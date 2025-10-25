@@ -1,0 +1,478 @@
+---
+description: Enforces the specific naming conventions used throughout the socket library
+globs: *.c,*.h
+---
+
+# Naming Conventions
+
+This rule enforces the specific naming conventions and patterns used throughout the socket library codebase.
+
+## 1. Type Names
+
+### Typedef Pattern
+**ALWAYS** use the T macro pattern for type definitions:
+
+```c
+#define T ModuleName_T
+typedef struct T *T;
+```
+
+**Examples**:
+```c
+#define T Arena_T
+typedef struct T *T;
+
+#define T Socket_T
+typedef struct T *T;
+
+#define T SocketBuf_T
+typedef struct T *T;
+
+#define T SocketPoll_T
+typedef struct T *T;
+
+#define T SocketPool_T
+typedef struct T *T;
+```
+
+### Structure Names
+**ALWAYS** use descriptive structure names:
+
+```c
+struct Arena_T
+{
+    Arena_T *prev;
+    char *avail;
+    char *limit;
+};
+
+struct Socket_T
+{
+    int fd;
+    struct sockaddr_storage addr;
+    socklen_t addrlen;
+    char *peeraddr;
+    int peerport;
+    Arena_T arena;
+};
+```
+
+## 2. Function Names
+
+### Module Prefix Pattern
+**ALWAYS** use module prefixes for all public functions:
+
+```c
+/* Arena functions */
+Arena_T Arena_new(void);
+void Arena_dispose(Arena_T *ap);
+void Arena_clear(Arena_T arena);
+void *Arena_alloc(Arena_T arena, size_t nbytes, const char *file, int line);
+
+/* Socket functions */
+Socket_T Socket_new(int domain, int type, int protocol);
+void Socket_free(Socket_T *socket);
+void Socket_bind(Socket_T socket, const char *host, int port);
+void Socket_listen(Socket_T socket, int backlog);
+Socket_T Socket_accept(Socket_T socket);
+void Socket_connect(Socket_T socket, const char *host, int port);
+ssize_t Socket_send(Socket_T socket, const void *buf, size_t len);
+ssize_t Socket_recv(Socket_T socket, void *buf, size_t len);
+void Socket_setnonblocking(Socket_T socket);
+void Socket_setreuseaddr(Socket_T socket);
+void Socket_settimeout(Socket_T socket, int timeout_sec);
+void Socket_setkeepalive(Socket_T socket, int idle, int interval, int count);
+void Socket_setnodelay(Socket_T socket, int nodelay);
+
+/* Buffer functions */
+SocketBuf_T SocketBuf_new(Arena_T arena, size_t capacity);
+void SocketBuf_release(SocketBuf_T *buf);
+size_t SocketBuf_write(SocketBuf_T buf, const void *data, size_t len);
+
+/* Poll functions */
+SocketPoll_T SocketPoll_new(int maxevents);
+void SocketPoll_free(SocketPoll_T *poll);
+void SocketPoll_add(SocketPoll_T poll, Socket_T socket, unsigned events, void *data);
+
+/* Pool functions */
+SocketPool_T SocketPool_new(Arena_T arena, size_t maxconns, size_t bufsize);
+void SocketPool_free(SocketPool_T *pool);
+Connection_T *SocketPool_get(SocketPool_T pool, Socket_T socket);
+```
+
+### Accessor Function Pattern
+**ALWAYS** use descriptive names for accessor functions:
+
+```c
+/* Socket accessors */
+int Socket_fd(Socket_T socket);
+const char *Socket_getpeeraddr(Socket_T socket);
+int Socket_getpeerport(Socket_T socket);
+
+/* Connection accessors */
+Socket_T Connection_socket(Connection_T *conn);
+SocketBuf_T Connection_inbuf(Connection_T *conn);
+SocketBuf_T Connection_outbuf(Connection_T *conn);
+void *Connection_data(Connection_T *conn);
+void Connection_setdata(Connection_T *conn, void *data);
+time_t Connection_lastactivity(Connection_T *conn);
+int Connection_isactive(Connection_T *conn);
+```
+
+## 3. Variable Names
+
+### Descriptive Names
+**ALWAYS** use descriptive variable names:
+
+```c
+/* Good variable names */
+size_t total_bytes_allocated;
+int number_of_active_connections;
+Socket_T client_socket;
+Arena_T memory_arena;
+char buffer[4096];
+int bytes_received;
+time_t last_activity_time;
+
+/* Avoid abbreviations */
+int n;        // Use count or number instead
+char *p;      // Use pointer or specific name instead
+int fd;       // Use file_descriptor or socket_fd instead
+```
+
+### Loop Variables
+**PREFER** descriptive loop variables:
+
+```c
+/* Good loop variables */
+for (size_t i = 0; i < connection_count; i++)
+for (int client_index = 0; client_index < max_clients; client_index++)
+for (SocketEvent_T *event = events; event < events + event_count; event++)
+
+/* Avoid single letters except in simple cases */
+for (int i = 0; i < 10; i++)  // OK for simple loops
+```
+
+## 4. Constant Names
+
+### Macro Constants
+**ALWAYS** use ALL_CAPS for macro constants:
+
+```c
+#define MAX_CONNECTIONS 1000
+#define DEFAULT_TIMEOUT 300
+#define BUFFER_SIZE (1024 * 1024)
+#define HASH_TABLE_SIZE 1021
+#define MAX_FREE_CHUNKS 10
+#define ALIGNMENT_SIZE sizeof(union align)
+```
+
+### Configuration Constants
+**ALWAYS** use module-specific prefixes for configuration:
+
+```c
+#define SOCKET_MAX_CONNECTIONS 10000
+#define SOCKET_MAX_BUFFER_SIZE (1024 * 1024)
+#define SOCKET_MIN_BUFFER_SIZE 512
+#define ARENA_CHUNK_SIZE (10 * 1024)
+#define ARENA_MAX_ALLOC_SIZE (100 * 1024 * 1024)
+```
+
+## 5. Exception Names
+
+### Exception Type Pattern
+**ALWAYS** use descriptive exception names:
+
+```c
+extern Except_T Socket_Failed;
+extern Except_T Socket_Closed;
+extern Except_T SocketPoll_Failed;
+extern Except_T Arena_Failed;
+extern Except_T Assert_Failed;
+```
+
+### Exception Messages
+**ALWAYS** use descriptive exception messages:
+
+```c
+Except_T Socket_Failed = {"Socket operation failed"};
+Except_T Socket_Closed = {"Socket closed"};
+Except_T SocketPoll_Failed = {"SocketPoll operation failed"};
+Except_T Assert_Failed = {"Assertion failed"};
+```
+
+## 6. Macro Names
+
+### Error Macros
+**ALWAYS** use consistent error macro patterns:
+
+```c
+#define SOCKET_ERROR_BUFSIZE 256
+#define SOCKET_ERROR_FMT(fmt, ...) \
+    snprintf(socket_error_buf, SOCKET_ERROR_BUFSIZE, fmt " (errno: %d - %s)", ##__VA_ARGS__, errno, strerror(errno))
+#define SOCKET_ERROR_MSG(fmt, ...) snprintf(socket_error_buf, SOCKET_ERROR_BUFSIZE, fmt, ##__VA_ARGS__)
+```
+
+### Validation Macros
+**ALWAYS** use descriptive validation macros:
+
+```c
+#define SOCKET_VALID_PORT(p) ((int)(p) > 0 && (int)(p) <= 65535)
+#define SOCKET_VALID_BUFFER_SIZE(s) \
+    ((size_t)(s) >= SOCKET_MIN_BUFFER_SIZE && (size_t)(s) <= SOCKET_MAX_BUFFER_SIZE)
+#define SOCKET_VALID_CONNECTION_COUNT(c) \
+    ((size_t)(c) > 0 && (size_t)(c) <= SOCKET_MAX_CONNECTIONS)
+```
+
+### Safe System Call Macros
+**ALWAYS** use SAFE_ prefix for safe system calls:
+
+```c
+#define SAFE_CLOSE(fd) \
+    do { \
+        if ((fd) >= 0) { \
+            int _result = close(fd); \
+            if (_result < 0 && errno != EINTR) { \
+                perror("close"); \
+            } \
+        } \
+    } while (0)
+```
+
+## 7. File Names
+
+### Header Files
+**ALWAYS** use descriptive header file names:
+
+```c
+Arena.h           // Arena memory management
+Except.h          // Exception handling
+Socket.h          // Socket operations
+SocketBuf.h       // Socket buffering
+SocketPoll.h      // Event polling
+SocketPool.h      // Connection pooling
+SocketConfig.h    // Configuration constants
+SocketError.h     // Error handling utilities
+```
+
+### Source Files
+**ALWAYS** match header file names:
+
+```c
+Arena.c           // Implementation of Arena.h
+Except.c          // Implementation of Except.h
+Socket.c          // Implementation of Socket.h
+SocketBuf.c       // Implementation of SocketBuf.h
+SocketPoll.c      // Implementation of SocketPoll.h
+SocketPool.c      // Implementation of SocketPool.h
+SocketError.c     // Implementation of SocketError.h
+main.c            // Main program/demo
+```
+
+## 8. Internal Function Names
+
+### Static Functions
+**ALWAYS** use static for internal functions:
+
+```c
+static unsigned socket_hash(Socket_T socket)
+{
+    return (unsigned)Socket_fd(socket) % HASH_TABLE_SIZE;
+}
+
+static Connection_T *find_slot(SocketPool_T pool, Socket_T socket)
+{
+    unsigned hash = socket_hash(socket);
+    Connection_T *conn = pool->hash_table[hash];
+    // ... implementation
+}
+
+static unsigned translate_to_epoll(unsigned events)
+{
+    unsigned epoll_events = 0;
+    if (events & POLL_READ) epoll_events |= EPOLLIN;
+    if (events & POLL_WRITE) epoll_events |= EPOLLOUT;
+    return epoll_events | EPOLLET;
+}
+```
+
+### Helper Function Names
+**ALWAYS** use descriptive names for helper functions:
+
+```c
+static void socket_data_add(SocketPoll_T poll, Socket_T socket, void *data)
+static void *socket_data_get(SocketPoll_T poll, Socket_T socket)
+static void socket_data_remove(SocketPoll_T poll, Socket_T socket)
+static time_t safe_time(void)
+static unsigned calculate_hash(void *key)
+```
+
+## 9. Global Variables
+
+### External Variables
+**ALWAYS** declare external variables properly:
+
+```c
+/* Thread-local exception stack */
+#ifdef _WIN32
+extern __declspec(thread) Except_Frame *Except_stack;
+#else
+extern __thread Except_Frame *Except_stack;
+#endif
+
+extern const Except_T Assert_Failed;
+extern Except_T Socket_Failed;
+extern Except_T Socket_Closed;
+```
+
+### Static Global Variables
+**ALWAYS** use static for file-scoped globals:
+
+```c
+static T freechunks;
+static int nfree;
+static pthread_mutex_t arena_mutex = PTHREAD_MUTEX_INITIALIZER;
+static Arena_T thread_local_arena = NULL;
+```
+
+## 10. Enum and Structure Member Names
+
+### Enum Values
+**ALWAYS** use descriptive enum values:
+
+```c
+typedef enum
+{
+    POLL_READ = 1 << 0,   /**< Data available for reading */
+    POLL_WRITE = 1 << 1,  /**< Socket ready for writing */
+    POLL_ERROR = 1 << 2,  /**< Error condition */
+    POLL_HANGUP = 1 << 3  /**< Hang up / disconnection */
+} SocketPoll_Events;
+
+enum
+{
+    Except_entered = 0,
+    Except_raised,
+    Except_handled,
+    Except_finalized
+};
+```
+
+### Structure Members
+**ALWAYS** use descriptive structure member names:
+
+```c
+struct Arena_T
+{
+    Arena_T *prev;        // Previous arena chunk
+    char *avail;          // Current allocation pointer
+    char *limit;          // End of current chunk
+};
+
+struct Socket_T
+{
+    int fd;                           // File descriptor
+    struct sockaddr_storage addr;     // Socket address
+    socklen_t addrlen;                // Address length
+    char *peeraddr;                   // Peer address string
+    int peerport;                     // Peer port number
+    Arena_T arena;                    // Private memory arena
+};
+
+struct Connection
+{
+    Socket_T socket;                  // Associated socket
+    SocketBuf_T inbuf;                // Input buffer
+    SocketBuf_T outbuf;               // Output buffer
+    void *data;                       // User data
+    time_t last_activity;             // Last activity timestamp
+    int active;                       // Connection active flag
+    struct Connection *hash_next;      // Hash table next pointer
+};
+```
+
+## 11. Comments and Documentation
+
+### Function Comments
+**ALWAYS** use Doxygen-style comments:
+
+```c
+/**
+ * FunctionName - Brief description of what the function does
+ * @param1: Description of first parameter
+ * @param2: Description of second parameter
+ *
+ * Returns: Description of return value
+ * Raises: Description of exceptions that may be raised
+ * Thread-safe: Yes/No with explanation
+ *
+ * Additional implementation details and usage notes.
+ */
+```
+
+### Code Comments
+**ALWAYS** add comments for complex logic:
+
+```c
+/* Check for overflow before calculation */
+if (nbytes > SIZE_MAX - (alignment - 1))
+    return NULL;
+
+/* Calculate aligned size safely */
+size_t sum = nbytes + alignment - 1;
+size_t aligned_bytes = sum / alignment;
+
+/* Verify multiplication won't overflow */
+if (alignment != 0 && aligned_bytes > SIZE_MAX / alignment)
+    return NULL;
+```
+
+### Block Comments
+**ALWAYS** use block comments for sections:
+
+```c
+/* Thread-local exception stack */
+#ifdef _WIN32
+__declspec(thread) Except_Frame *Except_stack = NULL;
+#else
+__thread Except_Frame *Except_stack = NULL;
+#endif
+
+/* Validation macros with proper parentheses and overflow protection */
+#define SOCKET_VALID_PORT(p) ((int)(p) > 0 && (int)(p) <= 65535)
+```
+
+## 12. Build System Names
+
+### Target Names
+**ALWAYS** use descriptive target names:
+
+```makefile
+TARGET = irc_server
+OBJECTS = Arena.o Except.o Socket.o SocketBuf.o SocketPoll.o SocketPool.o SocketError.o main.o
+```
+
+### Variable Names
+**ALWAYS** use standard Makefile variable names:
+
+```makefile
+CC = gcc
+CFLAGS = -Wall -Wextra -g -O2 -D_GNU_SOURCE
+LDFLAGS =
+TARGET = program_name
+OBJECTS = file1.o file2.o file3.o
+```
+
+### File Dependencies
+**ALWAYS** specify proper dependencies:
+
+```makefile
+Arena.o: Arena.c Arena.h SocketConfig.h
+Except.o: Except.c Except.h
+Socket.o: Socket.c Socket.h Arena.h Except.h SocketConfig.h SocketError.h
+SocketBuf.o: SocketBuf.c SocketBuf.h Arena.h
+SocketPoll.o: SocketPoll.c SocketPoll.h Socket.h Except.h Arena.h SocketConfig.h SocketError.h
+SocketPool.o: SocketPool.c SocketPool.h Socket.h SocketBuf.h Arena.h SocketConfig.h
+SocketError.o: SocketError.c SocketError.h
+main.o: main.c Arena.h Except.h Socket.h SocketBuf.h SocketPoll.h SocketPool.h
+```

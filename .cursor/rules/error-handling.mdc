@@ -1,0 +1,314 @@
+---
+description: Enforces consistent error handling patterns using the exception system
+globs: *.c,*.h
+---
+
+# Error Handling Rules
+
+This rule enforces the sophisticated error handling patterns used throughout the socket library. All errors should be handled through the exception system for consistency and reliability.
+
+## Exception System Usage
+
+### Basic Exception Usage
+**ALWAYS** use the TRY/EXCEPT/FINALLY/END_TRY pattern:
+
+```c
+TRY
+    // Code that might raise exceptions
+    if (error_condition)
+        RAISE(Some_Exception);
+EXCEPT(Some_Exception)
+    // Handle the exception
+FINALLY
+    // Cleanup code (always executed)
+END_TRY;
+```
+
+### Exception Types
+**ALWAYS** define module-specific exception types:
+
+```c
+/* Exception type definition */
+extern Except_T Module_Failed;
+extern Except_T Module_InvalidInput;
+extern Except_T Module_OutOfMemory;
+```
+
+### Exception Implementation
+**ALWAYS** implement exceptions with descriptive messages:
+
+```c
+Except_T Module_Failed = {"Module operation failed"};
+Except_T Module_InvalidInput = {"Invalid input parameter"};
+Except_T Module_OutOfMemory = {"Out of memory"};
+```
+
+## Detailed Error Messages
+
+### Thread-Local Error Buffers
+**ALWAYS** use thread-local error buffers for detailed messages:
+
+```c
+/* Error buffer size */
+#define MODULE_ERROR_BUFSIZE 256
+
+/* Thread-local error buffer declaration */
+#ifdef _WIN32
+extern __declspec(thread) char module_error_buf[MODULE_ERROR_BUFSIZE];
+#else
+extern __thread char module_error_buf[MODULE_ERROR_BUFSIZE];
+#endif
+
+/* Error buffer implementation */
+#ifdef _WIN32
+__declspec(thread) char module_error_buf[MODULE_ERROR_BUFSIZE] = {0};
+#else
+__thread char module_error_buf[MODULE_ERROR_BUFSIZE] = {0};
+#endif
+```
+
+### Error Formatting Macros
+**ALWAYS** create error formatting macros:
+
+```c
+/* Macro to format error messages with errno information */
+#define MODULE_ERROR_FMT(fmt, ...)                                                                                     \
+    snprintf(module_error_buf, MODULE_ERROR_BUFSIZE, fmt " (errno: %d - %s)", ##__VA_ARGS__, errno, strerror(errno))
+
+/* Macro to format error messages without errno */
+#define MODULE_ERROR_MSG(fmt, ...) snprintf(module_error_buf, MODULE_ERROR_BUFSIZE, fmt, ##__VA_ARGS__)
+```
+
+### Custom Exception Macros
+**ALWAYS** create module-specific exception raising macros:
+
+```c
+/* Macro to raise exception with detailed error message */
+/* IMPORTANT: Directly modify the original exception, don't create copies */
+#define RAISE_MODULE_ERROR(exception)                                          \
+  do                                                                           \
+    {                                                                          \
+      (exception).reason = module_error_buf;                                   \
+      RAISE(exception);                                                        \
+    }                                                                          \
+  while (0)
+```
+
+**WARNING**: Never create thread-local copies of exceptions as this prevents proper exception catching:
+
+```c
+/* WRONG - Don't do this! */
+static __thread Except_T Module_DetailedException;
+Module_DetailedException = (exception);
+Module_DetailedException.reason = module_error_buf;
+RAISE(Module_DetailedException);  // This will raise a different exception type!
+
+/* CORRECT - Modify and raise the original exception */
+(exception).reason = module_error_buf;
+RAISE(exception);  // This preserves the exception type for proper catching
+```
+
+## System Call Error Handling
+
+### Safe System Call Wrappers
+**ALWAYS** use safe wrappers for system calls:
+
+```c
+#define SAFE_CLOSE(fd)                                                         \
+  do                                                                           \
+    {                                                                          \
+      if ((fd) >= 0)                                                           \
+        {                                                                      \
+          int _result = close(fd);                                             \
+          if (_result < 0 && errno != EINTR)                                   \
+            {                                                                  \
+              /* Log error but don't fail - fd is closed anyway */             \
+              perror("close");                                                 \
+            }                                                                  \
+        }                                                                      \
+    }                                                                          \
+  while (0)
+```
+
+### System Call Error Patterns
+**ALWAYS** handle system call errors consistently:
+
+```c
+int result = system_call();
+if (result < 0)
+{
+    if (errno == ESPECIFIC_ERROR)
+    {
+        MODULE_ERROR_FMT("Specific error: %s", context);
+    }
+    else if (errno == ANOTHER_ERROR)
+    {
+        MODULE_ERROR_FMT("Another error in %s", function_context);
+    }
+    else
+    {
+        MODULE_ERROR_FMT("General error in %s", function_name);
+    }
+    RAISE_MODULE_ERROR(Module_Failed);
+}
+```
+
+## Input Validation
+
+### Validation Before Operations
+**ALWAYS** validate inputs before processing:
+
+```c
+void function_with_validation(Type param)
+{
+    assert(param != NULL);
+    assert(SOME_VALIDATION_MACRO(param));
+
+    // Main function logic
+}
+```
+
+### Validation Macros
+**ALWAYS** use descriptive validation macros:
+
+```c
+#define MODULE_VALID_INPUT(x) ((x) != NULL && (x)->field > 0)
+#define MODULE_VALID_SIZE(s) ((size_t)(s) > 0 && (size_t)(s) <= MAX_SIZE)
+#define MODULE_VALID_PORT(p) ((int)(p) > 0 && (int)(p) <= 65535)
+```
+
+## Resource Management
+
+### Resource Acquisition Pattern
+**ALWAYS** acquire resources in order and release in reverse:
+
+```c
+TRY
+    // 1. Acquire resource 1
+    resource1 = acquire_resource1();
+
+    // 2. Acquire resource 2
+    resource2 = acquire_resource2();
+
+    // 3. Acquire resource 3
+    resource3 = acquire_resource3();
+
+    // Use resources
+    use_resources(resource1, resource2, resource3);
+
+EXCEPT(Any_Exception)
+    // Handle errors
+FINALLY
+    // 4. Release resource 3
+    if (resource3)
+        release_resource3(&resource3);
+
+    // 5. Release resource 2
+    if (resource2)
+        release_resource2(&resource2);
+
+    // 6. Release resource 1
+    if (resource1)
+        release_resource1(&resource1);
+END_TRY;
+```
+
+## Specific Error Conditions
+
+### Network Error Handling
+**ALWAYS** handle network-specific errors:
+
+```c
+if (errno == EAGAIN || errno == EWOULDBLOCK)
+{
+    // Would block - not necessarily an error
+    return 0;
+}
+else if (errno == EPIPE)
+{
+    MODULE_ERROR_MSG("Connection closed by peer");
+    RAISE_MODULE_ERROR(Module_ConnectionClosed);
+}
+else if (errno == ECONNRESET)
+{
+    MODULE_ERROR_MSG("Connection reset by peer");
+    RAISE_MODULE_ERROR(Module_ConnectionClosed);
+}
+else
+{
+    MODULE_ERROR_FMT("Network operation failed");
+    RAISE_MODULE_ERROR(Module_Failed);
+}
+```
+
+### Memory Error Handling
+**ALWAYS** handle memory allocation failures:
+
+```c
+pointer = malloc(size);
+if (pointer == NULL)
+{
+    MODULE_ERROR_MSG(MODULE_ENOMEM ": Cannot allocate memory");
+    RAISE_MODULE_ERROR(Module_OutOfMemory);
+}
+```
+
+## Error Context
+
+### File and Line Information
+**ALWAYS** include context in error messages:
+
+```c
+#define RAISE_ERROR(e) Except_raise(&(e), __FILE__, __LINE__)
+```
+
+### Function Context
+**ALWAYS** include function context in error messages:
+
+```c
+MODULE_ERROR_FMT("Failed in %s at %s:%d", function_name, __FILE__, __LINE__)
+```
+
+## Recovery and Cleanup
+
+### Graceful Degradation
+**ALWAYS** attempt graceful recovery when possible:
+
+```c
+TRY
+    // Primary operation
+    result = primary_operation();
+EXCEPT(Recoverable_Exception)
+    // Attempt recovery
+    result = recovery_operation();
+EXCEPT(Any_Exception)
+    // Log error and continue
+    log_error("Operation failed but continuing");
+END_TRY;
+```
+
+### Resource Cleanup
+**ALWAYS** ensure resources are cleaned up in all error paths:
+
+```c
+void function_with_cleanup(void)
+{
+    Resource *r1 = NULL, *r2 = NULL;
+
+    TRY
+        r1 = acquire_resource1();
+        r2 = acquire_resource2();
+
+        // Main operation
+        do_work(r1, r2);
+
+    EXCEPT(Any_Exception)
+        // Handle error
+        handle_error();
+
+    FINALLY
+        if (r2) release_resource2(&r2);
+        if (r1) release_resource1(&r1);
+    END_TRY;
+}
+```

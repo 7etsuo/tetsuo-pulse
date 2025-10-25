@@ -1,0 +1,408 @@
+---
+description: Enforces proper memory management patterns using arena allocation and overflow protection
+globs: *.c,*.h
+---
+
+# Memory Management Rules
+
+This rule enforces the sophisticated memory management patterns used throughout the socket library. All memory operations must follow arena-based allocation with comprehensive overflow protection.
+
+## Arena-Based Allocation
+
+### Arena Usage Pattern
+**ALWAYS** use arena allocation for related objects:
+
+```c
+/* Create arena for related allocations */
+Arena_T arena = Arena_new();
+if (!arena)
+{
+    RAISE(Some_OutOfMemoryException);
+}
+
+/* Allocate from arena */
+object = ALLOC(arena, sizeof(*object));
+
+/* Cleanup entire arena at once */
+Arena_dispose(&arena);
+```
+
+### Allocation Macros
+**ALWAYS** use the provided allocation macros:
+
+```c
+#define ALLOC(arena, nbytes) (Arena_alloc((arena), (nbytes), __FILE__, __LINE__))
+#define CALLOC(arena, count, nbytes) (Arena_calloc((arena), (count), (nbytes), __FILE__, __LINE__))
+```
+
+## Overflow Protection
+
+### Size Validation
+**ALWAYS** validate sizes before calculations:
+
+```c
+/* Check for overflow before calculation */
+if (nbytes > SIZE_MAX - (alignment - 1))
+    return NULL;
+
+/* Calculate safely */
+size_t sum = nbytes + alignment - 1;
+size_t aligned_bytes = sum / alignment;
+
+/* Check multiplication overflow */
+if (alignment != 0 && aligned_bytes > SIZE_MAX / alignment)
+    return NULL;
+```
+
+### Allocation Size Limits
+**ALWAYS** enforce allocation size limits:
+
+```c
+/* Enforce maximum allocation size */
+if (size > MAX_ALLOCATION_SIZE)
+{
+    MODULE_ERROR_MSG("Allocation too large");
+    return NULL;
+}
+```
+
+## Memory Alignment
+
+### Alignment Union
+**ALWAYS** use proper alignment for all data types:
+
+```c
+union align {
+    int i;
+    long l;
+    long *lp;
+    void *p;
+    void (*fp)(void);
+    float f;
+    double d;
+    long double ld;
+};
+
+#define ALIGNMENT_SIZE sizeof(union align)
+```
+
+### Aligned Allocation
+**ALWAYS** allocate with proper alignment:
+
+```c
+size_t alignment = ALIGNMENT_SIZE;
+
+/* Calculate aligned size */
+size_t sum = nbytes + alignment - 1;
+size_t aligned_bytes = sum / alignment;
+nbytes = aligned_bytes * alignment;
+```
+
+## Chunk Management
+
+### Chunk Reuse
+**ALWAYS** implement chunk reuse for efficiency:
+
+```c
+/* Free chunk cache */
+#define MAX_FREE_CHUNKS 10
+
+static T freechunks;
+static int nfree;
+static pthread_mutex_t chunk_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void return_chunk(T chunk)
+{
+    pthread_mutex_lock(&chunk_mutex);
+    if (nfree < MAX_FREE_CHUNKS)
+    {
+        chunk->prev = freechunks;
+        freechunks = chunk;
+        nfree++;
+        pthread_mutex_unlock(&chunk_mutex);
+    }
+    else
+    {
+        pthread_mutex_unlock(&chunk_mutex);
+        free(chunk);
+    }
+}
+```
+
+## Memory Safety
+
+### Bounds Checking
+**ALWAYS** check bounds before access:
+
+```c
+/* Ensure we don't read beyond buffer */
+if (head + chunk > capacity)
+    chunk = capacity - head;
+
+/* Ensure we don't write beyond buffer */
+if (tail + chunk > capacity)
+    chunk = capacity - tail;
+```
+
+### NULL Pointer Checks
+**ALWAYS** check for NULL pointers:
+
+```c
+assert(pointer != NULL);
+if (pointer == NULL)
+{
+    MODULE_ERROR_MSG("NULL pointer access");
+    RAISE_MODULE_ERROR(Module_InvalidInput);
+}
+```
+
+## Resource Cleanup
+
+### Cleanup Order
+**ALWAYS** clean up resources in reverse order of creation:
+
+```c
+void cleanup_resources(void)
+{
+    /* 1. Close file descriptors */
+    if (fd >= 0)
+        SAFE_CLOSE(fd);
+
+    /* 2. Free arena-allocated memory */
+    if (arena)
+        Arena_dispose(&arena);
+
+    /* 3. Free malloc-allocated memory */
+    if (pointer)
+        free(pointer);
+}
+```
+
+### Partial Cleanup
+**ALWAYS** handle partial cleanup in error paths:
+
+```c
+object = malloc(sizeof(*object));
+if (!object)
+    return NULL;
+
+object->field = ALLOC(arena, size);
+if (!object->field)
+{
+    free(object);
+    return NULL;
+}
+
+object->other = acquire_resource();
+if (!object->other)
+{
+    free(object->field);
+    free(object);
+    return NULL;
+}
+```
+
+## Thread Safety
+
+### Mutex Protection
+**ALWAYS** protect shared memory operations:
+
+```c
+static pthread_mutex_t memory_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void thread_safe_allocation(void)
+{
+    pthread_mutex_lock(&memory_mutex);
+    /* Critical section */
+    pointer = malloc(size);
+    pthread_mutex_unlock(&memory_mutex);
+}
+```
+
+### Thread-Local Allocation
+**PREFER** thread-local allocation when possible:
+
+```c
+/* Thread-local allocator */
+#ifdef _WIN32
+__declspec(thread) Arena_T thread_arena = NULL;
+#else
+__thread Arena_T thread_arena = NULL;
+#endif
+
+void *thread_local_alloc(size_t size)
+{
+    if (!thread_arena)
+        thread_arena = Arena_new();
+
+    return ALLOC(thread_arena, size);
+}
+```
+
+## Buffer Management
+
+### Circular Buffer Safety
+**ALWAYS** implement safe circular buffer operations:
+
+```c
+size_t safe_write(void *data, size_t len)
+{
+    size_t space = capacity - size;
+    if (len > space)
+        len = space;
+
+    while (written < len)
+    {
+        size_t chunk = capacity - tail;
+        if (chunk > len - written)
+            chunk = len - written;
+
+        /* Safety check: ensure tail is valid */
+        if (tail >= capacity)
+        {
+            tail = 0;
+            continue;
+        }
+
+        /* Ensure we don't write beyond buffer */
+        if (tail + chunk > capacity)
+            chunk = capacity - tail;
+
+        memcpy(buffer + tail, data + written, chunk);
+        tail = (tail + chunk) % capacity;
+        written += chunk;
+    }
+
+    size += written;
+    return written;
+}
+```
+
+### Zero-Copy Operations
+**PREFER** zero-copy operations when safe:
+
+```c
+const void *get_read_ptr(size_t *len)
+{
+    if (size == 0)
+    {
+        *len = 0;
+        return NULL;
+    }
+
+    size_t contiguous = capacity - head;
+    if (contiguous > size)
+        contiguous = size;
+
+    *len = contiguous;
+    return buffer + head;
+}
+
+void *get_write_ptr(size_t *len)
+{
+    size_t space = capacity - size;
+    if (space == 0)
+    {
+        *len = 0;
+        return NULL;
+    }
+
+    size_t contiguous = capacity - tail;
+    if (contiguous > space)
+        contiguous = space;
+
+    *len = contiguous;
+    return buffer + tail;
+}
+```
+
+## Validation
+
+### Pre-Allocation Validation
+**ALWAYS** validate parameters before allocation:
+
+```c
+void *allocate_buffer(size_t size)
+{
+    assert(size > 0);
+    assert(SOCKET_VALID_BUFFER_SIZE(size));
+
+    /* Check for overflow */
+    if (size > MAX_ALLOCATION_SIZE)
+        return NULL;
+
+    return malloc(size);
+}
+```
+
+### Post-Allocation Validation
+**ALWAYS** validate allocation results:
+
+```c
+pointer = malloc(size);
+if (pointer == NULL)
+{
+    MODULE_ERROR_MSG(MODULE_ENOMEM ": Memory allocation failed");
+    RAISE_MODULE_ERROR(Module_OutOfMemory);
+}
+
+/* Zero the memory if needed */
+memset(pointer, 0, size);
+```
+
+## Memory Leaks Prevention
+
+### Reference Counting
+**CONSIDER** reference counting for shared resources:
+
+```c
+typedef struct {
+    void *data;
+    int refcount;
+    pthread_mutex_t mutex;
+} SharedResource;
+
+void retain_resource(SharedResource *resource)
+{
+    pthread_mutex_lock(&resource->mutex);
+    resource->refcount++;
+    pthread_mutex_unlock(&resource->mutex);
+}
+
+void release_resource(SharedResource *resource)
+{
+    pthread_mutex_lock(&resource->mutex);
+    resource->refcount--;
+    if (resource->refcount == 0)
+    {
+        pthread_mutex_unlock(&resource->mutex);
+        free(resource->data);
+        free(resource);
+        return;
+    }
+    pthread_mutex_unlock(&resource->mutex);
+}
+```
+
+### Leak Detection
+**CONSIDER** adding leak detection in debug builds:
+
+```c
+#ifdef DEBUG
+static int allocation_count = 0;
+
+void *debug_malloc(size_t size)
+{
+    void *ptr = malloc(size);
+    if (ptr)
+        allocation_count++;
+    return ptr;
+}
+
+void debug_free(void *ptr)
+{
+    free(ptr);
+    allocation_count--;
+}
+#endif
+```

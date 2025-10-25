@@ -1,0 +1,677 @@
+---
+description: Enforces the specific module design patterns used in the socket library
+globs: *.c,*.h
+---
+
+# Module Design Patterns
+
+This rule enforces the specific design patterns and architectural principles used throughout the socket library. Each module follows consistent patterns for maintainability and reliability.
+
+## 1. Socket Module Pattern
+
+### Socket Abstraction Structure
+**ALWAYS** follow the socket abstraction pattern:
+
+```c
+#define T Socket_T
+
+struct T
+{
+    int fd;                           // Underlying file descriptor
+    struct sockaddr_storage addr;     // Address information
+    socklen_t addrlen;                // Address length
+    char *peeraddr;                   // Peer address string
+    int peerport;                     // Peer port number
+    Arena_T arena;                    // Private memory arena
+};
+
+typedef struct T *T;
+```
+
+### Socket Operations Pattern
+**ALWAYS** implement socket operations with proper error handling:
+
+```c
+T Socket_new(int domain, int type, int protocol)
+{
+    T sock;
+    int fd;
+
+    /* Create underlying socket */
+    fd = socket(domain, type, protocol);
+    if (fd < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to create socket (domain=%d, type=%d, protocol=%d)",
+                        domain, type, protocol);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    /* Allocate socket structure */
+    sock = malloc(sizeof(*sock));
+    if (sock == NULL)
+    {
+        SAFE_CLOSE(fd);
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket structure");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    /* Initialize arena */
+    sock->arena = Arena_new();
+    if (!sock->arena)
+    {
+        SAFE_CLOSE(fd);
+        free(sock);
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket arena");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    /* Initialize socket */
+    sock->fd = fd;
+    sock->addrlen = sizeof(sock->addr);
+    memset(&sock->addr, 0, sizeof(sock->addr));
+    sock->peeraddr = NULL;
+    sock->peerport = 0;
+
+    return sock;
+}
+```
+
+### Socket Configuration Pattern
+**ALWAYS** implement socket options with proper error handling:
+
+```c
+/* DNS Resolution Support */
+void Socket_bind(T socket, const char *host, int port)
+{
+    struct sockaddr_in addr;
+    
+    /* Support both IP addresses and hostnames */
+    if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0)
+    {
+        /* Not an IP address, try DNS resolution */
+        struct hostent *he = gethostbyname(host);
+        if (he == NULL || he->h_addrtype != AF_INET)
+        {
+            SOCKET_ERROR_MSG("Invalid host/IP address: %.200s", host);
+            RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+        memcpy(&addr.sin_addr, he->h_addr_list[0], sizeof(addr.sin_addr));
+    }
+    
+    /* Continue with bind operation */
+}
+
+/* Timeout Configuration */
+void Socket_settimeout(T socket, int timeout_sec)
+{
+    struct timeval tv;
+    tv.tv_sec = timeout_sec;
+    tv.tv_usec = 0;
+    
+    if (setsockopt(socket->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to set receive timeout");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+    
+    if (setsockopt(socket->fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to set send timeout");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+}
+
+/* TCP Keepalive Configuration */
+void Socket_setkeepalive(T socket, int idle, int interval, int count)
+{
+    int optval = 1;
+    
+    /* Enable keepalive */
+    if (setsockopt(socket->fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to enable keepalive");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+    
+    /* Set keepalive parameters (Linux-specific) */
+#ifdef TCP_KEEPIDLE
+    setsockopt(socket->fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle));
+#endif
+#ifdef TCP_KEEPINTVL
+    setsockopt(socket->fd, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(interval));
+#endif
+#ifdef TCP_KEEPCNT
+    setsockopt(socket->fd, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(count));
+#endif
+}
+
+/* TCP Nodelay Configuration */
+void Socket_setnodelay(T socket, int nodelay)
+{
+    if (setsockopt(socket->fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to set TCP_NODELAY");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+}
+```
+
+## 2. Buffer Module Pattern
+
+### Circular Buffer Structure
+**ALWAYS** implement circular buffers with this pattern:
+
+```c
+#define T SocketBuf_T
+
+struct T
+{
+    char *data;           // Buffer data
+    size_t capacity;      // Total capacity
+    size_t head;          // Read position
+    size_t tail;          // Write position
+    size_t size;          // Current data size
+    Arena_T arena;        // Memory arena
+};
+
+typedef struct T *T;
+```
+
+### Buffer Safety Pattern
+**ALWAYS** implement safe buffer operations:
+
+```c
+size_t SocketBuf_write(T buf, const void *data, size_t len)
+{
+    size_t space;
+    size_t written = 0;
+    const char *src = data;
+
+    assert(buf);
+    assert(buf->data);
+    assert(data || len == 0);
+    assert(buf->size <= buf->capacity);
+
+    space = buf->capacity - buf->size;
+    if (len > space)
+        len = space;
+
+    while (written < len)
+    {
+        size_t chunk = buf->capacity - buf->tail;
+        if (chunk > len - written)
+            chunk = len - written;
+
+        /* Safety check: ensure tail is valid */
+        if (buf->tail >= buf->capacity)
+        {
+            buf->tail = 0;
+            continue;
+        }
+
+        /* Ensure we don't write beyond buffer */
+        if (buf->tail + chunk > buf->capacity)
+            chunk = buf->capacity - buf->tail;
+
+        memcpy(buf->data + buf->tail, src + written, chunk);
+        buf->tail = (buf->tail + chunk) % buf->capacity;
+        written += chunk;
+    }
+
+    buf->size += written;
+    return written;
+}
+```
+
+## 3. Poll Module Pattern
+
+### Event Translation Pattern
+**ALWAYS** implement event translation between systems:
+
+```c
+static unsigned translate_to_epoll(unsigned events)
+{
+    unsigned epoll_events = 0;
+
+    if (events & POLL_READ)
+        epoll_events |= EPOLLIN;
+    if (events & POLL_WRITE)
+        epoll_events |= EPOLLOUT;
+
+    return epoll_events | EPOLLET;  // Edge-triggered mode
+}
+
+static unsigned translate_from_epoll(unsigned epoll_events)
+{
+    unsigned events = 0;
+
+    if (epoll_events & EPOLLIN)
+        events |= POLL_READ;
+    if (epoll_events & EPOLLOUT)
+        events |= POLL_WRITE;
+    if (epoll_events & EPOLLERR)
+        events |= POLL_ERROR;
+    if (epoll_events & EPOLLHUP)
+        events |= POLL_HANGUP;
+
+    return events;
+}
+```
+
+### Socket Data Mapping Pattern
+**ALWAYS** implement efficient socket-to-data mapping:
+
+```c
+typedef struct SocketData
+{
+    Socket_T socket;
+    void *data;
+    struct SocketData *next;
+} SocketData;
+
+struct T
+{
+    int epfd;
+    int maxevents;
+    struct epoll_event *events;
+    SocketEvent_T *socketevents;
+    Arena_T arena;
+    SocketData *socket_data_map; /* Simple linked list for socket->data mapping */
+};
+```
+
+## 4. Pool Module Pattern
+
+### Connection Pool Structure
+**ALWAYS** implement pools with this pattern:
+
+```c
+#define T SocketPool_T
+
+struct T
+{
+    Connection_T *connections;        // Pre-allocated connection array
+    Connection_T **hash_table;        // Hash table for O(1) lookup
+    size_t maxconns;                  // Maximum connections
+    size_t bufsize;                   // Buffer size per connection
+    size_t count;                     // Active connection count
+    Arena_T arena;                    // Memory arena
+};
+```
+
+### Hash Table Pattern
+**ALWAYS** implement hash tables for O(1) lookups:
+
+```c
+/* Hash table size - should be prime for better distribution */
+#define SOCKET_HASH_SIZE 1021
+
+/* Hash function for socket file descriptors */
+static unsigned socket_hash(Socket_T socket)
+{
+    int fd = Socket_fd(socket);
+    return (unsigned)fd % SOCKET_HASH_SIZE;
+}
+
+static Connection_T *find_slot(T pool, Socket_T socket)
+{
+    unsigned hash = socket_hash(socket);
+    Connection_T *conn = pool->hash_table[hash];
+
+    /* Search the hash chain */
+    while (conn)
+    {
+        if (conn->active && conn->socket == socket)
+            return conn;
+        conn = conn->hash_next;
+    }
+    return NULL;
+}
+```
+
+### Thread Safety Pattern
+**ALWAYS** implement thread safety for shared data structures:
+
+```c
+/* Add mutex to structure for thread safety */
+struct T
+{
+    Connection_T *connections;        // Pre-allocated connection array
+    Connection_T **hash_table;        // Hash table for O(1) lookup
+    size_t maxconns;                  // Maximum connections
+    size_t bufsize;                   // Buffer size per connection
+    size_t count;                     // Active connection count
+    Arena_T arena;                    // Memory arena
+    pthread_mutex_t mutex;            // Mutex for thread safety
+};
+
+/* Initialize mutex in constructor */
+T SocketPool_new(Arena_T arena, size_t maxconns, size_t bufsize)
+{
+    T pool;
+    
+    /* ... allocation code ... */
+    
+    /* Initialize mutex */
+    if (pthread_mutex_init(&pool->mutex, NULL) != 0)
+    {
+        SOCKET_ERROR_MSG("Failed to initialize mutex");
+        RAISE_SOCKET_ERROR(SocketPool_Failed);
+    }
+    
+    return pool;
+}
+
+/* Protect all operations with mutex */
+Connection_T *SocketPool_get(T pool, Socket_T socket)
+{
+    Connection_T *conn;
+    
+    assert(pool);
+    assert(socket);
+    
+    pthread_mutex_lock(&pool->mutex);
+    conn = find_slot(pool, socket);
+    pthread_mutex_unlock(&pool->mutex);
+    
+    return conn;
+}
+
+/* Special care for cleanup to avoid deadlocks */
+void SocketPool_cleanup(T pool, time_t idle_timeout)
+{
+    Socket_T *to_close = NULL;
+    size_t close_count = 0;
+    
+    /* Collect sockets to close under lock */
+    pthread_mutex_lock(&pool->mutex);
+    
+    /* ... collect idle connections ... */
+    
+    pthread_mutex_unlock(&pool->mutex);
+    
+    /* Close sockets outside of lock to avoid deadlock */
+    for (i = 0; i < close_count; i++)
+    {
+        SocketPool_remove(pool, to_close[i]);
+        Socket_free(&to_close[i]);
+    }
+    
+    free(to_close);
+}
+
+/* Destroy mutex in destructor */
+void SocketPool_free(T *pool)
+{
+    T p;
+    
+    assert(pool);
+    assert(*pool);
+    
+    p = *pool;
+    
+    /* Clean up resources */
+    /* ... */
+    
+    /* Destroy mutex */
+    pthread_mutex_destroy(&p->mutex);
+    
+    *pool = NULL;
+}
+```
+
+## 5. Configuration Module Pattern
+
+### Configuration Header Pattern
+**ALWAYS** implement configuration with override protection:
+
+```c
+#ifndef MODULE_CONFIG_H
+#define MODULE_CONFIG_H
+
+/* Configuration limits */
+#ifndef MODULE_MAX_CONNECTIONS
+#define MODULE_MAX_CONNECTIONS 10000
+#endif
+
+#ifndef MODULE_MAX_BUFFER_SIZE
+#define MODULE_MAX_BUFFER_SIZE (1024 * 1024) /* 1MB */
+#endif
+
+#ifndef MODULE_MIN_BUFFER_SIZE
+#define MODULE_MIN_BUFFER_SIZE 512
+#endif
+
+/* Validation macros */
+#define MODULE_VALID_PORT(p) ((int)(p) > 0 && (int)(p) <= 65535)
+#define MODULE_VALID_BUFFER_SIZE(s)                                            \
+  ((size_t)(s) >= MODULE_MIN_BUFFER_SIZE && (size_t)(s) <= MODULE_MAX_BUFFER_SIZE)
+#define MODULE_VALID_CONNECTION_COUNT(c)                                       \
+  ((size_t)(c) > 0 && (size_t)(c) <= MODULE_MAX_CONNECTIONS)
+
+#endif /* MODULE_CONFIG_H */
+```
+
+## 6. Main Program Pattern
+
+### Event Loop Pattern
+**ALWAYS** implement event-driven main loops:
+
+```c
+int main(int argc, char **argv)
+{
+    /* Resource declarations */
+    Socket_T server = NULL;
+    SocketPoll_T poll = NULL;
+    SocketPool_T pool = NULL;
+    Arena_T arena = NULL;
+
+    /* Signal handling */
+    signal(SIGINT, handle_signal);
+    signal(SIGTERM, handle_signal);
+    signal(SIGPIPE, SIG_IGN);
+
+    /* Parse arguments */
+    volatile int port = 6667;
+    if (argc > 1)
+    {
+        port = atoi(argv[1]);
+        if (port <= 0 || port > 65535)
+        {
+            fprintf(stderr, "Invalid port number: %s\n", argv[1]);
+            return 1;
+        }
+    }
+
+    TRY
+        /* Create main arena for all allocations */
+        arena = Arena_new();
+
+        /* Create server socket */
+        server = Socket_new(AF_INET, SOCK_STREAM, 0);
+        Socket_setreuseaddr(server);
+        Socket_bind(server, "0.0.0.0", port);
+        Socket_listen(server, 128);
+        Socket_setnonblocking(server);
+
+        /* Create event poll */
+        poll = SocketPoll_new(1000);
+        SocketPoll_add(poll, server, POLL_READ, NULL);
+
+        /* Create connection pool */
+        pool = SocketPool_new(arena, 1000, 8192);
+
+        /* Main event loop */
+        while (running)
+        {
+            SocketEvent_T *events;
+            volatile int n, i;
+
+            n = SocketPoll_wait(poll, &events, 1000);
+
+            for (i = 0; i < n; i++)
+            {
+                if (events[i].socket == server)
+                {
+                    /* Accept new connection */
+                    handle_new_connection(server, poll, pool);
+                }
+                else
+                {
+                    /* Handle client I/O */
+                    handle_client_io(events[i], poll, pool);
+                }
+            }
+
+            /* Clean up idle connections */
+            SocketPool_cleanup(pool, 300);
+        }
+
+    EXCEPT(Socket_Failed)
+        fprintf(stderr, "Socket error: %s\n", Socket_Failed.reason);
+    EXCEPT(SocketPoll_Failed)
+        fprintf(stderr, "Poll error: %s\n", SocketPoll_Failed.reason);
+    FINALLY
+        /* Cleanup in reverse order */
+        if (poll) SocketPoll_free(&poll);
+        if (pool) SocketPool_free(&pool);
+        if (server) Socket_free(&server);
+        if (arena) Arena_dispose(&arena);
+    END_TRY;
+
+    return 0;
+}
+```
+
+## 7. Handler Function Pattern
+
+### Client Handler Pattern
+**ALWAYS** implement handlers with proper exception handling:
+
+```c
+static void handle_client_data(Connection_T *conn, SocketPoll_T poll)
+{
+    char buffer[4096];
+    int n;
+
+    TRY
+        n = Socket_recv(Connection_socket(conn), buffer, sizeof(buffer) - 1);
+        if (n > 0)
+        {
+            buffer[n] = '\0';
+
+            /* Process received data */
+            process_data(conn, buffer, n);
+
+            /* Enable write events if needed */
+            if (has_data_to_send(conn))
+            {
+                SocketPoll_mod(poll, Connection_socket(conn), POLL_READ | POLL_WRITE, conn);
+            }
+        }
+    EXCEPT(Socket_Closed)
+        /* Handle disconnection */
+        handle_disconnection(conn, poll);
+        RERAISE;
+    END_TRY;
+}
+
+static void handle_disconnection(Connection_T *conn, SocketPoll_T poll)
+{
+    Socket_T sock = Connection_socket(conn);
+
+    /* Clean up connection */
+    SocketPoll_del(poll, sock);
+    SocketPool_remove(pool, sock);
+    Socket_free(&sock);
+
+    printf("Client disconnected\n");
+}
+```
+
+## 8. Initialization Pattern
+
+### Multi-Step Initialization
+**ALWAYS** initialize components in dependency order:
+
+```c
+/* 1. Create main arena for all allocations */
+arena = Arena_new();
+
+/* 2. Create server socket */
+server = Socket_new(AF_INET, SOCK_STREAM, 0);
+Socket_setreuseaddr(server);
+Socket_bind(server, "0.0.0.0", port);
+Socket_listen(server, 128);
+Socket_setnonblocking(server);
+
+/* 3. Create event poll */
+poll = SocketPoll_new(1000);
+SocketPoll_add(poll, server, POLL_READ, NULL);
+
+/* 4. Create connection pool */
+pool = SocketPool_new(arena, 1000, 8192);
+```
+
+## 9. Cleanup Pattern
+
+### Resource Cleanup Order
+**ALWAYS** clean up resources in reverse order of creation:
+
+```c
+FINALLY
+    /* 1. Stop accepting new connections */
+    if (server)
+        SocketPoll_del(poll, server);
+
+    /* 2. Clean up event poll */
+    if (poll)
+        SocketPoll_free(&poll);
+
+    /* 3. Clean up connection pool */
+    if (pool)
+        SocketPool_free(&pool);
+
+    /* 4. Clean up server socket */
+    if (server)
+        Socket_free(&server);
+
+    /* 5. Clean up main arena */
+    if (arena)
+        Arena_dispose(&arena);
+END_TRY;
+```
+
+## 10. Performance Pattern
+
+### O(1) Operations
+**ALWAYS** document and implement O(1) operations:
+
+```c
+/**
+ * FunctionName - O(1) lookup operation
+ * @param: Input parameter
+ *
+ * Returns: Result in constant time
+ *
+ * Uses hash table for O(1) average case performance.
+ * Worst case is O(n) due to hash collisions, but rare with good hash function.
+ */
+```
+
+### Zero-Copy Operations
+**PREFER** zero-copy operations when safe:
+
+```c
+/**
+ * get_read_ptr - Get direct read pointer for zero-copy operations
+ * @buf: Buffer instance
+ * @len: Output - contiguous bytes available
+ *
+ * Returns: Pointer to data or NULL if empty
+ *
+ * For zero-copy reads. Data remains in buffer until consumed.
+ * Call consume() after processing to remove data from buffer.
+ */
+const void *get_read_ptr(T buf, size_t *len);
+```

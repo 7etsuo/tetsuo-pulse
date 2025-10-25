@@ -1,0 +1,446 @@
+---
+alwaysApply: true
+description: Enforces the GNU-style C coding conventions and patterns used throughout the socket library codebase
+---
+
+# GNU C Coding Style Guide
+
+This rule enforces the professional C coding style observed in the socket library codebase. Follow these patterns for consistent, maintainable, and safe C code.
+
+## 1. Header File Structure
+
+### Include Guards
+**ALWAYS** use include guards with `_INCLUDED` suffix:
+
+```c
+#ifndef FILENAME_INCLUDED
+#define FILENAME_INCLUDED
+
+// Header content
+
+#endif
+```
+
+### Header Documentation
+**ALWAYS** include comprehensive module documentation at the top:
+
+```c
+/**
+ * Module Name
+ *
+ * Detailed description of the module's purpose, features, and behavior.
+ * Include information about thread safety, performance characteristics,
+ * and any important usage notes.
+ *
+ * Features:
+ * - Feature 1 with brief description
+ * - Feature 2 with brief description
+ * - Feature 3 with brief description
+ *
+ * Usage example:
+ *   // Code example showing typical usage
+ */
+```
+
+## 2. Function Documentation
+
+### Doxygen-Style Comments
+**ALWAYS** document functions using Doxygen-style comments:
+
+```c
+/**
+ * FunctionName - Brief description of what the function does
+ * @param1: Description of first parameter
+ * @param2: Description of second parameter
+ * @param3: Description of third parameter
+ *
+ * Returns: Description of return value
+ * Raises: Description of exceptions that may be raised
+ *
+ * Additional notes about behavior, side effects, or usage constraints.
+ */
+```
+
+### Function Signatures
+**ALWAYS** use proper function signature formatting:
+
+```c
+ReturnType
+FunctionName(Type1 param1, Type2 param2, Type3 param3)
+{
+    // Function body
+}
+```
+
+## 3. Type Definitions and Opaque Types
+
+### Type Definition Pattern
+**ALWAYS** use the T macro pattern for type definitions:
+
+```c
+#define T ModuleName_T
+typedef struct T *T;
+
+// In implementation (.c) file:
+struct T
+{
+    // Structure members
+};
+#undef T
+```
+
+### Opaque Types
+**PREFER** opaque types for public APIs:
+
+```c
+/* Opaque type - use accessor functions */
+typedef struct Connection Connection_T;
+
+/**
+ * Connection_socket - Get connection's socket
+ * @conn: Connection instance
+ *
+ * Returns: Associated socket
+ */
+extern Socket_T Connection_socket(Connection_T *conn);
+```
+
+## 4. Error Handling
+
+### Exception-Based Error Handling
+**ALWAYS** use the exception system for error handling:
+
+```c
+TRY
+    // Code that might fail
+    if (error_condition)
+        RAISE(Some_Exception);
+EXCEPT(Some_Exception)
+    // Handle specific exception
+EXCEPT(Another_Exception)
+    // Handle another exception type
+FINALLY
+    // Cleanup code (always executed)
+END_TRY;
+```
+
+### Custom Exception Macros
+**ALWAYS** create detailed error macros for specific modules:
+
+```c
+/* Thread-local exception for detailed error messages */
+#ifdef _WIN32
+static __declspec(thread) Except_T Module_DetailedException;
+#else
+static __thread Except_T Module_DetailedException;
+#endif
+
+/* Macro to raise exception with detailed error message */
+#define RAISE_MODULE_ERROR(exception)                                          \
+  do                                                                           \
+    {                                                                          \
+      Module_DetailedException = (exception);                                  \
+      Module_DetailedException.reason = module_error_buf;                      \
+      RAISE(Module_DetailedException);                                         \
+    }                                                                          \
+  while (0)
+```
+
+## 5. Memory Management
+
+### Arena Allocation
+**ALWAYS** use arena allocation for related objects:
+
+```c
+#define ALLOC(arena, nbytes) (Arena_alloc((arena), (nbytes), __FILE__, __LINE__))
+#define CALLOC(arena, count, nbytes) (Arena_calloc((arena), (count), (nbytes), __FILE__, __LINE__))
+```
+
+### Resource Cleanup
+**ALWAYS** clean up resources in reverse order of creation:
+
+```c
+FINALLY
+    if (resource3)
+        Resource3_free(&resource3);
+    if (resource2)
+        Resource2_free(&resource2);
+    if (resource1)
+        Resource1_free(&resource1);
+END_TRY;
+```
+
+## 6. Thread Safety
+
+### Thread-Local Storage
+**ALWAYS** use thread-local storage with Windows compatibility:
+
+```c
+/* Thread-local variable declaration */
+#ifdef _WIN32
+extern __declspec(thread) Type variable;
+#else
+extern __thread Type variable;
+#endif
+
+/* Thread-local variable implementation */
+#ifdef _WIN32
+__declspec(thread) Type variable = {0};
+#else
+__thread Type variable = {0};
+#endif
+```
+
+### Mutex Protection
+**ALWAYS** protect shared resources with mutexes:
+
+```c
+static pthread_mutex_t module_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void thread_safe_function(void)
+{
+    pthread_mutex_lock(&module_mutex);
+    // Critical section
+    pthread_mutex_unlock(&module_mutex);
+}
+```
+
+## 7. Validation and Safety
+
+### Input Validation
+**ALWAYS** validate inputs with descriptive macros:
+
+```c
+/* Validation macros with proper parentheses and overflow protection */
+#define MODULE_VALID_INPUT(x) ((x) > 0 && (x) <= MAX_VALUE)
+#define MODULE_VALID_BUFFER_SIZE(s)                                            \
+  ((size_t)(s) >= MIN_BUFFER_SIZE && (size_t)(s) <= MAX_BUFFER_SIZE)
+```
+
+### Overflow Protection
+**ALWAYS** check for integer overflow before calculations:
+
+```c
+/* Check for overflow before calculation */
+if (nbytes > SIZE_MAX - (alignment - 1))
+    return NULL;
+
+/* Calculate aligned_bytes safely */
+size_t sum = nbytes + alignment - 1;
+size_t aligned_bytes = sum / alignment;
+
+/* Check if multiplication would overflow */
+if (alignment != 0 && aligned_bytes > SIZE_MAX / alignment)
+    return NULL;
+```
+
+### Safe System Calls
+**ALWAYS** use safe system call wrappers:
+
+```c
+#define SAFE_CLOSE(fd)                                                         \
+  do                                                                           \
+    {                                                                          \
+      if ((fd) >= 0)                                                           \
+        {                                                                      \
+          int _result = close (fd);                                            \
+          if (_result < 0 && errno != EINTR)                                   \
+            {                                                                  \
+              /* Log error but don't fail - fd is closed anyway */             \
+              perror ("close");                                                \
+            }                                                                  \
+        }                                                                      \
+    }                                                                          \
+  while (0)
+```
+
+## 8. Naming Conventions
+
+### Module Prefixes
+**ALWAYS** use consistent module prefixes:
+
+- `Arena_*` for arena memory management
+- `Except_*` for exception handling
+- `Socket_*` for socket operations
+- `SocketBuf_*` for buffer operations
+- `SocketPoll_*` for event polling
+- `SocketPool_*` for connection pooling
+
+### Constants
+**ALWAYS** use ALL_CAPS for constants:
+
+```c
+#define MAX_CONNECTIONS 1000
+#define DEFAULT_TIMEOUT 300
+#define BUFFER_SIZE (1024 * 1024)
+```
+
+### Private Functions
+**ALWAYS** use `static` for private helper functions:
+
+```c
+static unsigned hash_function(Type param)
+{
+    // Implementation
+}
+```
+
+## 9. Macro Usage
+
+### Complex Macros
+**ALWAYS** use `do/while(0)` pattern for complex macros:
+
+```c
+#define COMPLEX_MACRO(param)                                                   \
+    do                                                                         \
+    {                                                                          \
+        /* Multiple statements */                                              \
+        statement1;                                                            \
+        statement2;                                                            \
+        statement3;                                                            \
+    }                                                                          \
+    while (0)
+```
+
+### Parameter Safety
+**ALWAYS** use parentheses to prevent operator precedence issues:
+
+```c
+#define VALID_PORT(p) ((int)(p) > 0 && (int)(p) <= 65535)
+```
+
+### Variadic Macros
+**ALWAYS** use `##__VA_ARGS__` for proper argument handling:
+
+```c
+#define ERROR_FMT(fmt, ...)                                                    \
+    snprintf(error_buf, ERROR_BUFSIZE, fmt " (errno: %d - %s)", ##__VA_ARGS__, errno, strerror(errno))
+```
+
+## 10. Code Structure
+
+### Function Organization
+**PREFER** functions organized as:
+
+1. Input validation with `assert()`
+2. Error handling setup
+3. Main logic
+4. Resource cleanup
+5. Return statement
+
+### Variable Initialization
+**ALWAYS** initialize variables:
+
+```c
+Type variable = {0};  // Zero initialization
+Type variable = NULL; // Pointer initialization
+```
+
+### Unused Parameters
+**ALWAYS** cast unused parameters to void:
+
+```c
+void function_with_unused_param(int used, int unused)
+{
+    (void)unused;  // Suppress unused parameter warning
+    // Use 'used' parameter
+}
+```
+
+## 11. Performance Considerations
+
+### O(1) Operations
+**ALWAYS** document performance guarantees:
+
+```c
+/**
+ * FunctionName - O(1) lookup operation
+ * @param: Input parameter
+ *
+ * Returns: Result in constant time
+ *
+ * Uses hash table for O(1) average case performance.
+ */
+```
+
+### Memory Efficiency
+**ALWAYS** consider memory layout and alignment:
+
+```c
+union align {
+    int i;
+    long l;
+    long *lp;
+    void *p;
+    void (*fp)(void);
+    float f;
+    double d;
+    long double ld;
+};
+```
+
+## 12. Testing and Debugging
+
+### Assertions
+**ALWAYS** use assertions for debugging:
+
+```c
+assert(pointer != NULL);
+assert(size > 0);
+assert(valid_condition);
+```
+
+### Debug Information
+**ALWAYS** include file and line information in errors:
+
+```c
+#define RAISE_ERROR(e) Except_raise(&(e), __FILE__, __LINE__)
+```
+
+## 13. Configuration Management
+
+### Compile-Time Configuration
+**ALWAYS** use configuration headers with override protection:
+
+```c
+/* Configuration with compile-time override */
+#ifndef MODULE_MAX_SIZE
+#define MODULE_MAX_SIZE 1000
+#endif
+```
+
+### Runtime Validation
+**ALWAYS** validate configuration at runtime:
+
+```c
+/* Enforce configured limit */
+if (value > MODULE_MAX_SIZE)
+    value = MODULE_MAX_SIZE;
+```
+
+## 14. Build System
+
+### Makefile Structure
+**ALWAYS** use proper dependency tracking:
+
+```makefile
+TARGET = program_name
+OBJECTS = file1.o file2.o file3.o
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Proper dependency declarations
+file1.o: file1.c header1.h header2.h
+file2.o: file2.c header1.h header3.h
+
+clean:
+	rm -f $(OBJECTS) $(TARGET)
+
+.PHONY: all clean
+```

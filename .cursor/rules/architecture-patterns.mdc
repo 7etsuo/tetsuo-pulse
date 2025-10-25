@@ -1,0 +1,801 @@
+---
+description: Documents the architectural patterns and design principles used in the socket library
+---
+
+# Architecture Patterns
+
+This rule documents the specific architectural patterns and design principles observed in the socket library codebase.
+
+## Event-Driven Architecture
+
+### Main Event Loop Pattern
+**ALWAYS** implement event-driven systems using this pattern:
+
+```c
+int main(int argc, char **argv)
+{
+    /* Resource declarations */
+    Socket_T server = NULL;
+    SocketPoll_T poll = NULL;
+    SocketPool_T pool = NULL;
+    Arena_T arena = NULL;
+
+    /* Signal handling */
+    signal(SIGINT, handle_signal);
+    signal(SIGTERM, handle_signal);
+    signal(SIGPIPE, SIG_IGN);
+
+    /* Argument parsing */
+    volatile int port = 6667;
+    if (argc > 1)
+    {
+        port = atoi(argv[1]);
+        if (port <= 0 || port > 65535)
+        {
+            fprintf(stderr, "Invalid port number: %s\n", argv[1]);
+            return 1;
+        }
+    }
+
+    TRY
+        /* Initialize resources in dependency order */
+        arena = Arena_new();
+        server = Socket_new(AF_INET, SOCK_STREAM, 0);
+        Socket_setreuseaddr(server);
+        Socket_bind(server, "0.0.0.0", port);
+        Socket_listen(server, 128);
+        Socket_setnonblocking(server);
+
+        poll = SocketPoll_new(1000);
+        SocketPoll_add(poll, server, POLL_READ, NULL);
+
+        pool = SocketPool_new(arena, 1000, 8192);
+
+        /* Main event loop */
+        while (running)
+        {
+            SocketEvent_T *events;
+            volatile int n, i;
+
+            n = SocketPoll_wait(poll, &events, 1000);
+
+            for (i = 0; i < n; i++)
+            {
+                if (events[i].socket == server)
+                {
+                    /* Accept new connections */
+                    handle_new_connection(server, poll, pool);
+                }
+                else
+                {
+                    /* Handle client I/O */
+                    handle_client_io(events[i], poll, pool);
+                }
+            }
+
+            /* Periodic maintenance */
+            SocketPool_cleanup(pool, 300); /* 5 minute timeout */
+        }
+
+    EXCEPT(Socket_Failed)
+        fprintf(stderr, "Socket error: %s\n", Socket_Failed.reason);
+    EXCEPT(SocketPoll_Failed)
+        fprintf(stderr, "Poll error: %s\n", SocketPoll_Failed.reason);
+    FINALLY
+        /* Cleanup in reverse order */
+        if (poll) SocketPoll_free(&poll);
+        if (pool) SocketPool_free(&pool);
+        if (server) Socket_free(&server);
+        if (arena) Arena_dispose(&arena);
+    END_TRY;
+
+    return 0;
+}
+```
+
+## Resource Management Architecture
+
+### Resource Acquisition Order
+**ALWAYS** acquire resources in this order:
+
+1. **Memory Arena**: Base memory management
+2. **Server Socket**: Main listening socket
+3. **Event Poll**: I/O event monitoring
+4. **Connection Pool**: Client connection management
+5. **Buffers**: Per-connection I/O buffers
+
+### Cleanup Order
+**ALWAYS** clean up resources in reverse order:
+
+1. **Connection Pool**: Close all client connections
+2. **Event Poll**: Stop monitoring events
+3. **Server Socket**: Close listening socket
+4. **Memory Arena**: Free all allocated memory
+
+## Handler Function Architecture
+
+### Connection Handler Pattern
+**ALWAYS** implement handlers with proper exception handling:
+
+```c
+static void handle_client_data(Connection_T *conn, SocketPoll_T poll)
+{
+    char buffer[4096];
+    int n;
+
+    TRY
+        /* Receive data */
+        n = Socket_recv(Connection_socket(conn), buffer, sizeof(buffer) - 1);
+        if (n > 0)
+        {
+            buffer[n] = '\0';
+
+            /* Log received data */
+            printf("Client %s:%d: %s",
+                   Socket_getpeeraddr(Connection_socket(conn)),
+                   Socket_getpeerport(Connection_socket(conn)),
+                   buffer);
+
+            /* Echo back to client */
+            if (SocketBuf_write(Connection_outbuf(conn), buffer, n) < (size_t)n)
+            {
+                printf("Output buffer full for client %s:%d\n",
+                       Socket_getpeeraddr(Connection_socket(conn)),
+                       Socket_getpeerport(Connection_socket(conn)));
+            }
+            else
+            {
+                /* Enable write events when data is buffered */
+                SocketPoll_mod(poll, Connection_socket(conn), POLL_READ | POLL_WRITE, conn);
+            }
+        }
+    EXCEPT(Socket_Closed)
+        /* Handle disconnection */
+        printf("Client %s:%d disconnected\n",
+               Socket_getpeeraddr(Connection_socket(conn)),
+               Socket_getpeerport(Connection_socket(conn)));
+        handle_disconnection(conn, poll);
+        RERAISE;
+    END_TRY;
+}
+
+static void handle_client_write(Connection_T *conn, SocketPoll_T poll)
+{
+    size_t len;
+    const void *data;
+    int sent;
+
+    /* Get data from output buffer */
+    data = SocketBuf_readptr(Connection_outbuf(conn), &len);
+    if (data && len > 0)
+    {
+        TRY
+            /* Send data */
+            sent = Socket_send(Connection_socket(conn), data, len);
+            if (sent > 0)
+            {
+                /* Consume sent data */
+                SocketBuf_consume(Connection_outbuf(conn), sent);
+            }
+        EXCEPT(Socket_Closed)
+            /* Handle disconnection during write */
+            printf("Client %s:%d disconnected during write\n",
+                   Socket_getpeeraddr(Connection_socket(conn)),
+                   Socket_getpeerport(Connection_socket(conn)));
+            handle_disconnection(conn, poll);
+            RERAISE;
+        END_TRY;
+    }
+
+    /* If output buffer is empty, disable write events */
+    if (SocketBuf_empty(Connection_outbuf(conn)))
+    {
+        SocketPoll_mod(poll, Connection_socket(conn), POLL_READ, conn);
+    }
+}
+```
+
+## Connection Management Architecture
+
+### Connection Lifecycle Pattern
+**ALWAYS** manage connection lifecycle properly:
+
+```c
+static void handle_new_connection(Socket_T server, SocketPoll_T poll, SocketPool_T pool)
+{
+    TRY
+        /* Accept connection */
+        Socket_T client = Socket_accept(server);
+        if (client)
+        {
+            /* Add to connection pool */
+            Connection_T *conn = SocketPool_add(pool, client);
+            if (conn)
+            {
+                /* Log new connection */
+                printf("New connection from %s:%d\n",
+                       Socket_getpeeraddr(client), Socket_getpeerport(client));
+
+                /* Start monitoring for read events */
+                SocketPoll_add(poll, client, POLL_READ, conn);
+            }
+            else
+            {
+                /* Pool full, reject connection */
+                printf("Connection pool full, rejecting client\n");
+                Socket_free(&client);
+            }
+        }
+    EXCEPT(Socket_Failed)
+        printf("Failed to accept connection\n");
+    END_TRY;
+}
+
+static void handle_client_io(SocketEvent_T event, SocketPoll_T poll, SocketPool_T pool)
+{
+    Connection_T *conn = SocketPool_get(pool, event.socket);
+    if (!conn) return;
+
+    TRY
+        if (event.events & POLL_READ)
+        {
+            handle_client_data(conn, poll);
+        }
+
+        if (event.events & POLL_WRITE)
+        {
+            handle_client_write(conn, poll);
+        }
+
+        if (event.events & (POLL_ERROR | POLL_HANGUP))
+        {
+            /* Handle connection errors */
+            RAISE(Socket_Closed);
+        }
+    EXCEPT(Socket_Closed)
+        /* Clean up disconnected connection */
+        handle_disconnection(conn, poll);
+    END_TRY;
+}
+
+static void handle_disconnection(Connection_T *conn, SocketPoll_T poll)
+{
+    Socket_T sock = Connection_socket(conn);
+
+    /* Remove from poll */
+    SocketPoll_del(poll, sock);
+
+    /* Remove from pool */
+    SocketPool_remove(pool, sock);
+
+    /* Close socket */
+    Socket_free(&sock);
+
+    printf("Connection cleaned up\n");
+}
+```
+
+## Signal Handling Architecture
+
+### Graceful Shutdown Pattern
+**ALWAYS** implement graceful shutdown:
+
+```c
+static volatile int running = 1;
+
+static void handle_signal(int sig)
+{
+    (void)sig;
+    running = 0;
+}
+
+void setup_signal_handlers(void)
+{
+    signal(SIGINT, handle_signal);   /* Ctrl+C */
+    signal(SIGTERM, handle_signal);  /* Termination request */
+    signal(SIGPIPE, SIG_IGN);        /* Ignore broken pipes */
+}
+
+void graceful_shutdown(void)
+{
+    printf("\nShutting down server...\n");
+
+    /* Stop accepting new connections */
+    running = 0;
+
+    /* Close listening socket to stop accepting */
+    if (server)
+        SocketPoll_del(poll, server);
+
+    /* Wait for existing connections to finish */
+    sleep(1);
+
+    /* Cleanup resources */
+    /* ... cleanup code ... */
+}
+```
+
+## Error Recovery Architecture
+
+### Exception Recovery Pattern
+**ALWAYS** implement exception recovery:
+
+```c
+void robust_operation(void)
+{
+    TRY
+        /* Primary operation */
+        result = perform_critical_operation();
+
+        /* Secondary validation */
+        if (!validate_result(result))
+        {
+            RAISE(Validation_Failed);
+        }
+
+        /* Process result */
+        process_result(result);
+
+    EXCEPT(Recoverable_Error)
+        /* Attempt recovery */
+        result = recovery_operation();
+        if (result)
+        {
+            process_result(result);
+        }
+        else
+        {
+            /* Recovery failed */
+            RAISE(Critical_Failure);
+        }
+
+    EXCEPT(Critical_Failure)
+        /* Handle critical failure */
+        log_critical_error();
+        graceful_shutdown();
+
+    EXCEPT(Any_Exception)
+        /* Handle unexpected errors */
+        log_unexpected_error();
+        graceful_shutdown();
+    END_TRY;
+}
+```
+
+## Performance Architecture
+
+### Zero-Copy I/O Pattern
+**PREFER** zero-copy operations when safe:
+
+```c
+/* Zero-copy send */
+const void *get_data_to_send(size_t *len)
+{
+    return SocketBuf_readptr(output_buffer, len);
+}
+
+void send_data_zero_copy(Socket_T socket, const void *data, size_t len)
+{
+    int sent = Socket_send(socket, data, len);
+    if (sent > 0)
+    {
+        /* Only consume after successful send */
+        SocketBuf_consume(output_buffer, sent);
+    }
+}
+```
+
+### Event-Driven I/O Pattern
+**ALWAYS** use event-driven I/O for scalability:
+
+```c
+/* Process multiple events */
+for (int i = 0; i < event_count; i++)
+{
+    SocketEvent_T *event = &events[i];
+
+    if (event->events & POLL_READ)
+    {
+        /* Handle read events */
+        handle_read_event(event);
+    }
+
+    if (event->events & POLL_WRITE)
+    {
+        /* Handle write events */
+        handle_write_event(event);
+    }
+
+    if (event->events & (POLL_ERROR | POLL_HANGUP))
+    {
+        /* Handle error events */
+        handle_error_event(event);
+    }
+}
+```
+
+## Configuration Architecture
+
+### Runtime Configuration Pattern
+**ALWAYS** support runtime configuration:
+
+```c
+struct Configuration
+{
+    int port;
+    size_t max_connections;
+    size_t buffer_size;
+    time_t idle_timeout;
+    int log_level;
+};
+
+void load_configuration(const char *config_file)
+{
+    /* Default values */
+    config.port = 6667;
+    config.max_connections = 1000;
+    config.buffer_size = 8192;
+    config.idle_timeout = 300;
+    config.log_level = LOG_INFO;
+
+    /* Load from file if provided */
+    if (config_file)
+    {
+        load_config_from_file(config_file, &config);
+    }
+
+    /* Validate configuration */
+    validate_configuration(&config);
+}
+
+void validate_configuration(struct Configuration *config)
+{
+    assert(config->port > 0 && config->port <= 65535);
+    assert(config->max_connections > 0);
+    assert(config->buffer_size >= 512);
+    assert(config->idle_timeout > 0);
+    assert(config->log_level >= LOG_DEBUG && config->log_level <= LOG_ERROR);
+}
+```
+
+## Logging Architecture
+
+### Structured Logging Pattern
+**ALWAYS** use structured logging:
+
+```c
+enum LogLevel
+{
+    LOG_DEBUG = 0,
+    LOG_INFO = 1,
+    LOG_WARN = 2,
+    LOG_ERROR = 3
+};
+
+void log_message(enum LogLevel level, const char *format, ...)
+{
+    if (level < current_log_level) return;
+
+    va_list args;
+    va_start(args, format);
+
+    time_t now = time(NULL);
+    char timestamp[32];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
+
+    const char *level_names[] = {"DEBUG", "INFO", "WARN", "ERROR"};
+    fprintf(log_file, "[%s] %s: ", timestamp, level_names[level]);
+
+    vfprintf(log_file, format, args);
+    fprintf(log_file, "\n");
+    fflush(log_file);
+
+    va_end(args);
+}
+```
+
+## Testing Architecture
+
+### Test Harness Pattern
+**ALWAYS** implement comprehensive testing:
+
+```c
+void run_all_tests(void)
+{
+    printf("Running test suite...\n");
+
+    /* Unit tests */
+    test_result = run_unit_tests();
+    if (!test_result) return false;
+
+    /* Integration tests */
+    test_result = run_integration_tests();
+    if (!test_result) return false;
+
+    /* Performance tests */
+    test_result = run_performance_tests();
+    if (!test_result) return false;
+
+    printf("All tests passed!\n");
+    return true;
+}
+
+bool run_unit_tests(void)
+{
+    printf("Running unit tests...\n");
+
+    TEST_CASE(test_socket_creation);
+    TEST_CASE(test_buffer_operations);
+    TEST_CASE(test_poll_events);
+    TEST_CASE(test_connection_pool);
+
+    return all_tests_passed;
+}
+
+void TEST_CASE(test_function_t test_func)
+{
+    printf("  Running %s... ", test_func.name);
+
+    TRY
+        test_func();
+        printf("PASSED\n");
+    EXCEPT(Any_Exception)
+        printf("FAILED: %s\n", Exception_reason);
+        test_failures++;
+    END_TRY;
+}
+```
+
+## Deployment Architecture
+
+### Production Deployment Pattern
+**ALWAYS** support production deployment:
+
+```c
+void setup_production_environment(void)
+{
+    /* 1. Daemonize process */
+    daemonize();
+
+    /* 2. Set up logging */
+    setup_syslog_logging();
+
+    /* 3. Configure resource limits */
+    set_resource_limits();
+
+    /* 4. Set up monitoring */
+    setup_health_checks();
+
+    /* 5. Configure security */
+    setup_security_hardening();
+}
+
+void daemonize(void)
+{
+    pid_t pid = fork();
+    if (pid < 0) exit(1);
+    if (pid > 0) exit(0);
+
+    /* Become session leader */
+    setsid();
+
+    /* Change working directory */
+    chdir("/");
+
+    /* Close standard file descriptors */
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+
+    /* Redirect to log files */
+    open_log_files();
+}
+
+void set_resource_limits(void)
+{
+    struct rlimit limits;
+
+    /* Set maximum number of open files */
+    limits.rlim_cur = limits.rlim_max = 65536;
+    setrlimit(RLIMIT_NOFILE, &limits);
+
+    /* Set maximum memory usage */
+    limits.rlim_cur = limits.rlim_max = 1024 * 1024 * 1024; /* 1GB */
+    setrlimit(RLIMIT_AS, &limits);
+}
+```
+
+## Monitoring Architecture
+
+### Health Check Pattern
+**ALWAYS** implement health monitoring:
+
+```c
+void setup_health_checks(void)
+{
+    /* HTTP health check endpoint */
+    setup_health_check_endpoint();
+
+    /* Metrics collection */
+    setup_metrics_collection();
+
+    /* Alerting */
+    setup_alerting();
+}
+
+void health_check_handler(void)
+{
+    /* Check critical systems */
+    if (!check_database_health()) return HTTP_SERVICE_UNAVAILABLE;
+    if (!check_memory_usage()) return HTTP_SERVICE_UNAVAILABLE;
+    if (!check_connection_pool()) return HTTP_SERVICE_UNAVAILABLE;
+
+    /* All systems healthy */
+    return HTTP_OK;
+}
+
+bool check_memory_usage(void)
+{
+    /* Check arena usage */
+    size_t arena_usage = Arena_usage(arena);
+    if (arena_usage > MAX_ARENA_USAGE)
+        return false;
+
+    /* Check connection pool usage */
+    size_t pool_usage = SocketPool_count(pool);
+    if (pool_usage > MAX_POOL_USAGE)
+        return false;
+
+    return true;
+}
+```
+
+## Security Architecture
+
+### Security Hardening Pattern
+**ALWAYS** implement security measures:
+
+```c
+void setup_security_hardening(void)
+{
+    /* 1. Network security */
+    setup_network_security();
+
+    /* 2. Access control */
+    setup_access_control();
+
+    /* 3. Input validation */
+    setup_input_validation();
+
+    /* 4. Audit logging */
+    setup_audit_logging();
+}
+
+void setup_network_security(void)
+{
+    /* Bind to specific interface */
+    Socket_bind(server, "127.0.0.1", port);
+
+    /* Set appropriate permissions */
+    umask(0077);
+
+    /* Drop privileges */
+    drop_privileges();
+}
+
+void drop_privileges(void)
+{
+    /* Change to unprivileged user */
+    struct passwd *user = getpwnam("nobody");
+    if (user)
+    {
+        setgid(user->pw_gid);
+        setuid(user->pw_uid);
+    }
+}
+```
+
+## Scalability Architecture
+
+### Horizontal Scaling Pattern
+**ALWAYS** design for horizontal scaling:
+
+```c
+void setup_scaling(void)
+{
+    /* 1. Stateless design */
+    ensure_stateless_operations();
+
+    /* 2. Load balancing support */
+    setup_load_balancer_integration();
+
+    /* 3. Configuration management */
+    setup_configuration_distribution();
+
+    /* 4. Health monitoring */
+    setup_distributed_health_checks();
+}
+
+void ensure_stateless_operations(void)
+{
+    /* All state stored externally */
+    use_external_session_storage();
+
+    /* No local state persistence */
+    avoid_local_state_caching();
+
+    /* Idempotent operations */
+    ensure_idempotent_requests();
+}
+```
+
+## Maintenance Architecture
+
+### Maintenance Mode Pattern
+**ALWAYS** support maintenance operations:
+
+```c
+void enter_maintenance_mode(void)
+{
+    /* Stop accepting new connections */
+    maintenance_mode = true;
+
+    /* Wait for existing connections to finish */
+    wait_for_connections_to_drain();
+
+    /* Perform maintenance */
+    perform_maintenance_tasks();
+
+    /* Resume normal operation */
+    maintenance_mode = false;
+}
+
+void perform_maintenance_tasks(void)
+{
+    /* Database maintenance */
+    cleanup_database_connections();
+
+    /* Memory optimization */
+    optimize_memory_usage();
+
+    /* Log rotation */
+    rotate_log_files();
+
+    /* Statistics reset */
+    reset_performance_statistics();
+}
+```
+
+## Quality Assurance Architecture
+
+### Code Quality Pattern
+**ALWAYS** maintain code quality:
+
+```c
+void ensure_code_quality(void)
+{
+    /* Static analysis */
+    run_static_analysis();
+
+    /* Code coverage */
+    ensure_test_coverage();
+
+    /* Performance testing */
+    run_performance_tests();
+
+    /* Security auditing */
+    run_security_audit();
+}
+
+void run_static_analysis(void)
+{
+    /* Check for common issues */
+    check_for_memory_leaks();
+    check_for_buffer_overflows();
+    check_for_race_conditions();
+    check_for_null_pointer_dereferences();
+
+    /* Code style */
+    enforce_coding_standards();
+}
+```
