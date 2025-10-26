@@ -11,6 +11,13 @@
  * Uses epoll on Linux for scalable event notification. Supports both
  * edge-triggered and level-triggered modes.
  *
+ * PLATFORM REQUIREMENTS:
+ * - Linux kernel 2.6.8+ (epoll with EPOLLET support)
+ * - POSIX threads (pthread) for mutex synchronization
+ * - NOT portable to BSD/macOS (would require kqueue backend)
+ * - NOT portable to Windows (would require IOCP backend)
+ * - For portable code, consider falling back to poll(2)
+ *
  * Features:
  * - O(1) event delivery regardless of total sockets
  * - Edge-triggered mode for efficiency

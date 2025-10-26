@@ -22,12 +22,24 @@
 
 Except_T SocketPool_Failed = {"SocketPool operation failed"};
 
-/* Macro to raise exception with detailed error message */
+/* Thread-local exception for detailed error messages
+ * This is a COPY of the base exception with thread-local reason string.
+ * Each thread gets its own exception instance, preventing race conditions
+ * when multiple threads raise the same exception type simultaneously. */
+#ifdef _WIN32
+static __declspec(thread) Except_T SocketPool_DetailedException;
+#else
+static __thread Except_T SocketPool_DetailedException;
+#endif
+
+/* Macro to raise exception with detailed error message
+ * Creates a thread-local copy of the exception with detailed reason */
 #define RAISE_POOL_ERROR(exception)                                                                                    \
     do                                                                                                                 \
     {                                                                                                                  \
-        (exception).reason = socket_error_buf;                                                                         \
-        RAISE(exception);                                                                                              \
+        SocketPool_DetailedException = (exception);                                                                    \
+        SocketPool_DetailedException.reason = socket_error_buf;                                                        \
+        RAISE(SocketPool_DetailedException);                                                                           \
     } while (0)
 
 /* Safe time retrieval with exception on failure
@@ -72,7 +84,7 @@ struct Connection
  * NOTE: This is intentionally duplicated from SocketPoll.c rather than extracted
  * to a shared header. This maintains module independence - each module can be
  * used standalone without cross-dependencies. The code duplication is minimal
- * (5 lines) and the algorithm is stable (unlikely to change).
+ * and the algorithm is stable (unlikely to change).
  *
  * Uses multiplicative hashing with golden ratio constant for better
  * distribution than simple modulo, especially for sequential file descriptors.
@@ -89,9 +101,16 @@ struct Connection
  *
  * Reference: Knuth, TAOCP Vol 3, Section 6.4
  */
-static unsigned socket_hash(Socket_T socket)
+static unsigned socket_hash(const Socket_T socket)
 {
-    int fd = Socket_fd(socket);
+    int fd;
+
+    assert(socket);
+    fd = Socket_fd(socket);
+
+    /* Defensive check: socket FDs should never be negative */
+    assert(fd >= 0);
+
     /* Multiplicative hash for better distribution of sequential FDs */
     return ((unsigned)fd * 2654435761u) % SOCKET_HASH_SIZE;
 }
@@ -191,6 +210,13 @@ void SocketPool_free(T *pool)
     *pool = NULL;
 }
 
+/* find_slot - Look up active connection by socket
+ * @pool: Pool instance
+ * @socket: Socket to find
+ *
+ * Returns: Active connection or NULL if not found
+ *
+ * O(1) average case hash table lookup. Must be called with pool mutex held. */
 static Connection_T find_slot(T pool, Socket_T socket)
 {
     unsigned hash = socket_hash(socket);
@@ -206,6 +232,13 @@ static Connection_T find_slot(T pool, Socket_T socket)
     return NULL;
 }
 
+/* find_free_slot - Find an inactive connection slot in the pool
+ * @pool: Pool instance
+ *
+ * Returns: Inactive connection slot or NULL if pool is full
+ *
+ * O(n) operation scanning the connection array. Must be called with
+ * pool mutex held. */
 static Connection_T find_free_slot(T pool)
 {
     size_t i;

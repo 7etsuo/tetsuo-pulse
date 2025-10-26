@@ -73,7 +73,18 @@
 #define SOCKET_VALID_CONNECTION_COUNT(c) ((size_t)(c) > 0 && (size_t)(c) <= SOCKET_MAX_CONNECTIONS)
 #define SOCKET_VALID_POLL_EVENTS(e) ((int)(e) > 0 && (int)(e) <= SOCKET_MAX_POLL_EVENTS)
 
-/* Safe system call wrappers */
+/* Safe system call wrappers
+ *
+ * SAFE_CLOSE: Close file descriptor with proper EINTR handling
+ *
+ * Per POSIX.1-2008: Do NOT retry close() on EINTR. The file descriptor
+ * state is unspecified after close() returns with EINTR - it may or may
+ * not be closed. Retrying could close a different FD if the descriptor
+ * was reused by another thread. We treat EINTR as success (don't log error)
+ * since the FD is likely closed anyway.
+ *
+ * Reference: POSIX.1-2008, close() specification, Application Usage
+ */
 #define SAFE_CLOSE(fd)                                                                                                 \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -85,6 +96,7 @@
                 /* Log error but don't fail - fd is closed anyway */                                                   \
                 perror("close");                                                                                       \
             }                                                                                                          \
+            /* EINTR is silently treated as success - FD is likely closed */                                           \
         }                                                                                                              \
     } while (0)
 
