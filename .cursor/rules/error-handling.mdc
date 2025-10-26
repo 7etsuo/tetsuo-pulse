@@ -80,33 +80,56 @@ __thread char module_error_buf[MODULE_ERROR_BUFSIZE] = {0};
 ```
 
 ### Custom Exception Macros
-**ALWAYS** create module-specific exception raising macros:
+**ALWAYS** create module-specific exception raising macros with thread-local copies:
 
 ```c
-/* Macro to raise exception with detailed error message */
-/* IMPORTANT: Directly modify the original exception, don't create copies */
+/* Thread-local exception for detailed error messages
+ * This is a COPY of the base exception with thread-local reason string.
+ * Each thread gets its own exception instance, preventing race conditions
+ * when multiple threads raise the same exception type simultaneously. */
+#ifdef _WIN32
+static __declspec(thread) Except_T Module_DetailedException;
+#else
+static __thread Except_T Module_DetailedException;
+#endif
+
+/* Macro to raise exception with detailed error message
+ * Creates a thread-local copy of the exception with detailed reason */
 #define RAISE_MODULE_ERROR(exception)                                          \
   do                                                                           \
     {                                                                          \
-      (exception).reason = module_error_buf;                                   \
+      Module_DetailedException = (exception);                                  \
+      Module_DetailedException.reason = module_error_buf;                      \
+      RAISE(Module_DetailedException);                                         \
+    }                                                                          \
+  while (0)
+```
+
+**CRITICAL - THREAD SAFETY**: 
+
+**CORRECT Pattern** - Use thread-local exception copy (shown above):
+- Prevents race conditions when multiple threads raise same exception
+- Thread-local copy gets its own reason string from thread-local buffer
+- Exception type is still preserved for proper catching
+
+**WRONG Pattern** - Directly modifying global exception (NOT THREAD-SAFE):
+
+```c
+/* WRONG - Don't do this! Creates race conditions! */
+#define RAISE_MODULE_ERROR(exception)                                          \
+  do                                                                           \
+    {                                                                          \
+      (exception).reason = module_error_buf;  /* Modifies global exception! */ \
       RAISE(exception);                                                        \
     }                                                                          \
   while (0)
 ```
 
-**WARNING**: Never create thread-local copies of exceptions as this prevents proper exception catching:
-
-```c
-/* WRONG - Don't do this! */
-static __thread Except_T Module_DetailedException;
-Module_DetailedException = (exception);
-Module_DetailedException.reason = module_error_buf;
-RAISE(Module_DetailedException);  // This will raise a different exception type!
-
-/* CORRECT - Modify and raise the original exception */
-(exception).reason = module_error_buf;
-RAISE(exception);  // This preserves the exception type for proper catching
-```
+**Why Direct Modification is Wrong:**
+- Global exception structures are shared across all threads
+- Modifying `.reason` field creates data race (undefined behavior)
+- Thread A's error message can overwrite Thread B's error message
+- Results in incorrect error reporting and potential crashes
 
 ## System Call Error Handling
 

@@ -57,7 +57,16 @@ T SocketBuf_new(Arena_T arena, size_t capacity)
      * 3. size + len calculations stay safe (size <= capacity, len <= capacity)
      * 4. Modulo operations remain well-defined
      *
-     * This is conservative but guarantees safety across all architectures. */
+     * This limit is conservative but provides guaranteed safety:
+     * - On 32-bit systems: max buffer ~2GB (sufficient for most applications)
+     * - On 64-bit systems: max buffer ~9 exabytes (effectively unlimited)
+     *
+     * The limit could theoretically be relaxed to SIZE_MAX with explicit overflow
+     * checks before each arithmetic operation, but the added complexity provides
+     * no practical benefit given the generous limits already provided.
+     *
+     * For applications requiring buffers larger than SIZE_MAX/2 (extremely rare),
+     * use multiple buffer instances or memory-mapped files. */
     if (capacity > SIZE_MAX / 2)
         return NULL;
 

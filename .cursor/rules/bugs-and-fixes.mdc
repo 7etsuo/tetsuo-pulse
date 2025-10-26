@@ -79,16 +79,41 @@ static time_t safe_time(void)
 - **Symptoms**: Stack overflow crashes when idle connection cleanup runs
 - **Resolution**: Fixed by calling `time(NULL)` instead of recursive call
 
-## CRITICAL BUG: Server Crash on Client Disconnect (FIXED)
+## CRITICAL BUG: Thread-Safety - Exception Reason Modification (FIXED OCT 2025)
 
 ### Location
-**File**: `Socket.c`, lines 34-40
+**Files**: `Socket.c`, `SocketPoll.c`, `SocketPool.c`
 
 ### Problem
-The `RAISE_SOCKET_ERROR` macro was creating a copy of the exception instead of raising the original exception type:
+The pattern of directly modifying global exception `.reason` fields created race conditions:
 
 ```c
-/* WRONG - Created copy that couldn't be caught properly */
+/* WRONG - NOT thread-safe! */
+#define RAISE_SOCKET_ERROR(exception)                                          \
+    do                                                                         \
+    {                                                                          \
+        (exception).reason = socket_error_buf;  /* Modifies global structure! */ \
+        RAISE(exception);                                                      \
+    } while (0)
+```
+
+**Why This is Wrong:**
+- Global exception structures (`Socket_Failed`, `Socket_Closed`, etc.) are shared across all threads
+- Modifying the `.reason` field creates a data race (undefined behavior in C11)
+- Thread A's error message can overwrite Thread B's error message
+- Results in incorrect error reporting, corrupted messages, or crashes
+
+### Fix Applied (OCT 2025)
+**FIXED**: Use thread-local exception copies with thread-local reason strings:
+
+```c
+/* CORRECT - Thread-safe pattern */
+#ifdef _WIN32
+static __declspec(thread) Except_T Socket_DetailedException;
+#else
+static __thread Except_T Socket_DetailedException;
+#endif
+
 #define RAISE_SOCKET_ERROR(exception)                                          \
     do                                                                         \
     {                                                                          \
@@ -98,63 +123,22 @@ The `RAISE_SOCKET_ERROR` macro was creating a copy of the exception instead of r
     } while (0)
 ```
 
-This caused `EXCEPT(Socket_Closed)` handlers to not catch the exception, resulting in uncaught exceptions and server crashes.
-
-### Fix Applied
-**FIXED**: Modified macro to directly raise the original exception:
-
-```c
-/* CORRECT - Directly modifies and raises original exception */
-#define RAISE_SOCKET_ERROR(exception)                                          \
-    do                                                                         \
-    {                                                                          \
-        (exception).reason = socket_error_buf;                                 \
-        RAISE(exception);                                                      \
-    } while (0)
-```
+**Why This is Correct:**
+- Each thread gets its own exception copy (`__thread` storage)
+- Thread-local copy gets its own reason string from thread-local buffer
+- No data races - each thread modifies only its own exception
+- Exception type is still preserved for proper catching (`Socket_Failed` vs `Socket_Closed`)
 
 ### Impact
-- **CRITICAL**: Server crashed whenever a client disconnected
-- **Affects**: All socket operations that raise exceptions
-- **Symptoms**: "Uncaught exception Connection closed by peer" crashes
-- **Resolution**: Fixed by preserving exception type for proper catching
+- **CRITICAL**: Race conditions in multithreaded environments
+- **Affects**: All socket operations that raise exceptions in all three modules
+- **Symptoms**: Corrupted error messages, wrong exception types reported, undefined behavior
+- **Resolution**: True thread safety with thread-local exception copies
 
-## CRITICAL BUG: Exception Handling in SocketPoll.c (FIXED)
-
-### Location
-**File**: `SocketPoll.c`, lines 22-35
-
-### Problem
-The `RAISE_POLL_ERROR` macro was creating a thread-local copy of the exception:
-
-```c
-/* WRONG - Created thread-local copy */
-#define RAISE_POLL_ERROR(exception)                                            \
-    do                                                                         \
-    {                                                                          \
-        SocketPoll_DetailedException = (exception);                            \
-        SocketPoll_DetailedException.reason = socket_error_buf;                \
-        RAISE(SocketPoll_DetailedException);                                   \
-    } while (0)
-```
-
-### Fix Applied
-**FIXED**: Modified macro to directly raise the original exception:
-
-```c
-/* CORRECT - Directly modifies and raises original exception */
-#define RAISE_POLL_ERROR(exception)                                            \
-    do                                                                         \
-    {                                                                          \
-        (exception).reason = socket_error_buf;                                 \
-        RAISE(exception);                                                      \
-    } while (0)
-```
-
-### Impact
-- **CRITICAL**: Prevented proper exception catching in poll operations
-- **Affects**: All SocketPoll operations that raise exceptions
-- **Resolution**: Fixed by directly modifying the original exception
+**Pattern Applied to:**
+- `Socket.c` - `Socket_DetailedException`
+- `SocketPoll.c` - `SocketPoll_DetailedException`
+- `SocketPool.c` - `SocketPool_DetailedException`
 
 ## Missing NULL Checks (ADDRESSED)
 

@@ -43,14 +43,24 @@
 Except_T Socket_Failed = {"Socket operation failed"};
 Except_T Socket_Closed = {"Socket closed"};
 
-/* Removed thread-local exception - now using direct exception modification */
+/* Thread-local exception for detailed error messages
+ * This is a COPY of the base exception with thread-local reason string.
+ * Each thread gets its own exception instance, preventing race conditions
+ * when multiple threads raise the same exception type simultaneously. */
+#ifdef _WIN32
+static __declspec(thread) Except_T Socket_DetailedException;
+#else
+static __thread Except_T Socket_DetailedException;
+#endif
 
-/* Macro to raise exception with detailed error message */
+/* Macro to raise exception with detailed error message
+ * Creates a thread-local copy of the exception with detailed reason */
 #define RAISE_SOCKET_ERROR(exception)                                                                                  \
     do                                                                                                                 \
     {                                                                                                                  \
-        (exception).reason = socket_error_buf;                                                                         \
-        RAISE(exception);                                                                                              \
+        Socket_DetailedException = (exception);                                                                        \
+        Socket_DetailedException.reason = socket_error_buf;                                                            \
+        RAISE(Socket_DetailedException);                                                                               \
     } while (0)
 
 struct T
@@ -488,13 +498,11 @@ ssize_t Socket_send(T socket, const void *buf, size_t len)
             return 0;
         if (errno == EPIPE)
         {
-            SOCKET_ERROR_MSG(SOCKET_EPIPE);
-            RAISE_SOCKET_ERROR(Socket_Closed);
+            RAISE(Socket_Closed);
         }
         if (errno == ECONNRESET)
         {
-            SOCKET_ERROR_MSG(SOCKET_ECONNRESET);
-            RAISE_SOCKET_ERROR(Socket_Closed);
+            RAISE(Socket_Closed);
         }
         SOCKET_ERROR_FMT("Send failed (len=%zu)", len);
         RAISE_SOCKET_ERROR(Socket_Failed);
@@ -519,16 +527,14 @@ ssize_t Socket_recv(T socket, void *buf, size_t len)
             return 0;
         if (errno == ECONNRESET)
         {
-            SOCKET_ERROR_MSG(SOCKET_ECONNRESET);
-            RAISE_SOCKET_ERROR(Socket_Closed);
+            RAISE(Socket_Closed);
         }
         SOCKET_ERROR_FMT("Receive failed (len=%zu)", len);
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
     else if (result == 0)
     {
-        SOCKET_ERROR_MSG("Connection closed by peer");
-        RAISE_SOCKET_ERROR(Socket_Closed);
+        RAISE(Socket_Closed);
     }
 
     return result;

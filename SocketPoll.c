@@ -31,14 +31,24 @@
 
 Except_T SocketPoll_Failed = {"SocketPoll operation failed"};
 
-/* Removed thread-local exception - now using direct exception modification */
+/* Thread-local exception for detailed error messages
+ * This is a COPY of the base exception with thread-local reason string.
+ * Each thread gets its own exception instance, preventing race conditions
+ * when multiple threads raise the same exception type simultaneously. */
+#ifdef _WIN32
+static __declspec(thread) Except_T SocketPoll_DetailedException;
+#else
+static __thread Except_T SocketPoll_DetailedException;
+#endif
 
-/* Macro to raise exception with detailed error message */
+/* Macro to raise exception with detailed error message
+ * Creates a thread-local copy of the exception with detailed reason */
 #define RAISE_POLL_ERROR(exception)                                                                                    \
     do                                                                                                                 \
     {                                                                                                                  \
-        (exception).reason = socket_error_buf;                                                                         \
-        RAISE(exception);                                                                                              \
+        SocketPoll_DetailedException = (exception);                                                                    \
+        SocketPoll_DetailedException.reason = socket_error_buf;                                                        \
+        RAISE(SocketPoll_DetailedException);                                                                           \
     } while (0)
 
 /* Socket data mapping entry */
@@ -80,13 +90,27 @@ struct T
  *
  * Reference: Knuth, TAOCP Vol 3, Section 6.4
  */
-static unsigned socket_hash(Socket_T socket)
+static unsigned socket_hash(const Socket_T socket)
 {
-    int fd = Socket_fd(socket);
+    int fd;
+
+    assert(socket);
+    fd = Socket_fd(socket);
+
+    /* Defensive check: socket FDs should never be negative */
+    assert(fd >= 0);
+
     /* Multiplicative hash for better distribution of sequential FDs */
     return ((unsigned)fd * 2654435761u) % SOCKET_DATA_HASH_SIZE;
 }
 
+/* translate_to_epoll - Convert poll events to epoll events
+ * @events: Poll event flags (POLL_READ, POLL_WRITE)
+ *
+ * Returns: epoll event flags with edge-triggered mode (EPOLLET)
+ *
+ * Edge-triggered mode provides better performance by reducing spurious
+ * wakeups. Applications must read/write until EAGAIN. */
 static unsigned translate_to_epoll(unsigned events)
 {
     unsigned epoll_events = 0;
@@ -99,6 +123,10 @@ static unsigned translate_to_epoll(unsigned events)
     return epoll_events | EPOLLET;
 }
 
+/* translate_from_epoll - Convert epoll events to poll events
+ * @epoll_events: epoll event flags
+ *
+ * Returns: Poll event flags (POLL_READ, POLL_WRITE, POLL_ERROR, POLL_HANGUP) */
 static unsigned translate_from_epoll(unsigned epoll_events)
 {
     unsigned events = 0;
@@ -115,7 +143,14 @@ static unsigned translate_from_epoll(unsigned epoll_events)
     return events;
 }
 
-/* Helper functions for socket->data mapping - O(1) hash table operations */
+/* socket_data_add - Add socket->data mapping to hash table
+ * @poll: Poll instance
+ * @socket: Socket to map
+ * @data: User data to associate
+ *
+ * Raises: SocketPoll_Failed if allocation fails
+ *
+ * O(1) operation. Thread-safe via internal mutex. */
 static void socket_data_add(T poll, Socket_T socket, void *data)
 {
     unsigned hash = socket_hash(socket);
@@ -140,6 +175,13 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
     pthread_mutex_unlock(&poll->mutex);
 }
 
+/* socket_data_get - Retrieve user data for socket
+ * @poll: Poll instance
+ * @socket: Socket to look up
+ *
+ * Returns: User data or NULL if not found
+ *
+ * O(1) average case. Thread-safe via internal mutex. */
 static void *socket_data_get(T poll, Socket_T socket)
 {
     unsigned hash = socket_hash(socket);
@@ -161,6 +203,12 @@ static void *socket_data_get(T poll, Socket_T socket)
     return data;
 }
 
+/* socket_data_remove - Remove socket->data mapping from hash table
+ * @poll: Poll instance
+ * @socket: Socket to remove
+ *
+ * Silently succeeds if socket not found. O(1) average case.
+ * Thread-safe via internal mutex. Memory is freed with arena. */
 static void socket_data_remove(T poll, Socket_T socket)
 {
     unsigned hash = socket_hash(socket);
@@ -184,10 +232,15 @@ static void socket_data_remove(T poll, Socket_T socket)
     pthread_mutex_unlock(&poll->mutex);
 }
 
-/* Atomically update socket data mapping
- * NOTE: This function performs an "upsert" operation - it updates if found,
- * or inserts if not found. This fallback should not happen in normal operation
- * (socket should already be in map via SocketPoll_add), but provides robustness. */
+/* socket_data_update - Update user data for existing socket mapping
+ * @poll: Poll instance
+ * @socket: Socket to update
+ * @data: New user data
+ *
+ * Atomically updates existing mapping or inserts if not found (upsert).
+ * The fallback insert should not occur in normal operation (socket should
+ * already be in map via SocketPoll_add), but provides robustness.
+ * Thread-safe via internal mutex. */
 static void socket_data_update(T poll, Socket_T socket, void *data)
 {
     unsigned hash = socket_hash(socket);

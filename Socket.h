@@ -10,6 +10,13 @@
  * All functions use exceptions for error handling, making code cleaner
  * and more robust than traditional error code checking.
  *
+ * PLATFORM REQUIREMENTS:
+ * - POSIX-compliant system (Linux, BSD, macOS, etc.)
+ * - IPv6 support in kernel (for dual-stack sockets)
+ * - POSIX threads (pthread) for thread-safe error reporting
+ * - NOT portable to Windows without Winsock adaptation layer
+ * - getaddrinfo() for DNS resolution (POSIX.1-2001)
+ *
  * Features:
  * - Automatic resource management
  * - Non-blocking I/O support
@@ -69,6 +76,10 @@ extern void Socket_free(T *socket);
  *
  * Raises: Socket_Failed on error
  *
+ * WARNING: This function may block for extended periods (30+ seconds) during
+ * DNS resolution if hostname is provided. For non-blocking operation, use
+ * IP addresses directly or perform DNS resolution separately.
+ *
  * All parameters are validated at runtime for safety with user input.
  */
 extern void Socket_bind(T socket, const char *host, int port);
@@ -100,6 +111,11 @@ extern T Socket_accept(T socket);
  * @port: Remote port
  *
  * Raises: Socket_Failed on error
+ *
+ * WARNING: This function may block for extended periods (30+ seconds) during
+ * DNS resolution if hostname is provided. For non-blocking operation, use
+ * IP addresses directly or perform DNS resolution separately. This blocking
+ * can be exploited for DoS attacks if untrusted hostnames are accepted.
  *
  * Note: This function validates all user input at runtime (external API).
  *       Host and port are checked before use. Safe for untrusted input.

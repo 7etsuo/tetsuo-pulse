@@ -17,9 +17,21 @@
 
 #define T Arena_T
 
+/* Chunk header structure - used for arena chunk metadata
+ * Separate from Arena_T to avoid accidentally copying mutex fields.
+ * Chunks are linked memory blocks; only the main arena has a mutex. */
+struct ChunkHeader
+{
+    struct ChunkHeader *prev;
+    char *avail;
+    char *limit;
+};
+
+/* Main arena structure - includes mutex for thread safety
+ * Only the arena itself needs a mutex; chunks do not. */
 struct T
 {
-    T prev;
+    struct ChunkHeader *prev;
     char *avail;
     char *limit;
     pthread_mutex_t mutex; /* Per-arena mutex for thread-safe allocation */
@@ -39,21 +51,22 @@ union align {
     long double ld;
 };
 
-/* Header union - combines arena metadata with alignment requirements
+/* Header union - combines chunk metadata with alignment requirements
  * The union ensures that:
  * 1. Header is properly aligned (via union align member)
  * 2. Memory following header starts at aligned boundary
  * 3. Size of header is rounded up to alignment boundary
+ * Uses ChunkHeader (not Arena_T) since chunks don't need a mutex.
  */
 union header {
-    struct T b;
+    struct ChunkHeader b;
     union align a;
 };
 
 /* Free chunk cache - keeps up to MAX_FREE_CHUNKS chunks for reuse */
 #define MAX_FREE_CHUNKS 10
 
-static T freechunks = NULL;
+static struct ChunkHeader *freechunks = NULL;
 static int nfree = 0;
 static pthread_mutex_t arena_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -126,7 +139,7 @@ void *Arena_alloc(T arena, size_t nbytes, const char *file, int line)
     /* Use safer pointer subtraction check instead of addition */
     while (arena->avail == NULL || arena->limit == NULL || arena->limit - arena->avail < (ptrdiff_t)nbytes)
     {
-        T ptr;
+        struct ChunkHeader *ptr;
         char *limit;
 
         pthread_mutex_lock(&arena_mutex);
@@ -189,11 +202,10 @@ void *Arena_alloc(T arena, size_t nbytes, const char *file, int line)
 
             limit = (char *)ptr + m;
         }
-        /* Copy only the arena fields, NOT the mutex (undefined behavior to copy mutex) */
+        /* Safe to copy chunk fields - ChunkHeader has no mutex to worry about */
         ptr->prev = arena->prev;
         ptr->avail = arena->avail;
         ptr->limit = arena->limit;
-        /* Note: ptr->mutex field is not used in chunk headers - only prev/avail/limit matter */
 
         arena->avail = (char *)((union header *)ptr + 1);
         arena->limit = limit;
@@ -256,10 +268,10 @@ void Arena_clear(T arena)
     /* Protect entire free operation with mutex to prevent race conditions */
     while (arena->prev)
     {
-        T prev_chunk;
-        T chunk_to_free = NULL;
+        struct ChunkHeader *prev_chunk;
+        struct ChunkHeader *chunk_to_free = NULL;
         /* Save the arena state stored in the chunk header BEFORE modifying it */
-        T saved_prev;
+        struct ChunkHeader *saved_prev;
         char *saved_avail;
         char *saved_limit;
 
@@ -274,7 +286,6 @@ void Arena_clear(T arena)
         arena->prev = saved_prev;
         arena->avail = saved_avail;
         arena->limit = saved_limit;
-        /* Note: arena->mutex remains unchanged - do NOT copy it */
 
         /* Now decide what to do with prev_chunk - add to free list or free it
          * This requires the global freechunks mutex */
