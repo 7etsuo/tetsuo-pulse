@@ -17,6 +17,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 /* MSG_NOSIGNAL is not portable - provide fallback
@@ -686,6 +687,183 @@ int Socket_getpeerport(const T socket)
 {
     assert(socket);
     return socket->peerport;
+}
+
+void Socket_bind_unix(T socket, const char *path)
+{
+    struct sockaddr_un addr;
+    size_t path_len;
+
+    assert(socket);
+    assert(path);
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+
+    path_len = strlen(path);
+
+    /* Handle abstract namespace sockets on Linux */
+    if (path[0] == '@')
+    {
+#ifdef __linux__
+        /* Abstract socket - replace '@' with '\0' */
+        addr.sun_path[0] = '\0';
+        if (path_len > sizeof(addr.sun_path) - 1)
+        {
+            SOCKET_ERROR_MSG("Unix socket path too long (max %zu characters)", sizeof(addr.sun_path) - 1);
+            RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+        memcpy(addr.sun_path + 1, path + 1, path_len - 1);
+#else
+        SOCKET_ERROR_MSG("Abstract namespace sockets not supported on this platform");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+#endif
+    }
+    else
+    {
+        /* Regular filesystem socket */
+        if (path_len >= sizeof(addr.sun_path))
+        {
+            SOCKET_ERROR_MSG("Unix socket path too long (max %zu characters)", sizeof(addr.sun_path) - 1);
+            RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+        strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
+        addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
+    }
+
+    if (bind(socket->fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+        if (errno == EADDRINUSE)
+        {
+            SOCKET_ERROR_FMT(SOCKET_EADDRINUSE ": %s", path);
+        }
+        else if (errno == EACCES)
+        {
+            SOCKET_ERROR_FMT("Permission denied to bind to %s", path);
+        }
+        else
+        {
+            SOCKET_ERROR_FMT("Failed to bind to Unix socket %s", path);
+        }
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    memcpy(&socket->addr, &addr, sizeof(addr));
+    socket->addrlen = sizeof(addr);
+}
+
+void Socket_connect_unix(T socket, const char *path)
+{
+    struct sockaddr_un addr;
+    size_t path_len;
+
+    assert(socket);
+    assert(path);
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+
+    path_len = strlen(path);
+
+    /* Handle abstract namespace sockets on Linux */
+    if (path[0] == '@')
+    {
+#ifdef __linux__
+        /* Abstract socket - replace '@' with '\0' */
+        addr.sun_path[0] = '\0';
+        if (path_len > sizeof(addr.sun_path) - 1)
+        {
+            SOCKET_ERROR_MSG("Unix socket path too long (max %zu characters)", sizeof(addr.sun_path) - 1);
+            RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+        memcpy(addr.sun_path + 1, path + 1, path_len - 1);
+#else
+        SOCKET_ERROR_MSG("Abstract namespace sockets not supported on this platform");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+#endif
+    }
+    else
+    {
+        /* Regular filesystem socket */
+        if (path_len >= sizeof(addr.sun_path))
+        {
+            SOCKET_ERROR_MSG("Unix socket path too long (max %zu characters)", sizeof(addr.sun_path) - 1);
+            RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+        strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
+        addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
+    }
+
+    if (connect(socket->fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+        if (errno == ENOENT)
+        {
+            SOCKET_ERROR_FMT("Unix socket does not exist: %s", path);
+        }
+        else if (errno == ECONNREFUSED)
+        {
+            SOCKET_ERROR_FMT(SOCKET_ECONNREFUSED ": %s", path);
+        }
+        else
+        {
+            SOCKET_ERROR_FMT("Failed to connect to Unix socket %s", path);
+        }
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    memcpy(&socket->addr, &addr, sizeof(addr));
+    socket->addrlen = sizeof(addr);
+}
+
+int Socket_getpeerpid(const T socket)
+{
+    assert(socket);
+
+#ifdef SO_PEERCRED
+    struct ucred cred;
+    socklen_t len = sizeof(cred);
+
+    if (getsockopt(socket->fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == 0)
+    {
+        return cred.pid;
+    }
+#endif
+
+    return -1;
+}
+
+int Socket_getpeeruid(const T socket)
+{
+    assert(socket);
+
+#ifdef SO_PEERCRED
+    struct ucred cred;
+    socklen_t len = sizeof(cred);
+
+    if (getsockopt(socket->fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == 0)
+    {
+        return cred.uid;
+    }
+#endif
+
+    return -1;
+}
+
+int Socket_getpeergid(const T socket)
+{
+    assert(socket);
+
+#ifdef SO_PEERCRED
+    struct ucred cred;
+    socklen_t len = sizeof(cred);
+
+    if (getsockopt(socket->fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == 0)
+    {
+        return cred.gid;
+    }
+#endif
+
+    return -1;
 }
 
 #undef T
