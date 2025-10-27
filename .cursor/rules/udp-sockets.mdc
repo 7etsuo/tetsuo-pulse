@@ -1,0 +1,364 @@
+---
+description: UDP socket patterns and usage guidelines for the SocketDgram module
+---
+
+# UDP Socket Patterns (SocketDgram Module)
+
+This rule documents the UDP/datagram socket implementation patterns used in the SocketDgram module.
+
+## Module Overview
+
+The SocketDgram module provides UDP datagram socket functionality following the same patterns as the Socket module (TCP).
+
+**Files:**
+- `SocketDgram.h` - Public API (187 lines)
+- `SocketDgram.c` - Implementation (692 lines)
+
+## Design Patterns
+
+### Type Definition
+**ALWAYS** use the same opaque type pattern as Socket module:
+
+```c
+#define T SocketDgram_T
+typedef struct T *T;
+
+struct T
+{
+    int fd;                           // Underlying file descriptor
+    struct sockaddr_storage addr;     // Address information
+    socklen_t addrlen;                // Address length
+    Arena_T arena;                    // Private memory arena
+};
+```
+
+### Exception Handling
+**ALWAYS** use thread-local exception pattern for detailed errors:
+
+```c
+/* Thread-local exception for detailed error messages */
+#ifdef _WIN32
+static __declspec(thread) Except_T SocketDgram_DetailedException;
+#else
+static __thread Except_T SocketDgram_DetailedException;
+#endif
+
+/* Macro to raise exception with detailed error message */
+#define RAISE_DGRAM_ERROR(exception)                                           \
+    do                                                                         \
+    {                                                                          \
+        SocketDgram_DetailedException = (exception);                           \
+        SocketDgram_DetailedException.reason = socket_error_buf;               \
+        RAISE(SocketDgram_DetailedException);                                  \
+    }                                                                          \
+    while (0)
+```
+
+## UDP vs TCP Differences
+
+### Connectionless Nature
+**REMEMBER** UDP is connectionless:
+- No `listen()` or `accept()` operations
+- `sendto()` and `recvfrom()` include address information
+- `connect()` only sets default destination (optional)
+
+### Message Boundaries
+**IMPORTANT** UDP preserves message boundaries:
+- Each send() creates one datagram
+- Each recv() receives one complete datagram
+- Datagrams may be lost, duplicated, or reordered
+- No partial sends (unlike TCP) - returns full length or would-block
+
+### Maximum Datagram Size
+**ALWAYS** be aware of UDP size limits:
+
+```c
+/* Recommended buffer size for UDP */
+#define UDP_MAX_PAYLOAD 65507  /* Max theoretical UDP payload */
+#define UDP_SAFE_SIZE 1472     /* Avoids fragmentation (1500 MTU - 28 byte headers) */
+
+/* For recvfrom, use large buffer to avoid truncation */
+char buffer[65536];  /* Common practice */
+```
+
+## API Usage Patterns
+
+### Basic Server Pattern
+
+```c
+SocketDgram_T server = SocketDgram_new(AF_INET, 0);
+SocketDgram_setreuseaddr(server);
+SocketDgram_bind(server, NULL, 5000);  /* Bind to all interfaces */
+
+while (running) {
+    char buffer[65536];
+    char sender_host[256];
+    int sender_port;
+    
+    ssize_t n = SocketDgram_recvfrom(server, buffer, sizeof(buffer),
+                                     sender_host, sizeof(sender_host),
+                                     &sender_port);
+    if (n > 0) {
+        /* Process datagram */
+        SocketDgram_sendto(server, buffer, n, sender_host, sender_port);
+    }
+}
+```
+
+### Connected UDP Pattern
+
+```c
+/* Set default destination */
+SocketDgram_T client = SocketDgram_new(AF_INET, 0);
+SocketDgram_connect(client, "example.com", 5000);
+
+/* Now can use send/recv instead of sendto/recvfrom */
+SocketDgram_send(client, data, len);
+SocketDgram_recv(client, buffer, sizeof(buffer));
+
+/* Only receives from connected address */
+```
+
+### Broadcast Pattern
+
+```c
+SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
+SocketDgram_setbroadcast(socket, 1);  /* Enable broadcast */
+
+/* Send to subnet broadcast */
+SocketDgram_sendto(socket, data, len, "255.255.255.255", 5000);
+
+/* Or subnet-specific broadcast */
+SocketDgram_sendto(socket, data, len, "192.168.1.255", 5000);
+```
+
+### Multicast Pattern
+
+```c
+/* Receiver */
+SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+SocketDgram_setreuseaddr(receiver);
+SocketDgram_bind(receiver, "0.0.0.0", 5000);
+SocketDgram_joinmulticast(receiver, "224.0.0.1", NULL);  /* Join group */
+
+/* Sender */
+SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
+SocketDgram_setttl(sender, 1);  /* Link-local only */
+SocketDgram_sendto(sender, data, len, "224.0.0.1", 5000);
+```
+
+## Non-Blocking I/O
+
+### Pattern for Non-Blocking UDP
+
+```c
+SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
+SocketDgram_bind(socket, NULL, 5000);
+SocketDgram_setnonblocking(socket);
+
+/* Use with SocketPoll for event-driven I/O */
+SocketPoll_T poll = SocketPoll_new(100);
+SocketPoll_add(poll, socket, POLL_READ, NULL);
+
+SocketEvent_T *events;
+int n = SocketPoll_wait(poll, &events, 1000);
+for (int i = 0; i < n; i++) {
+    if (events[i].events & POLL_READ) {
+        /* Data available - won't block */
+        ssize_t received = SocketDgram_recvfrom(...);
+    }
+}
+```
+
+## Error Handling
+
+### Return Value Patterns
+
+```c
+/* sendto/recvfrom return values:
+ * > 0  : Bytes sent/received (success)
+ * = 0  : Would block (EAGAIN/EWOULDBLOCK) in non-blocking mode
+ * < 0  : Never returned (raises exception instead)
+ */
+
+ssize_t sent = SocketDgram_sendto(socket, data, len, host, port);
+if (sent > 0) {
+    /* Success - entire datagram sent */
+} else {
+    /* sent == 0: Would block */
+}
+```
+
+### Exception Types
+
+```c
+TRY
+    SocketDgram_sendto(socket, data, len, host, port);
+EXCEPT(SocketDgram_Failed)
+    /* Network error, invalid host, etc. */
+    fprintf(stderr, "Error: %s\n", SocketDgram_Failed.reason);
+END_TRY;
+```
+
+## IPv6 Support
+
+### Dual-Stack Sockets
+
+```c
+/* Create IPv6 socket that also handles IPv4 */
+SocketDgram_T socket = SocketDgram_new(AF_INET6, 0);
+SocketDgram_bind(socket, NULL, 5000);  /* Binds to :: (all addresses) */
+
+/* Will receive both IPv4 and IPv6 datagrams */
+/* IPv4 addresses appear as IPv4-mapped IPv6 (::ffff:192.0.2.1) */
+```
+
+## Security Considerations
+
+### Input Validation
+
+**ALWAYS** validate sender addresses:
+
+```c
+char sender_host[256];
+int sender_port;
+
+ssize_t n = SocketDgram_recvfrom(socket, buffer, sizeof(buffer),
+                                 sender_host, sizeof(sender_host),
+                                 &sender_port);
+
+if (n > 0) {
+    /* Validate sender is from expected source */
+    if (strcmp(sender_host, expected_host) != 0) {
+        /* Reject unexpected sender */
+        return;
+    }
+    /* Process datagram */
+}
+```
+
+### DoS Protection
+
+**CONSIDER** rate limiting:
+
+```c
+/* Track packets per source IP */
+/* Limit processing rate */
+/* Drop packets exceeding threshold */
+```
+
+## Performance Considerations
+
+### Buffer Sizing
+
+**PREFER** large receive buffers to avoid truncation:
+
+```c
+/* Good: Large buffer, no truncation */
+char buffer[65536];
+
+/* Bad: Small buffer, data may be truncated */
+char buffer[512];  /* May lose data if datagram > 512 bytes */
+```
+
+### Avoid Fragmentation
+
+**PREFER** datagrams under MTU size:
+
+```c
+#define SAFE_UDP_SIZE 1472  /* 1500 MTU - 20 IP - 8 UDP */
+
+/* Recommended for reliability and performance */
+if (data_len <= SAFE_UDP_SIZE) {
+    SocketDgram_sendto(socket, data, data_len, host, port);
+}
+```
+
+## Integration with SocketPoll
+
+### UDP with Event Loop
+
+**ALWAYS** compatible with SocketPoll:
+
+```c
+/* UDP sockets work with all event backends (epoll/kqueue/poll) */
+SocketDgram_T udp = SocketDgram_new(AF_INET, 0);
+SocketDgram_bind(udp, NULL, 5000);
+SocketDgram_setnonblocking(udp);
+
+/* Add to event poll using Socket_fd() for the FD */
+int fd = SocketDgram_fd(udp);
+SocketPoll_add(poll, udp, POLL_READ, userdata);
+```
+
+## Common Patterns
+
+### Request-Response Pattern
+
+```c
+/* Client sends request, waits for response */
+SocketDgram_T client = SocketDgram_new(AF_INET, 0);
+SocketDgram_settimeout(client, 5);  /* 5 second timeout */
+
+SocketDgram_sendto(client, request, req_len, server_host, server_port);
+
+char response[8192];
+char resp_host[256];
+int resp_port;
+
+ssize_t n = SocketDgram_recvfrom(client, response, sizeof(response),
+                                 resp_host, sizeof(resp_host), &resp_port);
+
+/* Verify response is from correct server */
+if (n > 0 && strcmp(resp_host, server_host) == 0) {
+    /* Process response */
+}
+```
+
+### Echo Server Pattern
+
+```c
+/* Simple echo server */
+while (running) {
+    char buffer[65536];
+    char sender[256];
+    int port;
+    
+    ssize_t n = SocketDgram_recvfrom(server, buffer, sizeof(buffer),
+                                     sender, sizeof(sender), &port);
+    if (n > 0) {
+        /* Echo back to sender */
+        SocketDgram_sendto(server, buffer, n, sender, port);
+    }
+}
+```
+
+## Testing Considerations
+
+### Reliability Testing
+
+**REMEMBER** UDP is unreliable:
+- Implement retransmission if reliability needed
+- Don't assume packets arrive in order
+- Handle duplicate packets
+- Implement timeouts for responses
+
+### Example Test Pattern
+
+```c
+/* Send with retry */
+int retries = 3;
+int timeout_ms = 1000;
+
+for (int i = 0; i < retries; i++) {
+    SocketDgram_sendto(socket, data, len, host, port);
+    
+    /* Wait for response with timeout */
+    SocketPoll_wait(poll, &events, timeout_ms);
+    
+    if (/* received response */) {
+        break;  /* Success */
+    }
+    /* Retry */
+}
+```

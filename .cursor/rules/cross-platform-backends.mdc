@@ -1,0 +1,555 @@
+---
+description: Cross-platform event backend system for SocketPoll with epoll/kqueue/poll support
+---
+
+# Cross-Platform Event Backend System
+
+This rule documents the backend abstraction system that enables cross-platform event polling with platform-specific optimizations.
+
+## Architecture Overview
+
+The SocketPoll module uses a compile-time selected backend for event notification:
+
+**Backend Hierarchy (best to fallback):**
+1. **epoll** (Linux) - O(active events), edge-triggered
+2. **kqueue** (BSD/macOS) - O(active events), edge-triggered  
+3. **poll(2)** (POSIX) - O(all FDs), level-triggered
+
+## Files Structure
+
+### Backend Interface
+- `SocketPoll_backend.h` - Private backend interface (NOT public API)
+
+### Backend Implementations
+- `SocketPoll_epoll.c` - Linux epoll backend (196 lines)
+- `SocketPoll_kqueue.c` - BSD/macOS kqueue backend (227 lines)
+- `SocketPoll_poll.c` - POSIX poll(2) fallback (298 lines)
+
+### Frontend
+- `SocketPoll.h` - Public API (unchanged, platform-agnostic)
+- `SocketPoll.c` - Platform-agnostic frontend (~200 lines)
+
+## Backend Interface
+
+### Required Functions
+
+**EVERY** backend MUST implement these functions:
+
+```c
+/* Create backend instance */
+PollBackend_T backend_new(int maxevents);
+
+/* Free backend instance */
+void backend_free(PollBackend_T backend);
+
+/* Add file descriptor to poll set */
+int backend_add(PollBackend_T backend, int fd, unsigned events);
+
+/* Modify events for file descriptor */
+int backend_mod(PollBackend_T backend, int fd, unsigned events);
+
+/* Remove file descriptor from poll set */
+int backend_del(PollBackend_T backend, int fd);
+
+/* Wait for events (returns count or -1 on error) */
+int backend_wait(PollBackend_T backend, int timeout_ms);
+
+/* Get event details by index */
+int backend_get_event(PollBackend_T backend, int index,
+                     int *fd_out, unsigned *events_out);
+
+/* Get backend name for debugging */
+const char *backend_name(void);
+```
+
+### Event Flag Translation
+
+**ALWAYS** use consistent event flags:
+
+```c
+/* Public API flags (SocketPoll.h) */
+POLL_READ   = 1 << 0  /* Data available for reading */
+POLL_WRITE  = 1 << 1  /* Socket ready for writing */
+POLL_ERROR  = 1 << 2  /* Error condition */
+POLL_HANGUP = 1 << 3  /* Hangup / disconnection */
+
+/* Backend translates to platform-specific flags internally */
+```
+
+## Backend Selection (Makefile)
+
+### Auto-Detection Pattern
+
+**ALWAYS** use platform auto-detection in Makefile:
+
+```makefile
+# Auto-detect platform for backend selection
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Linux)
+    POLL_BACKEND = epoll
+    POLL_BACKEND_SRC = SocketPoll_epoll.c
+else ifeq ($(UNAME_S),Darwin)
+    POLL_BACKEND = kqueue
+    POLL_BACKEND_SRC = SocketPoll_kqueue.c
+else ifeq ($(UNAME_S),FreeBSD)
+    POLL_BACKEND = kqueue
+    POLL_BACKEND_SRC = SocketPoll_kqueue.c
+else ifeq ($(UNAME_S),OpenBSD)
+    POLL_BACKEND = kqueue
+    POLL_BACKEND_SRC = SocketPoll_kqueue.c
+else ifeq ($(UNAME_S),NetBSD)
+    POLL_BACKEND = kqueue
+    POLL_BACKEND_SRC = SocketPoll_kqueue.c
+else
+    POLL_BACKEND = poll
+    POLL_BACKEND_SRC = SocketPoll_poll.c
+endif
+
+# Add backend source to build
+SOURCES = ... SocketPoll.c $(POLL_BACKEND_SRC) ...
+```
+
+### Build Info
+
+**ALWAYS** inform user of backend selection:
+
+```makefile
+info:
+	@echo "Building socket library with $(POLL_BACKEND) backend on $(UNAME_S)"
+```
+
+## epoll Backend (Linux)
+
+### Implementation Pattern
+
+```c
+struct PollBackend_T
+{
+    int epfd;                  /* epoll file descriptor */
+    struct epoll_event *events; /* Event array for results */
+    int maxevents;             /* Maximum events per wait */
+};
+
+PollBackend_T backend_new(int maxevents)
+{
+    PollBackend_T backend = calloc(1, sizeof(*backend));
+    
+    backend->epfd = epoll_create1(0);
+    backend->events = calloc(maxevents, sizeof(struct epoll_event));
+    backend->maxevents = maxevents;
+    
+    return backend;
+}
+```
+
+### Edge-Triggered Mode
+
+**ALWAYS** use EPOLLET for edge-triggered:
+
+```c
+static unsigned translate_to_epoll(unsigned events)
+{
+    unsigned epoll_events = 0;
+    
+    if (events & POLL_READ)
+        epoll_events |= EPOLLIN;
+    if (events & POLL_WRITE)
+        epoll_events |= EPOLLOUT;
+    
+    return epoll_events | EPOLLET;  /* Edge-triggered */
+}
+```
+
+### Event Retrieval
+
+```c
+int backend_wait(PollBackend_T backend, int timeout_ms)
+{
+    int nev = epoll_wait(backend->epfd, backend->events, 
+                        backend->maxevents, timeout_ms);
+    
+    if (nev < 0 && errno == EINTR)
+        return 0;  /* Treat interrupt as timeout */
+    
+    return nev;
+}
+```
+
+## kqueue Backend (BSD/macOS)
+
+### Implementation Pattern
+
+```c
+struct PollBackend_T
+{
+    int kq;                    /* kqueue file descriptor */
+    struct kevent *events;     /* Event array for results */
+    int maxevents;             /* Maximum events per wait */
+};
+
+PollBackend_T backend_new(int maxevents)
+{
+    PollBackend_T backend = calloc(1, sizeof(*backend));
+    
+    backend->kq = kqueue();
+    backend->events = calloc(maxevents, sizeof(struct kevent));
+    backend->maxevents = maxevents;
+    
+    return backend;
+}
+```
+
+### Edge-Triggered via EV_CLEAR
+
+**ALWAYS** use EV_CLEAR to match epoll behavior:
+
+```c
+int backend_add(PollBackend_T backend, int fd, unsigned events)
+{
+    struct kevent ev[2];
+    int nev = 0;
+    
+    if (events & POLL_READ) {
+        EV_SET(&ev[nev], fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, NULL);
+        nev++;
+    }
+    
+    if (events & POLL_WRITE) {
+        EV_SET(&ev[nev], fd, EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, NULL);
+        nev++;
+    }
+    
+    return kevent(backend->kq, ev, nev, NULL, 0, NULL);
+}
+```
+
+### Modify Operation
+
+**IMPORTANT** kqueue doesn't have MOD - delete then add:
+
+```c
+int backend_mod(PollBackend_T backend, int fd, unsigned events)
+{
+    struct kevent ev[4];
+    int nev = 0;
+    
+    /* Delete existing filters (silently succeeds if not present) */
+    EV_SET(&ev[nev++], fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+    EV_SET(&ev[nev++], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+    kevent(backend->kq, ev, nev, NULL, 0, NULL);
+    
+    /* Now add new events */
+    return backend_add(backend, fd, events);
+}
+```
+
+## poll(2) Backend (Portable Fallback)
+
+### Implementation Pattern
+
+```c
+struct PollBackend_T
+{
+    struct pollfd *fds;        /* Array of pollfd structures */
+    int *fd_to_index;          /* FD to index mapping */
+    int nfds;                  /* Current number of FDs */
+    int capacity;              /* Capacity of fds array */
+    int maxevents;             /* Maximum events per wait */
+    int max_fd;                /* Maximum FD value seen */
+};
+```
+
+### Dynamic Array Management
+
+**ALWAYS** resize array as needed:
+
+```c
+static int ensure_capacity(PollBackend_T backend)
+{
+    if (backend->nfds < backend->capacity)
+        return 0;
+    
+    /* Double the capacity */
+    int new_capacity = backend->capacity * 2;
+    struct pollfd *new_fds = realloc(backend->fds, 
+                                     new_capacity * sizeof(struct pollfd));
+    if (!new_fds)
+        return -1;
+    
+    backend->fds = new_fds;
+    backend->capacity = new_capacity;
+    return 0;
+}
+```
+
+### FD Mapping for O(1) Lookup
+
+**ALWAYS** maintain FD→index mapping:
+
+```c
+/* Map file descriptor to array index for fast lookup */
+int *fd_to_index;  /* Array indexed by FD, contains array index */
+
+/* Add operation updates mapping */
+backend->fd_to_index[fd] = backend->nfds;
+```
+
+### Event Scanning
+
+**REMEMBER** poll returns count, must scan array:
+
+```c
+int backend_get_event(PollBackend_T backend, int index,
+                     int *fd_out, unsigned *events_out)
+{
+    int i, count = 0;
+    
+    /* Scan array to find nth event */
+    for (i = 0; i < backend->nfds; i++) {
+        if (backend->fds[i].revents != 0) {
+            if (count == index) {
+                *fd_out = backend->fds[i].fd;
+                *events_out = translate_from_poll(backend->fds[i].revents);
+                return 0;
+            }
+            count++;
+        }
+    }
+    return -1;  /* Index out of range */
+}
+```
+
+## Frontend Integration
+
+### Backend Usage in SocketPoll.c
+
+**ALWAYS** use backend through abstraction:
+
+```c
+T SocketPoll_new(int maxevents)
+{
+    T poll = malloc(sizeof(*poll));
+    
+    /* Create backend - auto-selected at compile time */
+    poll->backend = backend_new(maxevents);
+    if (!poll->backend) {
+        SOCKET_ERROR_FMT("Failed to create %s backend", backend_name());
+        RAISE_POLL_ERROR(SocketPoll_Failed);
+    }
+    
+    /* ... rest of initialization ... */
+}
+
+void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
+{
+    int fd = Socket_fd(socket);
+    
+    /* Use backend interface */
+    if (backend_add(poll->backend, fd, events) < 0) {
+        SOCKET_ERROR_FMT("Failed to add socket to poll (fd=%d)", fd);
+        RAISE_POLL_ERROR(SocketPoll_Failed);
+    }
+    
+    /* Store socket→data mapping in frontend */
+    socket_data_add(poll, socket, data);
+}
+```
+
+### Socket Data Mapping
+
+**IMPORTANT** Frontend maintains socket→data mapping:
+
+```c
+/* Frontend's responsibility (not backend's) */
+typedef struct SocketData
+{
+    Socket_T socket;
+    void *data;
+    struct SocketData *next;
+} SocketData;
+
+/* Hash table in SocketPoll structure */
+SocketData *socket_data_map[SOCKET_DATA_HASH_SIZE];
+```
+
+### Event Translation
+
+**ALWAYS** translate backend FD events to Socket events:
+
+```c
+int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
+{
+    int nfds = backend_wait(poll->backend, timeout);
+    
+    for (int i = 0; i < nfds; i++) {
+        int fd;
+        unsigned event_flags;
+        
+        /* Get event from backend */
+        backend_get_event(poll->backend, i, &fd, &event_flags);
+        
+        /* Find Socket_T by FD (search hash table) */
+        Socket_T socket = find_socket_by_fd(poll, fd);
+        
+        /* Build SocketEvent_T */
+        poll->socketevents[i].socket = socket;
+        poll->socketevents[i].data = socket_data_get(poll, socket);
+        poll->socketevents[i].events = event_flags;
+    }
+    
+    return nfds;
+}
+```
+
+## Performance Characteristics
+
+### Backend Comparison
+
+| Backend | Complexity | Platform | Edge-Triggered | Best For |
+|---------|-----------|----------|----------------|----------|
+| epoll | O(active) | Linux | Yes | High connection count |
+| kqueue | O(active) | BSD/macOS | Yes | High connection count |
+| poll | O(total) | POSIX | No | < 100 connections |
+
+### When to Use Each
+
+**epoll (Linux):**
+- Production servers on Linux
+- Handles 10,000+ connections efficiently
+- Edge-triggered reduces spurious wakeups
+
+**kqueue (BSD/macOS):**
+- Production servers on BSD/macOS
+- Equivalent performance to epoll
+- EV_CLEAR provides edge-trigger behavior
+
+**poll (Portable):**
+- Development/testing on non-epoll/kqueue systems
+- Small connection counts (< 100)
+- Maximum portability required
+- Still O(n) but acceptable for small n
+
+## Testing Across Platforms
+
+### Verification Pattern
+
+```bash
+# Linux (epoll)
+make clean && make
+# Should show: "Building socket library with epoll backend on Linux"
+
+# macOS (kqueue)
+make clean && make
+# Should show: "Building socket library with kqueue backend on Darwin"
+
+# Generic POSIX (poll)
+# On system without epoll/kqueue
+make clean && make
+# Should show: "Building socket library with poll backend"
+```
+
+### Cross-Platform Testing
+
+**ALWAYS** test on multiple platforms:
+
+```c
+/* All backends provide same API */
+SocketPoll_T poll = SocketPoll_new(1000);  /* Works everywhere */
+SocketPoll_add(poll, socket, POLL_READ, data);
+SocketPoll_wait(poll, &events, timeout);
+```
+
+## Common Pitfalls
+
+### ❌ DON'T access backend directly from user code
+
+```c
+/* WRONG - backend is internal */
+poll->backend->epfd  /* Private implementation detail */
+```
+
+### ✅ DO use public SocketPoll API
+
+```c
+/* CORRECT - use public API */
+SocketPoll_add(poll, socket, events, data);
+```
+
+### ❌ DON'T assume specific backend
+
+```c
+/* WRONG - assumes epoll */
+#include <sys/epoll.h>
+struct epoll_event ev;  /* Not portable */
+```
+
+### ✅ DO write platform-agnostic code
+
+```c
+/* CORRECT - works with all backends */
+SocketPoll_add(poll, socket, POLL_READ | POLL_WRITE, data);
+```
+
+## Adding New Backend
+
+### Steps to Add Backend
+
+1. Create `SocketPoll_BACKEND.c`
+2. Implement all required functions
+3. Add to Makefile selection logic
+4. Test on target platform
+
+### Template Structure
+
+```c
+/* SocketPoll_newbackend.c */
+
+#include "SocketPoll_backend.h"
+
+struct PollBackend_T {
+    /* Backend-specific fields */
+};
+
+PollBackend_T backend_new(int maxevents) { /* ... */ }
+void backend_free(PollBackend_T backend) { /* ... */ }
+int backend_add(PollBackend_T backend, int fd, unsigned events) { /* ... */ }
+int backend_mod(PollBackend_T backend, int fd, unsigned events) { /* ... */ }
+int backend_del(PollBackend_T backend, int fd) { /* ... */ }
+int backend_wait(PollBackend_T backend, int timeout_ms) { /* ... */ }
+int backend_get_event(PollBackend_T backend, int index,
+                     int *fd_out, unsigned *events_out) { /* ... */ }
+const char *backend_name(void) { return "newbackend"; }
+```
+
+## Debugging Backend Issues
+
+### Enable Backend Name
+
+**ALWAYS** check which backend is running:
+
+```c
+printf("Using %s backend\n", backend_name());
+```
+
+### Verify Event Translation
+
+**ALWAYS** verify events are translated correctly:
+
+```c
+/* Check POLL_READ maps to platform event */
+/* Check platform event maps back to POLL_READ */
+```
+
+### Test Edge-Triggered Behavior
+
+**REMEMBER** edge-triggered requires read/write until EAGAIN:
+
+```c
+while (1) {
+    ssize_t n = Socket_recv(socket, buffer, sizeof(buffer));
+    if (n == 0)  /* EAGAIN in non-blocking mode */
+        break;
+    /* Process data */
+}
+```

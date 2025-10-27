@@ -27,27 +27,60 @@ project/
 **ALWAYS** group related files together:
 
 ```c
-Arena.c Arena.h           # Memory management
-Except.c Except.h         # Exception handling
-Socket.c Socket.h         # Core socket operations
-SocketBuf.c SocketBuf.h   # Socket buffering
-SocketPoll.c SocketPoll.h # Event polling
-SocketPool.c SocketPool.h # Connection management
-SocketConfig.h            # Configuration constants
+Arena.c Arena.h             # Memory management
+Except.c Except.h           # Exception handling
+Socket.c Socket.h           # TCP and Unix domain sockets
+SocketDgram.c SocketDgram.h # UDP datagram sockets
+SocketBuf.c SocketBuf.h     # Socket buffering
+SocketPoll.c SocketPoll.h   # Event polling (frontend)
+SocketPoll_backend.h        # Backend interface (private)
+SocketPoll_epoll.c          # Linux epoll backend
+SocketPoll_kqueue.c         # BSD/macOS kqueue backend
+SocketPoll_poll.c           # POSIX poll fallback
+SocketPool.c SocketPool.h   # Connection management
+SocketConfig.h              # Configuration constants
 SocketError.c SocketError.h # Error handling utilities
-main.c                    # Main program/demo
-Makefile                  # Build configuration
+main.c                      # Main program/demo
+Makefile                    # Build configuration
+examples/                   # Example programs
 ```
 
 ## Makefile Structure
+
+### Platform Detection and Backend Selection
+**ALWAYS** auto-detect platform for cross-platform builds:
+
+```makefile
+CC = gcc
+
+# Auto-detect platform for backend selection
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Linux)
+    POLL_BACKEND = epoll
+    POLL_BACKEND_SRC = SocketPoll_epoll.c
+else ifeq ($(UNAME_S),Darwin)
+    POLL_BACKEND = kqueue
+    POLL_BACKEND_SRC = SocketPoll_kqueue.c
+else ifeq ($(UNAME_S),FreeBSD)
+    POLL_BACKEND = kqueue
+    POLL_BACKEND_SRC = SocketPoll_kqueue.c
+else ifeq ($(UNAME_S),OpenBSD)
+    POLL_BACKEND = kqueue
+    POLL_BACKEND_SRC = SocketPoll_kqueue.c
+else ifeq ($(UNAME_S),NetBSD)
+    POLL_BACKEND = kqueue
+    POLL_BACKEND_SRC = SocketPoll_kqueue.c
+else
+    POLL_BACKEND = poll
+    POLL_BACKEND_SRC = SocketPoll_poll.c
+endif
+```
 
 ### Standard Makefile Pattern with Debug/Release
 **ALWAYS** use the standard Makefile structure with separate debug/release builds:
 
 ```makefile
-# Compiler
-CC = gcc
-
 # Debug build (default) - includes symbols, optimizes for debugging
 CFLAGS_DEBUG = -Wall -Wextra -Werror -g -Og -D_GNU_SOURCE -pthread -std=gnu99
 
@@ -60,17 +93,35 @@ CFLAGS = $(CFLAGS_DEBUG)
 LDFLAGS = -pthread
 TARGET = program_name
 
-# Object files
-OBJECTS = file1.o file2.o file3.o file4.o
-DEPS = $(OBJECTS:.o=.d)
+# Object files (include backend-specific source)
+SOURCES = Arena.c Except.c Socket.c SocketDgram.c SocketBuf.c \
+          SocketPoll.c $(POLL_BACKEND_SRC) SocketPool.c SocketError.c main.c
+OBJECTS = $(SOURCES:.c=.o)
+DEPS = $(SOURCES:.c=.d)
 
-# Default target
-all: $(TARGET)
+# Library object files (exclude main.c)
+LIB_SOURCES = Arena.c Except.c Socket.c SocketDgram.c SocketBuf.c \
+              SocketPoll.c $(POLL_BACKEND_SRC) SocketPool.c SocketError.c
+LIB_OBJECTS = $(LIB_SOURCES:.c=.o)
+
+# Default target with info message
+all: info $(TARGET)
+
+info:
+	@echo "Building socket library with $(POLL_BACKEND) backend on $(UNAME_S)"
 
 # Link target
 # NOTE: $(LDFLAGS) must come after object files for proper linking
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+# Shared library target
+libsocket.so: $(LIB_OBJECTS)
+	$(CC) -shared -o $@ $^ $(LDFLAGS)
+
+# Static library target
+libsocket.a: $(LIB_OBJECTS)
+	$(AR) rcs $@ $^
 
 # Compilation rule with dependency tracking
 %.o: %.c
@@ -79,16 +130,22 @@ $(TARGET): $(OBJECTS)
 # Auto-generated dependencies
 -include $(DEPS)
 
-# Cleanup
+# Cleanup (remove all backend object files)
 clean:
 	rm -f $(OBJECTS) $(TARGET) $(DEPS)
+	rm -f libsocket.so libsocket.a
+	rm -f SocketPoll_epoll.o SocketPoll_kqueue.o SocketPoll_poll.o
+	rm -f SocketPoll_epoll.d SocketPoll_kqueue.d SocketPoll_poll.d
 
 # Release build target - optimized for production
 release: CFLAGS = $(CFLAGS_RELEASE)
 release: clean all
 
+# Library build target
+lib: libsocket.so libsocket.a
+
 # Phony targets
-.PHONY: all clean release
+.PHONY: all clean release lib info
 ```
 
 ### Dependency Tracking

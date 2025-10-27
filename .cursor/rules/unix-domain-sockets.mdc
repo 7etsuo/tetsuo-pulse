@@ -1,0 +1,583 @@
+---
+description: Unix domain socket patterns for inter-process communication
+---
+
+# Unix Domain Socket Patterns
+
+This rule documents the Unix domain socket implementation and usage patterns for inter-process communication (IPC).
+
+## Overview
+
+Unix domain sockets (AF_UNIX) provide efficient IPC between processes on the same machine. They are integrated into the existing Socket module rather than a separate module.
+
+**Key Advantages over TCP:**
+- Faster (no network stack overhead)
+- More secure (file system permissions)
+- Peer credentials available (Linux SO_PEERCRED)
+- No network exposure
+
+## Socket Module Extensions
+
+### New Functions for Unix Sockets
+
+```c
+/* Bind to Unix domain socket path */
+void Socket_bind_unix(Socket_T socket, const char *path);
+
+/* Connect to Unix domain socket path */
+void Socket_connect_unix(Socket_T socket, const char *path);
+
+/* Get peer credentials (Linux only) */
+int Socket_getpeerpid(Socket_T socket);  /* Returns PID or -1 */
+int Socket_getpeeruid(Socket_T socket);  /* Returns UID or -1 */
+int Socket_getpeergid(Socket_T socket);  /* Returns GID or -1 */
+```
+
+## Socket Creation
+
+### Creating Unix Domain Socket
+
+**ALWAYS** use AF_UNIX for Unix domain sockets:
+
+```c
+/* Stream socket (SOCK_STREAM) - like TCP */
+Socket_T socket = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+
+/* Datagram socket (SOCK_DGRAM) - like UDP */
+Socket_T socket = Socket_new(AF_UNIX, SOCK_DGRAM, 0);
+```
+
+**NOTE:** SOCK_STREAM is most common for Unix sockets.
+
+## Server Pattern
+
+### Basic Server Setup
+
+```c
+#include "Socket.h"
+#include <unistd.h>  /* For unlink() */
+
+#define SOCKET_PATH "/tmp/myapp.sock"
+
+Socket_T server = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+
+/* Remove old socket file if it exists */
+unlink(SOCKET_PATH);
+
+/* Bind to path */
+Socket_bind_unix(server, SOCKET_PATH);
+Socket_listen(server, 5);
+
+/* Accept connections */
+while (running) {
+    Socket_T client = Socket_accept(server);
+    if (client) {
+        /* Handle client */
+    }
+}
+
+/* Cleanup */
+Socket_free(&server);
+unlink(SOCKET_PATH);  /* Remove socket file */
+```
+
+### Non-Blocking Server
+
+```c
+Socket_T server = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+unlink(SOCKET_PATH);
+Socket_bind_unix(server, SOCKET_PATH);
+Socket_listen(server, 5);
+Socket_setnonblocking(server);
+
+/* Use with SocketPoll */
+SocketPoll_T poll = SocketPoll_new(100);
+SocketPoll_add(poll, server, POLL_READ, NULL);
+
+while (running) {
+    SocketEvent_T *events;
+    int n = SocketPoll_wait(poll, &events, 1000);
+    
+    for (int i = 0; i < n; i++) {
+        if (events[i].socket == server) {
+            Socket_T client = Socket_accept(server);
+            if (client) {
+                SocketPoll_add(poll, client, POLL_READ, NULL);
+            }
+        }
+    }
+}
+```
+
+## Client Pattern
+
+### Basic Client Connection
+
+```c
+Socket_T client = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+Socket_connect_unix(client, "/tmp/myapp.sock");
+
+/* Send/receive data */
+Socket_send(client, data, len);
+Socket_recv(client, buffer, sizeof(buffer));
+
+Socket_free(&client);
+```
+
+## Socket Paths
+
+### Filesystem-Based Sockets
+
+**ALWAYS** use absolute paths for filesystem sockets:
+
+```c
+/* Good - absolute path */
+Socket_bind_unix(socket, "/tmp/myapp.sock");
+Socket_bind_unix(socket, "/var/run/myapp.sock");
+Socket_bind_unix(socket, "/home/user/.myapp.sock");
+
+/* Avoid - relative paths (current directory dependent) */
+Socket_bind_unix(socket, "./myapp.sock");  /* Fragile */
+```
+
+### Path Length Limits
+
+**ALWAYS** respect path length limits:
+
+```c
+/* Maximum path length for Unix sockets */
+#define UNIX_PATH_MAX 108  /* Typical on most systems */
+
+/* Implementation validates path length */
+size_t path_len = strlen(path);
+if (path_len >= sizeof(addr.sun_path)) {
+    /* Error: path too long */
+}
+```
+
+### Common Socket Locations
+
+**PREFER** standard locations:
+
+```c
+/* System services (require root) */
+"/var/run/myapp.sock"
+"/run/myapp.sock"
+
+/* User applications */
+"/tmp/myapp.sock"           /* Temporary, any user */
+"/tmp/myapp-UID.sock"       /* Per-user temporary */
+"$HOME/.myapp.sock"         /* User's home directory */
+"/var/lib/myapp/socket"     /* Application data directory */
+```
+
+## Abstract Namespace Sockets (Linux)
+
+### Abstract Socket Pattern
+
+**Linux-only** feature using `@` prefix:
+
+```c
+/* Abstract namespace socket (Linux only)
+ * - No filesystem entry created
+ * - Automatically removed when last reference closed
+ * - Prefix with '@' which becomes '\0' internally */
+
+#ifdef __linux__
+Socket_bind_unix(socket, "@myapp");
+Socket_connect_unix(socket, "@myapp");
+#endif
+```
+
+### Abstract vs Filesystem
+
+**Abstract namespace advantages:**
+- No filesystem clutter
+- Automatic cleanup (no stale socket files)
+- Namespace separate from filesystem
+
+**Filesystem socket advantages:**
+- Portable to all POSIX systems
+- File permissions for access control
+- Visible with `ls` for debugging
+
+### Platform-Specific Code
+
+**ALWAYS** handle platform differences:
+
+```c
+#ifdef __linux__
+    /* Use abstract namespace on Linux */
+    Socket_bind_unix(socket, "@myapp");
+#else
+    /* Use filesystem socket on other platforms */
+    Socket_bind_unix(socket, "/tmp/myapp.sock");
+#endif
+```
+
+## Peer Credentials (Linux)
+
+### Accessing Peer Information
+
+**Linux-only** feature via SO_PEERCRED:
+
+```c
+Socket_T client = Socket_accept(server);
+
+/* Get peer process credentials */
+pid_t peer_pid = Socket_getpeerpid(client);
+uid_t peer_uid = Socket_getpeeruid(client);
+gid_t peer_gid = Socket_getpeergid(client);
+
+if (peer_pid != -1) {
+    printf("Connection from PID=%d, UID=%d, GID=%d\n",
+           peer_pid, peer_uid, peer_gid);
+    
+    /* Authentication/authorization based on credentials */
+    if (peer_uid != getuid()) {
+        /* Reject connection from different user */
+        Socket_free(&client);
+        return;
+    }
+}
+```
+
+### Platform Portability
+
+**REMEMBER** peer credentials are Linux-specific:
+
+```c
+/* Functions return -1 on non-Linux platforms */
+int pid = Socket_getpeerpid(client);
+if (pid == -1) {
+    /* Not available on this platform */
+    /* Use other authentication method */
+}
+```
+
+## File Permissions
+
+### Setting Socket Permissions
+
+**ALWAYS** set appropriate permissions:
+
+```c
+Socket_bind_unix(socket, "/tmp/myapp.sock");
+
+/* Set file permissions using chmod */
+chmod("/tmp/myapp.sock", 0600);  /* Owner only */
+chmod("/tmp/myapp.sock", 0660);  /* Owner + group */
+chmod("/tmp/myapp.sock", 0666);  /* All users (careful!) */
+```
+
+### Directory Permissions
+
+**ALWAYS** ensure directory is accessible:
+
+```c
+/* Create directory with appropriate permissions */
+mkdir("/var/run/myapp", 0755);
+
+/* Then create socket */
+Socket_bind_unix(socket, "/var/run/myapp/socket");
+chmod("/var/run/myapp/socket", 0660);
+```
+
+## Cleanup and Management
+
+### Socket File Cleanup
+
+**ALWAYS** remove socket file on shutdown:
+
+```c
+#define SOCKET_PATH "/tmp/myapp.sock"
+
+TRY
+    Socket_T server = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+    
+    /* Remove old socket file */
+    unlink(SOCKET_PATH);
+    
+    Socket_bind_unix(server, SOCKET_PATH);
+    Socket_listen(server, 5);
+    
+    /* ... server logic ... */
+    
+FINALLY
+    if (server) {
+        Socket_free(&server);
+        unlink(SOCKET_PATH);  /* Clean up socket file */
+    }
+END_TRY;
+```
+
+### Handling Stale Sockets
+
+**ALWAYS** handle stale socket files:
+
+```c
+#include <sys/stat.h>
+
+int socket_exists(const char *path)
+{
+    struct stat st;
+    return (stat(path, &st) == 0);
+}
+
+/* Before binding */
+if (socket_exists(SOCKET_PATH)) {
+    /* Try to remove stale socket */
+    if (unlink(SOCKET_PATH) < 0) {
+        /* Socket in use or permission denied */
+        fprintf(stderr, "Socket file exists and cannot be removed\n");
+        return -1;
+    }
+}
+
+Socket_bind_unix(server, SOCKET_PATH);
+```
+
+## Integration with SocketPoll
+
+### Unix Sockets with Event Loop
+
+**ALWAYS** compatible with SocketPoll:
+
+```c
+/* Unix sockets work with all event backends */
+Socket_T unix_server = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+Socket_bind_unix(unix_server, "/tmp/server.sock");
+Socket_listen(unix_server, 5);
+Socket_setnonblocking(unix_server);
+
+SocketPoll_T poll = SocketPoll_new(100);
+SocketPoll_add(poll, unix_server, POLL_READ, NULL);
+
+/* Mix Unix and TCP sockets in same poll */
+Socket_T tcp_server = Socket_new(AF_INET, SOCK_STREAM, 0);
+Socket_bind(tcp_server, NULL, 8080);
+Socket_listen(tcp_server, 5);
+Socket_setnonblocking(tcp_server);
+SocketPoll_add(poll, tcp_server, POLL_READ, NULL);
+
+/* Poll handles both Unix and TCP sockets */
+SocketPoll_wait(poll, &events, timeout);
+```
+
+## Common Patterns
+
+### Client-Server Communication
+
+```c
+/* Server */
+Socket_T server = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+unlink("/tmp/server.sock");
+Socket_bind_unix(server, "/tmp/server.sock");
+Socket_listen(server, 5);
+
+while (running) {
+    Socket_T client = Socket_accept(server);
+    if (client) {
+        char buffer[4096];
+        ssize_t n = Socket_recv(client, buffer, sizeof(buffer));
+        if (n > 0) {
+            /* Process request */
+            Socket_send(client, response, response_len);
+        }
+        Socket_free(&client);
+    }
+}
+
+Socket_free(&server);
+unlink("/tmp/server.sock");
+
+/* Client */
+Socket_T client = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+Socket_connect_unix(client, "/tmp/server.sock");
+
+Socket_send(client, request, request_len);
+
+char response[4096];
+ssize_t n = Socket_recv(client, response, sizeof(response));
+
+Socket_free(&client);
+```
+
+### Request-Response with Timeout
+
+```c
+Socket_T client = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+Socket_connect_unix(client, "/tmp/server.sock");
+Socket_settimeout(client, 5);  /* 5 second timeout */
+
+TRY
+    Socket_send(client, request, request_len);
+    ssize_t n = Socket_recv(client, response, sizeof(response));
+    /* Process response */
+EXCEPT(Socket_Failed)
+    /* Timeout or other error */
+    fprintf(stderr, "Request failed: %s\n", Socket_Failed.reason);
+FINALLY
+    Socket_free(&client);
+END_TRY;
+```
+
+## Security Considerations
+
+### Authentication via Credentials
+
+**PREFER** peer credentials for authentication:
+
+```c
+Socket_T client = Socket_accept(server);
+
+/* Check peer UID */
+uid_t peer_uid = Socket_getpeeruid(client);
+if (peer_uid == -1 || peer_uid != getuid()) {
+    /* Reject connection from untrusted user */
+    Socket_free(&client);
+    return;
+}
+
+/* Trusted connection - proceed */
+```
+
+### File Permission Security
+
+**ALWAYS** restrict socket file permissions:
+
+```c
+/* Create socket with restricted permissions */
+mode_t old_mask = umask(0077);  /* Restrict default permissions */
+Socket_bind_unix(socket, "/tmp/myapp.sock");
+umask(old_mask);  /* Restore old mask */
+
+/* Or set after creation */
+chmod("/tmp/myapp.sock", 0600);  /* Owner only */
+```
+
+### Directory Security
+
+**PREFER** secure directories for sockets:
+
+```c
+/* Good: Restricted directory */
+mkdir("/var/run/myapp", 0750);  /* Owner + group only */
+Socket_bind_unix(socket, "/var/run/myapp/socket");
+
+/* Avoid: World-writable directory */
+Socket_bind_unix(socket, "/tmp/myapp.sock");  /* /tmp is world-writable */
+```
+
+## Error Handling
+
+### Common Errors
+
+```c
+TRY
+    Socket_bind_unix(socket, path);
+EXCEPT(Socket_Failed)
+    /* Common errors:
+     * - EADDRINUSE: Socket file already exists
+     * - EACCES: Permission denied
+     * - ENOENT: Directory doesn't exist
+     * - ENAMETOOLONG: Path too long
+     */
+    fprintf(stderr, "Bind failed: %s\n", Socket_Failed.reason);
+END_TRY;
+```
+
+### Path Too Long
+
+```c
+/* Implementation checks path length */
+const char *long_path = "/very/long/path/...";
+size_t len = strlen(long_path);
+
+if (len >= 108) {  /* UNIX_PATH_MAX */
+    /* Error will be raised */
+    Socket_bind_unix(socket, long_path);  /* Raises Socket_Failed */
+}
+```
+
+## Testing and Debugging
+
+### Socket File Inspection
+
+```bash
+# List Unix socket files
+ls -la /tmp/*.sock
+ls -la /var/run/*.sock
+
+# Check socket permissions
+stat /tmp/myapp.sock
+
+# Check if socket is in use
+lsof /tmp/myapp.sock
+
+# Remove stale socket
+rm /tmp/myapp.sock
+```
+
+### Connection Testing
+
+```bash
+# Test Unix socket with netcat
+nc -U /tmp/myapp.sock
+
+# Test Unix socket with socat
+socat - UNIX-CONNECT:/tmp/myapp.sock
+```
+
+## Performance Considerations
+
+### Unix vs TCP Performance
+
+**PREFER** Unix sockets for local IPC:
+
+```c
+/* Unix sockets are faster for local communication:
+ * - No TCP/IP stack overhead
+ * - No loopback network processing
+ * - Kernel can optimize data copying
+ * - Typically 2-3x faster than TCP loopback
+ */
+```
+
+### Buffer Sizing
+
+**CONSIDER** system limits:
+
+```c
+/* Unix sockets have buffer limits like TCP */
+/* Check with: sysctl net.unix.max_dgram_qlen (Linux) */
+
+/* For high throughput, may need larger buffers */
+int bufsize = 1024 * 1024;  /* 1MB */
+setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &bufsize, sizeof(bufsize));
+setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &bufsize, sizeof(bufsize));
+```
+
+## Comparison: Unix vs TCP Sockets
+
+| Feature | Unix Domain | TCP Loopback |
+|---------|-------------|--------------|
+| Speed | Fast | Slower |
+| Security | File permissions | Port accessible |
+| Peer info | Available (Linux) | Limited |
+| Network | Same machine only | Can be remote |
+| Cleanup | Manual (filesystem) | Automatic |
+| Portability | POSIX | Universal |
+
+## Best Practices
+
+1. **ALWAYS** remove socket file before binding (handle stale sockets)
+2. **ALWAYS** clean up socket file on shutdown
+3. **PREFER** absolute paths over relative paths
+4. **PREFER** secure directories (/var/run over /tmp)
+5. **USE** peer credentials for authentication (Linux)
+6. **SET** appropriate file permissions
+7. **HANDLE** EADDRINUSE error gracefully
+8. **INTEGRATE** with SocketPoll for non-blocking I/O
+9. **DOCUMENT** whether abstract namespace is used
+10. **TEST** on multiple platforms if portability needed

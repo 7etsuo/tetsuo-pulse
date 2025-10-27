@@ -228,5 +228,63 @@ extern const char *Socket_getpeeraddr(const T socket);
  */
 extern int Socket_getpeerport(const T socket);
 
+/**
+ * Socket_bind_unix - Bind to Unix domain socket path
+ * @socket: Socket to bind (must be AF_UNIX)
+ * @path: Socket file path
+ *
+ * Raises: Socket_Failed on error
+ *
+ * Note: If path already exists, bind will fail with EADDRINUSE.
+ * Consider unlinking the path first if you want to reuse it.
+ * Maximum path length is typically 108 bytes (UNIX_PATH_MAX).
+ * Supports abstract namespace sockets on Linux (path starting with '@').
+ */
+extern void Socket_bind_unix(T socket, const char *path);
+
+/**
+ * Socket_connect_unix - Connect to Unix domain socket path
+ * @socket: Socket to connect (must be AF_UNIX)
+ * @path: Socket file path
+ *
+ * Raises: Socket_Failed on error
+ *
+ * Note: Supports abstract namespace sockets on Linux (path starting with '@').
+ */
+extern void Socket_connect_unix(T socket, const char *path);
+
+/**
+ * Socket_getpeerpid - Get peer process ID (Linux only)
+ * @socket: Connected Unix domain socket
+ *
+ * Returns: Peer process ID, or -1 if unavailable
+ *
+ * Note: Only works on Linux with SO_PEERCRED.
+ * Returns -1 on other platforms or non-Unix sockets.
+ */
+extern int Socket_getpeerpid(const T socket);
+
+/**
+ * Socket_getpeeruid - Get peer user ID (Linux only)
+ * @socket: Connected Unix domain socket
+ *
+ * Returns: Peer user ID, or (uid_t)-1 if unavailable
+ *
+ * Note: Only works on Linux with SO_PEERCRED.
+ * Returns -1 on other platforms or non-Unix sockets.
+ */
+extern int Socket_getpeeruid(const T socket);
+
+/**
+ * Socket_getpeergid - Get peer group ID (Linux only)
+ * @socket: Connected Unix domain socket
+ *
+ * Returns: Peer group ID, or (gid_t)-1 if unavailable
+ *
+ * Note: Only works on Linux with SO_PEERCRED.
+ * Returns -1 on other platforms or non-Unix sockets.
+ */
+extern int Socket_getpeergid(const T socket);
+
 #undef T
 #endif

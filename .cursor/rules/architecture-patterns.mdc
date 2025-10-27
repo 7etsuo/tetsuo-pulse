@@ -6,6 +6,44 @@ description: Documents the architectural patterns and design principles used in 
 
 This rule documents the specific architectural patterns and design principles observed in the socket library codebase.
 
+## Module Architecture Overview
+
+The socket library consists of the following modules organized in layers:
+
+### Layer 1: Foundation
+- **Arena** - Memory management with arena allocation
+- **Except** - Exception handling with TRY/EXCEPT/FINALLY
+
+### Layer 2: Core I/O
+- **Socket** - TCP stream and Unix domain sockets (AF_INET, AF_INET6, AF_UNIX)
+- **SocketDgram** - UDP datagram sockets with multicast/broadcast
+- **SocketBuf** - Circular buffer for efficient I/O
+
+### Layer 3: Event System
+- **SocketPoll** - Event polling abstraction (cross-platform)
+  - SocketPoll_epoll - Linux epoll backend
+  - SocketPoll_kqueue - BSD/macOS kqueue backend
+  - SocketPoll_poll - POSIX poll(2) fallback
+
+### Layer 4: Application
+- **SocketPool** - Connection pool management
+- **SocketError** - Thread-safe error reporting
+
+### Dependency Graph
+
+```
+SocketPool → SocketBuf → Arena
+          → Socket → Arena, Except
+          
+SocketPoll → Socket → Arena, Except
+          → Backend (epoll/kqueue/poll)
+          
+SocketDgram → Arena, Except
+
+Socket → Arena, Except
+SocketBuf → Arena
+```
+
 ## Event-Driven Architecture
 
 ### Main Event Loop Pattern

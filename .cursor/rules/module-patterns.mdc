@@ -7,7 +7,7 @@ globs: *.c,*.h
 
 This rule enforces the specific design patterns and architectural principles used throughout the socket library. Each module follows consistent patterns for maintainability and reliability.
 
-## 1. Socket Module Pattern
+## 1. Socket Module Pattern (TCP + Unix Domain)
 
 ### Socket Abstraction Structure
 **ALWAYS** follow the socket abstraction pattern:
@@ -26,6 +26,94 @@ struct T
 };
 
 typedef struct T *T;
+```
+
+**NOTE:** Same structure supports TCP (AF_INET/AF_INET6) and Unix domain (AF_UNIX) sockets.
+
+## 1b. SocketDgram Module Pattern (UDP)
+
+### Datagram Socket Structure
+**ALWAYS** follow the datagram socket pattern:
+
+```c
+#define T SocketDgram_T
+
+struct T
+{
+    int fd;                           // Underlying file descriptor
+    struct sockaddr_storage addr;     // Address information
+    socklen_t addrlen;                // Address length
+    Arena_T arena;                    // Private memory arena
+};
+
+typedef struct T *T;
+```
+
+**NOTE:** Simpler than Socket_T (no peer info stored - retrieved per-datagram).
+
+### Datagram Operations Pattern
+**ALWAYS** implement UDP operations with proper error handling:
+
+```c
+T SocketDgram_new(int domain, int protocol)
+{
+    T sock;
+    int fd;
+
+    /* Create UDP socket */
+    fd = socket(domain, SOCK_DGRAM, protocol);
+    if (fd < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to create datagram socket (domain=%d, protocol=%d)",
+                        domain, protocol);
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+
+    sock = calloc(1, sizeof(*sock));
+    if (sock == NULL)
+    {
+        int saved_errno = errno;
+        SAFE_CLOSE(fd);
+        errno = saved_errno;
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket structure");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+
+    sock->arena = Arena_new();
+    if (!sock->arena)
+    {
+        int saved_errno = errno;
+        SAFE_CLOSE(fd);
+        free(sock);
+        errno = saved_errno;
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket arena");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+
+    sock->fd = fd;
+    return sock;
+}
+```
+
+### UDP-Specific Patterns
+
+**REMEMBER** UDP differences from TCP:
+
+```c
+/* No listen() or accept() for UDP */
+/* Use sendto/recvfrom with address information */
+
+/* Connectionless mode */
+ssize_t n = SocketDgram_recvfrom(socket, buffer, sizeof(buffer),
+                                 sender_host, sizeof(sender_host),
+                                 &sender_port);
+
+SocketDgram_sendto(socket, data, len, sender_host, sender_port);
+
+/* Connected mode (optional) */
+SocketDgram_connect(socket, "example.com", 5000);
+SocketDgram_send(socket, data, len);  /* To connected address */
+SocketDgram_recv(socket, buffer, sizeof(buffer));  /* From connected only */
 ```
 
 ### Socket Operations Pattern

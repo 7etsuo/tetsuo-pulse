@@ -1,22 +1,22 @@
 /**
- * SocketPoll.c - Event polling implementation using epoll
+ * SocketPoll.c - Event polling implementation with backend abstraction
  *
  * Part of the Socket Library
  * Following C Interfaces and Implementations patterns
  *
- * PLATFORM: Linux-only (requires epoll)
- * - Linux: Full support via epoll (kernel 2.6+)
- * - BSD/macOS: Not supported (would need kqueue backend)
- * - Windows: Not supported (would need IOCP backend)
- * - Portable: Could fall back to poll() for basic portability
+ * PLATFORM: Cross-platform (Linux/BSD/macOS/POSIX)
+ * - Linux: epoll backend (best performance)
+ * - BSD/macOS: kqueue backend (best performance)
+ * - Other POSIX: poll(2) fallback (portable)
+ *
+ * Backend selection is done at compile-time via Makefile
+ * See SocketPoll_backend.h for backend interface details
  */
 
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/epoll.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
 
@@ -24,6 +24,7 @@
 #include "Except.h"
 #include "Socket.h"
 #include "SocketPoll.h"
+#include "SocketPoll_backend.h"
 #include "SocketConfig.h"
 #include "SocketError.h"
 
@@ -64,9 +65,8 @@ typedef struct SocketData
 
 struct T
 {
-    int epfd;
+    PollBackend_T backend; /* Backend-specific poll implementation */
     int maxevents;
-    struct epoll_event *events;
     SocketEvent_T *socketevents;
     Arena_T arena;
     SocketData *socket_data_map[SOCKET_DATA_HASH_SIZE]; /* Hash table for O(1) socket->data mapping */
@@ -102,45 +102,6 @@ static unsigned socket_hash(const Socket_T socket)
 
     /* Multiplicative hash for better distribution of sequential FDs */
     return ((unsigned)fd * 2654435761u) % SOCKET_DATA_HASH_SIZE;
-}
-
-/* translate_to_epoll - Convert poll events to epoll events
- * @events: Poll event flags (POLL_READ, POLL_WRITE)
- *
- * Returns: epoll event flags with edge-triggered mode (EPOLLET)
- *
- * Edge-triggered mode provides better performance by reducing spurious
- * wakeups. Applications must read/write until EAGAIN. */
-static unsigned translate_to_epoll(unsigned events)
-{
-    unsigned epoll_events = 0;
-
-    if (events & POLL_READ)
-        epoll_events |= EPOLLIN;
-    if (events & POLL_WRITE)
-        epoll_events |= EPOLLOUT;
-
-    return epoll_events | EPOLLET;
-}
-
-/* translate_from_epoll - Convert epoll events to poll events
- * @epoll_events: epoll event flags
- *
- * Returns: Poll event flags (POLL_READ, POLL_WRITE, POLL_ERROR, POLL_HANGUP) */
-static unsigned translate_from_epoll(unsigned epoll_events)
-{
-    unsigned events = 0;
-
-    if (epoll_events & EPOLLIN)
-        events |= POLL_READ;
-    if (epoll_events & EPOLLOUT)
-        events |= POLL_WRITE;
-    if (epoll_events & EPOLLERR)
-        events |= POLL_ERROR;
-    if (epoll_events & EPOLLHUP)
-        events |= POLL_HANGUP;
-
-    return events;
 }
 
 /* socket_data_add - Add socket->data mapping to hash table
@@ -307,10 +268,10 @@ T SocketPoll_new(int maxevents)
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
 
-    poll->epfd = epoll_create1(EPOLL_CLOEXEC);
-    if (poll->epfd < 0)
+    poll->backend = backend_new(maxevents);
+    if (!poll->backend)
     {
-        SOCKET_ERROR_FMT("Failed to create epoll instance");
+        SOCKET_ERROR_FMT("Failed to create %s backend", backend_name());
         free(poll);
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
@@ -319,18 +280,17 @@ T SocketPoll_new(int maxevents)
     poll->arena = Arena_new();
     if (!poll->arena)
     {
-        SAFE_CLOSE(poll->epfd);
+        backend_free(poll->backend);
         free(poll);
         SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate poll arena");
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
 
-    poll->events = CALLOC(poll->arena, maxevents, sizeof(*poll->events));
     poll->socketevents = CALLOC(poll->arena, maxevents, sizeof(*poll->socketevents));
 
-    if (!poll->events || !poll->socketevents)
+    if (!poll->socketevents)
     {
-        SAFE_CLOSE(poll->epfd);
+        backend_free(poll->backend);
         Arena_dispose(&poll->arena);
         free(poll);
         SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate event arrays");
@@ -343,7 +303,7 @@ T SocketPoll_new(int maxevents)
     /* Initialize mutex */
     if (pthread_mutex_init(&poll->mutex, NULL) != 0)
     {
-        SAFE_CLOSE(poll->epfd);
+        backend_free(poll->backend);
         Arena_dispose(&poll->arena);
         free(poll);
         SOCKET_ERROR_MSG("Failed to initialize poll mutex");
@@ -357,8 +317,8 @@ void SocketPoll_free(T *poll)
 {
     assert(poll && *poll);
 
-    if ((*poll)->epfd >= 0)
-        SAFE_CLOSE((*poll)->epfd);
+    if ((*poll)->backend)
+        backend_free((*poll)->backend);
 
     /* Destroy mutex */
     pthread_mutex_destroy(&(*poll)->mutex);
@@ -372,7 +332,6 @@ void SocketPoll_free(T *poll)
 
 void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
 {
-    struct epoll_event ev;
     int fd;
 
     assert(poll);
@@ -380,15 +339,11 @@ void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
 
     fd = Socket_fd(socket);
 
-    /* Set non-blocking mode before adding to epoll
-     * If this fails, we don't want the socket in epoll */
+    /* Set non-blocking mode before adding to poll
+     * If this fails, we don't want the socket in poll */
     Socket_setnonblocking(socket);
 
-    memset(&ev, 0, sizeof(ev));
-    ev.events = translate_to_epoll(events);
-    ev.data.ptr = socket;
-
-    if (epoll_ctl(poll->epfd, EPOLL_CTL_ADD, fd, &ev) < 0)
+    if (backend_add(poll->backend, fd, events) < 0)
     {
         if (errno == EEXIST)
         {
@@ -401,18 +356,17 @@ void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
 
-    /* Store the socket->data mapping - remove from epoll on failure */
+    /* Store the socket->data mapping - remove from poll on failure */
     TRY socket_data_add(poll, socket, data);
     EXCEPT(SocketPoll_Failed)
-    /* Remove from epoll to prevent orphaned entry */
-    epoll_ctl(poll->epfd, EPOLL_CTL_DEL, fd, NULL);
+    /* Remove from poll to prevent orphaned entry */
+    backend_del(poll->backend, fd);
     RERAISE;
     END_TRY;
 }
 
 void SocketPoll_mod(T poll, Socket_T socket, unsigned events, void *data)
 {
-    struct epoll_event ev;
     int fd;
 
     assert(poll);
@@ -420,11 +374,7 @@ void SocketPoll_mod(T poll, Socket_T socket, unsigned events, void *data)
 
     fd = Socket_fd(socket);
 
-    memset(&ev, 0, sizeof(ev));
-    ev.events = translate_to_epoll(events);
-    ev.data.ptr = socket;
-
-    if (epoll_ctl(poll->epfd, EPOLL_CTL_MOD, fd, &ev) < 0)
+    if (backend_mod(poll->backend, fd, events) < 0)
     {
         if (errno == ENOENT)
         {
@@ -450,7 +400,7 @@ void SocketPoll_del(T poll, Socket_T socket)
 
     fd = Socket_fd(socket);
 
-    if (epoll_ctl(poll->epfd, EPOLL_CTL_DEL, fd, NULL) < 0)
+    if (backend_del(poll->backend, fd) < 0)
     {
         if (errno != ENOENT)
         {
@@ -471,21 +421,59 @@ int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
     assert(poll);
     assert(events);
 
-    nfds = epoll_wait(poll->epfd, poll->events, poll->maxevents, timeout);
+    nfds = backend_wait(poll->backend, timeout);
     if (nfds < 0)
     {
         if (errno == EINTR)
             return 0;
-        SOCKET_ERROR_FMT("epoll_wait failed (timeout=%d)", timeout);
+        SOCKET_ERROR_FMT("%s backend wait failed (timeout=%d)", backend_name(), timeout);
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
 
+    /* Translate backend events to SocketEvent_T structures */
     for (i = 0; i < nfds; i++)
     {
-        Socket_T socket = poll->events[i].data.ptr;
+        int fd;
+        unsigned event_flags;
+        Socket_T socket;
+
+        /* Get event from backend */
+        if (backend_get_event(poll->backend, i, &fd, &event_flags) < 0)
+        {
+            SOCKET_ERROR_MSG("Failed to get event from backend");
+            RAISE_POLL_ERROR(SocketPoll_Failed);
+        }
+
+        /* Find socket by FD - we need to search our socket_data_map
+         * This is a limitation of the abstraction but avoids storing
+         * socket pointers in backend-specific structures */
+        socket = NULL;
+        for (int hash = 0; hash < SOCKET_DATA_HASH_SIZE; hash++)
+        {
+            SocketData *entry = poll->socket_data_map[hash];
+            while (entry)
+            {
+                if (Socket_fd(entry->socket) == fd)
+                {
+                    socket = entry->socket;
+                    break;
+                }
+                entry = entry->next;
+            }
+            if (socket)
+                break;
+        }
+
+        if (!socket)
+        {
+            /* Socket not found - this shouldn't happen */
+            SOCKET_ERROR_MSG("Event for unknown socket (fd=%d)", fd);
+            continue;
+        }
+
         poll->socketevents[i].socket = socket;
         poll->socketevents[i].data = socket_data_get(poll, socket);
-        poll->socketevents[i].events = translate_from_epoll(poll->events[i].events);
+        poll->socketevents[i].events = event_flags;
     }
 
     *events = poll->socketevents;
