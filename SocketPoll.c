@@ -73,23 +73,7 @@ struct T
     pthread_mutex_t mutex;                              /* Mutex for thread-safe socket data mapping */
 };
 
-/* Hash function for socket file descriptors
- *
- * Uses multiplicative hashing with golden ratio constant for better
- * distribution than simple modulo, especially for sequential file descriptors.
- *
- * The constant 2654435761u = 2^32 / phi where phi = (1 + sqrt(5)) / 2
- * is the golden ratio. This value has the property that when used in
- * multiplicative hashing, it spreads consecutive integers uniformly
- * across the hash space, preventing clustering that would occur with
- * sequential FDs using simple modulo.
- *
- * IMPORTANT: Hash table size (SOCKET_DATA_HASH_SIZE) should be a prime number
- * for optimal distribution and minimal collisions. The configured value (1021)
- * is prime.
- *
- * Reference: Knuth, TAOCP Vol 3, Section 6.4
- */
+/* Hash function for socket file descriptors */
 static unsigned socket_hash(const Socket_T socket)
 {
     int fd;
@@ -100,24 +84,17 @@ static unsigned socket_hash(const Socket_T socket)
     /* Defensive check: socket FDs should never be negative */
     assert(fd >= 0);
 
-    /* Multiplicative hash for better distribution of sequential FDs */
+    /* Multiplicative hash with golden ratio */
     return ((unsigned)fd * 2654435761u) % SOCKET_DATA_HASH_SIZE;
 }
 
-/* socket_data_add - Add socket->data mapping to hash table
- * @poll: Poll instance
- * @socket: Socket to map
- * @data: User data to associate
- *
- * Raises: SocketPoll_Failed if allocation fails
- *
- * O(1) operation. Thread-safe via internal mutex. */
+/* Add socket->data mapping to hash table */
 static void socket_data_add(T poll, Socket_T socket, void *data)
 {
     unsigned hash = socket_hash(socket);
     SocketData *entry;
 
-    /* Allocate entry - this is the only operation that can fail */
+    /* Allocate entry */
     entry = ALLOC(poll->arena, sizeof(*entry));
     if (!entry)
     {
@@ -125,7 +102,7 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
 
-    /* Initialize entry before adding to map - atomic from this point */
+    /* Initialize entry */
     entry->socket = socket;
     entry->data = data;
 
@@ -136,13 +113,7 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
     pthread_mutex_unlock(&poll->mutex);
 }
 
-/* socket_data_get - Retrieve user data for socket
- * @poll: Poll instance
- * @socket: Socket to look up
- *
- * Returns: User data or NULL if not found
- *
- * O(1) average case. Thread-safe via internal mutex. */
+/* Retrieve user data for socket */
 static void *socket_data_get(T poll, Socket_T socket)
 {
     unsigned hash = socket_hash(socket);
@@ -164,12 +135,7 @@ static void *socket_data_get(T poll, Socket_T socket)
     return data;
 }
 
-/* socket_data_remove - Remove socket->data mapping from hash table
- * @poll: Poll instance
- * @socket: Socket to remove
- *
- * Silently succeeds if socket not found. O(1) average case.
- * Thread-safe via internal mutex. Memory is freed with arena. */
+/* Remove socket->data mapping from hash table */
 static void socket_data_remove(T poll, Socket_T socket)
 {
     unsigned hash = socket_hash(socket);
@@ -183,7 +149,7 @@ static void socket_data_remove(T poll, Socket_T socket)
         {
             SocketData *old = *pp;
             *pp = old->next;
-            /* Memory is managed by arena, no need to free */
+            /* Memory managed by arena */
             pthread_mutex_unlock(&poll->mutex);
             return;
         }
@@ -193,15 +159,7 @@ static void socket_data_remove(T poll, Socket_T socket)
     pthread_mutex_unlock(&poll->mutex);
 }
 
-/* socket_data_update - Update user data for existing socket mapping
- * @poll: Poll instance
- * @socket: Socket to update
- * @data: New user data
- *
- * Atomically updates existing mapping or inserts if not found (upsert).
- * The fallback insert should not occur in normal operation (socket should
- * already be in map via SocketPoll_add), but provides robustness.
- * Thread-safe via internal mutex. */
+/* Update user data for existing socket mapping */
 static void socket_data_update(T poll, Socket_T socket, void *data)
 {
     unsigned hash = socket_hash(socket);
@@ -225,16 +183,12 @@ static void socket_data_update(T poll, Socket_T socket, void *data)
 
     if (!found)
     {
-        /* This indicates a programming error - socket should already be in map.
-         * This fallback provides robustness but should not occur in normal operation. */
+        /* Programming error - socket should already be in map */
 #ifndef NDEBUG
-        fprintf(
-            stderr,
-            "WARNING: socket_data_update fallback - socket should have been added via SocketPoll_add first (fd %d)\n",
-            Socket_fd(socket));
+        fprintf(stderr, "WARNING: socket_data_update fallback (fd %d)\n", Socket_fd(socket));
 #endif
 
-        /* Allocate new entry while holding lock */
+        /* Allocate new entry */
         entry = ALLOC(poll->arena, sizeof(*entry));
         if (!entry)
         {
@@ -297,7 +251,7 @@ T SocketPoll_new(int maxevents)
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
 
-    /* Initialize hash table */
+    /* Initialize hash table to NULL */
     memset(poll->socket_data_map, 0, sizeof(poll->socket_data_map));
 
     /* Initialize mutex */
@@ -339,8 +293,7 @@ void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
 
     fd = Socket_fd(socket);
 
-    /* Set non-blocking mode before adding to poll
-     * If this fails, we don't want the socket in poll */
+    /* Set non-blocking mode before adding to poll */
     Socket_setnonblocking(socket);
 
     if (backend_add(poll->backend, fd, events) < 0)
@@ -356,7 +309,7 @@ void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
 
-    /* Store the socket->data mapping - remove from poll on failure */
+    /* Store socket->data mapping */
     TRY socket_data_add(poll, socket, data);
     EXCEPT(SocketPoll_Failed)
     /* Remove from poll to prevent orphaned entry */
@@ -444,9 +397,7 @@ int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
             RAISE_POLL_ERROR(SocketPoll_Failed);
         }
 
-        /* Find socket by FD - we need to search our socket_data_map
-         * This is a limitation of the abstraction but avoids storing
-         * socket pointers in backend-specific structures */
+        /* Find socket by FD */
         socket = NULL;
         for (int hash = 0; hash < SOCKET_DATA_HASH_SIZE; hash++)
         {
@@ -466,7 +417,7 @@ int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
 
         if (!socket)
         {
-            /* Socket not found - this shouldn't happen */
+            /* Socket not found */
             SOCKET_ERROR_MSG("Event for unknown socket (fd=%d)", fd);
             continue;
         }

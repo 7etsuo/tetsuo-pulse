@@ -17,9 +17,7 @@
 
 #define T Arena_T
 
-/* Chunk header structure - used for arena chunk metadata
- * Separate from Arena_T to avoid accidentally copying mutex fields.
- * Chunks are linked memory blocks; only the main arena has a mutex. */
+/* Chunk header structure - separate from Arena_T to avoid copying mutex */
 struct ChunkHeader
 {
     struct ChunkHeader *prev;
@@ -27,8 +25,7 @@ struct ChunkHeader
     char *limit;
 };
 
-/* Main arena structure - includes mutex for thread safety
- * Only the arena itself needs a mutex; chunks do not. */
+/* Main arena structure - includes mutex for thread safety */
 struct T
 {
     struct ChunkHeader *prev;
@@ -37,9 +34,7 @@ struct T
     pthread_mutex_t mutex; /* Per-arena mutex for thread-safe allocation */
 };
 
-/* Alignment union - ensures proper alignment for all data types
- * The union contains all fundamental types to determine the strictest
- * alignment requirement across different platforms */
+/* Alignment union - ensures proper alignment for all data types */
 union align {
     int i;
     long l;
@@ -51,19 +46,13 @@ union align {
     long double ld;
 };
 
-/* Header union - combines chunk metadata with alignment requirements
- * The union ensures that:
- * 1. Header is properly aligned (via union align member)
- * 2. Memory following header starts at aligned boundary
- * 3. Size of header is rounded up to alignment boundary
- * Uses ChunkHeader (not Arena_T) since chunks don't need a mutex.
- */
+/* Header union - combines chunk metadata with alignment requirements */
 union header {
     struct ChunkHeader b;
     union align a;
 };
 
-/* Free chunk cache - keeps up to MAX_FREE_CHUNKS chunks for reuse */
+/* Free chunk cache for reuse */
 #define MAX_FREE_CHUNKS 10
 
 static struct ChunkHeader *freechunks = NULL;
@@ -76,7 +65,7 @@ T Arena_new(void)
     if (arena == NULL)
         return NULL;
 
-    /* Initialize per-arena mutex */
+    /* Initialize mutex */
     if (pthread_mutex_init(&arena->mutex, NULL) != 0)
     {
         free(arena);
@@ -93,7 +82,7 @@ void Arena_dispose(T *ap)
     assert(ap && *ap);
     Arena_clear(*ap);
 
-    /* Destroy per-arena mutex */
+    /* Destroy mutex */
     pthread_mutex_destroy(&(*ap)->mutex);
 
     free(*ap);
@@ -111,32 +100,32 @@ void *Arena_alloc(T arena, size_t nbytes, const char *file, int line)
 
     size_t alignment = sizeof(union align);
 
-    /* Ensure alignment is never zero (defensive programming) */
+    /* Ensure alignment is never zero */
     if (alignment == 0)
         alignment = 1;
 
-    /* Check for overflow before calculation */
+    /* Check for overflow */
     if (nbytes > SIZE_MAX - (alignment - 1))
         return NULL;
 
-    /* Calculate aligned_bytes safely */
+    /* Calculate aligned size */
     size_t sum = nbytes + alignment - 1;
     size_t aligned_bytes = sum / alignment;
 
-    /* Check if multiplication would overflow */
+    /* Check multiplication overflow */
     if (aligned_bytes > SIZE_MAX / alignment)
         return NULL;
 
     nbytes = aligned_bytes * alignment;
 
-    /* Final sanity check against maximum allocation size */
+    /* Check against maximum allocation size */
     if (nbytes > ARENA_MAX_ALLOC_SIZE)
         return NULL;
 
-    /* Lock arena for thread-safe allocation */
+    /* Lock arena for thread safety */
     pthread_mutex_lock(&arena->mutex);
 
-    /* Use safer pointer subtraction check instead of addition */
+    /* Check available space */
     while (arena->avail == NULL || arena->limit == NULL || arena->limit - arena->avail < (ptrdiff_t)nbytes)
     {
         struct ChunkHeader *ptr;
@@ -155,7 +144,7 @@ void *Arena_alloc(T arena, size_t nbytes, const char *file, int line)
             pthread_mutex_unlock(&arena_mutex);
             size_t chunk_size = ARENA_CHUNK_SIZE;
 
-            /* Check for overflow before calculation */
+            /* Check for overflow */
             if (sizeof(union header) > SIZE_MAX - nbytes)
             {
                 pthread_mutex_unlock(&arena->mutex);
