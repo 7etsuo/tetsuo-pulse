@@ -20,9 +20,8 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-/* MSG_NOSIGNAL is not portable - provide fallback
- * On platforms without MSG_NOSIGNAL (macOS, BSD), applications MUST call
- * signal(SIGPIPE, SIG_IGN) during initialization. See Socket.h documentation. */
+/* MSG_NOSIGNAL fallback for platforms without it (macOS, BSD).
+ * Applications must call signal(SIGPIPE, SIG_IGN). See Socket.h. */
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
@@ -35,27 +34,21 @@
 
 #define T Socket_T
 
-/* Port string buffer size for snprintf - 16 bytes is sufficient for:
- * - Maximum port "65535" (5 digits) + null terminator = 6 bytes
- * - Extra space for safety and alignment = 10 bytes
- * Total: 16 bytes provides comfortable margin */
+/* Port string buffer size for snprintf - 16 bytes sufficient for "65535" + null */
 #define PORT_STR_BUFSIZE 16
 
 Except_T Socket_Failed = {"Socket operation failed"};
 Except_T Socket_Closed = {"Socket closed"};
 
-/* Thread-local exception for detailed error messages
- * This is a COPY of the base exception with thread-local reason string.
- * Each thread gets its own exception instance, preventing race conditions
- * when multiple threads raise the same exception type simultaneously. */
+/* Thread-local exception for detailed error messages.
+ * Prevents race conditions when multiple threads raise same exception. */
 #ifdef _WIN32
 static __declspec(thread) Except_T Socket_DetailedException;
 #else
 static __thread Except_T Socket_DetailedException;
 #endif
 
-/* Macro to raise exception with detailed error message
- * Creates a thread-local copy of the exception with detailed reason */
+/* Macro to raise exception with detailed error message */
 #define RAISE_SOCKET_ERROR(exception)                                                                                  \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -86,7 +79,7 @@ T Socket_new(int domain, int type, int protocol)
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 
-    /* Use calloc to zero-initialize the structure, avoiding GCC -O3 false positives */
+    /* Use calloc to zero-initialize structure */
     sock = calloc(1, sizeof(*sock));
     if (sock == NULL)
     {
@@ -97,7 +90,7 @@ T Socket_new(int domain, int type, int protocol)
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 
-    /* Initialize non-zero fields after calloc has zeroed the structure */
+    /* Initialize non-zero fields */
     sock->fd = -1;
     sock->addrlen = sizeof(sock->addr);
 
@@ -112,7 +105,7 @@ T Socket_new(int domain, int type, int protocol)
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 
-    /* Now that all allocations succeeded, set the actual file descriptor */
+    /* Set file descriptor after successful allocations */
     sock->fd = fd;
 
     return sock;
@@ -122,11 +115,11 @@ void Socket_free(T *socket)
 {
     assert(socket && *socket);
 
-    /* Always attempt to close the file descriptor */
+    /* Close file descriptor */
     if ((*socket)->fd >= 0)
     {
         int fd = (*socket)->fd;
-        (*socket)->fd = -1; /* Mark as closed immediately */
+        (*socket)->fd = -1; /* Mark as closed */
         SAFE_CLOSE(fd);
     }
 
@@ -146,23 +139,21 @@ void Socket_bind(T socket, const char *host, int port)
 
     assert(socket);
 
-    /* Validate port - runtime check for user input */
+    /* Validate port */
     if (!SOCKET_VALID_PORT(port))
     {
         SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 
-    /* Normalize wildcard addresses to NULL and validate hostname length */
+    /* Normalize wildcard addresses */
     if (host == NULL || strcmp(host, "0.0.0.0") == 0 || strcmp(host, "::") == 0)
     {
-        host = NULL; /* Use wildcard address */
+        host = NULL;
     }
     else
     {
-        /* Validate hostname length to prevent denial of service
-         * SECURITY: Prevents memory exhaustion attacks via extremely long hostnames.
-         * Limit of 255 chars matches DNS label length restrictions (RFC 1035). */
+        /* Validate hostname length to prevent DoS attacks */
         host_len = strlen(host);
         if (host_len > SOCKET_ERROR_MAX_HOSTNAME)
         {
@@ -171,7 +162,7 @@ void Socket_bind(T socket, const char *host, int port)
         }
     }
 
-    /* PORT_STR_BUFSIZE (16 bytes) is sufficient for port range 1-65535 (max 5 digits + null) */
+    /* Convert port to string */
     result = snprintf(port_str, sizeof(port_str), "%d", port);
     assert(result > 0 && result < (int)sizeof(port_str));
 
@@ -198,29 +189,14 @@ void Socket_bind(T socket, const char *host, int port)
         socket_family = AF_UNSPEC;
     }
 
-    /* Try each address until we successfully bind */
+    /* Try each address */
     for (rp = res; rp != NULL; rp = rp->ai_next)
     {
         /* Skip addresses that don't match socket's family if socket has a specific family */
         if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
             continue;
 
-        /* Enable dual-stack on IPv6 sockets
-         *
-         * Platform behavior varies:
-         * - Linux: IPV6_V6ONLY defaults to 0 (dual-stack enabled)
-         * - Windows/BSD: IPV6_V6ONLY defaults to 1 (IPv6 only)
-         * - Older OpenBSD: May not support dual-stack even with IPV6_V6ONLY=0
-         *
-         * We explicitly set to 0 for consistent cross-platform behavior.
-         * If this fails (some systems don't support IPV6_V6ONLY), the
-         * socket will use platform default behavior.
-         *
-         * Failure is non-fatal since:
-         * - On Linux: default already correct (dual-stack works)
-         * - On Windows/BSD: socket still works for IPv6
-         * - On systems without dual-stack support: use separate IPv4/IPv6 sockets
-         */
+        /* Enable dual-stack on IPv6 sockets */
         if (rp->ai_family == AF_INET6 && socket_family == AF_INET6)
         {
             int no = 0;
@@ -234,7 +210,7 @@ void Socket_bind(T socket, const char *host, int port)
         result = bind(socket->fd, rp->ai_addr, rp->ai_addrlen);
         if (result == 0)
         {
-            /* Bind succeeded */
+            /* Success */
             memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
             socket->addrlen = rp->ai_addrlen;
             freeaddrinfo(res);
@@ -242,7 +218,7 @@ void Socket_bind(T socket, const char *host, int port)
         }
     }
 
-    /* No address succeeded */
+    /* No address worked */
     if (errno == EADDRINUSE)
     {
         const char *safe_host = host ? host : "any";
@@ -308,7 +284,7 @@ T Socket_accept(T socket)
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 
-    /* Use calloc to zero-initialize the structure, avoiding GCC -O3 false positives */
+    /* Use calloc to zero-initialize structure */
     newsocket = calloc(1, sizeof(*newsocket));
     if (newsocket == NULL)
     {
@@ -334,7 +310,7 @@ T Socket_accept(T socket)
     memcpy(&newsocket->addr, &addr, addrlen);
     newsocket->addrlen = addrlen;
 
-    /* Get peer address and port using getnameinfo for both IPv4 and IPv6 */
+    /* Get peer address and port */
     result = getnameinfo((struct sockaddr *)&addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV,
                          NI_NUMERICHOST | NI_NUMERICSERV);
 
@@ -357,7 +333,7 @@ T Socket_accept(T socket)
         }
         strcpy(newsocket->peeraddr, host);
 
-        /* Use strtol instead of atoi for safe integer conversion */
+        /* Convert port string to int */
         errno = 0;
         port_long = strtol(serv, &endptr, 10);
         if (errno == 0 && endptr != serv && *endptr == '\0' && port_long >= 0 && port_long <= 65535)
@@ -366,7 +342,7 @@ T Socket_accept(T socket)
         }
         else
         {
-            /* Invalid port - set to 0 to indicate unknown */
+            /* Invalid port - set to 0 */
             newsocket->peerport = 0;
         }
     }
@@ -389,23 +365,21 @@ void Socket_connect(T socket, const char *host, int port)
 
     assert(socket);
 
-    /* Validate host - runtime check for user input */
+    /* Validate host */
     if (host == NULL)
     {
         SOCKET_ERROR_MSG("Invalid host: NULL pointer");
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 
-    /* Validate port - runtime check for user input */
+    /* Validate port */
     if (!SOCKET_VALID_PORT(port))
     {
         SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 
-    /* Validate hostname length to prevent DoS
-     * SECURITY: Prevents memory exhaustion attacks via extremely long hostnames.
-     * Limit of 255 chars matches DNS label length restrictions (RFC 1035). */
+    /* Validate hostname length to prevent DoS attacks */
     if (host)
     {
         size_t host_len = strlen(host);
@@ -416,7 +390,7 @@ void Socket_connect(T socket, const char *host, int port)
         }
     }
 
-    /* PORT_STR_BUFSIZE (16 bytes) is sufficient for port range 1-65535 (max 5 digits + null) */
+    /* Convert port to string */
     result = snprintf(port_str, sizeof(port_str), "%d", port);
     assert(result > 0 && result < (int)sizeof(port_str));
 
@@ -442,7 +416,7 @@ void Socket_connect(T socket, const char *host, int port)
         socket_family = AF_UNSPEC;
     }
 
-    /* Try each address until we successfully connect */
+    /* Try each address */
     for (rp = res; rp != NULL; rp = rp->ai_next)
     {
         /* Skip addresses that don't match socket's family */
@@ -452,7 +426,7 @@ void Socket_connect(T socket, const char *host, int port)
         result = connect(socket->fd, rp->ai_addr, rp->ai_addrlen);
         if (result == 0 || errno == EINPROGRESS)
         {
-            /* Connect succeeded or in progress (non-blocking) */
+            /* Success or in progress */
             memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
             socket->addrlen = rp->ai_addrlen;
             freeaddrinfo(res);
@@ -461,7 +435,7 @@ void Socket_connect(T socket, const char *host, int port)
         saved_errno = errno;
     }
 
-    /* No address succeeded */
+    /* No address worked */
     errno = saved_errno;
     freeaddrinfo(res);
 
@@ -580,7 +554,7 @@ void Socket_settimeout(T socket, int timeout_sec)
 
     assert(socket);
 
-    /* Validate timeout parameter */
+    /* Validate timeout */
     if (timeout_sec < 0)
     {
         SOCKET_ERROR_MSG("Invalid timeout value: %d (must be >= 0)", timeout_sec);
@@ -590,14 +564,13 @@ void Socket_settimeout(T socket, int timeout_sec)
     tv.tv_sec = timeout_sec;
     tv.tv_usec = 0;
 
-    /* Set receive timeout */
+    /* Set timeouts */
     if (setsockopt(socket->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set receive timeout");
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 
-    /* Set send timeout */
     if (setsockopt(socket->fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set send timeout");
@@ -611,7 +584,7 @@ void Socket_setkeepalive(T socket, int idle, int interval, int count)
 
     assert(socket);
 
-    /* Validate keepalive parameters - user input, so don't use assert */
+    /* Validate keepalive parameters */
     if (idle <= 0 || interval <= 0 || count <= 0)
     {
         SOCKET_ERROR_MSG("Invalid keepalive parameters (idle=%d, interval=%d, count=%d): all must be > 0", idle,
@@ -626,14 +599,9 @@ void Socket_setkeepalive(T socket, int idle, int interval, int count)
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 
-    /* Platform-specific TCP keepalive options
-     * Linux: TCP_KEEPIDLE, TCP_KEEPINTVL, TCP_KEEPCNT (all supported)
-     * macOS/BSD: TCP_KEEPALIVE instead of TCP_KEEPIDLE (some versions)
-     * Windows: Uses different mechanism via SIO_KEEPALIVE_VALS ioctl
-     * Solaris: Similar to Linux but may have different defaults */
+    /* Set keepalive parameters (platform-specific) */
 
 #ifdef TCP_KEEPIDLE
-    /* Set idle time before first probe */
     if (setsockopt(socket->fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set keepalive idle time");
@@ -642,7 +610,6 @@ void Socket_setkeepalive(T socket, int idle, int interval, int count)
 #endif
 
 #ifdef TCP_KEEPINTVL
-    /* Set interval between probes */
     if (setsockopt(socket->fd, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(interval)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set keepalive interval");
@@ -651,7 +618,6 @@ void Socket_setkeepalive(T socket, int idle, int interval, int count)
 #endif
 
 #ifdef TCP_KEEPCNT
-    /* Set number of probes */
     if (setsockopt(socket->fd, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(count)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set keepalive count");

@@ -48,25 +48,7 @@ T SocketBuf_new(Arena_T arena, size_t capacity)
     assert(arena);
     assert(capacity > 0);
 
-    /* Validate capacity is reasonable - prevents overflow when calculating
-     * buffer pointers (head + chunk, tail + chunk) and size arithmetic (size + len).
-     *
-     * Limiting to SIZE_MAX/2 ensures:
-     * 1. head + chunk never overflows (head < capacity, chunk <= capacity)
-     * 2. tail + chunk never overflows (tail < capacity, chunk <= capacity)
-     * 3. size + len calculations stay safe (size <= capacity, len <= capacity)
-     * 4. Modulo operations remain well-defined
-     *
-     * This limit is conservative but provides guaranteed safety:
-     * - On 32-bit systems: max buffer ~2GB (sufficient for most applications)
-     * - On 64-bit systems: max buffer ~9 exabytes (effectively unlimited)
-     *
-     * The limit could theoretically be relaxed to SIZE_MAX with explicit overflow
-     * checks before each arithmetic operation, but the added complexity provides
-     * no practical benefit given the generous limits already provided.
-     *
-     * For applications requiring buffers larger than SIZE_MAX/2 (extremely rare),
-     * use multiple buffer instances or memory-mapped files. */
+    /* Limit capacity to SIZE_MAX/2 to prevent overflow in pointer arithmetic */
     if (capacity > SIZE_MAX / 2)
         return NULL;
 
@@ -78,7 +60,7 @@ T SocketBuf_new(Arena_T arena, size_t capacity)
     if (!buf)
         return NULL;
 
-    /* Use CALLOC to ensure buffer is zeroed (prevents memory disclosure) */
+    /* Use CALLOC to zero buffer */
     buf->data = CALLOC(arena, capacity, 1);
     if (!buf->data)
         return NULL;
@@ -120,7 +102,6 @@ size_t SocketBuf_write(T buf, const void *data, size_t len)
         if (chunk > len - written)
             chunk = len - written;
 
-        /* Safety: prevent infinite loop in release builds - check before any operations */
         if (chunk == 0)
             break;
 
@@ -157,7 +138,6 @@ size_t SocketBuf_read(T buf, void *data, size_t len)
         if (chunk > len - read)
             chunk = len - read;
 
-        /* Safety: prevent infinite loop in release builds - check before any operations */
         if (chunk == 0)
             break;
 
@@ -196,7 +176,6 @@ size_t SocketBuf_peek(T buf, void *data, size_t len)
         if (chunk > len - read)
             chunk = len - read;
 
-        /* Safety: prevent infinite loop in release builds - check before any operations */
         if (chunk == 0)
             break;
 

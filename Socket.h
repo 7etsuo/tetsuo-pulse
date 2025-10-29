@@ -6,42 +6,21 @@
 /**
  * Socket Abstraction Layer
  *
- * Provides a high-level, exception-based interface for TCP/IP sockets.
- * All functions use exceptions for error handling, making code cleaner
- * and more robust than traditional error code checking.
+ * High-level, exception-based TCP/IP socket interface.
  *
  * PLATFORM REQUIREMENTS:
- * - POSIX-compliant system (Linux, BSD, macOS, etc.)
- * - IPv6 support in kernel (for dual-stack sockets)
- * - POSIX threads (pthread) for thread-safe error reporting
- * - NOT portable to Windows without Winsock adaptation layer
- * - getaddrinfo() for DNS resolution (POSIX.1-2001)
+ * - POSIX-compliant system (Linux, BSD, macOS)
+ * - IPv6 support in kernel for dual-stack sockets
+ * - POSIX threads for thread-safe error reporting
+ * - NOT portable to Windows without Winsock adaptation
  *
- * Features:
- * - Automatic resource management
- * - Non-blocking I/O support
- * - Thread-safe error reporting
- * - IPv4 and IPv6 dual-stack support
- *
- * CRITICAL SETUP REQUIREMENTS:
- * =============================================================================
- * Applications MUST ignore SIGPIPE by calling signal(SIGPIPE, SIG_IGN) during
- * initialization. This prevents process termination on broken pipe errors.
- *
- * Example:
- *   signal(SIGPIPE, SIG_IGN);  // Add to main() before using sockets
- *
- * This is REQUIRED for correct operation on platforms where MSG_NOSIGNAL is
- * not available (e.g., macOS, older BSD). Failure to ignore SIGPIPE will cause
- * the process to terminate when writing to a closed socket.
- * =============================================================================
+ * CRITICAL: Applications MUST call signal(SIGPIPE, SIG_IGN) during initialization
+ * to prevent process termination on broken pipe errors (required on macOS/BSD).
  *
  * Error Handling:
- * - Most functions raise Socket_Failed on errors or Socket_Closed when
- *   the connection is terminated by the peer
- * - Some functions (Socket_accept, Socket_send, Socket_recv) may return
- *   NULL/0 for non-blocking operations when they would block (EAGAIN/EWOULDBLOCK)
- * - Check individual function documentation for specific behavior
+ * - Socket_Failed: General socket errors
+ * - Socket_Closed: Connection terminated by peer
+ * - Some functions return NULL/0 for non-blocking EAGAIN/EWOULDBLOCK
  */
 
 #define T Socket_T
@@ -74,13 +53,10 @@ extern void Socket_free(T *socket);
  * @host: IP address or NULL/"0.0.0.0" for any
  * @port: Port number (1-65535)
  *
+ * WARNING: May block 30+ seconds during DNS resolution if hostname provided.
+ * Use IP addresses for non-blocking operation.
+ *
  * Raises: Socket_Failed on error
- *
- * WARNING: This function may block for extended periods (30+ seconds) during
- * DNS resolution if hostname is provided. For non-blocking operation, use
- * IP addresses directly or perform DNS resolution separately.
- *
- * All parameters are validated at runtime for safety with user input.
  */
 extern void Socket_bind(T socket, const char *host, int port);
 
@@ -97,10 +73,10 @@ extern void Socket_listen(T socket, int backlog);
  * Socket_accept - Accept incoming connection
  * @socket: Listening socket
  *
- * Returns: New socket for the connection, or NULL if would block (EAGAIN/EWOULDBLOCK)
- * Raises: Socket_Failed on error (other than EAGAIN/EWOULDBLOCK)
+ * Returns: New socket or NULL if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Failed on error
  *
- * Note: Socket must be in non-blocking mode for NULL return on would-block
+ * Note: Socket must be non-blocking for NULL return on EAGAIN/EWOULDBLOCK
  */
 extern T Socket_accept(T socket);
 
@@ -110,15 +86,11 @@ extern T Socket_accept(T socket);
  * @host: Remote IP address or hostname
  * @port: Remote port
  *
+ * WARNING: May block 30+ seconds during DNS resolution if hostname provided.
+ * Use IP addresses for non-blocking operation. Can be exploited for DoS attacks
+ * if untrusted hostnames are accepted.
+ *
  * Raises: Socket_Failed on error
- *
- * WARNING: This function may block for extended periods (30+ seconds) during
- * DNS resolution if hostname is provided. For non-blocking operation, use
- * IP addresses directly or perform DNS resolution separately. This blocking
- * can be exploited for DoS attacks if untrusted hostnames are accepted.
- *
- * Note: This function validates all user input at runtime (external API).
- *       Host and port are checked before use. Safe for untrusted input.
  */
 extern void Socket_connect(T socket, const char *host, int port);
 
@@ -126,13 +98,12 @@ extern void Socket_connect(T socket, const char *host, int port);
  * Socket_send - Send data
  * @socket: Connected socket
  * @buf: Data to send
- * @len: Length of data (must be > 0)
+ * @len: Length of data (> 0)
  *
- * Returns: Number of bytes sent (> 0), or 0 if would block (EAGAIN/EWOULDBLOCK)
- * Raises: Socket_Closed on EPIPE or ECONNRESET
- * Raises: Socket_Failed on other errors
+ * Returns: Bytes sent (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors
  *
- * Note: May send less than requested length. Caller should check return value.
+ * Note: May send less than requested. Check return value.
  */
 extern ssize_t Socket_send(T socket, const void *buf, size_t len);
 
@@ -140,13 +111,13 @@ extern ssize_t Socket_send(T socket, const void *buf, size_t len);
  * Socket_recv - Receive data
  * @socket: Connected socket
  * @buf: Buffer for received data
- * @len: Buffer size (must be > 0)
+ * @len: Buffer size (> 0)
  *
- * Returns: Number of bytes received (> 0), or 0 if would block (EAGAIN/EWOULDBLOCK)
- * Raises: Socket_Closed if peer closes connection (recv returns 0) or on ECONNRESET
+ * Returns: Bytes received (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Closed on peer close (recv returns 0) or ECONNRESET
  * Raises: Socket_Failed on other errors
  *
- * Note: Return value of 0 means would-block, NOT connection closed (that raises exception)
+ * Note: Return value 0 means would-block, NOT connection closed (raises exception)
  */
 extern ssize_t Socket_recv(T socket, void *buf, size_t len);
 
@@ -208,12 +179,10 @@ extern int Socket_fd(const T socket);
  * Socket_getpeeraddr - Get peer IP address
  * @socket: Connected socket
  *
- * Returns: IP address string (IPv4 or IPv6), or "(unknown)" if unavailable
+ * Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable
  *
- * Note: Returns "(unknown)" if address info could not be obtained during accept/connect.
- *       Always returns a valid non-NULL string - safe to use directly in printf.
- *       The returned string is owned by the socket and must NOT be freed or modified.
- *       It remains valid until the socket is freed.
+ * Note: Returns "(unknown)" if address info unavailable during accept/connect.
+ * String is owned by socket, must not be freed/modified. Valid until socket freed.
  */
 extern const char *Socket_getpeeraddr(const T socket);
 
@@ -221,30 +190,27 @@ extern const char *Socket_getpeeraddr(const T socket);
  * Socket_getpeerport - Get peer port number
  * @socket: Connected socket
  *
- * Returns: Port number (1-65535), or 0 if unavailable
+ * Returns: Port number (1-65535) or 0 if unavailable
  *
- * Note: Returns 0 if port info could not be obtained during accept/connect.
- *       0 is a valid return value indicating unknown port.
+ * Note: Returns 0 if port info unavailable during accept/connect.
  */
 extern int Socket_getpeerport(const T socket);
 
 /**
  * Socket_bind_unix - Bind to Unix domain socket path
- * @socket: Socket to bind (must be AF_UNIX)
+ * @socket: Socket to bind (AF_UNIX)
  * @path: Socket file path
  *
  * Raises: Socket_Failed on error
  *
- * Note: If path already exists, bind will fail with EADDRINUSE.
- * Consider unlinking the path first if you want to reuse it.
- * Maximum path length is typically 108 bytes (UNIX_PATH_MAX).
+ * Note: Fails with EADDRINUSE if path exists. Max path length ~108 bytes.
  * Supports abstract namespace sockets on Linux (path starting with '@').
  */
 extern void Socket_bind_unix(T socket, const char *path);
 
 /**
  * Socket_connect_unix - Connect to Unix domain socket path
- * @socket: Socket to connect (must be AF_UNIX)
+ * @socket: Socket to connect (AF_UNIX)
  * @path: Socket file path
  *
  * Raises: Socket_Failed on error

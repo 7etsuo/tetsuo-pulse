@@ -1,0 +1,370 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ALLOC	Arena.h	94;"	d
+ARENA_CHUNK_SIZE	SocketConfig.h	62;"	d
+ARENA_INCLUDED	Arena.h	2;"	d
+ARENA_MAX_ALLOC_SIZE	SocketConfig.h	67;"	d
+Arena_alloc	Arena.c	/^void *Arena_alloc(T arena, size_t nbytes, const char *file, int line)$/;"	f
+Arena_calloc	Arena.c	/^void *Arena_calloc(T arena, size_t count, size_t nbytes, const char *file, int line)$/;"	f
+Arena_clear	Arena.c	/^void Arena_clear(T arena)$/;"	f
+Arena_dispose	Arena.c	/^void Arena_dispose(T *ap)$/;"	f
+Arena_new	Arena.c	/^T Arena_new(void)$/;"	f
+Assert_Failed	Except.c	/^const Except_T Assert_Failed = {"Assertion failed"};$/;"	v
+BUILD_DIR	Makefile	/^BUILD_DIR = build$/;"	m
+CALLOC	Arena.h	95;"	d
+CC	Makefile	/^CC = gcc$/;"	m
+CFLAGS	Makefile	/^CFLAGS = $(CFLAGS_DEBUG)$/;"	m
+CFLAGS	Makefile	/^release: CFLAGS = $(CFLAGS_RELEASE)$/;"	m
+CFLAGS_DEBUG	Makefile	/^CFLAGS_DEBUG = -Wall -Wextra -Werror -g -Og -D_GNU_SOURCE -pthread -std=gnu99 -fno-strict-aliasing -fPIC$/;"	m
+CFLAGS_RELEASE	Makefile	/^CFLAGS_RELEASE = -Wall -Wextra -Werror -O3 -DNDEBUG -D_GNU_SOURCE -pthread -std=gnu99 -fno-strict-aliasing -fPIC$/;"	m
+ChunkHeader	Arena.c	/^struct ChunkHeader$/;"	s	file:
+Connection	SocketPool.c	/^struct Connection$/;"	s	file:
+Connection_T	SocketPool.h	/^typedef struct Connection *Connection_T;$/;"	t	typeref:struct:Connection
+Connection_data	SocketPool.c	/^Connection_data (const Connection_T conn)$/;"	f
+Connection_inbuf	SocketPool.c	/^Connection_inbuf (const Connection_T conn)$/;"	f
+Connection_isactive	SocketPool.c	/^Connection_isactive (const Connection_T conn)$/;"	f
+Connection_lastactivity	SocketPool.c	/^Connection_lastactivity (const Connection_T conn)$/;"	f
+Connection_outbuf	SocketPool.c	/^Connection_outbuf (const Connection_T conn)$/;"	f
+Connection_setdata	SocketPool.c	/^Connection_setdata (Connection_T conn, void *data)$/;"	f
+Connection_socket	SocketPool.c	/^Connection_socket (const Connection_T conn)$/;"	f
+DEPS	Makefile	/^DEPS = $(SOURCES:%.c=$(BUILD_DIR)\/%.d)$/;"	m
+ELSE	Except.h	120;"	d
+END_TRY	Except.h	136;"	d
+EXCEPT	Except.h	112;"	d
+EXCEPT_INCLUDED	Except.h	2;"	d
+Except_Frame	Except.h	/^struct Except_Frame$/;"	s
+Except_Frame	Except.h	/^typedef struct Except_Frame Except_Frame;$/;"	t	typeref:struct:Except_Frame
+Except_entered	Except.h	/^  Except_entered = 0,$/;"	e	enum:__anon2
+Except_finalized	Except.h	/^  Except_finalized$/;"	e	enum:__anon2
+Except_handled	Except.h	/^  Except_handled,$/;"	e	enum:__anon2
+Except_raise	Except.c	/^void Except_raise(const T *e, const char *file, int line)$/;"	f
+Except_raised	Except.h	/^  Except_raised,$/;"	e	enum:__anon2
+Except_stack	Except.c	/^__thread Except_Frame *Except_stack = NULL;$/;"	v
+Except_stack	Except.h	/^extern __declspec (thread) Except_Frame *Except_stack;$/;"	v
+FINALLY	Except.h	128;"	d
+INITIAL_POLLFDS	SocketPoll_poll.c	23;"	d	file:
+LDFLAGS	Makefile	/^LDFLAGS = -pthread$/;"	m
+LIB_OBJECTS	Makefile	/^LIB_OBJECTS = $(LIB_SOURCES:%.c=$(BUILD_DIR)\/%.o)$/;"	m
+LIB_SOURCES	Makefile	/^LIB_SOURCES = Arena.c Except.c Socket.c SocketDgram.c SocketBuf.c SocketPoll.c $(POLL_BACKEND_SRC) SocketPool.c SocketError.c$/;"	m
+MAX_FREE_CHUNKS	Arena.c	67;"	d	file:
+MSG_NOSIGNAL	Socket.c	27;"	d	file:
+OBJECTS	Makefile	/^OBJECTS = $(SOURCES:%.c=$(BUILD_DIR)\/%.o)$/;"	m
+POLL_BACKEND	Makefile	/^    POLL_BACKEND = epoll$/;"	m
+POLL_BACKEND	Makefile	/^    POLL_BACKEND = kqueue$/;"	m
+POLL_BACKEND	Makefile	/^    POLL_BACKEND = poll$/;"	m
+POLL_BACKEND_SRC	Makefile	/^    POLL_BACKEND_SRC = SocketPoll_epoll.c$/;"	m
+POLL_BACKEND_SRC	Makefile	/^    POLL_BACKEND_SRC = SocketPoll_kqueue.c$/;"	m
+POLL_BACKEND_SRC	Makefile	/^    POLL_BACKEND_SRC = SocketPoll_poll.c$/;"	m
+POLL_ERROR	SocketPoll.h	/^    POLL_ERROR = 1 << 2, \/**< Error condition *\/$/;"	e	enum:__anon1
+POLL_HANGUP	SocketPoll.h	/^    POLL_HANGUP = 1 << 3 \/**< Hang up \/ disconnection *\/$/;"	e	enum:__anon1
+POLL_READ	SocketPoll.h	/^    POLL_READ = 1 << 0,  \/**< Data available for reading *\/$/;"	e	enum:__anon1
+POLL_WRITE	SocketPoll.h	/^    POLL_WRITE = 1 << 1, \/**< Socket ready for writing *\/$/;"	e	enum:__anon1
+PORT_STR_BUFSIZE	Socket.c	42;"	d	file:
+PORT_STR_BUFSIZE	SocketDgram.c	31;"	d	file:
+PollBackend_T	SocketPoll_backend.h	/^typedef struct PollBackend_T *PollBackend_T;$/;"	t	typeref:struct:PollBackend_T
+PollBackend_T	SocketPoll_epoll.c	/^struct PollBackend_T$/;"	s	file:
+PollBackend_T	SocketPoll_kqueue.c	/^struct PollBackend_T$/;"	s	file:
+PollBackend_T	SocketPoll_poll.c	/^struct PollBackend_T$/;"	s	file:
+RAISE	Except.h	68;"	d
+RAISE_DGRAM_ERROR	SocketDgram.c	43;"	d	file:
+RAISE_POLL_ERROR	SocketPoll.c	47;"	d	file:
+RAISE_POOL_ERROR	SocketPool.c	35;"	d	file:
+RAISE_SOCKET_ERROR	Socket.c	59;"	d	file:
+RERAISE	Except.h	69;"	d
+RETURN	Except.h	93;"	d
+SAFE_CLOSE	SocketConfig.h	88;"	d
+SOCKETBUF_INCLUDED	SocketBuf.h	2;"	d
+SOCKETBUF_INVARIANTS	SocketBuf.c	23;"	d	file:
+SOCKETBUF_MIN_CAPACITY	SocketBuf.c	20;"	d	file:
+SOCKETCONFIG_H	SocketConfig.h	2;"	d
+SOCKETDGRAM_INCLUDED	SocketDgram.h	2;"	d
+SOCKETERROR_H	SocketError.h	2;"	d
+SOCKETPOLL_BACKEND_INCLUDED	SocketPoll_backend.h	2;"	d
+SOCKETPOLL_INCLUDED	SocketPoll.h	2;"	d
+SOCKETPOOL_INCLUDED	SocketPool.h	2;"	d
+SOCKET_DATA_HASH_SIZE	SocketPoll.c	64;"	d	file:
+SOCKET_DEFAULT_IDLE_TIMEOUT	SocketConfig.h	33;"	d
+SOCKET_DEFAULT_POLL_TIMEOUT	SocketConfig.h	38;"	d
+SOCKET_DEFAULT_POOL_BUFSIZE	SocketConfig.h	47;"	d
+SOCKET_DEFAULT_POOL_SIZE	SocketConfig.h	43;"	d
+SOCKET_EADDRINUSE	SocketError.h	72;"	d
+SOCKET_ECONNREFUSED	SocketError.h	70;"	d
+SOCKET_ECONNRESET	SocketError.h	76;"	d
+SOCKET_EHOSTUNREACH	SocketError.h	74;"	d
+SOCKET_EINVAL	SocketError.h	69;"	d
+SOCKET_ENETUNREACH	SocketError.h	73;"	d
+SOCKET_ENOMEM	SocketError.h	68;"	d
+SOCKET_EPIPE	SocketError.h	75;"	d
+SOCKET_ERROR_BUFSIZE	SocketError.h	8;"	d
+SOCKET_ERROR_FMT	SocketError.h	26;"	d
+SOCKET_ERROR_MAX_HOSTNAME	SocketError.h	15;"	d
+SOCKET_ERROR_MAX_MESSAGE	SocketError.h	16;"	d
+SOCKET_ERROR_MSG	SocketError.h	46;"	d
+SOCKET_ERROR_TRUNCATION_MARKER	SocketError.h	11;"	d
+SOCKET_ERROR_TRUNCATION_SIZE	SocketError.h	12;"	d
+SOCKET_ETIMEDOUT	SocketError.h	71;"	d
+SOCKET_HASH_SIZE	SocketPool.c	82;"	d	file:
+SOCKET_HASH_TABLE_SIZE	SocketConfig.h	57;"	d
+SOCKET_INCLUDED	Socket.h	2;"	d
+SOCKET_MAX_BUFFER_SIZE	SocketConfig.h	18;"	d
+SOCKET_MAX_CONNECTIONS	SocketConfig.h	13;"	d
+SOCKET_MAX_LISTEN_BACKLOG	SocketConfig.h	52;"	d
+SOCKET_MAX_POLL_EVENTS	SocketConfig.h	28;"	d
+SOCKET_MIN_BUFFER_SIZE	SocketConfig.h	23;"	d
+SOCKET_VALID_BUFFER_SIZE	SocketConfig.h	72;"	d
+SOCKET_VALID_CONNECTION_COUNT	SocketConfig.h	73;"	d
+SOCKET_VALID_POLL_EVENTS	SocketConfig.h	74;"	d
+SOCKET_VALID_PORT	SocketConfig.h	71;"	d
+SOURCES	Makefile	/^SOURCES = Arena.c Except.c Socket.c SocketDgram.c SocketBuf.c SocketPoll.c $(POLL_BACKEND_SRC) SocketPool.c SocketError.c main.c$/;"	m
+SocketBuf_available	SocketBuf.c	/^size_t SocketBuf_available(const T buf)$/;"	f
+SocketBuf_clear	SocketBuf.c	/^void SocketBuf_clear(T buf)$/;"	f
+SocketBuf_consume	SocketBuf.c	/^void SocketBuf_consume(T buf, size_t len)$/;"	f
+SocketBuf_empty	SocketBuf.c	/^int SocketBuf_empty(const T buf)$/;"	f
+SocketBuf_full	SocketBuf.c	/^int SocketBuf_full(const T buf)$/;"	f
+SocketBuf_new	SocketBuf.c	/^T SocketBuf_new(Arena_T arena, size_t capacity)$/;"	f
+SocketBuf_peek	SocketBuf.c	/^size_t SocketBuf_peek(T buf, void *data, size_t len)$/;"	f
+SocketBuf_read	SocketBuf.c	/^size_t SocketBuf_read(T buf, void *data, size_t len)$/;"	f
+SocketBuf_readptr	SocketBuf.c	/^const void *SocketBuf_readptr(T buf, size_t *len)$/;"	f
+SocketBuf_release	SocketBuf.c	/^void SocketBuf_release(T *buf)$/;"	f
+SocketBuf_secureclear	SocketBuf.c	/^void SocketBuf_secureclear(T buf)$/;"	f
+SocketBuf_space	SocketBuf.c	/^size_t SocketBuf_space(const T buf)$/;"	f
+SocketBuf_write	SocketBuf.c	/^size_t SocketBuf_write(T buf, const void *data, size_t len)$/;"	f
+SocketBuf_writeptr	SocketBuf.c	/^void *SocketBuf_writeptr(T buf, size_t *len)$/;"	f
+SocketBuf_written	SocketBuf.c	/^void SocketBuf_written(T buf, size_t len)$/;"	f
+SocketData	SocketPoll.c	/^typedef struct SocketData$/;"	s	file:
+SocketData	SocketPoll.c	/^} SocketData;$/;"	t	typeref:struct:SocketData	file:
+SocketDgram_Failed	SocketDgram.c	/^Except_T SocketDgram_Failed = {"Datagram socket operation failed"};$/;"	v
+SocketDgram_bind	SocketDgram.c	/^void SocketDgram_bind(T socket, const char *host, int port)$/;"	f
+SocketDgram_connect	SocketDgram.c	/^void SocketDgram_connect(T socket, const char *host, int port)$/;"	f
+SocketDgram_fd	SocketDgram.c	/^int SocketDgram_fd(const T socket)$/;"	f
+SocketDgram_free	SocketDgram.c	/^void SocketDgram_free(T *socket)$/;"	f
+SocketDgram_joinmulticast	SocketDgram.c	/^void SocketDgram_joinmulticast(T socket, const char *group, const char *interface)$/;"	f
+SocketDgram_leavemulticast	SocketDgram.c	/^void SocketDgram_leavemulticast(T socket, const char *group, const char *interface)$/;"	f
+SocketDgram_new	SocketDgram.c	/^T SocketDgram_new(int domain, int protocol)$/;"	f
+SocketDgram_recv	SocketDgram.c	/^ssize_t SocketDgram_recv(T socket, void *buf, size_t len)$/;"	f
+SocketDgram_recvfrom	SocketDgram.c	/^ssize_t SocketDgram_recvfrom(T socket, void *buf, size_t len, char *host, size_t host_len, int *port)$/;"	f
+SocketDgram_send	SocketDgram.c	/^ssize_t SocketDgram_send(T socket, const void *buf, size_t len)$/;"	f
+SocketDgram_sendto	SocketDgram.c	/^ssize_t SocketDgram_sendto(T socket, const void *buf, size_t len, const char *host, int port)$/;"	f
+SocketDgram_setbroadcast	SocketDgram.c	/^void SocketDgram_setbroadcast(T socket, int enable)$/;"	f
+SocketDgram_setnonblocking	SocketDgram.c	/^void SocketDgram_setnonblocking(T socket)$/;"	f
+SocketDgram_setreuseaddr	SocketDgram.c	/^void SocketDgram_setreuseaddr(T socket)$/;"	f
+SocketDgram_settimeout	SocketDgram.c	/^void SocketDgram_settimeout(T socket, int timeout_sec)$/;"	f
+SocketDgram_setttl	SocketDgram.c	/^void SocketDgram_setttl(T socket, int ttl)$/;"	f
+SocketEvent	SocketPoll.h	/^typedef struct SocketEvent$/;"	s
+SocketEvent_T	SocketPoll.h	/^} SocketEvent_T;$/;"	t	typeref:struct:SocketEvent
+SocketPoll_Events	SocketPoll.h	/^} SocketPoll_Events;$/;"	t	typeref:enum:__anon1
+SocketPoll_Failed	SocketPoll.c	/^Except_T SocketPoll_Failed = {"SocketPoll operation failed"};$/;"	v
+SocketPoll_add	SocketPoll.c	/^void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)$/;"	f
+SocketPoll_del	SocketPoll.c	/^void SocketPoll_del(T poll, Socket_T socket)$/;"	f
+SocketPoll_free	SocketPoll.c	/^void SocketPoll_free(T *poll)$/;"	f
+SocketPoll_mod	SocketPoll.c	/^void SocketPoll_mod(T poll, Socket_T socket, unsigned events, void *data)$/;"	f
+SocketPoll_new	SocketPoll.c	/^T SocketPoll_new(int maxevents)$/;"	f
+SocketPoll_wait	SocketPoll.c	/^int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)$/;"	f
+SocketPool_Failed	SocketPool.c	/^Except_T SocketPool_Failed = { "SocketPool operation failed" };$/;"	v
+SocketPool_add	SocketPool.c	/^SocketPool_add (T pool, Socket_T socket)$/;"	f
+SocketPool_cleanup	SocketPool.c	/^SocketPool_cleanup (T pool, time_t idle_timeout)$/;"	f
+SocketPool_count	SocketPool.c	/^SocketPool_count (T pool)$/;"	f
+SocketPool_foreach	SocketPool.c	/^SocketPool_foreach (T pool, void (*func) (Connection_T, void *), void *arg)$/;"	f
+SocketPool_free	SocketPool.c	/^SocketPool_free (T *pool)$/;"	f
+SocketPool_get	SocketPool.c	/^SocketPool_get (T pool, Socket_T socket)$/;"	f
+SocketPool_new	SocketPool.c	/^SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)$/;"	f
+SocketPool_remove	SocketPool.c	/^SocketPool_remove (T pool, Socket_T socket)$/;"	f
+Socket_Closed	Socket.c	/^Except_T Socket_Closed = {"Socket closed"};$/;"	v
+Socket_Failed	Socket.c	/^Except_T Socket_Failed = {"Socket operation failed"};$/;"	v
+Socket_GetLastError	SocketError.c	/^const char *Socket_GetLastError(void)$/;"	f
+Socket_accept	Socket.c	/^T Socket_accept(T socket)$/;"	f
+Socket_bind	Socket.c	/^void Socket_bind(T socket, const char *host, int port)$/;"	f
+Socket_bind_unix	Socket.c	/^void Socket_bind_unix(T socket, const char *path)$/;"	f
+Socket_connect	Socket.c	/^void Socket_connect(T socket, const char *host, int port)$/;"	f
+Socket_connect_unix	Socket.c	/^void Socket_connect_unix(T socket, const char *path)$/;"	f
+Socket_fd	Socket.c	/^int Socket_fd(const T socket)$/;"	f
+Socket_free	Socket.c	/^void Socket_free(T *socket)$/;"	f
+Socket_getpeeraddr	Socket.c	/^const char *Socket_getpeeraddr(const T socket)$/;"	f
+Socket_getpeergid	Socket.c	/^int Socket_getpeergid(const T socket)$/;"	f
+Socket_getpeerpid	Socket.c	/^int Socket_getpeerpid(const T socket)$/;"	f
+Socket_getpeerport	Socket.c	/^int Socket_getpeerport(const T socket)$/;"	f
+Socket_getpeeruid	Socket.c	/^int Socket_getpeeruid(const T socket)$/;"	f
+Socket_listen	Socket.c	/^void Socket_listen(T socket, int backlog)$/;"	f
+Socket_new	Socket.c	/^T Socket_new(int domain, int type, int protocol)$/;"	f
+Socket_recv	Socket.c	/^ssize_t Socket_recv(T socket, void *buf, size_t len)$/;"	f
+Socket_send	Socket.c	/^ssize_t Socket_send(T socket, const void *buf, size_t len)$/;"	f
+Socket_setkeepalive	Socket.c	/^void Socket_setkeepalive(T socket, int idle, int interval, int count)$/;"	f
+Socket_setnodelay	Socket.c	/^void Socket_setnodelay(T socket, int nodelay)$/;"	f
+Socket_setnonblocking	Socket.c	/^void Socket_setnonblocking(T socket)$/;"	f
+Socket_setreuseaddr	Socket.c	/^void Socket_setreuseaddr(T socket)$/;"	f
+Socket_settimeout	Socket.c	/^void Socket_settimeout(T socket, int timeout_sec)$/;"	f
+T	Arena.c	/^struct T$/;"	s	file:
+T	Arena.c	18;"	d	file:
+T	Arena.c	323;"	d	file:
+T	Arena.h	/^typedef struct T *T;$/;"	t	typeref:struct:T
+T	Arena.h	35;"	d
+T	Arena.h	97;"	d
+T	Except.c	27;"	d	file:
+T	Except.c	99;"	d	file:
+T	Except.h	/^typedef struct T$/;"	s
+T	Except.h	/^} T;$/;"	t	typeref:struct:T
+T	Except.h	145;"	d
+T	Except.h	34;"	d
+T	Socket.c	/^struct T$/;"	s	file:
+T	Socket.c	36;"	d	file:
+T	Socket.c	869;"	d	file:
+T	Socket.h	/^typedef struct T *T;$/;"	t	typeref:struct:T
+T	Socket.h	289;"	d
+T	Socket.h	47;"	d
+T	SocketBuf.c	/^struct T$/;"	s	file:
+T	SocketBuf.c	16;"	d	file:
+T	SocketBuf.c	360;"	d	file:
+T	SocketBuf.h	/^typedef struct T *T;$/;"	t	typeref:struct:T
+T	SocketBuf.h	185;"	d
+T	SocketBuf.h	24;"	d
+T	SocketDgram.c	/^struct T$/;"	s	file:
+T	SocketDgram.c	28;"	d	file:
+T	SocketDgram.c	690;"	d	file:
+T	SocketDgram.h	/^typedef struct T *T;$/;"	t	typeref:struct:T
+T	SocketDgram.h	248;"	d
+T	SocketDgram.h	41;"	d
+T	SocketPoll.c	/^struct T$/;"	s	file:
+T	SocketPoll.c	31;"	d	file:
+T	SocketPoll.c	483;"	d	file:
+T	SocketPoll.h	/^typedef struct T *T;$/;"	t	typeref:struct:T
+T	SocketPoll.h	127;"	d
+T	SocketPoll.h	31;"	d
+T	SocketPool.c	/^struct T$/;"	s	file:
+T	SocketPool.c	543;"	d	file:
+T	SocketPool.c	67;"	d	file:
+T	SocketPool.h	/^typedef struct T *T;$/;"	t	typeref:struct:T
+T	SocketPool.h	190;"	d
+T	SocketPool.h	29;"	d
+TARGET	Makefile	/^TARGET = irc_server$/;"	m
+TRY	Except.h	98;"	d
+UNAME_S	Makefile	/^UNAME_S := $(shell uname -s)$/;"	m
+a	Arena.c	/^    union align a;$/;"	m	union:header	typeref:union:header::align	file:
+active	SocketPool.c	/^  int active;$/;"	m	struct:Connection	file:
+addr	Socket.c	/^    struct sockaddr_storage addr;$/;"	m	struct:T	typeref:struct:T::sockaddr_storage	file:
+addr	SocketDgram.c	/^    struct sockaddr_storage addr;$/;"	m	struct:T	typeref:struct:T::sockaddr_storage	file:
+addrlen	Socket.c	/^    socklen_t addrlen;$/;"	m	struct:T	file:
+addrlen	SocketDgram.c	/^    socklen_t addrlen;$/;"	m	struct:T	file:
+align	Arena.c	/^union align {$/;"	u	file:
+arena	Socket.c	/^    Arena_T arena;$/;"	m	struct:T	file:
+arena	SocketBuf.c	/^    Arena_T arena;$/;"	m	struct:T	file:
+arena	SocketDgram.c	/^    Arena_T arena;$/;"	m	struct:T	file:
+arena	SocketPoll.c	/^    Arena_T arena;$/;"	m	struct:T	file:
+arena	SocketPool.c	/^  Arena_T arena;$/;"	m	struct:T	file:
+arena_mutex	Arena.c	/^static pthread_mutex_t arena_mutex = PTHREAD_MUTEX_INITIALIZER;$/;"	v	file:
+avail	Arena.c	/^    char *avail;$/;"	m	struct:ChunkHeader	file:
+avail	Arena.c	/^    char *avail;$/;"	m	struct:T	file:
+b	Arena.c	/^    struct ChunkHeader b;$/;"	m	union:header	typeref:struct:header::ChunkHeader	file:
+backend	SocketPoll.c	/^    PollBackend_T backend; \/* Backend-specific poll implementation *\/$/;"	m	struct:T	file:
+backend_add	SocketPoll_epoll.c	/^int backend_add(PollBackend_T backend, int fd, unsigned events)$/;"	f
+backend_add	SocketPoll_kqueue.c	/^int backend_add(PollBackend_T backend, int fd, unsigned events)$/;"	f
+backend_add	SocketPoll_poll.c	/^int backend_add(PollBackend_T backend, int fd, unsigned events)$/;"	f
+backend_del	SocketPoll_epoll.c	/^int backend_del(PollBackend_T backend, int fd)$/;"	f
+backend_del	SocketPoll_kqueue.c	/^int backend_del(PollBackend_T backend, int fd)$/;"	f
+backend_del	SocketPoll_poll.c	/^int backend_del(PollBackend_T backend, int fd)$/;"	f
+backend_free	SocketPoll_epoll.c	/^void backend_free(PollBackend_T backend)$/;"	f
+backend_free	SocketPoll_kqueue.c	/^void backend_free(PollBackend_T backend)$/;"	f
+backend_free	SocketPoll_poll.c	/^void backend_free(PollBackend_T backend)$/;"	f
+backend_get_event	SocketPoll_epoll.c	/^int backend_get_event(PollBackend_T backend, int index, int *fd_out, unsigned *events_out)$/;"	f
+backend_get_event	SocketPoll_kqueue.c	/^int backend_get_event(PollBackend_T backend, int index, int *fd_out, unsigned *events_out)$/;"	f
+backend_get_event	SocketPoll_poll.c	/^int backend_get_event(PollBackend_T backend, int index, int *fd_out, unsigned *events_out)$/;"	f
+backend_mod	SocketPoll_epoll.c	/^int backend_mod(PollBackend_T backend, int fd, unsigned events)$/;"	f
+backend_mod	SocketPoll_kqueue.c	/^int backend_mod(PollBackend_T backend, int fd, unsigned events)$/;"	f
+backend_mod	SocketPoll_poll.c	/^int backend_mod(PollBackend_T backend, int fd, unsigned events)$/;"	f
+backend_name	SocketPoll_epoll.c	/^const char *backend_name(void)$/;"	f
+backend_name	SocketPoll_kqueue.c	/^const char *backend_name(void)$/;"	f
+backend_name	SocketPoll_poll.c	/^const char *backend_name(void)$/;"	f
+backend_new	SocketPoll_epoll.c	/^PollBackend_T backend_new(int maxevents)$/;"	f
+backend_new	SocketPoll_kqueue.c	/^PollBackend_T backend_new(int maxevents)$/;"	f
+backend_new	SocketPoll_poll.c	/^PollBackend_T backend_new(int maxevents)$/;"	f
+backend_wait	SocketPoll_epoll.c	/^int backend_wait(PollBackend_T backend, int timeout_ms)$/;"	f
+backend_wait	SocketPoll_kqueue.c	/^int backend_wait(PollBackend_T backend, int timeout_ms)$/;"	f
+backend_wait	SocketPoll_poll.c	/^int backend_wait(PollBackend_T backend, int timeout_ms)$/;"	f
+bufsize	SocketPool.c	/^  size_t bufsize;$/;"	m	struct:T	file:
+capacity	SocketBuf.c	/^    size_t capacity;$/;"	m	struct:T	file:
+capacity	SocketPoll_poll.c	/^    int capacity;        \/* Capacity of fds array *\/$/;"	m	struct:PollBackend_T	file:
+cleanup_buffer	SocketPool.c	/^  Socket_T *cleanup_buffer; \/* Pre-allocated buffer for cleanup operations *\/$/;"	m	struct:T	file:
+connections	SocketPool.c	/^  struct Connection *connections; \/* Array of connection structs *\/$/;"	m	struct:T	typeref:struct:T::Connection	file:
+count	SocketPool.c	/^  size_t count;$/;"	m	struct:T	file:
+d	Arena.c	/^    double d;$/;"	m	union:align	file:
+data	SocketBuf.c	/^    char *data;$/;"	m	struct:T	file:
+data	SocketPoll.c	/^    void *data;$/;"	m	struct:SocketData	file:
+data	SocketPoll.h	/^    void *data;      \/**< User data associated with socket *\/$/;"	m	struct:SocketEvent
+data	SocketPool.c	/^  void *data;$/;"	m	struct:Connection	file:
+ensure_capacity	SocketPoll_poll.c	/^static int ensure_capacity(PollBackend_T backend)$/;"	f	file:
+ensure_fd_mapping	SocketPoll_poll.c	/^static int ensure_fd_mapping(PollBackend_T backend, int fd)$/;"	f	file:
+env	Except.h	/^  jmp_buf env;$/;"	m	struct:Except_Frame
+epfd	SocketPoll_epoll.c	/^    int epfd;                   \/* epoll file descriptor *\/$/;"	m	struct:PollBackend_T	file:
+events	SocketPoll.h	/^    unsigned events; \/**< Bitmask of events that occurred *\/$/;"	m	struct:SocketEvent
+events	SocketPoll_epoll.c	/^    struct epoll_event *events; \/* Event array for results *\/$/;"	m	struct:PollBackend_T	typeref:struct:PollBackend_T::epoll_event	file:
+events	SocketPoll_kqueue.c	/^    struct kevent *events; \/* Event array for results *\/$/;"	m	struct:PollBackend_T	typeref:struct:PollBackend_T::kevent	file:
+exception	Except.h	/^  const T *exception;$/;"	m	struct:Except_Frame
+f	Arena.c	/^    float f;$/;"	m	union:align	file:
+fd	Socket.c	/^    int fd;$/;"	m	struct:T	file:
+fd	SocketDgram.c	/^    int fd;$/;"	m	struct:T	file:
+fd_to_index	SocketPoll_poll.c	/^    int *fd_to_index;    \/* FD to index mapping (for O(1) lookup) *\/$/;"	m	struct:PollBackend_T	file:
+fds	SocketPoll_poll.c	/^    struct pollfd *fds;  \/* Array of pollfd structures *\/$/;"	m	struct:PollBackend_T	typeref:struct:PollBackend_T::pollfd	file:
+file	Except.h	/^  const char *file;$/;"	m	struct:Except_Frame
+find_fd_index	SocketPoll_poll.c	/^static int find_fd_index(PollBackend_T backend, int fd)$/;"	f	file:
+find_free_slot	SocketPool.c	/^find_free_slot (T pool)$/;"	f	file:
+find_slot	SocketPool.c	/^find_slot (T pool, Socket_T socket)$/;"	f	file:
+fp	Arena.c	/^    void (*fp)(void);$/;"	m	union:align	file:
+freechunks	Arena.c	/^static struct ChunkHeader *freechunks = NULL;$/;"	v	typeref:struct:ChunkHeader	file:
+hash_next	SocketPool.c	/^  struct Connection *hash_next; \/* For hash table chaining *\/$/;"	m	struct:Connection	typeref:struct:Connection::Connection	file:
+hash_table	SocketPool.c	/^  Connection_T *hash_table;       \/* Hash table for O(1) lookup *\/$/;"	m	struct:T	file:
+head	SocketBuf.c	/^    size_t head;$/;"	m	struct:T	file:
+header	Arena.c	/^union header {$/;"	u	file:
+i	Arena.c	/^    int i;$/;"	m	union:align	file:
+inbuf	SocketPool.c	/^  SocketBuf_T inbuf;$/;"	m	struct:Connection	file:
+kq	SocketPoll_kqueue.c	/^    int kq;                \/* kqueue file descriptor *\/$/;"	m	struct:PollBackend_T	file:
+l	Arena.c	/^    long l;$/;"	m	union:align	file:
+last_activity	SocketPool.c	/^  time_t last_activity;$/;"	m	struct:Connection	file:
+last_wait_count	SocketPoll_poll.c	/^    int last_wait_count; \/* Number of events from last wait *\/$/;"	m	struct:PollBackend_T	file:
+ld	Arena.c	/^    long double ld;$/;"	m	union:align	file:
+limit	Arena.c	/^    char *limit;$/;"	m	struct:ChunkHeader	file:
+limit	Arena.c	/^    char *limit;$/;"	m	struct:T	file:
+line	Except.h	/^  int line;$/;"	m	struct:Except_Frame
+lp	Arena.c	/^    long *lp;$/;"	m	union:align	file:
+max_fd	SocketPoll_poll.c	/^    int max_fd;          \/* Maximum FD value seen *\/$/;"	m	struct:PollBackend_T	file:
+maxconns	SocketPool.c	/^  size_t maxconns;$/;"	m	struct:T	file:
+maxevents	SocketPoll.c	/^    int maxevents;$/;"	m	struct:T	file:
+maxevents	SocketPoll_epoll.c	/^    int maxevents;              \/* Maximum events per wait *\/$/;"	m	struct:PollBackend_T	file:
+maxevents	SocketPoll_kqueue.c	/^    int maxevents;         \/* Maximum events per wait *\/$/;"	m	struct:PollBackend_T	file:
+maxevents	SocketPoll_poll.c	/^    int maxevents;       \/* Maximum events per wait (not strictly enforced) *\/$/;"	m	struct:PollBackend_T	file:
+mutex	Arena.c	/^    pthread_mutex_t mutex; \/* Per-arena mutex for thread-safe allocation *\/$/;"	m	struct:T	file:
+mutex	SocketPoll.c	/^    pthread_mutex_t mutex;                              \/* Mutex for thread-safe socket data mapping *\/$/;"	m	struct:T	file:
+mutex	SocketPool.c	/^  pthread_mutex_t mutex; \/* Mutex for thread safety *\/$/;"	m	struct:T	file:
+next	SocketPoll.c	/^    struct SocketData *next;$/;"	m	struct:SocketData	typeref:struct:SocketData::SocketData	file:
+nfds	SocketPoll_poll.c	/^    int nfds;            \/* Current number of FDs *\/$/;"	m	struct:PollBackend_T	file:
+nfree	Arena.c	/^static int nfree = 0;$/;"	v	file:
+outbuf	SocketPool.c	/^  SocketBuf_T outbuf;$/;"	m	struct:Connection	file:
+p	Arena.c	/^    void *p;$/;"	m	union:align	file:
+peeraddr	Socket.c	/^    char *peeraddr; \/* IPv4 or IPv6 address string *\/$/;"	m	struct:T	file:
+peerport	Socket.c	/^    int peerport;$/;"	m	struct:T	file:
+prev	Arena.c	/^    struct ChunkHeader *prev;$/;"	m	struct:ChunkHeader	typeref:struct:ChunkHeader::ChunkHeader	file:
+prev	Arena.c	/^    struct ChunkHeader *prev;$/;"	m	struct:T	typeref:struct:T::ChunkHeader	file:
+prev	Except.h	/^  Except_Frame *prev;$/;"	m	struct:Except_Frame
+reason	Except.h	/^  const char *reason; \/**< Human-readable error description *\/$/;"	m	struct:T
+safe_time	SocketPool.c	/^safe_time (void)$/;"	f	file:
+size	SocketBuf.c	/^    size_t size;$/;"	m	struct:T	file:
+socket	SocketPoll.c	/^    Socket_T socket;$/;"	m	struct:SocketData	file:
+socket	SocketPoll.h	/^    Socket_T socket; \/**< Socket that triggered event *\/$/;"	m	struct:SocketEvent
+socket	SocketPool.c	/^  Socket_T socket;$/;"	m	struct:Connection	file:
+socket_data_add	SocketPoll.c	/^static void socket_data_add(T poll, Socket_T socket, void *data)$/;"	f	file:
+socket_data_get	SocketPoll.c	/^static void *socket_data_get(T poll, Socket_T socket)$/;"	f	file:
+socket_data_map	SocketPoll.c	/^    SocketData *socket_data_map[SOCKET_DATA_HASH_SIZE]; \/* Hash table for O(1) socket->data mapping *\/$/;"	m	struct:T	file:
+socket_data_remove	SocketPoll.c	/^static void socket_data_remove(T poll, Socket_T socket)$/;"	f	file:
+socket_data_update	SocketPoll.c	/^static void socket_data_update(T poll, Socket_T socket, void *data)$/;"	f	file:
+socket_error_buf	SocketError.c	/^__thread char socket_error_buf[SOCKET_ERROR_BUFSIZE] = {0};$/;"	v
+socket_error_buf	SocketError.h	/^extern __declspec(thread) char socket_error_buf[SOCKET_ERROR_BUFSIZE];$/;"	v
+socket_hash	SocketPoll.c	/^static unsigned socket_hash(const Socket_T socket)$/;"	f	file:
+socket_hash	SocketPool.c	/^socket_hash (const Socket_T socket)$/;"	f	file:
+socketevents	SocketPoll.c	/^    SocketEvent_T *socketevents;$/;"	m	struct:T	file:
+tail	SocketBuf.c	/^    size_t tail;$/;"	m	struct:T	file:
+translate_from_epoll	SocketPoll_epoll.c	/^static unsigned translate_from_epoll(unsigned epoll_events)$/;"	f	file:
+translate_from_poll_events	SocketPoll_poll.c	/^static unsigned translate_from_poll_events(short revents)$/;"	f	file:
+translate_to_epoll	SocketPoll_epoll.c	/^static unsigned translate_to_epoll(unsigned events)$/;"	f	file:
+translate_to_poll_events	SocketPoll_poll.c	/^static unsigned translate_to_poll_events(unsigned events)$/;"	f	file:
