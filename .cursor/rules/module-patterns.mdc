@@ -730,6 +730,23 @@ FINALLY
 END_TRY;
 ```
 
+## 9. DNS Module Pattern (Async DNS Resolution)
+
+### DNS Resolver Structure
+**ALWAYS** follow the async DNS resolver pattern with thread pool, request queue, and completion signaling.
+
+### Thread Pool Pattern
+**ALWAYS** implement thread pool with proper lifecycle management in SocketDNS_new() and SocketDNS_free().
+
+### Request Queue Pattern
+**ALWAYS** implement thread-safe request queue using mutex + condition variable.
+
+### Worker Thread Pattern
+**ALWAYS** implement worker threads that wait on condition variable and process DNS requests.
+
+### Completion Signaling Pattern
+**ALWAYS** use pipe for completion signaling - write on completion, read via SocketDNS_check().
+
 ## 10. Performance Pattern
 
 ### O(1) Operations

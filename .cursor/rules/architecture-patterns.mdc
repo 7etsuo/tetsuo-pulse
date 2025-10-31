@@ -18,6 +18,7 @@ The socket library consists of the following modules organized in layers:
 - **Socket** - TCP stream and Unix domain sockets (AF_INET, AF_INET6, AF_UNIX)
 - **SocketDgram** - UDP datagram sockets with multicast/broadcast
 - **SocketBuf** - Circular buffer for efficient I/O
+- **SocketDNS** - Async DNS resolution with thread pool
 
 ### Layer 3: Event System
 - **SocketPoll** - Event polling abstraction (cross-platform)
@@ -40,8 +41,9 @@ SocketPoll → Socket → Arena, Except
           
 SocketDgram → Arena, Except
 
-Socket → Arena, Except
+Socket → Arena, Except, SocketDNS
 SocketBuf → Arena
+SocketDNS → Arena, Except
 ```
 
 ## Event-Driven Architecture

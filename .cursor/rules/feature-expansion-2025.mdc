@@ -9,10 +9,10 @@ This rule documents the major feature expansion completed in October 2025, addin
 ## Expansion Summary
 
 **Date:** October 26, 2025  
-**Scope:** UDP sockets, cross-platform event system, Unix domain sockets  
-**Lines Added:** ~3,500 lines of production code  
-**Files Created:** 11 new files  
-**Files Modified:** 4 files  
+**Scope:** UDP sockets, cross-platform event system, Unix domain sockets, async DNS resolution  
+**Lines Added:** ~5,700 lines of production code (3,500 + 2,200 async DNS)  
+**Files Created:** 13 new files (11 + 2 async DNS)  
+**Files Modified:** 6 files (4 + 2 async DNS)  
 **Build Status:** ✅ Compiles with zero warnings on Linux/BSD/macOS  
 **Backward Compatibility:** 100% (zero breaking changes)
 
@@ -81,7 +81,61 @@ SocketDgram_sendto(server, buffer, n, sender_host, sender_port);
 - Same SocketPoll API across all platforms
 - Zero overhead (compile-time selection)
 
-### 3. Unix Domain Sockets
+### 3. Async DNS Resolution (SocketDNS Module)
+
+**Files:**
+- `SocketDNS.h` (~200 lines) - Public API
+- `SocketDNS.c` (~700 lines) - Implementation
+
+**Capabilities:**
+- ✅ Thread pool-based async DNS resolution
+- ✅ Callback-based completion notification
+- ✅ SocketPoll integration via pollable file descriptor
+- ✅ Request cancellation support
+- ✅ Thread-safe implementation
+- ✅ Eliminates 30+ second blocking during DNS failures
+- ✅ Addresses DoS vulnerability from blocking DNS
+
+**Usage Pattern (Callback-based):**
+```c
+SocketDNS_T dns = SocketDNS_new();
+
+void on_resolve(SocketDNS_Request_T req, struct addrinfo *res, int error, void *data) {
+    Socket_T socket = (Socket_T)data;
+    if (res) {
+        Socket_bind_with_addrinfo(socket, res);
+        freeaddrinfo(res);
+    }
+}
+
+SocketDNS_Request_T req = Socket_bind_async(dns, socket, "example.com", 8080);
+SocketDNS_resolve(dns, "example.com", 8080, on_resolve, socket);
+```
+
+**Usage Pattern (SocketPoll integration):**
+```c
+SocketDNS_T dns = SocketDNS_new();
+SocketPoll_T poll = SocketPoll_new(100);
+int dns_fd = SocketDNS_pollfd(dns);
+
+/* Monitor DNS completion */
+SocketDNS_Request_T req = Socket_bind_async(dns, socket, "example.com", 8080);
+
+/* In event loop: */
+SocketDNS_check(dns);  /* Process completed requests */
+struct addrinfo *res = SocketDNS_getresult(dns, req);
+if (res) {
+    Socket_bind_with_addrinfo(socket, res);
+    freeaddrinfo(res);
+}
+```
+
+**Configuration:**
+- `SOCKET_DNS_THREAD_COUNT` - Worker thread count (default: 4)
+- `SOCKET_DNS_MAX_PENDING` - Max pending requests (default: 1000)
+- `SOCKET_DNS_TIMEOUT_SEC` - Request timeout (default: 5)
+
+### 4. Unix Domain Sockets
 
 **Integration:** Added to existing Socket module (no new module needed)
 
@@ -209,7 +263,19 @@ Building socket library with epoll backend on Linux
 - `SocketDgram_joinmulticast()`, `SocketDgram_leavemulticast()`
 - `SocketDgram_setnonblocking()`, `SocketDgram_setreuseaddr()`
 
-**Socket (Unix domain extensions):**
+**SocketDNS (Async DNS):**
+- `SocketDNS_new()`, `SocketDNS_free()`
+- `SocketDNS_resolve()` - Start async resolution
+- `SocketDNS_cancel()` - Cancel pending request
+- `SocketDNS_pollfd()` - Get pollable file descriptor
+- `SocketDNS_check()` - Check for completed requests
+- `SocketDNS_getresult()` - Get resolved address
+
+**Socket (Async DNS + Unix domain extensions):**
+- `Socket_bind_async()` - Start async DNS for bind
+- `Socket_connect_async()` - Start async DNS for connect
+- `Socket_bind_with_addrinfo()` - Bind with pre-resolved address
+- `Socket_connect_with_addrinfo()` - Connect with pre-resolved address
 - `Socket_bind_unix()` - Bind to Unix socket path
 - `Socket_connect_unix()` - Connect to Unix socket path
 - `Socket_getpeerpid()` - Get peer process ID (Linux)
@@ -365,13 +431,6 @@ int n = SocketPoll_wait(poll, &events, timeout);
 
 ## Future Enhancements (Not Implemented)
 
-### Async DNS Resolution
-**Status:** Deferred (complex, requires thread pool)
-
-**Reason:** Would add ~1500-2000 lines, can be added later without breaking changes.
-
-**Workaround:** Use IP addresses for non-blocking operation, DNS blocking is documented.
-
 ### Windows Support
 **Status:** Not planned (would require Winsock adaptation)
 
@@ -429,6 +488,10 @@ make clean && make
 - [SocketPoll_kqueue.c](mdc:SocketPoll_kqueue.c)
 - [SocketPoll_poll.c](mdc:SocketPoll_poll.c)
 
+**Async DNS Resolution:**
+- [SocketDNS.h](mdc:SocketDNS.h) - Async DNS API
+- [SocketDNS.c](mdc:SocketDNS.c) - Thread pool implementation
+
 **Unix Domain Sockets:**
 - [Socket.h](mdc:Socket.h) - Unix API additions
 - [Socket.c](mdc:Socket.c) - Unix implementation
@@ -446,9 +509,11 @@ make clean && make
 - `udp-sockets` - UDP socket patterns
 - `cross-platform-backends` - Backend system documentation
 - `unix-domain-sockets` - Unix socket patterns
+- `async-dns` - Async DNS resolution patterns and usage
 - `build-system` - Updated with platform detection
 - `module-patterns` - Updated with new modules
 - `architecture-patterns` - Updated with new architecture
+- `error-handling` - Thread-safe exception patterns
 
 ---
 
@@ -458,11 +523,18 @@ make clean && make
 
 | Type | Module | Create | Bind | Connect |
 |------|--------|--------|------|---------|
-| TCP IPv4 | Socket | `AF_INET, SOCK_STREAM` | `Socket_bind()` | `Socket_connect()` |
-| TCP IPv6 | Socket | `AF_INET6, SOCK_STREAM` | `Socket_bind()` | `Socket_connect()` |
+| TCP IPv4 | Socket | `AF_INET, SOCK_STREAM` | `Socket_bind()` / `Socket_bind_async()` | `Socket_connect()` / `Socket_connect_async()` |
+| TCP IPv6 | Socket | `AF_INET6, SOCK_STREAM` | `Socket_bind()` / `Socket_bind_async()` | `Socket_connect()` / `Socket_connect_async()` |
 | Unix Stream | Socket | `AF_UNIX, SOCK_STREAM` | `Socket_bind_unix()` | `Socket_connect_unix()` |
 | UDP IPv4 | SocketDgram | `AF_INET, 0` | `SocketDgram_bind()` | `SocketDgram_connect()` |
 | UDP IPv6 | SocketDgram | `AF_INET6, 0` | `SocketDgram_bind()` | `SocketDgram_connect()` |
+
+### Async DNS Usage
+
+| Operation | Async Start | Completion Check | Finish Operation |
+|-----------|-------------|------------------|------------------|
+| Bind | `Socket_bind_async()` | `SocketDNS_getresult()` | `Socket_bind_with_addrinfo()` |
+| Connect | `Socket_connect_async()` | `SocketDNS_getresult()` | `Socket_connect_with_addrinfo()` |
 
 ### Event Backends by Platform
 

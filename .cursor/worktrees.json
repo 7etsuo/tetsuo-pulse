@@ -1,0 +1,19 @@
+{
+  "worktrees": [
+    {
+      "name": "main",
+      "path": ".",
+      "branch": "main",
+      "setup-commands": [
+        "make clean",
+        "make lib"
+      ],
+      "description": "Main development worktree for the socket library"
+    }
+  ],
+  "default-worktree": "main",
+  "setup-worktree": [
+    "make clean",
+    "make lib"
+  ]
+}
