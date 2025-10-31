@@ -1,0 +1,44 @@
+# Build artifacts
+build/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+
+# Libraries
+libsocket.so
+libsocket.a
+
+# Test executables
+test_*
+build/test/
+
+# Dependency files
+*.d
+
+# Editor/IDE files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+*.orig
+
+# Debug files
+*.dSYM/
+*.gdb_history
+core
+core.*
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
