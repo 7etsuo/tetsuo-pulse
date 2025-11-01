@@ -90,6 +90,279 @@ static void validate_dgram_hostname(const char *host)
 }
 
 /**
+ * setup_sendto_hints - Initialize addrinfo hints for sendto operations
+ * @hints: Hints structure to initialize
+ */
+static void setup_sendto_hints(struct addrinfo *hints)
+{
+    memset(hints, 0, sizeof(*hints));
+    hints->ai_family = SOCKET_AF_UNSPEC;
+    hints->ai_socktype = SOCKET_DGRAM_TYPE;
+    hints->ai_protocol = 0;
+}
+
+/**
+ * resolve_sendto_address - Resolve address for sendto operation
+ * @host: Hostname to resolve
+ * @port: Port number
+ * @res: Output resolved addresses
+ *
+ * Returns: 0 on success, raises exception on failure
+ *
+ * Raises: SocketDgram_Failed on resolution failure
+ */
+static int resolve_sendto_address(const char *host, int port, struct addrinfo **res)
+{
+    struct addrinfo hints;
+    char port_str[SOCKET_PORT_STR_BUFSIZE];
+    int result;
+
+    result = snprintf(port_str, sizeof(port_str), "%d", port);
+    assert(result > 0 && result < (int)sizeof(port_str));
+
+    setup_sendto_hints(&hints);
+
+    result = getaddrinfo(host, port_str, &hints, res);
+    if (result != 0)
+    {
+        SOCKET_ERROR_MSG("Invalid host/IP address: %.*s (%s)", SOCKET_ERROR_MAX_HOSTNAME, host, gai_strerror(result));
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+
+    return 0;
+}
+
+/**
+ * perform_sendto - Send datagram to resolved address
+ * @socket: Socket to send from
+ * @buf: Data buffer
+ * @len: Data length
+ * @res: Resolved address info
+ *
+ * Returns: Bytes sent or 0 on EAGAIN/EWOULDBLOCK
+ *
+ * Raises: SocketDgram_Failed on send failure
+ */
+static ssize_t perform_sendto(T socket, const void *buf, size_t len, struct addrinfo *res)
+{
+    ssize_t sent = sendto(socket->fd, buf, len, 0, res->ai_addr, res->ai_addrlen);
+
+    if (sent < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0;
+
+        /* Note: We can't include host/port in error since res is freed */
+        SOCKET_ERROR_FMT("Failed to send datagram");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+
+    return sent;
+}
+
+/**
+ * perform_recvfrom - Receive datagram from socket
+ * @socket: Socket to receive from
+ * @buf: Data buffer
+ * @len: Buffer length
+ * @addr: Output sender address
+ * @addrlen: Input/output address length
+ *
+ * Returns: Bytes received or 0 on EAGAIN/EWOULDBLOCK
+ *
+ * Raises: SocketDgram_Failed on receive failure
+ */
+static ssize_t perform_recvfrom(T socket, void *buf, size_t len, struct sockaddr_storage *addr, socklen_t *addrlen)
+{
+    ssize_t received = recvfrom(socket->fd, buf, len, 0, (struct sockaddr *)addr, addrlen);
+
+    if (received < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0;
+
+        SOCKET_ERROR_FMT("Failed to receive datagram");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+
+    return received;
+}
+
+/**
+ * extract_sender_info - Extract sender address and port information
+ * @addr: Sender address structure
+ * @addrlen: Address length
+ * @host: Output host buffer
+ * @host_len: Host buffer length
+ * @port: Output port pointer
+ */
+static void extract_sender_info(const struct sockaddr_storage *addr, socklen_t addrlen,
+                               char *host, size_t host_len, int *port)
+{
+    char serv[SOCKET_NI_MAXSERV];
+    int result;
+
+    result = getnameinfo((struct sockaddr *)addr, addrlen, host, host_len, serv, SOCKET_NI_MAXSERV,
+                         SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
+
+    if (result == 0)
+    {
+        char *endptr;
+        long port_long = strtol(serv, &endptr, 10);
+        if (*endptr == '\0' && port_long > 0 && port_long <= 65535)
+        {
+            *port = (int)port_long;
+        }
+        else
+        {
+            *port = 0;
+        }
+    }
+    else
+    {
+        /* Failed to get address info - set defaults */
+        if (host_len > 0)
+            host[0] = '\0';
+        *port = 0;
+    }
+}
+
+/**
+ * resolve_multicast_group - Resolve multicast group address
+ * @group: Multicast group address
+ * @res: Output resolved address info
+ *
+ * Raises: SocketDgram_Failed on resolution failure
+ */
+static void resolve_multicast_group(const char *group, struct addrinfo **res)
+{
+    struct addrinfo hints;
+    int result;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = SOCKET_AF_UNSPEC;
+    hints.ai_socktype = SOCKET_DGRAM_TYPE;
+    hints.ai_flags = SOCKET_AI_NUMERICHOST;
+
+    result = getaddrinfo(group, NULL, &hints, res);
+    if (result != 0)
+    {
+        SOCKET_ERROR_MSG("Invalid multicast group address: %s (%s)", group, gai_strerror(result));
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+}
+
+/**
+ * join_ipv4_multicast - Join IPv4 multicast group
+ * @socket: Socket to join
+ * @group_addr: Multicast group address
+ * @interface: Interface address or NULL
+ *
+ * Raises: SocketDgram_Failed on join failure
+ */
+static void join_ipv4_multicast(T socket, struct in_addr group_addr, const char *interface)
+{
+    struct ip_mreq mreq;
+    memset(&mreq, 0, sizeof(mreq));
+    mreq.imr_multiaddr = group_addr;
+
+    if (interface)
+    {
+        if (inet_pton(SOCKET_AF_INET, interface, &mreq.imr_interface) <= 0)
+        {
+            SOCKET_ERROR_MSG("Invalid interface address: %s", interface);
+            RAISE_DGRAM_ERROR(SocketDgram_Failed);
+        }
+    }
+    else
+    {
+        mreq.imr_interface.s_addr = INADDR_ANY;
+    }
+
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to join IPv4 multicast group");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+}
+
+/**
+ * join_ipv6_multicast - Join IPv6 multicast group
+ * @socket: Socket to join
+ * @group_addr: Multicast group address
+ *
+ * Raises: SocketDgram_Failed on join failure
+ */
+static void join_ipv6_multicast(T socket, struct in6_addr group_addr)
+{
+    struct ipv6_mreq mreq6;
+    memset(&mreq6, 0, sizeof(mreq6));
+    mreq6.ipv6mr_multiaddr = group_addr;
+    mreq6.ipv6mr_interface = SOCKET_MULTICAST_DEFAULT_INTERFACE;
+
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to join IPv6 multicast group");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+}
+
+/**
+ * leave_ipv4_multicast - Leave IPv4 multicast group
+ * @socket: Socket to leave
+ * @group_addr: Multicast group address
+ * @interface: Interface address or NULL
+ *
+ * Raises: SocketDgram_Failed on leave failure
+ */
+static void leave_ipv4_multicast(T socket, struct in_addr group_addr, const char *interface)
+{
+    struct ip_mreq mreq;
+    memset(&mreq, 0, sizeof(mreq));
+    mreq.imr_multiaddr = group_addr;
+
+    if (interface)
+    {
+        if (inet_pton(SOCKET_AF_INET, interface, &mreq.imr_interface) <= 0)
+        {
+            SOCKET_ERROR_MSG("Invalid interface address: %s", interface);
+            RAISE_DGRAM_ERROR(SocketDgram_Failed);
+        }
+    }
+    else
+    {
+        mreq.imr_interface.s_addr = INADDR_ANY;
+    }
+
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to leave IPv4 multicast group");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+}
+
+/**
+ * leave_ipv6_multicast - Leave IPv6 multicast group
+ * @socket: Socket to leave
+ * @group_addr: Multicast group address
+ *
+ * Raises: SocketDgram_Failed on leave failure
+ */
+static void leave_ipv6_multicast(T socket, struct in6_addr group_addr)
+{
+    struct ipv6_mreq mreq6;
+    memset(&mreq6, 0, sizeof(mreq6));
+    mreq6.ipv6mr_multiaddr = group_addr;
+    mreq6.ipv6mr_interface = SOCKET_MULTICAST_DEFAULT_INTERFACE;
+
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to leave IPv6 multicast group");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+}
+
+/**
  * setup_dgram_bind_hints - Initialize addrinfo hints for datagram binding
  * @hints: Hints structure to initialize
  */
@@ -358,56 +631,20 @@ void SocketDgram_connect(T socket, const char *host, int port)
 
 ssize_t SocketDgram_sendto(T socket, const void *buf, size_t len, const char *host, int port)
 {
-    struct addrinfo hints, *res = NULL;
-    char port_str[SOCKET_PORT_STR_BUFSIZE];
-    int result;
+    struct addrinfo *res = NULL;
     ssize_t sent;
-    size_t host_len;
 
     assert(socket);
     assert(buf);
     assert(len > 0);
     assert(host);
 
-    if (!SOCKET_VALID_PORT(port))
-    {
-        SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
+    validate_dgram_port(port);
+    validate_dgram_hostname(host);
+    resolve_sendto_address(host, port, &res);
 
-    host_len = strlen(host);
-    if (host_len > SOCKET_ERROR_MAX_HOSTNAME)
-    {
-        SOCKET_ERROR_MSG("Host name too long (max %d characters)", SOCKET_ERROR_MAX_HOSTNAME);
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
-
-    result = snprintf(port_str, sizeof(port_str), "%d", port);
-    assert(result > 0 && result < (int)sizeof(port_str));
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = SOCKET_AF_UNSPEC;
-    hints.ai_socktype = SOCKET_DGRAM_TYPE;
-    hints.ai_protocol = 0;
-
-    result = getaddrinfo(host, port_str, &hints, &res);
-    if (result != 0)
-    {
-        SOCKET_ERROR_MSG("Invalid host/IP address: %.*s (%s)", SOCKET_ERROR_MAX_HOSTNAME, host, gai_strerror(result));
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
-
-    sent = sendto(socket->fd, buf, len, 0, res->ai_addr, res->ai_addrlen);
+    sent = perform_sendto(socket, buf, len, res);
     freeaddrinfo(res);
-
-    if (sent < 0)
-    {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 0;
-
-        SOCKET_ERROR_FMT("Failed to send datagram to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
 
     return sent;
 }
@@ -417,50 +654,17 @@ ssize_t SocketDgram_recvfrom(T socket, void *buf, size_t len, char *host, size_t
     struct sockaddr_storage addr;
     socklen_t addrlen = sizeof(addr);
     ssize_t received;
-    char serv[SOCKET_NI_MAXSERV];
-    int result;
 
     assert(socket);
     assert(buf);
     assert(len > 0);
 
-    received = recvfrom(socket->fd, buf, len, 0, (struct sockaddr *)&addr, &addrlen);
-
-    if (received < 0)
-    {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 0;
-
-        SOCKET_ERROR_FMT("Failed to receive datagram");
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
+    received = perform_recvfrom(socket, buf, len, &addr, &addrlen);
 
     /* Get sender address and port if requested */
     if (host && host_len > 0 && port)
     {
-        result = getnameinfo((struct sockaddr *)&addr, addrlen, host, host_len, serv, SOCKET_NI_MAXSERV,
-                             SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
-
-        if (result == 0)
-        {
-            char *endptr;
-            long port_long = strtol(serv, &endptr, 10);
-            if (*endptr == '\0' && port_long > 0 && port_long <= 65535)
-            {
-                *port = (int)port_long;
-            }
-            else
-            {
-                *port = 0;
-            }
-        }
-        else
-        {
-            /* Failed to get address info - set defaults */
-            if (host_len > 0)
-                host[0] = '\0';
-            *port = 0;
-        }
+        extract_sender_info(&addr, addrlen, host, host_len, port);
     }
 
     return received;
@@ -558,64 +762,20 @@ void SocketDgram_setbroadcast(T socket, int enable)
 
 void SocketDgram_joinmulticast(T socket, const char *group, const char *interface)
 {
-    struct addrinfo hints, *res = NULL;
-    int result;
+    struct addrinfo *res = NULL;
 
     assert(socket);
     assert(group);
 
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = SOCKET_AF_UNSPEC;
-    hints.ai_socktype = SOCKET_DGRAM_TYPE;
-    hints.ai_flags = SOCKET_AI_NUMERICHOST;
-
-    result = getaddrinfo(group, NULL, &hints, &res);
-    if (result != 0)
-    {
-        SOCKET_ERROR_MSG("Invalid multicast group address: %s (%s)", group, gai_strerror(result));
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
+    resolve_multicast_group(group, &res);
 
     if (res->ai_family == SOCKET_AF_INET)
     {
-        struct ip_mreq mreq;
-        memset(&mreq, 0, sizeof(mreq));
-        mreq.imr_multiaddr = ((struct sockaddr_in *)res->ai_addr)->sin_addr;
-
-        if (interface)
-        {
-            if (inet_pton(SOCKET_AF_INET, interface, &mreq.imr_interface) <= 0)
-            {
-                freeaddrinfo(res);
-                SOCKET_ERROR_MSG("Invalid interface address: %s", interface);
-                RAISE_DGRAM_ERROR(SocketDgram_Failed);
-            }
-        }
-        else
-        {
-            mreq.imr_interface.s_addr = INADDR_ANY;
-        }
-
-        if (setsockopt(socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
-        {
-            freeaddrinfo(res);
-            SOCKET_ERROR_FMT("Failed to join IPv4 multicast group: %s", group);
-            RAISE_DGRAM_ERROR(SocketDgram_Failed);
-        }
+        join_ipv4_multicast(socket, ((struct sockaddr_in *)res->ai_addr)->sin_addr, interface);
     }
     else if (res->ai_family == SOCKET_AF_INET6)
     {
-        struct ipv6_mreq mreq6;
-        memset(&mreq6, 0, sizeof(mreq6));
-        mreq6.ipv6mr_multiaddr = ((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
-        mreq6.ipv6mr_interface = 0; /* Default interface */
-
-        if (setsockopt(socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0)
-        {
-            freeaddrinfo(res);
-            SOCKET_ERROR_FMT("Failed to join IPv6 multicast group: %s", group);
-            RAISE_DGRAM_ERROR(SocketDgram_Failed);
-        }
+        join_ipv6_multicast(socket, ((struct sockaddr_in6 *)res->ai_addr)->sin6_addr);
     }
     else
     {
@@ -629,64 +789,20 @@ void SocketDgram_joinmulticast(T socket, const char *group, const char *interfac
 
 void SocketDgram_leavemulticast(T socket, const char *group, const char *interface)
 {
-    struct addrinfo hints, *res = NULL;
-    int result;
+    struct addrinfo *res = NULL;
 
     assert(socket);
     assert(group);
 
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = SOCKET_AF_UNSPEC;
-    hints.ai_socktype = SOCKET_DGRAM_TYPE;
-    hints.ai_flags = SOCKET_AI_NUMERICHOST;
-
-    result = getaddrinfo(group, NULL, &hints, &res);
-    if (result != 0)
-    {
-        SOCKET_ERROR_MSG("Invalid multicast group address: %s (%s)", group, gai_strerror(result));
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
+    resolve_multicast_group(group, &res);
 
     if (res->ai_family == SOCKET_AF_INET)
     {
-        struct ip_mreq mreq;
-        memset(&mreq, 0, sizeof(mreq));
-        mreq.imr_multiaddr = ((struct sockaddr_in *)res->ai_addr)->sin_addr;
-
-        if (interface)
-        {
-            if (inet_pton(SOCKET_AF_INET, interface, &mreq.imr_interface) <= 0)
-            {
-                freeaddrinfo(res);
-                SOCKET_ERROR_MSG("Invalid interface address: %s", interface);
-                RAISE_DGRAM_ERROR(SocketDgram_Failed);
-            }
-        }
-        else
-        {
-            mreq.imr_interface.s_addr = INADDR_ANY;
-        }
-
-        if (setsockopt(socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
-        {
-            freeaddrinfo(res);
-            SOCKET_ERROR_FMT("Failed to leave IPv4 multicast group: %s", group);
-            RAISE_DGRAM_ERROR(SocketDgram_Failed);
-        }
+        leave_ipv4_multicast(socket, ((struct sockaddr_in *)res->ai_addr)->sin_addr, interface);
     }
     else if (res->ai_family == SOCKET_AF_INET6)
     {
-        struct ipv6_mreq mreq6;
-        memset(&mreq6, 0, sizeof(mreq6));
-        mreq6.ipv6mr_multiaddr = ((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
-        mreq6.ipv6mr_interface = 0;
-
-        if (setsockopt(socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0)
-        {
-            freeaddrinfo(res);
-            SOCKET_ERROR_FMT("Failed to leave IPv6 multicast group: %s", group);
-            RAISE_DGRAM_ERROR(SocketDgram_Failed);
-        }
+        leave_ipv6_multicast(socket, ((struct sockaddr_in6 *)res->ai_addr)->sin6_addr);
     }
     else
     {

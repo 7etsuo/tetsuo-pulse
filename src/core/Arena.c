@@ -92,7 +92,8 @@ static pthread_mutex_t arena_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Helper macros for overflow protection */
 #define ARENA_CHECK_OVERFLOW_ADD(a, b) (((a) > SIZE_MAX - (b)) ? ARENA_VALIDATION_FAILURE : ARENA_VALIDATION_SUCCESS)
-#define ARENA_CHECK_OVERFLOW_MUL(a, b) (((a) != 0 && (b) > SIZE_MAX / (a)) ? ARENA_VALIDATION_FAILURE : ARENA_VALIDATION_SUCCESS)
+#define ARENA_CHECK_OVERFLOW_MUL(a, b)                                                                                 \
+    (((a) != 0 && (b) > SIZE_MAX / (a)) ? ARENA_VALIDATION_FAILURE : ARENA_VALIDATION_SUCCESS)
 
 /* Helper macro for safe pointer arithmetic validation */
 #define ARENA_VALID_PTR_ARITH(ptr, offset, max)                                                                        \
@@ -170,8 +171,7 @@ static size_t arena_calculate_final_size(size_t aligned_bytes, size_t alignment)
  */
 static int arena_validate_allocation_size(size_t size)
 {
-    return (size > 0 && size <= ARENA_MAX_ALLOC_SIZE) ?
-           ARENA_SIZE_VALID : ARENA_SIZE_INVALID;
+    return (size > 0 && size <= ARENA_MAX_ALLOC_SIZE) ? ARENA_SIZE_VALID : ARENA_SIZE_INVALID;
 }
 
 /**
@@ -373,8 +373,8 @@ static int arena_has_space(T arena, size_t aligned_size)
     if (arena->avail == NULL || arena->limit == NULL)
         return ARENA_VALIDATION_FAILURE;
 
-    return ((size_t)(arena->limit - arena->avail) >= aligned_size) ?
-           ARENA_VALIDATION_SUCCESS : ARENA_VALIDATION_FAILURE;
+    return ((size_t)(arena->limit - arena->avail) >= aligned_size) ? ARENA_VALIDATION_SUCCESS
+                                                                   : ARENA_VALIDATION_FAILURE;
 }
 
 /**
@@ -404,8 +404,8 @@ static int arena_ensure_space(T arena, size_t aligned_size)
  */
 static int arena_validate_state(T arena)
 {
-    return (arena->limit != NULL && arena->avail != NULL && arena->limit >= arena->avail) ?
-           ARENA_VALIDATION_SUCCESS : ARENA_VALIDATION_FAILURE;
+    return (arena->limit != NULL && arena->avail != NULL && arena->limit >= arena->avail) ? ARENA_VALIDATION_SUCCESS
+                                                                                          : ARENA_VALIDATION_FAILURE;
 }
 
 /**
@@ -582,11 +582,12 @@ static size_t arena_prepare_allocation(size_t nbytes)
  */
 static void *arena_execute_allocation(T arena, size_t aligned_size, size_t nbytes)
 {
-    void * volatile result;
+    void *volatile result;
 
     pthread_mutex_lock(&arena->mutex);
 
-    TRY {
+    TRY
+    {
         if (arena_ensure_space(arena, aligned_size) != ARENA_SUCCESS)
         {
             ARENA_ERROR_MSG("Failed to ensure space for %zu-byte allocation", nbytes);
