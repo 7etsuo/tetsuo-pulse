@@ -71,6 +71,264 @@ struct T
 /* Static helper functions */
 
 /**
+ * normalize_wildcard_host - Normalize wildcard host addresses to NULL
+ * @host: Host string to normalize
+ *
+ * Returns: NULL if wildcard, original host otherwise
+ */
+static const char *normalize_wildcard_host(const char *host)
+{
+        if (host == NULL || strcmp(host, "0.0.0.0") == 0 || strcmp(host, "::") == 0)
+                return NULL;
+        return host;
+}
+
+/**
+ * validate_port_number - Validate port is in valid range
+ * @port: Port number to validate
+ *
+ * Raises: Socket_Failed if port is invalid
+ */
+static void validate_port_number(int port)
+{
+        if (!SOCKET_VALID_PORT(port))
+        {
+                SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
+                RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+}
+
+/**
+ * validate_host_not_null - Validate host pointer is not NULL
+ * @host: Host pointer to validate
+ *
+ * Raises: Socket_Failed if host is NULL
+ */
+static void validate_host_not_null(const char *host)
+{
+        if (host == NULL)
+        {
+                SOCKET_ERROR_MSG("Invalid host: NULL pointer");
+                RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+}
+
+/**
+ * setup_bind_hints - Initialize addrinfo hints for binding
+ * @hints: Hints structure to initialize
+ */
+static void setup_bind_hints(struct addrinfo *hints)
+{
+        memset(hints, 0, sizeof(*hints));
+        hints->ai_family = AF_UNSPEC;
+        hints->ai_socktype = SOCK_STREAM;
+        hints->ai_flags = AI_PASSIVE;
+        hints->ai_protocol = 0;
+}
+
+/**
+ * setup_connect_hints - Initialize addrinfo hints for connecting
+ * @hints: Hints structure to initialize
+ */
+static void setup_connect_hints(struct addrinfo *hints)
+{
+        memset(hints, 0, sizeof(*hints));
+        hints->ai_family = AF_UNSPEC;
+        hints->ai_socktype = SOCK_STREAM;
+        hints->ai_protocol = 0;
+}
+
+/**
+ * get_socket_family - Get socket's address family
+ * @socket: Socket to query
+ *
+ * Returns: Socket family or AF_UNSPEC on error
+ */
+static int get_socket_family(T socket)
+{
+        int socket_family = AF_UNSPEC;
+        socklen_t len = sizeof(socket_family);
+
+        if (getsockopt(socket->fd, SOL_SOCKET, SO_DOMAIN, &socket_family, &len) < 0)
+                socket_family = AF_UNSPEC;
+
+        return socket_family;
+}
+
+/**
+ * enable_dual_stack - Enable IPv6 dual-stack mode
+ * @socket: Socket to configure
+ * @socket_family: Socket's family
+ *
+ * Non-fatal: May fail if platform doesn't support dual-stack
+ */
+static void enable_dual_stack(T socket, int socket_family)
+{
+        if (socket_family == AF_INET6)
+        {
+                int no = 0;
+                setsockopt(socket->fd, IPPROTO_IPV6, IPV6_V6ONLY, &no, sizeof(no));
+        }
+}
+
+/**
+ * try_bind_address - Try to bind socket to address
+ * @socket: Socket to bind
+ * @addr: Address to bind to
+ * @addrlen: Address length
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int try_bind_address(T socket, const struct sockaddr *addr, socklen_t addrlen)
+{
+        if (bind(socket->fd, addr, addrlen) == 0)
+        {
+                memcpy(&socket->addr, addr, addrlen);
+                socket->addrlen = addrlen;
+                return 0;
+        }
+        return -1;
+}
+
+/**
+ * try_connect_address - Try to connect socket to address
+ * @socket: Socket to connect
+ * @addr: Address to connect to
+ * @addrlen: Address length
+ *
+ * Returns: 0 on success or EINPROGRESS, -1 on failure
+ */
+static int try_connect_address(T socket, const struct sockaddr *addr, socklen_t addrlen)
+{
+        if (connect(socket->fd, addr, addrlen) == 0 || errno == EINPROGRESS)
+        {
+                memcpy(&socket->addr, addr, addrlen);
+                socket->addrlen = addrlen;
+                return 0;
+        }
+        return -1;
+}
+
+/**
+ * handle_bind_error - Handle bind error and raise exception
+ * @host: Host string for error message
+ * @port: Port for error message
+ */
+static void handle_bind_error(const char *host, int port)
+{
+        const char *safe_host = host ? host : "any";
+
+        if (errno == EADDRINUSE)
+        {
+                SOCKET_ERROR_FMT(SOCKET_EADDRINUSE ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
+        }
+        else if (errno == EACCES)
+        {
+                SOCKET_ERROR_FMT("Permission denied to bind to port %d", port);
+        }
+        else
+        {
+                SOCKET_ERROR_FMT("Failed to bind to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
+        }
+}
+
+/**
+ * handle_connect_error - Handle connect error and raise exception
+ * @host: Host string for error message
+ * @port: Port for error message
+ */
+static void handle_connect_error(const char *host, int port)
+{
+        if (errno == ECONNREFUSED)
+        {
+                SOCKET_ERROR_FMT(SOCKET_ECONNREFUSED ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
+        }
+        else if (errno == ENETUNREACH)
+        {
+                SOCKET_ERROR_FMT(SOCKET_ENETUNREACH ": %.*s", SOCKET_ERROR_MAX_HOSTNAME, host);
+        }
+        else if (errno == ETIMEDOUT)
+        {
+                SOCKET_ERROR_FMT(SOCKET_ETIMEDOUT ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
+        }
+        else
+        {
+                SOCKET_ERROR_FMT("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
+        }
+}
+
+/**
+ * allocate_peer_address - Allocate and copy peer address string
+ * @newsocket: New socket to allocate for
+ * @host: Host string to copy
+ *
+ * Returns: 0 on success, -1 on failure
+ *
+ * Raises: Socket_Failed on allocation failure
+ */
+static int allocate_peer_address(T newsocket, const char *host)
+{
+        size_t addr_len = strlen(host) + 1;
+
+        newsocket->peeraddr = ALLOC(newsocket->arena, addr_len);
+        if (!newsocket->peeraddr)
+        {
+                SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate peer address buffer");
+                return -1;
+        }
+        strcpy(newsocket->peeraddr, host);
+        return 0;
+}
+
+/**
+ * parse_peer_port - Parse port string to integer
+ * @serv: Port string
+ *
+ * Returns: Parsed port or 0 on failure
+ */
+static int parse_peer_port(const char *serv)
+{
+        char *endptr;
+        long port_long;
+
+        errno = 0;
+        port_long = strtol(serv, &endptr, 10);
+        if (errno == 0 && endptr != serv && *endptr == '\0' && port_long >= 0 && port_long <= 65535)
+                return (int)port_long;
+        return 0;
+}
+
+/**
+ * setup_peer_info - Set up peer address and port from getnameinfo result
+ * @newsocket: New socket to set up
+ * @addr: Address structure
+ * @addrlen: Address length
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int setup_peer_info(T newsocket, const struct sockaddr *addr, socklen_t addrlen)
+{
+        char host[NI_MAXHOST];
+        char serv[NI_MAXSERV];
+        int result;
+
+        result = getnameinfo(addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV,
+                             NI_NUMERICHOST | NI_NUMERICSERV);
+        if (result == 0)
+        {
+                if (allocate_peer_address(newsocket, host) != 0)
+                        return -1;
+                newsocket->peerport = parse_peer_port(serv);
+        }
+        else
+        {
+                newsocket->peeraddr = NULL;
+                newsocket->peerport = 0;
+        }
+        return 0;
+}
+
+/**
  * resolve_address - Resolve hostname/port to addrinfo structure
  * @host: Hostname or IP address (NULL for wildcard)
  * @port: Port number (1-65535)
@@ -240,91 +498,56 @@ void Socket_free(T *socket)
     *socket = NULL;
 }
 
+/**
+ * try_bind_resolved_addresses - Try binding to resolved addresses
+ * @socket: Socket to bind
+ * @res: Resolved address list
+ * @socket_family: Socket's address family
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int try_bind_resolved_addresses(T socket, struct addrinfo *res, int socket_family)
+{
+        struct addrinfo *rp;
+
+        for (rp = res; rp != NULL; rp = rp->ai_next)
+        {
+                if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
+                        continue;
+
+                enable_dual_stack(socket, rp->ai_family);
+
+                if (try_bind_address(socket, rp->ai_addr, rp->ai_addrlen) == 0)
+                        return 0;
+        }
+        return -1;
+}
+
 void Socket_bind(T socket, const char *host, int port)
 {
-    struct addrinfo hints, *res = NULL, *rp;
-    int socket_family = AF_UNSPEC;
-    socklen_t len = sizeof(socket_family);
+        struct addrinfo hints, *res = NULL;
+        int socket_family;
 
-    assert(socket);
+        assert(socket);
 
-    /* Validate port */
-    if (!SOCKET_VALID_PORT(port))
-    {
-        SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
+        validate_port_number(port);
+        host = normalize_wildcard_host(host);
+        setup_bind_hints(&hints);
 
-    /* Normalize wildcard addresses */
-    if (host == NULL || strcmp(host, "0.0.0.0") == 0 || strcmp(host, "::") == 0)
-    {
-        host = NULL;
-    }
+        if (resolve_address(host, port, &hints, &res, AF_UNSPEC) != 0)
+                RAISE_SOCKET_ERROR(Socket_Failed);
 
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC; /* Allow IPv4 or IPv6 */
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE; /* For wildcard IP address */
-    hints.ai_protocol = 0;       /* Any protocol */
+        socket_family = get_socket_family(socket);
 
-    /* Resolve address */
-    if (resolve_address(host, port, &hints, &res, AF_UNSPEC) != 0)
-    {
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
-    /* Get socket's address family to ensure compatibility */
-    if (getsockopt(socket->fd, SOL_SOCKET, SO_DOMAIN, &socket_family, &len) < 0)
-    {
-        socket_family = AF_UNSPEC;
-    }
-
-    /* Try each address */
-    for (rp = res; rp != NULL; rp = rp->ai_next)
-    {
-        /* Skip addresses that don't match socket's family if socket has a specific family */
-        if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
-            continue;
-
-        /* Enable dual-stack on IPv6 sockets */
-        if (rp->ai_family == AF_INET6 && socket_family == AF_INET6)
+        if (try_bind_resolved_addresses(socket, res, socket_family) == 0)
         {
-            int no = 0;
-            if (setsockopt(socket->fd, IPPROTO_IPV6, IPV6_V6ONLY, &no, sizeof(no)) < 0)
-            {
-                /* Non-fatal: dual-stack may not be supported on this platform */
-                /* Socket will work but may only accept IPv6 connections */
-            }
+                freeaddrinfo(res);
+                return;
         }
 
-        if (bind(socket->fd, rp->ai_addr, rp->ai_addrlen) == 0)
-        {
-            /* Success */
-            memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
-            socket->addrlen = rp->ai_addrlen;
-            freeaddrinfo(res);
-            return;
-        }
-    }
-
-    /* No address worked */
-    if (errno == EADDRINUSE)
-    {
-        const char *safe_host = host ? host : "any";
-        SOCKET_ERROR_FMT(SOCKET_EADDRINUSE ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
-    }
-    else if (errno == EACCES)
-    {
-        SOCKET_ERROR_FMT("Permission denied to bind to port %d", port);
-    }
-    else
-    {
-        const char *safe_host = host ? host : "any";
-        SOCKET_ERROR_FMT("Failed to bind to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
-    }
-
-    freeaddrinfo(res);
-    RAISE_SOCKET_ERROR(Socket_Failed);
+        handle_bind_error(host, port);
+        freeaddrinfo(res);
+        RAISE_SOCKET_ERROR(Socket_Failed);
 }
 
 void Socket_listen(T socket, int backlog)
@@ -352,178 +575,139 @@ void Socket_listen(T socket, int backlog)
     }
 }
 
+/**
+ * accept_connection - Accept a new connection
+ * @socket: Listening socket
+ * @addr: Output address structure
+ * @addrlen: Input/output address length
+ *
+ * Returns: New file descriptor or -1 on error
+ */
+static int accept_connection(T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
+{
+        int newfd = accept(socket->fd, (struct sockaddr *)addr, addrlen);
+
+        if (newfd < 0)
+        {
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                        return -1;
+                SOCKET_ERROR_FMT("Failed to accept connection");
+                RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+        return newfd;
+}
+
+/**
+ * create_accepted_socket - Create socket structure for accepted connection
+ * @newfd: Accepted file descriptor
+ * @addr: Peer address
+ * @addrlen: Address length
+ *
+ * Returns: New socket or NULL on failure
+ *
+ * Raises: Socket_Failed on allocation failure
+ */
+static T create_accepted_socket(int newfd, const struct sockaddr_storage *addr, socklen_t addrlen)
+{
+        T newsocket = calloc(1, sizeof(*newsocket));
+
+        if (newsocket == NULL)
+        {
+                int saved_errno = errno;
+                SAFE_CLOSE(newfd);
+                errno = saved_errno;
+                SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate new socket");
+                RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+
+        newsocket->arena = Arena_new();
+        if (!newsocket->arena)
+        {
+                int saved_errno = errno;
+                SAFE_CLOSE(newfd);
+                free(newsocket);
+                errno = saved_errno;
+                SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket arena");
+                RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+
+        newsocket->fd = newfd;
+        memcpy(&newsocket->addr, addr, addrlen);
+        newsocket->addrlen = addrlen;
+
+        return newsocket;
+}
+
 T Socket_accept(T socket)
 {
-    T newsocket;
-    int newfd;
-    struct sockaddr_storage addr;
-    socklen_t addrlen = sizeof(addr);
-    char host[NI_MAXHOST];
-    char serv[NI_MAXSERV];
-    int result;
+        struct sockaddr_storage addr;
+        socklen_t addrlen = sizeof(addr);
+        int newfd;
+        T newsocket;
 
-    assert(socket);
+        assert(socket);
 
-    newfd = accept(socket->fd, (struct sockaddr *)&addr, &addrlen);
-    if (newfd < 0)
-    {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return NULL;
-        SOCKET_ERROR_FMT("Failed to accept connection");
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
+        newfd = accept_connection(socket, &addr, &addrlen);
+        if (newfd < 0)
+                return NULL;
 
-    /* Use calloc to zero-initialize structure */
-    newsocket = calloc(1, sizeof(*newsocket));
-    if (newsocket == NULL)
-    {
-        int saved_errno = errno;
-        SAFE_CLOSE(newfd);
+        newsocket = create_accepted_socket(newfd, &addr, addrlen);
+        setup_peer_info(newsocket, (struct sockaddr *)&addr, addrlen);
+
+        return newsocket;
+}
+
+/**
+ * try_connect_resolved_addresses - Try connecting to resolved addresses
+ * @socket: Socket to connect
+ * @res: Resolved address list
+ * @socket_family: Socket's address family
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int try_connect_resolved_addresses(T socket, struct addrinfo *res, int socket_family)
+{
+        struct addrinfo *rp;
+        int saved_errno = 0;
+
+        for (rp = res; rp != NULL; rp = rp->ai_next)
+        {
+                if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
+                        continue;
+
+                if (try_connect_address(socket, rp->ai_addr, rp->ai_addrlen) == 0)
+                        return 0;
+                saved_errno = errno;
+        }
         errno = saved_errno;
-        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate new socket");
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
-    newsocket->arena = Arena_new();
-    if (!newsocket->arena)
-    {
-        int saved_errno = errno;
-        SAFE_CLOSE(newfd);
-        free(newsocket);
-        errno = saved_errno;
-        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket arena");
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
-    newsocket->fd = newfd;
-    memcpy(&newsocket->addr, &addr, addrlen);
-    newsocket->addrlen = addrlen;
-
-    /* Get peer address and port */
-    result = getnameinfo((struct sockaddr *)&addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV,
-                         NI_NUMERICHOST | NI_NUMERICSERV);
-
-    if (result == 0)
-    {
-        char *endptr;
-        long port_long;
-
-        size_t addr_len = strlen(host) + 1;
-        newsocket->peeraddr = ALLOC(newsocket->arena, addr_len);
-        if (!newsocket->peeraddr)
-        {
-            int saved_errno = errno;
-            SAFE_CLOSE(newfd);
-            Arena_dispose(&newsocket->arena);
-            free(newsocket);
-            errno = saved_errno;
-            SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate peer address buffer");
-            RAISE_SOCKET_ERROR(Socket_Failed);
-        }
-        strcpy(newsocket->peeraddr, host);
-
-        /* Convert port string to int */
-        errno = 0;
-        port_long = strtol(serv, &endptr, 10);
-        if (errno == 0 && endptr != serv && *endptr == '\0' && port_long >= 0 && port_long <= 65535)
-        {
-            newsocket->peerport = (int)port_long;
-        }
-        else
-        {
-            /* Invalid port - set to 0 */
-            newsocket->peerport = 0;
-        }
-    }
-    else
-    {
-        /* Failed to get address info - connection still valid */
-        newsocket->peeraddr = NULL;
-        newsocket->peerport = 0;
-    }
-
-    return newsocket;
+        return -1;
 }
 
 void Socket_connect(T socket, const char *host, int port)
 {
-    struct addrinfo hints, *res = NULL, *rp;
-    int socket_family = AF_UNSPEC;
-    socklen_t len = sizeof(socket_family);
-    int saved_errno = 0;
+        struct addrinfo hints, *res = NULL;
+        int socket_family;
 
-    assert(socket);
+        assert(socket);
 
-    /* Validate host */
-    if (host == NULL)
-    {
-        SOCKET_ERROR_MSG("Invalid host: NULL pointer");
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
+        validate_host_not_null(host);
+        validate_port_number(port);
+        setup_connect_hints(&hints);
 
-    /* Validate port */
-    if (!SOCKET_VALID_PORT(port))
-    {
-        SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
+        if (resolve_address(host, port, &hints, &res, AF_UNSPEC) != 0)
+                RAISE_SOCKET_ERROR(Socket_Failed);
 
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC; /* Allow IPv4 or IPv6 */
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = 0;
+        socket_family = get_socket_family(socket);
 
-    /* Resolve address */
-    if (resolve_address(host, port, &hints, &res, AF_UNSPEC) != 0)
-    {
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
-    /* Get socket's address family */
-    if (getsockopt(socket->fd, SOL_SOCKET, SO_DOMAIN, &socket_family, &len) < 0)
-    {
-        socket_family = AF_UNSPEC;
-    }
-
-    /* Try each address */
-    for (rp = res; rp != NULL; rp = rp->ai_next)
-    {
-        /* Skip addresses that don't match socket's family */
-        if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
-            continue;
-
-        if (connect(socket->fd, rp->ai_addr, rp->ai_addrlen) == 0 || errno == EINPROGRESS)
+        if (try_connect_resolved_addresses(socket, res, socket_family) == 0)
         {
-            /* Success or in progress */
-            memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
-            socket->addrlen = rp->ai_addrlen;
-            freeaddrinfo(res);
-            return;
+                freeaddrinfo(res);
+                return;
         }
-        saved_errno = errno;
-    }
 
-    /* No address worked */
-    errno = saved_errno;
-    freeaddrinfo(res);
-
-    if (errno == ECONNREFUSED)
-    {
-        SOCKET_ERROR_FMT(SOCKET_ECONNREFUSED ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
-    }
-    else if (errno == ENETUNREACH)
-    {
-        SOCKET_ERROR_FMT(SOCKET_ENETUNREACH ": %.*s", SOCKET_ERROR_MAX_HOSTNAME, host);
-    }
-    else if (errno == ETIMEDOUT)
-    {
-        SOCKET_ERROR_FMT(SOCKET_ETIMEDOUT ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
-    }
-    else
-    {
-        SOCKET_ERROR_FMT("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
-    }
-    RAISE_SOCKET_ERROR(Socket_Failed);
+        handle_connect_error(host, port);
+        freeaddrinfo(res);
+        RAISE_SOCKET_ERROR(Socket_Failed);
 }
 
 ssize_t Socket_send(T socket, const void *buf, size_t len)
@@ -887,114 +1071,34 @@ SocketDNS_Request_T Socket_connect_async(SocketDNS_T dns, T socket, const char *
 
 void Socket_bind_with_addrinfo(T socket, struct addrinfo *res)
 {
-    struct addrinfo *rp;
-    int socket_family = AF_UNSPEC;
-    socklen_t len = sizeof(socket_family);
+        int socket_family;
 
-    assert(socket);
-    assert(res);
+        assert(socket);
+        assert(res);
 
-    /* Get socket's address family to ensure compatibility */
-    if (getsockopt(socket->fd, SOL_SOCKET, SO_DOMAIN, &socket_family, &len) < 0)
-    {
-        socket_family = AF_UNSPEC;
-    }
+        socket_family = get_socket_family(socket);
 
-    /* Try each address */
-    for (rp = res; rp != NULL; rp = rp->ai_next)
-    {
-        /* Skip addresses that don't match socket's family if socket has a specific family */
-        if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
-            continue;
+        if (try_bind_resolved_addresses(socket, res, socket_family) == 0)
+                return;
 
-        /* Enable dual-stack on IPv6 sockets */
-        if (rp->ai_family == AF_INET6 && socket_family == AF_INET6)
-        {
-            int no = 0;
-            if (setsockopt(socket->fd, IPPROTO_IPV6, IPV6_V6ONLY, &no, sizeof(no)) < 0)
-            {
-                /* Non-fatal: dual-stack may not be supported on this platform */
-            }
-        }
-
-        if (bind(socket->fd, rp->ai_addr, rp->ai_addrlen) == 0)
-        {
-            /* Success */
-            memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
-            socket->addrlen = rp->ai_addrlen;
-            return;
-        }
-    }
-
-    /* No address worked */
-    if (errno == EADDRINUSE)
-    {
-        SOCKET_ERROR_FMT(SOCKET_EADDRINUSE ": Failed to bind (address in use)");
-    }
-    else if (errno == EACCES)
-    {
-        SOCKET_ERROR_FMT("Permission denied to bind");
-    }
-    else
-    {
-        SOCKET_ERROR_FMT("Failed to bind with resolved address");
-    }
-    RAISE_SOCKET_ERROR(Socket_Failed);
+        handle_bind_error(NULL, 0);
+        RAISE_SOCKET_ERROR(Socket_Failed);
 }
 
 void Socket_connect_with_addrinfo(T socket, struct addrinfo *res)
 {
-    struct addrinfo *rp;
-    int socket_family = AF_UNSPEC;
-    socklen_t len = sizeof(socket_family);
-    int saved_errno = 0;
+        int socket_family;
 
-    assert(socket);
-    assert(res);
+        assert(socket);
+        assert(res);
 
-    /* Get socket's address family */
-    if (getsockopt(socket->fd, SOL_SOCKET, SO_DOMAIN, &socket_family, &len) < 0)
-    {
-        socket_family = AF_UNSPEC;
-    }
+        socket_family = get_socket_family(socket);
 
-    /* Try each address */
-    for (rp = res; rp != NULL; rp = rp->ai_next)
-    {
-        /* Skip addresses that don't match socket's family */
-        if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
-            continue;
+        if (try_connect_resolved_addresses(socket, res, socket_family) == 0)
+                return;
 
-        if (connect(socket->fd, rp->ai_addr, rp->ai_addrlen) == 0 || errno == EINPROGRESS)
-        {
-            /* Success or in progress */
-            memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
-            socket->addrlen = rp->ai_addrlen;
-            return;
-        }
-        saved_errno = errno;
-    }
-
-    /* No address worked */
-    errno = saved_errno;
-
-    if (errno == ECONNREFUSED)
-    {
-        SOCKET_ERROR_FMT(SOCKET_ECONNREFUSED ": Connection refused");
-    }
-    else if (errno == ENETUNREACH)
-    {
-        SOCKET_ERROR_FMT(SOCKET_ENETUNREACH ": Network unreachable");
-    }
-    else if (errno == ETIMEDOUT)
-    {
-        SOCKET_ERROR_FMT(SOCKET_ETIMEDOUT ": Connection timed out");
-    }
-    else
-    {
-        SOCKET_ERROR_FMT("Failed to connect with resolved address");
-    }
-    RAISE_SOCKET_ERROR(Socket_Failed);
+        handle_connect_error("resolved", 0);
+        RAISE_SOCKET_ERROR(Socket_Failed);
 }
 
 #undef T
