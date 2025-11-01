@@ -24,6 +24,7 @@
 #include "socket/SocketDgram.h"
 #include "core/SocketConfig.h"
 #include "core/SocketError.h"
+#include "socket/SocketCommon.h"
 
 #define T SocketDgram_T
 
@@ -65,11 +66,7 @@ struct T
  */
 static void validate_dgram_port(int port)
 {
-    if (!SOCKET_VALID_PORT(port))
-    {
-        SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
+    SocketCommon_validate_port(port, SocketDgram_Failed);
 }
 
 /**
@@ -80,13 +77,7 @@ static void validate_dgram_port(int port)
  */
 static void validate_dgram_hostname(const char *host)
 {
-    size_t host_len = strlen(host);
-
-    if (host_len > SOCKET_ERROR_MAX_HOSTNAME)
-    {
-        SOCKET_ERROR_MSG("Host name too long (max %d characters)", SOCKET_ERROR_MAX_HOSTNAME);
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
+    SocketCommon_validate_hostname(host, SocketDgram_Failed);
 }
 
 /**
@@ -95,10 +86,7 @@ static void validate_dgram_hostname(const char *host)
  */
 static void setup_sendto_hints(struct addrinfo *hints)
 {
-    memset(hints, 0, sizeof(*hints));
-    hints->ai_family = SOCKET_AF_UNSPEC;
-    hints->ai_socktype = SOCKET_DGRAM_TYPE;
-    hints->ai_protocol = 0;
+    SocketCommon_setup_hints(hints, SOCKET_DGRAM_TYPE, 0);
 }
 
 /**
@@ -368,11 +356,7 @@ static void leave_ipv6_multicast(T socket, struct in6_addr group_addr)
  */
 static void setup_dgram_bind_hints(struct addrinfo *hints)
 {
-    memset(hints, 0, sizeof(*hints));
-    hints->ai_family = SOCKET_AF_UNSPEC;
-    hints->ai_socktype = SOCKET_DGRAM_TYPE;
-    hints->ai_flags = SOCKET_AI_PASSIVE;
-    hints->ai_protocol = 0;
+    SocketCommon_setup_hints(hints, SOCKET_DGRAM_TYPE, SOCKET_AI_PASSIVE);
 }
 
 /**
@@ -381,37 +365,7 @@ static void setup_dgram_bind_hints(struct addrinfo *hints)
  */
 static void setup_dgram_connect_hints(struct addrinfo *hints)
 {
-    memset(hints, 0, sizeof(*hints));
-    hints->ai_family = SOCKET_AF_UNSPEC;
-    hints->ai_socktype = SOCKET_DGRAM_TYPE;
-    hints->ai_protocol = 0;
-}
-
-/**
- * resolve_dgram_address - Resolve datagram address
- * @host: Hostname or NULL for wildcard
- * @port: Port number
- * @hints: Address hints
- * @res: Output resolved addresses
- *
- * Returns: 0 on success, raises exception on failure
- */
-static int resolve_dgram_address(const char *host, int port, const struct addrinfo *hints, struct addrinfo **res)
-{
-    char port_str[SOCKET_PORT_STR_BUFSIZE];
-    int result;
-
-    result = snprintf(port_str, sizeof(port_str), "%d", port);
-    assert(result > 0 && result < (int)sizeof(port_str));
-
-    result = getaddrinfo(host, port_str, hints, res);
-    if (result != 0)
-    {
-        SOCKET_ERROR_MSG("Invalid host/IP address: %.*s (%s)", SOCKET_ERROR_MAX_HOSTNAME, host ? host : "any",
-                         gai_strerror(result));
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
-    return 0;
+    SocketCommon_setup_hints(hints, SOCKET_DGRAM_TYPE, 0);
 }
 
 /**
@@ -588,7 +542,7 @@ void SocketDgram_bind(T socket, const char *host, int port)
         host = NULL;
 
     setup_dgram_bind_hints(&hints);
-    resolve_dgram_address(host, port, &hints, &res);
+    SocketCommon_resolve_address(host, port, &hints, &res, SocketDgram_Failed, SOCKET_AF_UNSPEC, 1);
 
     socket_family = get_dgram_socket_family(socket);
 
@@ -614,7 +568,7 @@ void SocketDgram_connect(T socket, const char *host, int port)
     validate_dgram_port(port);
     validate_dgram_hostname(host);
     setup_dgram_connect_hints(&hints);
-    resolve_dgram_address(host, port, &hints, &res);
+    SocketCommon_resolve_address(host, port, &hints, &res, SocketDgram_Failed, SOCKET_AF_UNSPEC, 1);
 
     socket_family = get_dgram_socket_family(socket);
 
