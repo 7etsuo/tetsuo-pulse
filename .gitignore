@@ -34,8 +34,8 @@ Thumbs.db
 # Debug files
 *.dSYM/
 *.gdb_history
-core
 core.*
+/core$
 
 # Temporary files
 *.tmp
