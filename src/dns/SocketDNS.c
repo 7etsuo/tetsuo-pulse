@@ -95,6 +95,7 @@ struct T
 /* Completion signal byte constant */
 #define COMPLETION_SIGNAL_BYTE 1
 
+
 /**
  * request_hash_function - Calculate hash for request pointer
  * @req: Request pointer to hash
@@ -413,40 +414,15 @@ initialize_pipe(T dns)
 }
 
 /**
- * create_worker_threads - Create worker thread pool
- * @dns: DNS resolver instance
+ * allocate_dns_resolver - Allocate and initialize basic DNS resolver structure
  *
- * Raises: SocketDNS_Failed on thread creation failure
+ * Returns: Allocated DNS resolver or NULL on failure
+ * Raises: SocketDNS_Failed on allocation failure
+ *
+ * Allocates DNS resolver structure and sets up basic fields.
  */
-static void
-create_worker_threads(T dns)
-{
-    int i;
-
-    for (i = 0; i < dns->num_workers; i++)
-    {
-        if (pthread_create(&dns->workers[i], NULL, worker_thread, dns) != 0)
-        {
-            int j;
-
-            dns->shutdown = 1;
-            pthread_cond_broadcast(&dns->queue_cond);
-
-            for (j = 0; j < i; j++)
-            {
-                pthread_join(dns->workers[j], NULL);
-            }
-
-            free(dns->workers);
-            cleanup_on_init_failure(dns, 4);
-            SOCKET_ERROR_FMT("Failed to create DNS worker thread %d", i);
-            RAISE_DNS_ERROR(SocketDNS_Failed);
-        }
-    }
-}
-
-T
-SocketDNS_new(void)
+static T
+allocate_dns_resolver(void)
 {
     T dns;
 
@@ -457,6 +433,39 @@ SocketDNS_new(void)
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
 
+    return dns;
+}
+
+/**
+ * initialize_dns_fields - Set default field values for DNS resolver
+ * @dns: DNS resolver instance
+ *
+ * Initializes configuration fields to default values.
+ */
+static void
+initialize_dns_fields(T dns)
+{
+    dns->num_workers = SOCKET_DNS_THREAD_COUNT;
+    dns->max_pending = SOCKET_DNS_MAX_PENDING;
+    dns->shutdown = 0;
+    dns->request_counter = 0;
+
+    dns->queue_head = NULL;
+    dns->queue_tail = NULL;
+    dns->queue_size = 0;
+}
+
+/**
+ * initialize_dns_components - Initialize arena and synchronization primitives
+ * @dns: DNS resolver instance
+ *
+ * Raises: SocketDNS_Failed on initialization failure
+ *
+ * Sets up arena, mutex, condition variables, and pipe for completion signaling.
+ */
+static void
+initialize_dns_components(T dns)
+{
     dns->arena = Arena_new();
     if (!dns->arena)
     {
@@ -465,20 +474,74 @@ SocketDNS_new(void)
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
 
-    dns->num_workers = SOCKET_DNS_THREAD_COUNT;
-    dns->max_pending = SOCKET_DNS_MAX_PENDING;
-    dns->shutdown = 0;
-    dns->request_counter = 0;
-
     initialize_synchronization(dns);
     initialize_pipe(dns);
+}
 
-    memset(dns->request_hash, 0, sizeof(dns->request_hash));
+/**
+ * create_single_worker_thread - Create a single worker thread
+ * @dns: DNS resolver instance
+ * @thread_index: Index of thread to create
+ *
+ * Returns: 0 on success, -1 on failure
+ *
+ * Creates one worker thread and handles partial cleanup on failure.
+ */
+static int
+create_single_worker_thread(T dns, int thread_index)
+{
+    if (pthread_create(&dns->workers[thread_index], NULL, worker_thread, dns) != 0)
+    {
+        /* Signal shutdown and join already created threads */
+        dns->shutdown = 1;
+        pthread_cond_broadcast(&dns->queue_cond);
 
-    dns->queue_head = NULL;
-    dns->queue_tail = NULL;
-    dns->queue_size = 0;
+        /* Join previously created threads */
+        for (int j = 0; j < thread_index; j++)
+        {
+            pthread_join(dns->workers[j], NULL);
+        }
 
+        return -1; /* Signal failure */
+    }
+
+    return 0; /* Success */
+}
+
+/**
+ * create_worker_threads - Create worker thread pool
+ * @dns: DNS resolver instance
+ *
+ * Raises: SocketDNS_Failed on thread creation failure
+ *
+ * Creates all worker threads, with proper cleanup on partial failure.
+ */
+static void
+create_worker_threads(T dns)
+{
+    for (int i = 0; i < dns->num_workers; i++)
+    {
+        if (create_single_worker_thread(dns, i) != 0)
+        {
+            /* Thread creation failed - cleanup and raise error */
+            cleanup_on_init_failure(dns, 4);
+            SOCKET_ERROR_FMT("Failed to create DNS worker thread %d", i);
+            RAISE_DNS_ERROR(SocketDNS_Failed);
+        }
+    }
+}
+
+/**
+ * start_dns_workers - Create and start worker thread pool
+ * @dns: DNS resolver instance
+ *
+ * Raises: SocketDNS_Failed on thread creation failure
+ *
+ * Creates worker threads and allocates thread array from arena.
+ */
+static void
+start_dns_workers(T dns)
+{
     dns->workers = ALLOC(dns->arena, dns->num_workers * sizeof(pthread_t));
     if (!dns->workers)
     {
@@ -487,7 +550,19 @@ SocketDNS_new(void)
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
 
+    memset(dns->request_hash, 0, sizeof(dns->request_hash));
     create_worker_threads(dns);
+}
+
+T
+SocketDNS_new(void)
+{
+    T dns;
+
+    dns = allocate_dns_resolver();
+    initialize_dns_fields(dns);
+    initialize_dns_components(dns);
+    start_dns_workers(dns);
 
     return dns;
 }
@@ -515,22 +590,49 @@ free_request_list(struct Request_T *head)
 }
 
 /**
+ * free_queued_requests - Free all requests in the request queue
+ * @d: DNS resolver instance
+ *
+ * Thread-safe: Must be called with mutex locked
+ *
+ * Frees all requests currently in the processing queue.
+ */
+static void
+free_queued_requests(T d)
+{
+    free_request_list(d->queue_head);
+}
+
+/**
+ * free_hash_table_requests - Free all requests in hash table
+ * @d: DNS resolver instance
+ *
+ * Thread-safe: Must be called with mutex locked
+ *
+ * Frees all requests currently registered in the hash table.
+ */
+static void
+free_hash_table_requests(T d)
+{
+    for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
+    {
+        free_request_list(d->request_hash[i]);
+    }
+}
+
+/**
  * free_all_requests - Free all pending requests
  * @d: DNS resolver instance
  *
  * Thread-safe: Must be called with mutex locked
+ *
+ * Frees all requests from both queue and hash table.
  */
 static void
 free_all_requests(T d)
 {
-    int i;
-
-    free_request_list(d->queue_head);
-
-    for (i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
-    {
-        free_request_list(d->request_hash[i]);
-    }
+    free_queued_requests(d);
+    free_hash_table_requests(d);
 }
 
 /**
@@ -604,19 +706,16 @@ validate_resolve_params(const char *host, int port)
 }
 
 /**
- * allocate_request - Allocate and initialize request structure
+ * allocate_request_structure - Allocate request structure
  * @dns: DNS resolver instance
- * @host: Hostname to resolve
- * @host_len: Length of hostname
- * @port: Port number
- * @callback: Completion callback
- * @data: User data for callback
  *
  * Returns: Allocated request structure
  * Raises: SocketDNS_Failed on allocation failure
+ *
+ * Allocates memory for the request structure from arena.
  */
 static struct Request_T *
-allocate_request(T dns, const char *host, size_t host_len, int port, SocketDNS_Callback callback, void *data)
+allocate_request_structure(T dns)
 {
     struct Request_T *req;
 
@@ -627,6 +726,23 @@ allocate_request(T dns, const char *host, size_t host_len, int port, SocketDNS_C
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
 
+    return req;
+}
+
+/**
+ * allocate_request_hostname - Allocate and copy hostname
+ * @dns: DNS resolver instance
+ * @req: Request structure to initialize
+ * @host: Hostname to copy
+ * @host_len: Length of hostname
+ *
+ * Raises: SocketDNS_Failed on allocation failure
+ *
+ * Allocates memory for hostname and copies it.
+ */
+static void
+allocate_request_hostname(T dns, struct Request_T *req, const char *host, size_t host_len)
+{
     req->host = ALLOC(dns->arena, host_len + 1);
     if (!req->host)
     {
@@ -636,6 +752,20 @@ allocate_request(T dns, const char *host, size_t host_len, int port, SocketDNS_C
 
     strncpy(req->host, host, host_len + 1);
     req->host[host_len] = '\0';
+}
+
+/**
+ * initialize_request_fields - Initialize request fields
+ * @req: Request structure to initialize
+ * @port: Port number
+ * @callback: Completion callback
+ * @data: User data for callback
+ *
+ * Sets all request fields to initial values.
+ */
+static void
+initialize_request_fields(struct Request_T *req, int port, SocketDNS_Callback callback, void *data)
+{
     req->port = port;
     req->callback = callback;
     req->callback_data = data;
@@ -645,6 +775,30 @@ allocate_request(T dns, const char *host, size_t host_len, int port, SocketDNS_C
     req->queue_next = NULL;
     req->hash_next = NULL;
     req->submit_time = time(NULL);
+}
+
+/**
+ * allocate_request - Allocate and initialize request structure
+ * @dns: DNS resolver instance
+ * @host: Hostname to resolve
+ * @host_len: Length of hostname
+ * @port: Port number
+ * @callback: Completion callback
+ * @data: User data for callback
+ *
+ * Returns: Allocated request structure
+ * Raises: SocketDNS_Failed on allocation failure
+ *
+ * Allocates and fully initializes a DNS request structure.
+ */
+static struct Request_T *
+allocate_request(T dns, const char *host, size_t host_len, int port, SocketDNS_Callback callback, void *data)
+{
+    struct Request_T *req;
+
+    req = allocate_request_structure(dns);
+    allocate_request_hostname(dns, req, host, host_len);
+    initialize_request_fields(req, port, callback, data);
 
     return req;
 }
@@ -709,6 +863,23 @@ check_queue_limit(T dns)
     }
 }
 
+/**
+ * submit_dns_request - Submit request to queue and hash table
+ * @dns: DNS resolver instance
+ * @req: Request to submit
+ *
+ * Thread-safe: Must be called with mutex locked
+ *
+ * Inserts request into hash table, appends to queue, and signals workers.
+ */
+static void
+submit_dns_request(T dns, struct Request_T *req)
+{
+    hash_table_insert(dns, req);
+    queue_append(dns, req);
+    pthread_cond_signal(&dns->queue_cond);
+}
+
 Request_T
 SocketDNS_resolve(T dns, const char *host, int port, SocketDNS_Callback callback, void *data)
 {
@@ -723,13 +894,8 @@ SocketDNS_resolve(T dns, const char *host, int port, SocketDNS_Callback callback
     req = allocate_request(dns, host, host_len, port, callback, data);
 
     pthread_mutex_lock(&dns->mutex);
-
     check_queue_limit(dns);
-
-    hash_table_insert(dns, req);
-    queue_append(dns, req);
-
-    pthread_cond_signal(&dns->queue_cond);
+    submit_dns_request(dns, req);
     pthread_mutex_unlock(&dns->mutex);
 
     return (Request_T)req;
