@@ -60,6 +60,14 @@ typedef struct SocketData
     struct SocketData *next;
 } SocketData;
 
+/* FD to socket mapping entry for reverse lookup */
+typedef struct FdSocketEntry
+{
+    int fd;
+    Socket_T socket;
+    struct FdSocketEntry *next;
+} FdSocketEntry;
+
 /* Use configured hash table size for socket data mapping */
 #define SOCKET_DATA_HASH_SIZE SOCKET_HASH_TABLE_SIZE
 
@@ -69,11 +77,23 @@ struct T
     int maxevents;
     SocketEvent_T *socketevents;
     Arena_T arena;
-    SocketData *socket_data_map[SOCKET_DATA_HASH_SIZE]; /* Hash table for O(1) socket->data mapping */
-    pthread_mutex_t mutex;                              /* Mutex for thread-safe socket data mapping */
+    SocketData *socket_data_map[SOCKET_DATA_HASH_SIZE];     /* Hash table for O(1) socket->data mapping */
+    FdSocketEntry *fd_to_socket_map[SOCKET_DATA_HASH_SIZE]; /* Hash table for O(1) fd->socket mapping */
+    pthread_mutex_t mutex;                                  /* Mutex for thread-safe socket data mapping */
 };
 
-/* Hash function for socket file descriptors */
+/* ==================== Hash Functions ==================== */
+
+/**
+ * socket_hash - Hash function for socket file descriptors
+ * @socket: Socket to hash
+ *
+ * Returns: Hash value in range [0, SOCKET_DATA_HASH_SIZE)
+ *
+ * Uses multiplicative hashing with the golden ratio constant for
+ * good distribution across hash buckets. This provides O(1) average
+ * case performance for socket data lookups.
+ */
 static unsigned socket_hash(const Socket_T socket)
 {
     int fd;
@@ -84,36 +104,81 @@ static unsigned socket_hash(const Socket_T socket)
     /* Defensive check: socket FDs should never be negative */
     assert(fd >= 0);
 
-    /* Multiplicative hash with golden ratio */
+    /* Multiplicative hash with golden ratio for good distribution */
     return ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_DATA_HASH_SIZE;
 }
 
-/* Add socket->data mapping to hash table */
+/* ==================== Socket Data Management ==================== */
+
+/**
+ * socket_data_add - Add socket->data mapping to hash tables
+ * @poll: Poll instance
+ * @socket: Socket to add
+ * @data: User data to associate with socket
+ *
+ * Raises: SocketPoll_Failed on allocation failure
+ * Thread-safe: Yes - uses internal mutex
+ *
+ * Adds both socket->data and fd->socket mappings to enable O(1)
+ * lookups in both directions. The fd->socket mapping provides
+ * efficient reverse lookup during event processing.
+ */
 static void socket_data_add(T poll, Socket_T socket, void *data)
 {
     unsigned hash = socket_hash(socket);
-    SocketData *entry;
+    unsigned fd_hash;
+    int fd;
+    SocketData *data_entry;
+    FdSocketEntry *fd_entry;
 
-    /* Allocate entry */
-    entry = ALLOC(poll->arena, sizeof(*entry));
-    if (!entry)
+    fd = Socket_fd(socket);
+    fd_hash = ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_DATA_HASH_SIZE;
+
+    /* Allocate socket->data entry */
+    data_entry = ALLOC(poll->arena, sizeof(*data_entry));
+    if (!data_entry)
     {
         SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket data mapping");
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
 
-    /* Initialize entry */
-    entry->socket = socket;
-    entry->data = data;
+    /* Allocate fd->socket entry */
+    fd_entry = ALLOC(poll->arena, sizeof(*fd_entry));
+    if (!fd_entry)
+    {
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate fd to socket mapping");
+        RAISE_POLL_ERROR(SocketPoll_Failed);
+    }
 
-    /* Add to hash table atomically */
+    /* Initialize entries */
+    data_entry->socket = socket;
+    data_entry->data = data;
+
+    fd_entry->fd = fd;
+    fd_entry->socket = socket;
+
+    /* Add to hash tables atomically */
     pthread_mutex_lock(&poll->mutex);
-    entry->next = poll->socket_data_map[hash];
-    poll->socket_data_map[hash] = entry;
+    data_entry->next = poll->socket_data_map[hash];
+    poll->socket_data_map[hash] = data_entry;
+
+    fd_entry->next = poll->fd_to_socket_map[fd_hash];
+    poll->fd_to_socket_map[fd_hash] = fd_entry;
     pthread_mutex_unlock(&poll->mutex);
 }
 
-/* Retrieve user data for socket */
+/**
+ * socket_data_get - Retrieve user data for socket
+ * @poll: Poll instance
+ * @socket: Socket to look up
+ *
+ * Returns: User data associated with socket, or NULL if not found
+ * Thread-safe: Yes - uses internal mutex
+ *
+ * Performs O(1) average case lookup in the socket data hash table.
+ * Returns the user data pointer that was associated with the socket
+ * when it was added to the poll.
+ */
 static void *socket_data_get(T poll, Socket_T socket)
 {
     unsigned hash = socket_hash(socket);
@@ -135,13 +200,28 @@ static void *socket_data_get(T poll, Socket_T socket)
     return data;
 }
 
-/* Remove socket->data mapping from hash table */
+/**
+ * socket_data_remove - Remove socket->data mapping from hash tables
+ * @poll: Poll instance
+ * @socket: Socket to remove
+ *
+ * Thread-safe: Yes - uses internal mutex
+ *
+ * Removes both socket->data and fd->socket mappings from the hash tables.
+ * Memory is managed by arena - no explicit freeing needed.
+ */
 static void socket_data_remove(T poll, Socket_T socket)
 {
     unsigned hash = socket_hash(socket);
+    unsigned fd_hash;
+    int fd;
+
+    fd = Socket_fd(socket);
+    fd_hash = ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_DATA_HASH_SIZE;
 
     pthread_mutex_lock(&poll->mutex);
 
+    /* Remove from socket->data hash table */
     SocketData **pp = &poll->socket_data_map[hash];
     while (*pp)
     {
@@ -149,17 +229,42 @@ static void socket_data_remove(T poll, Socket_T socket)
         {
             SocketData *old = *pp;
             *pp = old->next;
-            /* Memory managed by arena */
-            pthread_mutex_unlock(&poll->mutex);
-            return;
+            /* Memory managed by arena - no free needed */
+            break;
         }
         pp = &(*pp)->next;
+    }
+
+    /* Remove from fd->socket hash table */
+    FdSocketEntry **fd_pp = &poll->fd_to_socket_map[fd_hash];
+    while (*fd_pp)
+    {
+        if ((*fd_pp)->fd == fd)
+        {
+            FdSocketEntry *old = *fd_pp;
+            *fd_pp = old->next;
+            /* Memory managed by arena - no free needed */
+            break;
+        }
+        fd_pp = &(*fd_pp)->next;
     }
 
     pthread_mutex_unlock(&poll->mutex);
 }
 
-/* Update user data for existing socket mapping */
+/**
+ * socket_data_update - Update user data for existing socket mapping
+ * @poll: Poll instance
+ * @socket: Socket whose data to update
+ * @data: New user data to associate
+ *
+ * Raises: SocketPoll_Failed on allocation failure (fallback case only)
+ * Thread-safe: Yes - uses internal mutex
+ *
+ * Updates the user data associated with an existing socket. If the socket
+ * is not found in the map (programming error), it falls back to adding
+ * a new entry. This fallback should not normally occur in correct usage.
+ */
 static void socket_data_update(T poll, Socket_T socket, void *data)
 {
     unsigned hash = socket_hash(socket);
@@ -188,7 +293,7 @@ static void socket_data_update(T poll, Socket_T socket, void *data)
         fprintf(stderr, "WARNING: socket_data_update fallback (fd %d)\n", Socket_fd(socket));
 #endif
 
-        /* Allocate new entry */
+        /* Allocate new entry as fallback */
         entry = ALLOC(poll->arena, sizeof(*entry));
         if (!entry)
         {
@@ -251,8 +356,9 @@ T SocketPoll_new(int maxevents)
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
 
-    /* Initialize hash table to NULL */
+    /* Initialize hash tables to NULL */
     memset(poll->socket_data_map, 0, sizeof(poll->socket_data_map));
+    memset(poll->fd_to_socket_map, 0, sizeof(poll->fd_to_socket_map));
 
     /* Initialize mutex */
     if (pthread_mutex_init(&poll->mutex, NULL) != 0)
@@ -366,25 +472,53 @@ void SocketPoll_del(T poll, Socket_T socket)
     socket_data_remove(poll, socket);
 }
 
-int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
+/* ==================== Event Translation Functions ==================== */
+
+/**
+ * find_socket_by_fd - Find socket by file descriptor
+ * @poll: Poll instance
+ * @fd: File descriptor to search for
+ *
+ * Returns: Socket_T if found, NULL otherwise
+ * Thread-safe: No (must be called with poll mutex held)
+ *
+ * Performs O(1) lookup using the fd_to_socket_map hash table.
+ * This provides efficient reverse lookup during event processing.
+ */
+static Socket_T find_socket_by_fd(T poll, int fd)
 {
-    int nfds;
-    int i;
+    unsigned fd_hash = ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_DATA_HASH_SIZE;
+    FdSocketEntry *entry = poll->fd_to_socket_map[fd_hash];
 
-    assert(poll);
-    assert(events);
-
-    nfds = backend_wait(poll->backend, timeout);
-    if (nfds < 0)
+    /* Search the hash bucket for matching FD */
+    while (entry)
     {
-        if (errno == EINTR)
-            return 0;
-        SOCKET_ERROR_FMT("%s backend wait failed (timeout=%d)", backend_name(), timeout);
-        RAISE_POLL_ERROR(SocketPoll_Failed);
+        if (entry->fd == fd)
+            return entry->socket;
+        entry = entry->next;
     }
 
-    /* Translate backend events to SocketEvent_T structures */
-    for (i = 0; i < nfds; i++)
+    return NULL;
+}
+
+/**
+ * translate_backend_events_to_socket_events - Convert backend events to SocketEvent_T
+ * @poll: Poll instance
+ * @nfds: Number of events to process
+ *
+ * Returns: Number of successfully translated events
+ * Raises: SocketPoll_Failed on backend error
+ * Thread-safe: No (caller must ensure thread safety)
+ *
+ * Translates events from the backend-specific format to the
+ * standardized SocketEvent_T format used by the public API.
+ * Handles socket lookup and data association for each event.
+ */
+static int translate_backend_events_to_socket_events(T poll, int nfds)
+{
+    int translated_count = 0;
+
+    for (int i = 0; i < nfds; i++)
     {
         int fd;
         unsigned event_flags;
@@ -398,34 +532,45 @@ int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
         }
 
         /* Find socket by FD */
-        socket = NULL;
-        for (int hash = 0; hash < SOCKET_DATA_HASH_SIZE; hash++)
-        {
-            SocketData *entry = poll->socket_data_map[hash];
-            while (entry)
-            {
-                if (Socket_fd(entry->socket) == fd)
-                {
-                    socket = entry->socket;
-                    break;
-                }
-                entry = entry->next;
-            }
-            if (socket)
-                break;
-        }
-
+        socket = find_socket_by_fd(poll, fd);
         if (!socket)
         {
-            /* Socket not found */
+            /* Socket not found - skip this event */
             SOCKET_ERROR_MSG("Event for unknown socket (fd=%d)", fd);
             continue;
         }
 
-        poll->socketevents[i].socket = socket;
-        poll->socketevents[i].data = socket_data_get(poll, socket);
-        poll->socketevents[i].events = event_flags;
+        /* Fill in SocketEvent_T structure */
+        poll->socketevents[translated_count].socket = socket;
+        poll->socketevents[translated_count].data = socket_data_get(poll, socket);
+        poll->socketevents[translated_count].events = event_flags;
+        translated_count++;
     }
+
+    return translated_count;
+}
+
+/* ==================== Public API Functions ==================== */
+
+int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
+{
+    int nfds;
+
+    assert(poll);
+    assert(events);
+
+    /* Wait for events from backend */
+    nfds = backend_wait(poll->backend, timeout);
+    if (nfds < 0)
+    {
+        if (errno == EINTR)
+            return 0; /* Interrupted - not an error */
+        SOCKET_ERROR_FMT("%s backend wait failed (timeout=%d)", backend_name(), timeout);
+        RAISE_POLL_ERROR(SocketPoll_Failed);
+    }
+
+    /* Translate backend events to SocketEvent_T structures */
+    nfds = translate_backend_events_to_socket_events(poll, nfds);
 
     *events = poll->socketevents;
     return nfds;
