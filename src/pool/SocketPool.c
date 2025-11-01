@@ -272,6 +272,36 @@ build_free_list (T pool, size_t maxconns)
     }
 }
 
+/**
+ * allocate_pool_components - Allocate all pool data structures
+ * @arena: Arena for allocation
+ * @maxconns: Maximum connections
+ * @pool: Pool structure to populate
+ */
+static void
+allocate_pool_components (Arena_T arena, size_t maxconns, T pool)
+{
+  pool->connections = allocate_connections_array (arena, maxconns);
+  pool->hash_table = allocate_hash_table (arena);
+  pool->cleanup_buffer = allocate_cleanup_buffer (arena, maxconns);
+}
+
+/**
+ * initialize_pool_fields - Initialize pool structure fields
+ * @pool: Pool structure to initialize
+ * @arena: Arena reference
+ * @maxconns: Maximum connections
+ * @bufsize: Buffer size
+ */
+static void
+initialize_pool_fields (T pool, Arena_T arena, size_t maxconns, size_t bufsize)
+{
+  pool->maxconns = maxconns;
+  pool->bufsize = bufsize;
+  pool->count = 0;
+  pool->arena = arena;
+}
+
 T
 SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
 {
@@ -285,14 +315,8 @@ SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
   bufsize = enforce_buffer_size (bufsize);
 
   pool = allocate_pool_structure (arena);
-  pool->connections = allocate_connections_array (arena, maxconns);
-  pool->hash_table = allocate_hash_table (arena);
-  pool->cleanup_buffer = allocate_cleanup_buffer (arena, maxconns);
-
-  pool->maxconns = maxconns;
-  pool->bufsize = bufsize;
-  pool->count = 0;
-  pool->arena = arena;
+  allocate_pool_components (arena, maxconns, pool);
+  initialize_pool_fields (pool, arena, maxconns, bufsize);
 
   initialize_pool_mutex (pool);
   build_free_list (pool, maxconns);
@@ -469,6 +493,87 @@ increment_pool_count (T pool)
   pool->count++;
 }
 
+/**
+ * update_existing_slot - Update activity time for existing connection
+ * @conn: Existing connection slot
+ * @now: Current time
+ */
+static void
+update_existing_slot (Connection_T conn, time_t now)
+{
+  conn->last_activity = now;
+}
+
+/**
+ * prepare_free_slot - Prepare a free slot for new connection
+ * @pool: Pool instance
+ * @conn: Free connection slot
+ *
+ * Returns: Zero on success, non-zero on failure
+ */
+static int
+prepare_free_slot (T pool, Connection_T conn)
+{
+  remove_from_free_list (pool, conn);
+
+  if (allocate_connection_buffers (pool->arena, pool->bufsize, conn) != 0)
+    {
+      return_to_free_list (pool, conn);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * finalize_slot_creation - Finalize creation of new connection slot
+ * @pool: Pool instance
+ * @conn: Connection slot
+ * @socket: Socket to associate
+ * @now: Current time
+ */
+static void
+finalize_slot_creation (T pool, Connection_T conn, Socket_T socket, time_t now)
+{
+  initialize_connection (conn, socket, now);
+  insert_into_hash_table (pool, conn, socket);
+  increment_pool_count (pool);
+}
+
+/**
+ * find_or_create_slot - Find existing slot or create new one for socket
+ * @pool: Pool instance
+ * @socket: Socket to add
+ * @now: Current time for activity tracking
+ *
+ * Returns: Connection slot or NULL on failure
+ *
+ * Must be called with pool mutex held.
+ */
+static Connection_T
+find_or_create_slot (T pool, Socket_T socket, time_t now)
+{
+  Connection_T conn;
+
+  conn = find_slot (pool, socket);
+  if (conn)
+    {
+      update_existing_slot (conn, now);
+      return conn;
+    }
+
+  conn = find_free_slot (pool);
+  if (!conn)
+    return NULL;
+
+  if (prepare_free_slot (pool, conn) != 0)
+    return NULL;
+
+  finalize_slot_creation (pool, conn, socket, now);
+
+  return conn;
+}
+
 Connection_T
 SocketPool_add (T pool, Socket_T socket)
 {
@@ -484,34 +589,7 @@ SocketPool_add (T pool, Socket_T socket)
   now = safe_time ();
 
   pthread_mutex_lock (&pool->mutex);
-
-  conn = find_slot (pool, socket);
-  if (conn)
-    {
-      pthread_mutex_unlock (&pool->mutex);
-      return conn;
-    }
-
-  conn = find_free_slot (pool);
-  if (!conn)
-    {
-      pthread_mutex_unlock (&pool->mutex);
-      return NULL;
-    }
-
-  remove_from_free_list (pool, conn);
-
-  if (allocate_connection_buffers (pool->arena, pool->bufsize, conn) != 0)
-    {
-      return_to_free_list (pool, conn);
-      pthread_mutex_unlock (&pool->mutex);
-      return NULL;
-    }
-
-  initialize_connection (conn, socket, now);
-  insert_into_hash_table (pool, conn, socket);
-  increment_pool_count (pool);
-
+  conn = find_or_create_slot (pool, socket, now);
   pthread_mutex_unlock (&pool->mutex);
 
   return conn;
@@ -632,6 +710,23 @@ should_close_connection (time_t idle_timeout, time_t now, time_t last_activity)
 }
 
 /**
+ * should_collect_socket - Check if socket should be collected for cleanup
+ * @conn: Connection to check
+ * @idle_timeout: Idle timeout in seconds
+ * @now: Current time
+ *
+ * Returns: Non-zero if socket should be collected, zero otherwise
+ */
+static int
+should_collect_socket (Connection_T conn, time_t idle_timeout, time_t now)
+{
+  if (!conn->active || !conn->socket)
+    return 0;
+
+  return should_close_connection (idle_timeout, now, conn->last_activity);
+}
+
+/**
  * collect_idle_sockets - Collect sockets to close into buffer
  * @pool: Pool instance
  * @idle_timeout: Idle timeout in seconds
@@ -649,17 +744,9 @@ collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
 
   for (i = 0; i < pool->maxconns; i++)
     {
-      if (pool->connections[i].active)
+      if (should_collect_socket (&pool->connections[i], idle_timeout, now))
         {
-          Socket_T socket = pool->connections[i].socket;
-          if (!socket)
-            continue;
-
-          if (should_close_connection (idle_timeout, now,
-                                       pool->connections[i].last_activity))
-            {
-              pool->cleanup_buffer[close_count++] = socket;
-            }
+          pool->cleanup_buffer[close_count++] = pool->connections[i].socket;
         }
     }
   return close_count;
