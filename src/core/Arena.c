@@ -17,17 +17,6 @@
 #include "core/Except.h"
 
 /* Arena-specific configuration constants */
-#define ARENA_ERROR_BUFSIZE 256
-#define ARENA_ALIGNMENT_SIZE sizeof(union align)
-#define ARENA_ENOMEM "ENOMEM"
-#define ARENA_SIZE_VALID 0
-#define ARENA_SIZE_INVALID -1
-#define ARENA_VALIDATION_SUCCESS 0
-#define ARENA_VALIDATION_FAILURE -1
-#define ARENA_CHUNK_REUSED 1
-#define ARENA_CHUNK_NOT_REUSED 0
-#define ARENA_SUCCESS 0
-#define ARENA_FAILURE -1
 
 /* Thread-local error buffer */
 #ifdef _WIN32
@@ -47,18 +36,18 @@ static __thread Except_T Arena_DetailedException;
 #endif
 
 /* Error formatting macros */
-#define ARENA_ERROR_FMT(fmt, ...) \
+#define ARENA_ERROR_FMT(fmt, ...)                                                                                      \
     snprintf(arena_error_buf, ARENA_ERROR_BUFSIZE, fmt " (errno: %d - %s)", ##__VA_ARGS__, errno, strerror(errno))
 
 #define ARENA_ERROR_MSG(fmt, ...) snprintf(arena_error_buf, ARENA_ERROR_BUFSIZE, fmt, ##__VA_ARGS__)
 
 /* Macro to raise arena exception with detailed error message */
-#define RAISE_ARENA_ERROR(exception) \
-    do \
-    { \
-        Arena_DetailedException = (exception); \
-        Arena_DetailedException.reason = arena_error_buf; \
-        RAISE(Arena_DetailedException); \
+#define RAISE_ARENA_ERROR(exception)                                                                                   \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        Arena_DetailedException = (exception);                                                                         \
+        Arena_DetailedException.reason = arena_error_buf;                                                              \
+        RAISE(Arena_DetailedException);                                                                                \
     } while (0)
 
 #define T Arena_T
@@ -105,11 +94,11 @@ static pthread_mutex_t arena_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Helper macros for overflow protection */
 #define ARENA_CHECK_OVERFLOW_ADD(a, b) (((a) > SIZE_MAX - (b)) ? ARENA_VALIDATION_FAILURE : ARENA_VALIDATION_SUCCESS)
-#define ARENA_CHECK_OVERFLOW_MUL(a, b) \
+#define ARENA_CHECK_OVERFLOW_MUL(a, b)                                                                                 \
     (((a) != 0 && (b) > SIZE_MAX / (a)) ? ARENA_VALIDATION_FAILURE : ARENA_VALIDATION_SUCCESS)
 
 /* Helper macro for safe pointer arithmetic validation */
-#define ARENA_VALID_PTR_ARITH(ptr, offset, max) \
+#define ARENA_VALID_PTR_ARITH(ptr, offset, max)                                                                        \
     (((uintptr_t)(ptr) <= UINTPTR_MAX - (offset)) && ((uintptr_t)(ptr) + (offset) <= (uintptr_t)(max)))
 
 /**
@@ -595,7 +584,7 @@ static size_t arena_prepare_allocation(size_t nbytes)
  */
 static void *arena_execute_allocation(T arena, size_t aligned_size, size_t nbytes)
 {
-    void *result;
+    void *result = NULL;
 
     pthread_mutex_lock(&arena->mutex);
 
@@ -614,12 +603,14 @@ static void *arena_execute_allocation(T arena, size_t aligned_size, size_t nbyte
         }
 
         result = arena_perform_allocation(arena, aligned_size);
+        pthread_mutex_unlock(&arena->mutex);
+        return result;
     }
     FINALLY
     pthread_mutex_unlock(&arena->mutex);
     END_TRY;
 
-    return result;
+    return NULL; /* Should not reach here */
 }
 
 /**

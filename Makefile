@@ -39,7 +39,7 @@ LDFLAGS = -pthread
 BUILD_DIR = build
 TEST_DIR = $(BUILD_DIR)/test
 
-LIB_SOURCES = src/core/Arena.c src/core/Except.c src/socket/Socket.c src/socket/SocketDgram.c src/socket/SocketBuf.c src/poll/SocketPoll.c $(POLL_BACKEND_SRC) src/pool/SocketPool.c src/dns/SocketDNS.c src/core/SocketError.c
+LIB_SOURCES = src/core/Arena.c src/core/Except.c src/socket/Socket.c src/socket/SocketDgram.c src/socket/SocketBuf.c src/socket/SocketCommon.c src/poll/SocketPoll.c $(POLL_BACKEND_SRC) src/pool/SocketPool.c src/dns/SocketDNS.c src/core/SocketError.c
 LIB_OBJECTS = $(LIB_SOURCES:src/%.c=$(BUILD_DIR)/%.o)
 DEPS = $(LIB_SOURCES:src/%.c=$(BUILD_DIR)/%.d)
 

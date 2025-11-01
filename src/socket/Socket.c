@@ -32,6 +32,7 @@
 #include "core/SocketConfig.h"
 #include "dns/SocketDNS.h"
 #include "core/SocketError.h"
+#include "socket/SocketCommon.h"
 
 #define T Socket_T
 
@@ -69,18 +70,6 @@ struct T
 
 /* Static helper functions */
 
-/**
- * normalize_wildcard_host - Normalize wildcard host addresses to NULL
- * @host: Host string to normalize
- *
- * Returns: NULL if wildcard, original host otherwise
- */
-static const char *normalize_wildcard_host(const char *host)
-{
-    if (host == NULL || strcmp(host, "0.0.0.0") == 0 || strcmp(host, "::") == 0)
-        return NULL;
-    return host;
-}
 
 /**
  * validate_port_number - Validate port is in valid range
@@ -90,11 +79,7 @@ static const char *normalize_wildcard_host(const char *host)
  */
 static void validate_port_number(int port)
 {
-    if (!SOCKET_VALID_PORT(port))
-    {
-        SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
+    SocketCommon_validate_port(port, Socket_Failed);
 }
 
 /**
@@ -118,11 +103,7 @@ static void validate_host_not_null(const char *host)
  */
 static void setup_bind_hints(struct addrinfo *hints)
 {
-    memset(hints, 0, sizeof(*hints));
-    hints->ai_family = SOCKET_AF_UNSPEC;
-    hints->ai_socktype = SOCKET_STREAM_TYPE;
-    hints->ai_flags = SOCKET_AI_PASSIVE;
-    hints->ai_protocol = 0;
+    SocketCommon_setup_hints(hints, SOCKET_STREAM_TYPE, SOCKET_AI_PASSIVE);
 }
 
 /**
@@ -131,10 +112,7 @@ static void setup_bind_hints(struct addrinfo *hints)
  */
 static void setup_connect_hints(struct addrinfo *hints)
 {
-    memset(hints, 0, sizeof(*hints));
-    hints->ai_family = SOCKET_AF_UNSPEC;
-    hints->ai_socktype = SOCKET_STREAM_TYPE;
-    hints->ai_protocol = 0;
+    SocketCommon_setup_hints(hints, SOCKET_STREAM_TYPE, 0);
 }
 
 /**
@@ -411,66 +389,6 @@ static int setup_peer_info(T newsocket, const struct sockaddr *addr, socklen_t a
 }
 
 /**
- * resolve_address - Resolve hostname/port to addrinfo structure
- * @host: Hostname or IP address (NULL for wildcard)
- * @port: Port number (1-65535)
- * @hints: Addrinfo hints structure
- * @res: Output pointer to resolved addrinfo
- * @socket_family: Socket family to match (AF_UNSPEC if none)
- *
- * Returns: 0 on success, sets errno and returns -1 on failure
- *
- * Resolves address and validates against socket family if specified.
- */
-static int resolve_address(const char *host, int port, const struct addrinfo *hints, struct addrinfo **res,
-                           int socket_family)
-{
-    char port_str[SOCKET_PORT_STR_BUFSIZE];
-    int result;
-    size_t host_len = host ? strlen(host) : 0;
-
-    /* Validate hostname length */
-    if (host_len > SOCKET_ERROR_MAX_HOSTNAME)
-    {
-        SOCKET_ERROR_MSG("Host name too long (max %d characters)", SOCKET_ERROR_MAX_HOSTNAME);
-        return -1;
-    }
-
-    /* Convert port to string */
-    result = snprintf(port_str, sizeof(port_str), "%d", port);
-    assert(result > 0 && result < (int)sizeof(port_str));
-
-    result = getaddrinfo(host, port_str, hints, res);
-    if (result != 0)
-    {
-        const char *safe_host = host ? host : "any";
-        SOCKET_ERROR_MSG("Invalid host/IP address: %.*s (%s)", SOCKET_ERROR_MAX_HOSTNAME, safe_host,
-                         gai_strerror(result));
-        return -1;
-    }
-
-    /* Validate against socket family if specified */
-    if (socket_family != AF_UNSPEC)
-    {
-        for (struct addrinfo *rp = *res; rp != NULL; rp = rp->ai_next)
-        {
-            if (rp->ai_family == socket_family)
-            {
-                return 0; /* Found matching family */
-            }
-        }
-        freeaddrinfo(*res);
-        *res = NULL;
-        const char *safe_host = host ? host : "any";
-        SOCKET_ERROR_MSG("No address found for family %d: %.*s:%d", socket_family, SOCKET_ERROR_MAX_HOSTNAME, safe_host,
-                         port);
-        return -1;
-    }
-
-    return 0;
-}
-
-/**
  * setup_unix_sockaddr - Set up sockaddr_un structure for Unix domain socket
  * @addr: Output sockaddr_un structure
  * @path: Socket path (may start with '@' for abstract socket)
@@ -585,10 +503,10 @@ void Socket_bind(T socket, const char *host, int port)
     assert(socket);
 
     validate_port_number(port);
-    host = normalize_wildcard_host(host);
+    host = SocketCommon_normalize_wildcard_host(host);
     setup_bind_hints(&hints);
 
-    if (resolve_address(host, port, &hints, &res, AF_UNSPEC) != 0)
+    if (SocketCommon_resolve_address(host, port, &hints, &res, Socket_Failed, SOCKET_AF_UNSPEC, 1) != 0)
         RAISE_SOCKET_ERROR(Socket_Failed);
 
     socket_family = get_socket_family(socket);
@@ -748,7 +666,7 @@ void Socket_connect(T socket, const char *host, int port)
     validate_port_number(port);
     setup_connect_hints(&hints);
 
-    if (resolve_address(host, port, &hints, &res, AF_UNSPEC) != 0)
+    if (SocketCommon_resolve_address(host, port, &hints, &res, Socket_Failed, SOCKET_AF_UNSPEC, 1) != 0)
         RAISE_SOCKET_ERROR(Socket_Failed);
 
     socket_family = get_socket_family(socket);

@@ -40,7 +40,7 @@ static __thread Except_T Test_DetailedException;
 #endif
 
 /* Exception type for test failures */
-const Except_T Test_Failed = {"Test assertion failed"};
+Except_T Test_Failed = {"Test assertion failed"};
 
 /* Error message buffer for detailed failures */
 static char test_error_buf[512];
@@ -140,11 +140,10 @@ void Test_fail_ne(const char *expected_str, const char *actual_str, const char *
  */
 void Test_run_all(void)
 {
-    struct TestFunction *test;
-    int total_tests = 0;
+    volatile int total_tests = 0;
 
     /* Count total tests */
-    for (test = test_list; test != NULL; test = test->next)
+    for (struct TestFunction *test = test_list; test != NULL; test = test->next)
     {
         total_tests++;
     }
@@ -158,15 +157,16 @@ void Test_run_all(void)
     printf("Running %d test%s...\n\n", total_tests, total_tests == 1 ? "" : "s");
 
     /* Run each test */
-    for (test = test_list; test != NULL; test = test->next)
+    struct TestFunction *current_test = test_list;
+    while (current_test != NULL)
     {
         test_count++;
-        printf("[%d/%d] %s ... ", test_count, total_tests, test->name);
+        printf("[%d/%d] %s ... ", test_count, total_tests, current_test->name);
         fflush(stdout);
 
         TRY
         {
-            test->func();
+            current_test->func();
             test_passed++;
             printf("PASS\n");
         }
@@ -180,6 +180,8 @@ void Test_run_all(void)
             }
         }
         END_TRY;
+
+        current_test = current_test->next;
     }
 
     /* Print summary */
