@@ -28,7 +28,6 @@
 #define T SocketDgram_T
 
 /* Port string buffer size for snprintf */
-#define PORT_STR_BUFSIZE 16
 
 Except_T SocketDgram_Failed = {"Datagram socket operation failed"};
 
@@ -66,11 +65,11 @@ struct T
  */
 static void validate_dgram_port(int port)
 {
-        if (!SOCKET_VALID_PORT(port))
-        {
-                SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
-                RAISE_DGRAM_ERROR(SocketDgram_Failed);
-        }
+    if (!SOCKET_VALID_PORT(port))
+    {
+        SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
 }
 
 /**
@@ -81,13 +80,13 @@ static void validate_dgram_port(int port)
  */
 static void validate_dgram_hostname(const char *host)
 {
-        size_t host_len = strlen(host);
+    size_t host_len = strlen(host);
 
-        if (host_len > SOCKET_ERROR_MAX_HOSTNAME)
-        {
-                SOCKET_ERROR_MSG("Host name too long (max %d characters)", SOCKET_ERROR_MAX_HOSTNAME);
-                RAISE_DGRAM_ERROR(SocketDgram_Failed);
-        }
+    if (host_len > SOCKET_ERROR_MAX_HOSTNAME)
+    {
+        SOCKET_ERROR_MSG("Host name too long (max %d characters)", SOCKET_ERROR_MAX_HOSTNAME);
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
 }
 
 /**
@@ -96,11 +95,11 @@ static void validate_dgram_hostname(const char *host)
  */
 static void setup_dgram_bind_hints(struct addrinfo *hints)
 {
-        memset(hints, 0, sizeof(*hints));
-        hints->ai_family = AF_UNSPEC;
-        hints->ai_socktype = SOCK_DGRAM;
-        hints->ai_flags = AI_PASSIVE;
-        hints->ai_protocol = 0;
+    memset(hints, 0, sizeof(*hints));
+    hints->ai_family = SOCKET_AF_UNSPEC;
+    hints->ai_socktype = SOCKET_DGRAM_TYPE;
+    hints->ai_flags = SOCKET_AI_PASSIVE;
+    hints->ai_protocol = 0;
 }
 
 /**
@@ -109,10 +108,10 @@ static void setup_dgram_bind_hints(struct addrinfo *hints)
  */
 static void setup_dgram_connect_hints(struct addrinfo *hints)
 {
-        memset(hints, 0, sizeof(*hints));
-        hints->ai_family = AF_UNSPEC;
-        hints->ai_socktype = SOCK_DGRAM;
-        hints->ai_protocol = 0;
+    memset(hints, 0, sizeof(*hints));
+    hints->ai_family = SOCKET_AF_UNSPEC;
+    hints->ai_socktype = SOCKET_DGRAM_TYPE;
+    hints->ai_protocol = 0;
 }
 
 /**
@@ -126,20 +125,20 @@ static void setup_dgram_connect_hints(struct addrinfo *hints)
  */
 static int resolve_dgram_address(const char *host, int port, const struct addrinfo *hints, struct addrinfo **res)
 {
-        char port_str[PORT_STR_BUFSIZE];
-        int result;
+    char port_str[SOCKET_PORT_STR_BUFSIZE];
+    int result;
 
-        result = snprintf(port_str, sizeof(port_str), "%d", port);
-        assert(result > 0 && result < (int)sizeof(port_str));
+    result = snprintf(port_str, sizeof(port_str), "%d", port);
+    assert(result > 0 && result < (int)sizeof(port_str));
 
-        result = getaddrinfo(host, port_str, hints, res);
-        if (result != 0)
-        {
-                SOCKET_ERROR_MSG("Invalid host/IP address: %.*s (%s)", SOCKET_ERROR_MAX_HOSTNAME,
-                                 host ? host : "any", gai_strerror(result));
-                RAISE_DGRAM_ERROR(SocketDgram_Failed);
-        }
-        return 0;
+    result = getaddrinfo(host, port_str, hints, res);
+    if (result != 0)
+    {
+        SOCKET_ERROR_MSG("Invalid host/IP address: %.*s (%s)", SOCKET_ERROR_MAX_HOSTNAME, host ? host : "any",
+                         gai_strerror(result));
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+    return 0;
 }
 
 /**
@@ -152,27 +151,27 @@ static int resolve_dgram_address(const char *host, int port, const struct addrin
  */
 static int try_dgram_bind_addresses(T socket, struct addrinfo *res, int socket_family)
 {
-        struct addrinfo *rp;
+    struct addrinfo *rp;
 
-        for (rp = res; rp != NULL; rp = rp->ai_next)
+    for (rp = res; rp != NULL; rp = rp->ai_next)
+    {
+        if (socket_family != SOCKET_AF_UNSPEC && rp->ai_family != socket_family)
+            continue;
+
+        if (rp->ai_family == SOCKET_AF_INET6 && socket_family == SOCKET_AF_INET6)
         {
-                if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
-                        continue;
-
-                if (rp->ai_family == AF_INET6 && socket_family == AF_INET6)
-                {
-                        int no = 0;
-                        setsockopt(socket->fd, IPPROTO_IPV6, IPV6_V6ONLY, &no, sizeof(no));
-                }
-
-                if (bind(socket->fd, rp->ai_addr, rp->ai_addrlen) == 0)
-                {
-                        memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
-                        socket->addrlen = rp->ai_addrlen;
-                        return 0;
-                }
+            int no = 0;
+            setsockopt(socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_V6ONLY, &no, sizeof(no));
         }
-        return -1;
+
+        if (bind(socket->fd, rp->ai_addr, rp->ai_addrlen) == 0)
+        {
+            memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
+            socket->addrlen = rp->ai_addrlen;
+            return 0;
+        }
+    }
+    return -1;
 }
 
 /**
@@ -182,20 +181,20 @@ static int try_dgram_bind_addresses(T socket, struct addrinfo *res, int socket_f
  */
 static void handle_dgram_bind_error(const char *host, int port)
 {
-        const char *safe_host = host ? host : "any";
+    const char *safe_host = host ? host : "any";
 
-        if (errno == EADDRINUSE)
-        {
-                SOCKET_ERROR_FMT(SOCKET_EADDRINUSE ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
-        }
-        else if (errno == EACCES)
-        {
-                SOCKET_ERROR_FMT("Permission denied to bind to port %d", port);
-        }
-        else
-        {
-                SOCKET_ERROR_FMT("Failed to bind to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
-        }
+    if (errno == EADDRINUSE)
+    {
+        SOCKET_ERROR_FMT(SOCKET_EADDRINUSE ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
+    }
+    else if (errno == EACCES)
+    {
+        SOCKET_ERROR_FMT("Permission denied to bind to port %d", port);
+    }
+    else
+    {
+        SOCKET_ERROR_FMT("Failed to bind to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
+    }
 }
 
 /**
@@ -208,38 +207,38 @@ static void handle_dgram_bind_error(const char *host, int port)
  */
 static int try_dgram_connect_addresses(T socket, struct addrinfo *res, int socket_family)
 {
-        struct addrinfo *rp;
+    struct addrinfo *rp;
 
-        for (rp = res; rp != NULL; rp = rp->ai_next)
+    for (rp = res; rp != NULL; rp = rp->ai_next)
+    {
+        if (socket_family != SOCKET_AF_UNSPEC && rp->ai_family != socket_family)
+            continue;
+
+        if (connect(socket->fd, rp->ai_addr, rp->ai_addrlen) == 0)
         {
-                if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
-                        continue;
-
-                if (connect(socket->fd, rp->ai_addr, rp->ai_addrlen) == 0)
-                {
-                        memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
-                        socket->addrlen = rp->ai_addrlen;
-                        return 0;
-                }
+            memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
+            socket->addrlen = rp->ai_addrlen;
+            return 0;
         }
-        return -1;
+    }
+    return -1;
 }
 
 /**
  * get_dgram_socket_family - Get datagram socket's address family
  * @socket: Socket to query
  *
- * Returns: Socket family or AF_UNSPEC on error
+ * Returns: Socket family or SOCKET_AF_UNSPEC on error
  */
 static int get_dgram_socket_family(T socket)
 {
-        int socket_family = AF_UNSPEC;
-        socklen_t len = sizeof(socket_family);
+    int socket_family = SOCKET_AF_UNSPEC;
+    socklen_t len = sizeof(socket_family);
 
-        if (getsockopt(socket->fd, SOL_SOCKET, SO_DOMAIN, &socket_family, &len) < 0)
-                socket_family = AF_UNSPEC;
+    if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_DOMAIN, &socket_family, &len) < 0)
+        socket_family = SOCKET_AF_UNSPEC;
 
-        return socket_family;
+    return socket_family;
 }
 
 T SocketDgram_new(int domain, int protocol)
@@ -247,7 +246,7 @@ T SocketDgram_new(int domain, int protocol)
     T sock;
     int fd;
 
-    fd = socket(domain, SOCK_DGRAM, protocol);
+    fd = socket(domain, SOCKET_DGRAM_TYPE, protocol);
     if (fd < 0)
     {
         SOCKET_ERROR_FMT("Failed to create datagram socket (domain=%d, protocol=%d)", domain, protocol);
@@ -303,64 +302,64 @@ void SocketDgram_free(T *socket)
 
 void SocketDgram_bind(T socket, const char *host, int port)
 {
-        struct addrinfo hints, *res = NULL;
-        int socket_family;
+    struct addrinfo hints, *res = NULL;
+    int socket_family;
 
-        assert(socket);
+    assert(socket);
 
-        validate_dgram_port(port);
+    validate_dgram_port(port);
 
-        if (host != NULL && strcmp(host, "0.0.0.0") != 0 && strcmp(host, "::") != 0)
-                validate_dgram_hostname(host);
-        else
-                host = NULL;
+    if (host != NULL && strcmp(host, "0.0.0.0") != 0 && strcmp(host, "::") != 0)
+        validate_dgram_hostname(host);
+    else
+        host = NULL;
 
-        setup_dgram_bind_hints(&hints);
-        resolve_dgram_address(host, port, &hints, &res);
+    setup_dgram_bind_hints(&hints);
+    resolve_dgram_address(host, port, &hints, &res);
 
-        socket_family = get_dgram_socket_family(socket);
+    socket_family = get_dgram_socket_family(socket);
 
-        if (try_dgram_bind_addresses(socket, res, socket_family) == 0)
-        {
-                freeaddrinfo(res);
-                return;
-        }
-
-        handle_dgram_bind_error(host, port);
+    if (try_dgram_bind_addresses(socket, res, socket_family) == 0)
+    {
         freeaddrinfo(res);
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+        return;
+    }
+
+    handle_dgram_bind_error(host, port);
+    freeaddrinfo(res);
+    RAISE_DGRAM_ERROR(SocketDgram_Failed);
 }
 
 void SocketDgram_connect(T socket, const char *host, int port)
 {
-        struct addrinfo hints, *res = NULL;
-        int socket_family;
+    struct addrinfo hints, *res = NULL;
+    int socket_family;
 
-        assert(socket);
-        assert(host);
+    assert(socket);
+    assert(host);
 
-        validate_dgram_port(port);
-        validate_dgram_hostname(host);
-        setup_dgram_connect_hints(&hints);
-        resolve_dgram_address(host, port, &hints, &res);
+    validate_dgram_port(port);
+    validate_dgram_hostname(host);
+    setup_dgram_connect_hints(&hints);
+    resolve_dgram_address(host, port, &hints, &res);
 
-        socket_family = get_dgram_socket_family(socket);
+    socket_family = get_dgram_socket_family(socket);
 
-        if (try_dgram_connect_addresses(socket, res, socket_family) == 0)
-        {
-                freeaddrinfo(res);
-                return;
-        }
-
-        SOCKET_ERROR_FMT("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
+    if (try_dgram_connect_addresses(socket, res, socket_family) == 0)
+    {
         freeaddrinfo(res);
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+        return;
+    }
+
+    SOCKET_ERROR_FMT("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
+    freeaddrinfo(res);
+    RAISE_DGRAM_ERROR(SocketDgram_Failed);
 }
 
 ssize_t SocketDgram_sendto(T socket, const void *buf, size_t len, const char *host, int port)
 {
     struct addrinfo hints, *res = NULL;
-    char port_str[PORT_STR_BUFSIZE];
+    char port_str[SOCKET_PORT_STR_BUFSIZE];
     int result;
     ssize_t sent;
     size_t host_len;
@@ -387,8 +386,8 @@ ssize_t SocketDgram_sendto(T socket, const void *buf, size_t len, const char *ho
     assert(result > 0 && result < (int)sizeof(port_str));
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_family = SOCKET_AF_UNSPEC;
+    hints.ai_socktype = SOCKET_DGRAM_TYPE;
     hints.ai_protocol = 0;
 
     result = getaddrinfo(host, port_str, &hints, &res);
@@ -418,7 +417,7 @@ ssize_t SocketDgram_recvfrom(T socket, void *buf, size_t len, char *host, size_t
     struct sockaddr_storage addr;
     socklen_t addrlen = sizeof(addr);
     ssize_t received;
-    char serv[NI_MAXSERV];
+    char serv[SOCKET_NI_MAXSERV];
     int result;
 
     assert(socket);
@@ -439,8 +438,8 @@ ssize_t SocketDgram_recvfrom(T socket, void *buf, size_t len, char *host, size_t
     /* Get sender address and port if requested */
     if (host && host_len > 0 && port)
     {
-        result = getnameinfo((struct sockaddr *)&addr, addrlen, host, host_len, serv, NI_MAXSERV,
-                             NI_NUMERICHOST | NI_NUMERICSERV);
+        result = getnameinfo((struct sockaddr *)&addr, addrlen, host, host_len, serv, SOCKET_NI_MAXSERV,
+                             SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
 
         if (result == 0)
         {
@@ -537,7 +536,7 @@ void SocketDgram_setreuseaddr(T socket)
 
     assert(socket);
 
-    if (setsockopt(socket->fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0)
+    if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEADDR, &optval, sizeof(optval)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set SO_REUSEADDR");
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
@@ -550,7 +549,7 @@ void SocketDgram_setbroadcast(T socket, int enable)
 
     assert(socket);
 
-    if (setsockopt(socket->fd, SOL_SOCKET, SO_BROADCAST, &optval, sizeof(optval)) < 0)
+    if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_BROADCAST, &optval, sizeof(optval)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set SO_BROADCAST");
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
@@ -566,9 +565,9 @@ void SocketDgram_joinmulticast(T socket, const char *group, const char *interfac
     assert(group);
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = AI_NUMERICHOST;
+    hints.ai_family = SOCKET_AF_UNSPEC;
+    hints.ai_socktype = SOCKET_DGRAM_TYPE;
+    hints.ai_flags = SOCKET_AI_NUMERICHOST;
 
     result = getaddrinfo(group, NULL, &hints, &res);
     if (result != 0)
@@ -577,7 +576,7 @@ void SocketDgram_joinmulticast(T socket, const char *group, const char *interfac
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
     }
 
-    if (res->ai_family == AF_INET)
+    if (res->ai_family == SOCKET_AF_INET)
     {
         struct ip_mreq mreq;
         memset(&mreq, 0, sizeof(mreq));
@@ -585,7 +584,7 @@ void SocketDgram_joinmulticast(T socket, const char *group, const char *interfac
 
         if (interface)
         {
-            if (inet_pton(AF_INET, interface, &mreq.imr_interface) <= 0)
+            if (inet_pton(SOCKET_AF_INET, interface, &mreq.imr_interface) <= 0)
             {
                 freeaddrinfo(res);
                 SOCKET_ERROR_MSG("Invalid interface address: %s", interface);
@@ -597,21 +596,21 @@ void SocketDgram_joinmulticast(T socket, const char *group, const char *interfac
             mreq.imr_interface.s_addr = INADDR_ANY;
         }
 
-        if (setsockopt(socket->fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+        if (setsockopt(socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
         {
             freeaddrinfo(res);
             SOCKET_ERROR_FMT("Failed to join IPv4 multicast group: %s", group);
             RAISE_DGRAM_ERROR(SocketDgram_Failed);
         }
     }
-    else if (res->ai_family == AF_INET6)
+    else if (res->ai_family == SOCKET_AF_INET6)
     {
         struct ipv6_mreq mreq6;
         memset(&mreq6, 0, sizeof(mreq6));
         mreq6.ipv6mr_multiaddr = ((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
         mreq6.ipv6mr_interface = 0; /* Default interface */
 
-        if (setsockopt(socket->fd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0)
+        if (setsockopt(socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0)
         {
             freeaddrinfo(res);
             SOCKET_ERROR_FMT("Failed to join IPv6 multicast group: %s", group);
@@ -637,9 +636,9 @@ void SocketDgram_leavemulticast(T socket, const char *group, const char *interfa
     assert(group);
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = AI_NUMERICHOST;
+    hints.ai_family = SOCKET_AF_UNSPEC;
+    hints.ai_socktype = SOCKET_DGRAM_TYPE;
+    hints.ai_flags = SOCKET_AI_NUMERICHOST;
 
     result = getaddrinfo(group, NULL, &hints, &res);
     if (result != 0)
@@ -648,7 +647,7 @@ void SocketDgram_leavemulticast(T socket, const char *group, const char *interfa
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
     }
 
-    if (res->ai_family == AF_INET)
+    if (res->ai_family == SOCKET_AF_INET)
     {
         struct ip_mreq mreq;
         memset(&mreq, 0, sizeof(mreq));
@@ -656,7 +655,7 @@ void SocketDgram_leavemulticast(T socket, const char *group, const char *interfa
 
         if (interface)
         {
-            if (inet_pton(AF_INET, interface, &mreq.imr_interface) <= 0)
+            if (inet_pton(SOCKET_AF_INET, interface, &mreq.imr_interface) <= 0)
             {
                 freeaddrinfo(res);
                 SOCKET_ERROR_MSG("Invalid interface address: %s", interface);
@@ -668,21 +667,21 @@ void SocketDgram_leavemulticast(T socket, const char *group, const char *interfa
             mreq.imr_interface.s_addr = INADDR_ANY;
         }
 
-        if (setsockopt(socket->fd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+        if (setsockopt(socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
         {
             freeaddrinfo(res);
             SOCKET_ERROR_FMT("Failed to leave IPv4 multicast group: %s", group);
             RAISE_DGRAM_ERROR(SocketDgram_Failed);
         }
     }
-    else if (res->ai_family == AF_INET6)
+    else if (res->ai_family == SOCKET_AF_INET6)
     {
         struct ipv6_mreq mreq6;
         memset(&mreq6, 0, sizeof(mreq6));
         mreq6.ipv6mr_multiaddr = ((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
         mreq6.ipv6mr_interface = 0;
 
-        if (setsockopt(socket->fd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0)
+        if (setsockopt(socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0)
         {
             freeaddrinfo(res);
             SOCKET_ERROR_FMT("Failed to leave IPv6 multicast group: %s", group);
@@ -701,7 +700,7 @@ void SocketDgram_leavemulticast(T socket, const char *group, const char *interfa
 
 void SocketDgram_setttl(T socket, int ttl)
 {
-    int socket_family = AF_UNSPEC;
+    int socket_family = SOCKET_AF_UNSPEC;
     socklen_t len = sizeof(socket_family);
 
     assert(socket);
@@ -718,17 +717,17 @@ void SocketDgram_setttl(T socket, int ttl)
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
     }
 
-    if (socket_family == AF_INET)
+    if (socket_family == SOCKET_AF_INET)
     {
-        if (setsockopt(socket->fd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0)
+        if (setsockopt(socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_TTL, &ttl, sizeof(ttl)) < 0)
         {
             SOCKET_ERROR_FMT("Failed to set IPv4 TTL");
             RAISE_DGRAM_ERROR(SocketDgram_Failed);
         }
     }
-    else if (socket_family == AF_INET6)
+    else if (socket_family == SOCKET_AF_INET6)
     {
-        if (setsockopt(socket->fd, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof(ttl)) < 0)
+        if (setsockopt(socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_UNICAST_HOPS, &ttl, sizeof(ttl)) < 0)
         {
             SOCKET_ERROR_FMT("Failed to set IPv6 hop limit");
             RAISE_DGRAM_ERROR(SocketDgram_Failed);
@@ -750,13 +749,13 @@ void SocketDgram_settimeout(T socket, int timeout_sec)
     tv.tv_sec = timeout_sec;
     tv.tv_usec = 0;
 
-    if (setsockopt(socket->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
+    if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set receive timeout");
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
     }
 
-    if (setsockopt(socket->fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
+    if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set send timeout");
         RAISE_DGRAM_ERROR(SocketDgram_Failed);

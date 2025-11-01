@@ -36,7 +36,6 @@
 #define T Socket_T
 
 /* Port string buffer size for snprintf - 16 bytes sufficient for "65535" + null */
-#define PORT_STR_BUFSIZE 16
 
 Except_T Socket_Failed = {"Socket operation failed"};
 Except_T Socket_Closed = {"Socket closed"};
@@ -78,9 +77,9 @@ struct T
  */
 static const char *normalize_wildcard_host(const char *host)
 {
-        if (host == NULL || strcmp(host, "0.0.0.0") == 0 || strcmp(host, "::") == 0)
-                return NULL;
-        return host;
+    if (host == NULL || strcmp(host, "0.0.0.0") == 0 || strcmp(host, "::") == 0)
+        return NULL;
+    return host;
 }
 
 /**
@@ -91,11 +90,11 @@ static const char *normalize_wildcard_host(const char *host)
  */
 static void validate_port_number(int port)
 {
-        if (!SOCKET_VALID_PORT(port))
-        {
-                SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
-                RAISE_SOCKET_ERROR(Socket_Failed);
-        }
+    if (!SOCKET_VALID_PORT(port))
+    {
+        SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
 }
 
 /**
@@ -106,11 +105,11 @@ static void validate_port_number(int port)
  */
 static void validate_host_not_null(const char *host)
 {
-        if (host == NULL)
-        {
-                SOCKET_ERROR_MSG("Invalid host: NULL pointer");
-                RAISE_SOCKET_ERROR(Socket_Failed);
-        }
+    if (host == NULL)
+    {
+        SOCKET_ERROR_MSG("Invalid host: NULL pointer");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
 }
 
 /**
@@ -119,11 +118,11 @@ static void validate_host_not_null(const char *host)
  */
 static void setup_bind_hints(struct addrinfo *hints)
 {
-        memset(hints, 0, sizeof(*hints));
-        hints->ai_family = AF_UNSPEC;
-        hints->ai_socktype = SOCK_STREAM;
-        hints->ai_flags = AI_PASSIVE;
-        hints->ai_protocol = 0;
+    memset(hints, 0, sizeof(*hints));
+    hints->ai_family = SOCKET_AF_UNSPEC;
+    hints->ai_socktype = SOCKET_STREAM_TYPE;
+    hints->ai_flags = SOCKET_AI_PASSIVE;
+    hints->ai_protocol = 0;
 }
 
 /**
@@ -132,10 +131,10 @@ static void setup_bind_hints(struct addrinfo *hints)
  */
 static void setup_connect_hints(struct addrinfo *hints)
 {
-        memset(hints, 0, sizeof(*hints));
-        hints->ai_family = AF_UNSPEC;
-        hints->ai_socktype = SOCK_STREAM;
-        hints->ai_protocol = 0;
+    memset(hints, 0, sizeof(*hints));
+    hints->ai_family = SOCKET_AF_UNSPEC;
+    hints->ai_socktype = SOCKET_STREAM_TYPE;
+    hints->ai_protocol = 0;
 }
 
 /**
@@ -146,13 +145,13 @@ static void setup_connect_hints(struct addrinfo *hints)
  */
 static int get_socket_family(T socket)
 {
-        int socket_family = AF_UNSPEC;
-        socklen_t len = sizeof(socket_family);
+    int socket_family = SOCKET_AF_UNSPEC;
+    socklen_t len = sizeof(socket_family);
 
-        if (getsockopt(socket->fd, SOL_SOCKET, SO_DOMAIN, &socket_family, &len) < 0)
-                socket_family = AF_UNSPEC;
+    if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_DOMAIN, &socket_family, &len) < 0)
+        socket_family = SOCKET_AF_UNSPEC;
 
-        return socket_family;
+    return socket_family;
 }
 
 /**
@@ -164,11 +163,11 @@ static int get_socket_family(T socket)
  */
 static void enable_dual_stack(T socket, int socket_family)
 {
-        if (socket_family == AF_INET6)
-        {
-                int no = 0;
-                setsockopt(socket->fd, IPPROTO_IPV6, IPV6_V6ONLY, &no, sizeof(no));
-        }
+    if (socket_family == SOCKET_AF_INET6)
+    {
+        int no = 0;
+        setsockopt(socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_V6ONLY, &no, sizeof(no));
+    }
 }
 
 /**
@@ -181,13 +180,13 @@ static void enable_dual_stack(T socket, int socket_family)
  */
 static int try_bind_address(T socket, const struct sockaddr *addr, socklen_t addrlen)
 {
-        if (bind(socket->fd, addr, addrlen) == 0)
-        {
-                memcpy(&socket->addr, addr, addrlen);
-                socket->addrlen = addrlen;
-                return 0;
-        }
-        return -1;
+    if (bind(socket->fd, addr, addrlen) == 0)
+    {
+        memcpy(&socket->addr, addr, addrlen);
+        socket->addrlen = addrlen;
+        return 0;
+    }
+    return -1;
 }
 
 /**
@@ -200,13 +199,13 @@ static int try_bind_address(T socket, const struct sockaddr *addr, socklen_t add
  */
 static int try_connect_address(T socket, const struct sockaddr *addr, socklen_t addrlen)
 {
-        if (connect(socket->fd, addr, addrlen) == 0 || errno == EINPROGRESS)
-        {
-                memcpy(&socket->addr, addr, addrlen);
-                socket->addrlen = addrlen;
-                return 0;
-        }
-        return -1;
+    if (connect(socket->fd, addr, addrlen) == 0 || errno == EINPROGRESS)
+    {
+        memcpy(&socket->addr, addr, addrlen);
+        socket->addrlen = addrlen;
+        return 0;
+    }
+    return -1;
 }
 
 /**
@@ -216,20 +215,20 @@ static int try_connect_address(T socket, const struct sockaddr *addr, socklen_t 
  */
 static void handle_bind_error(const char *host, int port)
 {
-        const char *safe_host = host ? host : "any";
+    const char *safe_host = host ? host : "any";
 
-        if (errno == EADDRINUSE)
-        {
-                SOCKET_ERROR_FMT(SOCKET_EADDRINUSE ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
-        }
-        else if (errno == EACCES)
-        {
-                SOCKET_ERROR_FMT("Permission denied to bind to port %d", port);
-        }
-        else
-        {
-                SOCKET_ERROR_FMT("Failed to bind to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
-        }
+    if (errno == EADDRINUSE)
+    {
+        SOCKET_ERROR_FMT(SOCKET_EADDRINUSE ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
+    }
+    else if (errno == EACCES)
+    {
+        SOCKET_ERROR_FMT("Permission denied to bind to port %d", port);
+    }
+    else
+    {
+        SOCKET_ERROR_FMT("Failed to bind to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
+    }
 }
 
 /**
@@ -239,22 +238,22 @@ static void handle_bind_error(const char *host, int port)
  */
 static void handle_connect_error(const char *host, int port)
 {
-        if (errno == ECONNREFUSED)
-        {
-                SOCKET_ERROR_FMT(SOCKET_ECONNREFUSED ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
-        }
-        else if (errno == ENETUNREACH)
-        {
-                SOCKET_ERROR_FMT(SOCKET_ENETUNREACH ": %.*s", SOCKET_ERROR_MAX_HOSTNAME, host);
-        }
-        else if (errno == ETIMEDOUT)
-        {
-                SOCKET_ERROR_FMT(SOCKET_ETIMEDOUT ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
-        }
-        else
-        {
-                SOCKET_ERROR_FMT("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
-        }
+    if (errno == ECONNREFUSED)
+    {
+        SOCKET_ERROR_FMT(SOCKET_ECONNREFUSED ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
+    }
+    else if (errno == ENETUNREACH)
+    {
+        SOCKET_ERROR_FMT(SOCKET_ENETUNREACH ": %.*s", SOCKET_ERROR_MAX_HOSTNAME, host);
+    }
+    else if (errno == ETIMEDOUT)
+    {
+        SOCKET_ERROR_FMT(SOCKET_ETIMEDOUT ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
+    }
+    else
+    {
+        SOCKET_ERROR_FMT("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
+    }
 }
 
 /**
@@ -268,16 +267,16 @@ static void handle_connect_error(const char *host, int port)
  */
 static int allocate_peer_address(T newsocket, const char *host)
 {
-        size_t addr_len = strlen(host) + 1;
+    size_t addr_len = strlen(host) + 1;
 
-        newsocket->peeraddr = ALLOC(newsocket->arena, addr_len);
-        if (!newsocket->peeraddr)
-        {
-                SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate peer address buffer");
-                return -1;
-        }
-        strcpy(newsocket->peeraddr, host);
-        return 0;
+    newsocket->peeraddr = ALLOC(newsocket->arena, addr_len);
+    if (!newsocket->peeraddr)
+    {
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate peer address buffer");
+        return -1;
+    }
+    strcpy(newsocket->peeraddr, host);
+    return 0;
 }
 
 /**
@@ -288,14 +287,14 @@ static int allocate_peer_address(T newsocket, const char *host)
  */
 static int parse_peer_port(const char *serv)
 {
-        char *endptr;
-        long port_long;
+    char *endptr;
+    long port_long;
 
-        errno = 0;
-        port_long = strtol(serv, &endptr, 10);
-        if (errno == 0 && endptr != serv && *endptr == '\0' && port_long >= 0 && port_long <= 65535)
-                return (int)port_long;
-        return 0;
+    errno = 0;
+    port_long = strtol(serv, &endptr, 10);
+    if (errno == 0 && endptr != serv && *endptr == '\0' && port_long >= 0 && port_long <= 65535)
+        return (int)port_long;
+    return 0;
 }
 
 /**
@@ -308,24 +307,23 @@ static int parse_peer_port(const char *serv)
  */
 static int setup_peer_info(T newsocket, const struct sockaddr *addr, socklen_t addrlen)
 {
-        char host[NI_MAXHOST];
-        char serv[NI_MAXSERV];
-        int result;
+    char host[SOCKET_NI_MAXHOST];
+    char serv[SOCKET_NI_MAXSERV];
+    int result;
 
-        result = getnameinfo(addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV,
-                             NI_NUMERICHOST | NI_NUMERICSERV);
-        if (result == 0)
-        {
-                if (allocate_peer_address(newsocket, host) != 0)
-                        return -1;
-                newsocket->peerport = parse_peer_port(serv);
-        }
-        else
-        {
-                newsocket->peeraddr = NULL;
-                newsocket->peerport = 0;
-        }
-        return 0;
+    result = getnameinfo(addr, addrlen, host, SOCKET_NI_MAXHOST, serv, SOCKET_NI_MAXSERV, SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
+    if (result == 0)
+    {
+        if (allocate_peer_address(newsocket, host) != 0)
+            return -1;
+        newsocket->peerport = parse_peer_port(serv);
+    }
+    else
+    {
+        newsocket->peeraddr = NULL;
+        newsocket->peerport = 0;
+    }
+    return 0;
 }
 
 /**
@@ -340,9 +338,10 @@ static int setup_peer_info(T newsocket, const struct sockaddr *addr, socklen_t a
  *
  * Resolves address and validates against socket family if specified.
  */
-static int resolve_address(const char *host, int port, const struct addrinfo *hints, struct addrinfo **res, int socket_family)
+static int resolve_address(const char *host, int port, const struct addrinfo *hints, struct addrinfo **res,
+                           int socket_family)
 {
-    char port_str[PORT_STR_BUFSIZE];
+    char port_str[SOCKET_PORT_STR_BUFSIZE];
     int result;
     size_t host_len = host ? strlen(host) : 0;
 
@@ -361,7 +360,8 @@ static int resolve_address(const char *host, int port, const struct addrinfo *hi
     if (result != 0)
     {
         const char *safe_host = host ? host : "any";
-        SOCKET_ERROR_MSG("Invalid host/IP address: %.*s (%s)", SOCKET_ERROR_MAX_HOSTNAME, safe_host, gai_strerror(result));
+        SOCKET_ERROR_MSG("Invalid host/IP address: %.*s (%s)", SOCKET_ERROR_MAX_HOSTNAME, safe_host,
+                         gai_strerror(result));
         return -1;
     }
 
@@ -378,7 +378,8 @@ static int resolve_address(const char *host, int port, const struct addrinfo *hi
         freeaddrinfo(*res);
         *res = NULL;
         const char *safe_host = host ? host : "any";
-        SOCKET_ERROR_MSG("No address found for family %d: %.*s:%d", socket_family, SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
+        SOCKET_ERROR_MSG("No address found for family %d: %.*s:%d", socket_family, SOCKET_ERROR_MAX_HOSTNAME, safe_host,
+                         port);
         return -1;
     }
 
@@ -400,7 +401,7 @@ static int setup_unix_sockaddr(struct sockaddr_un *addr, const char *path)
     assert(path);
 
     memset(addr, 0, sizeof(*addr));
-    addr->sun_family = AF_UNIX;
+    addr->sun_family = SOCKET_AF_UNIX;
     path_len = strlen(path);
 
     /* Handle abstract namespace sockets on Linux */
@@ -508,46 +509,46 @@ void Socket_free(T *socket)
  */
 static int try_bind_resolved_addresses(T socket, struct addrinfo *res, int socket_family)
 {
-        struct addrinfo *rp;
+    struct addrinfo *rp;
 
-        for (rp = res; rp != NULL; rp = rp->ai_next)
-        {
-                if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
-                        continue;
+    for (rp = res; rp != NULL; rp = rp->ai_next)
+    {
+        if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
+            continue;
 
-                enable_dual_stack(socket, rp->ai_family);
+        enable_dual_stack(socket, rp->ai_family);
 
-                if (try_bind_address(socket, rp->ai_addr, rp->ai_addrlen) == 0)
-                        return 0;
-        }
-        return -1;
+        if (try_bind_address(socket, rp->ai_addr, rp->ai_addrlen) == 0)
+            return 0;
+    }
+    return -1;
 }
 
 void Socket_bind(T socket, const char *host, int port)
 {
-        struct addrinfo hints, *res = NULL;
-        int socket_family;
+    struct addrinfo hints, *res = NULL;
+    int socket_family;
 
-        assert(socket);
+    assert(socket);
 
-        validate_port_number(port);
-        host = normalize_wildcard_host(host);
-        setup_bind_hints(&hints);
+    validate_port_number(port);
+    host = normalize_wildcard_host(host);
+    setup_bind_hints(&hints);
 
-        if (resolve_address(host, port, &hints, &res, AF_UNSPEC) != 0)
-                RAISE_SOCKET_ERROR(Socket_Failed);
-
-        socket_family = get_socket_family(socket);
-
-        if (try_bind_resolved_addresses(socket, res, socket_family) == 0)
-        {
-                freeaddrinfo(res);
-                return;
-        }
-
-        handle_bind_error(host, port);
-        freeaddrinfo(res);
+    if (resolve_address(host, port, &hints, &res, AF_UNSPEC) != 0)
         RAISE_SOCKET_ERROR(Socket_Failed);
+
+    socket_family = get_socket_family(socket);
+
+    if (try_bind_resolved_addresses(socket, res, socket_family) == 0)
+    {
+        freeaddrinfo(res);
+        return;
+    }
+
+    handle_bind_error(host, port);
+    freeaddrinfo(res);
+    RAISE_SOCKET_ERROR(Socket_Failed);
 }
 
 void Socket_listen(T socket, int backlog)
@@ -585,16 +586,16 @@ void Socket_listen(T socket, int backlog)
  */
 static int accept_connection(T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
 {
-        int newfd = accept(socket->fd, (struct sockaddr *)addr, addrlen);
+    int newfd = accept(socket->fd, (struct sockaddr *)addr, addrlen);
 
-        if (newfd < 0)
-        {
-                if (errno == EAGAIN || errno == EWOULDBLOCK)
-                        return -1;
-                SOCKET_ERROR_FMT("Failed to accept connection");
-                RAISE_SOCKET_ERROR(Socket_Failed);
-        }
-        return newfd;
+    if (newfd < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return -1;
+        SOCKET_ERROR_FMT("Failed to accept connection");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+    return newfd;
 }
 
 /**
@@ -609,52 +610,52 @@ static int accept_connection(T socket, struct sockaddr_storage *addr, socklen_t 
  */
 static T create_accepted_socket(int newfd, const struct sockaddr_storage *addr, socklen_t addrlen)
 {
-        T newsocket = calloc(1, sizeof(*newsocket));
+    T newsocket = calloc(1, sizeof(*newsocket));
 
-        if (newsocket == NULL)
-        {
-                int saved_errno = errno;
-                SAFE_CLOSE(newfd);
-                errno = saved_errno;
-                SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate new socket");
-                RAISE_SOCKET_ERROR(Socket_Failed);
-        }
+    if (newsocket == NULL)
+    {
+        int saved_errno = errno;
+        SAFE_CLOSE(newfd);
+        errno = saved_errno;
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate new socket");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
 
-        newsocket->arena = Arena_new();
-        if (!newsocket->arena)
-        {
-                int saved_errno = errno;
-                SAFE_CLOSE(newfd);
-                free(newsocket);
-                errno = saved_errno;
-                SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket arena");
-                RAISE_SOCKET_ERROR(Socket_Failed);
-        }
+    newsocket->arena = Arena_new();
+    if (!newsocket->arena)
+    {
+        int saved_errno = errno;
+        SAFE_CLOSE(newfd);
+        free(newsocket);
+        errno = saved_errno;
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket arena");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
 
-        newsocket->fd = newfd;
-        memcpy(&newsocket->addr, addr, addrlen);
-        newsocket->addrlen = addrlen;
+    newsocket->fd = newfd;
+    memcpy(&newsocket->addr, addr, addrlen);
+    newsocket->addrlen = addrlen;
 
-        return newsocket;
+    return newsocket;
 }
 
 T Socket_accept(T socket)
 {
-        struct sockaddr_storage addr;
-        socklen_t addrlen = sizeof(addr);
-        int newfd;
-        T newsocket;
+    struct sockaddr_storage addr;
+    socklen_t addrlen = sizeof(addr);
+    int newfd;
+    T newsocket;
 
-        assert(socket);
+    assert(socket);
 
-        newfd = accept_connection(socket, &addr, &addrlen);
-        if (newfd < 0)
-                return NULL;
+    newfd = accept_connection(socket, &addr, &addrlen);
+    if (newfd < 0)
+        return NULL;
 
-        newsocket = create_accepted_socket(newfd, &addr, addrlen);
-        setup_peer_info(newsocket, (struct sockaddr *)&addr, addrlen);
+    newsocket = create_accepted_socket(newfd, &addr, addrlen);
+    setup_peer_info(newsocket, (struct sockaddr *)&addr, addrlen);
 
-        return newsocket;
+    return newsocket;
 }
 
 /**
@@ -667,47 +668,47 @@ T Socket_accept(T socket)
  */
 static int try_connect_resolved_addresses(T socket, struct addrinfo *res, int socket_family)
 {
-        struct addrinfo *rp;
-        int saved_errno = 0;
+    struct addrinfo *rp;
+    int saved_errno = 0;
 
-        for (rp = res; rp != NULL; rp = rp->ai_next)
-        {
-                if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
-                        continue;
+    for (rp = res; rp != NULL; rp = rp->ai_next)
+    {
+        if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
+            continue;
 
-                if (try_connect_address(socket, rp->ai_addr, rp->ai_addrlen) == 0)
-                        return 0;
-                saved_errno = errno;
-        }
-        errno = saved_errno;
-        return -1;
+        if (try_connect_address(socket, rp->ai_addr, rp->ai_addrlen) == 0)
+            return 0;
+        saved_errno = errno;
+    }
+    errno = saved_errno;
+    return -1;
 }
 
 void Socket_connect(T socket, const char *host, int port)
 {
-        struct addrinfo hints, *res = NULL;
-        int socket_family;
+    struct addrinfo hints, *res = NULL;
+    int socket_family;
 
-        assert(socket);
+    assert(socket);
 
-        validate_host_not_null(host);
-        validate_port_number(port);
-        setup_connect_hints(&hints);
+    validate_host_not_null(host);
+    validate_port_number(port);
+    setup_connect_hints(&hints);
 
-        if (resolve_address(host, port, &hints, &res, AF_UNSPEC) != 0)
-                RAISE_SOCKET_ERROR(Socket_Failed);
-
-        socket_family = get_socket_family(socket);
-
-        if (try_connect_resolved_addresses(socket, res, socket_family) == 0)
-        {
-                freeaddrinfo(res);
-                return;
-        }
-
-        handle_connect_error(host, port);
-        freeaddrinfo(res);
+    if (resolve_address(host, port, &hints, &res, AF_UNSPEC) != 0)
         RAISE_SOCKET_ERROR(Socket_Failed);
+
+    socket_family = get_socket_family(socket);
+
+    if (try_connect_resolved_addresses(socket, res, socket_family) == 0)
+    {
+        freeaddrinfo(res);
+        return;
+    }
+
+    handle_connect_error(host, port);
+    freeaddrinfo(res);
+    RAISE_SOCKET_ERROR(Socket_Failed);
 }
 
 ssize_t Socket_send(T socket, const void *buf, size_t len)
@@ -718,7 +719,7 @@ ssize_t Socket_send(T socket, const void *buf, size_t len)
     assert(buf);
     assert(len > 0);
 
-    result = send(socket->fd, buf, len, MSG_NOSIGNAL);
+    result = send(socket->fd, buf, len, SOCKET_MSG_NOSIGNAL);
     if (result < 0)
     {
         if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -793,7 +794,7 @@ void Socket_setreuseaddr(T socket)
 
     assert(socket);
 
-    if (setsockopt(socket->fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+    if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEADDR, &opt, sizeof(opt)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set SO_REUSEADDR");
         RAISE_SOCKET_ERROR(Socket_Failed);
@@ -817,13 +818,13 @@ void Socket_settimeout(T socket, int timeout_sec)
     tv.tv_usec = 0;
 
     /* Set timeouts */
-    if (setsockopt(socket->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
+    if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set receive timeout");
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 
-    if (setsockopt(socket->fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
+    if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set send timeout");
         RAISE_SOCKET_ERROR(Socket_Failed);
@@ -845,7 +846,7 @@ void Socket_setkeepalive(T socket, int idle, int interval, int count)
     }
 
     /* Enable keepalive */
-    if (setsockopt(socket->fd, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)) < 0)
+    if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_KEEPALIVE, &opt, sizeof(opt)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to enable keepalive");
         RAISE_SOCKET_ERROR(Socket_Failed);
@@ -854,7 +855,7 @@ void Socket_setkeepalive(T socket, int idle, int interval, int count)
     /* Set keepalive parameters (platform-specific) */
 
 #ifdef TCP_KEEPIDLE
-    if (setsockopt(socket->fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle)) < 0)
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPIDLE, &idle, sizeof(idle)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set keepalive idle time");
         RAISE_SOCKET_ERROR(Socket_Failed);
@@ -862,7 +863,7 @@ void Socket_setkeepalive(T socket, int idle, int interval, int count)
 #endif
 
 #ifdef TCP_KEEPINTVL
-    if (setsockopt(socket->fd, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(interval)) < 0)
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPINTVL, &interval, sizeof(interval)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set keepalive interval");
         RAISE_SOCKET_ERROR(Socket_Failed);
@@ -870,7 +871,7 @@ void Socket_setkeepalive(T socket, int idle, int interval, int count)
 #endif
 
 #ifdef TCP_KEEPCNT
-    if (setsockopt(socket->fd, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(count)) < 0)
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPCNT, &count, sizeof(count)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set keepalive count");
         RAISE_SOCKET_ERROR(Socket_Failed);
@@ -882,7 +883,7 @@ void Socket_setnodelay(T socket, int nodelay)
 {
     assert(socket);
 
-    if (setsockopt(socket->fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay)) < 0)
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_NODELAY, &nodelay, sizeof(nodelay)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set TCP_NODELAY");
         RAISE_SOCKET_ERROR(Socket_Failed);
@@ -981,7 +982,7 @@ int Socket_getpeerpid(const T socket)
     struct ucred cred;
     socklen_t len = sizeof(cred);
 
-    if (getsockopt(socket->fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == 0)
+    if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_PEERCRED, &cred, &len) == 0)
     {
         return cred.pid;
     }
@@ -998,7 +999,7 @@ int Socket_getpeeruid(const T socket)
     struct ucred cred;
     socklen_t len = sizeof(cred);
 
-    if (getsockopt(socket->fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == 0)
+    if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_PEERCRED, &cred, &len) == 0)
     {
         return cred.uid;
     }
@@ -1015,7 +1016,7 @@ int Socket_getpeergid(const T socket)
     struct ucred cred;
     socklen_t len = sizeof(cred);
 
-    if (getsockopt(socket->fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == 0)
+    if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_PEERCRED, &cred, &len) == 0)
     {
         return cred.gid;
     }
@@ -1071,34 +1072,34 @@ SocketDNS_Request_T Socket_connect_async(SocketDNS_T dns, T socket, const char *
 
 void Socket_bind_with_addrinfo(T socket, struct addrinfo *res)
 {
-        int socket_family;
+    int socket_family;
 
-        assert(socket);
-        assert(res);
+    assert(socket);
+    assert(res);
 
-        socket_family = get_socket_family(socket);
+    socket_family = get_socket_family(socket);
 
-        if (try_bind_resolved_addresses(socket, res, socket_family) == 0)
-                return;
+    if (try_bind_resolved_addresses(socket, res, socket_family) == 0)
+        return;
 
-        handle_bind_error(NULL, 0);
-        RAISE_SOCKET_ERROR(Socket_Failed);
+    handle_bind_error(NULL, 0);
+    RAISE_SOCKET_ERROR(Socket_Failed);
 }
 
 void Socket_connect_with_addrinfo(T socket, struct addrinfo *res)
 {
-        int socket_family;
+    int socket_family;
 
-        assert(socket);
-        assert(res);
+    assert(socket);
+    assert(res);
 
-        socket_family = get_socket_family(socket);
+    socket_family = get_socket_family(socket);
 
-        if (try_connect_resolved_addresses(socket, res, socket_family) == 0)
-                return;
+    if (try_connect_resolved_addresses(socket, res, socket_family) == 0)
+        return;
 
-        handle_connect_error("resolved", 0);
-        RAISE_SOCKET_ERROR(Socket_Failed);
+    handle_connect_error("resolved", 0);
+    RAISE_SOCKET_ERROR(Socket_Failed);
 }
 
 #undef T

@@ -11,13 +11,13 @@
 #include <stdint.h>
 
 #include "core/Arena.h"
+#include "core/SocketConfig.h"
 #include "socket/SocketBuf.h"
 
 #define T SocketBuf_T
 
 /* Minimum buffer capacity for practical network I/O
  * Matches SOCKET_MIN_BUFFER_SIZE from SocketConfig.h for consistency */
-#define SOCKETBUF_MIN_CAPACITY 512
 
 /* Validation macro for buffer invariants */
 #define SOCKETBUF_INVARIANTS(buf)                                                                                      \
@@ -53,7 +53,7 @@ T SocketBuf_new(Arena_T arena, size_t capacity)
         return NULL;
 
     /* Enforce minimum capacity for practical network I/O */
-    if (capacity < SOCKETBUF_MIN_CAPACITY)
+    if (capacity < SOCKET_MIN_BUFFER_SIZE)
         return NULL;
 
     buf = ALLOC(arena, sizeof(*buf));
