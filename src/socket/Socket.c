@@ -171,6 +171,90 @@ static void enable_dual_stack(T socket, int socket_family)
 }
 
 /**
+ * create_socket_fd - Create underlying socket file descriptor
+ * @domain: Socket domain (AF_INET, AF_INET6, AF_UNIX)
+ * @type: Socket type (SOCK_STREAM, SOCK_DGRAM)
+ * @protocol: Socket protocol (usually 0)
+ *
+ * Returns: Socket file descriptor or -1 on failure
+ *
+ * Raises: Socket_Failed on socket creation failure
+ */
+static int create_socket_fd(int domain, int type, int protocol)
+{
+    int fd = socket(domain, type, protocol);
+    if (fd < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to create socket (domain=%d, type=%d, protocol=%d)", domain, type, protocol);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+    return fd;
+}
+
+/**
+ * allocate_socket_structure - Allocate and zero-initialize socket structure
+ * @fd: File descriptor for cleanup on failure
+ *
+ * Returns: Pointer to allocated socket structure or NULL on failure
+ *
+ * Raises: Socket_Failed on allocation failure (cleans up fd)
+ */
+static T allocate_socket_structure(int fd)
+{
+    T sock = calloc(1, sizeof(*sock));
+    if (sock == NULL)
+    {
+        int saved_errno = errno;
+        SAFE_CLOSE(fd);
+        errno = saved_errno;
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket structure");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+    return sock;
+}
+
+/**
+ * initialize_socket_structure - Initialize socket structure fields
+ * @socket: Socket to initialize
+ * @fd: File descriptor to assign
+ *
+ * Returns: Initialized socket structure
+ */
+static T initialize_socket_structure(T socket, int fd)
+{
+    socket->fd = fd;
+    socket->addrlen = sizeof(socket->addr);
+    memset(&socket->addr, 0, sizeof(socket->addr));
+    socket->peeraddr = NULL;
+    socket->peerport = 0;
+    return socket;
+}
+
+/**
+ * create_socket_arena - Create arena for socket-related allocations
+ * @fd: File descriptor for cleanup on failure
+ * @sock: Socket structure for cleanup on failure
+ *
+ * Returns: New arena or NULL on failure
+ *
+ * Raises: Socket_Failed on arena creation failure (cleans up fd and sock)
+ */
+static Arena_T create_socket_arena(int fd, T sock)
+{
+    Arena_T arena = Arena_new();
+    if (!arena)
+    {
+        int saved_errno = errno;
+        SAFE_CLOSE(fd);
+        free(sock);
+        errno = saved_errno;
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket arena");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+    return arena;
+}
+
+/**
  * try_bind_address - Try to bind socket to address
  * @socket: Socket to bind
  * @addr: Address to bind to
@@ -441,41 +525,10 @@ T Socket_new(int domain, int type, int protocol)
     T sock;
     int fd;
 
-    fd = socket(domain, type, protocol);
-    if (fd < 0)
-    {
-        SOCKET_ERROR_FMT("Failed to create socket (domain=%d, type=%d, protocol=%d)", domain, type, protocol);
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
-    /* Use calloc to zero-initialize structure */
-    sock = calloc(1, sizeof(*sock));
-    if (sock == NULL)
-    {
-        int saved_errno = errno;
-        SAFE_CLOSE(fd);
-        errno = saved_errno;
-        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket structure");
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
-    /* Initialize non-zero fields */
-    sock->fd = -1;
-    sock->addrlen = sizeof(sock->addr);
-
-    sock->arena = Arena_new();
-    if (!sock->arena)
-    {
-        int saved_errno = errno;
-        SAFE_CLOSE(fd);
-        free(sock);
-        errno = saved_errno;
-        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket arena");
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
-    /* Set file descriptor after successful allocations */
-    sock->fd = fd;
+    fd = create_socket_fd(domain, type, protocol);
+    sock = allocate_socket_structure(fd);
+    sock->arena = create_socket_arena(fd, sock);
+    initialize_socket_structure(sock, fd);
 
     return sock;
 }
