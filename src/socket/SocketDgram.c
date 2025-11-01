@@ -56,6 +56,192 @@ struct T
     Arena_T arena;
 };
 
+/* Static helper functions */
+
+/**
+ * validate_dgram_port - Validate port is in valid range
+ * @port: Port number to validate
+ *
+ * Raises: SocketDgram_Failed if port is invalid
+ */
+static void validate_dgram_port(int port)
+{
+        if (!SOCKET_VALID_PORT(port))
+        {
+                SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
+                RAISE_DGRAM_ERROR(SocketDgram_Failed);
+        }
+}
+
+/**
+ * validate_dgram_hostname - Validate hostname length
+ * @host: Hostname to validate
+ *
+ * Raises: SocketDgram_Failed if hostname too long
+ */
+static void validate_dgram_hostname(const char *host)
+{
+        size_t host_len = strlen(host);
+
+        if (host_len > SOCKET_ERROR_MAX_HOSTNAME)
+        {
+                SOCKET_ERROR_MSG("Host name too long (max %d characters)", SOCKET_ERROR_MAX_HOSTNAME);
+                RAISE_DGRAM_ERROR(SocketDgram_Failed);
+        }
+}
+
+/**
+ * setup_dgram_bind_hints - Initialize addrinfo hints for datagram binding
+ * @hints: Hints structure to initialize
+ */
+static void setup_dgram_bind_hints(struct addrinfo *hints)
+{
+        memset(hints, 0, sizeof(*hints));
+        hints->ai_family = AF_UNSPEC;
+        hints->ai_socktype = SOCK_DGRAM;
+        hints->ai_flags = AI_PASSIVE;
+        hints->ai_protocol = 0;
+}
+
+/**
+ * setup_dgram_connect_hints - Initialize addrinfo hints for datagram connecting
+ * @hints: Hints structure to initialize
+ */
+static void setup_dgram_connect_hints(struct addrinfo *hints)
+{
+        memset(hints, 0, sizeof(*hints));
+        hints->ai_family = AF_UNSPEC;
+        hints->ai_socktype = SOCK_DGRAM;
+        hints->ai_protocol = 0;
+}
+
+/**
+ * resolve_dgram_address - Resolve datagram address
+ * @host: Hostname or NULL for wildcard
+ * @port: Port number
+ * @hints: Address hints
+ * @res: Output resolved addresses
+ *
+ * Returns: 0 on success, raises exception on failure
+ */
+static int resolve_dgram_address(const char *host, int port, const struct addrinfo *hints, struct addrinfo **res)
+{
+        char port_str[PORT_STR_BUFSIZE];
+        int result;
+
+        result = snprintf(port_str, sizeof(port_str), "%d", port);
+        assert(result > 0 && result < (int)sizeof(port_str));
+
+        result = getaddrinfo(host, port_str, hints, res);
+        if (result != 0)
+        {
+                SOCKET_ERROR_MSG("Invalid host/IP address: %.*s (%s)", SOCKET_ERROR_MAX_HOSTNAME,
+                                 host ? host : "any", gai_strerror(result));
+                RAISE_DGRAM_ERROR(SocketDgram_Failed);
+        }
+        return 0;
+}
+
+/**
+ * try_dgram_bind_addresses - Try binding datagram socket to resolved addresses
+ * @socket: Socket to bind
+ * @res: Resolved address list
+ * @socket_family: Socket's address family
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int try_dgram_bind_addresses(T socket, struct addrinfo *res, int socket_family)
+{
+        struct addrinfo *rp;
+
+        for (rp = res; rp != NULL; rp = rp->ai_next)
+        {
+                if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
+                        continue;
+
+                if (rp->ai_family == AF_INET6 && socket_family == AF_INET6)
+                {
+                        int no = 0;
+                        setsockopt(socket->fd, IPPROTO_IPV6, IPV6_V6ONLY, &no, sizeof(no));
+                }
+
+                if (bind(socket->fd, rp->ai_addr, rp->ai_addrlen) == 0)
+                {
+                        memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
+                        socket->addrlen = rp->ai_addrlen;
+                        return 0;
+                }
+        }
+        return -1;
+}
+
+/**
+ * handle_dgram_bind_error - Handle datagram bind error
+ * @host: Host string
+ * @port: Port number
+ */
+static void handle_dgram_bind_error(const char *host, int port)
+{
+        const char *safe_host = host ? host : "any";
+
+        if (errno == EADDRINUSE)
+        {
+                SOCKET_ERROR_FMT(SOCKET_EADDRINUSE ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
+        }
+        else if (errno == EACCES)
+        {
+                SOCKET_ERROR_FMT("Permission denied to bind to port %d", port);
+        }
+        else
+        {
+                SOCKET_ERROR_FMT("Failed to bind to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
+        }
+}
+
+/**
+ * try_dgram_connect_addresses - Try connecting datagram socket to resolved addresses
+ * @socket: Socket to connect
+ * @res: Resolved address list
+ * @socket_family: Socket's address family
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int try_dgram_connect_addresses(T socket, struct addrinfo *res, int socket_family)
+{
+        struct addrinfo *rp;
+
+        for (rp = res; rp != NULL; rp = rp->ai_next)
+        {
+                if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
+                        continue;
+
+                if (connect(socket->fd, rp->ai_addr, rp->ai_addrlen) == 0)
+                {
+                        memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
+                        socket->addrlen = rp->ai_addrlen;
+                        return 0;
+                }
+        }
+        return -1;
+}
+
+/**
+ * get_dgram_socket_family - Get datagram socket's address family
+ * @socket: Socket to query
+ *
+ * Returns: Socket family or AF_UNSPEC on error
+ */
+static int get_dgram_socket_family(T socket)
+{
+        int socket_family = AF_UNSPEC;
+        socklen_t len = sizeof(socket_family);
+
+        if (getsockopt(socket->fd, SOL_SOCKET, SO_DOMAIN, &socket_family, &len) < 0)
+                socket_family = AF_UNSPEC;
+
+        return socket_family;
+}
+
 T SocketDgram_new(int domain, int protocol)
 {
     T sock;
@@ -117,162 +303,58 @@ void SocketDgram_free(T *socket)
 
 void SocketDgram_bind(T socket, const char *host, int port)
 {
-    struct addrinfo hints, *res = NULL, *rp;
-    char port_str[PORT_STR_BUFSIZE];
-    int result;
-    size_t host_len;
+        struct addrinfo hints, *res = NULL;
+        int socket_family;
 
-    assert(socket);
+        assert(socket);
 
-    if (!SOCKET_VALID_PORT(port))
-    {
-        SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
+        validate_dgram_port(port);
+
+        if (host != NULL && strcmp(host, "0.0.0.0") != 0 && strcmp(host, "::") != 0)
+                validate_dgram_hostname(host);
+        else
+                host = NULL;
+
+        setup_dgram_bind_hints(&hints);
+        resolve_dgram_address(host, port, &hints, &res);
+
+        socket_family = get_dgram_socket_family(socket);
+
+        if (try_dgram_bind_addresses(socket, res, socket_family) == 0)
+        {
+                freeaddrinfo(res);
+                return;
+        }
+
+        handle_dgram_bind_error(host, port);
+        freeaddrinfo(res);
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
-
-    if (host == NULL || strcmp(host, "0.0.0.0") == 0 || strcmp(host, "::") == 0)
-    {
-        host = NULL;
-    }
-    else
-    {
-        host_len = strlen(host);
-        if (host_len > SOCKET_ERROR_MAX_HOSTNAME)
-        {
-            SOCKET_ERROR_MSG("Host name too long (max %d characters)", SOCKET_ERROR_MAX_HOSTNAME);
-            RAISE_DGRAM_ERROR(SocketDgram_Failed);
-        }
-    }
-
-    result = snprintf(port_str, sizeof(port_str), "%d", port);
-    assert(result > 0 && result < (int)sizeof(port_str));
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = AI_PASSIVE;
-    hints.ai_protocol = 0;
-
-    result = getaddrinfo(host, port_str, &hints, &res);
-    if (result != 0)
-    {
-        SOCKET_ERROR_MSG("Invalid host/IP address: %.*s (%s)", SOCKET_ERROR_MAX_HOSTNAME, host ? host : "any",
-                         gai_strerror(result));
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
-
-    int socket_family = AF_UNSPEC;
-    socklen_t len = sizeof(socket_family);
-
-    if (getsockopt(socket->fd, SOL_SOCKET, SO_DOMAIN, &socket_family, &len) < 0)
-    {
-        socket_family = AF_UNSPEC;
-    }
-
-    for (rp = res; rp != NULL; rp = rp->ai_next)
-    {
-        if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
-            continue;
-
-        if (rp->ai_family == AF_INET6 && socket_family == AF_INET6)
-        {
-            int no = 0;
-            setsockopt(socket->fd, IPPROTO_IPV6, IPV6_V6ONLY, &no, sizeof(no));
-        }
-
-        result = bind(socket->fd, rp->ai_addr, rp->ai_addrlen);
-        if (result == 0)
-        {
-            memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
-            socket->addrlen = rp->ai_addrlen;
-            freeaddrinfo(res);
-            return;
-        }
-    }
-
-    if (errno == EADDRINUSE)
-    {
-        const char *safe_host = host ? host : "any";
-        SOCKET_ERROR_FMT(SOCKET_EADDRINUSE ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
-    }
-    else if (errno == EACCES)
-    {
-        SOCKET_ERROR_FMT("Permission denied to bind to port %d", port);
-    }
-    else
-    {
-        const char *safe_host = host ? host : "any";
-        SOCKET_ERROR_FMT("Failed to bind to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
-    }
-
-    freeaddrinfo(res);
-    RAISE_DGRAM_ERROR(SocketDgram_Failed);
 }
 
 void SocketDgram_connect(T socket, const char *host, int port)
 {
-    struct addrinfo hints, *res = NULL, *rp;
-    char port_str[PORT_STR_BUFSIZE];
-    int result;
-    size_t host_len;
+        struct addrinfo hints, *res = NULL;
+        int socket_family;
 
-    assert(socket);
-    assert(host);
+        assert(socket);
+        assert(host);
 
-    if (!SOCKET_VALID_PORT(port))
-    {
-        SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
+        validate_dgram_port(port);
+        validate_dgram_hostname(host);
+        setup_dgram_connect_hints(&hints);
+        resolve_dgram_address(host, port, &hints, &res);
 
-    host_len = strlen(host);
-    if (host_len > SOCKET_ERROR_MAX_HOSTNAME)
-    {
-        SOCKET_ERROR_MSG("Host name too long (max %d characters)", SOCKET_ERROR_MAX_HOSTNAME);
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
+        socket_family = get_dgram_socket_family(socket);
 
-    result = snprintf(port_str, sizeof(port_str), "%d", port);
-    assert(result > 0 && result < (int)sizeof(port_str));
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_protocol = 0;
-
-    result = getaddrinfo(host, port_str, &hints, &res);
-    if (result != 0)
-    {
-        SOCKET_ERROR_MSG("Invalid host/IP address: %.*s (%s)", SOCKET_ERROR_MAX_HOSTNAME, host, gai_strerror(result));
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
-
-    int socket_family = AF_UNSPEC;
-    socklen_t len = sizeof(socket_family);
-
-    if (getsockopt(socket->fd, SOL_SOCKET, SO_DOMAIN, &socket_family, &len) < 0)
-    {
-        socket_family = AF_UNSPEC;
-    }
-
-    for (rp = res; rp != NULL; rp = rp->ai_next)
-    {
-        if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
-            continue;
-
-        result = connect(socket->fd, rp->ai_addr, rp->ai_addrlen);
-        if (result == 0)
+        if (try_dgram_connect_addresses(socket, res, socket_family) == 0)
         {
-            memcpy(&socket->addr, rp->ai_addr, rp->ai_addrlen);
-            socket->addrlen = rp->ai_addrlen;
-            freeaddrinfo(res);
-            return;
+                freeaddrinfo(res);
+                return;
         }
-    }
 
-    SOCKET_ERROR_FMT("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
-    freeaddrinfo(res);
-    RAISE_DGRAM_ERROR(SocketDgram_Failed);
+        SOCKET_ERROR_FMT("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
+        freeaddrinfo(res);
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
 }
 
 ssize_t SocketDgram_sendto(T socket, const void *buf, size_t len, const char *host, int port)
