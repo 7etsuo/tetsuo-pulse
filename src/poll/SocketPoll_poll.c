@@ -19,8 +19,8 @@
 
 #include "poll/SocketPoll_backend.h"
 
-/* Initial pollfd array size */
-#define INITIAL_POLLFDS 64
+/* Initial pollfd array size - use configured constant */
+#define INITIAL_POLLFDS POLL_INITIAL_FDS
 
 /* Backend instance structure */
 struct PollBackend_T
@@ -53,7 +53,7 @@ PollBackend_T backend_new(int maxevents)
     }
 
     /* Allocate FD mapping table - size based on typical FD range */
-    backend->max_fd = 1024;
+    backend->max_fd = POLL_INITIAL_FD_MAP_SIZE;
     backend->fd_to_index = calloc(backend->max_fd, sizeof(int));
     if (!backend->fd_to_index)
     {
@@ -105,7 +105,7 @@ static int ensure_fd_mapping(PollBackend_T backend, int fd)
         return 0;
 
     /* Expand mapping table */
-    new_max = fd + 1024;
+    new_max = fd + POLL_FD_MAP_EXPAND_INCREMENT;
     new_mapping = calloc(new_max, sizeof(int));
     if (!new_mapping)
         return -1;
