@@ -100,23 +100,47 @@ struct T
   pthread_mutex_t mutex; /* Mutex for thread safety */
 };
 
-T
-SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
+/**
+ * enforce_max_connections - Enforce maximum connection limit
+ * @maxconns: Requested maximum connections
+ *
+ * Returns: Enforced maximum connections value
+ */
+static size_t
+enforce_max_connections (size_t maxconns)
+{
+  if (maxconns > SOCKET_MAX_CONNECTIONS)
+    return SOCKET_MAX_CONNECTIONS;
+  return maxconns;
+}
+
+/**
+ * enforce_buffer_size - Enforce buffer size limits
+ * @bufsize: Requested buffer size
+ *
+ * Returns: Enforced buffer size value
+ */
+static size_t
+enforce_buffer_size (size_t bufsize)
+{
+  if (bufsize > SOCKET_MAX_BUFFER_SIZE)
+    return SOCKET_MAX_BUFFER_SIZE;
+  if (bufsize < SOCKET_MIN_BUFFER_SIZE)
+    return SOCKET_MIN_BUFFER_SIZE;
+  return bufsize;
+}
+
+/**
+ * allocate_pool_structure - Allocate pool structure from arena
+ * @arena: Arena for allocation
+ *
+ * Returns: Allocated pool structure
+ * Raises: SocketPool_Failed on allocation failure
+ */
+static T
+allocate_pool_structure (Arena_T arena)
 {
   T pool;
-  size_t i;
-
-  assert (arena);
-  assert (SOCKET_VALID_CONNECTION_COUNT (maxconns));
-  assert (SOCKET_VALID_BUFFER_SIZE (bufsize));
-
-  /* Enforce configured limits */
-  if (maxconns > SOCKET_MAX_CONNECTIONS)
-    maxconns = SOCKET_MAX_CONNECTIONS;
-  if (bufsize > SOCKET_MAX_BUFFER_SIZE)
-    bufsize = SOCKET_MAX_BUFFER_SIZE;
-  if (bufsize < SOCKET_MIN_BUFFER_SIZE)
-    bufsize = SOCKET_MIN_BUFFER_SIZE;
 
   pool = ALLOC (arena, sizeof (*pool));
   if (!pool)
@@ -124,57 +148,154 @@ SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
       SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate pool structure");
       RAISE_POOL_ERROR (SocketPool_Failed);
     }
+  return pool;
+}
 
-  pool->connections = CALLOC (arena, maxconns, sizeof (struct Connection));
-  if (!pool->connections)
+/**
+ * allocate_connections_array - Allocate connections array from arena
+ * @arena: Arena for allocation
+ * @maxconns: Number of connections to allocate
+ *
+ * Returns: Allocated connections array
+ * Raises: SocketPool_Failed on allocation failure
+ */
+static struct Connection *
+allocate_connections_array (Arena_T arena, size_t maxconns)
+{
+  struct Connection *connections;
+
+  connections = CALLOC (arena, maxconns, sizeof (struct Connection));
+  if (!connections)
     {
       SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate connections array");
       RAISE_POOL_ERROR (SocketPool_Failed);
     }
+  return connections;
+}
 
-  pool->hash_table = CALLOC (arena, SOCKET_HASH_SIZE, sizeof (Connection_T));
-  if (!pool->hash_table)
+/**
+ * allocate_hash_table - Allocate hash table from arena
+ * @arena: Arena for allocation
+ *
+ * Returns: Allocated hash table
+ * Raises: SocketPool_Failed on allocation failure
+ */
+static Connection_T *
+allocate_hash_table (Arena_T arena)
+{
+  Connection_T *hash_table;
+
+  hash_table = CALLOC (arena, SOCKET_HASH_SIZE, sizeof (Connection_T));
+  if (!hash_table)
     {
       SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate hash table");
       RAISE_POOL_ERROR (SocketPool_Failed);
     }
+  return hash_table;
+}
 
-  /* Pre-allocate cleanup buffer */
-  pool->cleanup_buffer = CALLOC (arena, maxconns, sizeof (Socket_T));
-  if (!pool->cleanup_buffer)
+/**
+ * allocate_cleanup_buffer - Allocate cleanup buffer from arena
+ * @arena: Arena for allocation
+ * @maxconns: Number of connection slots
+ *
+ * Returns: Allocated cleanup buffer
+ * Raises: SocketPool_Failed on allocation failure
+ */
+static Socket_T *
+allocate_cleanup_buffer (Arena_T arena, size_t maxconns)
+{
+  Socket_T *cleanup_buffer;
+
+  cleanup_buffer = CALLOC (arena, maxconns, sizeof (Socket_T));
+  if (!cleanup_buffer)
     {
       SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate cleanup buffer");
       RAISE_POOL_ERROR (SocketPool_Failed);
     }
+  return cleanup_buffer;
+}
+
+/**
+ * initialize_pool_mutex - Initialize pool mutex
+ * @pool: Pool instance
+ *
+ * Raises: SocketPool_Failed on mutex initialization failure
+ */
+static void
+initialize_pool_mutex (T pool)
+{
+  if (pthread_mutex_init (&pool->mutex, NULL) != 0)
+    {
+      SOCKET_ERROR_MSG ("Failed to initialize pool mutex");
+      RAISE_POOL_ERROR (SocketPool_Failed);
+    }
+}
+
+/**
+ * initialize_connection_slot - Initialize a connection slot to default state
+ * @conn: Connection slot to initialize
+ */
+static void
+initialize_connection_slot (struct Connection *conn)
+{
+  conn->socket = NULL;
+  conn->inbuf = NULL;
+  conn->outbuf = NULL;
+  conn->data = NULL;
+  conn->last_activity = 0;
+  conn->active = 0;
+  conn->hash_next = NULL;
+}
+
+/**
+ * build_free_list - Build free list from connections array
+ * @pool: Pool instance
+ * @maxconns: Number of connection slots
+ *
+ * Initializes all connection slots and links them into free list.
+ */
+static void
+build_free_list (T pool, size_t maxconns)
+{
+  size_t i;
+
+  pool->free_list = NULL;
+  for (i = maxconns; i > 0; i--)
+    {
+      size_t idx = i - 1;
+      struct Connection *conn = &pool->connections[idx];
+
+      initialize_connection_slot (conn);
+      conn->hash_next = (struct Connection *)pool->free_list;
+      pool->free_list = conn;
+    }
+}
+
+T
+SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
+{
+  T pool;
+
+  assert (arena);
+  assert (SOCKET_VALID_CONNECTION_COUNT (maxconns));
+  assert (SOCKET_VALID_BUFFER_SIZE (bufsize));
+
+  maxconns = enforce_max_connections (maxconns);
+  bufsize = enforce_buffer_size (bufsize);
+
+  pool = allocate_pool_structure (arena);
+  pool->connections = allocate_connections_array (arena, maxconns);
+  pool->hash_table = allocate_hash_table (arena);
+  pool->cleanup_buffer = allocate_cleanup_buffer (arena, maxconns);
 
   pool->maxconns = maxconns;
   pool->bufsize = bufsize;
   pool->count = 0;
   pool->arena = arena;
 
-  /* Initialize mutex */
-  if (pthread_mutex_init (&pool->mutex, NULL) != 0)
-    {
-      SOCKET_ERROR_MSG ("Failed to initialize pool mutex");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
-
-  /* Build free list: all slots start free, linked in reverse order */
-  pool->free_list = NULL;
-  for (i = maxconns; i > 0; i--)
-    {
-      size_t idx = i - 1;
-      pool->connections[idx].socket = NULL;
-      pool->connections[idx].inbuf = NULL;
-      pool->connections[idx].outbuf = NULL;
-      pool->connections[idx].data = NULL;
-      pool->connections[idx].last_activity = 0;
-      pool->connections[idx].active = 0;
-      pool->connections[idx].hash_next = NULL;
-      /* Link into free list */
-      pool->connections[idx].hash_next = (struct Connection *)pool->free_list;
-      pool->free_list = &pool->connections[idx];
-    }
+  initialize_pool_mutex (pool);
+  build_free_list (pool, maxconns);
 
   return pool;
 }
@@ -247,20 +368,120 @@ SocketPool_get (T pool, Socket_T socket)
   return conn;
 }
 
+/**
+ * check_pool_full - Check if pool is at capacity
+ * @pool: Pool instance
+ *
+ * Returns: Non-zero if pool is full, zero otherwise
+ */
+static int
+check_pool_full (T pool)
+{
+  return pool->count >= pool->maxconns;
+}
+
+/**
+ * remove_from_free_list - Remove connection from free list
+ * @pool: Pool instance
+ * @conn: Connection to remove
+ */
+static void
+remove_from_free_list (T pool, Connection_T conn)
+{
+  pool->free_list = (struct Connection *)conn->hash_next;
+}
+
+/**
+ * return_to_free_list - Return connection to free list
+ * @pool: Pool instance
+ * @conn: Connection to return
+ */
+static void
+return_to_free_list (T pool, Connection_T conn)
+{
+  conn->hash_next = (struct Connection *)pool->free_list;
+  pool->free_list = conn;
+}
+
+/**
+ * allocate_connection_buffers - Allocate input and output buffers for connection
+ * @arena: Arena for allocation
+ * @bufsize: Buffer size
+ * @conn: Connection to allocate buffers for
+ *
+ * Returns: Zero on success, non-zero on failure
+ *
+ * On failure, caller must handle cleanup of any partially allocated buffers.
+ */
+static int
+allocate_connection_buffers (Arena_T arena, size_t bufsize, Connection_T conn)
+{
+  conn->inbuf = SocketBuf_new (arena, bufsize);
+  if (!conn->inbuf)
+    return -1;
+
+  conn->outbuf = SocketBuf_new (arena, bufsize);
+  if (!conn->outbuf)
+    {
+      SocketBuf_release (&conn->inbuf);
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * initialize_connection - Initialize connection with socket and metadata
+ * @conn: Connection to initialize
+ * @socket: Socket to associate
+ * @now: Current time for activity tracking
+ */
+static void
+initialize_connection (Connection_T conn, Socket_T socket, time_t now)
+{
+  conn->socket = socket;
+  conn->data = NULL;
+  conn->last_activity = now;
+  conn->active = 1;
+}
+
+/**
+ * insert_into_hash_table - Insert connection into hash table
+ * @pool: Pool instance
+ * @conn: Connection to insert
+ * @socket: Socket for hash calculation
+ */
+static void
+insert_into_hash_table (T pool, Connection_T conn, Socket_T socket)
+{
+  unsigned hash = socket_hash (socket);
+
+  conn->hash_next = pool->hash_table[hash];
+  pool->hash_table[hash] = conn;
+}
+
+/**
+ * increment_pool_count - Increment active connection count
+ * @pool: Pool instance
+ */
+static void
+increment_pool_count (T pool)
+{
+  pool->count++;
+}
+
 Connection_T
 SocketPool_add (T pool, Socket_T socket)
 {
   Connection_T conn;
-  unsigned hash;
+  time_t now;
 
   assert (pool);
   assert (socket);
 
-  /* Defensive check: ensure we don't exceed configured maximum */
-  if (pool->count >= pool->maxconns)
-    {
-      return NULL;
-    }
+  if (check_pool_full (pool))
+    return NULL;
+
+  now = safe_time ();
 
   pthread_mutex_lock (&pool->mutex);
 
@@ -278,54 +499,98 @@ SocketPool_add (T pool, Socket_T socket)
       return NULL;
     }
 
-  /* Remove from free list */
-  pool->free_list = (struct Connection *)conn->hash_next;
+  remove_from_free_list (pool, conn);
 
-  /* Allocate buffers from arena - memory persists until arena disposal */
-  conn->inbuf = SocketBuf_new (pool->arena, pool->bufsize);
-  if (!conn->inbuf)
+  if (allocate_connection_buffers (pool->arena, pool->bufsize, conn) != 0)
     {
-      /* Put back on free list */
-      conn->hash_next = (struct Connection *)pool->free_list;
-      pool->free_list = conn;
+      return_to_free_list (pool, conn);
       pthread_mutex_unlock (&pool->mutex);
       return NULL;
     }
 
-  conn->outbuf = SocketBuf_new (pool->arena, pool->bufsize);
-  if (!conn->outbuf)
-    {
-      /* inbuf memory persists in arena (arena-based allocation limitation) */
-      SocketBuf_release (&conn->inbuf);
-      /* Put back on free list */
-      conn->hash_next = (struct Connection *)pool->free_list;
-      pool->free_list = conn;
-      pthread_mutex_unlock (&pool->mutex);
-      return NULL;
-    }
-
-  conn->socket = socket;
-  conn->data = NULL;
-  conn->last_activity = safe_time ();
-  conn->active = 1;
-
-  /* Insert into hash table */
-  hash = socket_hash (socket);
-  conn->hash_next = pool->hash_table[hash];
-  pool->hash_table[hash] = conn;
-
-  pool->count++;
+  initialize_connection (conn, socket, now);
+  insert_into_hash_table (pool, conn, socket);
+  increment_pool_count (pool);
 
   pthread_mutex_unlock (&pool->mutex);
 
   return conn;
 }
 
+/**
+ * remove_from_hash_table - Remove connection from hash table
+ * @pool: Pool instance
+ * @conn: Connection to remove
+ * @socket: Socket for hash calculation
+ *
+ * Note: Hash chain nodes are allocated from arena and are not individually
+ * freed. They remain in arena memory until arena disposal. This is expected
+ * arena behavior.
+ */
+static void
+remove_from_hash_table (T pool, Connection_T conn, Socket_T socket)
+{
+  unsigned hash = socket_hash (socket);
+  Connection_T *pp = &pool->hash_table[hash];
+
+  while (*pp)
+    {
+      if (*pp == conn)
+        {
+          *pp = conn->hash_next;
+          break;
+        }
+      pp = &(*pp)->hash_next;
+    }
+}
+
+/**
+ * cleanup_connection_buffers - Cleanup and release connection buffers
+ * @conn: Connection with buffers to cleanup
+ */
+static void
+cleanup_connection_buffers (Connection_T conn)
+{
+  if (conn->inbuf)
+    {
+      SocketBuf_secureclear (conn->inbuf);
+      SocketBuf_release (&conn->inbuf);
+    }
+
+  if (conn->outbuf)
+    {
+      SocketBuf_secureclear (conn->outbuf);
+      SocketBuf_release (&conn->outbuf);
+    }
+}
+
+/**
+ * reset_connection_slot - Reset connection slot to inactive state
+ * @conn: Connection slot to reset
+ */
+static void
+reset_connection_slot (Connection_T conn)
+{
+  conn->socket = NULL;
+  conn->data = NULL;
+  conn->last_activity = 0;
+  conn->active = 0;
+}
+
+/**
+ * decrement_pool_count - Decrement active connection count
+ * @pool: Pool instance
+ */
+static void
+decrement_pool_count (T pool)
+{
+  pool->count--;
+}
+
 void
 SocketPool_remove (T pool, Socket_T socket)
 {
   Connection_T conn;
-  unsigned hash;
 
   assert (pool);
   assert (socket);
@@ -339,61 +604,48 @@ SocketPool_remove (T pool, Socket_T socket)
       return;
     }
 
-  /* Remove from hash table
-   * Note: Hash chain nodes are allocated from arena and are not individually
-   * freed. They remain in arena memory until arena disposal. This is expected
-   * arena behavior. */
-  hash = socket_hash (socket);
-  Connection_T *pp = &pool->hash_table[hash];
-  while (*pp)
-    {
-      if (*pp == conn)
-        {
-          *pp = conn->hash_next;
-          break;
-        }
-      pp = &(*pp)->hash_next;
-    }
-
-  if (conn->inbuf)
-    {
-      SocketBuf_secureclear (conn->inbuf);
-      SocketBuf_release (&conn->inbuf);
-    }
-
-  if (conn->outbuf)
-    {
-      SocketBuf_secureclear (conn->outbuf);
-      SocketBuf_release (&conn->outbuf);
-    }
-
-  conn->socket = NULL;
-  conn->data = NULL;
-  conn->last_activity = 0;
-  conn->active = 0;
-  /* Add back to free list (reuse hash_next as free list next) */
-  conn->hash_next = (struct Connection *)pool->free_list;
-  pool->free_list = conn;
-  pool->count--;
+  remove_from_hash_table (pool, conn, socket);
+  cleanup_connection_buffers (conn);
+  reset_connection_slot (conn);
+  return_to_free_list (pool, conn);
+  decrement_pool_count (pool);
 
   pthread_mutex_unlock (&pool->mutex);
 }
 
-void
-SocketPool_cleanup (T pool, time_t idle_timeout)
+/**
+ * should_close_connection - Determine if connection should be closed
+ * @idle_timeout: Idle timeout in seconds (0 means close all)
+ * @now: Current time
+ * @last_activity: Last activity time of connection
+ *
+ * Returns: Non-zero if connection should be closed, zero otherwise
+ *
+ * Note: idle_timeout of 0 means close all connections.
+ */
+static int
+should_close_connection (time_t idle_timeout, time_t now, time_t last_activity)
+{
+  if (idle_timeout == 0)
+    return 1;
+  return difftime (now, last_activity) > (double)idle_timeout;
+}
+
+/**
+ * collect_idle_sockets - Collect sockets to close into buffer
+ * @pool: Pool instance
+ * @idle_timeout: Idle timeout in seconds
+ * @now: Current time
+ *
+ * Returns: Number of sockets collected for closing
+ *
+ * Must be called with pool mutex held. Uses pre-allocated cleanup_buffer.
+ */
+static size_t
+collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
 {
   size_t i;
-  time_t now;
   size_t close_count = 0;
-
-  assert (pool);
-  assert (pool->cleanup_buffer);
-  /* Note: idle_timeout of 0 means close all connections */
-
-  now = safe_time ();
-
-  /* Collect sockets to close under lock - use pre-allocated buffer */
-  pthread_mutex_lock (&pool->mutex);
 
   for (i = 0; i < pool->maxconns; i++)
     {
@@ -403,25 +655,49 @@ SocketPool_cleanup (T pool, time_t idle_timeout)
           if (!socket)
             continue;
 
-          /* Check if connection should be closed */
-          int should_close = (idle_timeout == 0) ||
-                           (difftime(now, pool->connections[i].last_activity) > (double)idle_timeout);
-
-          if (should_close)
+          if (should_close_connection (idle_timeout, now,
+                                       pool->connections[i].last_activity))
             {
               pool->cleanup_buffer[close_count++] = socket;
             }
         }
     }
+  return close_count;
+}
 
-  pthread_mutex_unlock (&pool->mutex);
+/**
+ * close_collected_sockets - Close and remove collected sockets
+ * @pool: Pool instance
+ * @close_count: Number of sockets to close
+ */
+static void
+close_collected_sockets (T pool, size_t close_count)
+{
+  size_t i;
 
-  /* Close sockets outside of lock to avoid deadlock */
   for (i = 0; i < close_count; i++)
     {
       SocketPool_remove (pool, pool->cleanup_buffer[i]);
       Socket_free (&pool->cleanup_buffer[i]);
     }
+}
+
+void
+SocketPool_cleanup (T pool, time_t idle_timeout)
+{
+  time_t now;
+  size_t close_count;
+
+  assert (pool);
+  assert (pool->cleanup_buffer);
+
+  now = safe_time ();
+
+  pthread_mutex_lock (&pool->mutex);
+  close_count = collect_idle_sockets (pool, idle_timeout, now);
+  pthread_mutex_unlock (&pool->mutex);
+
+  close_collected_sockets (pool, close_count);
 }
 
 size_t
