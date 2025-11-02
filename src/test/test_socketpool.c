@@ -20,6 +20,9 @@
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 
+/* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
+#pragma GCC diagnostic ignored "-Wclobbered"
+
 static void setup_signals(void)
 {
     signal(SIGPIPE, SIG_IGN);
@@ -609,7 +612,7 @@ static void *thread_add_remove_connections(void *arg)
 {
     SocketPool_T pool = (SocketPool_T)arg;
     
-    for (int i = 0; i < 20; i++)
+    for (volatile int i = 0; i < 20; i++)
     {
         Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
         TRY

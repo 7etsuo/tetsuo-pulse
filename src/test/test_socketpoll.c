@@ -17,6 +17,9 @@
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 
+/* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
+#pragma GCC diagnostic ignored "-Wclobbered"
+
 #define TEST_BUFFER_SIZE 4096
 
 static void setup_signals(void)
@@ -596,7 +599,7 @@ static void *thread_poll_operations(void *arg)
 {
     SocketPoll_T poll = (SocketPoll_T)arg;
     
-    for (int i = 0; i < 20; i++)
+    for (volatile int i = 0; i < 20; i++)
     {
         SocketEvent_T *events = NULL;
         TRY SocketPoll_wait(poll, &events, 5);

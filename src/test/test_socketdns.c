@@ -13,6 +13,9 @@
 #include "core/Except.h"
 #include "dns/SocketDNS.h"
 
+/* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
+#pragma GCC diagnostic ignored "-Wclobbered"
+
 /* ==================== Basic Resolver Tests ==================== */
 
 TEST(socketdns_new_creates_resolver)
@@ -471,7 +474,7 @@ static void *thread_resolve_requests(void *arg)
 {
     SocketDNS_T dns = (SocketDNS_T)arg;
     
-    for (int i = 0; i < 10; i++)
+    for (volatile int i = 0; i < 10; i++)
     {
         TRY
             SocketDNS_Request_T req = SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
@@ -537,7 +540,7 @@ static void *thread_cancel_requests(void *arg)
 {
     SocketDNS_T dns = (SocketDNS_T)arg;
     
-    for (int i = 0; i < 10; i++)
+    for (volatile int i = 0; i < 10; i++)
     {
         TRY
             SocketDNS_Request_T req = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
