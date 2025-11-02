@@ -48,7 +48,7 @@ TEST_FRAMEWORK_SRC = src/test/Test.c
 TEST_FRAMEWORK_OBJ = $(BUILD_DIR)/test/Test.o
 
 # Test source files
-TEST_SOURCES = src/test/test_arena.c src/test/test_except.c src/test/test_socket.c src/test/test_socketbuf.c src/test/test_socketdgram.c src/test/test_socketpoll.c src/test/test_socketpool.c src/test/test_socketdns.c
+TEST_SOURCES = src/test/test_arena.c src/test/test_except.c src/test/test_socket.c src/test/test_socketbuf.c src/test/test_socketdgram.c src/test/test_socketpoll.c src/test/test_socketpool.c src/test/test_socketdns.c src/test/test_integration.c src/test/test_threadsafety.c
 TEST_OBJECTS = $(TEST_SOURCES:src/%.c=$(BUILD_DIR)/%.o)
 TEST_EXECUTABLES = $(TEST_SOURCES:src/test/test_%.c=$(TEST_DIR)/test_%)
 
@@ -141,6 +141,12 @@ test-socketpool: $(TEST_DIR)/test_socketpool
 test-socketdns: $(TEST_DIR)/test_socketdns
 	$(TEST_DIR)/test_socketdns
 
+test-integration: $(TEST_DIR)/test_integration
+	$(TEST_DIR)/test_integration
+
+test-threadsafety: $(TEST_DIR)/test_threadsafety
+	$(TEST_DIR)/test_threadsafety
+
 # Include test dependencies
 -include $(TEST_DEPS)
 
@@ -151,4 +157,4 @@ release: clean lib
 # Library targets
 lib: libsocket.so libsocket.a
 
-.PHONY: all clean release lib info test test-clean test-arena test-except test-socket test-socketbuf test-socketdgram test-socketpoll test-socketpool test-socketdns
+.PHONY: all clean release lib info test test-clean test-arena test-except test-socket test-socketbuf test-socketdgram test-socketpoll test-socketpool test-socketdns test-integration test-threadsafety

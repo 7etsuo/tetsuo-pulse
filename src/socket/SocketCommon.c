@@ -30,14 +30,13 @@ static __thread Except_T Common_DetailedException;
 #endif
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_COMMON_ERROR(exception)                                          \
-  do                                                                           \
-    {                                                                          \
-      Common_DetailedException = (exception);                                  \
-      Common_DetailedException.reason = socket_error_buf;                      \
-      RAISE(Common_DetailedException);                                         \
-    }                                                                          \
-  while (0)
+#define RAISE_COMMON_ERROR(exception)                                                                                  \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        Common_DetailedException = (exception);                                                                        \
+        Common_DetailedException.reason = socket_error_buf;                                                            \
+        RAISE(Common_DetailedException);                                                                               \
+    } while (0)
 
 /**
  * socketcommon_get_safe_host - Get safe host string for error messages
