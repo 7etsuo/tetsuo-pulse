@@ -621,13 +621,14 @@ TEST(socketpoll_concurrent_wait)
     pthread_t threads[4];
 
     TRY
+        volatile int i;
         Socket_setnonblocking(socket);
         SocketPoll_add(poll, socket, POLL_WRITE, NULL);
         
-        for (int i = 0; i < 4; i++)
+        for (i = 0; i < 4; i++)
             pthread_create(&threads[i], NULL, thread_poll_operations, poll);
         
-        for (int i = 0; i < 4; i++)
+        for (i = 0; i < 4; i++)
             pthread_join(threads[i], NULL);
     EXCEPT(SocketPoll_Failed) (void)0;
     FINALLY

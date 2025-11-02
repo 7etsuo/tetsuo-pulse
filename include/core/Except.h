@@ -67,7 +67,7 @@ void Except_raise (const T *e, const char *file, int line);
 
 #define RAISE(e) Except_raise (&(e), __FILE__, __LINE__)
 #define RERAISE                                                                \
-  Except_raise (Except_stack->exception, Except_stack->file, Except_stack->line)
+  Except_raise (Except_frame.exception, Except_frame.file, Except_frame.line)
 
 /**
  * RETURN macro - Returns from function while cleaning up exception stack

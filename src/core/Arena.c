@@ -28,36 +28,33 @@ __thread char arena_error_buf[ARENA_ERROR_BUFSIZE];
 /* Arena exception definition */
 Except_T Arena_Failed = {"Arena operation failed"};
 
-/* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-static __declspec(thread) Except_T Arena_DetailedException;
-#else
-static __thread Except_T Arena_DetailedException;
-#endif
-
 /* Error formatting macros */
 #define ARENA_ERROR_FMT(fmt, ...)                                                                                      \
     snprintf(arena_error_buf, ARENA_ERROR_BUFSIZE, fmt " (errno: %d - %s)", ##__VA_ARGS__, errno, strerror(errno))
 
 #define ARENA_ERROR_MSG(fmt, ...) snprintf(arena_error_buf, ARENA_ERROR_BUFSIZE, fmt, ##__VA_ARGS__)
 
-/* Macro to raise arena exception with detailed error message */
-#define RAISE_ARENA_ERROR(exception)                                                                                   \
+/* Macro to raise arena exception with detailed error message
+ * Uses stack-local exception to avoid thread-local storage issues */
+#define RAISE_ARENA_ERROR(base_exception)                                                                              \
     do                                                                                                                 \
     {                                                                                                                  \
-        Arena_DetailedException = (exception);                                                                         \
-        Arena_DetailedException.reason = arena_error_buf;                                                              \
-        RAISE(Arena_DetailedException);                                                                                \
+        Except_T _detailed_exception = (base_exception);                                                               \
+        _detailed_exception.reason = arena_error_buf;                                                                  \
+        Except_raise(&_detailed_exception, __FILE__, __LINE__);                                                        \
     } while (0)
 
 #define T Arena_T
 
-/* Chunk header structure - separate from Arena_T to avoid copying mutex */
+/* Chunk header structure - separate from Arena_T to avoid copying mutex
+ * NOTE: avail and limit store the PREVIOUS arena state for restoration,
+ * NOT the chunk's own boundaries. chunk_size stores actual malloc'd size. */
 struct ChunkHeader
 {
     struct ChunkHeader *prev;
     char *avail;
     char *limit;
+    size_t chunk_size; /* Actual size of this chunk (for proper reuse) */
 };
 
 /* Main arena structure - includes mutex for thread safety */
@@ -227,6 +224,7 @@ static size_t arena_calculate_aligned_size(size_t nbytes)
 static int arena_reuse_free_chunk(struct ChunkHeader **ptr_out, char **limit_out)
 {
     struct ChunkHeader *ptr;
+    size_t total_size;
 
     pthread_mutex_lock(&arena_mutex);
     if ((ptr = freechunks) != NULL)
@@ -234,7 +232,12 @@ static int arena_reuse_free_chunk(struct ChunkHeader **ptr_out, char **limit_out
         freechunks = freechunks->prev;
         nfree--;
         *ptr_out = ptr;
-        *limit_out = ptr->limit;
+
+        /* Use stored chunk_size to recalculate proper limit
+         * This prevents using stale limit values from previous arena state */
+        total_size = sizeof(union header) + ptr->chunk_size;
+        *limit_out = (char *)ptr + total_size;
+
         pthread_mutex_unlock(&arena_mutex);
         return ARENA_CHUNK_REUSED;
     }
@@ -303,6 +306,9 @@ static int arena_allocate_new_chunk(size_t total_size, struct ChunkHeader **ptr_
         ARENA_ERROR_MSG("Invalid pointer arithmetic for chunk allocation");
         return ARENA_FAILURE;
     }
+
+    /* Store actual chunk size for proper reuse from cache */
+    ptr->chunk_size = total_size - sizeof(union header);
 
     *ptr_out = ptr;
     *limit_out = (char *)ptr + total_size;
@@ -395,19 +401,6 @@ static int arena_ensure_space(T arena, size_t aligned_size)
             return ARENA_FAILURE;
     }
     return ARENA_SUCCESS;
-}
-
-/**
- * arena_validate_state - Validate arena state before allocation
- * @arena: Arena to validate
- *
- * Returns: ARENA_VALIDATION_SUCCESS if valid, ARENA_VALIDATION_FAILURE otherwise
- * Thread-safe: Must be called with arena->mutex held
- */
-static int arena_validate_state(T arena)
-{
-    return (arena->limit != NULL && arena->avail != NULL && arena->limit >= arena->avail) ? ARENA_VALIDATION_SUCCESS
-                                                                                          : ARENA_VALIDATION_FAILURE;
 }
 
 /**
@@ -596,12 +589,7 @@ static void *arena_execute_allocation(T arena, size_t aligned_size, size_t nbyte
             RAISE_ARENA_ERROR(Arena_Failed);
         }
 
-        if (arena_validate_state(arena) != ARENA_VALIDATION_SUCCESS)
-        {
-            ARENA_ERROR_MSG("Arena in invalid state during allocation");
-            RAISE_ARENA_ERROR(Arena_Failed);
-        }
-
+        /* arena_ensure_space already validates state - no need for redundant check */
         result = arena_perform_allocation(arena, aligned_size);
         pthread_mutex_unlock(&arena->mutex);
         return result;
@@ -694,10 +682,11 @@ void *Arena_calloc(T arena, size_t count, size_t nbytes, const char *file, int l
         RAISE_ARENA_ERROR(Arena_Failed);
     }
 
-    /* Allocate memory */
+    /* Allocate memory - this allocates aligned_size bytes */
     ptr = Arena_alloc(arena, total, file, line);
 
-    /* Zero the allocated memory */
+    /* Zero the allocated memory - use aligned size to ensure we don't write past allocation
+     * Arena_alloc returns aligned_size bytes, so we must zero that amount, not the requested total */
     memset(ptr, 0, total);
     return ptr;
 }

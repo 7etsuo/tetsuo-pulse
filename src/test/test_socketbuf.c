@@ -115,9 +115,10 @@ TEST(socketbuf_partial_read)
     char read_buf[5] = {0};
     size_t read = SocketBuf_read(buf, read_buf, sizeof(read_buf) - 1);
 
-    ASSERT_EQ(read, 5);
-    ASSERT_EQ(strcmp(read_buf, "Hello"), 0);
-    ASSERT_EQ(SocketBuf_available(buf), strlen(data) - 5);
+    ASSERT_EQ(read, 4);  /* Reading 4 bytes, not 5 */
+    read_buf[4] = '\0';  /* Null terminate */
+    ASSERT_EQ(strcmp(read_buf, "Hell"), 0);
+    ASSERT_EQ(SocketBuf_available(buf), strlen(data) - 4);
 
     Arena_dispose(&arena);
 }

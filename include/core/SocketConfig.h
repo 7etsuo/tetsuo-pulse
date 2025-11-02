@@ -254,7 +254,8 @@
 #endif
 
 /* Validation macros with proper parentheses and overflow protection */
-#define SOCKET_VALID_PORT(p) ((int)(p) > 0 && (int)(p) <= 65535)
+/* Port 0 is valid - it means "let OS assign ephemeral port" */
+#define SOCKET_VALID_PORT(p) ((int)(p) >= 0 && (int)(p) <= 65535)
 #define SOCKET_VALID_BUFFER_SIZE(s) ((size_t)(s) >= SOCKET_MIN_BUFFER_SIZE && (size_t)(s) <= SOCKET_MAX_BUFFER_SIZE)
 #define SOCKET_VALID_CONNECTION_COUNT(c) ((size_t)(c) > 0 && (size_t)(c) <= SOCKET_MAX_CONNECTIONS)
 #define SOCKET_VALID_POLL_EVENTS(e) ((int)(e) > 0 && (int)(e) <= SOCKET_MAX_POLL_EVENTS)

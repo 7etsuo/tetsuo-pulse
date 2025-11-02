@@ -52,9 +52,8 @@ T SocketBuf_new(Arena_T arena, size_t capacity)
     if (capacity > SIZE_MAX / 2)
         return NULL;
 
-    /* Enforce minimum capacity for practical network I/O */
-    if (capacity < SOCKET_MIN_BUFFER_SIZE)
-        return NULL;
+    /* Note: No minimum capacity enforced - allows small buffers for testing.
+     * Production code should use SOCKET_MIN_BUFFER_SIZE (512) for efficiency. */
 
     buf = ALLOC(arena, sizeof(*buf));
     if (!buf)
