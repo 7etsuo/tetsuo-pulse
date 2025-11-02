@@ -130,11 +130,9 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
     volatile int fd;
     volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
     
-    /* Note: data_entry and fd_entry don't need volatile - they're only assigned
-     * within TRY blocks and used immediately after. The allocations are in arena
-     * which persists across exceptions. */
-    SocketData *data_entry;
-    FdSocketEntry *fd_entry;
+    /* Variables assigned across exception boundaries must be volatile */
+    SocketData *volatile volatile_data_entry = NULL;
+    FdSocketEntry *volatile volatile_fd_entry = NULL;
 
     hash = socket_hash(volatile_socket);
     fd = Socket_fd(volatile_socket);
@@ -144,7 +142,7 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
     /* Convert Arena_Failed to SocketPoll_Failed for consistent error handling */
     TRY
     {
-        data_entry = ALLOC(poll->arena, sizeof(SocketData));
+        volatile_data_entry = ALLOC(poll->arena, sizeof(SocketData));
     }
     EXCEPT(Arena_Failed)
     {
@@ -156,7 +154,7 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
     /* Allocate fd->socket entry - ALLOC raises Arena_Failed on failure */
     TRY
     {
-        fd_entry = ALLOC(poll->arena, sizeof(FdSocketEntry));
+        volatile_fd_entry = ALLOC(poll->arena, sizeof(FdSocketEntry));
     }
     EXCEPT(Arena_Failed)
     {
@@ -167,19 +165,19 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
     END_TRY;
 
     /* Initialize entries */
-    data_entry->socket = volatile_socket;
-    data_entry->data = data;
+    volatile_data_entry->socket = volatile_socket;
+    volatile_data_entry->data = data;
 
-    fd_entry->fd = fd;
-    fd_entry->socket = volatile_socket;
+    volatile_fd_entry->fd = fd;
+    volatile_fd_entry->socket = volatile_socket;
 
-    /* Add to hash tables atomically */
+    /* Add to hash tables atomically - cast to non-volatile for storage */
     pthread_mutex_lock(&poll->mutex);
-    data_entry->next = poll->socket_data_map[hash];
-    poll->socket_data_map[hash] = data_entry;
+    ((SocketData *)volatile_data_entry)->next = poll->socket_data_map[hash];
+    poll->socket_data_map[hash] = (SocketData *)volatile_data_entry;
 
-    fd_entry->next = poll->fd_to_socket_map[fd_hash];
-    poll->fd_to_socket_map[fd_hash] = fd_entry;
+    ((FdSocketEntry *)volatile_fd_entry)->next = poll->fd_to_socket_map[fd_hash];
+    poll->fd_to_socket_map[fd_hash] = (FdSocketEntry *)volatile_fd_entry;
     pthread_mutex_unlock(&poll->mutex);
 }
 
@@ -409,14 +407,15 @@ void SocketPoll_free(T *poll)
 void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
 {
     int fd;
+    volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
 
     assert(poll);
     assert(socket);
 
-    fd = Socket_fd(socket);
+    fd = Socket_fd(volatile_socket);
 
     /* Set non-blocking mode before adding to poll */
-    Socket_setnonblocking(socket);
+    Socket_setnonblocking(volatile_socket);
 
     if (backend_add(poll->backend, fd, events) < 0)
     {
@@ -434,7 +433,7 @@ void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
     /* Store socket->data mapping - if this fails, we need to clean up backend entry */
     TRY
     {
-        socket_data_add(poll, socket, data);
+        socket_data_add(poll, volatile_socket, data);
     }
     EXCEPT(SocketPoll_Failed)
     {
