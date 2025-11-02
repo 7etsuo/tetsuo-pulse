@@ -49,6 +49,7 @@ set(LIB_SOURCES
     src/socket/Socket.c
     src/socket/SocketDgram.c
     src/socket/SocketBuf.c
+    src/socket/SocketCommon.c
     
     # DNS module
     src/dns/SocketDNS.c
@@ -73,6 +74,7 @@ set(SOCKET_HEADERS
     include/socket/Socket.h
     include/socket/SocketDgram.h
     include/socket/SocketBuf.h
+    include/socket/SocketCommon.h
 )
 
 set(DNS_HEADERS
@@ -88,13 +90,21 @@ set(POOL_HEADERS
     include/pool/SocketPool.h
 )
 
+set(TEST_HEADERS
+    include/test/Test.h
+)
+
+# Object library for reuse in tests (avoids static library constructor issues)
+add_library(socket_objects OBJECT ${LIB_SOURCES})
+target_include_directories(socket_objects PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
 # Static library
-add_library(socket_static STATIC ${LIB_SOURCES})
+add_library(socket_static STATIC $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_static PROPERTIES OUTPUT_NAME socket)
 target_link_libraries(socket_static pthread)
 
 # Shared library
-add_library(socket_shared SHARED ${LIB_SOURCES})
+add_library(socket_shared SHARED $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_shared PROPERTIES OUTPUT_NAME socket)
 target_link_libraries(socket_shared pthread)
 
@@ -112,6 +122,7 @@ install(FILES ${SOCKET_HEADERS} DESTINATION include/socket/socket)
 install(FILES ${DNS_HEADERS} DESTINATION include/socket/dns)
 install(FILES ${POLL_HEADERS} DESTINATION include/socket/poll)
 install(FILES ${POOL_HEADERS} DESTINATION include/socket/pool)
+install(FILES ${TEST_HEADERS} DESTINATION include/socket/test)
 
 # Print build configuration
 message(STATUS "Socket Library Configuration:")
@@ -125,4 +136,41 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 message(STATUS "  Poll Backend: ${POLL_BACKEND}")
 
+# Enable testing
+enable_testing()
+
+# Test framework
+add_library(test_framework OBJECT src/test/Test.c)
+target_include_directories(test_framework PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
+# Test source files
+set(TEST_SOURCES
+    test_arena
+    test_except
+    test_socket
+    test_socketbuf
+    test_socketdgram
+    test_socketpoll
+    test_socketpool
+    test_socketdns
+    test_integration
+    test_threadsafety
+)
+
+# Create test executables (link against object files to preserve constructor attributes)
+foreach(test_name ${TEST_SOURCES})
+    add_executable(${test_name} src/test/${test_name}.c $<TARGET_OBJECTS:socket_objects> $<TARGET_OBJECTS:test_framework>)
+    target_link_libraries(${test_name} pthread)
+    target_include_directories(${test_name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+    add_test(NAME ${test_name} COMMAND ${test_name})
+endforeach()
+
+# Custom target to build all tests
+add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES})
+
+# Print test configuration
+message(STATUS "Test Suite Configuration:")
+message(STATUS "  Test files: 10")
+message(STATUS "  Total tests: 213+")
+message(STATUS "  Run with: make test (or ctest)")
 

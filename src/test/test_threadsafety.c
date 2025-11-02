@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -21,6 +22,12 @@
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 #include "socket/SocketDgram.h"
+
+/* Arena exception - external declaration */
+extern Except_T Arena_Failed;
+
+/* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
+#pragma GCC diagnostic ignored "-Wclobbered"
 
 #define NUM_THREADS 8
 #define OPERATIONS_PER_THREAD 100

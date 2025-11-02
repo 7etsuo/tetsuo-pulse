@@ -141,7 +141,7 @@ static size_t arena_calculate_aligned_bytes(size_t nbytes, size_t alignment)
 {
     size_t sum;
 
-    if (arena_check_size_overflow(nbytes, alignment))
+    if (arena_check_size_overflow(nbytes, alignment) == ARENA_VALIDATION_FAILURE)
         return 0;
 
     sum = nbytes + alignment - 1;
@@ -158,7 +158,7 @@ static size_t arena_calculate_aligned_bytes(size_t nbytes, size_t alignment)
  */
 static size_t arena_calculate_final_size(size_t aligned_bytes, size_t alignment)
 {
-    if (ARENA_CHECK_OVERFLOW_MUL(aligned_bytes, alignment))
+    if (ARENA_CHECK_OVERFLOW_MUL(aligned_bytes, alignment) == ARENA_VALIDATION_FAILURE)
         return 0;
 
     return aligned_bytes * alignment;
@@ -266,7 +266,7 @@ static size_t arena_validate_chunk_size(size_t chunk_size)
 {
     size_t total_size;
 
-    if (ARENA_CHECK_OVERFLOW_ADD(sizeof(union header), chunk_size))
+    if (ARENA_CHECK_OVERFLOW_ADD(sizeof(union header), chunk_size) == ARENA_VALIDATION_FAILURE)
         return 0;
 
     total_size = sizeof(union header) + chunk_size;
@@ -679,7 +679,7 @@ void *Arena_calloc(T arena, size_t count, size_t nbytes, const char *file, int l
     assert(nbytes > 0);
 
     /* Check for multiplication overflow before calculating total */
-    if (ARENA_CHECK_OVERFLOW_MUL(count, nbytes))
+    if (ARENA_CHECK_OVERFLOW_MUL(count, nbytes) == ARENA_VALIDATION_FAILURE)
     {
         ARENA_ERROR_MSG("calloc overflow: count=%zu, nbytes=%zu", count, nbytes);
         RAISE_ARENA_ERROR(Arena_Failed);

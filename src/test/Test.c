@@ -179,6 +179,20 @@ void Test_run_all(void)
                 printf("  %s\n", Except_frame.exception->reason);
             }
         }
+        ELSE
+        {
+            /* Catch any other exception (Socket_Failed, Arena_Failed, etc.) */
+            test_failed++;
+            printf("FAIL\n");
+            if (Except_frame.exception)
+            {
+                printf("  Unexpected exception: %s", 
+                       Except_frame.exception->reason ? Except_frame.exception->reason : "(no reason)");
+                if (Except_frame.file)
+                    printf(" at %s:%d", Except_frame.file, Except_frame.line);
+                printf("\n");
+            }
+        }
         END_TRY;
 
         current_test = current_test->next;
