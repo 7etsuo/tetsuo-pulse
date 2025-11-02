@@ -307,13 +307,15 @@ TEST(integration_pool_cleanup_idle)
     setup_signals();
     Arena_T arena = Arena_new();
     SocketPool_T pool = SocketPool_new(arena, 10, 1024);
-    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    volatile Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
         volatile size_t count_before;
         volatile size_t count_after;
-        Connection_T conn = SocketPool_add(pool, socket);
+        volatile Connection_T conn;
+        conn = SocketPool_add(pool, socket);
         ASSERT_NOT_NULL(conn);
+        socket = NULL;  /* Ownership transferred to pool */
         
         count_before = SocketPool_count(pool);
         ASSERT_EQ(count_before, 1);
@@ -325,6 +327,11 @@ TEST(integration_pool_cleanup_idle)
         ASSERT_EQ(count_after, 0);
     EXCEPT(SocketPool_Failed) (void)0;
     FINALLY
+        if (socket)
+        {
+            Socket_T s = (Socket_T)socket;
+            Socket_free(&s);
+        }
         SocketPool_free(&pool);
         Arena_dispose(&arena);
     END_TRY;
