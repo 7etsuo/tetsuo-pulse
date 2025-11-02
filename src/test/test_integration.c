@@ -310,16 +310,18 @@ TEST(integration_pool_cleanup_idle)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+        volatile size_t count_before;
+        volatile size_t count_after;
         Connection_T conn = SocketPool_add(pool, socket);
         ASSERT_NOT_NULL(conn);
         
-        size_t count_before = SocketPool_count(pool);
+        count_before = SocketPool_count(pool);
         ASSERT_EQ(count_before, 1);
         
         sleep(2);
         SocketPool_cleanup(pool, 1);
         
-        size_t count_after = SocketPool_count(pool);
+        count_after = SocketPool_count(pool);
         ASSERT_EQ(count_after, 0);
     EXCEPT(SocketPool_Failed) (void)0;
     FINALLY
