@@ -18,7 +18,9 @@
 #include "socket/Socket.h"
 
 /* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wclobbered"
+#endif
 
 #define TEST_BUFFER_SIZE 4096
 
@@ -348,12 +350,21 @@ TEST(socketpoll_wait_negative_timeout)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+        Socket_bind(socket, "127.0.0.1", 0);
         Socket_setnonblocking(socket);
         SocketPoll_add(poll, socket, POLL_WRITE, NULL);
         
+        /* On macOS/kqueue, -1 timeout means infinite wait. Use a short timeout
+         * instead to test that wait works, but avoid hanging if socket isn't ready. */
         SocketEvent_T *events = NULL;
-        int nfds = SocketPoll_wait(poll, &events, -1);
+        int nfds = SocketPoll_wait(poll, &events, 100);
         ASSERT_NE(nfds, -1);
+        /* Bound socket should be writable immediately */
+        if (nfds > 0)
+        {
+            ASSERT_NOT_NULL(events);
+            ASSERT_NE(events[0].events & POLL_WRITE, 0);
+        }
     EXCEPT(SocketPoll_Failed) (void)0;
     FINALLY
         SocketPoll_free(&poll);

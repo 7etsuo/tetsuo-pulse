@@ -11,7 +11,9 @@
 #include "core/Except.h"
 
 /* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wclobbered"
+#endif
 
 /* Test exception type for testing */
 static const Except_T TestException = {"Test exception"};

@@ -121,16 +121,23 @@ static void setup_connect_hints(struct addrinfo *hints)
  * @socket: Socket to query
  *
  * Returns: Socket family or AF_UNSPEC on error
+ *
+ * Uses SO_DOMAIN on Linux, falls back to getsockname() on other platforms.
  */
 static int get_socket_family(T socket)
 {
+#if SOCKET_HAS_SO_DOMAIN
     int socket_family = SOCKET_AF_UNSPEC;
     socklen_t len = sizeof(socket_family);
-
-    if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_DOMAIN, &socket_family, &len) < 0)
-        socket_family = SOCKET_AF_UNSPEC;
-
-    return socket_family;
+    if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_DOMAIN, &socket_family, &len) == 0)
+        return socket_family;
+#endif
+    /* Fallback: use getsockname() to get socket address family */
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof(addr);
+    if (getsockname(socket->fd, (struct sockaddr *)&addr, &len) == 0)
+        return addr.ss_family;
+    return SOCKET_AF_UNSPEC;
 }
 
 /**
@@ -423,6 +430,9 @@ static int setup_abstract_unix_socket(struct sockaddr_un *addr, const char *path
     memcpy(addr->sun_path + 1, path + 1, path_len - 1);
     return 0;
 #else
+    (void)addr;
+    (void)path;
+    (void)path_len;
     SOCKET_ERROR_MSG("Abstract namespace sockets not supported on this platform");
     return -1;
 #endif
@@ -901,6 +911,9 @@ static void set_keepalive_idle_time(T socket, int idle)
         SOCKET_ERROR_FMT("Failed to set keepalive idle time");
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
+#else
+    (void)socket;
+    (void)idle;
 #endif
 }
 
