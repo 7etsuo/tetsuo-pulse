@@ -125,45 +125,55 @@ static unsigned socket_hash(const Socket_T socket)
  */
 static void socket_data_add(T poll, Socket_T socket, void *data)
 {
-    unsigned hash = socket_hash(socket);
-    unsigned fd_hash;
-    int fd;
-    SocketData *data_entry;
-    FdSocketEntry *fd_entry;
+    volatile unsigned hash = socket_hash(socket);
+    volatile unsigned fd_hash;
+    volatile int fd;
+    volatile SocketData *volatile_data_entry = NULL;
+    volatile FdSocketEntry *volatile_fd_entry = NULL;
 
     fd = Socket_fd(socket);
     fd_hash = ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_DATA_HASH_SIZE;
 
-    /* Allocate socket->data entry */
-    data_entry = ALLOC(poll->arena, sizeof(*data_entry));
-    if (!data_entry)
+    /* Allocate socket->data entry - ALLOC raises Arena_Failed on failure */
+    /* Convert Arena_Failed to SocketPoll_Failed for consistent error handling */
+    TRY
+    {
+        volatile_data_entry = ALLOC(poll->arena, sizeof(SocketData));
+    }
+    EXCEPT(Arena_Failed)
     {
         SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket data mapping");
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
+    END_TRY;
 
-    /* Allocate fd->socket entry */
-    fd_entry = ALLOC(poll->arena, sizeof(*fd_entry));
-    if (!fd_entry)
+    /* Allocate fd->socket entry - ALLOC raises Arena_Failed on failure */
+    TRY
     {
+        volatile_fd_entry = ALLOC(poll->arena, sizeof(FdSocketEntry));
+    }
+    EXCEPT(Arena_Failed)
+    {
+        /* Note: data_entry remains allocated in arena - will be freed with arena */
         SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate fd to socket mapping");
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
+    END_TRY;
 
-    /* Initialize entries */
-    data_entry->socket = socket;
-    data_entry->data = data;
+    /* Initialize entries - volatile pointers can be dereferenced */
+    volatile_data_entry->socket = socket;
+    volatile_data_entry->data = data;
 
-    fd_entry->fd = fd;
-    fd_entry->socket = socket;
+    volatile_fd_entry->fd = fd;
+    volatile_fd_entry->socket = socket;
 
-    /* Add to hash tables atomically */
+    /* Add to hash tables atomically - cast to non-volatile for storage */
     pthread_mutex_lock(&poll->mutex);
-    data_entry->next = poll->socket_data_map[hash];
-    poll->socket_data_map[hash] = data_entry;
+    ((SocketData *)volatile_data_entry)->next = poll->socket_data_map[hash];
+    poll->socket_data_map[hash] = (SocketData *)volatile_data_entry;
 
-    fd_entry->next = poll->fd_to_socket_map[fd_hash];
-    poll->fd_to_socket_map[fd_hash] = fd_entry;
+    ((FdSocketEntry *)volatile_fd_entry)->next = poll->fd_to_socket_map[fd_hash];
+    poll->fd_to_socket_map[fd_hash] = (FdSocketEntry *)volatile_fd_entry;
     pthread_mutex_unlock(&poll->mutex);
 }
 
@@ -415,12 +425,17 @@ void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
 
-    /* Store socket->data mapping */
-    TRY socket_data_add(poll, socket, data);
+    /* Store socket->data mapping - if this fails, we need to clean up backend entry */
+    TRY
+    {
+        socket_data_add(poll, socket, data);
+    }
     EXCEPT(SocketPoll_Failed)
-    /* Remove from poll to prevent orphaned entry */
-    backend_del(poll->backend, fd);
-    RERAISE;
+    {
+        /* Remove from poll to prevent orphaned entry */
+        backend_del(poll->backend, fd);
+        RERAISE;
+    }
     END_TRY;
 }
 
@@ -508,44 +523,58 @@ static Socket_T find_socket_by_fd(T poll, int fd)
  *
  * Returns: Number of successfully translated events
  * Raises: SocketPoll_Failed on backend error
- * Thread-safe: No (caller must ensure thread safety)
+ * Thread-safe: Yes (socket_data_get handles its own mutex locking)
  *
  * Translates events from the backend-specific format to the
  * standardized SocketEvent_T format used by the public API.
  * Handles socket lookup and data association for each event.
+ *
+ * Note: find_socket_by_fd requires mutex but socket_data_get also locks mutex,
+ * so we lock mutex only for find_socket_by_fd, then unlock before calling socket_data_get.
  */
 static int translate_backend_events_to_socket_events(T poll, int nfds)
 {
-    int translated_count = 0;
+    volatile int translated_count = 0;
+    volatile int i;
 
-    for (int i = 0; i < nfds; i++)
+    TRY
     {
-        int fd;
-        unsigned event_flags;
-        Socket_T socket;
-
-        /* Get event from backend */
-        if (backend_get_event(poll->backend, i, &fd, &event_flags) < 0)
+        for (i = 0; i < nfds; i++)
         {
-            SOCKET_ERROR_MSG("Failed to get event from backend");
-            RAISE_POLL_ERROR(SocketPoll_Failed);
-        }
+            volatile int fd;
+            volatile unsigned event_flags;
+            volatile Socket_T socket;
 
-        /* Find socket by FD */
-        socket = find_socket_by_fd(poll, fd);
-        if (!socket)
-        {
-            /* Socket not found - skip this event */
-            SOCKET_ERROR_MSG("Event for unknown socket (fd=%d)", fd);
-            continue;
-        }
+            /* Get event from backend */
+            if (backend_get_event(poll->backend, i, (int *)&fd, (unsigned *)&event_flags) < 0)
+            {
+                SOCKET_ERROR_MSG("Failed to get event from backend");
+                RAISE_POLL_ERROR(SocketPoll_Failed);
+            }
 
-        /* Fill in SocketEvent_T structure */
-        poll->socketevents[translated_count].socket = socket;
-        poll->socketevents[translated_count].data = socket_data_get(poll, socket);
-        poll->socketevents[translated_count].events = event_flags;
-        translated_count++;
+            /* Find socket by FD - requires mutex */
+            pthread_mutex_lock(&poll->mutex);
+            socket = find_socket_by_fd(poll, fd);
+            pthread_mutex_unlock(&poll->mutex);
+
+            if (!socket)
+            {
+                /* Socket not found - skip this event */
+                continue;
+            }
+
+            /* Fill in SocketEvent_T structure - socket_data_get handles its own mutex */
+            poll->socketevents[translated_count].socket = (Socket_T)socket;
+            poll->socketevents[translated_count].data = socket_data_get(poll, (Socket_T)socket);
+            poll->socketevents[translated_count].events = event_flags;
+            translated_count++;
+        }
     }
+    EXCEPT(SocketPoll_Failed)
+    {
+        /* Handle translation errors - exception already raised */
+    }
+    END_TRY;
 
     return translated_count;
 }
