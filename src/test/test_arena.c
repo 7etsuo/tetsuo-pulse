@@ -6,12 +6,14 @@
  */
 
 #include <assert.h>
+#include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
 #include "test/Test.h"
 #include "core/Arena.h"
+#include "core/Except.h"
 
 /* Test basic arena creation */
 TEST(arena_new_creates_arena)
@@ -275,6 +277,176 @@ TEST(arena_mixed_allocation_sizes)
     ASSERT_NOT_NULL(medium);
     ASSERT_NOT_NULL(large);
     ASSERT_NOT_NULL(tiny);
+
+    Arena_dispose(&arena);
+}
+
+/* ==================== Error Condition Tests ==================== */
+
+/* Test dispose with NULL pointer */
+TEST(arena_dispose_null_pointer)
+{
+    Arena_T arena = NULL;
+    Arena_dispose(&arena);
+    ASSERT_NULL(arena);
+}
+
+/* Test dispose with NULL double pointer */
+TEST(arena_dispose_null_double_pointer)
+{
+    Arena_T *ap = NULL;
+    Arena_dispose(ap);
+    /* Should not crash */
+}
+
+/* Test calloc overflow detection */
+TEST(arena_calloc_overflow_detection)
+{
+    Arena_T arena = Arena_new();
+    ASSERT_NOT_NULL(arena);
+
+    TRY
+    {
+        /* Try to allocate with values that would overflow */
+        size_t huge_count = SIZE_MAX / sizeof(int) + 1;
+        void *ptr = CALLOC(arena, huge_count, sizeof(int));
+        ASSERT(0); /* Should have raised exception */
+        (void)ptr;
+    }
+    ELSE
+    {
+        /* Expected - overflow detected (exception raised) */
+        ASSERT_NOT_NULL(Except_frame.exception);
+    }
+    END_TRY;
+
+    Arena_dispose(&arena);
+}
+
+/* Test calloc maximum size exceeded */
+TEST(arena_calloc_max_size_exceeded)
+{
+    Arena_T arena = Arena_new();
+    ASSERT_NOT_NULL(arena);
+
+    TRY
+    {
+        /* Try to allocate more than maximum allowed */
+        size_t max_size = 100 * 1024 * 1024 + 1; /* ARENA_MAX_ALLOC_SIZE + 1 */
+        void *ptr = CALLOC(arena, max_size, 1);
+        ASSERT(0); /* Should have raised exception */
+        (void)ptr;
+    }
+    ELSE
+    {
+        /* Expected - size exceeds maximum (exception raised) */
+        ASSERT_NOT_NULL(Except_frame.exception);
+    }
+    END_TRY;
+
+    Arena_dispose(&arena);
+}
+
+/* Test allocation after clear preserves arena */
+TEST(arena_allocation_after_clear)
+{
+    Arena_T arena = Arena_new();
+    ASSERT_NOT_NULL(arena);
+
+    void *ptr1 = ALLOC(arena, 100);
+    ASSERT_NOT_NULL(ptr1);
+
+    Arena_clear(arena);
+
+    void *ptr2 = ALLOC(arena, 200);
+    ASSERT_NOT_NULL(ptr2);
+
+    Arena_dispose(&arena);
+}
+
+/* Test multiple disposals (should be safe) */
+TEST(arena_multiple_disposals)
+{
+    Arena_T arena = Arena_new();
+    ASSERT_NOT_NULL(arena);
+
+    Arena_dispose(&arena);
+    ASSERT_NULL(arena);
+
+    /* Dispose again - should be safe */
+    Arena_dispose(&arena);
+    ASSERT_NULL(arena);
+}
+
+/* Test clear on empty arena */
+TEST(arena_clear_empty_arena)
+{
+    Arena_T arena = Arena_new();
+    ASSERT_NOT_NULL(arena);
+
+    /* Clear without any allocations */
+    Arena_clear(arena);
+
+    /* Should still be able to allocate */
+    void *ptr = ALLOC(arena, 100);
+    ASSERT_NOT_NULL(ptr);
+
+    Arena_dispose(&arena);
+}
+
+/* Test very large allocation */
+TEST(arena_very_large_allocation)
+{
+    Arena_T arena = Arena_new();
+    ASSERT_NOT_NULL(arena);
+
+    /* Allocate close to maximum size */
+    size_t large_size = 10 * 1024 * 1024; /* 10MB */
+    void *ptr = ALLOC(arena, large_size);
+    ASSERT_NOT_NULL(ptr);
+
+    /* Verify memory is writable */
+    memset(ptr, 0x42, large_size);
+    char *cptr = (char *)ptr;
+    ASSERT_EQ(cptr[0], 0x42);
+    ASSERT_EQ(cptr[large_size - 1], 0x42);
+
+    Arena_dispose(&arena);
+}
+
+/* Test alignment preservation across allocations */
+TEST(arena_alignment_preservation)
+{
+    Arena_T arena = Arena_new();
+    ASSERT_NOT_NULL(arena);
+
+    /* Allocate with various sizes and check alignment */
+    void *ptrs[10];
+    for (int i = 0; i < 10; i++)
+    {
+        ptrs[i] = ALLOC(arena, i * 8 + 1);
+        ASSERT_NOT_NULL(ptrs[i]);
+        uintptr_t addr = (uintptr_t)ptrs[i];
+        ASSERT_EQ(addr % sizeof(void *), 0);
+    }
+
+    Arena_dispose(&arena);
+}
+
+/* Test calloc with large count */
+TEST(arena_calloc_large_count)
+{
+    Arena_T arena = Arena_new();
+    ASSERT_NOT_NULL(arena);
+
+    int *arr = (int *)CALLOC(arena, 10000, sizeof(int));
+    ASSERT_NOT_NULL(arr);
+
+    /* Verify all elements are zero */
+    for (int i = 0; i < 10000; i++)
+    {
+        ASSERT_EQ(arr[i], 0);
+    }
 
     Arena_dispose(&arena);
 }
