@@ -239,7 +239,7 @@ void SocketCommon_validate_port(int port, Except_T exception_type)
 {
     if (!SOCKET_VALID_PORT(port))
     {
-        SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
+        SOCKET_ERROR_MSG("Invalid port number: %d (must be 0-65535, 0 = OS-assigned)", port);
         RAISE_COMMON_ERROR(exception_type);
     }
 }

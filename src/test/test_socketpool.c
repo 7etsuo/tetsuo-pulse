@@ -174,11 +174,12 @@ TEST(socketpool_remove_multiple)
     Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+        volatile size_t count;
         SocketPool_add(pool, sock1);
         SocketPool_add(pool, sock2);
         SocketPool_remove(pool, sock1);
         SocketPool_remove(pool, sock2);
-        size_t count = SocketPool_count(pool);
+        count = SocketPool_count(pool);
         ASSERT_EQ(count, 0);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
@@ -224,9 +225,10 @@ TEST(socketpool_count_after_add)
     Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+        volatile size_t count;
         SocketPool_add(pool, sock1);
         SocketPool_add(pool, sock2);
-        size_t count = SocketPool_count(pool);
+        count = SocketPool_count(pool);
         ASSERT_EQ(count, 2);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
@@ -245,9 +247,10 @@ TEST(socketpool_count_after_remove)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+        volatile size_t count;
         SocketPool_add(pool, socket);
         SocketPool_remove(pool, socket);
-        size_t count = SocketPool_count(pool);
+        count = SocketPool_count(pool);
         ASSERT_EQ(count, 0);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
@@ -267,12 +270,11 @@ TEST(socketpool_cleanup_no_idle)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
-    {
+        volatile size_t count;
         SocketPool_add(pool, socket);
         SocketPool_cleanup(pool, 60);
-        volatile size_t count = SocketPool_count(pool);
+        count = SocketPool_count(pool);
         ASSERT_EQ(count, 1);
-    }
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -289,9 +291,10 @@ TEST(socketpool_cleanup_all)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+        volatile size_t count;
         SocketPool_add(pool, socket);
         SocketPool_cleanup(pool, 0);
-        size_t count = SocketPool_count(pool);
+        count = SocketPool_count(pool);
         ASSERT_EQ(count, 0);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
@@ -309,10 +312,11 @@ TEST(socketpool_cleanup_multiple)
     Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+        volatile size_t count;
         SocketPool_add(pool, sock1);
         SocketPool_add(pool, sock2);
         SocketPool_cleanup(pool, 0);
-        size_t count = SocketPool_count(pool);
+        count = SocketPool_count(pool);
         ASSERT_EQ(count, 0);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
@@ -575,18 +579,21 @@ TEST(socketpool_many_connections)
     Socket_T sockets[50];
 
     TRY
-        for (int i = 0; i < 50; i++)
+        volatile int i;
+        volatile size_t count;
+        for (i = 0; i < 50; i++)
         {
             sockets[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
             Connection_T conn = SocketPool_add(pool, sockets[i]);
             ASSERT_NOT_NULL(conn);
         }
-        size_t count = SocketPool_count(pool);
+        count = SocketPool_count(pool);
         ASSERT_EQ(count, 50);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     FINALLY
-        for (int i = 0; i < 50; i++)
-            Socket_free(&sockets[i]);
+        volatile int j;
+        for (j = 0; j < 50; j++)
+            Socket_free(&sockets[j]);
         SocketPool_free(&pool);
         Arena_dispose(&arena);
     END_TRY;
@@ -599,7 +606,8 @@ TEST(socketpool_add_remove_cycle)
     SocketPool_T pool = SocketPool_new(arena, 10, 1024);
 
     TRY
-        for (int i = 0; i < 20; i++)
+        volatile int i;
+        for (i = 0; i < 20; i++)
         {
             Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
             SocketPool_add(pool, socket);
@@ -664,8 +672,9 @@ static void *thread_get_connections(void *arg)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
     
     TRY
+        volatile int i;
         SocketPool_add(pool, socket);
-        for (int i = 0; i < 100; i++)
+        for (i = 0; i < 100; i++)
         {
             Connection_T conn = SocketPool_get(pool, socket);
             (void)conn;

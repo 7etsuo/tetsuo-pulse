@@ -32,8 +32,13 @@
  *   Arena_dispose(&arena);  // Free everything including arena itself
  */
 
+#include "core/Except.h"
+
 #define T Arena_T
 typedef struct T *T;
+
+/* Arena exception types */
+extern Except_T Arena_Failed;
 
 /**
  * Arena_new - Create a new memory arena
