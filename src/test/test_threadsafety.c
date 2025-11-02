@@ -634,12 +634,15 @@ TEST(threadsafety_high_load_server_simulation)
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
         getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
+        volatile int port = ntohs(addr.sin_port);
         
         SocketPoll_add(poll, server, POLL_READ, NULL);
         
         Socket_T clients[20];
-        for (int i = 0; i < 20; i++)
+        volatile int i;
+        volatile int iteration;
+        volatile int nfds;
+        for (i = 0; i < 20; i++)
         {
             clients[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
             Socket_connect(clients[i], "127.0.0.1", port);
@@ -647,12 +650,12 @@ TEST(threadsafety_high_load_server_simulation)
         
         usleep(200000);
         
-        for (int iteration = 0; iteration < 5; iteration++)
+        for (iteration = 0; iteration < 5; iteration++)
         {
             SocketEvent_T *events = NULL;
-            int nfds = SocketPoll_wait(poll, &events, 50);
+            nfds = SocketPoll_wait(poll, &events, 50);
             
-            for (int i = 0; i < nfds; i++)
+            for (i = 0; i < nfds; i++)
             {
                 if (events[i].socket == server)
                 {
@@ -666,7 +669,7 @@ TEST(threadsafety_high_load_server_simulation)
             }
         }
         
-        for (int i = 0; i < 20; i++)
+        for (i = 0; i < 20; i++)
             Socket_free(&clients[i]);
     EXCEPT(Socket_Failed) (void)0;
     EXCEPT(SocketPoll_Failed) (void)0;

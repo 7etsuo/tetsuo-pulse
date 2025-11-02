@@ -12,6 +12,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -215,16 +216,30 @@ store_resolution_result(T dns, struct Request_T *req, struct addrinfo *result, i
 
 /**
  * invoke_callback - Invoke completion callback if provided
+ * @dns: DNS resolver instance
  * @req: Completed request
  *
  * Thread-safe: Called without mutex (callback may take time)
+ *
+ * Note: Callback receives ownership of result. After callback returns,
+ * we clear req->result to prevent use-after-free if SocketDNS_getresult()
+ * is called. SocketDNS_getresult() checks for callback and returns NULL
+ * if callback was provided.
  */
 static void
-invoke_callback(struct Request_T *req)
+invoke_callback(T dns, struct Request_T *req)
 {
     if (req->callback && req->state == REQ_COMPLETE)
     {
-        req->callback((Request_T)req, req->result, req->error, req->callback_data);
+        /* Callback receives ownership of result */
+        struct addrinfo *result = req->result;
+        req->callback((Request_T)req, result, req->error, req->callback_data);
+        
+        /* Clear result pointer after callback to prevent use-after-free.
+         * Callback has taken ownership and freed it. */
+        pthread_mutex_lock(&dns->mutex);
+        req->result = NULL;
+        pthread_mutex_unlock(&dns->mutex);
     }
 }
 
@@ -248,7 +263,7 @@ process_single_request(T dns, struct Request_T *req, const struct addrinfo *hint
     store_resolution_result(dns, req, result, res);
     pthread_mutex_unlock(&dns->mutex);
 
-    invoke_callback(req);
+    invoke_callback(dns, req);
 }
 
 /**
@@ -335,8 +350,17 @@ cleanup_mutex_cond(T dns)
 static void
 cleanup_pipe(T dns)
 {
-    SAFE_CLOSE(dns->pipefd[0]);
-    SAFE_CLOSE(dns->pipefd[1]);
+    /* Close pipe file descriptors and mark as invalid */
+    if (dns->pipefd[0] >= 0)
+    {
+        SAFE_CLOSE(dns->pipefd[0]);
+        dns->pipefd[0] = -1;
+    }
+    if (dns->pipefd[1] >= 0)
+    {
+        SAFE_CLOSE(dns->pipefd[1]);
+        dns->pipefd[1] = -1;
+    }
 }
 
 /**
@@ -405,6 +429,22 @@ initialize_pipe(T dns)
     {
         cleanup_on_init_failure(dns, 3);
         SOCKET_ERROR_FMT("Failed to create completion pipe");
+        RAISE_DNS_ERROR(SocketDNS_Failed);
+    }
+
+    /* Set read end to non-blocking mode */
+    int flags = fcntl(dns->pipefd[0], F_GETFL);
+    if (flags < 0)
+    {
+        cleanup_on_init_failure(dns, 4);
+        SOCKET_ERROR_FMT("Failed to get pipe flags");
+        RAISE_DNS_ERROR(SocketDNS_Failed);
+    }
+
+    if (fcntl(dns->pipefd[0], F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+        cleanup_on_init_failure(dns, 4);
+        SOCKET_ERROR_FMT("Failed to set pipe to non-blocking");
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
 }
@@ -1021,13 +1061,25 @@ SocketDNS_check(T dns)
 {
     char buffer[SOCKET_DNS_PIPE_BUFFER_SIZE];
     ssize_t n;
-    int count = 0;
+    volatile int count = 0;
 
     assert(dns);
 
+    /* Check if pipe is still valid (may be closed during shutdown) */
+    if (dns->pipefd[0] < 0)
+        return 0;
+
+    /* Read all available data from pipe (non-blocking) */
     while ((n = read(dns->pipefd[0], buffer, sizeof(buffer))) > 0)
     {
         count += n;
+    }
+
+    /* EAGAIN/EWOULDBLOCK means no data available - not an error */
+    if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+    {
+        /* Real error - but don't raise exception, just return count */
+        return count;
     }
 
     return count;
@@ -1046,8 +1098,18 @@ SocketDNS_getresult(T dns, Request_T req)
 
     if (r->state == REQ_COMPLETE)
     {
-        result = r->result;
-        r->result = NULL;
+        /* If callback was provided, result ownership was transferred to callback */
+        if (r->callback)
+        {
+            /* Callback already received the result - it's been consumed */
+            result = NULL;
+        }
+        else
+        {
+            /* No callback - transfer ownership to caller */
+            result = r->result;
+            r->result = NULL;
+        }
 
         hash_table_remove(dns, r);
     }
