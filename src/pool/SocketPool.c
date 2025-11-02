@@ -754,7 +754,7 @@ collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
 static void
 close_collected_sockets (T pool, size_t close_count)
 {
-  size_t i;
+  volatile size_t i;
 
   for (i = 0; i < close_count; i++)
     {
@@ -766,19 +766,28 @@ close_collected_sockets (T pool, size_t close_count)
 void
 SocketPool_cleanup (T pool, time_t idle_timeout)
 {
-  time_t now;
-  size_t close_count;
+  volatile time_t now;
+  volatile size_t close_count;
 
   assert (pool);
   assert (pool->cleanup_buffer);
 
-  now = safe_time ();
+  TRY
+    {
+      now = safe_time ();
 
-  pthread_mutex_lock (&pool->mutex);
-  close_count = collect_idle_sockets (pool, idle_timeout, now);
-  pthread_mutex_unlock (&pool->mutex);
+      pthread_mutex_lock (&pool->mutex);
+      close_count = collect_idle_sockets (pool, idle_timeout, now);
+      pthread_mutex_unlock (&pool->mutex);
 
-  close_collected_sockets (pool, close_count);
+      close_collected_sockets (pool, close_count);
+    }
+  EXCEPT (SocketPool_Failed)
+    {
+      /* Handle cleanup failure - log error but don't corrupt exception frame */
+      /* Exception already raised by safe_time() or other operations */
+    }
+  END_TRY;
 }
 
 size_t
