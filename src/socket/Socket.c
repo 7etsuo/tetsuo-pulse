@@ -12,6 +12,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -389,6 +390,62 @@ static int setup_peer_info(T newsocket, const struct sockaddr *addr, socklen_t a
 }
 
 /**
+ * validate_unix_path_length - Validate Unix socket path length
+ * @path_len: Path length to validate
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int validate_unix_path_length(size_t path_len)
+{
+    if (path_len > sizeof(struct sockaddr_un) - offsetof(struct sockaddr_un, sun_path) - 1)
+    {
+        SOCKET_ERROR_MSG("Unix socket path too long (max %zu characters)",
+                         sizeof(struct sockaddr_un) - offsetof(struct sockaddr_un, sun_path) - 1);
+        return -1;
+    }
+    return 0;
+}
+
+/**
+ * setup_abstract_unix_socket - Set up abstract namespace Unix socket
+ * @addr: Output sockaddr_un structure
+ * @path: Socket path starting with '@'
+ * @path_len: Length of path
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int setup_abstract_unix_socket(struct sockaddr_un *addr, const char *path, size_t path_len)
+{
+#ifdef __linux__
+    if (validate_unix_path_length(path_len) != 0)
+        return -1;
+    addr->sun_path[0] = '\0';
+    memcpy(addr->sun_path + 1, path + 1, path_len - 1);
+    return 0;
+#else
+    SOCKET_ERROR_MSG("Abstract namespace sockets not supported on this platform");
+    return -1;
+#endif
+}
+
+/**
+ * setup_regular_unix_socket - Set up regular filesystem Unix socket
+ * @addr: Output sockaddr_un structure
+ * @path: Socket path
+ * @path_len: Length of path
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int setup_regular_unix_socket(struct sockaddr_un *addr, const char *path, size_t path_len)
+{
+    if (validate_unix_path_length(path_len) != 0)
+        return -1;
+    strncpy(addr->sun_path, path, sizeof(addr->sun_path) - 1);
+    addr->sun_path[sizeof(addr->sun_path) - 1] = '\0';
+    return 0;
+}
+
+/**
  * setup_unix_sockaddr - Set up sockaddr_un structure for Unix domain socket
  * @addr: Output sockaddr_un structure
  * @path: Socket path (may start with '@' for abstract socket)
@@ -406,36 +463,10 @@ static int setup_unix_sockaddr(struct sockaddr_un *addr, const char *path)
     addr->sun_family = SOCKET_AF_UNIX;
     path_len = strlen(path);
 
-    /* Handle abstract namespace sockets on Linux */
     if (path[0] == '@')
-    {
-#ifdef __linux__
-        /* Abstract socket - replace '@' with '\0' */
-        addr->sun_path[0] = '\0';
-        if (path_len > sizeof(addr->sun_path) - 1)
-        {
-            SOCKET_ERROR_MSG("Unix socket path too long (max %zu characters)", sizeof(addr->sun_path) - 1);
-            return -1;
-        }
-        memcpy(addr->sun_path + 1, path + 1, path_len - 1);
-#else
-        SOCKET_ERROR_MSG("Abstract namespace sockets not supported on this platform");
-        return -1;
-#endif
-    }
+        return setup_abstract_unix_socket(addr, path, path_len);
     else
-    {
-        /* Regular filesystem socket */
-        if (path_len >= sizeof(addr->sun_path))
-        {
-            SOCKET_ERROR_MSG("Unix socket path too long (max %zu characters)", sizeof(addr->sun_path) - 1);
-            return -1;
-        }
-        strncpy(addr->sun_path, path, sizeof(addr->sun_path) - 1);
-        addr->sun_path[sizeof(addr->sun_path) - 1] = '\0';
-    }
-
-    return 0;
+        return setup_regular_unix_socket(addr, path, path_len);
 }
 
 T Socket_new(int domain, int type, int protocol)
@@ -522,22 +553,41 @@ void Socket_bind(T socket, const char *host, int port)
     RAISE_SOCKET_ERROR(Socket_Failed);
 }
 
-void Socket_listen(T socket, int backlog)
+/**
+ * validate_backlog - Validate listen backlog parameter
+ * @backlog: Backlog value to validate
+ *
+ * Raises: Socket_Failed if invalid
+ */
+static void validate_backlog(int backlog)
 {
-    int result;
-
-    assert(socket);
-
-    /* Validate backlog parameter */
     if (backlog <= 0)
     {
         SOCKET_ERROR_MSG("Invalid backlog value: %d (must be > 0)", backlog);
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
+}
 
-    /* Enforce configured limit */
+/**
+ * enforce_backlog_limit - Enforce maximum backlog limit
+ * @backlog: Backlog value to enforce
+ *
+ * Returns: Enforced backlog value
+ */
+static int enforce_backlog_limit(int backlog)
+{
     if (backlog > SOCKET_MAX_LISTEN_BACKLOG)
-        backlog = SOCKET_MAX_LISTEN_BACKLOG;
+        return SOCKET_MAX_LISTEN_BACKLOG;
+    return backlog;
+}
+
+void Socket_listen(T socket, int backlog)
+{
+    int result;
+
+    assert(socket);
+    validate_backlog(backlog);
+    backlog = enforce_backlog_limit(backlog);
 
     result = listen(socket->fd, backlog);
     if (result < 0)
@@ -802,29 +852,49 @@ void Socket_settimeout(T socket, int timeout_sec)
     }
 }
 
-void Socket_setkeepalive(T socket, int idle, int interval, int count)
+/**
+ * validate_keepalive_parameters - Validate keepalive parameters
+ * @idle: Idle timeout
+ * @interval: Interval between probes
+ * @count: Probe count
+ *
+ * Raises: Socket_Failed if parameters are invalid
+ */
+static void validate_keepalive_parameters(int idle, int interval, int count)
 {
-    int opt = 1;
-
-    assert(socket);
-
-    /* Validate keepalive parameters */
     if (idle <= 0 || interval <= 0 || count <= 0)
     {
         SOCKET_ERROR_MSG("Invalid keepalive parameters (idle=%d, interval=%d, count=%d): all must be > 0", idle,
                          interval, count);
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
+}
 
-    /* Enable keepalive */
+/**
+ * enable_socket_keepalive - Enable keepalive on socket
+ * @socket: Socket to configure
+ *
+ * Raises: Socket_Failed on failure
+ */
+static void enable_socket_keepalive(T socket)
+{
+    int opt = 1;
     if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_KEEPALIVE, &opt, sizeof(opt)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to enable keepalive");
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
+}
 
-    /* Set keepalive parameters (platform-specific) */
-
+/**
+ * set_keepalive_idle_time - Set keepalive idle timeout
+ * @socket: Socket to configure
+ * @idle: Idle timeout in seconds
+ *
+ * Raises: Socket_Failed on failure
+ */
+static void set_keepalive_idle_time(T socket, int idle)
+{
 #ifdef TCP_KEEPIDLE
     if (setsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPIDLE, &idle, sizeof(idle)) < 0)
     {
@@ -832,7 +902,17 @@ void Socket_setkeepalive(T socket, int idle, int interval, int count)
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 #endif
+}
 
+/**
+ * set_keepalive_interval - Set keepalive probe interval
+ * @socket: Socket to configure
+ * @interval: Interval in seconds
+ *
+ * Raises: Socket_Failed on failure
+ */
+static void set_keepalive_interval(T socket, int interval)
+{
 #ifdef TCP_KEEPINTVL
     if (setsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPINTVL, &interval, sizeof(interval)) < 0)
     {
@@ -840,7 +920,17 @@ void Socket_setkeepalive(T socket, int idle, int interval, int count)
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 #endif
+}
 
+/**
+ * set_keepalive_count - Set keepalive probe count
+ * @socket: Socket to configure
+ * @count: Probe count
+ *
+ * Raises: Socket_Failed on failure
+ */
+static void set_keepalive_count(T socket, int count)
+{
 #ifdef TCP_KEEPCNT
     if (setsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPCNT, &count, sizeof(count)) < 0)
     {
@@ -848,6 +938,16 @@ void Socket_setkeepalive(T socket, int idle, int interval, int count)
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 #endif
+}
+
+void Socket_setkeepalive(T socket, int idle, int interval, int count)
+{
+    assert(socket);
+    validate_keepalive_parameters(idle, interval, count);
+    enable_socket_keepalive(socket);
+    set_keepalive_idle_time(socket, idle);
+    set_keepalive_interval(socket, interval);
+    set_keepalive_count(socket, count);
 }
 
 void Socket_setnodelay(T socket, int nodelay)
@@ -879,6 +979,37 @@ int Socket_getpeerport(const T socket)
     return socket->peerport;
 }
 
+/**
+ * handle_unix_bind_error - Handle Unix socket bind error
+ * @path: Socket path
+ */
+static void handle_unix_bind_error(const char *path)
+{
+    if (errno == EADDRINUSE)
+        SOCKET_ERROR_FMT(SOCKET_EADDRINUSE ": %s", path);
+    else if (errno == EACCES)
+        SOCKET_ERROR_FMT("Permission denied to bind to %s", path);
+    else
+        SOCKET_ERROR_FMT("Failed to bind to Unix socket %s", path);
+}
+
+/**
+ * perform_unix_bind - Perform Unix socket bind operation
+ * @socket: Socket to bind
+ * @addr: Address structure
+ * @path: Path for error messages
+ *
+ * Raises: Socket_Failed on failure
+ */
+static void perform_unix_bind(T socket, const struct sockaddr_un *addr, const char *path)
+{
+    if (bind(socket->fd, (struct sockaddr *)addr, sizeof(*addr)) < 0)
+    {
+        handle_unix_bind_error(path);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+}
+
 void Socket_bind_unix(T socket, const char *path)
 {
     struct sockaddr_un addr;
@@ -887,29 +1018,42 @@ void Socket_bind_unix(T socket, const char *path)
     assert(path);
 
     if (setup_unix_sockaddr(&addr, path) != 0)
-    {
         RAISE_SOCKET_ERROR(Socket_Failed);
-    }
 
-    if (bind(socket->fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        if (errno == EADDRINUSE)
-        {
-            SOCKET_ERROR_FMT(SOCKET_EADDRINUSE ": %s", path);
-        }
-        else if (errno == EACCES)
-        {
-            SOCKET_ERROR_FMT("Permission denied to bind to %s", path);
-        }
-        else
-        {
-            SOCKET_ERROR_FMT("Failed to bind to Unix socket %s", path);
-        }
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
+    perform_unix_bind(socket, &addr, path);
     memcpy(&socket->addr, &addr, sizeof(addr));
     socket->addrlen = sizeof(addr);
+}
+
+/**
+ * handle_unix_connect_error - Handle Unix socket connect error
+ * @path: Socket path
+ */
+static void handle_unix_connect_error(const char *path)
+{
+    if (errno == ENOENT)
+        SOCKET_ERROR_FMT("Unix socket does not exist: %s", path);
+    else if (errno == ECONNREFUSED)
+        SOCKET_ERROR_FMT(SOCKET_ECONNREFUSED ": %s", path);
+    else
+        SOCKET_ERROR_FMT("Failed to connect to Unix socket %s", path);
+}
+
+/**
+ * perform_unix_connect - Perform Unix socket connect operation
+ * @socket: Socket to connect
+ * @addr: Address structure
+ * @path: Path for error messages
+ *
+ * Raises: Socket_Failed on failure
+ */
+static void perform_unix_connect(T socket, const struct sockaddr_un *addr, const char *path)
+{
+    if (connect(socket->fd, (struct sockaddr *)addr, sizeof(*addr)) < 0)
+    {
+        handle_unix_connect_error(path);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
 }
 
 void Socket_connect_unix(T socket, const char *path)
@@ -920,27 +1064,9 @@ void Socket_connect_unix(T socket, const char *path)
     assert(path);
 
     if (setup_unix_sockaddr(&addr, path) != 0)
-    {
         RAISE_SOCKET_ERROR(Socket_Failed);
-    }
 
-    if (connect(socket->fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        if (errno == ENOENT)
-        {
-            SOCKET_ERROR_FMT("Unix socket does not exist: %s", path);
-        }
-        else if (errno == ECONNREFUSED)
-        {
-            SOCKET_ERROR_FMT(SOCKET_ECONNREFUSED ": %s", path);
-        }
-        else
-        {
-            SOCKET_ERROR_FMT("Failed to connect to Unix socket %s", path);
-        }
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
+    perform_unix_connect(socket, &addr, path);
     memcpy(&socket->addr, &addr, sizeof(addr));
     socket->addrlen = sizeof(addr);
 }

@@ -241,6 +241,29 @@ static void resolve_multicast_group(const char *group, struct addrinfo **res)
 }
 
 /**
+ * setup_ipv4_multicast_interface - Set up IPv4 multicast interface
+ * @mreq: Multicast request structure
+ * @interface: Interface address or NULL
+ *
+ * Raises: SocketDgram_Failed on invalid interface
+ */
+static void setup_ipv4_multicast_interface(struct ip_mreq *mreq, const char *interface)
+{
+    if (interface)
+    {
+        if (inet_pton(SOCKET_AF_INET, interface, &mreq->imr_interface) <= 0)
+        {
+            SOCKET_ERROR_MSG("Invalid interface address: %s", interface);
+            RAISE_DGRAM_ERROR(SocketDgram_Failed);
+        }
+    }
+    else
+    {
+        mreq->imr_interface.s_addr = INADDR_ANY;
+    }
+}
+
+/**
  * join_ipv4_multicast - Join IPv4 multicast group
  * @socket: Socket to join
  * @group_addr: Multicast group address
@@ -253,19 +276,7 @@ static void join_ipv4_multicast(T socket, struct in_addr group_addr, const char 
     struct ip_mreq mreq;
     memset(&mreq, 0, sizeof(mreq));
     mreq.imr_multiaddr = group_addr;
-
-    if (interface)
-    {
-        if (inet_pton(SOCKET_AF_INET, interface, &mreq.imr_interface) <= 0)
-        {
-            SOCKET_ERROR_MSG("Invalid interface address: %s", interface);
-            RAISE_DGRAM_ERROR(SocketDgram_Failed);
-        }
-    }
-    else
-    {
-        mreq.imr_interface.s_addr = INADDR_ANY;
-    }
+    setup_ipv4_multicast_interface(&mreq, interface);
 
     if (setsockopt(socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
     {
@@ -308,19 +319,7 @@ static void leave_ipv4_multicast(T socket, struct in_addr group_addr, const char
     struct ip_mreq mreq;
     memset(&mreq, 0, sizeof(mreq));
     mreq.imr_multiaddr = group_addr;
-
-    if (interface)
-    {
-        if (inet_pton(SOCKET_AF_INET, interface, &mreq.imr_interface) <= 0)
-        {
-            SOCKET_ERROR_MSG("Invalid interface address: %s", interface);
-            RAISE_DGRAM_ERROR(SocketDgram_Failed);
-        }
-    }
-    else
-    {
-        mreq.imr_interface.s_addr = INADDR_ANY;
-    }
+    setup_ipv4_multicast_interface(&mreq, interface);
 
     if (setsockopt(socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
     {
@@ -527,19 +526,30 @@ void SocketDgram_free(T *socket)
     *socket = NULL;
 }
 
+/**
+ * normalize_dgram_host - Normalize host for datagram binding
+ * @host: Host string to normalize
+ *
+ * Returns: NULL if wildcard, normalized host otherwise
+ */
+static const char *normalize_dgram_host(const char *host)
+{
+    if (host != NULL && strcmp(host, "0.0.0.0") != 0 && strcmp(host, "::") != 0)
+        return host;
+    return NULL;
+}
+
 void SocketDgram_bind(T socket, const char *host, int port)
 {
     struct addrinfo hints, *res = NULL;
     int socket_family;
 
     assert(socket);
-
     validate_dgram_port(port);
 
-    if (host != NULL && strcmp(host, "0.0.0.0") != 0 && strcmp(host, "::") != 0)
+    host = normalize_dgram_host(host);
+    if (host)
         validate_dgram_hostname(host);
-    else
-        host = NULL;
 
     setup_dgram_bind_hints(&hints);
     SocketCommon_resolve_address(host, port, &hints, &res, SocketDgram_Failed, SOCKET_AF_UNSPEC, 1);
@@ -555,6 +565,16 @@ void SocketDgram_bind(T socket, const char *host, int port)
     handle_dgram_bind_error(host, port);
     freeaddrinfo(res);
     RAISE_DGRAM_ERROR(SocketDgram_Failed);
+}
+
+/**
+ * handle_dgram_connect_error - Handle datagram connect error
+ * @host: Host string
+ * @port: Port number
+ */
+static void handle_dgram_connect_error(const char *host, int port)
+{
+    SOCKET_ERROR_FMT("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
 }
 
 void SocketDgram_connect(T socket, const char *host, int port)
@@ -578,7 +598,7 @@ void SocketDgram_connect(T socket, const char *host, int port)
         return;
     }
 
-    SOCKET_ERROR_FMT("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
+    handle_dgram_connect_error(host, port);
     freeaddrinfo(res);
     RAISE_DGRAM_ERROR(SocketDgram_Failed);
 }
@@ -714,15 +734,16 @@ void SocketDgram_setbroadcast(T socket, int enable)
     }
 }
 
-void SocketDgram_joinmulticast(T socket, const char *group, const char *interface)
+/**
+ * join_multicast_by_family - Join multicast group based on address family
+ * @socket: Socket to join
+ * @res: Resolved address info
+ * @interface: Interface address or NULL
+ *
+ * Raises: SocketDgram_Failed on unsupported family or join failure
+ */
+static void join_multicast_by_family(T socket, struct addrinfo *res, const char *interface)
 {
-    struct addrinfo *res = NULL;
-
-    assert(socket);
-    assert(group);
-
-    resolve_multicast_group(group, &res);
-
     if (res->ai_family == SOCKET_AF_INET)
     {
         join_ipv4_multicast(socket, ((struct sockaddr_in *)res->ai_addr)->sin_addr, interface);
@@ -733,15 +754,12 @@ void SocketDgram_joinmulticast(T socket, const char *group, const char *interfac
     }
     else
     {
-        freeaddrinfo(res);
         SOCKET_ERROR_MSG("Unsupported address family for multicast");
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
     }
-
-    freeaddrinfo(res);
 }
 
-void SocketDgram_leavemulticast(T socket, const char *group, const char *interface)
+void SocketDgram_joinmulticast(T socket, const char *group, const char *interface)
 {
     struct addrinfo *res = NULL;
 
@@ -749,7 +767,20 @@ void SocketDgram_leavemulticast(T socket, const char *group, const char *interfa
     assert(group);
 
     resolve_multicast_group(group, &res);
+    join_multicast_by_family(socket, res, interface);
+    freeaddrinfo(res);
+}
 
+/**
+ * leave_multicast_by_family - Leave multicast group based on address family
+ * @socket: Socket to leave
+ * @res: Resolved address info
+ * @interface: Interface address or NULL
+ *
+ * Raises: SocketDgram_Failed on unsupported family or leave failure
+ */
+static void leave_multicast_by_family(T socket, struct addrinfo *res, const char *interface)
+{
     if (res->ai_family == SOCKET_AF_INET)
     {
         leave_ipv4_multicast(socket, ((struct sockaddr_in *)res->ai_addr)->sin_addr, interface);
@@ -760,54 +791,118 @@ void SocketDgram_leavemulticast(T socket, const char *group, const char *interfa
     }
     else
     {
-        freeaddrinfo(res);
         SOCKET_ERROR_MSG("Unsupported address family for multicast");
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
     }
+}
 
+void SocketDgram_leavemulticast(T socket, const char *group, const char *interface)
+{
+    struct addrinfo *res = NULL;
+
+    assert(socket);
+    assert(group);
+
+    resolve_multicast_group(group, &res);
+    leave_multicast_by_family(socket, res, interface);
     freeaddrinfo(res);
 }
 
-void SocketDgram_setttl(T socket, int ttl)
+/**
+ * validate_ttl_value - Validate TTL value
+ * @ttl: TTL value to validate
+ *
+ * Raises: SocketDgram_Failed if invalid
+ */
+static void validate_ttl_value(int ttl)
 {
-    int socket_family = SOCKET_AF_UNSPEC;
-    socklen_t len = sizeof(socket_family);
-
-    assert(socket);
-
     if (ttl < 1 || ttl > 255)
     {
         SOCKET_ERROR_MSG("Invalid TTL value: %d (must be 1-255)", ttl);
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
     }
+}
+
+/**
+ * get_socket_domain - Get socket address family
+ * @socket: Socket to query
+ *
+ * Returns: Socket family or SOCKET_AF_UNSPEC on error
+ */
+static int get_socket_domain(T socket)
+{
+    int socket_family = SOCKET_AF_UNSPEC;
+    socklen_t len = sizeof(socket_family);
 
     if (getsockopt(socket->fd, SOL_SOCKET, SO_DOMAIN, &socket_family, &len) < 0)
     {
         SOCKET_ERROR_FMT("Failed to get socket domain");
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
     }
+    return socket_family;
+}
 
+/**
+ * set_ipv4_ttl - Set IPv4 TTL value
+ * @socket: Socket to configure
+ * @ttl: TTL value
+ *
+ * Raises: SocketDgram_Failed on failure
+ */
+static void set_ipv4_ttl(T socket, int ttl)
+{
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_TTL, &ttl, sizeof(ttl)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to set IPv4 TTL");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+}
+
+/**
+ * set_ipv6_hop_limit - Set IPv6 hop limit
+ * @socket: Socket to configure
+ * @ttl: Hop limit value
+ *
+ * Raises: SocketDgram_Failed on failure
+ */
+static void set_ipv6_hop_limit(T socket, int ttl)
+{
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_UNICAST_HOPS, &ttl, sizeof(ttl)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to set IPv6 hop limit");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+}
+
+/**
+ * set_ttl_by_family - Set TTL based on socket address family
+ * @socket: Socket to configure
+ * @socket_family: Socket address family
+ * @ttl: TTL value
+ *
+ * Raises: SocketDgram_Failed on unsupported family or failure
+ */
+static void set_ttl_by_family(T socket, int socket_family, int ttl)
+{
     if (socket_family == SOCKET_AF_INET)
-    {
-        if (setsockopt(socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_TTL, &ttl, sizeof(ttl)) < 0)
-        {
-            SOCKET_ERROR_FMT("Failed to set IPv4 TTL");
-            RAISE_DGRAM_ERROR(SocketDgram_Failed);
-        }
-    }
+        set_ipv4_ttl(socket, ttl);
     else if (socket_family == SOCKET_AF_INET6)
-    {
-        if (setsockopt(socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_UNICAST_HOPS, &ttl, sizeof(ttl)) < 0)
-        {
-            SOCKET_ERROR_FMT("Failed to set IPv6 hop limit");
-            RAISE_DGRAM_ERROR(SocketDgram_Failed);
-        }
-    }
+        set_ipv6_hop_limit(socket, ttl);
     else
     {
         SOCKET_ERROR_MSG("Unsupported address family for TTL");
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
     }
+}
+
+void SocketDgram_setttl(T socket, int ttl)
+{
+    int socket_family;
+
+    assert(socket);
+    validate_ttl_value(ttl);
+    socket_family = get_socket_domain(socket);
+    set_ttl_by_family(socket, socket_family, ttl);
 }
 
 void SocketDgram_settimeout(T socket, int timeout_sec)
