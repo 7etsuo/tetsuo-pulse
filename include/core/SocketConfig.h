@@ -1,5 +1,5 @@
-#ifndef SOCKETCONFIG_H
-#define SOCKETCONFIG_H
+#ifndef SOCKETCONFIG_INCLUDED
+#define SOCKETCONFIG_INCLUDED
 
 /* Standard includes required for SAFE_CLOSE macro */
 #include <errno.h>
@@ -286,4 +286,4 @@
         }                                                                                                              \
     } while (0)
 
-#endif /* SOCKETCONFIG_H */
+#endif /* SOCKETCONFIG_INCLUDED */
