@@ -292,6 +292,21 @@ wait_for_request(T dns)
 }
 
 /**
+ * initialize_addrinfo_hints - Initialize getaddrinfo hints structure
+ * @hints: Hints structure to initialize
+ *
+ * Sets up hints for DNS resolution with AF_UNSPEC (IPv4/IPv6).
+ */
+static void
+initialize_addrinfo_hints(struct addrinfo *hints)
+{
+    memset(hints, 0, sizeof(*hints));
+    hints->ai_family = AF_UNSPEC;
+    hints->ai_socktype = SOCK_STREAM;
+    hints->ai_protocol = 0;
+}
+
+/**
  * worker_thread - Worker thread for DNS resolution
  * @arg: DNS resolver instance
  *
@@ -307,10 +322,7 @@ worker_thread(void *arg)
     struct Request_T *req;
     struct addrinfo hints;
 
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = 0;
+    initialize_addrinfo_hints(&hints);
 
     while (1)
     {
@@ -386,13 +398,13 @@ cleanup_on_init_failure(T dns, int cleanup_level)
 }
 
 /**
- * initialize_synchronization - Initialize mutex and condition variables
+ * initialize_mutex - Initialize mutex for DNS resolver
  * @dns: DNS resolver instance
  *
  * Raises: SocketDNS_Failed on initialization failure
  */
 static void
-initialize_synchronization(T dns)
+initialize_mutex(T dns)
 {
     if (pthread_mutex_init(&dns->mutex, NULL) != 0)
     {
@@ -400,14 +412,34 @@ initialize_synchronization(T dns)
         SOCKET_ERROR_MSG("Failed to initialize DNS resolver mutex");
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
+}
 
+/**
+ * initialize_queue_condition - Initialize queue condition variable
+ * @dns: DNS resolver instance
+ *
+ * Raises: SocketDNS_Failed on initialization failure
+ */
+static void
+initialize_queue_condition(T dns)
+{
     if (pthread_cond_init(&dns->queue_cond, NULL) != 0)
     {
         cleanup_on_init_failure(dns, 1);
         SOCKET_ERROR_MSG("Failed to initialize DNS resolver condition variable");
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
+}
 
+/**
+ * initialize_result_condition - Initialize result condition variable
+ * @dns: DNS resolver instance
+ *
+ * Raises: SocketDNS_Failed on initialization failure
+ */
+static void
+initialize_result_condition(T dns)
+{
     if (pthread_cond_init(&dns->result_cond, NULL) != 0)
     {
         cleanup_on_init_failure(dns, 2);
@@ -417,13 +449,27 @@ initialize_synchronization(T dns)
 }
 
 /**
- * initialize_pipe - Create pipe for completion signaling
+ * initialize_synchronization - Initialize mutex and condition variables
+ * @dns: DNS resolver instance
+ *
+ * Raises: SocketDNS_Failed on initialization failure
+ */
+static void
+initialize_synchronization(T dns)
+{
+    initialize_mutex(dns);
+    initialize_queue_condition(dns);
+    initialize_result_condition(dns);
+}
+
+/**
+ * create_completion_pipe - Create pipe for completion signaling
  * @dns: DNS resolver instance
  *
  * Raises: SocketDNS_Failed on pipe creation failure
  */
 static void
-initialize_pipe(T dns)
+create_completion_pipe(T dns)
 {
     if (pipe(dns->pipefd) < 0)
     {
@@ -431,8 +477,17 @@ initialize_pipe(T dns)
         SOCKET_ERROR_FMT("Failed to create completion pipe");
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
+}
 
-    /* Set read end to non-blocking mode */
+/**
+ * set_pipe_nonblocking - Set pipe read end to non-blocking mode
+ * @dns: DNS resolver instance
+ *
+ * Raises: SocketDNS_Failed on fcntl failure
+ */
+static void
+set_pipe_nonblocking(T dns)
+{
     int flags = fcntl(dns->pipefd[0], F_GETFL);
     if (flags < 0)
     {
@@ -447,6 +502,19 @@ initialize_pipe(T dns)
         SOCKET_ERROR_FMT("Failed to set pipe to non-blocking");
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
+}
+
+/**
+ * initialize_pipe - Create pipe for completion signaling
+ * @dns: DNS resolver instance
+ *
+ * Raises: SocketDNS_Failed on pipe creation failure
+ */
+static void
+initialize_pipe(T dns)
+{
+    create_completion_pipe(dns);
+    set_pipe_nonblocking(dns);
 }
 
 /**
