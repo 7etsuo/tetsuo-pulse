@@ -337,6 +337,57 @@ TEST(socketbuf_write_read_cycle)
     Arena_dispose(&arena);
 }
 
+/* Test secure clear operation */
+TEST(socketbuf_secureclear)
+{
+    Arena_T arena = Arena_new();
+    SocketBuf_T buf = SocketBuf_new(arena, 1024);
+
+    /* Write sensitive data */
+    const char *sensitive = "password123";
+    SocketBuf_write(buf, sensitive, strlen(sensitive));
+    ASSERT_EQ(SocketBuf_available(buf), strlen(sensitive));
+
+    /* Secure clear should zero memory and reset buffer */
+    SocketBuf_secureclear(buf);
+
+    ASSERT_EQ(SocketBuf_available(buf), 0);
+    ASSERT_NE(SocketBuf_empty(buf), 0);
+    ASSERT_EQ(SocketBuf_space(buf), 1024);
+
+    /* Can write again after secure clear */
+    SocketBuf_write(buf, "New data", 8);
+    ASSERT_EQ(SocketBuf_available(buf), 8);
+
+    Arena_dispose(&arena);
+}
+
+/* Test clear vs secureclear difference */
+TEST(socketbuf_clear_vs_secureclear)
+{
+    Arena_T arena = Arena_new();
+    SocketBuf_T buf1 = SocketBuf_new(arena, 1024);
+    SocketBuf_T buf2 = SocketBuf_new(arena, 1024);
+
+    const char *data = "Sensitive information";
+    
+    /* Test regular clear */
+    SocketBuf_write(buf1, data, strlen(data));
+    SocketBuf_clear(buf1);
+    ASSERT_EQ(SocketBuf_available(buf1), 0);
+    
+    /* Test secure clear */
+    SocketBuf_write(buf2, data, strlen(data));
+    SocketBuf_secureclear(buf2);
+    ASSERT_EQ(SocketBuf_available(buf2), 0);
+    
+    /* Both should be empty after clear */
+    ASSERT_NE(SocketBuf_empty(buf1), 0);
+    ASSERT_NE(SocketBuf_empty(buf2), 0);
+
+    Arena_dispose(&arena);
+}
+
 int main(void)
 {
     Test_run_all();
