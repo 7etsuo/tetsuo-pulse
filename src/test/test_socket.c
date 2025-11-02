@@ -435,7 +435,7 @@ TEST(socket_bidirectional_communication)
         getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
         port = ntohs(addr.sin_port);
         Socket_connect(client, "127.0.0.1", port);
-        Socket_T accepted = Socket_accept(server);
+        volatile Socket_T accepted = Socket_accept(server);
         if (!accepted) { usleep(100000); accepted = Socket_accept(server); }
         
         if (accepted)
@@ -450,7 +450,8 @@ TEST(socket_bidirectional_communication)
             usleep(10000);
             char buf2[TEST_BUFFER_SIZE] = {0};
             Socket_recv(client, buf2, sizeof(buf2) - 1);
-            Socket_free(&accepted);
+            Socket_T a = (Socket_T)accepted;
+            Socket_free(&a);
         }
     EXCEPT(Socket_Failed) (void)0;
     FINALLY
@@ -570,21 +571,23 @@ TEST(socket_getpeerport_after_accept)
     Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+        volatile int port;
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 1);
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
         getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
+        port = ntohs(addr.sin_port);
         Socket_connect(client, "127.0.0.1", port);
-        Socket_T accepted = Socket_accept(server);
+        volatile Socket_T accepted = Socket_accept(server);
         if (!accepted) { usleep(100000); accepted = Socket_accept(server); }
         
         if (accepted)
         {
             int peerport = Socket_getpeerport(accepted);
             ASSERT_NE(peerport, 0);
-            Socket_free(&accepted);
+            Socket_T a = (Socket_T)accepted;
+            Socket_free(&a);
         }
     EXCEPT(Socket_Failed) (void)0;
     FINALLY
@@ -603,14 +606,15 @@ TEST(socket_recv_on_closed_socket_raises)
     volatile int closed_raised = 0;
 
     TRY
+        volatile int port;
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 1);
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
         getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
+        port = ntohs(addr.sin_port);
         Socket_connect(client, "127.0.0.1", port);
-        Socket_T accepted = Socket_accept(server);
+        volatile Socket_T accepted = Socket_accept(server);
         if (!accepted) { usleep(100000); accepted = Socket_accept(server); }
 
         if (accepted)
@@ -622,7 +626,8 @@ TEST(socket_recv_on_closed_socket_raises)
             TRY Socket_recv(accepted, buf, sizeof(buf));
             EXCEPT(Socket_Closed) closed_raised = 1;
             END_TRY;
-            Socket_free(&accepted);
+            Socket_T a = (Socket_T)accepted;
+            Socket_free(&a);
         }
     EXCEPT(Socket_Failed) (void)0;
     FINALLY
@@ -641,23 +646,24 @@ TEST(socket_multiple_connections)
     Socket_T client2 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+        volatile int port;
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 10);
         Socket_setnonblocking(server);
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
         getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
+        port = ntohs(addr.sin_port);
         
         Socket_connect(client1, "127.0.0.1", port);
         Socket_connect(client2, "127.0.0.1", port);
         usleep(50000);
         
-        Socket_T acc1 = Socket_accept(server);
-        Socket_T acc2 = Socket_accept(server);
+        volatile Socket_T acc1 = Socket_accept(server);
+        volatile Socket_T acc2 = Socket_accept(server);
         
-        if (acc1) Socket_free(&acc1);
-        if (acc2) Socket_free(&acc2);
+        if (acc1) { Socket_T a = (Socket_T)acc1; Socket_free(&a); }
+        if (acc2) { Socket_T a = (Socket_T)acc2; Socket_free(&a); }
     EXCEPT(Socket_Failed) (void)0;
     FINALLY
         Socket_free(&client2);
@@ -695,15 +701,17 @@ TEST(socket_many_sequential_connections)
     Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+        volatile int port;
+        volatile int i;
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 10);
         Socket_setnonblocking(server);
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
         getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
+        port = ntohs(addr.sin_port);
         
-        for (int i = 0; i < 10; i++)
+        for (i = 0; i < 10; i++)
             {
             Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
             Socket_connect(client, "127.0.0.1", port);
