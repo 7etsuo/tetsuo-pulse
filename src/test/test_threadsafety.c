@@ -623,7 +623,7 @@ TEST(threadsafety_high_load_server_simulation)
     Arena_T arena = Arena_new();
     SocketPoll_T poll = SocketPoll_new(1000);
     SocketPool_T pool = SocketPool_new(arena, 500, 4096);
-    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    volatile Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
         Socket_setreuseaddr(server);
@@ -652,8 +652,8 @@ TEST(threadsafety_high_load_server_simulation)
         
         for (iteration = 0; iteration < 5; iteration++)
         {
-            SocketEvent_T *events = NULL;
-            nfds = SocketPoll_wait(poll, &events, 50);
+            SocketEvent_T *volatile events = NULL;
+            nfds = SocketPoll_wait(poll, (SocketEvent_T **)&events, 50);
             
             for (i = 0; i < nfds; i++)
             {
@@ -675,7 +675,11 @@ TEST(threadsafety_high_load_server_simulation)
     EXCEPT(SocketPoll_Failed) (void)0;
     EXCEPT(SocketPool_Failed) (void)0;
     FINALLY
-        Socket_free(&server);
+        if (server)
+        {
+            Socket_T s = (Socket_T)server;
+            Socket_free(&s);
+        }
         SocketPoll_free(&poll);
         SocketPool_free(&pool);
         Arena_dispose(&arena);
