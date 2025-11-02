@@ -526,15 +526,11 @@ T Arena_new(void)
  */
 void Arena_dispose(T *ap)
 {
-    assert(ap && *ap);
+    if (!ap || !*ap)
+        return;
 
-    /* Clear all allocations first */
     Arena_clear(*ap);
-
-    /* Destroy per-arena mutex */
     pthread_mutex_destroy(&(*ap)->mutex);
-
-    /* Free arena structure and nullify pointer */
     free(*ap);
     *ap = NULL;
 }
@@ -577,6 +573,24 @@ static size_t arena_prepare_allocation(size_t nbytes)
 }
 
 /**
+ * arena_ensure_allocation_space - Ensure arena has space for allocation
+ * @arena: Arena to check
+ * @aligned_size: Required aligned size
+ * @nbytes: Original requested size (for error messages)
+ *
+ * Raises: Arena_Failed if space cannot be ensured
+ * Thread-safe: Must be called with arena->mutex held
+ */
+static void arena_ensure_allocation_space(T arena, size_t aligned_size, size_t nbytes)
+{
+    if (arena_ensure_space(arena, aligned_size) != ARENA_SUCCESS)
+    {
+        ARENA_ERROR_MSG("Failed to ensure space for %zu-byte allocation", nbytes);
+        RAISE_ARENA_ERROR(Arena_Failed);
+    }
+}
+
+/**
  * arena_execute_allocation - Execute the allocation under mutex protection
  * @arena: Arena to allocate from
  * @aligned_size: Aligned size to allocate
@@ -593,13 +607,7 @@ static void *arena_execute_allocation(T arena, size_t aligned_size, size_t nbyte
 
     TRY
     {
-        if (arena_ensure_space(arena, aligned_size) != ARENA_SUCCESS)
-        {
-            ARENA_ERROR_MSG("Failed to ensure space for %zu-byte allocation", nbytes);
-            RAISE_ARENA_ERROR(Arena_Failed);
-        }
-
-        /* arena_ensure_space already validates state - no need for redundant check */
+        arena_ensure_allocation_space(arena, aligned_size, nbytes);
         result = arena_perform_allocation(arena, aligned_size);
         pthread_mutex_unlock(&arena->mutex);
         return result;
@@ -608,7 +616,7 @@ static void *arena_execute_allocation(T arena, size_t aligned_size, size_t nbyte
     pthread_mutex_unlock(&arena->mutex);
     END_TRY;
 
-    return NULL; /* Should not reach here */
+    return NULL;
 }
 
 /**
@@ -652,6 +660,47 @@ void *Arena_alloc(T arena, size_t nbytes, const char *file, int line)
 }
 
 /**
+ * arena_validate_calloc_overflow - Validate calloc parameters for overflow
+ * @count: Number of elements
+ * @nbytes: Size of each element
+ *
+ * Raises: Arena_Failed if overflow detected
+ */
+static void arena_validate_calloc_overflow(size_t count, size_t nbytes)
+{
+    if (ARENA_CHECK_OVERFLOW_MUL(count, nbytes) == ARENA_VALIDATION_FAILURE)
+    {
+        ARENA_ERROR_MSG("calloc overflow: count=%zu, nbytes=%zu", count, nbytes);
+        RAISE_ARENA_ERROR(Arena_Failed);
+    }
+}
+
+/**
+ * arena_validate_calloc_size - Validate calloc total size
+ * @total: Total size to validate
+ *
+ * Raises: Arena_Failed if size exceeds maximum
+ */
+static void arena_validate_calloc_size(size_t total)
+{
+    if (total > ARENA_MAX_ALLOC_SIZE)
+    {
+        ARENA_ERROR_MSG("calloc size exceeds maximum: %zu", total);
+        RAISE_ARENA_ERROR(Arena_Failed);
+    }
+}
+
+/**
+ * arena_zero_memory - Zero allocated memory
+ * @ptr: Pointer to memory
+ * @total: Size to zero
+ */
+static void arena_zero_memory(void *ptr, size_t total)
+{
+    memset(ptr, 0, total);
+}
+
+/**
  * Arena_calloc - Allocate and zero memory from arena
  * @arena: Arena to allocate from
  * @count: Number of elements
@@ -676,28 +725,12 @@ void *Arena_calloc(T arena, size_t count, size_t nbytes, const char *file, int l
     assert(count > 0);
     assert(nbytes > 0);
 
-    /* Check for multiplication overflow before calculating total */
-    if (ARENA_CHECK_OVERFLOW_MUL(count, nbytes) == ARENA_VALIDATION_FAILURE)
-    {
-        ARENA_ERROR_MSG("calloc overflow: count=%zu, nbytes=%zu", count, nbytes);
-        RAISE_ARENA_ERROR(Arena_Failed);
-    }
-
+    arena_validate_calloc_overflow(count, nbytes);
     total = count * nbytes;
+    arena_validate_calloc_size(total);
 
-    /* Additional sanity check against maximum allocation size */
-    if (total > ARENA_MAX_ALLOC_SIZE)
-    {
-        ARENA_ERROR_MSG("calloc size exceeds maximum: %zu", total);
-        RAISE_ARENA_ERROR(Arena_Failed);
-    }
-
-    /* Allocate memory - this allocates aligned_size bytes */
     ptr = Arena_alloc(arena, total, file, line);
-
-    /* Zero the allocated memory - use aligned size to ensure we don't write past allocation
-     * Arena_alloc returns aligned_size bytes, so we must zero that amount, not the requested total */
-    memset(ptr, 0, total);
+    arena_zero_memory(ptr, total);
     return ptr;
 }
 
