@@ -313,11 +313,9 @@ SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
 
   maxconns = enforce_max_connections (maxconns);
   bufsize = enforce_buffer_size (bufsize);
-
   pool = allocate_pool_structure (arena);
   allocate_pool_components (arena, maxconns, pool);
   initialize_pool_fields (pool, arena, maxconns, bufsize);
-
   initialize_pool_mutex (pool);
   build_free_list (pool, maxconns);
 
@@ -563,14 +561,10 @@ find_or_create_slot (T pool, Socket_T socket, time_t now)
     }
 
   conn = find_free_slot (pool);
-  if (!conn)
-    return NULL;
-
-  if (prepare_free_slot (pool, conn) != 0)
+  if (!conn || prepare_free_slot (pool, conn) != 0)
     return NULL;
 
   finalize_slot_creation (pool, conn, socket, now);
-
   return conn;
 }
 

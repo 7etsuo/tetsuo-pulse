@@ -352,16 +352,12 @@ cleanup_on_init_failure(T dns, int cleanup_level)
 {
     if (cleanup_level >= 4)
         Arena_dispose(&dns->arena);
-
     if (cleanup_level >= 3)
         cleanup_pipe(dns);
-
     if (cleanup_level >= 2)
         cleanup_mutex_cond(dns);
-
     if (cleanup_level >= 1)
         pthread_mutex_destroy(&dns->mutex);
-
     free(dns);
 }
 
@@ -928,6 +924,38 @@ hash_table_remove(T dns, struct Request_T *req)
 }
 
 /**
+ * remove_from_queue_head - Remove request from queue head
+ * @dns: DNS resolver instance
+ * @req: Request to remove
+ */
+static void
+remove_from_queue_head(T dns, struct Request_T *req)
+{
+    dns->queue_head = req->queue_next;
+    if (!dns->queue_head)
+        dns->queue_tail = NULL;
+}
+
+/**
+ * remove_from_queue_middle - Remove request from queue middle/tail
+ * @dns: DNS resolver instance
+ * @req: Request to remove
+ */
+static void
+remove_from_queue_middle(T dns, struct Request_T *req)
+{
+    struct Request_T *prev = dns->queue_head;
+    while (prev && prev->queue_next != req)
+        prev = prev->queue_next;
+    if (prev)
+    {
+        prev->queue_next = req->queue_next;
+        if (dns->queue_tail == req)
+            dns->queue_tail = prev;
+    }
+}
+
+/**
  * queue_remove - Remove request from queue
  * @dns: DNS resolver instance
  * @req: Request to remove
@@ -938,23 +966,9 @@ static void
 queue_remove(T dns, struct Request_T *req)
 {
     if (dns->queue_head == req)
-    {
-        dns->queue_head = req->queue_next;
-        if (!dns->queue_head)
-            dns->queue_tail = NULL;
-    }
+        remove_from_queue_head(dns, req);
     else
-    {
-        struct Request_T *prev = dns->queue_head;
-        while (prev && prev->queue_next != req)
-            prev = prev->queue_next;
-        if (prev)
-        {
-            prev->queue_next = req->queue_next;
-            if (dns->queue_tail == req)
-                dns->queue_tail = prev;
-        }
-    }
+        remove_from_queue_middle(dns, req);
     dns->queue_size--;
 }
 
