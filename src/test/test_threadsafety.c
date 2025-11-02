@@ -636,7 +636,8 @@ TEST(threadsafety_high_load_server_simulation)
         getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
         volatile int port = ntohs(addr.sin_port);
         
-        SocketPoll_add(poll, server, POLL_READ, NULL);
+        /* Cast volatile server to non-volatile for SocketPoll_add */
+        SocketPoll_add(poll, (Socket_T)server, POLL_READ, NULL);
         
         Socket_T clients[20];
         volatile int i;
@@ -657,7 +658,8 @@ TEST(threadsafety_high_load_server_simulation)
             
             for (i = 0; i < nfds; i++)
             {
-                if (events[i].socket == server)
+                /* Cast volatile server for comparison */
+                if (events[i].socket == (Socket_T)server)
                 {
                     Socket_T accepted = Socket_accept(server);
                     if (accepted)

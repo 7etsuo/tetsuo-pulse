@@ -125,20 +125,26 @@ static unsigned socket_hash(const Socket_T socket)
  */
 static void socket_data_add(T poll, Socket_T socket, void *data)
 {
-    volatile unsigned hash = socket_hash(socket);
+    volatile unsigned hash;
     volatile unsigned fd_hash;
     volatile int fd;
-    volatile SocketData *volatile_data_entry = NULL;
-    volatile FdSocketEntry *volatile_fd_entry = NULL;
+    volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
+    
+    /* Note: data_entry and fd_entry don't need volatile - they're only assigned
+     * within TRY blocks and used immediately after. The allocations are in arena
+     * which persists across exceptions. */
+    SocketData *data_entry;
+    FdSocketEntry *fd_entry;
 
-    fd = Socket_fd(socket);
+    hash = socket_hash(volatile_socket);
+    fd = Socket_fd(volatile_socket);
     fd_hash = ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_DATA_HASH_SIZE;
 
     /* Allocate socket->data entry - ALLOC raises Arena_Failed on failure */
     /* Convert Arena_Failed to SocketPoll_Failed for consistent error handling */
     TRY
     {
-        volatile_data_entry = ALLOC(poll->arena, sizeof(SocketData));
+        data_entry = ALLOC(poll->arena, sizeof(SocketData));
     }
     EXCEPT(Arena_Failed)
     {
@@ -150,7 +156,7 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
     /* Allocate fd->socket entry - ALLOC raises Arena_Failed on failure */
     TRY
     {
-        volatile_fd_entry = ALLOC(poll->arena, sizeof(FdSocketEntry));
+        fd_entry = ALLOC(poll->arena, sizeof(FdSocketEntry));
     }
     EXCEPT(Arena_Failed)
     {
@@ -160,20 +166,20 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
     }
     END_TRY;
 
-    /* Initialize entries - volatile pointers can be dereferenced */
-    volatile_data_entry->socket = socket;
-    volatile_data_entry->data = data;
+    /* Initialize entries */
+    data_entry->socket = volatile_socket;
+    data_entry->data = data;
 
-    volatile_fd_entry->fd = fd;
-    volatile_fd_entry->socket = socket;
+    fd_entry->fd = fd;
+    fd_entry->socket = volatile_socket;
 
-    /* Add to hash tables atomically - cast to non-volatile for storage */
+    /* Add to hash tables atomically */
     pthread_mutex_lock(&poll->mutex);
-    ((SocketData *)volatile_data_entry)->next = poll->socket_data_map[hash];
-    poll->socket_data_map[hash] = (SocketData *)volatile_data_entry;
+    data_entry->next = poll->socket_data_map[hash];
+    poll->socket_data_map[hash] = data_entry;
 
-    ((FdSocketEntry *)volatile_fd_entry)->next = poll->fd_to_socket_map[fd_hash];
-    poll->fd_to_socket_map[fd_hash] = (FdSocketEntry *)volatile_fd_entry;
+    fd_entry->next = poll->fd_to_socket_map[fd_hash];
+    poll->fd_to_socket_map[fd_hash] = fd_entry;
     pthread_mutex_unlock(&poll->mutex);
 }
 
