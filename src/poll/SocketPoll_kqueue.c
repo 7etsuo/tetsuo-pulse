@@ -111,32 +111,40 @@ int backend_add(PollBackend_T backend, int fd, unsigned events)
     return 0;
 }
 
-int backend_mod(PollBackend_T backend, int fd, unsigned events)
+/**
+ * delete_existing_filters - Delete existing read/write filters
+ * @backend: Backend instance
+ * @fd: File descriptor
+ *
+ * kqueue doesn't have a "modify" operation like epoll.
+ * Instead, we delete existing events and add new ones.
+ * This is safe because EV_DELETE silently succeeds if event doesn't exist.
+ */
+static void delete_existing_filters(PollBackend_T backend, int fd)
 {
-    struct kevent ev[4];
+    struct kevent ev[2];
     int nev = 0;
 
-    assert(backend);
-    assert(fd >= 0);
-
-    /* kqueue doesn't have a "modify" operation like epoll
-     * Instead, we delete existing events and add new ones
-     * This is safe because EV_DELETE silently succeeds if event doesn't exist
-     */
-
-    /* Delete existing read filter */
     EV_SET(&ev[nev], fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
     nev++;
-
-    /* Delete existing write filter */
     EV_SET(&ev[nev], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
     nev++;
 
-    /* Apply deletions (ignore errors - events may not exist) */
     kevent(backend->kq, ev, nev, NULL, 0, NULL);
+}
 
-    /* Now add new events */
-    nev = 0;
+/**
+ * add_new_filters - Add new event filters
+ * @backend: Backend instance
+ * @fd: File descriptor
+ * @events: Events to monitor
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int add_new_filters(PollBackend_T backend, int fd, unsigned events)
+{
+    struct kevent ev[2];
+    int nev = 0;
 
     if (events & POLL_READ)
     {
@@ -151,16 +159,21 @@ int backend_mod(PollBackend_T backend, int fd, unsigned events)
     }
 
     if (nev == 0)
-    {
-        /* No events to add - all deleted, treat as success */
         return 0;
-    }
 
-    /* Register new events */
     if (kevent(backend->kq, ev, nev, NULL, 0, NULL) < 0)
         return -1;
 
     return 0;
+}
+
+int backend_mod(PollBackend_T backend, int fd, unsigned events)
+{
+    assert(backend);
+    assert(fd >= 0);
+
+    delete_existing_filters(backend, fd);
+    return add_new_filters(backend, fd, events);
 }
 
 int backend_del(PollBackend_T backend, int fd)

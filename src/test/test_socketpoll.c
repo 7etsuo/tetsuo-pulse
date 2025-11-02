@@ -648,6 +648,159 @@ TEST(socketpoll_concurrent_wait)
     END_TRY;
 }
 
+/* ==================== Error Condition Tests ==================== */
+
+TEST(socketpoll_mod_nonexistent_socket)
+{
+    setup_signals();
+    SocketPoll_T poll = SocketPoll_new(100);
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        SocketPoll_mod(poll, socket, POLL_READ, NULL);
+        ASSERT(0); /* Should have raised exception */
+    EXCEPT(SocketPoll_Failed)
+        /* Expected - socket not in poll */
+    END_TRY;
+
+    SocketPoll_free(&poll);
+    Socket_free(&socket);
+}
+
+TEST(socketpoll_del_nonexistent_socket)
+{
+    setup_signals();
+    SocketPoll_T poll = SocketPoll_new(100);
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        SocketPoll_del(poll, socket);
+        /* Should succeed silently */
+    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    END_TRY;
+
+    SocketPoll_free(&poll);
+    Socket_free(&socket);
+}
+
+TEST(socketpoll_add_duplicate_socket)
+{
+    setup_signals();
+    SocketPoll_T poll = SocketPoll_new(100);
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        SocketPoll_add(poll, socket, POLL_READ, NULL);
+        SocketPoll_add(poll, socket, POLL_READ, NULL);
+        ASSERT(0); /* Should have raised exception */
+    EXCEPT(SocketPoll_Failed)
+        /* Expected - socket already in poll */
+    END_TRY;
+
+    SocketPoll_free(&poll);
+    Socket_free(&socket);
+}
+
+TEST(socketpoll_wait_zero_timeout)
+{
+    setup_signals();
+    SocketPoll_T poll = SocketPoll_new(100);
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        Socket_bind(socket, "127.0.0.1", 0);
+        Socket_setnonblocking(socket);
+        SocketPoll_add(poll, socket, POLL_WRITE, NULL);
+        
+        SocketEvent_T *events = NULL;
+        int nfds = SocketPoll_wait(poll, &events, 0);
+        ASSERT_NE(nfds, -1);
+    EXCEPT(SocketPoll_Failed) (void)0;
+    FINALLY
+        SocketPoll_free(&poll);
+        Socket_free(&socket);
+    END_TRY;
+}
+
+TEST(socketpoll_data_association_persistence)
+{
+    setup_signals();
+    SocketPoll_T poll = SocketPoll_new(100);
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    int data1 = 100;
+    int data2 = 200;
+
+    TRY
+        SocketPoll_add(poll, socket, POLL_READ, &data1);
+        SocketPoll_mod(poll, socket, POLL_READ, &data2);
+        
+        Socket_bind(socket, "127.0.0.1", 0);
+        Socket_listen(socket, 1);
+        Socket_setnonblocking(socket);
+        
+        SocketEvent_T *events = NULL;
+        (void)SocketPoll_wait(poll, &events, 10);
+        /* Data should be updated to data2 */
+    EXCEPT(SocketPoll_Failed) (void)0;
+    FINALLY
+        SocketPoll_free(&poll);
+        Socket_free(&socket);
+    END_TRY;
+}
+
+TEST(socketpoll_multiple_event_types)
+{
+    setup_signals();
+    SocketPoll_T poll = SocketPoll_new(100);
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        Socket_bind(socket, "127.0.0.1", 0);
+        Socket_setnonblocking(socket);
+        SocketPoll_add(poll, socket, POLL_READ | POLL_WRITE, NULL);
+        
+        SocketEvent_T *events = NULL;
+        int nfds = SocketPoll_wait(poll, &events, 100);
+        
+        if (nfds > 0)
+        {
+            ASSERT_NOT_NULL(events);
+            unsigned event_flags = events[0].events;
+            ASSERT_NE(event_flags & POLL_WRITE, 0);
+        }
+    EXCEPT(SocketPoll_Failed) (void)0;
+    FINALLY
+        SocketPoll_free(&poll);
+        Socket_free(&socket);
+    END_TRY;
+}
+
+TEST(socketpoll_remove_and_re_add)
+{
+    setup_signals();
+    SocketPoll_T poll = SocketPoll_new(100);
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    int data1 = 1;
+    int data2 = 2;
+
+    TRY
+        SocketPoll_add(poll, socket, POLL_READ, &data1);
+        SocketPoll_del(poll, socket);
+        SocketPoll_add(poll, socket, POLL_READ, &data2);
+    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    END_TRY;
+
+    SocketPoll_free(&poll);
+    Socket_free(&socket);
+}
+
+TEST(socketpoll_free_null_pointer)
+{
+    SocketPoll_T poll = NULL;
+    SocketPoll_free(&poll);
+    ASSERT_NULL(poll);
+}
+
 int main(void)
 {
     Test_run_all();
