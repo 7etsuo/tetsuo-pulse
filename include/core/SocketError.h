@@ -1,5 +1,5 @@
-#ifndef SOCKETERROR_H
-#define SOCKETERROR_H
+#ifndef SOCKETERROR_INCLUDED
+#define SOCKETERROR_INCLUDED
 
 #include <errno.h>
 #include <string.h>
@@ -75,4 +75,4 @@ extern const char *Socket_GetLastError(void);
 #define SOCKET_EPIPE "Broken pipe"
 #define SOCKET_ECONNRESET "Connection reset by peer"
 
-#endif /* SOCKETERROR_H */
+#endif /* SOCKETERROR_INCLUDED */
