@@ -28,6 +28,16 @@ __thread char arena_error_buf[ARENA_ERROR_BUFSIZE];
 /* Arena exception definition */
 Except_T Arena_Failed = {"Arena operation failed"};
 
+/* Thread-local exception for detailed error messages
+ * This is a COPY of the base exception with thread-local reason string.
+ * Each thread gets its own exception instance, preventing race conditions
+ * when multiple threads raise the same exception type simultaneously. */
+#ifdef _WIN32
+static __declspec(thread) Except_T Arena_DetailedException;
+#else
+static __thread Except_T Arena_DetailedException;
+#endif
+
 /* Error formatting macros */
 #define ARENA_ERROR_FMT(fmt, ...)                                                                                      \
     snprintf(arena_error_buf, ARENA_ERROR_BUFSIZE, fmt " (errno: %d - %s)", ##__VA_ARGS__, errno, strerror(errno))
@@ -35,13 +45,13 @@ Except_T Arena_Failed = {"Arena operation failed"};
 #define ARENA_ERROR_MSG(fmt, ...) snprintf(arena_error_buf, ARENA_ERROR_BUFSIZE, fmt, ##__VA_ARGS__)
 
 /* Macro to raise arena exception with detailed error message
- * Uses stack-local exception to avoid thread-local storage issues */
+ * Creates a thread-local copy of the exception with detailed reason */
 #define RAISE_ARENA_ERROR(base_exception)                                                                              \
     do                                                                                                                 \
     {                                                                                                                  \
-        Except_T _detailed_exception = (base_exception);                                                               \
-        _detailed_exception.reason = arena_error_buf;                                                                  \
-        Except_raise(&_detailed_exception, __FILE__, __LINE__);                                                        \
+        Arena_DetailedException = (base_exception);                                                                     \
+        Arena_DetailedException.reason = arena_error_buf;                                                              \
+        RAISE(Arena_DetailedException);                                                                                \
     } while (0)
 
 #define T Arena_T

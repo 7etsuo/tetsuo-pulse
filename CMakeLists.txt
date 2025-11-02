@@ -147,6 +147,7 @@ target_include_directories(test_framework PRIVATE ${CMAKE_SOURCE_DIR}/include)
 set(TEST_SOURCES
     test_arena
     test_except
+    test_socketerror
     test_socket
     test_socketbuf
     test_socketdgram
@@ -170,7 +171,7 @@ add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES})
 
 # Print test configuration
 message(STATUS "Test Suite Configuration:")
-message(STATUS "  Test files: 10")
-message(STATUS "  Total tests: 213+")
+message(STATUS "  Test files: 11")
+message(STATUS "  Total tests: 216+")
 message(STATUS "  Run with: make test (or ctest)")
 
