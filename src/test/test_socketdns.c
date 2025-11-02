@@ -14,7 +14,9 @@
 #include "dns/SocketDNS.h"
 
 /* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wclobbered"
+#endif
 
 /* ==================== Basic Resolver Tests ==================== */
 
@@ -234,29 +236,30 @@ TEST(socketdns_callback_invoked)
     END_TRY;
 }
 
+static int test_received_data;
+
+static void callback_check_data(SocketDNS_Request_T r, struct addrinfo *res, int err, void *d)
+{
+    (void)r; (void)err;
+    if (d) test_received_data = *(int *)d;
+    if (res) freeaddrinfo(res);
+}
+
 TEST(socketdns_callback_with_user_data)
 {
     SocketDNS_T dns = SocketDNS_new();
     SocketDNS_Request_T req = NULL;
     int user_data = 12345;
-    static int received_data;
-
-    void callback_check_data(SocketDNS_Request_T r, struct addrinfo *res, int err, void *d)
-    {
-        (void)r; (void)err;
-        if (d) received_data = *(int *)d;
-        if (res) freeaddrinfo(res);
-    }
 
     TRY
-        received_data = 0;
+        test_received_data = 0;
         req = SocketDNS_resolve(dns, "localhost", 80, callback_check_data, &user_data);
         ASSERT_NOT_NULL(req);
         
         usleep(200000);
         SocketDNS_check(dns);
         
-        ASSERT_EQ(received_data, user_data);
+        ASSERT_EQ(test_received_data, user_data);
     EXCEPT(SocketDNS_Failed) (void)0;
     FINALLY
         SocketDNS_free(&dns);

@@ -21,7 +21,9 @@
 #include "socket/SocketBuf.h"
 
 /* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wclobbered"
+#endif
 
 static void setup_signals(void)
 {

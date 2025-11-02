@@ -455,16 +455,23 @@ static int try_dgram_connect_addresses(T socket, struct addrinfo *res, int socke
  * @socket: Socket to query
  *
  * Returns: Socket family or SOCKET_AF_UNSPEC on error
+ *
+ * Uses SO_DOMAIN on Linux, falls back to getsockname() on other platforms.
  */
 static int get_dgram_socket_family(T socket)
 {
+#if SOCKET_HAS_SO_DOMAIN
     int socket_family = SOCKET_AF_UNSPEC;
     socklen_t len = sizeof(socket_family);
-
-    if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_DOMAIN, &socket_family, &len) < 0)
-        socket_family = SOCKET_AF_UNSPEC;
-
-    return socket_family;
+    if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_DOMAIN, &socket_family, &len) == 0)
+        return socket_family;
+#endif
+    /* Fallback: use getsockname() to get socket address family */
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof(addr);
+    if (getsockname(socket->fd, (struct sockaddr *)&addr, &len) == 0)
+        return addr.ss_family;
+    return SOCKET_AF_UNSPEC;
 }
 
 T SocketDgram_new(int domain, int protocol)
@@ -828,18 +835,26 @@ static void validate_ttl_value(int ttl)
  * @socket: Socket to query
  *
  * Returns: Socket family or SOCKET_AF_UNSPEC on error
+ *
+ * Uses SO_DOMAIN on Linux, falls back to getsockname() on other platforms.
+ * Raises: SocketDgram_Failed if getsockname() fails (only on error path).
  */
 static int get_socket_domain(T socket)
 {
+#if SOCKET_HAS_SO_DOMAIN
     int socket_family = SOCKET_AF_UNSPEC;
     socklen_t len = sizeof(socket_family);
-
-    if (getsockopt(socket->fd, SOL_SOCKET, SO_DOMAIN, &socket_family, &len) < 0)
-    {
-        SOCKET_ERROR_FMT("Failed to get socket domain");
-        RAISE_DGRAM_ERROR(SocketDgram_Failed);
-    }
-    return socket_family;
+    if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_DOMAIN, &socket_family, &len) == 0)
+        return socket_family;
+#endif
+    /* Fallback: use getsockname() to get socket address family */
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof(addr);
+    if (getsockname(socket->fd, (struct sockaddr *)&addr, &len) == 0)
+        return addr.ss_family;
+    SOCKET_ERROR_FMT("Failed to get socket domain");
+    RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    return SOCKET_AF_UNSPEC; /* Never reached, but satisfies compiler */
 }
 
 /**

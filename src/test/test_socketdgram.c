@@ -382,12 +382,18 @@ TEST(socketdgram_multicast_send_receive)
         SocketDgram_setnonblocking(receiver);
         
         const char *msg = "Multicast message";
-        SocketDgram_sendto(sender, msg, strlen(msg), TEST_MULTICAST_GROUP, port);
-        usleep(50000);
-        
-        char buf[TEST_BUFFER_SIZE] = {0};
-        ssize_t received = SocketDgram_recvfrom(receiver, buf, sizeof(buf) - 1, NULL, 0, NULL);
-        if (received > 0) ASSERT_EQ(strcmp(buf, msg), 0);
+        TRY
+            SocketDgram_sendto(sender, msg, strlen(msg), TEST_MULTICAST_GROUP, port);
+            usleep(50000);
+            
+            char buf[TEST_BUFFER_SIZE] = {0};
+            ssize_t received = SocketDgram_recvfrom(receiver, buf, sizeof(buf) - 1, NULL, 0, NULL);
+            if (received > 0) ASSERT_EQ(strcmp(buf, msg), 0);
+        EXCEPT(SocketDgram_Failed)
+            /* Multicast may fail if routing is not configured (e.g., macOS without multicast routing) */
+            /* This is acceptable - test passes if we can join/leave multicast group */
+            (void)0;
+        END_TRY;
         
         SocketDgram_leavemulticast(receiver, TEST_MULTICAST_GROUP, NULL);
     EXCEPT(SocketDgram_Failed) (void)0;

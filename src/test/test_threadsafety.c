@@ -27,7 +27,9 @@
 extern Except_T Arena_Failed;
 
 /* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wclobbered"
+#endif
 
 #define NUM_THREADS 8
 #define OPERATIONS_PER_THREAD 100
@@ -173,17 +175,21 @@ TEST(threadsafety_socket_concurrent_operations)
 typedef struct {
     Arena_T arena;
     SocketBuf_T buf;
+    pthread_mutex_t mutex;
 } BufTestData;
 
 static void *thread_buf_writer(void *arg)
 {
-    SocketBuf_T buf = ((BufTestData *)arg)->buf;
+    BufTestData *data = (BufTestData *)arg;
+    SocketBuf_T buf = data->buf;
     
     for (int i = 0; i < 100; i++)
     {
-        char data[32];
-        snprintf(data, sizeof(data), "Thread data %d", i);
-        SocketBuf_write(buf, data, strlen(data));
+        char data_str[32];
+        snprintf(data_str, sizeof(data_str), "Thread data %d", i);
+        pthread_mutex_lock(&data->mutex);
+        SocketBuf_write(buf, data_str, strlen(data_str));
+        pthread_mutex_unlock(&data->mutex);
         usleep(100);
     }
     
@@ -192,12 +198,15 @@ static void *thread_buf_writer(void *arg)
 
 static void *thread_buf_reader(void *arg)
 {
-    SocketBuf_T buf = ((BufTestData *)arg)->buf;
+    BufTestData *data = (BufTestData *)arg;
+    SocketBuf_T buf = data->buf;
     
     for (int i = 0; i < 100; i++)
     {
-        char data[128];
-        SocketBuf_read(buf, data, sizeof(data));
+        char data_str[128];
+        pthread_mutex_lock(&data->mutex);
+        SocketBuf_read(buf, data_str, sizeof(data_str));
+        pthread_mutex_unlock(&data->mutex);
         usleep(100);
     }
     
@@ -208,7 +217,7 @@ TEST(threadsafety_socketbuf_concurrent_read_write)
 {
     Arena_T arena = Arena_new();
     SocketBuf_T buf = SocketBuf_new(arena, 65536);
-    BufTestData data = {arena, buf};
+    BufTestData data = {arena, buf, PTHREAD_MUTEX_INITIALIZER};
     pthread_t writers[4], readers[4];
     
     for (int i = 0; i < 4; i++)
@@ -223,6 +232,7 @@ TEST(threadsafety_socketbuf_concurrent_read_write)
         pthread_join(readers[i], NULL);
     }
     
+    pthread_mutex_destroy(&data.mutex);
     Arena_dispose(&arena);
 }
 

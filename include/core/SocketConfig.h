@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
+/* Socket header required for IPv6 multicast constants */
+#include <netinet/in.h>
+
 /* Socket library configuration limits */
 
 /* Maximum number of connections in pool (can be overridden at compile time) */
@@ -184,7 +187,13 @@
 #define SOCKET_SO_KEEPALIVE SO_KEEPALIVE
 #define SOCKET_SO_RCVTIMEO SO_RCVTIMEO
 #define SOCKET_SO_SNDTIMEO SO_SNDTIMEO
+/* SO_DOMAIN is Linux-specific - use getsockname() fallback on other platforms */
+#ifdef __linux__
 #define SOCKET_SO_DOMAIN SO_DOMAIN
+#define SOCKET_HAS_SO_DOMAIN 1
+#else
+#define SOCKET_HAS_SO_DOMAIN 0
+#endif
 #define SOCKET_SO_PEERCRED SO_PEERCRED
 
 /* TCP options */
@@ -195,8 +204,25 @@
 
 /* IPv6 options */
 #define SOCKET_IPV6_V6ONLY IPV6_V6ONLY
+/* IPv6 multicast - use platform-specific names */
+#ifdef IPV6_ADD_MEMBERSHIP
+/* Linux uses IPV6_ADD_MEMBERSHIP */
 #define SOCKET_IPV6_ADD_MEMBERSHIP IPV6_ADD_MEMBERSHIP
+#elif defined(IPV6_JOIN_GROUP)
+/* macOS/BSD use IPV6_JOIN_GROUP */
+#define SOCKET_IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
+#else
+#error "IPv6 multicast add membership not supported on this platform"
+#endif
+#ifdef IPV6_DROP_MEMBERSHIP
+/* Linux uses IPV6_DROP_MEMBERSHIP */
 #define SOCKET_IPV6_DROP_MEMBERSHIP IPV6_DROP_MEMBERSHIP
+#elif defined(IPV6_LEAVE_GROUP)
+/* macOS/BSD use IPV6_LEAVE_GROUP */
+#define SOCKET_IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
+#else
+#error "IPv6 multicast drop membership not supported on this platform"
+#endif
 #define SOCKET_IPV6_UNICAST_HOPS IPV6_UNICAST_HOPS
 
 /* IP options */
