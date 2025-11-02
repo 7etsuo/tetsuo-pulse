@@ -758,8 +758,20 @@ close_collected_sockets (T pool, size_t close_count)
 
   for (i = 0; i < close_count; i++)
     {
-      SocketPool_remove (pool, pool->cleanup_buffer[i]);
-      Socket_free (&pool->cleanup_buffer[i]);
+      TRY
+        {
+          SocketPool_remove (pool, pool->cleanup_buffer[i]);
+          Socket_free (&pool->cleanup_buffer[i]);
+        }
+      EXCEPT (SocketPool_Failed)
+        {
+          /* Ignore remove failures - socket may already be removed */
+        }
+      EXCEPT (Socket_Failed)
+        {
+          /* Ignore free failures - continue cleanup */
+        }
+      END_TRY;
     }
 }
 
