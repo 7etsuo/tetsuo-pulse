@@ -548,7 +548,7 @@ TEST(socket_getpeeraddr_after_accept)
         Socket_connect(client, "127.0.0.1", port);
         Socket_T accepted = Socket_accept(server);
         if (!accepted) { usleep(100000); accepted = Socket_accept(server); }
-        
+
         if (accepted)
         {
             const char *peeraddr = Socket_getpeeraddr(accepted);
@@ -611,7 +611,7 @@ TEST(socket_recv_on_closed_socket_raises)
         Socket_connect(client, "127.0.0.1", port);
         Socket_T accepted = Socket_accept(server);
         if (!accepted) { usleep(100000); accepted = Socket_accept(server); }
-        
+
         if (accepted)
         {
             Socket_free(&client);
@@ -703,7 +703,7 @@ TEST(socket_many_sequential_connections)
         int port = ntohs(addr.sin_port);
         
         for (int i = 0; i < 10; i++)
-        {
+            {
             Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
             Socket_connect(client, "127.0.0.1", port);
             usleep(10000);
@@ -782,7 +782,7 @@ TEST(socket_bind_async_basic)
 }
 
 TEST(socket_bind_async_wildcard)
-{
+                {
     setup_signals();
     SocketDNS_T dns = SocketDNS_new();
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
@@ -867,7 +867,7 @@ TEST(socket_connect_async_localhost)
         {
             Socket_connect_with_addrinfo(client, res);
             freeaddrinfo(res);
-        }
+    }
     EXCEPT(Socket_Failed) (void)0;
     EXCEPT(SocketDNS_Failed) (void)0;
     FINALLY

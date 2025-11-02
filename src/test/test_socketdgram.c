@@ -453,7 +453,7 @@ TEST(socketdgram_recvfrom_nonblocking_returns_zero)
         ASSERT_EQ(received, 0);
     EXCEPT(SocketDgram_Failed) ASSERT(0);
     END_TRY;
-    
+
     SocketDgram_free(&socket);
 }
 
@@ -472,7 +472,7 @@ TEST(socketdgram_recv_nonblocking_returns_zero)
         ASSERT_EQ(received, 0);
     EXCEPT(SocketDgram_Failed) ASSERT(0);
     END_TRY;
-    
+
     SocketDgram_free(&socket);
 }
 
