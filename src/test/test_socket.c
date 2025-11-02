@@ -6,6 +6,7 @@
  */
 
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <signal.h>
@@ -17,6 +18,7 @@
 #include "test/Test.h"
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "dns/SocketDNS.h"
 #include "socket/Socket.h"
 
 #define TEST_UNIX_SOCKET_PATH "/tmp/test_socket_unix"
@@ -749,6 +751,189 @@ TEST(socket_concurrent_creation)
     
     for (int i = 0; i < 4; i++)
         pthread_join(threads[i], NULL);
+}
+
+/* ==================== Async DNS Integration Tests ==================== */
+
+TEST(socket_bind_async_basic)
+{
+    setup_signals();
+    SocketDNS_T dns = SocketDNS_new();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        SocketDNS_Request_T req = Socket_bind_async(dns, socket, "127.0.0.1", 0);
+        ASSERT_NOT_NULL(req);
+        usleep(100000);
+        SocketDNS_check(dns);
+        struct addrinfo *res = SocketDNS_getresult(dns, req);
+        if (res)
+        {
+            Socket_bind_with_addrinfo(socket, res);
+            freeaddrinfo(res);
+        }
+    EXCEPT(Socket_Failed) (void)0;
+    EXCEPT(SocketDNS_Failed) (void)0;
+    FINALLY
+        Socket_free(&socket);
+        SocketDNS_free(&dns);
+    END_TRY;
+}
+
+TEST(socket_bind_async_wildcard)
+{
+    setup_signals();
+    SocketDNS_T dns = SocketDNS_new();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        SocketDNS_Request_T req = Socket_bind_async(dns, socket, NULL, 0);
+        ASSERT_NOT_NULL(req);
+        usleep(100000);
+        SocketDNS_check(dns);
+        struct addrinfo *res = SocketDNS_getresult(dns, req);
+        if (res)
+        {
+            Socket_bind_with_addrinfo(socket, res);
+            freeaddrinfo(res);
+        }
+    EXCEPT(Socket_Failed) (void)0;
+    EXCEPT(SocketDNS_Failed) (void)0;
+    FINALLY
+        Socket_free(&socket);
+        SocketDNS_free(&dns);
+    END_TRY;
+}
+
+TEST(socket_connect_async_basic)
+{
+    setup_signals();
+    SocketDNS_T dns = SocketDNS_new();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        Socket_setreuseaddr(server);
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 5);
+        
+        struct sockaddr_in addr;
+        socklen_t len = sizeof(addr);
+        getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+        int port = ntohs(addr.sin_port);
+        
+        SocketDNS_Request_T req = Socket_connect_async(dns, client, "127.0.0.1", port);
+        ASSERT_NOT_NULL(req);
+        usleep(100000);
+        SocketDNS_check(dns);
+        struct addrinfo *res = SocketDNS_getresult(dns, req);
+        if (res)
+        {
+            Socket_connect_with_addrinfo(client, res);
+            freeaddrinfo(res);
+        }
+    EXCEPT(Socket_Failed) (void)0;
+    EXCEPT(SocketDNS_Failed) (void)0;
+    FINALLY
+        Socket_free(&client);
+        Socket_free(&server);
+        SocketDNS_free(&dns);
+    END_TRY;
+}
+
+TEST(socket_connect_async_localhost)
+{
+    setup_signals();
+    SocketDNS_T dns = SocketDNS_new();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 5);
+        
+        struct sockaddr_in addr;
+        socklen_t len = sizeof(addr);
+        getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+        int port = ntohs(addr.sin_port);
+        
+        SocketDNS_Request_T req = Socket_connect_async(dns, client, "localhost", port);
+        ASSERT_NOT_NULL(req);
+        usleep(200000);
+        SocketDNS_check(dns);
+        struct addrinfo *res = SocketDNS_getresult(dns, req);
+        if (res)
+        {
+            Socket_connect_with_addrinfo(client, res);
+            freeaddrinfo(res);
+        }
+    EXCEPT(Socket_Failed) (void)0;
+    EXCEPT(SocketDNS_Failed) (void)0;
+    FINALLY
+        Socket_free(&client);
+        Socket_free(&server);
+        SocketDNS_free(&dns);
+    END_TRY;
+}
+
+TEST(socket_bind_with_addrinfo_ipv4)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    struct addrinfo hints, *res = NULL;
+
+    TRY
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_PASSIVE;
+        
+        int result = getaddrinfo("127.0.0.1", "0", &hints, &res);
+        if (result == 0 && res)
+        {
+            Socket_bind_with_addrinfo(socket, res);
+            freeaddrinfo(res);
+        }
+    EXCEPT(Socket_Failed) (void)0;
+    FINALLY
+        Socket_free(&socket);
+    END_TRY;
+}
+
+TEST(socket_connect_with_addrinfo_ipv4)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    struct addrinfo hints, *res = NULL;
+
+    TRY
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 5);
+        
+        struct sockaddr_in addr;
+        socklen_t len = sizeof(addr);
+        getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+        int port = ntohs(addr.sin_port);
+        
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+        
+        char port_str[16];
+        snprintf(port_str, sizeof(port_str), "%d", port);
+        
+        int result = getaddrinfo("127.0.0.1", port_str, &hints, &res);
+        if (result == 0 && res)
+        {
+            Socket_connect_with_addrinfo(client, res);
+            freeaddrinfo(res);
+        }
+    EXCEPT(Socket_Failed) (void)0;
+    FINALLY
+        Socket_free(&client);
+        Socket_free(&server);
+    END_TRY;
 }
 
 int main(void)
