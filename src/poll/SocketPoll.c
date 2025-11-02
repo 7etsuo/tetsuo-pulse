@@ -195,14 +195,15 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
  */
 static void *socket_data_get(T poll, Socket_T socket)
 {
-    unsigned hash = socket_hash(socket);
+    volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
+    unsigned hash = socket_hash(volatile_socket);
     void *data = NULL;
 
     pthread_mutex_lock(&poll->mutex);
     SocketData *entry = poll->socket_data_map[hash];
     while (entry)
     {
-        if (entry->socket == socket)
+        if (entry->socket == volatile_socket)
         {
             data = entry->data;
             break;
@@ -226,11 +227,12 @@ static void *socket_data_get(T poll, Socket_T socket)
  */
 static void socket_data_remove(T poll, Socket_T socket)
 {
-    unsigned hash = socket_hash(socket);
+    volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
+    unsigned hash = socket_hash(volatile_socket);
     unsigned fd_hash;
     int fd;
 
-    fd = Socket_fd(socket);
+    fd = Socket_fd(volatile_socket);
     fd_hash = ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_DATA_HASH_SIZE;
 
     pthread_mutex_lock(&poll->mutex);
@@ -239,7 +241,7 @@ static void socket_data_remove(T poll, Socket_T socket)
     SocketData **pp = &poll->socket_data_map[hash];
     while (*pp)
     {
-        if ((*pp)->socket == socket)
+        if ((*pp)->socket == volatile_socket)
         {
             SocketData *old = *pp;
             *pp = old->next;
@@ -281,7 +283,8 @@ static void socket_data_remove(T poll, Socket_T socket)
  */
 static void socket_data_update(T poll, Socket_T socket, void *data)
 {
-    unsigned hash = socket_hash(socket);
+    volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
+    unsigned hash = socket_hash(volatile_socket);
     SocketData *entry;
     int found = 0;
 
@@ -291,7 +294,7 @@ static void socket_data_update(T poll, Socket_T socket, void *data)
     entry = poll->socket_data_map[hash];
     while (entry)
     {
-        if (entry->socket == socket)
+        if (entry->socket == volatile_socket)
         {
             entry->data = data;
             found = 1;
@@ -304,7 +307,7 @@ static void socket_data_update(T poll, Socket_T socket, void *data)
     {
         /* Programming error - socket should already be in map */
 #ifndef NDEBUG
-        fprintf(stderr, "WARNING: socket_data_update fallback (fd %d)\n", Socket_fd(socket));
+        fprintf(stderr, "WARNING: socket_data_update fallback (fd %d)\n", Socket_fd(volatile_socket));
 #endif
 
         /* Allocate new entry as fallback */
@@ -315,7 +318,7 @@ static void socket_data_update(T poll, Socket_T socket, void *data)
             SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket data mapping");
             RAISE_POLL_ERROR(SocketPoll_Failed);
         }
-        entry->socket = socket;
+        entry->socket = volatile_socket;
         entry->data = data;
         entry->next = poll->socket_data_map[hash];
         poll->socket_data_map[hash] = entry;
@@ -412,10 +415,11 @@ void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
     assert(poll);
     assert(socket);
 
-    fd = Socket_fd(volatile_socket);
+    /* Cast to non-volatile for Socket API calls - these don't need volatile */
+    fd = Socket_fd((Socket_T)volatile_socket);
 
     /* Set non-blocking mode before adding to poll */
-    Socket_setnonblocking(volatile_socket);
+    Socket_setnonblocking((Socket_T)volatile_socket);
 
     if (backend_add(poll->backend, fd, events) < 0)
     {
@@ -447,11 +451,12 @@ void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
 void SocketPoll_mod(T poll, Socket_T socket, unsigned events, void *data)
 {
     int fd;
+    volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
 
     assert(poll);
     assert(socket);
 
-    fd = Socket_fd(socket);
+    fd = Socket_fd((Socket_T)volatile_socket);
 
     if (backend_mod(poll->backend, fd, events) < 0)
     {
@@ -467,17 +472,18 @@ void SocketPoll_mod(T poll, Socket_T socket, unsigned events, void *data)
     }
 
     /* Update the socket->data mapping atomically */
-    socket_data_update(poll, socket, data);
+    socket_data_update(poll, volatile_socket, data);
 }
 
 void SocketPoll_del(T poll, Socket_T socket)
 {
     int fd;
+    volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
 
     assert(poll);
     assert(socket);
 
-    fd = Socket_fd(socket);
+    fd = Socket_fd((Socket_T)volatile_socket);
 
     if (backend_del(poll->backend, fd) < 0)
     {
@@ -489,7 +495,7 @@ void SocketPoll_del(T poll, Socket_T socket)
     }
 
     /* Remove the socket->data mapping */
-    socket_data_remove(poll, socket);
+    socket_data_remove(poll, volatile_socket);
 }
 
 /* ==================== Event Translation Functions ==================== */
