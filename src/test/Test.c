@@ -27,10 +27,10 @@ struct TestFunction
 static struct TestFunction *test_list = NULL;
 
 /* Test statistics */
-static int test_count = 0;
-static int test_passed = 0;
-static int test_failed = 0;
-static int last_failure_count = 0; /* Preserve failure count after Test_run_all() */
+static volatile int test_count = 0;
+static volatile int test_passed = 0;
+static volatile int test_failed = 0;
+static volatile int last_failure_count = 0; /* Preserve failure count after Test_run_all() */
 
 /* Thread-local exception for detailed error messages */
 #ifdef _WIN32
@@ -157,12 +157,15 @@ void Test_run_all(void)
     printf("Running %d test%s...\n\n", total_tests, total_tests == 1 ? "" : "s");
 
     /* Run each test */
-    struct TestFunction *current_test = test_list;
+    volatile struct TestFunction *volatile current_test = test_list;
     while (current_test != NULL)
     {
         test_count++;
         printf("[%d/%d] %s ... ", test_count, total_tests, current_test->name);
         fflush(stdout);
+
+        /* Store next pointer before TRY block to prevent corruption */
+        volatile struct TestFunction *next_test = current_test->next;
 
         TRY
         {
@@ -195,7 +198,7 @@ void Test_run_all(void)
         }
         END_TRY;
 
-        current_test = current_test->next;
+        current_test = next_test;
     }
 
     /* Print summary */

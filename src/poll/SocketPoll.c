@@ -32,24 +32,16 @@
 
 Except_T SocketPoll_Failed = {"SocketPoll operation failed"};
 
-/* Thread-local exception for detailed error messages
- * This is a COPY of the base exception with thread-local reason string.
- * Each thread gets its own exception instance, preventing race conditions
- * when multiple threads raise the same exception type simultaneously. */
-#ifdef _WIN32
-static __declspec(thread) Except_T SocketPoll_DetailedException;
-#else
-static __thread Except_T SocketPoll_DetailedException;
-#endif
-
 /* Macro to raise exception with detailed error message
- * Creates a thread-local copy of the exception with detailed reason */
+ * Creates a thread-local copy of the exception with detailed reason.
+ * CRITICAL: Uses volatile local variable on ARM64 to prevent corruption across setjmp/longjmp */
 #define RAISE_POLL_ERROR(exception)                                                                                    \
     do                                                                                                                 \
     {                                                                                                                  \
-        SocketPoll_DetailedException = (exception);                                                                    \
-        SocketPoll_DetailedException.reason = socket_error_buf;                                                        \
-        RAISE(SocketPoll_DetailedException);                                                                           \
+        volatile Except_T volatile_exception = (exception);                                                            \
+        volatile_exception.reason = socket_error_buf;                                                                  \
+        Except_T non_volatile_exception = *(const Except_T *)&volatile_exception;                                     \
+        RAISE(non_volatile_exception);                                                                                 \
     } while (0)
 
 /* Socket data mapping entry */
@@ -218,24 +210,24 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
     volatile unsigned hash;
     volatile unsigned fd_hash;
     volatile int fd;
-    SocketData *data_entry = NULL;
-    FdSocketEntry *fd_entry = NULL;
+    volatile SocketData *volatile_data_entry = NULL;
+    volatile FdSocketEntry *volatile_fd_entry = NULL;
 
-    hash = socket_hash(volatile_socket);
-    fd = Socket_fd(volatile_socket);
+    hash = socket_hash((Socket_T)volatile_socket);
+    fd = Socket_fd((Socket_T)volatile_socket);
     fd_hash = compute_fd_hash(fd);
 
-    data_entry = allocate_socket_data_entry(poll);
-    fd_entry = allocate_fd_socket_entry(poll);
+    volatile_data_entry = allocate_socket_data_entry(poll);
+    volatile_fd_entry = allocate_fd_socket_entry(poll);
 
-    data_entry->socket = volatile_socket;
-    data_entry->data = data;
-    fd_entry->fd = fd;
-    fd_entry->socket = volatile_socket;
+    volatile_data_entry->socket = (Socket_T)volatile_socket;
+    volatile_data_entry->data = data;
+    volatile_fd_entry->fd = fd;
+    volatile_fd_entry->socket = (Socket_T)volatile_socket;
 
     pthread_mutex_lock(&poll->mutex);
-    insert_socket_data_entry(poll, hash, data_entry);
-    insert_fd_socket_entry(poll, fd_hash, fd_entry);
+    insert_socket_data_entry(poll, hash, (SocketData *)volatile_data_entry);
+    insert_fd_socket_entry(poll, fd_hash, (FdSocketEntry *)volatile_fd_entry);
     pthread_mutex_unlock(&poll->mutex);
 }
 
@@ -254,14 +246,21 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
 static void *socket_data_get(T poll, Socket_T socket)
 {
     volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
-    unsigned hash = socket_hash(volatile_socket);
+    unsigned hash;
     void *data = NULL;
+
+    if (!poll || !socket)
+        return NULL;
+    
+    hash = socket_hash((Socket_T)volatile_socket);
+    if (hash >= SOCKET_DATA_HASH_SIZE)
+        return NULL;
 
     pthread_mutex_lock(&poll->mutex);
     SocketData *entry = poll->socket_data_map[hash];
     while (entry)
     {
-        if (entry->socket == volatile_socket)
+        if (entry->socket == (Socket_T)volatile_socket)
         {
             data = entry->data;
             break;
@@ -330,15 +329,15 @@ static void remove_fd_socket_entry(T poll, unsigned fd_hash, int fd)
 static void socket_data_remove(T poll, Socket_T socket)
 {
     volatile Socket_T volatile_socket = socket;
-    unsigned hash = socket_hash(volatile_socket);
+    unsigned hash = socket_hash((Socket_T)volatile_socket);
     unsigned fd_hash;
     int fd;
 
-    fd = Socket_fd(volatile_socket);
+    fd = Socket_fd((Socket_T)volatile_socket);
     fd_hash = compute_fd_hash(fd);
 
     pthread_mutex_lock(&poll->mutex);
-    remove_socket_data_entry(poll, hash, volatile_socket);
+    remove_socket_data_entry(poll, hash, (Socket_T)volatile_socket);
     remove_fd_socket_entry(poll, fd_hash, fd);
     pthread_mutex_unlock(&poll->mutex);
 }
@@ -376,19 +375,26 @@ static SocketData *find_socket_data_entry(T poll, unsigned hash, Socket_T socket
  */
 static void add_fallback_socket_data_entry(T poll, unsigned hash, Socket_T socket, void *data)
 {
-    SocketData *entry;
+    volatile SocketData *volatile_entry = NULL;
 
 #ifndef NDEBUG
     fprintf(stderr, "WARNING: socket_data_update fallback (fd %d)\n", Socket_fd(socket));
 #endif
 
-    entry = ALLOC(poll->arena, sizeof(*entry));
-    if (!entry)
+    TRY
     {
-        pthread_mutex_unlock(&poll->mutex);
+        volatile_entry = ALLOC(poll->arena, sizeof(SocketData));
+    }
+    EXCEPT(Arena_Failed)
+    {
+        /* Don't unlock mutex here - caller is responsible for unlocking */
         SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket data mapping");
         RAISE_POLL_ERROR(SocketPoll_Failed);
+        /* NOTREACHED */
     }
+    END_TRY;
+
+    SocketData *entry = (SocketData *)volatile_entry;
     entry->socket = socket;
     entry->data = data;
     entry->next = poll->socket_data_map[hash];
@@ -411,20 +417,31 @@ static void add_fallback_socket_data_entry(T poll, unsigned hash, Socket_T socke
 static void socket_data_update(T poll, Socket_T socket, void *data)
 {
     volatile Socket_T volatile_socket = socket;
-    unsigned hash = socket_hash(volatile_socket);
-    SocketData *entry;
+    volatile unsigned hash = socket_hash((Socket_T)volatile_socket);
+    volatile SocketData *volatile_entry = NULL;
 
     pthread_mutex_lock(&poll->mutex);
-    entry = find_socket_data_entry(poll, hash, volatile_socket);
-    if (entry)
+    TRY
     {
-        entry->data = data;
+        volatile_entry = find_socket_data_entry(poll, hash, (Socket_T)volatile_socket);
+        if (volatile_entry)
+        {
+            volatile_entry->data = data;
+            pthread_mutex_unlock(&poll->mutex);
+        }
+        else
+        {
+            add_fallback_socket_data_entry(poll, hash, (Socket_T)volatile_socket, data);
+            pthread_mutex_unlock(&poll->mutex);
+        }
     }
-    else
+    EXCEPT(SocketPoll_Failed)
     {
-        add_fallback_socket_data_entry(poll, hash, volatile_socket, data);
+        pthread_mutex_unlock(&poll->mutex);
+        RERAISE;
     }
-    pthread_mutex_unlock(&poll->mutex);
+    END_TRY;
+    /* Mutex already unlocked in TRY block */
 }
 
 /**
@@ -441,6 +458,8 @@ static T allocate_poll_structure(void)
         SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate poll structure");
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
+    /* Zero-initialize to ensure all fields start in a known state */
+    memset(poll, 0, sizeof(*poll));
     return poll;
 }
 
@@ -489,6 +508,29 @@ static void initialize_poll_arena(T poll)
  */
 static void allocate_poll_event_arrays(T poll, int maxevents)
 {
+    size_t array_size;
+
+    /* Validate maxevents before allocation */
+    if (maxevents <= 0 || maxevents > SOCKET_MAX_POLL_EVENTS)
+    {
+        backend_free(poll->backend);
+        Arena_dispose(&poll->arena);
+        free(poll);
+        SOCKET_ERROR_MSG("Invalid maxevents value");
+        RAISE_POLL_ERROR(SocketPoll_Failed);
+    }
+
+    /* Calculate array size with overflow check */
+    array_size = (size_t)maxevents * sizeof(*poll->socketevents);
+    if (array_size / sizeof(*poll->socketevents) != (size_t)maxevents)
+    {
+        backend_free(poll->backend);
+        Arena_dispose(&poll->arena);
+        free(poll);
+        SOCKET_ERROR_MSG("Array size overflow");
+        RAISE_POLL_ERROR(SocketPoll_Failed);
+    }
+
     poll->socketevents = CALLOC(poll->arena, maxevents, sizeof(*poll->socketevents));
     if (!poll->socketevents)
     {
@@ -568,7 +610,7 @@ void SocketPoll_free(T *poll)
 
 void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
 {
-    int fd;
+    volatile int fd;
     volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
 
     assert(poll);
@@ -576,9 +618,40 @@ void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
 
     /* Cast to non-volatile for Socket API calls - these don't need volatile */
     fd = Socket_fd((Socket_T)volatile_socket);
+    assert(fd >= 0); /* Socket FD should be valid */
 
     /* Set non-blocking mode before adding to poll */
     Socket_setnonblocking((Socket_T)volatile_socket);
+
+    /* Check if socket is already in poll set (works for all backends)
+     * kqueue doesn't fail on duplicate adds, so we need to check our internal state */
+    volatile unsigned dup_check_hash = ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_DATA_HASH_SIZE;
+    volatile SocketData *volatile_entry = NULL;
+    volatile int is_duplicate = 0;
+
+    pthread_mutex_lock(&poll->mutex);
+    volatile_entry = poll->socket_data_map[dup_check_hash];
+    while (volatile_entry != NULL)
+    {
+        /* Store next pointer before comparison to prevent issues with volatile access */
+        volatile SocketData *next_entry = (volatile SocketData *)volatile_entry->next;
+        
+        if (volatile_entry->socket == (Socket_T)volatile_socket)
+        {
+            is_duplicate = 1;
+            break;
+        }
+        /* Move to next entry */
+        volatile_entry = next_entry;
+    }
+    pthread_mutex_unlock(&poll->mutex);
+
+    if (is_duplicate)
+    {
+        SOCKET_ERROR_MSG("Socket already in poll set");
+        RAISE_POLL_ERROR(SocketPoll_Failed);
+        /* NOTREACHED */
+    }
 
     if (backend_add(poll->backend, fd, events) < 0)
     {
@@ -596,7 +669,7 @@ void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
     /* Store socket->data mapping - if this fails, we need to clean up backend entry */
     TRY
     {
-        socket_data_add(poll, volatile_socket, data);
+        socket_data_add(poll, (Socket_T)volatile_socket, data);
     }
     EXCEPT(SocketPoll_Failed)
     {
@@ -631,7 +704,7 @@ void SocketPoll_mod(T poll, Socket_T socket, unsigned events, void *data)
     }
 
     /* Update the socket->data mapping atomically */
-    socket_data_update(poll, volatile_socket, data);
+    socket_data_update(poll, (Socket_T)volatile_socket, data);
 }
 
 void SocketPoll_del(T poll, Socket_T socket)
@@ -654,7 +727,7 @@ void SocketPoll_del(T poll, Socket_T socket)
     }
 
     /* Remove the socket->data mapping */
-    socket_data_remove(poll, volatile_socket);
+    socket_data_remove(poll, (Socket_T)volatile_socket);
 }
 
 /* ==================== Event Translation Functions ==================== */
@@ -718,19 +791,49 @@ static int translate_single_event(T poll, int index, int translated_index)
     volatile int fd;
     volatile unsigned event_flags;
     volatile Socket_T socket;
+    volatile int max_events;
+
+    if (!poll || index < 0 || translated_index < 0)
+        return 0;
+
+    /* Cache maxevents to prevent reading corrupted value */
+    max_events = poll->maxevents;
+    if (max_events <= 0 || max_events > SOCKET_MAX_POLL_EVENTS)
+        return 0;
+
+    if (!poll->socketevents || translated_index >= max_events)
+        return 0;
 
     get_backend_event(poll, index, (int *)&fd, (unsigned *)&event_flags);
 
     pthread_mutex_lock(&poll->mutex);
     socket = find_socket_by_fd(poll, fd);
+    if (!socket)
+    {
+        pthread_mutex_unlock(&poll->mutex);
+        return 0;
+    }
+    /* Store socket pointer before unlocking - socket_data_get will re-lock mutex */
+    Socket_T non_volatile_socket = (Socket_T)socket;
     pthread_mutex_unlock(&poll->mutex);
 
-    if (!socket)
+    /* Use cached maxevents value for bounds checking */
+    /* Ensure translated_index is strictly less than max_events (valid indices are 0 to max_events-1) */
+    if (translated_index < 0 || translated_index >= max_events || !poll->socketevents)
+        return 0;
+    
+    /* Validate bounds using pointer arithmetic to prevent any potential overrun */
+    SocketEvent_T *event_ptr = poll->socketevents + translated_index;
+    SocketEvent_T *array_start = poll->socketevents;
+    SocketEvent_T *array_end = array_start + max_events;
+    
+    /* Additional pointer validation */
+    if (event_ptr < array_start || event_ptr >= array_end)
         return 0;
 
-    poll->socketevents[translated_index].socket = (Socket_T)socket;
-    poll->socketevents[translated_index].data = socket_data_get(poll, (Socket_T)socket);
-    poll->socketevents[translated_index].events = event_flags;
+    event_ptr->socket = non_volatile_socket;
+    event_ptr->data = socket_data_get(poll, non_volatile_socket);
+    event_ptr->events = event_flags;
     return 1;
 }
 
@@ -754,13 +857,32 @@ static int translate_backend_events_to_socket_events(T poll, int nfds)
 {
     volatile int translated_count = 0;
     volatile int i;
+    volatile int max_events; /* Cache maxevents to prevent corruption issues */
+    volatile int volatile_nfds = nfds; /* Preserve nfds across exception boundaries */
+
+    if (!poll || volatile_nfds < 0 || !poll->socketevents || poll->maxevents <= 0)
+        return 0;
+
+    /* Cache maxevents value to ensure consistency */
+    max_events = poll->maxevents;
+
+    /* Ensure we don't exceed the allocated event array size */
+    if (volatile_nfds > max_events)
+        volatile_nfds = max_events;
 
     TRY
     {
-        for (i = 0; i < nfds; i++)
+        for (i = 0; i < volatile_nfds; i++)
         {
+            /* Stop if we've filled the array */
+            if (translated_count >= max_events)
+                break;
+            
+            /* translate_single_event validates bounds internally */
             if (translate_single_event(poll, i, translated_count))
+            {
                 translated_count++;
+            }
         }
     }
     EXCEPT(SocketPoll_Failed)
@@ -768,6 +890,10 @@ static int translate_backend_events_to_socket_events(T poll, int nfds)
         /* Handle translation errors - exception already raised */
     }
     END_TRY;
+
+    /* Ensure we never return a count exceeding maxevents */
+    if (translated_count > max_events)
+        translated_count = max_events;
 
     return translated_count;
 }
@@ -786,13 +912,30 @@ int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
     if (nfds < 0)
     {
         if (errno == EINTR)
+        {
+            *events = NULL;
             return 0; /* Interrupted - not an error */
+        }
         SOCKET_ERROR_FMT("%s backend wait failed (timeout=%d)", backend_name(), timeout);
         RAISE_POLL_ERROR(SocketPoll_Failed);
     }
 
+    /* If no events, return immediately */
+    if (nfds == 0)
+    {
+        *events = poll->socketevents; /* Return valid pointer even if empty */
+        return 0;
+    }
+
     /* Translate backend events to SocketEvent_T structures */
     nfds = translate_backend_events_to_socket_events(poll, nfds);
+
+    /* Validate poll structure is still intact before returning pointer */
+    if (!poll || !poll->socketevents)
+    {
+        *events = NULL;
+        return 0;
+    }
 
     *events = poll->socketevents;
     return nfds;
