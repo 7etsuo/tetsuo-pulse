@@ -12,7 +12,6 @@
 #include "test/Test.h"
 #include "core/Except.h"
 #include "dns/SocketDNS.h"
-#include <stdio.h>
 
 /* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
 #if defined(__GNUC__) && !defined(__clang__)
@@ -973,9 +972,7 @@ TEST(socketdns_queue_full_handling)
 
         /* Should have successfully queued some requests */
         ASSERT_NE(success_count, 0);
-
-        if (failure_count == 0)
-            fprintf(stderr, "[socketdns debug] queue did not report full condition\n");
+        ASSERT_NE(failure_count, 0);
 
         /* Process some requests to make room */
         usleep(200000);
