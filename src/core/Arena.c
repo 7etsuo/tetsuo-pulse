@@ -610,10 +610,10 @@ static void *arena_execute_allocation(T arena, size_t aligned_size, size_t nbyte
         arena_ensure_allocation_space(arena, aligned_size, nbytes);
         result = arena_perform_allocation(arena, aligned_size);
         pthread_mutex_unlock(&arena->mutex);
-        return result;
+        RETURN result;
     }
     FINALLY
-    pthread_mutex_unlock(&arena->mutex);
+        pthread_mutex_unlock(&arena->mutex);
     END_TRY;
 
     return NULL;

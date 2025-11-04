@@ -8,7 +8,7 @@ This codebase follows **C Interfaces and Implementations** patterns with:
 - **Arena-based memory management** (`Arena_T`, `ALLOC`, `CALLOC`)
 - **Exception-based error handling** (`TRY`, `EXCEPT`, `FINALLY`, `RAISE`)
 - **Module-prefixed naming** (`Socket_*`, `Arena_*`, `Except_*`, `SocketPoll_*`, `SocketPool_*`)
-- **Thread-safe design** (thread-local storage, mutex protection)
+- **Thread-safe design** (thread-local storage, mutex protection, and zero-leak socket lifecycles confirmed via `Socket_debug_live_count()`)
 - **GNU C coding style** (8-space indentation, return types on separate lines)
 - **Opaque types** with `T` macro pattern (`#define T ModuleName_T`)
 
@@ -16,7 +16,7 @@ This codebase follows **C Interfaces and Implementations** patterns with:
 
 1. **Understand the Codebase Context**: Analyze the provided code in the context of the broader socket library. Identify opportunities to leverage existing base layer components (Arena, Exception system, SocketError, SocketConfig) instead of reinventing functionality. Ensure the code builds upon foundational elements where appropriate, avoiding duplication.
 
-2. **Security Audit**: Conduct a thorough security review. Check for vulnerabilities such as buffer overflows, integer overflows, null pointer dereferences, memory leaks, race conditions, and injection risks. Use secure coding patterns (bounds checking, safe string handling with `snprintf`, overflow protection before arithmetic). Eliminate any insecure practices and suggest hardened alternatives.
+2. **Security Audit**: Conduct a thorough security review. Check for vulnerabilities such as buffer overflows, integer overflows, null pointer dereferences, memory leaks, race conditions, and injection risks. Use secure coding patterns (bounds checking, safe string handling with `snprintf`, overflow protection before arithmetic). Eliminate any insecure practices and suggest hardened alternatives. Pay special attention to socket lifetimes—verify that every accepted socket is either pooled and subsequently removed or explicitly freed so that `Socket_debug_live_count()` reaches zero at teardown.
 
 3. **Remove Redundancy**: Identify and eliminate redundant code, including duplicated logic, unused variables, or unnecessary computations. Consolidate similar operations into reusable functions if they align with the codebase patterns (e.g., reuse Arena allocation, exception handling patterns).
 
@@ -206,6 +206,7 @@ This codebase follows **C Interfaces and Implementations** patterns with:
    - Allocation sizes that could be calculated more safely (use overflow protection macros)
    - Buffer management that could use `SocketBuf` module
    - Memory operations that should use `ALLOC`/`CALLOC` macros
+   - Socket lifecycle hygiene: ensure every `Socket_accept` call leads to a corresponding `SocketPool_remove` (when applicable) and `Socket_free`, and confirm integration/tests leave `Socket_debug_live_count()` at zero.
 
 ### 9. **Error Handling Refactoring**
    - Error handling that should use exception system (`TRY/EXCEPT/FINALLY`)
@@ -528,6 +529,7 @@ Before completing refactoring, verify:
 - [ ] Function declarations use `extern` keyword in headers
 - [ ] Type definitions follow `T` macro pattern with `#undef T` at end
 - [ ] Code is production-ready
+- [ ] Socket lifecycle verified (no outstanding sockets; `Socket_debug_live_count()` is zero at teardown)
 
 ## C Interfaces and Implementations Style Examples
 

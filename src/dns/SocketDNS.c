@@ -679,16 +679,19 @@ SocketDNS_new(void)
  * Request structures themselves are in Arena, so not freed here.
  */
 static void
-free_request_list(struct Request_T *head)
+free_request_list(struct Request_T *head, int use_hash_next)
 {
     struct Request_T *req = head;
     struct Request_T *next;
 
     while (req)
     {
-        next = req->queue_next;
+        next = use_hash_next ? req->hash_next : req->queue_next;
         if (req->result)
+        {
             freeaddrinfo(req->result);
+            req->result = NULL;
+        }
         req = next;
     }
 }
@@ -704,7 +707,7 @@ free_request_list(struct Request_T *head)
 static void
 free_queued_requests(T d)
 {
-    free_request_list(d->queue_head);
+    free_request_list(d->queue_head, 0);
 }
 
 /**
@@ -720,7 +723,7 @@ free_hash_table_requests(T d)
 {
     for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
     {
-        free_request_list(d->request_hash[i]);
+        free_request_list(d->request_hash[i], 1);
     }
 }
 
@@ -761,6 +764,60 @@ shutdown_workers(T d)
     }
 }
 
+/**
+ * drain_completion_pipe - Drain completion pipe before cleanup
+ * @dns: DNS resolver instance
+ *
+ * Reads and discards any remaining completion notifications so that
+ * subsequent close operations do not leave unread data in the pipe.
+ */
+static void
+drain_completion_pipe(T dns)
+{
+    char buffer[SOCKET_DNS_PIPE_BUFFER_SIZE];
+    ssize_t n;
+
+    if (dns->pipefd[0] < 0)
+        return;
+
+    do
+    {
+        n = read(dns->pipefd[0], buffer, sizeof(buffer));
+    }
+    while (n > 0);
+}
+
+/**
+ * drain_completed_requests - Release results for completed requests
+ * @dns: DNS resolver instance
+ *
+ * Ensures any outstanding getaddrinfo() results owned by the resolver are
+ * released prior to arena disposal. This is necessary when callers never
+ * retrieve results (e.g., cancelled or overflowed requests).
+ *
+ * Thread-safe: Must be called with mutex locked.
+ */
+static void
+drain_completed_requests(T dns)
+{
+    int i;
+
+    for (i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
+    {
+        struct Request_T *req = dns->request_hash[i];
+
+        while (req)
+        {
+            if (req->result)
+            {
+                freeaddrinfo(req->result);
+                req->result = NULL;
+            }
+            req = req->hash_next;
+        }
+    }
+}
+
 void
 SocketDNS_free(T *dns)
 {
@@ -771,9 +828,16 @@ SocketDNS_free(T *dns)
     d = *dns;
 
     shutdown_workers(d);
+    drain_completion_pipe(d);
 
     pthread_mutex_lock(&d->mutex);
+    drain_completed_requests(d);
     free_all_requests(d);
+    d->queue_head = NULL;
+    d->queue_tail = NULL;
+    d->queue_size = 0;
+    for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
+        d->request_hash[i] = NULL;
     pthread_mutex_unlock(&d->mutex);
 
     cleanup_pipe(d);
@@ -1111,6 +1175,14 @@ SocketDNS_cancel(T dns, Request_T req)
     else if (r->state == REQ_PROCESSING)
     {
         r->state = REQ_CANCELLED;
+    }
+    else if (r->state == REQ_COMPLETE)
+    {
+        if (r->result)
+        {
+            freeaddrinfo(r->result);
+            r->result = NULL;
+        }
     }
 
     hash_table_remove(dns, r);

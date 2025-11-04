@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -25,6 +26,57 @@
 #define TEST_BUFFER_SIZE 4096
 #define TEST_PORT_BASE 40000
 
+static Socket_T tracked_sockets[128];
+static int tracked_count;
+
+static void
+reset_tracked_sockets(void)
+{
+    tracked_count = 0;
+}
+
+static void
+track_socket(Socket_T socket)
+{
+    if (socket && tracked_count < (int)(sizeof(tracked_sockets) / sizeof(tracked_sockets[0])))
+        tracked_sockets[tracked_count++] = socket;
+}
+
+static void
+untrack_socket(Socket_T socket)
+{
+    for (int i = 0; i < tracked_count; i++)
+    {
+        if (tracked_sockets[i] == socket)
+        {
+            tracked_sockets[i] = tracked_sockets[tracked_count - 1];
+            tracked_sockets[tracked_count - 1] = NULL;
+            tracked_count--;
+            return;
+        }
+    }
+}
+
+static void
+assert_no_tracked_sockets(void)
+{
+    if (tracked_count != 0)
+    {
+        fprintf(stderr, "[integration debug] tracked sockets remaining: %d\n", tracked_count);
+        fflush(stderr);
+    }
+    ASSERT_EQ(tracked_count, 0);
+}
+
+static void
+assert_no_socket_leaks(void)
+{
+    int live = Socket_debug_live_count();
+    fprintf(stderr, "[integration debug] live sockets remaining: %d\n", live);
+    fflush(stderr);
+    ASSERT_EQ(live, 0);
+}
+
 static void setup_signals(void)
 {
     signal(SIGPIPE, SIG_IGN);
@@ -35,6 +87,7 @@ static void setup_signals(void)
 TEST(integration_simple_tcp_server)
 {
     setup_signals();
+    reset_tracked_sockets();
     Arena_T arena = Arena_new();
     SocketPoll_T poll = SocketPoll_new(100);
     SocketPool_T pool = SocketPool_new(arena, 100, 4096);
@@ -64,10 +117,13 @@ TEST(integration_simple_tcp_server)
             Socket_T accepted = Socket_accept(server);
             if (accepted)
             {
+                Socket_T tracked = accepted;
+                track_socket(tracked);
                 Connection_T conn = SocketPool_add(pool, accepted);
                 ASSERT_NOT_NULL(conn);
                 SocketPool_remove(pool, accepted);
                 Socket_free(&accepted);
+                untrack_socket(tracked);
             }
         }
     EXCEPT(Socket_Failed) (void)0;
@@ -77,14 +133,22 @@ TEST(integration_simple_tcp_server)
         Socket_free(&client);
         Socket_free(&server);
         SocketPoll_free(&poll);
+        if (pool)
+        {
+            SocketPool_cleanup(pool, 0);
+            ASSERT_EQ(SocketPool_count(pool), 0);
+        }
         SocketPool_free(&pool);
         Arena_dispose(&arena);
+        assert_no_tracked_sockets();
+        assert_no_socket_leaks();
     END_TRY;
 }
 
 TEST(integration_tcp_echo_server)
 {
     setup_signals();
+    reset_tracked_sockets();
     Arena_T arena = Arena_new();
     SocketPoll_T poll = SocketPoll_new(100);
     SocketPool_T pool = SocketPool_new(arena, 100, 4096);
@@ -114,6 +178,8 @@ TEST(integration_tcp_echo_server)
             Socket_T accepted = Socket_accept(server);
             if (accepted)
             {
+                Socket_T tracked = accepted;
+                track_socket(tracked);
                 Connection_T conn = SocketPool_add(pool, accepted);
                 SocketPoll_add(poll, accepted, POLL_READ, conn);
                 
@@ -136,6 +202,7 @@ TEST(integration_tcp_echo_server)
                 SocketPoll_del(poll, accepted);
                 SocketPool_remove(pool, accepted);
                 Socket_free(&accepted);
+                untrack_socket(tracked);
             }
         }
     EXCEPT(Socket_Failed) (void)0;
@@ -145,20 +212,30 @@ TEST(integration_tcp_echo_server)
         Socket_free(&client);
         Socket_free(&server);
         SocketPoll_free(&poll);
+        if (pool)
+        {
+            SocketPool_cleanup(pool, 0);
+            ASSERT_EQ(SocketPool_count(pool), 0);
+        }
         SocketPool_free(&pool);
         Arena_dispose(&arena);
+        assert_no_tracked_sockets();
+        assert_no_socket_leaks();
     END_TRY;
 }
 
 TEST(integration_tcp_multiple_clients)
 {
     setup_signals();
+    reset_tracked_sockets();
     Arena_T arena = Arena_new();
     SocketPoll_T poll = SocketPoll_new(100);
     SocketPool_T pool = SocketPool_new(arena, 100, 4096);
     Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T client1 = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T client2 = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted_sockets[2] = {NULL, NULL};
+    volatile int accepted_count = 0;
 
     TRY
         Socket_setreuseaddr(server);
@@ -187,8 +264,12 @@ TEST(integration_tcp_multiple_clients)
                 Socket_T accepted = Socket_accept(server);
                 if (accepted)
                 {
+                    Socket_T tracked = accepted;
+                    track_socket(tracked);
                     SocketPool_add(pool, accepted);
                     SocketPoll_add(poll, accepted, POLL_READ, NULL);
+                    if (accepted_count < 2)
+                        accepted_sockets[accepted_count++] = tracked;
                 }
             }
         }
@@ -199,12 +280,31 @@ TEST(integration_tcp_multiple_clients)
     EXCEPT(SocketPoll_Failed) (void)0;
     EXCEPT(SocketPool_Failed) (void)0;
     FINALLY
+        for (int i = 0; i < accepted_count; i++)
+        {
+            Socket_T sock = accepted_sockets[i];
+            if (sock)
+            {
+                SocketPoll_del(poll, sock);
+                SocketPool_remove(pool, sock);
+                untrack_socket(sock);
+                Socket_free(&sock);
+                accepted_sockets[i] = NULL;
+            }
+        }
         Socket_free(&client2);
         Socket_free(&client1);
         Socket_free(&server);
         SocketPoll_free(&poll);
+        if (pool)
+        {
+            SocketPool_cleanup(pool, 0);
+            ASSERT_EQ(SocketPool_count(pool), 0);
+        }
         SocketPool_free(&pool);
         Arena_dispose(&arena);
+        assert_no_tracked_sockets();
+        assert_no_socket_leaks();
     END_TRY;
 }
 
@@ -254,6 +354,7 @@ TEST(integration_udp_echo_server)
 TEST(integration_pool_with_buffers)
 {
     setup_signals();
+    reset_tracked_sockets();
     Arena_T arena = Arena_new();
     SocketPool_T pool = SocketPool_new(arena, 10, 1024);
     Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
@@ -275,6 +376,8 @@ TEST(integration_pool_with_buffers)
         Socket_T accepted = Socket_accept(server);
         if (accepted)
         {
+            Socket_T tracked = accepted;
+            track_socket(tracked);
             Connection_T conn = SocketPool_add(pool, accepted);
             ASSERT_NOT_NULL(conn);
             
@@ -291,14 +394,22 @@ TEST(integration_pool_with_buffers)
             
             SocketPool_remove(pool, accepted);
             Socket_free(&accepted);
+            untrack_socket(tracked);
         }
     EXCEPT(Socket_Failed) (void)0;
     EXCEPT(SocketPool_Failed) (void)0;
     FINALLY
         Socket_free(&client);
         Socket_free(&server);
+        if (pool)
+        {
+            SocketPool_cleanup(pool, 0);
+            ASSERT_EQ(SocketPool_count(pool), 0);
+        }
         SocketPool_free(&pool);
         Arena_dispose(&arena);
+        assert_no_tracked_sockets();
+        assert_no_socket_leaks();
     END_TRY;
 }
 
@@ -332,8 +443,15 @@ TEST(integration_pool_cleanup_idle)
             Socket_T s = (Socket_T)socket;
             Socket_free(&s);
         }
+        if (pool)
+        {
+            SocketPool_cleanup(pool, 0);
+            ASSERT_EQ(SocketPool_count(pool), 0);
+        }
         SocketPool_free(&pool);
         Arena_dispose(&arena);
+        assert_no_tracked_sockets();
+        assert_no_socket_leaks();
     END_TRY;
 }
 
@@ -342,11 +460,14 @@ TEST(integration_pool_cleanup_idle)
 TEST(integration_full_stack_tcp_server)
 {
     setup_signals();
+    reset_tracked_sockets();
     Arena_T arena = Arena_new();
     SocketPoll_T poll = SocketPoll_new(100);
     SocketPool_T pool = SocketPool_new(arena, 100, 8192);
     Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted_sockets[32] = {NULL};
+    volatile int accepted_count = 0;
 
     TRY
         Socket_setreuseaddr(server);
@@ -375,10 +496,19 @@ TEST(integration_full_stack_tcp_server)
                     Socket_T accepted = Socket_accept(server);
                     if (accepted)
                     {
+                        Socket_T tracked = accepted;
+                        track_socket(tracked);
                         Connection_T conn = SocketPool_add(pool, accepted);
                         if (conn)
                         {
                             SocketPoll_add(poll, accepted, POLL_READ, conn);
+                            if (accepted_count < 32)
+                                accepted_sockets[accepted_count++] = tracked;
+                        }
+                        else
+                        {
+                            Socket_free(&accepted);
+                            untrack_socket(tracked);
                         }
                     }
                 }
@@ -402,11 +532,30 @@ TEST(integration_full_stack_tcp_server)
     EXCEPT(SocketPoll_Failed) (void)0;
     EXCEPT(SocketPool_Failed) (void)0;
     FINALLY
+        for (int i = 0; i < accepted_count; i++)
+        {
+            Socket_T sock = accepted_sockets[i];
+            if (sock)
+            {
+                SocketPoll_del(poll, sock);
+                SocketPool_remove(pool, sock);
+                untrack_socket(sock);
+                Socket_free(&sock);
+                accepted_sockets[i] = NULL;
+            }
+        }
         Socket_free(&client);
         Socket_free(&server);
         SocketPoll_free(&poll);
+        if (pool)
+        {
+            SocketPool_cleanup(pool, 0);
+            ASSERT_EQ(SocketPool_count(pool), 0);
+        }
         SocketPool_free(&pool);
         Arena_dispose(&arena);
+        assert_no_tracked_sockets();
+        assert_no_socket_leaks();
     END_TRY;
 }
 
@@ -446,7 +595,13 @@ static void *server_thread(void *arg)
                 if (events[i].socket == server)
                 {
                     Socket_T accepted = Socket_accept(server);
-                    if (accepted) Socket_free(&accepted);
+                    if (accepted)
+                    {
+                        Socket_T tracked = accepted;
+                        track_socket(tracked);
+                        Socket_free(&accepted);
+                        untrack_socket(tracked);
+                    }
                 }
             }
         }
@@ -455,6 +610,11 @@ static void *server_thread(void *arg)
     FINALLY
         Socket_free(&server);
         SocketPoll_free(&poll);
+        if (pool)
+        {
+            SocketPool_cleanup(pool, 0);
+            ASSERT_EQ(SocketPool_count(pool), 0);
+        }
         SocketPool_free(&pool);
         Arena_dispose(&arena);
     END_TRY;
@@ -465,6 +625,7 @@ static void *server_thread(void *arg)
 TEST(integration_multithreaded_server)
 {
     setup_signals();
+    reset_tracked_sockets();
     pthread_t server_tid;
     server_running = 1;
     server_port = 0;
@@ -488,6 +649,8 @@ TEST(integration_multithreaded_server)
     
     for (int i = 0; i < 5; i++)
         Socket_free(&clients[i]);
+    assert_no_tracked_sockets();
+    assert_no_socket_leaks();
 }
 
 /* ==================== Arena Integration Tests ==================== */
@@ -500,20 +663,31 @@ TEST(integration_arena_lifecycle)
     for (int i = 0; i < 10; i++)
     {
         Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+        Socket_T tracked = socket;
+        track_socket(tracked);
         TRY
             Connection_T conn = SocketPool_add(pool, socket);
             if (conn)
             {
                 SocketBuf_T inbuf = Connection_inbuf(conn);
                 SocketBuf_write(inbuf, "Data", 4);
+                SocketPool_remove(pool, socket);
             }
         EXCEPT(SocketPool_Failed) (void)0;
         END_TRY;
         Socket_free(&socket);
+        untrack_socket(tracked);
     }
     
+    if (pool)
+    {
+        SocketPool_cleanup(pool, 0);
+        ASSERT_EQ(SocketPool_count(pool), 0);
+    }
     SocketPool_free(&pool);
     Arena_dispose(&arena);
+    assert_no_tracked_sockets();
+    assert_no_socket_leaks();
 }
 
 /* ==================== Connection Lifecycle Tests ==================== */
@@ -521,6 +695,7 @@ TEST(integration_arena_lifecycle)
 TEST(integration_connection_full_lifecycle)
 {
     setup_signals();
+    reset_tracked_sockets();
     Arena_T arena = Arena_new();
     SocketPoll_T poll = SocketPoll_new(100);
     SocketPool_T pool = SocketPool_new(arena, 100, 4096);
@@ -550,6 +725,8 @@ TEST(integration_connection_full_lifecycle)
             Socket_T accepted = Socket_accept(server);
             if (accepted)
             {
+                Socket_T tracked = accepted;
+                track_socket(tracked);
                 Connection_T conn = SocketPool_add(pool, accepted);
                 SocketPoll_add(poll, accepted, POLL_READ | POLL_WRITE, conn);
                 
@@ -561,6 +738,7 @@ TEST(integration_connection_full_lifecycle)
                 SocketPoll_del(poll, accepted);
                 SocketPool_remove(pool, accepted);
                 Socket_free(&accepted);
+                untrack_socket(tracked);
             }
         }
     EXCEPT(Socket_Failed) (void)0;
@@ -570,8 +748,15 @@ TEST(integration_connection_full_lifecycle)
         Socket_free(&client);
         Socket_free(&server);
         SocketPoll_free(&poll);
+        if (pool)
+        {
+            SocketPool_cleanup(pool, 0);
+            ASSERT_EQ(SocketPool_count(pool), 0);
+        }
         SocketPool_free(&pool);
         Arena_dispose(&arena);
+        assert_no_tracked_sockets();
+        assert_no_socket_leaks();
     END_TRY;
 }
 
@@ -580,6 +765,7 @@ TEST(integration_connection_full_lifecycle)
 TEST(integration_rapid_connect_disconnect)
 {
     setup_signals();
+    reset_tracked_sockets();
     Arena_T arena = Arena_new();
     SocketPoll_T poll = SocketPoll_new(100);
     SocketPool_T pool = SocketPool_new(arena, 50, 2048);
@@ -612,9 +798,12 @@ TEST(integration_rapid_connect_disconnect)
                 Socket_T accepted = Socket_accept(server);
                 if (accepted)
                 {
+                    Socket_T tracked = accepted;
+                    track_socket(tracked);
                     SocketPool_add(pool, accepted);
                     SocketPool_remove(pool, accepted);
                     Socket_free(&accepted);
+                    untrack_socket(tracked);
                 }
             }
             Socket_free(&client);
@@ -625,8 +814,15 @@ TEST(integration_rapid_connect_disconnect)
     FINALLY
         Socket_free(&server);
         SocketPoll_free(&poll);
+        if (pool)
+        {
+            SocketPool_cleanup(pool, 0);
+            ASSERT_EQ(SocketPool_count(pool), 0);
+        }
         SocketPool_free(&pool);
         Arena_dispose(&arena);
+        assert_no_tracked_sockets();
+        assert_no_socket_leaks();
     END_TRY;
 }
 

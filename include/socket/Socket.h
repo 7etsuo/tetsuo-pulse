@@ -49,6 +49,15 @@ extern T Socket_new(int domain, int type, int protocol);
 extern void Socket_free(T *socket);
 
 /**
+ * Socket_debug_live_count - Get number of live socket instances (test-only)
+ *
+ * Returns: Current count of allocated Socket_T instances that have not been freed.
+ *
+ * Notes: Intended for debugging and test instrumentation to detect leaks.
+ */
+extern int Socket_debug_live_count(void);
+
+/**
  * Socket_bind - Bind socket to address and port
  * @socket: Socket to bind
  * @host: IP address or NULL/"0.0.0.0" for any
