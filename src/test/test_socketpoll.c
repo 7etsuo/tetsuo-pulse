@@ -60,8 +60,14 @@ TEST(socketpoll_add_socket)
     setup_signals();
     SocketPoll_T poll = SocketPoll_new(100);
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
-    TRY SocketPoll_add(poll, socket, POLL_READ, NULL);
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    TRY
+    {
+        SocketPoll_add(poll, socket, POLL_READ, NULL);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
     SocketPoll_free(&poll);
     Socket_free(&socket);
@@ -74,8 +80,14 @@ TEST(socketpoll_add_with_user_data)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
     int user_data = 42;
     
-    TRY SocketPoll_add(poll, socket, POLL_READ, &user_data);
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    TRY
+    {
+        SocketPoll_add(poll, socket, POLL_READ, &user_data);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
     
     SocketPoll_free(&poll);
@@ -91,10 +103,15 @@ TEST(socketpoll_add_multiple_sockets)
     Socket_T sock3 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         SocketPoll_add(poll, sock1, POLL_READ, NULL);
         SocketPoll_add(poll, sock2, POLL_READ, NULL);
         SocketPoll_add(poll, sock3, POLL_READ | POLL_WRITE, NULL);
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
 
     SocketPoll_free(&poll);
@@ -110,9 +127,14 @@ TEST(socketpoll_remove_socket)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         SocketPoll_add(poll, socket, POLL_READ, NULL);
         SocketPoll_del(poll, socket);
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
 
     SocketPoll_free(&poll);
@@ -127,11 +149,16 @@ TEST(socketpoll_remove_multiple_sockets)
     Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         SocketPoll_add(poll, sock1, POLL_READ, NULL);
         SocketPoll_add(poll, sock2, POLL_READ, NULL);
         SocketPoll_del(poll, sock1);
         SocketPoll_del(poll, sock2);
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
 
     SocketPoll_free(&poll);
@@ -148,10 +175,15 @@ TEST(socketpoll_mod_events)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         SocketPoll_add(poll, socket, POLL_READ, NULL);
         SocketPoll_mod(poll, socket, POLL_WRITE, NULL);
         SocketPoll_mod(poll, socket, POLL_READ | POLL_WRITE, NULL);
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
 
     SocketPoll_free(&poll);
@@ -166,9 +198,14 @@ TEST(socketpoll_mod_user_data)
     int data1 = 1, data2 = 2;
 
     TRY
+    {
         SocketPoll_add(poll, socket, POLL_READ, &data1);
         SocketPoll_mod(poll, socket, POLL_READ, &data2);
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
 
     SocketPoll_free(&poll);
@@ -183,9 +220,14 @@ TEST(socketpoll_wait_timeout)
     SocketEvent_T *events = NULL;
 
     TRY
+    {
         int nfds = SocketPoll_wait(poll, &events, 10);
         ASSERT_EQ(nfds, 0);
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
 
     SocketPoll_free(&poll);
@@ -199,33 +241,40 @@ TEST(socketpoll_wait_read_event)
     Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 1);
         Socket_setnonblocking(server);
-        
+
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
         getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
         int port = ntohs(addr.sin_port);
-        
+
         SocketPoll_add(poll, server, POLL_READ, NULL);
         Socket_connect(client, "127.0.0.1", port);
         usleep(50000);
-        
+
         SocketEvent_T *events = NULL;
         int nfds = SocketPoll_wait(poll, &events, 100);
-        
+
         if (nfds > 0)
         {
             ASSERT_NOT_NULL(events);
             ASSERT_NOT_NULL(events[0].socket);
             ASSERT_NE(events[0].events & POLL_READ, 0);
         }
-    EXCEPT(SocketPoll_Failed) (void)0;
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         SocketPoll_free(&poll);
         Socket_free(&client);
         Socket_free(&server);
+    }
     END_TRY;
 }
 
@@ -236,22 +285,29 @@ TEST(socketpoll_wait_write_event)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         Socket_bind(socket, "127.0.0.1", 0);
         Socket_setnonblocking(socket);
         SocketPoll_add(poll, socket, POLL_WRITE, NULL);
-        
+
         SocketEvent_T *events = NULL;
         int nfds = SocketPoll_wait(poll, &events, 100);
-        
+
         if (nfds > 0)
         {
             ASSERT_NOT_NULL(events);
             ASSERT_NE(events[0].events & POLL_WRITE, 0);
         }
-    EXCEPT(SocketPoll_Failed) (void)0;
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         SocketPoll_free(&poll);
         Socket_free(&socket);
+    }
     END_TRY;
 }
 
@@ -264,6 +320,7 @@ TEST(socketpoll_wait_multiple_events)
     Socket_T client2 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 10);
         Socket_setnonblocking(server);
@@ -281,12 +338,18 @@ TEST(socketpoll_wait_multiple_events)
         SocketEvent_T *events = NULL;
         int nfds = SocketPoll_wait(poll, &events, 100);
         ASSERT_NE(nfds, -1);
-    EXCEPT(SocketPoll_Failed) (void)0;
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         SocketPoll_free(&poll);
         Socket_free(&client2);
         Socket_free(&client1);
         Socket_free(&server);
+    }
     END_TRY;
 }
 
@@ -299,6 +362,7 @@ TEST(socketpoll_wait_with_user_data)
     int user_data = 12345;
 
     TRY
+    {
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 1);
         Socket_setnonblocking(server);
@@ -319,11 +383,17 @@ TEST(socketpoll_wait_with_user_data)
         {
             ASSERT_EQ(*(int *)events[0].data, user_data);
         }
-    EXCEPT(SocketPoll_Failed) (void)0;
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         SocketPoll_free(&poll);
         Socket_free(&client);
         Socket_free(&server);
+    }
     END_TRY;
 }
 
@@ -335,9 +405,14 @@ TEST(socketpoll_wait_empty_poll)
     SocketEvent_T *events = NULL;
 
     TRY
+    {
         int nfds = SocketPoll_wait(poll, &events, 10);
         ASSERT_EQ(nfds, 0);
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
 
     SocketPoll_free(&poll);
@@ -350,10 +425,11 @@ TEST(socketpoll_wait_negative_timeout)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         Socket_bind(socket, "127.0.0.1", 0);
         Socket_setnonblocking(socket);
         SocketPoll_add(poll, socket, POLL_WRITE, NULL);
-        
+
         /* On macOS/kqueue, -1 timeout means infinite wait. Use a short timeout
          * instead to test that wait works, but avoid hanging if socket isn't ready. */
         SocketEvent_T *events = NULL;
@@ -365,10 +441,16 @@ TEST(socketpoll_wait_negative_timeout)
             ASSERT_NOT_NULL(events);
             ASSERT_NE(events[0].events & POLL_WRITE, 0);
         }
-    EXCEPT(SocketPoll_Failed) (void)0;
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         SocketPoll_free(&poll);
         Socket_free(&socket);
+    }
     END_TRY;
 }
 
@@ -379,10 +461,15 @@ TEST(socketpoll_add_remove_readd)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         SocketPoll_add(poll, socket, POLL_READ, NULL);
         SocketPoll_del(poll, socket);
         SocketPoll_add(poll, socket, POLL_WRITE, NULL);
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
 
     SocketPoll_free(&poll);
@@ -396,10 +483,15 @@ TEST(socketpoll_mod_after_add)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         SocketPoll_add(poll, socket, POLL_READ, NULL);
         SocketPoll_mod(poll, socket, POLL_WRITE, NULL);
         SocketPoll_mod(poll, socket, POLL_READ | POLL_WRITE, NULL);
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
 
     SocketPoll_free(&poll);
@@ -416,33 +508,41 @@ TEST(socketpoll_accept_via_poll)
     Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 5);
         Socket_setnonblocking(server);
-        
+
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
         getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
         int port = ntohs(addr.sin_port);
-        
+
         SocketPoll_add(poll, server, POLL_READ, NULL);
         Socket_connect(client, "127.0.0.1", port);
         usleep(50000);
-        
+
         SocketEvent_T *events = NULL;
         int nfds = SocketPoll_wait(poll, &events, 100);
-        
+
         if (nfds > 0)
         {
             ASSERT_EQ(events[0].socket, server);
             Socket_T accepted = Socket_accept(server);
-            if (accepted) Socket_free(&accepted);
+            if (accepted)
+                Socket_free(&accepted);
         }
-    EXCEPT(SocketPoll_Failed) (void)0;
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         SocketPoll_free(&poll);
         Socket_free(&client);
         Socket_free(&server);
+    }
     END_TRY;
 }
 
@@ -454,6 +554,7 @@ TEST(socketpoll_data_ready_event)
     Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 1);
         Socket_setnonblocking(server);
@@ -484,15 +585,22 @@ TEST(socketpoll_data_ready_event)
                 
                 char buf[TEST_BUFFER_SIZE] = {0};
                 ssize_t received = Socket_recv(accepted, buf, sizeof(buf) - 1);
-                if (received > 0) ASSERT_EQ(strcmp(buf, msg), 0);
+                if (received > 0)
+                    ASSERT_EQ(strcmp(buf, msg), 0);
             }
             Socket_free(&accepted);
         }
-    EXCEPT(SocketPoll_Failed) (void)0;
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         SocketPoll_free(&poll);
         Socket_free(&client);
         Socket_free(&server);
+    }
     END_TRY;
 }
 
@@ -506,6 +614,7 @@ TEST(socketpoll_multiple_ready_sockets)
     Socket_T client2 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 10);
         Socket_setnonblocking(server);
@@ -523,12 +632,18 @@ TEST(socketpoll_multiple_ready_sockets)
         SocketEvent_T *events = NULL;
         int nfds = SocketPoll_wait(poll, &events, 100);
         ASSERT_NE(nfds, -1);
-    EXCEPT(SocketPoll_Failed) (void)0;
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         SocketPoll_free(&poll);
         Socket_free(&client2);
         Socket_free(&client1);
         Socket_free(&server);
+    }
     END_TRY;
 }
 #endif
@@ -542,6 +657,7 @@ TEST(socketpoll_event_loop_simulation)
     Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 10);
         Socket_setnonblocking(server);
@@ -553,10 +669,16 @@ TEST(socketpoll_event_loop_simulation)
             int nfds = SocketPoll_wait(poll, &events, 10);
             (void)nfds;
         }
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     FINALLY
+    {
         SocketPoll_free(&poll);
         Socket_free(&server);
+    }
     END_TRY;
 }
 
@@ -569,21 +691,28 @@ TEST(socketpoll_many_sockets)
     Socket_T sockets[50];
 
     TRY
+    {
         for (int i = 0; i < 50; i++)
         {
             sockets[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
             SocketPoll_add(poll, sockets[i], POLL_READ, NULL);
         }
-        
+
         for (int i = 0; i < 50; i++)
         {
             SocketPoll_del(poll, sockets[i]);
         }
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     FINALLY
+    {
         for (int i = 0; i < 50; i++)
             Socket_free(&sockets[i]);
         SocketPoll_free(&poll);
+    }
     END_TRY;
 }
 
@@ -594,12 +723,17 @@ TEST(socketpoll_rapid_add_remove)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         for (int i = 0; i < 100; i++)
         {
             SocketPoll_add(poll, socket, POLL_READ, NULL);
             SocketPoll_del(poll, socket);
         }
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
 
     SocketPoll_free(&poll);
@@ -615,8 +749,14 @@ static void *thread_poll_operations(void *arg)
     for (volatile int i = 0; i < 20; i++)
     {
         SocketEvent_T *events = NULL;
-        TRY SocketPoll_wait(poll, &events, 5);
-        EXCEPT(SocketPoll_Failed) break;
+        TRY
+        {
+            SocketPoll_wait(poll, &events, 5);
+        }
+        EXCEPT(SocketPoll_Failed)
+        {
+            break;
+        }
         END_TRY;
         usleep(1000);
     }
@@ -632,19 +772,26 @@ TEST(socketpoll_concurrent_wait)
     pthread_t threads[4];
 
     TRY
+    {
         volatile int i;
         Socket_setnonblocking(socket);
         SocketPoll_add(poll, socket, POLL_WRITE, NULL);
-        
+
         for (i = 0; i < 4; i++)
             pthread_create(&threads[i], NULL, thread_poll_operations, poll);
-        
+
         for (i = 0; i < 4; i++)
             pthread_join(threads[i], NULL);
-    EXCEPT(SocketPoll_Failed) (void)0;
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         SocketPoll_free(&poll);
         Socket_free(&socket);
+    }
     END_TRY;
 }
 
@@ -655,16 +802,35 @@ TEST(socketpoll_mod_nonexistent_socket)
     setup_signals();
     SocketPoll_T poll = SocketPoll_new(100);
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    int caught = 0;
 
     TRY
-        SocketPoll_mod(poll, socket, POLL_READ, NULL);
-        ASSERT(0); /* Should have raised exception */
-    EXCEPT(SocketPoll_Failed)
-        /* Expected - socket not in poll */
+    {
+        TRY
+        {
+            SocketPoll_mod(poll, socket, POLL_READ, NULL);
+            ASSERT(0); /* Should have raised exception */
+        }
+        EXCEPT(Test_Failed)
+        {
+            RERAISE;
+        }
+        ELSE
+        {
+            ASSERT_NOT_NULL(Except_frame.exception);
+            ASSERT_NOT_NULL(strstr(Except_frame.exception->reason, "Socket not in poll set"));
+            caught = 1;
+        }
+        END_TRY;
+    }
+    FINALLY
+    {
+        SocketPoll_free(&poll);
+        Socket_free(&socket);
+    }
     END_TRY;
 
-    SocketPoll_free(&poll);
-    Socket_free(&socket);
+    ASSERT(caught);
 }
 
 TEST(socketpoll_del_nonexistent_socket)
@@ -674,9 +840,14 @@ TEST(socketpoll_del_nonexistent_socket)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         SocketPoll_del(poll, socket);
         /* Should succeed silently */
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
 
     SocketPoll_free(&poll);
@@ -686,19 +857,38 @@ TEST(socketpoll_del_nonexistent_socket)
 TEST(socketpoll_add_duplicate_socket)
 {
     setup_signals();
-    volatile SocketPoll_T poll = SocketPoll_new(100);
-    volatile Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    SocketPoll_T poll = SocketPoll_new(100);
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    int caught = 0;
 
     TRY
-        SocketPoll_add((SocketPoll_T)poll, (Socket_T)socket, POLL_READ, NULL);
-        SocketPoll_add((SocketPoll_T)poll, (Socket_T)socket, POLL_READ, NULL);
-        /* Should not reach here - second add should raise exception */
-    EXCEPT(SocketPoll_Failed)
-        (void)0; /* Expected - socket already in poll */
+    {
+        TRY
+        {
+            SocketPoll_add(poll, socket, POLL_READ, NULL);
+            SocketPoll_add(poll, socket, POLL_READ, NULL);
+            ASSERT(0); /* Second add should raise exception */
+        }
+        EXCEPT(Test_Failed)
+        {
+            RERAISE;
+        }
+        ELSE
+        {
+            ASSERT_NOT_NULL(Except_frame.exception);
+            ASSERT_NOT_NULL(strstr(Except_frame.exception->reason, "Socket already in poll set"));
+            caught = 1;
+        }
+        END_TRY;
+    }
+    FINALLY
+    {
+        SocketPoll_free(&poll);
+        Socket_free(&socket);
+    }
     END_TRY;
 
-    SocketPoll_free((SocketPoll_T *)&poll);
-    Socket_free((Socket_T *)&socket);
+    ASSERT(caught);
 }
 
 TEST(socketpoll_wait_zero_timeout)
@@ -708,17 +898,24 @@ TEST(socketpoll_wait_zero_timeout)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         Socket_bind(socket, "127.0.0.1", 0);
         Socket_setnonblocking(socket);
         SocketPoll_add(poll, socket, POLL_WRITE, NULL);
-        
+
         SocketEvent_T *events = NULL;
         int nfds = SocketPoll_wait(poll, &events, 0);
         ASSERT_NE(nfds, -1);
-    EXCEPT(SocketPoll_Failed) (void)0;
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         SocketPoll_free(&poll);
         Socket_free(&socket);
+    }
     END_TRY;
 }
 
@@ -753,6 +950,7 @@ TEST(socketpoll_multiple_event_types)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         Socket_bind(socket, "127.0.0.1", 0);
         Socket_setnonblocking(socket);
         SocketPoll_add(poll, socket, POLL_READ | POLL_WRITE, NULL);
@@ -766,10 +964,16 @@ TEST(socketpoll_multiple_event_types)
             unsigned event_flags = events[0].events;
             ASSERT_NE(event_flags & POLL_WRITE, 0);
         }
-    EXCEPT(SocketPoll_Failed) (void)0;
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         SocketPoll_free(&poll);
         Socket_free(&socket);
+    }
     END_TRY;
 }
 
@@ -782,10 +986,15 @@ TEST(socketpoll_remove_and_re_add)
     int data2 = 2;
 
     TRY
+    {
         SocketPoll_add(poll, socket, POLL_READ, &data1);
         SocketPoll_del(poll, socket);
         SocketPoll_add(poll, socket, POLL_READ, &data2);
-    EXCEPT(SocketPoll_Failed) ASSERT(0);
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
 
     SocketPoll_free(&poll);

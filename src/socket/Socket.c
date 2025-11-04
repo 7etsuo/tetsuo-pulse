@@ -37,6 +37,21 @@
 
 #define T Socket_T
 
+static int socket_live_count = 0;
+
+static void
+socket_live_increment(void)
+{
+    socket_live_count++;
+}
+
+static void
+socket_live_decrement(void)
+{
+    if (socket_live_count > 0)
+        socket_live_count--;
+}
+
 /* Port string buffer size for snprintf - 16 bytes sufficient for "65535" + null */
 
 Except_T Socket_Failed = {"Socket operation failed"};
@@ -197,6 +212,7 @@ static T allocate_socket_structure(int fd)
         SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate socket structure");
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
+    socket_live_increment();
     return sock;
 }
 
@@ -509,6 +525,7 @@ void Socket_free(T *socket)
         Arena_dispose(&(*socket)->arena);
 
     free(*socket);
+    socket_live_decrement();
     *socket = NULL;
 }
 
@@ -667,6 +684,7 @@ static T create_accepted_socket(int newfd, const struct sockaddr_storage *addr, 
     newsocket->fd = newfd;
     memcpy(&newsocket->addr, addr, addrlen);
     newsocket->addrlen = addrlen;
+    socket_live_increment();
 
     return newsocket;
 }
@@ -1214,3 +1232,9 @@ void Socket_connect_with_addrinfo(T socket, struct addrinfo *res)
 }
 
 #undef T
+
+int
+Socket_debug_live_count(void)
+{
+    return socket_live_count;
+}

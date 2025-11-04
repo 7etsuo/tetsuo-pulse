@@ -63,8 +63,14 @@ TEST(socketdgram_bind_localhost)
     setup_signals();
     SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
     ASSERT_NOT_NULL(socket);
-    TRY SocketDgram_bind(socket, "127.0.0.1", 0);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
+    TRY
+    {
+        SocketDgram_bind(socket, "127.0.0.1", 0);
+    }
+    EXCEPT(SocketDgram_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
     SocketDgram_free(&socket);
 }
@@ -74,8 +80,14 @@ TEST(socketdgram_bind_any)
     setup_signals();
     SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
     ASSERT_NOT_NULL(socket);
-    TRY SocketDgram_bind(socket, NULL, 0);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
+    TRY
+    {
+        SocketDgram_bind(socket, NULL, 0);
+    }
+    EXCEPT(SocketDgram_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
     SocketDgram_free(&socket);
 }
@@ -84,8 +96,14 @@ TEST(socketdgram_bind_wildcard_ipv4)
 {
     setup_signals();
     SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    TRY SocketDgram_bind(socket, "0.0.0.0", 0);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
+    TRY
+    {
+        SocketDgram_bind(socket, "0.0.0.0", 0);
+    }
+    EXCEPT(SocketDgram_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
     SocketDgram_free(&socket);
 }
@@ -94,8 +112,14 @@ TEST(socketdgram_bind_ipv6_localhost)
 {
     setup_signals();
     SocketDgram_T socket = SocketDgram_new(AF_INET6, 0);
-    TRY SocketDgram_bind(socket, "::1", 0);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
+    TRY
+    {
+        SocketDgram_bind(socket, "::1", 0);
+    }
+    EXCEPT(SocketDgram_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
     SocketDgram_free(&socket);
 }
@@ -104,8 +128,14 @@ TEST(socketdgram_bind_ipv6_any)
 {
     setup_signals();
     SocketDgram_T socket = SocketDgram_new(AF_INET6, 0);
-    TRY SocketDgram_bind(socket, "::", 0);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
+    TRY
+    {
+        SocketDgram_bind(socket, "::", 0);
+    }
+    EXCEPT(SocketDgram_Failed)
+    {
+        ASSERT(0);
+    }
     END_TRY;
     SocketDgram_free(&socket);
 }
@@ -119,31 +149,38 @@ TEST(socketdgram_sendto_recvfrom_localhost)
     SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
 
     TRY
+    {
         SocketDgram_bind(receiver, "127.0.0.1", 0);
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
         getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
         int port = ntohs(addr.sin_port);
-        
+
         const char *msg = "UDP test message";
         ssize_t sent = SocketDgram_sendto(sender, msg, strlen(msg), "127.0.0.1", port);
         ASSERT_NE(sent, -1);
-        
+
         usleep(10000);
         char recv_host[256] = {0};
         int recv_port = 0;
         char buf[TEST_BUFFER_SIZE] = {0};
         ssize_t received = SocketDgram_recvfrom(receiver, buf, sizeof(buf) - 1, recv_host, sizeof(recv_host), &recv_port);
-        
+
         if (received > 0)
         {
             ASSERT_EQ(strcmp(buf, msg), 0);
             ASSERT_NE(recv_port, 0);
         }
-    EXCEPT(SocketDgram_Failed) (void)0;
+    }
+    EXCEPT(SocketDgram_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         SocketDgram_free(&sender);
         SocketDgram_free(&receiver);
+    }
     END_TRY;
 }
 

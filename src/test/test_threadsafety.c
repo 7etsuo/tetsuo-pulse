@@ -48,11 +48,18 @@ static void *thread_arena_operations(void *arg)
     for (int i = 0; i < OPERATIONS_PER_THREAD; i++)
     {
         TRY
+        {
             void *ptr1 = ALLOC(arena, 100);
             void *ptr2 = ALLOC(arena, 200);
             void *ptr3 = CALLOC(arena, 10, sizeof(int));
-            (void)ptr1; (void)ptr2; (void)ptr3;
-        EXCEPT(Arena_Failed) break;
+            (void)ptr1;
+            (void)ptr2;
+            (void)ptr3;
+        }
+        EXCEPT(Arena_Failed)
+        {
+            break;
+        }
         END_TRY;
     }
     
@@ -80,9 +87,15 @@ static void *thread_arena_clear(void *arg)
     for (int i = 0; i < 50; i++)
     {
         TRY
+        {
             ALLOC(arena, 500);
-            if (i % 10 == 0) Arena_clear(arena);
-        EXCEPT(Arena_Failed) break;
+            if (i % 10 == 0)
+                Arena_clear(arena);
+        }
+        EXCEPT(Arena_Failed)
+        {
+            break;
+        }
         END_TRY;
         usleep(100);
     }
@@ -115,11 +128,15 @@ static void *thread_exception_handling(void *arg)
     for (int i = 0; i < OPERATIONS_PER_THREAD; i++)
     {
         TRY
+        {
             if (i % 2 == 0)
                 RAISE(ThreadTest_Exception);
+        }
         EXCEPT(ThreadTest_Exception)
+        {
             /* Exception caught successfully */
             (void)0;
+        }
         END_TRY;
     }
     
@@ -148,10 +165,15 @@ static void *thread_socket_operations(void *arg)
     {
         Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
         TRY
+        {
             Socket_setnonblocking(socket);
             Socket_setreuseaddr(socket);
             Socket_settimeout(socket, 5);
-        EXCEPT(Socket_Failed) (void)0;
+        }
+        EXCEPT(Socket_Failed)
+        {
+            (void)0;
+        }
         END_TRY;
         Socket_free(&socket);
     }
@@ -247,10 +269,15 @@ static void *thread_poll_add_remove(void *arg)
     {
         Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
         TRY
+        {
             SocketPoll_add(poll, socket, POLL_READ, NULL);
             usleep(100);
             SocketPoll_del(poll, socket);
-        EXCEPT(SocketPoll_Failed) (void)0;
+        }
+        EXCEPT(SocketPoll_Failed)
+        {
+            (void)0;
+        }
         END_TRY;
         Socket_free(&socket);
     }
@@ -283,13 +310,18 @@ static void *thread_pool_add_remove(void *arg)
     {
         Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
         TRY
+        {
             Connection_T conn = SocketPool_add(pool, socket);
             if (conn)
             {
                 usleep(100);
                 SocketPool_remove(pool, socket);
             }
-        EXCEPT(SocketPool_Failed) (void)0;
+        }
+        EXCEPT(SocketPool_Failed)
+        {
+            (void)0;
+        }
         END_TRY;
         Socket_free(&socket);
     }
@@ -320,6 +352,7 @@ static void *thread_pool_get_operations(void *arg)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
     
     TRY
+    {
         Connection_T conn = SocketPool_add(pool, socket);
         if (conn)
         {
@@ -331,7 +364,11 @@ static void *thread_pool_get_operations(void *arg)
             }
             SocketPool_remove(pool, socket);
         }
-    EXCEPT(SocketPool_Failed) (void)0;
+    }
+    EXCEPT(SocketPool_Failed)
+    {
+        (void)0;
+    }
     END_TRY;
     
     Socket_free(&socket);
@@ -393,10 +430,15 @@ static void *thread_dns_resolve(void *arg)
     for (int i = 0; i < 30; i++)
     {
         TRY
+        {
             SocketDNS_Request_T req = SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
             (void)req;
             usleep(5000);
-        EXCEPT(SocketDNS_Failed) break;
+        }
+        EXCEPT(SocketDNS_Failed)
+        {
+            break;
+        }
         END_TRY;
     }
     
@@ -426,10 +468,15 @@ static void *thread_dns_cancel(void *arg)
     for (int i = 0; i < 30; i++)
     {
         TRY
+        {
             SocketDNS_Request_T req = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
             usleep(1000);
             SocketDNS_cancel(dns, req);
-        EXCEPT(SocketDNS_Failed) break;
+        }
+        EXCEPT(SocketDNS_Failed)
+        {
+            break;
+        }
         END_TRY;
     }
     
@@ -469,9 +516,14 @@ TEST(threadsafety_socketdns_concurrent_check)
     pthread_t threads[NUM_THREADS];
     
     TRY
+    {
         for (int i = 0; i < 20; i++)
             SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
-    EXCEPT(SocketDNS_Failed) (void)0;
+    }
+    EXCEPT(SocketDNS_Failed)
+    {
+        (void)0;
+    }
     END_TRY;
     
     for (int i = 0; i < NUM_THREADS; i++)
@@ -500,21 +552,29 @@ static void *thread_mixed_operations(void *arg)
         Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
         
         TRY
+        {
             SocketPoll_add(data->poll, socket, POLL_READ, NULL);
             Connection_T conn = SocketPool_add(data->pool, socket);
-            
+
             usleep(100);
-            
+
             if (conn)
             {
                 SocketBuf_T inbuf = Connection_inbuf(conn);
                 SocketBuf_write(inbuf, "Test", 4);
             }
-            
+
             SocketPoll_del(data->poll, socket);
             SocketPool_remove(data->pool, socket);
-        EXCEPT(SocketPoll_Failed) (void)0;
-        EXCEPT(SocketPool_Failed) (void)0;
+        }
+        EXCEPT(SocketPoll_Failed)
+        {
+            (void)0;
+        }
+        EXCEPT(SocketPool_Failed)
+        {
+            (void)0;
+        }
         END_TRY;
         
         Socket_free(&socket);
@@ -554,22 +614,32 @@ static void *thread_exception_stress(void *arg)
         Socket_T socket = NULL;
         
         TRY
+        {
             socket = Socket_new(AF_INET, SOCK_STREAM, 0);
             void *ptr = ALLOC(arena, 100);
             (void)ptr;
-            
+
             Socket_setnonblocking(socket);
-            
+
             if (i % 3 == 0)
                 RAISE(ThreadTest_Exception);
+        }
         EXCEPT(ThreadTest_Exception)
+        {
             /* Cleanup in exception path */
-            if (socket) Socket_free(&socket);
+            if (socket)
+                Socket_free(&socket);
+        }
         EXCEPT(Socket_Failed)
-            if (socket) Socket_free(&socket);
+        {
+            if (socket)
+                Socket_free(&socket);
+        }
         FINALLY
+        {
             /* Additional cleanup */
             (void)0;
+        }
         END_TRY;
         
         if (socket) Socket_free(&socket);
@@ -603,10 +673,15 @@ static void *thread_udp_operations(void *arg)
     {
         SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
         TRY
+        {
             SocketDgram_setnonblocking(socket);
             SocketDgram_setreuseaddr(socket);
             SocketDgram_setttl(socket, 64);
-        EXCEPT(SocketDgram_Failed) (void)0;
+        }
+        EXCEPT(SocketDgram_Failed)
+        {
+            (void)0;
+        }
         END_TRY;
         SocketDgram_free(&socket);
     }
@@ -636,19 +711,20 @@ TEST(threadsafety_high_load_server_simulation)
     volatile Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
+    {
         Socket_setreuseaddr(server);
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 100);
         Socket_setnonblocking(server);
-        
+
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
         getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
         volatile int port = ntohs(addr.sin_port);
-        
+
         /* Cast volatile server to non-volatile for SocketPoll_add */
         SocketPoll_add(poll, (Socket_T)server, POLL_READ, NULL);
-        
+
         Socket_T clients[20];
         volatile int i;
         volatile int iteration;
@@ -658,14 +734,14 @@ TEST(threadsafety_high_load_server_simulation)
             clients[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
             Socket_connect(clients[i], "127.0.0.1", port);
         }
-        
+
         usleep(200000);
-        
+
         for (iteration = 0; iteration < 5; iteration++)
         {
             SocketEvent_T *volatile events = NULL;
             nfds = SocketPoll_wait(poll, (SocketEvent_T **)&events, 50);
-            
+
             for (i = 0; i < nfds; i++)
             {
                 /* Cast volatile server for comparison */
@@ -680,21 +756,26 @@ TEST(threadsafety_high_load_server_simulation)
                 }
             }
         }
-        
+
         for (i = 0; i < 20; i++)
             Socket_free(&clients[i]);
-    EXCEPT(Socket_Failed) (void)0;
-    EXCEPT(SocketPoll_Failed) (void)0;
-    EXCEPT(SocketPool_Failed) (void)0;
+    }
+    EXCEPT(Socket_Failed)
+    {
+        (void)0;
+    }
+    EXCEPT(SocketPoll_Failed)
+    {
+        (void)0;
+    }
     FINALLY
+    {
         if (server)
-        {
-            Socket_T s = (Socket_T)server;
-            Socket_free(&s);
-        }
-        SocketPoll_free(&poll);
+            Socket_free((Socket_T *)&server);
         SocketPool_free(&pool);
+        SocketPoll_free(&poll);
         Arena_dispose(&arena);
+    }
     END_TRY;
 }
 
@@ -712,10 +793,15 @@ TEST(threadsafety_memory_intensive_operations)
         for (int i = 0; i < 10; i++)
         {
             TRY
+            {
                 for (int j = 0; j < 100; j++)
                     ALLOC(arenas[i], 1000);
                 Arena_clear(arenas[i]);
-            EXCEPT(Arena_Failed) (void)0;
+            }
+            EXCEPT(Arena_Failed)
+            {
+                (void)0;
+            }
             END_TRY;
         }
     }
