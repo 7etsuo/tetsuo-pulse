@@ -138,7 +138,9 @@ static void except_unwind_stack(Except_Frame *p)
  */
 static void except_perform_jump(Except_Frame *p)
 {
-    longjmp(p->env, Except_raised);
+    /* Cast jmp_buf to non-volatile for longjmp - jmp_buf array is already saved */
+    jmp_buf *env_ptr = (jmp_buf *)&p->env;
+    longjmp(*env_ptr, Except_raised);
 }
 
 /**
@@ -158,11 +160,12 @@ static void except_perform_jump(Except_Frame *p)
  */
 void Except_raise(const T *e, const char *file, int line)
 {
-    Except_Frame *p;
+    /* Read Except_stack into local variable - ensures we get current value */
+    volatile Except_Frame *volatile_p = Except_stack;
+    Except_Frame *p = (Except_Frame *)volatile_p;
 
     except_validate_pointer(e);
 
-    p = Except_stack;
     if (p == NULL)
         except_handle_uncaught(e, file, line);
 

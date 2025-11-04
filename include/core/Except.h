@@ -67,7 +67,7 @@ void Except_raise (const T *e, const char *file, int line);
 
 #define RAISE(e) Except_raise (&(e), __FILE__, __LINE__)
 #define RERAISE                                                                \
-  Except_raise (Except_frame.exception, Except_frame.file, Except_frame.line)
+  Except_raise ((const Except_T *)Except_frame.exception, Except_frame.file, Except_frame.line)
 
 /**
  * RETURN macro - Returns from function while cleaning up exception stack
@@ -91,7 +91,7 @@ void Except_raise (const T *e, const char *file, int line);
  *   RETURN func(a, b);   // Works with function calls containing commas
  */
 #define RETURN                                                                 \
-  switch (Except_stack = Except_stack->prev, 0)                                \
+  switch (Except_stack = ((Except_Frame *)Except_stack)->prev, 0)              \
   default:                                                                     \
     return
 
@@ -99,13 +99,14 @@ void Except_raise (const T *e, const char *file, int line);
   do                                                                           \
     {                                                                          \
       volatile int Except_flag;                                                \
-      Except_Frame Except_frame;                                               \
+      volatile Except_Frame Except_frame;                                     \
+      jmp_buf *env_ptr = (jmp_buf *)&Except_frame.env;                         \
       Except_frame.prev = Except_stack;                                        \
       Except_frame.file = NULL;                                                \
       Except_frame.line = 0;                                                   \
       Except_frame.exception = NULL;                                           \
-      Except_stack = &Except_frame;                                            \
-      Except_flag = setjmp (Except_frame.env);                                 \
+      Except_stack = (Except_Frame *)&Except_frame;                            \
+      Except_flag = setjmp (*env_ptr);                                         \
       if (Except_flag == Except_entered)                                       \
         {
 
@@ -113,7 +114,7 @@ void Except_raise (const T *e, const char *file, int line);
   if (Except_flag == Except_entered)                                           \
     Except_stack = Except_stack->prev;                                         \
   }                                                                            \
-  else if (Except_frame.exception == &(e))                                     \
+  else if ((const Except_T *)Except_frame.exception == &(e))                   \
   {                                                                            \
     Except_flag = Except_handled;
 
