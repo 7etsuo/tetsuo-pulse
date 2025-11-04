@@ -198,8 +198,6 @@ void Test_run_all(void)
         }
         END_TRY;
 
-        printf("[debug harness] after %s: stack=%p\n", current_test->name, (void *)Except_stack);
-
         current_test = next_test;
     }
 

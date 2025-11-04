@@ -8,7 +8,6 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -60,21 +59,13 @@ untrack_socket(Socket_T socket)
 static void
 assert_no_tracked_sockets(void)
 {
-    if (tracked_count != 0)
-    {
-        fprintf(stderr, "[integration debug] tracked sockets remaining: %d\n", tracked_count);
-        fflush(stderr);
-    }
     ASSERT_EQ(tracked_count, 0);
 }
 
 static void
 assert_no_socket_leaks(void)
 {
-    int live = Socket_debug_live_count();
-    fprintf(stderr, "[integration debug] live sockets remaining: %d\n", live);
-    fflush(stderr);
-    ASSERT_EQ(live, 0);
+    ASSERT_EQ(Socket_debug_live_count(), 0);
 }
 
 static void setup_signals(void)
