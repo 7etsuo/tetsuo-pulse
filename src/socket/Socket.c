@@ -126,15 +126,16 @@ static void setup_connect_hints(struct addrinfo *hints)
  */
 static int get_socket_family(T socket)
 {
+    socklen_t len;
 #if SOCKET_HAS_SO_DOMAIN
     int socket_family = SOCKET_AF_UNSPEC;
-    socklen_t len = sizeof(socket_family);
+    len = sizeof(socket_family);
     if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_DOMAIN, &socket_family, &len) == 0)
         return socket_family;
 #endif
     /* Fallback: use getsockname() to get socket address family */
     struct sockaddr_storage addr;
-    socklen_t len = sizeof(addr);
+    len = sizeof(addr);
     if (getsockname(socket->fd, (struct sockaddr *)&addr, &len) == 0)
         return addr.ss_family;
     return SOCKET_AF_UNSPEC;

@@ -111,7 +111,7 @@ static unsigned socket_hash(const Socket_T socket)
  */
 static SocketData *allocate_socket_data_entry(T poll)
 {
-    volatile SocketData *volatile_entry = NULL;
+    SocketData *volatile volatile_entry = NULL;
 
     TRY
     {
@@ -124,7 +124,7 @@ static SocketData *allocate_socket_data_entry(T poll)
     }
     END_TRY;
 
-    return (SocketData *)volatile_entry;
+    return volatile_entry;
 }
 
 /**
@@ -136,7 +136,7 @@ static SocketData *allocate_socket_data_entry(T poll)
  */
 static FdSocketEntry *allocate_fd_socket_entry(T poll)
 {
-    volatile FdSocketEntry *volatile_entry = NULL;
+    FdSocketEntry *volatile volatile_entry = NULL;
 
     TRY
     {
@@ -149,7 +149,7 @@ static FdSocketEntry *allocate_fd_socket_entry(T poll)
     }
     END_TRY;
 
-    return (FdSocketEntry *)volatile_entry;
+    return volatile_entry;
 }
 
 /**
@@ -375,7 +375,7 @@ static SocketData *find_socket_data_entry(T poll, unsigned hash, Socket_T socket
  */
 static void add_fallback_socket_data_entry(T poll, unsigned hash, Socket_T socket, void *data)
 {
-    volatile SocketData *volatile_entry = NULL;
+    SocketData *volatile volatile_entry = NULL;
 
 #ifndef NDEBUG
     fprintf(stderr, "WARNING: socket_data_update fallback (fd %d)\n", Socket_fd(socket));
@@ -394,11 +394,10 @@ static void add_fallback_socket_data_entry(T poll, unsigned hash, Socket_T socke
     }
     END_TRY;
 
-    SocketData *entry = (SocketData *)volatile_entry;
-    entry->socket = socket;
-    entry->data = data;
-    entry->next = poll->socket_data_map[hash];
-    poll->socket_data_map[hash] = entry;
+    volatile_entry->socket = socket;
+    volatile_entry->data = data;
+    volatile_entry->next = poll->socket_data_map[hash];
+    poll->socket_data_map[hash] = volatile_entry;
 }
 
 /**
