@@ -207,6 +207,25 @@ extern const char *Socket_getpeeraddr(const T socket);
 extern int Socket_getpeerport(const T socket);
 
 /**
+ * Socket_getlocaladdr - Get local IP address
+ * @socket: Socket instance
+ *
+ * Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable
+ *
+ * Note: Returns "(unknown)" if address info unavailable. String is owned by
+ * socket, must not be freed/modified. Valid until socket freed.
+ */
+extern const char *Socket_getlocaladdr(const T socket);
+
+/**
+ * Socket_getlocalport - Get local port number
+ * @socket: Socket instance
+ *
+ * Returns: Port number (1-65535) or 0 if unavailable
+ */
+extern int Socket_getlocalport(const T socket);
+
+/**
  * Socket_bind_unix - Bind to Unix domain socket path
  * @socket: Socket to bind (AF_UNIX)
  * @path: Socket file path
