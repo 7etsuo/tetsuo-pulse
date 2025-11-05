@@ -39,14 +39,12 @@
 
 static int socket_live_count = 0;
 
-static void
-socket_live_increment(void)
+static void socket_live_increment(void)
 {
     socket_live_count++;
 }
 
-static void
-socket_live_decrement(void)
+static void socket_live_decrement(void)
 {
     if (socket_live_count > 0)
         socket_live_count--;
@@ -79,13 +77,16 @@ struct T
     int fd;
     struct sockaddr_storage addr;
     socklen_t addrlen;
+    struct sockaddr_storage local_addr;
+    socklen_t local_addrlen;
     char *peeraddr; /* IPv4 or IPv6 address string */
     int peerport;
+    char *localaddr;
+    int localport;
     Arena_T arena;
 };
 
 /* Static helper functions */
-
 
 /**
  * validate_port_number - Validate port is in valid range
@@ -228,8 +229,12 @@ static T initialize_socket_structure(T socket, int fd)
     socket->fd = fd;
     socket->addrlen = sizeof(socket->addr);
     memset(&socket->addr, 0, sizeof(socket->addr));
+    socket->local_addrlen = 0;
+    memset(&socket->local_addr, 0, sizeof(socket->local_addr));
     socket->peeraddr = NULL;
     socket->peerport = 0;
+    socket->localaddr = NULL;
+    socket->localport = 0;
     return socket;
 }
 
@@ -366,6 +371,20 @@ static int allocate_peer_address(T newsocket, const char *host)
     return 0;
 }
 
+static int allocate_local_address(T socket, const char *host)
+{
+    size_t addr_len = strlen(host) + 1;
+
+    socket->localaddr = ALLOC(socket->arena, addr_len);
+    if (!socket->localaddr)
+    {
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate local address buffer");
+        return -1;
+    }
+    strcpy(socket->localaddr, host);
+    return 0;
+}
+
 /**
  * parse_peer_port - Parse port string to integer
  * @serv: Port string
@@ -398,7 +417,8 @@ static int setup_peer_info(T newsocket, const struct sockaddr *addr, socklen_t a
     char serv[SOCKET_NI_MAXSERV];
     int result;
 
-    result = getnameinfo(addr, addrlen, host, SOCKET_NI_MAXHOST, serv, SOCKET_NI_MAXSERV, SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
+    result = getnameinfo(addr, addrlen, host, SOCKET_NI_MAXHOST, serv, SOCKET_NI_MAXSERV,
+                         SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
     if (result == 0)
     {
         if (allocate_peer_address(newsocket, host) != 0)
@@ -411,6 +431,53 @@ static int setup_peer_info(T newsocket, const struct sockaddr *addr, socklen_t a
         newsocket->peerport = 0;
     }
     return 0;
+}
+
+static void update_local_endpoint(T socket)
+{
+    struct sockaddr_storage local;
+    socklen_t len = sizeof(local);
+    char host[SOCKET_NI_MAXHOST];
+    char serv[SOCKET_NI_MAXSERV];
+    int result;
+
+    assert(socket);
+
+    if (getsockname(socket->fd, (struct sockaddr *)&local, &len) < 0)
+    {
+        memset(&socket->local_addr, 0, sizeof(socket->local_addr));
+        socket->local_addrlen = 0;
+        socket->localaddr = NULL;
+        socket->localport = 0;
+        return;
+    }
+
+    socket->local_addr = local;
+    socket->local_addrlen = len;
+
+    result = getnameinfo((struct sockaddr *)&local, len, host, sizeof(host), serv, sizeof(serv),
+                         SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
+    if (result != 0)
+    {
+        socket->localaddr = NULL;
+        socket->localport = 0;
+        return;
+    }
+
+    {
+        char *previous_addr = socket->localaddr;
+        int previous_port = socket->localport;
+
+        socket->localaddr = NULL;
+        if (allocate_local_address(socket, host) != 0)
+        {
+            socket->localaddr = previous_addr;
+            socket->localport = previous_port;
+            return;
+        }
+    }
+
+    socket->localport = parse_peer_port(serv);
 }
 
 /**
@@ -572,6 +639,7 @@ void Socket_bind(T socket, const char *host, int port)
 
     if (try_bind_resolved_addresses(socket, res, socket_family) == 0)
     {
+        update_local_endpoint(socket);
         freeaddrinfo(res);
         return;
     }
@@ -684,6 +752,12 @@ static T create_accepted_socket(int newfd, const struct sockaddr_storage *addr, 
     newsocket->fd = newfd;
     memcpy(&newsocket->addr, addr, addrlen);
     newsocket->addrlen = addrlen;
+    memset(&newsocket->local_addr, 0, sizeof(newsocket->local_addr));
+    newsocket->local_addrlen = 0;
+    newsocket->peeraddr = NULL;
+    newsocket->peerport = 0;
+    newsocket->localaddr = NULL;
+    newsocket->localport = 0;
     socket_live_increment();
 
     return newsocket;
@@ -704,6 +778,7 @@ T Socket_accept(T socket)
 
     newsocket = create_accepted_socket(newfd, &addr, addrlen);
     setup_peer_info(newsocket, (struct sockaddr *)&addr, addrlen);
+    update_local_endpoint(newsocket);
 
     return newsocket;
 }
@@ -752,6 +827,7 @@ void Socket_connect(T socket, const char *host, int port)
 
     if (try_connect_resolved_addresses(socket, res, socket_family) == 0)
     {
+        update_local_endpoint(socket);
         freeaddrinfo(res);
         return;
     }
@@ -1011,6 +1087,18 @@ int Socket_getpeerport(const T socket)
     return socket->peerport;
 }
 
+const char *Socket_getlocaladdr(const T socket)
+{
+    assert(socket);
+    return socket->localaddr ? socket->localaddr : "(unknown)";
+}
+
+int Socket_getlocalport(const T socket)
+{
+    assert(socket);
+    return socket->localport;
+}
+
 /**
  * handle_unix_bind_error - Handle Unix socket bind error
  * @path: Socket path
@@ -1055,6 +1143,7 @@ void Socket_bind_unix(T socket, const char *path)
     perform_unix_bind(socket, &addr, path);
     memcpy(&socket->addr, &addr, sizeof(addr));
     socket->addrlen = sizeof(addr);
+    update_local_endpoint(socket);
 }
 
 /**
@@ -1101,6 +1190,7 @@ void Socket_connect_unix(T socket, const char *path)
     perform_unix_connect(socket, &addr, path);
     memcpy(&socket->addr, &addr, sizeof(addr));
     socket->addrlen = sizeof(addr);
+    update_local_endpoint(socket);
 }
 
 int Socket_getpeerpid(const T socket)
@@ -1209,7 +1299,10 @@ void Socket_bind_with_addrinfo(T socket, struct addrinfo *res)
     socket_family = get_socket_family(socket);
 
     if (try_bind_resolved_addresses(socket, res, socket_family) == 0)
+    {
+        update_local_endpoint(socket);
         return;
+    }
 
     handle_bind_error(NULL, 0);
     RAISE_SOCKET_ERROR(Socket_Failed);
@@ -1225,7 +1318,10 @@ void Socket_connect_with_addrinfo(T socket, struct addrinfo *res)
     socket_family = get_socket_family(socket);
 
     if (try_connect_resolved_addresses(socket, res, socket_family) == 0)
+    {
+        update_local_endpoint(socket);
         return;
+    }
 
     handle_connect_error("resolved", 0);
     RAISE_SOCKET_ERROR(Socket_Failed);
@@ -1233,8 +1329,7 @@ void Socket_connect_with_addrinfo(T socket, struct addrinfo *res)
 
 #undef T
 
-int
-Socket_debug_live_count(void)
+int Socket_debug_live_count(void)
 {
     return socket_live_count;
 }
