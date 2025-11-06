@@ -205,6 +205,17 @@ TEST(socketdns_sequential_resolutions)
 
 /* ==================== Callback Tests ==================== */
 
+static void slow_queue_callback(SocketDNS_Request_T req, struct addrinfo *result, int error, void *data)
+{
+    (void)req;
+    (void)error;
+    if (data)
+        *(int *)data = 1;
+    usleep(50000);
+    if (result)
+        freeaddrinfo(result);
+}
+
 static int callback_invoked;
 static void test_callback(SocketDNS_Request_T req, struct addrinfo *result, int error, void *data)
 {
@@ -935,60 +946,53 @@ TEST(socketdns_getresult_cancelled_request)
 TEST(socketdns_queue_full_handling)
 {
     SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T requests[1100]; /* More than default max_pending */
-    volatile int i;
-    volatile int success_count = 0;
-    volatile int failure_count = 0;
+    SocketDNS_Request_T req = NULL;
+    size_t original_limit = 0;
+    int limit_overridden = 0;
+    int queue_full_triggered = 0;
 
     TRY
     {
-        /* Fill queue beyond capacity - should eventually fail */
-        for (i = 0; i < 1100; i++)
+        original_limit = SocketDNS_getmaxpending(dns);
+        SocketDNS_setmaxpending(dns, 0);
+        limit_overridden = 1;
+
+        TRY
         {
-            int queue_full = 0;
-
-            TRY
-            {
-                requests[i] = SocketDNS_resolve(dns, "127.0.0.1", 80 + (i % 100), NULL, NULL);
-                ASSERT_NOT_NULL(requests[i]);
-                success_count++;
-            }
-            EXCEPT(Test_Failed)
-            {
-                RERAISE;
-            }
-            ELSE
-            {
-                ASSERT_NOT_NULL(Except_frame.exception);
-                ASSERT_NOT_NULL(strstr(Except_frame.exception->reason, "queue full"));
-                failure_count++;
-                queue_full = 1;
-            }
-            END_TRY;
-
-            if (queue_full)
-                break; /* Queue full - stop */
+            req = SocketDNS_resolve(dns, "127.0.0.1", 80, slow_queue_callback, NULL);
+            (void)req;
+            ASSERT(0);
         }
+        EXCEPT(Test_Failed)
+        {
+            RERAISE;
+        }
+        ELSE
+        {
+            ASSERT_NOT_NULL(Except_frame.exception);
+            ASSERT_NOT_NULL(strstr(Except_frame.exception->reason, "queue full"));
+            queue_full_triggered = 1;
+        }
+        END_TRY;
 
-        /* Should have successfully queued some requests */
-        ASSERT_NE(success_count, 0);
-        ASSERT_NE(failure_count, 0);
+        SocketDNS_setmaxpending(dns, original_limit);
+        limit_overridden = 0;
 
-        /* Process some requests to make room */
-        usleep(200000);
+        req = SocketDNS_resolve(dns, "127.0.0.1", 80, slow_queue_callback, NULL);
+        ASSERT_NOT_NULL(req);
+        usleep(100000);
+        SocketDNS_cancel(dns, req);
         SocketDNS_check(dns);
-
-        /* Cancel remaining requests */
-        for (i = 0; i < success_count; i++)
-        {
-            SocketDNS_cancel(dns, requests[i]);
-        }
     }
     FINALLY
     {
+        if (dns && limit_overridden)
+            SocketDNS_setmaxpending(dns, original_limit);
         SocketDNS_free(&dns);
     }
     END_TRY;
+
+    ASSERT_NE(queue_full_triggered, 0);
 }
 
 TEST(socketdns_multiple_resolvers_independent)

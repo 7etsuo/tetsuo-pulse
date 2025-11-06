@@ -12,6 +12,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include "core/Arena.h"
+
 #include "core/Except.h"
 #include "core/SocketConfig.h"
 
@@ -69,5 +71,18 @@ void SocketCommon_validate_hostname(const char *host, Except_T exception_type);
  * Returns: NULL if wildcard ("0.0.0.0" or "::"), original host otherwise
  */
 const char *SocketCommon_normalize_wildcard_host(const char *host);
+
+/**
+ * SocketCommon_cache_endpoint - Cache numeric address/port from sockaddr
+ * @arena: Arena to allocate cached address string
+ * @addr: Socket address to format
+ * @addrlen: Length of socket address
+ * @addr_out: Output pointer updated to arena-allocated address string
+ * @port_out: Output integer updated with numeric port (0 if unavailable)
+ *
+ * Returns: 0 on success, -1 on failure (addr_out unchanged on failure)
+ */
+int SocketCommon_cache_endpoint(Arena_T arena, const struct sockaddr *addr, socklen_t addrlen,
+                               char **addr_out, int *port_out);
 
 #endif /* SOCKETCOMMON_H */
