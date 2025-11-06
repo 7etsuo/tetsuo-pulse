@@ -1,6 +1,5 @@
 /**
  * test_socketbuf.c - SocketBuf circular buffer unit tests
- *
  * Tests for the SocketBuf circular buffer module.
  * Covers write, read, peek, wraparound, capacity limits, and edge cases.
  */

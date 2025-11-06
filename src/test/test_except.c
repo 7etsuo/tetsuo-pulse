@@ -1,6 +1,5 @@
 /**
  * test_except.c - Exception handling unit tests
- *
  * Tests for the Except exception handling module.
  * Covers TRY/EXCEPT/FINALLY blocks, exception raising, and propagation.
  */

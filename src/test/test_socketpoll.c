@@ -1,6 +1,5 @@
 /**
  * test_socketpoll.c - Comprehensive SocketPoll unit tests
- *
  * Industry-standard test coverage for SocketPoll event polling module.
  * Tests event polling, multiple sockets, timeout, modifications, and thread safety.
  */

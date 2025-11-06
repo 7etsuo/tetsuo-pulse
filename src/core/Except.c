@@ -1,21 +1,15 @@
 /**
  * Except.c - Exception handling implementation
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
  * Thread Safety:
  * This implementation uses thread-local storage (TLS) for the exception stack.
  * On POSIX systems, this requires __thread (C11/GCC extension). On Windows,
  * it uses __declspec(thread). The thread-local storage provides proper memory
  * ordering guarantees - each thread has its own independent exception stack
  * with no cross-thread visibility or synchronization needed.
- *
  * Requirements:
  * - C11 or later, OR
  * - GCC/Clang with __thread support, OR
  * - MSVC with __declspec(thread) support
- *
  * Security Notes:
  * - Thread-local exception stack prevents race conditions in multithreaded code
  * - NULL exception pointer validation prevents undefined behavior
@@ -148,13 +142,10 @@ static void except_perform_jump(Except_Frame *p)
  * @e: Exception to raise (must not be NULL)
  * @file: Source file where exception was raised (may be NULL)
  * @line: Line number where exception was raised (may be 0)
- *
  * Raises an exception by performing a non-local jump to the nearest exception
  * handler. The exception stack must be properly set up by TRY blocks.
- *
  * Thread Safety: Thread-safe due to thread-local exception stack.
  * No synchronization needed between threads.
- *
  * Security: Validates NULL exception pointer to prevent undefined behavior.
  * Uses abort() for uncaught exceptions (appropriate for fatal errors).
  */

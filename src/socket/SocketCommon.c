@@ -1,8 +1,5 @@
 /**
  * SocketCommon.c - Common utilities shared between Socket and SocketDgram modules
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  */
 
 #include <assert.h>
@@ -42,10 +39,8 @@ static __thread Except_T Common_DetailedException;
     } while (0)
 
 /**
- * socketcommon_get_safe_host - Get safe host string for error messages
+ * socketcommon_get_safe_host
  * @host: Host string (may be NULL)
- *
- * Returns: Host string or "any" if NULL
  * Thread-safe: Yes
  */
 static const char *socketcommon_get_safe_host(const char *host)
@@ -91,7 +86,6 @@ static int socketcommon_parse_port_string(const char *serv)
  * @host: Hostname to validate
  * @use_exceptions: If true, raise exception; if false, return error code
  * @exception_type: Exception type to raise on failure
- *
  * Returns: 0 on success, -1 on failure
  * Raises: Specified exception type if hostname too long (if using exceptions)
  * Thread-safe: Yes
@@ -115,7 +109,6 @@ static int socketcommon_validate_hostname_length(const char *host, int use_excep
  * @port: Port number
  * @port_str: Output buffer for port string
  * @bufsize: Size of output buffer
- *
  * Thread-safe: Yes
  */
 static void socketcommon_convert_port_to_string(int port, char *port_str, size_t bufsize)
@@ -134,7 +127,6 @@ static void socketcommon_convert_port_to_string(int port, char *port_str, size_t
  * @res: Output pointer to resolved addrinfo
  * @use_exceptions: If true, raise exception; if false, return error code
  * @exception_type: Exception type to raise on failure
- *
  * Returns: 0 on success, -1 on failure
  * Raises: Specified exception type on failure (if using exceptions)
  * Thread-safe: Yes
@@ -162,7 +154,6 @@ static int socketcommon_perform_getaddrinfo(const char *host, const char *port_s
  * socketcommon_find_matching_family - Find address matching socket family
  * @res: Resolved address list
  * @socket_family: Socket family to match
- *
  * Returns: 1 if matching family found, 0 otherwise
  * Thread-safe: Yes
  */
@@ -186,7 +177,6 @@ static int socketcommon_find_matching_family(struct addrinfo *res, int socket_fa
  * @port: Port number for error messages
  * @use_exceptions: If true, raise exception; if false, return error code
  * @exception_type: Exception type to raise on failure
- *
  * Returns: 0 on success, -1 on failure
  * Raises: Specified exception type if no matching family (if using exceptions)
  * Thread-safe: Yes
@@ -218,7 +208,6 @@ static int socketcommon_validate_address_family(struct addrinfo **res, int socke
  * @hints: Hints structure to initialize
  * @socktype: Socket type (SOCK_STREAM or SOCK_DGRAM)
  * @flags: Additional flags (0 for connect/sendto, AI_PASSIVE for bind)
- *
  * Thread-safe: Yes
  */
 void SocketCommon_setup_hints(struct addrinfo *hints, int socktype, int flags)
@@ -239,7 +228,6 @@ void SocketCommon_setup_hints(struct addrinfo *hints, int socktype, int flags)
  * @exception_type: Exception type to raise on failure
  * @socket_family: Socket family to match (AF_UNSPEC if none)
  * @use_exceptions: If true, raise exceptions; if false, return error codes
- *
  * Returns: 0 on success, -1 on failure (if not using exceptions)
  * Raises: Specified exception type on failure (if using exceptions)
  * Thread-safe: Yes
@@ -267,7 +255,6 @@ int SocketCommon_resolve_address(const char *host, int port, const struct addrin
  * SocketCommon_validate_port - Validate port number is in valid range
  * @port: Port number to validate
  * @exception_type: Exception type to raise on invalid port
- *
  * Raises: Specified exception type if port is invalid
  * Thread-safe: Yes
  */
@@ -284,7 +271,6 @@ void SocketCommon_validate_port(int port, Except_T exception_type)
  * SocketCommon_validate_hostname - Validate hostname length
  * @host: Hostname to validate
  * @exception_type: Exception type to raise on invalid hostname
- *
  * Raises: Specified exception type if hostname is too long
  * Thread-safe: Yes
  */
@@ -297,7 +283,6 @@ void SocketCommon_validate_hostname(const char *host, Except_T exception_type)
 /**
  * SocketCommon_normalize_wildcard_host - Normalize wildcard host addresses to NULL
  * @host: Host string to normalize
- *
  * Returns: NULL if wildcard ("0.0.0.0" or "::"), original host otherwise
  * Thread-safe: Yes
  */

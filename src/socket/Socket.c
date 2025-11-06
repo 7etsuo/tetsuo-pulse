@@ -1,8 +1,5 @@
 /**
  * Socket.c - Socket abstraction layer implementation
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  */
 
 /* Feature test macros for accept4() on Linux */
@@ -94,9 +91,7 @@ struct T
 /* Static helper functions */
 
 /**
- * validate_port_number - Validate port is in valid range
- * @port: Port number to validate
- *
+ * validate_port_number
  * Raises: Socket_Failed if port is invalid
  */
 static void validate_port_number(int port)
@@ -105,9 +100,7 @@ static void validate_port_number(int port)
 }
 
 /**
- * validate_host_not_null - Validate host pointer is not NULL
- * @host: Host pointer to validate
- *
+ * validate_host_not_null
  * Raises: Socket_Failed if host is NULL
  */
 static void validate_host_not_null(const char *host)
@@ -120,8 +113,7 @@ static void validate_host_not_null(const char *host)
 }
 
 /**
- * setup_bind_hints - Initialize addrinfo hints for binding
- * @hints: Hints structure to initialize
+ * setup_bind_hints
  */
 static void setup_bind_hints(struct addrinfo *hints)
 {
@@ -129,8 +121,7 @@ static void setup_bind_hints(struct addrinfo *hints)
 }
 
 /**
- * setup_connect_hints - Initialize addrinfo hints for connecting
- * @hints: Hints structure to initialize
+ * setup_connect_hints
  */
 static void setup_connect_hints(struct addrinfo *hints)
 {
@@ -140,9 +131,7 @@ static void setup_connect_hints(struct addrinfo *hints)
 /**
  * get_socket_family - Get socket's address family
  * @socket: Socket to query
- *
  * Returns: Socket family or AF_UNSPEC on error
- *
  * Uses SO_DOMAIN on Linux, falls back to getsockname() on other platforms.
  */
 static int get_socket_family(T socket)
@@ -166,7 +155,6 @@ static int get_socket_family(T socket)
  * enable_dual_stack - Enable IPv6 dual-stack mode
  * @socket: Socket to configure
  * @socket_family: Socket's family
- *
  * Non-fatal: May fail if platform doesn't support dual-stack
  */
 static void enable_dual_stack(T socket, int socket_family)
@@ -183,11 +171,8 @@ static void enable_dual_stack(T socket, int socket_family)
  * @domain: Socket domain (AF_INET, AF_INET6, AF_UNIX)
  * @type: Socket type (SOCK_STREAM, SOCK_DGRAM)
  * @protocol: Socket protocol (usually 0)
- *
  * Returns: Socket file descriptor or -1 on failure
- *
  * Raises: Socket_Failed on socket creation failure
- *
  * Note: All sockets are created with close-on-exec flag set by default.
  */
 static int create_socket_fd(int domain, int type, int protocol)
@@ -224,9 +209,7 @@ static int create_socket_fd(int domain, int type, int protocol)
 /**
  * allocate_socket_structure - Allocate and zero-initialize socket structure
  * @fd: File descriptor for cleanup on failure
- *
  * Returns: Pointer to allocated socket structure or NULL on failure
- *
  * Raises: Socket_Failed on allocation failure (cleans up fd)
  */
 static T allocate_socket_structure(int fd)
@@ -248,7 +231,6 @@ static T allocate_socket_structure(int fd)
  * initialize_socket_structure - Initialize socket structure fields
  * @socket: Socket to initialize
  * @fd: File descriptor to assign
- *
  * Returns: Initialized socket structure
  */
 static T initialize_socket_structure(T socket, int fd)
@@ -269,9 +251,7 @@ static T initialize_socket_structure(T socket, int fd)
  * create_socket_arena - Create arena for socket-related allocations
  * @fd: File descriptor for cleanup on failure
  * @sock: Socket structure for cleanup on failure
- *
  * Returns: New arena or NULL on failure
- *
  * Raises: Socket_Failed on arena creation failure (cleans up fd and sock)
  */
 static Arena_T create_socket_arena(int fd, T sock)
@@ -294,7 +274,6 @@ static Arena_T create_socket_arena(int fd, T sock)
  * @socket: Socket to bind
  * @addr: Address to bind to
  * @addrlen: Address length
- *
  * Returns: 0 on success, -1 on failure
  */
 static int try_bind_address(T socket, const struct sockaddr *addr, socklen_t addrlen)
@@ -313,7 +292,6 @@ static int try_bind_address(T socket, const struct sockaddr *addr, socklen_t add
  * @socket: Socket to connect
  * @addr: Address to connect to
  * @addrlen: Address length
- *
  * Returns: 0 on success or EINPROGRESS, -1 on failure
  */
 static int try_connect_address(T socket, const struct sockaddr *addr, socklen_t addrlen)
@@ -379,9 +357,7 @@ static void handle_connect_error(const char *host, int port)
  * allocate_peer_address - Allocate and copy peer address string
  * @newsocket: New socket to allocate for
  * @host: Host string to copy
- *
  * Returns: 0 on success, -1 on failure
- *
  * Raises: Socket_Failed on allocation failure
  */
 /**
@@ -389,7 +365,6 @@ static void handle_connect_error(const char *host, int port)
  * @newsocket: New socket to set up
  * @addr: Address structure
  * @addrlen: Address length
- *
  * Returns: 0 on success, -1 on failure
  */
 static int setup_peer_info(T newsocket, const struct sockaddr *addr, socklen_t addrlen)
@@ -432,7 +407,6 @@ static void update_local_endpoint(T socket)
 /**
  * validate_unix_path_length - Validate Unix socket path length
  * @path_len: Path length to validate
- *
  * Returns: 0 on success, -1 on failure
  */
 static int validate_unix_path_length(size_t path_len)
@@ -451,7 +425,6 @@ static int validate_unix_path_length(size_t path_len)
  * @addr: Output sockaddr_un structure
  * @path: Socket path starting with '@'
  * @path_len: Length of path
- *
  * Returns: 0 on success, -1 on failure
  */
 static int setup_abstract_unix_socket(struct sockaddr_un *addr, const char *path, size_t path_len)
@@ -476,7 +449,6 @@ static int setup_abstract_unix_socket(struct sockaddr_un *addr, const char *path
  * @addr: Output sockaddr_un structure
  * @path: Socket path
  * @path_len: Length of path
- *
  * Returns: 0 on success, -1 on failure
  */
 static int setup_regular_unix_socket(struct sockaddr_un *addr, const char *path, size_t path_len)
@@ -492,7 +464,6 @@ static int setup_regular_unix_socket(struct sockaddr_un *addr, const char *path,
  * setup_unix_sockaddr - Set up sockaddr_un structure for Unix domain socket
  * @addr: Output sockaddr_un structure
  * @path: Socket path (may start with '@' for abstract socket)
- *
  * Returns: 0 on success, -1 on failure with errno set
  */
 static int setup_unix_sockaddr(struct sockaddr_un *addr, const char *path)
@@ -550,7 +521,6 @@ void Socket_free(T *socket)
  * @socket: Socket to bind
  * @res: Resolved address list
  * @socket_family: Socket's address family
- *
  * Returns: 0 on success, -1 on failure
  */
 static int try_bind_resolved_addresses(T socket, struct addrinfo *res, int socket_family)
@@ -601,7 +571,6 @@ void Socket_bind(T socket, const char *host, int port)
 /**
  * validate_backlog - Validate listen backlog parameter
  * @backlog: Backlog value to validate
- *
  * Raises: Socket_Failed if invalid
  */
 static void validate_backlog(int backlog)
@@ -616,7 +585,6 @@ static void validate_backlog(int backlog)
 /**
  * enforce_backlog_limit - Enforce maximum backlog limit
  * @backlog: Backlog value to enforce
- *
  * Returns: Enforced backlog value
  */
 static int enforce_backlog_limit(int backlog)
@@ -647,9 +615,7 @@ void Socket_listen(T socket, int backlog)
  * @socket: Listening socket
  * @addr: Output address structure
  * @addrlen: Input/output address length
- *
  * Returns: New file descriptor or -1 on error
- *
  * Note: All accepted sockets have close-on-exec flag set by default.
  */
 static int accept_connection(T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
@@ -691,9 +657,7 @@ static int accept_connection(T socket, struct sockaddr_storage *addr, socklen_t 
  * @newfd: Accepted file descriptor
  * @addr: Peer address
  * @addrlen: Address length
- *
  * Returns: New socket or NULL on failure
- *
  * Raises: Socket_Failed on allocation failure
  */
 static T create_accepted_socket(int newfd, const struct sockaddr_storage *addr, socklen_t addrlen)
@@ -759,7 +723,6 @@ T Socket_accept(T socket)
  * @socket: Socket to connect
  * @res: Resolved address list
  * @socket_family: Socket's address family
- *
  * Returns: 0 on success, -1 on failure
  */
 static int try_connect_resolved_addresses(T socket, struct addrinfo *res, int socket_family)
@@ -950,7 +913,6 @@ void Socket_settimeout(T socket, int timeout_sec)
 /**
  * socket_shutdown_mode_valid - Check shutdown mode value
  * @how: Shutdown mode
- *
  * Returns: 1 if valid, 0 otherwise
  * Thread-safe: Yes
  */
@@ -963,7 +925,6 @@ static int socket_shutdown_mode_valid(int how)
  * Socket_shutdown - Disable further sends and/or receives
  * @socket: Connected socket
  * @how: Shutdown mode (SOCKET_SHUT_RD, SOCKET_SHUT_WR, SOCKET_SHUT_RDWR)
- *
  * Raises: Socket_Failed on error
  */
 void Socket_shutdown(T socket, int how)
@@ -990,7 +951,6 @@ void Socket_shutdown(T socket, int how)
  * Socket_setcloexec - Control close-on-exec flag
  * @socket: Socket to modify
  * @enable: 1 to enable CLOEXEC, 0 to disable
- *
  * Raises: Socket_Failed on error
  */
 void Socket_setcloexec(T socket, int enable)
@@ -1009,7 +969,6 @@ void Socket_setcloexec(T socket, int enable)
  * @idle: Idle timeout
  * @interval: Interval between probes
  * @count: Probe count
- *
  * Raises: Socket_Failed if parameters are invalid
  */
 static void validate_keepalive_parameters(int idle, int interval, int count)
@@ -1025,7 +984,6 @@ static void validate_keepalive_parameters(int idle, int interval, int count)
 /**
  * enable_socket_keepalive - Enable keepalive on socket
  * @socket: Socket to configure
- *
  * Raises: Socket_Failed on failure
  */
 static void enable_socket_keepalive(T socket)
@@ -1042,7 +1000,6 @@ static void enable_socket_keepalive(T socket)
  * set_keepalive_idle_time - Set keepalive idle timeout
  * @socket: Socket to configure
  * @idle: Idle timeout in seconds
- *
  * Raises: Socket_Failed on failure
  */
 static void set_keepalive_idle_time(T socket, int idle)
@@ -1063,7 +1020,6 @@ static void set_keepalive_idle_time(T socket, int idle)
  * set_keepalive_interval - Set keepalive probe interval
  * @socket: Socket to configure
  * @interval: Interval in seconds
- *
  * Raises: Socket_Failed on failure
  */
 static void set_keepalive_interval(T socket, int interval)
@@ -1081,7 +1037,6 @@ static void set_keepalive_interval(T socket, int interval)
  * set_keepalive_count - Set keepalive probe count
  * @socket: Socket to configure
  * @count: Probe count
- *
  * Raises: Socket_Failed on failure
  */
 static void set_keepalive_count(T socket, int count)
@@ -1165,7 +1120,6 @@ static void handle_unix_bind_error(const char *path)
  * @socket: Socket to bind
  * @addr: Address structure
  * @path: Path for error messages
- *
  * Raises: Socket_Failed on failure
  */
 static void perform_unix_bind(T socket, const struct sockaddr_un *addr, const char *path)
@@ -1212,7 +1166,6 @@ static void handle_unix_connect_error(const char *path)
  * @socket: Socket to connect
  * @addr: Address structure
  * @path: Path for error messages
- *
  * Raises: Socket_Failed on failure
  */
 static void perform_unix_connect(T socket, const struct sockaddr_un *addr, const char *path)

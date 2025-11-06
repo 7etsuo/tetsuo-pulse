@@ -1,14 +1,9 @@
 /**
  * SocketPoll.c - Event polling implementation with backend abstraction
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
  * PLATFORM: Cross-platform (Linux/BSD/macOS/POSIX)
  * - Linux: epoll backend (best performance)
  * - BSD/macOS: kqueue backend (best performance)
  * - Other POSIX: poll(2) fallback (portable)
- *
  * Backend selection is done at compile-time via Makefile
  * See SocketPoll_backend.h for backend interface details
  */
@@ -79,9 +74,7 @@ struct T
 /**
  * socket_hash - Hash function for socket file descriptors
  * @socket: Socket to hash
- *
  * Returns: Hash value in range [0, SOCKET_DATA_HASH_SIZE)
- *
  * Uses multiplicative hashing with the golden ratio constant for
  * good distribution across hash buckets. This provides O(1) average
  * case performance for socket data lookups.
@@ -103,10 +96,7 @@ static unsigned socket_hash(const Socket_T socket)
 /* ==================== Socket Data Management ==================== */
 
 /**
- * allocate_socket_data_entry - Allocate socket data entry
- * @poll: Poll instance
- *
- * Returns: Allocated SocketData entry
+ * allocate_socket_data_entry
  * Raises: SocketPoll_Failed on allocation failure
  */
 static SocketData *allocate_socket_data_entry(T poll)
@@ -128,10 +118,7 @@ static SocketData *allocate_socket_data_entry(T poll)
 }
 
 /**
- * allocate_fd_socket_entry - Allocate FD to socket mapping entry
- * @poll: Poll instance
- *
- * Returns: Allocated FdSocketEntry
+ * allocate_fd_socket_entry
  * Raises: SocketPoll_Failed on allocation failure
  */
 static FdSocketEntry *allocate_fd_socket_entry(T poll)
@@ -155,7 +142,6 @@ static FdSocketEntry *allocate_fd_socket_entry(T poll)
 /**
  * compute_fd_hash - Compute hash for file descriptor
  * @fd: File descriptor
- *
  * Returns: Hash value in range [0, SOCKET_DATA_HASH_SIZE)
  */
 static unsigned compute_fd_hash(int fd)
@@ -168,7 +154,6 @@ static unsigned compute_fd_hash(int fd)
  * @poll: Poll instance
  * @hash: Hash bucket index
  * @entry: Entry to insert
- *
  * Thread-safe: Yes - caller must hold mutex
  */
 static void insert_socket_data_entry(T poll, unsigned hash, SocketData *entry)
@@ -182,7 +167,6 @@ static void insert_socket_data_entry(T poll, unsigned hash, SocketData *entry)
  * @poll: Poll instance
  * @fd_hash: Hash bucket index
  * @entry: Entry to insert
- *
  * Thread-safe: Yes - caller must hold mutex
  */
 static void insert_fd_socket_entry(T poll, unsigned fd_hash, FdSocketEntry *entry)
@@ -196,10 +180,8 @@ static void insert_fd_socket_entry(T poll, unsigned fd_hash, FdSocketEntry *entr
  * @poll: Poll instance
  * @socket: Socket to add
  * @data: User data to associate with socket
- *
  * Raises: SocketPoll_Failed on allocation failure
  * Thread-safe: Yes - uses internal mutex
- *
  * Adds both socket->data and fd->socket mappings to enable O(1)
  * lookups in both directions. The fd->socket mapping provides
  * efficient reverse lookup during event processing.
@@ -235,10 +217,8 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
  * socket_data_get - Retrieve user data for socket
  * @poll: Poll instance
  * @socket: Socket to look up
- *
  * Returns: User data associated with socket, or NULL if not found
  * Thread-safe: Yes - uses internal mutex
- *
  * Performs O(1) average case lookup in the socket data hash table.
  * Returns the user data pointer that was associated with the socket
  * when it was added to the poll.
@@ -277,7 +257,6 @@ static void *socket_data_get(T poll, Socket_T socket)
  * @poll: Poll instance
  * @hash: Hash bucket index
  * @socket: Socket to remove
- *
  * Thread-safe: Yes - caller must hold mutex
  */
 static void remove_socket_data_entry(T poll, unsigned hash, Socket_T socket)
@@ -299,7 +278,6 @@ static void remove_socket_data_entry(T poll, unsigned hash, Socket_T socket)
  * @poll: Poll instance
  * @fd_hash: Hash bucket index
  * @fd: File descriptor to remove
- *
  * Thread-safe: Yes - caller must hold mutex
  */
 static void remove_fd_socket_entry(T poll, unsigned fd_hash, int fd)
@@ -320,9 +298,7 @@ static void remove_fd_socket_entry(T poll, unsigned fd_hash, int fd)
  * socket_data_remove - Remove socket->data mapping from hash tables
  * @poll: Poll instance
  * @socket: Socket to remove
- *
  * Thread-safe: Yes - uses internal mutex
- *
  * Removes both socket->data and fd->socket mappings from the hash tables.
  * Memory is managed by arena - no explicit freeing needed.
  */
@@ -343,12 +319,7 @@ static void socket_data_remove(T poll, Socket_T socket)
 }
 
 /**
- * find_socket_data_entry - Find socket data entry in hash table
- * @poll: Poll instance
- * @hash: Hash bucket index
- * @socket: Socket to find
- *
- * Returns: SocketData entry if found, NULL otherwise
+ * find_socket_data_entry
  * Thread-safe: Yes - caller must hold mutex
  */
 static SocketData *find_socket_data_entry(T poll, unsigned hash, Socket_T socket)
@@ -369,7 +340,6 @@ static SocketData *find_socket_data_entry(T poll, unsigned hash, Socket_T socket
  * @hash: Hash bucket index
  * @socket: Socket to add
  * @data: User data to associate
- *
  * Raises: SocketPoll_Failed on allocation failure
  * Thread-safe: Yes - caller must hold mutex
  */
@@ -405,10 +375,8 @@ static void add_fallback_socket_data_entry(T poll, unsigned hash, Socket_T socke
  * @poll: Poll instance
  * @socket: Socket whose data to update
  * @data: New user data to associate
- *
  * Raises: SocketPoll_Failed on allocation failure (fallback case only)
  * Thread-safe: Yes - uses internal mutex
- *
  * Updates the user data associated with an existing socket. If the socket
  * is not found in the map (programming error), it falls back to adding
  * a new entry. This fallback should not normally occur in correct usage.
@@ -444,9 +412,7 @@ static void socket_data_update(T poll, Socket_T socket, void *data)
 }
 
 /**
- * allocate_poll_structure - Allocate poll structure
- *
- * Returns: Allocated poll structure
+ * allocate_poll_structure
  * Raises: SocketPoll_Failed on allocation failure
  */
 static T allocate_poll_structure(void)
@@ -463,10 +429,7 @@ static T allocate_poll_structure(void)
 }
 
 /**
- * initialize_poll_backend - Initialize poll backend
- * @poll: Poll instance
- * @maxevents: Maximum events
- *
+ * initialize_poll_backend
  * Raises: SocketPoll_Failed on failure
  */
 static void initialize_poll_backend(T poll, int maxevents)
@@ -481,9 +444,7 @@ static void initialize_poll_backend(T poll, int maxevents)
 }
 
 /**
- * initialize_poll_arena - Initialize poll arena
- * @poll: Poll instance
- *
+ * initialize_poll_arena
  * Raises: SocketPoll_Failed on failure
  */
 static void initialize_poll_arena(T poll)
@@ -499,10 +460,7 @@ static void initialize_poll_arena(T poll)
 }
 
 /**
- * allocate_poll_event_arrays - Allocate event arrays
- * @poll: Poll instance
- * @maxevents: Maximum events
- *
+ * allocate_poll_event_arrays
  * Raises: SocketPoll_Failed on failure
  */
 static void allocate_poll_event_arrays(T poll, int maxevents)
@@ -542,8 +500,7 @@ static void allocate_poll_event_arrays(T poll, int maxevents)
 }
 
 /**
- * initialize_poll_hash_tables - Initialize hash tables
- * @poll: Poll instance
+ * initialize_poll_hash_tables
  */
 static void initialize_poll_hash_tables(T poll)
 {
@@ -552,9 +509,7 @@ static void initialize_poll_hash_tables(T poll)
 }
 
 /**
- * initialize_poll_mutex - Initialize poll mutex
- * @poll: Poll instance
- *
+ * initialize_poll_mutex
  * Raises: SocketPoll_Failed on failure
  */
 static void initialize_poll_mutex(T poll)
@@ -732,13 +687,8 @@ void SocketPoll_del(T poll, Socket_T socket)
 /* ==================== Event Translation Functions ==================== */
 
 /**
- * find_socket_by_fd - Find socket by file descriptor
- * @poll: Poll instance
- * @fd: File descriptor to search for
- *
- * Returns: Socket_T if found, NULL otherwise
+ * find_socket_by_fd
  * Thread-safe: No (must be called with poll mutex held)
- *
  * Performs O(1) lookup using the fd_to_socket_map hash table.
  * This provides efficient reverse lookup during event processing.
  */
@@ -759,12 +709,7 @@ static Socket_T find_socket_by_fd(T poll, int fd)
 }
 
 /**
- * get_backend_event - Get event from backend
- * @poll: Poll instance
- * @index: Event index
- * @fd_out: Output - file descriptor
- * @events_out: Output - event flags
- *
+ * get_backend_event
  * Raises: SocketPoll_Failed on backend error
  */
 static void get_backend_event(T poll, int index, int *fd_out, unsigned *events_out)
@@ -781,7 +726,6 @@ static void get_backend_event(T poll, int index, int *fd_out, unsigned *events_o
  * @poll: Poll instance
  * @index: Backend event index
  * @translated_index: Index in translated events array
- *
  * Returns: 1 if event was translated, 0 if skipped
  * Raises: SocketPoll_Failed on backend error
  */
@@ -840,15 +784,12 @@ static int translate_single_event(T poll, int index, int translated_index)
  * translate_backend_events_to_socket_events - Convert backend events to SocketEvent_T
  * @poll: Poll instance
  * @nfds: Number of events to process
- *
  * Returns: Number of successfully translated events
  * Raises: SocketPoll_Failed on backend error
  * Thread-safe: Yes (socket_data_get handles its own mutex locking)
- *
  * Translates events from the backend-specific format to the
  * standardized SocketEvent_T format used by the public API.
  * Handles socket lookup and data association for each event.
- *
  * Note: find_socket_by_fd requires mutex but socket_data_get also locks mutex,
  * so we lock mutex only for find_socket_by_fd, then unlock before calling socket_data_get.
  */

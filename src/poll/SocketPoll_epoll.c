@@ -1,9 +1,5 @@
 /**
  * SocketPoll_epoll.c - epoll backend for Linux
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
  * PLATFORM: Linux (requires epoll)
  * - Linux kernel 2.6.8+ for full epoll support
  * - Edge-triggered mode via EPOLLET

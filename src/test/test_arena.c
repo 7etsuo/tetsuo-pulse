@@ -1,6 +1,5 @@
 /**
  * test_arena.c - Arena allocator unit tests
- *
  * Tests for the Arena memory allocator module.
  * Covers allocation, disposal, clearing, and edge cases.
  */

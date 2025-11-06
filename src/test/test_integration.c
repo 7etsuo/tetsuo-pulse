@@ -1,6 +1,5 @@
 /**
  * test_integration.c - Comprehensive integration tests
- *
  * Industry-standard integration testing for the socket library.
  * Tests complete server/client scenarios with Poll, Pool, DNS integration.
  */

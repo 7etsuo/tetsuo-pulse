@@ -1,8 +1,5 @@
 /**
  * Test.c - Test framework implementation
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  */
 
 #include <assert.h>
@@ -49,7 +46,6 @@ static char test_error_buf[512];
  * Test_register - Register a test function
  * @name: Test name (for reporting)
  * @func: Test function to register
- *
  * Called automatically by TEST() macro via constructor attribute.
  * Thread Safety: Not thread-safe (called at program startup before threads).
  */
@@ -79,7 +75,6 @@ void Test_register(const char *name, void (*func)(void))
  * @message: Failure message
  * @file: Source file where failure occurred
  * @line: Line number where failure occurred
- *
  * This function raises Test_Failed exception with detailed error information.
  * The exception is caught by the test runner, which records the failure.
  */
@@ -131,11 +126,9 @@ void Test_fail_ne(const char *expected_str, const char *actual_str, const char *
 
 /**
  * Test_run_all - Run all registered tests
- *
  * Executes each registered test function in registration order.
  * Catches Test_Failed exceptions and records failures.
  * Prints summary of test results.
- *
  * Thread Safety: Not thread-safe (intended for single-threaded test execution).
  */
 void Test_run_all(void)
@@ -216,7 +209,6 @@ void Test_run_all(void)
 
 /**
  * Test_get_failures - Get number of failed tests
- *
  * Returns: Number of tests that failed in the last Test_run_all() call.
  * Returns 0 if no tests have been run yet or if all tests passed.
  */

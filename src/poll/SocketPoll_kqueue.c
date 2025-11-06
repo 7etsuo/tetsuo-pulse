@@ -1,9 +1,5 @@
 /**
  * SocketPoll_kqueue.c - kqueue backend for BSD/macOS
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
  * PLATFORM: BSD/macOS (requires kqueue)
  * - FreeBSD: Full support (kqueue/kevent)
  * - OpenBSD: Full support
@@ -115,7 +111,6 @@ int backend_add(PollBackend_T backend, int fd, unsigned events)
  * delete_existing_filters - Delete existing read/write filters
  * @backend: Backend instance
  * @fd: File descriptor
- *
  * kqueue doesn't have a "modify" operation like epoll.
  * Instead, we delete existing events and add new ones.
  * This is safe because EV_DELETE silently succeeds if event doesn't exist.
@@ -138,7 +133,6 @@ static void delete_existing_filters(PollBackend_T backend, int fd)
  * @backend: Backend instance
  * @fd: File descriptor
  * @events: Events to monitor
- *
  * Returns: 0 on success, -1 on failure
  */
 static int add_new_filters(PollBackend_T backend, int fd, unsigned events)
