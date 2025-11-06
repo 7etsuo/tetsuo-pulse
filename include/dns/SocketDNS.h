@@ -131,6 +131,25 @@ extern Request_T SocketDNS_resolve(T dns, const char *host, int port, SocketDNS_
 extern void SocketDNS_cancel(T dns, Request_T req);
 
 /**
+ * SocketDNS_getmaxpending - Get maximum pending request capacity
+ * @dns: DNS resolver instance
+ *
+ * Returns: Current pending request limit
+ * Thread-safe: Yes
+ */
+extern size_t SocketDNS_getmaxpending(T dns);
+
+/**
+ * SocketDNS_setmaxpending - Set maximum pending request capacity
+ * @dns: DNS resolver instance
+ * @max_pending: New pending request limit (0 allows no pending requests)
+ *
+ * Raises: SocketDNS_Failed if max_pending < current queue depth
+ * Thread-safe: Yes
+ */
+extern void SocketDNS_setmaxpending(T dns, size_t max_pending);
+
+/**
  * SocketDNS_pollfd - Get pollable file descriptor for SocketPoll integration
  * @dns: DNS resolver instance
  *

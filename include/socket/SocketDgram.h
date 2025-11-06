@@ -177,6 +177,14 @@ extern void SocketDgram_setnonblocking(T socket);
 extern void SocketDgram_setreuseaddr(T socket);
 
 /**
+ * SocketDgram_setreuseport - Enable port reuse across sockets
+ * @socket: Socket to modify
+ *
+ * Raises: SocketDgram_Failed on error (or if SO_REUSEPORT unsupported)
+ */
+extern void SocketDgram_setreuseport(T socket);
+
+/**
  * SocketDgram_setbroadcast - Enable broadcast
  * @socket: Socket to modify
  * @enable: 1 to enable, 0 to disable
@@ -244,6 +252,25 @@ extern void SocketDgram_settimeout(T socket, int timeout_sec);
  * Returns: File descriptor
  */
 extern int SocketDgram_fd(const T socket);
+
+/**
+ * SocketDgram_getlocaladdr - Get local IP address
+ * @socket: Socket instance
+ *
+ * Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable
+ *
+ * Note: Returns "(unknown)" if address info unavailable. String is owned by
+ * socket, must not be freed/modified. Valid until socket freed.
+ */
+extern const char *SocketDgram_getlocaladdr(const T socket);
+
+/**
+ * SocketDgram_getlocalport - Get local port number
+ * @socket: Socket instance
+ *
+ * Returns: Port number (1-65535) or 0 if unavailable
+ */
+extern int SocketDgram_getlocalport(const T socket);
 
 #undef T
 #endif

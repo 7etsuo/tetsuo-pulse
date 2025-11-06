@@ -357,52 +357,6 @@ static void handle_connect_error(const char *host, int port)
  *
  * Raises: Socket_Failed on allocation failure
  */
-static int allocate_peer_address(T newsocket, const char *host)
-{
-    size_t addr_len = strlen(host) + 1;
-
-    newsocket->peeraddr = ALLOC(newsocket->arena, addr_len);
-    if (!newsocket->peeraddr)
-    {
-        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate peer address buffer");
-        return -1;
-    }
-    strcpy(newsocket->peeraddr, host);
-    return 0;
-}
-
-static int allocate_local_address(T socket, const char *host)
-{
-    size_t addr_len = strlen(host) + 1;
-
-    socket->localaddr = ALLOC(socket->arena, addr_len);
-    if (!socket->localaddr)
-    {
-        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate local address buffer");
-        return -1;
-    }
-    strcpy(socket->localaddr, host);
-    return 0;
-}
-
-/**
- * parse_peer_port - Parse port string to integer
- * @serv: Port string
- *
- * Returns: Parsed port or 0 on failure
- */
-static int parse_peer_port(const char *serv)
-{
-    char *endptr;
-    long port_long;
-
-    errno = 0;
-    port_long = strtol(serv, &endptr, 10);
-    if (errno == 0 && endptr != serv && *endptr == '\0' && port_long >= 0 && port_long <= 65535)
-        return (int)port_long;
-    return 0;
-}
-
 /**
  * setup_peer_info - Set up peer address and port from getnameinfo result
  * @newsocket: New socket to set up
@@ -413,19 +367,7 @@ static int parse_peer_port(const char *serv)
  */
 static int setup_peer_info(T newsocket, const struct sockaddr *addr, socklen_t addrlen)
 {
-    char host[SOCKET_NI_MAXHOST];
-    char serv[SOCKET_NI_MAXSERV];
-    int result;
-
-    result = getnameinfo(addr, addrlen, host, SOCKET_NI_MAXHOST, serv, SOCKET_NI_MAXSERV,
-                         SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
-    if (result == 0)
-    {
-        if (allocate_peer_address(newsocket, host) != 0)
-            return -1;
-        newsocket->peerport = parse_peer_port(serv);
-    }
-    else
+    if (SocketCommon_cache_endpoint(newsocket->arena, addr, addrlen, &newsocket->peeraddr, &newsocket->peerport) != 0)
     {
         newsocket->peeraddr = NULL;
         newsocket->peerport = 0;
@@ -437,9 +379,6 @@ static void update_local_endpoint(T socket)
 {
     struct sockaddr_storage local;
     socklen_t len = sizeof(local);
-    char host[SOCKET_NI_MAXHOST];
-    char serv[SOCKET_NI_MAXSERV];
-    int result;
 
     assert(socket);
 
@@ -455,29 +394,12 @@ static void update_local_endpoint(T socket)
     socket->local_addr = local;
     socket->local_addrlen = len;
 
-    result = getnameinfo((struct sockaddr *)&local, len, host, sizeof(host), serv, sizeof(serv),
-                         SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
-    if (result != 0)
+    if (SocketCommon_cache_endpoint(socket->arena, (struct sockaddr *)&local, len, &socket->localaddr,
+                                    &socket->localport) != 0)
     {
         socket->localaddr = NULL;
         socket->localport = 0;
-        return;
     }
-
-    {
-        char *previous_addr = socket->localaddr;
-        int previous_port = socket->localport;
-
-        socket->localaddr = NULL;
-        if (allocate_local_address(socket, host) != 0)
-        {
-            socket->localaddr = previous_addr;
-            socket->localport = previous_port;
-            return;
-        }
-    }
-
-    socket->localport = parse_peer_port(serv);
 }
 
 /**
@@ -927,6 +849,25 @@ void Socket_setreuseaddr(T socket)
     }
 }
 
+void Socket_setreuseport(T socket)
+{
+    int opt = 1;
+
+    assert(socket);
+
+#if SOCKET_HAS_SO_REUSEPORT
+    if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEPORT, &opt, sizeof(opt)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to set SO_REUSEPORT");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+#else
+    (void)opt;
+    SOCKET_ERROR_MSG("SO_REUSEPORT not supported on this platform");
+    RAISE_SOCKET_ERROR(Socket_Failed);
+#endif
+}
+
 void Socket_settimeout(T socket, int timeout_sec)
 {
     struct timeval tv;
@@ -953,6 +894,45 @@ void Socket_settimeout(T socket, int timeout_sec)
     if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
     {
         SOCKET_ERROR_FMT("Failed to set send timeout");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+}
+
+/**
+ * socket_shutdown_mode_valid - Check shutdown mode value
+ * @how: Shutdown mode
+ *
+ * Returns: 1 if valid, 0 otherwise
+ * Thread-safe: Yes
+ */
+static int socket_shutdown_mode_valid(int how)
+{
+    return (how == SOCKET_SHUT_RD || how == SOCKET_SHUT_WR || how == SOCKET_SHUT_RDWR);
+}
+
+/**
+ * Socket_shutdown - Disable further sends and/or receives
+ * @socket: Connected socket
+ * @how: Shutdown mode (SOCKET_SHUT_RD, SOCKET_SHUT_WR, SOCKET_SHUT_RDWR)
+ *
+ * Raises: Socket_Failed on error
+ */
+void Socket_shutdown(T socket, int how)
+{
+    assert(socket);
+
+    if (!socket_shutdown_mode_valid(how))
+    {
+        SOCKET_ERROR_MSG("Invalid shutdown mode: %d", how);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    if (shutdown(socket->fd, how) < 0)
+    {
+        if (errno == ENOTCONN)
+            SOCKET_ERROR_FMT("Socket is not connected (shutdown mode=%d)", how);
+        else
+            SOCKET_ERROR_FMT("Failed to shutdown socket (mode=%d)", how);
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 }

@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include "core/Arena.h"
 #include "core/SocketConfig.h"
 #include "core/SocketError.h"
 #include "socket/SocketCommon.h"
@@ -48,6 +49,41 @@ static __thread Except_T Common_DetailedException;
 static const char *socketcommon_get_safe_host(const char *host)
 {
     return host ? host : "any";
+}
+
+static char *
+socketcommon_duplicate_address(Arena_T arena, const char *addr_str)
+{
+    size_t addr_len;
+    char *copy = NULL;
+
+    assert(arena);
+    assert(addr_str);
+
+    addr_len = strlen(addr_str) + 1;
+    copy = ALLOC(arena, addr_len);
+    if (!copy)
+    {
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate address buffer");
+        return NULL;
+    }
+    memcpy(copy, addr_str, addr_len);
+    return copy;
+}
+
+static int
+socketcommon_parse_port_string(const char *serv)
+{
+    char *endptr = NULL;
+    long port_long = 0;
+
+    assert(serv);
+
+    errno = 0;
+    port_long = strtol(serv, &endptr, 10);
+    if (errno == 0 && endptr != serv && *endptr == '\0' && port_long >= 0 && port_long <= 65535)
+        return (int)port_long;
+    return 0;
 }
 
 /**
@@ -270,4 +306,35 @@ const char *SocketCommon_normalize_wildcard_host(const char *host)
     if (host == NULL || strcmp(host, "0.0.0.0") == 0 || strcmp(host, "::") == 0)
         return NULL;
     return host;
+}
+
+int
+SocketCommon_cache_endpoint(Arena_T arena, const struct sockaddr *addr, socklen_t addrlen,
+                            char **addr_out, int *port_out)
+{
+    char host[SOCKET_NI_MAXHOST];
+    char serv[SOCKET_NI_MAXSERV];
+    char *copy = NULL;
+    int result;
+
+    assert(arena);
+    assert(addr);
+    assert(addr_out);
+    assert(port_out);
+
+    result = getnameinfo(addr, addrlen, host, sizeof(host), serv, sizeof(serv),
+                         SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
+    if (result != 0)
+    {
+        SOCKET_ERROR_MSG("Failed to format socket address: %s", gai_strerror(result));
+        return -1;
+    }
+
+    copy = socketcommon_duplicate_address(arena, host);
+    if (!copy)
+        return -1;
+
+    *addr_out = copy;
+    *port_out = socketcommon_parse_port_string(serv);
+    return 0;
 }

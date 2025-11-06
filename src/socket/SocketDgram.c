@@ -53,6 +53,10 @@ struct T
     int fd;
     struct sockaddr_storage addr;
     socklen_t addrlen;
+    struct sockaddr_storage local_addr;
+    socklen_t local_addrlen;
+    char *localaddr;
+    int localport;
     Arena_T arena;
 };
 
@@ -512,6 +516,10 @@ T SocketDgram_new(int domain, int protocol)
     }
 
     sock->fd = fd;
+    sock->local_addrlen = 0;
+    memset(&sock->local_addr, 0, sizeof(sock->local_addr));
+    sock->localaddr = NULL;
+    sock->localport = 0;
 
     return sock;
 }
@@ -547,6 +555,33 @@ static const char *normalize_dgram_host(const char *host)
     return NULL;
 }
 
+static void update_local_endpoint(T socket)
+{
+    struct sockaddr_storage local;
+    socklen_t len = sizeof(local);
+
+    assert(socket);
+
+    if (getsockname(socket->fd, (struct sockaddr *)&local, &len) < 0)
+    {
+        memset(&socket->local_addr, 0, sizeof(socket->local_addr));
+        socket->local_addrlen = 0;
+        socket->localaddr = NULL;
+        socket->localport = 0;
+        return;
+    }
+
+    socket->local_addr = local;
+    socket->local_addrlen = len;
+
+    if (SocketCommon_cache_endpoint(socket->arena, (struct sockaddr *)&local, len, &socket->localaddr,
+                                    &socket->localport) != 0)
+    {
+        socket->localaddr = NULL;
+        socket->localport = 0;
+    }
+}
+
 void SocketDgram_bind(T socket, const char *host, int port)
 {
     struct addrinfo hints, *res = NULL;
@@ -566,6 +601,7 @@ void SocketDgram_bind(T socket, const char *host, int port)
 
     if (try_dgram_bind_addresses(socket, res, socket_family) == 0)
     {
+        update_local_endpoint(socket);
         freeaddrinfo(res);
         return;
     }
@@ -602,6 +638,7 @@ void SocketDgram_connect(T socket, const char *host, int port)
 
     if (try_dgram_connect_addresses(socket, res, socket_family) == 0)
     {
+        update_local_endpoint(socket);
         freeaddrinfo(res);
         return;
     }
@@ -727,6 +764,25 @@ void SocketDgram_setreuseaddr(T socket)
         SOCKET_ERROR_FMT("Failed to set SO_REUSEADDR");
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
     }
+}
+
+void SocketDgram_setreuseport(T socket)
+{
+    int optval = 1;
+
+    assert(socket);
+
+#if SOCKET_HAS_SO_REUSEPORT
+    if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEPORT, &optval, sizeof(optval)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to set SO_REUSEPORT");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+#else
+    (void)optval;
+    SOCKET_ERROR_MSG("SO_REUSEPORT not supported on this platform");
+    RAISE_DGRAM_ERROR(SocketDgram_Failed);
+#endif
 }
 
 void SocketDgram_setbroadcast(T socket, int enable)
@@ -948,6 +1004,18 @@ int SocketDgram_fd(const T socket)
 {
     assert(socket);
     return socket->fd;
+}
+
+const char *SocketDgram_getlocaladdr(const T socket)
+{
+    assert(socket);
+    return socket->localaddr ? socket->localaddr : "(unknown)";
+}
+
+int SocketDgram_getlocalport(const T socket)
+{
+    assert(socket);
+    return socket->localport;
 }
 
 #undef T

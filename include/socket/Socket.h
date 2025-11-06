@@ -148,6 +148,14 @@ extern void Socket_setnonblocking(T socket);
 extern void Socket_setreuseaddr(T socket);
 
 /**
+ * Socket_setreuseport - Enable port reuse across sockets
+ * @socket: Socket to modify
+ *
+ * Raises: Socket_Failed on error (or if SO_REUSEPORT unsupported)
+ */
+extern void Socket_setreuseport(T socket);
+
+/**
  * Socket_settimeout - Set socket timeout
  * @socket: Socket to modify
  * @timeout_sec: Timeout in seconds (0 to disable)
@@ -176,6 +184,16 @@ extern void Socket_setkeepalive(T socket, int idle, int interval, int count);
  * Raises: Socket_Failed on error
  */
 extern void Socket_setnodelay(T socket, int nodelay);
+
+/**
+ * Socket_shutdown - Disable further sends and/or receives
+ * @socket: Connected socket
+ * @how: Shutdown mode (SHUT_RD, SHUT_WR, or SHUT_RDWR)
+ *
+ * Raises: Socket_Failed on error
+ * Thread-safe: No (callers must synchronize concurrent access to the socket)
+ */
+extern void Socket_shutdown(T socket, int how);
 
 /**
  * Socket_fd - Get underlying file descriptor

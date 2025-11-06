@@ -8,6 +8,7 @@
 
 /* Socket header required for IPv6 multicast constants */
 #include <netinet/in.h>
+#include <sys/socket.h>
 
 /* Socket library configuration limits */
 
@@ -183,6 +184,13 @@
 /* Socket options */
 #define SOCKET_SOL_SOCKET SOL_SOCKET
 #define SOCKET_SO_REUSEADDR SO_REUSEADDR
+#ifdef SO_REUSEPORT
+#define SOCKET_SO_REUSEPORT SO_REUSEPORT
+#define SOCKET_HAS_SO_REUSEPORT 1
+#else
+#define SOCKET_SO_REUSEPORT 0
+#define SOCKET_HAS_SO_REUSEPORT 0
+#endif
 #define SOCKET_SO_BROADCAST SO_BROADCAST
 #define SOCKET_SO_KEEPALIVE SO_KEEPALIVE
 #define SOCKET_SO_RCVTIMEO SO_RCVTIMEO
@@ -238,6 +246,11 @@
 /* Name info flags */
 #define SOCKET_NI_NUMERICHOST NI_NUMERICHOST
 #define SOCKET_NI_NUMERICSERV NI_NUMERICSERV
+
+/* Shutdown modes */
+#define SOCKET_SHUT_RD SHUT_RD
+#define SOCKET_SHUT_WR SHUT_WR
+#define SOCKET_SHUT_RDWR SHUT_RDWR
 
 /* Maximum lengths for name info */
 #define SOCKET_NI_MAXHOST NI_MAXHOST
