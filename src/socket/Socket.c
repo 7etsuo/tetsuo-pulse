@@ -14,6 +14,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <poll.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +41,11 @@
 #define T Socket_T
 
 static int socket_live_count = 0;
+static SocketTimeouts_T socket_default_timeouts = {
+    .connect_timeout_ms = SOCKET_DEFAULT_CONNECT_TIMEOUT_MS,
+    .dns_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS,
+    .operation_timeout_ms = SOCKET_DEFAULT_OPERATION_TIMEOUT_MS
+};
 
 static void socket_live_increment(void)
 {
@@ -50,6 +56,14 @@ static void socket_live_decrement(void)
 {
     if (socket_live_count > 0)
         socket_live_count--;
+}
+
+static int
+sanitize_timeout(int timeout_ms)
+{
+    if (timeout_ms < 0)
+        return 0;
+    return timeout_ms;
 }
 
 /* Port string buffer size for snprintf - 16 bytes sufficient for "65535" + null */
@@ -86,6 +100,7 @@ struct T
     char *localaddr;
     int localport;
     Arena_T arena;
+    SocketTimeouts_T timeouts;
 };
 
 /* Static helper functions */
@@ -244,6 +259,7 @@ static T initialize_socket_structure(T socket, int fd)
     socket->peerport = 0;
     socket->localaddr = NULL;
     socket->localport = 0;
+    socket->timeouts = socket_default_timeouts;
     return socket;
 }
 
@@ -287,6 +303,46 @@ static int try_bind_address(T socket, const struct sockaddr *addr, socklen_t add
     return -1;
 }
 
+static int
+socket_wait_for_connect(T socket, int timeout_ms)
+{
+    struct pollfd pfd;
+    int result;
+    int error = 0;
+    socklen_t error_len = sizeof(error);
+
+    assert(socket);
+    assert(timeout_ms >= 0);
+
+    pfd.fd = socket->fd;
+    pfd.events = POLLOUT;
+    pfd.revents = 0;
+
+    while ((result = poll(&pfd, 1, timeout_ms)) < 0)
+    {
+        if (errno == EINTR)
+            continue;
+        return -1;
+    }
+
+    if (result == 0)
+    {
+        errno = ETIMEDOUT;
+        return -1;
+    }
+
+    if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SO_ERROR, &error, &error_len) < 0)
+        return -1;
+
+    if (error != 0)
+    {
+        errno = error;
+        return -1;
+    }
+
+    return 0;
+}
+
 /**
  * try_connect_address - Try to connect socket to address
  * @socket: Socket to connect
@@ -294,14 +350,65 @@ static int try_bind_address(T socket, const struct sockaddr *addr, socklen_t add
  * @addrlen: Address length
  * Returns: 0 on success or EINPROGRESS, -1 on failure
  */
-static int try_connect_address(T socket, const struct sockaddr *addr, socklen_t addrlen)
+static int try_connect_address(T socket, const struct sockaddr *addr, socklen_t addrlen, int timeout_ms)
 {
-    if (connect(socket->fd, addr, addrlen) == 0 || errno == EINPROGRESS)
+    int saved_errno;
+    int original_flags = -1;
+    int restore_blocking = 0;
+
+    assert(socket);
+    assert(addr);
+
+    if (timeout_ms <= 0)
     {
+        if (connect(socket->fd, addr, addrlen) == 0 || errno == EINPROGRESS || errno == EISCONN)
+        {
+            memcpy(&socket->addr, addr, addrlen);
+            socket->addrlen = addrlen;
+            return 0;
+        }
+        return -1;
+    }
+
+    original_flags = fcntl(socket->fd, F_GETFL);
+    if (original_flags < 0)
+        return -1;
+
+    if ((original_flags & O_NONBLOCK) == 0)
+    {
+        if (fcntl(socket->fd, F_SETFL, original_flags | O_NONBLOCK) < 0)
+            return -1;
+        restore_blocking = 1;
+    }
+
+    if (connect(socket->fd, addr, addrlen) == 0 || errno == EISCONN)
+    {
+        if (restore_blocking)
+            (void)fcntl(socket->fd, F_SETFL, original_flags);
         memcpy(&socket->addr, addr, addrlen);
         socket->addrlen = addrlen;
         return 0;
     }
+
+    saved_errno = errno;
+
+    if (saved_errno == EINPROGRESS || saved_errno == EINTR)
+    {
+        if (socket_wait_for_connect(socket, timeout_ms) == 0)
+        {
+            if (restore_blocking)
+                (void)fcntl(socket->fd, F_SETFL, original_flags);
+            memcpy(&socket->addr, addr, addrlen);
+            socket->addrlen = addrlen;
+            return 0;
+        }
+        saved_errno = errno;
+    }
+
+    if (restore_blocking)
+        (void)fcntl(socket->fd, F_SETFL, original_flags);
+
+    errno = saved_errno;
     return -1;
 }
 
@@ -725,7 +832,7 @@ T Socket_accept(T socket)
  * @socket_family: Socket's address family
  * Returns: 0 on success, -1 on failure
  */
-static int try_connect_resolved_addresses(T socket, struct addrinfo *res, int socket_family)
+static int try_connect_resolved_addresses(T socket, struct addrinfo *res, int socket_family, int timeout_ms)
 {
     struct addrinfo *rp;
     int saved_errno = 0;
@@ -735,7 +842,7 @@ static int try_connect_resolved_addresses(T socket, struct addrinfo *res, int so
         if (socket_family != AF_UNSPEC && rp->ai_family != socket_family)
             continue;
 
-        if (try_connect_address(socket, rp->ai_addr, rp->ai_addrlen) == 0)
+        if (try_connect_address(socket, rp->ai_addr, rp->ai_addrlen, timeout_ms) == 0)
             return 0;
         saved_errno = errno;
     }
@@ -759,7 +866,7 @@ void Socket_connect(T socket, const char *host, int port)
 
     socket_family = get_socket_family(socket);
 
-    if (try_connect_resolved_addresses(socket, res, socket_family) == 0)
+    if (try_connect_resolved_addresses(socket, res, socket_family, socket->timeouts.connect_timeout_ms) == 0)
     {
         update_local_endpoint(socket);
         freeaddrinfo(res);
@@ -962,6 +1069,53 @@ void Socket_setcloexec(T socket, int enable)
         SOCKET_ERROR_FMT("Failed to %s close-on-exec flag", enable ? "set" : "clear");
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
+}
+
+void
+Socket_timeouts_get(const T socket, SocketTimeouts_T *timeouts)
+{
+    assert(socket);
+    assert(timeouts);
+
+    *timeouts = socket->timeouts;
+}
+
+void
+Socket_timeouts_set(T socket, const SocketTimeouts_T *timeouts)
+{
+    assert(socket);
+
+    if (timeouts == NULL)
+    {
+        socket->timeouts = socket_default_timeouts;
+        return;
+    }
+
+    socket->timeouts.connect_timeout_ms = sanitize_timeout(timeouts->connect_timeout_ms);
+    socket->timeouts.dns_timeout_ms = sanitize_timeout(timeouts->dns_timeout_ms);
+    socket->timeouts.operation_timeout_ms = sanitize_timeout(timeouts->operation_timeout_ms);
+}
+
+void
+Socket_timeouts_getdefaults(SocketTimeouts_T *timeouts)
+{
+    assert(timeouts);
+
+    *timeouts = socket_default_timeouts;
+}
+
+void
+Socket_timeouts_setdefaults(const SocketTimeouts_T *timeouts)
+{
+    SocketTimeouts_T local = socket_default_timeouts;
+
+    assert(timeouts);
+
+    local.connect_timeout_ms = sanitize_timeout(timeouts->connect_timeout_ms);
+    local.dns_timeout_ms = sanitize_timeout(timeouts->dns_timeout_ms);
+    local.operation_timeout_ms = sanitize_timeout(timeouts->operation_timeout_ms);
+
+    socket_default_timeouts = local;
 }
 
 /**
@@ -1263,7 +1417,21 @@ SocketDNS_Request_T Socket_bind_async(SocketDNS_T dns, T socket, const char *hos
     }
 
     /* Start async DNS resolution */
-    return SocketDNS_resolve(dns, host ? host : "0.0.0.0", port, NULL, NULL);
+    {
+        SocketDNS_Request_T req = SocketDNS_resolve(dns, host ? host : "0.0.0.0", port, NULL, NULL);
+        if (socket->timeouts.dns_timeout_ms > 0)
+            SocketDNS_request_settimeout(dns, req, socket->timeouts.dns_timeout_ms);
+        return req;
+    }
+}
+
+void
+Socket_bind_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req)
+{
+    assert(dns);
+
+    if (req)
+        SocketDNS_cancel(dns, req);
 }
 
 SocketDNS_Request_T Socket_connect_async(SocketDNS_T dns, T socket, const char *host, int port)
@@ -1286,7 +1454,21 @@ SocketDNS_Request_T Socket_connect_async(SocketDNS_T dns, T socket, const char *
     }
 
     /* Start async DNS resolution */
-    return SocketDNS_resolve(dns, host, port, NULL, NULL);
+    {
+        SocketDNS_Request_T req = SocketDNS_resolve(dns, host, port, NULL, NULL);
+        if (socket->timeouts.dns_timeout_ms > 0)
+            SocketDNS_request_settimeout(dns, req, socket->timeouts.dns_timeout_ms);
+        return req;
+    }
+}
+
+void
+Socket_connect_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req)
+{
+    assert(dns);
+
+    if (req)
+        SocketDNS_cancel(dns, req);
 }
 
 void Socket_bind_with_addrinfo(T socket, struct addrinfo *res)
@@ -1317,7 +1499,7 @@ void Socket_connect_with_addrinfo(T socket, struct addrinfo *res)
 
     socket_family = get_socket_family(socket);
 
-    if (try_connect_resolved_addresses(socket, res, socket_family) == 0)
+    if (try_connect_resolved_addresses(socket, res, socket_family, socket->timeouts.connect_timeout_ms) == 0)
     {
         update_local_endpoint(socket);
         return;

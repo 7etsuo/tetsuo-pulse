@@ -191,6 +191,43 @@ TEST(socketpool_remove_multiple)
     Arena_dispose(&arena);
 }
 
+TEST(socketpool_reuses_connection_buffers)
+{
+    setup_signals();
+    Arena_T arena = Arena_new();
+    SocketPool_T pool = SocketPool_new(arena, 1, 1024);
+    Socket_T sock1 = Socket_new(AF_INET, SOCK_STREAM, 0);
+    SocketBuf_T first_inbuf = NULL;
+    SocketBuf_T first_outbuf = NULL;
+
+    TRY
+        Connection_T conn1 = SocketPool_add(pool, sock1);
+        ASSERT_NOT_NULL(conn1);
+        first_inbuf = Connection_inbuf(conn1);
+        first_outbuf = Connection_outbuf(conn1);
+        ASSERT_NOT_NULL(first_inbuf);
+        ASSERT_NOT_NULL(first_outbuf);
+
+        SocketPool_remove(pool, sock1);
+        Socket_free(&sock1);
+
+        Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
+        Connection_T conn2 = SocketPool_add(pool, sock2);
+        ASSERT_NOT_NULL(conn2);
+        ASSERT_EQ(conn1, conn2);
+        ASSERT_EQ(first_inbuf, Connection_inbuf(conn2));
+        ASSERT_EQ(first_outbuf, Connection_outbuf(conn2));
+
+        SocketPool_remove(pool, sock2);
+        Socket_free(&sock2);
+    EXCEPT(SocketPool_Failed)
+        ASSERT(0);
+    END_TRY;
+
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+}
+
 TEST(socketpool_remove_nonexistent)
 {
     setup_signals();

@@ -18,10 +18,27 @@
  * - Socket_Failed: General socket errors
  * - Socket_Closed: Connection terminated by peer
  * - Some functions return NULL/0 for non-blocking EAGAIN/EWOULDBLOCK
+ * Timeouts:
+ * - Global defaults configurable via Socket_timeouts_setdefaults()
+ * - Per-socket overrides via Socket_timeouts_set()
+ * - Applied to DNS resolution and blocking connect() paths
  */
 
 #define T Socket_T
 typedef struct T *T;
+
+/**
+ * SocketTimeouts_T - Timeout configuration for socket operations
+ * @connect_timeout_ms: Connect timeout in milliseconds (0 = infinite)
+ * @dns_timeout_ms: DNS resolution timeout in milliseconds (0 = infinite)
+ * @operation_timeout_ms: General operation timeout in milliseconds (reserved for future use)
+ */
+typedef struct SocketTimeouts
+{
+    int connect_timeout_ms;
+    int dns_timeout_ms;
+    int operation_timeout_ms;
+} SocketTimeouts_T;
 
 /* Exception types */
 extern Except_T Socket_Failed; /**< General socket operation failure */
@@ -182,6 +199,36 @@ extern void Socket_shutdown(T socket, int how);
 extern void Socket_setcloexec(T socket, int enable);
 
 /**
+ * Socket_timeouts_get - Retrieve per-socket timeout configuration
+ * @socket: Socket instance
+ * @timeouts: Output timeout structure
+ * Returns: Nothing
+ */
+extern void Socket_timeouts_get(const T socket, SocketTimeouts_T *timeouts);
+
+/**
+ * Socket_timeouts_set - Set per-socket timeout configuration
+ * @socket: Socket instance
+ * @timeouts: Timeout configuration (NULL to reset to defaults)
+ * Returns: Nothing
+ */
+extern void Socket_timeouts_set(T socket, const SocketTimeouts_T *timeouts);
+
+/**
+ * Socket_timeouts_getdefaults - Get global default timeouts
+ * @timeouts: Output timeout structure containing current defaults
+ * Returns: Nothing
+ */
+extern void Socket_timeouts_getdefaults(SocketTimeouts_T *timeouts);
+
+/**
+ * Socket_timeouts_setdefaults - Set global default timeouts
+ * @timeouts: New default timeout configuration
+ * Returns: Nothing
+ */
+extern void Socket_timeouts_setdefaults(const SocketTimeouts_T *timeouts);
+
+/**
  * Socket_fd - Get underlying file descriptor
  * @socket: Socket instance
  * Returns: File descriptor
@@ -286,6 +333,14 @@ extern int Socket_getpeergid(const T socket);
 extern SocketDNS_Request_T Socket_bind_async(SocketDNS_T dns, T socket, const char *host, int port);
 
 /**
+ * Socket_bind_async_cancel - Cancel pending async bind resolution
+ * @dns: DNS resolver instance
+ * @req: Request handle returned by Socket_bind_async
+ * Returns: Nothing
+ */
+extern void Socket_bind_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req);
+
+/**
  * Socket_connect_async - Start async DNS resolution for connect
  * @dns: DNS resolver instance
  * @socket: Socket to connect
@@ -297,6 +352,14 @@ extern SocketDNS_Request_T Socket_bind_async(SocketDNS_T dns, T socket, const ch
  * then call Socket_connect_with_addrinfo() to perform connect.
  */
 extern SocketDNS_Request_T Socket_connect_async(SocketDNS_T dns, T socket, const char *host, int port);
+
+/**
+ * Socket_connect_async_cancel - Cancel pending async connect resolution
+ * @dns: DNS resolver instance
+ * @req: Request handle returned by Socket_connect_async
+ * Returns: Nothing
+ */
+extern void Socket_connect_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req);
 
 /**
  * Socket_bind_with_addrinfo - Bind socket using resolved address

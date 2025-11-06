@@ -62,6 +62,7 @@ struct T
 {
     PollBackend_T backend; /* Backend-specific poll implementation */
     int maxevents;
+    int default_timeout_ms;
     SocketEvent_T *socketevents;
     Arena_T arena;
     SocketData *socket_data_map[SOCKET_DATA_HASH_SIZE];     /* Hash table for O(1) socket->data mapping */
@@ -223,33 +224,27 @@ static void socket_data_add(T poll, Socket_T socket, void *data)
  * Returns the user data pointer that was associated with the socket
  * when it was added to the poll.
  */
-static void *socket_data_get(T poll, Socket_T socket)
+static void *socket_data_lookup_unlocked(T poll, Socket_T socket)
 {
-    volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
     unsigned hash;
-    void *data = NULL;
+    SocketData *entry;
 
     if (!poll || !socket)
         return NULL;
-    
-    hash = socket_hash((Socket_T)volatile_socket);
+
+    hash = socket_hash(socket);
     if (hash >= SOCKET_DATA_HASH_SIZE)
         return NULL;
 
-    pthread_mutex_lock(&poll->mutex);
-    SocketData *entry = poll->socket_data_map[hash];
+    entry = poll->socket_data_map[hash];
     while (entry)
     {
-        if (entry->socket == (Socket_T)volatile_socket)
-        {
-            data = entry->data;
-            break;
-        }
+        if (entry->socket == socket)
+            return entry->data;
         entry = entry->next;
     }
-    pthread_mutex_unlock(&poll->mutex);
 
-    return data;
+    return NULL;
 }
 
 /**
@@ -536,6 +531,7 @@ T SocketPoll_new(int maxevents)
     poll = allocate_poll_structure();
     initialize_poll_backend(poll, maxevents);
     poll->maxevents = maxevents;
+    poll->default_timeout_ms = SOCKET_DEFAULT_POLL_TIMEOUT;
     initialize_poll_arena(poll);
     allocate_poll_event_arrays(poll, maxevents);
     initialize_poll_hash_tables(poll);
@@ -756,7 +752,8 @@ static int translate_single_event(T poll, int index, int translated_index)
         pthread_mutex_unlock(&poll->mutex);
         return 0;
     }
-    /* Store socket pointer before unlocking - socket_data_get will re-lock mutex */
+
+    void *associated_data = socket_data_lookup_unlocked(poll, (Socket_T)socket);
     Socket_T non_volatile_socket = (Socket_T)socket;
     pthread_mutex_unlock(&poll->mutex);
 
@@ -775,7 +772,7 @@ static int translate_single_event(T poll, int index, int translated_index)
         return 0;
 
     event_ptr->socket = non_volatile_socket;
-    event_ptr->data = socket_data_get(poll, non_volatile_socket);
+    event_ptr->data = associated_data;
     event_ptr->events = event_flags;
     return 1;
 }
@@ -840,12 +837,44 @@ static int translate_backend_events_to_socket_events(T poll, int nfds)
 
 /* ==================== Public API Functions ==================== */
 
+int
+SocketPoll_getdefaulttimeout(T poll)
+{
+    int current;
+
+    assert(poll);
+
+    pthread_mutex_lock(&poll->mutex);
+    current = poll->default_timeout_ms;
+    pthread_mutex_unlock(&poll->mutex);
+
+    return current;
+}
+
+void
+SocketPoll_setdefaulttimeout(T poll, int timeout)
+{
+    int sanitized = timeout;
+
+    assert(poll);
+
+    if (sanitized < -1)
+        sanitized = 0;
+
+    pthread_mutex_lock(&poll->mutex);
+    poll->default_timeout_ms = sanitized;
+    pthread_mutex_unlock(&poll->mutex);
+}
+
 int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
 {
     int nfds;
 
     assert(poll);
     assert(events);
+
+    if (timeout == SOCKET_POLL_TIMEOUT_USE_DEFAULT)
+        timeout = poll->default_timeout_ms;
 
     /* Wait for events from backend */
     nfds = backend_wait(poll->backend, timeout);
@@ -882,3 +911,4 @@ int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
 }
 
 #undef T
+

@@ -24,7 +24,8 @@
  * - Thread pool-based async DNS resolution
  * - Callback-based completion notification
  * - SocketPoll integration for event-driven completion
- * - Request cancellation support
+ * - Request cancellation support with explicit error reporting
+ * - Configurable per-resolver and per-request timeouts
  * - Thread-safe implementation
  * - Automatic request lifecycle management
  * Usage Pattern (Callback-based):
@@ -134,6 +135,22 @@ extern size_t SocketDNS_getmaxpending(T dns);
 extern void SocketDNS_setmaxpending(T dns, size_t max_pending);
 
 /**
+ * SocketDNS_gettimeout - Get resolver request timeout in milliseconds
+ * @dns: DNS resolver instance
+ * Returns: Timeout in milliseconds (0 disables timeout)
+ * Thread-safe: Yes
+ */
+extern int SocketDNS_gettimeout(T dns);
+
+/**
+ * SocketDNS_settimeout - Set resolver request timeout in milliseconds
+ * @dns: DNS resolver instance
+ * @timeout_ms: Timeout in milliseconds (0 disables timeout)
+ * Thread-safe: Yes
+ */
+extern void SocketDNS_settimeout(T dns, int timeout_ms);
+
+/**
  * SocketDNS_pollfd - Get pollable file descriptor for SocketPoll integration
  * @dns: DNS resolver instance
  * Returns: File descriptor ready for reading when requests complete
@@ -166,13 +183,31 @@ extern int SocketDNS_check(T dns);
  * Retrieves the result of a completed DNS resolution. Returns NULL if:
  * - Request is still pending
  * - Request was cancelled
- * - Resolution failed (check error via callback)
+ * - Resolution failed (check error via SocketDNS_geterror())
  * The caller owns the returned addrinfo structure and must call
  * freeaddrinfo() when done. The request handle becomes invalid after
  * the result is retrieved.
  * Performance: O(1) hash table lookup
  */
 extern struct addrinfo *SocketDNS_getresult(T dns, Request_T req);
+
+/**
+ * SocketDNS_geterror - Get error code for completed request
+ * @dns: DNS resolver instance
+ * @req: Request handle
+ * Returns: getaddrinfo() error code or 0 on success
+ * Thread-safe: Yes
+ */
+extern int SocketDNS_geterror(T dns, Request_T req);
+
+/**
+ * SocketDNS_request_settimeout - Override timeout for specific request
+ * @dns: DNS resolver instance
+ * @req: Request handle
+ * @timeout_ms: Timeout in milliseconds (0 disables timeout for this request)
+ * Thread-safe: Yes
+ */
+extern void SocketDNS_request_settimeout(T dns, Request_T req, int timeout_ms);
 
 #undef T
 #undef Request_T

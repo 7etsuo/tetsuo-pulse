@@ -68,7 +68,8 @@ struct Request_T
     struct Request_T *queue_next; /* Next in request queue */
     struct Request_T *hash_next;  /* Next in hash table chain */
     unsigned hash_value;          /* Hash value for lookup */
-    time_t submit_time;           /* Time request was submitted */
+    struct timespec submit_time;  /* Time request was submitted */
+    int timeout_override_ms;      /* Per-request timeout override (ms) */
 };
 
 /* DNS resolver structure */
@@ -88,6 +89,7 @@ struct T
     int shutdown;                                                 /* Shutdown flag */
     int pipefd[2];                                                /* Pipe for completion signaling */
     unsigned request_counter;                                     /* Request ID counter */
+    int request_timeout_ms;                                       /* Default request timeout (ms) */
 };
 
 /* Completion signal byte constant */
@@ -103,6 +105,58 @@ static unsigned request_hash_function(struct Request_T *req)
 {
     uintptr_t ptr = (uintptr_t)req;
     return ((unsigned)ptr * HASH_GOLDEN_RATIO) % SOCKET_DNS_REQUEST_HASH_SIZE;
+}
+
+static void signal_completion(T dns);
+
+static int
+dns_cancellation_error(void)
+{
+#ifdef EAI_CANCELLED
+    return EAI_CANCELLED;
+#else
+    return EAI_AGAIN;
+#endif
+}
+
+static int
+request_effective_timeout_ms(T dns, const struct Request_T *req)
+{
+    if (req->timeout_override_ms >= 0)
+        return req->timeout_override_ms;
+    return dns->request_timeout_ms;
+}
+
+static int
+request_timed_out(T dns, const struct Request_T *req)
+{
+    int timeout_ms = request_effective_timeout_ms(dns, req);
+    struct timespec now;
+    long long elapsed_ms;
+
+    if (timeout_ms <= 0)
+        return 0;
+
+    clock_gettime(CLOCK_MONOTONIC, &now);
+
+    elapsed_ms = (now.tv_sec - req->submit_time.tv_sec) * 1000LL;
+    elapsed_ms += (now.tv_nsec - req->submit_time.tv_nsec) / 1000000LL;
+
+    return elapsed_ms >= timeout_ms;
+}
+
+static void
+mark_request_timeout(T dns, struct Request_T *req)
+{
+    req->state = REQ_COMPLETE;
+    req->error = EAI_AGAIN;
+    if (req->result)
+    {
+        freeaddrinfo(req->result);
+        req->result = NULL;
+    }
+    signal_completion(dns);
+    pthread_cond_broadcast(&dns->result_cond);
 }
 
 /**
@@ -194,6 +248,14 @@ static void store_resolution_result(T dns, struct Request_T *req, struct addrinf
         /* Request was cancelled, free result */
         if (result)
             freeaddrinfo(result);
+
+        if (req->state == REQ_CANCELLED)
+        {
+            if (req->error == 0)
+                req->error = dns_cancellation_error();
+            signal_completion(dns);
+            pthread_cond_broadcast(&dns->result_cond);
+        }
     }
 }
 
@@ -235,9 +297,27 @@ static void process_single_request(T dns, struct Request_T *req, const struct ad
     struct addrinfo *result = NULL;
     int res;
 
+    if (request_timed_out(dns, req))
+    {
+        pthread_mutex_lock(&dns->mutex);
+        mark_request_timeout(dns, req);
+        pthread_mutex_unlock(&dns->mutex);
+        invoke_callback(dns, req);
+        return;
+    }
+
     res = perform_dns_resolution(req, hints, &result);
 
     pthread_mutex_lock(&dns->mutex);
+    if (request_timed_out(dns, req))
+    {
+        if (result)
+        {
+            freeaddrinfo(result);
+            result = NULL;
+        }
+        res = EAI_AGAIN;
+    }
     store_resolution_result(dns, req, result, res);
     pthread_mutex_unlock(&dns->mutex);
 
@@ -517,6 +597,7 @@ static void initialize_dns_fields(T dns)
     dns->queue_head = NULL;
     dns->queue_tail = NULL;
     dns->queue_size = 0;
+    dns->request_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
 }
 
 /**
@@ -859,7 +940,8 @@ static void initialize_request_fields(struct Request_T *req, int port, SocketDNS
     req->error = 0;
     req->queue_next = NULL;
     req->hash_next = NULL;
-    req->submit_time = time(NULL);
+    clock_gettime(CLOCK_MONOTONIC, &req->submit_time);
+    req->timeout_override_ms = -1;
 }
 
 /**
@@ -1057,6 +1139,7 @@ static void cancel_pending_request(T dns, struct Request_T *req)
 void SocketDNS_cancel(T dns, Request_T req)
 {
     struct Request_T *r = (struct Request_T *)req;
+    int send_signal = 0;
 
     assert(dns);
     assert(req);
@@ -1066,10 +1149,14 @@ void SocketDNS_cancel(T dns, Request_T req)
     if (r->state == REQ_PENDING)
     {
         cancel_pending_request(dns, r);
+        r->error = dns_cancellation_error();
+        send_signal = 1;
     }
     else if (r->state == REQ_PROCESSING)
     {
         r->state = REQ_CANCELLED;
+        r->error = dns_cancellation_error();
+        send_signal = 1;
     }
     else if (r->state == REQ_COMPLETE)
     {
@@ -1078,6 +1165,18 @@ void SocketDNS_cancel(T dns, Request_T req)
             freeaddrinfo(r->result);
             r->result = NULL;
         }
+        r->error = dns_cancellation_error();
+    }
+    else if (r->state == REQ_CANCELLED)
+    {
+        if (r->error == 0)
+            r->error = dns_cancellation_error();
+    }
+
+    if (send_signal)
+    {
+        signal_completion(dns);
+        pthread_cond_broadcast(&dns->result_cond);
     }
 
     hash_table_remove(dns, r);
@@ -1113,6 +1212,30 @@ void SocketDNS_setmaxpending(T dns, size_t max_pending)
     }
 
     dns->max_pending = max_pending;
+    pthread_mutex_unlock(&dns->mutex);
+}
+
+int SocketDNS_gettimeout(T dns)
+{
+    int current;
+
+    assert(dns);
+
+    pthread_mutex_lock(&dns->mutex);
+    current = dns->request_timeout_ms;
+    pthread_mutex_unlock(&dns->mutex);
+
+    return current;
+}
+
+void SocketDNS_settimeout(T dns, int timeout_ms)
+{
+    int sanitized = timeout_ms < 0 ? 0 : timeout_ms;
+
+    assert(dns);
+
+    pthread_mutex_lock(&dns->mutex);
+    dns->request_timeout_ms = sanitized;
     pthread_mutex_unlock(&dns->mutex);
 }
 
@@ -1181,6 +1304,36 @@ struct addrinfo *SocketDNS_getresult(T dns, Request_T req)
     pthread_mutex_unlock(&dns->mutex);
 
     return result;
+}
+
+int SocketDNS_geterror(T dns, Request_T req)
+{
+    struct Request_T *r = (struct Request_T *)req;
+    int error = 0;
+
+    assert(dns);
+    assert(req);
+
+    pthread_mutex_lock(&dns->mutex);
+    if (r->state == REQ_COMPLETE || r->state == REQ_CANCELLED)
+        error = r->error;
+    pthread_mutex_unlock(&dns->mutex);
+
+    return error;
+}
+
+void SocketDNS_request_settimeout(T dns, Request_T req, int timeout_ms)
+{
+    struct Request_T *r = (struct Request_T *)req;
+    int sanitized = timeout_ms < 0 ? 0 : timeout_ms;
+
+    assert(dns);
+    assert(req);
+
+    pthread_mutex_lock(&dns->mutex);
+    if (r->state == REQ_PENDING || r->state == REQ_PROCESSING)
+        r->timeout_override_ms = sanitized;
+    pthread_mutex_unlock(&dns->mutex);
 }
 
 #undef T
