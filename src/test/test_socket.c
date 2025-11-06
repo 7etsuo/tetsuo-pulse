@@ -1,6 +1,5 @@
 /**
  * test_socket.c - Comprehensive Socket unit tests
- *
  * Industry-standard test coverage for Socket module.
  * Tests TCP sockets, Unix domain sockets, IPv6, error conditions, and edge cases.
  */

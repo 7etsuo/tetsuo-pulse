@@ -10,18 +10,15 @@
 
 /**
  * Socket Connection Pool
- *
  * Manages a pool of socket connections with associated buffers and
  * metadata. Provides O(1) connection lookup using hash tables and
  * automatic cleanup of idle connections.
- *
  * Features:
  * - Pre-allocated connection slots for predictable memory usage
  * - Hash table for O(1) socket lookup
  * - Automatic idle connection cleanup
  * - Per-connection input/output buffers
  * - User data storage per connection
- *
  * The Connection_T type is opaque - use accessor functions to
  * access connection properties.
  */
@@ -40,7 +37,6 @@ extern Except_T SocketPool_Failed; /**< Pool operation failure */
  * @arena: Arena for memory allocation
  * @maxconns: Maximum number of connections
  * @bufsize: Size of I/O buffers per connection
- *
  * Returns: New pool instance (never returns NULL)
  * Raises: SocketPool_Failed on any allocation or initialization failure
  * Thread-safe: Yes - returns new instance
@@ -50,7 +46,6 @@ extern T SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize);
 /**
  * SocketPool_free - Free a connection pool
  * @pool: Pointer to pool (will be set to NULL)
- *
  * Note: Does not close sockets - caller must do that
  */
 extern void SocketPool_free (T *pool);
@@ -59,12 +54,9 @@ extern void SocketPool_free (T *pool);
  * SocketPool_get - Look up connection by socket
  * @pool: Pool instance
  * @socket: Socket to find
- *
  * Returns: Connection or NULL if not found
  * Thread-safe: Yes - protected by internal mutex
- *
  * O(1) operation using hash table lookup
- *
  * Thread Safety Note: The returned Connection_T pointer is valid only while
  * the connection remains in the pool. The caller should not cache this pointer
  * across operations that might remove the connection (like cleanup). The
@@ -77,10 +69,8 @@ extern Connection_T SocketPool_get (T pool, Socket_T socket);
  * SocketPool_add - Add socket to pool
  * @pool: Pool instance
  * @socket: Socket to add
- *
  * Returns: New connection or NULL if pool is full
  * Thread-safe: Yes - protected by internal mutex
- *
  * Allocates I/O buffers and initializes connection
  */
 extern Connection_T SocketPool_add (T pool, Socket_T socket);
@@ -89,7 +79,6 @@ extern Connection_T SocketPool_add (T pool, Socket_T socket);
  * SocketPool_remove - Remove socket from pool
  * @pool: Pool instance
  * @socket: Socket to remove
- *
  * Clears buffers but does not close the socket
  * Thread-safe: Yes - protected by internal mutex
  */
@@ -99,7 +88,6 @@ extern void SocketPool_remove (T pool, Socket_T socket);
  * SocketPool_cleanup - Remove idle connections
  * @pool: Pool instance
  * @idle_timeout: Seconds of inactivity before removal (0 = remove all)
- *
  * Automatically closes and removes idle sockets.
  * Pass 0 for idle_timeout to close all connections immediately.
  * Thread-safe: Yes - collects sockets under mutex, closes outside lock
@@ -110,7 +98,6 @@ extern void SocketPool_cleanup (T pool, time_t idle_timeout);
 /**
  * SocketPool_count - Get active connection count
  * @pool: Pool instance
- *
  * Returns: Number of active connections
  * Thread-safe: Yes - protected by internal mutex
  */
@@ -121,7 +108,6 @@ extern size_t SocketPool_count (T pool);
  * @pool: Pool instance
  * @func: Callback function
  * @arg: User data for callback
- *
  * Calls func for each active connection
  * Thread-safe: Yes - holds mutex during iteration
  * Performance: O(n) where n is maxconns (scans all connection slots)
@@ -135,7 +121,6 @@ extern void SocketPool_foreach (T pool, void (*func) (Connection_T, void *),
 /**
  * Connection_socket - Get connection's socket
  * @conn: Connection instance
- *
  * Returns: Associated socket
  */
 extern Socket_T Connection_socket (const Connection_T conn);
@@ -143,7 +128,6 @@ extern Socket_T Connection_socket (const Connection_T conn);
 /**
  * Connection_inbuf - Get input buffer
  * @conn: Connection instance
- *
  * Returns: Input buffer for reading data
  */
 extern SocketBuf_T Connection_inbuf (const Connection_T conn);
@@ -151,7 +135,6 @@ extern SocketBuf_T Connection_inbuf (const Connection_T conn);
 /**
  * Connection_outbuf - Get output buffer
  * @conn: Connection instance
- *
  * Returns: Output buffer for writing data
  */
 extern SocketBuf_T Connection_outbuf (const Connection_T conn);
@@ -159,7 +142,6 @@ extern SocketBuf_T Connection_outbuf (const Connection_T conn);
 /**
  * Connection_data - Get user data
  * @conn: Connection instance
- *
  * Returns: User-defined data pointer
  */
 extern void *Connection_data (const Connection_T conn);
@@ -174,7 +156,6 @@ extern void Connection_setdata (Connection_T conn, void *data);
 /**
  * Connection_lastactivity - Get last activity time
  * @conn: Connection instance
- *
  * Returns: time_t of last activity
  */
 extern time_t Connection_lastactivity (const Connection_T conn);
@@ -182,7 +163,6 @@ extern time_t Connection_lastactivity (const Connection_T conn);
 /**
  * Connection_isactive - Check if connection is active
  * @conn: Connection instance
- *
  * Returns: Non-zero if active
  */
 extern int Connection_isactive (const Connection_T conn);

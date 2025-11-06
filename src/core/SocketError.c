@@ -1,8 +1,5 @@
 /**
  * SocketError.c - Thread-local error message handling
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  */
 
 #include "core/SocketError.h"

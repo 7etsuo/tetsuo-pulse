@@ -1,8 +1,5 @@
 /**
  * SocketDgram.c - UDP/datagram socket implementation
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  */
 
 #include <arpa/inet.h>
@@ -63,9 +60,7 @@ struct T
 /* Static helper functions */
 
 /**
- * validate_dgram_port - Validate port is in valid range
- * @port: Port number to validate
- *
+ * validate_dgram_port
  * Raises: SocketDgram_Failed if port is invalid
  */
 static void validate_dgram_port(int port)
@@ -74,9 +69,7 @@ static void validate_dgram_port(int port)
 }
 
 /**
- * validate_dgram_hostname - Validate hostname length
- * @host: Hostname to validate
- *
+ * validate_dgram_hostname
  * Raises: SocketDgram_Failed if hostname too long
  */
 static void validate_dgram_hostname(const char *host)
@@ -85,8 +78,7 @@ static void validate_dgram_hostname(const char *host)
 }
 
 /**
- * setup_sendto_hints - Initialize addrinfo hints for sendto operations
- * @hints: Hints structure to initialize
+ * setup_sendto_hints
  */
 static void setup_sendto_hints(struct addrinfo *hints)
 {
@@ -98,9 +90,7 @@ static void setup_sendto_hints(struct addrinfo *hints)
  * @host: Hostname to resolve
  * @port: Port number
  * @res: Output resolved addresses
- *
  * Returns: 0 on success, raises exception on failure
- *
  * Raises: SocketDgram_Failed on resolution failure
  */
 static int resolve_sendto_address(const char *host, int port, struct addrinfo **res)
@@ -130,9 +120,7 @@ static int resolve_sendto_address(const char *host, int port, struct addrinfo **
  * @buf: Data buffer
  * @len: Data length
  * @res: Resolved address info
- *
  * Returns: Bytes sent or 0 on EAGAIN/EWOULDBLOCK
- *
  * Raises: SocketDgram_Failed on send failure
  */
 static ssize_t perform_sendto(T socket, const void *buf, size_t len, struct addrinfo *res)
@@ -159,9 +147,7 @@ static ssize_t perform_sendto(T socket, const void *buf, size_t len, struct addr
  * @len: Buffer length
  * @addr: Output sender address
  * @addrlen: Input/output address length
- *
  * Returns: Bytes received or 0 on EAGAIN/EWOULDBLOCK
- *
  * Raises: SocketDgram_Failed on receive failure
  */
 static ssize_t perform_recvfrom(T socket, void *buf, size_t len, struct sockaddr_storage *addr, socklen_t *addrlen)
@@ -188,8 +174,8 @@ static ssize_t perform_recvfrom(T socket, void *buf, size_t len, struct sockaddr
  * @host_len: Host buffer length
  * @port: Output port pointer
  */
-static void extract_sender_info(const struct sockaddr_storage *addr, socklen_t addrlen,
-                               char *host, size_t host_len, int *port)
+static void extract_sender_info(const struct sockaddr_storage *addr, socklen_t addrlen, char *host, size_t host_len,
+                                int *port)
 {
     char serv[SOCKET_NI_MAXSERV];
     int result;
@@ -223,7 +209,6 @@ static void extract_sender_info(const struct sockaddr_storage *addr, socklen_t a
  * resolve_multicast_group - Resolve multicast group address
  * @group: Multicast group address
  * @res: Output resolved address info
- *
  * Raises: SocketDgram_Failed on resolution failure
  */
 static void resolve_multicast_group(const char *group, struct addrinfo **res)
@@ -245,10 +230,7 @@ static void resolve_multicast_group(const char *group, struct addrinfo **res)
 }
 
 /**
- * setup_ipv4_multicast_interface - Set up IPv4 multicast interface
- * @mreq: Multicast request structure
- * @interface: Interface address or NULL
- *
+ * setup_ipv4_multicast_interface
  * Raises: SocketDgram_Failed on invalid interface
  */
 static void setup_ipv4_multicast_interface(struct ip_mreq *mreq, const char *interface)
@@ -272,7 +254,6 @@ static void setup_ipv4_multicast_interface(struct ip_mreq *mreq, const char *int
  * @socket: Socket to join
  * @group_addr: Multicast group address
  * @interface: Interface address or NULL
- *
  * Raises: SocketDgram_Failed on join failure
  */
 static void join_ipv4_multicast(T socket, struct in_addr group_addr, const char *interface)
@@ -293,7 +274,6 @@ static void join_ipv4_multicast(T socket, struct in_addr group_addr, const char 
  * join_ipv6_multicast - Join IPv6 multicast group
  * @socket: Socket to join
  * @group_addr: Multicast group address
- *
  * Raises: SocketDgram_Failed on join failure
  */
 static void join_ipv6_multicast(T socket, struct in6_addr group_addr)
@@ -315,7 +295,6 @@ static void join_ipv6_multicast(T socket, struct in6_addr group_addr)
  * @socket: Socket to leave
  * @group_addr: Multicast group address
  * @interface: Interface address or NULL
- *
  * Raises: SocketDgram_Failed on leave failure
  */
 static void leave_ipv4_multicast(T socket, struct in_addr group_addr, const char *interface)
@@ -336,7 +315,6 @@ static void leave_ipv4_multicast(T socket, struct in_addr group_addr, const char
  * leave_ipv6_multicast - Leave IPv6 multicast group
  * @socket: Socket to leave
  * @group_addr: Multicast group address
- *
  * Raises: SocketDgram_Failed on leave failure
  */
 static void leave_ipv6_multicast(T socket, struct in6_addr group_addr)
@@ -354,8 +332,7 @@ static void leave_ipv6_multicast(T socket, struct in6_addr group_addr)
 }
 
 /**
- * setup_dgram_bind_hints - Initialize addrinfo hints for datagram binding
- * @hints: Hints structure to initialize
+ * setup_dgram_bind_hints
  */
 static void setup_dgram_bind_hints(struct addrinfo *hints)
 {
@@ -363,8 +340,7 @@ static void setup_dgram_bind_hints(struct addrinfo *hints)
 }
 
 /**
- * setup_dgram_connect_hints - Initialize addrinfo hints for datagram connecting
- * @hints: Hints structure to initialize
+ * setup_dgram_connect_hints
  */
 static void setup_dgram_connect_hints(struct addrinfo *hints)
 {
@@ -376,7 +352,6 @@ static void setup_dgram_connect_hints(struct addrinfo *hints)
  * @socket: Socket to bind
  * @res: Resolved address list
  * @socket_family: Socket's address family
- *
  * Returns: 0 on success, -1 on failure
  */
 static int try_dgram_bind_addresses(T socket, struct addrinfo *res, int socket_family)
@@ -432,7 +407,6 @@ static void handle_dgram_bind_error(const char *host, int port)
  * @socket: Socket to connect
  * @res: Resolved address list
  * @socket_family: Socket's address family
- *
  * Returns: 0 on success, -1 on failure
  */
 static int try_dgram_connect_addresses(T socket, struct addrinfo *res, int socket_family)
@@ -455,11 +429,7 @@ static int try_dgram_connect_addresses(T socket, struct addrinfo *res, int socke
 }
 
 /**
- * get_dgram_socket_family - Get datagram socket's address family
- * @socket: Socket to query
- *
- * Returns: Socket family or SOCKET_AF_UNSPEC on error
- *
+ * get_dgram_socket_family
  * Uses SO_DOMAIN on Linux, falls back to getsockname() on other platforms.
  */
 static int get_dgram_socket_family(T socket)
@@ -562,7 +532,6 @@ void SocketDgram_free(T *socket)
 /**
  * normalize_dgram_host - Normalize host for datagram binding
  * @host: Host string to normalize
- *
  * Returns: NULL if wildcard, normalized host otherwise
  */
 static const char *normalize_dgram_host(const char *host)
@@ -820,7 +789,6 @@ void SocketDgram_setbroadcast(T socket, int enable)
  * @socket: Socket to join
  * @res: Resolved address info
  * @interface: Interface address or NULL
- *
  * Raises: SocketDgram_Failed on unsupported family or join failure
  */
 static void join_multicast_by_family(T socket, struct addrinfo *res, const char *interface)
@@ -857,7 +825,6 @@ void SocketDgram_joinmulticast(T socket, const char *group, const char *interfac
  * @socket: Socket to leave
  * @res: Resolved address info
  * @interface: Interface address or NULL
- *
  * Raises: SocketDgram_Failed on unsupported family or leave failure
  */
 static void leave_multicast_by_family(T socket, struct addrinfo *res, const char *interface)
@@ -890,9 +857,7 @@ void SocketDgram_leavemulticast(T socket, const char *group, const char *interfa
 }
 
 /**
- * validate_ttl_value - Validate TTL value
- * @ttl: TTL value to validate
- *
+ * validate_ttl_value
  * Raises: SocketDgram_Failed if invalid
  */
 static void validate_ttl_value(int ttl)
@@ -905,11 +870,7 @@ static void validate_ttl_value(int ttl)
 }
 
 /**
- * get_socket_domain - Get socket address family
- * @socket: Socket to query
- *
- * Returns: Socket family or SOCKET_AF_UNSPEC on error
- *
+ * get_socket_domain
  * Uses SO_DOMAIN on Linux, falls back to getsockname() on other platforms.
  * Raises: SocketDgram_Failed if getsockname() fails (only on error path).
  */
@@ -933,10 +894,7 @@ static int get_socket_domain(T socket)
 }
 
 /**
- * set_ipv4_ttl - Set IPv4 TTL value
- * @socket: Socket to configure
- * @ttl: TTL value
- *
+ * set_ipv4_ttl
  * Raises: SocketDgram_Failed on failure
  */
 static void set_ipv4_ttl(T socket, int ttl)
@@ -949,10 +907,7 @@ static void set_ipv4_ttl(T socket, int ttl)
 }
 
 /**
- * set_ipv6_hop_limit - Set IPv6 hop limit
- * @socket: Socket to configure
- * @ttl: Hop limit value
- *
+ * set_ipv6_hop_limit
  * Raises: SocketDgram_Failed on failure
  */
 static void set_ipv6_hop_limit(T socket, int ttl)
@@ -965,11 +920,7 @@ static void set_ipv6_hop_limit(T socket, int ttl)
 }
 
 /**
- * set_ttl_by_family - Set TTL based on socket address family
- * @socket: Socket to configure
- * @socket_family: Socket address family
- * @ttl: TTL value
- *
+ * set_ttl_by_family
  * Raises: SocketDgram_Failed on unsupported family or failure
  */
 static void set_ttl_by_family(T socket, int socket_family, int ttl)
@@ -1039,7 +990,6 @@ int SocketDgram_getlocalport(const T socket)
  * SocketDgram_setcloexec - Control close-on-exec flag
  * @socket: Socket to modify
  * @enable: 1 to enable CLOEXEC, 0 to disable
- *
  * Raises: SocketDgram_Failed on error
  */
 void SocketDgram_setcloexec(T socket, int enable)

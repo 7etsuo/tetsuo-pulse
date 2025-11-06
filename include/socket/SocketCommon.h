@@ -3,9 +3,6 @@
 
 /**
  * SocketCommon.h - Common utilities shared between Socket and SocketDgram modules
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  */
 
 #include <netdb.h>
@@ -39,7 +36,6 @@ void SocketCommon_setup_hints(struct addrinfo *hints, int socktype, int flags);
  * @exception_type: Exception type to raise on failure
  * @socket_family: Socket family to match (AF_UNSPEC if none)
  * @use_exceptions: If true, raise exceptions; if false, return error codes
- *
  * Returns: 0 on success, -1 on failure (if not using exceptions)
  * Raises: Specified exception type on failure (if using exceptions)
  */
@@ -51,7 +47,6 @@ int SocketCommon_resolve_address(const char *host, int port, const struct addrin
  * SocketCommon_validate_port - Validate port number is in valid range
  * @port: Port number to validate
  * @exception_type: Exception type to raise on invalid port
- *
  * Raises: Specified exception type if port is invalid
  */
 void SocketCommon_validate_port(int port, Except_T exception_type);
@@ -60,7 +55,6 @@ void SocketCommon_validate_port(int port, Except_T exception_type);
  * SocketCommon_validate_hostname - Validate hostname length
  * @host: Hostname to validate
  * @exception_type: Exception type to raise on invalid hostname
- *
  * Raises: Specified exception type if hostname is too long
  */
 void SocketCommon_validate_hostname(const char *host, Except_T exception_type);
@@ -68,7 +62,6 @@ void SocketCommon_validate_hostname(const char *host, Except_T exception_type);
 /**
  * SocketCommon_normalize_wildcard_host - Normalize wildcard host addresses to NULL
  * @host: Host string to normalize
- *
  * Returns: NULL if wildcard ("0.0.0.0" or "::"), original host otherwise
  */
 const char *SocketCommon_normalize_wildcard_host(const char *host);
@@ -80,7 +73,6 @@ const char *SocketCommon_normalize_wildcard_host(const char *host);
  * @addrlen: Length of socket address
  * @addr_out: Output pointer updated to arena-allocated address string
  * @port_out: Output integer updated with numeric port (0 if unavailable)
- *
  * Returns: 0 on success, -1 on failure (addr_out unchanged on failure)
  */
 int SocketCommon_cache_endpoint(Arena_T arena, const struct sockaddr *addr, socklen_t addrlen,
@@ -90,7 +82,6 @@ int SocketCommon_cache_endpoint(Arena_T arena, const struct sockaddr *addr, sock
  * SocketCommon_setcloexec - Set close-on-exec flag on file descriptor
  * @fd: File descriptor to modify
  * @enable: 1 to enable CLOEXEC, 0 to disable
- *
  * Returns: 0 on success, -1 on failure
  * Thread-safe: Yes (operates on single fd)
  */
@@ -99,7 +90,6 @@ int SocketCommon_setcloexec(int fd, int enable);
 /**
  * SocketCommon_has_cloexec - Check if close-on-exec flag is set
  * @fd: File descriptor to check
- *
  * Returns: 1 if CLOEXEC is set, 0 if not set, -1 on error
  * Thread-safe: Yes (operates on single fd)
  */

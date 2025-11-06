@@ -1,6 +1,5 @@
 /**
  * test_socketerror.c - SocketError module unit tests
- *
  * Tests for the SocketError thread-local error message handling module.
  * Covers error message retrieval and thread-local storage behavior.
  */

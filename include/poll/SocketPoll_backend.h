@@ -3,15 +3,12 @@
 
 /**
  * SocketPoll Backend Abstraction (Private Interface)
- *
  * This header defines the internal interface that all polling backends
  * must implement. It is not part of the public API.
- *
  * Supported Backends:
  * - epoll (Linux) - High performance, edge-triggered
  * - kqueue (BSD/macOS) - High performance, edge-triggered via EV_CLEAR
  * - poll (POSIX) - Portable fallback, level-triggered
- *
  * Backend Selection:
  * - Compile-time via Makefile based on platform detection
  * - Linux: epoll (best)
@@ -32,7 +29,6 @@ typedef struct PollBackend_T *PollBackend_T;
 /**
  * backend_new - Create new backend instance
  * @maxevents: Maximum events to return per wait
- *
  * Returns: Backend instance or NULL on failure
  */
 extern PollBackend_T backend_new(int maxevents);
@@ -48,7 +44,6 @@ extern void backend_free(PollBackend_T backend);
  * @backend: Backend instance
  * @fd: File descriptor to monitor
  * @events: Events to monitor (POLL_READ | POLL_WRITE)
- *
  * Returns: 0 on success, -1 on failure (sets errno)
  */
 extern int backend_add(PollBackend_T backend, int fd, unsigned events);
@@ -58,7 +53,6 @@ extern int backend_add(PollBackend_T backend, int fd, unsigned events);
  * @backend: Backend instance
  * @fd: File descriptor to modify
  * @events: New events to monitor
- *
  * Returns: 0 on success, -1 on failure (sets errno)
  */
 extern int backend_mod(PollBackend_T backend, int fd, unsigned events);
@@ -67,7 +61,6 @@ extern int backend_mod(PollBackend_T backend, int fd, unsigned events);
  * backend_del - Remove socket from poll set
  * @backend: Backend instance
  * @fd: File descriptor to remove
- *
  * Returns: 0 on success, -1 on failure (sets errno)
  * Note: Should succeed silently if fd not in set
  */
@@ -77,7 +70,6 @@ extern int backend_del(PollBackend_T backend, int fd);
  * backend_wait - Wait for events
  * @backend: Backend instance
  * @timeout: Timeout in milliseconds (-1 for infinite)
- *
  * Returns: Number of events ready (>= 0), or -1 on error (sets errno)
  * Note: Returns 0 on timeout
  */
@@ -89,14 +81,12 @@ extern int backend_wait(PollBackend_T backend, int timeout);
  * @index: Event index (0 to count-1 from backend_wait)
  * @fd_out: Output - file descriptor
  * @events_out: Output - events that occurred
- *
  * Returns: 0 on success, -1 on invalid index
  */
 extern int backend_get_event(PollBackend_T backend, int index, int *fd_out, unsigned *events_out);
 
 /**
  * backend_name - Get backend name for debugging
- *
  * Returns: Static string with backend name ("epoll", "kqueue", "poll")
  */
 extern const char *backend_name(void);

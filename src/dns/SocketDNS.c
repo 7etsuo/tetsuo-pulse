@@ -1,9 +1,5 @@
 /**
  * SocketDNS.c - Async DNS resolution implementation
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
  * PLATFORM: POSIX-compliant systems (Linux, BSD, macOS)
  * - POSIX threads (pthread) for thread pool
  * - getaddrinfo() for DNS resolution
@@ -100,9 +96,7 @@ struct T
 /**
  * request_hash_function - Calculate hash for request pointer
  * @req: Request pointer to hash
- *
  * Returns: Hash value in range [0, SOCKET_DNS_REQUEST_HASH_SIZE)
- *
  * Uses golden ratio multiplicative hashing for good distribution.
  */
 static unsigned request_hash_function(struct Request_T *req)
@@ -114,7 +108,6 @@ static unsigned request_hash_function(struct Request_T *req)
 /**
  * signal_completion - Signal completion via pipe
  * @dns: DNS resolver instance
- *
  * Writes completion signal to pipe. Non-blocking best-effort operation.
  * Pipe may be full, which is acceptable - signals are cumulative.
  */
@@ -130,9 +123,7 @@ static void signal_completion(T dns)
 /**
  * dequeue_request - Dequeue next request from queue
  * @dns: DNS resolver instance
- *
  * Returns: Next request or NULL if queue empty
- *
  * Thread-safe: Must be called with mutex locked
  */
 static struct Request_T *dequeue_request(T dns)
@@ -157,10 +148,8 @@ static struct Request_T *dequeue_request(T dns)
  * perform_dns_resolution - Perform actual DNS lookup
  * @req: Request to resolve
  * @hints: getaddrinfo hints structure
- *
  * Returns: getaddrinfo result code
  * @result: Set to resolved addresses (or NULL on error)
- *
  * Performs DNS resolution with optional port parameter.
  */
 static int perform_dns_resolution(struct Request_T *req, const struct addrinfo *hints, struct addrinfo **result)
@@ -187,7 +176,6 @@ static int perform_dns_resolution(struct Request_T *req, const struct addrinfo *
  * @req: Completed request
  * @result: Resolution result
  * @error: Error code from getaddrinfo
- *
  * Thread-safe: Must be called with mutex locked
  */
 static void store_resolution_result(T dns, struct Request_T *req, struct addrinfo *result, int error)
@@ -213,9 +201,7 @@ static void store_resolution_result(T dns, struct Request_T *req, struct addrinf
  * invoke_callback - Invoke completion callback if provided
  * @dns: DNS resolver instance
  * @req: Completed request
- *
  * Thread-safe: Called without mutex (callback may take time)
- *
  * Note: Callback receives ownership of result. After callback returns,
  * we clear req->result to prevent use-after-free if SocketDNS_getresult()
  * is called. SocketDNS_getresult() checks for callback and returns NULL
@@ -242,7 +228,6 @@ static void invoke_callback(T dns, struct Request_T *req)
  * @dns: DNS resolver instance
  * @req: Request to process
  * @hints: getaddrinfo hints structure
- *
  * Performs DNS resolution for one request and stores result.
  */
 static void process_single_request(T dns, struct Request_T *req, const struct addrinfo *hints)
@@ -262,9 +247,7 @@ static void process_single_request(T dns, struct Request_T *req, const struct ad
 /**
  * wait_for_request - Wait for next request or shutdown
  * @dns: DNS resolver instance
- *
  * Returns: Request to process, or NULL if shutdown
- *
  * Thread-safe: Must be called with mutex locked, unlocks on return
  */
 static struct Request_T *wait_for_request(T dns)
@@ -286,7 +269,6 @@ static struct Request_T *wait_for_request(T dns)
 /**
  * initialize_addrinfo_hints - Initialize getaddrinfo hints structure
  * @hints: Hints structure to initialize
- *
  * Sets up hints for DNS resolution with AF_UNSPEC (IPv4/IPv6).
  */
 static void initialize_addrinfo_hints(struct addrinfo *hints)
@@ -300,9 +282,7 @@ static void initialize_addrinfo_hints(struct addrinfo *hints)
 /**
  * worker_thread - Worker thread for DNS resolution
  * @arg: DNS resolver instance
- *
  * Returns: NULL
- *
  * Worker thread that processes DNS resolution requests from queue.
  * Blocks waiting for requests, performs resolution, stores results.
  */
@@ -332,7 +312,6 @@ static void *worker_thread(void *arg)
 /**
  * cleanup_mutex_cond - Cleanup mutex and condition variables
  * @dns: DNS resolver instance
- *
  * Destroys mutex and condition variables in reverse order of creation.
  */
 static void cleanup_mutex_cond(T dns)
@@ -345,7 +324,6 @@ static void cleanup_mutex_cond(T dns)
 /**
  * cleanup_pipe - Close pipe file descriptors
  * @dns: DNS resolver instance
- *
  * Safely closes both pipe file descriptors.
  */
 static void cleanup_pipe(T dns)
@@ -367,7 +345,6 @@ static void cleanup_pipe(T dns)
  * cleanup_on_init_failure - Cleanup resources on initialization failure
  * @dns: DNS resolver instance
  * @cleanup_level: How much cleanup needed (0=none, 1=mutex, 2=cond, 3=pipe, 4=arena)
- *
  * Cleans up partially initialized resolver. cleanup_level indicates how far
  * initialization got before failure.
  */
@@ -387,7 +364,6 @@ static void cleanup_on_init_failure(T dns, int cleanup_level)
 /**
  * initialize_mutex - Initialize mutex for DNS resolver
  * @dns: DNS resolver instance
- *
  * Raises: SocketDNS_Failed on initialization failure
  */
 static void initialize_mutex(T dns)
@@ -403,7 +379,6 @@ static void initialize_mutex(T dns)
 /**
  * initialize_queue_condition - Initialize queue condition variable
  * @dns: DNS resolver instance
- *
  * Raises: SocketDNS_Failed on initialization failure
  */
 static void initialize_queue_condition(T dns)
@@ -419,7 +394,6 @@ static void initialize_queue_condition(T dns)
 /**
  * initialize_result_condition - Initialize result condition variable
  * @dns: DNS resolver instance
- *
  * Raises: SocketDNS_Failed on initialization failure
  */
 static void initialize_result_condition(T dns)
@@ -435,7 +409,6 @@ static void initialize_result_condition(T dns)
 /**
  * initialize_synchronization - Initialize mutex and condition variables
  * @dns: DNS resolver instance
- *
  * Raises: SocketDNS_Failed on initialization failure
  */
 static void initialize_synchronization(T dns)
@@ -448,9 +421,7 @@ static void initialize_synchronization(T dns)
 /**
  * create_completion_pipe - Create pipe for completion signaling
  * @dns: DNS resolver instance
- *
  * Raises: SocketDNS_Failed on pipe creation failure
- *
  * Note: Both pipe ends are created with close-on-exec flag set.
  */
 static void create_completion_pipe(T dns)
@@ -480,7 +451,6 @@ static void create_completion_pipe(T dns)
 /**
  * set_pipe_nonblocking - Set pipe read end to non-blocking mode
  * @dns: DNS resolver instance
- *
  * Raises: SocketDNS_Failed on fcntl failure
  */
 static void set_pipe_nonblocking(T dns)
@@ -504,7 +474,6 @@ static void set_pipe_nonblocking(T dns)
 /**
  * initialize_pipe - Create pipe for completion signaling
  * @dns: DNS resolver instance
- *
  * Raises: SocketDNS_Failed on pipe creation failure
  */
 static void initialize_pipe(T dns)
@@ -515,10 +484,8 @@ static void initialize_pipe(T dns)
 
 /**
  * allocate_dns_resolver - Allocate and initialize basic DNS resolver structure
- *
  * Returns: Allocated DNS resolver or NULL on failure
  * Raises: SocketDNS_Failed on allocation failure
- *
  * Allocates DNS resolver structure and sets up basic fields.
  */
 static T allocate_dns_resolver(void)
@@ -538,7 +505,6 @@ static T allocate_dns_resolver(void)
 /**
  * initialize_dns_fields - Set default field values for DNS resolver
  * @dns: DNS resolver instance
- *
  * Initializes configuration fields to default values.
  */
 static void initialize_dns_fields(T dns)
@@ -556,9 +522,7 @@ static void initialize_dns_fields(T dns)
 /**
  * initialize_dns_components - Initialize arena and synchronization primitives
  * @dns: DNS resolver instance
- *
  * Raises: SocketDNS_Failed on initialization failure
- *
  * Sets up arena, mutex, condition variables, and pipe for completion signaling.
  */
 static void initialize_dns_components(T dns)
@@ -579,9 +543,7 @@ static void initialize_dns_components(T dns)
  * create_single_worker_thread - Create a single worker thread
  * @dns: DNS resolver instance
  * @thread_index: Index of thread to create
- *
  * Returns: 0 on success, -1 on failure
- *
  * Creates one worker thread and handles partial cleanup on failure.
  */
 static int create_single_worker_thread(T dns, int thread_index)
@@ -607,9 +569,7 @@ static int create_single_worker_thread(T dns, int thread_index)
 /**
  * create_worker_threads - Create worker thread pool
  * @dns: DNS resolver instance
- *
  * Raises: SocketDNS_Failed on thread creation failure
- *
  * Creates all worker threads, with proper cleanup on partial failure.
  */
 static void create_worker_threads(T dns)
@@ -629,9 +589,7 @@ static void create_worker_threads(T dns)
 /**
  * start_dns_workers - Create and start worker thread pool
  * @dns: DNS resolver instance
- *
  * Raises: SocketDNS_Failed on thread creation failure
- *
  * Creates worker threads and allocates thread array from arena.
  */
 static void start_dns_workers(T dns)
@@ -663,7 +621,6 @@ T SocketDNS_new(void)
 /**
  * free_request_list - Free all requests in a list
  * @head: Head of request list
- *
  * Frees getaddrinfo results for all requests in list.
  * Request structures themselves are in Arena, so not freed here.
  */
@@ -687,9 +644,7 @@ static void free_request_list(struct Request_T *head, int use_hash_next)
 /**
  * free_queued_requests - Free all requests in the request queue
  * @d: DNS resolver instance
- *
  * Thread-safe: Must be called with mutex locked
- *
  * Frees all requests currently in the processing queue.
  */
 static void free_queued_requests(T d)
@@ -700,9 +655,7 @@ static void free_queued_requests(T d)
 /**
  * free_hash_table_requests - Free all requests in hash table
  * @d: DNS resolver instance
- *
  * Thread-safe: Must be called with mutex locked
- *
  * Frees all requests currently registered in the hash table.
  */
 static void free_hash_table_requests(T d)
@@ -716,9 +669,7 @@ static void free_hash_table_requests(T d)
 /**
  * free_all_requests - Free all pending requests
  * @d: DNS resolver instance
- *
  * Thread-safe: Must be called with mutex locked
- *
  * Frees all requests from both queue and hash table.
  */
 static void free_all_requests(T d)
@@ -730,7 +681,6 @@ static void free_all_requests(T d)
 /**
  * shutdown_workers - Signal and wait for worker threads
  * @d: DNS resolver instance
- *
  * Signals shutdown and joins all worker threads.
  */
 static void shutdown_workers(T d)
@@ -751,7 +701,6 @@ static void shutdown_workers(T d)
 /**
  * drain_completion_pipe - Drain completion pipe before cleanup
  * @dns: DNS resolver instance
- *
  * Reads and discards any remaining completion notifications so that
  * subsequent close operations do not leave unread data in the pipe.
  */
@@ -772,11 +721,9 @@ static void drain_completion_pipe(T dns)
 /**
  * drain_completed_requests - Release results for completed requests
  * @dns: DNS resolver instance
- *
  * Ensures any outstanding getaddrinfo() results owned by the resolver are
  * released prior to arena disposal. This is necessary when callers never
  * retrieve results (e.g., cancelled or overflowed requests).
- *
  * Thread-safe: Must be called with mutex locked.
  */
 static void drain_completed_requests(T dns)
@@ -831,7 +778,6 @@ void SocketDNS_free(T *dns)
  * validate_resolve_params - Validate parameters for DNS resolution
  * @host: Hostname to validate
  * @port: Port number to validate
- *
  * Raises: SocketDNS_Failed on invalid parameters
  */
 static void validate_resolve_params(const char *host, int port)
@@ -855,10 +801,8 @@ static void validate_resolve_params(const char *host, int port)
 /**
  * allocate_request_structure - Allocate request structure
  * @dns: DNS resolver instance
- *
  * Returns: Allocated request structure
  * Raises: SocketDNS_Failed on allocation failure
- *
  * Allocates memory for the request structure from arena.
  */
 static struct Request_T *allocate_request_structure(T dns)
@@ -881,9 +825,7 @@ static struct Request_T *allocate_request_structure(T dns)
  * @req: Request structure to initialize
  * @host: Hostname to copy
  * @host_len: Length of hostname
- *
  * Raises: SocketDNS_Failed on allocation failure
- *
  * Allocates memory for hostname and copies it.
  */
 static void allocate_request_hostname(T dns, struct Request_T *req, const char *host, size_t host_len)
@@ -905,7 +847,6 @@ static void allocate_request_hostname(T dns, struct Request_T *req, const char *
  * @port: Port number
  * @callback: Completion callback
  * @data: User data for callback
- *
  * Sets all request fields to initial values.
  */
 static void initialize_request_fields(struct Request_T *req, int port, SocketDNS_Callback callback, void *data)
@@ -929,10 +870,8 @@ static void initialize_request_fields(struct Request_T *req, int port, SocketDNS
  * @port: Port number
  * @callback: Completion callback
  * @data: User data for callback
- *
  * Returns: Allocated request structure
  * Raises: SocketDNS_Failed on allocation failure
- *
  * Allocates and fully initializes a DNS request structure.
  */
 static struct Request_T *allocate_request(T dns, const char *host, size_t host_len, int port,
@@ -951,7 +890,6 @@ static struct Request_T *allocate_request(T dns, const char *host, size_t host_l
  * hash_table_insert - Insert request into hash table
  * @dns: DNS resolver instance
  * @req: Request to insert
- *
  * Thread-safe: Must be called with mutex locked
  */
 static void hash_table_insert(T dns, struct Request_T *req)
@@ -968,7 +906,6 @@ static void hash_table_insert(T dns, struct Request_T *req)
  * queue_append - Append request to queue
  * @dns: DNS resolver instance
  * @req: Request to append
- *
  * Thread-safe: Must be called with mutex locked
  */
 static void queue_append(T dns, struct Request_T *req)
@@ -989,9 +926,7 @@ static void queue_append(T dns, struct Request_T *req)
 /**
  * check_queue_limit - Check if queue has reached limit
  * @dns: DNS resolver instance
- *
  * Raises: SocketDNS_Failed if queue is full
- *
  * Thread-safe: Must be called with mutex locked
  */
 static void check_queue_limit(T dns)
@@ -1008,9 +943,7 @@ static void check_queue_limit(T dns)
  * submit_dns_request - Submit request to queue and hash table
  * @dns: DNS resolver instance
  * @req: Request to submit
- *
  * Thread-safe: Must be called with mutex locked
- *
  * Inserts request into hash table, appends to queue, and signals workers.
  */
 static void submit_dns_request(T dns, struct Request_T *req)
@@ -1044,7 +977,6 @@ Request_T SocketDNS_resolve(T dns, const char *host, int port, SocketDNS_Callbac
  * hash_table_remove - Remove request from hash table
  * @dns: DNS resolver instance
  * @req: Request to remove
- *
  * Thread-safe: Must be called with mutex locked
  */
 static void hash_table_remove(T dns, struct Request_T *req)
@@ -1099,7 +1031,6 @@ static void remove_from_queue_middle(T dns, struct Request_T *req)
  * queue_remove - Remove request from queue
  * @dns: DNS resolver instance
  * @req: Request to remove
- *
  * Thread-safe: Must be called with mutex locked
  */
 static void queue_remove(T dns, struct Request_T *req)
@@ -1115,7 +1046,6 @@ static void queue_remove(T dns, struct Request_T *req)
  * cancel_pending_request - Cancel a pending request
  * @dns: DNS resolver instance
  * @req: Request to cancel
- *
  * Thread-safe: Must be called with mutex locked
  */
 static void cancel_pending_request(T dns, struct Request_T *req)

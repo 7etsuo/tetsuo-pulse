@@ -1,6 +1,5 @@
 /**
  * test_socketpool.c - Comprehensive SocketPool unit tests
- *
  * Industry-standard test coverage for SocketPool connection pool module.
  * Tests connection management, cleanup, accessors, limits, and thread safety.
  */

@@ -12,13 +12,11 @@
  *
  * This module provides structured exception handling similar to try/catch
  * in other languages. It uses setjmp/longjmp for non-local control flow.
- *
  * Features:
  * - TRY/EXCEPT/FINALLY blocks
  * - Thread-safe implementation (thread-local exception stack)
  * - Named exceptions with reason strings
  * - Exception propagation with RERAISE
- *
  * Usage:
  *   TRY
  *     // Code that might raise an exception
@@ -71,12 +69,10 @@ void Except_raise (const T *e, const char *file, int line);
 
 /**
  * RETURN macro - Returns from function while cleaning up exception stack
- *
  * WARNING: This macro uses the comma operator to modify Except_stack as a side
  * effect before returning. This is intentional but subtle. Use only within
  * TRY blocks when you need to return early while properly cleaning up the
  * exception stack.
- *
  * The switch/default pattern is necessary because:
  * 1. The comma operator evaluates left-to-right: (expr1, expr2) evaluates
  * expr1, discards result, evaluates expr2, returns result of expr2.
@@ -84,7 +80,6 @@ void Except_raise (const T *e, const char *file, int line);
  * 3. default: always matches, allowing "return" to work as a statement.
  * 4. This prevents issues with return values containing commas (e.g., function
  * calls).
- *
  * Usage examples:
  *   RETURN;              // For void functions
  *   RETURN value;        // For functions returning a value

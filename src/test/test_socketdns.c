@@ -1,6 +1,5 @@
 /**
  * test_socketdns.c - Comprehensive SocketDNS unit tests
- *
  * Industry-standard test coverage for SocketDNS async DNS module.
  * Tests async resolution, callbacks, cancellation, queue management, and thread pool.
  */

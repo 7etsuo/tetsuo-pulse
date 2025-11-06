@@ -1,9 +1,5 @@
 /**
  * SocketPoll_poll.c - poll(2) fallback backend
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
  * PLATFORM: Any POSIX system (poll is standardized in POSIX.1-2001)
  * - Portable to all POSIX-compliant systems
  * - Performance: O(n) where n = number of file descriptors

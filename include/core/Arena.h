@@ -15,14 +15,12 @@
  * - No memory fragmentation within the arena
  * - Simple cleanup - dispose entire arena at once
  * - Thread-safe chunk management with mutex protection
- *
  * Thread Safety:
  * - All operations fully thread-safe with per-arena and global mutex protection
  * - Multiple threads can safely allocate from the same arena concurrently
  * - Each arena has its own mutex protecting allocation state (avail, limit, prev)
  * - Global free chunk cache protected by separate mutex
  * - Safe to use same arena from multiple threads or one arena per thread
- *
  * Usage:
  *   Arena_T arena = Arena_new();
  *   void *ptr = ALLOC(arena, 100);  // Allocate 100 bytes
@@ -42,7 +40,6 @@ extern Except_T Arena_Failed;
 
 /**
  * Arena_new - Create a new memory arena
- *
  * Returns: New arena instance, or NULL on allocation failure
  * Note: Returns NULL if malloc fails or mutex initialization fails
  * Thread-safe: Yes
@@ -52,7 +49,6 @@ extern T Arena_new(void);
 /**
  * Arena_dispose - Dispose of an arena and all its allocations
  * @ap: Pointer to arena pointer (will be set to NULL)
- *
  * Frees all memory allocated from this arena.
  * Thread-safe: Yes
  */
@@ -64,10 +60,8 @@ extern void Arena_dispose(T *ap);
  * @nbytes: Number of bytes to allocate
  * @file: Source file (for debugging)
  * @line: Source line (for debugging)
- *
  * Returns: Pointer to allocated memory, or NULL on failure
  * Thread-safe: Yes
- *
  * Note: Memory is aligned appropriately for any data type
  */
 extern void *Arena_alloc(T arena, size_t nbytes, const char *file, int line);
@@ -79,7 +73,6 @@ extern void *Arena_alloc(T arena, size_t nbytes, const char *file, int line);
  * @nbytes: Size of each element
  * @file: Source file (for debugging)
  * @line: Source line (for debugging)
- *
  * Returns: Pointer to zeroed memory, or NULL on failure
  * Thread-safe: Yes
  */
@@ -88,7 +81,6 @@ extern void *Arena_calloc(T arena, size_t count, size_t nbytes, const char *file
 /**
  * Arena_clear - Clear all allocations in arena but keep arena active
  * @arena: Arena to clear
- *
  * Frees all memory allocated from this arena but keeps the arena
  * itself active for future allocations.
  * Thread-safe: Yes

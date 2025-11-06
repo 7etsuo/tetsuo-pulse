@@ -1,8 +1,5 @@
 /**
  * SocketBuf.c - Circular buffer implementation for socket I/O
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  */
 
 #include <assert.h>
@@ -246,11 +243,9 @@ void SocketBuf_secureclear(T buf)
     assert(buf->data);
 
     /* Secure clear - zero memory contents before resetting pointers
-     *
      * SECURITY PATTERN: Defense-in-depth with assertion + runtime check
      * - Debug builds: assertion catches programming errors early
      * - Release builds (NDEBUG): runtime check prevents security vulnerabilities
-     *
      * This pattern ensures security-critical operations work correctly even when
      * assertions are disabled in production builds. Recommended for all operations
      * involving sensitive data (passwords, keys, tokens, etc.). */

@@ -13,7 +13,6 @@
  * - Test result reporting (pass/fail counts)
  * - File/line tracking for failures
  * - Minimal API surface
- *
  * Usage:
  *   TEST(test_name)
  *   {
@@ -21,7 +20,6 @@
  *       ASSERT_EQ(expected, actual);
  *       ASSERT_NULL(ptr);
  *   }
- *
  *   int main(void)
  *   {
  *       Test_run_all();
@@ -37,7 +35,6 @@ extern Except_T Test_Failed;
 
 /**
  * Test_run_all - Run all registered tests
- *
  * Executes all tests registered via TEST() macro and prints summary.
  * Tests are executed in registration order.
  */
@@ -45,14 +42,12 @@ extern void Test_run_all(void);
 
 /**
  * Test_get_failures - Get number of failed tests
- *
  * Returns: Number of tests that failed (0 if all passed)
  */
 extern int Test_get_failures(void);
 
 /**
  * Test registration macro - declares and registers a test function
- *
  * Usage:
  *   TEST(test_arena_allocation)
  *   {
@@ -73,7 +68,6 @@ extern void Test_register(const char *name, void (*func)(void));
 /**
  * ASSERT - Basic assertion macro
  * @condition: Condition that must be true
- *
  * Raises Test_Failed if condition is false.
  */
 #define ASSERT(condition)                                                                                              \
@@ -89,7 +83,6 @@ extern void Test_register(const char *name, void (*func)(void));
  * ASSERT_EQ - Equality assertion macro
  * @expected: Expected value
  * @actual: Actual value
- *
  * Raises Test_Failed if values are not equal.
  * Works with any comparable types.
  */
@@ -106,7 +99,6 @@ extern void Test_register(const char *name, void (*func)(void));
  * ASSERT_NE - Inequality assertion macro
  * @expected: Value that should not equal actual
  * @actual: Actual value
- *
  * Raises Test_Failed if values are equal.
  */
 #define ASSERT_NE(expected, actual)                                                                                    \
@@ -121,7 +113,6 @@ extern void Test_register(const char *name, void (*func)(void));
 /**
  * ASSERT_NULL - NULL pointer assertion macro
  * @ptr: Pointer that must be NULL
- *
  * Raises Test_Failed if pointer is not NULL.
  */
 #define ASSERT_NULL(ptr)                                                                                               \
@@ -136,7 +127,6 @@ extern void Test_register(const char *name, void (*func)(void));
 /**
  * ASSERT_NOT_NULL - Non-NULL pointer assertion macro
  * @ptr: Pointer that must not be NULL
- *
  * Raises Test_Failed if pointer is NULL.
  */
 #define ASSERT_NOT_NULL(ptr)                                                                                           \

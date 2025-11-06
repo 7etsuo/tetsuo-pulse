@@ -1,8 +1,5 @@
 /**
  * SocketPool.c - Connection pool implementation
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  */
 
 #include <assert.h>
@@ -103,7 +100,6 @@ struct T
 /**
  * enforce_max_connections - Enforce maximum connection limit
  * @maxconns: Requested maximum connections
- *
  * Returns: Enforced maximum connections value
  */
 static size_t
@@ -117,7 +113,6 @@ enforce_max_connections (size_t maxconns)
 /**
  * enforce_buffer_size - Enforce buffer size limits
  * @bufsize: Requested buffer size
- *
  * Returns: Enforced buffer size value
  */
 static size_t
@@ -131,10 +126,7 @@ enforce_buffer_size (size_t bufsize)
 }
 
 /**
- * allocate_pool_structure - Allocate pool structure from arena
- * @arena: Arena for allocation
- *
- * Returns: Allocated pool structure
+ * allocate_pool_structure
  * Raises: SocketPool_Failed on allocation failure
  */
 static T
@@ -152,11 +144,7 @@ allocate_pool_structure (Arena_T arena)
 }
 
 /**
- * allocate_connections_array - Allocate connections array from arena
- * @arena: Arena for allocation
- * @maxconns: Number of connections to allocate
- *
- * Returns: Allocated connections array
+ * allocate_connections_array
  * Raises: SocketPool_Failed on allocation failure
  */
 static struct Connection *
@@ -174,10 +162,7 @@ allocate_connections_array (Arena_T arena, size_t maxconns)
 }
 
 /**
- * allocate_hash_table - Allocate hash table from arena
- * @arena: Arena for allocation
- *
- * Returns: Allocated hash table
+ * allocate_hash_table
  * Raises: SocketPool_Failed on allocation failure
  */
 static Connection_T *
@@ -195,11 +180,7 @@ allocate_hash_table (Arena_T arena)
 }
 
 /**
- * allocate_cleanup_buffer - Allocate cleanup buffer from arena
- * @arena: Arena for allocation
- * @maxconns: Number of connection slots
- *
- * Returns: Allocated cleanup buffer
+ * allocate_cleanup_buffer
  * Raises: SocketPool_Failed on allocation failure
  */
 static Socket_T *
@@ -217,9 +198,7 @@ allocate_cleanup_buffer (Arena_T arena, size_t maxconns)
 }
 
 /**
- * initialize_pool_mutex - Initialize pool mutex
- * @pool: Pool instance
- *
+ * initialize_pool_mutex
  * Raises: SocketPool_Failed on mutex initialization failure
  */
 static void
@@ -233,8 +212,7 @@ initialize_pool_mutex (T pool)
 }
 
 /**
- * initialize_connection_slot - Initialize a connection slot to default state
- * @conn: Connection slot to initialize
+ * initialize_connection_slot
  */
 static void
 initialize_connection_slot (struct Connection *conn)
@@ -252,7 +230,6 @@ initialize_connection_slot (struct Connection *conn)
  * build_free_list - Build free list from connections array
  * @pool: Pool instance
  * @maxconns: Number of connection slots
- *
  * Initializes all connection slots and links them into free list.
  */
 static void
@@ -273,10 +250,7 @@ build_free_list (T pool, size_t maxconns)
 }
 
 /**
- * allocate_pool_components - Allocate all pool data structures
- * @arena: Arena for allocation
- * @maxconns: Maximum connections
- * @pool: Pool structure to populate
+ * allocate_pool_components
  */
 static void
 allocate_pool_components (Arena_T arena, size_t maxconns, T pool)
@@ -287,11 +261,7 @@ allocate_pool_components (Arena_T arena, size_t maxconns, T pool)
 }
 
 /**
- * initialize_pool_fields - Initialize pool structure fields
- * @pool: Pool structure to initialize
- * @arena: Arena reference
- * @maxconns: Maximum connections
- * @bufsize: Buffer size
+ * initialize_pool_fields
  */
 static void
 initialize_pool_fields (T pool, Arena_T arena, size_t maxconns, size_t bufsize)
@@ -336,9 +306,7 @@ SocketPool_free (T *pool)
 /* find_slot - Look up active connection by socket
  * @pool: Pool instance
  * @socket: Socket to find
- *
  * Returns: Active connection or NULL if not found
- *
  * O(1) average case hash table lookup. Must be called with pool mutex held. */
 static Connection_T
 find_slot (T pool, Socket_T socket)
@@ -358,9 +326,7 @@ find_slot (T pool, Socket_T socket)
 
 /* find_free_slot - Find an inactive connection slot in the pool
  * @pool: Pool instance
- *
  * Returns: Inactive connection slot or NULL if pool is full
- *
  * O(1) operation using free list. Must be called with pool mutex held. */
 static Connection_T
 find_free_slot (T pool)
@@ -391,10 +357,7 @@ SocketPool_get (T pool, Socket_T socket)
 }
 
 /**
- * check_pool_full - Check if pool is at capacity
- * @pool: Pool instance
- *
- * Returns: Non-zero if pool is full, zero otherwise
+ * check_pool_full
  */
 static int
 check_pool_full (T pool)
@@ -414,9 +377,7 @@ remove_from_free_list (T pool, Connection_T conn)
 }
 
 /**
- * return_to_free_list - Return connection to free list
- * @pool: Pool instance
- * @conn: Connection to return
+ * return_to_free_list
  */
 static void
 return_to_free_list (T pool, Connection_T conn)
@@ -426,13 +387,8 @@ return_to_free_list (T pool, Connection_T conn)
 }
 
 /**
- * allocate_connection_buffers - Allocate input and output buffers for connection
- * @arena: Arena for allocation
- * @bufsize: Buffer size
- * @conn: Connection to allocate buffers for
- *
+ * allocate_connection_buffers
  * Returns: Zero on success, non-zero on failure
- *
  * On failure, caller must handle cleanup of any partially allocated buffers.
  */
 static int
@@ -452,10 +408,7 @@ allocate_connection_buffers (Arena_T arena, size_t bufsize, Connection_T conn)
 }
 
 /**
- * initialize_connection - Initialize connection with socket and metadata
- * @conn: Connection to initialize
- * @socket: Socket to associate
- * @now: Current time for activity tracking
+ * initialize_connection
  */
 static void
 initialize_connection (Connection_T conn, Socket_T socket, time_t now)
@@ -506,7 +459,6 @@ update_existing_slot (Connection_T conn, time_t now)
  * prepare_free_slot - Prepare a free slot for new connection
  * @pool: Pool instance
  * @conn: Free connection slot
- *
  * Returns: Zero on success, non-zero on failure
  */
 static int
@@ -543,9 +495,7 @@ finalize_slot_creation (T pool, Connection_T conn, Socket_T socket, time_t now)
  * @pool: Pool instance
  * @socket: Socket to add
  * @now: Current time for activity tracking
- *
  * Returns: Connection slot or NULL on failure
- *
  * Must be called with pool mutex held.
  */
 static Connection_T
@@ -594,7 +544,6 @@ SocketPool_add (T pool, Socket_T socket)
  * @pool: Pool instance
  * @conn: Connection to remove
  * @socket: Socket for hash calculation
- *
  * Note: Hash chain nodes are allocated from arena and are not individually
  * freed. They remain in arena memory until arena disposal. This is expected
  * arena behavior.
@@ -690,9 +639,7 @@ SocketPool_remove (T pool, Socket_T socket)
  * @idle_timeout: Idle timeout in seconds (0 means close all)
  * @now: Current time
  * @last_activity: Last activity time of connection
- *
  * Returns: Non-zero if connection should be closed, zero otherwise
- *
  * Note: idle_timeout of 0 means close all connections.
  */
 static int
@@ -708,7 +655,6 @@ should_close_connection (time_t idle_timeout, time_t now, time_t last_activity)
  * @conn: Connection to check
  * @idle_timeout: Idle timeout in seconds
  * @now: Current time
- *
  * Returns: Non-zero if socket should be collected, zero otherwise
  */
 static int
@@ -725,9 +671,7 @@ should_collect_socket (Connection_T conn, time_t idle_timeout, time_t now)
  * @pool: Pool instance
  * @idle_timeout: Idle timeout in seconds
  * @now: Current time
- *
  * Returns: Number of sockets collected for closing
- *
  * Must be called with pool mutex held. Uses pre-allocated cleanup_buffer.
  */
 static size_t
