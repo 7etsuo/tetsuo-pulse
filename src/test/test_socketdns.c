@@ -12,6 +12,7 @@
 #include "test/Test.h"
 #include "core/Except.h"
 #include "dns/SocketDNS.h"
+#include "socket/SocketCommon.h"
 
 /* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
 #if defined(__GNUC__) && !defined(__clang__)
@@ -1033,6 +1034,23 @@ TEST(socketdns_multiple_resolvers_independent)
         SocketDNS_free(&dns2);
     }
     END_TRY;
+}
+
+/* ==================== Close-on-Exec Tests ==================== */
+
+TEST(socketdns_pipe_has_cloexec)
+{
+    SocketDNS_T dns = SocketDNS_new();
+    ASSERT_NOT_NULL(dns);
+    
+    int pollfd = SocketDNS_pollfd(dns);
+    ASSERT_NE(pollfd, -1);
+    
+    /* Verify pipe read end has CLOEXEC set */
+    int has_cloexec = SocketCommon_has_cloexec(pollfd);
+    ASSERT_EQ(has_cloexec, 1);
+    
+    SocketDNS_free(&dns);
 }
 
 int main(void)

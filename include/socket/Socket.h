@@ -196,6 +196,19 @@ extern void Socket_setnodelay(T socket, int nodelay);
 extern void Socket_shutdown(T socket, int how);
 
 /**
+ * Socket_setcloexec - Control close-on-exec flag
+ * @socket: Socket to modify
+ * @enable: 1 to enable CLOEXEC, 0 to disable
+ *
+ * Raises: Socket_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ *
+ * Note: By default, all sockets have CLOEXEC enabled. This function
+ * allows disabling it if you need to pass the socket to a child process.
+ */
+extern void Socket_setcloexec(T socket, int enable);
+
+/**
  * Socket_fd - Get underlying file descriptor
  * @socket: Socket instance
  *

@@ -5,6 +5,11 @@
  * Following C Interfaces and Implementations patterns
  */
 
+/* Feature test macros for accept4() on Linux */
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
@@ -182,15 +187,37 @@ static void enable_dual_stack(T socket, int socket_family)
  * Returns: Socket file descriptor or -1 on failure
  *
  * Raises: Socket_Failed on socket creation failure
+ *
+ * Note: All sockets are created with close-on-exec flag set by default.
  */
 static int create_socket_fd(int domain, int type, int protocol)
 {
-    int fd = socket(domain, type, protocol);
+    int fd;
+
+#if SOCKET_HAS_SOCK_CLOEXEC
+    fd = socket(domain, type | SOCKET_SOCK_CLOEXEC, protocol);
+#else
+    fd = socket(domain, type, protocol);
+#endif
+
     if (fd < 0)
     {
         SOCKET_ERROR_FMT("Failed to create socket (domain=%d, type=%d, protocol=%d)", domain, type, protocol);
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
+
+#if !SOCKET_HAS_SOCK_CLOEXEC
+    /* Fallback: Set CLOEXEC via fcntl on older systems */
+    if (SocketCommon_setcloexec(fd, 1) < 0)
+    {
+        int saved_errno = errno;
+        SAFE_CLOSE(fd);
+        errno = saved_errno;
+        SOCKET_ERROR_FMT("Failed to set close-on-exec flag");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+#endif
+
     return fd;
 }
 
@@ -622,10 +649,19 @@ void Socket_listen(T socket, int backlog)
  * @addrlen: Input/output address length
  *
  * Returns: New file descriptor or -1 on error
+ *
+ * Note: All accepted sockets have close-on-exec flag set by default.
  */
 static int accept_connection(T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
 {
-    int newfd = accept(socket->fd, (struct sockaddr *)addr, addrlen);
+    int newfd;
+
+#if SOCKET_HAS_ACCEPT4
+    /* Use accept4() with SOCK_CLOEXEC when available */
+    newfd = accept4(socket->fd, (struct sockaddr *)addr, addrlen, SOCKET_SOCK_CLOEXEC);
+#else
+    newfd = accept(socket->fd, (struct sockaddr *)addr, addrlen);
+#endif
 
     if (newfd < 0)
     {
@@ -634,6 +670,19 @@ static int accept_connection(T socket, struct sockaddr_storage *addr, socklen_t 
         SOCKET_ERROR_FMT("Failed to accept connection");
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
+
+#if !SOCKET_HAS_ACCEPT4
+    /* Fallback: Set CLOEXEC via fcntl on older systems */
+    if (SocketCommon_setcloexec(newfd, 1) < 0)
+    {
+        int saved_errno = errno;
+        SAFE_CLOSE(newfd);
+        errno = saved_errno;
+        SOCKET_ERROR_FMT("Failed to set close-on-exec flag on accepted socket");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+#endif
+
     return newfd;
 }
 
@@ -933,6 +982,24 @@ void Socket_shutdown(T socket, int how)
             SOCKET_ERROR_FMT("Socket is not connected (shutdown mode=%d)", how);
         else
             SOCKET_ERROR_FMT("Failed to shutdown socket (mode=%d)", how);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+}
+
+/**
+ * Socket_setcloexec - Control close-on-exec flag
+ * @socket: Socket to modify
+ * @enable: 1 to enable CLOEXEC, 0 to disable
+ *
+ * Raises: Socket_Failed on error
+ */
+void Socket_setcloexec(T socket, int enable)
+{
+    assert(socket);
+
+    if (SocketCommon_setcloexec(socket->fd, enable) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to %s close-on-exec flag", enable ? "set" : "clear");
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 }

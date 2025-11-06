@@ -484,12 +484,29 @@ T SocketDgram_new(int domain, int protocol)
     T sock;
     int fd;
 
+#if SOCKET_HAS_SOCK_CLOEXEC
+    fd = socket(domain, SOCKET_DGRAM_TYPE | SOCKET_SOCK_CLOEXEC, protocol);
+#else
     fd = socket(domain, SOCKET_DGRAM_TYPE, protocol);
+#endif
+
     if (fd < 0)
     {
         SOCKET_ERROR_FMT("Failed to create datagram socket (domain=%d, protocol=%d)", domain, protocol);
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
     }
+
+#if !SOCKET_HAS_SOCK_CLOEXEC
+    /* Fallback: Set CLOEXEC via fcntl on older systems */
+    if (SocketCommon_setcloexec(fd, 1) < 0)
+    {
+        int saved_errno = errno;
+        SAFE_CLOSE(fd);
+        errno = saved_errno;
+        SOCKET_ERROR_FMT("Failed to set close-on-exec flag");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+#endif
 
     sock = calloc(1, sizeof(*sock));
     if (sock == NULL)
@@ -1016,6 +1033,24 @@ int SocketDgram_getlocalport(const T socket)
 {
     assert(socket);
     return socket->localport;
+}
+
+/**
+ * SocketDgram_setcloexec - Control close-on-exec flag
+ * @socket: Socket to modify
+ * @enable: 1 to enable CLOEXEC, 0 to disable
+ *
+ * Raises: SocketDgram_Failed on error
+ */
+void SocketDgram_setcloexec(T socket, int enable)
+{
+    assert(socket);
+
+    if (SocketCommon_setcloexec(socket->fd, enable) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to %s close-on-exec flag", enable ? "set" : "clear");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
 }
 
 #undef T

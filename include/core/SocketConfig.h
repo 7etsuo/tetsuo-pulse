@@ -9,6 +9,7 @@
 /* Socket header required for IPv6 multicast constants */
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <fcntl.h>
 
 /* Socket library configuration limits */
 
@@ -191,6 +192,37 @@
 #define SOCKET_SO_REUSEPORT 0
 #define SOCKET_HAS_SO_REUSEPORT 0
 #endif
+
+/* Close-on-exec support */
+#ifdef SOCK_CLOEXEC
+#define SOCKET_SOCK_CLOEXEC SOCK_CLOEXEC
+#define SOCKET_HAS_SOCK_CLOEXEC 1
+#else
+#define SOCKET_SOCK_CLOEXEC 0
+#define SOCKET_HAS_SOCK_CLOEXEC 0
+#endif
+
+/* accept4() support detection
+ * Linux 2.6.28+ has accept4(), BSD/macOS may have it
+ * We'll use runtime detection: try accept4() and fall back to accept() + fcntl()
+ */
+#ifdef __linux__
+/* Linux 2.6.28+ has accept4() - assume available on modern Linux */
+#define SOCKET_HAS_ACCEPT4 1
+#elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__APPLE__)
+/* BSD systems may have accept4() - check at compile time */
+#if defined(accept4) || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L)
+#define SOCKET_HAS_ACCEPT4 1
+#else
+#define SOCKET_HAS_ACCEPT4 0
+#endif
+#else
+/* Other systems - assume not available */
+#define SOCKET_HAS_ACCEPT4 0
+#endif
+
+/* FD_CLOEXEC constant */
+#define SOCKET_FD_CLOEXEC FD_CLOEXEC
 #define SOCKET_SO_BROADCAST SO_BROADCAST
 #define SOCKET_SO_KEEPALIVE SO_KEEPALIVE
 #define SOCKET_SO_RCVTIMEO SO_RCVTIMEO

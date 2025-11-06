@@ -17,6 +17,7 @@
 #include "test/Test.h"
 #include "core/Except.h"
 #include "socket/SocketDgram.h"
+#include "socket/SocketCommon.h"
 
 #define TEST_BUFFER_SIZE 4096
 #define TEST_MULTICAST_GROUP "239.0.0.1"
@@ -360,6 +361,49 @@ TEST(socketdgram_settimeout)
     TRY SocketDgram_settimeout(socket, 5);
     EXCEPT(SocketDgram_Failed) ASSERT(0);
     END_TRY;
+    SocketDgram_free(&socket);
+}
+
+/* ==================== Close-on-Exec Tests ==================== */
+
+TEST(socketdgram_new_sets_cloexec_by_default)
+{
+    setup_signals();
+    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
+    ASSERT_NOT_NULL(socket);
+    
+    int has_cloexec = SocketCommon_has_cloexec(SocketDgram_fd(socket));
+    ASSERT_EQ(has_cloexec, 1);
+    
+    SocketDgram_free(&socket);
+}
+
+TEST(socketdgram_setcloexec_enable_disable)
+{
+    setup_signals();
+    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
+    ASSERT_NOT_NULL(socket);
+    
+    /* Verify CLOEXEC is set by default */
+    int has_cloexec = SocketCommon_has_cloexec(SocketDgram_fd(socket));
+    ASSERT_EQ(has_cloexec, 1);
+    
+    /* Disable CLOEXEC */
+    TRY SocketDgram_setcloexec(socket, 0);
+    EXCEPT(SocketDgram_Failed) ASSERT(0);
+    END_TRY;
+    
+    has_cloexec = SocketCommon_has_cloexec(SocketDgram_fd(socket));
+    ASSERT_EQ(has_cloexec, 0);
+    
+    /* Re-enable CLOEXEC */
+    TRY SocketDgram_setcloexec(socket, 1);
+    EXCEPT(SocketDgram_Failed) ASSERT(0);
+    END_TRY;
+    
+    has_cloexec = SocketCommon_has_cloexec(SocketDgram_fd(socket));
+    ASSERT_EQ(has_cloexec, 1);
+    
     SocketDgram_free(&socket);
 }
 
