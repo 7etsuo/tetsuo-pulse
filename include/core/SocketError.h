@@ -6,6 +6,42 @@
 
 #include "core/SocketLog.h"
 
+/**
+ * SocketErrorCode - Error code enumeration mapping common errno values
+ * Provides structured error codes for programmatic error handling
+ */
+typedef enum SocketErrorCode
+{
+    SOCKET_ERROR_NONE = 0,
+    SOCKET_ERROR_EINVAL,
+    SOCKET_ERROR_EACCES,
+    SOCKET_ERROR_EADDRINUSE,
+    SOCKET_ERROR_EADDRNOTAVAIL,
+    SOCKET_ERROR_EAFNOSUPPORT,
+    SOCKET_ERROR_EAGAIN,
+    SOCKET_ERROR_EALREADY,
+    SOCKET_ERROR_EBADF,
+    SOCKET_ERROR_ECONNREFUSED,
+    SOCKET_ERROR_ECONNRESET,
+    SOCKET_ERROR_EFAULT,
+    SOCKET_ERROR_EHOSTUNREACH,
+    SOCKET_ERROR_EINPROGRESS,
+    SOCKET_ERROR_EINTR,
+    SOCKET_ERROR_EISCONN,
+    SOCKET_ERROR_EMFILE,
+    SOCKET_ERROR_ENETUNREACH,
+    SOCKET_ERROR_ENOBUFS,
+    SOCKET_ERROR_ENOMEM,
+    SOCKET_ERROR_ENOTCONN,
+    SOCKET_ERROR_ENOTSOCK,
+    SOCKET_ERROR_EOPNOTSUPP,
+    SOCKET_ERROR_EPIPE,
+    SOCKET_ERROR_EPROTONOSUPPORT,
+    SOCKET_ERROR_ETIMEDOUT,
+    SOCKET_ERROR_EWOULDBLOCK,
+    SOCKET_ERROR_UNKNOWN
+} SocketErrorCode;
+
 /* Error buffer size - increased for safety */
 #define SOCKET_ERROR_BUFSIZE 1024
 
@@ -20,8 +56,10 @@
 /* Thread-local error buffer for detailed messages */
 #ifdef _WIN32
 extern __declspec(thread) char socket_error_buf[SOCKET_ERROR_BUFSIZE];
+extern __declspec(thread) int socket_last_errno;
 #else
 extern __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE];
+extern __thread int socket_last_errno;
 #endif
 
 /* Default log component (overridable before including this header) */
@@ -33,8 +71,9 @@ extern __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE];
 #define SOCKET_ERROR_FMT(fmt, ...)                                                                                     \
     do                                                                                                                 \
     {                                                                                                                  \
+        socket_last_errno = errno;                                                                                     \
         int _socket_error_ret = snprintf(socket_error_buf, SOCKET_ERROR_BUFSIZE, fmt " (errno: %d - %s)",              \
-                                         ##__VA_ARGS__, errno, strerror(errno));                                       \
+                                         ##__VA_ARGS__, socket_last_errno, strerror(socket_last_errno));               \
         if (_socket_error_ret >= (int)SOCKET_ERROR_BUFSIZE)                                                            \
         {                                                                                                              \
             /* Message was truncated - add truncation marker */                                                        \
@@ -54,6 +93,7 @@ extern __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE];
 #define SOCKET_ERROR_MSG(fmt, ...)                                                                                     \
     do                                                                                                                 \
     {                                                                                                                  \
+        socket_last_errno = errno;                                                                                     \
         int _socket_error_ret = snprintf(socket_error_buf, SOCKET_ERROR_BUFSIZE, fmt, ##__VA_ARGS__);                  \
         if (_socket_error_ret >= (int)SOCKET_ERROR_BUFSIZE)                                                            \
         {                                                                                                              \
@@ -72,6 +112,20 @@ extern __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE];
 
 /* Get the last error message - declared here, defined in SocketError.c */
 extern const char *Socket_GetLastError(void);
+
+/**
+ * Socket_geterrno - Get the last captured errno value
+ * Returns: Last errno value captured by error macros (0 if no error)
+ * Thread-safe: Uses thread-local storage
+ */
+extern int Socket_geterrno(void);
+
+/**
+ * Socket_geterrorcode - Get the last error as a SocketErrorCode enum
+ * Returns: SocketErrorCode enum value corresponding to last captured errno
+ * Thread-safe: Uses thread-local storage
+ */
+extern SocketErrorCode Socket_geterrorcode(void);
 
 /* Common error conditions with descriptive messages */
 #define SOCKET_ENOMEM "Out of memory"

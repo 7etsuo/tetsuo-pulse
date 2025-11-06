@@ -157,7 +157,7 @@ static void mark_request_timeout(T dns, struct Request_T *req)
     signal_completion(dns);
     pthread_cond_broadcast(&dns->result_cond);
     SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_TIMEOUT, 1);
-    SocketEvent_emit_dns_timeout(req->host, req->port);
+    SocketEvent_emit_dns_timeout(req->host ? req->host : "(wildcard)", req->port);
 }
 
 /**
@@ -206,6 +206,7 @@ static struct Request_T *dequeue_request(T dns)
  * Returns: getaddrinfo result code
  * @result: Set to resolved addresses (or NULL on error)
  * Performs DNS resolution with optional port parameter.
+ * Handles NULL host (wildcard bind) by passing NULL to getaddrinfo.
  */
 static int perform_dns_resolution(struct Request_T *req, const struct addrinfo *hints, struct addrinfo **result)
 {
@@ -295,12 +296,14 @@ static void invoke_callback(T dns, struct Request_T *req)
  * process_single_request - Process one DNS resolution request
  * @dns: DNS resolver instance
  * @req: Request to process
- * @hints: getaddrinfo hints structure
+ * @hints: getaddrinfo hints structure (base hints, may be modified)
  * Performs DNS resolution for one request and stores result.
+ * Sets AI_PASSIVE flag when host is NULL (wildcard bind).
  */
-static void process_single_request(T dns, struct Request_T *req, const struct addrinfo *hints)
+static void process_single_request(T dns, struct Request_T *req, struct addrinfo *hints)
 {
     struct addrinfo *result = NULL;
+    struct addrinfo local_hints;
     int res;
 
     if (request_timed_out(dns, req))
@@ -312,7 +315,14 @@ static void process_single_request(T dns, struct Request_T *req, const struct ad
         return;
     }
 
-    res = perform_dns_resolution(req, hints, &result);
+    /* For wildcard bind (NULL host), set AI_PASSIVE flag */
+    memcpy(&local_hints, hints, sizeof(local_hints));
+    if (req->host == NULL)
+    {
+        local_hints.ai_flags |= AI_PASSIVE;
+    }
+
+    res = perform_dns_resolution(req, &local_hints, &result);
 
     pthread_mutex_lock(&dns->mutex);
     if (request_timed_out(dns, req))
@@ -863,7 +873,7 @@ void SocketDNS_free(T *dns)
 
 /**
  * validate_resolve_params - Validate parameters for DNS resolution
- * @host: Hostname to validate
+ * @host: Hostname to validate (NULL allowed for wildcard bind)
  * @port: Port number to validate
  * Raises: SocketDNS_Failed on invalid parameters
  */
@@ -871,11 +881,14 @@ static void validate_resolve_params(const char *host, int port)
 {
     size_t host_len;
 
-    host_len = strlen(host);
-    if (host_len == 0 || host_len > SOCKET_ERROR_MAX_HOSTNAME)
+    if (host != NULL)
     {
-        SOCKET_ERROR_MSG("Invalid hostname length (max %d characters)", SOCKET_ERROR_MAX_HOSTNAME);
-        RAISE_DNS_ERROR(SocketDNS_Failed);
+        host_len = strlen(host);
+        if (host_len == 0 || host_len > SOCKET_ERROR_MAX_HOSTNAME)
+        {
+            SOCKET_ERROR_MSG("Invalid hostname length (max %d characters)", SOCKET_ERROR_MAX_HOSTNAME);
+            RAISE_DNS_ERROR(SocketDNS_Failed);
+        }
     }
 
     if (port < 0 || port > 65535)
@@ -910,13 +923,19 @@ static struct Request_T *allocate_request_structure(T dns)
  * allocate_request_hostname - Allocate and copy hostname
  * @dns: DNS resolver instance
  * @req: Request structure to initialize
- * @host: Hostname to copy
- * @host_len: Length of hostname
+ * @host: Hostname to copy (NULL allowed for wildcard bind)
+ * @host_len: Length of hostname (0 if host is NULL)
  * Raises: SocketDNS_Failed on allocation failure
- * Allocates memory for hostname and copies it.
+ * Allocates memory for hostname and copies it. Sets req->host to NULL if host is NULL.
  */
 static void allocate_request_hostname(T dns, struct Request_T *req, const char *host, size_t host_len)
 {
+    if (host == NULL)
+    {
+        req->host = NULL;
+        return;
+    }
+
     req->host = ALLOC(dns->arena, host_len + 1);
     if (!req->host)
     {
@@ -1047,9 +1066,8 @@ Request_T SocketDNS_resolve(T dns, const char *host, int port, SocketDNS_Callbac
     size_t host_len;
 
     assert(dns);
-    assert(host);
 
-    host_len = strlen(host);
+    host_len = host ? strlen(host) : 0;
     validate_resolve_params(host, port);
     req = allocate_request(dns, host, host_len, port, callback, data);
 

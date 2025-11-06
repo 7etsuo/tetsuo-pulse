@@ -383,7 +383,14 @@ static int try_connect_address(T socket, const struct sockaddr *addr, socklen_t 
     if (connect(socket->fd, addr, addrlen) == 0 || errno == EISCONN)
     {
         if (restore_blocking)
-            (void)fcntl(socket->fd, F_SETFL, original_flags);
+        {
+            if (fcntl(socket->fd, F_SETFL, original_flags) < 0)
+            {
+                SocketLog_emitf(SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                                "Failed to restore blocking mode after connect (fd=%d, errno=%d): %s", socket->fd,
+                                errno, strerror(errno));
+            }
+        }
         memcpy(&socket->addr, addr, addrlen);
         socket->addrlen = addrlen;
         return 0;
@@ -396,7 +403,14 @@ static int try_connect_address(T socket, const struct sockaddr *addr, socklen_t 
         if (socket_wait_for_connect(socket, timeout_ms) == 0)
         {
             if (restore_blocking)
-                (void)fcntl(socket->fd, F_SETFL, original_flags);
+            {
+                if (fcntl(socket->fd, F_SETFL, original_flags) < 0)
+                {
+                    SocketLog_emitf(SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                                    "Failed to restore blocking mode after connect (fd=%d, errno=%d): %s", socket->fd,
+                                    errno, strerror(errno));
+                }
+            }
             memcpy(&socket->addr, addr, addrlen);
             socket->addrlen = addrlen;
             return 0;
@@ -405,7 +419,16 @@ static int try_connect_address(T socket, const struct sockaddr *addr, socklen_t 
     }
 
     if (restore_blocking)
-        (void)fcntl(socket->fd, F_SETFL, original_flags);
+    {
+        int restore_result = fcntl(socket->fd, F_SETFL, original_flags);
+        if (restore_result < 0)
+        {
+            int restore_errno = errno;
+            SocketLog_emitf(SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                            "Failed to restore blocking mode after connect failure (fd=%d, errno=%d): %s", socket->fd,
+                            restore_errno, strerror(restore_errno));
+        }
+    }
 
     errno = saved_errno;
     return -1;
@@ -1414,15 +1437,15 @@ SocketDNS_Request_T Socket_bind_async(SocketDNS_T dns, T socket, const char *hos
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 
-    /* Normalize wildcard addresses */
+    /* Normalize wildcard addresses to NULL */
     if (host == NULL || strcmp(host, "0.0.0.0") == 0 || strcmp(host, "::") == 0)
     {
         host = NULL;
     }
 
-    /* Start async DNS resolution */
+    /* Start async DNS resolution - SocketDNS_resolve now accepts NULL host */
     {
-        SocketDNS_Request_T req = SocketDNS_resolve(dns, host ? host : "0.0.0.0", port, NULL, NULL);
+        SocketDNS_Request_T req = SocketDNS_resolve(dns, host, port, NULL, NULL);
         if (socket->timeouts.dns_timeout_ms > 0)
             SocketDNS_request_settimeout(dns, req, socket->timeouts.dns_timeout_ms);
         return req;
