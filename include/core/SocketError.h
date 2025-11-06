@@ -4,6 +4,8 @@
 #include <errno.h>
 #include <string.h>
 
+#include "core/SocketLog.h"
+
 /* Error buffer size - increased for safety */
 #define SOCKET_ERROR_BUFSIZE 1024
 
@@ -20,6 +22,11 @@
 extern __declspec(thread) char socket_error_buf[SOCKET_ERROR_BUFSIZE];
 #else
 extern __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE];
+#endif
+
+/* Default log component (overridable before including this header) */
+#ifndef SOCKET_LOG_COMPONENT
+#define SOCKET_LOG_COMPONENT "Socket"
 #endif
 
 /* Macro to format error messages with errno information - with truncation protection */
@@ -40,6 +47,7 @@ extern __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE];
             }                                                                                                          \
         }                                                                                                              \
         (void)_socket_error_ret; /* Suppress unused warning */                                                         \
+        SocketLog_emit(SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT, socket_error_buf);                                      \
     } while (0)
 
 /* Macro to format error messages without errno - with truncation protection */
@@ -59,6 +67,7 @@ extern __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE];
             }                                                                                                          \
         }                                                                                                              \
         (void)_socket_error_ret; /* Suppress unused warning */                                                         \
+        SocketLog_emit(SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT, socket_error_buf);                                      \
     } while (0)
 
 /* Get the last error message - declared here, defined in SocketError.c */

@@ -4,7 +4,7 @@ High-performance, exception-driven socket toolkit inspired by *C Interfaces and 
 
 ## Documentation
 
-- [Release Notes](RELEASE_NOTES.md) – latest reliability/performance enhancements, including timeout APIs, DNS cancellation, and poll/pool optimisations.
+- [Release Notes](RELEASE_NOTES.md) – latest reliability, performance, and observability enhancements (timeouts, DNS cancellation, logging, metrics, events).
 - `.cursor/rules/` – authoritative coding, architectural, and module pattern guides enforced across the codebase.
 
 ## Building

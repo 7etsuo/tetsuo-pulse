@@ -15,6 +15,7 @@
 
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
+#define SOCKET_LOG_COMPONENT "SocketCommon"
 #include "core/SocketError.h"
 #include "socket/SocketCommon.h"
 

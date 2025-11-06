@@ -22,8 +22,11 @@
 #include "core/Except.h"
 #include "core/SocketConfig.h"
 #include "dns/SocketDNS.h"
+#define SOCKET_LOG_COMPONENT "SocketDNS"
 #include "core/SocketError.h"
 #include "socket/SocketCommon.h"
+#include "core/SocketMetrics.h"
+#include "core/SocketEvents.h"
 
 #define T SocketDNS_T
 #define Request_T SocketDNS_Request_T
@@ -109,8 +112,7 @@ static unsigned request_hash_function(struct Request_T *req)
 
 static void signal_completion(T dns);
 
-static int
-dns_cancellation_error(void)
+static int dns_cancellation_error(void)
 {
 #ifdef EAI_CANCELLED
     return EAI_CANCELLED;
@@ -119,16 +121,14 @@ dns_cancellation_error(void)
 #endif
 }
 
-static int
-request_effective_timeout_ms(T dns, const struct Request_T *req)
+static int request_effective_timeout_ms(T dns, const struct Request_T *req)
 {
     if (req->timeout_override_ms >= 0)
         return req->timeout_override_ms;
     return dns->request_timeout_ms;
 }
 
-static int
-request_timed_out(T dns, const struct Request_T *req)
+static int request_timed_out(T dns, const struct Request_T *req)
 {
     int timeout_ms = request_effective_timeout_ms(dns, req);
     struct timespec now;
@@ -145,8 +145,7 @@ request_timed_out(T dns, const struct Request_T *req)
     return elapsed_ms >= timeout_ms;
 }
 
-static void
-mark_request_timeout(T dns, struct Request_T *req)
+static void mark_request_timeout(T dns, struct Request_T *req)
 {
     req->state = REQ_COMPLETE;
     req->error = EAI_AGAIN;
@@ -157,6 +156,8 @@ mark_request_timeout(T dns, struct Request_T *req)
     }
     signal_completion(dns);
     pthread_cond_broadcast(&dns->result_cond);
+    SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_TIMEOUT, 1);
+    SocketEvent_emit_dns_timeout(req->host, req->port);
 }
 
 /**
@@ -239,6 +240,11 @@ static void store_resolution_result(T dns, struct Request_T *req, struct addrinf
         req->state = REQ_COMPLETE;
         req->result = result;
         req->error = error;
+
+        if (error == 0)
+            SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_COMPLETED, 1);
+        else
+            SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_FAILED, 1);
 
         signal_completion(dns);
         pthread_cond_broadcast(&dns->result_cond);
@@ -1050,6 +1056,7 @@ Request_T SocketDNS_resolve(T dns, const char *host, int port, SocketDNS_Callbac
     pthread_mutex_lock(&dns->mutex);
     check_queue_limit(dns);
     submit_dns_request(dns, req);
+    SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_SUBMITTED, 1);
     pthread_mutex_unlock(&dns->mutex);
 
     return (Request_T)req;
@@ -1140,6 +1147,7 @@ void SocketDNS_cancel(T dns, Request_T req)
 {
     struct Request_T *r = (struct Request_T *)req;
     int send_signal = 0;
+    int cancelled = 0;
 
     assert(dns);
     assert(req);
@@ -1151,12 +1159,14 @@ void SocketDNS_cancel(T dns, Request_T req)
         cancel_pending_request(dns, r);
         r->error = dns_cancellation_error();
         send_signal = 1;
+        cancelled = 1;
     }
     else if (r->state == REQ_PROCESSING)
     {
         r->state = REQ_CANCELLED;
         r->error = dns_cancellation_error();
         send_signal = 1;
+        cancelled = 1;
     }
     else if (r->state == REQ_COMPLETE)
     {
@@ -1180,6 +1190,8 @@ void SocketDNS_cancel(T dns, Request_T req)
     }
 
     hash_table_remove(dns, r);
+    if (cancelled)
+        SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_CANCELLED, 1);
     pthread_mutex_unlock(&dns->mutex);
 }
 

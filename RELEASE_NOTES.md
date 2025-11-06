@@ -26,3 +26,22 @@
 - Unit tests verify SocketPool buffer reuse semantics.
 - Documentation in `.cursor/rules` has been updated to reflect the new patterns.
 
+## 2025-11-07 – Observability Layer
+
+### Pluggable Logging
+- Added `SocketLog_setcallback()` to install custom log sinks with severity filtering.
+- All `SOCKET_ERROR_*` macros now route formatted messages through the logger while preserving thread-local buffers.
+
+### Metrics Registry
+- Introduced `SocketMetrics_*` helpers for thread-safe counter tracking across Socket, SocketDNS, SocketPoll, and SocketPool.
+- Snapshot API (`SocketMetrics_getsnapshot()`, `SocketMetrics_snapshot_value()`) and `SocketMetrics_reset()` enable periodic export or zeroing.
+- Default instrumentation records connect successes/failures, DNS lifecycle, poll wakeups, and pool activity.
+
+### Event Hooks
+- Lightweight event dispatcher (`SocketEvent_register()` / `SocketEvent_emit_*()`) surfaces accept/connect lifecycles, DNS timeouts, and poll wakeups.
+- Callbacks execute outside internal locks to keep hot paths fast.
+
+### Tests & Samples
+- Extended `test_socketerror` and `test_socket` suites to cover logging callbacks, metrics snapshots, and event dispatch/unregister flows.
+- Updated build to include new core modules (`SocketLog`, `SocketMetrics`, `SocketEvents`).
+
