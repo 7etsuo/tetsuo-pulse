@@ -19,6 +19,8 @@
 #include "test/Test.h"
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketEvents.h"
+#include "core/SocketMetrics.h"
 #include "dns/SocketDNS.h"
 #include "socket/Socket.h"
 #include "socket/SocketCommon.h"
@@ -36,6 +38,23 @@ static void setup_signals(void)
 static void cleanup_unix_socket(const char *path)
 {
     unlink(path);
+}
+
+typedef struct
+{
+    int count;
+    SocketEventRecord last_event;
+} EventProbe;
+
+static void event_probe_callback(void *userdata, const SocketEventRecord *event)
+{
+    EventProbe *probe = (EventProbe *)userdata;
+
+    if (!probe || !event)
+        return;
+
+    probe->count++;
+    probe->last_event = *event;
 }
 
 /* ==================== Basic Socket Tests ==================== */
@@ -1070,6 +1089,47 @@ TEST(socket_connect_with_addrinfo_ipv4)
     Socket_free(&client);
     Socket_free(&server);
     END_TRY;
+}
+
+TEST(socketmetrics_snapshot_exports)
+{
+    SocketMetricsSnapshot snapshot = {{0ULL}};
+
+    SocketMetrics_reset();
+    SocketMetrics_increment(SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 3);
+    SocketMetrics_increment(SOCKET_METRIC_POLL_WAKEUPS, 1);
+    SocketMetrics_getsnapshot(&snapshot);
+
+    ASSERT_EQ(3ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_SOCKET_CONNECT_SUCCESS));
+    ASSERT_EQ(1ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_POLL_WAKEUPS));
+    ASSERT_EQ(SOCKET_METRIC_COUNT, SocketMetrics_count());
+
+    SocketMetrics_reset();
+    SocketMetrics_getsnapshot(&snapshot);
+    ASSERT_EQ(0ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_SOCKET_CONNECT_SUCCESS));
+}
+
+TEST(socketevents_emit_and_unregister)
+{
+    EventProbe probe = {0};
+
+    SocketEvent_register(event_probe_callback, &probe);
+    SocketEvent_emit_poll_wakeup(5, 100);
+
+    ASSERT_EQ(1, probe.count);
+    ASSERT_EQ(SOCKET_EVENT_POLL_WAKEUP, probe.last_event.type);
+    ASSERT_EQ(5, probe.last_event.data.poll.nfds);
+    ASSERT_EQ(100, probe.last_event.data.poll.timeout_ms);
+
+    SocketEvent_emit_dns_timeout("example.com", 443);
+    ASSERT_EQ(2, probe.count);
+    ASSERT_EQ(SOCKET_EVENT_DNS_TIMEOUT, probe.last_event.type);
+    ASSERT(strcmp(probe.last_event.data.dns.host, "example.com") == 0);
+    ASSERT_EQ(443, probe.last_event.data.dns.port);
+
+    SocketEvent_unregister(event_probe_callback, &probe);
+    SocketEvent_emit_poll_wakeup(1, 0);
+    ASSERT_EQ(2, probe.count);
 }
 
 int main(void)

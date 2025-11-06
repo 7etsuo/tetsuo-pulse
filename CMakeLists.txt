@@ -44,6 +44,9 @@ set(LIB_SOURCES
     src/core/Arena.c
     src/core/Except.c
     src/core/SocketError.c
+    src/core/SocketLog.c
+    src/core/SocketMetrics.c
+    src/core/SocketEvents.c
     
     # Socket core
     src/socket/Socket.c
@@ -68,6 +71,9 @@ set(CORE_HEADERS
     include/core/Except.h
     include/core/SocketConfig.h
     include/core/SocketError.h
+    include/core/SocketLog.h
+    include/core/SocketMetrics.h
+    include/core/SocketEvents.h
 )
 
 set(SOCKET_HEADERS

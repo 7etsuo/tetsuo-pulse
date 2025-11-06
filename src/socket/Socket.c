@@ -35,17 +35,18 @@
 #include "socket/Socket.h"
 #include "core/SocketConfig.h"
 #include "dns/SocketDNS.h"
+#define SOCKET_LOG_COMPONENT "Socket"
 #include "core/SocketError.h"
 #include "socket/SocketCommon.h"
+#include "core/SocketMetrics.h"
+#include "core/SocketEvents.h"
 
 #define T Socket_T
 
 static int socket_live_count = 0;
-static SocketTimeouts_T socket_default_timeouts = {
-    .connect_timeout_ms = SOCKET_DEFAULT_CONNECT_TIMEOUT_MS,
-    .dns_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS,
-    .operation_timeout_ms = SOCKET_DEFAULT_OPERATION_TIMEOUT_MS
-};
+static SocketTimeouts_T socket_default_timeouts = {.connect_timeout_ms = SOCKET_DEFAULT_CONNECT_TIMEOUT_MS,
+                                                   .dns_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS,
+                                                   .operation_timeout_ms = SOCKET_DEFAULT_OPERATION_TIMEOUT_MS};
 
 static void socket_live_increment(void)
 {
@@ -58,8 +59,7 @@ static void socket_live_decrement(void)
         socket_live_count--;
 }
 
-static int
-sanitize_timeout(int timeout_ms)
+static int sanitize_timeout(int timeout_ms)
 {
     if (timeout_ms < 0)
         return 0;
@@ -303,8 +303,7 @@ static int try_bind_address(T socket, const struct sockaddr *addr, socklen_t add
     return -1;
 }
 
-static int
-socket_wait_for_connect(T socket, int timeout_ms)
+static int socket_wait_for_connect(T socket, int timeout_ms)
 {
     struct pollfd pfd;
     int result;
@@ -442,6 +441,8 @@ static void handle_bind_error(const char *host, int port)
  */
 static void handle_connect_error(const char *host, int port)
 {
+    SocketMetrics_increment(SOCKET_METRIC_SOCKET_CONNECT_FAILURE, 1);
+
     if (errno == ECONNREFUSED)
     {
         SOCKET_ERROR_FMT(SOCKET_ECONNREFUSED ": %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME, host, port);
@@ -821,6 +822,8 @@ T Socket_accept(T socket)
     newsocket = create_accepted_socket(newfd, &addr, addrlen);
     setup_peer_info(newsocket, (struct sockaddr *)&addr, addrlen);
     update_local_endpoint(newsocket);
+    SocketEvent_emit_accept(newsocket->fd, newsocket->peeraddr, newsocket->peerport, newsocket->localaddr,
+                            newsocket->localport);
 
     return newsocket;
 }
@@ -868,7 +871,10 @@ void Socket_connect(T socket, const char *host, int port)
 
     if (try_connect_resolved_addresses(socket, res, socket_family, socket->timeouts.connect_timeout_ms) == 0)
     {
+        SocketMetrics_increment(SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
         update_local_endpoint(socket);
+        setup_peer_info(socket, (struct sockaddr *)&socket->addr, socket->addrlen);
+        SocketEvent_emit_connect(socket->fd, socket->peeraddr, socket->peerport, socket->localaddr, socket->localport);
         freeaddrinfo(res);
         return;
     }
@@ -1052,6 +1058,8 @@ void Socket_shutdown(T socket, int how)
             SOCKET_ERROR_FMT("Failed to shutdown socket (mode=%d)", how);
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
+
+    SocketMetrics_increment(SOCKET_METRIC_SOCKET_SHUTDOWN_CALL, 1);
 }
 
 /**
@@ -1071,8 +1079,7 @@ void Socket_setcloexec(T socket, int enable)
     }
 }
 
-void
-Socket_timeouts_get(const T socket, SocketTimeouts_T *timeouts)
+void Socket_timeouts_get(const T socket, SocketTimeouts_T *timeouts)
 {
     assert(socket);
     assert(timeouts);
@@ -1080,8 +1087,7 @@ Socket_timeouts_get(const T socket, SocketTimeouts_T *timeouts)
     *timeouts = socket->timeouts;
 }
 
-void
-Socket_timeouts_set(T socket, const SocketTimeouts_T *timeouts)
+void Socket_timeouts_set(T socket, const SocketTimeouts_T *timeouts)
 {
     assert(socket);
 
@@ -1096,16 +1102,14 @@ Socket_timeouts_set(T socket, const SocketTimeouts_T *timeouts)
     socket->timeouts.operation_timeout_ms = sanitize_timeout(timeouts->operation_timeout_ms);
 }
 
-void
-Socket_timeouts_getdefaults(SocketTimeouts_T *timeouts)
+void Socket_timeouts_getdefaults(SocketTimeouts_T *timeouts)
 {
     assert(timeouts);
 
     *timeouts = socket_default_timeouts;
 }
 
-void
-Socket_timeouts_setdefaults(const SocketTimeouts_T *timeouts)
+void Socket_timeouts_setdefaults(const SocketTimeouts_T *timeouts)
 {
     SocketTimeouts_T local = socket_default_timeouts;
 
@@ -1425,8 +1429,7 @@ SocketDNS_Request_T Socket_bind_async(SocketDNS_T dns, T socket, const char *hos
     }
 }
 
-void
-Socket_bind_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req)
+void Socket_bind_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req)
 {
     assert(dns);
 
@@ -1462,8 +1465,7 @@ SocketDNS_Request_T Socket_connect_async(SocketDNS_T dns, T socket, const char *
     }
 }
 
-void
-Socket_connect_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req)
+void Socket_connect_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req)
 {
     assert(dns);
 
@@ -1501,7 +1503,10 @@ void Socket_connect_with_addrinfo(T socket, struct addrinfo *res)
 
     if (try_connect_resolved_addresses(socket, res, socket_family, socket->timeouts.connect_timeout_ms) == 0)
     {
+        SocketMetrics_increment(SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
         update_local_endpoint(socket);
+        setup_peer_info(socket, (struct sockaddr *)&socket->addr, socket->addrlen);
+        SocketEvent_emit_connect(socket->fd, socket->peeraddr, socket->peerport, socket->localaddr, socket->localport);
         return;
     }
 

@@ -820,3 +820,14 @@ END_TRY;
  */
 const void *get_read_ptr(T buf, size_t *len);
 ```
+
+## 11. Observability Pattern
+
+### Logging Hooks
+**ALWAYS** route diagnostics through `SocketLog_emit*()` or the existing `SOCKET_ERROR_*` macros. Modules may install custom loggers with `SocketLog_setcallback()`; avoid ad hoc `printf()` usage in production code paths.
+
+### Metrics Registry
+**ALWAYS** use `SocketMetrics_increment()` to track subsystem counters and `SocketMetrics_getsnapshot()` for export. Each module owns a dedicated metric namespace (Socket, SocketDNS, SocketPoll, SocketPool) to prevent overlap.
+
+### Event Dispatch
+**PREFER** lifecycle notifications via `SocketEvent_emit_*()` (accept/connect, DNS timeouts, poll wakeups). Callbacks registered through `SocketEvent_register()` execute outside internal locks—keep callback work lightweight to preserve latency guarantees.

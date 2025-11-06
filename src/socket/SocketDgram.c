@@ -20,6 +20,7 @@
 #include "core/Except.h"
 #include "socket/SocketDgram.h"
 #include "core/SocketConfig.h"
+#define SOCKET_LOG_COMPONENT "SocketDgram"
 #include "core/SocketError.h"
 #include "socket/SocketCommon.h"
 

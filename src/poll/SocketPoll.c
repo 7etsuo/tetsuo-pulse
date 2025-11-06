@@ -20,8 +20,11 @@
 #include "socket/Socket.h"
 #include "poll/SocketPoll.h"
 #include "poll/SocketPoll_backend.h"
+#define SOCKET_LOG_COMPONENT "SocketPoll"
 #include "core/SocketConfig.h"
 #include "core/SocketError.h"
+#include "core/SocketMetrics.h"
+#include "core/SocketEvents.h"
 
 #define T SocketPoll_T
 
@@ -35,7 +38,7 @@ Except_T SocketPoll_Failed = {"SocketPoll operation failed"};
     {                                                                                                                  \
         volatile Except_T volatile_exception = (exception);                                                            \
         volatile_exception.reason = socket_error_buf;                                                                  \
-        Except_T non_volatile_exception = *(const Except_T *)&volatile_exception;                                     \
+        Except_T non_volatile_exception = *(const Except_T *)&volatile_exception;                                      \
         RAISE(non_volatile_exception);                                                                                 \
     } while (0)
 
@@ -561,7 +564,7 @@ void SocketPoll_free(T *poll)
 void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
 {
     volatile int fd;
-    volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
+    volatile Socket_T volatile_socket = socket; /* Preserve socket across exception boundaries */
 
     assert(poll);
     assert(socket);
@@ -585,7 +588,7 @@ void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
     {
         /* Store next pointer before comparison to prevent issues with volatile access */
         volatile SocketData *next_entry = (volatile SocketData *)volatile_entry->next;
-        
+
         if (volatile_entry->socket == (Socket_T)volatile_socket)
         {
             is_duplicate = 1;
@@ -633,7 +636,7 @@ void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
 void SocketPoll_mod(T poll, Socket_T socket, unsigned events, void *data)
 {
     int fd;
-    volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
+    volatile Socket_T volatile_socket = socket; /* Preserve socket across exception boundaries */
 
     assert(poll);
     assert(socket);
@@ -660,7 +663,7 @@ void SocketPoll_mod(T poll, Socket_T socket, unsigned events, void *data)
 void SocketPoll_del(T poll, Socket_T socket)
 {
     int fd;
-    volatile Socket_T volatile_socket = socket;  /* Preserve socket across exception boundaries */
+    volatile Socket_T volatile_socket = socket; /* Preserve socket across exception boundaries */
 
     assert(poll);
     assert(socket);
@@ -761,12 +764,12 @@ static int translate_single_event(T poll, int index, int translated_index)
     /* Ensure translated_index is strictly less than max_events (valid indices are 0 to max_events-1) */
     if (translated_index < 0 || translated_index >= max_events || !poll->socketevents)
         return 0;
-    
+
     /* Validate bounds using pointer arithmetic to prevent any potential overrun */
     SocketEvent_T *event_ptr = poll->socketevents + translated_index;
     SocketEvent_T *array_start = poll->socketevents;
     SocketEvent_T *array_end = array_start + max_events;
-    
+
     /* Additional pointer validation */
     if (event_ptr < array_start || event_ptr >= array_end)
         return 0;
@@ -794,7 +797,7 @@ static int translate_backend_events_to_socket_events(T poll, int nfds)
 {
     volatile int translated_count = 0;
     volatile int i;
-    volatile int max_events; /* Cache maxevents to prevent corruption issues */
+    volatile int max_events;           /* Cache maxevents to prevent corruption issues */
     volatile int volatile_nfds = nfds; /* Preserve nfds across exception boundaries */
 
     if (!poll || volatile_nfds < 0 || !poll->socketevents || poll->maxevents <= 0)
@@ -814,7 +817,7 @@ static int translate_backend_events_to_socket_events(T poll, int nfds)
             /* Stop if we've filled the array */
             if (translated_count >= max_events)
                 break;
-            
+
             /* translate_single_event validates bounds internally */
             if (translate_single_event(poll, i, translated_count))
             {
@@ -837,8 +840,7 @@ static int translate_backend_events_to_socket_events(T poll, int nfds)
 
 /* ==================== Public API Functions ==================== */
 
-int
-SocketPoll_getdefaulttimeout(T poll)
+int SocketPoll_getdefaulttimeout(T poll)
 {
     int current;
 
@@ -851,8 +853,7 @@ SocketPoll_getdefaulttimeout(T poll)
     return current;
 }
 
-void
-SocketPoll_setdefaulttimeout(T poll, int timeout)
+void SocketPoll_setdefaulttimeout(T poll, int timeout)
 {
     int sanitized = timeout;
 
@@ -878,6 +879,7 @@ int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
 
     /* Wait for events from backend */
     nfds = backend_wait(poll->backend, timeout);
+    SocketMetrics_increment(SOCKET_METRIC_POLL_WAKEUPS, 1);
     if (nfds < 0)
     {
         if (errno == EINTR)
@@ -898,6 +900,9 @@ int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
 
     /* Translate backend events to SocketEvent_T structures */
     nfds = translate_backend_events_to_socket_events(poll, nfds);
+    if (nfds > 0)
+        SocketMetrics_increment(SOCKET_METRIC_POLL_EVENTS_DISPATCHED, (unsigned long)nfds);
+    SocketEvent_emit_poll_wakeup(nfds, timeout);
 
     /* Validate poll structure is still intact before returning pointer */
     if (!poll || !poll->socketevents)
@@ -911,4 +916,3 @@ int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
 }
 
 #undef T
-
