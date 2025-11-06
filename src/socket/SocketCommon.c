@@ -7,12 +7,14 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
@@ -51,8 +53,7 @@ static const char *socketcommon_get_safe_host(const char *host)
     return host ? host : "any";
 }
 
-static char *
-socketcommon_duplicate_address(Arena_T arena, const char *addr_str)
+static char *socketcommon_duplicate_address(Arena_T arena, const char *addr_str)
 {
     size_t addr_len;
     char *copy = NULL;
@@ -71,8 +72,7 @@ socketcommon_duplicate_address(Arena_T arena, const char *addr_str)
     return copy;
 }
 
-static int
-socketcommon_parse_port_string(const char *serv)
+static int socketcommon_parse_port_string(const char *serv)
 {
     char *endptr = NULL;
     long port_long = 0;
@@ -308,9 +308,8 @@ const char *SocketCommon_normalize_wildcard_host(const char *host)
     return host;
 }
 
-int
-SocketCommon_cache_endpoint(Arena_T arena, const struct sockaddr *addr, socklen_t addrlen,
-                            char **addr_out, int *port_out)
+int SocketCommon_cache_endpoint(Arena_T arena, const struct sockaddr *addr, socklen_t addrlen, char **addr_out,
+                                int *port_out)
 {
     char host[SOCKET_NI_MAXHOST];
     char serv[SOCKET_NI_MAXSERV];
@@ -337,4 +336,42 @@ SocketCommon_cache_endpoint(Arena_T arena, const struct sockaddr *addr, socklen_
     *addr_out = copy;
     *port_out = socketcommon_parse_port_string(serv);
     return 0;
+}
+
+int SocketCommon_setcloexec(int fd, int enable)
+{
+    int flags;
+    int new_flags;
+
+    assert(fd >= 0);
+
+    flags = fcntl(fd, F_GETFD);
+    if (flags < 0)
+        return -1;
+
+    if (enable)
+        new_flags = flags | SOCKET_FD_CLOEXEC;
+    else
+        new_flags = flags & ~SOCKET_FD_CLOEXEC;
+
+    if (new_flags == flags)
+        return 0; /* Already in desired state */
+
+    if (fcntl(fd, F_SETFD, new_flags) < 0)
+        return -1;
+
+    return 0;
+}
+
+int SocketCommon_has_cloexec(int fd)
+{
+    int flags;
+
+    assert(fd >= 0);
+
+    flags = fcntl(fd, F_GETFD);
+    if (flags < 0)
+        return -1;
+
+    return (flags & SOCKET_FD_CLOEXEC) ? 1 : 0;
 }

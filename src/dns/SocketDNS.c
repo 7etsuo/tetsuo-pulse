@@ -27,6 +27,7 @@
 #include "core/SocketConfig.h"
 #include "dns/SocketDNS.h"
 #include "core/SocketError.h"
+#include "socket/SocketCommon.h"
 
 #define T SocketDNS_T
 #define Request_T SocketDNS_Request_T
@@ -449,6 +450,8 @@ static void initialize_synchronization(T dns)
  * @dns: DNS resolver instance
  *
  * Raises: SocketDNS_Failed on pipe creation failure
+ *
+ * Note: Both pipe ends are created with close-on-exec flag set.
  */
 static void create_completion_pipe(T dns)
 {
@@ -456,6 +459,20 @@ static void create_completion_pipe(T dns)
     {
         cleanup_on_init_failure(dns, 3);
         SOCKET_ERROR_FMT("Failed to create completion pipe");
+        RAISE_DNS_ERROR(SocketDNS_Failed);
+    }
+
+    /* Set CLOEXEC on both pipe ends */
+    if (SocketCommon_setcloexec(dns->pipefd[0], 1) < 0 || SocketCommon_setcloexec(dns->pipefd[1], 1) < 0)
+    {
+        int saved_errno = errno;
+        SAFE_CLOSE(dns->pipefd[0]);
+        SAFE_CLOSE(dns->pipefd[1]);
+        dns->pipefd[0] = -1;
+        dns->pipefd[1] = -1;
+        cleanup_on_init_failure(dns, 3);
+        errno = saved_errno;
+        SOCKET_ERROR_FMT("Failed to set close-on-exec flag on pipe");
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
 }

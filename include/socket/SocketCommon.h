@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <fcntl.h>
 
 #include "core/Arena.h"
 
@@ -84,5 +85,24 @@ const char *SocketCommon_normalize_wildcard_host(const char *host);
  */
 int SocketCommon_cache_endpoint(Arena_T arena, const struct sockaddr *addr, socklen_t addrlen,
                                char **addr_out, int *port_out);
+
+/**
+ * SocketCommon_setcloexec - Set close-on-exec flag on file descriptor
+ * @fd: File descriptor to modify
+ * @enable: 1 to enable CLOEXEC, 0 to disable
+ *
+ * Returns: 0 on success, -1 on failure
+ * Thread-safe: Yes (operates on single fd)
+ */
+int SocketCommon_setcloexec(int fd, int enable);
+
+/**
+ * SocketCommon_has_cloexec - Check if close-on-exec flag is set
+ * @fd: File descriptor to check
+ *
+ * Returns: 1 if CLOEXEC is set, 0 if not set, -1 on error
+ * Thread-safe: Yes (operates on single fd)
+ */
+int SocketCommon_has_cloexec(int fd);
 
 #endif /* SOCKETCOMMON_H */

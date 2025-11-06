@@ -272,5 +272,18 @@ extern const char *SocketDgram_getlocaladdr(const T socket);
  */
 extern int SocketDgram_getlocalport(const T socket);
 
+/**
+ * SocketDgram_setcloexec - Control close-on-exec flag
+ * @socket: Socket to modify
+ * @enable: 1 to enable CLOEXEC, 0 to disable
+ *
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ *
+ * Note: By default, all sockets have CLOEXEC enabled. This function
+ * allows disabling it if you need to pass the socket to a child process.
+ */
+extern void SocketDgram_setcloexec(T socket, int enable);
+
 #undef T
 #endif
