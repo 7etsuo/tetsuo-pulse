@@ -1132,6 +1132,188 @@ TEST(socketevents_emit_and_unregister)
     ASSERT_EQ(2, probe.count);
 }
 
+TEST(socketmetrics_all_metric_types)
+{
+    SocketMetricsSnapshot snapshot = {{0ULL}};
+
+    SocketMetrics_reset();
+    SocketMetrics_increment(SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
+    SocketMetrics_increment(SOCKET_METRIC_SOCKET_CONNECT_FAILURE, 2);
+    SocketMetrics_increment(SOCKET_METRIC_SOCKET_SHUTDOWN_CALL, 3);
+    SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_SUBMITTED, 4);
+    SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_COMPLETED, 5);
+    SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_FAILED, 6);
+    SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_CANCELLED, 7);
+    SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_TIMEOUT, 8);
+    SocketMetrics_increment(SOCKET_METRIC_POLL_WAKEUPS, 9);
+    SocketMetrics_increment(SOCKET_METRIC_POLL_EVENTS_DISPATCHED, 10);
+    SocketMetrics_increment(SOCKET_METRIC_POOL_CONNECTIONS_ADDED, 11);
+    SocketMetrics_increment(SOCKET_METRIC_POOL_CONNECTIONS_REMOVED, 12);
+    SocketMetrics_increment(SOCKET_METRIC_POOL_CONNECTIONS_REUSED, 13);
+
+    SocketMetrics_getsnapshot(&snapshot);
+
+    ASSERT_EQ(1ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_SOCKET_CONNECT_SUCCESS));
+    ASSERT_EQ(2ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_SOCKET_CONNECT_FAILURE));
+    ASSERT_EQ(3ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_SOCKET_SHUTDOWN_CALL));
+    ASSERT_EQ(4ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_DNS_REQUEST_SUBMITTED));
+    ASSERT_EQ(5ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_DNS_REQUEST_COMPLETED));
+    ASSERT_EQ(6ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_DNS_REQUEST_FAILED));
+    ASSERT_EQ(7ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_DNS_REQUEST_CANCELLED));
+    ASSERT_EQ(8ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_DNS_REQUEST_TIMEOUT));
+    ASSERT_EQ(9ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_POLL_WAKEUPS));
+    ASSERT_EQ(10ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_POLL_EVENTS_DISPATCHED));
+    ASSERT_EQ(11ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_POOL_CONNECTIONS_ADDED));
+    ASSERT_EQ(12ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_POOL_CONNECTIONS_REMOVED));
+    ASSERT_EQ(13ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_POOL_CONNECTIONS_REUSED));
+}
+
+TEST(socketmetrics_metric_names)
+{
+    ASSERT_NOT_NULL(SocketMetrics_name(SOCKET_METRIC_SOCKET_CONNECT_SUCCESS));
+    ASSERT_NOT_NULL(SocketMetrics_name(SOCKET_METRIC_SOCKET_CONNECT_FAILURE));
+    ASSERT_NOT_NULL(SocketMetrics_name(SOCKET_METRIC_DNS_REQUEST_SUBMITTED));
+    ASSERT_NOT_NULL(SocketMetrics_name(SOCKET_METRIC_POLL_WAKEUPS));
+    ASSERT_NOT_NULL(SocketMetrics_name(SOCKET_METRIC_POOL_CONNECTIONS_ADDED));
+    ASSERT_NOT_NULL(SocketMetrics_name((SocketMetric)999));
+}
+
+TEST(socketmetrics_increment_by_value)
+{
+    SocketMetricsSnapshot snapshot = {{0ULL}};
+
+    SocketMetrics_reset();
+    SocketMetrics_increment(SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 5);
+    SocketMetrics_increment(SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 3);
+    SocketMetrics_getsnapshot(&snapshot);
+
+    ASSERT_EQ(8ULL, SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_SOCKET_CONNECT_SUCCESS));
+}
+
+TEST(socketevents_multiple_handlers)
+{
+    EventProbe probe1 = {0};
+    EventProbe probe2 = {0};
+
+    SocketEvent_register(event_probe_callback, &probe1);
+    SocketEvent_register(event_probe_callback, &probe2);
+    SocketEvent_emit_poll_wakeup(10, 200);
+
+    ASSERT_EQ(1, probe1.count);
+    ASSERT_EQ(1, probe2.count);
+    ASSERT_EQ(10, probe1.last_event.data.poll.nfds);
+    ASSERT_EQ(10, probe2.last_event.data.poll.nfds);
+
+    SocketEvent_unregister(event_probe_callback, &probe1);
+    SocketEvent_unregister(event_probe_callback, &probe2);
+}
+
+TEST(socketevents_accept_and_connect_events)
+{
+    EventProbe probe = {0};
+
+    SocketEvent_register(event_probe_callback, &probe);
+    SocketEvent_emit_accept(42, "192.168.1.1", 8080, "0.0.0.0", 80);
+
+    ASSERT_EQ(1, probe.count);
+    ASSERT_EQ(SOCKET_EVENT_ACCEPTED, probe.last_event.type);
+    ASSERT_EQ(42, probe.last_event.data.connection.fd);
+    ASSERT(strcmp(probe.last_event.data.connection.peer_addr, "192.168.1.1") == 0);
+    ASSERT_EQ(8080, probe.last_event.data.connection.peer_port);
+    ASSERT(strcmp(probe.last_event.data.connection.local_addr, "0.0.0.0") == 0);
+    ASSERT_EQ(80, probe.last_event.data.connection.local_port);
+
+    SocketEvent_emit_connect(43, "10.0.0.1", 443, "192.168.1.2", 50000);
+    ASSERT_EQ(2, probe.count);
+    ASSERT_EQ(SOCKET_EVENT_CONNECTED, probe.last_event.type);
+    ASSERT_EQ(43, probe.last_event.data.connection.fd);
+    ASSERT(strcmp(probe.last_event.data.connection.peer_addr, "10.0.0.1") == 0);
+    ASSERT_EQ(443, probe.last_event.data.connection.peer_port);
+
+    SocketEvent_unregister(event_probe_callback, &probe);
+}
+
+TEST(socketevents_duplicate_registration_ignored)
+{
+    EventProbe probe = {0};
+
+    SocketEvent_register(event_probe_callback, &probe);
+    SocketEvent_register(event_probe_callback, &probe);
+    SocketEvent_emit_poll_wakeup(1, 0);
+
+    ASSERT_EQ(1, probe.count);
+
+    SocketEvent_unregister(event_probe_callback, &probe);
+    SocketEvent_emit_poll_wakeup(1, 0);
+    ASSERT_EQ(1, probe.count);
+}
+
+TEST(socketevents_handler_limit_enforced)
+{
+    EventProbe probes[16] = {0};
+    int i;
+
+    for (i = 0; i < 8; i++)
+    {
+        SocketEvent_register(event_probe_callback, &probes[i]);
+    }
+
+    SocketEvent_emit_poll_wakeup(1, 0);
+    ASSERT_EQ(1, probes[0].count);
+
+    SocketEvent_register(event_probe_callback, &probes[8]);
+    SocketEvent_emit_poll_wakeup(1, 0);
+    ASSERT_EQ(0, probes[8].count);
+
+    for (i = 0; i < 8; i++)
+    {
+        SocketEvent_unregister(event_probe_callback, &probes[i]);
+    }
+}
+
+TEST(socket_bind_async_wildcard_uses_ai_passive)
+{
+    SocketDNS_T dns = NULL;
+    Socket_T socket = NULL;
+    SocketDNS_Request_T req;
+    struct addrinfo *res = NULL;
+
+    TRY
+        dns = SocketDNS_new();
+        socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+        req = Socket_bind_async(dns, socket, NULL, 0);
+
+        while ((res = SocketDNS_getresult(dns, req)) == NULL)
+        {
+            usleep(10000);
+        }
+
+        ASSERT_NOT_NULL(res);
+        ASSERT_NOT_NULL(res->ai_addr);
+
+        Socket_bind_with_addrinfo(socket, res);
+        Socket_listen(socket, 5);
+
+        ASSERT(Socket_getlocalport(socket) >= 1);
+        ASSERT(Socket_getlocalport(socket) <= 65535);
+
+        freeaddrinfo(res);
+        res = NULL;
+    EXCEPT(Socket_Failed)
+        if (res)
+            freeaddrinfo(res);
+    EXCEPT(SocketDNS_Failed)
+        if (res)
+            freeaddrinfo(res);
+    FINALLY
+        if (socket)
+            Socket_free(&socket);
+        if (dns)
+            SocketDNS_free(&dns);
+    END_TRY;
+}
+
 int main(void)
 {
     Test_run_all();

@@ -87,7 +87,7 @@ extern void SocketDNS_free(T *dns);
 /**
  * SocketDNS_resolve - Start async DNS resolution
  * @dns: DNS resolver instance
- * @host: Hostname or IP address to resolve
+ * @host: Hostname or IP address to resolve (NULL for wildcard bind with AI_PASSIVE)
  * @port: Port number (0 if not needed)
  * @callback: Completion callback (NULL for SocketPoll integration)
  * @data: User data passed to callback
@@ -98,6 +98,7 @@ extern void SocketDNS_free(T *dns);
  * integration: add SocketDNS_pollfd() to SocketPoll and call SocketDNS_check()
  * on events. If callback is provided, it will be called from a worker thread
  * when resolution completes.
+ * When host is NULL, AI_PASSIVE flag is automatically set for wildcard bind operations.
  * The request handle remains valid until:
  * - Result retrieved via SocketDNS_getresult() (callback mode)
  * - Request cancelled via SocketDNS_cancel()
