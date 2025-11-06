@@ -20,6 +20,7 @@
  * - O(1) event delivery regardless of total sockets
  * - Edge-triggered mode for efficiency
  * - User data association with sockets
+ * - Configurable default timeout applied when requested
  * - Thread-safe implementation
  * The poll maintains a mapping of sockets to user data, allowing
  * efficient context retrieval when events occur.
@@ -51,6 +52,8 @@ typedef struct SocketEvent
     void *data;      /**< User data associated with socket */
     unsigned events; /**< Bitmask of events that occurred */
 } SocketEvent_T;
+
+#define SOCKET_POLL_TIMEOUT_USE_DEFAULT (-2)
 
 /**
  * SocketPoll_new - Create a new event poll
@@ -100,6 +103,21 @@ extern void SocketPoll_mod(T poll, Socket_T socket, unsigned events, void *data)
  * Thread-safe: Yes - uses internal mutex for socket data mapping
  */
 extern void SocketPoll_del(T poll, Socket_T socket);
+
+/**
+ * SocketPoll_getdefaulttimeout - Get default wait timeout in milliseconds
+ * @poll: Poll instance
+ * Returns: Default timeout in milliseconds
+ */
+extern int SocketPoll_getdefaulttimeout(T poll);
+
+/**
+ * SocketPoll_setdefaulttimeout - Set default wait timeout in milliseconds
+ * @poll: Poll instance
+ * @timeout: Timeout in milliseconds (0 = immediate, -1 = infinite)
+ * Returns: Nothing
+ */
+extern void SocketPoll_setdefaulttimeout(T poll, int timeout);
 
 /**
  * SocketPoll_wait - Wait for events

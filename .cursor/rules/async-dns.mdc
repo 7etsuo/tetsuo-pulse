@@ -24,7 +24,7 @@ The SocketDNS module provides asynchronous DNS resolution using a thread pool to
 1. **PENDING**: Request in queue, waiting for worker thread
 2. **PROCESSING**: Worker thread performing DNS resolution
 3. **COMPLETE**: Result available for retrieval
-4. **CANCELLED**: Request cancelled before completion
+4. **CANCELLED**: Request cancelled or timed out (completion signal still emitted)
 
 ## Usage Patterns
 
@@ -67,6 +67,7 @@ Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
 /* Start async DNS resolution */
 SocketDNS_Request_T req = Socket_bind_async(dns, socket, "example.com", 8080);
+SocketDNS_request_settimeout(dns, req, 2000);  /* 2s per-request timeout */
 
 /* Get pollable file descriptor */
 int dns_fd = SocketDNS_pollfd(dns);
@@ -104,6 +105,11 @@ while (!res) {
     SocketDNS_check(dns);
     res = SocketDNS_getresult(dns, req);
     if (!res) {
+        int error = SocketDNS_geterror(dns, req);
+        if (error != 0) {
+            fprintf(stderr, "DNS failure: %s\n", gai_strerror(error));
+            break;
+        }
         usleep(10000);  /* Small delay before retry */
     }
 }
@@ -146,9 +152,12 @@ if (res) {
 
 ### Timeout Configuration
 
-**Default**: 5 seconds (`SOCKET_DNS_TIMEOUT_SEC`)
+**Default**: 5 seconds (`SOCKET_DEFAULT_DNS_TIMEOUT_MS`)
 
-**Note**: Currently informational - actual timeout handled by system `getaddrinfo()` (typically 30+ seconds).
+**Behaviour**:
+- Worker threads enforce the timeout using `CLOCK_MONOTONIC`
+- Expired requests transition to `CANCELLED`, emit completion signal, and report `EAI_AGAIN`
+- Overrides per resolver (`SocketDNS_settimeout`) or per request (`SocketDNS_request_settimeout`)
 
 ## Error Handling
 
@@ -156,10 +165,12 @@ if (res) {
 
 ```c
 struct addrinfo *res = SocketDNS_getresult(dns, req);
+int error = SocketDNS_geterror(dns, req);
 if (!res) {
-    /* Check if request was cancelled or still pending */
-    /* Error code available in callback mode */
-    fprintf(stderr, "DNS resolution failed or cancelled\n");
+    if (error != 0)
+        fprintf(stderr, "DNS resolution failed: %s\n", gai_strerror(error));
+    else
+        fprintf(stderr, "DNS resolution pending\n");
 } else {
     /* Use result */
     Socket_bind_with_addrinfo(socket, res);
@@ -298,11 +309,12 @@ while (running) {
 
 ```c
 SocketDNS_Request_T req = Socket_bind_async(dns, socket, "slow-dns.example.com", 8080);
+SocketDNS_request_settimeout(dns, req, 3000);  /* Optional per-request timeout */
 
 /* ... later, need to cancel ... */
 SocketDNS_cancel(dns, req);
 
-/* Request handle now invalid - do not use */
+/* SocketDNS_geterror(dns, req) now returns EAI_CANCELLED (or EAI_AGAIN fallback) */
 ```
 
 ## Troubleshooting

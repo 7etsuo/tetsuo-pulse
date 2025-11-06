@@ -466,10 +466,18 @@ prepare_free_slot (T pool, Connection_T conn)
 {
   remove_from_free_list (pool, conn);
 
-  if (allocate_connection_buffers (pool->arena, pool->bufsize, conn) != 0)
+  if (conn->inbuf && conn->outbuf)
     {
-      return_to_free_list (pool, conn);
-      return -1;
+      SocketBuf_secureclear (conn->inbuf);
+      SocketBuf_secureclear (conn->outbuf);
+    }
+  else
+    {
+      if (allocate_connection_buffers (pool->arena, pool->bufsize, conn) != 0)
+        {
+          return_to_free_list (pool, conn);
+          return -1;
+        }
     }
 
   return 0;
@@ -575,13 +583,11 @@ cleanup_connection_buffers (Connection_T conn)
   if (conn->inbuf)
     {
       SocketBuf_secureclear (conn->inbuf);
-      SocketBuf_release (&conn->inbuf);
     }
 
   if (conn->outbuf)
     {
       SocketBuf_secureclear (conn->outbuf);
-      SocketBuf_release (&conn->outbuf);
     }
 }
 

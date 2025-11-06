@@ -18,17 +18,33 @@ This rule enforces the specific design patterns and architectural principles use
 struct T
 {
     int fd;                           // Underlying file descriptor
-    struct sockaddr_storage addr;     // Address information
-    socklen_t addrlen;                // Address length
+    struct sockaddr_storage addr;     // Peer address information
+    socklen_t addrlen;                // Peer address length
+    struct sockaddr_storage local_addr; // Cached local endpoint
+    socklen_t local_addrlen;          // Cached local endpoint length
     char *peeraddr;                   // Peer address string
     int peerport;                     // Peer port number
+    char *localaddr;                  // Local address string
+    int localport;                    // Local port number
+    SocketTimeouts_T timeouts;        // Per-socket timeout configuration
     Arena_T arena;                    // Private memory arena
 };
 
 typedef struct T *T;
 ```
 
-**NOTE:** Same structure supports TCP (AF_INET/AF_INET6) and Unix domain (AF_UNIX) sockets.
+**NOTE:** Same structure supports TCP (AF_INET/AF_INET6) and Unix domain (AF_UNIX) sockets. Local endpoint caching enables `Socket_getlocaladdr()`/`Socket_getlocalport()` to be constant time, while the `SocketTimeouts_T` member stores sanitized per-socket timeout overrides.
+
+### Timeout Handling Pattern
+**ALWAYS** initialize and sanitize timeouts when constructing sockets:
+
+```c
+Socket_timeouts_getdefaults(&sock->timeouts);
+/* Ensure negative values become zero */
+sock->timeouts.connect_timeout_ms = sanitize_timeout(sock->timeouts.connect_timeout_ms);
+```
+
+Blocking connect paths must honour `timeouts.connect_timeout_ms` by switching to non-blocking mode and using `poll()` with the configured deadline. Async helper functions **must** propagate `timeouts.dns_timeout_ms` to the DNS request via `SocketDNS_request_settimeout()`.
 
 ## 1b. SocketDgram Module Pattern (UDP)
 
@@ -346,6 +362,20 @@ static unsigned translate_from_epoll(unsigned epoll_events)
 }
 ```
 
+### Default Timeout Pattern
+**ALWAYS** honour the poll's default timeout:
+
+- Store the configured value in `poll->default_timeout_ms`
+- Treat `SOCKET_POLL_TIMEOUT_USE_DEFAULT` as a sentinel in `SocketPoll_wait()`
+- Expose `SocketPoll_getdefaulttimeout()` / `SocketPoll_setdefaulttimeout()` so applications can tune behaviour globally
+
+### Event Translation Optimisation
+**PREFER** locking the mutex once per backend event and reusing lookup results:
+
+- Acquire the mutex, locate the socket via `find_socket_by_fd()`, and fetch user data with `socket_data_lookup_unlocked()`
+- Release the mutex before writing into the event array
+- This keeps the hot path lock duration minimal and avoids redundant lookups
+
 ### Socket Data Mapping Pattern
 **ALWAYS** implement efficient socket-to-data mapping:
 
@@ -506,6 +536,16 @@ void SocketPool_free(T *pool)
     
     *pool = NULL;
 }
+```
+
+### Buffer Reuse Pattern
+**ALWAYS** reuse connection buffers instead of freeing them:
+
+- Keep `SocketBuf` instances attached to each slot for the lifetime of the pool
+- On removal or cleanup, call `SocketBuf_secureclear()` rather than `SocketBuf_release()`
+- Reinitialise reused slots via `prepare_free_slot()` to avoid arena churn under load
+
+This guarantees stable memory usage and eliminates repeated arena allocations during steady-state traffic.
 ```
 
 ## 5. Configuration Module Pattern

@@ -142,8 +142,16 @@
 #define SOCKET_DNS_MAX_PENDING 1000
 #endif
 
-#ifndef SOCKET_DNS_TIMEOUT_SEC
-#define SOCKET_DNS_TIMEOUT_SEC 5
+#ifndef SOCKET_DEFAULT_CONNECT_TIMEOUT_MS
+#define SOCKET_DEFAULT_CONNECT_TIMEOUT_MS 10000 /* 10 seconds */
+#endif
+
+#ifndef SOCKET_DEFAULT_DNS_TIMEOUT_MS
+#define SOCKET_DEFAULT_DNS_TIMEOUT_MS 5000 /* 5 seconds */
+#endif
+
+#ifndef SOCKET_DEFAULT_OPERATION_TIMEOUT_MS
+#define SOCKET_DEFAULT_OPERATION_TIMEOUT_MS 0 /* Disabled */
 #endif
 
 /* DNS request hash table size - prime number for better distribution */

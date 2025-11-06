@@ -15,6 +15,12 @@ The SocketPoll module uses a compile-time selected backend for event notificatio
 2. **kqueue** (BSD/macOS) - O(active events), edge-triggered  
 3. **poll(2)** (POSIX) - O(all FDs), level-triggered
 
+## Timeout Behaviour
+
+- The frontend tracks a default timeout (`SocketPoll_setdefaulttimeout`) stored in the poll structure.
+- Passing `SOCKET_POLL_TIMEOUT_USE_DEFAULT` to `SocketPoll_wait()` applies that value transparently before dispatching to the backend.
+- Backends must accept the sanitized timeout (0 = immediate poll, -1 = infinite) without additional sentinel handling.
+
 ## Files Structure
 
 ### Backend Interface

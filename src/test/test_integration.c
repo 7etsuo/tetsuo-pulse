@@ -214,6 +214,58 @@ TEST(integration_tcp_echo_server)
     END_TRY;
 }
 
+TEST(integration_dns_cancellation_signal)
+{
+    SocketDNS_T dns = SocketDNS_new();
+    ASSERT_NOT_NULL(dns);
+
+    SocketDNS_Request_T req = SocketDNS_resolve(dns, "localhost", 0, NULL, NULL);
+    ASSERT_NOT_NULL(req);
+
+    SocketDNS_cancel(dns, req);
+    int signals = SocketDNS_check(dns);
+    ASSERT(signals >= 0);
+
+    int error = SocketDNS_geterror(dns, req);
+#ifdef EAI_CANCELLED
+    ASSERT_EQ(error, EAI_CANCELLED);
+#else
+    ASSERT_EQ(error, EAI_AGAIN);
+#endif
+
+    struct addrinfo *result = SocketDNS_getresult(dns, req);
+    ASSERT_NULL(result);
+
+    SocketDNS_free(&dns);
+}
+
+TEST(integration_poll_default_timeout_microbenchmark)
+{
+    SocketPoll_T poll = SocketPoll_new(1);
+    ASSERT_NOT_NULL(poll);
+
+    SocketPoll_setdefaulttimeout(poll, 0);
+
+    struct timespec start = {0}, end = {0};
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    for (int i = 0; i < 500; i++)
+    {
+        SocketEvent_T *events = NULL;
+        int rc = SocketPoll_wait(poll, &events, SOCKET_POLL_TIMEOUT_USE_DEFAULT);
+        ASSERT_EQ(rc, 0);
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    long long elapsed_ms = (end.tv_sec - start.tv_sec) * 1000LL;
+    elapsed_ms += (end.tv_nsec - start.tv_nsec) / 1000000LL;
+
+    ASSERT(elapsed_ms < 100); /* Ensure wait loop stays responsive */
+
+    SocketPoll_free(&poll);
+}
+
 TEST(integration_tcp_multiple_clients)
 {
     setup_signals();
