@@ -753,6 +753,126 @@ TEST(socket_islistening_returns_false_after_connect)
     Socket_free(&client);
 }
 
+/* ==================== Socket Pair Tests ==================== */
+
+TEST(socketpair_new_creates_connected_stream_sockets)
+{
+    setup_signals();
+    Socket_T socket1 = NULL;
+    Socket_T socket2 = NULL;
+
+    TRY
+        SocketPair_new(SOCK_STREAM, &socket1, &socket2);
+        ASSERT_NOT_NULL(socket1);
+        ASSERT_NOT_NULL(socket2);
+
+        /* Verify sockets are connected */
+        ASSERT_EQ(1, Socket_isconnected(socket1));
+        ASSERT_EQ(1, Socket_isconnected(socket2));
+
+        /* Test bidirectional communication */
+        const char *msg = "Hello from socket1";
+        ssize_t sent = Socket_send(socket1, msg, strlen(msg));
+        ASSERT(sent > 0);
+
+        char buf[256] = {0};
+        ssize_t received = Socket_recv(socket2, buf, sizeof(buf) - 1);
+        ASSERT(received > 0);
+        ASSERT_EQ(0, strcmp(buf, msg));
+
+        /* Test reverse direction */
+        const char *reply = "Hello from socket2";
+        sent = Socket_send(socket2, reply, strlen(reply));
+        ASSERT(sent > 0);
+
+        memset(buf, 0, sizeof(buf));
+        received = Socket_recv(socket1, buf, sizeof(buf) - 1);
+        ASSERT(received > 0);
+        ASSERT_EQ(0, strcmp(buf, reply));
+    EXCEPT(Socket_Failed)
+        (void)0;
+    END_TRY;
+
+    if (socket1)
+        Socket_free(&socket1);
+    if (socket2)
+        Socket_free(&socket2);
+}
+
+TEST(socketpair_new_creates_connected_dgram_sockets)
+{
+    setup_signals();
+    Socket_T socket1 = NULL;
+    Socket_T socket2 = NULL;
+
+    TRY
+        SocketPair_new(SOCK_DGRAM, &socket1, &socket2);
+        ASSERT_NOT_NULL(socket1);
+        ASSERT_NOT_NULL(socket2);
+
+        /* Verify sockets are connected */
+        ASSERT_EQ(1, Socket_isconnected(socket1));
+        ASSERT_EQ(1, Socket_isconnected(socket2));
+
+        /* Test bidirectional communication */
+        const char *msg = "Hello from socket1";
+        ssize_t sent = Socket_send(socket1, msg, strlen(msg));
+        ASSERT(sent > 0);
+
+        char buf[256] = {0};
+        ssize_t received = Socket_recv(socket2, buf, sizeof(buf) - 1);
+        ASSERT(received > 0);
+        ASSERT_EQ(0, strcmp(buf, msg));
+
+        /* Test reverse direction */
+        const char *reply = "Hello from socket2";
+        sent = Socket_send(socket2, reply, strlen(reply));
+        ASSERT(sent > 0);
+
+        memset(buf, 0, sizeof(buf));
+        received = Socket_recv(socket1, buf, sizeof(buf) - 1);
+        ASSERT(received > 0);
+        ASSERT_EQ(0, strcmp(buf, reply));
+    EXCEPT(Socket_Failed)
+        (void)0;
+    END_TRY;
+
+    if (socket1)
+        Socket_free(&socket1);
+    if (socket2)
+        Socket_free(&socket2);
+}
+
+TEST(socketpair_new_sockets_are_unix_domain)
+{
+    setup_signals();
+    Socket_T socket1 = NULL;
+    Socket_T socket2 = NULL;
+
+    TRY
+        SocketPair_new(SOCK_STREAM, &socket1, &socket2);
+        ASSERT_NOT_NULL(socket1);
+        ASSERT_NOT_NULL(socket2);
+
+        /* Verify sockets are Unix domain sockets */
+        struct sockaddr_storage addr;
+        socklen_t len = sizeof(addr);
+        ASSERT_EQ(0, getsockname(Socket_fd(socket1), (struct sockaddr *)&addr, &len));
+        ASSERT_EQ(AF_UNIX, addr.ss_family);
+
+        len = sizeof(addr);
+        ASSERT_EQ(0, getsockname(Socket_fd(socket2), (struct sockaddr *)&addr, &len));
+        ASSERT_EQ(AF_UNIX, addr.ss_family);
+    EXCEPT(Socket_Failed)
+        (void)0;
+    END_TRY;
+
+    if (socket1)
+        Socket_free(&socket1);
+    if (socket2)
+        Socket_free(&socket2);
+}
+
 /* ==================== Close-on-Exec Tests ==================== */
 
 TEST(socket_new_sets_cloexec_by_default)

@@ -1,38 +1,5 @@
-Phase 1: Foundation (enables everything else)
-1.1 Error detail extraction (#5)
-Why first: Other features need structured error handling.
-Implementation:
-Add Socket_geterrno() to return last errno
-Add SocketError enum with common error codes
-Add Socket_geterrorcode() returning enum value
-Thread-safe errno capture in error macros
-Dependencies: None (builds on existing SocketError)
-
-1.2 Socket option getters infrastructure (#3 - partial)
-Why second: Establishes the getter pattern used by later features.
-Implementation:
-Add generic Socket_getoption() / SocketDgram_getoption() helpers
-Implement Socket_gettimeout(), Socket_getkeepalive(), Socket_getnodelay()
-Add Socket_getrcvbuf(), Socket_getsndbuf()
-Mirror for SocketDgram_*
-Dependencies: #1.1 (error handling)
-
-1.3 Connection state queries (#4)
-Why third: Uses getters and error handling.
-Implementation:
-Add Socket_isconnected(), Socket_islistening(), Socket_isbound()
-Use getsockopt(SO_ERROR) and socket state checks
-Add SocketDgram_isconnected(), SocketDgram_isbound()
-Dependencies: #1.1, #1.2
-
 Phase 2: Quick wins (builds confidence, enables docs)
-2.1 Socket pair creation (#9)
-Why fourth: Simple, independent, common pattern.
-Implementation:
-Add SocketPair_new() wrapper for socketpair()
-Support Unix domain sockets (AF_UNIX)
-Return two connected sockets
-Dependencies: #1.1 (error handling)
+
 2.2 Address resolution helpers (#8)
 Why fifth: Independent, useful immediately.
 Implementation:
@@ -42,6 +9,7 @@ Add SocketCommon_cidr_match() for CIDR checks
 Dependencies: #1.1 (error handling)
 
 Phase 3: Advanced I/O (builds on foundation)
+
 3.1 Partial I/O helpers (#10)
 Why sixth: Prepares for scatter/gather.
 Implementation:
@@ -49,6 +17,7 @@ Add Socket_sendall() (handles partial sends)
 Add Socket_recvall() (handles partial receives)
 Add SocketDgram_sendall(), SocketDgram_recvall()
 Dependencies: #1.1, #1.3 (state checks)
+
 3.2 Scatter/gather I/O (#2)
 Why seventh: Uses partial I/O patterns.
 Implementation:
@@ -56,6 +25,7 @@ Add Socket_sendv() / Socket_recvv() (readv/writev wrappers)
 Add SocketDgram_sendv() / SocketDgram_recvv()
 Handle partial I/O automatically
 Dependencies: #3.1 (partial I/O helpers)
+
 3.3 Zero-copy I/O (#1)
 Why eighth: Most complex; benefits from prior work.
 Implementation:
@@ -65,6 +35,7 @@ Platform detection for splice(), sendfile(), splice()
 Dependencies: #1.1, #3.1, #3.2
 
 Phase 4: Advanced options (polish)
+
 4.1 Advanced socket options (#7)
 Why ninth: Builds on option infrastructure.
 Implementation:

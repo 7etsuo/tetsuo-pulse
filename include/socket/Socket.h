@@ -55,6 +55,20 @@ extern Except_T Socket_Closed; /**< Connection closed by peer */
 extern T Socket_new(int domain, int type, int protocol);
 
 /**
+ * SocketPair_new - Create a pair of connected Unix domain sockets
+ * @type: Socket type (SOCK_STREAM or SOCK_DGRAM)
+ * @socket1: Output - first socket of the pair
+ * @socket2: Output - second socket of the pair
+ * Raises: Socket_Failed on error
+ * Thread-safe: Yes (creates new sockets)
+ * Note: Creates two connected Unix domain sockets for IPC.
+ * Both sockets are ready to use - no bind/connect needed.
+ * Typically used for parent-child or thread communication.
+ * Only supports AF_UNIX (Unix domain sockets).
+ */
+extern void SocketPair_new(int type, T *socket1, T *socket2);
+
+/**
  * Socket_free - Free a socket and close the connection
  * @socket: Pointer to socket (will be set to NULL)
  */
