@@ -145,6 +145,36 @@ extern ssize_t Socket_send(T socket, const void *buf, size_t len);
 extern ssize_t Socket_recv(T socket, void *buf, size_t len);
 
 /**
+ * Socket_sendall - Send all data (handles partial sends)
+ * @socket: Connected socket
+ * @buf: Data to send
+ * @len: Length of data (> 0)
+ * Returns: Total bytes sent (always equals len on success)
+ * Raises: Socket_Closed on EPIPE/ECONNRESET
+ * Raises: Socket_Failed on other errors
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Loops until all data is sent or an error occurs.
+ * For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK).
+ * Use Socket_isconnected() to verify connection state before calling.
+ */
+extern ssize_t Socket_sendall(T socket, const void *buf, size_t len);
+
+/**
+ * Socket_recvall - Receive all requested data (handles partial receives)
+ * @socket: Connected socket
+ * @buf: Buffer for received data
+ * @len: Buffer size (> 0)
+ * Returns: Total bytes received (always equals len on success)
+ * Raises: Socket_Closed on peer close (recv returns 0) or ECONNRESET
+ * Raises: Socket_Failed on other errors
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Loops until len bytes are received or an error occurs.
+ * For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK).
+ * Use Socket_isconnected() to verify connection state before calling.
+ */
+extern ssize_t Socket_recvall(T socket, void *buf, size_t len);
+
+/**
  * Socket_setnonblocking - Enable non-blocking mode
  * @socket: Socket to modify
  * Raises: Socket_Failed on error

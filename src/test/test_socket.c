@@ -873,6 +873,293 @@ TEST(socketpair_new_sockets_are_unix_domain)
         Socket_free(&socket2);
 }
 
+/* ==================== Address Resolution Helper Tests ==================== */
+
+TEST(socketcommon_parse_ip_validates_ipv4)
+{
+    int family = AF_UNSPEC;
+
+    ASSERT_EQ(1, SocketCommon_parse_ip("127.0.0.1", &family));
+    ASSERT_EQ(AF_INET, family);
+
+    ASSERT_EQ(1, SocketCommon_parse_ip("192.168.1.1", &family));
+    ASSERT_EQ(AF_INET, family);
+
+    ASSERT_EQ(1, SocketCommon_parse_ip("0.0.0.0", &family));
+    ASSERT_EQ(AF_INET, family);
+
+    ASSERT_EQ(1, SocketCommon_parse_ip("255.255.255.255", &family));
+    ASSERT_EQ(AF_INET, family);
+}
+
+TEST(socketcommon_parse_ip_validates_ipv6)
+{
+    int family = AF_UNSPEC;
+
+    ASSERT_EQ(1, SocketCommon_parse_ip("::1", &family));
+    ASSERT_EQ(AF_INET6, family);
+
+    ASSERT_EQ(1, SocketCommon_parse_ip("2001:db8::1", &family));
+    ASSERT_EQ(AF_INET6, family);
+
+    ASSERT_EQ(1, SocketCommon_parse_ip("::", &family));
+    ASSERT_EQ(AF_INET6, family);
+
+    /* Note: Zone identifiers (%lo0) may not be supported by inet_pton on all systems */
+    /* Test without zone identifier */
+    ASSERT_EQ(1, SocketCommon_parse_ip("fe80::1", &family));
+    ASSERT_EQ(AF_INET6, family);
+}
+
+TEST(socketcommon_parse_ip_rejects_invalid)
+{
+    int family = AF_UNSPEC;
+
+    ASSERT_EQ(0, SocketCommon_parse_ip("not.an.ip", &family));
+    ASSERT_EQ(AF_UNSPEC, family);
+
+    ASSERT_EQ(0, SocketCommon_parse_ip("256.1.1.1", &family));
+    ASSERT_EQ(AF_UNSPEC, family);
+
+    ASSERT_EQ(0, SocketCommon_parse_ip("192.168.1", &family));
+    ASSERT_EQ(AF_UNSPEC, family);
+
+    ASSERT_EQ(0, SocketCommon_parse_ip("", &family));
+    ASSERT_EQ(AF_UNSPEC, family);
+}
+
+TEST(socketcommon_parse_ip_handles_null_family)
+{
+    ASSERT_EQ(1, SocketCommon_parse_ip("127.0.0.1", NULL));
+    ASSERT_EQ(1, SocketCommon_parse_ip("::1", NULL));
+    ASSERT_EQ(0, SocketCommon_parse_ip("invalid", NULL));
+}
+
+TEST(socketcommon_cidr_match_ipv4)
+{
+    /* Test IPv4 CIDR matching */
+    ASSERT_EQ(1, SocketCommon_cidr_match("192.168.1.100", "192.168.1.0/24"));
+    ASSERT_EQ(1, SocketCommon_cidr_match("192.168.1.1", "192.168.1.0/24"));
+    ASSERT_EQ(1, SocketCommon_cidr_match("192.168.1.255", "192.168.1.0/24"));
+    ASSERT_EQ(0, SocketCommon_cidr_match("192.168.2.1", "192.168.1.0/24"));
+    ASSERT_EQ(0, SocketCommon_cidr_match("10.0.0.1", "192.168.1.0/24"));
+
+    /* Test /32 (single host) */
+    ASSERT_EQ(1, SocketCommon_cidr_match("192.168.1.1", "192.168.1.1/32"));
+    ASSERT_EQ(0, SocketCommon_cidr_match("192.168.1.2", "192.168.1.1/32"));
+
+    /* Test /0 (all addresses) */
+    ASSERT_EQ(1, SocketCommon_cidr_match("192.168.1.1", "0.0.0.0/0"));
+    ASSERT_EQ(1, SocketCommon_cidr_match("10.0.0.1", "0.0.0.0/0"));
+}
+
+TEST(socketcommon_cidr_match_ipv6)
+{
+    /* Test IPv6 CIDR matching */
+    ASSERT_EQ(1, SocketCommon_cidr_match("2001:db8::1", "2001:db8::/32"));
+    ASSERT_EQ(1, SocketCommon_cidr_match("2001:db8:1::1", "2001:db8::/32"));
+    ASSERT_EQ(0, SocketCommon_cidr_match("2001:db9::1", "2001:db8::/32"));
+    ASSERT_EQ(0, SocketCommon_cidr_match("::1", "2001:db8::/32"));
+
+    /* Test /128 (single host) */
+    ASSERT_EQ(1, SocketCommon_cidr_match("2001:db8::1", "2001:db8::1/128"));
+    ASSERT_EQ(0, SocketCommon_cidr_match("2001:db8::2", "2001:db8::1/128"));
+}
+
+TEST(socketcommon_cidr_match_cross_family)
+{
+    /* IPv4 IP should not match IPv6 CIDR and vice versa */
+    ASSERT_EQ(0, SocketCommon_cidr_match("192.168.1.1", "2001:db8::/32"));
+    ASSERT_EQ(0, SocketCommon_cidr_match("::1", "192.168.1.0/24"));
+}
+
+TEST(socketcommon_cidr_match_invalid_inputs)
+{
+    /* Invalid CIDR notation */
+    ASSERT_EQ(-1, SocketCommon_cidr_match("192.168.1.1", "invalid"));
+    ASSERT_EQ(-1, SocketCommon_cidr_match("192.168.1.1", "192.168.1.0"));
+    ASSERT_EQ(-1, SocketCommon_cidr_match("192.168.1.1", "192.168.1.0/"));
+    ASSERT_EQ(-1, SocketCommon_cidr_match("192.168.1.1", "192.168.1.0/33")); /* Invalid prefix for IPv4 */
+    ASSERT_EQ(-1, SocketCommon_cidr_match("2001:db8::1", "2001:db8::/129")); /* Invalid prefix for IPv6 */
+
+    /* Invalid IP addresses */
+    ASSERT_EQ(-1, SocketCommon_cidr_match("invalid", "192.168.1.0/24"));
+    ASSERT_EQ(-1, SocketCommon_cidr_match("256.1.1.1", "192.168.1.0/24"));
+}
+
+TEST(socketcommon_reverse_lookup_numeric)
+{
+    setup_signals();
+    struct sockaddr_in addr;
+    char host[NI_MAXHOST];
+    char serv[NI_MAXSERV];
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(80);
+    ASSERT_EQ(1, inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr));
+
+    TRY
+        ASSERT_EQ(0, SocketCommon_reverse_lookup((struct sockaddr *)&addr, sizeof(addr), host, sizeof(host), serv,
+                                                  sizeof(serv), NI_NUMERICHOST | NI_NUMERICSERV, Socket_Failed));
+        ASSERT_EQ(0, strcmp(host, "127.0.0.1"));
+        ASSERT_EQ(0, strcmp(serv, "80"));
+    EXCEPT(Socket_Failed)
+        ASSERT(0); /* Should not fail */
+    END_TRY;
+}
+
+TEST(socketcommon_reverse_lookup_ipv6_numeric)
+{
+    setup_signals();
+    struct sockaddr_in6 addr;
+    char host[NI_MAXHOST];
+    char serv[NI_MAXSERV];
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin6_family = AF_INET6;
+    addr.sin6_port = htons(443);
+    ASSERT_EQ(1, inet_pton(AF_INET6, "::1", &addr.sin6_addr));
+
+    TRY
+        ASSERT_EQ(0, SocketCommon_reverse_lookup((struct sockaddr *)&addr, sizeof(addr), host, sizeof(host), serv,
+                                                  sizeof(serv), NI_NUMERICHOST | NI_NUMERICSERV, Socket_Failed));
+        /* IPv6 address format may vary, but should contain "::1" or "0:0:0:0:0:0:0:1" */
+        ASSERT(strstr(host, "1") != NULL);
+        ASSERT_EQ(0, strcmp(serv, "443"));
+    EXCEPT(Socket_Failed)
+        ASSERT(0); /* Should not fail */
+    END_TRY;
+}
+
+TEST(socketcommon_reverse_lookup_hostname_only)
+{
+    setup_signals();
+    struct sockaddr_in addr;
+    char host[NI_MAXHOST];
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(80);
+    ASSERT_EQ(1, inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr));
+
+    TRY
+        ASSERT_EQ(0, SocketCommon_reverse_lookup((struct sockaddr *)&addr, sizeof(addr), host, sizeof(host), NULL, 0,
+                                                  NI_NUMERICHOST, Socket_Failed));
+        ASSERT_EQ(0, strcmp(host, "127.0.0.1"));
+    EXCEPT(Socket_Failed)
+        ASSERT(0); /* Should not fail */
+    END_TRY;
+}
+
+/* ==================== Partial I/O Helper Tests ==================== */
+
+TEST(socket_sendall_sends_all_data)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted = NULL;
+
+    TRY
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 1);
+        Socket_connect(client, "127.0.0.1", Socket_getlocalport(server));
+        accepted = Socket_accept(server);
+
+        /* Send large data that may require multiple sends */
+        char send_buf[8192];
+        memset(send_buf, 'A', sizeof(send_buf));
+        ssize_t sent = Socket_sendall(client, send_buf, sizeof(send_buf));
+        ASSERT_EQ((ssize_t)sizeof(send_buf), sent);
+
+        /* Receive all data */
+        char recv_buf[8192] = {0};
+        ssize_t received = Socket_recvall(accepted, recv_buf, sizeof(recv_buf));
+        ASSERT_EQ((ssize_t)sizeof(recv_buf), received);
+        ASSERT_EQ(0, memcmp(send_buf, recv_buf, sizeof(send_buf)));
+    EXCEPT(Socket_Failed)
+        (void)0;
+    EXCEPT(Socket_Closed)
+        (void)0;
+    END_TRY;
+
+    if (accepted)
+        Socket_free(&accepted);
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
+TEST(socket_recvall_receives_all_data)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted = NULL;
+
+    TRY
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 1);
+        Socket_connect(client, "127.0.0.1", Socket_getlocalport(server));
+        accepted = Socket_accept(server);
+
+        /* Send data in chunks */
+        const char *msg = "Hello, World! This is a test message.";
+        ssize_t sent = Socket_sendall(client, msg, strlen(msg));
+        ASSERT_EQ((ssize_t)strlen(msg), sent);
+
+        /* Receive all data */
+        char recv_buf[256] = {0};
+        ssize_t received = Socket_recvall(accepted, recv_buf, strlen(msg));
+        ASSERT_EQ((ssize_t)strlen(msg), received);
+        ASSERT_EQ(0, strcmp(msg, recv_buf));
+    EXCEPT(Socket_Failed)
+        (void)0;
+    EXCEPT(Socket_Closed)
+        (void)0;
+    END_TRY;
+
+    if (accepted)
+        Socket_free(&accepted);
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
+TEST(socket_sendall_handles_partial_sends)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted = NULL;
+
+    TRY
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 1);
+        Socket_connect(client, "127.0.0.1", Socket_getlocalport(server));
+        accepted = Socket_accept(server);
+
+        /* Send data - sendall should handle any partial sends internally */
+        const char *msg = "Test message for partial send handling";
+        ssize_t sent = Socket_sendall(client, msg, strlen(msg));
+        ASSERT_EQ((ssize_t)strlen(msg), sent);
+
+        /* Verify all data was sent */
+        char recv_buf[256] = {0};
+        ssize_t received = Socket_recvall(accepted, recv_buf, strlen(msg));
+        ASSERT_EQ((ssize_t)strlen(msg), received);
+        ASSERT_EQ(0, strcmp(msg, recv_buf));
+    EXCEPT(Socket_Failed)
+        (void)0;
+    EXCEPT(Socket_Closed)
+        (void)0;
+    END_TRY;
+
+    if (accepted)
+        Socket_free(&accepted);
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
 /* ==================== Close-on-Exec Tests ==================== */
 
 TEST(socket_new_sets_cloexec_by_default)

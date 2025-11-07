@@ -141,6 +141,34 @@ extern ssize_t SocketDgram_send(T socket, const void *buf, size_t len);
 extern ssize_t SocketDgram_recv(T socket, void *buf, size_t len);
 
 /**
+ * SocketDgram_sendall - Send all data (handles partial sends)
+ * @socket: Connected socket
+ * @buf: Data to send
+ * @len: Length of data (> 0)
+ * Returns: Total bytes sent (always equals len on success)
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Loops until all data is sent or an error occurs.
+ * For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK).
+ * Use SocketDgram_isconnected() to verify connection state before calling.
+ */
+extern ssize_t SocketDgram_sendall(T socket, const void *buf, size_t len);
+
+/**
+ * SocketDgram_recvall - Receive all requested data (handles partial receives)
+ * @socket: Connected socket
+ * @buf: Buffer for received data
+ * @len: Buffer size (> 0)
+ * Returns: Total bytes received (always equals len on success)
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Loops until len bytes are received or an error occurs.
+ * For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK).
+ * Use SocketDgram_isconnected() to verify connection state before calling.
+ */
+extern ssize_t SocketDgram_recvall(T socket, void *buf, size_t len);
+
+/**
  * SocketDgram_setnonblocking - Enable non-blocking mode
  * @socket: Socket to modify
  * Raises: SocketDgram_Failed on error

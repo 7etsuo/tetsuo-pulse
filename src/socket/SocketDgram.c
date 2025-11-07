@@ -720,6 +720,86 @@ ssize_t SocketDgram_recv(T socket, void *buf, size_t len)
     return received;
 }
 
+/**
+ * SocketDgram_sendall - Send all data (handles partial sends)
+ * @socket: Connected socket
+ * @buf: Data to send
+ * @len: Length of data (> 0)
+ * Returns: Total bytes sent (always equals len on success)
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Loops until all data is sent or an error occurs.
+ * For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK).
+ * Use SocketDgram_isconnected() to verify connection state before calling.
+ */
+ssize_t SocketDgram_sendall(T socket, const void *buf, size_t len)
+{
+    const char *ptr = (const char *)buf;
+    volatile size_t total_sent = 0;
+    ssize_t sent;
+
+    assert(socket);
+    assert(buf);
+    assert(len > 0);
+
+    TRY
+        while (total_sent < len)
+        {
+            sent = SocketDgram_send(socket, ptr + total_sent, len - total_sent);
+            if (sent == 0)
+            {
+                /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+                return (ssize_t)total_sent;
+            }
+            total_sent += (size_t)sent;
+        }
+    EXCEPT(SocketDgram_Failed)
+        RERAISE;
+    END_TRY;
+
+    return (ssize_t)total_sent;
+}
+
+/**
+ * SocketDgram_recvall - Receive all requested data (handles partial receives)
+ * @socket: Connected socket
+ * @buf: Buffer for received data
+ * @len: Buffer size (> 0)
+ * Returns: Total bytes received (always equals len on success)
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Loops until len bytes are received or an error occurs.
+ * For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK).
+ * Use SocketDgram_isconnected() to verify connection state before calling.
+ */
+ssize_t SocketDgram_recvall(T socket, void *buf, size_t len)
+{
+    char *ptr = (char *)buf;
+    volatile size_t total_received = 0;
+    ssize_t received;
+
+    assert(socket);
+    assert(buf);
+    assert(len > 0);
+
+    TRY
+        while (total_received < len)
+        {
+            received = SocketDgram_recv(socket, ptr + total_received, len - total_received);
+            if (received == 0)
+            {
+                /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+                return (ssize_t)total_received;
+            }
+            total_received += (size_t)received;
+        }
+    EXCEPT(SocketDgram_Failed)
+        RERAISE;
+    END_TRY;
+
+    return (ssize_t)total_received;
+}
+
 void SocketDgram_setnonblocking(T socket)
 {
     int flags;
