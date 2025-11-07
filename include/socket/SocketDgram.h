@@ -214,6 +214,47 @@ extern void SocketDgram_setttl(T socket, int ttl);
 extern void SocketDgram_settimeout(T socket, int timeout_sec);
 
 /**
+ * SocketDgram_gettimeout - Get socket timeout
+ * @socket: Socket to query
+ * Returns: Timeout in seconds (0 if disabled)
+ * Raises: SocketDgram_Failed on error
+ * Note: Returns receive timeout (send timeout may differ)
+ */
+extern int SocketDgram_gettimeout(T socket);
+
+/**
+ * SocketDgram_getbroadcast - Get broadcast setting
+ * @socket: Socket to query
+ * Returns: 1 if broadcast is enabled, 0 if disabled
+ * Raises: SocketDgram_Failed on error
+ */
+extern int SocketDgram_getbroadcast(T socket);
+
+/**
+ * SocketDgram_getttl - Get time-to-live (hop limit)
+ * @socket: Socket to query
+ * Returns: TTL value (1-255)
+ * Raises: SocketDgram_Failed on error
+ */
+extern int SocketDgram_getttl(T socket);
+
+/**
+ * SocketDgram_getrcvbuf - Get receive buffer size
+ * @socket: Socket to query
+ * Returns: Receive buffer size in bytes
+ * Raises: SocketDgram_Failed on error
+ */
+extern int SocketDgram_getrcvbuf(T socket);
+
+/**
+ * SocketDgram_getsndbuf - Get send buffer size
+ * @socket: Socket to query
+ * Returns: Send buffer size in bytes
+ * Raises: SocketDgram_Failed on error
+ */
+extern int SocketDgram_getsndbuf(T socket);
+
+/**
  * SocketDgram_fd - Get underlying file descriptor
  * @socket: Socket instance
  * Returns: File descriptor

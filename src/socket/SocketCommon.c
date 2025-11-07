@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "core/Arena.h"
@@ -360,4 +361,60 @@ int SocketCommon_has_cloexec(int fd)
         return -1;
 
     return (flags & SOCKET_FD_CLOEXEC) ? 1 : 0;
+}
+
+/**
+ * SocketCommon_getoption_int - Get integer socket option
+ * @fd: File descriptor
+ * @level: Option level (SOL_SOCKET, IPPROTO_TCP, etc.)
+ * @optname: Option name (SO_KEEPALIVE, TCP_NODELAY, etc.)
+ * @value: Output pointer for option value
+ * @exception_type: Exception type to raise on failure
+ * Returns: 0 on success, -1 on failure
+ * Raises: Specified exception type on failure
+ * Thread-safe: Yes (operates on single fd)
+ */
+int SocketCommon_getoption_int(int fd, int level, int optname, int *value, Except_T exception_type)
+{
+    socklen_t len = sizeof(*value);
+
+    assert(fd >= 0);
+    assert(value);
+
+    if (getsockopt(fd, level, optname, value, &len) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to get socket option (level=%d, optname=%d)", level, optname);
+        RAISE_COMMON_ERROR(exception_type);
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
+ * SocketCommon_getoption_timeval - Get timeval socket option
+ * @fd: File descriptor
+ * @level: Option level (SOL_SOCKET)
+ * @optname: Option name (SO_RCVTIMEO, SO_SNDTIMEO)
+ * @tv: Output pointer for timeval structure
+ * @exception_type: Exception type to raise on failure
+ * Returns: 0 on success, -1 on failure
+ * Raises: Specified exception type on failure
+ * Thread-safe: Yes (operates on single fd)
+ */
+int SocketCommon_getoption_timeval(int fd, int level, int optname, struct timeval *tv, Except_T exception_type)
+{
+    socklen_t len = sizeof(*tv);
+
+    assert(fd >= 0);
+    assert(tv);
+
+    if (getsockopt(fd, level, optname, tv, &len) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to get socket timeout option (level=%d, optname=%d)", level, optname);
+        RAISE_COMMON_ERROR(exception_type);
+        return -1;
+    }
+
+    return 0;
 }

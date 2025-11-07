@@ -235,6 +235,8 @@
 #define SOCKET_SO_KEEPALIVE SO_KEEPALIVE
 #define SOCKET_SO_RCVTIMEO SO_RCVTIMEO
 #define SOCKET_SO_SNDTIMEO SO_SNDTIMEO
+#define SOCKET_SO_RCVBUF SO_RCVBUF
+#define SOCKET_SO_SNDBUF SO_SNDBUF
 /* SO_DOMAIN is Linux-specific - use getsockname() fallback on other platforms */
 #ifdef __linux__
 #define SOCKET_SO_DOMAIN SO_DOMAIN
