@@ -1284,11 +1284,7 @@ TEST(socket_bind_async_wildcard_uses_ai_passive)
 
         req = Socket_bind_async(dns, socket, NULL, 0);
 
-        while ((res = SocketDNS_getresult(dns, req)) == NULL)
-        {
-            usleep(10000);
-        }
-
+        res = SocketDNS_getresult(dns, req);
         ASSERT_NOT_NULL(res);
         ASSERT_NOT_NULL(res->ai_addr);
 
