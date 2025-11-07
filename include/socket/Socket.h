@@ -233,6 +233,72 @@ extern ssize_t Socket_sendvall(T socket, const struct iovec *iov, int iovcnt);
 extern ssize_t Socket_recvvall(T socket, struct iovec *iov, int iovcnt);
 
 /**
+ * Socket_sendfile - Zero-copy file-to-socket transfer
+ * @socket: Connected socket to send to
+ * @file_fd: File descriptor to read from (must be a regular file)
+ * @offset: File offset to start reading from (NULL for current position)
+ * @count: Number of bytes to transfer (0 for entire file from offset)
+ * Returns: Total bytes transferred (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Closed on EPIPE/ECONNRESET
+ * Raises: Socket_Failed on other errors
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Uses platform-specific zero-copy mechanism (sendfile/splice).
+ * Falls back to read/write loop on platforms without sendfile support.
+ * May transfer less than requested. Use Socket_sendfileall() for guaranteed complete transfer.
+ * Platform support:
+ * - Linux: Uses sendfile() system call
+ * - BSD/macOS: Uses sendfile() system call (different signature)
+ * - Other: Falls back to read/write loop
+ */
+extern ssize_t Socket_sendfile(T socket, int file_fd, off_t *offset, size_t count);
+
+/**
+ * Socket_sendfileall - Zero-copy file-to-socket transfer (handles partial transfers)
+ * @socket: Connected socket to send to
+ * @file_fd: File descriptor to read from (must be a regular file)
+ * @offset: File offset to start reading from (NULL for current position)
+ * @count: Number of bytes to transfer (0 for entire file from offset)
+ * Returns: Total bytes transferred (always equals count on success)
+ * Raises: Socket_Closed on EPIPE/ECONNRESET
+ * Raises: Socket_Failed on other errors
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Loops until all data is transferred or an error occurs.
+ * For non-blocking sockets, returns partial progress if would block.
+ * Uses platform-specific zero-copy mechanism when available.
+ */
+extern ssize_t Socket_sendfileall(T socket, int file_fd, off_t *offset, size_t count);
+
+/**
+ * Socket_sendmsg - Send message with ancillary data (sendmsg wrapper)
+ * @socket: Connected socket
+ * @msg: Message structure with data, address, and ancillary data
+ * @flags: Message flags (MSG_NOSIGNAL, MSG_DONTWAIT, etc.)
+ * Returns: Total bytes sent (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Closed on EPIPE/ECONNRESET
+ * Raises: Socket_Failed on other errors
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Allows sending data with control messages (CMSG) for advanced features
+ * like file descriptor passing, credentials, IP options, etc.
+ * May send less than requested. Use Socket_sendmsgall() for guaranteed complete send.
+ */
+extern ssize_t Socket_sendmsg(T socket, const struct msghdr *msg, int flags);
+
+/**
+ * Socket_recvmsg - Receive message with ancillary data (recvmsg wrapper)
+ * @socket: Connected socket
+ * @msg: Message structure for data, address, and ancillary data
+ * @flags: Message flags (MSG_DONTWAIT, MSG_PEEK, etc.)
+ * Returns: Total bytes received (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Closed on peer close (recv returns 0) or ECONNRESET
+ * Raises: Socket_Failed on other errors
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Allows receiving data with control messages (CMSG) for advanced features
+ * like file descriptor passing, credentials, IP options, etc.
+ * May receive less than requested. Use Socket_recvmsgall() for guaranteed complete receive.
+ */
+extern ssize_t Socket_recvmsg(T socket, struct msghdr *msg, int flags);
+
+/**
  * Socket_setnonblocking - Enable non-blocking mode
  * @socket: Socket to modify
  * Raises: Socket_Failed on error

@@ -18,6 +18,34 @@
 #define IOV_MAX 1024 /* Reasonable default, typically 1024 on Linux */
 #endif
 
+/* Zero-copy I/O platform detection */
+/* Linux sendfile() - available since Linux 2.2 */
+#if defined(__linux__)
+#define SOCKET_HAS_SENDFILE 1
+#define SOCKET_HAS_SPLICE 1
+#include <sys/sendfile.h>
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+/* BSD sendfile() - different signature */
+#define SOCKET_HAS_SENDFILE 1
+#define SOCKET_HAS_SPLICE 0
+#include <sys/socket.h>
+#include <sys/uio.h>
+#elif defined(__APPLE__) && defined(__MACH__)
+/* macOS sendfile() - similar to BSD */
+#define SOCKET_HAS_SENDFILE 1
+#define SOCKET_HAS_SPLICE 0
+#include <sys/socket.h>
+#include <sys/uio.h>
+#else
+/* Other platforms - fallback to read/write */
+#define SOCKET_HAS_SENDFILE 0
+#define SOCKET_HAS_SPLICE 0
+#endif
+
+/* sendmsg/recvmsg are standard POSIX - always available */
+#define SOCKET_HAS_SENDMSG 1
+#define SOCKET_HAS_RECVMSG 1
+
 /* Socket library configuration limits */
 
 /* Maximum number of connections in pool (can be overridden at compile time) */

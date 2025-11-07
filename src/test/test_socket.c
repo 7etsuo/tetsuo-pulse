@@ -5,6 +5,7 @@
  */
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -1359,6 +1360,227 @@ TEST(socket_recvvall_receives_all_into_multiple_buffers)
         ASSERT(memcmp(buf2, send_buf + sizeof(buf1), sizeof(buf2)) == 0);
         ASSERT(memcmp(buf3, send_buf + sizeof(buf1) + sizeof(buf2), sizeof(buf3)) == 0);
         ASSERT(memcmp(buf4, send_buf + sizeof(buf1) + sizeof(buf2) + sizeof(buf3), sizeof(buf4)) == 0);
+    EXCEPT(Socket_Failed)
+        (void)0;
+    EXCEPT(Socket_Closed)
+        (void)0;
+    END_TRY;
+
+    if (accepted)
+        Socket_free(&accepted);
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
+/* ==================== Zero-Copy I/O Tests ==================== */
+
+TEST(socket_sendfile_transfers_file_data)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted = NULL;
+    int file_fd = -1;
+    const char *test_file = "/tmp/socket_sendfile_test.txt";
+    const char *test_data = "Hello, Zero-Copy World!";
+    size_t test_data_len = strlen(test_data);
+
+    TRY
+        /* Create test file */
+        file_fd = open(test_file, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+        ASSERT(file_fd >= 0);
+        ASSERT_EQ((ssize_t)test_data_len, write(file_fd, test_data, test_data_len));
+        close(file_fd);
+        file_fd = -1;
+
+        /* Open file for reading */
+        file_fd = open(test_file, O_RDONLY);
+        ASSERT(file_fd >= 0);
+
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 1);
+        Socket_connect(client, "127.0.0.1", Socket_getlocalport(server));
+        accepted = Socket_accept(server);
+
+        /* Transfer file using zero-copy */
+        off_t offset = 0;
+        ssize_t sent = Socket_sendfile(client, file_fd, &offset, test_data_len);
+        ASSERT(sent > 0);
+
+        /* Receive data */
+        char recv_buf[256] = {0};
+        ssize_t received = Socket_recvall(accepted, recv_buf, sent);
+        ASSERT_EQ(sent, received);
+        ASSERT_EQ(0, memcmp(recv_buf, test_data, test_data_len));
+    EXCEPT(Socket_Failed)
+        (void)0;
+    EXCEPT(Socket_Closed)
+        (void)0;
+    END_TRY;
+
+    if (file_fd >= 0)
+        close(file_fd);
+    unlink(test_file);
+    if (accepted)
+        Socket_free(&accepted);
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
+TEST(socket_sendfileall_transfers_complete_file)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted = NULL;
+    int file_fd = -1;
+    const char *test_file = "/tmp/socket_sendfileall_test.txt";
+    char test_data[8192];
+    size_t test_data_len = sizeof(test_data);
+
+    TRY
+        /* Create test file with pattern */
+        for (size_t i = 0; i < test_data_len; i++)
+        {
+            test_data[i] = (char)(i % 256);
+        }
+
+        file_fd = open(test_file, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+        ASSERT(file_fd >= 0);
+        ASSERT_EQ((ssize_t)test_data_len, write(file_fd, test_data, test_data_len));
+        close(file_fd);
+        file_fd = -1;
+
+        /* Open file for reading */
+        file_fd = open(test_file, O_RDONLY);
+        ASSERT(file_fd >= 0);
+
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 1);
+        Socket_connect(client, "127.0.0.1", Socket_getlocalport(server));
+        accepted = Socket_accept(server);
+
+        /* Transfer entire file using zero-copy */
+        off_t offset = 0;
+        ssize_t sent = Socket_sendfileall(client, file_fd, &offset, test_data_len);
+        ASSERT_EQ((ssize_t)test_data_len, sent);
+
+        /* Receive all data */
+        char recv_buf[8192] = {0};
+        ssize_t received = Socket_recvall(accepted, recv_buf, test_data_len);
+        ASSERT_EQ((ssize_t)test_data_len, received);
+        ASSERT_EQ(0, memcmp(recv_buf, test_data, test_data_len));
+    EXCEPT(Socket_Failed)
+        (void)0;
+    EXCEPT(Socket_Closed)
+        (void)0;
+    END_TRY;
+
+    if (file_fd >= 0)
+        close(file_fd);
+    unlink(test_file);
+    if (accepted)
+        Socket_free(&accepted);
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
+TEST(socket_sendmsg_sends_message_with_iovec)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted = NULL;
+
+    TRY
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 1);
+        Socket_connect(client, "127.0.0.1", Socket_getlocalport(server));
+        accepted = Socket_accept(server);
+
+        /* Prepare scatter buffers */
+        char buf1[] = "Hello, ";
+        char buf2[] = "sendmsg";
+        char buf3[] = "!";
+        struct iovec iov[3];
+        iov[0].iov_base = buf1;
+        iov[0].iov_len = strlen(buf1);
+        iov[1].iov_base = buf2;
+        iov[1].iov_len = strlen(buf2);
+        iov[2].iov_base = buf3;
+        iov[2].iov_len = strlen(buf3);
+
+        struct msghdr msg = {0};
+        msg.msg_iov = iov;
+        msg.msg_iovlen = 3;
+
+        ssize_t sent = Socket_sendmsg(client, &msg, 0);
+        ASSERT(sent > 0);
+
+        /* Receive data */
+        char recv_buf[256] = {0};
+        ssize_t received = Socket_recvall(accepted, recv_buf, sent);
+        ASSERT_EQ(sent, received);
+        ASSERT_EQ(0, strcmp(recv_buf, "Hello, sendmsg!"));
+    EXCEPT(Socket_Failed)
+        (void)0;
+    EXCEPT(Socket_Closed)
+        (void)0;
+    END_TRY;
+
+    if (accepted)
+        Socket_free(&accepted);
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
+TEST(socket_recvmsg_receives_message_with_iovec)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted = NULL;
+
+    TRY
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 1);
+        Socket_connect(client, "127.0.0.1", Socket_getlocalport(server));
+        accepted = Socket_accept(server);
+
+        /* Send data */
+        const char *msg = "Hello, recvmsg!";
+        ssize_t sent = Socket_sendall(client, msg, strlen(msg));
+        ASSERT_EQ((ssize_t)strlen(msg), sent);
+
+        /* Receive into scatter buffers using recvmsg */
+        char buf1[8] = {0};
+        char buf2[8] = {0};
+        struct iovec iov[2];
+        iov[0].iov_base = buf1;
+        iov[0].iov_len = sizeof(buf1) - 1;
+        iov[1].iov_base = buf2;
+        iov[1].iov_len = sizeof(buf2) - 1;
+
+        struct msghdr msg_hdr = {0};
+        msg_hdr.msg_iov = iov;
+        msg_hdr.msg_iovlen = 2;
+
+        ssize_t received = Socket_recvmsg(accepted, &msg_hdr, 0);
+        ASSERT(received > 0);
+        /* recvmsg may receive less than requested, so verify we got at least some data */
+        ASSERT(received <= (ssize_t)strlen(msg));
+
+        /* Verify total data received matches - recvmsg fills buffers sequentially */
+        /* Calculate how much was received in each buffer */
+        size_t buf1_received = (received > (ssize_t)(sizeof(buf1) - 1)) ? (sizeof(buf1) - 1) : (size_t)received;
+        size_t buf2_received = (received > (ssize_t)(sizeof(buf1) - 1)) ? (size_t)received - buf1_received : 0;
+
+        char combined[16] = {0};
+        memcpy(combined, buf1, buf1_received);
+        if (buf2_received > 0)
+            memcpy(combined + buf1_received, buf2, buf2_received);
+        /* Verify received data matches the sent message */
+        ASSERT_EQ(0, memcmp(combined, msg, (size_t)received));
     EXCEPT(Socket_Failed)
         (void)0;
     EXCEPT(Socket_Closed)
