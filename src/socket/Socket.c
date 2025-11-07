@@ -1415,6 +1415,129 @@ int Socket_getsndbuf(T socket)
     return bufsize;
 }
 
+/**
+ * Socket_isconnected - Check if socket is connected
+ * @socket: Socket to check
+ * Returns: 1 if connected, 0 if not connected
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Uses getpeername() to determine connection state.
+ * For TCP sockets, checks if peer address is available.
+ */
+int Socket_isconnected(T socket)
+{
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof(addr);
+
+    assert(socket);
+
+    /* Check if we have cached peer address */
+    if (socket->peeraddr != NULL)
+        return 1;
+
+    /* Use getpeername() to check connection state */
+    if (getpeername(socket->fd, (struct sockaddr *)&addr, &len) == 0)
+    {
+        /* Socket is connected - update cached peer info if not already set */
+        if (socket->peeraddr == NULL && socket->arena != NULL)
+        {
+            setup_peer_info(socket, (struct sockaddr *)&addr, len);
+        }
+        return 1;
+    }
+
+    /* Not connected or error occurred */
+    if (errno == ENOTCONN)
+        return 0;
+
+    /* Other errors (EBADF, etc.) - treat as not connected */
+    return 0;
+}
+
+/**
+ * Socket_isbound - Check if socket is bound to an address
+ * @socket: Socket to check
+ * Returns: 1 if bound, 0 if not bound
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Uses getsockname() to determine binding state.
+ * A socket is bound if getsockname() succeeds and returns a valid address.
+ * Wildcard addresses (0.0.0.0 or ::) still count as bound.
+ */
+int Socket_isbound(T socket)
+{
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof(addr);
+
+    assert(socket);
+
+    /* Check if we have cached local address */
+    if (socket->localaddr != NULL)
+        return 1;
+
+    /* Use getsockname() to check binding state */
+    if (getsockname(socket->fd, (struct sockaddr *)&addr, &len) == 0)
+    {
+        /* Socket is bound if getsockname succeeds */
+        /* For IPv4/IPv6, check if we have a valid port (address can be wildcard) */
+        if (addr.ss_family == AF_INET)
+        {
+            struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
+            if (sin->sin_port != 0)
+                return 1;
+        }
+        else if (addr.ss_family == AF_INET6)
+        {
+            struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&addr;
+            if (sin6->sin6_port != 0)
+                return 1;
+        }
+        else if (addr.ss_family == AF_UNIX)
+        {
+            /* Unix domain sockets are bound if getsockname succeeds */
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Socket_islistening - Check if socket is listening for connections
+ * @socket: Socket to check
+ * Returns: 1 if listening, 0 if not listening
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Checks if socket is bound and not connected.
+ * A socket is listening if it's bound but has no peer address.
+ */
+int Socket_islistening(T socket)
+{
+    assert(socket);
+
+    /* Socket must be bound to be listening */
+    if (!Socket_isbound(socket))
+        return 0;
+
+    /* Socket must not be connected to be listening */
+    if (Socket_isconnected(socket))
+        return 0;
+
+    /* Additional check: verify socket is actually in listening state
+     * by checking if accept() would work (non-blocking check) */
+    {
+        int error = 0;
+        socklen_t error_len = sizeof(error);
+
+        /* Check SO_ERROR - listening sockets should have no error */
+        if (getsockopt(socket->fd, SOCKET_SOL_SOCKET, SO_ERROR, &error, &error_len) == 0)
+        {
+            /* If there's a connection error, socket might be in wrong state */
+            if (error != 0 && error != ENOTCONN)
+                return 0;
+        }
+    }
+
+    return 1;
+}
+
 int Socket_fd(const T socket)
 {
     assert(socket);

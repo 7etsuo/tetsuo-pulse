@@ -631,6 +631,128 @@ TEST(socket_getsndbuf_returns_positive_value)
     Socket_free(&socket);
 }
 
+/* ==================== Connection State Query Tests ==================== */
+
+TEST(socket_isbound_returns_false_for_new_socket)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL(socket);
+
+    ASSERT_EQ(0, Socket_isbound(socket));
+
+    Socket_free(&socket);
+}
+
+TEST(socket_isbound_returns_true_after_bind)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL(socket);
+
+    Socket_bind(socket, "127.0.0.1", 0);
+    ASSERT_EQ(1, Socket_isbound(socket));
+
+    Socket_free(&socket);
+}
+
+TEST(socket_isconnected_returns_false_for_new_socket)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL(socket);
+
+    ASSERT_EQ(0, Socket_isconnected(socket));
+
+    Socket_free(&socket);
+}
+
+TEST(socket_isconnected_returns_true_after_connect)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 1);
+    Socket_setnonblocking(server);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+    int port = ntohs(addr.sin_port);
+
+    Socket_connect(client, "127.0.0.1", port);
+    usleep(10000);
+
+    ASSERT_EQ(1, Socket_isconnected(client));
+
+    Socket_T accepted = Socket_accept(server);
+    if (accepted)
+    {
+        ASSERT_EQ(1, Socket_isconnected(accepted));
+        Socket_free(&accepted);
+    }
+    EXCEPT(Socket_Failed)
+    (void)0;
+    END_TRY;
+
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
+TEST(socket_islistening_returns_false_for_new_socket)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL(socket);
+
+    ASSERT_EQ(0, Socket_islistening(socket));
+
+    Socket_free(&socket);
+}
+
+TEST(socket_islistening_returns_true_after_listen)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL(socket);
+
+    Socket_bind(socket, "127.0.0.1", 0);
+    Socket_listen(socket, 5);
+    ASSERT_EQ(1, Socket_islistening(socket));
+
+    Socket_free(&socket);
+}
+
+TEST(socket_islistening_returns_false_after_connect)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 1);
+    ASSERT_EQ(1, Socket_islistening(server));
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+    int port = ntohs(addr.sin_port);
+
+    Socket_connect(client, "127.0.0.1", port);
+    usleep(10000);
+
+    /* Server is still listening (can accept more connections) */
+    ASSERT_EQ(1, Socket_islistening(server));
+    EXCEPT(Socket_Failed)
+    (void)0;
+    END_TRY;
+
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
 /* ==================== Close-on-Exec Tests ==================== */
 
 TEST(socket_new_sets_cloexec_by_default)

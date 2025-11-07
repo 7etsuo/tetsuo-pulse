@@ -1142,4 +1142,73 @@ void SocketDgram_setcloexec(T socket, int enable)
     }
 }
 
+/**
+ * SocketDgram_isconnected - Check if datagram socket is connected
+ * @socket: Socket to check
+ * Returns: 1 if connected, 0 if not connected
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Uses getpeername() to determine connection state.
+ * For UDP sockets, "connected" means a default destination is set.
+ */
+int SocketDgram_isconnected(T socket)
+{
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof(addr);
+
+    assert(socket);
+
+    /* Use getpeername() to check connection state */
+    if (getpeername(socket->fd, (struct sockaddr *)&addr, &len) == 0)
+        return 1;
+
+    /* Not connected or error occurred */
+    if (errno == ENOTCONN)
+        return 0;
+
+    /* Other errors (EBADF, etc.) - treat as not connected */
+    return 0;
+}
+
+/**
+ * SocketDgram_isbound - Check if datagram socket is bound to an address
+ * @socket: Socket to check
+ * Returns: 1 if bound, 0 if not bound
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Uses getsockname() to determine binding state.
+ * A socket is bound if getsockname() succeeds and returns a valid address.
+ * Wildcard addresses (0.0.0.0 or ::) still count as bound.
+ */
+int SocketDgram_isbound(T socket)
+{
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof(addr);
+
+    assert(socket);
+
+    /* Check if we have cached local address */
+    if (socket->localaddr != NULL)
+        return 1;
+
+    /* Use getsockname() to check binding state */
+    if (getsockname(socket->fd, (struct sockaddr *)&addr, &len) == 0)
+    {
+        /* Socket is bound if getsockname succeeds */
+        /* For IPv4/IPv6, check if we have a valid port (address can be wildcard) */
+        if (addr.ss_family == AF_INET)
+        {
+            struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
+            if (sin->sin_port != 0)
+                return 1;
+        }
+        else if (addr.ss_family == AF_INET6)
+        {
+            struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&addr;
+            if (sin6->sin6_port != 0)
+                return 1;
+        }
+    }
+
+    return 0;
+}
+
 #undef T

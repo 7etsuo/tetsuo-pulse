@@ -223,6 +223,37 @@ extern int Socket_getrcvbuf(T socket);
 extern int Socket_getsndbuf(T socket);
 
 /**
+ * Socket_isconnected - Check if socket is connected
+ * @socket: Socket to check
+ * Returns: 1 if connected, 0 if not connected
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Uses getpeername() to determine connection state.
+ * For TCP sockets, checks if peer address is available.
+ */
+extern int Socket_isconnected(T socket);
+
+/**
+ * Socket_isbound - Check if socket is bound to an address
+ * @socket: Socket to check
+ * Returns: 1 if bound, 0 if not bound
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Uses getsockname() to determine binding state.
+ * A socket is bound if getsockname() succeeds and returns a valid address.
+ * Wildcard addresses (0.0.0.0 or ::) still count as bound.
+ */
+extern int Socket_isbound(T socket);
+
+/**
+ * Socket_islistening - Check if socket is listening for connections
+ * @socket: Socket to check
+ * Returns: 1 if listening, 0 if not listening
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Checks if socket is bound and not connected.
+ * A socket is listening if it's bound but has no peer address.
+ */
+extern int Socket_islistening(T socket);
+
+/**
  * Socket_shutdown - Disable further sends and/or receives
  * @socket: Connected socket
  * @how: Shutdown mode (SHUT_RD, SHUT_WR, or SHUT_RDWR)
