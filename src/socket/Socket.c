@@ -285,6 +285,128 @@ static T initialize_socket_structure(T socket, int fd)
 }
 
 /**
+ * SocketPair_new - Create a pair of connected Unix domain sockets
+ * @type: Socket type (SOCK_STREAM or SOCK_DGRAM)
+ * @socket1: Output - first socket of the pair
+ * @socket2: Output - second socket of the pair
+ * Raises: Socket_Failed on error
+ * Thread-safe: Yes (creates new sockets)
+ * Note: Creates two connected Unix domain sockets for IPC.
+ * Both sockets are ready to use - no bind/connect needed.
+ * Typically used for parent-child or thread communication.
+ * Only supports AF_UNIX (Unix domain sockets).
+ */
+void SocketPair_new(int type, T *socket1, T *socket2)
+{
+    int sv[2];
+    T sock1 = NULL;
+    T sock2 = NULL;
+    Arena_T arena1 = NULL;
+    Arena_T arena2 = NULL;
+
+    assert(socket1);
+    assert(socket2);
+
+    /* Validate socket type */
+    if (type != SOCK_STREAM && type != SOCK_DGRAM)
+    {
+        SOCKET_ERROR_MSG("Invalid socket type for socketpair: %d (must be SOCK_STREAM or SOCK_DGRAM)", type);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    /* Create socket pair */
+#if SOCKET_HAS_SOCK_CLOEXEC
+    if (socketpair(AF_UNIX, type | SOCKET_SOCK_CLOEXEC, 0, sv) < 0)
+#else
+    if (socketpair(AF_UNIX, type, 0, sv) < 0)
+#endif
+    {
+        SOCKET_ERROR_FMT("Failed to create socket pair (type=%d)", type);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    TRY
+        /* Create arenas for both sockets */
+        arena1 = Arena_new();
+        if (!arena1)
+        {
+            int saved_errno = errno;
+            SAFE_CLOSE(sv[0]);
+            SAFE_CLOSE(sv[1]);
+            errno = saved_errno;
+            SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
+            RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+
+        arena2 = Arena_new();
+        if (!arena2)
+        {
+            int saved_errno = errno;
+            SAFE_CLOSE(sv[0]);
+            SAFE_CLOSE(sv[1]);
+            Arena_dispose(&arena1);
+            errno = saved_errno;
+            SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
+            RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+
+        /* Allocate socket structures */
+        sock1 = allocate_socket_structure(sv[0]);
+        sock1->arena = arena1;
+        arena1 = NULL; /* Transfer ownership */
+
+        sock2 = allocate_socket_structure(sv[1]);
+        sock2->arena = arena2;
+        arena2 = NULL; /* Transfer ownership */
+
+        /* Initialize both sockets */
+        initialize_socket_structure(sock1, sv[0]);
+        initialize_socket_structure(sock2, sv[1]);
+
+        /* Mark sockets as connected (socketpair creates connected sockets) */
+        /* For Unix domain sockets, we can set a placeholder peer address */
+        sock1->peeraddr = NULL; /* Will be set if needed via getpeername */
+        sock2->peeraddr = NULL;
+
+        *socket1 = sock1;
+        *socket2 = sock2;
+        sock1 = NULL; /* Transfer ownership */
+        sock2 = NULL; /* Transfer ownership */
+
+    EXCEPT(Socket_Failed)
+        /* Cleanup on error */
+        if (sock1)
+        {
+            SAFE_CLOSE(sv[0]);
+            socket_live_decrement(); /* Decrement count before freeing */
+            free(sock1);
+        }
+        else if (sv[0] >= 0)
+        {
+            SAFE_CLOSE(sv[0]);
+        }
+
+        if (sock2)
+        {
+            SAFE_CLOSE(sv[1]);
+            socket_live_decrement(); /* Decrement count before freeing */
+            free(sock2);
+        }
+        else if (sv[1] >= 0)
+        {
+            SAFE_CLOSE(sv[1]);
+        }
+
+        if (arena1)
+            Arena_dispose(&arena1);
+        if (arena2)
+            Arena_dispose(&arena2);
+
+        RERAISE;
+    END_TRY;
+}
+
+/**
  * create_socket_arena - Create arena for socket-related allocations
  * @fd: File descriptor for cleanup on failure
  * @sock: Socket structure for cleanup on failure
