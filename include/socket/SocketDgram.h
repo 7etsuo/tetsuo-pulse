@@ -169,6 +169,60 @@ extern ssize_t SocketDgram_sendall(T socket, const void *buf, size_t len);
 extern ssize_t SocketDgram_recvall(T socket, void *buf, size_t len);
 
 /**
+ * SocketDgram_sendv - Scatter/gather send (writev wrapper)
+ * @socket: Connected socket
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures (> 0, <= IOV_MAX)
+ * Returns: Total bytes sent (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Sends data from multiple buffers in a single system call.
+ * May send less than requested. Use SocketDgram_sendvall() for guaranteed complete send.
+ */
+extern ssize_t SocketDgram_sendv(T socket, const struct iovec *iov, int iovcnt);
+
+/**
+ * SocketDgram_recvv - Scatter/gather receive (readv wrapper)
+ * @socket: Connected socket
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures (> 0, <= IOV_MAX)
+ * Returns: Total bytes received (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Receives data into multiple buffers in a single system call.
+ * May receive less than requested. Use SocketDgram_recvvall() for guaranteed complete receive.
+ */
+extern ssize_t SocketDgram_recvv(T socket, struct iovec *iov, int iovcnt);
+
+/**
+ * SocketDgram_sendvall - Scatter/gather send all (handles partial sends)
+ * @socket: Connected socket
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures (> 0, <= IOV_MAX)
+ * Returns: Total bytes sent (always equals sum of all iov_len on success)
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Loops until all data from all buffers is sent or an error occurs.
+ * For non-blocking sockets, returns partial progress if would block.
+ * Use SocketDgram_isconnected() to verify connection state before calling.
+ */
+extern ssize_t SocketDgram_sendvall(T socket, const struct iovec *iov, int iovcnt);
+
+/**
+ * SocketDgram_recvvall - Scatter/gather receive all (handles partial receives)
+ * @socket: Connected socket
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures (> 0, <= IOV_MAX)
+ * Returns: Total bytes received (always equals sum of all iov_len on success)
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Loops until all requested data is received into all buffers or an error occurs.
+ * For non-blocking sockets, returns partial progress if would block.
+ * Use SocketDgram_isconnected() to verify connection state before calling.
+ */
+extern ssize_t SocketDgram_recvvall(T socket, struct iovec *iov, int iovcnt);
+
+/**
  * SocketDgram_setnonblocking - Enable non-blocking mode
  * @socket: Socket to modify
  * Raises: SocketDgram_Failed on error

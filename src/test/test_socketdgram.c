@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <unistd.h>
 
 #include "test/Test.h"
@@ -872,6 +873,160 @@ TEST(socketdgram_recvall_receives_all_data)
         ssize_t received = SocketDgram_recvall(receiver, recv_buf, strlen(msg));
         ASSERT_EQ((ssize_t)strlen(msg), received);
         ASSERT_EQ(0, strcmp(msg, recv_buf));
+    EXCEPT(SocketDgram_Failed)
+        (void)0;
+    END_TRY;
+
+    SocketDgram_free(&sender);
+    SocketDgram_free(&receiver);
+}
+
+/* ==================== Scatter/Gather I/O Tests ==================== */
+
+TEST(socketdgram_sendv_sends_from_multiple_buffers)
+{
+    setup_signals();
+    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
+    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+
+    TRY
+        SocketDgram_bind(receiver, "127.0.0.1", 0);
+        struct sockaddr_in addr;
+        socklen_t len = sizeof(addr);
+        getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
+        int port = ntohs(addr.sin_port);
+
+        SocketDgram_connect(sender, "127.0.0.1", port);
+        SocketDgram_connect(receiver, "127.0.0.1", SocketDgram_getlocalport(sender));
+
+        /* Prepare scatter buffers */
+        char buf1[] = "Hello, ";
+        char buf2[] = "UDP";
+        char buf3[] = " World!";
+        struct iovec iov[3];
+        iov[0].iov_base = buf1;
+        iov[0].iov_len = strlen(buf1);
+        iov[1].iov_base = buf2;
+        iov[1].iov_len = strlen(buf2);
+        iov[2].iov_base = buf3;
+        iov[2].iov_len = strlen(buf3);
+
+        ssize_t sent = SocketDgram_sendv(sender, iov, 3);
+        ASSERT(sent > 0);
+
+        /* Receive all data */
+        char recv_buf[256] = {0};
+        ssize_t received = SocketDgram_recvall(receiver, recv_buf, sent);
+        ASSERT_EQ(sent, received);
+        ASSERT_EQ(0, strcmp(recv_buf, "Hello, UDP World!"));
+    EXCEPT(SocketDgram_Failed)
+        (void)0;
+    END_TRY;
+
+    SocketDgram_free(&sender);
+    SocketDgram_free(&receiver);
+}
+
+TEST(socketdgram_recvv_receives_into_multiple_buffers)
+{
+    setup_signals();
+    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
+    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+
+    TRY
+        SocketDgram_bind(receiver, "127.0.0.1", 0);
+        struct sockaddr_in addr;
+        socklen_t len = sizeof(addr);
+        getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
+        int port = ntohs(addr.sin_port);
+
+        SocketDgram_connect(sender, "127.0.0.1", port);
+        SocketDgram_connect(receiver, "127.0.0.1", SocketDgram_getlocalport(sender));
+
+        /* Send data */
+        const char *msg = "UDP Scatter Test";
+        ssize_t sent = SocketDgram_sendall(sender, msg, strlen(msg));
+        ASSERT_EQ((ssize_t)strlen(msg), sent);
+
+        /* Receive into scatter buffers */
+        char buf1[5] = {0};
+        char buf2[6] = {0};
+        char buf3[6] = {0};
+        struct iovec iov[3];
+        iov[0].iov_base = buf1;
+        iov[0].iov_len = sizeof(buf1) - 1;
+        iov[1].iov_base = buf2;
+        iov[1].iov_len = sizeof(buf2) - 1;
+        iov[2].iov_base = buf3;
+        iov[2].iov_len = sizeof(buf3) - 1;
+
+        ssize_t received = SocketDgram_recvv(receiver, iov, 3);
+        ASSERT(received > 0);
+        /* readv may receive less than requested, so verify we got at least some data */
+        ASSERT(received <= (ssize_t)strlen(msg));
+
+        /* Calculate how much was received in each buffer */
+        size_t buf1_received = (received > (ssize_t)(sizeof(buf1) - 1)) ? (sizeof(buf1) - 1) : (size_t)received;
+        size_t remaining = (received > (ssize_t)(sizeof(buf1) - 1)) ? (size_t)received - buf1_received : 0;
+        size_t buf2_received = (remaining > (sizeof(buf2) - 1)) ? (sizeof(buf2) - 1) : remaining;
+        size_t buf3_received = (remaining > (sizeof(buf2) - 1)) ? remaining - buf2_received : 0;
+
+        char combined[17] = {0};
+        memcpy(combined, buf1, buf1_received);
+        if (buf2_received > 0)
+            memcpy(combined + buf1_received, buf2, buf2_received);
+        if (buf3_received > 0)
+            memcpy(combined + buf1_received + buf2_received, buf3, buf3_received);
+        /* Verify received data matches the sent message */
+        ASSERT_EQ(0, memcmp(combined, msg, (size_t)received));
+    EXCEPT(SocketDgram_Failed)
+        (void)0;
+    END_TRY;
+
+    SocketDgram_free(&sender);
+    SocketDgram_free(&receiver);
+}
+
+TEST(socketdgram_sendvall_sends_all_from_multiple_buffers)
+{
+    setup_signals();
+    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
+    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+
+    TRY
+        SocketDgram_bind(receiver, "127.0.0.1", 0);
+        struct sockaddr_in addr;
+        socklen_t len = sizeof(addr);
+        getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
+        int port = ntohs(addr.sin_port);
+
+        SocketDgram_connect(sender, "127.0.0.1", port);
+        SocketDgram_connect(receiver, "127.0.0.1", SocketDgram_getlocalport(sender));
+
+        /* Prepare scatter buffers */
+        char buf1[512];
+        char buf2[512];
+        memset(buf1, 'A', sizeof(buf1));
+        memset(buf2, 'B', sizeof(buf2));
+
+        struct iovec iov[2];
+        iov[0].iov_base = buf1;
+        iov[0].iov_len = sizeof(buf1);
+        iov[1].iov_base = buf2;
+        iov[1].iov_len = sizeof(buf2);
+
+        size_t total_len = sizeof(buf1) + sizeof(buf2);
+        ssize_t sent = SocketDgram_sendvall(sender, iov, 2);
+        ASSERT_EQ((ssize_t)total_len, sent);
+
+        /* Receive all data */
+        char recv_buf[1024] = {0};
+        ssize_t received = SocketDgram_recvall(receiver, recv_buf, total_len);
+        ASSERT_EQ((ssize_t)total_len, received);
+
+        /* Verify data */
+        ASSERT(memcmp(recv_buf, buf1, sizeof(buf1)) == 0);
+        ASSERT(memcmp(recv_buf + sizeof(buf1), buf2, sizeof(buf2)) == 0);
     EXCEPT(SocketDgram_Failed)
         (void)0;
     END_TRY;

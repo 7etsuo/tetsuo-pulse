@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -1148,6 +1149,216 @@ TEST(socket_sendall_handles_partial_sends)
         ssize_t received = Socket_recvall(accepted, recv_buf, strlen(msg));
         ASSERT_EQ((ssize_t)strlen(msg), received);
         ASSERT_EQ(0, strcmp(msg, recv_buf));
+    EXCEPT(Socket_Failed)
+        (void)0;
+    EXCEPT(Socket_Closed)
+        (void)0;
+    END_TRY;
+
+    if (accepted)
+        Socket_free(&accepted);
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
+/* ==================== Scatter/Gather I/O Tests ==================== */
+
+TEST(socket_sendv_sends_from_multiple_buffers)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted = NULL;
+
+    TRY
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 1);
+        Socket_connect(client, "127.0.0.1", Socket_getlocalport(server));
+        accepted = Socket_accept(server);
+
+        /* Prepare scatter buffers */
+        char buf1[] = "Hello, ";
+        char buf2[] = "World!";
+        char buf3[] = " Test";
+        struct iovec iov[3];
+        iov[0].iov_base = buf1;
+        iov[0].iov_len = strlen(buf1);
+        iov[1].iov_base = buf2;
+        iov[1].iov_len = strlen(buf2);
+        iov[2].iov_base = buf3;
+        iov[2].iov_len = strlen(buf3);
+
+        ssize_t sent = Socket_sendv(client, iov, 3);
+        ASSERT(sent > 0);
+
+        /* Receive all data */
+        char recv_buf[256] = {0};
+        ssize_t received = Socket_recvall(accepted, recv_buf, sent);
+        ASSERT_EQ(sent, received);
+        ASSERT_EQ(0, strcmp(recv_buf, "Hello, World! Test"));
+    EXCEPT(Socket_Failed)
+        (void)0;
+    EXCEPT(Socket_Closed)
+        (void)0;
+    END_TRY;
+
+    if (accepted)
+        Socket_free(&accepted);
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
+TEST(socket_recvv_receives_into_multiple_buffers)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted = NULL;
+
+    TRY
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 1);
+        Socket_connect(client, "127.0.0.1", Socket_getlocalport(server));
+        accepted = Socket_accept(server);
+
+        /* Send data */
+        const char *msg = "Hello, World!";
+        ssize_t sent = Socket_sendall(client, msg, strlen(msg));
+        ASSERT_EQ((ssize_t)strlen(msg), sent);
+
+        /* Receive into scatter buffers */
+        char buf1[8] = {0};
+        char buf2[6] = {0};
+        struct iovec iov[2];
+        iov[0].iov_base = buf1;
+        iov[0].iov_len = sizeof(buf1) - 1;
+        iov[1].iov_base = buf2;
+        iov[1].iov_len = sizeof(buf2) - 1;
+
+        ssize_t received = Socket_recvv(accepted, iov, 2);
+        ASSERT(received > 0);
+        /* readv may receive less than requested, so verify we got at least some data */
+        ASSERT(received <= (ssize_t)strlen(msg));
+
+        /* Verify total data received matches - readv fills buffers sequentially */
+        /* Calculate how much was received in each buffer */
+        size_t buf1_received = (received > (ssize_t)(sizeof(buf1) - 1)) ? (sizeof(buf1) - 1) : (size_t)received;
+        size_t buf2_received = (received > (ssize_t)(sizeof(buf1) - 1)) ? (size_t)received - buf1_received : 0;
+
+        char combined[14] = {0};
+        memcpy(combined, buf1, buf1_received);
+        if (buf2_received > 0)
+            memcpy(combined + buf1_received, buf2, buf2_received);
+        /* Verify received data matches the sent message */
+        ASSERT_EQ(0, memcmp(combined, msg, (size_t)received));
+    EXCEPT(Socket_Failed)
+        (void)0;
+    EXCEPT(Socket_Closed)
+        (void)0;
+    END_TRY;
+
+    if (accepted)
+        Socket_free(&accepted);
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
+TEST(socket_sendvall_sends_all_from_multiple_buffers)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted = NULL;
+
+    TRY
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 1);
+        Socket_connect(client, "127.0.0.1", Socket_getlocalport(server));
+        accepted = Socket_accept(server);
+
+        /* Prepare scatter buffers */
+        char buf1[1024];
+        char buf2[1024];
+        char buf3[1024];
+        memset(buf1, 'A', sizeof(buf1));
+        memset(buf2, 'B', sizeof(buf2));
+        memset(buf3, 'C', sizeof(buf3));
+
+        struct iovec iov[3];
+        iov[0].iov_base = buf1;
+        iov[0].iov_len = sizeof(buf1);
+        iov[1].iov_base = buf2;
+        iov[1].iov_len = sizeof(buf2);
+        iov[2].iov_base = buf3;
+        iov[2].iov_len = sizeof(buf3);
+
+        size_t total_len = sizeof(buf1) + sizeof(buf2) + sizeof(buf3);
+        ssize_t sent = Socket_sendvall(client, iov, 3);
+        ASSERT_EQ((ssize_t)total_len, sent);
+
+        /* Receive all data */
+        char recv_buf[3072] = {0};
+        ssize_t received = Socket_recvall(accepted, recv_buf, total_len);
+        ASSERT_EQ((ssize_t)total_len, received);
+
+        /* Verify data */
+        ASSERT(memcmp(recv_buf, buf1, sizeof(buf1)) == 0);
+        ASSERT(memcmp(recv_buf + sizeof(buf1), buf2, sizeof(buf2)) == 0);
+        ASSERT(memcmp(recv_buf + sizeof(buf1) + sizeof(buf2), buf3, sizeof(buf3)) == 0);
+    EXCEPT(Socket_Failed)
+        (void)0;
+    EXCEPT(Socket_Closed)
+        (void)0;
+    END_TRY;
+
+    if (accepted)
+        Socket_free(&accepted);
+    Socket_free(&server);
+    Socket_free(&client);
+}
+
+TEST(socket_recvvall_receives_all_into_multiple_buffers)
+{
+    setup_signals();
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted = NULL;
+
+    TRY
+        Socket_bind(server, "127.0.0.1", 0);
+        Socket_listen(server, 1);
+        Socket_connect(client, "127.0.0.1", Socket_getlocalport(server));
+        accepted = Socket_accept(server);
+
+        /* Send data */
+        char send_buf[2048];
+        memset(send_buf, 'X', sizeof(send_buf));
+        ssize_t sent = Socket_sendall(client, send_buf, sizeof(send_buf));
+        ASSERT_EQ((ssize_t)sizeof(send_buf), sent);
+
+        /* Receive into scatter buffers */
+        char buf1[512] = {0};
+        char buf2[512] = {0};
+        char buf3[512] = {0};
+        char buf4[512] = {0};
+        struct iovec iov[4];
+        iov[0].iov_base = buf1;
+        iov[0].iov_len = sizeof(buf1);
+        iov[1].iov_base = buf2;
+        iov[1].iov_len = sizeof(buf2);
+        iov[2].iov_base = buf3;
+        iov[2].iov_len = sizeof(buf3);
+        iov[3].iov_base = buf4;
+        iov[3].iov_len = sizeof(buf4);
+
+        ssize_t received = Socket_recvvall(accepted, iov, 4);
+        ASSERT_EQ((ssize_t)sizeof(send_buf), received);
+
+        /* Verify all buffers filled */
+        ASSERT(memcmp(buf1, send_buf, sizeof(buf1)) == 0);
+        ASSERT(memcmp(buf2, send_buf + sizeof(buf1), sizeof(buf2)) == 0);
+        ASSERT(memcmp(buf3, send_buf + sizeof(buf1) + sizeof(buf2), sizeof(buf3)) == 0);
+        ASSERT(memcmp(buf4, send_buf + sizeof(buf1) + sizeof(buf2) + sizeof(buf3), sizeof(buf4)) == 0);
     EXCEPT(Socket_Failed)
         (void)0;
     EXCEPT(Socket_Closed)
