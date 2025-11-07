@@ -1352,6 +1352,36 @@ int SocketDNS_geterror(T dns, Request_T req)
     return error;
 }
 
+Request_T SocketDNS_create_completed_request(T dns, struct addrinfo *result, int port)
+{
+    struct Request_T *req;
+
+    assert(dns);
+    assert(result);
+
+    req = allocate_request_structure(dns);
+    req->host = NULL;
+    req->port = port;
+    req->callback = NULL;
+    req->callback_data = NULL;
+    req->state = REQ_COMPLETE;
+    req->result = result;
+    req->error = 0;
+    req->queue_next = NULL;
+    req->hash_next = NULL;
+    clock_gettime(CLOCK_MONOTONIC, &req->submit_time);
+    req->timeout_override_ms = -1;
+
+    pthread_mutex_lock(&dns->mutex);
+    hash_table_insert(dns, req);
+    SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_COMPLETED, 1);
+    signal_completion(dns);
+    pthread_cond_broadcast(&dns->result_cond);
+    pthread_mutex_unlock(&dns->mutex);
+
+    return (Request_T)req;
+}
+
 void SocketDNS_request_settimeout(T dns, Request_T req, int timeout_ms)
 {
     struct Request_T *r = (struct Request_T *)req;

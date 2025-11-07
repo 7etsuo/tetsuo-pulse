@@ -210,6 +210,20 @@ extern int SocketDNS_geterror(T dns, Request_T req);
  */
 extern void SocketDNS_request_settimeout(T dns, Request_T req, int timeout_ms);
 
+/**
+ * SocketDNS_create_completed_request - Create a completed request from pre-resolved addrinfo
+ * @dns: DNS resolver instance
+ * @result: Pre-resolved addrinfo result (caller transfers ownership)
+ * @port: Port number
+ * Returns: Request handle for completed request
+ * Raises: SocketDNS_Failed on allocation failure
+ * Thread-safe: Yes - protected by internal mutex
+ * Creates a request that is already marked as complete with the provided result.
+ * Useful for synchronous resolution (e.g., wildcard bind) that doesn't need async DNS.
+ * The caller transfers ownership of the addrinfo result to the request.
+ */
+extern Request_T SocketDNS_create_completed_request(T dns, struct addrinfo *result, int port);
+
 #undef T
 #undef Request_T
 #endif

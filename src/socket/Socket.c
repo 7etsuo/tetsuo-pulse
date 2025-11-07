@@ -1427,6 +1427,8 @@ int Socket_getpeergid(const T socket)
 
 SocketDNS_Request_T Socket_bind_async(SocketDNS_T dns, T socket, const char *host, int port)
 {
+    struct addrinfo hints, *res = NULL;
+
     assert(dns);
     assert(socket);
 
@@ -1443,7 +1445,17 @@ SocketDNS_Request_T Socket_bind_async(SocketDNS_T dns, T socket, const char *hos
         host = NULL;
     }
 
-    /* Start async DNS resolution - SocketDNS_resolve now accepts NULL host */
+    /* For wildcard bind (NULL host), resolve synchronously and create completed request */
+    if (host == NULL)
+    {
+        setup_bind_hints(&hints);
+        if (SocketCommon_resolve_address(NULL, port, &hints, &res, Socket_Failed, SOCKET_AF_UNSPEC, 1) != 0)
+            RAISE_SOCKET_ERROR(Socket_Failed);
+
+        return SocketDNS_create_completed_request(dns, res, port);
+    }
+
+    /* For non-wildcard hosts, use async DNS resolution */
     {
         SocketDNS_Request_T req = SocketDNS_resolve(dns, host, port, NULL, NULL);
         if (socket->timeouts.dns_timeout_ms > 0)
