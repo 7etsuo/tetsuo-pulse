@@ -555,6 +555,82 @@ TEST(socket_setnodelay_disable)
     Socket_free(&socket);
 }
 
+/* ==================== Socket Option Getter Tests ==================== */
+
+TEST(socket_gettimeout_returns_set_value)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL(socket);
+
+    Socket_settimeout(socket, 5);
+    int timeout = Socket_gettimeout(socket);
+    ASSERT_EQ(timeout, 5);
+
+    Socket_settimeout(socket, 0);
+    timeout = Socket_gettimeout(socket);
+    ASSERT_EQ(timeout, 0);
+
+    Socket_free(&socket);
+}
+
+TEST(socket_getkeepalive_returns_set_values)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL(socket);
+
+    Socket_setkeepalive(socket, 60, 10, 3);
+    int idle = 0, interval = 0, count = 0;
+    Socket_getkeepalive(socket, &idle, &interval, &count);
+    ASSERT_EQ(idle, 60);
+    ASSERT_EQ(interval, 10);
+    ASSERT_EQ(count, 3);
+
+    Socket_free(&socket);
+}
+
+TEST(socket_getnodelay_returns_set_value)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL(socket);
+
+    Socket_setnodelay(socket, 1);
+    int nodelay = Socket_getnodelay(socket);
+    ASSERT_EQ(nodelay, 1);
+
+    Socket_setnodelay(socket, 0);
+    nodelay = Socket_getnodelay(socket);
+    ASSERT_EQ(nodelay, 0);
+
+    Socket_free(&socket);
+}
+
+TEST(socket_getrcvbuf_returns_positive_value)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL(socket);
+
+    int rcvbuf = Socket_getrcvbuf(socket);
+    ASSERT(rcvbuf > 0);
+
+    Socket_free(&socket);
+}
+
+TEST(socket_getsndbuf_returns_positive_value)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL(socket);
+
+    int sndbuf = Socket_getsndbuf(socket);
+    ASSERT(sndbuf > 0);
+
+    Socket_free(&socket);
+}
+
 /* ==================== Close-on-Exec Tests ==================== */
 
 TEST(socket_new_sets_cloexec_by_default)
@@ -1278,35 +1354,34 @@ TEST(socket_bind_async_wildcard_uses_ai_passive)
     SocketDNS_Request_T req;
     struct addrinfo *res = NULL;
 
-    TRY
-        dns = SocketDNS_new();
-        socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    TRY dns = SocketDNS_new();
+    socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-        req = Socket_bind_async(dns, socket, NULL, 0);
+    req = Socket_bind_async(dns, socket, NULL, 0);
 
-        res = SocketDNS_getresult(dns, req);
-        ASSERT_NOT_NULL(res);
-        ASSERT_NOT_NULL(res->ai_addr);
+    res = SocketDNS_getresult(dns, req);
+    ASSERT_NOT_NULL(res);
+    ASSERT_NOT_NULL(res->ai_addr);
 
-        Socket_bind_with_addrinfo(socket, res);
-        Socket_listen(socket, 5);
+    Socket_bind_with_addrinfo(socket, res);
+    Socket_listen(socket, 5);
 
-        ASSERT(Socket_getlocalport(socket) >= 1);
-        ASSERT(Socket_getlocalport(socket) <= 65535);
+    ASSERT(Socket_getlocalport(socket) >= 1);
+    ASSERT(Socket_getlocalport(socket) <= 65535);
 
-        freeaddrinfo(res);
-        res = NULL;
+    freeaddrinfo(res);
+    res = NULL;
     EXCEPT(Socket_Failed)
-        if (res)
-            freeaddrinfo(res);
+    if (res)
+        freeaddrinfo(res);
     EXCEPT(SocketDNS_Failed)
-        if (res)
-            freeaddrinfo(res);
+    if (res)
+        freeaddrinfo(res);
     FINALLY
-        if (socket)
-            Socket_free(&socket);
-        if (dns)
-            SocketDNS_free(&dns);
+    if (socket)
+        Socket_free(&socket);
+    if (dns)
+        SocketDNS_free(&dns);
     END_TRY;
 }
 

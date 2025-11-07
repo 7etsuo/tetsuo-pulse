@@ -15,6 +15,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <poll.h>
+#include <pthread.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,19 +45,34 @@
 #define T Socket_T
 
 static int socket_live_count = 0;
+static pthread_mutex_t socket_live_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 static SocketTimeouts_T socket_default_timeouts = {.connect_timeout_ms = SOCKET_DEFAULT_CONNECT_TIMEOUT_MS,
                                                    .dns_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS,
                                                    .operation_timeout_ms = SOCKET_DEFAULT_OPERATION_TIMEOUT_MS};
+static pthread_mutex_t socket_default_timeouts_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/**
+ * socket_live_increment - Increment live socket count (thread-safe)
+ * Thread-safe: Yes - protected by mutex
+ */
 static void socket_live_increment(void)
 {
+    pthread_mutex_lock(&socket_live_count_mutex);
     socket_live_count++;
+    pthread_mutex_unlock(&socket_live_count_mutex);
 }
 
+/**
+ * socket_live_decrement - Decrement live socket count (thread-safe)
+ * Thread-safe: Yes - protected by mutex
+ * Prevents TOCTOU race condition by atomically checking and decrementing
+ */
 static void socket_live_decrement(void)
 {
+    pthread_mutex_lock(&socket_live_count_mutex);
     if (socket_live_count > 0)
         socket_live_count--;
+    pthread_mutex_unlock(&socket_live_count_mutex);
 }
 
 static int sanitize_timeout(int timeout_ms)
@@ -259,7 +275,12 @@ static T initialize_socket_structure(T socket, int fd)
     socket->peerport = 0;
     socket->localaddr = NULL;
     socket->localport = 0;
+
+    /* Thread-safe copy of default timeouts */
+    pthread_mutex_lock(&socket_default_timeouts_mutex);
     socket->timeouts = socket_default_timeouts;
+    pthread_mutex_unlock(&socket_default_timeouts_mutex);
+
     return socket;
 }
 
@@ -1116,7 +1137,10 @@ void Socket_timeouts_set(T socket, const SocketTimeouts_T *timeouts)
 
     if (timeouts == NULL)
     {
+        /* Thread-safe copy of default timeouts */
+        pthread_mutex_lock(&socket_default_timeouts_mutex);
         socket->timeouts = socket_default_timeouts;
+        pthread_mutex_unlock(&socket_default_timeouts_mutex);
         return;
     }
 
@@ -1129,20 +1153,30 @@ void Socket_timeouts_getdefaults(SocketTimeouts_T *timeouts)
 {
     assert(timeouts);
 
+    /* Thread-safe copy of default timeouts */
+    pthread_mutex_lock(&socket_default_timeouts_mutex);
     *timeouts = socket_default_timeouts;
+    pthread_mutex_unlock(&socket_default_timeouts_mutex);
 }
 
 void Socket_timeouts_setdefaults(const SocketTimeouts_T *timeouts)
 {
-    SocketTimeouts_T local = socket_default_timeouts;
+    SocketTimeouts_T local;
 
     assert(timeouts);
+
+    /* Thread-safe read-modify-write of default timeouts */
+    pthread_mutex_lock(&socket_default_timeouts_mutex);
+    local = socket_default_timeouts;
+    pthread_mutex_unlock(&socket_default_timeouts_mutex);
 
     local.connect_timeout_ms = sanitize_timeout(timeouts->connect_timeout_ms);
     local.dns_timeout_ms = sanitize_timeout(timeouts->dns_timeout_ms);
     local.operation_timeout_ms = sanitize_timeout(timeouts->operation_timeout_ms);
 
+    pthread_mutex_lock(&socket_default_timeouts_mutex);
     socket_default_timeouts = local;
+    pthread_mutex_unlock(&socket_default_timeouts_mutex);
 }
 
 /**
@@ -1250,6 +1284,135 @@ void Socket_setnodelay(T socket, int nodelay)
         SOCKET_ERROR_FMT("Failed to set TCP_NODELAY");
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
+}
+
+/**
+ * Socket_gettimeout - Get socket timeout
+ * @socket: Socket to query
+ * Returns: Timeout in seconds (0 if disabled)
+ * Raises: Socket_Failed on error
+ * Note: Returns receive timeout (send timeout may differ)
+ */
+int Socket_gettimeout(T socket)
+{
+    struct timeval tv;
+
+    assert(socket);
+
+    if (SocketCommon_getoption_timeval(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_RCVTIMEO, &tv, Socket_Failed) < 0)
+        RAISE_SOCKET_ERROR(Socket_Failed);
+
+    return (int)tv.tv_sec;
+}
+
+/**
+ * Socket_getkeepalive - Get TCP keepalive configuration
+ * @socket: Socket to query
+ * @idle: Output - idle timeout in seconds
+ * @interval: Output - interval between probes in seconds
+ * @count: Output - number of probes before declaring dead
+ * Raises: Socket_Failed on error
+ * Note: Returns 0 for parameters not supported on this platform
+ */
+void Socket_getkeepalive(T socket, int *idle, int *interval, int *count)
+{
+    int keepalive_enabled = 0;
+
+    assert(socket);
+    assert(idle);
+    assert(interval);
+    assert(count);
+
+    /* Get SO_KEEPALIVE flag */
+    if (SocketCommon_getoption_int(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_KEEPALIVE, &keepalive_enabled,
+                                   Socket_Failed) < 0)
+        RAISE_SOCKET_ERROR(Socket_Failed);
+
+    if (!keepalive_enabled)
+    {
+        *idle = 0;
+        *interval = 0;
+        *count = 0;
+        return;
+    }
+
+    /* Get TCP_KEEPIDLE */
+#ifdef TCP_KEEPIDLE
+    if (SocketCommon_getoption_int(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPIDLE, idle, Socket_Failed) < 0)
+        RAISE_SOCKET_ERROR(Socket_Failed);
+#else
+    *idle = 0;
+#endif
+
+    /* Get TCP_KEEPINTVL */
+#ifdef TCP_KEEPINTVL
+    if (SocketCommon_getoption_int(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPINTVL, interval, Socket_Failed) < 0)
+        RAISE_SOCKET_ERROR(Socket_Failed);
+#else
+    *interval = 0;
+#endif
+
+    /* Get TCP_KEEPCNT */
+#ifdef TCP_KEEPCNT
+    if (SocketCommon_getoption_int(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPCNT, count, Socket_Failed) < 0)
+        RAISE_SOCKET_ERROR(Socket_Failed);
+#else
+    *count = 0;
+#endif
+}
+
+/**
+ * Socket_getnodelay - Get TCP_NODELAY setting
+ * @socket: Socket to query
+ * Returns: 1 if Nagle's algorithm is disabled, 0 if enabled
+ * Raises: Socket_Failed on error
+ */
+int Socket_getnodelay(T socket)
+{
+    int nodelay = 0;
+
+    assert(socket);
+
+    if (SocketCommon_getoption_int(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_NODELAY, &nodelay, Socket_Failed) < 0)
+        RAISE_SOCKET_ERROR(Socket_Failed);
+
+    return nodelay;
+}
+
+/**
+ * Socket_getrcvbuf - Get receive buffer size
+ * @socket: Socket to query
+ * Returns: Receive buffer size in bytes
+ * Raises: Socket_Failed on error
+ */
+int Socket_getrcvbuf(T socket)
+{
+    int bufsize = 0;
+
+    assert(socket);
+
+    if (SocketCommon_getoption_int(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_RCVBUF, &bufsize, Socket_Failed) < 0)
+        RAISE_SOCKET_ERROR(Socket_Failed);
+
+    return bufsize;
+}
+
+/**
+ * Socket_getsndbuf - Get send buffer size
+ * @socket: Socket to query
+ * Returns: Send buffer size in bytes
+ * Raises: Socket_Failed on error
+ */
+int Socket_getsndbuf(T socket)
+{
+    int bufsize = 0;
+
+    assert(socket);
+
+    if (SocketCommon_getoption_int(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_SNDBUF, &bufsize, Socket_Failed) < 0)
+        RAISE_SOCKET_ERROR(Socket_Failed);
+
+    return bufsize;
 }
 
 int Socket_fd(const T socket)
@@ -1553,5 +1716,12 @@ void Socket_connect_with_addrinfo(T socket, struct addrinfo *res)
 
 int Socket_debug_live_count(void)
 {
-    return socket_live_count;
+    int count;
+
+    /* Thread-safe read of live socket count */
+    pthread_mutex_lock(&socket_live_count_mutex);
+    count = socket_live_count;
+    pthread_mutex_unlock(&socket_live_count_mutex);
+
+    return count;
 }

@@ -988,6 +988,144 @@ int SocketDgram_getlocalport(const T socket)
 }
 
 /**
+ * SocketDgram_gettimeout - Get socket timeout
+ * @socket: Socket to query
+ * Returns: Timeout in seconds (0 if disabled)
+ * Raises: SocketDgram_Failed on error
+ * Note: Returns receive timeout (send timeout may differ)
+ */
+int SocketDgram_gettimeout(T socket)
+{
+    struct timeval tv;
+
+    assert(socket);
+
+    if (SocketCommon_getoption_timeval(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_RCVTIMEO, &tv, SocketDgram_Failed) < 0)
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+
+    return (int)tv.tv_sec;
+}
+
+/**
+ * SocketDgram_getbroadcast - Get broadcast setting
+ * @socket: Socket to query
+ * Returns: 1 if broadcast is enabled, 0 if disabled
+ * Raises: SocketDgram_Failed on error
+ */
+int SocketDgram_getbroadcast(T socket)
+{
+    int broadcast = 0;
+
+    assert(socket);
+
+    if (SocketCommon_getoption_int(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_BROADCAST, &broadcast, SocketDgram_Failed) <
+        0)
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+
+    return broadcast;
+}
+
+/**
+ * get_ipv4_ttl - Get IPv4 TTL
+ * @socket: Socket to query
+ * @ttl: Output pointer for TTL value
+ * Raises: SocketDgram_Failed on failure
+ */
+static void get_ipv4_ttl(T socket, int *ttl)
+{
+    if (SocketCommon_getoption_int(socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_TTL, ttl, SocketDgram_Failed) < 0)
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+}
+
+/**
+ * get_ipv6_hop_limit - Get IPv6 hop limit
+ * @socket: Socket to query
+ * @ttl: Output pointer for hop limit value
+ * Raises: SocketDgram_Failed on failure
+ */
+static void get_ipv6_hop_limit(T socket, int *ttl)
+{
+    if (SocketCommon_getoption_int(socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_UNICAST_HOPS, ttl, SocketDgram_Failed) <
+        0)
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+}
+
+/**
+ * get_ttl_by_family - Get TTL by address family
+ * @socket: Socket to query
+ * @socket_family: Address family
+ * @ttl: Output pointer for TTL value
+ * Raises: SocketDgram_Failed on unsupported family or failure
+ */
+static void get_ttl_by_family(T socket, int socket_family, int *ttl)
+{
+    if (socket_family == SOCKET_AF_INET)
+        get_ipv4_ttl(socket, ttl);
+    else if (socket_family == SOCKET_AF_INET6)
+        get_ipv6_hop_limit(socket, ttl);
+    else
+    {
+        SOCKET_ERROR_MSG("Unsupported address family for TTL");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+}
+
+/**
+ * SocketDgram_getttl - Get time-to-live (hop limit)
+ * @socket: Socket to query
+ * Returns: TTL value (1-255)
+ * Raises: SocketDgram_Failed on error
+ */
+int SocketDgram_getttl(T socket)
+{
+    int socket_family;
+    int ttl = 0;
+
+    assert(socket);
+
+    socket_family = get_socket_domain(socket);
+    get_ttl_by_family(socket, socket_family, &ttl);
+
+    return ttl;
+}
+
+/**
+ * SocketDgram_getrcvbuf - Get receive buffer size
+ * @socket: Socket to query
+ * Returns: Receive buffer size in bytes
+ * Raises: SocketDgram_Failed on error
+ */
+int SocketDgram_getrcvbuf(T socket)
+{
+    int bufsize = 0;
+
+    assert(socket);
+
+    if (SocketCommon_getoption_int(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_RCVBUF, &bufsize, SocketDgram_Failed) < 0)
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+
+    return bufsize;
+}
+
+/**
+ * SocketDgram_getsndbuf - Get send buffer size
+ * @socket: Socket to query
+ * Returns: Send buffer size in bytes
+ * Raises: SocketDgram_Failed on error
+ */
+int SocketDgram_getsndbuf(T socket)
+{
+    int bufsize = 0;
+
+    assert(socket);
+
+    if (SocketCommon_getoption_int(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_SNDBUF, &bufsize, SocketDgram_Failed) < 0)
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+
+    return bufsize;
+}
+
+/**
  * SocketDgram_setcloexec - Control close-on-exec flag
  * @socket: Socket to modify
  * @enable: 1 to enable CLOEXEC, 0 to disable

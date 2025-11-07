@@ -8,6 +8,7 @@
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <fcntl.h>
 
 #include "core/Arena.h"
@@ -39,9 +40,8 @@ void SocketCommon_setup_hints(struct addrinfo *hints, int socktype, int flags);
  * Returns: 0 on success, -1 on failure (if not using exceptions)
  * Raises: Specified exception type on failure (if using exceptions)
  */
-int SocketCommon_resolve_address(const char *host, int port, const struct addrinfo *hints,
-                                struct addrinfo **res, Except_T exception_type,
-                                int socket_family, int use_exceptions);
+int SocketCommon_resolve_address(const char *host, int port, const struct addrinfo *hints, struct addrinfo **res,
+                                 Except_T exception_type, int socket_family, int use_exceptions);
 
 /**
  * SocketCommon_validate_port - Validate port number is in valid range
@@ -75,8 +75,8 @@ const char *SocketCommon_normalize_wildcard_host(const char *host);
  * @port_out: Output integer updated with numeric port (0 if unavailable)
  * Returns: 0 on success, -1 on failure (addr_out unchanged on failure)
  */
-int SocketCommon_cache_endpoint(Arena_T arena, const struct sockaddr *addr, socklen_t addrlen,
-                               char **addr_out, int *port_out);
+int SocketCommon_cache_endpoint(Arena_T arena, const struct sockaddr *addr, socklen_t addrlen, char **addr_out,
+                                int *port_out);
 
 /**
  * SocketCommon_setcloexec - Set close-on-exec flag on file descriptor
@@ -94,5 +94,31 @@ int SocketCommon_setcloexec(int fd, int enable);
  * Thread-safe: Yes (operates on single fd)
  */
 int SocketCommon_has_cloexec(int fd);
+
+/**
+ * SocketCommon_getoption_int - Get integer socket option
+ * @fd: File descriptor
+ * @level: Option level (SOL_SOCKET, IPPROTO_TCP, etc.)
+ * @optname: Option name (SO_KEEPALIVE, TCP_NODELAY, etc.)
+ * @value: Output pointer for option value
+ * @exception_type: Exception type to raise on failure
+ * Returns: 0 on success, -1 on failure
+ * Raises: Specified exception type on failure
+ * Thread-safe: Yes (operates on single fd)
+ */
+int SocketCommon_getoption_int(int fd, int level, int optname, int *value, Except_T exception_type);
+
+/**
+ * SocketCommon_getoption_timeval - Get timeval socket option
+ * @fd: File descriptor
+ * @level: Option level (SOL_SOCKET)
+ * @optname: Option name (SO_RCVTIMEO, SO_SNDTIMEO)
+ * @tv: Output pointer for timeval structure
+ * @exception_type: Exception type to raise on failure
+ * Returns: 0 on success, -1 on failure
+ * Raises: Specified exception type on failure
+ * Thread-safe: Yes (operates on single fd)
+ */
+int SocketCommon_getoption_timeval(int fd, int level, int optname, struct timeval *tv, Except_T exception_type);
 
 #endif /* SOCKETCOMMON_H */

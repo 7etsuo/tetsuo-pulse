@@ -179,6 +179,50 @@ extern void Socket_setkeepalive(T socket, int idle, int interval, int count);
 extern void Socket_setnodelay(T socket, int nodelay);
 
 /**
+ * Socket_gettimeout - Get socket timeout
+ * @socket: Socket to query
+ * Returns: Timeout in seconds (0 if disabled)
+ * Raises: Socket_Failed on error
+ * Note: Returns receive timeout (send timeout may differ)
+ */
+extern int Socket_gettimeout(T socket);
+
+/**
+ * Socket_getkeepalive - Get TCP keepalive configuration
+ * @socket: Socket to query
+ * @idle: Output - idle timeout in seconds
+ * @interval: Output - interval between probes in seconds
+ * @count: Output - number of probes before declaring dead
+ * Raises: Socket_Failed on error
+ * Note: Returns 0 for parameters not supported on this platform
+ */
+extern void Socket_getkeepalive(T socket, int *idle, int *interval, int *count);
+
+/**
+ * Socket_getnodelay - Get TCP_NODELAY setting
+ * @socket: Socket to query
+ * Returns: 1 if Nagle's algorithm is disabled, 0 if enabled
+ * Raises: Socket_Failed on error
+ */
+extern int Socket_getnodelay(T socket);
+
+/**
+ * Socket_getrcvbuf - Get receive buffer size
+ * @socket: Socket to query
+ * Returns: Receive buffer size in bytes
+ * Raises: Socket_Failed on error
+ */
+extern int Socket_getrcvbuf(T socket);
+
+/**
+ * Socket_getsndbuf - Get send buffer size
+ * @socket: Socket to query
+ * Returns: Send buffer size in bytes
+ * Raises: Socket_Failed on error
+ */
+extern int Socket_getsndbuf(T socket);
+
+/**
  * Socket_shutdown - Disable further sends and/or receives
  * @socket: Connected socket
  * @how: Shutdown mode (SHUT_RD, SHUT_WR, or SHUT_RDWR)
