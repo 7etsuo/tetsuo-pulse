@@ -255,6 +255,27 @@ extern int SocketDgram_getrcvbuf(T socket);
 extern int SocketDgram_getsndbuf(T socket);
 
 /**
+ * SocketDgram_isconnected - Check if datagram socket is connected
+ * @socket: Socket to check
+ * Returns: 1 if connected, 0 if not connected
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Uses getpeername() to determine connection state.
+ * For UDP sockets, "connected" means a default destination is set.
+ */
+extern int SocketDgram_isconnected(T socket);
+
+/**
+ * SocketDgram_isbound - Check if datagram socket is bound to an address
+ * @socket: Socket to check
+ * Returns: 1 if bound, 0 if not bound
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Uses getsockname() to determine binding state.
+ * A socket is bound if getsockname() succeeds and returns a valid address.
+ * Wildcard addresses (0.0.0.0 or ::) still count as bound.
+ */
+extern int SocketDgram_isbound(T socket);
+
+/**
  * SocketDgram_fd - Get underlying file descriptor
  * @socket: Socket instance
  * Returns: File descriptor

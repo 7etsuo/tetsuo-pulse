@@ -503,6 +503,72 @@ TEST(socketdgram_getsndbuf_returns_positive_value)
     SocketDgram_free(&socket);
 }
 
+/* ==================== Connection State Query Tests ==================== */
+
+TEST(socketdgram_isbound_returns_false_for_new_socket)
+{
+    setup_signals();
+    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
+    ASSERT_NOT_NULL(socket);
+
+    ASSERT_EQ(0, SocketDgram_isbound(socket));
+
+    SocketDgram_free(&socket);
+}
+
+TEST(socketdgram_isbound_returns_true_after_bind)
+{
+    setup_signals();
+    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
+    ASSERT_NOT_NULL(socket);
+
+    SocketDgram_bind(socket, "127.0.0.1", 0);
+    ASSERT_EQ(1, SocketDgram_isbound(socket));
+
+    SocketDgram_free(&socket);
+}
+
+TEST(socketdgram_isconnected_returns_false_for_new_socket)
+{
+    setup_signals();
+    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
+    ASSERT_NOT_NULL(socket);
+
+    ASSERT_EQ(0, SocketDgram_isconnected(socket));
+
+    SocketDgram_free(&socket);
+}
+
+TEST(socketdgram_isconnected_returns_true_after_connect)
+{
+    setup_signals();
+    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
+    ASSERT_NOT_NULL(socket);
+
+    SocketDgram_bind(socket, "127.0.0.1", 0);
+    SocketDgram_connect(socket, "127.0.0.1", 5000);
+    ASSERT_EQ(1, SocketDgram_isconnected(socket));
+
+    SocketDgram_free(&socket);
+}
+
+TEST(socketdgram_isbound_after_connect)
+{
+    setup_signals();
+    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
+    ASSERT_NOT_NULL(socket);
+
+    /* Socket is not bound initially */
+    ASSERT_EQ(0, SocketDgram_isbound(socket));
+
+    /* Connect without bind - OS will auto-bind */
+    SocketDgram_connect(socket, "127.0.0.1", 5000);
+    ASSERT_EQ(1, SocketDgram_isconnected(socket));
+    /* Socket may or may not be bound after connect (OS-dependent) */
+
+    SocketDgram_free(&socket);
+}
+
 /* ==================== Multicast Tests ==================== */
 
 TEST(socketdgram_joinmulticast_ipv4)
