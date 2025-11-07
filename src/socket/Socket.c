@@ -1509,6 +1509,299 @@ ssize_t Socket_recvvall(T socket, struct iovec *iov, int iovcnt)
     return (ssize_t)total_received;
 }
 
+/**
+ * socket_sendfile_linux - Linux sendfile() implementation
+ * @socket: Socket to send to
+ * @file_fd: File descriptor to read from
+ * @offset: File offset pointer (may be NULL)
+ * @count: Bytes to transfer
+ * Returns: Bytes transferred or -1 on error
+ */
+#if SOCKET_HAS_SENDFILE && defined(__linux__)
+static ssize_t socket_sendfile_linux(T socket, int file_fd, off_t *offset, size_t count)
+{
+    off_t off = offset ? *offset : 0;
+    ssize_t result = sendfile(socket->fd, file_fd, &off, count);
+    if (result >= 0 && offset)
+        *offset = off;
+    return result;
+}
+#endif
+
+/**
+ * socket_sendfile_bsd - BSD/macOS sendfile() implementation
+ * @socket: Socket to send to
+ * @file_fd: File descriptor to read from
+ * @offset: File offset pointer (may be NULL)
+ * @count: Bytes to transfer
+ * Returns: Bytes transferred or -1 on error
+ */
+#if SOCKET_HAS_SENDFILE && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || (defined(__APPLE__) && defined(__MACH__)))
+static ssize_t socket_sendfile_bsd(T socket, int file_fd, off_t *offset, size_t count)
+{
+    off_t len = (off_t)count;
+    off_t off = offset ? *offset : 0;
+    int result = sendfile(file_fd, socket->fd, off, &len, NULL, 0);
+    if (result == 0)
+    {
+        if (offset)
+            *offset = off + len;
+        return (ssize_t)len;
+    }
+    return -1;
+}
+#endif
+
+/**
+ * socket_sendfile_fallback - Fallback implementation using read/write
+ * @socket: Socket to send to
+ * @file_fd: File descriptor to read from
+ * @offset: File offset pointer (may be NULL)
+ * @count: Bytes to transfer
+ * Returns: Bytes transferred or -1 on error
+ * Note: Used when platform doesn't support sendfile() or as fallback
+ */
+__attribute__((unused))
+static ssize_t socket_sendfile_fallback(T socket, int file_fd, off_t *offset, size_t count)
+{
+    char buffer[8192];
+    volatile size_t total_sent = 0;
+    ssize_t read_bytes, sent_bytes;
+
+    if (offset && *offset != 0)
+    {
+        if (lseek(file_fd, *offset, SEEK_SET) < 0)
+            return -1;
+    }
+
+    TRY
+        while (total_sent < count)
+        {
+            size_t to_read = (count - total_sent < sizeof(buffer)) ? (count - total_sent) : sizeof(buffer);
+            read_bytes = read(file_fd, buffer, to_read);
+            if (read_bytes <= 0)
+            {
+                if (read_bytes == 0)
+                    break; /* EOF */
+                if (errno == EINTR)
+                    continue;
+                return -1;
+            }
+
+            sent_bytes = Socket_send(socket, buffer, (size_t)read_bytes);
+            if (sent_bytes == 0)
+            {
+                /* Would block - return partial progress */
+                if (offset)
+                    *offset += (off_t)total_sent;
+                return (ssize_t)total_sent;
+            }
+            total_sent += (size_t)sent_bytes;
+
+            if ((size_t)read_bytes < to_read)
+                break; /* EOF reached */
+        }
+    EXCEPT(Socket_Closed)
+        if (offset)
+            *offset += (off_t)total_sent;
+        RERAISE;
+    EXCEPT(Socket_Failed)
+        if (offset)
+            *offset += (off_t)total_sent;
+        RERAISE;
+    END_TRY;
+
+    if (offset)
+        *offset += (off_t)total_sent;
+    return (ssize_t)total_sent;
+}
+
+/**
+ * Socket_sendfile - Zero-copy file-to-socket transfer
+ * @socket: Connected socket to send to
+ * @file_fd: File descriptor to read from (must be a regular file)
+ * @offset: File offset to start reading from (NULL for current position)
+ * @count: Number of bytes to transfer (0 for entire file from offset)
+ * Returns: Total bytes transferred (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Closed on EPIPE/ECONNRESET
+ * Raises: Socket_Failed on other errors
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Uses platform-specific zero-copy mechanism (sendfile/splice).
+ * Falls back to read/write loop on platforms without sendfile support.
+ * May transfer less than requested. Use Socket_sendfileall() for guaranteed complete transfer.
+ */
+ssize_t Socket_sendfile(T socket, int file_fd, off_t *offset, size_t count)
+{
+    ssize_t result = -1;
+
+    assert(socket);
+    assert(file_fd >= 0);
+    assert(count > 0);
+
+#if SOCKET_HAS_SENDFILE && defined(__linux__)
+    result = socket_sendfile_linux(socket, file_fd, offset, count);
+#elif SOCKET_HAS_SENDFILE && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || (defined(__APPLE__) && defined(__MACH__)))
+    result = socket_sendfile_bsd(socket, file_fd, offset, count);
+#else
+    result = socket_sendfile_fallback(socket, file_fd, offset, count);
+#endif
+
+    if (result < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0;
+        if (errno == EPIPE)
+        {
+            RAISE(Socket_Closed);
+        }
+        if (errno == ECONNRESET)
+        {
+            RAISE(Socket_Closed);
+        }
+        SOCKET_ERROR_FMT("Zero-copy file transfer failed (file_fd=%d, count=%zu)", file_fd, count);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    return result;
+}
+
+/**
+ * Socket_sendfileall - Zero-copy file-to-socket transfer (handles partial transfers)
+ * @socket: Connected socket to send to
+ * @file_fd: File descriptor to read from (must be a regular file)
+ * @offset: File offset to start reading from (NULL for current position)
+ * @count: Number of bytes to transfer (0 for entire file from offset)
+ * Returns: Total bytes transferred (always equals count on success)
+ * Raises: Socket_Closed on EPIPE/ECONNRESET
+ * Raises: Socket_Failed on other errors
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Loops until all data is transferred or an error occurs.
+ * For non-blocking sockets, returns partial progress if would block.
+ * Uses platform-specific zero-copy mechanism when available.
+ */
+ssize_t Socket_sendfileall(T socket, int file_fd, off_t *offset, size_t count)
+{
+    volatile size_t total_sent = 0;
+    ssize_t sent;
+    off_t current_offset = offset ? *offset : 0;
+
+    assert(socket);
+    assert(file_fd >= 0);
+    assert(count > 0);
+
+    TRY
+        while (total_sent < count)
+        {
+            off_t *current_offset_ptr = offset ? &current_offset : NULL;
+            size_t remaining = count - total_sent;
+
+            sent = Socket_sendfile(socket, file_fd, current_offset_ptr, remaining);
+            if (sent == 0)
+            {
+                /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+                if (offset)
+                    *offset = current_offset;
+                return (ssize_t)total_sent;
+            }
+            total_sent += (size_t)sent;
+            if (offset)
+                current_offset += (off_t)sent;
+        }
+    EXCEPT(Socket_Closed)
+        if (offset)
+            *offset = current_offset;
+        RERAISE;
+    EXCEPT(Socket_Failed)
+        if (offset)
+            *offset = current_offset;
+        RERAISE;
+    END_TRY;
+
+    if (offset)
+        *offset = current_offset;
+    return (ssize_t)total_sent;
+}
+
+/**
+ * Socket_sendmsg - Send message with ancillary data (sendmsg wrapper)
+ * @socket: Connected socket
+ * @msg: Message structure with data, address, and ancillary data
+ * @flags: Message flags (MSG_NOSIGNAL, MSG_DONTWAIT, etc.)
+ * Returns: Total bytes sent (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Closed on EPIPE/ECONNRESET
+ * Raises: Socket_Failed on other errors
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Allows sending data with control messages (CMSG) for advanced features
+ * like file descriptor passing, credentials, IP options, etc.
+ * May send less than requested. Use Socket_sendmsgall() for guaranteed complete send.
+ */
+ssize_t Socket_sendmsg(T socket, const struct msghdr *msg, int flags)
+{
+    ssize_t result;
+
+    assert(socket);
+    assert(msg);
+
+    result = sendmsg(socket->fd, msg, flags);
+    if (result < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0;
+        if (errno == EPIPE)
+        {
+            RAISE(Socket_Closed);
+        }
+        if (errno == ECONNRESET)
+        {
+            RAISE(Socket_Closed);
+        }
+        SOCKET_ERROR_FMT("sendmsg failed (flags=0x%x)", flags);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    return result;
+}
+
+/**
+ * Socket_recvmsg - Receive message with ancillary data (recvmsg wrapper)
+ * @socket: Connected socket
+ * @msg: Message structure for data, address, and ancillary data
+ * @flags: Message flags (MSG_DONTWAIT, MSG_PEEK, etc.)
+ * Returns: Total bytes received (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Closed on peer close (recv returns 0) or ECONNRESET
+ * Raises: Socket_Failed on other errors
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Allows receiving data with control messages (CMSG) for advanced features
+ * like file descriptor passing, credentials, IP options, etc.
+ * May receive less than requested. Use Socket_recvmsgall() for guaranteed complete receive.
+ */
+ssize_t Socket_recvmsg(T socket, struct msghdr *msg, int flags)
+{
+    ssize_t result;
+
+    assert(socket);
+    assert(msg);
+
+    result = recvmsg(socket->fd, msg, flags);
+    if (result < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0;
+        if (errno == ECONNRESET)
+        {
+            RAISE(Socket_Closed);
+        }
+        SOCKET_ERROR_FMT("recvmsg failed (flags=0x%x)", flags);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+    else if (result == 0)
+    {
+        RAISE(Socket_Closed);
+    }
+
+    return result;
+}
+
 void Socket_setnonblocking(T socket)
 {
     int flags;
