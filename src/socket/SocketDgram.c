@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -14,6 +15,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 #include <unistd.h>
 
 #include "core/Arena.h"
@@ -797,6 +799,296 @@ ssize_t SocketDgram_recvall(T socket, void *buf, size_t len)
         RERAISE;
     END_TRY;
 
+    return (ssize_t)total_received;
+}
+
+/**
+ * dgram_calculate_total_iov_len - Calculate total length of iovec array
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ * Returns: Total length in bytes
+ * Thread-safe: Yes
+ */
+static size_t dgram_calculate_total_iov_len(const struct iovec *iov, int iovcnt)
+{
+    size_t total = 0;
+    int i;
+
+    for (i = 0; i < iovcnt; i++)
+    {
+        total += iov[i].iov_len;
+    }
+
+    return total;
+}
+
+/**
+ * dgram_advance_iov - Advance iovec array past sent/received bytes
+ * @iov: Array of iovec structures (modified in place)
+ * @iovcnt: Number of iovec structures
+ * @bytes: Number of bytes to advance past
+ * Thread-safe: Yes (operates on local copy)
+ */
+static void dgram_advance_iov(struct iovec *iov, int iovcnt, size_t bytes)
+{
+    size_t remaining = bytes;
+    int i;
+
+    for (i = 0; i < iovcnt && remaining > 0; i++)
+    {
+        if (remaining >= iov[i].iov_len)
+        {
+            remaining -= iov[i].iov_len;
+            iov[i].iov_base = NULL;
+            iov[i].iov_len = 0;
+        }
+        else
+        {
+            iov[i].iov_base = (char *)iov[i].iov_base + remaining;
+            iov[i].iov_len -= remaining;
+            remaining = 0;
+        }
+    }
+}
+
+/**
+ * SocketDgram_sendv - Scatter/gather send (writev wrapper)
+ * @socket: Connected socket
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures (> 0, <= IOV_MAX)
+ * Returns: Total bytes sent (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Sends data from multiple buffers in a single system call.
+ * May send less than requested. Use SocketDgram_sendvall() for guaranteed complete send.
+ */
+ssize_t SocketDgram_sendv(T socket, const struct iovec *iov, int iovcnt)
+{
+    ssize_t result;
+
+    assert(socket);
+    assert(iov);
+    assert(iovcnt > 0);
+    assert(iovcnt <= IOV_MAX);
+
+    result = writev(socket->fd, iov, iovcnt);
+    if (result < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0;
+
+        SOCKET_ERROR_FMT("Scatter/gather send failed (iovcnt=%d)", iovcnt);
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+
+    return result;
+}
+
+/**
+ * SocketDgram_recvv - Scatter/gather receive (readv wrapper)
+ * @socket: Connected socket
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures (> 0, <= IOV_MAX)
+ * Returns: Total bytes received (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Receives data into multiple buffers in a single system call.
+ * May receive less than requested. Use SocketDgram_recvvall() for guaranteed complete receive.
+ */
+ssize_t SocketDgram_recvv(T socket, struct iovec *iov, int iovcnt)
+{
+    ssize_t result;
+
+    assert(socket);
+    assert(iov);
+    assert(iovcnt > 0);
+    assert(iovcnt <= IOV_MAX);
+
+    result = readv(socket->fd, iov, iovcnt);
+    if (result < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0;
+
+        SOCKET_ERROR_FMT("Scatter/gather receive failed (iovcnt=%d)", iovcnt);
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+
+    return result;
+}
+
+/**
+ * SocketDgram_sendvall - Scatter/gather send all (handles partial sends)
+ * @socket: Connected socket
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures (> 0, <= IOV_MAX)
+ * Returns: Total bytes sent (always equals sum of all iov_len on success)
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Loops until all data from all buffers is sent or an error occurs.
+ * For non-blocking sockets, returns partial progress if would block.
+ * Use SocketDgram_isconnected() to verify connection state before calling.
+ */
+ssize_t SocketDgram_sendvall(T socket, const struct iovec *iov, int iovcnt)
+{
+    struct iovec *iov_copy = NULL;
+    volatile size_t total_sent = 0;
+    size_t total_len;
+    ssize_t sent;
+    int i;
+
+    assert(socket);
+    assert(iov);
+    assert(iovcnt > 0);
+    assert(iovcnt <= IOV_MAX);
+
+    /* Calculate total length */
+    total_len = dgram_calculate_total_iov_len(iov, iovcnt);
+
+    /* Make a copy of iovec array for modification */
+    iov_copy = calloc((size_t)iovcnt, sizeof(struct iovec));
+    if (!iov_copy)
+    {
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate iovec copy");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+
+    memcpy(iov_copy, iov, (size_t)iovcnt * sizeof(struct iovec));
+
+    TRY
+        while (total_sent < total_len)
+        {
+            /* Find first non-empty iovec */
+            int active_iovcnt = 0;
+            struct iovec *active_iov = NULL;
+
+            for (i = 0; i < iovcnt; i++)
+            {
+                if (iov_copy[i].iov_len > 0)
+                {
+                    active_iov = &iov_copy[i];
+                    active_iovcnt = iovcnt - i;
+                    break;
+                }
+            }
+
+            if (active_iov == NULL)
+                break; /* All buffers sent */
+
+            sent = SocketDgram_sendv(socket, active_iov, active_iovcnt);
+            if (sent == 0)
+            {
+                /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+                free(iov_copy);
+                return (ssize_t)total_sent;
+            }
+            total_sent += (size_t)sent;
+            dgram_advance_iov(iov_copy, iovcnt, (size_t)sent);
+        }
+    EXCEPT(SocketDgram_Failed)
+        free(iov_copy);
+        RERAISE;
+    END_TRY;
+
+    free(iov_copy);
+    return (ssize_t)total_sent;
+}
+
+/**
+ * SocketDgram_recvvall - Scatter/gather receive all (handles partial receives)
+ * @socket: Connected socket
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures (> 0, <= IOV_MAX)
+ * Returns: Total bytes received (always equals sum of all iov_len on success)
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Loops until all requested data is received into all buffers or an error occurs.
+ * For non-blocking sockets, returns partial progress if would block.
+ * Use SocketDgram_isconnected() to verify connection state before calling.
+ */
+ssize_t SocketDgram_recvvall(T socket, struct iovec *iov, int iovcnt)
+{
+    struct iovec *iov_copy = NULL;
+    volatile size_t total_received = 0;
+    size_t total_len;
+    ssize_t received;
+    int i;
+
+    assert(socket);
+    assert(iov);
+    assert(iovcnt > 0);
+    assert(iovcnt <= IOV_MAX);
+
+    /* Calculate total length */
+    total_len = dgram_calculate_total_iov_len(iov, iovcnt);
+
+    /* Make a copy of iovec array for modification */
+    iov_copy = calloc((size_t)iovcnt, sizeof(struct iovec));
+    if (!iov_copy)
+    {
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate iovec copy");
+        RAISE_DGRAM_ERROR(SocketDgram_Failed);
+    }
+
+    memcpy(iov_copy, iov, (size_t)iovcnt * sizeof(struct iovec));
+
+    TRY
+        while (total_received < total_len)
+        {
+            /* Find first non-empty iovec */
+            int active_iovcnt = 0;
+            struct iovec *active_iov = NULL;
+
+            for (i = 0; i < iovcnt; i++)
+            {
+                if (iov_copy[i].iov_len > 0)
+                {
+                    active_iov = &iov_copy[i];
+                    active_iovcnt = iovcnt - i;
+                    break;
+                }
+            }
+
+            if (active_iov == NULL)
+                break; /* All buffers filled */
+
+            received = SocketDgram_recvv(socket, active_iov, active_iovcnt);
+            if (received == 0)
+            {
+                /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+                /* Copy back partial data */
+                for (i = 0; i < iovcnt; i++)
+                {
+                    if (iov_copy[i].iov_base != iov[i].iov_base)
+                    {
+                        size_t copied = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
+                        iov[i].iov_len -= copied;
+                        iov[i].iov_base = (char *)iov[i].iov_base + copied;
+                    }
+                }
+                free(iov_copy);
+                return (ssize_t)total_received;
+            }
+            total_received += (size_t)received;
+            dgram_advance_iov(iov_copy, iovcnt, (size_t)received);
+        }
+
+        /* Copy back final data positions */
+        for (i = 0; i < iovcnt; i++)
+        {
+            if (iov_copy[i].iov_base != iov[i].iov_base)
+            {
+                size_t copied = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
+                iov[i].iov_len -= copied;
+                iov[i].iov_base = (char *)iov[i].iov_base + copied;
+            }
+        }
+    EXCEPT(SocketDgram_Failed)
+        free(iov_copy);
+        RERAISE;
+    END_TRY;
+
+    free(iov_copy);
     return (ssize_t)total_received;
 }
 

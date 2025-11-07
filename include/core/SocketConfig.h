@@ -9,7 +9,14 @@
 /* Socket header required for IPv6 multicast constants */
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <fcntl.h>
+#include <unistd.h>
+
+/* IOV_MAX fallback if not defined */
+#ifndef IOV_MAX
+#define IOV_MAX 1024 /* Reasonable default, typically 1024 on Linux */
+#endif
 
 /* Socket library configuration limits */
 
