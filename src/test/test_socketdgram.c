@@ -809,6 +809,77 @@ TEST(socketdgram_concurrent_sendto)
     SocketDgram_free(&receiver);
 }
 
+/* ==================== Partial I/O Helper Tests ==================== */
+
+TEST(socketdgram_sendall_sends_all_data)
+{
+    setup_signals();
+    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
+    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+
+    TRY
+        SocketDgram_bind(receiver, "127.0.0.1", 0);
+        struct sockaddr_in addr;
+        socklen_t len = sizeof(addr);
+        getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
+        int port = ntohs(addr.sin_port);
+
+        SocketDgram_connect(sender, "127.0.0.1", port);
+        SocketDgram_connect(receiver, "127.0.0.1", SocketDgram_getlocalport(sender));
+
+        /* Send large data */
+        char send_buf[4096];
+        memset(send_buf, 'X', sizeof(send_buf));
+        ssize_t sent = SocketDgram_sendall(sender, send_buf, sizeof(send_buf));
+        ASSERT_EQ((ssize_t)sizeof(send_buf), sent);
+
+        /* Receive all data */
+        char recv_buf[4096] = {0};
+        ssize_t received = SocketDgram_recvall(receiver, recv_buf, sizeof(recv_buf));
+        ASSERT_EQ((ssize_t)sizeof(recv_buf), received);
+        ASSERT_EQ(0, memcmp(send_buf, recv_buf, sizeof(send_buf)));
+    EXCEPT(SocketDgram_Failed)
+        (void)0;
+    END_TRY;
+
+    SocketDgram_free(&sender);
+    SocketDgram_free(&receiver);
+}
+
+TEST(socketdgram_recvall_receives_all_data)
+{
+    setup_signals();
+    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
+    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+
+    TRY
+        SocketDgram_bind(receiver, "127.0.0.1", 0);
+        struct sockaddr_in addr;
+        socklen_t len = sizeof(addr);
+        getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
+        int port = ntohs(addr.sin_port);
+
+        SocketDgram_connect(sender, "127.0.0.1", port);
+        SocketDgram_connect(receiver, "127.0.0.1", SocketDgram_getlocalport(sender));
+
+        /* Send data */
+        const char *msg = "Test message for recvall";
+        ssize_t sent = SocketDgram_sendall(sender, msg, strlen(msg));
+        ASSERT_EQ((ssize_t)strlen(msg), sent);
+
+        /* Receive all data */
+        char recv_buf[256] = {0};
+        ssize_t received = SocketDgram_recvall(receiver, recv_buf, strlen(msg));
+        ASSERT_EQ((ssize_t)strlen(msg), received);
+        ASSERT_EQ(0, strcmp(msg, recv_buf));
+    EXCEPT(SocketDgram_Failed)
+        (void)0;
+    END_TRY;
+
+    SocketDgram_free(&sender);
+    SocketDgram_free(&receiver);
+}
+
 int main(void)
 {
     Test_run_all();

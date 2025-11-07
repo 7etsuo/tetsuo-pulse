@@ -121,4 +121,45 @@ int SocketCommon_getoption_int(int fd, int level, int optname, int *value, Excep
  */
 int SocketCommon_getoption_timeval(int fd, int level, int optname, struct timeval *tv, Except_T exception_type);
 
+/**
+ * SocketCommon_reverse_lookup - Perform reverse DNS lookup (getnameinfo wrapper)
+ * @addr: Socket address to look up
+ * @addrlen: Length of socket address
+ * @host: Output buffer for hostname (NULL to skip)
+ * @hostlen: Size of host buffer
+ * @serv: Output buffer for service/port (NULL to skip)
+ * @servlen: Size of service buffer
+ * @flags: getnameinfo flags (NI_NUMERICHOST, NI_NAMEREQD, etc.)
+ * @exception_type: Exception type to raise on failure
+ * Returns: 0 on success, -1 on failure
+ * Raises: Specified exception type on failure
+ * Thread-safe: Yes
+ * Note: Wrapper around getnameinfo() for reverse DNS lookups.
+ * Use NI_NUMERICHOST flag to get numeric IP address instead of hostname.
+ */
+int SocketCommon_reverse_lookup(const struct sockaddr *addr, socklen_t addrlen, char *host, socklen_t hostlen,
+                                char *serv, socklen_t servlen, int flags, Except_T exception_type);
+
+/**
+ * SocketCommon_parse_ip - Validate and parse IP address string
+ * @ip_str: IP address string to validate
+ * @family: Output pointer for address family (AF_INET or AF_INET6), can be NULL
+ * Returns: 1 if valid IP address, 0 if invalid
+ * Thread-safe: Yes
+ * Note: Validates both IPv4 and IPv6 addresses.
+ * Sets family to AF_INET for IPv4, AF_INET6 for IPv6, or AF_UNSPEC if invalid.
+ */
+int SocketCommon_parse_ip(const char *ip_str, int *family);
+
+/**
+ * SocketCommon_cidr_match - Check if IP address matches CIDR range
+ * @ip_str: IP address string to check
+ * @cidr_str: CIDR notation string (e.g., "192.168.1.0/24" or "2001:db8::/32")
+ * Returns: 1 if IP matches CIDR range, 0 if not, -1 on error
+ * Thread-safe: Yes
+ * Note: Supports both IPv4 and IPv6 CIDR notation.
+ * Returns -1 if IP or CIDR string is invalid.
+ */
+int SocketCommon_cidr_match(const char *ip_str, const char *cidr_str);
+
 #endif /* SOCKETCOMMON_H */
