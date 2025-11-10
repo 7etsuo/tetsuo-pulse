@@ -287,6 +287,34 @@
 #define SOCKET_TCP_KEEPINTVL TCP_KEEPINTVL
 #define SOCKET_TCP_KEEPCNT TCP_KEEPCNT
 
+/* TCP congestion control (Linux 2.6.13+) */
+#ifdef TCP_CONGESTION
+#define SOCKET_TCP_CONGESTION TCP_CONGESTION
+#define SOCKET_HAS_TCP_CONGESTION 1
+#else
+#define SOCKET_HAS_TCP_CONGESTION 0
+#endif
+
+/* TCP Fast Open (Linux 3.7+, FreeBSD 10.0+) */
+#ifdef TCP_FASTOPEN
+#define SOCKET_TCP_FASTOPEN TCP_FASTOPEN
+#define SOCKET_HAS_TCP_FASTOPEN 1
+#elif defined(TCP_FASTOPEN_CONNECT)
+/* macOS uses TCP_FASTOPEN_CONNECT */
+#define SOCKET_TCP_FASTOPEN TCP_FASTOPEN_CONNECT
+#define SOCKET_HAS_TCP_FASTOPEN 1
+#else
+#define SOCKET_HAS_TCP_FASTOPEN 0
+#endif
+
+/* TCP User Timeout (Linux 2.6.37+) */
+#ifdef TCP_USER_TIMEOUT
+#define SOCKET_TCP_USER_TIMEOUT TCP_USER_TIMEOUT
+#define SOCKET_HAS_TCP_USER_TIMEOUT 1
+#else
+#define SOCKET_HAS_TCP_USER_TIMEOUT 0
+#endif
+
 /* IPv6 options */
 #define SOCKET_IPV6_V6ONLY IPV6_V6ONLY
 /* IPv6 multicast - use platform-specific names */
