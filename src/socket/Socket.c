@@ -2233,6 +2233,215 @@ int Socket_getsndbuf(T socket)
 }
 
 /**
+ * Socket_setrcvbuf - Set receive buffer size
+ * @socket: Socket to modify
+ * @size: Buffer size in bytes (> 0)
+ * Raises: Socket_Failed on error
+ * Note: The kernel may adjust the value to be within system limits.
+ * Use Socket_getrcvbuf() to verify the actual size set.
+ */
+void Socket_setrcvbuf(T socket, int size)
+{
+    assert(socket);
+    assert(size > 0);
+
+    if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_RCVBUF, &size, sizeof(size)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to set SO_RCVBUF (size=%d)", size);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+}
+
+/**
+ * Socket_setsndbuf - Set send buffer size
+ * @socket: Socket to modify
+ * @size: Buffer size in bytes (> 0)
+ * Raises: Socket_Failed on error
+ * Note: The kernel may adjust the value to be within system limits.
+ * Use Socket_getsndbuf() to verify the actual size set.
+ */
+void Socket_setsndbuf(T socket, int size)
+{
+    assert(socket);
+    assert(size > 0);
+
+    if (setsockopt(socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_SNDBUF, &size, sizeof(size)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to set SO_SNDBUF (size=%d)", size);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+}
+
+/**
+ * Socket_setcongestion - Set TCP congestion control algorithm
+ * @socket: Socket to modify
+ * @algorithm: Algorithm name (e.g., "cubic", "reno", "bbr")
+ * Raises: Socket_Failed on error or if not supported
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Only available on Linux 2.6.13+. Common algorithms:
+ * - "cubic" (default on many Linux systems)
+ * - "reno" (classic TCP)
+ * - "bbr" (Google BBR, Linux 4.9+)
+ * - "bbr2" (BBR v2, Linux 4.20+)
+ * Use Socket_getcongestion() to query current algorithm.
+ */
+void Socket_setcongestion(T socket, const char *algorithm)
+{
+    assert(socket);
+    assert(algorithm);
+
+#if SOCKET_HAS_TCP_CONGESTION
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_CONGESTION, algorithm, strlen(algorithm) + 1) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to set TCP_CONGESTION (algorithm=%s)", algorithm);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+#else
+    SOCKET_ERROR_MSG("TCP_CONGESTION not supported on this platform");
+    RAISE_SOCKET_ERROR(Socket_Failed);
+#endif
+}
+
+/**
+ * Socket_getcongestion - Get TCP congestion control algorithm
+ * @socket: Socket to query
+ * @algorithm: Output buffer for algorithm name
+ * @len: Buffer length
+ * Returns: 0 on success, -1 on error or if not supported
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Only available on Linux 2.6.13+.
+ * The algorithm name is written to the provided buffer.
+ */
+int Socket_getcongestion(T socket, char *algorithm, size_t len)
+{
+    socklen_t optlen;
+
+    assert(socket);
+    assert(algorithm);
+    assert(len > 0);
+
+#if SOCKET_HAS_TCP_CONGESTION
+    optlen = (socklen_t)len;
+    if (getsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_CONGESTION, algorithm, &optlen) < 0)
+    {
+        return -1;
+    }
+    return 0;
+#else
+    (void)len;
+    return -1;
+#endif
+}
+
+/**
+ * Socket_setfastopen - Enable TCP Fast Open
+ * @socket: Socket to modify
+ * @enable: 1 to enable, 0 to disable
+ * Raises: Socket_Failed on error or if not supported
+ * Thread-safe: Yes (operates on single socket)
+ * Note: TCP Fast Open allows sending data in SYN packet.
+ * Only available on Linux 3.7+, FreeBSD 10.0+, macOS 10.11+.
+ * Must be set before connect() or listen().
+ * Use Socket_getfastopen() to query current setting.
+ */
+void Socket_setfastopen(T socket, int enable)
+{
+    int opt = enable ? 1 : 0;
+
+    assert(socket);
+
+#if SOCKET_HAS_TCP_FASTOPEN
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_FASTOPEN, &opt, sizeof(opt)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to set TCP_FASTOPEN (enable=%d)", enable);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+#else
+    (void)opt;
+    SOCKET_ERROR_MSG("TCP_FASTOPEN not supported on this platform");
+    RAISE_SOCKET_ERROR(Socket_Failed);
+#endif
+}
+
+/**
+ * Socket_getfastopen - Get TCP Fast Open setting
+ * @socket: Socket to query
+ * Returns: 1 if enabled, 0 if disabled, -1 on error or if not supported
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Only available on platforms that support TCP Fast Open.
+ */
+int Socket_getfastopen(T socket)
+{
+    int opt = 0;
+    socklen_t optlen = sizeof(opt);
+
+    assert(socket);
+
+#if SOCKET_HAS_TCP_FASTOPEN
+    if (getsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_FASTOPEN, &opt, &optlen) < 0)
+    {
+        return -1;
+    }
+    return opt;
+#else
+    return -1;
+#endif
+}
+
+/**
+ * Socket_setusertimeout - Set TCP user timeout
+ * @socket: Socket to modify
+ * @timeout_ms: Timeout in milliseconds (> 0)
+ * Raises: Socket_Failed on error or if not supported
+ * Thread-safe: Yes (operates on single socket)
+ * Note: TCP user timeout controls how long to wait for ACK before
+ * closing connection. Only available on Linux 2.6.37+.
+ * Use Socket_getusertimeout() to query current timeout.
+ */
+void Socket_setusertimeout(T socket, unsigned int timeout_ms)
+{
+    assert(socket);
+    assert(timeout_ms > 0);
+
+#if SOCKET_HAS_TCP_USER_TIMEOUT
+    if (setsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_USER_TIMEOUT, &timeout_ms, sizeof(timeout_ms)) < 0)
+    {
+        SOCKET_ERROR_FMT("Failed to set TCP_USER_TIMEOUT (timeout_ms=%u)", timeout_ms);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+#else
+    (void)timeout_ms;
+    SOCKET_ERROR_MSG("TCP_USER_TIMEOUT not supported on this platform");
+    RAISE_SOCKET_ERROR(Socket_Failed);
+#endif
+}
+
+/**
+ * Socket_getusertimeout - Get TCP user timeout
+ * @socket: Socket to query
+ * Returns: Timeout in milliseconds, or 0 on error or if not supported
+ * Thread-safe: Yes (operates on single socket)
+ * Note: Only available on Linux 2.6.37+.
+ */
+unsigned int Socket_getusertimeout(T socket)
+{
+    unsigned int timeout_ms = 0;
+    socklen_t optlen = sizeof(timeout_ms);
+
+    assert(socket);
+
+#if SOCKET_HAS_TCP_USER_TIMEOUT
+    if (getsockopt(socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_USER_TIMEOUT, &timeout_ms, &optlen) < 0)
+    {
+        return 0;
+    }
+    return timeout_ms;
+#else
+    return 0;
+#endif
+}
+
+/**
  * Socket_isconnected - Check if socket is connected
  * @socket: Socket to check
  * Returns: 1 if connected, 0 if not connected

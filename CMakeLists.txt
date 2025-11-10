@@ -181,3 +181,36 @@ message(STATUS "  Test files: 11")
 message(STATUS "  Total tests: 216+")
 message(STATUS "  Run with: make test (or ctest)")
 
+# Documentation generation (Doxygen)
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+    set(DOXYGEN_IN ${CMAKE_SOURCE_DIR}/Doxyfile)
+    set(DOXYGEN_OUT ${CMAKE_BINARY_DIR}/docs)
+    
+    # Copy CSS file to HTML output directory (Doxygen will include it)
+    add_custom_command(
+        OUTPUT ${CMAKE_SOURCE_DIR}/docs/html/doxygen-awesome.css
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/docs/html
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/docs/doxygen-awesome.css
+            ${CMAKE_SOURCE_DIR}/docs/html/doxygen-awesome.css
+        COMMENT "Preparing Doxygen CSS"
+        VERBATIM
+    )
+    
+    add_custom_target(doc
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/docs/html
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/docs/doxygen-awesome.css
+            ${CMAKE_SOURCE_DIR}/docs/html/doxygen-awesome.css
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_IN}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Generating API documentation with Doxygen"
+        VERBATIM
+    )
+    
+    message(STATUS "Documentation: Doxygen found - use 'make doc' to generate API docs")
+else()
+    message(STATUS "Documentation: Doxygen not found - install doxygen to generate API docs")
+endif()
+

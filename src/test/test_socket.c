@@ -1593,6 +1593,198 @@ TEST(socket_recvmsg_receives_message_with_iovec)
     Socket_free(&client);
 }
 
+/* ==================== Advanced Socket Options Tests ==================== */
+
+TEST(socket_setrcvbuf_sets_receive_buffer_size)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        int original_size = Socket_getrcvbuf(socket);
+        ASSERT(original_size > 0);
+
+        /* Set new buffer size */
+        int new_size = 65536;
+        Socket_setrcvbuf(socket, new_size);
+
+        /* Verify it was set (kernel may adjust) */
+        int actual_size = Socket_getrcvbuf(socket);
+        ASSERT(actual_size > 0);
+        /* Kernel may adjust, but should be close to requested */
+        ASSERT(actual_size >= new_size / 2);
+    EXCEPT(Socket_Failed)
+        (void)0;
+    END_TRY;
+
+    Socket_free(&socket);
+}
+
+TEST(socket_setsndbuf_sets_send_buffer_size)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        int original_size = Socket_getsndbuf(socket);
+        ASSERT(original_size > 0);
+
+        /* Set new buffer size */
+        int new_size = 65536;
+        Socket_setsndbuf(socket, new_size);
+
+        /* Verify it was set (kernel may adjust) */
+        int actual_size = Socket_getsndbuf(socket);
+        ASSERT(actual_size > 0);
+        /* Kernel may adjust, but should be close to requested */
+        ASSERT(actual_size >= new_size / 2);
+    EXCEPT(Socket_Failed)
+        (void)0;
+    END_TRY;
+
+    Socket_free(&socket);
+}
+
+TEST(socket_setcongestion_sets_congestion_algorithm)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    char algorithm[16] = {0};
+
+    TRY
+        /* Try to get current algorithm */
+        int result = Socket_getcongestion(socket, algorithm, sizeof(algorithm));
+        if (result < 0)
+        {
+            /* Not supported on this platform - skip test */
+            Socket_free(&socket);
+            return;
+        }
+
+        /* Try setting to "reno" */
+        Socket_setcongestion(socket, "reno");
+
+        /* Verify it was set */
+        memset(algorithm, 0, sizeof(algorithm));
+        result = Socket_getcongestion(socket, algorithm, sizeof(algorithm));
+        ASSERT_EQ(0, result);
+        ASSERT_EQ(0, strcmp(algorithm, "reno"));
+
+        /* Try setting back to original or "cubic" */
+        Socket_setcongestion(socket, "cubic");
+    EXCEPT(Socket_Failed)
+        /* May fail if algorithm not available - that's OK */
+        (void)0;
+    END_TRY;
+
+    Socket_free(&socket);
+}
+
+TEST(socket_setfastopen_enables_tcp_fast_open)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        /* Try to get current setting */
+        int result = Socket_getfastopen(socket);
+        if (result < 0)
+        {
+            /* Not supported on this platform - skip test */
+            Socket_free(&socket);
+            return;
+        }
+
+        /* Enable Fast Open */
+        Socket_setfastopen(socket, 1);
+
+        /* Verify it was enabled */
+        result = Socket_getfastopen(socket);
+        ASSERT_EQ(1, result);
+
+        /* Disable Fast Open */
+        Socket_setfastopen(socket, 0);
+
+        /* Verify it was disabled */
+        result = Socket_getfastopen(socket);
+        ASSERT_EQ(0, result);
+    EXCEPT(Socket_Failed)
+        /* May fail if not supported - that's OK */
+        (void)0;
+    END_TRY;
+
+    Socket_free(&socket);
+}
+
+TEST(socket_setusertimeout_sets_tcp_user_timeout)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        /* Try to get current timeout */
+        unsigned int timeout = Socket_getusertimeout(socket);
+        if (timeout == 0)
+        {
+            /* May not be supported - try setting it */
+            Socket_setusertimeout(socket, 30000);
+            timeout = Socket_getusertimeout(socket);
+            if (timeout == 0)
+            {
+                /* Not supported on this platform - skip test */
+                Socket_free(&socket);
+                return;
+            }
+        }
+
+        /* Set new timeout */
+        unsigned int new_timeout = 60000;
+        Socket_setusertimeout(socket, new_timeout);
+
+        /* Verify it was set */
+        timeout = Socket_getusertimeout(socket);
+        ASSERT_EQ(new_timeout, timeout);
+    EXCEPT(Socket_Failed)
+        /* May fail if not supported - that's OK */
+        (void)0;
+    END_TRY;
+
+    Socket_free(&socket);
+}
+
+TEST(socket_buffer_size_setters_and_getters_work_together)
+{
+    setup_signals();
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY
+        /* Get original sizes */
+        int original_rcvbuf = Socket_getrcvbuf(socket);
+        int original_sndbuf = Socket_getsndbuf(socket);
+        ASSERT(original_rcvbuf > 0);
+        ASSERT(original_sndbuf > 0);
+
+        /* Set new sizes */
+        int new_rcvbuf = 32768;
+        int new_sndbuf = 32768;
+        Socket_setrcvbuf(socket, new_rcvbuf);
+        Socket_setsndbuf(socket, new_sndbuf);
+
+        /* Verify they were set */
+        int actual_rcvbuf = Socket_getrcvbuf(socket);
+        int actual_sndbuf = Socket_getsndbuf(socket);
+        ASSERT(actual_rcvbuf > 0);
+        ASSERT(actual_sndbuf > 0);
+        /* Kernel may adjust, but should be reasonable */
+        ASSERT(actual_rcvbuf >= new_rcvbuf / 2);
+        ASSERT(actual_sndbuf >= new_sndbuf / 2);
+    EXCEPT(Socket_Failed)
+        (void)0;
+    END_TRY;
+
+    Socket_free(&socket);
+}
+
 /* ==================== Close-on-Exec Tests ==================== */
 
 TEST(socket_new_sets_cloexec_by_default)

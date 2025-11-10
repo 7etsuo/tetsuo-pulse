@@ -92,3 +92,8 @@ ReturnType
 
 Adhering to these rules ensures the socket library remains leak-free, consistent with Hanson’s C Interfaces and Implementations methodology, and aligned with GNU C style across all modules.
 
+## Documentation Restrictions
+
+- **DO NOT** add references to "C Interfaces and Implementations" in README.md or any documentation files
+- Keep documentation focused on the library's features and usage without external book references
+
