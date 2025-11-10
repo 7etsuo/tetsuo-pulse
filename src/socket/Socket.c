@@ -2328,6 +2328,7 @@ int Socket_getcongestion(T socket, char *algorithm, size_t len)
     }
     return 0;
 #else
+    (void)optlen;
     (void)len;
     return -1;
 #endif
@@ -2437,6 +2438,7 @@ unsigned int Socket_getusertimeout(T socket)
     }
     return timeout_ms;
 #else
+    (void) optlen;
     return 0;
 #endif
 }
