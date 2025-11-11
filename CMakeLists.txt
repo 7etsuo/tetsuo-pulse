@@ -53,6 +53,7 @@ set(LIB_SOURCES
     src/socket/SocketDgram.c
     src/socket/SocketBuf.c
     src/socket/SocketCommon.c
+    src/socket/SocketAsync.c
     
     # DNS module
     src/dns/SocketDNS.c
@@ -81,6 +82,7 @@ set(SOCKET_HEADERS
     include/socket/SocketDgram.h
     include/socket/SocketBuf.h
     include/socket/SocketCommon.h
+    include/socket/SocketAsync.h
 )
 
 set(DNS_HEADERS
@@ -100,6 +102,22 @@ set(TEST_HEADERS
     include/test/Test.h
 )
 
+# Detect liburing for async I/O support (Linux only)
+set(LIBURING_LIBRARIES "")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(LIBURING QUIET liburing)
+        if(LIBURING_FOUND)
+            add_definitions(-DSOCKET_HAS_IO_URING)
+            set(LIBURING_LIBRARIES ${LIBURING_LIBRARIES})
+            message(STATUS "liburing found - async I/O enabled")
+        else()
+            message(STATUS "liburing not found - async I/O will use fallback mode (install liburing-dev)")
+        endif()
+    endif()
+endif()
+
 # Object library for reuse in tests (avoids static library constructor issues)
 add_library(socket_objects OBJECT ${LIB_SOURCES})
 target_include_directories(socket_objects PRIVATE ${CMAKE_SOURCE_DIR}/include)
@@ -107,12 +125,12 @@ target_include_directories(socket_objects PRIVATE ${CMAKE_SOURCE_DIR}/include)
 # Static library
 add_library(socket_static STATIC $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_static PROPERTIES OUTPUT_NAME socket)
-target_link_libraries(socket_static pthread)
+target_link_libraries(socket_static pthread ${LIBURING_LIBRARIES})
 
 # Shared library
 add_library(socket_shared SHARED $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_shared PROPERTIES OUTPUT_NAME socket)
-target_link_libraries(socket_shared pthread)
+target_link_libraries(socket_shared pthread ${LIBURING_LIBRARIES})
 
 # Custom target to build both libraries (default)
 add_custom_target(lib ALL DEPENDS socket_static socket_shared)
@@ -160,6 +178,7 @@ set(TEST_SOURCES
     test_socketpoll
     test_socketpool
     test_socketdns
+    test_socketasync
     test_integration
     test_threadsafety
 )
@@ -212,5 +231,37 @@ if(DOXYGEN_FOUND)
     message(STATUS "Documentation: Doxygen found - use 'make doc' to generate API docs")
 else()
     message(STATUS "Documentation: Doxygen not found - install doxygen to generate API docs")
+endif()
+
+add_executable(benchmark_server ../src/test/benchmark_server.c)
+target_link_libraries(benchmark_server socket_static pthread)
+
+add_executable(benchmark_client ../src/test/benchmark_client.c)
+target_link_libraries(benchmark_client socket_static pthread)
+
+add_executable(benchmark_raw ../src/test/benchmark_raw.c)
+target_link_libraries(benchmark_raw pthread)
+
+find_package(LibEvent QUIET)
+
+if(NOT LibEvent_FOUND)
+    # Try pkg-config fallback
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(LibEvent QUIET libevent)
+        if(LibEvent_FOUND)
+            set(LibEvent_LIBRARIES ${LibEvent_LIBRARIES})
+            set(LibEvent_INCLUDE_DIRS ${LibEvent_INCLUDE_DIRS})
+        endif()
+    endif()
+endif()
+
+if(LibEvent_FOUND)
+    add_executable(benchmark_libevent ../src/test/benchmark_libevent.c)
+    target_include_directories(benchmark_libevent PRIVATE ${LibEvent_INCLUDE_DIRS})
+    target_link_libraries(benchmark_libevent ${LibEvent_LIBRARIES} pthread)
+    message(STATUS "LibEvent found - building benchmark_libevent")
+else()
+    message(STATUS "LibEvent not found - skipping benchmark_libevent (install libevent-dev)")
 endif()
 

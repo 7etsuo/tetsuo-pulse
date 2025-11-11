@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -20,6 +21,7 @@
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 #include "socket/SocketDgram.h"
+#include "socket/SocketAsync.h"
 
 #define TEST_BUFFER_SIZE 4096
 #define TEST_PORT_BASE 40000
@@ -27,21 +29,18 @@
 static Socket_T tracked_sockets[128];
 static int tracked_count;
 
-static void
-reset_tracked_sockets(void)
+static void reset_tracked_sockets(void)
 {
     tracked_count = 0;
 }
 
-static void
-track_socket(Socket_T socket)
+static void track_socket(Socket_T socket)
 {
     if (socket && tracked_count < (int)(sizeof(tracked_sockets) / sizeof(tracked_sockets[0])))
         tracked_sockets[tracked_count++] = socket;
 }
 
-static void
-untrack_socket(Socket_T socket)
+static void untrack_socket(Socket_T socket)
 {
     for (int i = 0; i < tracked_count; i++)
     {
@@ -55,14 +54,12 @@ untrack_socket(Socket_T socket)
     }
 }
 
-static void
-assert_no_tracked_sockets(void)
+static void assert_no_tracked_sockets(void)
 {
     ASSERT_EQ(tracked_count, 0);
 }
 
-static void
-assert_no_socket_leaks(void)
+static void assert_no_socket_leaks(void)
 {
     ASSERT_EQ(Socket_debug_live_count(), 0);
 }
@@ -84,54 +81,53 @@ TEST(integration_simple_tcp_server)
     Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Socket_setreuseaddr(server);
-        Socket_bind(server, "127.0.0.1", 0);
-        Socket_listen(server, 10);
-        Socket_setnonblocking(server);
-        
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
-        
-        SocketPoll_add(poll, server, POLL_READ, NULL);
-        Socket_connect(client, "127.0.0.1", port);
-        usleep(50000);
-        
-        SocketEvent_T *events = NULL;
-        int nfds = SocketPoll_wait(poll, &events, 100);
-        
-        if (nfds > 0 && events[0].socket == server)
+    TRY Socket_setreuseaddr(server);
+    Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 10);
+    Socket_setnonblocking(server);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+    int port = ntohs(addr.sin_port);
+
+    SocketPoll_add(poll, server, POLL_READ, NULL);
+    Socket_connect(client, "127.0.0.1", port);
+    usleep(50000);
+
+    SocketEvent_T *events = NULL;
+    int nfds = SocketPoll_wait(poll, &events, 100);
+
+    if (nfds > 0 && events[0].socket == server)
+    {
+        Socket_T accepted = Socket_accept(server);
+        if (accepted)
         {
-            Socket_T accepted = Socket_accept(server);
-            if (accepted)
-            {
-                Socket_T tracked = accepted;
-                track_socket(tracked);
-                Connection_T conn = SocketPool_add(pool, accepted);
-                ASSERT_NOT_NULL(conn);
-                SocketPool_remove(pool, accepted);
-                Socket_free(&accepted);
-                untrack_socket(tracked);
-            }
+            Socket_T tracked = accepted;
+            track_socket(tracked);
+            Connection_T conn = SocketPool_add(pool, accepted);
+            ASSERT_NOT_NULL(conn);
+            SocketPool_remove(pool, accepted);
+            Socket_free(&accepted);
+            untrack_socket(tracked);
         }
-    EXCEPT(Socket_Failed) (void)0;
-    EXCEPT(SocketPoll_Failed) (void)0;
-    EXCEPT(SocketPool_Failed) (void)0;
+    }
+    EXCEPT(Socket_Failed)(void) 0;
+    EXCEPT(SocketPoll_Failed)(void) 0;
+    EXCEPT(SocketPool_Failed)(void) 0;
     FINALLY
-        Socket_free(&client);
-        Socket_free(&server);
-        SocketPoll_free(&poll);
-        if (pool)
-        {
-            SocketPool_cleanup(pool, 0);
-            ASSERT_EQ(SocketPool_count(pool), 0);
-        }
-        SocketPool_free(&pool);
-        Arena_dispose(&arena);
-        assert_no_tracked_sockets();
-        assert_no_socket_leaks();
+    Socket_free(&client);
+    Socket_free(&server);
+    SocketPoll_free(&poll);
+    if (pool)
+    {
+        SocketPool_cleanup(pool, 0);
+        ASSERT_EQ(SocketPool_count(pool), 0);
+    }
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+    assert_no_tracked_sockets();
+    assert_no_socket_leaks();
     END_TRY;
 }
 
@@ -145,72 +141,71 @@ TEST(integration_tcp_echo_server)
     Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Socket_setreuseaddr(server);
-        Socket_bind(server, "127.0.0.1", 0);
-        Socket_listen(server, 10);
-        Socket_setnonblocking(server);
-        
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
-        
-        SocketPoll_add(poll, server, POLL_READ, NULL);
-        Socket_connect(client, "127.0.0.1", port);
-        usleep(50000);
-        
-        SocketEvent_T *events = NULL;
-        int nfds = SocketPoll_wait(poll, &events, 100);
-        
-        if (nfds > 0)
+    TRY Socket_setreuseaddr(server);
+    Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 10);
+    Socket_setnonblocking(server);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+    int port = ntohs(addr.sin_port);
+
+    SocketPoll_add(poll, server, POLL_READ, NULL);
+    Socket_connect(client, "127.0.0.1", port);
+    usleep(50000);
+
+    SocketEvent_T *events = NULL;
+    int nfds = SocketPoll_wait(poll, &events, 100);
+
+    if (nfds > 0)
+    {
+        Socket_T accepted = Socket_accept(server);
+        if (accepted)
         {
-            Socket_T accepted = Socket_accept(server);
-            if (accepted)
+            Socket_T tracked = accepted;
+            track_socket(tracked);
+            Connection_T conn = SocketPool_add(pool, accepted);
+            SocketPoll_add(poll, accepted, POLL_READ, conn);
+
+            const char *msg = "Echo test";
+            Socket_send(client, msg, strlen(msg));
+            usleep(50000);
+
+            nfds = SocketPoll_wait(poll, &events, 100);
+            if (nfds > 0)
             {
-                Socket_T tracked = accepted;
-                track_socket(tracked);
-                Connection_T conn = SocketPool_add(pool, accepted);
-                SocketPoll_add(poll, accepted, POLL_READ, conn);
-                
-                const char *msg = "Echo test";
-                Socket_send(client, msg, strlen(msg));
-                usleep(50000);
-                
-                nfds = SocketPoll_wait(poll, &events, 100);
-                if (nfds > 0)
+                char buf[TEST_BUFFER_SIZE] = {0};
+                ssize_t received = Socket_recv(accepted, buf, sizeof(buf) - 1);
+                if (received > 0)
                 {
-                    char buf[TEST_BUFFER_SIZE] = {0};
-                    ssize_t received = Socket_recv(accepted, buf, sizeof(buf) - 1);
-                    if (received > 0)
-                    {
-                        ASSERT_EQ(strcmp(buf, msg), 0);
-                        Socket_send(accepted, buf, received);
-                    }
+                    ASSERT_EQ(strcmp(buf, msg), 0);
+                    Socket_send(accepted, buf, received);
                 }
-                
-                SocketPoll_del(poll, accepted);
-                SocketPool_remove(pool, accepted);
-                Socket_free(&accepted);
-                untrack_socket(tracked);
             }
+
+            SocketPoll_del(poll, accepted);
+            SocketPool_remove(pool, accepted);
+            Socket_free(&accepted);
+            untrack_socket(tracked);
         }
-    EXCEPT(Socket_Failed) (void)0;
-    EXCEPT(SocketPoll_Failed) (void)0;
-    EXCEPT(SocketPool_Failed) (void)0;
+    }
+    EXCEPT(Socket_Failed)(void) 0;
+    EXCEPT(SocketPoll_Failed)(void) 0;
+    EXCEPT(SocketPool_Failed)(void) 0;
     FINALLY
-        Socket_free(&client);
-        Socket_free(&server);
-        SocketPoll_free(&poll);
-        if (pool)
-        {
-            SocketPool_cleanup(pool, 0);
-            ASSERT_EQ(SocketPool_count(pool), 0);
-        }
-        SocketPool_free(&pool);
-        Arena_dispose(&arena);
-        assert_no_tracked_sockets();
-        assert_no_socket_leaks();
+    Socket_free(&client);
+    Socket_free(&server);
+    SocketPoll_free(&poll);
+    if (pool)
+    {
+        SocketPool_cleanup(pool, 0);
+        ASSERT_EQ(SocketPool_count(pool), 0);
+    }
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+    assert_no_tracked_sockets();
+    assert_no_socket_leaks();
     END_TRY;
 }
 
@@ -279,74 +274,73 @@ TEST(integration_tcp_multiple_clients)
     Socket_T accepted_sockets[2] = {NULL, NULL};
     volatile int accepted_count = 0;
 
-    TRY
-        Socket_setreuseaddr(server);
-        Socket_bind(server, "127.0.0.1", 0);
-        Socket_listen(server, 10);
-        Socket_setnonblocking(server);
-        
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
-        
-        SocketPoll_add(poll, server, POLL_READ, NULL);
-        
-        Socket_connect(client1, "127.0.0.1", port);
-        Socket_connect(client2, "127.0.0.1", port);
-        usleep(100000);
-        
-        for (int i = 0; i < 2; i++)
+    TRY Socket_setreuseaddr(server);
+    Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 10);
+    Socket_setnonblocking(server);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+    int port = ntohs(addr.sin_port);
+
+    SocketPoll_add(poll, server, POLL_READ, NULL);
+
+    Socket_connect(client1, "127.0.0.1", port);
+    Socket_connect(client2, "127.0.0.1", port);
+    usleep(100000);
+
+    for (int i = 0; i < 2; i++)
+    {
+        SocketEvent_T *events = NULL;
+        int nfds = SocketPoll_wait(poll, &events, 100);
+
+        if (nfds > 0 && events[0].socket == server)
         {
-            SocketEvent_T *events = NULL;
-            int nfds = SocketPoll_wait(poll, &events, 100);
-            
-            if (nfds > 0 && events[0].socket == server)
+            Socket_T accepted = Socket_accept(server);
+            if (accepted)
             {
-                Socket_T accepted = Socket_accept(server);
-                if (accepted)
-                {
-                    Socket_T tracked = accepted;
-                    track_socket(tracked);
-                    SocketPool_add(pool, accepted);
-                    SocketPoll_add(poll, accepted, POLL_READ, NULL);
-                    if (accepted_count < 2)
-                        accepted_sockets[accepted_count++] = tracked;
-                }
+                Socket_T tracked = accepted;
+                track_socket(tracked);
+                SocketPool_add(pool, accepted);
+                SocketPoll_add(poll, accepted, POLL_READ, NULL);
+                if (accepted_count < 2)
+                    accepted_sockets[accepted_count++] = tracked;
             }
         }
-        
-        size_t conn_count = SocketPool_count(pool);
-        ASSERT_NE(conn_count, 0);
-    EXCEPT(Socket_Failed) (void)0;
-    EXCEPT(SocketPoll_Failed) (void)0;
-    EXCEPT(SocketPool_Failed) (void)0;
+    }
+
+    size_t conn_count = SocketPool_count(pool);
+    ASSERT_NE(conn_count, 0);
+    EXCEPT(Socket_Failed)(void) 0;
+    EXCEPT(SocketPoll_Failed)(void) 0;
+    EXCEPT(SocketPool_Failed)(void) 0;
     FINALLY
-        for (int i = 0; i < accepted_count; i++)
+    for (int i = 0; i < accepted_count; i++)
+    {
+        Socket_T sock = accepted_sockets[i];
+        if (sock)
         {
-            Socket_T sock = accepted_sockets[i];
-            if (sock)
-            {
-                SocketPoll_del(poll, sock);
-                SocketPool_remove(pool, sock);
-                untrack_socket(sock);
-                Socket_free(&sock);
-                accepted_sockets[i] = NULL;
-            }
+            SocketPoll_del(poll, sock);
+            SocketPool_remove(pool, sock);
+            untrack_socket(sock);
+            Socket_free(&sock);
+            accepted_sockets[i] = NULL;
         }
-        Socket_free(&client2);
-        Socket_free(&client1);
-        Socket_free(&server);
-        SocketPoll_free(&poll);
-        if (pool)
-        {
-            SocketPool_cleanup(pool, 0);
-            ASSERT_EQ(SocketPool_count(pool), 0);
-        }
-        SocketPool_free(&pool);
-        Arena_dispose(&arena);
-        assert_no_tracked_sockets();
-        assert_no_socket_leaks();
+    }
+    Socket_free(&client2);
+    Socket_free(&client1);
+    Socket_free(&server);
+    SocketPoll_free(&poll);
+    if (pool)
+    {
+        SocketPool_cleanup(pool, 0);
+        ASSERT_EQ(SocketPool_count(pool), 0);
+    }
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+    assert_no_tracked_sockets();
+    assert_no_socket_leaks();
     END_TRY;
 }
 
@@ -359,35 +353,34 @@ TEST(integration_udp_echo_server)
     SocketDgram_T server = SocketDgram_new(AF_INET, 0);
     SocketDgram_T client = SocketDgram_new(AF_INET, 0);
 
-    TRY
-        SocketDgram_bind(server, "127.0.0.1", 0);
-        SocketDgram_setnonblocking(server);
-        
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(SocketDgram_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
-        
-        const char *msg = "UDP echo test";
-        SocketDgram_sendto(client, msg, strlen(msg), "127.0.0.1", port);
-        usleep(50000);
-        
-        char recv_host[256] = {0};
-        int recv_port = 0;
-        char buf[TEST_BUFFER_SIZE] = {0};
-        ssize_t received = SocketDgram_recvfrom(server, buf, sizeof(buf) - 1, recv_host, sizeof(recv_host), &recv_port);
-        
-        if (received > 0)
-        {
-            ASSERT_EQ(strcmp(buf, msg), 0);
-            SocketDgram_sendto(server, buf, received, recv_host, recv_port);
-        }
-    EXCEPT(SocketDgram_Failed) (void)0;
-    EXCEPT(SocketPoll_Failed) (void)0;
+    TRY SocketDgram_bind(server, "127.0.0.1", 0);
+    SocketDgram_setnonblocking(server);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    getsockname(SocketDgram_fd(server), (struct sockaddr *)&addr, &len);
+    int port = ntohs(addr.sin_port);
+
+    const char *msg = "UDP echo test";
+    SocketDgram_sendto(client, msg, strlen(msg), "127.0.0.1", port);
+    usleep(50000);
+
+    char recv_host[256] = {0};
+    int recv_port = 0;
+    char buf[TEST_BUFFER_SIZE] = {0};
+    ssize_t received = SocketDgram_recvfrom(server, buf, sizeof(buf) - 1, recv_host, sizeof(recv_host), &recv_port);
+
+    if (received > 0)
+    {
+        ASSERT_EQ(strcmp(buf, msg), 0);
+        SocketDgram_sendto(server, buf, received, recv_host, recv_port);
+    }
+    EXCEPT(SocketDgram_Failed)(void) 0;
+    EXCEPT(SocketPoll_Failed)(void) 0;
     FINALLY
-        SocketDgram_free(&client);
-        SocketDgram_free(&server);
-        SocketPoll_free(&poll);
+    SocketDgram_free(&client);
+    SocketDgram_free(&server);
+    SocketPoll_free(&poll);
     END_TRY;
 }
 
@@ -402,56 +395,55 @@ TEST(integration_pool_with_buffers)
     Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Socket_bind(server, "127.0.0.1", 0);
-        Socket_listen(server, 1);
-        Socket_setnonblocking(server);
-        
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
-        
-        Socket_connect(client, "127.0.0.1", port);
-        usleep(50000);
-        
-        Socket_T accepted = Socket_accept(server);
-        if (accepted)
-        {
-            Socket_T tracked = accepted;
-            track_socket(tracked);
-            Connection_T conn = SocketPool_add(pool, accepted);
-            ASSERT_NOT_NULL(conn);
-            
-            SocketBuf_T inbuf = Connection_inbuf(conn);
-            SocketBuf_T outbuf = Connection_outbuf(conn);
-            
-            const char *in_msg = "Input test";
-            const char *out_msg = "Output test";
-            SocketBuf_write(inbuf, in_msg, strlen(in_msg));
-            SocketBuf_write(outbuf, out_msg, strlen(out_msg));
-            
-            ASSERT_EQ(SocketBuf_available(inbuf), strlen(in_msg));
-            ASSERT_EQ(SocketBuf_available(outbuf), strlen(out_msg));
-            
-            SocketPool_remove(pool, accepted);
-            Socket_free(&accepted);
-            untrack_socket(tracked);
-        }
-    EXCEPT(Socket_Failed) (void)0;
-    EXCEPT(SocketPool_Failed) (void)0;
+    TRY Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 1);
+    Socket_setnonblocking(server);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+    int port = ntohs(addr.sin_port);
+
+    Socket_connect(client, "127.0.0.1", port);
+    usleep(50000);
+
+    Socket_T accepted = Socket_accept(server);
+    if (accepted)
+    {
+        Socket_T tracked = accepted;
+        track_socket(tracked);
+        Connection_T conn = SocketPool_add(pool, accepted);
+        ASSERT_NOT_NULL(conn);
+
+        SocketBuf_T inbuf = Connection_inbuf(conn);
+        SocketBuf_T outbuf = Connection_outbuf(conn);
+
+        const char *in_msg = "Input test";
+        const char *out_msg = "Output test";
+        SocketBuf_write(inbuf, in_msg, strlen(in_msg));
+        SocketBuf_write(outbuf, out_msg, strlen(out_msg));
+
+        ASSERT_EQ(SocketBuf_available(inbuf), strlen(in_msg));
+        ASSERT_EQ(SocketBuf_available(outbuf), strlen(out_msg));
+
+        SocketPool_remove(pool, accepted);
+        Socket_free(&accepted);
+        untrack_socket(tracked);
+    }
+    EXCEPT(Socket_Failed)(void) 0;
+    EXCEPT(SocketPool_Failed)(void) 0;
     FINALLY
-        Socket_free(&client);
-        Socket_free(&server);
-        if (pool)
-        {
-            SocketPool_cleanup(pool, 0);
-            ASSERT_EQ(SocketPool_count(pool), 0);
-        }
-        SocketPool_free(&pool);
-        Arena_dispose(&arena);
-        assert_no_tracked_sockets();
-        assert_no_socket_leaks();
+    Socket_free(&client);
+    Socket_free(&server);
+    if (pool)
+    {
+        SocketPool_cleanup(pool, 0);
+        ASSERT_EQ(SocketPool_count(pool), 0);
+    }
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+    assert_no_tracked_sockets();
+    assert_no_socket_leaks();
     END_TRY;
 }
 
@@ -462,38 +454,37 @@ TEST(integration_pool_cleanup_idle)
     SocketPool_T pool = SocketPool_new(arena, 10, 1024);
     volatile Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        volatile size_t count_before;
-        volatile size_t count_after;
-        volatile Connection_T conn;
-        conn = SocketPool_add(pool, socket);
-        ASSERT_NOT_NULL(conn);
-        socket = NULL;  /* Ownership transferred to pool */
-        
-        count_before = SocketPool_count(pool);
-        ASSERT_EQ(count_before, 1);
-        
-        sleep(2);
-        SocketPool_cleanup(pool, 1);
-        
-        count_after = SocketPool_count(pool);
-        ASSERT_EQ(count_after, 0);
-    EXCEPT(SocketPool_Failed) (void)0;
+    TRY volatile size_t count_before;
+    volatile size_t count_after;
+    volatile Connection_T conn;
+    conn = SocketPool_add(pool, socket);
+    ASSERT_NOT_NULL(conn);
+    socket = NULL; /* Ownership transferred to pool */
+
+    count_before = SocketPool_count(pool);
+    ASSERT_EQ(count_before, 1);
+
+    sleep(2);
+    SocketPool_cleanup(pool, 1);
+
+    count_after = SocketPool_count(pool);
+    ASSERT_EQ(count_after, 0);
+    EXCEPT(SocketPool_Failed)(void) 0;
     FINALLY
-        if (socket)
-        {
-            Socket_T s = (Socket_T)socket;
-            Socket_free(&s);
-        }
-        if (pool)
-        {
-            SocketPool_cleanup(pool, 0);
-            ASSERT_EQ(SocketPool_count(pool), 0);
-        }
-        SocketPool_free(&pool);
-        Arena_dispose(&arena);
-        assert_no_tracked_sockets();
-        assert_no_socket_leaks();
+    if (socket)
+    {
+        Socket_T s = (Socket_T)socket;
+        Socket_free(&s);
+    }
+    if (pool)
+    {
+        SocketPool_cleanup(pool, 0);
+        ASSERT_EQ(SocketPool_count(pool), 0);
+    }
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+    assert_no_tracked_sockets();
+    assert_no_socket_leaks();
     END_TRY;
 }
 
@@ -511,93 +502,92 @@ TEST(integration_full_stack_tcp_server)
     Socket_T accepted_sockets[32] = {NULL};
     volatile int accepted_count = 0;
 
-    TRY
-        Socket_setreuseaddr(server);
-        Socket_bind(server, "127.0.0.1", 0);
-        Socket_listen(server, 10);
-        Socket_setnonblocking(server);
-        
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
-        
-        SocketPoll_add(poll, server, POLL_READ, NULL);
-        Socket_connect(client, "127.0.0.1", port);
-        usleep(50000);
-        
-        for (int iteration = 0; iteration < 3; iteration++)
+    TRY Socket_setreuseaddr(server);
+    Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 10);
+    Socket_setnonblocking(server);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+    int port = ntohs(addr.sin_port);
+
+    SocketPoll_add(poll, server, POLL_READ, NULL);
+    Socket_connect(client, "127.0.0.1", port);
+    usleep(50000);
+
+    for (int iteration = 0; iteration < 3; iteration++)
+    {
+        SocketEvent_T *events = NULL;
+        int nfds = SocketPoll_wait(poll, &events, 100);
+
+        for (int i = 0; i < nfds; i++)
         {
-            SocketEvent_T *events = NULL;
-            int nfds = SocketPoll_wait(poll, &events, 100);
-            
-            for (int i = 0; i < nfds; i++)
+            if (events[i].socket == server && (events[i].events & POLL_READ))
             {
-                if (events[i].socket == server && (events[i].events & POLL_READ))
+                Socket_T accepted = Socket_accept(server);
+                if (accepted)
                 {
-                    Socket_T accepted = Socket_accept(server);
-                    if (accepted)
+                    Socket_T tracked = accepted;
+                    track_socket(tracked);
+                    Connection_T conn = SocketPool_add(pool, accepted);
+                    if (conn)
                     {
-                        Socket_T tracked = accepted;
-                        track_socket(tracked);
-                        Connection_T conn = SocketPool_add(pool, accepted);
-                        if (conn)
-                        {
-                            SocketPoll_add(poll, accepted, POLL_READ, conn);
-                            if (accepted_count < 32)
-                                accepted_sockets[accepted_count++] = tracked;
-                        }
-                        else
-                        {
-                            Socket_free(&accepted);
-                            untrack_socket(tracked);
-                        }
+                        SocketPoll_add(poll, accepted, POLL_READ, conn);
+                        if (accepted_count < 32)
+                            accepted_sockets[accepted_count++] = tracked;
                     }
-                }
-                else if (events[i].data && (events[i].events & POLL_READ))
-                {
-                    Connection_T conn = (Connection_T)events[i].data;
-                    Socket_T sock = Connection_socket(conn);
-                    SocketBuf_T inbuf = Connection_inbuf(conn);
-                    
-                    char buf[1024];
-                    ssize_t received = Socket_recv(sock, buf, sizeof(buf));
-                    if (received > 0)
+                    else
                     {
-                        SocketBuf_write(inbuf, buf, received);
+                        Socket_free(&accepted);
+                        untrack_socket(tracked);
                     }
                 }
             }
-            usleep(10000);
+            else if (events[i].data && (events[i].events & POLL_READ))
+            {
+                Connection_T conn = (Connection_T)events[i].data;
+                Socket_T sock = Connection_socket(conn);
+                SocketBuf_T inbuf = Connection_inbuf(conn);
+
+                char buf[1024];
+                ssize_t received = Socket_recv(sock, buf, sizeof(buf));
+                if (received > 0)
+                {
+                    SocketBuf_write(inbuf, buf, received);
+                }
+            }
         }
-    EXCEPT(Socket_Failed) (void)0;
-    EXCEPT(SocketPoll_Failed) (void)0;
-    EXCEPT(SocketPool_Failed) (void)0;
+        usleep(10000);
+    }
+    EXCEPT(Socket_Failed)(void) 0;
+    EXCEPT(SocketPoll_Failed)(void) 0;
+    EXCEPT(SocketPool_Failed)(void) 0;
     FINALLY
-        for (int i = 0; i < accepted_count; i++)
+    for (int i = 0; i < accepted_count; i++)
+    {
+        Socket_T sock = accepted_sockets[i];
+        if (sock)
         {
-            Socket_T sock = accepted_sockets[i];
-            if (sock)
-            {
-                SocketPoll_del(poll, sock);
-                SocketPool_remove(pool, sock);
-                untrack_socket(sock);
-                Socket_free(&sock);
-                accepted_sockets[i] = NULL;
-            }
+            SocketPoll_del(poll, sock);
+            SocketPool_remove(pool, sock);
+            untrack_socket(sock);
+            Socket_free(&sock);
+            accepted_sockets[i] = NULL;
         }
-        Socket_free(&client);
-        Socket_free(&server);
-        SocketPoll_free(&poll);
-        if (pool)
-        {
-            SocketPool_cleanup(pool, 0);
-            ASSERT_EQ(SocketPool_count(pool), 0);
-        }
-        SocketPool_free(&pool);
-        Arena_dispose(&arena);
-        assert_no_tracked_sockets();
-        assert_no_socket_leaks();
+    }
+    Socket_free(&client);
+    Socket_free(&server);
+    SocketPoll_free(&poll);
+    if (pool)
+    {
+        SocketPool_cleanup(pool, 0);
+        ASSERT_EQ(SocketPool_count(pool), 0);
+    }
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+    assert_no_tracked_sockets();
+    assert_no_socket_leaks();
     END_TRY;
 }
 
@@ -614,53 +604,52 @@ static void *server_thread(void *arg)
     SocketPool_T pool = SocketPool_new(arena, 100, 4096);
     Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Socket_setreuseaddr(server);
-        Socket_bind(server, "127.0.0.1", 0);
-        Socket_listen(server, 10);
-        Socket_setnonblocking(server);
-        
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        server_port = ntohs(addr.sin_port);
-        
-        SocketPoll_add(poll, server, POLL_READ, NULL);
-        
-        while (server_running)
+    TRY Socket_setreuseaddr(server);
+    Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 10);
+    Socket_setnonblocking(server);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+    server_port = ntohs(addr.sin_port);
+
+    SocketPoll_add(poll, server, POLL_READ, NULL);
+
+    while (server_running)
+    {
+        SocketEvent_T *events = NULL;
+        int nfds = SocketPoll_wait(poll, &events, 100);
+
+        for (int i = 0; i < nfds; i++)
         {
-            SocketEvent_T *events = NULL;
-            int nfds = SocketPoll_wait(poll, &events, 100);
-            
-            for (int i = 0; i < nfds; i++)
+            if (events[i].socket == server)
             {
-                if (events[i].socket == server)
+                Socket_T accepted = Socket_accept(server);
+                if (accepted)
                 {
-                    Socket_T accepted = Socket_accept(server);
-                    if (accepted)
-                    {
-                        Socket_T tracked = accepted;
-                        track_socket(tracked);
-                        Socket_free(&accepted);
-                        untrack_socket(tracked);
-                    }
+                    Socket_T tracked = accepted;
+                    track_socket(tracked);
+                    Socket_free(&accepted);
+                    untrack_socket(tracked);
                 }
             }
         }
-    EXCEPT(Socket_Failed) (void)0;
-    EXCEPT(SocketPoll_Failed) (void)0;
+    }
+    EXCEPT(Socket_Failed)(void) 0;
+    EXCEPT(SocketPoll_Failed)(void) 0;
     FINALLY
-        Socket_free(&server);
-        SocketPoll_free(&poll);
-        if (pool)
-        {
-            SocketPool_cleanup(pool, 0);
-            ASSERT_EQ(SocketPool_count(pool), 0);
-        }
-        SocketPool_free(&pool);
-        Arena_dispose(&arena);
+    Socket_free(&server);
+    SocketPoll_free(&poll);
+    if (pool)
+    {
+        SocketPool_cleanup(pool, 0);
+        ASSERT_EQ(SocketPool_count(pool), 0);
+    }
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
     END_TRY;
-    
+
     return NULL;
 }
 
@@ -671,24 +660,24 @@ TEST(integration_multithreaded_server)
     pthread_t server_tid;
     server_running = 1;
     server_port = 0;
-    
+
     pthread_create(&server_tid, NULL, server_thread, NULL);
     usleep(200000);
-    
+
     Socket_T clients[5];
     for (int i = 0; i < 5; i++)
     {
         clients[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
         TRY Socket_connect(clients[i], "127.0.0.1", server_port);
-        EXCEPT(Socket_Failed) (void)0;
+        EXCEPT(Socket_Failed)(void) 0;
         END_TRY;
         usleep(10000);
     }
-    
+
     usleep(100000);
     server_running = 0;
     pthread_join(server_tid, NULL);
-    
+
     for (int i = 0; i < 5; i++)
         Socket_free(&clients[i]);
     assert_no_tracked_sockets();
@@ -701,26 +690,25 @@ TEST(integration_arena_lifecycle)
 {
     Arena_T arena = Arena_new();
     SocketPool_T pool = SocketPool_new(arena, 50, 2048);
-    
+
     for (int i = 0; i < 10; i++)
     {
         Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
         Socket_T tracked = socket;
         track_socket(tracked);
-        TRY
-            Connection_T conn = SocketPool_add(pool, socket);
-            if (conn)
-            {
-                SocketBuf_T inbuf = Connection_inbuf(conn);
-                SocketBuf_write(inbuf, "Data", 4);
-                SocketPool_remove(pool, socket);
-            }
-        EXCEPT(SocketPool_Failed) (void)0;
+        TRY Connection_T conn = SocketPool_add(pool, socket);
+        if (conn)
+        {
+            SocketBuf_T inbuf = Connection_inbuf(conn);
+            SocketBuf_write(inbuf, "Data", 4);
+            SocketPool_remove(pool, socket);
+        }
+        EXCEPT(SocketPool_Failed)(void) 0;
         END_TRY;
         Socket_free(&socket);
         untrack_socket(tracked);
     }
-    
+
     if (pool)
     {
         SocketPool_cleanup(pool, 0);
@@ -744,61 +732,60 @@ TEST(integration_connection_full_lifecycle)
     Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Socket_setreuseaddr(server);
-        Socket_bind(server, "127.0.0.1", 0);
-        Socket_listen(server, 10);
-        Socket_setnonblocking(server);
-        
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
-        
-        SocketPoll_add(poll, server, POLL_READ, NULL);
-        Socket_connect(client, "127.0.0.1", port);
-        usleep(50000);
-        
-        SocketEvent_T *events = NULL;
-        int nfds = SocketPoll_wait(poll, &events, 100);
-        
-        if (nfds > 0)
+    TRY Socket_setreuseaddr(server);
+    Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 10);
+    Socket_setnonblocking(server);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+    int port = ntohs(addr.sin_port);
+
+    SocketPoll_add(poll, server, POLL_READ, NULL);
+    Socket_connect(client, "127.0.0.1", port);
+    usleep(50000);
+
+    SocketEvent_T *events = NULL;
+    int nfds = SocketPoll_wait(poll, &events, 100);
+
+    if (nfds > 0)
+    {
+        Socket_T accepted = Socket_accept(server);
+        if (accepted)
         {
-            Socket_T accepted = Socket_accept(server);
-            if (accepted)
-            {
-                Socket_T tracked = accepted;
-                track_socket(tracked);
-                Connection_T conn = SocketPool_add(pool, accepted);
-                SocketPoll_add(poll, accepted, POLL_READ | POLL_WRITE, conn);
-                
-                Connection_setdata(conn, (void *)42);
-                ASSERT_EQ(Connection_data(conn), (void *)42);
-                ASSERT_EQ(Connection_socket(conn), accepted);
-                ASSERT_NE(Connection_isactive(conn), 0);
-                
-                SocketPoll_del(poll, accepted);
-                SocketPool_remove(pool, accepted);
-                Socket_free(&accepted);
-                untrack_socket(tracked);
-            }
+            Socket_T tracked = accepted;
+            track_socket(tracked);
+            Connection_T conn = SocketPool_add(pool, accepted);
+            SocketPoll_add(poll, accepted, POLL_READ | POLL_WRITE, conn);
+
+            Connection_setdata(conn, (void *)42);
+            ASSERT_EQ(Connection_data(conn), (void *)42);
+            ASSERT_EQ(Connection_socket(conn), accepted);
+            ASSERT_NE(Connection_isactive(conn), 0);
+
+            SocketPoll_del(poll, accepted);
+            SocketPool_remove(pool, accepted);
+            Socket_free(&accepted);
+            untrack_socket(tracked);
         }
-    EXCEPT(Socket_Failed) (void)0;
-    EXCEPT(SocketPoll_Failed) (void)0;
-    EXCEPT(SocketPool_Failed) (void)0;
+    }
+    EXCEPT(Socket_Failed)(void) 0;
+    EXCEPT(SocketPoll_Failed)(void) 0;
+    EXCEPT(SocketPool_Failed)(void) 0;
     FINALLY
-        Socket_free(&client);
-        Socket_free(&server);
-        SocketPoll_free(&poll);
-        if (pool)
-        {
-            SocketPool_cleanup(pool, 0);
-            ASSERT_EQ(SocketPool_count(pool), 0);
-        }
-        SocketPool_free(&pool);
-        Arena_dispose(&arena);
-        assert_no_tracked_sockets();
-        assert_no_socket_leaks();
+    Socket_free(&client);
+    Socket_free(&server);
+    SocketPoll_free(&poll);
+    if (pool)
+    {
+        SocketPool_cleanup(pool, 0);
+        ASSERT_EQ(SocketPool_count(pool), 0);
+    }
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+    assert_no_tracked_sockets();
+    assert_no_socket_leaks();
     END_TRY;
 }
 
@@ -813,58 +800,255 @@ TEST(integration_rapid_connect_disconnect)
     SocketPool_T pool = SocketPool_new(arena, 50, 2048);
     Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Socket_setreuseaddr(server);
-        Socket_bind(server, "127.0.0.1", 0);
-        Socket_listen(server, 50);
-        Socket_setnonblocking(server);
-        
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
-        
-        SocketPoll_add(poll, server, POLL_READ, NULL);
-        
-        for (int i = 0; i < 10; i++)
+    TRY Socket_setreuseaddr(server);
+    Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 50);
+    Socket_setnonblocking(server);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+    int port = ntohs(addr.sin_port);
+
+    SocketPoll_add(poll, server, POLL_READ, NULL);
+
+    for (int i = 0; i < 10; i++)
+    {
+        Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+        Socket_connect(client, "127.0.0.1", port);
+        usleep(20000);
+
+        SocketEvent_T *events = NULL;
+        int nfds = SocketPoll_wait(poll, &events, 50);
+
+        if (nfds > 0)
         {
-            Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
-            Socket_connect(client, "127.0.0.1", port);
-            usleep(20000);
-            
-            SocketEvent_T *events = NULL;
-            int nfds = SocketPoll_wait(poll, &events, 50);
-            
-            if (nfds > 0)
+            Socket_T accepted = Socket_accept(server);
+            if (accepted)
             {
-                Socket_T accepted = Socket_accept(server);
-                if (accepted)
-                {
-                    Socket_T tracked = accepted;
-                    track_socket(tracked);
-                    SocketPool_add(pool, accepted);
-                    SocketPool_remove(pool, accepted);
-                    Socket_free(&accepted);
-                    untrack_socket(tracked);
-                }
+                Socket_T tracked = accepted;
+                track_socket(tracked);
+                SocketPool_add(pool, accepted);
+                SocketPool_remove(pool, accepted);
+                Socket_free(&accepted);
+                untrack_socket(tracked);
             }
-            Socket_free(&client);
         }
-    EXCEPT(Socket_Failed) (void)0;
-    EXCEPT(SocketPoll_Failed) (void)0;
-    EXCEPT(SocketPool_Failed) (void)0;
+        Socket_free(&client);
+    }
+    EXCEPT(Socket_Failed)(void) 0;
+    EXCEPT(SocketPoll_Failed)(void) 0;
+    EXCEPT(SocketPool_Failed)(void) 0;
     FINALLY
-        Socket_free(&server);
+    Socket_free(&server);
+    SocketPoll_free(&poll);
+    if (pool)
+    {
+        SocketPool_cleanup(pool, 0);
+        ASSERT_EQ(SocketPool_count(pool), 0);
+    }
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+    assert_no_tracked_sockets();
+    assert_no_socket_leaks();
+    END_TRY;
+}
+
+/* ==================== Async I/O Integration Tests ==================== */
+
+TEST(integration_async_availability)
+{
+    setup_signals();
+    Arena_T arena = Arena_new();
+    SocketPoll_T poll = SocketPoll_new(100);
+
+    TRY SocketAsync_T async = SocketPoll_get_async(poll);
+
+    if (async)
+    {
+        (void)SocketAsync_is_available(async); /* Check availability */
+        const char *backend = SocketAsync_backend_name(async);
+        ASSERT_NOT_NULL(backend);
+        /* Note: printf already included via test framework */
+    }
+    else
+    {
+        /* Async I/O not available on this platform */
+    }
+
+    SocketPoll_free(&poll);
+    FINALLY
+    Arena_dispose(&arena);
+    END_TRY;
+}
+
+/* Callback functions for async tests */
+static volatile int async_send_complete = 0;
+static volatile int async_recv_complete = 0;
+static volatile ssize_t async_send_bytes = 0;
+static volatile ssize_t async_recv_bytes = 0;
+
+static void async_send_callback(Socket_T sock, ssize_t bytes, int err, void *data)
+{
+    (void)sock;
+    (void)data;
+    async_send_bytes = bytes;
+    async_send_complete = (err == 0 && bytes > 0) ? 1 : -1;
+}
+
+static void async_recv_callback(Socket_T sock, ssize_t bytes, int err, void *data)
+{
+    (void)sock;
+    (void)data;
+    async_recv_bytes = bytes;
+    async_recv_complete = (err == 0 && bytes > 0) ? 1 : -1;
+}
+
+TEST(integration_async_send_recv)
+{
+    setup_signals();
+    reset_tracked_sockets();
+    Arena_T arena = Arena_new();
+    SocketPoll_T poll = SocketPoll_new(100);
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T client = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    async_send_complete = 0;
+    async_recv_complete = 0;
+    async_send_bytes = 0;
+    async_recv_bytes = 0;
+
+    TRY SocketAsync_T async = SocketPoll_get_async(poll);
+
+    if (!async || !SocketAsync_is_available(async))
+    {
+        printf("  Skipping async test - async I/O not available\n");
         SocketPoll_free(&poll);
-        if (pool)
-        {
-            SocketPool_cleanup(pool, 0);
-            ASSERT_EQ(SocketPool_count(pool), 0);
-        }
-        SocketPool_free(&pool);
+        Socket_free(&server);
+        Socket_free(&client);
         Arena_dispose(&arena);
-        assert_no_tracked_sockets();
-        assert_no_socket_leaks();
+        return;
+    }
+
+    Socket_setreuseaddr(server);
+    Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 10);
+    Socket_setnonblocking(server);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
+    int port = ntohs(addr.sin_port);
+
+    SocketPoll_add(poll, server, POLL_READ, NULL);
+    Socket_connect(client, "127.0.0.1", port);
+    Socket_setnonblocking(client);
+
+    /* Accept connection */
+    Socket_T accepted = NULL;
+    SocketEvent_T *events;
+    int n = SocketPoll_wait(poll, &events, 100);
+    if (n > 0 && events[0].socket == server)
+    {
+        accepted = Socket_accept(server);
+        if (accepted)
+        {
+            Socket_setnonblocking(accepted);
+            track_socket(accepted);
+        }
+    }
+
+    if (!accepted)
+    {
+        SocketPoll_free(&poll);
+        Socket_free(&server);
+        Socket_free(&client);
+        Arena_dispose(&arena);
+        return;
+    }
+
+    /* Submit async send */
+    char send_buf[] = "Hello async!";
+    unsigned send_req =
+        SocketAsync_send(async, client, send_buf, sizeof(send_buf) - 1, async_send_callback, NULL, ASYNC_FLAG_NONE);
+    ASSERT(send_req > 0);
+
+    /* Submit async recv */
+    char recv_buf[64];
+    unsigned recv_req =
+        SocketAsync_recv(async, accepted, recv_buf, sizeof(recv_buf), async_recv_callback, NULL, ASYNC_FLAG_NONE);
+    ASSERT(recv_req > 0);
+
+    /* Process completions */
+    int timeout = 0;
+    while ((!async_send_complete || !async_recv_complete) && timeout < 100)
+    {
+        SocketPoll_wait(poll, &events, 10);
+        SocketAsync_process_completions(async, 0);
+        usleep(10000);
+        timeout++;
+    }
+
+    ASSERT_EQ(async_send_complete, 1);
+    ASSERT_EQ(async_recv_complete, 1);
+    ASSERT_EQ(async_send_bytes, (ssize_t)(sizeof(send_buf) - 1));
+    ASSERT_EQ(async_recv_bytes, (ssize_t)(sizeof(send_buf) - 1));
+    ASSERT_EQ(memcmp(send_buf, recv_buf, sizeof(send_buf) - 1), 0);
+
+    Socket_free(&accepted);
+    SocketPoll_free(&poll);
+    Socket_free(&server);
+    Socket_free(&client);
+    FINALLY
+    Arena_dispose(&arena);
+    END_TRY;
+
+    assert_no_socket_leaks();
+}
+
+static void async_dummy_callback(Socket_T sock, ssize_t bytes, int err, void *data)
+{
+    (void)sock;
+    (void)bytes;
+    (void)err;
+    (void)data;
+}
+
+TEST(integration_async_cancellation)
+{
+    setup_signals();
+    Arena_T arena = Arena_new();
+    SocketPoll_T poll = SocketPoll_new(100);
+    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+    TRY SocketAsync_T async = SocketPoll_get_async(poll);
+
+    if (!async || !SocketAsync_is_available(async))
+    {
+        printf("  Skipping cancellation test - async I/O not available\n");
+        SocketPoll_free(&poll);
+        Socket_free(&socket);
+        Arena_dispose(&arena);
+        return;
+    }
+
+    char buf[10] = "test";
+    unsigned req_id = SocketAsync_send(async, socket, buf, 4, async_dummy_callback, NULL, ASYNC_FLAG_NONE);
+    ASSERT(req_id > 0);
+
+    /* Cancel the request */
+    int cancelled = SocketAsync_cancel(async, req_id);
+    /* May succeed or fail depending on timing */
+    ASSERT(cancelled == 0 || cancelled == -1);
+
+    /* Try to cancel non-existent request */
+    int not_found = SocketAsync_cancel(async, 99999);
+    ASSERT_EQ(not_found, -1);
+
+    SocketPoll_free(&poll);
+    Socket_free(&socket);
+    FINALLY
+    Arena_dispose(&arena);
     END_TRY;
 }
 
@@ -873,4 +1057,3 @@ int main(void)
     Test_run_all();
     return Test_get_failures() > 0 ? 1 : 0;
 }
-

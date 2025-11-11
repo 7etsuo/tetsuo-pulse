@@ -32,40 +32,39 @@
 #define T Except_T
 typedef struct T
 {
-  const char *reason; /**< Human-readable error description */
+    const char *reason; /**< Human-readable error description */
 } T;
 
 typedef struct Except_Frame Except_Frame;
 struct Except_Frame
 {
-  Except_Frame *prev;
-  jmp_buf env;
-  const char *file;
-  int line;
-  const T *exception;
+    Except_Frame *prev;
+    jmp_buf env;
+    const char *file;
+    int line;
+    const T *exception;
 };
 
 enum
 {
-  Except_entered = 0,
-  Except_raised,
-  Except_handled,
-  Except_finalized
+    Except_entered = 0,
+    Except_raised,
+    Except_handled,
+    Except_finalized
 };
 
 /* Thread-local exception stack */
 #ifdef _WIN32
-extern __declspec (thread) Except_Frame *Except_stack;
+extern __declspec(thread) Except_Frame *Except_stack;
 #else
 extern __thread Except_Frame *Except_stack;
 #endif
 extern const Except_T Assert_Failed;
 
-void Except_raise (const T *e, const char *file, int line);
+void Except_raise(const T *e, const char *file, int line);
 
-#define RAISE(e) Except_raise (&(e), __FILE__, __LINE__)
-#define RERAISE                                                                \
-  Except_raise ((const Except_T *)Except_frame.exception, Except_frame.file, Except_frame.line)
+#define RAISE(e) Except_raise(&(e), __FILE__, __LINE__)
+#define RERAISE Except_raise((const Except_T *)Except_frame.exception, Except_frame.file, Except_frame.line)
 
 /**
  * RETURN macro - Returns from function while cleaning up exception stack
@@ -85,58 +84,78 @@ void Except_raise (const T *e, const char *file, int line);
  *   RETURN value;        // For functions returning a value
  *   RETURN func(a, b);   // Works with function calls containing commas
  */
-#define RETURN                                                                 \
-  switch (Except_stack = ((Except_Frame *)Except_stack)->prev, 0)              \
-  default:                                                                     \
-    return
+#define RETURN                                                                                                         \
+    switch (Except_stack = ((Except_Frame *)Except_stack)->prev, 0)                                                    \
+    default:                                                                                                           \
+        return
 
-#define TRY                                                                    \
-  do                                                                           \
-    {                                                                          \
-      volatile int Except_flag;                                                \
-      volatile Except_Frame Except_frame;                                     \
-      jmp_buf *env_ptr = (jmp_buf *)&Except_frame.env;                         \
-      Except_frame.prev = Except_stack;                                        \
-      Except_frame.file = NULL;                                                \
-      Except_frame.line = 0;                                                   \
-      Except_frame.exception = NULL;                                           \
-      Except_stack = (Except_Frame *)&Except_frame;                            \
-      Except_flag = setjmp (*env_ptr);                                         \
-      if (Except_flag == Except_entered)                                       \
+#define TRY                                                                                                            \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        volatile int Except_flag;                                                                                      \
+        volatile Except_Frame Except_frame;                                                                            \
+        jmp_buf *env_ptr = (jmp_buf *)&Except_frame.env;                                                               \
+        Except_frame.prev = Except_stack;                                                                              \
+        Except_frame.file = NULL;                                                                                      \
+        Except_frame.line = 0;                                                                                         \
+        Except_frame.exception = NULL;                                                                                 \
+        Except_stack = (Except_Frame *)&Except_frame;                                                                  \
+        Except_flag = setjmp(*env_ptr);                                                                                \
+        if (Except_flag == Except_entered)                                                                             \
         {
 
-#define EXCEPT(e)                                                              \
-  if (Except_flag == Except_entered)                                           \
-    Except_stack = Except_stack->prev;                                         \
-  }                                                                            \
-  else if ((const Except_T *)Except_frame.exception == &(e))                   \
-  {                                                                            \
-    Except_flag = Except_handled;
+#define EXCEPT(e)                                                                                                      \
+    if (Except_flag == Except_entered)                                                                                 \
+    {                                                                                                                  \
+        Except_Frame *prev_frame = NULL;                                                                               \
+        if (Except_stack != NULL)                                                                                      \
+            prev_frame = Except_stack->prev;                                                                           \
+        Except_stack = prev_frame;                                                                                     \
+    }                                                                                                                  \
+    }                                                                                                                  \
+    else if ((const Except_T *)Except_frame.exception == &(e))                                                         \
+    {                                                                                                                  \
+        Except_flag = Except_handled;
 
-#define ELSE                                                                   \
-  if (Except_flag == Except_entered)                                           \
-    Except_stack = Except_stack->prev;                                         \
-  }                                                                            \
-  else                                                                         \
-  {                                                                            \
-    Except_flag = Except_handled;
+#define ELSE                                                                                                           \
+    if (Except_flag == Except_entered)                                                                                 \
+    {                                                                                                                  \
+        Except_Frame *prev_frame = NULL;                                                                               \
+        if (Except_stack != NULL)                                                                                      \
+            prev_frame = Except_stack->prev;                                                                           \
+        Except_stack = prev_frame;                                                                                     \
+    }                                                                                                                  \
+    }                                                                                                                  \
+    else                                                                                                               \
+    {                                                                                                                  \
+        Except_flag = Except_handled;
 
-#define FINALLY                                                                \
-  if (Except_flag == Except_entered)                                           \
-    Except_stack = Except_stack->prev;                                         \
-  }                                                                            \
-  {                                                                            \
-    if (Except_flag == Except_entered)                                         \
-      Except_flag = Except_finalized;
+#define FINALLY                                                                                                        \
+    if (Except_flag == Except_entered)                                                                                 \
+    {                                                                                                                  \
+        Except_Frame *prev_frame = NULL;                                                                               \
+        if (Except_stack != NULL)                                                                                      \
+            prev_frame = Except_stack->prev;                                                                           \
+        Except_stack = prev_frame;                                                                                     \
+    }                                                                                                                  \
+    }                                                                                                                  \
+    {                                                                                                                  \
+        if (Except_flag == Except_entered)                                                                             \
+            Except_flag = Except_finalized;
 
-#define END_TRY                                                                \
-  if (Except_flag == Except_entered)                                           \
-    Except_stack = Except_stack->prev;                                         \
-  }                                                                            \
-  if (Except_flag == Except_raised)                                            \
-    RERAISE;                                                                   \
-  }                                                                            \
-  while (0)
+#define END_TRY                                                                                                        \
+    if (Except_flag == Except_entered)                                                                                 \
+    {                                                                                                                  \
+        Except_Frame *prev_frame = NULL;                                                                               \
+        if (Except_stack != NULL)                                                                                      \
+            prev_frame = Except_stack->prev;                                                                           \
+        Except_stack = prev_frame;                                                                                     \
+    }                                                                                                                  \
+    }                                                                                                                  \
+    if (Except_flag == Except_raised)                                                                                  \
+        RERAISE;                                                                                                       \
+    }                                                                                                                  \
+    while (0)
 
 #undef T
 #endif
