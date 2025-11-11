@@ -18,6 +18,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "socket/Socket.h"
+#include "socket/SocketAsync.h"
 #include "poll/SocketPoll.h"
 #include "poll/SocketPoll_backend.h"
 #define SOCKET_LOG_COMPONENT "SocketPoll"
@@ -71,6 +72,7 @@ struct T
     SocketData *socket_data_map[SOCKET_DATA_HASH_SIZE];     /* Hash table for O(1) socket->data mapping */
     FdSocketEntry *fd_to_socket_map[SOCKET_DATA_HASH_SIZE]; /* Hash table for O(1) fd->socket mapping */
     pthread_mutex_t mutex;                                  /* Mutex for thread-safe socket data mapping */
+    SocketAsync_T async;                                    /* Optional async I/O context */
 };
 
 /* ==================== Hash Functions ==================== */
@@ -540,6 +542,22 @@ T SocketPoll_new(int maxevents)
     initialize_poll_hash_tables(poll);
     initialize_poll_mutex(poll);
 
+    /* Initialize async context (optional - graceful degradation if fails) */
+    poll->async = NULL;
+    volatile SocketAsync_T volatile_async = NULL;
+    TRY
+    {
+        volatile_async = SocketAsync_new(poll->arena);
+        poll->async = (SocketAsync_T)volatile_async;
+    }
+    EXCEPT(SocketAsync_Failed)
+    {
+        /* Async unavailable - continue without it */
+        poll->async = NULL;
+        volatile_async = NULL;
+    }
+    END_TRY;
+
     return poll;
 }
 
@@ -550,6 +568,10 @@ void SocketPoll_free(T *poll)
 
     if ((*poll)->backend)
         backend_free((*poll)->backend);
+
+    /* Free async context if exists */
+    if ((*poll)->async)
+        SocketAsync_free(&(*poll)->async);
 
     /* Destroy mutex */
     pthread_mutex_destroy(&(*poll)->mutex);
@@ -870,12 +892,19 @@ void SocketPoll_setdefaulttimeout(T poll, int timeout)
 int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
 {
     int nfds;
+    int async_completions = 0;
 
     assert(poll);
     assert(events);
 
     if (timeout == SOCKET_POLL_TIMEOUT_USE_DEFAULT)
         timeout = poll->default_timeout_ms;
+
+    /* Process async completions first (non-blocking) */
+    if (poll->async)
+    {
+        async_completions = SocketAsync_process_completions(poll->async, 0);
+    }
 
     /* Wait for events from backend */
     nfds = backend_wait(poll->backend, timeout);
@@ -889,6 +918,12 @@ int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
         }
         SOCKET_ERROR_FMT("%s backend wait failed (timeout=%d)", backend_name(), timeout);
         RAISE_POLL_ERROR(SocketPoll_Failed);
+    }
+
+    /* Process async completions after backend wait (non-blocking) */
+    if (poll->async)
+    {
+        async_completions += SocketAsync_process_completions(poll->async, 0);
     }
 
     /* If no events, return immediately */
@@ -911,8 +946,18 @@ int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
         return 0;
     }
 
+    /* Note: Async completions invoke callbacks directly, they don't appear
+     * in SocketEvent_T array. The nfds return value only counts backend events. */
+    (void)async_completions; /* Suppress unused warning */
+
     *events = poll->socketevents;
     return nfds;
+}
+
+SocketAsync_T SocketPoll_get_async(T poll)
+{
+    assert(poll);
+    return poll->async;
 }
 
 #undef T

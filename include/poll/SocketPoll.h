@@ -4,6 +4,10 @@
 #include "core/Except.h"
 #include "socket/Socket.h"
 
+/* Forward declaration for async I/O */
+struct SocketAsync_T;
+typedef struct SocketAsync_T *SocketAsync_T;
+
 /**
  * Socket Event Polling
  *
@@ -128,8 +132,18 @@ extern void SocketPoll_setdefaulttimeout(T poll, int timeout);
  * Raises: SocketPoll_Failed on error
  * Thread-safe: Yes - event array is thread-local to poll instance
  * The events array points to internal memory - do not free
+ * Note: Also processes async I/O completions automatically
  */
 extern int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout);
+
+/**
+ * SocketPoll_get_async - Get async I/O context from poll
+ * @poll: Poll instance
+ * Returns: Async context or NULL if unavailable
+ * Thread-safe: Yes
+ * Note: Returns NULL if async I/O is not available on this platform
+ */
+extern SocketAsync_T SocketPoll_get_async(T poll);
 
 #undef T
 #endif

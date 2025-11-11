@@ -6,11 +6,11 @@
 
 /**
  * Socket Abstraction Layer
- * High-level, exception-based TCP/IP socket interface.
+ * High-level, exception-based TCP/IP/Unix domain socket interface.
  * PLATFORM REQUIREMENTS:
- * - POSIX-compliant system (Linux, BSD, macOS)
- * - IPv6 support in kernel for dual-stack sockets
- * - POSIX threads for thread-safe error reporting
+ * - POSIX-compliant system (Linux, BSD, macOS, etc.)
+ * - IPv6 support in kernel (for dual-stack sockets)
+ * - POSIX threads (pthread) for thread-safe error reporting
  * - NOT portable to Windows without Winsock adaptation
  * CRITICAL: Applications MUST call signal(SIGPIPE, SIG_IGN) during initialization
  * to prevent process termination on broken pipe errors (required on macOS/BSD).
@@ -65,6 +65,8 @@ extern T Socket_new(int domain, int type, int protocol);
  * Both sockets are ready to use - no bind/connect needed.
  * Typically used for parent-child or thread communication.
  * Only supports AF_UNIX (Unix domain sockets).
+ * Abstract namespace paths (starting with '@') are Linux-only.
+ * On macOS/BSD, use regular filesystem paths; attempts with '@' will log a warning and fail.
  */
 extern void SocketPair_new(int type, T *socket1, T *socket2);
 

@@ -330,81 +330,81 @@ void SocketPair_new(int type, T *socket1, T *socket2)
     TRY
         /* Create arenas for both sockets */
         arena1 = Arena_new();
-        if (!arena1)
-        {
-            int saved_errno = errno;
-            SAFE_CLOSE(sv[0]);
-            SAFE_CLOSE(sv[1]);
-            errno = saved_errno;
-            SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
-            RAISE_SOCKET_ERROR(Socket_Failed);
-        }
+    if (!arena1)
+    {
+        int saved_errno = errno;
+        SAFE_CLOSE(sv[0]);
+        SAFE_CLOSE(sv[1]);
+        errno = saved_errno;
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
 
-        arena2 = Arena_new();
-        if (!arena2)
-        {
-            int saved_errno = errno;
-            SAFE_CLOSE(sv[0]);
-            SAFE_CLOSE(sv[1]);
-            Arena_dispose(&arena1);
-            errno = saved_errno;
-            SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
-            RAISE_SOCKET_ERROR(Socket_Failed);
-        }
+    arena2 = Arena_new();
+    if (!arena2)
+    {
+        int saved_errno = errno;
+        SAFE_CLOSE(sv[0]);
+        SAFE_CLOSE(sv[1]);
+        Arena_dispose(&arena1);
+        errno = saved_errno;
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
 
-        /* Allocate socket structures */
-        sock1 = allocate_socket_structure(sv[0]);
-        sock1->arena = arena1;
-        arena1 = NULL; /* Transfer ownership */
+    /* Allocate socket structures */
+    sock1 = allocate_socket_structure(sv[0]);
+    sock1->arena = arena1;
+    arena1 = NULL; /* Transfer ownership */
 
-        sock2 = allocate_socket_structure(sv[1]);
-        sock2->arena = arena2;
-        arena2 = NULL; /* Transfer ownership */
+    sock2 = allocate_socket_structure(sv[1]);
+    sock2->arena = arena2;
+    arena2 = NULL; /* Transfer ownership */
 
-        /* Initialize both sockets */
-        initialize_socket_structure(sock1, sv[0]);
-        initialize_socket_structure(sock2, sv[1]);
+    /* Initialize both sockets */
+    initialize_socket_structure(sock1, sv[0]);
+    initialize_socket_structure(sock2, sv[1]);
 
-        /* Mark sockets as connected (socketpair creates connected sockets) */
-        /* For Unix domain sockets, we can set a placeholder peer address */
-        sock1->peeraddr = NULL; /* Will be set if needed via getpeername */
-        sock2->peeraddr = NULL;
+    /* Mark sockets as connected (socketpair creates connected sockets) */
+    /* For Unix domain sockets, we can set a placeholder peer address */
+    sock1->peeraddr = NULL; /* Will be set if needed via getpeername */
+    sock2->peeraddr = NULL;
 
-        *socket1 = sock1;
-        *socket2 = sock2;
-        sock1 = NULL; /* Transfer ownership */
-        sock2 = NULL; /* Transfer ownership */
+    *socket1 = sock1;
+    *socket2 = sock2;
+    sock1 = NULL; /* Transfer ownership */
+    sock2 = NULL; /* Transfer ownership */
 
     EXCEPT(Socket_Failed)
-        /* Cleanup on error */
-        if (sock1)
-        {
-            SAFE_CLOSE(sv[0]);
-            socket_live_decrement(); /* Decrement count before freeing */
-            free(sock1);
-        }
-        else if (sv[0] >= 0)
-        {
-            SAFE_CLOSE(sv[0]);
-        }
+    /* Cleanup on error */
+    if (sock1)
+    {
+        SAFE_CLOSE(sv[0]);
+        socket_live_decrement(); /* Decrement count before freeing */
+        free(sock1);
+    }
+    else if (sv[0] >= 0)
+    {
+        SAFE_CLOSE(sv[0]);
+    }
 
-        if (sock2)
-        {
-            SAFE_CLOSE(sv[1]);
-            socket_live_decrement(); /* Decrement count before freeing */
-            free(sock2);
-        }
-        else if (sv[1] >= 0)
-        {
-            SAFE_CLOSE(sv[1]);
-        }
+    if (sock2)
+    {
+        SAFE_CLOSE(sv[1]);
+        socket_live_decrement(); /* Decrement count before freeing */
+        free(sock2);
+    }
+    else if (sv[1] >= 0)
+    {
+        SAFE_CLOSE(sv[1]);
+    }
 
-        if (arena1)
-            Arena_dispose(&arena1);
-        if (arena2)
-            Arena_dispose(&arena2);
+    if (arena1)
+        Arena_dispose(&arena1);
+    if (arena2)
+        Arena_dispose(&arena2);
 
-        RERAISE;
+    RERAISE;
     END_TRY;
 }
 
@@ -712,10 +712,12 @@ static int setup_abstract_unix_socket(struct sockaddr_un *addr, const char *path
     memcpy(addr->sun_path + 1, path + 1, path_len - 1);
     return 0;
 #else
-    (void)addr;
-    (void)path;
-    (void)path_len;
-    SOCKET_ERROR_MSG("Abstract namespace sockets not supported on this platform");
+    /* macOS/BSD don't support abstract sockets - log warning and fail */
+    SocketLog_emitf(SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                    "Abstract namespace sockets (@%s) not supported on this platform; "
+                    "fall back to regular Unix socket or use filesystem path",
+                    path + 1);
+    errno = EINVAL;
     return -1;
 #endif
 }
@@ -820,6 +822,8 @@ void Socket_bind(T socket, const char *host, int port)
 {
     struct addrinfo hints, *res = NULL;
     int socket_family;
+    volatile Socket_T volatile_socket = socket; /* Preserve across exception boundaries */
+    volatile int bind_result = -1;
 
     assert(socket);
 
@@ -827,20 +831,54 @@ void Socket_bind(T socket, const char *host, int port)
     host = SocketCommon_normalize_wildcard_host(host);
     setup_bind_hints(&hints);
 
-    if (SocketCommon_resolve_address(host, port, &hints, &res, Socket_Failed, SOCKET_AF_UNSPEC, 1) != 0)
-        RAISE_SOCKET_ERROR(Socket_Failed);
-
-    socket_family = get_socket_family(socket);
-
-    if (try_bind_resolved_addresses(socket, res, socket_family) == 0)
+    if (SocketCommon_resolve_address(host, port, &hints, &res, Socket_Failed, SOCKET_AF_UNSPEC, 0) != 0)
     {
-        update_local_endpoint(socket);
-        freeaddrinfo(res);
+        errno = EAI_FAIL;
         return;
     }
 
-    handle_bind_error(host, port);
+    socket_family = get_socket_family((Socket_T)volatile_socket);
+
+    TRY
+    {
+        bind_result = try_bind_resolved_addresses((Socket_T)volatile_socket, res, socket_family);
+        if (bind_result == 0)
+        {
+            update_local_endpoint((Socket_T)volatile_socket);
+            freeaddrinfo(res);
+            return;
+        }
+    }
+    EXCEPT(Socket_Failed)
+    {
+        // Preserve errno before freeaddrinfo() may modify it
+        int saved_errno = errno;
+        freeaddrinfo(res);
+        // Graceful failure for common bind errors - check errno from the underlying bind call
+        if (saved_errno == EADDRINUSE || saved_errno == EACCES || saved_errno == EADDRNOTAVAIL ||
+            saved_errno == EAFNOSUPPORT)
+        {
+            errno = saved_errno; /* Restore errno for caller */
+            return;              /* Caller can check errno */
+        }
+        // For unexpected errors, re-raise
+        errno = saved_errno; /* Restore errno before re-raising */
+        RERAISE;
+    }
+    END_TRY;
+
+    // If bind failed, check errno for common errors before raising
+    // Preserve errno before freeaddrinfo() may modify it
+    int saved_errno = errno;
     freeaddrinfo(res);
+    if (saved_errno == EADDRINUSE || saved_errno == EACCES || saved_errno == EADDRNOTAVAIL ||
+        saved_errno == EAFNOSUPPORT)
+    {
+        errno = saved_errno; /* Restore errno for caller */
+        return;              /* Graceful failure - caller checks errno */
+    }
+
+    handle_bind_error(host, port);
     RAISE_SOCKET_ERROR(Socket_Failed);
 }
 
@@ -1025,30 +1063,69 @@ void Socket_connect(T socket, const char *host, int port)
 {
     struct addrinfo hints, *res = NULL;
     int socket_family;
+    volatile Socket_T volatile_socket = socket; /* Preserve across exception boundaries */
 
     assert(socket);
+    assert(host);
 
     validate_host_not_null(host);
     validate_port_number(port);
     setup_connect_hints(&hints);
 
-    if (SocketCommon_resolve_address(host, port, &hints, &res, Socket_Failed, SOCKET_AF_UNSPEC, 1) != 0)
-        RAISE_SOCKET_ERROR(Socket_Failed);
-
-    socket_family = get_socket_family(socket);
-
-    if (try_connect_resolved_addresses(socket, res, socket_family, socket->timeouts.connect_timeout_ms) == 0)
-    {
-        SocketMetrics_increment(SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
-        update_local_endpoint(socket);
-        setup_peer_info(socket, (struct sockaddr *)&socket->addr, socket->addrlen);
-        SocketEvent_emit_connect(socket->fd, socket->peeraddr, socket->peerport, socket->localaddr, socket->localport);
-        freeaddrinfo(res);
+    if (SocketCommon_resolve_address(host, port, &hints, &res, Socket_Failed, SOCKET_AF_UNSPEC, 0) != 0)
+    { // Don't raise on resolve fail
+        errno = EAI_FAIL;
         return;
     }
 
-    handle_connect_error(host, port);
+    socket_family = get_socket_family((Socket_T)volatile_socket);
+
+    TRY
+    {
+        if (try_connect_resolved_addresses((Socket_T)volatile_socket, res, socket_family,
+                                           socket->timeouts.connect_timeout_ms) == 0)
+        {
+            SocketMetrics_increment(SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
+            update_local_endpoint((Socket_T)volatile_socket);
+            setup_peer_info((Socket_T)volatile_socket, (struct sockaddr *)&((Socket_T)volatile_socket)->addr,
+                            ((Socket_T)volatile_socket)->addrlen);
+            SocketEvent_emit_connect(Socket_fd((Socket_T)volatile_socket), ((Socket_T)volatile_socket)->peeraddr,
+                                     ((Socket_T)volatile_socket)->peerport, ((Socket_T)volatile_socket)->localaddr,
+                                     ((Socket_T)volatile_socket)->localport);
+            freeaddrinfo(res);
+            return;
+        }
+    }
+    EXCEPT(Socket_Failed)
+    {
+        // Preserve errno before freeaddrinfo() may modify it
+        int saved_errno = errno;
+        freeaddrinfo(res);
+        // Check errno and return gracefully for common connection errors
+        if (saved_errno == ECONNREFUSED || saved_errno == ETIMEDOUT || saved_errno == ENETUNREACH ||
+            saved_errno == EHOSTUNREACH || saved_errno == ECONNABORTED)
+        {
+            errno = saved_errno; /* Restore errno for caller */
+            return;              /* Caller can retry */
+        }
+        // For other errors, re-raise
+        errno = saved_errno; /* Restore errno before re-raising */
+        RERAISE;
+    }
+    END_TRY;
+
+    // If connect failed, check errno for common errors before raising
+    // Preserve errno before freeaddrinfo() may modify it
+    int saved_errno = errno;
     freeaddrinfo(res);
+    if (saved_errno == ECONNREFUSED || saved_errno == ETIMEDOUT || saved_errno == ENETUNREACH ||
+        saved_errno == EHOSTUNREACH || saved_errno == ECONNABORTED)
+    {
+        errno = saved_errno; /* Restore errno for caller */
+        return;              /* Graceful failure - caller can retry */
+    }
+
+    handle_connect_error(host, port);
     RAISE_SOCKET_ERROR(Socket_Failed);
 }
 
@@ -1132,21 +1209,20 @@ ssize_t Socket_sendall(T socket, const void *buf, size_t len)
     assert(buf);
     assert(len > 0);
 
-    TRY
-        while (total_sent < len)
+    TRY while (total_sent < len)
+    {
+        sent = Socket_send(socket, ptr + total_sent, len - total_sent);
+        if (sent == 0)
         {
-            sent = Socket_send(socket, ptr + total_sent, len - total_sent);
-            if (sent == 0)
-            {
-                /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
-                return (ssize_t)total_sent;
-            }
-            total_sent += (size_t)sent;
+            /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+            return (ssize_t)total_sent;
         }
+        total_sent += (size_t)sent;
+    }
     EXCEPT(Socket_Closed)
-        RERAISE;
+    RERAISE;
     EXCEPT(Socket_Failed)
-        RERAISE;
+    RERAISE;
     END_TRY;
 
     return (ssize_t)total_sent;
@@ -1175,21 +1251,20 @@ ssize_t Socket_recvall(T socket, void *buf, size_t len)
     assert(buf);
     assert(len > 0);
 
-    TRY
-        while (total_received < len)
+    TRY while (total_received < len)
+    {
+        received = Socket_recv(socket, ptr + total_received, len - total_received);
+        if (received == 0)
         {
-            received = Socket_recv(socket, ptr + total_received, len - total_received);
-            if (received == 0)
-            {
-                /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
-                return (ssize_t)total_received;
-            }
-            total_received += (size_t)received;
+            /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+            return (ssize_t)total_received;
         }
+        total_received += (size_t)received;
+    }
     EXCEPT(Socket_Closed)
-        RERAISE;
+    RERAISE;
     EXCEPT(Socket_Failed)
-        RERAISE;
+    RERAISE;
     END_TRY;
 
     return (ssize_t)total_received;
@@ -1365,42 +1440,41 @@ ssize_t Socket_sendvall(T socket, const struct iovec *iov, int iovcnt)
 
     memcpy(iov_copy, iov, (size_t)iovcnt * sizeof(struct iovec));
 
-    TRY
-        while (total_sent < total_len)
+    TRY while (total_sent < total_len)
+    {
+        /* Find first non-empty iovec */
+        int active_iovcnt = 0;
+        struct iovec *active_iov = NULL;
+
+        for (i = 0; i < iovcnt; i++)
         {
-            /* Find first non-empty iovec */
-            int active_iovcnt = 0;
-            struct iovec *active_iov = NULL;
-
-            for (i = 0; i < iovcnt; i++)
+            if (iov_copy[i].iov_len > 0)
             {
-                if (iov_copy[i].iov_len > 0)
-                {
-                    active_iov = &iov_copy[i];
-                    active_iovcnt = iovcnt - i;
-                    break;
-                }
+                active_iov = &iov_copy[i];
+                active_iovcnt = iovcnt - i;
+                break;
             }
-
-            if (active_iov == NULL)
-                break; /* All buffers sent */
-
-            sent = Socket_sendv(socket, active_iov, active_iovcnt);
-            if (sent == 0)
-            {
-                /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
-                free(iov_copy);
-                return (ssize_t)total_sent;
-            }
-            total_sent += (size_t)sent;
-            socket_advance_iov(iov_copy, iovcnt, (size_t)sent);
         }
+
+        if (active_iov == NULL)
+            break; /* All buffers sent */
+
+        sent = Socket_sendv(socket, active_iov, active_iovcnt);
+        if (sent == 0)
+        {
+            /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+            free(iov_copy);
+            return (ssize_t)total_sent;
+        }
+        total_sent += (size_t)sent;
+        socket_advance_iov(iov_copy, iovcnt, (size_t)sent);
+    }
     EXCEPT(Socket_Closed)
-        free(iov_copy);
-        RERAISE;
+    free(iov_copy);
+    RERAISE;
     EXCEPT(Socket_Failed)
-        free(iov_copy);
-        RERAISE;
+    free(iov_copy);
+    RERAISE;
     END_TRY;
 
     free(iov_copy);
@@ -1446,63 +1520,62 @@ ssize_t Socket_recvvall(T socket, struct iovec *iov, int iovcnt)
 
     memcpy(iov_copy, iov, (size_t)iovcnt * sizeof(struct iovec));
 
-    TRY
-        while (total_received < total_len)
-        {
-            /* Find first non-empty iovec */
-            int active_iovcnt = 0;
-            struct iovec *active_iov = NULL;
+    TRY while (total_received < total_len)
+    {
+        /* Find first non-empty iovec */
+        int active_iovcnt = 0;
+        struct iovec *active_iov = NULL;
 
-            for (i = 0; i < iovcnt; i++)
-            {
-                if (iov_copy[i].iov_len > 0)
-                {
-                    active_iov = &iov_copy[i];
-                    active_iovcnt = iovcnt - i;
-                    break;
-                }
-            }
-
-            if (active_iov == NULL)
-                break; /* All buffers filled */
-
-            received = Socket_recvv(socket, active_iov, active_iovcnt);
-            if (received == 0)
-            {
-                /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
-                /* Copy back partial data */
-                for (i = 0; i < iovcnt; i++)
-                {
-                    if (iov_copy[i].iov_base != iov[i].iov_base)
-                    {
-                        size_t copied = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
-                        iov[i].iov_len -= copied;
-                        iov[i].iov_base = (char *)iov[i].iov_base + copied;
-                    }
-                }
-                free(iov_copy);
-                return (ssize_t)total_received;
-            }
-            total_received += (size_t)received;
-            socket_advance_iov(iov_copy, iovcnt, (size_t)received);
-        }
-
-        /* Copy back final data positions */
         for (i = 0; i < iovcnt; i++)
         {
-            if (iov_copy[i].iov_base != iov[i].iov_base)
+            if (iov_copy[i].iov_len > 0)
             {
-                size_t copied = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
-                iov[i].iov_len -= copied;
-                iov[i].iov_base = (char *)iov[i].iov_base + copied;
+                active_iov = &iov_copy[i];
+                active_iovcnt = iovcnt - i;
+                break;
             }
         }
+
+        if (active_iov == NULL)
+            break; /* All buffers filled */
+
+        received = Socket_recvv(socket, active_iov, active_iovcnt);
+        if (received == 0)
+        {
+            /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+            /* Copy back partial data */
+            for (i = 0; i < iovcnt; i++)
+            {
+                if (iov_copy[i].iov_base != iov[i].iov_base)
+                {
+                    size_t copied = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
+                    iov[i].iov_len -= copied;
+                    iov[i].iov_base = (char *)iov[i].iov_base + copied;
+                }
+            }
+            free(iov_copy);
+            return (ssize_t)total_received;
+        }
+        total_received += (size_t)received;
+        socket_advance_iov(iov_copy, iovcnt, (size_t)received);
+    }
+
+    /* Copy back final data positions */
+    for (i = 0; i < iovcnt; i++)
+    {
+        if (iov_copy[i].iov_base != iov[i].iov_base)
+        {
+            size_t copied = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
+            iov[i].iov_len -= copied;
+            iov[i].iov_base = (char *)iov[i].iov_base + copied;
+        }
+    }
     EXCEPT(Socket_Closed)
-        free(iov_copy);
-        RERAISE;
+    free(iov_copy);
+    RERAISE;
     EXCEPT(Socket_Failed)
-        free(iov_copy);
-        RERAISE;
+    free(iov_copy);
+    RERAISE;
     END_TRY;
 
     free(iov_copy);
@@ -1536,7 +1609,8 @@ static ssize_t socket_sendfile_linux(T socket, int file_fd, off_t *offset, size_
  * @count: Bytes to transfer
  * Returns: Bytes transferred or -1 on error
  */
-#if SOCKET_HAS_SENDFILE && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || (defined(__APPLE__) && defined(__MACH__)))
+#if SOCKET_HAS_SENDFILE && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) ||                     \
+                            defined(__DragonFly__) || (defined(__APPLE__) && defined(__MACH__)))
 static ssize_t socket_sendfile_bsd(T socket, int file_fd, off_t *offset, size_t count)
 {
     off_t len = (off_t)count;
@@ -1561,8 +1635,7 @@ static ssize_t socket_sendfile_bsd(T socket, int file_fd, off_t *offset, size_t 
  * Returns: Bytes transferred or -1 on error
  * Note: Used when platform doesn't support sendfile() or as fallback
  */
-__attribute__((unused))
-static ssize_t socket_sendfile_fallback(T socket, int file_fd, off_t *offset, size_t count)
+__attribute__((unused)) static ssize_t socket_sendfile_fallback(T socket, int file_fd, off_t *offset, size_t count)
 {
     char buffer[8192];
     volatile size_t total_sent = 0;
@@ -1574,41 +1647,40 @@ static ssize_t socket_sendfile_fallback(T socket, int file_fd, off_t *offset, si
             return -1;
     }
 
-    TRY
-        while (total_sent < count)
+    TRY while (total_sent < count)
+    {
+        size_t to_read = (count - total_sent < sizeof(buffer)) ? (count - total_sent) : sizeof(buffer);
+        read_bytes = read(file_fd, buffer, to_read);
+        if (read_bytes <= 0)
         {
-            size_t to_read = (count - total_sent < sizeof(buffer)) ? (count - total_sent) : sizeof(buffer);
-            read_bytes = read(file_fd, buffer, to_read);
-            if (read_bytes <= 0)
-            {
-                if (read_bytes == 0)
-                    break; /* EOF */
-                if (errno == EINTR)
-                    continue;
-                return -1;
-            }
-
-            sent_bytes = Socket_send(socket, buffer, (size_t)read_bytes);
-            if (sent_bytes == 0)
-            {
-                /* Would block - return partial progress */
-                if (offset)
-                    *offset += (off_t)total_sent;
-                return (ssize_t)total_sent;
-            }
-            total_sent += (size_t)sent_bytes;
-
-            if ((size_t)read_bytes < to_read)
-                break; /* EOF reached */
+            if (read_bytes == 0)
+                break; /* EOF */
+            if (errno == EINTR)
+                continue;
+            return -1;
         }
+
+        sent_bytes = Socket_send(socket, buffer, (size_t)read_bytes);
+        if (sent_bytes == 0)
+        {
+            /* Would block - return partial progress */
+            if (offset)
+                *offset += (off_t)total_sent;
+            return (ssize_t)total_sent;
+        }
+        total_sent += (size_t)sent_bytes;
+
+        if ((size_t)read_bytes < to_read)
+            break; /* EOF reached */
+    }
     EXCEPT(Socket_Closed)
-        if (offset)
-            *offset += (off_t)total_sent;
-        RERAISE;
+    if (offset)
+        *offset += (off_t)total_sent;
+    RERAISE;
     EXCEPT(Socket_Failed)
-        if (offset)
-            *offset += (off_t)total_sent;
-        RERAISE;
+    if (offset)
+        *offset += (off_t)total_sent;
+    RERAISE;
     END_TRY;
 
     if (offset)
@@ -1640,7 +1712,8 @@ ssize_t Socket_sendfile(T socket, int file_fd, off_t *offset, size_t count)
 
 #if SOCKET_HAS_SENDFILE && defined(__linux__)
     result = socket_sendfile_linux(socket, file_fd, offset, count);
-#elif SOCKET_HAS_SENDFILE && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || (defined(__APPLE__) && defined(__MACH__)))
+#elif SOCKET_HAS_SENDFILE && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) ||                   \
+                              defined(__DragonFly__) || (defined(__APPLE__) && defined(__MACH__)))
     result = socket_sendfile_bsd(socket, file_fd, offset, count);
 #else
     result = socket_sendfile_fallback(socket, file_fd, offset, count);
@@ -1689,32 +1762,31 @@ ssize_t Socket_sendfileall(T socket, int file_fd, off_t *offset, size_t count)
     assert(file_fd >= 0);
     assert(count > 0);
 
-    TRY
-        while (total_sent < count)
-        {
-            off_t *current_offset_ptr = offset ? &current_offset : NULL;
-            size_t remaining = count - total_sent;
+    TRY while (total_sent < count)
+    {
+        off_t *current_offset_ptr = offset ? &current_offset : NULL;
+        size_t remaining = count - total_sent;
 
-            sent = Socket_sendfile(socket, file_fd, current_offset_ptr, remaining);
-            if (sent == 0)
-            {
-                /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
-                if (offset)
-                    *offset = current_offset;
-                return (ssize_t)total_sent;
-            }
-            total_sent += (size_t)sent;
+        sent = Socket_sendfile(socket, file_fd, current_offset_ptr, remaining);
+        if (sent == 0)
+        {
+            /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
             if (offset)
-                current_offset += (off_t)sent;
+                *offset = current_offset;
+            return (ssize_t)total_sent;
         }
+        total_sent += (size_t)sent;
+        if (offset)
+            current_offset += (off_t)sent;
+    }
     EXCEPT(Socket_Closed)
-        if (offset)
-            *offset = current_offset;
-        RERAISE;
+    if (offset)
+        *offset = current_offset;
+    RERAISE;
     EXCEPT(Socket_Failed)
-        if (offset)
-            *offset = current_offset;
-        RERAISE;
+    if (offset)
+        *offset = current_offset;
+    RERAISE;
     END_TRY;
 
     if (offset)

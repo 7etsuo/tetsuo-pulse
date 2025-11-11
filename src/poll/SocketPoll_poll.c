@@ -237,6 +237,12 @@ int backend_del(PollBackend_T backend, int fd)
     int index, last_index, last_fd;
 
     assert(backend);
+
+    if (fd < 0)
+    {
+        return 0; // Invalid FD - silently succeed (already closed)
+    }
+
     assert(fd >= 0);
 
     index = find_fd_index(backend, fd);
