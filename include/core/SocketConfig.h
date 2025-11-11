@@ -25,6 +25,13 @@
 #define SOCKET_HAS_SENDMSG 1
 #define SOCKET_HAS_RECVMSG 1
 
+/* Platform detection */
+#ifdef __APPLE__
+#define SOCKET_PLATFORM_MACOS 1
+#else
+#define SOCKET_PLATFORM_MACOS 0
+#endif
+
 /* Socket library configuration limits */
 
 /* Maximum number of connections in pool (can be overridden at compile time) */

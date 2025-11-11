@@ -1383,6 +1383,9 @@ int SocketDgram_gettimeout(T socket)
  * @socket: Socket to query
  * Returns: 1 if broadcast is enabled, 0 if disabled
  * Raises: SocketDgram_Failed on error
+ * Note: On macOS, getsockopt() may return 0 even after successfully setting
+ * SO_BROADCAST to 1. This is a known macOS quirk - the option is set correctly,
+ * but getsockopt() doesn't always reflect the set value.
  */
 int SocketDgram_getbroadcast(T socket)
 {

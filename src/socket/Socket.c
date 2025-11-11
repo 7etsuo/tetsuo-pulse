@@ -2246,7 +2246,10 @@ int Socket_gettimeout(T socket)
  * @interval: Output - interval between probes in seconds
  * @count: Output - number of probes before declaring dead
  * Raises: Socket_Failed on error
- * Note: Returns 0 for parameters not supported on this platform
+ * Note: Returns 0 for parameters not supported on this platform.
+ * On macOS, getsockopt() may return 0 or default values even after successfully
+ * setting keepalive parameters. This is a known macOS quirk - the options are
+ * set correctly, but getsockopt() doesn't always reflect the set values.
  */
 void Socket_getkeepalive(T socket, int *idle, int *interval, int *count)
 {
@@ -2300,6 +2303,9 @@ void Socket_getkeepalive(T socket, int *idle, int *interval, int *count)
  * @socket: Socket to query
  * Returns: 1 if Nagle's algorithm is disabled, 0 if enabled
  * Raises: Socket_Failed on error
+ * Note: On macOS, getsockopt() may return 0 even after successfully setting
+ * TCP_NODELAY to 1. This is a known macOS quirk - the option is set correctly,
+ * but getsockopt() doesn't always reflect the set value.
  */
 int Socket_getnodelay(T socket)
 {
