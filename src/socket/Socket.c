@@ -705,6 +705,8 @@ static int validate_unix_path_length(size_t path_len)
  */
 static int setup_abstract_unix_socket(struct sockaddr_un *addr, const char *path, size_t path_len)
 {
+    (void)addr;
+    (void)path_len;
 #ifdef __linux__
     if (validate_unix_path_length(path_len) != 0)
         return -1;
@@ -717,7 +719,6 @@ static int setup_abstract_unix_socket(struct sockaddr_un *addr, const char *path
                     "Abstract namespace sockets (@%s) not supported on this platform; "
                     "fall back to regular Unix socket or use filesystem path",
                     path + 1);
-    errno = EINVAL;
     return -1;
 #endif
 }

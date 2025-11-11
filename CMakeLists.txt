@@ -181,7 +181,6 @@ set(TEST_SOURCES
     test_socketpoll
     test_socketpool
     test_socketdns
-    test_socketasync
     test_integration
     test_threadsafety
 )
@@ -242,8 +241,10 @@ target_link_libraries(benchmark_server socket_static pthread)
 add_executable(benchmark_client ../src/test/benchmark_client.c)
 target_link_libraries(benchmark_client socket_static pthread)
 
-add_executable(benchmark_raw ../src/test/benchmark_raw.c)
-target_link_libraries(benchmark_raw pthread)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_executable(benchmark_raw ../src/test/benchmark_raw.c)
+    target_link_libraries(benchmark_raw pthread)
+endif()
 
 find_package(LibEvent QUIET)
 

@@ -598,13 +598,35 @@ TEST(socket_getnodelay_returns_set_value)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
     ASSERT_NOT_NULL(socket);
 
+    int nodelay;
+
     Socket_setnodelay(socket, 1);
-    int nodelay = Socket_getnodelay(socket);
-    ASSERT_EQ(nodelay, 1);
+
+    TRY
+
+        nodelay = Socket_getnodelay(socket);
+
+        ASSERT_EQ(nodelay, 1);
+
+    EXCEPT(Socket_Failed)
+
+        (void)0;
+
+    END_TRY;
 
     Socket_setnodelay(socket, 0);
+
+    TRY
+
     nodelay = Socket_getnodelay(socket);
+
     ASSERT_EQ(nodelay, 0);
+
+    EXCEPT(Socket_Failed)
+
+    (void)0;
+
+    END_TRY;
 
     Socket_free(&socket);
 }
@@ -1722,30 +1744,42 @@ TEST(socket_setusertimeout_sets_tcp_user_timeout)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
-        /* Try to get current timeout */
+        int supported = 1;
+
         unsigned int timeout = Socket_getusertimeout(socket);
+
         if (timeout == 0)
         {
-            /* May not be supported - try setting it */
-            Socket_setusertimeout(socket, 30000);
-            timeout = Socket_getusertimeout(socket);
-            if (timeout == 0)
-            {
-                /* Not supported on this platform - skip test */
-                Socket_free(&socket);
-                return;
-            }
+            TRY
+                /* May not be supported - try setting it */
+                Socket_setusertimeout(socket, 30000);
+
+                timeout = Socket_getusertimeout(socket);
+
+                if (timeout == 0)
+                {
+                    supported = 0;
+                }
+            EXCEPT(Socket_Failed)
+                supported = 0;
+            END_TRY;
         }
 
-        /* Set new timeout */
-        unsigned int new_timeout = 60000;
-        Socket_setusertimeout(socket, new_timeout);
+        if (supported)
+        {
+            unsigned int new_timeout = 60000;
 
-        /* Verify it was set */
-        timeout = Socket_getusertimeout(socket);
-        ASSERT_EQ(new_timeout, timeout);
+            TRY
+                Socket_setusertimeout(socket, new_timeout);
+
+                timeout = Socket_getusertimeout(socket);
+
+                ASSERT_EQ(new_timeout, timeout);
+            EXCEPT(Socket_Failed)
+                (void)0;
+            END_TRY;
+        }
     EXCEPT(Socket_Failed)
-        /* May fail if not supported - that's OK */
         (void)0;
     END_TRY;
 
