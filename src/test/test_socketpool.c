@@ -68,9 +68,8 @@ TEST(socketpool_add_socket)
     SocketPool_T pool = SocketPool_new(arena, 100, 1024);
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Connection_T conn = SocketPool_add(pool, socket);
-        ASSERT_NOT_NULL(conn);
+    TRY Connection_T conn = SocketPool_add(pool, socket);
+    ASSERT_NOT_NULL(conn);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -86,12 +85,11 @@ TEST(socketpool_get_connection)
     SocketPool_T pool = SocketPool_new(arena, 100, 1024);
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Connection_T conn1 = SocketPool_add(pool, socket);
-        ASSERT_NOT_NULL(conn1);
-        Connection_T conn2 = SocketPool_get(pool, socket);
-        ASSERT_NOT_NULL(conn2);
-        ASSERT_EQ(conn1, conn2);
+    TRY Connection_T conn1 = SocketPool_add(pool, socket);
+    ASSERT_NOT_NULL(conn1);
+    Connection_T conn2 = SocketPool_get(pool, socket);
+    ASSERT_NOT_NULL(conn2);
+    ASSERT_EQ(conn1, conn2);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -124,15 +122,14 @@ TEST(socketpool_add_multiple_sockets)
     Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T sock3 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Connection_T conn1 = SocketPool_add(pool, sock1);
-        Connection_T conn2 = SocketPool_add(pool, sock2);
-        Connection_T conn3 = SocketPool_add(pool, sock3);
-        ASSERT_NOT_NULL(conn1);
-        ASSERT_NOT_NULL(conn2);
-        ASSERT_NOT_NULL(conn3);
-        ASSERT_NE(conn1, conn2);
-        ASSERT_NE(conn2, conn3);
+    TRY Connection_T conn1 = SocketPool_add(pool, sock1);
+    Connection_T conn2 = SocketPool_add(pool, sock2);
+    Connection_T conn3 = SocketPool_add(pool, sock3);
+    ASSERT_NOT_NULL(conn1);
+    ASSERT_NOT_NULL(conn2);
+    ASSERT_NOT_NULL(conn3);
+    ASSERT_NE(conn1, conn2);
+    ASSERT_NE(conn2, conn3);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -152,12 +149,11 @@ TEST(socketpool_remove_socket)
     SocketPool_T pool = SocketPool_new(arena, 100, 1024);
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Connection_T conn = SocketPool_add(pool, socket);
-        ASSERT_NOT_NULL(conn);
-        SocketPool_remove(pool, socket);
-        Connection_T conn2 = SocketPool_get(pool, socket);
-        ASSERT_NULL(conn2);
+    TRY Connection_T conn = SocketPool_add(pool, socket);
+    ASSERT_NOT_NULL(conn);
+    SocketPool_remove(pool, socket);
+    Connection_T conn2 = SocketPool_get(pool, socket);
+    ASSERT_NULL(conn2);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -174,14 +170,13 @@ TEST(socketpool_remove_multiple)
     Socket_T sock1 = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        volatile size_t count;
-        SocketPool_add(pool, sock1);
-        SocketPool_add(pool, sock2);
-        SocketPool_remove(pool, sock1);
-        SocketPool_remove(pool, sock2);
-        count = SocketPool_count(pool);
-        ASSERT_EQ(count, 0);
+    TRY volatile size_t count;
+    SocketPool_add(pool, sock1);
+    SocketPool_add(pool, sock2);
+    SocketPool_remove(pool, sock1);
+    SocketPool_remove(pool, sock2);
+    count = SocketPool_count(pool);
+    ASSERT_EQ(count, 0);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -200,28 +195,27 @@ TEST(socketpool_reuses_connection_buffers)
     SocketBuf_T first_inbuf = NULL;
     SocketBuf_T first_outbuf = NULL;
 
-    TRY
-        Connection_T conn1 = SocketPool_add(pool, sock1);
-        ASSERT_NOT_NULL(conn1);
-        first_inbuf = Connection_inbuf(conn1);
-        first_outbuf = Connection_outbuf(conn1);
-        ASSERT_NOT_NULL(first_inbuf);
-        ASSERT_NOT_NULL(first_outbuf);
+    TRY Connection_T conn1 = SocketPool_add(pool, sock1);
+    ASSERT_NOT_NULL(conn1);
+    first_inbuf = Connection_inbuf(conn1);
+    first_outbuf = Connection_outbuf(conn1);
+    ASSERT_NOT_NULL(first_inbuf);
+    ASSERT_NOT_NULL(first_outbuf);
 
-        SocketPool_remove(pool, sock1);
-        Socket_free(&sock1);
+    SocketPool_remove(pool, sock1);
+    Socket_free(&sock1);
 
-        Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
-        Connection_T conn2 = SocketPool_add(pool, sock2);
-        ASSERT_NOT_NULL(conn2);
-        ASSERT_EQ(conn1, conn2);
-        ASSERT_EQ(first_inbuf, Connection_inbuf(conn2));
-        ASSERT_EQ(first_outbuf, Connection_outbuf(conn2));
+    Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Connection_T conn2 = SocketPool_add(pool, sock2);
+    ASSERT_NOT_NULL(conn2);
+    ASSERT_EQ(conn1, conn2);
+    ASSERT_EQ(first_inbuf, Connection_inbuf(conn2));
+    ASSERT_EQ(first_outbuf, Connection_outbuf(conn2));
 
-        SocketPool_remove(pool, sock2);
-        Socket_free(&sock2);
+    SocketPool_remove(pool, sock2);
+    Socket_free(&sock2);
     EXCEPT(SocketPool_Failed)
-        ASSERT(0);
+    ASSERT(0);
     END_TRY;
 
     SocketPool_free(&pool);
@@ -262,12 +256,11 @@ TEST(socketpool_count_after_add)
     Socket_T sock1 = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        volatile size_t count;
-        SocketPool_add(pool, sock1);
-        SocketPool_add(pool, sock2);
-        count = SocketPool_count(pool);
-        ASSERT_EQ(count, 2);
+    TRY volatile size_t count;
+    SocketPool_add(pool, sock1);
+    SocketPool_add(pool, sock2);
+    count = SocketPool_count(pool);
+    ASSERT_EQ(count, 2);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -284,12 +277,11 @@ TEST(socketpool_count_after_remove)
     SocketPool_T pool = SocketPool_new(arena, 100, 1024);
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        volatile size_t count;
-        SocketPool_add(pool, socket);
-        SocketPool_remove(pool, socket);
-        count = SocketPool_count(pool);
-        ASSERT_EQ(count, 0);
+    TRY volatile size_t count;
+    SocketPool_add(pool, socket);
+    SocketPool_remove(pool, socket);
+    count = SocketPool_count(pool);
+    ASSERT_EQ(count, 0);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -307,12 +299,11 @@ TEST(socketpool_cleanup_no_idle)
     SocketPool_T pool = SocketPool_new(arena, 100, 1024);
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        volatile size_t count;
-        SocketPool_add(pool, socket);
-        SocketPool_cleanup(pool, 60);
-        count = SocketPool_count(pool);
-        ASSERT_EQ(count, 1);
+    TRY volatile size_t count;
+    SocketPool_add(pool, socket);
+    SocketPool_cleanup(pool, 60);
+    count = SocketPool_count(pool);
+    ASSERT_EQ(count, 1);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -328,12 +319,11 @@ TEST(socketpool_cleanup_all)
     SocketPool_T pool = SocketPool_new(arena, 100, 1024);
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        volatile size_t count;
-        SocketPool_add(pool, socket);
-        SocketPool_cleanup(pool, 0);
-        count = SocketPool_count(pool);
-        ASSERT_EQ(count, 0);
+    TRY volatile size_t count;
+    SocketPool_add(pool, socket);
+    SocketPool_cleanup(pool, 0);
+    count = SocketPool_count(pool);
+    ASSERT_EQ(count, 0);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -349,13 +339,12 @@ TEST(socketpool_cleanup_multiple)
     Socket_T sock1 = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        volatile size_t count;
-        SocketPool_add(pool, sock1);
-        SocketPool_add(pool, sock2);
-        SocketPool_cleanup(pool, 0);
-        count = SocketPool_count(pool);
-        ASSERT_EQ(count, 0);
+    TRY volatile size_t count;
+    SocketPool_add(pool, sock1);
+    SocketPool_add(pool, sock2);
+    SocketPool_cleanup(pool, 0);
+    count = SocketPool_count(pool);
+    ASSERT_EQ(count, 0);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -372,10 +361,9 @@ TEST(socketpool_connection_socket)
     SocketPool_T pool = SocketPool_new(arena, 100, 1024);
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Connection_T conn = SocketPool_add(pool, socket);
-        Socket_T sock = Connection_socket(conn);
-        ASSERT_EQ(sock, socket);
+    TRY Connection_T conn = SocketPool_add(pool, socket);
+    Socket_T sock = Connection_socket(conn);
+    ASSERT_EQ(sock, socket);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -391,13 +379,12 @@ TEST(socketpool_connection_buffers)
     SocketPool_T pool = SocketPool_new(arena, 100, 1024);
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Connection_T conn = SocketPool_add(pool, socket);
-        SocketBuf_T inbuf = Connection_inbuf(conn);
-        SocketBuf_T outbuf = Connection_outbuf(conn);
-        ASSERT_NOT_NULL(inbuf);
-        ASSERT_NOT_NULL(outbuf);
-        ASSERT_NE(inbuf, outbuf);
+    TRY Connection_T conn = SocketPool_add(pool, socket);
+    SocketBuf_T inbuf = Connection_inbuf(conn);
+    SocketBuf_T outbuf = Connection_outbuf(conn);
+    ASSERT_NOT_NULL(inbuf);
+    ASSERT_NOT_NULL(outbuf);
+    ASSERT_NE(inbuf, outbuf);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -414,12 +401,11 @@ TEST(socketpool_connection_user_data)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
     int user_data = 42;
 
-    TRY
-        Connection_T conn = SocketPool_add(pool, socket);
-        Connection_setdata(conn, &user_data);
-        void *data = Connection_data(conn);
-        ASSERT_EQ(data, &user_data);
-        ASSERT_EQ(*(int *)data, 42);
+    TRY Connection_T conn = SocketPool_add(pool, socket);
+    Connection_setdata(conn, &user_data);
+    void *data = Connection_data(conn);
+    ASSERT_EQ(data, &user_data);
+    ASSERT_EQ(*(int *)data, 42);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -435,10 +421,9 @@ TEST(socketpool_connection_isactive)
     SocketPool_T pool = SocketPool_new(arena, 100, 1024);
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Connection_T conn = SocketPool_add(pool, socket);
-        int active = Connection_isactive(conn);
-        ASSERT_NE(active, 0);
+    TRY Connection_T conn = SocketPool_add(pool, socket);
+    int active = Connection_isactive(conn);
+    ASSERT_NE(active, 0);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -454,10 +439,9 @@ TEST(socketpool_connection_lastactivity)
     SocketPool_T pool = SocketPool_new(arena, 100, 1024);
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Connection_T conn = SocketPool_add(pool, socket);
-        time_t last = Connection_lastactivity(conn);
-        ASSERT_NE(last, 0);
+    TRY Connection_T conn = SocketPool_add(pool, socket);
+    time_t last = Connection_lastactivity(conn);
+    ASSERT_NE(last, 0);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -480,11 +464,11 @@ TEST(socketpool_foreach_empty)
 {
     Arena_T arena = Arena_new();
     SocketPool_T pool = SocketPool_new(arena, 100, 1024);
-    
+
     foreach_count = 0;
     SocketPool_foreach(pool, count_connections, NULL);
     ASSERT_EQ(foreach_count, 0);
-    
+
     SocketPool_free(&pool);
     Arena_dispose(&arena);
 }
@@ -498,14 +482,13 @@ TEST(socketpool_foreach_counts_connections)
     Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T sock3 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        SocketPool_add(pool, sock1);
-        SocketPool_add(pool, sock2);
-        SocketPool_add(pool, sock3);
-        
-        foreach_count = 0;
-        SocketPool_foreach(pool, count_connections, NULL);
-        ASSERT_EQ(foreach_count, 3);
+    TRY SocketPool_add(pool, sock1);
+    SocketPool_add(pool, sock2);
+    SocketPool_add(pool, sock3);
+
+    foreach_count = 0;
+    SocketPool_foreach(pool, count_connections, NULL);
+    ASSERT_EQ(foreach_count, 3);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -527,13 +510,12 @@ TEST(socketpool_full_pool_returns_null)
     Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T sock3 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        Connection_T conn1 = SocketPool_add(pool, sock1);
-        Connection_T conn2 = SocketPool_add(pool, sock2);
-        Connection_T conn3 = SocketPool_add(pool, sock3);
-        ASSERT_NOT_NULL(conn1);
-        ASSERT_NOT_NULL(conn2);
-        ASSERT_NULL(conn3);
+    TRY Connection_T conn1 = SocketPool_add(pool, sock1);
+    Connection_T conn2 = SocketPool_add(pool, sock2);
+    Connection_T conn3 = SocketPool_add(pool, sock3);
+    ASSERT_NOT_NULL(conn1);
+    ASSERT_NOT_NULL(conn2);
+    ASSERT_NULL(conn3);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -553,12 +535,11 @@ TEST(socketpool_reuse_after_remove)
     Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
     Socket_T sock3 = Socket_new(AF_INET, SOCK_STREAM, 0);
 
-    TRY
-        SocketPool_add(pool, sock1);
-        SocketPool_add(pool, sock2);
-        SocketPool_remove(pool, sock1);
-        Connection_T conn3 = SocketPool_add(pool, sock3);
-        ASSERT_NOT_NULL(conn3);
+    TRY SocketPool_add(pool, sock1);
+    SocketPool_add(pool, sock2);
+    SocketPool_remove(pool, sock1);
+    Connection_T conn3 = SocketPool_add(pool, sock3);
+    ASSERT_NOT_NULL(conn3);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -616,24 +597,23 @@ TEST(socketpool_many_connections)
     SocketPool_T pool = SocketPool_new(arena, 100, 1024);
     Socket_T sockets[50];
 
-    TRY
-        volatile int i;
-        volatile size_t count;
-        for (i = 0; i < 50; i++)
-        {
-            sockets[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
-            Connection_T conn = SocketPool_add(pool, sockets[i]);
-            ASSERT_NOT_NULL(conn);
-        }
-        count = SocketPool_count(pool);
-        ASSERT_EQ(count, 50);
+    TRY volatile int i;
+    volatile size_t count;
+    for (i = 0; i < 50; i++)
+    {
+        sockets[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
+        Connection_T conn = SocketPool_add(pool, sockets[i]);
+        ASSERT_NOT_NULL(conn);
+    }
+    count = SocketPool_count(pool);
+    ASSERT_EQ(count, 50);
     EXCEPT(SocketPool_Failed) ASSERT(0);
     FINALLY
-        volatile int j;
-        for (j = 0; j < 50; j++)
-            Socket_free(&sockets[j]);
-        SocketPool_free(&pool);
-        Arena_dispose(&arena);
+    volatile int j;
+    for (j = 0; j < 50; j++)
+        Socket_free(&sockets[j]);
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
     END_TRY;
 }
 
@@ -643,15 +623,14 @@ TEST(socketpool_add_remove_cycle)
     Arena_T arena = Arena_new();
     SocketPool_T pool = SocketPool_new(arena, 10, 1024);
 
-    TRY
-        volatile int i;
-        for (i = 0; i < 20; i++)
-        {
-            Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
-            SocketPool_add(pool, socket);
-            SocketPool_remove(pool, socket);
-            Socket_free(&socket);
-        }
+    TRY volatile int i;
+    for (i = 0; i < 20; i++)
+    {
+        Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+        SocketPool_add(pool, socket);
+        SocketPool_remove(pool, socket);
+        Socket_free(&socket);
+    }
     EXCEPT(SocketPool_Failed) ASSERT(0);
     END_TRY;
 
@@ -708,20 +687,19 @@ static void *thread_get_connections(void *arg)
 {
     SocketPool_T pool = (SocketPool_T)arg;
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
-    
-    TRY
-        volatile int i;
-        SocketPool_add(pool, socket);
-        for (i = 0; i < 100; i++)
-        {
-            Connection_T conn = SocketPool_get(pool, socket);
-            (void)conn;
-            usleep(100);
-        }
-        SocketPool_remove(pool, socket);
-    EXCEPT(SocketPool_Failed) (void)0;
+
+    TRY volatile int i;
+    SocketPool_add(pool, socket);
+    for (i = 0; i < 100; i++)
+    {
+        Connection_T conn = SocketPool_get(pool, socket);
+        (void)conn;
+        usleep(100);
+    }
+    SocketPool_remove(pool, socket);
+    EXCEPT(SocketPool_Failed)(void) 0;
     END_TRY;
-    
+
     Socket_free(&socket);
     return NULL;
 }
@@ -735,9 +713,231 @@ TEST(socketpool_concurrent_get)
 
     for (int i = 0; i < 4; i++)
         pthread_create(&threads[i], NULL, thread_get_connections, pool);
-    
+
     for (int i = 0; i < 4; i++)
         pthread_join(threads[i], NULL);
+
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+}
+
+/* ==================== Batch Accept Tests ==================== */
+
+TEST(socketpool_batch_accept_single)
+{
+    setup_signals();
+    Arena_T arena = Arena_new();
+    SocketPool_T pool = SocketPool_new(arena, 100, 1024);
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted[1];
+
+    TRY Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 10);
+    Socket_setnonblocking(server);
+
+    int count = SocketPool_accept_batch(pool, server, 1, accepted);
+    /* No connections pending, should return 0 */
+    ASSERT_EQ(count, 0);
+    EXCEPT(Socket_Failed) ASSERT(0);
+    EXCEPT(SocketPool_Failed) ASSERT(0);
+    END_TRY;
+
+    Socket_free(&server);
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+}
+
+TEST(socketpool_batch_accept_multiple)
+{
+    setup_signals();
+    Arena_T arena = Arena_new();
+    SocketPool_T pool = SocketPool_new(arena, 100, 1024);
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted[10];
+
+    TRY Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 10);
+    Socket_setnonblocking(server);
+
+    int count = SocketPool_accept_batch(pool, server, 10, accepted);
+    /* No connections pending, should return 0 */
+    ASSERT_EQ(count, 0);
+    EXCEPT(Socket_Failed) ASSERT(0);
+    EXCEPT(SocketPool_Failed) ASSERT(0);
+    END_TRY;
+
+    Socket_free(&server);
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+}
+
+TEST(socketpool_batch_accept_pool_full)
+{
+    setup_signals();
+    Arena_T arena = Arena_new();
+    SocketPool_T pool = SocketPool_new(arena, 2, 1024);
+    Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T accepted[10];
+
+    TRY Socket_bind(server, "127.0.0.1", 0);
+    Socket_listen(server, 10);
+    Socket_setnonblocking(server);
+
+    /* Fill pool */
+    Socket_T sock1 = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
+    SocketPool_add(pool, sock1);
+    SocketPool_add(pool, sock2);
+
+    int count = SocketPool_accept_batch(pool, server, 10, accepted);
+    /* Pool is full, should return 0 */
+    ASSERT_EQ(count, 0);
+
+    SocketPool_remove(pool, sock1);
+    SocketPool_remove(pool, sock2);
+    Socket_free(&sock1);
+    Socket_free(&sock2);
+    EXCEPT(Socket_Failed) ASSERT(0);
+    EXCEPT(SocketPool_Failed) ASSERT(0);
+    END_TRY;
+
+    Socket_free(&server);
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+}
+
+/* ==================== Resize Tests ==================== */
+
+TEST(socketpool_resize_grow)
+{
+    Arena_T arena = Arena_new();
+    SocketPool_T pool = SocketPool_new(arena, 100, 1024);
+    volatile size_t count;
+
+    TRY count = SocketPool_count(pool);
+    ASSERT_EQ(count, 0);
+
+    SocketPool_resize(pool, 200);
+    /* Count should still be 0 */
+    count = SocketPool_count(pool);
+    ASSERT_EQ(count, 0);
+    EXCEPT(SocketPool_Failed) ASSERT(0);
+    END_TRY;
+
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+}
+
+TEST(socketpool_resize_shrink)
+{
+    setup_signals();
+    Arena_T arena = Arena_new();
+    SocketPool_T pool = SocketPool_new(arena, 100, 1024);
+    Socket_T sock1 = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T sock2 = Socket_new(AF_INET, SOCK_STREAM, 0);
+    volatile size_t count;
+
+    TRY SocketPool_add(pool, sock1);
+    SocketPool_add(pool, sock2);
+    count = SocketPool_count(pool);
+    ASSERT_EQ(count, 2);
+
+    /* Shrink to 50 - should close excess connections */
+    SocketPool_resize(pool, 50);
+    count = SocketPool_count(pool);
+    /* Should have closed excess connections */
+    ASSERT(count <= 50);
+    EXCEPT(SocketPool_Failed) ASSERT(0);
+    END_TRY;
+
+    SocketPool_remove(pool, sock1);
+    SocketPool_remove(pool, sock2);
+    Socket_free(&sock1);
+    Socket_free(&sock2);
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+}
+
+TEST(socketpool_resize_same_size)
+{
+    Arena_T arena = Arena_new();
+    SocketPool_T pool = SocketPool_new(arena, 100, 1024);
+    volatile size_t count;
+
+    TRY count = SocketPool_count(pool);
+    ASSERT_EQ(count, 0);
+
+    /* Resize to same size - should be no-op */
+    SocketPool_resize(pool, 100);
+    count = SocketPool_count(pool);
+    ASSERT_EQ(count, 0);
+    EXCEPT(SocketPool_Failed) ASSERT(0);
+    END_TRY;
+
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+}
+
+/* ==================== Pre-warming Tests ==================== */
+
+TEST(socketpool_prewarm_default)
+{
+    Arena_T arena = Arena_new();
+    SocketPool_T pool = SocketPool_new(arena, 100, 1024);
+
+    /* Pre-warming happens automatically in SocketPool_new with 20% */
+    /* Just verify pool was created successfully */
+    ASSERT_NOT_NULL(pool);
+
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+}
+
+TEST(socketpool_prewarm_custom)
+{
+    Arena_T arena = Arena_new();
+    SocketPool_T pool = SocketPool_new(arena, 100, 1024);
+
+    TRY
+        /* Pre-warm 50% */
+        SocketPool_prewarm(pool, 50);
+    /* Should not raise exception */
+    EXCEPT(SocketPool_Failed) ASSERT(0);
+    END_TRY;
+
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+}
+
+/* ==================== Buffer Size Tuning Tests ==================== */
+
+TEST(socketpool_set_bufsize)
+{
+    Arena_T arena = Arena_new();
+    SocketPool_T pool = SocketPool_new(arena, 100, 1024);
+
+    TRY
+        /* Change buffer size */
+        SocketPool_set_bufsize(pool, 2048);
+    /* Should not raise exception */
+    EXCEPT(SocketPool_Failed) ASSERT(0);
+    END_TRY;
+
+    SocketPool_free(&pool);
+    Arena_dispose(&arena);
+}
+
+TEST(socketpool_set_bufsize_large)
+{
+    Arena_T arena = Arena_new();
+    SocketPool_T pool = SocketPool_new(arena, 100, 1024);
+
+    TRY
+        /* Set large buffer size */
+        SocketPool_set_bufsize(pool, 65536);
+    /* Should not raise exception */
+    EXCEPT(SocketPool_Failed) ASSERT(0);
+    END_TRY;
 
     SocketPool_free(&pool);
     Arena_dispose(&arena);
@@ -748,5 +948,3 @@ int main(void)
     Test_run_all();
     return Test_get_failures() > 0 ? 1 : 0;
 }
-
-

@@ -103,6 +103,17 @@ extern void Socket_bind(T socket, const char *host, int port);
 extern void Socket_listen(T socket, int backlog);
 
 /**
+ * Socket_new_from_fd - Create Socket_T from existing file descriptor
+ * @fd: File descriptor (must be valid socket, will be set to non-blocking)
+ * Returns: New Socket_T instance or NULL on failure
+ * Raises: Socket_Failed on error
+ * Thread-safe: Yes - returns new instance
+ * Note: Used internally for batch accept operations. The socket must
+ * already be a valid socket file descriptor. Sets socket to non-blocking mode.
+ */
+extern T Socket_new_from_fd(int fd);
+
+/**
  * Socket_accept - Accept incoming connection
  * @socket: Listening socket
  * Returns: New socket or NULL if would block (EAGAIN/EWOULDBLOCK)
