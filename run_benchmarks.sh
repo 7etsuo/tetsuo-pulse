@@ -1,6 +1,39 @@
 #!/bin/bash
 set -e
 
+# macOS compatibility: detect OS and set platform-specific commands
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    NPROC_CMD="sysctl -n hw.ncpu"
+    XARGS_CMD="xargs"
+    # macOS doesn't have timeout command - use perl or gtimeout if available
+    if command -v gtimeout &> /dev/null; then
+        TIMEOUT_CMD="gtimeout"
+    elif command -v perl &> /dev/null; then
+        TIMEOUT_CMD="perl_timeout"
+    else
+        TIMEOUT_CMD="no_timeout"
+    fi
+else
+    # Linux
+    NPROC_CMD="nproc"
+    XARGS_CMD="xargs -r"
+    TIMEOUT_CMD="timeout"
+fi
+
+# macOS timeout function using perl
+perl_timeout() {
+    local timeout=$1
+    shift
+    perl -e 'alarm shift; exec @ARGV' "$timeout" "$@"
+}
+
+# No timeout function - just run the command
+no_timeout() {
+    shift  # Skip timeout argument
+    "$@"
+}
+
 echo "=========================================="
 echo "  Socket Library Benchmark Suite"
 echo "=========================================="
@@ -52,7 +85,10 @@ BUILD_DIR="$SCRIPT_DIR/build"
 
 # Step 1: Clean up ports
 echo "=== Step 1: Cleaning up ports ==="
-sudo lsof -ti:8080,8081,8082 | xargs -r kill -9 2>/dev/null || true
+PIDS=$(sudo lsof -ti:8080,8081,8082 2>/dev/null || true)
+if [ -n "$PIDS" ]; then
+    echo "$PIDS" | $XARGS_CMD kill -9 2>/dev/null || true
+fi
 sleep 1
 
 # Step 2: Rebuild if needed
@@ -62,7 +98,7 @@ if [ -n "$REBUILD_FLAG" ] || [ ! -f "benchmark_server" ]; then
     echo "Rebuilding..."
     rm -rf *
     cmake ..
-    make -j$(nproc)
+    make -j$($NPROC_CMD)
     echo "Build complete!"
 else
     echo "Skipping rebuild (use --rebuild to force)"
@@ -101,15 +137,30 @@ run_benchmark() {
     fi
     
     echo "Running benchmark client (timeout: ${TIMEOUT}s)..."
-    timeout ${TIMEOUT}s ./benchmark_client --reqs=$REQS --threads=$THREADS --port=$PORT || {
-        echo "WARNING: Benchmark client timed out or failed after ${TIMEOUT}s"
-        echo "This may indicate the server is slow or unresponsive"
-    }
+    if [ "$TIMEOUT_CMD" = "timeout" ] || [ "$TIMEOUT_CMD" = "gtimeout" ]; then
+        $TIMEOUT_CMD ${TIMEOUT}s ./benchmark_client --reqs=$REQS --threads=$THREADS --port=$PORT || {
+            echo "WARNING: Benchmark client timed out or failed after ${TIMEOUT}s"
+            echo "This may indicate the server is slow or unresponsive"
+        }
+    elif [ "$TIMEOUT_CMD" = "perl_timeout" ]; then
+        perl_timeout ${TIMEOUT} ./benchmark_client --reqs=$REQS --threads=$THREADS --port=$PORT || {
+            echo "WARNING: Benchmark client timed out or failed after ${TIMEOUT}s"
+            echo "This may indicate the server is slow or unresponsive"
+        }
+    else
+        # No timeout available - just run it
+        ./benchmark_client --reqs=$REQS --threads=$THREADS --port=$PORT || {
+            echo "WARNING: Benchmark client failed"
+        }
+    fi
     
     # Cleanup
     kill $SERVER_PID 2>/dev/null || true
     sleep 1
-    sudo lsof -ti:$PORT | xargs -r kill -9 2>/dev/null || true
+    PIDS=$(sudo lsof -ti:$PORT 2>/dev/null || true)
+    if [ -n "$PIDS" ]; then
+        echo "$PIDS" | $XARGS_CMD kill -9 2>/dev/null || true
+    fi
     
     echo ""
     sleep 2
@@ -118,8 +169,16 @@ run_benchmark() {
 # Benchmark 1: Socket Library (port 8080)
 run_benchmark "Socket Library" "./benchmark_server" 8080
 
-# Benchmark 2: Raw epoll (port 8081)
-run_benchmark "Raw epoll" "./benchmark_raw" 8081
+# Benchmark 2: Raw epoll (port 8081) - Linux only
+if [ -f "./benchmark_raw" ]; then
+    run_benchmark "Raw epoll" "./benchmark_raw" 8081
+else
+    echo "=========================================="
+    echo "  Skipping Raw epoll benchmark"
+    echo "=========================================="
+    echo "Raw epoll benchmark not available (Linux-only, uses epoll)"
+    echo ""
+fi
 
 # Benchmark 3: libevent (port 8082)
 if [ -f "./benchmark_libevent" ]; then
@@ -134,7 +193,10 @@ fi
 
 # Final cleanup
 echo "=== Final cleanup ==="
-sudo lsof -ti:8080,8081,8082 | xargs -r kill -9 2>/dev/null || true
+PIDS=$(sudo lsof -ti:8080,8081,8082 2>/dev/null || true)
+if [ -n "$PIDS" ]; then
+    echo "$PIDS" | $XARGS_CMD kill -9 2>/dev/null || true
+fi
 
 echo ""
 echo "=========================================="
