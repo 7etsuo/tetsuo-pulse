@@ -62,8 +62,11 @@ set(LIB_SOURCES
     src/poll/SocketPoll.c
     ${POLL_BACKEND_SRC}
     
-    # Pool module
-    src/pool/SocketPool.c
+    # Pool module - split files
+    src/pool/SocketPool-core.c
+    src/pool/SocketPool-connections.c
+    src/pool/SocketPool-accept.c
+    src/pool/SocketPool-cleanup.c
 )
 
 # Collect all header files for installation
