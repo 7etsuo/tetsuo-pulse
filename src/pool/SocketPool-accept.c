@@ -36,9 +36,9 @@ static int accept_connection_direct(int server_fd)
 {
     int newfd;
 
-#if defined(SOCKET_HAS_ACCEPT4) && defined(SOCK_NONBLOCK)
+#if SOCKET_HAS_ACCEPT4 && defined(SOCK_NONBLOCK)
     newfd = accept4(server_fd, NULL, NULL, SOCK_CLOEXEC | SOCK_NONBLOCK);
-#elif defined(SOCKET_HAS_ACCEPT4)
+#elif SOCKET_HAS_ACCEPT4
     newfd = accept4(server_fd, NULL, NULL, SOCK_CLOEXEC);
 #else
     newfd = accept(server_fd, NULL, NULL);
@@ -51,7 +51,7 @@ static int accept_connection_direct(int server_fd)
         return -1;
     }
 
-#if !defined(SOCKET_HAS_ACCEPT4) || !defined(SOCK_NONBLOCK)
+#if !SOCKET_HAS_ACCEPT4 || !defined(SOCK_NONBLOCK)
     if (SocketCommon_setcloexec(newfd, 1) < 0)
     {
         SAFE_CLOSE(newfd);

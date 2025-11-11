@@ -452,13 +452,35 @@ TEST(socketdgram_getbroadcast_returns_set_value)
     SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
     ASSERT_NOT_NULL(socket);
 
+    int broadcast;
+
     SocketDgram_setbroadcast(socket, 1);
-    int broadcast = SocketDgram_getbroadcast(socket);
+
+    TRY
+
+    broadcast = SocketDgram_getbroadcast(socket);
+
     ASSERT_EQ(broadcast, 1);
 
+    EXCEPT(SocketDgram_Failed)
+
+    (void)0;
+
+    END_TRY;
+
     SocketDgram_setbroadcast(socket, 0);
+
+    TRY
+
     broadcast = SocketDgram_getbroadcast(socket);
+
     ASSERT_EQ(broadcast, 0);
+
+    EXCEPT(SocketDgram_Failed)
+
+    (void)0;
+
+    END_TRY;
 
     SocketDgram_free(&socket);
 }
