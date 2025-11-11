@@ -1012,6 +1012,50 @@ static T create_accepted_socket(int newfd, const struct sockaddr_storage *addr, 
     return newsocket;
 }
 
+T Socket_new_from_fd(int fd)
+{
+    T sock;
+    int flags;
+
+    assert(fd >= 0);
+
+    /* Validate fd is a socket */
+    int optval;
+    socklen_t optlen = sizeof(optval);
+    if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &optval, &optlen) < 0)
+    {
+        SOCKET_ERROR_FMT("Invalid file descriptor (not a socket): fd=%d", fd);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    /* Allocate socket structure */
+    sock = allocate_socket_structure(fd);
+    sock->arena = create_socket_arena(fd, sock);
+    initialize_socket_structure(sock, fd);
+
+    /* Set non-blocking mode (required for batch accept) */
+    flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0)
+    {
+        int saved_errno = errno;
+        Socket_free(&sock);
+        errno = saved_errno;
+        SOCKET_ERROR_FMT("Failed to get socket flags for fd=%d", fd);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+        int saved_errno = errno;
+        Socket_free(&sock);
+        errno = saved_errno;
+        SOCKET_ERROR_FMT("Failed to set non-blocking mode for fd=%d", fd);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+
+    return sock;
+}
+
 T Socket_accept(T socket)
 {
     struct sockaddr_storage addr;
@@ -2510,7 +2554,7 @@ unsigned int Socket_getusertimeout(T socket)
     }
     return timeout_ms;
 #else
-    (void) optlen;
+    (void)optlen;
     return 0;
 #endif
 }

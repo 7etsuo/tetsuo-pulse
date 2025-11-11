@@ -140,14 +140,18 @@ static T allocate_pool_structure(Arena_T arena)
 }
 
 /**
- * allocate_connections_array
+ * allocate_connections_array - Allocate connections array using malloc (resizable)
+ * @maxconns: Number of connection slots
+ * Returns: Zero-initialized connections array or NULL on failure
  * Raises: SocketPool_Failed on allocation failure
+ * Note: Uses malloc() instead of arena allocation to support realloc() for resize.
+ * Must be explicitly freed in SocketPool_free().
  */
-static struct Connection *allocate_connections_array(Arena_T arena, size_t maxconns)
+static struct Connection *allocate_connections_array(size_t maxconns)
 {
     struct Connection *connections;
 
-    connections = CALLOC(arena, maxconns, sizeof(struct Connection));
+    connections = calloc(maxconns, sizeof(struct Connection));
     if (!connections)
     {
         SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate connections array");
@@ -244,7 +248,7 @@ static void build_free_list(T pool, size_t maxconns)
  */
 static void allocate_pool_components(Arena_T arena, size_t maxconns, T pool)
 {
-    pool->connections = allocate_connections_array(arena, maxconns);
+    pool->connections = allocate_connections_array(maxconns);
     pool->hash_table = allocate_hash_table(arena);
     pool->cleanup_buffer = allocate_cleanup_buffer(arena, maxconns);
 }
@@ -276,6 +280,9 @@ T SocketPool_new(Arena_T arena, size_t maxconns, size_t bufsize)
     initialize_pool_mutex(pool);
     build_free_list(pool, maxconns);
 
+    /* Pre-warm 20% of slots by default */
+    SocketPool_prewarm(pool, 20);
+
     return pool;
 }
 
@@ -283,10 +290,211 @@ void SocketPool_free(T *pool)
 {
     assert(pool && *pool);
 
+    /* Free connections array (allocated with malloc, not arena) */
+    if ((*pool)->connections)
+    {
+        free((*pool)->connections);
+        (*pool)->connections = NULL;
+    }
+
     /* Destroy mutex */
     pthread_mutex_destroy(&(*pool)->mutex);
 
     *pool = NULL;
+}
+
+/**
+ * allocate_connection_buffers - Allocate buffers for a connection slot
+ * @arena: Arena for buffer allocation
+ * @bufsize: Buffer size
+ * @conn: Connection slot
+ * Returns: Zero on success, non-zero on failure
+ * On failure, caller must handle cleanup of any partially allocated buffers.
+ */
+static int allocate_connection_buffers(Arena_T arena, size_t bufsize, Connection_T conn);
+
+/**
+ * collect_excess_connections - Collect excess active connections for closing
+ * @pool: Pool instance
+ * @new_maxconns: New maximum capacity
+ * @excess_sockets: Output array for excess sockets (must be pre-allocated)
+ * Returns: Number of excess connections found
+ * Must be called with pool mutex held.
+ */
+static size_t collect_excess_connections(T pool, size_t new_maxconns, Socket_T *excess_sockets)
+{
+    size_t excess_count = 0;
+    size_t i;
+
+    if (pool->count <= new_maxconns)
+        return 0; /* No excess */
+
+    /* Collect connections beyond new_maxconns */
+    for (i = 0; i < pool->maxconns && excess_count < (pool->count - new_maxconns); i++)
+    {
+        struct Connection *conn = &pool->connections[i];
+        if (conn->active && conn->socket)
+        {
+            excess_sockets[excess_count++] = conn->socket;
+        }
+    }
+
+    return excess_count;
+}
+
+void SocketPool_resize(T pool, size_t new_maxconns)
+{
+    size_t old_maxconns;
+    struct Connection *new_connections;
+    size_t excess_count;
+    Socket_T *excess_sockets = NULL;
+    size_t i;
+
+    assert(pool);
+    assert(SOCKET_VALID_CONNECTION_COUNT(new_maxconns));
+
+    new_maxconns = enforce_max_connections(new_maxconns);
+
+    pthread_mutex_lock(&pool->mutex);
+
+    old_maxconns = pool->maxconns;
+
+    /* Same size - no-op */
+    if (new_maxconns == old_maxconns)
+    {
+        pthread_mutex_unlock(&pool->mutex);
+        return;
+    }
+
+    /* Shrinking: Collect and close excess connections */
+    if (new_maxconns < old_maxconns)
+    {
+        excess_count = pool->count > new_maxconns ? (pool->count - new_maxconns) : 0;
+
+        if (excess_count > 0)
+        {
+            /* Allocate buffer for excess sockets (outside mutex) */
+            excess_sockets = calloc(excess_count, sizeof(Socket_T));
+            if (!excess_sockets)
+            {
+                pthread_mutex_unlock(&pool->mutex);
+                SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate excess sockets buffer");
+                RAISE_POOL_ERROR(SocketPool_Failed);
+            }
+
+            /* Collect excess connections (with mutex held) */
+            size_t collected = collect_excess_connections(pool, new_maxconns, excess_sockets);
+            assert(collected == excess_count);
+
+            /* Release mutex before closing sockets */
+            pthread_mutex_unlock(&pool->mutex);
+
+            /* Close excess connections (outside mutex) */
+            for (i = 0; i < excess_count; i++)
+            {
+                if (excess_sockets[i])
+                {
+                    SocketPool_remove(pool, excess_sockets[i]);
+                    Socket_free(&excess_sockets[i]);
+                }
+            }
+
+            free(excess_sockets);
+            excess_sockets = NULL;
+
+            /* Re-acquire mutex for resize */
+            pthread_mutex_lock(&pool->mutex);
+        }
+    }
+
+    /* Realloc connections array */
+    new_connections = realloc(pool->connections, new_maxconns * sizeof(struct Connection));
+    if (!new_connections)
+    {
+        pthread_mutex_unlock(&pool->mutex);
+        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot reallocate connections array");
+        RAISE_POOL_ERROR(SocketPool_Failed);
+    }
+
+    pool->connections = new_connections;
+
+    /* Growing: Initialize new slots and allocate buffers */
+    if (new_maxconns > old_maxconns)
+    {
+        size_t growth = new_maxconns - old_maxconns;
+
+        /* Zero-initialize new slots */
+        memset(&pool->connections[old_maxconns], 0, growth * sizeof(struct Connection));
+
+        /* Allocate buffers for new slots and add to free list */
+        for (i = old_maxconns; i < new_maxconns; i++)
+        {
+            struct Connection *conn = &pool->connections[i];
+            initialize_connection_slot(conn);
+
+            /* Allocate buffers (may fail, but we continue) */
+            if (allocate_connection_buffers(pool->arena, pool->bufsize, conn) == 0)
+            {
+                /* Add to free list */
+                conn->hash_next = (struct Connection *)pool->free_list;
+                pool->free_list = conn;
+            }
+            /* If allocation fails, slot remains initialized but without buffers */
+        }
+    }
+    else
+    {
+        /* Shrinking: Rebuild free list for new size */
+        build_free_list(pool, new_maxconns);
+    }
+
+    pool->maxconns = new_maxconns;
+    pthread_mutex_unlock(&pool->mutex);
+}
+
+void SocketPool_prewarm(T pool, int percentage)
+{
+    size_t prewarm_count;
+    struct Connection *conn;
+    size_t allocated = 0;
+
+    assert(pool);
+    assert(percentage >= 0 && percentage <= 100);
+
+    pthread_mutex_lock(&pool->mutex);
+
+    /* Calculate number of slots to pre-warm */
+    prewarm_count = (pool->maxconns * (size_t)percentage) / 100;
+
+    /* Iterate free list and allocate buffers */
+    conn = pool->free_list;
+    while (conn && allocated < prewarm_count)
+    {
+        /* Skip if buffers already allocated */
+        if (!conn->inbuf && !conn->outbuf)
+        {
+            /* Allocate buffers (may fail, but continue) */
+            if (allocate_connection_buffers(pool->arena, pool->bufsize, conn) == 0)
+            {
+                allocated++;
+            }
+        }
+        conn = (struct Connection *)conn->hash_next;
+    }
+
+    pthread_mutex_unlock(&pool->mutex);
+}
+
+void SocketPool_set_bufsize(T pool, size_t new_bufsize)
+{
+    assert(pool);
+    assert(SOCKET_VALID_BUFFER_SIZE(new_bufsize));
+
+    new_bufsize = enforce_buffer_size(new_bufsize);
+
+    pthread_mutex_lock(&pool->mutex);
+    pool->bufsize = new_bufsize;
+    pthread_mutex_unlock(&pool->mutex);
 }
 
 /* find_slot - Look up active connection by socket
@@ -518,6 +726,135 @@ Connection_T SocketPool_add(T pool, Socket_T socket)
     pthread_mutex_unlock(&pool->mutex);
 
     return conn;
+}
+
+/**
+ * accept_connection_direct - Accept connection directly using accept4/accept
+ * @server_fd: Server socket file descriptor
+ * Returns: New file descriptor or -1 on error/would block
+ * Note: Uses accept4() with SOCK_CLOEXEC | SOCK_NONBLOCK on Linux,
+ * falls back to accept() + fcntl() on other platforms.
+ */
+static int accept_connection_direct(int server_fd)
+{
+    int newfd;
+
+#if SOCKET_HAS_ACCEPT4
+    /* Use accept4() with SOCK_CLOEXEC | SOCK_NONBLOCK when available */
+#ifdef SOCK_NONBLOCK
+    newfd = accept4(server_fd, NULL, NULL, SOCKET_SOCK_CLOEXEC | SOCK_NONBLOCK);
+#else
+    /* SOCK_NONBLOCK not available, use accept4 with CLOEXEC only */
+    newfd = accept4(server_fd, NULL, NULL, SOCKET_SOCK_CLOEXEC);
+#endif
+#else
+    newfd = accept(server_fd, NULL, NULL);
+#endif
+
+    if (newfd < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return -1; /* Would block - not an error */
+        return -1;     /* Error */
+    }
+
+#if !SOCKET_HAS_ACCEPT4 || !defined(SOCK_NONBLOCK)
+    /* Fallback: Set CLOEXEC and NONBLOCK via fcntl */
+    if (SocketCommon_setcloexec(newfd, 1) < 0)
+    {
+        SAFE_CLOSE(newfd);
+        return -1;
+    }
+
+    /* Set non-blocking mode */
+    int flags = fcntl(newfd, F_GETFL, 0);
+    if (flags >= 0)
+    {
+        fcntl(newfd, F_SETFL, flags | O_NONBLOCK);
+    }
+#endif
+
+    return newfd;
+}
+
+int SocketPool_accept_batch(T pool, Socket_T server, int max_accepts, Socket_T *accepted)
+{
+    volatile int count = 0;
+    int server_fd;
+    int available;
+    volatile int volatile_max_accepts = max_accepts;
+    int local_max_accepts;
+
+    assert(pool);
+    assert(server);
+    assert(max_accepts > 0 && max_accepts <= 1000);
+    assert(accepted);
+
+    server_fd = Socket_fd(server);
+    local_max_accepts = (int)volatile_max_accepts;
+
+    /* Check available pool slots (with mutex) */
+    pthread_mutex_lock(&pool->mutex);
+    available = (int)(pool->maxconns - pool->count);
+    pthread_mutex_unlock(&pool->mutex);
+
+    if (available <= 0)
+        return 0; /* Pool is full */
+
+    /* Limit max_accepts to available slots */
+    if (local_max_accepts > available)
+        local_max_accepts = available;
+
+    /* Accept loop - minimize lock time */
+    for (int i = 0; i < local_max_accepts; i++)
+    {
+        int newfd = accept_connection_direct(server_fd);
+        if (newfd < 0)
+        {
+            /* Would block or error - stop accepting */
+            if (errno != EAGAIN && errno != EWOULDBLOCK)
+            {
+                /* Real error - log but continue with what we have */
+                SOCKET_ERROR_FMT("accept() failed during batch (accepted %d so far)", count);
+            }
+            break;
+        }
+
+        /* Create Socket_T from file descriptor */
+        Socket_T sock = NULL;
+        TRY
+        {
+            sock = Socket_new_from_fd(newfd);
+        }
+        EXCEPT(Socket_Failed)
+        {
+            /* Failed to create socket wrapper - close fd */
+            SAFE_CLOSE(newfd);
+            break; /* Stop accepting on allocation failure */
+        }
+        END_TRY;
+
+        if (!sock)
+        {
+            SAFE_CLOSE(newfd);
+            break;
+        }
+
+        /* Add to pool (acquires mutex internally) */
+        Connection_T conn = SocketPool_add(pool, sock);
+        if (conn)
+        {
+            accepted[count++] = sock;
+        }
+        else
+        {
+            /* Pool full (race condition) - free socket */
+            Socket_free(&sock);
+            break;
+        }
+    }
+
+    return count;
 }
 
 /**
