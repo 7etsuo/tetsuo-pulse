@@ -66,6 +66,15 @@
 #define SOCKET_DEFAULT_POOL_BUFSIZE 8192
 #endif
 
+/* Pool pre-warm and batch limits */
+#ifndef SOCKET_POOL_DEFAULT_PREWARM_PCT
+#define SOCKET_POOL_DEFAULT_PREWARM_PCT 20  /* Default percentage of slots to pre-warm for latency reduction under burst loads */
+#endif
+
+#ifndef SOCKET_POOL_MAX_BATCH_ACCEPTS
+#define SOCKET_POOL_MAX_BATCH_ACCEPTS 1000  /* Maximum number of accepts per batch call to prevent excessive resource use */
+#endif
+
 /* Maximum backlog for listen() */
 #ifndef SOCKET_MAX_LISTEN_BACKLOG
 #define SOCKET_MAX_LISTEN_BACKLOG 1024
