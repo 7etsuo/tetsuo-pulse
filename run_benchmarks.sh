@@ -91,9 +91,20 @@ run_benchmark() {
         return 1
     fi
     
-    # Run client
-    echo "Running benchmark client..."
-    ./benchmark_client --reqs=$REQS --threads=$THREADS --port=$PORT
+    # Run client with timeout (calculate timeout: 2 seconds per 1000 requests, minimum 30 seconds)
+    local TIMEOUT=$((REQS / 1000 * 2))
+    if [ $TIMEOUT -lt 30 ]; then
+        TIMEOUT=30
+    fi
+    if [ $TIMEOUT -gt 300 ]; then
+        TIMEOUT=300  # Cap at 5 minutes
+    fi
+    
+    echo "Running benchmark client (timeout: ${TIMEOUT}s)..."
+    timeout ${TIMEOUT}s ./benchmark_client --reqs=$REQS --threads=$THREADS --port=$PORT || {
+        echo "WARNING: Benchmark client timed out or failed after ${TIMEOUT}s"
+        echo "This may indicate the server is slow or unresponsive"
+    }
     
     # Cleanup
     kill $SERVER_PID 2>/dev/null || true

@@ -22,13 +22,24 @@ static void handle_raw_connection(int epfd, int client_fd) {
     char buf[RAW_BUF_SIZE];
     ssize_t n;
     
-    while (raw_running) {
-        n = read(client_fd, buf, sizeof(buf));
-        if (n <= 0) break;
-        write(client_fd, buf, n);  // Echo
+    // Read available data (non-blocking)
+    n = read(client_fd, buf, sizeof(buf));
+    if (n > 0) {
+        // Echo back what we read
+        ssize_t written = write(client_fd, buf, n);
+        if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+            // Write error - close connection
+            close(client_fd);
+            epoll_ctl(epfd, EPOLL_CTL_DEL, client_fd, NULL);
+            return;
+        }
+    } else if (n == 0 || (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)) {
+        // EOF or error - close connection
+        close(client_fd);
+        epoll_ctl(epfd, EPOLL_CTL_DEL, client_fd, NULL);
+        return;
     }
-    close(client_fd);
-    epoll_ctl(epfd, EPOLL_CTL_DEL, client_fd, NULL);
+    // If n < 0 and errno == EAGAIN, just return - more data will come later
 }
 
 int main() {
