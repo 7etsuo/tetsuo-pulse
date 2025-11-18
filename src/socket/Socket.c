@@ -1694,19 +1694,24 @@ ssize_t Socket_sendfile(T socket, int file_fd, off_t *offset, size_t count)
     /* TLS cannot use kernel sendfile() - must use fallback */
     if (socket_is_tls_enabled(socket))
     {
-        return socket_sendfile_fallback(socket, file_fd, offset, count);
+        result = socket_sendfile_fallback(socket, file_fd, offset, count);
     }
+    else
 #endif
-
 #if SOCKET_HAS_SENDFILE && defined(__linux__)
-    result = socket_sendfile_linux(socket, file_fd, offset, count);
+    {
+        result = socket_sendfile_linux(socket, file_fd, offset, count);
+    }
 #elif SOCKET_HAS_SENDFILE && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) ||                   \
                               defined(__DragonFly__) || (defined(__APPLE__) && defined(__MACH__)))
-    result = socket_sendfile_bsd(socket, file_fd, offset, count);
+    {
+        result = socket_sendfile_bsd(socket, file_fd, offset, count);
+    }
 #else
-    result = socket_sendfile_fallback(socket, file_fd, offset, count);
+    {
+        result = socket_sendfile_fallback(socket, file_fd, offset, count);
+    }
 #endif
-
     if (result < 0)
     {
         if (errno == EAGAIN || errno == EWOULDBLOCK)
