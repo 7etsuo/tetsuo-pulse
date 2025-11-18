@@ -738,13 +738,89 @@ int socket_tls_want_read(Socket_T socket)
     if (!socket->tls_enabled || !socket->tls_ssl)
         return 0;
 
-    /* Check if last TLS operation indicated WANT_READ */
-    SSL *ssl = (SSL *)socket->tls_ssl;
-    /* Implementation tracks SSL_ERROR_WANT_READ state */
-    return 0; /* Placeholder - full implementation needed */
+    /* Check if handshake is in progress and wants read */
+    if (!socket->tls_handshake_done)
+    {
+        return (socket->tls_last_handshake_state == TLS_HANDSHAKE_WANT_READ) ? 1 : 0;
+    }
+
+    /* For established connections, SSL_pending indicates data available */
+    SSL *ssl = socket_get_ssl(socket);
+    if (ssl && SSL_pending(ssl) > 0)
+        return 1;
+
+    return 0;
 #else
     return 0;
 #endif
+}
+```
+
+**ALWAYS** track TLS handshake state in socket structures:
+
+```c
+/* In Socket_T structure */
+int tls_last_handshake_state; /* Last TLSHandshakeState from handshake() */
+
+/* In SocketTLS_handshake() function */
+TLSHandshakeState SocketTLS_handshake(Socket_T socket)
+{
+    /* ... perform handshake ... */
+
+    if (result == 1)
+    {
+        socket->tls_handshake_done = 1;
+        socket->tls_last_handshake_state = TLS_HANDSHAKE_COMPLETE;
+        return TLS_HANDSHAKE_COMPLETE;
+    }
+    else
+    {
+        TLSHandshakeState state = socket_handle_ssl_error(socket, ssl, result);
+        socket->tls_last_handshake_state = state;  /* Store state for polling */
+        return state;
+    }
+}
+```
+
+**ALWAYS** integrate TLS polling efficiently with O(nfds) complexity:
+
+```c
+/* In SocketPoll_wait() - only check sockets that had events */
+#ifdef SOCKET_HAS_TLS
+/* Update poll events for TLS sockets that had events and need handshake */
+/* Only check sockets that actually had events (efficient - O(nfds) not O(total sockets)) */
+for (int i = 0; i < nfds; i++)
+{
+    Socket_T socket = poll->socketevents[i].socket;
+    if (socket && socket_is_tls_enabled(socket))
+    {
+        /* If handshake is in progress, update events based on TLS state */
+        if (!socket->tls_handshake_done)
+        {
+            socketpoll_update_tls_events(poll, socket);
+        }
+    }
+}
+#endif
+```
+
+**ALWAYS** use existing socket data lookup patterns with proper mutex locking:
+
+```c
+/* Use socket_data_lookup_unlocked() pattern from translate_single_event() */
+static void socketpoll_update_tls_events(T poll, Socket_T socket)
+{
+    /* ... */
+
+    /* Get user data to preserve it - use existing socket_data_lookup_unlocked pattern */
+    /* Same pattern as translate_single_event() uses */
+    hash = socket_hash(socket);
+    pthread_mutex_lock(&poll->mutex);
+    user_data = socket_data_lookup_unlocked(poll, socket);
+    pthread_mutex_unlock(&poll->mutex);
+
+    /* Update events - SocketPoll_mod handles socket not found gracefully */
+    SocketPoll_mod(poll, socket, events, user_data);
 }
 ```
 
