@@ -456,8 +456,19 @@ int socket_tls_want_read(T socket)
 #ifdef SOCKET_HAS_TLS
     if (!socket->tls_enabled || !socket->tls_ssl)
         return 0;
-    /* Check last SSL error - would need to track this */
-    return 0;  /* Placeholder - full implementation tracks SSL_ERROR_WANT_READ */
+
+    /* Check if handshake is in progress and wants read */
+    if (!socket->tls_handshake_done)
+    {
+        return (socket->tls_last_handshake_state == TLS_HANDSHAKE_WANT_READ) ? 1 : 0;
+    }
+
+    /* For established connections, SSL_pending indicates data available */
+    SSL *ssl = socket_get_ssl(socket);
+    if (ssl && SSL_pending(ssl) > 0)
+        return 1;
+
+    return 0;
 #else
     return 0;
 #endif
@@ -469,8 +480,14 @@ int socket_tls_want_write(T socket)
 #ifdef SOCKET_HAS_TLS
     if (!socket->tls_enabled || !socket->tls_ssl)
         return 0;
-    /* Check last SSL error - would need to track this */
-    return 0;  /* Placeholder - full implementation tracks SSL_ERROR_WANT_WRITE */
+
+    /* Check if handshake is in progress and wants write */
+    if (!socket->tls_handshake_done)
+    {
+        return (socket->tls_last_handshake_state == TLS_HANDSHAKE_WANT_WRITE) ? 1 : 0;
+    }
+
+    return 0;
 #else
     return 0;
 #endif
