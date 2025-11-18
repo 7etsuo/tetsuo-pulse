@@ -542,7 +542,13 @@ static void *thread_resolve_requests(void *arg)
         TRY
         {
             req = SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
-            ASSERT_NOT_NULL(req);
+            if (req == NULL)
+            {
+                /* Use test framework failure reporting and abort this thread's work
+                 * NOTE: Use RETURN to properly unwind exception stack inside TRY block. */
+                Test_fail("Assertion failed: req is NULL", __FILE__, __LINE__);
+                RETURN NULL;
+            }
 
             while (result == NULL)
             {
