@@ -29,6 +29,11 @@
 #include "core/SocketConfig.h"
 #define SOCKET_LOG_COMPONENT "SocketAsync"
 #include "core/SocketError.h"
+#include "socket/SocketIO.h"  /* TLS-aware I/O functions */
+
+#ifdef SOCKET_HAS_TLS
+#include "tls/SocketTLS.h"  /* For TLS exception types */
+#endif
 
 #define T SocketAsync_T
 
@@ -645,25 +650,73 @@ static int process_kqueue_completions(T async, int timeout_ms, int max_completio
 
         pthread_mutex_unlock(&async->mutex);
 
-        /* Perform I/O operation */
-        if (type == REQ_SEND)
+        /* Perform I/O operation using TLS-aware functions */
+        /* These functions automatically route through TLS when enabled */
+        TRY
         {
-            result = send(Socket_fd(socket), send_buf, len, MSG_NOSIGNAL);
-            if (result < 0)
+            if (type == REQ_SEND)
             {
-                err = errno;
-                result = -1;
+                result = socket_send_internal(socket, send_buf, len, MSG_NOSIGNAL);
+                if (result == 0)
+                {
+                    /* Would block (EAGAIN/EWOULDBLOCK) */
+                    err = EAGAIN;
+                    result = -1;
+                }
+                else
+                {
+                    /* Success - result > 0 is bytes sent */
+                    err = 0;
+                }
+            }
+            else
+            {
+                result = socket_recv_internal(socket, recv_buf, len, 0);
+                if (result == 0)
+                {
+                    /* Would block (EAGAIN/EWOULDBLOCK) */
+                    /* Note: EOF raises Socket_Closed exception, never returns 0 */
+                    err = EAGAIN;
+                    result = -1;
+                }
+                else
+                {
+                    /* Success - result > 0 is bytes received */
+                    err = 0;
+                }
             }
         }
-        else
+        EXCEPT(Socket_Closed)
         {
-            result = recv(Socket_fd(socket), recv_buf, len, 0);
-            if (result < 0)
-            {
-                err = errno;
-                result = -1;
-            }
+            /* Connection closed (EOF for recv, EPIPE/ECONNRESET for send) */
+            err = ECONNRESET;
+            result = -1;
         }
+        EXCEPT(Socket_Failed)
+        {
+            /* Socket operation failed - errno should be set by socket_send_internal/recv_internal */
+            err = errno;
+            if (err == 0)
+                err = EPROTO;  /* Fallback if errno not set (shouldn't happen) */
+            result = -1;
+        }
+#ifdef SOCKET_HAS_TLS
+        EXCEPT(SocketTLS_HandshakeFailed)
+        {
+            /* TLS handshake not complete - treat as would block */
+            err = EAGAIN;
+            result = -1;
+        }
+        EXCEPT(SocketTLS_Failed)
+        {
+            /* TLS operation failed - errno should be set by socket_handle_ssl_error */
+            err = errno;
+            if (err == 0)
+                err = EPROTO;  /* Fallback if errno not set (shouldn't happen) */
+            result = -1;
+        }
+#endif
+        END_TRY;
 
         /* Invoke callback */
         if (cb)
