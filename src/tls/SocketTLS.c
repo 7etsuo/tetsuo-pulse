@@ -323,12 +323,15 @@ TLSHandshakeState SocketTLS_handshake(Socket_T socket)
     {
         /* Handshake completed successfully */
         socket->tls_handshake_done = 1;
+        socket->tls_last_handshake_state = TLS_HANDSHAKE_COMPLETE;
         return TLS_HANDSHAKE_COMPLETE;
     }
     else
     {
         /* Check for specific errors */
-        return socket_handle_ssl_error(socket, ssl, result);
+        TLSHandshakeState state = socket_handle_ssl_error(socket, ssl, result);
+        socket->tls_last_handshake_state = state;  /* Store state for polling */
+        return state;
     }
 }
 

@@ -27,6 +27,11 @@
 #include "core/SocketMetrics.h"
 #include "core/SocketEvents.h"
 
+#ifdef SOCKET_HAS_TLS
+#include "tls/SocketTLS.h"
+#include "socket/SocketIO.h"
+#endif
+
 #define T SocketPoll_T
 
 Except_T SocketPoll_Failed = {"SocketPoll operation failed"};
@@ -427,6 +432,59 @@ static T allocate_poll_structure(void)
     memset(poll, 0, sizeof(*poll));
     return poll;
 }
+
+#ifdef SOCKET_HAS_TLS
+/**
+ * socketpoll_update_tls_events - Update poll events based on TLS handshake state
+ * @poll: Poll instance
+ * @socket: Socket with TLS enabled
+ *
+ * Updates the poll event mask for a TLS-enabled socket based on its current
+ * handshake state. If TLS handshake is in progress and wants read/write,
+ * adjusts the monitored events accordingly. Only updates if socket is in poll.
+ *
+ * Thread-safe: Yes (SocketPoll_mod handles mutex locking, we lock for data lookup)
+ * Uses existing socket_data_lookup_unlocked() pattern from translate_single_event()
+ */
+static void socketpoll_update_tls_events(T poll, Socket_T socket)
+{
+    unsigned events = 0;
+    void *user_data;
+    unsigned hash;
+
+    assert(poll);
+    assert(socket);
+
+    /* Only process TLS-enabled sockets */
+    if (!socket_is_tls_enabled(socket))
+        return;
+
+    /* Only update if handshake is in progress */
+    if (!socket->tls_handshake_done)
+    {
+        /* Check if TLS wants read/write based on last handshake state */
+        if (socket_tls_want_read(socket))
+            events |= POLL_READ;
+        if (socket_tls_want_write(socket))
+            events |= POLL_WRITE;
+
+        /* Update poll events if TLS state requires it */
+        if (events != 0)
+        {
+            /* Get user data to preserve it - use existing socket_data_lookup_unlocked pattern */
+            /* Same pattern as translate_single_event() uses */
+            hash = socket_hash(socket);
+            pthread_mutex_lock(&poll->mutex);
+            user_data = socket_data_lookup_unlocked(poll, socket);
+            pthread_mutex_unlock(&poll->mutex);
+
+            /* Update events - SocketPoll_mod handles socket not found gracefully */
+            /* If user_data is NULL, socket might not be in poll, but mod will handle it */
+            SocketPoll_mod(poll, socket, events, user_data);
+        }
+    }
+}
+#endif /* SOCKET_HAS_TLS */
 
 /**
  * initialize_poll_backend
@@ -938,6 +996,23 @@ int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout)
     if (nfds > 0)
         SocketMetrics_increment(SOCKET_METRIC_POLL_EVENTS_DISPATCHED, (unsigned long)nfds);
     SocketEvent_emit_poll_wakeup(nfds, timeout);
+
+#ifdef SOCKET_HAS_TLS
+    /* Update poll events for TLS sockets that had events and need handshake */
+    /* Only check sockets that actually had events (efficient - O(nfds) not O(total sockets)) */
+    for (int i = 0; i < nfds; i++)
+    {
+        Socket_T socket = poll->socketevents[i].socket;
+        if (socket && socket_is_tls_enabled(socket))
+        {
+            /* If handshake is in progress, update events based on TLS state */
+            if (!socket->tls_handshake_done)
+            {
+                socketpoll_update_tls_events(poll, socket);
+            }
+        }
+    }
+#endif
 
     /* Validate poll structure is still intact before returning pointer */
     if (!poll || !poll->socketevents)

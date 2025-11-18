@@ -128,6 +128,7 @@ struct T
     int tls_enabled;            /* Flag: 1 if TLS is active on this socket */
     int tls_handshake_done;     /* Flag: 1 if TLS handshake is complete */
     int tls_shutdown_done;      /* Flag: 1 if TLS shutdown is complete */
+    int tls_last_handshake_state; /* Last TLSHandshakeState from handshake() */
     char *tls_sni_hostname;     /* SNI hostname (allocated in arena) */
     void *tls_read_buf;         /* TLS read buffer (allocated in arena) */
     void *tls_write_buf;        /* TLS write buffer (allocated in arena) */
