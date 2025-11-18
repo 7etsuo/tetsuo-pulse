@@ -803,6 +803,15 @@ void Socket_free(T *socket)
         SAFE_CLOSE(fd);
     }
 
+#ifdef SOCKET_HAS_TLS
+    /* Free TLS resources before arena disposal */
+    if ((*socket)->tls_ssl)
+    {
+        SSL_free((SSL *)(*socket)->tls_ssl);
+        (*socket)->tls_ssl = NULL;
+    }
+#endif
+
     if ((*socket)->arena)
         Arena_dispose(&(*socket)->arena);
 

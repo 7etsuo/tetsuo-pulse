@@ -26,6 +26,9 @@ static __thread Except_T SocketIO_DetailedException;
 #include "tls/SocketTLSConfig.h"
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+
+/* Access to TLS error buffer for error reporting */
+extern char tls_error_buf[];
 #endif
 
 #define T Socket_T
