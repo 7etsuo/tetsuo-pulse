@@ -700,6 +700,126 @@ if (ssl_ctx) SSL_CTX_free(ssl_ctx);
 if (arena) Arena_dispose(&arena);
 ```
 
+## 13. System Integration Patterns
+
+### 13.1 SocketPoll TLS Integration
+**ALWAYS** integrate TLS operations with event polling:
+
+```c
+/**
+ * SocketPoll TLS Integration Pattern
+ * Handle SSL_ERROR_WANT_READ/WRITE by adjusting poll events
+ */
+static void socket_poll_handle_tls_events(SocketPoll_T poll, Socket_T socket)
+{
+    unsigned events = 0;
+
+    /* Check if TLS wants read/write */
+    if (socket_tls_want_read(socket))
+        events |= POLL_READ;
+    if (socket_tls_want_write(socket))
+        events |= POLL_WRITE;
+
+    if (events != 0)
+    {
+        void *user_data = socket_data_get(poll, socket);
+        SocketPoll_mod(poll, socket, events, user_data);
+    }
+}
+```
+
+**ALWAYS** implement `socket_tls_want_read/write` helpers:
+
+```c
+int socket_tls_want_read(Socket_T socket)
+{
+    assert(socket);
+#ifdef SOCKET_HAS_TLS
+    if (!socket->tls_enabled || !socket->tls_ssl)
+        return 0;
+
+    /* Check if last TLS operation indicated WANT_READ */
+    SSL *ssl = (SSL *)socket->tls_ssl;
+    /* Implementation tracks SSL_ERROR_WANT_READ state */
+    return 0; /* Placeholder - full implementation needed */
+#else
+    return 0;
+#endif
+}
+```
+
+### 13.2 SocketAsync TLS Integration
+**ALWAYS** route async operations through TLS I/O layer:
+
+```c
+/* In SocketAsync.c, replace direct send/recv with TLS-aware calls */
+if (type == REQ_SEND)
+{
+    /* Use TLS send if enabled, otherwise direct send */
+    result = socket_send_internal(socket, send_buf, len, MSG_NOSIGNAL);
+}
+else
+{
+    /* Use TLS recv if enabled, otherwise direct recv */
+    result = socket_recv_internal(socket, recv_buf, len, 0);
+}
+```
+
+**ALWAYS** add TLS I/O abstraction layer:
+
+```c
+/* socket_send_internal() and socket_recv_internal() in SocketIO.c */
+/* Automatically route through SSL_read/SSL_write when TLS enabled */
+/* Handle SSL_ERROR_WANT_READ/WRITE appropriately */
+```
+
+### 13.3 Zero-Copy TLS Handling
+**ALWAYS** handle sendfile operations with TLS properly:
+
+```c
+/**
+ * Socket_sendfile - Send file contents over socket
+ * @socket: Socket instance
+ * @file_fd: File descriptor to send from
+ * @offset: File offset (updated on return)
+ * @count: Number of bytes to send
+ *
+ * For TLS sockets: Read file into buffer, then use SSL_write()
+ * For non-TLS sockets: Use sendfile() system call directly
+ *
+ * Returns: Number of bytes sent, 0 if would block, -1 on error
+ */
+ssize_t Socket_sendfile(Socket_T socket, int file_fd, off_t *offset, size_t count)
+{
+    assert(socket);
+    assert(file_fd >= 0);
+
+#ifdef SOCKET_HAS_TLS
+    if (socket->tls_enabled)
+    {
+        /* TLS path: Read file, then encrypt */
+        char buffer[8192];
+        ssize_t nread, nsent = 0;
+
+        /* Read from file */
+        nread = pread(file_fd, buffer, sizeof(buffer), *offset);
+        if (nread <= 0)
+            return nread;
+
+        /* Send via TLS */
+        nsent = SocketTLS_send(socket, buffer, nread);
+        if (nsent > 0)
+            *offset += nsent;
+
+        return nsent;
+    }
+#endif
+
+    /* Non-TLS path: Use sendfile directly */
+    return sendfile(socket->fd, file_fd, offset, count);
+}
+```
+
 ## 13. Testing and Quality Assurance
 
 ### 13.1 Test Organization
@@ -743,6 +863,7 @@ These rules ensure:
 - **Thread Safety**: Proper synchronization and thread-local storage (critical fixes applied)
 - **Portability**: Cross-platform compatibility with conditional compilation
 - **Security**: TLS integration with proper certificate validation and OpenSSL error handling
+- **System Integration**: Seamless TLS integration with polling, async operations, and zero-copy features
 
 ## Critical Safety Requirements
 
