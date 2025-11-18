@@ -54,10 +54,14 @@ set(LIB_SOURCES
     src/socket/SocketBuf.c
     src/socket/SocketCommon.c
     src/socket/SocketAsync.c
+    src/socket/SocketIO.c
     
     # DNS module
     src/dns/SocketDNS.c
-    
+
+    # TLS module (optional)
+    $<$<BOOL:${SOCKET_HAS_TLS}>:src/tls/SocketTLS.c>
+
     # Poll module
     src/poll/SocketPoll.c
     ${POLL_BACKEND_SRC}
@@ -101,9 +105,16 @@ set(POOL_HEADERS
     include/pool/SocketPool.h
 )
 
+set(TLS_HEADERS
+    include/tls/SocketTLSConfig.h
+)
+
 set(TEST_HEADERS
     include/test/Test.h
 )
+
+# Enable TLS support option
+option(ENABLE_TLS "Enable TLS/SSL support using OpenSSL/LibreSSL" OFF)
 
 # Detect liburing for async I/O support (Linux only)
 set(LIBURING_LIBRARIES "")
@@ -121,6 +132,33 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     endif()
 endif()
 
+# Detect OpenSSL/LibreSSL for TLS support (optional)
+set(SOCKET_HAS_TLS OFF)
+set(OPENSSL_LIBRARIES "")
+if(ENABLE_TLS)
+    find_package(OpenSSL QUIET)
+    if(OpenSSL_FOUND)
+        set(SOCKET_HAS_TLS ON)
+        set(OPENSSL_LIBRARIES OpenSSL::SSL OpenSSL::Crypto)
+        add_definitions(-DSOCKET_HAS_TLS)
+        message(STATUS "OpenSSL found - TLS support enabled")
+    else()
+        # Try LibreSSL as fallback
+        find_library(CRYPTO_LIB crypto)
+        find_library(SSL_LIB ssl)
+        if(CRYPTO_LIB AND SSL_LIB)
+            set(SOCKET_HAS_TLS ON)
+            set(OPENSSL_LIBRARIES ${SSL_LIB} ${CRYPTO_LIB})
+            add_definitions(-DSOCKET_HAS_TLS)
+            message(STATUS "LibreSSL found - TLS support enabled")
+        else()
+            message(WARNING "TLS requested but no SSL library found (OpenSSL/LibreSSL)")
+        endif()
+    endif()
+else()
+    message(STATUS "TLS support disabled (use -DENABLE_TLS=ON to enable)")
+endif()
+
 # Object library for reuse in tests (avoids static library constructor issues)
 add_library(socket_objects OBJECT ${LIB_SOURCES})
 target_include_directories(socket_objects PRIVATE ${CMAKE_SOURCE_DIR}/include)
@@ -128,12 +166,20 @@ target_include_directories(socket_objects PRIVATE ${CMAKE_SOURCE_DIR}/include)
 # Static library
 add_library(socket_static STATIC $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_static PROPERTIES OUTPUT_NAME socket)
-target_link_libraries(socket_static pthread ${LIBURING_LIBRARIES})
+if(SOCKET_HAS_TLS)
+    target_link_libraries(socket_static pthread ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES})
+else()
+    target_link_libraries(socket_static pthread ${LIBURING_LIBRARIES})
+endif()
 
 # Shared library
 add_library(socket_shared SHARED $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_shared PROPERTIES OUTPUT_NAME socket)
-target_link_libraries(socket_shared pthread ${LIBURING_LIBRARIES})
+if(SOCKET_HAS_TLS)
+    target_link_libraries(socket_shared pthread ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES})
+else()
+    target_link_libraries(socket_shared pthread ${LIBURING_LIBRARIES})
+endif()
 
 # Custom target to build both libraries (default)
 add_custom_target(lib ALL DEPENDS socket_static socket_shared)
@@ -149,6 +195,7 @@ install(FILES ${SOCKET_HEADERS} DESTINATION include/socket/socket)
 install(FILES ${DNS_HEADERS} DESTINATION include/socket/dns)
 install(FILES ${POLL_HEADERS} DESTINATION include/socket/poll)
 install(FILES ${POOL_HEADERS} DESTINATION include/socket/pool)
+install(FILES ${TLS_HEADERS} DESTINATION include/socket/tls)
 install(FILES ${TEST_HEADERS} DESTINATION include/socket/test)
 
 # Print build configuration
@@ -162,6 +209,11 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     message(STATUS "  Release Flags: ${CMAKE_C_FLAGS_RELEASE}")
 endif()
 message(STATUS "  Poll Backend: ${POLL_BACKEND}")
+if(SOCKET_HAS_TLS)
+    message(STATUS "  TLS Support: Enabled (${OPENSSL_LIBRARIES})")
+else()
+    message(STATUS "  TLS Support: Disabled")
+endif()
 
 # Enable testing
 enable_testing()
@@ -235,14 +287,14 @@ else()
     message(STATUS "Documentation: Doxygen not found - install doxygen to generate API docs")
 endif()
 
-add_executable(benchmark_server ../src/test/benchmark_server.c)
+add_executable(benchmark_server src/test/benchmark_server.c)
 target_link_libraries(benchmark_server socket_static pthread)
 
-add_executable(benchmark_client ../src/test/benchmark_client.c)
+add_executable(benchmark_client src/test/benchmark_client.c)
 target_link_libraries(benchmark_client socket_static pthread)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    add_executable(benchmark_raw ../src/test/benchmark_raw.c)
+    add_executable(benchmark_raw src/test/benchmark_raw.c)
     target_link_libraries(benchmark_raw pthread)
 endif()
 
@@ -261,7 +313,7 @@ if(NOT LibEvent_FOUND)
 endif()
 
 if(LibEvent_FOUND)
-    add_executable(benchmark_libevent ../src/test/benchmark_libevent.c)
+    add_executable(benchmark_libevent src/test/benchmark_libevent.c)
     target_include_directories(benchmark_libevent PRIVATE ${LibEvent_INCLUDE_DIRS})
     target_link_libraries(benchmark_libevent ${LibEvent_LIBRARIES} pthread)
     message(STATUS "LibEvent found - building benchmark_libevent")

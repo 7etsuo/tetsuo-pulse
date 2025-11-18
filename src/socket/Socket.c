@@ -43,6 +43,7 @@
 #include "socket/SocketCommon.h"
 #include "core/SocketMetrics.h"
 #include "core/SocketEvents.h"
+#include "socket/SocketIO.h"
 
 #define T Socket_T
 
@@ -119,6 +120,21 @@ struct T
     int localport;
     Arena_T arena;
     SocketTimeouts_T timeouts;
+
+#ifdef SOCKET_HAS_TLS
+    /* TLS-specific fields - allocated via arena when TLS is enabled */
+    void *tls_ctx;              /* SSL_CTX* - opaque to avoid exposing OpenSSL */
+    void *tls_ssl;              /* SSL* - opaque to avoid exposing OpenSSL */
+    int tls_enabled;            /* Flag: 1 if TLS is active on this socket */
+    int tls_handshake_done;     /* Flag: 1 if TLS handshake is complete */
+    int tls_shutdown_done;      /* Flag: 1 if TLS shutdown is complete */
+    char *tls_sni_hostname;     /* SNI hostname (allocated in arena) */
+    void *tls_read_buf;         /* TLS read buffer (allocated in arena) */
+    void *tls_write_buf;        /* TLS write buffer (allocated in arena) */
+    size_t tls_read_buf_len;    /* Current read buffer length */
+    size_t tls_write_buf_len;   /* Current write buffer length */
+    SocketTimeouts_T tls_timeouts; /* TLS-specific timeouts */
+#endif
 };
 
 /* Static helper functions */
@@ -1176,59 +1192,12 @@ void Socket_connect(T socket, const char *host, int port)
 
 ssize_t Socket_send(T socket, const void *buf, size_t len)
 {
-    ssize_t result;
-
-    assert(socket);
-    assert(buf);
-    assert(len > 0);
-
-    result = send(socket->fd, buf, len, SOCKET_MSG_NOSIGNAL);
-    if (result < 0)
-    {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 0;
-        if (errno == EPIPE)
-        {
-            RAISE(Socket_Closed);
-        }
-        if (errno == ECONNRESET)
-        {
-            RAISE(Socket_Closed);
-        }
-        SOCKET_ERROR_FMT("Send failed (len=%zu)", len);
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
-    return result;
+    return socket_send_internal(socket, buf, len, SOCKET_MSG_NOSIGNAL);
 }
 
 ssize_t Socket_recv(T socket, void *buf, size_t len)
 {
-    ssize_t result;
-
-    assert(socket);
-    assert(buf);
-    assert(len > 0);
-
-    result = recv(socket->fd, buf, len, 0);
-
-    if (result < 0)
-    {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 0;
-        if (errno == ECONNRESET)
-        {
-            RAISE(Socket_Closed);
-        }
-        SOCKET_ERROR_FMT("Receive failed (len=%zu)", len);
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-    else if (result == 0)
-    {
-        RAISE(Socket_Closed);
-    }
-
-    return result;
+    return socket_recv_internal(socket, buf, len, 0);
 }
 
 /**
@@ -1378,31 +1347,7 @@ static void socket_advance_iov(struct iovec *iov, int iovcnt, size_t bytes)
  */
 ssize_t Socket_sendv(T socket, const struct iovec *iov, int iovcnt)
 {
-    ssize_t result;
-
-    assert(socket);
-    assert(iov);
-    assert(iovcnt > 0);
-    assert(iovcnt <= IOV_MAX);
-
-    result = writev(socket->fd, iov, iovcnt);
-    if (result < 0)
-    {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 0;
-        if (errno == EPIPE)
-        {
-            RAISE(Socket_Closed);
-        }
-        if (errno == ECONNRESET)
-        {
-            RAISE(Socket_Closed);
-        }
-        SOCKET_ERROR_FMT("Scatter/gather send failed (iovcnt=%d)", iovcnt);
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
-    return result;
+    return socket_sendv_internal(socket, iov, iovcnt, 0);
 }
 
 /**
@@ -1419,31 +1364,7 @@ ssize_t Socket_sendv(T socket, const struct iovec *iov, int iovcnt)
  */
 ssize_t Socket_recvv(T socket, struct iovec *iov, int iovcnt)
 {
-    ssize_t result;
-
-    assert(socket);
-    assert(iov);
-    assert(iovcnt > 0);
-    assert(iovcnt <= IOV_MAX);
-
-    result = readv(socket->fd, iov, iovcnt);
-    if (result < 0)
-    {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 0;
-        if (errno == ECONNRESET)
-        {
-            RAISE(Socket_Closed);
-        }
-        SOCKET_ERROR_FMT("Scatter/gather receive failed (iovcnt=%d)", iovcnt);
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-    else if (result == 0)
-    {
-        RAISE(Socket_Closed);
-    }
-
-    return result;
+    return socket_recvv_internal(socket, iov, iovcnt, 0);
 }
 
 /**

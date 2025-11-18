@@ -29,18 +29,12 @@ static volatile int test_passed = 0;
 static volatile int test_failed = 0;
 static volatile int last_failure_count = 0; /* Preserve failure count after Test_run_all() */
 
-/* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-static __declspec(thread) Except_T Test_DetailedException;
-#else
-static __thread Except_T Test_DetailedException;
-#endif
+/* Test failure flag and message - avoids exception nesting issues */
+static volatile int test_failure_flag = 0;
+static char test_failure_message[512];
 
-/* Exception type for test failures */
+/* Exception type for test failures - kept for compatibility but not used for failures */
 Except_T Test_Failed = {"Test assertion failed"};
-
-/* Error message buffer for detailed failures */
-static char test_error_buf[512];
 
 /**
  * Test_register - Register a test function
@@ -75,19 +69,17 @@ void Test_register(const char *name, void (*func)(void))
  * @message: Failure message
  * @file: Source file where failure occurred
  * @line: Line number where failure occurred
- * This function raises Test_Failed exception with detailed error information.
- * The exception is caught by the test runner, which records the failure.
+ * This function sets a failure flag with detailed error information.
+ * The test runner checks the flag after test execution and records the failure.
  */
 void Test_fail(const char *message, const char *file, int line)
 {
     /* Format detailed error message */
-    snprintf(test_error_buf, sizeof(test_error_buf), "%s at %s:%d", message ? message : "Test failed",
+    snprintf(test_failure_message, sizeof(test_failure_message), "%s at %s:%d", message ? message : "Test failed",
              file ? file : "unknown", line);
 
-    /* Raise exception with detailed message */
-    Test_DetailedException = Test_Failed;
-    Test_DetailedException.reason = test_error_buf;
-    RAISE(Test_DetailedException);
+    /* Set failure flag - avoids exception nesting issues */
+    test_failure_flag = 1;
 }
 
 /**
@@ -99,12 +91,10 @@ void Test_fail(const char *message, const char *file, int line)
  */
 void Test_fail_eq(const char *expected_str, const char *actual_str, const char *file, int line)
 {
-    snprintf(test_error_buf, sizeof(test_error_buf), "Assertion failed: expected %s == %s at %s:%d", expected_str,
+    snprintf(test_failure_message, sizeof(test_failure_message), "Assertion failed: expected %s == %s at %s:%d", expected_str,
              actual_str, file ? file : "unknown", line);
 
-    Test_DetailedException = Test_Failed;
-    Test_DetailedException.reason = test_error_buf;
-    RAISE(Test_DetailedException);
+    test_failure_flag = 1;
 }
 
 /**
@@ -116,18 +106,17 @@ void Test_fail_eq(const char *expected_str, const char *actual_str, const char *
  */
 void Test_fail_ne(const char *expected_str, const char *actual_str, const char *file, int line)
 {
-    snprintf(test_error_buf, sizeof(test_error_buf), "Assertion failed: expected %s != %s at %s:%d", expected_str,
+    snprintf(test_failure_message, sizeof(test_failure_message), "Assertion failed: expected %s != %s at %s:%d", expected_str,
              actual_str, file ? file : "unknown", line);
 
-    Test_DetailedException = Test_Failed;
-    Test_DetailedException.reason = test_error_buf;
-    RAISE(Test_DetailedException);
+    test_failure_flag = 1;
 }
 
 /**
  * Test_run_all - Run all registered tests
  * Executes each registered test function in registration order.
- * Catches Test_Failed exceptions and records failures.
+ * Checks test failure flags set by assertion macros and records assertion failures.
+ * Tests are expected to handle their own exceptions; uncaught exceptions will terminate the runner.
  * Prints summary of test results.
  * Thread Safety: Not thread-safe (intended for single-threaded test execution).
  */
@@ -157,39 +146,27 @@ void Test_run_all(void)
         printf("[%d/%d] %s ... ", test_count, total_tests, current_test->name);
         fflush(stdout);
 
-        /* Store next pointer before TRY block to prevent corruption */
+        /* Store next pointer before test execution */
         volatile struct TestFunction *next_test = current_test->next;
 
-        TRY
+        /* Clear failure flag before test */
+        test_failure_flag = 0;
+
+        /* Run test function */
+        current_test->func();
+
+        /* Check if test failed via assertion flag */
+        if (test_failure_flag)
         {
-            current_test->func();
+            test_failed++;
+            printf("FAIL\n");
+            printf("  %s\n", test_failure_message);
+        }
+        else
+        {
             test_passed++;
             printf("PASS\n");
         }
-        EXCEPT(Test_Failed)
-        {
-            test_failed++;
-            printf("FAIL\n");
-            if (Except_frame.exception && Except_frame.exception->reason)
-            {
-                printf("  %s\n", Except_frame.exception->reason);
-            }
-        }
-        ELSE
-        {
-            /* Catch any other exception (Socket_Failed, Arena_Failed, etc.) */
-            test_failed++;
-            printf("FAIL\n");
-            if (Except_frame.exception)
-            {
-                printf("  Unexpected exception: %s", 
-                       Except_frame.exception->reason ? Except_frame.exception->reason : "(no reason)");
-                if (Except_frame.file)
-                    printf(" at %s:%d", Except_frame.file, Except_frame.line);
-                printf("\n");
-            }
-        }
-        END_TRY;
 
         current_test = next_test;
     }
