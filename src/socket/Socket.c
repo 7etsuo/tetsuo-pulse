@@ -1676,7 +1676,11 @@ __attribute__((unused)) static ssize_t socket_sendfile_fallback(T socket, int fi
  * Thread-safe: Yes (operates on single socket)
  * Note: Uses platform-specific zero-copy mechanism (sendfile/splice).
  * Falls back to read/write loop on platforms without sendfile support.
- * May transfer less than requested. Use Socket_sendfileall() for guaranteed complete transfer.
+ * TLS-enabled sockets automatically use read/write fallback since kernel
+ * sendfile() cannot encrypt data. Performance will be reduced compared to
+ * non-TLS sockets due to user-space encryption overhead.
+ * May transfer less than requested. Use Socket_sendfileall() for guaranteed
+ * complete transfer.
  */
 ssize_t Socket_sendfile(T socket, int file_fd, off_t *offset, size_t count)
 {
@@ -1685,6 +1689,14 @@ ssize_t Socket_sendfile(T socket, int file_fd, off_t *offset, size_t count)
     assert(socket);
     assert(file_fd >= 0);
     assert(count > 0);
+
+#ifdef SOCKET_HAS_TLS
+    /* TLS cannot use kernel sendfile() - must use fallback */
+    if (socket_is_tls_enabled(socket))
+    {
+        return socket_sendfile_fallback(socket, file_fd, offset, count);
+    }
+#endif
 
 #if SOCKET_HAS_SENDFILE && defined(__linux__)
     result = socket_sendfile_linux(socket, file_fd, offset, count);
