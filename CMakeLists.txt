@@ -61,6 +61,7 @@ set(LIB_SOURCES
 
     # TLS module (optional)
     $<$<BOOL:${SOCKET_HAS_TLS}>:src/tls/SocketTLS.c>
+    $<$<BOOL:${SOCKET_HAS_TLS}>:src/tls/SocketTLSContext.c>
 
     # Poll module
     src/poll/SocketPoll.c
@@ -106,7 +107,9 @@ set(POOL_HEADERS
 )
 
 set(TLS_HEADERS
+    include/tls/SocketTLS.h
     include/tls/SocketTLSConfig.h
+    include/tls/SocketTLSContext.h
 )
 
 set(TEST_HEADERS
