@@ -38,103 +38,6 @@ else()
     message(STATUS "Building with poll(2) fallback backend")
 endif()
 
-# Collect all source files
-set(LIB_SOURCES
-    # Core foundation
-    src/core/Arena.c
-    src/core/Except.c
-    src/core/SocketError.c
-    src/core/SocketLog.c
-    src/core/SocketMetrics.c
-    src/core/SocketEvents.c
-    
-    # Socket core
-    src/socket/Socket.c
-    src/socket/SocketDgram.c
-    src/socket/SocketBuf.c
-    src/socket/SocketCommon.c
-    src/socket/SocketAsync.c
-    src/socket/SocketIO.c
-    
-    # DNS module
-    src/dns/SocketDNS.c
-
-    # TLS module (optional)
-    $<$<BOOL:${SOCKET_HAS_TLS}>:src/tls/SocketTLS.c>
-    $<$<BOOL:${SOCKET_HAS_TLS}>:src/tls/SocketTLSContext.c>
-
-    # Poll module
-    src/poll/SocketPoll.c
-    ${POLL_BACKEND_SRC}
-    
-    # Pool module - split files
-    src/pool/SocketPool-core.c
-    src/pool/SocketPool-connections.c
-    src/pool/SocketPool-accept.c
-    src/pool/SocketPool-cleanup.c
-)
-
-# Collect all header files for installation
-set(CORE_HEADERS
-    include/core/Arena.h
-    include/core/Except.h
-    include/core/SocketConfig.h
-    include/core/SocketError.h
-    include/core/SocketLog.h
-    include/core/SocketMetrics.h
-    include/core/SocketEvents.h
-)
-
-set(SOCKET_HEADERS
-    include/socket/Socket.h
-    include/socket/SocketDgram.h
-    include/socket/SocketBuf.h
-    include/socket/SocketCommon.h
-    include/socket/SocketAsync.h
-)
-
-set(DNS_HEADERS
-    include/dns/SocketDNS.h
-)
-
-set(POLL_HEADERS
-    include/poll/SocketPoll.h
-    include/poll/SocketPoll_backend.h
-)
-
-set(POOL_HEADERS
-    include/pool/SocketPool.h
-)
-
-set(TLS_HEADERS
-    include/tls/SocketTLS.h
-    include/tls/SocketTLSConfig.h
-    include/tls/SocketTLSContext.h
-)
-
-set(TEST_HEADERS
-    include/test/Test.h
-)
-
-# Enable TLS support option
-option(ENABLE_TLS "Enable TLS/SSL support using OpenSSL/LibreSSL" OFF)
-
-# Detect liburing for async I/O support (Linux only)
-set(LIBURING_LIBRARIES "")
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    find_package(PkgConfig QUIET)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(LIBURING QUIET liburing)
-        if(LIBURING_FOUND)
-            add_definitions(-DSOCKET_HAS_IO_URING)
-            set(LIBURING_LIBRARIES ${LIBURING_LIBRARIES})
-            message(STATUS "liburing found - async I/O enabled")
-        else()
-            message(STATUS "liburing not found - async I/O will use fallback mode (install liburing-dev)")
-        endif()
-    endif()
-endif()
-
 # Detect OpenSSL/LibreSSL for TLS support (optional)
 set(SOCKET_HAS_TLS OFF)
 set(OPENSSL_LIBRARIES "")
@@ -160,6 +63,46 @@ if(ENABLE_TLS)
     endif()
 else()
     message(STATUS "TLS support disabled (use -DENABLE_TLS=ON to enable)")
+endif()
+
+# Collect all source files
+set(LIB_SOURCES
+    # Core foundation
+    src/core/Arena.c
+    src/core/Except.c
+    src/core/SocketError.c
+    src/core/SocketLog.c
+    src/core/SocketMetrics.c
+    src/core/SocketEvents.c
+    
+    # Socket core
+    src/socket/Socket.c
+    src/socket/SocketDgram.c
+    src/socket/SocketBuf.c
+    src/socket/SocketCommon.c
+    src/socket/SocketAsync.c
+    src/socket/SocketIO.c
+    
+    # DNS module
+    src/dns/SocketDNS.c
+
+    # Poll module
+    src/poll/SocketPoll.c
+    ${POLL_BACKEND_SRC}
+    
+    # Pool module - split files
+    src/pool/SocketPool-core.c
+    src/pool/SocketPool-connections.c
+    src/pool/SocketPool-accept.c
+    src/pool/SocketPool-cleanup.c
+)
+
+# Add TLS sources if enabled
+if(SOCKET_HAS_TLS)
+    list(APPEND LIB_SOURCES
+        src/tls/SocketTLS.c
+        src/tls/SocketTLSContext.c
+    )
 endif()
 
 # Object library for reuse in tests (avoids static library constructor issues)
@@ -238,12 +181,17 @@ set(TEST_SOURCES
     test_socketdns
     test_integration
     test_threadsafety
+    test_socketpool_tls
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
 foreach(test_name ${TEST_SOURCES})
     add_executable(${test_name} src/test/${test_name}.c $<TARGET_OBJECTS:socket_objects> $<TARGET_OBJECTS:test_framework>)
-    target_link_libraries(${test_name} pthread)
+    if(SOCKET_HAS_TLS)
+        target_link_libraries(${test_name} pthread ${OPENSSL_LIBRARIES})
+    else()
+        target_link_libraries(${test_name} pthread)
+    endif()
     target_include_directories(${test_name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
     add_test(NAME ${test_name} COMMAND ${test_name})
 endforeach()

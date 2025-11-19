@@ -1,5 +1,6 @@
 #include "socket/SocketIO.h"
 #include "socket/Socket.h"
+#include "socket/Socket-private.h"
 #include "core/SocketError.h"
 #include "core/SocketConfig.h"
 #include <assert.h>
@@ -122,7 +123,7 @@ ssize_t socket_send_internal(T socket, const void *buf, size_t len, int flags)
         if (ssl_result < 0)
         {
             SOCKET_ERROR_FMT("TLS send failed (len=%zu)", len);
-            RAISE_TLS_ERROR(SocketTLS_Failed);
+            RAISE_SOCKETIO_ERROR(SocketTLS_Failed);
         }
 
         return (ssize_t)ssl_result;
@@ -188,7 +189,7 @@ ssize_t socket_recv_internal(T socket, void *buf, size_t len, int flags)
         if (ssl_result < 0)
         {
             SOCKET_ERROR_FMT("TLS receive failed (len=%zu)", len);
-            RAISE_TLS_ERROR(SocketTLS_Failed);
+            RAISE_SOCKETIO_ERROR(SocketTLS_Failed);
         }
 
         if (ssl_result == 0)
@@ -286,7 +287,7 @@ ssize_t socket_sendv_internal(T socket, const struct iovec *iov, int iovcnt, int
         if (ssl_result < 0)
         {
             SOCKET_ERROR_FMT("TLS sendv failed (iovcnt=%d, total_len=%zu)", iovcnt, total_len);
-            RAISE_TLS_ERROR(SocketTLS_Failed);
+            RAISE_SOCKETIO_ERROR(SocketTLS_Failed);
         }
 
         return (ssize_t)ssl_result;
@@ -357,7 +358,7 @@ ssize_t socket_recvv_internal(T socket, struct iovec *iov, int iovcnt, int flags
             if (ssl_result < 0)
             {
                 SOCKET_ERROR_FMT("TLS recvv failed (iovcnt=%d)", iovcnt);
-                RAISE_TLS_ERROR(SocketTLS_Failed);
+                RAISE_SOCKETIO_ERROR(SocketTLS_Failed);
             }
 
             if (ssl_result == 0)
@@ -394,7 +395,7 @@ ssize_t socket_recvv_internal(T socket, struct iovec *iov, int iovcnt, int flags
             if (ssl_result < 0)
             {
                 SOCKET_ERROR_FMT("TLS recvv failed (iovcnt=%d, capacity=%zu)", iovcnt, total_capacity);
-                RAISE_TLS_ERROR(SocketTLS_Failed);
+                RAISE_SOCKETIO_ERROR(SocketTLS_Failed);
             }
 
             if (ssl_result == 0)

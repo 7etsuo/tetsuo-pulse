@@ -7,6 +7,9 @@
 
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSConfig.h"
+#include "tls/SocketTLSContext.h"
+#include "socket/Socket-private.h"
+#include "core/Arena.h"
 #include <assert.h>
 #include <string.h>
 #include <openssl/ssl.h>
@@ -168,7 +171,7 @@ void SocketTLS_enable(Socket_T socket, SocketTLSContext_T ctx)
 
     assert(socket);
     assert(ctx);
-    assert(ctx->ssl_ctx);
+    assert(SocketTLSContext_get_ssl_ctx(ctx));
 
     /* Check if TLS is already enabled */
     if (socket->tls_enabled)
@@ -186,7 +189,7 @@ void SocketTLS_enable(Socket_T socket, SocketTLSContext_T ctx)
     }
 
     /* Create SSL object from context */
-    ssl = SSL_new(ctx->ssl_ctx);
+    ssl = SSL_new((SSL_CTX *)SocketTLSContext_get_ssl_ctx(ctx));
     if (!ssl)
     {
         snprintf(tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "Failed to create SSL object");
@@ -538,6 +541,7 @@ ssize_t SocketTLS_recv(Socket_T socket, void *buf, size_t len)
         errno = EAGAIN;
         return 0;
     }
+    return -1; /* Should not be reached */
 }
 
 /**
