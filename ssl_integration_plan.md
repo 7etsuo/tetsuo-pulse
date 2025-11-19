@@ -105,50 +105,9 @@ Add documentation warning:
 ```
 
 ### Task 3.4: SocketPool TLS integration
-
-Changes to `src/pool/SocketPool.c`:
-
-```c
-/* Extend Connection structure (around line 57): */
-struct Connection
-{
-    Socket_T socket;
-    SocketBuf_T inbuf;
-    SocketBuf_T outbuf;
-    void *data;
-    time_t last_activity;
-    int active;
-    struct Connection *hash_next;
-    
-#ifdef SOCKET_HAS_TLS
-    SocketTLSContext_T tls_ctx;  /* TLS context for this connection */
-    int tls_handshake_complete;   /* TLS handshake state */
-#endif
-};
-```
-
-Add TLS cleanup in `SocketPool_remove()`:
-
-```c
-void SocketPool_remove(T pool, Socket_T socket)
-{
-    /* ... existing code ... */
-    
-#ifdef SOCKET_HAS_TLS
-    /* Cleanup TLS state if present */
-    if (conn->tls_ctx)
-    {
-        /* TLS shutdown should happen before socket close */
-        if (socket_is_tls_enabled(socket))
-        {
-            SocketTLS_shutdown(socket);
-        }
-    }
-#endif
-    
-    /* ... rest of cleanup ... */
-}
-```
+- [x] Extend SocketPool Connection structure
+- [x] Add TLS cleanup to SocketPool
+- [x] Implement graceful shutdown in SocketPool_remove
 
 ---
 
@@ -234,11 +193,11 @@ void SocketPool_remove(T pool, Socket_T socket)
 - [ ] Implement SocketTLS_shutdown()
 
 ### Phase 3: Integration
-- [ ] Update SocketPoll for TLS events
-- [ ] Update SocketAsync for TLS I/O
-- [ ] Handle sendfile() with TLS
-- [ ] Extend SocketPool Connection structure
-- [ ] Add TLS cleanup to SocketPool
+- [x] Update SocketPoll for TLS events
+- [x] Update SocketAsync for TLS I/O
+- [x] Handle sendfile() with TLS
+- [x] Extend SocketPool Connection structure
+- [x] Add TLS cleanup to SocketPool
 
 ### Phase 4: Advanced features
 - [ ] Implement SNI support
