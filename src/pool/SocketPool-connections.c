@@ -24,6 +24,11 @@
 
 #include "pool/SocketPool-core.h" /* For safe_time */
 
+#ifdef SOCKET_HAS_TLS
+#include "tls/SocketTLS.h"
+#include "socket/SocketIO.h"
+#endif
+
 #define T SocketPool_T
 
 extern Except_T SocketPool_Failed;
@@ -129,6 +134,10 @@ void SocketPool_connections_initialize_slot(struct Connection *conn)
     conn->last_activity = 0;
     conn->active = 0;
     conn->hash_next = NULL;
+#ifdef SOCKET_HAS_TLS
+    conn->tls_ctx = NULL;
+    conn->tls_handshake_complete = 0;
+#endif
 }
 
 /**
@@ -425,6 +434,10 @@ void SocketPool_connections_reset_slot(Connection_T conn)
     conn->data = NULL;
     conn->last_activity = 0;
     conn->active = 0;
+#ifdef SOCKET_HAS_TLS
+    conn->tls_ctx = NULL;
+    conn->tls_handshake_complete = 0;
+#endif
 }
 
 /**
@@ -459,6 +472,25 @@ void SocketPool_remove(T pool, Socket_T socket)
     }
 
     remove_from_hash_table(pool, conn, socket);
+
+#ifdef SOCKET_HAS_TLS
+    /* Cleanup TLS state if present */
+    /* TLS shutdown should happen before socket close */
+    if (socket_is_tls_enabled(socket))
+    {
+        /* Ignore shutdown errors during cleanup */
+        TRY
+        {
+            SocketTLS_shutdown(socket);
+        }
+        ELSE
+        {
+            /* Consume exception - we are closing anyway */
+        }
+        END_TRY;
+    }
+#endif
+
     SocketPool_connections_release_buffers(conn);
     SocketPool_connections_reset_slot(conn);
     return_to_free_list(pool, conn);
