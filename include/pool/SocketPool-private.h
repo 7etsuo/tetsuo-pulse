@@ -7,6 +7,10 @@
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 
+#ifdef SOCKET_HAS_TLS
+#include "tls/SocketTLSContext.h"
+#endif
+
 struct Connection
 {
     Socket_T socket;
@@ -17,6 +21,10 @@ struct Connection
     int active;
     struct Connection *hash_next;
     struct Connection *free_next;
+#ifdef SOCKET_HAS_TLS
+    SocketTLSContext_T tls_ctx; /* TLS context for this connection */
+    int tls_handshake_complete; /* TLS handshake state */
+#endif
 };
 
 typedef struct Connection *Connection_T;
