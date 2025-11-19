@@ -956,6 +956,41 @@ ssize_t Socket_sendfile(T socket, int file_fd, off_t *offset, size_t count)
 
 **Rationale:** Reuse existing TLS-compatible fallback instead of reinventing sendfile logic. The fallback uses `Socket_send()` which routes through `socket_send_internal()` and automatically handles TLS encryption.
 
+### 13.4 SocketPool TLS Integration
+**ALWAYS** extend connection structures with TLS fields guarded by conditional compilation:
+
+```c
+struct Connection
+{
+    /* ... existing fields ... */
+#ifdef SOCKET_HAS_TLS
+    SocketTLSContext_T tls_ctx;  /* TLS context for this connection */
+    int tls_handshake_complete;   /* TLS handshake state */
+#endif
+};
+```
+
+**ALWAYS** perform graceful TLS shutdown before closing pooled sockets:
+
+```c
+/* In SocketPool_remove() */
+#ifdef SOCKET_HAS_TLS
+    if (socket_is_tls_enabled(socket))
+    {
+        /* Attempt graceful shutdown, ignoring errors during cleanup */
+        TRY
+        {
+            SocketTLS_shutdown(socket);
+        }
+        CATCH_ALL
+        {
+            /* Consume exception */
+        }
+        END_TRY;
+    }
+#endif
+```
+
 ## 13. Testing and Quality Assurance
 
 ### 13.1 Test Organization
