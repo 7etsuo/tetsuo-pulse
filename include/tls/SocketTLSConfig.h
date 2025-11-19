@@ -48,18 +48,29 @@
 #endif
 
 /* Forward declarations for TLS types */
-typedef struct SSL_CTX SSL_CTX;
-typedef struct SSL SSL;
-typedef struct X509 X509;
-typedef struct X509_STORE X509_STORE;
-
-#else /* SOCKET_HAS_TLS not defined */
-
-/* Stub definitions when TLS is disabled */
+/* OpenSSL types are already defined by the includes above when SOCKET_HAS_TLS is set */
+#ifndef SOCKET_HAS_TLS
 typedef void SSL_CTX;
 typedef void SSL;
 typedef void X509;
 typedef void X509_STORE;
+#endif
+
+#else /* SOCKET_HAS_TLS not defined */
+
+/* Stub definitions when TLS is disabled */
+#ifndef SSL_CTX
+typedef void SSL_CTX;
+#endif
+#ifndef SSL
+typedef void SSL;
+#endif
+#ifndef X509
+typedef void X509;
+#endif
+#ifndef X509_STORE
+typedef void X509_STORE;
+#endif
 
 #endif /* SOCKET_HAS_TLS */
 

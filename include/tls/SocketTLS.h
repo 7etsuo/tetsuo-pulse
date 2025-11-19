@@ -41,7 +41,8 @@ typedef enum {
     TLS_VERIFY_CLIENT_ONCE = 4
 } TLSVerifyMode;
 
-#include "tls/SocketTLSContext.h"
+/* Forward declaration to avoid circular dependency */
+typedef struct SocketTLSContext_T *SocketTLSContext_T;
 
 /* TLS socket operations */
 void SocketTLS_enable(Socket_T socket, SocketTLSContext_T ctx);

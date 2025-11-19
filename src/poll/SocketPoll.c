@@ -30,6 +30,7 @@
 #ifdef SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
 #include "socket/SocketIO.h"
+#include "socket/Socket-private.h"
 #endif
 
 #define T SocketPoll_T
@@ -450,7 +451,6 @@ static void socketpoll_update_tls_events(T poll, Socket_T socket)
 {
     unsigned events = 0;
     void *user_data;
-    unsigned hash;
 
     assert(poll);
     assert(socket);
@@ -473,7 +473,6 @@ static void socketpoll_update_tls_events(T poll, Socket_T socket)
         {
             /* Get user data to preserve it - use existing socket_data_lookup_unlocked pattern */
             /* Same pattern as translate_single_event() uses */
-            hash = socket_hash(socket);
             pthread_mutex_lock(&poll->mutex);
             user_data = socket_data_lookup_unlocked(poll, socket);
             pthread_mutex_unlock(&poll->mutex);
