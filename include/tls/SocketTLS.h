@@ -7,8 +7,6 @@
  * - Non-blocking handshake with poll
  * - SNI + hostname verification
  * - ALPN support
- * 
- * Build: -DSOCKET_TLS_COMPAT_MODE for TLS1.2 fallback
  */
 
 #ifndef SOCKETTLS_INCLUDED
