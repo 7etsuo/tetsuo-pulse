@@ -675,11 +675,12 @@ static void update_local_endpoint(T socket)
 }
 
 /**
- * validate_unix_path_length - Validate Unix socket path length
+ * validate_unix_path - Validate Unix socket path
+ * @path: Path string
  * @path_len: Path length to validate
  * Returns: 0 on success, -1 on failure
  */
-static int validate_unix_path_length(size_t path_len)
+static int validate_unix_path(const char *path, size_t path_len)
 {
     if (path_len > sizeof(struct sockaddr_un) - offsetof(struct sockaddr_un, sun_path) - 1)
     {
@@ -687,6 +688,15 @@ static int validate_unix_path_length(size_t path_len)
                          sizeof(struct sockaddr_un) - offsetof(struct sockaddr_un, sun_path) - 1);
         return -1;
     }
+
+    /* Check for directory traversal */
+    if (strstr(path, "/../") || strcmp(path, "..") == 0 || strncmp(path, "../", 3) == 0 ||
+        (path_len >= 3 && strcmp(path + path_len - 3, "/..") == 0))
+    {
+        SOCKET_ERROR_MSG("Invalid Unix socket path: directory traversal detected");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -702,7 +712,7 @@ static int setup_abstract_unix_socket(struct sockaddr_un *addr, const char *path
     (void)addr;
     (void)path_len;
 #ifdef __linux__
-    if (validate_unix_path_length(path_len) != 0)
+    if (validate_unix_path(path, path_len) != 0)
         return -1;
     addr->sun_path[0] = '\0';
     memcpy(addr->sun_path + 1, path + 1, path_len - 1);
@@ -726,7 +736,7 @@ static int setup_abstract_unix_socket(struct sockaddr_un *addr, const char *path
  */
 static int setup_regular_unix_socket(struct sockaddr_un *addr, const char *path, size_t path_len)
 {
-    if (validate_unix_path_length(path_len) != 0)
+    if (validate_unix_path(path, path_len) != 0)
         return -1;
     strncpy(addr->sun_path, path, sizeof(addr->sun_path) - 1);
     addr->sun_path[sizeof(addr->sun_path) - 1] = '\0';
