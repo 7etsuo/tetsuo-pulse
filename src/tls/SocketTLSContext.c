@@ -581,4 +581,17 @@ void *SocketTLSContext_get_ssl_ctx(T ctx)
     return (void *)ctx->ssl_ctx;
 }
 
+/**
+ * SocketTLSContext_is_server - Check if context is for server
+ * @ctx: TLS context instance
+ *
+ * Returns: 1 if server context, 0 if client context
+ * Thread-safe: Yes
+ */
+int SocketTLSContext_is_server(T ctx)
+{
+    assert(ctx);
+    return ctx->is_server;
+}
+
 #endif /* SOCKET_HAS_TLS */

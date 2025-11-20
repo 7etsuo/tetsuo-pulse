@@ -180,6 +180,7 @@ set(TEST_SOURCES
     test_socketpool
     test_socketdns
     test_integration
+    test_tls_integration
     test_threadsafety
     test_socketpool_tls
 )

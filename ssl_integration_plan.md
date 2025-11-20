@@ -137,20 +137,20 @@ Add documentation warning:
 
 ### Task 5.1: Unit tests
 
-- TLS context creation/destruction
-- Handshake (client/server)
-- Encrypted I/O operations
-- Error handling
-- Integration with SocketPoll
-- Integration with SocketPool
+- [x] TLS context creation/destruction
+- [x] Handshake (client/server)
+- [x] Encrypted I/O operations
+- [x] Error handling
+- [x] Integration with SocketPoll
+- [x] Integration with SocketPool
 
 ### Task 5.2: Integration tests
 
-- Full TLS client/server communication
-- Non-blocking handshake with SocketPoll
-- TLS with connection pooling
-- Certificate validation
-- ALPN negotiation
+- [x] Full TLS client/server communication
+- [x] Non-blocking handshake with SocketPoll
+- [x] TLS with connection pooling
+- [x] Certificate validation
+- [x] ALPN negotiation
 
 ### Task 5.3: Documentation
 
@@ -165,32 +165,32 @@ Add documentation warning:
 ## Implementation checklist
 
 ### Phase 0: Foundation
-- [ ] Add OpenSSL detection to CMakeLists.txt
-- [ ] Create SocketTLSConfig.h
-- [ ] Add ENABLE_TLS build option
-- [ ] Test build with/without TLS enabled
+- [x] Add OpenSSL detection to CMakeLists.txt
+- [x] Create SocketTLSConfig.h
+- [x] Add ENABLE_TLS build option
+- [x] Test build with/without TLS enabled
 
 ### Phase 1: Core infrastructure
-- [ ] Extend Socket_T structure with TLS fields
-- [ ] Create SocketTLS exception types
-- [ ] Implement socket_send_internal()
-- [ ] Implement socket_recv_internal()
-- [ ] Implement socket_sendv_internal()
-- [ ] Implement socket_recvv_internal()
-- [ ] Update Socket_send() to use abstraction
-- [ ] Update Socket_recv() to use abstraction
-- [ ] Update Socket_sendv() to use abstraction
-- [ ] Update Socket_recvv() to use abstraction
+- [x] Extend Socket_T structure with TLS fields
+- [x] Create SocketTLS exception types
+- [x] Implement socket_send_internal()
+- [x] Implement socket_recv_internal()
+- [x] Implement socket_sendv_internal()
+- [x] Implement socket_recvv_internal()
+- [x] Update Socket_send() to use abstraction
+- [x] Update Socket_recv() to use abstraction
+- [x] Update Socket_sendv() to use abstraction
+- [x] Update Socket_recvv() to use abstraction
 
 ### Phase 2: TLS management
-- [ ] Implement SocketTLSContext_new_server()
-- [ ] Implement SocketTLSContext_new_client()
-- [ ] Implement certificate loading
-- [ ] Implement SocketTLS_enable()
-- [ ] Implement SocketTLS_handshake()
-- [ ] Implement SocketTLS_send()
-- [ ] Implement SocketTLS_recv()
-- [ ] Implement SocketTLS_shutdown()
+- [x] Implement SocketTLSContext_new_server()
+- [x] Implement SocketTLSContext_new_client()
+- [x] Implement certificate loading
+- [x] Implement SocketTLS_enable()
+- [x] Implement SocketTLS_handshake()
+- [x] Implement SocketTLS_send()
+- [x] Implement SocketTLS_recv()
+- [x] Implement SocketTLS_shutdown()
 
 ### Phase 3: Integration
 - [x] Update SocketPoll for TLS events
@@ -200,16 +200,16 @@ Add documentation warning:
 - [x] Add TLS cleanup to SocketPool
 
 ### Phase 4: Advanced features
-- [ ] Implement SNI support
-- [ ] Implement ALPN support
+- [x] Implement SNI support
+- [x] Implement ALPN support
 - [ ] Add certificate verification callbacks
 - [ ] Implement session resumption
 
 ### Phase 5: Testing
-- [ ] Unit tests for TLS context
-- [ ] Unit tests for TLS handshake
-- [ ] Unit tests for TLS I/O
-- [ ] Integration tests
+- [x] Unit tests for TLS context
+- [x] Unit tests for TLS handshake
+- [x] Unit tests for TLS I/O
+- [x] Integration tests
 - [ ] Performance benchmarks
 - [ ] Documentation
 

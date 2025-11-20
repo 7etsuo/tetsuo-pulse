@@ -8,6 +8,7 @@ High-performance, exception-driven socket toolkit for POSIX systems. Provides a 
 - **TCP Stream Sockets** - Full-featured TCP client/server support
 - **UDP Datagram Sockets** - Connectionless and connected UDP modes
 - **Unix Domain Sockets** - IPC sockets for local communication
+- **TLS/SSL Support** - Secure communication via OpenSSL integration
 - **Exception-Based Error Handling** - Clean error propagation with `TRY/EXCEPT/FINALLY`
 - **Asynchronous DNS Resolution** - Non-blocking DNS with thread pool
 - **Cross-Platform Event Polling** - epoll (Linux), kqueue (BSD/macOS), poll fallback
@@ -311,6 +312,39 @@ for (int i = 0; i < n; i++) {
 }
 ```
 
+### TLS/SSL Secure Communication
+
+```c
+#include "tls/SocketTLS.h"
+#include "tls/SocketTLSContext.h"
+
+/* Create TLS context */
+SocketTLSContext_T ctx = SocketTLSContext_new_client("ca-bundle.crt");
+
+/* Create and connect socket */
+Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+Socket_connect(socket, "example.com", 443);
+
+/* Enable TLS */
+SocketTLS_enable(socket, ctx);
+SocketTLS_set_hostname(socket, "example.com"); /* SNI */
+
+/* Perform handshake */
+while (SocketTLS_handshake(socket) != TLS_HANDSHAKE_COMPLETE) {
+    /* Handle non-blocking handshake if needed */
+}
+
+/* Send/Recv encrypted data */
+SocketTLS_send(socket, "GET / HTTP/1.1\r\n\r\n", 18);
+char buf[1024];
+SocketTLS_recv(socket, buf, sizeof(buf));
+
+/* Cleanup */
+SocketTLS_shutdown(socket);
+Socket_free(&socket);
+SocketTLSContext_free(&ctx);
+```
+
 ## API Reference
 
 ### Core Modules
@@ -418,6 +452,17 @@ for (int i = 0; i < n; i++) {
 - `SocketDNS_pollfd()` - Get poll file descriptor
 - `SocketDNS_check()` - Process completed requests
 
+#### SocketTLS (TLS/SSL)
+
+- `SocketTLSContext_new_client()` - Create client TLS context
+- `SocketTLSContext_new_server()` - Create server TLS context
+- `SocketTLSContext_free()` - Free TLS context
+- `SocketTLS_enable()` - Enable TLS on socket
+- `SocketTLS_handshake()` - Perform TLS handshake
+- `SocketTLS_send()` / `SocketTLS_recv()` - Encrypted I/O
+- `SocketTLS_shutdown()` - Graceful TLS shutdown
+- `SocketTLS_set_hostname()` - Set SNI hostname
+
 ### Exception Types
 
 - `Socket_Failed` - General socket operation failure
@@ -426,6 +471,9 @@ for (int i = 0; i < n; i++) {
 - `SocketPoll_Failed` - Event polling failure
 - `SocketPool_Failed` - Connection pool operation failure
 - `SocketDNS_Failed` - DNS resolution failure
+- `SocketTLS_Failed` - General TLS operation failure
+- `SocketTLS_HandshakeFailed` - TLS handshake failure
+- `SocketTLS_VerifyFailed` - Certificate verification failure
 
 ### Error Reporting
 

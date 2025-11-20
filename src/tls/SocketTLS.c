@@ -196,6 +196,16 @@ void SocketTLS_enable(Socket_T socket, SocketTLSContext_T ctx)
         RAISE_TLS_ERROR(SocketTLS_Failed);
     }
 
+    /* Set connection state (client/server) */
+    if (SocketTLSContext_is_server(ctx))
+    {
+        SSL_set_accept_state(ssl);
+    }
+    else
+    {
+        SSL_set_connect_state(ssl);
+    }
+
     /* Associate SSL object with socket file descriptor */
     if (SSL_set_fd(ssl, fd) != 1)
     {
