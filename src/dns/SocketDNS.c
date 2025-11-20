@@ -889,6 +889,18 @@ static void validate_resolve_params(const char *host, int port)
             SOCKET_ERROR_MSG("Invalid hostname length (max %d characters)", SOCKET_ERROR_MAX_HOSTNAME);
             RAISE_DNS_ERROR(SocketDNS_Failed);
         }
+
+        size_t i;
+        for (i = 0; i < host_len; i++)
+        {
+            char c = host[i];
+            if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '.' ||
+                  c == ':' || c == '%'))
+            {
+                SOCKET_ERROR_MSG("Invalid character in hostname: '%c'", c);
+                RAISE_DNS_ERROR(SocketDNS_Failed);
+            }
+        }
     }
 
     if (port < 0 || port > 65535)

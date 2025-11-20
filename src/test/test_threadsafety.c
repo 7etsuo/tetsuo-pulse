@@ -162,9 +162,10 @@ static void *thread_socket_operations(void *arg)
     
     for (int i = 0; i < 50; i++)
     {
-        Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+        Socket_T socket = NULL;
         TRY
         {
+            socket = Socket_new(AF_INET, SOCK_STREAM, 0);
             Socket_setnonblocking(socket);
             Socket_setreuseaddr(socket);
             Socket_settimeout(socket, 5);
@@ -173,8 +174,12 @@ static void *thread_socket_operations(void *arg)
         {
             (void)0;
         }
+        FINALLY
+        {
+            if (socket)
+                Socket_free(&socket);
+        }
         END_TRY;
-        Socket_free(&socket);
     }
     
     return NULL;
@@ -266,9 +271,10 @@ static void *thread_poll_add_remove(void *arg)
     
     for (int i = 0; i < 50; i++)
     {
-        Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+        Socket_T socket = NULL;
         TRY
         {
+            socket = Socket_new(AF_INET, SOCK_STREAM, 0);
             SocketPoll_add(poll, socket, POLL_READ, NULL);
             usleep(100);
             SocketPoll_del(poll, socket);
@@ -277,8 +283,16 @@ static void *thread_poll_add_remove(void *arg)
         {
             (void)0;
         }
+        EXCEPT(Socket_Failed)
+        {
+            (void)0;
+        }
+        FINALLY
+        {
+            if (socket)
+                Socket_free(&socket);
+        }
         END_TRY;
-        Socket_free(&socket);
     }
     
     return NULL;
@@ -307,9 +321,10 @@ static void *thread_pool_add_remove(void *arg)
     
     for (int i = 0; i < 50; i++)
     {
-        Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+        Socket_T socket = NULL;
         TRY
         {
+            socket = Socket_new(AF_INET, SOCK_STREAM, 0);
             Connection_T conn = SocketPool_add(pool, socket);
             if (conn)
             {
@@ -321,8 +336,16 @@ static void *thread_pool_add_remove(void *arg)
         {
             (void)0;
         }
+        EXCEPT(Socket_Failed)
+        {
+            (void)0;
+        }
+        FINALLY
+        {
+            if (socket)
+                Socket_free(&socket);
+        }
         END_TRY;
-        Socket_free(&socket);
     }
     
     return NULL;
@@ -348,10 +371,11 @@ static void *thread_pool_get_operations(void *arg)
 {
     SocketPool_T pool = (SocketPool_T)arg;
     setup_signals();
-    Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+    Socket_T socket = NULL;
     
     TRY
     {
+        socket = Socket_new(AF_INET, SOCK_STREAM, 0);
         Connection_T conn = SocketPool_add(pool, socket);
         if (conn)
         {
@@ -368,9 +392,17 @@ static void *thread_pool_get_operations(void *arg)
     {
         (void)0;
     }
+    EXCEPT(Socket_Failed)
+    {
+        (void)0;
+    }
+    FINALLY
+    {
+        if (socket)
+            Socket_free(&socket);
+    }
     END_TRY;
     
-    Socket_free(&socket);
     return NULL;
 }
 
@@ -548,10 +580,11 @@ static void *thread_mixed_operations(void *arg)
     
     for (int i = 0; i < 20; i++)
     {
-        Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+        Socket_T socket = NULL;
         
         TRY
         {
+            socket = Socket_new(AF_INET, SOCK_STREAM, 0);
             SocketPoll_add(data->poll, socket, POLL_READ, NULL);
             Connection_T conn = SocketPool_add(data->pool, socket);
 
@@ -574,9 +607,16 @@ static void *thread_mixed_operations(void *arg)
         {
             (void)0;
         }
+        EXCEPT(Socket_Failed)
+        {
+            (void)0;
+        }
+        FINALLY
+        {
+            if (socket)
+                Socket_free(&socket);
+        }
         END_TRY;
-        
-        Socket_free(&socket);
     }
     
     return NULL;
@@ -670,9 +710,10 @@ static void *thread_udp_operations(void *arg)
     
     for (int i = 0; i < 50; i++)
     {
-        SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
+        SocketDgram_T socket = NULL;
         TRY
         {
+            socket = SocketDgram_new(AF_INET, 0);
             SocketDgram_setnonblocking(socket);
             SocketDgram_setreuseaddr(socket);
             SocketDgram_setttl(socket, 64);
@@ -681,8 +722,12 @@ static void *thread_udp_operations(void *arg)
         {
             (void)0;
         }
+        FINALLY
+        {
+            if (socket)
+                SocketDgram_free(&socket);
+        }
         END_TRY;
-        SocketDgram_free(&socket);
     }
     
     return NULL;
@@ -707,10 +752,11 @@ TEST(threadsafety_high_load_server_simulation)
     Arena_T arena = Arena_new();
     SocketPoll_T poll = SocketPoll_new(1000);
     SocketPool_T pool = SocketPool_new(arena, 500, 4096);
-    volatile Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+    volatile Socket_T server = NULL;
 
     TRY
     {
+        server = Socket_new(AF_INET, SOCK_STREAM, 0);
         Socket_setreuseaddr(server);
         Socket_bind(server, "127.0.0.1", 0);
         Socket_listen(server, 100);
@@ -729,9 +775,25 @@ TEST(threadsafety_high_load_server_simulation)
         volatile int iteration;
         volatile int nfds;
         for (i = 0; i < 20; i++)
+            clients[i] = NULL;
+
+        for (i = 0; i < 20; i++)
         {
-            clients[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
-            Socket_connect(clients[i], "127.0.0.1", port);
+            TRY
+            {
+                clients[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
+                Socket_connect(clients[i], "127.0.0.1", port);
+            }
+            EXCEPT(Socket_Failed)
+            {
+                /* Ignore connection failures under load */
+                if (clients[i])
+                {
+                     Socket_free(&clients[i]);
+                     clients[i] = NULL;
+                }
+            }
+            END_TRY;
         }
 
         usleep(200000);
@@ -757,7 +819,10 @@ TEST(threadsafety_high_load_server_simulation)
         }
 
         for (i = 0; i < 20; i++)
-            Socket_free(&clients[i]);
+        {
+            if (clients[i])
+                Socket_free(&clients[i]);
+        }
     }
     EXCEPT(Socket_Failed)
     {

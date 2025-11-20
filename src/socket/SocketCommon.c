@@ -85,17 +85,18 @@ static int socketcommon_parse_port_string(const char *serv)
 }
 
 /**
- * socketcommon_validate_hostname_length - Validate hostname length
+ * socketcommon_validate_hostname_internal - Validate hostname length and characters
  * @host: Hostname to validate
  * @use_exceptions: If true, raise exception; if false, return error code
  * @exception_type: Exception type to raise on failure
  * Returns: 0 on success, -1 on failure
- * Raises: Specified exception type if hostname too long (if using exceptions)
+ * Raises: Specified exception type if hostname invalid (if using exceptions)
  * Thread-safe: Yes
  */
-static int socketcommon_validate_hostname_length(const char *host, int use_exceptions, Except_T exception_type)
+static int socketcommon_validate_hostname_internal(const char *host, int use_exceptions, Except_T exception_type)
 {
     size_t host_len = host ? strlen(host) : 0;
+    size_t i;
 
     if (host_len > SOCKET_ERROR_MAX_HOSTNAME)
     {
@@ -104,6 +105,20 @@ static int socketcommon_validate_hostname_length(const char *host, int use_excep
             RAISE_COMMON_ERROR(exception_type);
         return -1;
     }
+
+    for (i = 0; i < host_len; i++)
+    {
+        char c = host[i];
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '.' ||
+              c == ':' || c == '%'))
+        {
+            SOCKET_ERROR_MSG("Invalid character in hostname: '%c'", c);
+            if (use_exceptions)
+                RAISE_COMMON_ERROR(exception_type);
+            return -1;
+        }
+    }
+
     return 0;
 }
 
@@ -240,7 +255,7 @@ int SocketCommon_resolve_address(const char *host, int port, const struct addrin
 {
     char port_str[SOCKET_PORT_STR_BUFSIZE];
 
-    if (socketcommon_validate_hostname_length(host, use_exceptions, exception_type) != 0)
+    if (socketcommon_validate_hostname_internal(host, use_exceptions, exception_type) != 0)
         return -1;
 
     socketcommon_convert_port_to_string(port, port_str, sizeof(port_str));
@@ -279,7 +294,7 @@ void SocketCommon_validate_port(int port, Except_T exception_type)
  */
 void SocketCommon_validate_hostname(const char *host, Except_T exception_type)
 {
-    if (socketcommon_validate_hostname_length(host, 1, exception_type) != 0)
+    if (socketcommon_validate_hostname_internal(host, 1, exception_type) != 0)
         return; /* Exception already raised */
 }
 
