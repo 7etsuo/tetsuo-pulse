@@ -34,10 +34,13 @@ void SocketTLSContext_set_session_cache_size(T ctx, size_t size);
 /* Context lifecycle */
 void SocketTLSContext_free(T *ctx);
 
-/* Internal: Get SSL_CTX* (for implementation use) */
-void *SocketTLSContext_get_ssl_ctx(T ctx);
-
-#undef T
+    /* Internal: Get SSL_CTX* (for implementation use) */
+    void *SocketTLSContext_get_ssl_ctx(T ctx);
+    
+    /* Check if context is for server */
+    int SocketTLSContext_is_server(T ctx);
+    
+    #undef T
 
 #endif /* SOCKET_HAS_TLS */
 
