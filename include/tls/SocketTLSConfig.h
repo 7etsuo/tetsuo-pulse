@@ -8,9 +8,13 @@
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
-/* TLS protocol version configuration */
-#define SOCKET_TLS_MIN_VERSION TLS1_2_VERSION
-#define SOCKET_TLS_MAX_VERSION 0  /* 0 = use highest available */
+/* TLS Protocol Versions - STRICT TLS1.3-ONLY (recommended for high-perf servers) */
+/* Compatibility mode removed to enforce strict security standards */
+#define SOCKET_TLS_MIN_VERSION TLS1_3_VERSION
+#define SOCKET_TLS_MAX_VERSION TLS1_3_VERSION
+
+/* TLS1.3 Modern Ciphersuites (ECDHE-PFS only, AES-GCM/ChaCha20-Poly1305) */
+#define SOCKET_TLS13_CIPHERSUITES "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256"
 
 /* TLS handshake timeout defaults */
 #ifndef SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS
@@ -19,7 +23,7 @@
 
 /* TLS read/write buffer sizes */
 #ifndef SOCKET_TLS_BUFFER_SIZE
-#define SOCKET_TLS_BUFFER_SIZE 16384  /* 16KB - typical TLS record size */
+#define SOCKET_TLS_BUFFER_SIZE 16384  /* 16KB - TLS record max */
 #endif
 
 /* Maximum certificate chain depth */

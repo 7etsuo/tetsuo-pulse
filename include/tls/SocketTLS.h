@@ -1,3 +1,16 @@
+/**
+ * SocketTLS.h - TLS/SSL Socket Integration (TLS1.3-Only by Default)
+ *
+ * Features:
+ * - TLS1.3-only (strict PFS, no legacy vulns)
+ * - Transparent I/O integration
+ * - Non-blocking handshake with poll
+ * - SNI + hostname verification
+ * - ALPN support
+ * 
+ * Build: -DSOCKET_TLS_COMPAT_MODE for TLS1.2 fallback
+ */
+
 #ifndef SOCKETTLS_INCLUDED
 #define SOCKETTLS_INCLUDED
 
@@ -48,6 +61,7 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 void SocketTLS_enable(Socket_T socket, SocketTLSContext_T ctx);
 void SocketTLS_set_hostname(Socket_T socket, const char *hostname);
 TLSHandshakeState SocketTLS_handshake(Socket_T socket);
+TLSHandshakeState SocketTLS_handshake_loop(Socket_T socket, int timeout_ms);  /* NEW: Complete non-blocking handshake helper */
 void SocketTLS_shutdown(Socket_T socket);
 
 /* TLS I/O operations */
