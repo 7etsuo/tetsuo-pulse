@@ -778,7 +778,17 @@ unsigned SocketAsync_send(T async, Socket_T socket, const void *buf, size_t len,
     pthread_mutex_unlock(&async->mutex);
 
     /* Submit to platform backend */
-    if (async->available)
+    /* CRITICAL: TLS sockets cannot use io_uring/direct AIO as they require
+     * userspace encryption via SSL_write/SSL_read. Force fallback. */
+    int use_backend = async->available;
+#ifdef SOCKET_HAS_TLS
+    if (socket_is_tls_enabled(socket))
+    {
+        use_backend = 0; /* Force fallback for TLS */
+    }
+#endif
+
+    if (use_backend)
     {
 #ifdef SOCKET_HAS_IO_URING
         result = submit_io_uring_send(async, req);
@@ -859,7 +869,17 @@ unsigned SocketAsync_recv(T async, Socket_T socket, void *buf, size_t len, Socke
     pthread_mutex_unlock(&async->mutex);
 
     /* Submit to platform backend */
-    if (async->available)
+    /* CRITICAL: TLS sockets cannot use io_uring/direct AIO as they require
+     * userspace encryption via SSL_write/SSL_read. Force fallback. */
+    int use_backend = async->available;
+#ifdef SOCKET_HAS_TLS
+    if (socket_is_tls_enabled(socket))
+    {
+        use_backend = 0; /* Force fallback for TLS */
+    }
+#endif
+
+    if (use_backend)
     {
 #ifdef SOCKET_HAS_IO_URING
         result = submit_io_uring_recv(async, req);

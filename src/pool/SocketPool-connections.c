@@ -134,10 +134,7 @@ void SocketPool_connections_initialize_slot(struct Connection *conn)
     conn->last_activity = 0;
     conn->active = 0;
     conn->hash_next = NULL;
-#ifdef SOCKET_HAS_TLS
-    conn->tls_ctx = NULL;
-    conn->tls_handshake_complete = 0;
-#endif
+    // Removed unused TLS fields - state managed by Socket_T
 }
 
 /**
