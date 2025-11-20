@@ -107,6 +107,20 @@ T SocketTLSContext_new_server(const char *cert_file, const char *key_file, const
         raise_tls_context_error("Failed to set minimum TLS protocol version");
     }
 
+    /* Enforce TLS1.3-only (max version) */
+    if (SSL_CTX_set_max_proto_version(ssl_ctx, SOCKET_TLS_MAX_VERSION) != 1)
+    {
+        SSL_CTX_free(ssl_ctx);
+        raise_tls_context_error("Failed to set maximum TLS protocol version (TLS1.3-only)");
+    }
+
+    /* Enforce modern TLS1.3 ciphersuites (ECDHE-PFS, AES-GCM/ChaCha20) */
+    if (SSL_CTX_set_ciphersuites(ssl_ctx, SOCKET_TLS13_CIPHERSUITES) != 1)
+    {
+        SSL_CTX_free(ssl_ctx);
+        raise_tls_context_error("Failed to enforce TLS1.3 ciphersuites");
+    }
+
     /* Allocate context structure */
     ctx = calloc(1, sizeof(*ctx));
     if (!ctx)
@@ -174,6 +188,20 @@ T SocketTLSContext_new_client(const char *ca_file)
         raise_tls_context_error("Failed to set minimum TLS protocol version");
     }
 
+    /* Enforce TLS1.3-only (max version) */
+    if (SSL_CTX_set_max_proto_version(ssl_ctx, SOCKET_TLS_MAX_VERSION) != 1)
+    {
+        SSL_CTX_free(ssl_ctx);
+        raise_tls_context_error("Failed to set maximum TLS protocol version (TLS1.3-only)");
+    }
+
+    /* Enforce modern TLS1.3 ciphersuites (ECDHE-PFS, AES-GCM/ChaCha20) */
+    if (SSL_CTX_set_ciphersuites(ssl_ctx, SOCKET_TLS13_CIPHERSUITES) != 1)
+    {
+        SSL_CTX_free(ssl_ctx);
+        raise_tls_context_error("Failed to enforce TLS1.3 ciphersuites");
+    }
+
     /* Allocate context structure */
     ctx = calloc(1, sizeof(*ctx));
     if (!ctx)
@@ -201,6 +229,8 @@ T SocketTLSContext_new_client(const char *ca_file)
     {
         TRY
             SocketTLSContext_load_ca(ctx, ca_file);
+            /* Enable verification by default when CA is provided */
+            SocketTLSContext_set_verify_mode(ctx, TLS_VERIFY_PEER);
         EXCEPT(SocketTLS_Failed)
             SocketTLSContext_free(&ctx);
             RERAISE;
@@ -336,6 +366,7 @@ void SocketTLSContext_set_min_protocol(T ctx, int version)
     /* Try the modern API first (OpenSSL 1.1.0+) */
     if (SSL_CTX_set_min_proto_version(ctx->ssl_ctx, version) != 1)
     {
+#if defined(SSL_OP_NO_SSLv2) && defined(SSL_OP_NO_SSLv3)
         /* Fall back to disabling older protocols via options */
         long options = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
 
@@ -351,6 +382,11 @@ void SocketTLSContext_set_min_protocol(T ctx, int version)
         {
             raise_tls_context_error("Failed to set minimum TLS protocol version");
         }
+#else
+        /* On modern OpenSSL without deprecated macros, assume set_min_proto_version works 
+         * or we are stuck. If it failed above, we can't fallback easily. */
+        raise_tls_context_error("Failed to set minimum TLS protocol version (fallback unavailable)");
+#endif
     }
 }
 

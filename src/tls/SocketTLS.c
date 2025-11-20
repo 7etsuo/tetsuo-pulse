@@ -269,8 +269,8 @@ void SocketTLS_set_hostname(Socket_T socket, const char *hostname)
         RAISE_TLS_ERROR(SocketTLS_Failed);
     }
 
-    /* Copy hostname */
-    strcpy((char *)socket->tls_sni_hostname, hostname);
+    /* Copy hostname safely */
+    memcpy((char *)socket->tls_sni_hostname, hostname, hostname_len + 1);
 
     /* Get SSL object */
     ssl = socket_get_ssl(socket);
@@ -284,6 +284,13 @@ void SocketTLS_set_hostname(Socket_T socket, const char *hostname)
     if (SSL_set_tlsext_host_name(ssl, hostname) != 1)
     {
         snprintf(tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "Failed to set SNI hostname");
+        RAISE_TLS_ERROR(SocketTLS_Failed);
+    }
+
+    /* Enable automatic hostname checks */
+    if (SSL_set1_host(ssl, hostname) != 1)
+    {
+        snprintf(tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "Failed to enable hostname verification");
         RAISE_TLS_ERROR(SocketTLS_Failed);
     }
 }
@@ -343,6 +350,23 @@ TLSHandshakeState SocketTLS_handshake(Socket_T socket)
     {
         /* Check for specific errors */
         TLSHandshakeState state = socket_handle_ssl_error(socket, ssl, result);
+        
+        if (state == TLS_HANDSHAKE_ERROR)
+        {
+            /* socket_handle_ssl_error doesn't set the detailed buffer for us,
+             * so we should fetch the error from OpenSSL queue here if needed,
+             * or ensure tls_error_buf is set. */
+             unsigned long err = ERR_get_error();
+             if (err) {
+                 char msg[256];
+                 ERR_error_string_n(err, msg, sizeof(msg));
+                 snprintf(tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "Handshake failed: %s", msg);
+             } else {
+                 snprintf(tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "Handshake failed");
+             }
+             RAISE_TLS_ERROR(SocketTLS_HandshakeFailed);
+        }
+
         socket->tls_last_handshake_state = state;  /* Store state for polling */
         return state;
     }
