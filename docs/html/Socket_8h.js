@@ -38,6 +38,7 @@ var Socket_8h =
     [ "Socket_islistening", "Socket_8h.html#aaf51b653c9d3ad62e91c87ffb8977459", null ],
     [ "Socket_listen", "Socket_8h.html#afb9495f689b00ffc14f393d8173c98a4", null ],
     [ "Socket_new", "Socket_8h.html#a48a12cae4cd51b880e7927a22ab82641", null ],
+    [ "Socket_new_from_fd", "Socket_8h.html#a46237f02b97c4724649a46b6afe0df7f", null ],
     [ "Socket_recv", "Socket_8h.html#af5ec96ac4f3517384ca22c1ef50d646a", null ],
     [ "Socket_recvall", "Socket_8h.html#af21e86cdf39ae94b27c74b19e6c29c28", null ],
     [ "Socket_recvmsg", "Socket_8h.html#a3aec26ecfd893efb26b95ec741c46656", null ],

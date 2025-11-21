@@ -17,6 +17,7 @@
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -116,9 +117,9 @@ Macros</h2></td></tr>
 <tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Except_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;Except_T</td></tr>
 <tr class="memdesc:a0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception Handling for C.  <br /></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a45e87c4d7dee50346b15c7761b0b340a" id="r_a45e87c4d7dee50346b15c7761b0b340a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Except_8h.html#a45e87c4d7dee50346b15c7761b0b340a">RAISE</a>(e)&#160;&#160;&#160;<a class="el" href="Except_8h.html#a74a6737ffcaaf94b7c8137a651f9d94b">Except_raise</a> (&amp;(e), __FILE__, __LINE__)</td></tr>
+<tr class="memitem:a45e87c4d7dee50346b15c7761b0b340a" id="r_a45e87c4d7dee50346b15c7761b0b340a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Except_8h.html#a45e87c4d7dee50346b15c7761b0b340a">RAISE</a>(e)&#160;&#160;&#160;<a class="el" href="Except_8h.html#a74a6737ffcaaf94b7c8137a651f9d94b">Except_raise</a>(&amp;(e), __FILE__, __LINE__)</td></tr>
 <tr class="separator:a45e87c4d7dee50346b15c7761b0b340a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a947ef43f0f0def3fcc050a8df849fd16" id="r_a947ef43f0f0def3fcc050a8df849fd16"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Except_8h.html#a947ef43f0f0def3fcc050a8df849fd16">RERAISE</a>&#160;&#160;&#160;  <a class="el" href="Except_8h.html#a74a6737ffcaaf94b7c8137a651f9d94b">Except_raise</a> ((const Except_T *)Except_frame.exception, Except_frame.file, Except_frame.line)</td></tr>
+<tr class="memitem:a947ef43f0f0def3fcc050a8df849fd16" id="r_a947ef43f0f0def3fcc050a8df849fd16"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Except_8h.html#a947ef43f0f0def3fcc050a8df849fd16">RERAISE</a>&#160;&#160;&#160;<a class="el" href="Except_8h.html#a74a6737ffcaaf94b7c8137a651f9d94b">Except_raise</a>((const Except_T *)Except_frame.exception, Except_frame.file, Except_frame.line)</td></tr>
 <tr class="separator:a947ef43f0f0def3fcc050a8df849fd16"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a0e6b80dd3d5ca395cf58151749f5e2" id="r_a6a0e6b80dd3d5ca395cf58151749f5e2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Except_8h.html#a6a0e6b80dd3d5ca395cf58151749f5e2">RETURN</a></td></tr>
 <tr class="memdesc:a6a0e6b80dd3d5ca395cf58151749f5e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">RETURN macro - Returns from function while cleaning up exception stack WARNING: This macro uses the comma operator to modify Except_stack as a side effect before returning.  <br /></td></tr>
@@ -174,18 +175,24 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">if</span> (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a>)                                           \</div>
-<div class="line">    <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> = <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a>-&gt;<a class="code hl_variable" href="structExcept__Frame.html#a4a5323a9c98b198d171a7f0409f3bbae">prev</a>;                                         \</div>
-<div class="line">  }                                                                            \</div>
-<div class="line">  <span class="keywordflow">else</span>                                                                         \</div>
-<div class="line">  {                                                                            \</div>
-<div class="line">    Except_flag = <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55bac0d9956bf062b2f2db1f9294563e73b4">Except_handled</a>;</div>
+<b>Value:</b><div class="fragment"><div class="line">    <span class="keywordflow">if</span> (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a>)                                                                                 \</div>
+<div class="line">    {                                                                                                                  \</div>
+<div class="line">        <a class="code hl_struct" href="structExcept__Frame.html">Except_Frame</a> *prev_frame = NULL;                                                                               \</div>
+<div class="line">        if (<a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> != NULL)                                                                                      \</div>
+<div class="line">            prev_frame = <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a>-&gt;<a class="code hl_variable" href="structExcept__Frame.html#a4a5323a9c98b198d171a7f0409f3bbae">prev</a>;                                                                           \</div>
+<div class="line">        <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> = prev_frame;                                                                                     \</div>
+<div class="line">    }                                                                                                                  \</div>
+<div class="line">    }                                                                                                                  \</div>
+<div class="line">    <span class="keywordflow">else</span>                                                                                                               \</div>
+<div class="line">    {                                                                                                                  \</div>
+<div class="line">        Except_flag = <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55bac0d9956bf062b2f2db1f9294563e73b4">Except_handled</a>;</div>
 <div class="ttc" id="aExcept_8h_html_a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2"><div class="ttname"><a href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a></div><div class="ttdeci">@ Except_entered</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00050">Except.h:50</a></div></div>
 <div class="ttc" id="aExcept_8h_html_a06fc87d81c62e9abb8790b6e5713c55bac0d9956bf062b2f2db1f9294563e73b4"><div class="ttname"><a href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55bac0d9956bf062b2f2db1f9294563e73b4">Except_handled</a></div><div class="ttdeci">@ Except_handled</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00052">Except.h:52</a></div></div>
 <div class="ttc" id="aExcept_8h_html_a83beb50c01f16c3fb874b4925b8e76ec"><div class="ttname"><a href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a></div><div class="ttdeci">__thread Except_Frame * Except_stack</div></div>
+<div class="ttc" id="astructExcept__Frame_html"><div class="ttname"><a href="structExcept__Frame.html">Except_Frame</a></div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00039">Except.h:40</a></div></div>
 <div class="ttc" id="astructExcept__Frame_html_a4a5323a9c98b198d171a7f0409f3bbae"><div class="ttname"><a href="structExcept__Frame.html#a4a5323a9c98b198d171a7f0409f3bbae">Except_Frame::prev</a></div><div class="ttdeci">Except_Frame * prev</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00041">Except.h:41</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00116">116</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00120">120</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
 
 </div>
 </div>
@@ -200,17 +207,22 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">if</span> (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a>)                                           \</div>
-<div class="line">    <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> = <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a>-&gt;<a class="code hl_variable" href="structExcept__Frame.html#a4a5323a9c98b198d171a7f0409f3bbae">prev</a>;                                         \</div>
-<div class="line">  }                                                                            \</div>
-<div class="line">  if (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba80cdb3635fb4b8d00925dea5821c9fbb">Except_raised</a>)                                            \</div>
-<div class="line">    <a class="code hl_define" href="Except_8h.html#a947ef43f0f0def3fcc050a8df849fd16">RERAISE</a>;                                                                   \</div>
-<div class="line">  }                                                                            \</div>
-<div class="line">  while (0)</div>
+<b>Value:</b><div class="fragment"><div class="line">    <span class="keywordflow">if</span> (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a>)                                                                                 \</div>
+<div class="line">    {                                                                                                                  \</div>
+<div class="line">        <a class="code hl_struct" href="structExcept__Frame.html">Except_Frame</a> *prev_frame = NULL;                                                                               \</div>
+<div class="line">        if (<a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> != NULL)                                                                                      \</div>
+<div class="line">            prev_frame = <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a>-&gt;<a class="code hl_variable" href="structExcept__Frame.html#a4a5323a9c98b198d171a7f0409f3bbae">prev</a>;                                                                           \</div>
+<div class="line">        <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> = prev_frame;                                                                                     \</div>
+<div class="line">    }                                                                                                                  \</div>
+<div class="line">    }                                                                                                                  \</div>
+<div class="line">    if (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba80cdb3635fb4b8d00925dea5821c9fbb">Except_raised</a>)                                                                                  \</div>
+<div class="line">        <a class="code hl_define" href="Except_8h.html#a947ef43f0f0def3fcc050a8df849fd16">RERAISE</a>;                                                                                                       \</div>
+<div class="line">    }                                                                                                                  \</div>
+<div class="line">    while (0)</div>
 <div class="ttc" id="aExcept_8h_html_a06fc87d81c62e9abb8790b6e5713c55ba80cdb3635fb4b8d00925dea5821c9fbb"><div class="ttname"><a href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba80cdb3635fb4b8d00925dea5821c9fbb">Except_raised</a></div><div class="ttdeci">@ Except_raised</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00051">Except.h:51</a></div></div>
 <div class="ttc" id="aExcept_8h_html_a947ef43f0f0def3fcc050a8df849fd16"><div class="ttname"><a href="Except_8h.html#a947ef43f0f0def3fcc050a8df849fd16">RERAISE</a></div><div class="ttdeci">#define RERAISE</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00067">Except.h:67</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00132">132</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00146">146</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
 
 </div>
 </div>
@@ -229,14 +241,19 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">if</span> (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a>)                                           \</div>
-<div class="line">    <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> = <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a>-&gt;<a class="code hl_variable" href="structExcept__Frame.html#a4a5323a9c98b198d171a7f0409f3bbae">prev</a>;                                         \</div>
-<div class="line">  }                                                                            \</div>
-<div class="line">  <span class="keywordflow">else</span> <span class="keywordflow">if</span> ((<span class="keyword">const</span> Except_T *)Except_frame.exception == &amp;(e))                   \</div>
-<div class="line">  {                                                                            \</div>
-<div class="line">    Except_flag = <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55bac0d9956bf062b2f2db1f9294563e73b4">Except_handled</a>;</div>
+<b>Value:</b><div class="fragment"><div class="line">    <span class="keywordflow">if</span> (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a>)                                                                                 \</div>
+<div class="line">    {                                                                                                                  \</div>
+<div class="line">        <a class="code hl_struct" href="structExcept__Frame.html">Except_Frame</a> *prev_frame = NULL;                                                                               \</div>
+<div class="line">        if (<a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> != NULL)                                                                                      \</div>
+<div class="line">            prev_frame = <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a>-&gt;<a class="code hl_variable" href="structExcept__Frame.html#a4a5323a9c98b198d171a7f0409f3bbae">prev</a>;                                                                           \</div>
+<div class="line">        <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> = prev_frame;                                                                                     \</div>
+<div class="line">    }                                                                                                                  \</div>
+<div class="line">    }                                                                                                                  \</div>
+<div class="line">    <span class="keywordflow">else</span> <span class="keywordflow">if</span> ((<span class="keyword">const</span> Except_T *)Except_frame.exception == &amp;(e))                                                         \</div>
+<div class="line">    {                                                                                                                  \</div>
+<div class="line">        Except_flag = <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55bac0d9956bf062b2f2db1f9294563e73b4">Except_handled</a>;</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00108">108</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00107">107</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
 
 </div>
 </div>
@@ -251,15 +268,20 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">if</span> (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a>)                                           \</div>
-<div class="line">    <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> = <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a>-&gt;<a class="code hl_variable" href="structExcept__Frame.html#a4a5323a9c98b198d171a7f0409f3bbae">prev</a>;                                         \</div>
-<div class="line">  }                                                                            \</div>
-<div class="line">  {                                                                            \</div>
-<div class="line">    if (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a>)                                         \</div>
-<div class="line">      Except_flag = <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba8f2b6b8b0f719ecda31559637209f40b">Except_finalized</a>;</div>
+<b>Value:</b><div class="fragment"><div class="line">    <span class="keywordflow">if</span> (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a>)                                                                                 \</div>
+<div class="line">    {                                                                                                                  \</div>
+<div class="line">        <a class="code hl_struct" href="structExcept__Frame.html">Except_Frame</a> *prev_frame = NULL;                                                                               \</div>
+<div class="line">        if (<a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> != NULL)                                                                                      \</div>
+<div class="line">            prev_frame = <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a>-&gt;<a class="code hl_variable" href="structExcept__Frame.html#a4a5323a9c98b198d171a7f0409f3bbae">prev</a>;                                                                           \</div>
+<div class="line">        <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> = prev_frame;                                                                                     \</div>
+<div class="line">    }                                                                                                                  \</div>
+<div class="line">    }                                                                                                                  \</div>
+<div class="line">    {                                                                                                                  \</div>
+<div class="line">        if (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a>)                                                                             \</div>
+<div class="line">            Except_flag = <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba8f2b6b8b0f719ecda31559637209f40b">Except_finalized</a>;</div>
 <div class="ttc" id="aExcept_8h_html_a06fc87d81c62e9abb8790b6e5713c55ba8f2b6b8b0f719ecda31559637209f40b"><div class="ttname"><a href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba8f2b6b8b0f719ecda31559637209f40b">Except_finalized</a></div><div class="ttdeci">@ Except_finalized</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00054">Except.h:53</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00124">124</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00133">133</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
 
 </div>
 </div>
@@ -274,7 +296,7 @@ Variables</h2></td></tr>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname">e</td><td>)</td>
-          <td>&#160;&#160;&#160;<a class="el" href="Except_8h.html#a74a6737ffcaaf94b7c8137a651f9d94b">Except_raise</a> (&amp;(e), __FILE__, __LINE__)</td>
+          <td>&#160;&#160;&#160;<a class="el" href="Except_8h.html#a74a6737ffcaaf94b7c8137a651f9d94b">Except_raise</a>(&amp;(e), __FILE__, __LINE__)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -290,7 +312,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define RERAISE&#160;&#160;&#160;  <a class="el" href="Except_8h.html#a74a6737ffcaaf94b7c8137a651f9d94b">Except_raise</a> ((const Except_T *)Except_frame.exception, Except_frame.file, Except_frame.line)</td>
+          <td class="memname">#define RERAISE&#160;&#160;&#160;<a class="el" href="Except_8h.html#a74a6737ffcaaf94b7c8137a651f9d94b">Except_raise</a>((const Except_T *)Except_frame.exception, Except_frame.file, Except_frame.line)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -310,10 +332,9 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">switch</span> (<a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> = ((<a class="code hl_struct" href="structExcept__Frame.html">Except_Frame</a> *)<a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a>)-&gt;prev, 0)              \</div>
-<div class="line">  <span class="keywordflow">default</span>:                                                                     \</div>
-<div class="line">    <span class="keywordflow">return</span></div>
-<div class="ttc" id="astructExcept__Frame_html"><div class="ttname"><a href="structExcept__Frame.html">Except_Frame</a></div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00039">Except.h:40</a></div></div>
+<b>Value:</b><div class="fragment"><div class="line">    <span class="keywordflow">switch</span> (<a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> = ((<a class="code hl_struct" href="structExcept__Frame.html">Except_Frame</a> *)<a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a>)-&gt;prev, 0)                                                    \</div>
+<div class="line">    <span class="keywordflow">default</span>:                                                                                                           \</div>
+<div class="line">        <span class="keywordflow">return</span></div>
 </div><!-- fragment -->
 <p>RETURN macro - Returns from function while cleaning up exception stack WARNING: This macro uses the comma operator to modify Except_stack as a side effect before returning. </p>
 <p>This is intentional but subtle. Use only within TRY blocks when you need to return early while properly cleaning up the exception stack. The switch/default pattern is necessary because:</p><ol type="1">
@@ -323,7 +344,7 @@ Variables</h2></td></tr>
 <li>This prevents issues with return values containing commas (e.g., function calls). Usage examples: RETURN; // For void functions RETURN value; // For functions returning a value RETURN func(a, b); // Works with function calls containing commas </li>
 </ol>
 
-<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00088">88</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00087">87</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
 
 </div>
 </div>
@@ -363,23 +384,23 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">do</span>                                                                           \</div>
-<div class="line">    {                                                                          \</div>
-<div class="line">      <span class="keyword">volatile</span> <span class="keywordtype">int</span> Except_flag;                                                \</div>
-<div class="line">      <span class="keyword">volatile</span> <a class="code hl_struct" href="structExcept__Frame.html">Except_Frame</a> Except_frame;                                     \</div>
-<div class="line">      jmp_buf *env_ptr = (jmp_buf *)&amp;Except_frame.<a class="code hl_variable" href="structExcept__Frame.html#abce4b8de2bbf7d6fb6ef52d618309264">env</a>;                         \</div>
-<div class="line">      Except_frame.prev = <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a>;                                        \</div>
-<div class="line">      Except_frame.<a class="code hl_variable" href="structExcept__Frame.html#a4c8d0ea0c9437ede53e8703feefe0dc6">file</a> = NULL;                                                \</div>
-<div class="line">      Except_frame.line = 0;                                                   \</div>
-<div class="line">      Except_frame.exception = NULL;                                           \</div>
-<div class="line">      <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> = (<a class="code hl_struct" href="structExcept__Frame.html">Except_Frame</a> *)&amp;Except_frame;                            \</div>
-<div class="line">      Except_flag = setjmp (*env_ptr);                                         \</div>
-<div class="line">      if (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a>)                                       \</div>
+<b>Value:</b><div class="fragment"><div class="line">    <span class="keywordflow">do</span>                                                                                                                 \</div>
+<div class="line">    {                                                                                                                  \</div>
+<div class="line">        <span class="keyword">volatile</span> <span class="keywordtype">int</span> Except_flag;                                                                                      \</div>
+<div class="line">        <span class="keyword">volatile</span> <a class="code hl_struct" href="structExcept__Frame.html">Except_Frame</a> Except_frame;                                                                            \</div>
+<div class="line">        jmp_buf *env_ptr = (jmp_buf *)&amp;Except_frame.<a class="code hl_variable" href="structExcept__Frame.html#abce4b8de2bbf7d6fb6ef52d618309264">env</a>;                                                               \</div>
+<div class="line">        Except_frame.prev = <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a>;                                                                              \</div>
+<div class="line">        Except_frame.<a class="code hl_variable" href="structExcept__Frame.html#a4c8d0ea0c9437ede53e8703feefe0dc6">file</a> = NULL;                                                                                      \</div>
+<div class="line">        Except_frame.line = 0;                                                                                         \</div>
+<div class="line">        Except_frame.exception = NULL;                                                                                 \</div>
+<div class="line">        <a class="code hl_variable" href="Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec">Except_stack</a> = (<a class="code hl_struct" href="structExcept__Frame.html">Except_Frame</a> *)&amp;Except_frame;                                                                  \</div>
+<div class="line">        Except_flag = setjmp(*env_ptr);                                                                                \</div>
+<div class="line">        if (Except_flag == <a class="code hl_enumvalue" href="Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2">Except_entered</a>)                                                                             \</div>
 <div class="line">        {</div>
 <div class="ttc" id="astructExcept__Frame_html_a4c8d0ea0c9437ede53e8703feefe0dc6"><div class="ttname"><a href="structExcept__Frame.html#a4c8d0ea0c9437ede53e8703feefe0dc6">Except_Frame::file</a></div><div class="ttdeci">const char * file</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00043">Except.h:43</a></div></div>
 <div class="ttc" id="astructExcept__Frame_html_abce4b8de2bbf7d6fb6ef52d618309264"><div class="ttname"><a href="structExcept__Frame.html#abce4b8de2bbf7d6fb6ef52d618309264">Except_Frame::env</a></div><div class="ttdeci">jmp_buf env</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00042">Except.h:42</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00093">93</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00092">92</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
 
 </div>
 </div>

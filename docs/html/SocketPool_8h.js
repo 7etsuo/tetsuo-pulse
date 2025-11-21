@@ -10,6 +10,7 @@ var SocketPool_8h =
     [ "Connection_outbuf", "SocketPool_8h.html#a6d7573f71d8853943029cfd55fa3fb3a", null ],
     [ "Connection_setdata", "SocketPool_8h.html#ab48a53bc1b36954d521104fedf9012c1", null ],
     [ "Connection_socket", "SocketPool_8h.html#aaeff7efb1109a312f56e35689b67c652", null ],
+    [ "SocketPool_accept_batch", "SocketPool_8h.html#a5a96d5a3ac0e763c19ec5ee0eda0f99e", null ],
     [ "SocketPool_add", "SocketPool_8h.html#a4b466dc021839d7eeec5f1ab320a7715", null ],
     [ "SocketPool_cleanup", "SocketPool_8h.html#a7087165181060dbdd9e37d5ff5e92c85", null ],
     [ "SocketPool_count", "SocketPool_8h.html#a624d0bec224f70a7ac067a891c258b45", null ],
@@ -17,6 +18,9 @@ var SocketPool_8h =
     [ "SocketPool_free", "SocketPool_8h.html#a4d90769ccea1288fb30e50ec18e4f0c4", null ],
     [ "SocketPool_get", "SocketPool_8h.html#a85a96cfcffc6de6cfce0f3571e7adb18", null ],
     [ "SocketPool_new", "SocketPool_8h.html#a74388803e1d08380acf64f7abbd00414", null ],
+    [ "SocketPool_prewarm", "SocketPool_8h.html#af2f6c45582ddbb25e842e5f41f9e0948", null ],
     [ "SocketPool_remove", "SocketPool_8h.html#a2a5f1ef514ea1ccbe5133b4eca4f5dfb", null ],
+    [ "SocketPool_resize", "SocketPool_8h.html#aa02f8acf084c3e5a48dda941a1594989", null ],
+    [ "SocketPool_set_bufsize", "SocketPool_8h.html#a6b6e1d08c443eef3fe0ac60bf3188ebd", null ],
     [ "SocketPool_Failed", "SocketPool_8h.html#a0e9aa7d82b00e7c8c8899029ddfa5a67", null ]
 ];

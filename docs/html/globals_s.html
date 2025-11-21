@@ -17,6 +17,7 @@
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -94,6 +95,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 
 <h3><a id="index_s" name="index_s"></a>- s -</h3><ul>
 <li>SAFE_CLOSE&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a71b9fcff797cf3624ea3ec9c02805291">SocketConfig.h</a></li>
+<li>safe_time()&#160;:&#160;<a class="el" href="SocketPool-core_8h.html#aab8dfea746f7edd426d43574e437ffc7">SocketPool-core.h</a></li>
 <li>Socket_accept()&#160;:&#160;<a class="el" href="Socket_8h.html#af21e0268831aeee010b41d28ac61b464">Socket.h</a></li>
 <li>SOCKET_AF_INET&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a04ce265041d74932e7d3354651fd0a79">SocketConfig.h</a></li>
 <li>SOCKET_AF_INET6&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a7a754a1f4470597ea52da2a678378100">SocketConfig.h</a></li>
@@ -204,12 +206,10 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>Socket_getusertimeout()&#160;:&#160;<a class="el" href="Socket_8h.html#a5fa721bd54b028d6e92cc459c76b96ef">Socket.h</a></li>
 <li>SOCKET_HAS_ACCEPT4&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a179e47f6c98b38853e2f9e223586dc5d">SocketConfig.h</a></li>
 <li>SOCKET_HAS_RECVMSG&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a1b4cba449b689c0e2069c5592d65ff70">SocketConfig.h</a></li>
-<li>SOCKET_HAS_SENDFILE&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a344295e98b08de11d12e7a2992d44bc5">SocketConfig.h</a></li>
 <li>SOCKET_HAS_SENDMSG&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a3d1b69dbf142e7aaa4b329f0e0f34dee">SocketConfig.h</a></li>
 <li>SOCKET_HAS_SO_DOMAIN&#160;:&#160;<a class="el" href="SocketConfig_8h.html#ac2c905681cea26eada867ab143d2c48d">SocketConfig.h</a></li>
 <li>SOCKET_HAS_SO_REUSEPORT&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a2ec065ddbde3ec44ad0f0f6bce1c3c30">SocketConfig.h</a></li>
 <li>SOCKET_HAS_SOCK_CLOEXEC&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a4df9ceb2961f6a063fc5c97374f00fea">SocketConfig.h</a></li>
-<li>SOCKET_HAS_SPLICE&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a7254b404e987f6bff7c2c562ad1cefbd">SocketConfig.h</a></li>
 <li>SOCKET_HAS_TCP_CONGESTION&#160;:&#160;<a class="el" href="SocketConfig_8h.html#ae59b371249a0e487e26d4f9e087351e5">SocketConfig.h</a></li>
 <li>SOCKET_HAS_TCP_FASTOPEN&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a680a9b46408253f21f2fae08fab1a073">SocketConfig.h</a></li>
 <li>SOCKET_HAS_TCP_USER_TIMEOUT&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a2e0034bad5cc9db994f51ea107fed151">SocketConfig.h</a></li>
@@ -223,6 +223,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKET_IPPROTO_UDP&#160;:&#160;<a class="el" href="SocketConfig_8h.html#affc1bd28b038fdf084f3363167b1f4f4">SocketConfig.h</a></li>
 <li>SOCKET_IPV6_UNICAST_HOPS&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a6718d10ef55392425b3e4eea07ee15ce">SocketConfig.h</a></li>
 <li>SOCKET_IPV6_V6ONLY&#160;:&#160;<a class="el" href="SocketConfig_8h.html#abc73d2f6f2da35365e09b28eff6364b8">SocketConfig.h</a></li>
+<li>socket_is_tls_enabled()&#160;:&#160;<a class="el" href="SocketIO_8h.html#a561e3aafa4c8f510b871db31e5de139e">SocketIO.h</a></li>
 <li>Socket_isbound()&#160;:&#160;<a class="el" href="Socket_8h.html#a87607a3fb7bb47442e3ca5c8664cadf3">Socket.h</a></li>
 <li>Socket_isconnected()&#160;:&#160;<a class="el" href="Socket_8h.html#a4c832b75a949f8716f52b2a25fa54071">Socket.h</a></li>
 <li>Socket_islistening()&#160;:&#160;<a class="el" href="Socket_8h.html#aaf51b653c9d3ad62e91c87ffb8977459">Socket.h</a></li>
@@ -257,23 +258,31 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKET_MSG_NOSIGNAL&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a6d8596dc13da264d86966c08b435110a">SocketConfig.h</a></li>
 <li>SOCKET_MULTICAST_DEFAULT_INTERFACE&#160;:&#160;<a class="el" href="SocketConfig_8h.html#af69be862b0cece4e20e7ea283ad91c70">SocketConfig.h</a></li>
 <li>Socket_new()&#160;:&#160;<a class="el" href="Socket_8h.html#a48a12cae4cd51b880e7927a22ab82641">Socket.h</a></li>
+<li>Socket_new_from_fd()&#160;:&#160;<a class="el" href="Socket_8h.html#a46237f02b97c4724649a46b6afe0df7f">Socket.h</a></li>
 <li>SOCKET_NI_MAXHOST&#160;:&#160;<a class="el" href="SocketConfig_8h.html#abb714afb577d800a5b6388c5ff985e45">SocketConfig.h</a></li>
 <li>SOCKET_NI_MAXSERV&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a0470d30293aefa9d90b1adeae8b2a893">SocketConfig.h</a></li>
 <li>SOCKET_NI_NUMERICHOST&#160;:&#160;<a class="el" href="SocketConfig_8h.html#aed05968c714f431c7489dbbd6491c4da">SocketConfig.h</a></li>
 <li>SOCKET_NI_NUMERICSERV&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a189adadf65e2effcf336ae92be1453a3">SocketConfig.h</a></li>
+<li>SOCKET_PLATFORM_MACOS&#160;:&#160;<a class="el" href="SocketConfig_8h.html#afe51dc34402f488f54f734a1ebd48307">SocketConfig.h</a></li>
 <li>SOCKET_POLL_TIMEOUT_USE_DEFAULT&#160;:&#160;<a class="el" href="SocketPoll_8h.html#a0fc8aa94a3e9bb10cb26d85c6474d04e">SocketPoll.h</a></li>
+<li>SOCKET_POOL_DEFAULT_PREWARM_PCT&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a46e9cd9dc6e5eabbe91e5fa71ec00b81">SocketConfig.h</a></li>
+<li>SOCKET_POOL_MAX_BATCH_ACCEPTS&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a331e1002cf6dfb30695f5af41625cf46">SocketConfig.h</a></li>
 <li>SOCKET_PORT_STR_BUFSIZE&#160;:&#160;<a class="el" href="SocketConfig_8h.html#aa5594e0bf4a9a492cc6e9dd7bcdae74c">SocketConfig.h</a></li>
 <li>Socket_recv()&#160;:&#160;<a class="el" href="Socket_8h.html#af5ec96ac4f3517384ca22c1ef50d646a">Socket.h</a></li>
+<li>socket_recv_internal()&#160;:&#160;<a class="el" href="SocketIO_8h.html#a77b880a168150dd12d999b465d13d2e8">SocketIO.h</a></li>
 <li>Socket_recvall()&#160;:&#160;<a class="el" href="Socket_8h.html#af21e86cdf39ae94b27c74b19e6c29c28">Socket.h</a></li>
 <li>Socket_recvmsg()&#160;:&#160;<a class="el" href="Socket_8h.html#a3aec26ecfd893efb26b95ec741c46656">Socket.h</a></li>
 <li>Socket_recvv()&#160;:&#160;<a class="el" href="Socket_8h.html#af2a76fbae389a57c9a0389a691f90766">Socket.h</a></li>
+<li>socket_recvv_internal()&#160;:&#160;<a class="el" href="SocketIO_8h.html#a5801e5730324a5034ea28dd57e574256">SocketIO.h</a></li>
 <li>Socket_recvvall()&#160;:&#160;<a class="el" href="Socket_8h.html#ac157beed03142752182021261a263671">Socket.h</a></li>
 <li>Socket_send()&#160;:&#160;<a class="el" href="Socket_8h.html#ab72bbc8824c7adf5aa55af88b784b9d0">Socket.h</a></li>
+<li>socket_send_internal()&#160;:&#160;<a class="el" href="SocketIO_8h.html#a315f828a33a3df584ca2028acb1ac4a1">SocketIO.h</a></li>
 <li>Socket_sendall()&#160;:&#160;<a class="el" href="Socket_8h.html#afa7bde7e1ab3130c4674e0c7bcb94ea8">Socket.h</a></li>
 <li>Socket_sendfile()&#160;:&#160;<a class="el" href="Socket_8h.html#acb117caeae8c8c1ce3b50a0568be35da">Socket.h</a></li>
 <li>Socket_sendfileall()&#160;:&#160;<a class="el" href="Socket_8h.html#a618437cdccde7f979f09307b99ad2b73">Socket.h</a></li>
 <li>Socket_sendmsg()&#160;:&#160;<a class="el" href="Socket_8h.html#ab76433dc005a43612f7ce752d01884e3">Socket.h</a></li>
 <li>Socket_sendv()&#160;:&#160;<a class="el" href="Socket_8h.html#ab675b5c1dbc4531aa0c1fc289475823b">Socket.h</a></li>
+<li>socket_sendv_internal()&#160;:&#160;<a class="el" href="SocketIO_8h.html#a48344d26614e3b920958010432e867f3">SocketIO.h</a></li>
 <li>Socket_sendvall()&#160;:&#160;<a class="el" href="Socket_8h.html#abb71b00d768e2285da07038dd6144e8e">Socket.h</a></li>
 <li>Socket_setcloexec()&#160;:&#160;<a class="el" href="Socket_8h.html#adef76ca110b35a97542a01abd96b56d3">Socket.h</a></li>
 <li>Socket_setcongestion()&#160;:&#160;<a class="el" href="Socket_8h.html#a914404cbf71b91e14240ae961b30df73">Socket.h</a></li>
@@ -311,10 +320,24 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>Socket_timeouts_getdefaults()&#160;:&#160;<a class="el" href="Socket_8h.html#acfcc79428e54b0284cc7cad257d56adf">Socket.h</a></li>
 <li>Socket_timeouts_set()&#160;:&#160;<a class="el" href="Socket_8h.html#a617c15d23eeff4b6b91aca2d1993a407">Socket.h</a></li>
 <li>Socket_timeouts_setdefaults()&#160;:&#160;<a class="el" href="Socket_8h.html#a0385e87c51740c37c9d90ff5bba1eced">Socket.h</a></li>
+<li>socket_tls_want_read()&#160;:&#160;<a class="el" href="SocketIO_8h.html#afdb01a2c5c9b6012ee2e7fce625127ea">SocketIO.h</a></li>
+<li>socket_tls_want_write()&#160;:&#160;<a class="el" href="SocketIO_8h.html#a9daa6a4b431abd57a718457b20caa591">SocketIO.h</a></li>
 <li>SOCKET_VALID_BUFFER_SIZE&#160;:&#160;<a class="el" href="SocketConfig_8h.html#ad203163c86ed5dd20746385d2a43ea6f">SocketConfig.h</a></li>
 <li>SOCKET_VALID_CONNECTION_COUNT&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a43c348045ef81f2408c0afd49c1f299a">SocketConfig.h</a></li>
 <li>SOCKET_VALID_POLL_EVENTS&#160;:&#160;<a class="el" href="SocketConfig_8h.html#af3934edfea9b109a06dc66e7487959b4">SocketConfig.h</a></li>
 <li>SOCKET_VALID_PORT&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a79772cb715462c6705db6d9440786f2d">SocketConfig.h</a></li>
+<li>SocketAsync_backend_name()&#160;:&#160;<a class="el" href="SocketAsync_8h.html#a21f74b54be873b1ca3040b53cb15e99e">SocketAsync.h</a></li>
+<li>SocketAsync_Callback&#160;:&#160;<a class="el" href="SocketAsync_8h.html#ad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync.h</a></li>
+<li>SocketAsync_cancel()&#160;:&#160;<a class="el" href="SocketAsync_8h.html#a229345d46001f8c9e4a0df90339be910">SocketAsync.h</a></li>
+<li>SocketAsync_Failed&#160;:&#160;<a class="el" href="SocketAsync_8h.html#a832db2f86b4c0d8a57dc3def7121d833">SocketAsync.h</a></li>
+<li>SocketAsync_Flags&#160;:&#160;<a class="el" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdf">SocketAsync.h</a></li>
+<li>SocketAsync_free()&#160;:&#160;<a class="el" href="SocketAsync_8h.html#a2ee23e4535260946b632fc973ac4935a">SocketAsync.h</a></li>
+<li>SocketAsync_is_available()&#160;:&#160;<a class="el" href="SocketAsync_8h.html#ab0e10c5a59d6331ea46cb4458307424e">SocketAsync.h</a></li>
+<li>SocketAsync_new()&#160;:&#160;<a class="el" href="SocketAsync_8h.html#a6001469d4be96f6f05d78d1c222784cc">SocketAsync.h</a></li>
+<li>SocketAsync_process_completions()&#160;:&#160;<a class="el" href="SocketAsync_8h.html#af209d2124b5062b1f294501ea3ae79b2">SocketAsync.h</a></li>
+<li>SocketAsync_recv()&#160;:&#160;<a class="el" href="SocketAsync_8h.html#a966b7ae7c15262f4503a70f869a04ddb">SocketAsync.h</a></li>
+<li>SocketAsync_send()&#160;:&#160;<a class="el" href="SocketAsync_8h.html#adf11b6fec4537a1d25ed17038c2f2f7c">SocketAsync.h</a></li>
+<li>SocketAsync_T&#160;:&#160;<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketPoll.h</a></li>
 <li>SocketBuf_available()&#160;:&#160;<a class="el" href="SocketBuf_8h.html#a1c24cb001b8719e744e7b23102cf9cbf">SocketBuf.h</a></li>
 <li>SocketBuf_clear()&#160;:&#160;<a class="el" href="SocketBuf_8h.html#a1901d45150be93f028ceb17fae25a9a9">SocketBuf.h</a></li>
 <li>SocketBuf_consume()&#160;:&#160;<a class="el" href="SocketBuf_8h.html#a2b0f1f39925ead88382c8fa3a376ce1a">SocketBuf.h</a></li>
@@ -412,7 +435,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketLog_levelname()&#160;:&#160;<a class="el" href="SocketLog_8h.html#a6bf61f863971355d13751fa2d76bc1d4">SocketLog.h</a></li>
 <li>SocketLog_setcallback()&#160;:&#160;<a class="el" href="SocketLog_8h.html#a1e1c2036c1e8e227409d3cb2dfab8fc2">SocketLog.h</a></li>
 <li>SocketLogCallback&#160;:&#160;<a class="el" href="SocketLog_8h.html#add820ca01810b616cfe1d6fef0cbf899">SocketLog.h</a></li>
-<li>SocketLogLevel&#160;:&#160;<a class="el" href="SocketLog_8h.html#adf209a9f107e88a5df277fcc3e2641d1">SocketLog.h</a></li>
+<li>SocketLogLevel&#160;:&#160;<a class="el" href="SocketLog_8h.html#a60c353a4ac7a38ca0b694cbfe4d8e4ea">SocketLog.h</a></li>
 <li>SocketMetric&#160;:&#160;<a class="el" href="SocketMetrics_8h.html#a422e43ad3ca4ce64261dda7879e73e5a">SocketMetrics.h</a></li>
 <li>SocketMetrics_count()&#160;:&#160;<a class="el" href="SocketMetrics_8h.html#ae500ae3a4e6dc4b4ba83182988453cc7">SocketMetrics.h</a></li>
 <li>SocketMetrics_getsnapshot()&#160;:&#160;<a class="el" href="SocketMetrics_8h.html#adf35517a39395522a5884f9d92c7086d">SocketMetrics.h</a></li>
@@ -426,21 +449,35 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketPoll_Events&#160;:&#160;<a class="el" href="SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6">SocketPoll.h</a></li>
 <li>SocketPoll_Failed&#160;:&#160;<a class="el" href="SocketPoll_8h.html#a86a0b655cec6077638e85d6bbb8da574">SocketPoll.h</a></li>
 <li>SocketPoll_free()&#160;:&#160;<a class="el" href="SocketPoll_8h.html#ac93edae1d8976b9f30f1dff1d18ca62b">SocketPoll.h</a></li>
+<li>SocketPoll_get_async()&#160;:&#160;<a class="el" href="SocketPoll_8h.html#a96de2b0763f90a3ee559dc276f52329f">SocketPoll.h</a></li>
 <li>SocketPoll_getdefaulttimeout()&#160;:&#160;<a class="el" href="SocketPoll_8h.html#a54dfccc1496c17f97bdca464e3ebf6e4">SocketPoll.h</a></li>
 <li>SocketPoll_mod()&#160;:&#160;<a class="el" href="SocketPoll_8h.html#a1430c3ad9eea988697e1d6c32ceef909">SocketPoll.h</a></li>
 <li>SocketPoll_new()&#160;:&#160;<a class="el" href="SocketPoll_8h.html#aae64ff18791dbd4acacc3c5ee6f4f710">SocketPoll.h</a></li>
 <li>SocketPoll_setdefaulttimeout()&#160;:&#160;<a class="el" href="SocketPoll_8h.html#a5b94934d4bdf73131cb851ef356da102">SocketPoll.h</a></li>
 <li>SocketPoll_wait()&#160;:&#160;<a class="el" href="SocketPoll_8h.html#a838225b94dfd40f308c49482bca2e7fd">SocketPoll.h</a></li>
+<li>SocketPool_accept_batch()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a5a96d5a3ac0e763c19ec5ee0eda0f99e">SocketPool.h</a></li>
 <li>SocketPool_add()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a4b466dc021839d7eeec5f1ab320a7715">SocketPool.h</a></li>
 <li>SocketPool_cleanup()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a7087165181060dbdd9e37d5ff5e92c85">SocketPool.h</a></li>
+<li>SocketPool_cleanup_allocate_buffer()&#160;:&#160;<a class="el" href="SocketPool-private_8h.html#a42428b94afc3df0714036baf96dbc1f3">SocketPool-private.h</a></li>
+<li>SocketPool_connections_alloc_buffers()&#160;:&#160;<a class="el" href="SocketPool-private_8h.html#a0baf2c21ed54520dcaab3460a9a987f7">SocketPool-private.h</a></li>
+<li>SocketPool_connections_allocate_array()&#160;:&#160;<a class="el" href="SocketPool-private_8h.html#ade1f70a34432ae896e257fb0ee350c26">SocketPool-private.h</a></li>
+<li>SocketPool_connections_allocate_hash_table()&#160;:&#160;<a class="el" href="SocketPool-private_8h.html#a21e158d703adc910946bca1ec5ca6b86">SocketPool-private.h</a></li>
+<li>SocketPool_connections_initialize_slot()&#160;:&#160;<a class="el" href="SocketPool-private_8h.html#a88ab86be313053fde04989b904bb957a">SocketPool-private.h</a></li>
+<li>SocketPool_connections_release_buffers()&#160;:&#160;<a class="el" href="SocketPool-private_8h.html#a9cd17434558e5aa3cd77339b3043cd3a">SocketPool-private.h</a></li>
+<li>SocketPool_connections_reset_slot()&#160;:&#160;<a class="el" href="SocketPool-private_8h.html#acf51388d2a06f1d1b1caa4d55fe29159">SocketPool-private.h</a></li>
 <li>SocketPool_count()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a624d0bec224f70a7ac067a891c258b45">SocketPool.h</a></li>
 <li>SocketPool_Failed&#160;:&#160;<a class="el" href="SocketPool_8h.html#a0e9aa7d82b00e7c8c8899029ddfa5a67">SocketPool.h</a></li>
 <li>SocketPool_foreach()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a2fa63691a53322bc10f6e11d75982705">SocketPool.h</a></li>
 <li>SocketPool_free()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a4d90769ccea1288fb30e50ec18e4f0c4">SocketPool.h</a></li>
 <li>SocketPool_get()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a85a96cfcffc6de6cfce0f3571e7adb18">SocketPool.h</a></li>
 <li>SocketPool_new()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a74388803e1d08380acf64f7abbd00414">SocketPool.h</a></li>
+<li>SocketPool_prewarm()&#160;:&#160;<a class="el" href="SocketPool_8h.html#af2f6c45582ddbb25e842e5f41f9e0948">SocketPool.h</a></li>
 <li>SocketPool_remove()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a2a5f1ef514ea1ccbe5133b4eca4f5dfb">SocketPool.h</a></li>
+<li>SocketPool_resize()&#160;:&#160;<a class="el" href="SocketPool_8h.html#aa02f8acf084c3e5a48dda941a1594989">SocketPool.h</a></li>
+<li>SocketPool_set_bufsize()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a6b6e1d08c443eef3fe0ac60bf3188ebd">SocketPool.h</a></li>
 <li>SocketTimeouts_T&#160;:&#160;<a class="el" href="Socket_8h.html#a3debcc5506f258fc65706fa6455f1a05">Socket.h</a></li>
+<li>SSL&#160;:&#160;<a class="el" href="SocketTLSConfig_8h.html#a19bc048d3a30ad9cfe2d68ab94d58164">SocketTLSConfig.h</a></li>
+<li>SSL_CTX&#160;:&#160;<a class="el" href="SocketTLSConfig_8h.html#aad8bf8af36c55ecaf203d07f9675d7bd">SocketTLSConfig.h</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

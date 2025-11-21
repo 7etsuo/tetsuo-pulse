@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['line_0',['line',['../structExcept__Frame.html#aff1099dac68f6f3b8392f2ebe5c8341f',1,'Except_Frame']]],
-  ['local_5faddr_1',['local_addr',['../structSocketEventRecord.html#a0cea70562d6b7c2652b73ca802cbb02d',1,'SocketEventRecord']]],
-  ['local_5fport_2',['local_port',['../structSocketEventRecord.html#a52d282239d83a254db8d3503fb26c0fb',1,'SocketEventRecord']]]
+  ['hash_5fnext_0',['hash_next',['../structConnection.html#a5ccdc44e61ddd38c63a8a960c095f49f',1,'Connection']]],
+  ['hash_5ftable_1',['hash_table',['../structT.html#a1f116f43fda701b0b42ffbd76a976f1d',1,'T']]],
+  ['host_2',['host',['../structSocketEventRecord.html#a18885f3e5dede775985597bcffd144e0',1,'SocketEventRecord']]]
 ];

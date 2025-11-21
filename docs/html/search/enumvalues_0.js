@@ -1,7 +1,6 @@
 var searchData=
 [
-  ['except_5fentered_0',['Except_entered',['../Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba388ad603a03109702c508bd464b66da2',1,'Except.h']]],
-  ['except_5ffinalized_1',['Except_finalized',['../Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba8f2b6b8b0f719ecda31559637209f40b',1,'Except.h']]],
-  ['except_5fhandled_2',['Except_handled',['../Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55bac0d9956bf062b2f2db1f9294563e73b4',1,'Except.h']]],
-  ['except_5fraised_3',['Except_raised',['../Except_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba80cdb3635fb4b8d00925dea5821c9fbb',1,'Except.h']]]
+  ['async_5fflag_5fnone_0',['ASYNC_FLAG_NONE',['../SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c',1,'SocketAsync.h']]],
+  ['async_5fflag_5furgent_1',['ASYNC_FLAG_URGENT',['../SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfaf08a13c5b932be67e3f0ed7de0499ef8',1,'SocketAsync.h']]],
+  ['async_5fflag_5fzero_5fcopy_2',['ASYNC_FLAG_ZERO_COPY',['../SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d',1,'SocketAsync.h']]]
 ];

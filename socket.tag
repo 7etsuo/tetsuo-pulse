@@ -218,20 +218,6 @@
     </member>
     <member kind="define">
       <type>#define</type>
-      <name>SOCKET_HAS_SENDFILE</name>
-      <anchorfile>SocketConfig_8h.html</anchorfile>
-      <anchor>a344295e98b08de11d12e7a2992d44bc5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_HAS_SPLICE</name>
-      <anchorfile>SocketConfig_8h.html</anchorfile>
-      <anchor>a7254b404e987f6bff7c2c562ad1cefbd</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
       <name>SOCKET_HAS_SENDMSG</name>
       <anchorfile>SocketConfig_8h.html</anchorfile>
       <anchor>a3d1b69dbf142e7aaa4b329f0e0f34dee</anchor>
@@ -242,6 +228,13 @@
       <name>SOCKET_HAS_RECVMSG</name>
       <anchorfile>SocketConfig_8h.html</anchorfile>
       <anchor>a1b4cba449b689c0e2069c5592d65ff70</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_PLATFORM_MACOS</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>afe51dc34402f488f54f734a1ebd48307</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -298,6 +291,20 @@
       <name>SOCKET_DEFAULT_POOL_BUFSIZE</name>
       <anchorfile>SocketConfig_8h.html</anchorfile>
       <anchor>ae566ef3ebb6568218b7f7dbf8feea2c6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_POOL_DEFAULT_PREWARM_PCT</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a46e9cd9dc6e5eabbe91e5fa71ec00b81</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_POOL_MAX_BATCH_ACCEPTS</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a331e1002cf6dfb30695f5af41625cf46</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -1784,6 +1791,13 @@
       <arglist></arglist>
     </member>
     <member kind="typedef">
+      <type>struct SocketAsync_T *</type>
+      <name>SocketAsync_T</name>
+      <anchorfile>SocketPoll_8h.html</anchorfile>
+      <anchor>a733615fa159421d6c73d01f6bb34bac8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
       <type>struct T *</type>
       <name>T</name>
       <anchorfile>SocketPoll_8h.html</anchorfile>
@@ -1884,6 +1898,13 @@
       <anchor>a838225b94dfd40f308c49482bca2e7fd</anchor>
       <arglist>(T poll, SocketEvent_T **events, int timeout)</arglist>
     </member>
+    <member kind="function">
+      <type>SocketAsync_T</type>
+      <name>SocketPoll_get_async</name>
+      <anchorfile>SocketPoll_8h.html</anchorfile>
+      <anchor>a96de2b0763f90a3ee559dc276f52329f</anchor>
+      <arglist>(T poll)</arglist>
+    </member>
     <member kind="variable">
       <type>Except_T</type>
       <name>SocketPoll_Failed</name>
@@ -1963,11 +1984,189 @@
     </member>
   </compound>
   <compound kind="file">
+    <name>SocketPool-core.h</name>
+    <path>include/pool/</path>
+    <filename>SocketPool-core_8h.html</filename>
+    <includes id="SocketPool_8h" name="SocketPool.h" local="yes" import="no" module="no" objc="no">pool/SocketPool.h</includes>
+    <member kind="function">
+      <type>time_t</type>
+      <name>safe_time</name>
+      <anchorfile>SocketPool-core_8h.html</anchorfile>
+      <anchor>aab8dfea746f7edd426d43574e437ffc7</anchor>
+      <arglist>(void)</arglist>
+    </member>
+  </compound>
+  <compound kind="file">
+    <name>SocketPool-private.h</name>
+    <path>include/pool/</path>
+    <filename>SocketPool-private_8h.html</filename>
+    <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
+    <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
+    <includes id="SocketBuf_8h" name="SocketBuf.h" local="yes" import="no" module="no" objc="no">socket/SocketBuf.h</includes>
+    <class kind="struct">Connection</class>
+    <class kind="struct">T</class>
+    <member kind="define">
+      <type>#define</type>
+      <name>T</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>struct Connection *</type>
+      <name>Connection_T</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a424a0221f5eef0991c244d83d02d8b2c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>struct Connection *</type>
+      <name>SocketPool_connections_allocate_array</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>ade1f70a34432ae896e257fb0ee350c26</anchor>
+      <arglist>(size_t maxconns)</arglist>
+    </member>
+    <member kind="function">
+      <type>Connection_T *</type>
+      <name>SocketPool_connections_allocate_hash_table</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a21e158d703adc910946bca1ec5ca6b86</anchor>
+      <arglist>(Arena_T arena)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPool_connections_initialize_slot</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a88ab86be313053fde04989b904bb957a</anchor>
+      <arglist>(struct Connection *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketPool_connections_alloc_buffers</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a0baf2c21ed54520dcaab3460a9a987f7</anchor>
+      <arglist>(Arena_T arena, size_t bufsize, Connection_T conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>Connection_T</type>
+      <name>find_slot</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a344c2ab8a3e0b099bd74e65cc97cb66f</anchor>
+      <arglist>(SocketPool_T pool, const Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>Connection_T</type>
+      <name>find_free_slot</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>aba36afb2d1d22b6830506a69f41c9c39</anchor>
+      <arglist>(SocketPool_T pool)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>check_pool_full</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a9cf917c1dffc690121a5e68ef92fbc89</anchor>
+      <arglist>(SocketPool_T pool)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>remove_from_free_list</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a8d3db0f18f008462c96cd8dc85be8c40</anchor>
+      <arglist>(SocketPool_T pool, Connection_T conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>return_to_free_list</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a7024a2a77a04587e061d67a1172cdbfc</anchor>
+      <arglist>(SocketPool_T pool, Connection_T conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>prepare_free_slot</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a7821321479544a6e24fb4c2946e22c60</anchor>
+      <arglist>(SocketPool_T pool, Connection_T conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>update_existing_slot</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>ae1541da7f1233af52ca75bb932074851</anchor>
+      <arglist>(Connection_T conn, time_t now)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>insert_into_hash_table</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>ac073c8a892a77bae682cec8398d10518</anchor>
+      <arglist>(SocketPool_T pool, Connection_T conn, Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>increment_pool_count</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a5426648c6c6a14ebaff48ee2160856c3</anchor>
+      <arglist>(SocketPool_T pool)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>initialize_connection</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a6c55ecf49e5103925192159127088241</anchor>
+      <arglist>(Connection_T conn, Socket_T socket, time_t now)</arglist>
+    </member>
+    <member kind="function">
+      <type>Connection_T</type>
+      <name>find_or_create_slot</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>ae5693c260bb02fb1c779d497b35eb6db</anchor>
+      <arglist>(SocketPool_T pool, Socket_T socket, time_t now)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>remove_from_hash_table</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a9710c881ae321ed9da843ca815ca0733</anchor>
+      <arglist>(SocketPool_T pool, Connection_T conn, Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPool_connections_release_buffers</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a9cd17434558e5aa3cd77339b3043cd3a</anchor>
+      <arglist>(Connection_T conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPool_connections_reset_slot</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>acf51388d2a06f1d1b1caa4d55fe29159</anchor>
+      <arglist>(Connection_T conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>decrement_pool_count</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a5374f9969a32eb12ea7794b1f1a20d77</anchor>
+      <arglist>(SocketPool_T pool)</arglist>
+    </member>
+    <member kind="function">
+      <type>Socket_T *</type>
+      <name>SocketPool_cleanup_allocate_buffer</name>
+      <anchorfile>SocketPool-private_8h.html</anchorfile>
+      <anchor>a42428b94afc3df0714036baf96dbc1f3</anchor>
+      <arglist>(Arena_T arena, size_t maxconns)</arglist>
+    </member>
+  </compound>
+  <compound kind="file">
     <name>SocketPool.h</name>
     <path>include/pool/</path>
     <filename>SocketPool_8h.html</filename>
     <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
     <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
+    <includes id="SocketError_8h" name="SocketError.h" local="yes" import="no" module="no" objc="no">core/SocketError.h</includes>
     <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
     <includes id="SocketBuf_8h" name="SocketBuf.h" local="yes" import="no" module="no" objc="no">socket/SocketBuf.h</includes>
     <member kind="define">
@@ -2020,6 +2219,13 @@
       <arglist>(T pool, Socket_T socket)</arglist>
     </member>
     <member kind="function">
+      <type>int</type>
+      <name>SocketPool_accept_batch</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a5a96d5a3ac0e763c19ec5ee0eda0f99e</anchor>
+      <arglist>(T pool, Socket_T server, int max_accepts, Socket_T *accepted)</arglist>
+    </member>
+    <member kind="function">
       <type>void</type>
       <name>SocketPool_remove</name>
       <anchorfile>SocketPool_8h.html</anchorfile>
@@ -2039,6 +2245,27 @@
       <anchorfile>SocketPool_8h.html</anchorfile>
       <anchor>a624d0bec224f70a7ac067a891c258b45</anchor>
       <arglist>(T pool)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPool_resize</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>aa02f8acf084c3e5a48dda941a1594989</anchor>
+      <arglist>(T pool, size_t new_maxconns)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPool_prewarm</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>af2f6c45582ddbb25e842e5f41f9e0948</anchor>
+      <arglist>(T pool, int percentage)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPool_set_bufsize</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a6b6e1d08c443eef3fe0ac60bf3188ebd</anchor>
+      <arglist>(T pool, size_t new_bufsize)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -2103,6 +2330,15 @@
       <anchor>a0e9aa7d82b00e7c8c8899029ddfa5a67</anchor>
       <arglist></arglist>
     </member>
+  </compound>
+  <compound kind="file">
+    <name>Socket-private.h</name>
+    <path>include/socket/</path>
+    <filename>Socket-private_8h.html</filename>
+    <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
+    <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
+    <includes id="SocketConfig_8h" name="SocketConfig.h" local="yes" import="no" module="no" objc="no">core/SocketConfig.h</includes>
+    <class kind="struct">Socket_T</class>
   </compound>
   <compound kind="file">
     <name>Socket.h</name>
@@ -2173,6 +2409,13 @@
       <anchorfile>Socket_8h.html</anchorfile>
       <anchor>afb9495f689b00ffc14f393d8173c98a4</anchor>
       <arglist>(T socket, int backlog)</arglist>
+    </member>
+    <member kind="function">
+      <type>T</type>
+      <name>Socket_new_from_fd</name>
+      <anchorfile>Socket_8h.html</anchorfile>
+      <anchor>a46237f02b97c4724649a46b6afe0df7f</anchor>
+      <arglist>(int fd)</arglist>
     </member>
     <member kind="function">
       <type>T</type>
@@ -2592,6 +2835,122 @@
       <name>Socket_Closed</name>
       <anchorfile>Socket_8h.html</anchorfile>
       <anchor>ae149a16c5ec76f277f565783bc39469e</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="file">
+    <name>SocketAsync.h</name>
+    <path>include/socket/</path>
+    <filename>SocketAsync_8h.html</filename>
+    <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
+    <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
+    <member kind="define">
+      <type>#define</type>
+      <name>T</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>a0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>struct T *</type>
+      <name>T</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>a24514489b0962fafe8414bfae95aa268</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>void(*</type>
+      <name>SocketAsync_Callback</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>ad6644a0c3153b65fa217ecbc45b5b8f9</anchor>
+      <arglist>)(Socket_T socket, ssize_t bytes, int err, void *user_data)</arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketAsync_Flags</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>ae66259c675b6f9658c95d34e1fbfefdf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ASYNC_FLAG_NONE</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ASYNC_FLAG_ZERO_COPY</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>ae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ASYNC_FLAG_URGENT</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>ae66259c675b6f9658c95d34e1fbfefdfaf08a13c5b932be67e3f0ed7de0499ef8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>T</type>
+      <name>SocketAsync_new</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>a6001469d4be96f6f05d78d1c222784cc</anchor>
+      <arglist>(Arena_T arena)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketAsync_free</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>a2ee23e4535260946b632fc973ac4935a</anchor>
+      <arglist>(T *async)</arglist>
+    </member>
+    <member kind="function">
+      <type>unsigned</type>
+      <name>SocketAsync_send</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>adf11b6fec4537a1d25ed17038c2f2f7c</anchor>
+      <arglist>(T async, Socket_T socket, const void *buf, size_t len, SocketAsync_Callback cb, void *user_data, SocketAsync_Flags flags)</arglist>
+    </member>
+    <member kind="function">
+      <type>unsigned</type>
+      <name>SocketAsync_recv</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>a966b7ae7c15262f4503a70f869a04ddb</anchor>
+      <arglist>(T async, Socket_T socket, void *buf, size_t len, SocketAsync_Callback cb, void *user_data, SocketAsync_Flags flags)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketAsync_cancel</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>a229345d46001f8c9e4a0df90339be910</anchor>
+      <arglist>(T async, unsigned request_id)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketAsync_process_completions</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>af209d2124b5062b1f294501ea3ae79b2</anchor>
+      <arglist>(T async, int timeout_ms)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketAsync_is_available</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>ab0e10c5a59d6331ea46cb4458307424e</anchor>
+      <arglist>(T async)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketAsync_backend_name</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>a21f74b54be873b1ca3040b53cb15e99e</anchor>
+      <arglist>(T async)</arglist>
+    </member>
+    <member kind="variable">
+      <type>Except_T</type>
+      <name>SocketAsync_Failed</name>
+      <anchorfile>SocketAsync_8h.html</anchorfile>
+      <anchor>a832db2f86b4c0d8a57dc3def7121d833</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -3092,9 +3451,179 @@
     </member>
   </compound>
   <compound kind="file">
+    <name>SocketIO.h</name>
+    <path>include/socket/</path>
+    <filename>SocketIO_8h.html</filename>
+    <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
+    <member kind="define">
+      <type>#define</type>
+      <name>T</name>
+      <anchorfile>SocketIO_8h.html</anchorfile>
+      <anchor>a0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>socket_send_internal</name>
+      <anchorfile>SocketIO_8h.html</anchorfile>
+      <anchor>a315f828a33a3df584ca2028acb1ac4a1</anchor>
+      <arglist>(T socket, const void *buf, size_t len, int flags)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>socket_recv_internal</name>
+      <anchorfile>SocketIO_8h.html</anchorfile>
+      <anchor>a77b880a168150dd12d999b465d13d2e8</anchor>
+      <arglist>(T socket, void *buf, size_t len, int flags)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>socket_sendv_internal</name>
+      <anchorfile>SocketIO_8h.html</anchorfile>
+      <anchor>a48344d26614e3b920958010432e867f3</anchor>
+      <arglist>(T socket, const struct iovec *iov, int iovcnt, int flags)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>socket_recvv_internal</name>
+      <anchorfile>SocketIO_8h.html</anchorfile>
+      <anchor>a5801e5730324a5034ea28dd57e574256</anchor>
+      <arglist>(T socket, struct iovec *iov, int iovcnt, int flags)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>socket_is_tls_enabled</name>
+      <anchorfile>SocketIO_8h.html</anchorfile>
+      <anchor>a561e3aafa4c8f510b871db31e5de139e</anchor>
+      <arglist>(T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>socket_tls_want_read</name>
+      <anchorfile>SocketIO_8h.html</anchorfile>
+      <anchor>afdb01a2c5c9b6012ee2e7fce625127ea</anchor>
+      <arglist>(T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>socket_tls_want_write</name>
+      <anchorfile>SocketIO_8h.html</anchorfile>
+      <anchor>a9daa6a4b431abd57a718457b20caa591</anchor>
+      <arglist>(T socket)</arglist>
+    </member>
+  </compound>
+  <compound kind="file">
+    <name>SocketTLS.h</name>
+    <path>include/tls/</path>
+    <filename>SocketTLS_8h.html</filename>
+    <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
+    <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
+  </compound>
+  <compound kind="file">
+    <name>SocketTLSConfig.h</name>
+    <path>include/tls/</path>
+    <filename>SocketTLSConfig_8h.html</filename>
+    <member kind="typedef">
+      <type>void</type>
+      <name>SSL_CTX</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>aad8bf8af36c55ecaf203d07f9675d7bd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>void</type>
+      <name>SSL</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>a19bc048d3a30ad9cfe2d68ab94d58164</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>void</type>
+      <name>X509</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>a67ae08332bc96adf58fadfad49755cd3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>void</type>
+      <name>X509_STORE</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>acc2b5cd7d9f661a4442799c07c87e742</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="file">
+    <name>SocketTLSContext.h</name>
+    <path>include/tls/</path>
+    <filename>SocketTLSContext_8h.html</filename>
+    <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
+    <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
+    <includes id="SocketTLS_8h" name="SocketTLS.h" local="yes" import="no" module="no" objc="no">tls/SocketTLS.h</includes>
+  </compound>
+  <compound kind="file">
     <name>README.md</name>
     <path></path>
     <filename>README_8md.html</filename>
+  </compound>
+  <compound kind="struct">
+    <name>Connection</name>
+    <filename>structConnection.html</filename>
+    <member kind="variable">
+      <type>Socket_T</type>
+      <name>socket</name>
+      <anchorfile>structConnection.html</anchorfile>
+      <anchor>a13c3d90e8ed4e4955a6965251bcd2046</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketBuf_T</type>
+      <name>inbuf</name>
+      <anchorfile>structConnection.html</anchorfile>
+      <anchor>a5d83db74dbbfc74a5d79e8237dcb675d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketBuf_T</type>
+      <name>outbuf</name>
+      <anchorfile>structConnection.html</anchorfile>
+      <anchor>a54843d12b9903d53b3b44380d52aa4bf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>void *</type>
+      <name>data</name>
+      <anchorfile>structConnection.html</anchorfile>
+      <anchor>aedd67a1038db9b1a6025b4436a29c291</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>time_t</type>
+      <name>last_activity</name>
+      <anchorfile>structConnection.html</anchorfile>
+      <anchor>a7b610bb6b7840583e38f923eaa16b488</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>active</name>
+      <anchorfile>structConnection.html</anchorfile>
+      <anchor>a440c4ba210bf89a0431e8e29cd531811</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct Connection *</type>
+      <name>hash_next</name>
+      <anchorfile>structConnection.html</anchorfile>
+      <anchor>a5ccdc44e61ddd38c63a8a960c095f49f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct Connection *</type>
+      <name>free_next</name>
+      <anchorfile>structConnection.html</anchorfile>
+      <anchor>ad69db73c6cfea7b6481e4d467885342a</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Except_Frame</name>
@@ -3142,6 +3671,87 @@
   <compound kind="protocol">
     <name>Protocol-p</name>
     <filename>protocolProtocol-p.html</filename>
+  </compound>
+  <compound kind="struct">
+    <name>Socket_T</name>
+    <filename>structSocket__T.html</filename>
+    <member kind="variable">
+      <type>int</type>
+      <name>fd</name>
+      <anchorfile>structSocket__T.html</anchorfile>
+      <anchor>aad3b62a640e257bb2327afb361c9ea8e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct sockaddr_storage</type>
+      <name>addr</name>
+      <anchorfile>structSocket__T.html</anchorfile>
+      <anchor>a20d5d8f84fa467b40337770aa0ffbc60</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>socklen_t</type>
+      <name>addrlen</name>
+      <anchorfile>structSocket__T.html</anchorfile>
+      <anchor>ab15ed0b4a73c85c2c73119c65ad7eb05</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct sockaddr_storage</type>
+      <name>local_addr</name>
+      <anchorfile>structSocket__T.html</anchorfile>
+      <anchor>afdfe3a76e69482033381117982815aa8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>socklen_t</type>
+      <name>local_addrlen</name>
+      <anchorfile>structSocket__T.html</anchorfile>
+      <anchor>a5d32905fed18791ae3de2ca9a1c92f29</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>char *</type>
+      <name>peeraddr</name>
+      <anchorfile>structSocket__T.html</anchorfile>
+      <anchor>a21c341f83bea5b1f7a4fbb330062e50c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>peerport</name>
+      <anchorfile>structSocket__T.html</anchorfile>
+      <anchor>a8bf6fcc2dc26873b3ad7f6f663672b6d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>char *</type>
+      <name>localaddr</name>
+      <anchorfile>structSocket__T.html</anchorfile>
+      <anchor>a320461334e36422eb4f487c668b34345</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>localport</name>
+      <anchorfile>structSocket__T.html</anchorfile>
+      <anchor>a9b0f589e41ac3ea6b09e9f99a7e15e4b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>Arena_T</type>
+      <name>arena</name>
+      <anchorfile>structSocket__T.html</anchorfile>
+      <anchor>a84fccc715a196b2375b0f4d97429802f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketTimeouts_T</type>
+      <name>timeouts</name>
+      <anchorfile>structSocket__T.html</anchorfile>
+      <anchor>aa64c85e4ddaea14196fbe9500b2edf70</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>SocketEvent</name>
@@ -3321,6 +3931,69 @@
       <name>reason</name>
       <anchorfile>structT.html</anchorfile>
       <anchor>a8984328ed338fdfb0fb2641c9451d431</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct Connection *</type>
+      <name>connections</name>
+      <anchorfile>structT.html</anchorfile>
+      <anchor>a42e8933a2639b540ca0366c9c32c7ea1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>Connection_T *</type>
+      <name>hash_table</name>
+      <anchorfile>structT.html</anchorfile>
+      <anchor>a1f116f43fda701b0b42ffbd76a976f1d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>Connection_T</type>
+      <name>free_list</name>
+      <anchorfile>structT.html</anchorfile>
+      <anchor>ade73b8c1895a643ab5ab9f0417f52a77</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>Socket_T *</type>
+      <name>cleanup_buffer</name>
+      <anchorfile>structT.html</anchorfile>
+      <anchor>a0d22d0dcb779224114afdaf891b67d5f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>maxconns</name>
+      <anchorfile>structT.html</anchorfile>
+      <anchor>a799b35c1dfa67b158c5df7414dc6ed3d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>bufsize</name>
+      <anchorfile>structT.html</anchorfile>
+      <anchor>a6230cec72dbf7957c381537a2cc26e9c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>count</name>
+      <anchorfile>structT.html</anchorfile>
+      <anchor>a452684ecc4cd44033d756b6ac51217dd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>Arena_T</type>
+      <name>arena</name>
+      <anchorfile>structT.html</anchorfile>
+      <anchor>affcacfe2471d162aa0f489bd985ffd49</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>pthread_mutex_t</type>
+      <name>mutex</name>
+      <anchorfile>structT.html</anchorfile>
+      <anchor>a44434bdb8b36e3f232fac1e2acc3201f</anchor>
       <arglist></arglist>
     </member>
   </compound>

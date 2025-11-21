@@ -11,7 +11,8 @@ var searchData=
   ['basic_20tcp_20client_8',['Basic TCP Client',['../index.html#autotoc_md8',1,'']]],
   ['basic_20tcp_20server_9',['Basic TCP Server',['../index.html#autotoc_md7',1,'']]],
   ['blocking_20i_20o_10',['Non-Blocking I/O',['../index.html#autotoc_md11',1,'']]],
-  ['build_20commands_11',['Build Commands',['../index.html#autotoc_md30',1,'']]],
-  ['build_20options_12',['Build Options',['../index.html#autotoc_md31',1,'']]],
-  ['building_13',['building',['../index.html#autotoc_md6',1,'Building'],['../index.html#autotoc_md28',1,'Building']]]
+  ['bufsize_11',['bufsize',['../structT.html#a6230cec72dbf7957c381537a2cc26e9c',1,'T']]],
+  ['build_20commands_12',['Build Commands',['../index.html#autotoc_md32',1,'']]],
+  ['build_20options_13',['Build Options',['../index.html#autotoc_md33',1,'']]],
+  ['building_14',['building',['../index.html#autotoc_md6',1,'Building'],['../index.html#autotoc_md30',1,'Building']]]
 ];
