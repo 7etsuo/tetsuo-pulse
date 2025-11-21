@@ -17,6 +17,7 @@
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -121,6 +122,8 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
+<tr class="memitem:a733615fa159421d6c73d01f6bb34bac8" id="r_a733615fa159421d6c73d01f6bb34bac8"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a></td></tr>
+<tr class="separator:a733615fa159421d6c73d01f6bb34bac8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a24514489b0962fafe8414bfae95aa268" id="r_a24514489b0962fafe8414bfae95aa268"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structT.html">T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a24514489b0962fafe8414bfae95aa268">T</a></td></tr>
 <tr class="separator:a24514489b0962fafe8414bfae95aa268"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6473a43b209b9b48b6acee00f1e1bb01" id="r_a6473a43b209b9b48b6acee00f1e1bb01"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structSocketEvent.html">SocketEvent</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a6473a43b209b9b48b6acee00f1e1bb01">SocketEvent_T</a></td></tr>
@@ -145,13 +148,13 @@ Functions</h2></td></tr>
 <tr class="memitem:ac93edae1d8976b9f30f1dff1d18ca62b" id="r_ac93edae1d8976b9f30f1dff1d18ca62b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#ac93edae1d8976b9f30f1dff1d18ca62b">SocketPoll_free</a> (<a class="el" href="structT.html">T</a> *poll)</td></tr>
 <tr class="memdesc:ac93edae1d8976b9f30f1dff1d18ca62b"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_free - Free an event poll @poll: Pointer to poll (will be set to NULL) Closes the underlying epoll descriptor.  <br /></td></tr>
 <tr class="separator:ac93edae1d8976b9f30f1dff1d18ca62b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a13c47bc69be50329371df6dd5e8bee70" id="r_a13c47bc69be50329371df6dd5e8bee70"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a13c47bc69be50329371df6dd5e8bee70">SocketPoll_add</a> (<a class="el" href="structT.html">T</a> poll, Socket_T socket, unsigned events, void *data)</td></tr>
+<tr class="memitem:a13c47bc69be50329371df6dd5e8bee70" id="r_a13c47bc69be50329371df6dd5e8bee70"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a13c47bc69be50329371df6dd5e8bee70">SocketPoll_add</a> (<a class="el" href="structT.html">T</a> poll, <a class="el" href="structSocket__T.html">Socket_T</a> socket, unsigned events, void *data)</td></tr>
 <tr class="memdesc:a13c47bc69be50329371df6dd5e8bee70"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_add - Add socket to poll set @poll: Poll instance @socket: Socket to monitor @events: Events to monitor (POLL_READ | POLL_WRITE) @data: User data to associate with socket Socket is automatically set to non-blocking mode Raises: SocketPoll_Failed if socket already added or epoll_ctl fails Thread-safe: Yes - uses internal mutex for socket data mapping.  <br /></td></tr>
 <tr class="separator:a13c47bc69be50329371df6dd5e8bee70"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1430c3ad9eea988697e1d6c32ceef909" id="r_a1430c3ad9eea988697e1d6c32ceef909"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a1430c3ad9eea988697e1d6c32ceef909">SocketPoll_mod</a> (<a class="el" href="structT.html">T</a> poll, Socket_T socket, unsigned events, void *data)</td></tr>
+<tr class="memitem:a1430c3ad9eea988697e1d6c32ceef909" id="r_a1430c3ad9eea988697e1d6c32ceef909"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a1430c3ad9eea988697e1d6c32ceef909">SocketPoll_mod</a> (<a class="el" href="structT.html">T</a> poll, <a class="el" href="structSocket__T.html">Socket_T</a> socket, unsigned events, void *data)</td></tr>
 <tr class="memdesc:a1430c3ad9eea988697e1d6c32ceef909"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_mod - Modify monitored events @poll: Poll instance @socket: Socket to modify @events: New events to monitor @data: New user data (updates association) Raises: SocketPoll_Failed if socket not in poll or epoll_ctl fails Thread-safe: Yes - atomic update of socket data mapping.  <br /></td></tr>
 <tr class="separator:a1430c3ad9eea988697e1d6c32ceef909"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1490cf11e085381381480a18c889b3b2" id="r_a1490cf11e085381381480a18c889b3b2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a1490cf11e085381381480a18c889b3b2">SocketPoll_del</a> (<a class="el" href="structT.html">T</a> poll, Socket_T socket)</td></tr>
+<tr class="memitem:a1490cf11e085381381480a18c889b3b2" id="r_a1490cf11e085381381480a18c889b3b2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a1490cf11e085381381480a18c889b3b2">SocketPoll_del</a> (<a class="el" href="structT.html">T</a> poll, <a class="el" href="structSocket__T.html">Socket_T</a> socket)</td></tr>
 <tr class="memdesc:a1490cf11e085381381480a18c889b3b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_del - Remove socket from poll set @poll: Poll instance @socket: Socket to remove Silently succeeds if socket not in poll Thread-safe: Yes - uses internal mutex for socket data mapping.  <br /></td></tr>
 <tr class="separator:a1490cf11e085381381480a18c889b3b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a54dfccc1496c17f97bdca464e3ebf6e4" id="r_a54dfccc1496c17f97bdca464e3ebf6e4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a54dfccc1496c17f97bdca464e3ebf6e4">SocketPoll_getdefaulttimeout</a> (<a class="el" href="structT.html">T</a> poll)</td></tr>
@@ -161,8 +164,11 @@ Functions</h2></td></tr>
 <tr class="memdesc:a5b94934d4bdf73131cb851ef356da102"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_setdefaulttimeout - Set default wait timeout in milliseconds @poll: Poll instance @timeout: Timeout in milliseconds (0 = immediate, -1 = infinite) Returns: Nothing.  <br /></td></tr>
 <tr class="separator:a5b94934d4bdf73131cb851ef356da102"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a838225b94dfd40f308c49482bca2e7fd" id="r_a838225b94dfd40f308c49482bca2e7fd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a838225b94dfd40f308c49482bca2e7fd">SocketPoll_wait</a> (<a class="el" href="structT.html">T</a> poll, <a class="el" href="SocketPoll_8h.html#a6473a43b209b9b48b6acee00f1e1bb01">SocketEvent_T</a> **events, int timeout)</td></tr>
-<tr class="memdesc:a838225b94dfd40f308c49482bca2e7fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_wait - Wait for events @poll: Poll instance @events: Output - array of events that occurred @timeout: Timeout in milliseconds (-1 for infinite) Returns: Number of events (0 on timeout) Raises: SocketPoll_Failed on error Thread-safe: Yes - event array is thread-local to poll instance The events array points to internal memory - do not free.  <br /></td></tr>
+<tr class="memdesc:a838225b94dfd40f308c49482bca2e7fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_wait - Wait for events @poll: Poll instance @events: Output - array of events that occurred @timeout: Timeout in milliseconds (-1 for infinite) Returns: Number of events (0 on timeout) Raises: SocketPoll_Failed on error Thread-safe: Yes - event array is thread-local to poll instance The events array points to internal memory - do not free Note: Also processes async I/O completions automatically.  <br /></td></tr>
 <tr class="separator:a838225b94dfd40f308c49482bca2e7fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96de2b0763f90a3ee559dc276f52329f" id="r_a96de2b0763f90a3ee559dc276f52329f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a96de2b0763f90a3ee559dc276f52329f">SocketPoll_get_async</a> (<a class="el" href="structT.html">T</a> poll)</td></tr>
+<tr class="memdesc:a96de2b0763f90a3ee559dc276f52329f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_get_async - Get async I/O context from poll @poll: Poll instance Returns: Async context or NULL if unavailable Thread-safe: Yes Note: Returns NULL if async I/O is not available on this platform.  <br /></td></tr>
+<tr class="separator:a96de2b0763f90a3ee559dc276f52329f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -182,7 +188,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00056">56</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00060">60</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
 
 </div>
 </div>
@@ -212,11 +218,27 @@ Variables</h2></td></tr>
 <li>Thread-safe implementation The poll maintains a mapping of sockets to user data, allowing efficient context retrieval when events occur. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00029">29</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00033">33</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Typedef Documentation</h2>
+<a id="a733615fa159421d6c73d01f6bb34bac8" name="a733615fa159421d6c73d01f6bb34bac8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a733615fa159421d6c73d01f6bb34bac8">&#9670;&#160;</a></span>SocketAsync_T</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>* <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00009">9</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
+
+</div>
+</div>
 <a id="a6473a43b209b9b48b6acee00f1e1bb01" name="a6473a43b209b9b48b6acee00f1e1bb01"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6473a43b209b9b48b6acee00f1e1bb01">&#9670;&#160;</a></span>SocketEvent_T</h2>
 
@@ -245,7 +267,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00030">30</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00034">34</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
 
 </div>
 </div>
@@ -274,7 +296,7 @@ Variables</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00038">38</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00042">42</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
 
 </div>
 </div>
@@ -297,7 +319,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Socket_T&#160;</td>
+          <td class="paramtype"><a class="el" href="structSocket__T.html">Socket_T</a>&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -347,7 +369,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Socket_T&#160;</td>
+          <td class="paramtype"><a class="el" href="structSocket__T.html">Socket_T</a>&#160;</td>
           <td class="paramname"><em>socket</em>&#160;</td>
         </tr>
         <tr>
@@ -392,6 +414,34 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>SocketPoll_free - Free an event poll @poll: Pointer to poll (will be set to NULL) Closes the underlying epoll descriptor. </p>
+
+</div>
+</div>
+<a id="a96de2b0763f90a3ee559dc276f52329f" name="a96de2b0763f90a3ee559dc276f52329f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96de2b0763f90a3ee559dc276f52329f">&#9670;&#160;</a></span>SocketPoll_get_async()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> SocketPoll_get_async </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structT.html">T</a>&#160;</td>
+          <td class="paramname"><em>poll</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPoll_get_async - Get async I/O context from poll @poll: Poll instance Returns: Async context or NULL if unavailable Thread-safe: Yes Note: Returns NULL if async I/O is not available on this platform. </p>
 
 </div>
 </div>
@@ -441,7 +491,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Socket_T&#160;</td>
+          <td class="paramtype"><a class="el" href="structSocket__T.html">Socket_T</a>&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -579,7 +629,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>SocketPoll_wait - Wait for events @poll: Poll instance @events: Output - array of events that occurred @timeout: Timeout in milliseconds (-1 for infinite) Returns: Number of events (0 on timeout) Raises: SocketPoll_Failed on error Thread-safe: Yes - event array is thread-local to poll instance The events array points to internal memory - do not free. </p>
+<p>SocketPoll_wait - Wait for events @poll: Poll instance @events: Output - array of events that occurred @timeout: Timeout in milliseconds (-1 for infinite) Returns: Number of events (0 on timeout) Raises: SocketPoll_Failed on error Thread-safe: Yes - event array is thread-local to poll instance The events array points to internal memory - do not free Note: Also processes async I/O completions automatically. </p>
 
 </div>
 </div>

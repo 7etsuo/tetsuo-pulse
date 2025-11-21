@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['nfds_0',['nfds',['../structSocketEventRecord.html#af43951ea25c34d38bfe5c7f8bef9a159',1,'SocketEventRecord']]]
+  ['inbuf_0',['inbuf',['../structConnection.html#a5d83db74dbbfc74a5d79e8237dcb675d',1,'Connection']]]
 ];

@@ -17,6 +17,7 @@
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -98,74 +99,87 @@ $(document).ready(function(){initNavTree('SocketPool_8h.html',''); initResizable
   <div class="headertitle"><div class="title">SocketPool.h File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
+<div class="textblock"><code>#include &lt;stddef.h&gt;</code><br />
+<code>#include &lt;time.h&gt;</code><br />
+<code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="SocketError_8h_source.html">core/SocketError.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Socket_8h_source.html">socket/Socket.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketBuf_8h_source.html">socket/SocketBuf.h</a>&quot;</code><br />
-<code>#include &lt;stddef.h&gt;</code><br />
-<code>#include &lt;time.h&gt;</code><br />
 </div>
 <p><a href="SocketPool_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;SocketPool_T</td></tr>
-<tr class="memdesc:a0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket Connection Pool Manages a pool of socket connections with associated buffers and metadata.  <br /></td></tr>
+<tr class="memdesc:a0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket <a class="el" href="structConnection.html">Connection</a> Pool Manages a pool of socket connections with associated buffers and metadata.  <br /></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
 <tr class="memitem:a24514489b0962fafe8414bfae95aa268" id="r_a24514489b0962fafe8414bfae95aa268"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structT.html">T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a24514489b0962fafe8414bfae95aa268">T</a></td></tr>
 <tr class="separator:a24514489b0962fafe8414bfae95aa268"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a424a0221f5eef0991c244d83d02d8b2c" id="r_a424a0221f5eef0991c244d83d02d8b2c"><td class="memItemLeft" align="right" valign="top">typedef struct Connection *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a></td></tr>
+<tr class="memitem:a424a0221f5eef0991c244d83d02d8b2c" id="r_a424a0221f5eef0991c244d83d02d8b2c"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structConnection.html">Connection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a></td></tr>
 <tr class="separator:a424a0221f5eef0991c244d83d02d8b2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a74388803e1d08380acf64f7abbd00414" id="r_a74388803e1d08380acf64f7abbd00414"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structT.html">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a74388803e1d08380acf64f7abbd00414">SocketPool_new</a> (Arena_T arena, size_t maxconns, size_t bufsize)</td></tr>
-<tr class="memdesc:a74388803e1d08380acf64f7abbd00414"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_new - Create a new connection pool @arena: Arena for memory allocation @maxconns: Maximum number of connections @bufsize: Size of I/O buffers per connection Returns: New pool instance (never returns NULL) Raises: SocketPool_Failed on any allocation or initialization failure Thread-safe: Yes - returns new instance.  <br /></td></tr>
+<tr class="memdesc:a74388803e1d08380acf64f7abbd00414"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_new - Create a new connection pool @arena: Arena for memory allocation @maxconns: Maximum number of connections @bufsize: Size of I/O buffers per connection Returns: New pool instance (never returns NULL) Raises: SocketPool_Failed on any allocation or initialization failure Thread-safe: Yes - returns new instance Automatically pre-warms SOCKET_POOL_DEFAULT_PREWARM_PCT slots.  <br /></td></tr>
 <tr class="separator:a74388803e1d08380acf64f7abbd00414"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d90769ccea1288fb30e50ec18e4f0c4" id="r_a4d90769ccea1288fb30e50ec18e4f0c4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a4d90769ccea1288fb30e50ec18e4f0c4">SocketPool_free</a> (<a class="el" href="structT.html">T</a> *pool)</td></tr>
-<tr class="memdesc:a4d90769ccea1288fb30e50ec18e4f0c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_free - Free a connection pool @pool: Pointer to pool (will be set to NULL) Note: Does not close sockets - caller must do that.  <br /></td></tr>
+<tr class="memdesc:a4d90769ccea1288fb30e50ec18e4f0c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_free - Free a connection pool @pool: Pointer to pool (will be set to NULL) Note: Does not close sockets - caller must do that Thread-safe: Yes.  <br /></td></tr>
 <tr class="separator:a4d90769ccea1288fb30e50ec18e4f0c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85a96cfcffc6de6cfce0f3571e7adb18" id="r_a85a96cfcffc6de6cfce0f3571e7adb18"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a85a96cfcffc6de6cfce0f3571e7adb18">SocketPool_get</a> (<a class="el" href="structT.html">T</a> pool, Socket_T socket)</td></tr>
-<tr class="memdesc:a85a96cfcffc6de6cfce0f3571e7adb18"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_get - Look up connection by socket @pool: Pool instance @socket: Socket to find Returns: Connection or NULL if not found Thread-safe: Yes - protected by internal mutex O(1) operation using hash table lookup Thread Safety Note: The returned Connection_T pointer is valid only while the connection remains in the pool.  <br /></td></tr>
+<tr class="memitem:a85a96cfcffc6de6cfce0f3571e7adb18" id="r_a85a96cfcffc6de6cfce0f3571e7adb18"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a85a96cfcffc6de6cfce0f3571e7adb18">SocketPool_get</a> (<a class="el" href="structT.html">T</a> pool, <a class="el" href="structSocket__T.html">Socket_T</a> socket)</td></tr>
+<tr class="memdesc:a85a96cfcffc6de6cfce0f3571e7adb18"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_get - Look up connection by socket @pool: Pool instance @socket: Socket to find Returns: <a class="el" href="structConnection.html">Connection</a> or NULL if not found Thread-safe: Yes O(1) hash lookup.  <br /></td></tr>
 <tr class="separator:a85a96cfcffc6de6cfce0f3571e7adb18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b466dc021839d7eeec5f1ab320a7715" id="r_a4b466dc021839d7eeec5f1ab320a7715"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a4b466dc021839d7eeec5f1ab320a7715">SocketPool_add</a> (<a class="el" href="structT.html">T</a> pool, Socket_T socket)</td></tr>
-<tr class="memdesc:a4b466dc021839d7eeec5f1ab320a7715"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_add - Add socket to pool @pool: Pool instance @socket: Socket to add Returns: New connection or NULL if pool is full Thread-safe: Yes - protected by internal mutex Allocates I/O buffers and initializes connection.  <br /></td></tr>
+<tr class="memitem:a4b466dc021839d7eeec5f1ab320a7715" id="r_a4b466dc021839d7eeec5f1ab320a7715"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a4b466dc021839d7eeec5f1ab320a7715">SocketPool_add</a> (<a class="el" href="structT.html">T</a> pool, <a class="el" href="structSocket__T.html">Socket_T</a> socket)</td></tr>
+<tr class="memdesc:a4b466dc021839d7eeec5f1ab320a7715"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_add - Add socket to pool @pool: Pool instance @socket: Socket to add Returns: New connection or NULL if pool is full Thread-safe: Yes Allocates I/O buffers and initializes connection metadata.  <br /></td></tr>
 <tr class="separator:a4b466dc021839d7eeec5f1ab320a7715"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a5f1ef514ea1ccbe5133b4eca4f5dfb" id="r_a2a5f1ef514ea1ccbe5133b4eca4f5dfb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a2a5f1ef514ea1ccbe5133b4eca4f5dfb">SocketPool_remove</a> (<a class="el" href="structT.html">T</a> pool, Socket_T socket)</td></tr>
-<tr class="memdesc:a2a5f1ef514ea1ccbe5133b4eca4f5dfb"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_remove - Remove socket from pool @pool: Pool instance @socket: Socket to remove Clears buffers but does not close the socket Thread-safe: Yes - protected by internal mutex.  <br /></td></tr>
+<tr class="memitem:a5a96d5a3ac0e763c19ec5ee0eda0f99e" id="r_a5a96d5a3ac0e763c19ec5ee0eda0f99e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a5a96d5a3ac0e763c19ec5ee0eda0f99e">SocketPool_accept_batch</a> (<a class="el" href="structT.html">T</a> pool, <a class="el" href="structSocket__T.html">Socket_T</a> server, int max_accepts, <a class="el" href="structSocket__T.html">Socket_T</a> *accepted)</td></tr>
+<tr class="memdesc:a5a96d5a3ac0e763c19ec5ee0eda0f99e"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_accept_batch - Accept multiple connections from server socket @pool: Pool instance @server: Server socket (listening, non-blocking) @max_accepts: Max to accept (1-SOCKET_POOL_MAX_BATCH_ACCEPTS) @accepted: Output array of accepted sockets (pre-allocated) Returns: Number accepted (0 to max_accepts) Raises: SocketPool_Failed on error Thread-safe: Yes Efficient batch accept using accept4() where available.  <br /></td></tr>
+<tr class="separator:a5a96d5a3ac0e763c19ec5ee0eda0f99e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a5f1ef514ea1ccbe5133b4eca4f5dfb" id="r_a2a5f1ef514ea1ccbe5133b4eca4f5dfb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a2a5f1ef514ea1ccbe5133b4eca4f5dfb">SocketPool_remove</a> (<a class="el" href="structT.html">T</a> pool, <a class="el" href="structSocket__T.html">Socket_T</a> socket)</td></tr>
+<tr class="memdesc:a2a5f1ef514ea1ccbe5133b4eca4f5dfb"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_remove - Remove socket from pool @pool: Pool instance @socket: Socket to remove Clears buffers but does not close socket Thread-safe: Yes.  <br /></td></tr>
 <tr class="separator:a2a5f1ef514ea1ccbe5133b4eca4f5dfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7087165181060dbdd9e37d5ff5e92c85" id="r_a7087165181060dbdd9e37d5ff5e92c85"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a7087165181060dbdd9e37d5ff5e92c85">SocketPool_cleanup</a> (<a class="el" href="structT.html">T</a> pool, time_t idle_timeout)</td></tr>
-<tr class="memdesc:a7087165181060dbdd9e37d5ff5e92c85"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_cleanup - Remove idle connections @pool: Pool instance @idle_timeout: Seconds of inactivity before removal (0 = remove all) Automatically closes and removes idle sockets.  <br /></td></tr>
+<tr class="memdesc:a7087165181060dbdd9e37d5ff5e92c85"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_cleanup - Remove idle connections @pool: Pool instance @idle_timeout: Seconds inactive before removal (0 = remove all) Thread-safe: Yes O(n) scan of all slots; closes/removes idle ones.  <br /></td></tr>
 <tr class="separator:a7087165181060dbdd9e37d5ff5e92c85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a624d0bec224f70a7ac067a891c258b45" id="r_a624d0bec224f70a7ac067a891c258b45"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a624d0bec224f70a7ac067a891c258b45">SocketPool_count</a> (<a class="el" href="structT.html">T</a> pool)</td></tr>
-<tr class="memdesc:a624d0bec224f70a7ac067a891c258b45"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_count - Get active connection count @pool: Pool instance Returns: Number of active connections Thread-safe: Yes - protected by internal mutex.  <br /></td></tr>
+<tr class="memdesc:a624d0bec224f70a7ac067a891c258b45"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_count - Get active connection count @pool: Pool instance Returns: Number of active connections Thread-safe: Yes.  <br /></td></tr>
 <tr class="separator:a624d0bec224f70a7ac067a891c258b45"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2fa63691a53322bc10f6e11d75982705" id="r_a2fa63691a53322bc10f6e11d75982705"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a2fa63691a53322bc10f6e11d75982705">SocketPool_foreach</a> (<a class="el" href="structT.html">T</a> pool, void(*func)(<a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>, void *), void *arg)</td></tr>
-<tr class="memdesc:a2fa63691a53322bc10f6e11d75982705"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_foreach - Iterate over connections @pool: Pool instance @func: Callback function.  <br /></td></tr>
+<tr class="memitem:aa02f8acf084c3e5a48dda941a1594989" id="r_aa02f8acf084c3e5a48dda941a1594989"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#aa02f8acf084c3e5a48dda941a1594989">SocketPool_resize</a> (<a class="el" href="structT.html">T</a> pool, size_t new_maxconns)</td></tr>
+<tr class="memdesc:aa02f8acf084c3e5a48dda941a1594989"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_resize - Resize pool capacity at runtime @pool: Pool instance @new_maxconns: New maximum Raises: SocketPool_Failed on error Thread-safe: Yes Grows/shrinks pool; closes excess on shrink.  <br /></td></tr>
+<tr class="separator:aa02f8acf084c3e5a48dda941a1594989"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2f6c45582ddbb25e842e5f41f9e0948" id="r_af2f6c45582ddbb25e842e5f41f9e0948"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#af2f6c45582ddbb25e842e5f41f9e0948">SocketPool_prewarm</a> (<a class="el" href="structT.html">T</a> pool, int percentage)</td></tr>
+<tr class="memdesc:af2f6c45582ddbb25e842e5f41f9e0948"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_prewarm - Pre-allocate buffers for % of free slots @pool: Pool instance @percentage: % of free slots (0-100) Thread-safe: Yes Reduces latency by pre-allocating buffers.  <br /></td></tr>
+<tr class="separator:af2f6c45582ddbb25e842e5f41f9e0948"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b6e1d08c443eef3fe0ac60bf3188ebd" id="r_a6b6e1d08c443eef3fe0ac60bf3188ebd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a6b6e1d08c443eef3fe0ac60bf3188ebd">SocketPool_set_bufsize</a> (<a class="el" href="structT.html">T</a> pool, size_t new_bufsize)</td></tr>
+<tr class="memdesc:a6b6e1d08c443eef3fe0ac60bf3188ebd"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_set_bufsize - Set buffer size for future connections @pool: Pool instance @new_bufsize: New size Thread-safe: Yes Existing connections keep old size.  <br /></td></tr>
+<tr class="separator:a6b6e1d08c443eef3fe0ac60bf3188ebd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2fa63691a53322bc10f6e11d75982705" id="r_a2fa63691a53322bc10f6e11d75982705"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a2fa63691a53322bc10f6e11d75982705">SocketPool_foreach</a> (<a class="el" href="structT.html">T</a> pool, void(*func)(<a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>, void *), void *arg)</td></tr>
+<tr class="memdesc:a2fa63691a53322bc10f6e11d75982705"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_foreach - Iterate over active connections @pool: Pool instance @func: Callback (Connection_T, void*)  <br /></td></tr>
 <tr class="separator:a2fa63691a53322bc10f6e11d75982705"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaeff7efb1109a312f56e35689b67c652" id="r_aaeff7efb1109a312f56e35689b67c652"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#aaeff7efb1109a312f56e35689b67c652">Connection_socket</a> (const <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn)</td></tr>
-<tr class="memdesc:aaeff7efb1109a312f56e35689b67c652"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_socket - Get connection's socket @conn: Connection instance Returns: Associated socket.  <br /></td></tr>
+<tr class="memitem:aaeff7efb1109a312f56e35689b67c652" id="r_aaeff7efb1109a312f56e35689b67c652"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structSocket__T.html">Socket_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#aaeff7efb1109a312f56e35689b67c652">Connection_socket</a> (const <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn)</td></tr>
+<tr class="memdesc:aaeff7efb1109a312f56e35689b67c652"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_socket - Get connection's socket @conn: <a class="el" href="structConnection.html">Connection</a> Returns: Socket.  <br /></td></tr>
 <tr class="separator:aaeff7efb1109a312f56e35689b67c652"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24170577512ce3a19fe195ab9c3576bf" id="r_a24170577512ce3a19fe195ab9c3576bf"><td class="memItemLeft" align="right" valign="top">SocketBuf_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a24170577512ce3a19fe195ab9c3576bf">Connection_inbuf</a> (const <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn)</td></tr>
-<tr class="memdesc:a24170577512ce3a19fe195ab9c3576bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_inbuf - Get input buffer @conn: Connection instance Returns: Input buffer for reading data.  <br /></td></tr>
+<tr class="memitem:a24170577512ce3a19fe195ab9c3576bf" id="r_a24170577512ce3a19fe195ab9c3576bf"><td class="memItemLeft" align="right" valign="top">SocketBuf_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a24170577512ce3a19fe195ab9c3576bf">Connection_inbuf</a> (const <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn)</td></tr>
+<tr class="memdesc:a24170577512ce3a19fe195ab9c3576bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_inbuf - Get input buffer @conn: <a class="el" href="structConnection.html">Connection</a> Returns: Input buffer.  <br /></td></tr>
 <tr class="separator:a24170577512ce3a19fe195ab9c3576bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d7573f71d8853943029cfd55fa3fb3a" id="r_a6d7573f71d8853943029cfd55fa3fb3a"><td class="memItemLeft" align="right" valign="top">SocketBuf_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a6d7573f71d8853943029cfd55fa3fb3a">Connection_outbuf</a> (const <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn)</td></tr>
-<tr class="memdesc:a6d7573f71d8853943029cfd55fa3fb3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_outbuf - Get output buffer @conn: Connection instance Returns: Output buffer for writing data.  <br /></td></tr>
+<tr class="memitem:a6d7573f71d8853943029cfd55fa3fb3a" id="r_a6d7573f71d8853943029cfd55fa3fb3a"><td class="memItemLeft" align="right" valign="top">SocketBuf_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a6d7573f71d8853943029cfd55fa3fb3a">Connection_outbuf</a> (const <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn)</td></tr>
+<tr class="memdesc:a6d7573f71d8853943029cfd55fa3fb3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_outbuf - Get output buffer @conn: <a class="el" href="structConnection.html">Connection</a> Returns: Output buffer.  <br /></td></tr>
 <tr class="separator:a6d7573f71d8853943029cfd55fa3fb3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1faf8c706d1ed9418446fc155fa289dd" id="r_a1faf8c706d1ed9418446fc155fa289dd"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a1faf8c706d1ed9418446fc155fa289dd">Connection_data</a> (const <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn)</td></tr>
-<tr class="memdesc:a1faf8c706d1ed9418446fc155fa289dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_data - Get user data @conn: Connection instance Returns: User-defined data pointer.  <br /></td></tr>
+<tr class="memitem:a1faf8c706d1ed9418446fc155fa289dd" id="r_a1faf8c706d1ed9418446fc155fa289dd"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a1faf8c706d1ed9418446fc155fa289dd">Connection_data</a> (const <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn)</td></tr>
+<tr class="memdesc:a1faf8c706d1ed9418446fc155fa289dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_data - Get user data @conn: <a class="el" href="structConnection.html">Connection</a> Returns: User data.  <br /></td></tr>
 <tr class="separator:a1faf8c706d1ed9418446fc155fa289dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab48a53bc1b36954d521104fedf9012c1" id="r_ab48a53bc1b36954d521104fedf9012c1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#ab48a53bc1b36954d521104fedf9012c1">Connection_setdata</a> (<a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn, void *data)</td></tr>
-<tr class="memdesc:ab48a53bc1b36954d521104fedf9012c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_setdata - Set user data @conn: Connection instance @data: User data to store.  <br /></td></tr>
+<tr class="memitem:ab48a53bc1b36954d521104fedf9012c1" id="r_ab48a53bc1b36954d521104fedf9012c1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#ab48a53bc1b36954d521104fedf9012c1">Connection_setdata</a> (<a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn, void *data)</td></tr>
+<tr class="memdesc:ab48a53bc1b36954d521104fedf9012c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_setdata - Set user data @conn: <a class="el" href="structConnection.html">Connection</a> @data: Data.  <br /></td></tr>
 <tr class="separator:ab48a53bc1b36954d521104fedf9012c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a68397aca39e8902ee26108dcb86b5db1" id="r_a68397aca39e8902ee26108dcb86b5db1"><td class="memItemLeft" align="right" valign="top">time_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a68397aca39e8902ee26108dcb86b5db1">Connection_lastactivity</a> (const <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn)</td></tr>
-<tr class="memdesc:a68397aca39e8902ee26108dcb86b5db1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_lastactivity - Get last activity time @conn: Connection instance Returns: time_t of last activity.  <br /></td></tr>
+<tr class="memitem:a68397aca39e8902ee26108dcb86b5db1" id="r_a68397aca39e8902ee26108dcb86b5db1"><td class="memItemLeft" align="right" valign="top">time_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a68397aca39e8902ee26108dcb86b5db1">Connection_lastactivity</a> (const <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn)</td></tr>
+<tr class="memdesc:a68397aca39e8902ee26108dcb86b5db1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_lastactivity - Get last activity time @conn: <a class="el" href="structConnection.html">Connection</a> Returns: time_t.  <br /></td></tr>
 <tr class="separator:a68397aca39e8902ee26108dcb86b5db1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af52bba490d68b2dd5448a61a1cc820a1" id="r_af52bba490d68b2dd5448a61a1cc820a1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#af52bba490d68b2dd5448a61a1cc820a1">Connection_isactive</a> (const <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn)</td></tr>
-<tr class="memdesc:af52bba490d68b2dd5448a61a1cc820a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_isactive - Check if connection is active @conn: Connection instance Returns: Non-zero if active.  <br /></td></tr>
+<tr class="memitem:af52bba490d68b2dd5448a61a1cc820a1" id="r_af52bba490d68b2dd5448a61a1cc820a1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#af52bba490d68b2dd5448a61a1cc820a1">Connection_isactive</a> (const <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn)</td></tr>
+<tr class="memdesc:af52bba490d68b2dd5448a61a1cc820a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection_isactive - Check if active @conn: <a class="el" href="structConnection.html">Connection</a> Returns: Non-zero if active.  <br /></td></tr>
 <tr class="separator:af52bba490d68b2dd5448a61a1cc820a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
@@ -187,16 +201,20 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Socket Connection Pool Manages a pool of socket connections with associated buffers and metadata. </p>
+<p>Socket <a class="el" href="structConnection.html">Connection</a> Pool Manages a pool of socket connections with associated buffers and metadata. </p>
 <p>Provides O(1) connection lookup using hash tables and automatic cleanup of idle connections. Features:</p><ul>
 <li>Pre-allocated connection slots for predictable memory usage</li>
 <li>Hash table for O(1) socket lookup</li>
 <li>Automatic idle connection cleanup</li>
 <li>Per-connection input/output buffers</li>
-<li>User data storage per connection The Connection_T type is opaque - use accessor functions to access connection properties. </li>
+<li>User data storage per connection</li>
+<li>Dynamic resize and pre-warming for performance The Connection_T type is opaque - use accessor functions to access connection properties. Thread Safety: All operations are thread-safe via internal mutex. The pool can be used from multiple threads simultaneously. PLATFORM REQUIREMENTS:</li>
+<li>POSIX-compliant system (Linux, BSD, macOS)</li>
+<li>POSIX threads (pthread) for mutex synchronization</li>
+<li>NOT portable to Windows without pthreads adaptation </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00026">26</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00034">34</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -208,12 +226,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef struct Connection* <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a></td>
+          <td class="memname">typedef struct <a class="el" href="structConnection.html">Connection</a>* <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00030">30</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00038">38</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -229,7 +247,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00027">27</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00035">35</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -246,7 +264,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">void * Connection_data </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
           <td class="paramname"><em>conn</em></td><td>)</td>
           <td></td>
         </tr>
@@ -258,7 +276,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Connection_data - Get user data @conn: Connection instance Returns: User-defined data pointer. </p>
+<p>Connection_data - Get user data @conn: <a class="el" href="structConnection.html">Connection</a> Returns: User data. </p>
 
 </div>
 </div>
@@ -274,7 +292,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">SocketBuf_T Connection_inbuf </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
           <td class="paramname"><em>conn</em></td><td>)</td>
           <td></td>
         </tr>
@@ -286,7 +304,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Connection_inbuf - Get input buffer @conn: Connection instance Returns: Input buffer for reading data. </p>
+<p>Connection_inbuf - Get input buffer @conn: <a class="el" href="structConnection.html">Connection</a> Returns: Input buffer. </p>
 
 </div>
 </div>
@@ -302,7 +320,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">int Connection_isactive </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
           <td class="paramname"><em>conn</em></td><td>)</td>
           <td></td>
         </tr>
@@ -314,7 +332,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Connection_isactive - Check if connection is active @conn: Connection instance Returns: Non-zero if active. </p>
+<p>Connection_isactive - Check if active @conn: <a class="el" href="structConnection.html">Connection</a> Returns: Non-zero if active. </p>
 
 </div>
 </div>
@@ -330,7 +348,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">time_t Connection_lastactivity </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
           <td class="paramname"><em>conn</em></td><td>)</td>
           <td></td>
         </tr>
@@ -342,7 +360,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Connection_lastactivity - Get last activity time @conn: Connection instance Returns: time_t of last activity. </p>
+<p>Connection_lastactivity - Get last activity time @conn: <a class="el" href="structConnection.html">Connection</a> Returns: time_t. </p>
 
 </div>
 </div>
@@ -358,7 +376,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">SocketBuf_T Connection_outbuf </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
           <td class="paramname"><em>conn</em></td><td>)</td>
           <td></td>
         </tr>
@@ -370,7 +388,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Connection_outbuf - Get output buffer @conn: Connection instance Returns: Output buffer for writing data. </p>
+<p>Connection_outbuf - Get output buffer @conn: <a class="el" href="structConnection.html">Connection</a> Returns: Output buffer. </p>
 
 </div>
 </div>
@@ -386,7 +404,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">void Connection_setdata </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
           <td class="paramname"><em>conn</em>, </td>
         </tr>
         <tr>
@@ -408,7 +426,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Connection_setdata - Set user data @conn: Connection instance @data: User data to store. </p>
+<p>Connection_setdata - Set user data @conn: <a class="el" href="structConnection.html">Connection</a> @data: Data. </p>
 
 </div>
 </div>
@@ -422,9 +440,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Socket_T Connection_socket </td>
+          <td class="memname"><a class="el" href="structSocket__T.html">Socket_T</a> Connection_socket </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>&#160;</td>
           <td class="paramname"><em>conn</em></td><td>)</td>
           <td></td>
         </tr>
@@ -436,7 +454,58 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Connection_socket - Get connection's socket @conn: Connection instance Returns: Associated socket. </p>
+<p>Connection_socket - Get connection's socket @conn: <a class="el" href="structConnection.html">Connection</a> Returns: Socket. </p>
+
+</div>
+</div>
+<a id="a5a96d5a3ac0e763c19ec5ee0eda0f99e" name="a5a96d5a3ac0e763c19ec5ee0eda0f99e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a96d5a3ac0e763c19ec5ee0eda0f99e">&#9670;&#160;</a></span>SocketPool_accept_batch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketPool_accept_batch </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structT.html">T</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structSocket__T.html">Socket_T</a>&#160;</td>
+          <td class="paramname"><em>server</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>max_accepts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structSocket__T.html">Socket_T</a> *&#160;</td>
+          <td class="paramname"><em>accepted</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_accept_batch - Accept multiple connections from server socket @pool: Pool instance @server: Server socket (listening, non-blocking) @max_accepts: Max to accept (1-SOCKET_POOL_MAX_BATCH_ACCEPTS) @accepted: Output array of accepted sockets (pre-allocated) Returns: Number accepted (0 to max_accepts) Raises: SocketPool_Failed on error Thread-safe: Yes Efficient batch accept using accept4() where available. </p>
+<p>Automatically adds accepted sockets to pool. </p>
 
 </div>
 </div>
@@ -450,7 +519,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> SocketPool_add </td>
+          <td class="memname"><a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> SocketPool_add </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structT.html">T</a>&#160;</td>
           <td class="paramname"><em>pool</em>, </td>
@@ -458,7 +527,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Socket_T&#160;</td>
+          <td class="paramtype"><a class="el" href="structSocket__T.html">Socket_T</a>&#160;</td>
           <td class="paramname"><em>socket</em>&#160;</td>
         </tr>
         <tr>
@@ -474,7 +543,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>SocketPool_add - Add socket to pool @pool: Pool instance @socket: Socket to add Returns: New connection or NULL if pool is full Thread-safe: Yes - protected by internal mutex Allocates I/O buffers and initializes connection. </p>
+<p>SocketPool_add - Add socket to pool @pool: Pool instance @socket: Socket to add Returns: New connection or NULL if pool is full Thread-safe: Yes Allocates I/O buffers and initializes connection metadata. </p>
 
 </div>
 </div>
@@ -512,8 +581,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>SocketPool_cleanup - Remove idle connections @pool: Pool instance @idle_timeout: Seconds of inactivity before removal (0 = remove all) Automatically closes and removes idle sockets. </p>
-<p>Pass 0 for idle_timeout to close all connections immediately. Thread-safe: Yes - collects sockets under mutex, closes outside lock Performance: O(n) where n is maxconns (scans all connection slots) </p>
+<p>SocketPool_cleanup - Remove idle connections @pool: Pool instance @idle_timeout: Seconds inactive before removal (0 = remove all) Thread-safe: Yes O(n) scan of all slots; closes/removes idle ones. </p>
 
 </div>
 </div>
@@ -541,7 +609,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>SocketPool_count - Get active connection count @pool: Pool instance Returns: Number of active connections Thread-safe: Yes - protected by internal mutex. </p>
+<p>SocketPool_count - Get active connection count @pool: Pool instance Returns: Number of active connections Thread-safe: Yes. </p>
 
 </div>
 </div>
@@ -563,7 +631,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">void(*)(<a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>, void *)&#160;</td>
+          <td class="paramtype">void(*)(<a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a>, void *)&#160;</td>
           <td class="paramname"><em>func</em>, </td>
         </tr>
         <tr>
@@ -585,9 +653,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>SocketPool_foreach - Iterate over connections @pool: Pool instance @func: Callback function. </p>
+<p>SocketPool_foreach - Iterate over active connections @pool: Pool instance @func: Callback (Connection_T, void*) </p>
 <ul>
-<li>: User data for callback Calls func for each active connection Thread-safe: Yes - holds mutex during iteration Performance: O(n) where n is maxconns (scans all connection slots) Warning: Callback must not modify pool structure </li>
+<li>: User data Thread-safe: Yes - holds mutex O(n) scan; callback must not modify pool. </li>
 </ul>
 
 </div>
@@ -616,7 +684,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>SocketPool_free - Free a connection pool @pool: Pointer to pool (will be set to NULL) Note: Does not close sockets - caller must do that. </p>
+<p>SocketPool_free - Free a connection pool @pool: Pointer to pool (will be set to NULL) Note: Does not close sockets - caller must do that Thread-safe: Yes. </p>
 
 </div>
 </div>
@@ -630,7 +698,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> SocketPool_get </td>
+          <td class="memname"><a class="el" href="SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> SocketPool_get </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structT.html">T</a>&#160;</td>
           <td class="paramname"><em>pool</em>, </td>
@@ -638,7 +706,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Socket_T&#160;</td>
+          <td class="paramtype"><a class="el" href="structSocket__T.html">Socket_T</a>&#160;</td>
           <td class="paramname"><em>socket</em>&#160;</td>
         </tr>
         <tr>
@@ -654,8 +722,8 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>SocketPool_get - Look up connection by socket @pool: Pool instance @socket: Socket to find Returns: Connection or NULL if not found Thread-safe: Yes - protected by internal mutex O(1) operation using hash table lookup Thread Safety Note: The returned Connection_T pointer is valid only while the connection remains in the pool. </p>
-<p>The caller should not cache this pointer across operations that might remove the connection (like cleanup). The Connection_T structure itself is stable once allocated, but could be removed from the pool by another thread. </p>
+<p>SocketPool_get - Look up connection by socket @pool: Pool instance @socket: Socket to find Returns: <a class="el" href="structConnection.html">Connection</a> or NULL if not found Thread-safe: Yes O(1) hash lookup. </p>
+<p>Updates last_activity timestamp. </p>
 
 </div>
 </div>
@@ -699,7 +767,45 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>SocketPool_new - Create a new connection pool @arena: Arena for memory allocation @maxconns: Maximum number of connections @bufsize: Size of I/O buffers per connection Returns: New pool instance (never returns NULL) Raises: SocketPool_Failed on any allocation or initialization failure Thread-safe: Yes - returns new instance. </p>
+<p>SocketPool_new - Create a new connection pool @arena: Arena for memory allocation @maxconns: Maximum number of connections @bufsize: Size of I/O buffers per connection Returns: New pool instance (never returns NULL) Raises: SocketPool_Failed on any allocation or initialization failure Thread-safe: Yes - returns new instance Automatically pre-warms SOCKET_POOL_DEFAULT_PREWARM_PCT slots. </p>
+
+</div>
+</div>
+<a id="af2f6c45582ddbb25e842e5f41f9e0948" name="af2f6c45582ddbb25e842e5f41f9e0948"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2f6c45582ddbb25e842e5f41f9e0948">&#9670;&#160;</a></span>SocketPool_prewarm()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketPool_prewarm </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structT.html">T</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>percentage</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_prewarm - Pre-allocate buffers for % of free slots @pool: Pool instance @percentage: % of free slots (0-100) Thread-safe: Yes Reduces latency by pre-allocating buffers. </p>
 
 </div>
 </div>
@@ -721,7 +827,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Socket_T&#160;</td>
+          <td class="paramtype"><a class="el" href="structSocket__T.html">Socket_T</a>&#160;</td>
           <td class="paramname"><em>socket</em>&#160;</td>
         </tr>
         <tr>
@@ -737,7 +843,83 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>SocketPool_remove - Remove socket from pool @pool: Pool instance @socket: Socket to remove Clears buffers but does not close the socket Thread-safe: Yes - protected by internal mutex. </p>
+<p>SocketPool_remove - Remove socket from pool @pool: Pool instance @socket: Socket to remove Clears buffers but does not close socket Thread-safe: Yes. </p>
+
+</div>
+</div>
+<a id="aa02f8acf084c3e5a48dda941a1594989" name="aa02f8acf084c3e5a48dda941a1594989"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa02f8acf084c3e5a48dda941a1594989">&#9670;&#160;</a></span>SocketPool_resize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketPool_resize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structT.html">T</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>new_maxconns</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_resize - Resize pool capacity at runtime @pool: Pool instance @new_maxconns: New maximum Raises: SocketPool_Failed on error Thread-safe: Yes Grows/shrinks pool; closes excess on shrink. </p>
+
+</div>
+</div>
+<a id="a6b6e1d08c443eef3fe0ac60bf3188ebd" name="a6b6e1d08c443eef3fe0ac60bf3188ebd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b6e1d08c443eef3fe0ac60bf3188ebd">&#9670;&#160;</a></span>SocketPool_set_bufsize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketPool_set_bufsize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structT.html">T</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>new_bufsize</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_set_bufsize - Set buffer size for future connections @pool: Pool instance @new_bufsize: New size Thread-safe: Yes Existing connections keep old size. </p>
 
 </div>
 </div>

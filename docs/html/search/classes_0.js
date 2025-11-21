@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['except_5fframe_0',['Except_Frame',['../structExcept__Frame.html',1,'']]]
+  ['connection_0',['Connection',['../structConnection.html',1,'']]]
 ];

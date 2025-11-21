@@ -1,7 +1,6 @@
 var searchData=
 [
-  ['env_0',['env',['../structExcept__Frame.html#abce4b8de2bbf7d6fb6ef52d618309264',1,'Except_Frame']]],
-  ['events_1',['events',['../structSocketEvent.html#a0e8eac7870fd0ca415bca9e451b1c968',1,'SocketEvent']]],
-  ['except_5fstack_2',['Except_stack',['../Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec',1,'Except.h']]],
-  ['exception_3',['exception',['../structExcept__Frame.html#af94963d421b72862ad98d190f02919fe',1,'Except_Frame']]]
+  ['data_0',['data',['../structSocketEventRecord.html#a46454b1b915024075996facfd55e75a2',1,'SocketEventRecord::data'],['../structSocketEvent.html#af4aeacc9896cef31c5a5c9afc9e1061c',1,'SocketEvent::data'],['../structConnection.html#aedd67a1038db9b1a6025b4436a29c291',1,'Connection::data']]],
+  ['dns_1',['dns',['../structSocketEventRecord.html#af33711caebc2c989291dd9441c893b27',1,'SocketEventRecord']]],
+  ['dns_5ftimeout_5fms_2',['dns_timeout_ms',['../structSocketTimeouts.html#a736142191c923c26705b75234d09bc65',1,'SocketTimeouts']]]
 ];

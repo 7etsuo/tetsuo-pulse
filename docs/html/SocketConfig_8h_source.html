@@ -17,6 +17,7 @@
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -118,422 +119,405 @@ $(document).ready(function(){initNavTree('SocketConfig_8h_source.html',''); init
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a25080e819a36fcf9aede01a6e7298ea4">   18</a></span><span class="preprocessor">#define IOV_MAX 1024 </span><span class="comment">/* Reasonable default, typically 1024 on Linux */</span><span class="preprocessor"></span></div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span> </div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="comment">/* Zero-copy I/O platform detection */</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="comment">/* Linux sendfile() - available since Linux 2.2 */</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#if defined(__linux__)</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#define SOCKET_HAS_SENDFILE 1</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#define SOCKET_HAS_SPLICE 1</span></div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;sys/sendfile.h&gt;</span></div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)</span></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="comment">/* BSD sendfile() - different signature */</span></div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#define SOCKET_HAS_SENDFILE 1</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#define SOCKET_HAS_SPLICE 0</span></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#include &lt;sys/socket.h&gt;</span></div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="preprocessor">#include &lt;sys/uio.h&gt;</span></div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="preprocessor">#elif defined(__APPLE__) &amp;&amp; defined(__MACH__)</span></div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="comment">/* macOS sendfile() - similar to BSD */</span></div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="preprocessor">#define SOCKET_HAS_SENDFILE 1</span></div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="preprocessor">#define SOCKET_HAS_SPLICE 0</span></div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="preprocessor">#include &lt;sys/socket.h&gt;</span></div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><span class="preprocessor">#include &lt;sys/uio.h&gt;</span></div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><span class="comment">/* Other platforms - fallback to read/write */</span></div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a344295e98b08de11d12e7a2992d44bc5">   41</a></span><span class="preprocessor">#define SOCKET_HAS_SENDFILE 0</span></div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a7254b404e987f6bff7c2c562ad1cefbd">   42</a></span><span class="preprocessor">#define SOCKET_HAS_SPLICE 0</span></div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="comment">/* sendmsg/recvmsg are standard POSIX - always available */</span></div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a3d1b69dbf142e7aaa4b329f0e0f34dee">   46</a></span><span class="preprocessor">#define SOCKET_HAS_SENDMSG 1</span></div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a1b4cba449b689c0e2069c5592d65ff70">   47</a></span><span class="preprocessor">#define SOCKET_HAS_RECVMSG 1</span></div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span><span class="comment">/* Socket library configuration limits */</span></div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="comment">/* Maximum number of connections in pool (can be overridden at compile time) */</span></div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="preprocessor">#ifndef SOCKET_MAX_CONNECTIONS</span></div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a72f1e9bc10cc82fb4ee1915335d60152">   53</a></span><span class="preprocessor">#define SOCKET_MAX_CONNECTIONS 10000</span></div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><span class="comment">/* Maximum buffer size per connection (can be overridden at compile time) */</span></div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="preprocessor">#ifndef SOCKET_MAX_BUFFER_SIZE</span></div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a72443e4b95fbd8ef4d191b754b4324dc">   58</a></span><span class="preprocessor">#define SOCKET_MAX_BUFFER_SIZE (1024 * 1024) </span><span class="comment">/* 1MB */</span><span class="preprocessor"></span></div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span><span class="comment">/* Minimum buffer size per connection */</span></div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span><span class="preprocessor">#ifndef SOCKET_MIN_BUFFER_SIZE</span></div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a8ae494bcc57f791a1f8cbcf48b96b9a8">   63</a></span><span class="preprocessor">#define SOCKET_MIN_BUFFER_SIZE 512</span></div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span> </div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span><span class="comment">/* Maximum events per poll */</span></div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span><span class="preprocessor">#ifndef SOCKET_MAX_POLL_EVENTS</span></div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ab6d7f45fcb5eae5fe42694e8e123cab4">   68</a></span><span class="preprocessor">#define SOCKET_MAX_POLL_EVENTS 10000</span></div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span><span class="comment">/* Default idle timeout in seconds */</span></div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_IDLE_TIMEOUT</span></div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aa656899af348069271d2878e221b95e3">   73</a></span><span class="preprocessor">#define SOCKET_DEFAULT_IDLE_TIMEOUT 300 </span><span class="comment">/* 5 minutes */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="comment">/* Remove all remnants of the duplicate platform detection attempt */</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="comment">/* The existing platform-specific definitions below are sufficient and correct */</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="comment">/* sendmsg/recvmsg are standard POSIX - always available */</span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a3d1b69dbf142e7aaa4b329f0e0f34dee">   25</a></span><span class="preprocessor">#define SOCKET_HAS_SENDMSG 1</span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a1b4cba449b689c0e2069c5592d65ff70">   26</a></span><span class="preprocessor">#define SOCKET_HAS_RECVMSG 1</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="comment">/* Platform detection */</span></div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#ifdef __APPLE__</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#define SOCKET_PLATFORM_MACOS 1</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#else</span></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#afe51dc34402f488f54f734a1ebd48307">   32</a></span><span class="preprocessor">#define SOCKET_PLATFORM_MACOS 0</span></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> </div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="comment">/* Socket library configuration limits */</span></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="comment">/* Maximum number of connections in pool (can be overridden at compile time) */</span></div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><span class="preprocessor">#ifndef SOCKET_MAX_CONNECTIONS</span></div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a72f1e9bc10cc82fb4ee1915335d60152">   39</a></span><span class="preprocessor">#define SOCKET_MAX_CONNECTIONS 10000</span></div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="comment">/* Maximum buffer size per connection (can be overridden at compile time) */</span></div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="preprocessor">#ifndef SOCKET_MAX_BUFFER_SIZE</span></div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a72443e4b95fbd8ef4d191b754b4324dc">   44</a></span><span class="preprocessor">#define SOCKET_MAX_BUFFER_SIZE (1024 * 1024) </span><span class="comment">/* 1MB */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="comment">/* Minimum buffer size per connection */</span></div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><span class="preprocessor">#ifndef SOCKET_MIN_BUFFER_SIZE</span></div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a8ae494bcc57f791a1f8cbcf48b96b9a8">   49</a></span><span class="preprocessor">#define SOCKET_MIN_BUFFER_SIZE 512</span></div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="comment">/* Maximum events per poll */</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="preprocessor">#ifndef SOCKET_MAX_POLL_EVENTS</span></div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ab6d7f45fcb5eae5fe42694e8e123cab4">   54</a></span><span class="preprocessor">#define SOCKET_MAX_POLL_EVENTS 10000</span></div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="comment">/* Default idle timeout in seconds */</span></div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_IDLE_TIMEOUT</span></div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aa656899af348069271d2878e221b95e3">   59</a></span><span class="preprocessor">#define SOCKET_DEFAULT_IDLE_TIMEOUT 300 </span><span class="comment">/* 5 minutes */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span><span class="comment">/* Default poll timeout in milliseconds */</span></div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_POLL_TIMEOUT</span></div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a71cb10d1eefc15616a20bcd7ae21e875">   64</a></span><span class="preprocessor">#define SOCKET_DEFAULT_POLL_TIMEOUT 1000 </span><span class="comment">/* 1 second */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span><span class="comment">/* Default connection pool settings */</span></div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_POOL_SIZE</span></div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a2ab0335d59ba489638143cfcdbeb131c">   69</a></span><span class="preprocessor">#define SOCKET_DEFAULT_POOL_SIZE 1000</span></div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_POOL_BUFSIZE</span></div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae566ef3ebb6568218b7f7dbf8feea2c6">   73</a></span><span class="preprocessor">#define SOCKET_DEFAULT_POOL_BUFSIZE 8192</span></div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span> </div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span><span class="comment">/* Default poll timeout in milliseconds */</span></div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_POLL_TIMEOUT</span></div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a71cb10d1eefc15616a20bcd7ae21e875">   78</a></span><span class="preprocessor">#define SOCKET_DEFAULT_POLL_TIMEOUT 1000 </span><span class="comment">/* 1 second */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span><span class="comment">/* Pool pre-warm and batch limits */</span></div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span><span class="preprocessor">#ifndef SOCKET_POOL_DEFAULT_PREWARM_PCT</span></div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a46e9cd9dc6e5eabbe91e5fa71ec00b81">   78</a></span><span class="preprocessor">#define SOCKET_POOL_DEFAULT_PREWARM_PCT 20  </span><span class="comment">/* Default percentage of slots to pre-warm for latency reduction under burst loads */</span><span class="preprocessor"></span></div>
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span> </div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span><span class="comment">/* Default connection pool settings */</span></div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_POOL_SIZE</span></div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a2ab0335d59ba489638143cfcdbeb131c">   83</a></span><span class="preprocessor">#define SOCKET_DEFAULT_POOL_SIZE 1000</span></div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_POOL_BUFSIZE</span></div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae566ef3ebb6568218b7f7dbf8feea2c6">   87</a></span><span class="preprocessor">#define SOCKET_DEFAULT_POOL_BUFSIZE 8192</span></div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span><span class="preprocessor">#ifndef SOCKET_POOL_MAX_BATCH_ACCEPTS</span></div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a331e1002cf6dfb30695f5af41625cf46">   82</a></span><span class="preprocessor">#define SOCKET_POOL_MAX_BATCH_ACCEPTS 1000  </span><span class="comment">/* Maximum number of accepts per batch call to prevent excessive resource use */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span> </div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span><span class="comment">/* Maximum backlog for listen() */</span></div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span><span class="preprocessor">#ifndef SOCKET_MAX_LISTEN_BACKLOG</span></div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a2fb10bfccfe83fb0bb5873949cf8a2f7">   87</a></span><span class="preprocessor">#define SOCKET_MAX_LISTEN_BACKLOG 1024</span></div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span> </div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span><span class="comment">/* Maximum backlog for listen() */</span></div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span><span class="preprocessor">#ifndef SOCKET_MAX_LISTEN_BACKLOG</span></div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a2fb10bfccfe83fb0bb5873949cf8a2f7">   92</a></span><span class="preprocessor">#define SOCKET_MAX_LISTEN_BACKLOG 1024</span></div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span><span class="comment">/* Hash table size for socket data mapping - prime number for better distribution */</span></div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span><span class="preprocessor">#ifndef SOCKET_HASH_TABLE_SIZE</span></div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a9aab9f1282519c6c66aca1271deffe84">   92</a></span><span class="preprocessor">#define SOCKET_HASH_TABLE_SIZE 1021</span></div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span> </div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span><span class="comment">/* Hash table size for socket data mapping - prime number for better distribution */</span></div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span><span class="preprocessor">#ifndef SOCKET_HASH_TABLE_SIZE</span></div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a9aab9f1282519c6c66aca1271deffe84">   97</a></span><span class="preprocessor">#define SOCKET_HASH_TABLE_SIZE 1021</span></div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span><span class="comment">/* Golden ratio constant for multiplicative hashing (2^32 * (sqrt(5)-1)/2) */</span></div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span><span class="preprocessor">#ifndef HASH_GOLDEN_RATIO</span></div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae5597cbeaa3012e797eb99aaf9570030">   97</a></span><span class="preprocessor">#define HASH_GOLDEN_RATIO 2654435761u</span></div>
 <div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><span class="comment">/* Golden ratio constant for multiplicative hashing (2^32 * (sqrt(5)-1)/2) */</span></div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><span class="preprocessor">#ifndef HASH_GOLDEN_RATIO</span></div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae5597cbeaa3012e797eb99aaf9570030">  102</a></span><span class="preprocessor">#define HASH_GOLDEN_RATIO 2654435761u</span></div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><span class="comment">/* Arena chunk size */</span></div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><span class="preprocessor">#ifndef ARENA_CHUNK_SIZE</span></div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a9ae8a98b44ad6ae722e484144907b3b5">  102</a></span><span class="preprocessor">#define ARENA_CHUNK_SIZE (10 * 1024) </span><span class="comment">/* 10KB */</span><span class="preprocessor"></span></div>
 <div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span> </div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span><span class="comment">/* Arena chunk size */</span></div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span><span class="preprocessor">#ifndef ARENA_CHUNK_SIZE</span></div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a9ae8a98b44ad6ae722e484144907b3b5">  107</a></span><span class="preprocessor">#define ARENA_CHUNK_SIZE (10 * 1024) </span><span class="comment">/* 10KB */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span><span class="comment">/* Maximum allocation size for arena */</span></div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span><span class="preprocessor">#ifndef ARENA_MAX_ALLOC_SIZE</span></div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a56ca9e70161f78a70b367eaf8feb0a44">  107</a></span><span class="preprocessor">#define ARENA_MAX_ALLOC_SIZE (100 * 1024 * 1024) </span><span class="comment">/* 100MB */</span><span class="preprocessor"></span></div>
 <div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span> </div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span><span class="comment">/* Maximum allocation size for arena */</span></div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span><span class="preprocessor">#ifndef ARENA_MAX_ALLOC_SIZE</span></div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a56ca9e70161f78a70b367eaf8feb0a44">  112</a></span><span class="preprocessor">#define ARENA_MAX_ALLOC_SIZE (100 * 1024 * 1024) </span><span class="comment">/* 100MB */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span><span class="comment">/* Maximum number of free chunks to cache for reuse */</span></div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span><span class="preprocessor">#ifndef ARENA_MAX_FREE_CHUNKS</span></div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ab329c6b2c13d14e3cf0bd9138bd3a7fc">  112</a></span><span class="preprocessor">#define ARENA_MAX_FREE_CHUNKS 10</span></div>
 <div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span> </div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span><span class="comment">/* Maximum number of free chunks to cache for reuse */</span></div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span><span class="preprocessor">#ifndef ARENA_MAX_FREE_CHUNKS</span></div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ab329c6b2c13d14e3cf0bd9138bd3a7fc">  117</a></span><span class="preprocessor">#define ARENA_MAX_FREE_CHUNKS 10</span></div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span><span class="comment">/* Arena error buffer size for detailed error messages */</span></div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span><span class="preprocessor">#ifndef ARENA_ERROR_BUFSIZE</span></div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a5e690294cf5966dce9003c888766d18b">  117</a></span><span class="preprocessor">#define ARENA_ERROR_BUFSIZE 256</span></div>
 <div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span> </div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span><span class="comment">/* Arena error buffer size for detailed error messages */</span></div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span><span class="preprocessor">#ifndef ARENA_ERROR_BUFSIZE</span></div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a5e690294cf5966dce9003c888766d18b">  122</a></span><span class="preprocessor">#define ARENA_ERROR_BUFSIZE 256</span></div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span><span class="comment">/* Arena alignment size - size of union align for proper alignment */</span></div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span><span class="preprocessor">#ifndef ARENA_ALIGNMENT_SIZE</span></div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aa5fcd2a71e9dd699dd7db574c5d70d8b">  122</a></span><span class="preprocessor">#define ARENA_ALIGNMENT_SIZE sizeof(union align)</span></div>
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span> </div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span><span class="comment">/* Arena alignment size - size of union align for proper alignment */</span></div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span><span class="preprocessor">#ifndef ARENA_ALIGNMENT_SIZE</span></div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aa5fcd2a71e9dd699dd7db574c5d70d8b">  127</a></span><span class="preprocessor">#define ARENA_ALIGNMENT_SIZE sizeof(union align)</span></div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span><span class="comment">/* Arena validation constants */</span></div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span><span class="preprocessor">#ifndef ARENA_VALIDATION_SUCCESS</span></div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a52f2e715ab8051dc17b23d6a90b35c80">  127</a></span><span class="preprocessor">#define ARENA_VALIDATION_SUCCESS 1</span></div>
 <div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span> </div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span><span class="comment">/* Arena validation constants */</span></div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span><span class="preprocessor">#ifndef ARENA_VALIDATION_SUCCESS</span></div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a52f2e715ab8051dc17b23d6a90b35c80">  132</a></span><span class="preprocessor">#define ARENA_VALIDATION_SUCCESS 1</span></div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span> </div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span><span class="preprocessor">#ifndef ARENA_VALIDATION_FAILURE</span></div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a235602fcede4fb9bc69be7f5ca97665e">  136</a></span><span class="preprocessor">#define ARENA_VALIDATION_FAILURE 0</span></div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span><span class="preprocessor">#ifndef ARENA_VALIDATION_FAILURE</span></div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a235602fcede4fb9bc69be7f5ca97665e">  131</a></span><span class="preprocessor">#define ARENA_VALIDATION_FAILURE 0</span></div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span> </div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span><span class="comment">/* Arena operation return codes */</span></div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span><span class="preprocessor">#ifndef ARENA_SUCCESS</span></div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae0ed91b25c305280f9b71295fe1a3360">  136</a></span><span class="preprocessor">#define ARENA_SUCCESS 0</span></div>
 <div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span> </div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span><span class="comment">/* Arena operation return codes */</span></div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span><span class="preprocessor">#ifndef ARENA_SUCCESS</span></div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae0ed91b25c305280f9b71295fe1a3360">  141</a></span><span class="preprocessor">#define ARENA_SUCCESS 0</span></div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span> </div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span><span class="preprocessor">#ifndef ARENA_FAILURE</span></div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a78d9c75a31ffd984a1165184a0387d8a">  145</a></span><span class="preprocessor">#define ARENA_FAILURE -1</span></div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span><span class="preprocessor">#ifndef ARENA_FAILURE</span></div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a78d9c75a31ffd984a1165184a0387d8a">  140</a></span><span class="preprocessor">#define ARENA_FAILURE -1</span></div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span> </div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span><span class="comment">/* Arena reuse chunk return codes */</span></div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span><span class="preprocessor">#ifndef ARENA_CHUNK_REUSED</span></div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a330e671ddbefb1ef08ee48275781353f">  145</a></span><span class="preprocessor">#define ARENA_CHUNK_REUSED 1</span></div>
 <div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span> </div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span><span class="comment">/* Arena reuse chunk return codes */</span></div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span><span class="preprocessor">#ifndef ARENA_CHUNK_REUSED</span></div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a330e671ddbefb1ef08ee48275781353f">  150</a></span><span class="preprocessor">#define ARENA_CHUNK_REUSED 1</span></div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span> </div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span><span class="preprocessor">#ifndef ARENA_CHUNK_NOT_REUSED</span></div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ad92e368c5798a837d8417e68e448d1f0">  154</a></span><span class="preprocessor">#define ARENA_CHUNK_NOT_REUSED 0</span></div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span><span class="preprocessor">#ifndef ARENA_CHUNK_NOT_REUSED</span></div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ad92e368c5798a837d8417e68e448d1f0">  149</a></span><span class="preprocessor">#define ARENA_CHUNK_NOT_REUSED 0</span></div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span> </div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span><span class="comment">/* Arena size validation return codes */</span></div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span><span class="preprocessor">#ifndef ARENA_SIZE_VALID</span></div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a9c85173f39d617fc9c01f0dc1b05eb61">  154</a></span><span class="preprocessor">#define ARENA_SIZE_VALID 1</span></div>
 <div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span> </div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span><span class="comment">/* Arena size validation return codes */</span></div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span><span class="preprocessor">#ifndef ARENA_SIZE_VALID</span></div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a9c85173f39d617fc9c01f0dc1b05eb61">  159</a></span><span class="preprocessor">#define ARENA_SIZE_VALID 1</span></div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span> </div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span><span class="preprocessor">#ifndef ARENA_SIZE_INVALID</span></div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#af5726e1d3fb61d34d3041ec202c15e1e">  163</a></span><span class="preprocessor">#define ARENA_SIZE_INVALID 0</span></div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span><span class="preprocessor">#ifndef ARENA_SIZE_INVALID</span></div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#af5726e1d3fb61d34d3041ec202c15e1e">  158</a></span><span class="preprocessor">#define ARENA_SIZE_INVALID 0</span></div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span> </div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span><span class="comment">/* Arena error message constants */</span></div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span><span class="preprocessor">#ifndef ARENA_ENOMEM</span></div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a8f1d456ae6fcdcfae1ca0d188d08e471">  163</a></span><span class="preprocessor">#define ARENA_ENOMEM &quot;Out of memory&quot;</span></div>
 <div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span> </div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span><span class="comment">/* Arena error message constants */</span></div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span><span class="preprocessor">#ifndef ARENA_ENOMEM</span></div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a8f1d456ae6fcdcfae1ca0d188d08e471">  168</a></span><span class="preprocessor">#define ARENA_ENOMEM &quot;Out of memory&quot;</span></div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span><span class="comment">/* Async DNS resolution configuration */</span></div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span><span class="preprocessor">#ifndef SOCKET_DNS_THREAD_COUNT</span></div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a7333dd84db01bccd272a0a535cb69ffa">  168</a></span><span class="preprocessor">#define SOCKET_DNS_THREAD_COUNT 4</span></div>
 <div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span> </div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span><span class="comment">/* Async DNS resolution configuration */</span></div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span><span class="preprocessor">#ifndef SOCKET_DNS_THREAD_COUNT</span></div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a7333dd84db01bccd272a0a535cb69ffa">  173</a></span><span class="preprocessor">#define SOCKET_DNS_THREAD_COUNT 4</span></div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span> </div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span><span class="preprocessor">#ifndef SOCKET_DNS_MAX_PENDING</span></div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#afe6640a153bf74038b7a011808d6bf78">  177</a></span><span class="preprocessor">#define SOCKET_DNS_MAX_PENDING 1000</span></div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span> </div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_CONNECT_TIMEOUT_MS</span></div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aaa099b2101176b12abb25299a6ac5bd1">  181</a></span><span class="preprocessor">#define SOCKET_DEFAULT_CONNECT_TIMEOUT_MS 10000 </span><span class="comment">/* 10 seconds */</span><span class="preprocessor"></span></div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span> </div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_DNS_TIMEOUT_MS</span></div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ac01d46f482abd08d6fb51a115b3590c4">  185</a></span><span class="preprocessor">#define SOCKET_DEFAULT_DNS_TIMEOUT_MS 5000 </span><span class="comment">/* 5 seconds */</span><span class="preprocessor"></span></div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span> </div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_OPERATION_TIMEOUT_MS</span></div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a4f0df33f87080b6004ea3a3400e388c7">  189</a></span><span class="preprocessor">#define SOCKET_DEFAULT_OPERATION_TIMEOUT_MS 0 </span><span class="comment">/* Disabled */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span><span class="preprocessor">#ifndef SOCKET_DNS_MAX_PENDING</span></div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#afe6640a153bf74038b7a011808d6bf78">  172</a></span><span class="preprocessor">#define SOCKET_DNS_MAX_PENDING 1000</span></div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span> </div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_CONNECT_TIMEOUT_MS</span></div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aaa099b2101176b12abb25299a6ac5bd1">  176</a></span><span class="preprocessor">#define SOCKET_DEFAULT_CONNECT_TIMEOUT_MS 10000 </span><span class="comment">/* 10 seconds */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span> </div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_DNS_TIMEOUT_MS</span></div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ac01d46f482abd08d6fb51a115b3590c4">  180</a></span><span class="preprocessor">#define SOCKET_DEFAULT_DNS_TIMEOUT_MS 5000 </span><span class="comment">/* 5 seconds */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span> </div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span><span class="preprocessor">#ifndef SOCKET_DEFAULT_OPERATION_TIMEOUT_MS</span></div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a4f0df33f87080b6004ea3a3400e388c7">  184</a></span><span class="preprocessor">#define SOCKET_DEFAULT_OPERATION_TIMEOUT_MS 0 </span><span class="comment">/* Disabled */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span> </div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span><span class="comment">/* DNS request hash table size - prime number for better distribution */</span></div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span><span class="preprocessor">#ifndef SOCKET_DNS_REQUEST_HASH_SIZE</span></div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ad93bb14bccd4fd5d8f37a22b30a4c944">  189</a></span><span class="preprocessor">#define SOCKET_DNS_REQUEST_HASH_SIZE 1021</span></div>
 <div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span> </div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span><span class="comment">/* DNS request hash table size - prime number for better distribution */</span></div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span><span class="preprocessor">#ifndef SOCKET_DNS_REQUEST_HASH_SIZE</span></div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ad93bb14bccd4fd5d8f37a22b30a4c944">  194</a></span><span class="preprocessor">#define SOCKET_DNS_REQUEST_HASH_SIZE 1021</span></div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span><span class="comment">/* Port number string buffer size (sufficient for &quot;65535&quot; + null terminator) */</span></div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span><span class="preprocessor">#ifndef SOCKET_DNS_PORT_STR_SIZE</span></div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a8dd2e41af45c32418159edb2bfa3d4b8">  194</a></span><span class="preprocessor">#define SOCKET_DNS_PORT_STR_SIZE 16</span></div>
 <div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span> </div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span><span class="comment">/* Port number string buffer size (sufficient for &quot;65535&quot; + null terminator) */</span></div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span><span class="preprocessor">#ifndef SOCKET_DNS_PORT_STR_SIZE</span></div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a8dd2e41af45c32418159edb2bfa3d4b8">  199</a></span><span class="preprocessor">#define SOCKET_DNS_PORT_STR_SIZE 16</span></div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span><span class="comment">/* Socket port string buffer size for general use */</span></div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span><span class="preprocessor">#ifndef SOCKET_PORT_STR_BUFSIZE</span></div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aa5594e0bf4a9a492cc6e9dd7bcdae74c">  199</a></span><span class="preprocessor">#define SOCKET_PORT_STR_BUFSIZE 16</span></div>
 <div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span> </div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span><span class="comment">/* Socket port string buffer size for general use */</span></div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span><span class="preprocessor">#ifndef SOCKET_PORT_STR_BUFSIZE</span></div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aa5594e0bf4a9a492cc6e9dd7bcdae74c">  204</a></span><span class="preprocessor">#define SOCKET_PORT_STR_BUFSIZE 16</span></div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span><span class="comment">/* Minimum capacity for circular buffers */</span></div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span><span class="preprocessor">#ifndef SOCKETBUF_MIN_CAPACITY</span></div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ab0563923535025dbd7c98a992dbf8df2">  204</a></span><span class="preprocessor">#define SOCKETBUF_MIN_CAPACITY 512</span></div>
 <div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span> </div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span><span class="comment">/* Minimum capacity for circular buffers */</span></div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span><span class="preprocessor">#ifndef SOCKETBUF_MIN_CAPACITY</span></div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ab0563923535025dbd7c98a992dbf8df2">  209</a></span><span class="preprocessor">#define SOCKETBUF_MIN_CAPACITY 512</span></div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span> </div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span><span class="comment">/* Socket types */</span></div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae91c5e89e959589a4c72b572da87aed1">  213</a></span><span class="preprocessor">#define SOCKET_STREAM_TYPE SOCK_STREAM</span></div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aeb19a3aa101d92d9befe7a980238bf0d">  214</a></span><span class="preprocessor">#define SOCKET_DGRAM_TYPE SOCK_DGRAM</span></div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span> </div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span><span class="comment">/* Address family constants */</span></div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a723007dbfa6e622f70650dce72fe4949">  217</a></span><span class="preprocessor">#define SOCKET_AF_UNSPEC AF_UNSPEC</span></div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a04ce265041d74932e7d3354651fd0a79">  218</a></span><span class="preprocessor">#define SOCKET_AF_INET AF_INET</span></div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a7a754a1f4470597ea52da2a678378100">  219</a></span><span class="preprocessor">#define SOCKET_AF_INET6 AF_INET6</span></div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#af26b9f671650b58e0bd264a71ec3cbfa">  220</a></span><span class="preprocessor">#define SOCKET_AF_UNIX AF_UNIX</span></div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span> </div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span><span class="comment">/* Protocol constants */</span></div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a23ac52f2e8e200798e44cdbf8704096b">  223</a></span><span class="preprocessor">#define SOCKET_IPPROTO_TCP IPPROTO_TCP</span></div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#affc1bd28b038fdf084f3363167b1f4f4">  224</a></span><span class="preprocessor">#define SOCKET_IPPROTO_UDP IPPROTO_UDP</span></div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#af4deb45fce6ccd9618225ad46d6c414b">  225</a></span><span class="preprocessor">#define SOCKET_IPPROTO_IP IPPROTO_IP</span></div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a98c4b46c80919077e8a17075c1843ecf">  226</a></span><span class="preprocessor">#define SOCKET_IPPROTO_IPV6 IPPROTO_IPV6</span></div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span> </div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span><span class="comment">/* Socket options */</span></div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aa4457fd2dac639801c08d5b7633cf0e8">  229</a></span><span class="preprocessor">#define SOCKET_SOL_SOCKET SOL_SOCKET</span></div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a7a238f64c49ef6c7aea7cfe16d1e0ac5">  230</a></span><span class="preprocessor">#define SOCKET_SO_REUSEADDR SO_REUSEADDR</span></div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span><span class="preprocessor">#ifdef SO_REUSEPORT</span></div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span><span class="preprocessor">#define SOCKET_SO_REUSEPORT SO_REUSEPORT</span></div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span><span class="preprocessor">#define SOCKET_HAS_SO_REUSEPORT 1</span></div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aa677c5c4c9fb9c2901f59bae61218989">  235</a></span><span class="preprocessor">#define SOCKET_SO_REUSEPORT 0</span></div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a2ec065ddbde3ec44ad0f0f6bce1c3c30">  236</a></span><span class="preprocessor">#define SOCKET_HAS_SO_REUSEPORT 0</span></div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span> </div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span><span class="comment">/* Close-on-exec support */</span></div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span><span class="preprocessor">#ifdef SOCK_CLOEXEC</span></div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span><span class="preprocessor">#define SOCKET_SOCK_CLOEXEC SOCK_CLOEXEC</span></div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span><span class="preprocessor">#define SOCKET_HAS_SOCK_CLOEXEC 1</span></div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a3e9c0eecdab0e5173a8a5c75d84dc932">  244</a></span><span class="preprocessor">#define SOCKET_SOCK_CLOEXEC 0</span></div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a4df9ceb2961f6a063fc5c97374f00fea">  245</a></span><span class="preprocessor">#define SOCKET_HAS_SOCK_CLOEXEC 0</span></div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span> </div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span><span class="comment">/* accept4() support detection</span></div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span><span class="comment"> * Linux 2.6.28+ has accept4(), BSD/macOS may have it</span></div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span><span class="comment"> * We&#39;ll use runtime detection: try accept4() and fall back to accept() + fcntl()</span></div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span><span class="comment"> */</span></div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span><span class="preprocessor">#ifdef __linux__</span></div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span><span class="comment">/* Linux 2.6.28+ has accept4() - assume available on modern Linux */</span></div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span><span class="preprocessor">#define SOCKET_HAS_ACCEPT4 1</span></div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span><span class="preprocessor">#elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__APPLE__)</span></div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span><span class="comment">/* BSD systems may have accept4() - check at compile time */</span></div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span><span class="preprocessor">#if defined(accept4) || (defined(_POSIX_C_SOURCE) &amp;&amp; _POSIX_C_SOURCE &gt;= 200809L)</span></div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span><span class="preprocessor">#define SOCKET_HAS_ACCEPT4 1</span></div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span><span class="preprocessor">#define SOCKET_HAS_ACCEPT4 0</span></div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span><span class="comment">/* Socket types */</span></div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae91c5e89e959589a4c72b572da87aed1">  208</a></span><span class="preprocessor">#define SOCKET_STREAM_TYPE SOCK_STREAM</span></div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aeb19a3aa101d92d9befe7a980238bf0d">  209</a></span><span class="preprocessor">#define SOCKET_DGRAM_TYPE SOCK_DGRAM</span></div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span> </div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span><span class="comment">/* Address family constants */</span></div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a723007dbfa6e622f70650dce72fe4949">  212</a></span><span class="preprocessor">#define SOCKET_AF_UNSPEC AF_UNSPEC</span></div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a04ce265041d74932e7d3354651fd0a79">  213</a></span><span class="preprocessor">#define SOCKET_AF_INET AF_INET</span></div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a7a754a1f4470597ea52da2a678378100">  214</a></span><span class="preprocessor">#define SOCKET_AF_INET6 AF_INET6</span></div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#af26b9f671650b58e0bd264a71ec3cbfa">  215</a></span><span class="preprocessor">#define SOCKET_AF_UNIX AF_UNIX</span></div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span> </div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span><span class="comment">/* Protocol constants */</span></div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a23ac52f2e8e200798e44cdbf8704096b">  218</a></span><span class="preprocessor">#define SOCKET_IPPROTO_TCP IPPROTO_TCP</span></div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#affc1bd28b038fdf084f3363167b1f4f4">  219</a></span><span class="preprocessor">#define SOCKET_IPPROTO_UDP IPPROTO_UDP</span></div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#af4deb45fce6ccd9618225ad46d6c414b">  220</a></span><span class="preprocessor">#define SOCKET_IPPROTO_IP IPPROTO_IP</span></div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a98c4b46c80919077e8a17075c1843ecf">  221</a></span><span class="preprocessor">#define SOCKET_IPPROTO_IPV6 IPPROTO_IPV6</span></div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span> </div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span><span class="comment">/* Socket options */</span></div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aa4457fd2dac639801c08d5b7633cf0e8">  224</a></span><span class="preprocessor">#define SOCKET_SOL_SOCKET SOL_SOCKET</span></div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a7a238f64c49ef6c7aea7cfe16d1e0ac5">  225</a></span><span class="preprocessor">#define SOCKET_SO_REUSEADDR SO_REUSEADDR</span></div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span><span class="preprocessor">#ifdef SO_REUSEPORT</span></div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span><span class="preprocessor">#define SOCKET_SO_REUSEPORT SO_REUSEPORT</span></div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span><span class="preprocessor">#define SOCKET_HAS_SO_REUSEPORT 1</span></div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span><span class="preprocessor">#else</span></div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aa677c5c4c9fb9c2901f59bae61218989">  230</a></span><span class="preprocessor">#define SOCKET_SO_REUSEPORT 0</span></div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a2ec065ddbde3ec44ad0f0f6bce1c3c30">  231</a></span><span class="preprocessor">#define SOCKET_HAS_SO_REUSEPORT 0</span></div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span> </div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span><span class="comment">/* Close-on-exec support */</span></div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span><span class="preprocessor">#ifdef SOCK_CLOEXEC</span></div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span><span class="preprocessor">#define SOCKET_SOCK_CLOEXEC SOCK_CLOEXEC</span></div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span><span class="preprocessor">#define SOCKET_HAS_SOCK_CLOEXEC 1</span></div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span><span class="preprocessor">#else</span></div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a3e9c0eecdab0e5173a8a5c75d84dc932">  239</a></span><span class="preprocessor">#define SOCKET_SOCK_CLOEXEC 0</span></div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a4df9ceb2961f6a063fc5c97374f00fea">  240</a></span><span class="preprocessor">#define SOCKET_HAS_SOCK_CLOEXEC 0</span></div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span> </div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span><span class="comment">/* accept4() support detection */</span></div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span><span class="preprocessor">#ifdef __linux__</span></div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span><span class="preprocessor">#define SOCKET_HAS_ACCEPT4 1</span></div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span><span class="preprocessor">#else</span></div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a179e47f6c98b38853e2f9e223586dc5d">  247</a></span><span class="preprocessor">#define SOCKET_HAS_ACCEPT4 0</span></div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span> </div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span><span class="comment">/* FD_CLOEXEC constant */</span></div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ac0cac1c13bb3060c9311bba91b026c63">  251</a></span><span class="preprocessor">#define SOCKET_FD_CLOEXEC FD_CLOEXEC</span></div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a1d16a51106f47efdc76e1495f3cf9ead">  252</a></span><span class="preprocessor">#define SOCKET_SO_BROADCAST SO_BROADCAST</span></div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a0f7074b869b88f5fb750473b41e6eb5e">  253</a></span><span class="preprocessor">#define SOCKET_SO_KEEPALIVE SO_KEEPALIVE</span></div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae523e4269e9d3d8d811d9b201cd22bda">  254</a></span><span class="preprocessor">#define SOCKET_SO_RCVTIMEO SO_RCVTIMEO</span></div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a4e79c5dbef56609cfb2ca32a5cf82257">  255</a></span><span class="preprocessor">#define SOCKET_SO_SNDTIMEO SO_SNDTIMEO</span></div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a057781fff8a16936f1d2f81e639d17e9">  256</a></span><span class="preprocessor">#define SOCKET_SO_RCVBUF SO_RCVBUF</span></div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a458bafdef6d2bfdd698d25935a9a05a8">  257</a></span><span class="preprocessor">#define SOCKET_SO_SNDBUF SO_SNDBUF</span></div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span><span class="comment">/* SO_DOMAIN is Linux-specific - use getsockname() fallback on other platforms */</span></div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span><span class="preprocessor">#ifdef __linux__</span></div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span><span class="preprocessor">#define SOCKET_SO_DOMAIN SO_DOMAIN</span></div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span><span class="preprocessor">#define SOCKET_HAS_SO_DOMAIN 1</span></div>
 <div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span><span class="comment">/* Other systems - assume not available */</span></div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a179e47f6c98b38853e2f9e223586dc5d">  264</a></span><span class="preprocessor">#define SOCKET_HAS_ACCEPT4 0</span></div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ac2c905681cea26eada867ab143d2c48d">  263</a></span><span class="preprocessor">#define SOCKET_HAS_SO_DOMAIN 0</span></div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ac9a84a186673663e3306d00e73e6abc1">  265</a></span><span class="preprocessor">#define SOCKET_SO_PEERCRED SO_PEERCRED</span></div>
 <div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span> </div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span><span class="comment">/* FD_CLOEXEC constant */</span></div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ac0cac1c13bb3060c9311bba91b026c63">  268</a></span><span class="preprocessor">#define SOCKET_FD_CLOEXEC FD_CLOEXEC</span></div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a1d16a51106f47efdc76e1495f3cf9ead">  269</a></span><span class="preprocessor">#define SOCKET_SO_BROADCAST SO_BROADCAST</span></div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a0f7074b869b88f5fb750473b41e6eb5e">  270</a></span><span class="preprocessor">#define SOCKET_SO_KEEPALIVE SO_KEEPALIVE</span></div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae523e4269e9d3d8d811d9b201cd22bda">  271</a></span><span class="preprocessor">#define SOCKET_SO_RCVTIMEO SO_RCVTIMEO</span></div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a4e79c5dbef56609cfb2ca32a5cf82257">  272</a></span><span class="preprocessor">#define SOCKET_SO_SNDTIMEO SO_SNDTIMEO</span></div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a057781fff8a16936f1d2f81e639d17e9">  273</a></span><span class="preprocessor">#define SOCKET_SO_RCVBUF SO_RCVBUF</span></div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a458bafdef6d2bfdd698d25935a9a05a8">  274</a></span><span class="preprocessor">#define SOCKET_SO_SNDBUF SO_SNDBUF</span></div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span><span class="comment">/* SO_DOMAIN is Linux-specific - use getsockname() fallback on other platforms */</span></div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span><span class="preprocessor">#ifdef __linux__</span></div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span><span class="preprocessor">#define SOCKET_SO_DOMAIN SO_DOMAIN</span></div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span><span class="preprocessor">#define SOCKET_HAS_SO_DOMAIN 1</span></div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ac2c905681cea26eada867ab143d2c48d">  280</a></span><span class="preprocessor">#define SOCKET_HAS_SO_DOMAIN 0</span></div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ac9a84a186673663e3306d00e73e6abc1">  282</a></span><span class="preprocessor">#define SOCKET_SO_PEERCRED SO_PEERCRED</span></div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span> </div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span><span class="comment">/* TCP options */</span></div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a50e904b0adcc6c319bc93af43aa172ee">  285</a></span><span class="preprocessor">#define SOCKET_TCP_NODELAY TCP_NODELAY</span></div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a213393dd843fb9bbb3a8e452fea5838e">  286</a></span><span class="preprocessor">#define SOCKET_TCP_KEEPIDLE TCP_KEEPIDLE</span></div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#acddb57a19b17c1e8730658e051d7cb97">  287</a></span><span class="preprocessor">#define SOCKET_TCP_KEEPINTVL TCP_KEEPINTVL</span></div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae9b4cfc38baeb5d092a9dbc968868e17">  288</a></span><span class="preprocessor">#define SOCKET_TCP_KEEPCNT TCP_KEEPCNT</span></div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span> </div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span><span class="comment">/* TCP congestion control (Linux 2.6.13+) */</span></div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span><span class="preprocessor">#ifdef TCP_CONGESTION</span></div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span><span class="preprocessor">#define SOCKET_TCP_CONGESTION TCP_CONGESTION</span></div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span><span class="preprocessor">#define SOCKET_HAS_TCP_CONGESTION 1</span></div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae59b371249a0e487e26d4f9e087351e5">  295</a></span><span class="preprocessor">#define SOCKET_HAS_TCP_CONGESTION 0</span></div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span> </div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span><span class="comment">/* TCP Fast Open (Linux 3.7+, FreeBSD 10.0+) */</span></div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span><span class="preprocessor">#ifdef TCP_FASTOPEN</span></div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span><span class="preprocessor">#define SOCKET_TCP_FASTOPEN TCP_FASTOPEN</span></div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span><span class="preprocessor">#define SOCKET_HAS_TCP_FASTOPEN 1</span></div>
-<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span><span class="preprocessor">#elif defined(TCP_FASTOPEN_CONNECT)</span></div>
-<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span><span class="comment">/* macOS uses TCP_FASTOPEN_CONNECT */</span></div>
-<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span><span class="preprocessor">#define SOCKET_TCP_FASTOPEN TCP_FASTOPEN_CONNECT</span></div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span><span class="preprocessor">#define SOCKET_HAS_TCP_FASTOPEN 1</span></div>
-<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00307" name="l00307"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a680a9b46408253f21f2fae08fab1a073">  307</a></span><span class="preprocessor">#define SOCKET_HAS_TCP_FASTOPEN 0</span></div>
-<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span> </div>
-<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span><span class="comment">/* TCP User Timeout (Linux 2.6.37+) */</span></div>
-<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span><span class="preprocessor">#ifdef TCP_USER_TIMEOUT</span></div>
-<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span><span class="preprocessor">#define SOCKET_TCP_USER_TIMEOUT TCP_USER_TIMEOUT</span></div>
-<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span><span class="preprocessor">#define SOCKET_HAS_TCP_USER_TIMEOUT 1</span></div>
-<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00315" name="l00315"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a2e0034bad5cc9db994f51ea107fed151">  315</a></span><span class="preprocessor">#define SOCKET_HAS_TCP_USER_TIMEOUT 0</span></div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span> </div>
-<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span><span class="comment">/* IPv6 options */</span></div>
-<div class="line"><a id="l00319" name="l00319"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#abc73d2f6f2da35365e09b28eff6364b8">  319</a></span><span class="preprocessor">#define SOCKET_IPV6_V6ONLY IPV6_V6ONLY</span></div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span><span class="comment">/* IPv6 multicast - use platform-specific names */</span></div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span><span class="preprocessor">#ifdef IPV6_ADD_MEMBERSHIP</span></div>
-<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span><span class="comment">/* Linux uses IPV6_ADD_MEMBERSHIP */</span></div>
-<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span><span class="preprocessor">#define SOCKET_IPV6_ADD_MEMBERSHIP IPV6_ADD_MEMBERSHIP</span></div>
-<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span><span class="preprocessor">#elif defined(IPV6_JOIN_GROUP)</span></div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span><span class="comment">/* macOS/BSD use IPV6_JOIN_GROUP */</span></div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span><span class="preprocessor">#define SOCKET_IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP</span></div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span><span class="preprocessor">#error &quot;IPv6 multicast add membership not supported on this platform&quot;</span></div>
-<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span><span class="preprocessor">#ifdef IPV6_DROP_MEMBERSHIP</span></div>
-<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span><span class="comment">/* Linux uses IPV6_DROP_MEMBERSHIP */</span></div>
-<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span><span class="preprocessor">#define SOCKET_IPV6_DROP_MEMBERSHIP IPV6_DROP_MEMBERSHIP</span></div>
-<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span><span class="preprocessor">#elif defined(IPV6_LEAVE_GROUP)</span></div>
-<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span><span class="comment">/* macOS/BSD use IPV6_LEAVE_GROUP */</span></div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span><span class="preprocessor">#define SOCKET_IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP</span></div>
-<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span><span class="preprocessor">#error &quot;IPv6 multicast drop membership not supported on this platform&quot;</span></div>
-<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00339" name="l00339"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a6718d10ef55392425b3e4eea07ee15ce">  339</a></span><span class="preprocessor">#define SOCKET_IPV6_UNICAST_HOPS IPV6_UNICAST_HOPS</span></div>
-<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span> </div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span><span class="comment">/* IP options */</span></div>
-<div class="line"><a id="l00342" name="l00342"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aaa278a4a5238ff43c2eedd874cd289b0">  342</a></span><span class="preprocessor">#define SOCKET_IP_TTL IP_TTL</span></div>
-<div class="line"><a id="l00343" name="l00343"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a3a982d41e0cbfea982c0ee35cab78ae3">  343</a></span><span class="preprocessor">#define SOCKET_IP_ADD_MEMBERSHIP IP_ADD_MEMBERSHIP</span></div>
-<div class="line"><a id="l00344" name="l00344"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a057793cb88e55bf92024c4c36e81a9e5">  344</a></span><span class="preprocessor">#define SOCKET_IP_DROP_MEMBERSHIP IP_DROP_MEMBERSHIP</span></div>
-<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span> </div>
-<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span><span class="comment">/* Address info flags */</span></div>
-<div class="line"><a id="l00347" name="l00347"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#af554ab0a276793e3c2211071e90d2379">  347</a></span><span class="preprocessor">#define SOCKET_AI_PASSIVE AI_PASSIVE</span></div>
-<div class="line"><a id="l00348" name="l00348"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ac5c758285ea3ec616ebef228524e5870">  348</a></span><span class="preprocessor">#define SOCKET_AI_NUMERICHOST AI_NUMERICHOST</span></div>
-<div class="line"><a id="l00349" name="l00349"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a9650f9a758e7db73f81549f62c336c06">  349</a></span><span class="preprocessor">#define SOCKET_AI_NUMERICSERV AI_NUMERICSERV</span></div>
-<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span> </div>
-<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span><span class="comment">/* Name info flags */</span></div>
-<div class="line"><a id="l00352" name="l00352"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aed05968c714f431c7489dbbd6491c4da">  352</a></span><span class="preprocessor">#define SOCKET_NI_NUMERICHOST NI_NUMERICHOST</span></div>
-<div class="line"><a id="l00353" name="l00353"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a189adadf65e2effcf336ae92be1453a3">  353</a></span><span class="preprocessor">#define SOCKET_NI_NUMERICSERV NI_NUMERICSERV</span></div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span><span class="comment">/* TCP options */</span></div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a50e904b0adcc6c319bc93af43aa172ee">  268</a></span><span class="preprocessor">#define SOCKET_TCP_NODELAY TCP_NODELAY</span></div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a213393dd843fb9bbb3a8e452fea5838e">  269</a></span><span class="preprocessor">#define SOCKET_TCP_KEEPIDLE TCP_KEEPIDLE</span></div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#acddb57a19b17c1e8730658e051d7cb97">  270</a></span><span class="preprocessor">#define SOCKET_TCP_KEEPINTVL TCP_KEEPINTVL</span></div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae9b4cfc38baeb5d092a9dbc968868e17">  271</a></span><span class="preprocessor">#define SOCKET_TCP_KEEPCNT TCP_KEEPCNT</span></div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span> </div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span><span class="comment">/* TCP congestion control (Linux 2.6.13+) */</span></div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span><span class="preprocessor">#ifdef TCP_CONGESTION</span></div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span><span class="preprocessor">#define SOCKET_TCP_CONGESTION TCP_CONGESTION</span></div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span><span class="preprocessor">#define SOCKET_HAS_TCP_CONGESTION 1</span></div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span><span class="preprocessor">#else</span></div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ae59b371249a0e487e26d4f9e087351e5">  278</a></span><span class="preprocessor">#define SOCKET_HAS_TCP_CONGESTION 0</span></div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span> </div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span><span class="comment">/* TCP Fast Open (Linux 3.7+, FreeBSD 10.0+) */</span></div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span><span class="preprocessor">#ifdef TCP_FASTOPEN</span></div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span><span class="preprocessor">#define SOCKET_TCP_FASTOPEN TCP_FASTOPEN</span></div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span><span class="preprocessor">#define SOCKET_HAS_TCP_FASTOPEN 1</span></div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span><span class="preprocessor">#elif defined(TCP_FASTOPEN_CONNECT)</span></div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span><span class="comment">/* macOS uses TCP_FASTOPEN_CONNECT */</span></div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span><span class="preprocessor">#define SOCKET_TCP_FASTOPEN TCP_FASTOPEN_CONNECT</span></div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span><span class="preprocessor">#define SOCKET_HAS_TCP_FASTOPEN 1</span></div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span><span class="preprocessor">#else</span></div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a680a9b46408253f21f2fae08fab1a073">  290</a></span><span class="preprocessor">#define SOCKET_HAS_TCP_FASTOPEN 0</span></div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span> </div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span><span class="comment">/* TCP User Timeout (Linux 2.6.37+) */</span></div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span><span class="preprocessor">#ifdef TCP_USER_TIMEOUT</span></div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span><span class="preprocessor">#define SOCKET_TCP_USER_TIMEOUT TCP_USER_TIMEOUT</span></div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span><span class="preprocessor">#define SOCKET_HAS_TCP_USER_TIMEOUT 1</span></div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span><span class="preprocessor">#else</span></div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a2e0034bad5cc9db994f51ea107fed151">  298</a></span><span class="preprocessor">#define SOCKET_HAS_TCP_USER_TIMEOUT 0</span></div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span> </div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span><span class="comment">/* IPv6 options */</span></div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#abc73d2f6f2da35365e09b28eff6364b8">  302</a></span><span class="preprocessor">#define SOCKET_IPV6_V6ONLY IPV6_V6ONLY</span></div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span><span class="comment">/* IPv6 multicast - use platform-specific names */</span></div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span><span class="preprocessor">#ifdef IPV6_ADD_MEMBERSHIP</span></div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span><span class="comment">/* Linux uses IPV6_ADD_MEMBERSHIP */</span></div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span><span class="preprocessor">#define SOCKET_IPV6_ADD_MEMBERSHIP IPV6_ADD_MEMBERSHIP</span></div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span><span class="preprocessor">#elif defined(IPV6_JOIN_GROUP)</span></div>
+<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span><span class="comment">/* macOS/BSD use IPV6_JOIN_GROUP */</span></div>
+<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span><span class="preprocessor">#define SOCKET_IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP</span></div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span><span class="preprocessor">#else</span></div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span><span class="preprocessor">#error &quot;IPv6 multicast add membership not supported on this platform&quot;</span></div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span><span class="preprocessor">#ifdef IPV6_DROP_MEMBERSHIP</span></div>
+<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span><span class="comment">/* Linux uses IPV6_DROP_MEMBERSHIP */</span></div>
+<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span><span class="preprocessor">#define SOCKET_IPV6_DROP_MEMBERSHIP IPV6_DROP_MEMBERSHIP</span></div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span><span class="preprocessor">#elif defined(IPV6_LEAVE_GROUP)</span></div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span><span class="comment">/* macOS/BSD use IPV6_LEAVE_GROUP */</span></div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span><span class="preprocessor">#define SOCKET_IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP</span></div>
+<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span><span class="preprocessor">#else</span></div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span><span class="preprocessor">#error &quot;IPv6 multicast drop membership not supported on this platform&quot;</span></div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a6718d10ef55392425b3e4eea07ee15ce">  322</a></span><span class="preprocessor">#define SOCKET_IPV6_UNICAST_HOPS IPV6_UNICAST_HOPS</span></div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span> </div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span><span class="comment">/* IP options */</span></div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aaa278a4a5238ff43c2eedd874cd289b0">  325</a></span><span class="preprocessor">#define SOCKET_IP_TTL IP_TTL</span></div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a3a982d41e0cbfea982c0ee35cab78ae3">  326</a></span><span class="preprocessor">#define SOCKET_IP_ADD_MEMBERSHIP IP_ADD_MEMBERSHIP</span></div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a057793cb88e55bf92024c4c36e81a9e5">  327</a></span><span class="preprocessor">#define SOCKET_IP_DROP_MEMBERSHIP IP_DROP_MEMBERSHIP</span></div>
+<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span> </div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span><span class="comment">/* Address info flags */</span></div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#af554ab0a276793e3c2211071e90d2379">  330</a></span><span class="preprocessor">#define SOCKET_AI_PASSIVE AI_PASSIVE</span></div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ac5c758285ea3ec616ebef228524e5870">  331</a></span><span class="preprocessor">#define SOCKET_AI_NUMERICHOST AI_NUMERICHOST</span></div>
+<div class="line"><a id="l00332" name="l00332"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a9650f9a758e7db73f81549f62c336c06">  332</a></span><span class="preprocessor">#define SOCKET_AI_NUMERICSERV AI_NUMERICSERV</span></div>
+<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span> </div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span><span class="comment">/* Name info flags */</span></div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aed05968c714f431c7489dbbd6491c4da">  335</a></span><span class="preprocessor">#define SOCKET_NI_NUMERICHOST NI_NUMERICHOST</span></div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a189adadf65e2effcf336ae92be1453a3">  336</a></span><span class="preprocessor">#define SOCKET_NI_NUMERICSERV NI_NUMERICSERV</span></div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span> </div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span><span class="comment">/* Shutdown modes */</span></div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ad846caae5ed6ec066d9ae975c23d0e10">  339</a></span><span class="preprocessor">#define SOCKET_SHUT_RD SHUT_RD</span></div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a5549c3faf506d9057ac05de132462f87">  340</a></span><span class="preprocessor">#define SOCKET_SHUT_WR SHUT_WR</span></div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a30e4937ecabbc1aafef3092ed4d062e4">  341</a></span><span class="preprocessor">#define SOCKET_SHUT_RDWR SHUT_RDWR</span></div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span> </div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span><span class="comment">/* Maximum lengths for name info */</span></div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#abb714afb577d800a5b6388c5ff985e45">  344</a></span><span class="preprocessor">#define SOCKET_NI_MAXHOST NI_MAXHOST</span></div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a0470d30293aefa9d90b1adeae8b2a893">  345</a></span><span class="preprocessor">#define SOCKET_NI_MAXSERV NI_MAXSERV</span></div>
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span> </div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span><span class="comment">/* Message flags */</span></div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a6d8596dc13da264d86966c08b435110a">  348</a></span><span class="preprocessor">#define SOCKET_MSG_NOSIGNAL MSG_NOSIGNAL</span></div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span> </div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span><span class="comment">/* Default keepalive parameters */</span></div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a72227e2f5945efa472401c12608ae6f0">  351</a></span><span class="preprocessor">#define SOCKET_DEFAULT_KEEPALIVE_IDLE 60</span></div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ac35dee011f3919c4720812ef8b163f03">  352</a></span><span class="preprocessor">#define SOCKET_DEFAULT_KEEPALIVE_INTERVAL 10</span></div>
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#afd745a2d91d7bc8aad76a133ef1cb0bf">  353</a></span><span class="preprocessor">#define SOCKET_DEFAULT_KEEPALIVE_COUNT 3</span></div>
 <div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span> </div>
-<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span><span class="comment">/* Shutdown modes */</span></div>
-<div class="line"><a id="l00356" name="l00356"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ad846caae5ed6ec066d9ae975c23d0e10">  356</a></span><span class="preprocessor">#define SOCKET_SHUT_RD SHUT_RD</span></div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a5549c3faf506d9057ac05de132462f87">  357</a></span><span class="preprocessor">#define SOCKET_SHUT_WR SHUT_WR</span></div>
-<div class="line"><a id="l00358" name="l00358"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a30e4937ecabbc1aafef3092ed4d062e4">  358</a></span><span class="preprocessor">#define SOCKET_SHUT_RDWR SHUT_RDWR</span></div>
-<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span> </div>
-<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span><span class="comment">/* Maximum lengths for name info */</span></div>
-<div class="line"><a id="l00361" name="l00361"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#abb714afb577d800a5b6388c5ff985e45">  361</a></span><span class="preprocessor">#define SOCKET_NI_MAXHOST NI_MAXHOST</span></div>
-<div class="line"><a id="l00362" name="l00362"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a0470d30293aefa9d90b1adeae8b2a893">  362</a></span><span class="preprocessor">#define SOCKET_NI_MAXSERV NI_MAXSERV</span></div>
-<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span> </div>
-<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span><span class="comment">/* Message flags */</span></div>
-<div class="line"><a id="l00365" name="l00365"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a6d8596dc13da264d86966c08b435110a">  365</a></span><span class="preprocessor">#define SOCKET_MSG_NOSIGNAL MSG_NOSIGNAL</span></div>
-<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span> </div>
-<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span><span class="comment">/* Default keepalive parameters */</span></div>
-<div class="line"><a id="l00368" name="l00368"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a72227e2f5945efa472401c12608ae6f0">  368</a></span><span class="preprocessor">#define SOCKET_DEFAULT_KEEPALIVE_IDLE 60</span></div>
-<div class="line"><a id="l00369" name="l00369"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ac35dee011f3919c4720812ef8b163f03">  369</a></span><span class="preprocessor">#define SOCKET_DEFAULT_KEEPALIVE_INTERVAL 10</span></div>
-<div class="line"><a id="l00370" name="l00370"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#afd745a2d91d7bc8aad76a133ef1cb0bf">  370</a></span><span class="preprocessor">#define SOCKET_DEFAULT_KEEPALIVE_COUNT 3</span></div>
-<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span> </div>
-<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span><span class="comment">/* Default TTL for datagrams */</span></div>
-<div class="line"><a id="l00373" name="l00373"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a4c36ad0507aab15f0b59b4ccde5dfb31">  373</a></span><span class="preprocessor">#define SOCKET_DEFAULT_DATAGRAM_TTL 64</span></div>
-<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span> </div>
-<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span><span class="comment">/* Multicast interface index */</span></div>
-<div class="line"><a id="l00376" name="l00376"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#af69be862b0cece4e20e7ea283ad91c70">  376</a></span><span class="preprocessor">#define SOCKET_MULTICAST_DEFAULT_INTERFACE 0</span></div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span><span class="comment">/* Default TTL for datagrams */</span></div>
+<div class="line"><a id="l00356" name="l00356"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a4c36ad0507aab15f0b59b4ccde5dfb31">  356</a></span><span class="preprocessor">#define SOCKET_DEFAULT_DATAGRAM_TTL 64</span></div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span> </div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span><span class="comment">/* Multicast interface index */</span></div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#af69be862b0cece4e20e7ea283ad91c70">  359</a></span><span class="preprocessor">#define SOCKET_MULTICAST_DEFAULT_INTERFACE 0</span></div>
+<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span> </div>
+<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span><span class="comment">/* Completion pipe read buffer size */</span></div>
+<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span><span class="preprocessor">#ifndef SOCKET_DNS_PIPE_BUFFER_SIZE</span></div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aabf88e7e79136014eb538ec90cf2a0f4">  363</a></span><span class="preprocessor">#define SOCKET_DNS_PIPE_BUFFER_SIZE 256</span></div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span> </div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span><span class="comment">/* Poll backend configuration */</span></div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span> </div>
+<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span><span class="comment">/* Initial pollfd array size for poll(2) backend */</span></div>
+<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span><span class="preprocessor">#ifndef POLL_INITIAL_FDS</span></div>
+<div class="line"><a id="l00370" name="l00370"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a673275383493d8cff8bc582fef311e42">  370</a></span><span class="preprocessor">#define POLL_INITIAL_FDS 64</span></div>
+<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span> </div>
+<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span><span class="comment">/* Initial file descriptor mapping table size for poll backend */</span></div>
+<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span><span class="preprocessor">#ifndef POLL_INITIAL_FD_MAP_SIZE</span></div>
+<div class="line"><a id="l00375" name="l00375"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a211a6387523fa6487af971831aabf461">  375</a></span><span class="preprocessor">#define POLL_INITIAL_FD_MAP_SIZE 1024</span></div>
+<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span> </div>
-<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span><span class="comment">/* Completion pipe read buffer size */</span></div>
-<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span><span class="preprocessor">#ifndef SOCKET_DNS_PIPE_BUFFER_SIZE</span></div>
-<div class="line"><a id="l00380" name="l00380"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#aabf88e7e79136014eb538ec90cf2a0f4">  380</a></span><span class="preprocessor">#define SOCKET_DNS_PIPE_BUFFER_SIZE 256</span></div>
+<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span><span class="comment">/* File descriptor mapping table expansion increment */</span></div>
+<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span><span class="preprocessor">#ifndef POLL_FD_MAP_EXPAND_INCREMENT</span></div>
+<div class="line"><a id="l00380" name="l00380"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a834e79d67b92d737d55e4ba2b0684025">  380</a></span><span class="preprocessor">#define POLL_FD_MAP_EXPAND_INCREMENT 1024</span></div>
 <div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span> </div>
-<div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span><span class="comment">/* Poll backend configuration */</span></div>
-<div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span> </div>
-<div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span><span class="comment">/* Initial pollfd array size for poll(2) backend */</span></div>
-<div class="line"><a id="l00386" name="l00386"></a><span class="lineno">  386</span><span class="preprocessor">#ifndef POLL_INITIAL_FDS</span></div>
-<div class="line"><a id="l00387" name="l00387"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a673275383493d8cff8bc582fef311e42">  387</a></span><span class="preprocessor">#define POLL_INITIAL_FDS 64</span></div>
-<div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span><span class="comment">/* Validation macros with proper parentheses and overflow protection */</span></div>
+<div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span><span class="comment">/* Port 0 is valid - it means &quot;let OS assign ephemeral port&quot; */</span></div>
+<div class="line"><a id="l00385" name="l00385"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a79772cb715462c6705db6d9440786f2d">  385</a></span><span class="preprocessor">#define SOCKET_VALID_PORT(p) ((int)(p) &gt;= 0 &amp;&amp; (int)(p) &lt;= 65535)</span></div>
+<div class="line"><a id="l00386" name="l00386"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ad203163c86ed5dd20746385d2a43ea6f">  386</a></span><span class="preprocessor">#define SOCKET_VALID_BUFFER_SIZE(s) ((size_t)(s) &gt;= SOCKET_MIN_BUFFER_SIZE &amp;&amp; (size_t)(s) &lt;= SOCKET_MAX_BUFFER_SIZE)</span></div>
+<div class="line"><a id="l00387" name="l00387"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a43c348045ef81f2408c0afd49c1f299a">  387</a></span><span class="preprocessor">#define SOCKET_VALID_CONNECTION_COUNT(c) ((size_t)(c) &gt; 0 &amp;&amp; (size_t)(c) &lt;= SOCKET_MAX_CONNECTIONS)</span></div>
+<div class="line"><a id="l00388" name="l00388"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#af3934edfea9b109a06dc66e7487959b4">  388</a></span><span class="preprocessor">#define SOCKET_VALID_POLL_EVENTS(e) ((int)(e) &gt; 0 &amp;&amp; (int)(e) &lt;= SOCKET_MAX_POLL_EVENTS)</span></div>
 <div class="line"><a id="l00389" name="l00389"></a><span class="lineno">  389</span> </div>
-<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span><span class="comment">/* Initial file descriptor mapping table size for poll backend */</span></div>
-<div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span><span class="preprocessor">#ifndef POLL_INITIAL_FD_MAP_SIZE</span></div>
-<div class="line"><a id="l00392" name="l00392"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a211a6387523fa6487af971831aabf461">  392</a></span><span class="preprocessor">#define POLL_INITIAL_FD_MAP_SIZE 1024</span></div>
-<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span> </div>
-<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span><span class="comment">/* File descriptor mapping table expansion increment */</span></div>
-<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span><span class="preprocessor">#ifndef POLL_FD_MAP_EXPAND_INCREMENT</span></div>
-<div class="line"><a id="l00397" name="l00397"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a834e79d67b92d737d55e4ba2b0684025">  397</a></span><span class="preprocessor">#define POLL_FD_MAP_EXPAND_INCREMENT 1024</span></div>
-<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span> </div>
-<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span><span class="comment">/* Validation macros with proper parentheses and overflow protection */</span></div>
-<div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span><span class="comment">/* Port 0 is valid - it means &quot;let OS assign ephemeral port&quot; */</span></div>
-<div class="line"><a id="l00402" name="l00402"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a79772cb715462c6705db6d9440786f2d">  402</a></span><span class="preprocessor">#define SOCKET_VALID_PORT(p) ((int)(p) &gt;= 0 &amp;&amp; (int)(p) &lt;= 65535)</span></div>
-<div class="line"><a id="l00403" name="l00403"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#ad203163c86ed5dd20746385d2a43ea6f">  403</a></span><span class="preprocessor">#define SOCKET_VALID_BUFFER_SIZE(s) ((size_t)(s) &gt;= SOCKET_MIN_BUFFER_SIZE &amp;&amp; (size_t)(s) &lt;= SOCKET_MAX_BUFFER_SIZE)</span></div>
-<div class="line"><a id="l00404" name="l00404"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a43c348045ef81f2408c0afd49c1f299a">  404</a></span><span class="preprocessor">#define SOCKET_VALID_CONNECTION_COUNT(c) ((size_t)(c) &gt; 0 &amp;&amp; (size_t)(c) &lt;= SOCKET_MAX_CONNECTIONS)</span></div>
-<div class="line"><a id="l00405" name="l00405"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#af3934edfea9b109a06dc66e7487959b4">  405</a></span><span class="preprocessor">#define SOCKET_VALID_POLL_EVENTS(e) ((int)(e) &gt; 0 &amp;&amp; (int)(e) &lt;= SOCKET_MAX_POLL_EVENTS)</span></div>
-<div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span> </div>
-<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span><span class="comment">/* Safe system call wrappers</span></div>
-<div class="line"><a id="l00408" name="l00408"></a><span class="lineno">  408</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span><span class="comment"> * SAFE_CLOSE: Close file descriptor with proper EINTR handling</span></div>
-<div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00411" name="l00411"></a><span class="lineno">  411</span><span class="comment"> * Per POSIX.1-2008: Do NOT retry close() on EINTR. The file descriptor</span></div>
-<div class="line"><a id="l00412" name="l00412"></a><span class="lineno">  412</span><span class="comment"> * state is unspecified after close() returns with EINTR - it may or may</span></div>
-<div class="line"><a id="l00413" name="l00413"></a><span class="lineno">  413</span><span class="comment"> * not be closed. Retrying could close a different FD if the descriptor</span></div>
-<div class="line"><a id="l00414" name="l00414"></a><span class="lineno">  414</span><span class="comment"> * was reused by another thread. We treat EINTR as success (don&#39;t log error)</span></div>
-<div class="line"><a id="l00415" name="l00415"></a><span class="lineno">  415</span><span class="comment"> * since the FD is likely closed anyway.</span></div>
-<div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00417" name="l00417"></a><span class="lineno">  417</span><span class="comment"> * Reference: POSIX.1-2008, close() specification, Application Usage</span></div>
-<div class="line"><a id="l00418" name="l00418"></a><span class="lineno">  418</span><span class="comment"> */</span></div>
-<div class="foldopen" id="foldopen00419" data-start="" data-end="">
-<div class="line"><a id="l00419" name="l00419"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a71b9fcff797cf3624ea3ec9c02805291">  419</a></span><span class="preprocessor">#define SAFE_CLOSE(fd)                                                                                                 \</span></div>
-<div class="line"><a id="l00420" name="l00420"></a><span class="lineno">  420</span><span class="preprocessor">    do                                                                                                                 \</span></div>
-<div class="line"><a id="l00421" name="l00421"></a><span class="lineno">  421</span><span class="preprocessor">    {                                                                                                                  \</span></div>
-<div class="line"><a id="l00422" name="l00422"></a><span class="lineno">  422</span><span class="preprocessor">        if ((fd) &gt;= 0)                                                                                                 \</span></div>
-<div class="line"><a id="l00423" name="l00423"></a><span class="lineno">  423</span><span class="preprocessor">        {                                                                                                              \</span></div>
-<div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span><span class="preprocessor">            int _safe_close_result = close(fd);                                                                        \</span></div>
-<div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span><span class="preprocessor">            if (_safe_close_result &lt; 0 &amp;&amp; errno != EINTR)                                                              \</span></div>
-<div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span><span class="preprocessor">            {                                                                                                          \</span></div>
-<div class="line"><a id="l00427" name="l00427"></a><span class="lineno">  427</span><span class="preprocessor">                </span><span class="comment">/* Log error but don&#39;t fail - fd is closed anyway */</span><span class="preprocessor">                                                   \</span></div>
-<div class="line"><a id="l00428" name="l00428"></a><span class="lineno">  428</span><span class="preprocessor">                perror(&quot;close&quot;);                                                                                       \</span></div>
-<div class="line"><a id="l00429" name="l00429"></a><span class="lineno">  429</span><span class="preprocessor">            }                                                                                                          \</span></div>
-<div class="line"><a id="l00430" name="l00430"></a><span class="lineno">  430</span><span class="preprocessor">            </span><span class="comment">/* EINTR is silently treated as success - FD is likely closed */</span><span class="preprocessor">                                           \</span></div>
-<div class="line"><a id="l00431" name="l00431"></a><span class="lineno">  431</span><span class="preprocessor">        }                                                                                                              \</span></div>
-<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span><span class="preprocessor">    } while (0)</span></div>
+<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span><span class="comment">/* Safe system call wrappers</span></div>
+<div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span><span class="comment"> * SAFE_CLOSE: Close file descriptor with proper EINTR handling</span></div>
+<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span><span class="comment"> * Per POSIX.1-2008: Do NOT retry close() on EINTR. The file descriptor</span></div>
+<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span><span class="comment"> * state is unspecified after close() returns with EINTR - it may or may</span></div>
+<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span><span class="comment"> * not be closed. Retrying could close a different FD if the descriptor</span></div>
+<div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span><span class="comment"> * was reused by another thread. We treat EINTR as success (don&#39;t log error)</span></div>
+<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span><span class="comment"> * since the FD is likely closed anyway.</span></div>
+<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span><span class="comment"> * Reference: POSIX.1-2008, close() specification, Application Usage</span></div>
+<div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span><span class="comment"> */</span></div>
+<div class="foldopen" id="foldopen00402" data-start="" data-end="">
+<div class="line"><a id="l00402" name="l00402"></a><span class="lineno"><a class="line" href="SocketConfig_8h.html#a71b9fcff797cf3624ea3ec9c02805291">  402</a></span><span class="preprocessor">#define SAFE_CLOSE(fd)                                                                                                 \</span></div>
+<div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span><span class="preprocessor">    do                                                                                                                 \</span></div>
+<div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span><span class="preprocessor">    {                                                                                                                  \</span></div>
+<div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span><span class="preprocessor">        if ((fd) &gt;= 0)                                                                                                 \</span></div>
+<div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span><span class="preprocessor">        {                                                                                                              \</span></div>
+<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span><span class="preprocessor">            int _safe_close_result = close(fd);                                                                        \</span></div>
+<div class="line"><a id="l00408" name="l00408"></a><span class="lineno">  408</span><span class="preprocessor">            if (_safe_close_result &lt; 0 &amp;&amp; errno != EINTR)                                                              \</span></div>
+<div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span><span class="preprocessor">            {                                                                                                          \</span></div>
+<div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span><span class="preprocessor">                </span><span class="comment">/* Log error but don&#39;t fail - fd is closed anyway */</span><span class="preprocessor">                                                   \</span></div>
+<div class="line"><a id="l00411" name="l00411"></a><span class="lineno">  411</span><span class="preprocessor">                perror(&quot;close&quot;);                                                                                       \</span></div>
+<div class="line"><a id="l00412" name="l00412"></a><span class="lineno">  412</span><span class="preprocessor">            }                                                                                                          \</span></div>
+<div class="line"><a id="l00413" name="l00413"></a><span class="lineno">  413</span><span class="preprocessor">            </span><span class="comment">/* EINTR is silently treated as success - FD is likely closed */</span><span class="preprocessor">                                           \</span></div>
+<div class="line"><a id="l00414" name="l00414"></a><span class="lineno">  414</span><span class="preprocessor">        }                                                                                                              \</span></div>
+<div class="line"><a id="l00415" name="l00415"></a><span class="lineno">  415</span><span class="preprocessor">    } while (0)</span></div>
 </div>
-<div class="line"><a id="l00433" name="l00433"></a><span class="lineno">  433</span> </div>
-<div class="line"><a id="l00434" name="l00434"></a><span class="lineno">  434</span><span class="preprocessor">#endif </span><span class="comment">/* SOCKETCONFIG_INCLUDED */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span> </div>
+<div class="line"><a id="l00417" name="l00417"></a><span class="lineno">  417</span><span class="preprocessor">#endif </span><span class="comment">/* SOCKETCONFIG_INCLUDED */</span><span class="preprocessor"></span></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

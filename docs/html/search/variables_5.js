@@ -1,4 +1,7 @@
 var searchData=
 [
-  ['host_0',['host',['../structSocketEventRecord.html#a18885f3e5dede775985597bcffd144e0',1,'SocketEventRecord']]]
+  ['fd_0',['fd',['../structSocketEventRecord.html#a97e68a348cf1c03285373831ec514140',1,'SocketEventRecord::fd'],['../structSocket__T.html#aad3b62a640e257bb2327afb361c9ea8e',1,'Socket_T::fd']]],
+  ['file_1',['file',['../structExcept__Frame.html#a4c8d0ea0c9437ede53e8703feefe0dc6',1,'Except_Frame']]],
+  ['free_5flist_2',['free_list',['../structT.html#ade73b8c1895a643ab5ab9f0417f52a77',1,'T']]],
+  ['free_5fnext_3',['free_next',['../structConnection.html#ad69db73c6cfea7b6481e4d467885342a',1,'Connection']]]
 ];

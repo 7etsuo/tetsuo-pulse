@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['values_0',['values',['../structSocketMetricsSnapshot.html#ad4bec382c27642da1ce45dcf676684e6',1,'SocketMetricsSnapshot']]]
+  ['reason_0',['reason',['../structT.html#a8984328ed338fdfb0fb2641c9451d431',1,'T']]]
 ];

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['reason_0',['reason',['../structT.html#a8984328ed338fdfb0fb2641c9451d431',1,'T']]]
+  ['nfds_0',['nfds',['../structSocketEventRecord.html#af43951ea25c34d38bfe5c7f8bef9a159',1,'SocketEventRecord']]]
 ];

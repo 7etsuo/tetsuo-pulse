@@ -1,4 +1,10 @@
 var searchData=
 [
-  ['operation_5ftimeout_5fms_0',['operation_timeout_ms',['../structSocketTimeouts.html#a14d40ecee50f5401530d5034866ed127',1,'SocketTimeouts']]]
+  ['last_5factivity_0',['last_activity',['../structConnection.html#a7b610bb6b7840583e38f923eaa16b488',1,'Connection']]],
+  ['line_1',['line',['../structExcept__Frame.html#aff1099dac68f6f3b8392f2ebe5c8341f',1,'Except_Frame']]],
+  ['local_5faddr_2',['local_addr',['../structSocketEventRecord.html#a0cea70562d6b7c2652b73ca802cbb02d',1,'SocketEventRecord::local_addr'],['../structSocket__T.html#afdfe3a76e69482033381117982815aa8',1,'Socket_T::local_addr']]],
+  ['local_5faddrlen_3',['local_addrlen',['../structSocket__T.html#a5d32905fed18791ae3de2ca9a1c92f29',1,'Socket_T']]],
+  ['local_5fport_4',['local_port',['../structSocketEventRecord.html#a52d282239d83a254db8d3503fb26c0fb',1,'SocketEventRecord']]],
+  ['localaddr_5',['localaddr',['../structSocket__T.html#a320461334e36422eb4f487c668b34345',1,'Socket_T']]],
+  ['localport_6',['localport',['../structSocket__T.html#a9b0f589e41ac3ea6b09e9f99a7e15e4b',1,'Socket_T']]]
 ];

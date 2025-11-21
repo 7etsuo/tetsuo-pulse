@@ -1,0 +1,27 @@
+var SocketPool_private_8h =
+[
+    [ "Connection", "structConnection.html", "structConnection" ],
+    [ "T", "structT.html", "structT" ],
+    [ "T", "SocketPool-private_8h.html#a0acb682b8260ab1c60b918599864e2e5", null ],
+    [ "Connection_T", "SocketPool-private_8h.html#a424a0221f5eef0991c244d83d02d8b2c", null ],
+    [ "check_pool_full", "SocketPool-private_8h.html#a9cf917c1dffc690121a5e68ef92fbc89", null ],
+    [ "decrement_pool_count", "SocketPool-private_8h.html#a5374f9969a32eb12ea7794b1f1a20d77", null ],
+    [ "find_free_slot", "SocketPool-private_8h.html#aba36afb2d1d22b6830506a69f41c9c39", null ],
+    [ "find_or_create_slot", "SocketPool-private_8h.html#ae5693c260bb02fb1c779d497b35eb6db", null ],
+    [ "find_slot", "SocketPool-private_8h.html#a344c2ab8a3e0b099bd74e65cc97cb66f", null ],
+    [ "increment_pool_count", "SocketPool-private_8h.html#a5426648c6c6a14ebaff48ee2160856c3", null ],
+    [ "initialize_connection", "SocketPool-private_8h.html#a6c55ecf49e5103925192159127088241", null ],
+    [ "insert_into_hash_table", "SocketPool-private_8h.html#ac073c8a892a77bae682cec8398d10518", null ],
+    [ "prepare_free_slot", "SocketPool-private_8h.html#a7821321479544a6e24fb4c2946e22c60", null ],
+    [ "remove_from_free_list", "SocketPool-private_8h.html#a8d3db0f18f008462c96cd8dc85be8c40", null ],
+    [ "remove_from_hash_table", "SocketPool-private_8h.html#a9710c881ae321ed9da843ca815ca0733", null ],
+    [ "return_to_free_list", "SocketPool-private_8h.html#a7024a2a77a04587e061d67a1172cdbfc", null ],
+    [ "SocketPool_cleanup_allocate_buffer", "SocketPool-private_8h.html#a42428b94afc3df0714036baf96dbc1f3", null ],
+    [ "SocketPool_connections_alloc_buffers", "SocketPool-private_8h.html#a0baf2c21ed54520dcaab3460a9a987f7", null ],
+    [ "SocketPool_connections_allocate_array", "SocketPool-private_8h.html#ade1f70a34432ae896e257fb0ee350c26", null ],
+    [ "SocketPool_connections_allocate_hash_table", "SocketPool-private_8h.html#a21e158d703adc910946bca1ec5ca6b86", null ],
+    [ "SocketPool_connections_initialize_slot", "SocketPool-private_8h.html#a88ab86be313053fde04989b904bb957a", null ],
+    [ "SocketPool_connections_release_buffers", "SocketPool-private_8h.html#a9cd17434558e5aa3cd77339b3043cd3a", null ],
+    [ "SocketPool_connections_reset_slot", "SocketPool-private_8h.html#acf51388d2a06f1d1b1caa4d55fe29159", null ],
+    [ "update_existing_slot", "SocketPool-private_8h.html#ae1541da7f1233af52ca75bb932074851", null ]
+];

@@ -44,32 +44,34 @@ var NAVTREE =
       [ "Zero-Copy File Transfer", "index.html#autotoc_md15", null ],
       [ "Scatter/Gather I/O", "index.html#autotoc_md16", null ],
       [ "Advanced TCP Options", "index.html#autotoc_md17", null ],
-      [ "Asynchronous DNS Resolution", "index.html#autotoc_md18", null ]
+      [ "Asynchronous DNS Resolution", "index.html#autotoc_md18", null ],
+      [ "TLS/SSL Secure Communication", "index.html#autotoc_md19", null ]
     ] ],
-    [ "API Reference", "index.html#autotoc_md19", [
-      [ "Core Modules", "index.html#autotoc_md20", [
-        [ "Socket (TCP Stream Sockets)", "index.html#autotoc_md21", null ],
-        [ "SocketDgram (UDP Datagram Sockets)", "index.html#autotoc_md22", null ],
-        [ "SocketPoll (Event Polling)", "index.html#autotoc_md23", null ],
-        [ "SocketPool (Connection Pooling)", "index.html#autotoc_md24", null ],
-        [ "SocketDNS (Asynchronous DNS)", "index.html#autotoc_md25", null ]
+    [ "API Reference", "index.html#autotoc_md20", [
+      [ "Core Modules", "index.html#autotoc_md21", [
+        [ "Socket (TCP Stream Sockets)", "index.html#autotoc_md22", null ],
+        [ "SocketDgram (UDP Datagram Sockets)", "index.html#autotoc_md23", null ],
+        [ "SocketPoll (Event Polling)", "index.html#autotoc_md24", null ],
+        [ "SocketPool (Connection Pooling)", "index.html#autotoc_md25", null ],
+        [ "SocketDNS (Asynchronous DNS)", "index.html#autotoc_md26", null ],
+        [ "SocketTLS (TLS/SSL)", "index.html#autotoc_md27", null ]
       ] ],
-      [ "Exception Types", "index.html#autotoc_md26", null ],
-      [ "Error Reporting", "index.html#autotoc_md27", null ]
+      [ "Exception Types", "index.html#autotoc_md28", null ],
+      [ "Error Reporting", "index.html#autotoc_md29", null ]
     ] ],
-    [ "Building", "index.html#autotoc_md28", [
-      [ "Requirements", "index.html#autotoc_md29", null ],
-      [ "Build Commands", "index.html#autotoc_md30", null ],
-      [ "Build Options", "index.html#autotoc_md31", null ]
+    [ "Building", "index.html#autotoc_md30", [
+      [ "Requirements", "index.html#autotoc_md31", null ],
+      [ "Build Commands", "index.html#autotoc_md32", null ],
+      [ "Build Options", "index.html#autotoc_md33", null ]
     ] ],
-    [ "Thread Safety", "index.html#autotoc_md32", null ],
-    [ "Memory Management", "index.html#autotoc_md33", null ],
-    [ "Performance Considerations", "index.html#autotoc_md34", null ],
-    [ "Examples", "index.html#autotoc_md35", null ],
-    [ "Documentation", "index.html#autotoc_md36", [
-      [ "Generating API Reference", "index.html#autotoc_md37", null ]
+    [ "Thread Safety", "index.html#autotoc_md34", null ],
+    [ "Memory Management", "index.html#autotoc_md35", null ],
+    [ "Performance Considerations", "index.html#autotoc_md36", null ],
+    [ "Examples", "index.html#autotoc_md37", null ],
+    [ "Documentation", "index.html#autotoc_md38", [
+      [ "Generating API Reference", "index.html#autotoc_md39", null ]
     ] ],
-    [ "License", "index.html#autotoc_md38", null ],
+    [ "License", "index.html#autotoc_md40", null ],
     [ "Data Structures", "annotated.html", [
       [ "Data Structures", "annotated.html", "annotated_dup" ],
       [ "Data Structure Index", "classes.html", null ],
@@ -82,7 +84,7 @@ var NAVTREE =
       [ "File List", "files.html", "files_dup" ],
       [ "Globals", "globals.html", [
         [ "All", "globals.html", "globals_dup" ],
-        [ "Functions", "globals_func.html", null ],
+        [ "Functions", "globals_func.html", "globals_func" ],
         [ "Variables", "globals_vars.html", null ],
         [ "Typedefs", "globals_type.html", null ],
         [ "Enumerations", "globals_enum.html", null ],
@@ -96,8 +98,8 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "Arena_8h.html",
-"SocketError_8h.html#acf807f3c720486767d282324cacd4908a08206822505583f83a334ade68139a75",
-"index.html#autotoc_md17"
+"SocketError_8h.html#a1feea47474a6b6e939c442cdd7c42fdb",
+"Socket_8h.html#a9262ae6cbe3a40b63967ba700a011016"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
