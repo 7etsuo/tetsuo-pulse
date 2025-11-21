@@ -93,6 +93,12 @@ int SocketPool_accept_batch(T pool, Socket_T server, int max_accepts, Socket_T *
     int available;
     volatile int local_max_accepts = max_accepts;
 
+    if (!pool || !server || !accepted || max_accepts <= 0 || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS) {
+        if (max_accepts <= 0 || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS) {
+            SOCKET_ERROR_MSG("Invalid max_accepts %d (must be 1-%d)", max_accepts, SOCKET_POOL_MAX_BATCH_ACCEPTS);
+        }
+        return 0; /* Or RAISE if void no */
+    }
     assert(pool);
     assert(server);
     assert(max_accepts > 0 && max_accepts <= SOCKET_POOL_MAX_BATCH_ACCEPTS);
