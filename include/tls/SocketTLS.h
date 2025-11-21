@@ -221,6 +221,19 @@ extern int SocketTLS_get_verify_result(Socket_T socket);
  */
 extern int SocketTLS_is_session_reused(Socket_T socket);
 
+/**
+ * SocketTLS_get_alpn_selected - Get the negotiated ALPN protocol
+ * @socket: Socket instance with completed handshake
+ *
+ * Returns the ALPN protocol that was negotiated during the TLS handshake.
+ * This is useful for determining which application protocol to use (e.g., "h2", "http/1.1").
+ *
+ * Returns: Negotiated protocol string, or NULL if none negotiated or unavailable
+ * Raises: None
+ * Thread-safe: Yes - reads immutable post-handshake state
+ */
+extern const char *SocketTLS_get_alpn_selected(Socket_T socket);
+
 #undef T
 
 #endif /* SOCKET_HAS_TLS */

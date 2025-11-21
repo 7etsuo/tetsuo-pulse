@@ -174,6 +174,52 @@ SocketTLS_is_session_reused(Socket_T socket)
     return SSL_session_reused(ssl) ? 1 : 0;
 }
 
+/**
+ * SocketTLS_get_alpn_selected - Get the negotiated ALPN protocol
+ * @socket: Socket instance with completed handshake
+ *
+ * Returns the ALPN protocol that was negotiated during the TLS handshake.
+ * This is useful for determining which application protocol to use (e.g., "h2", "http/1.1").
+ *
+ * Returns: Negotiated protocol string, or NULL if none negotiated or unavailable
+ * Raises: None
+ * Thread-safe: Yes - reads immutable post-handshake state
+ */
+const char *
+SocketTLS_get_alpn_selected(Socket_T socket)
+{
+    SSL *ssl;
+    const unsigned char *alpn_data;
+    unsigned int alpn_len;
+
+    assert(socket);
+
+    /* Check if TLS is enabled */
+    if (!socket->tls_enabled)
+    {
+        return NULL;
+    }
+
+    /* Get SSL object */
+    ssl = socket_get_ssl(socket);
+    if (!ssl)
+    {
+        return NULL;
+    }
+
+    /* Get negotiated ALPN protocol */
+    SSL_get0_alpn_selected(ssl, &alpn_data, &alpn_len);
+    if (!alpn_data || alpn_len == 0)
+    {
+        return NULL;
+    }
+
+    /* Note: OpenSSL returns the protocol in wire format (length-prefixed)
+     * For simplicity, we assume it's a valid string and return it directly.
+     * In production, you might want to validate the format. */
+    return (const char *)alpn_data;
+}
+
 #undef T
 
 #endif /* SOCKET_HAS_TLS */

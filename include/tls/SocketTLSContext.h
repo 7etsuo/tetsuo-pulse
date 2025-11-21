@@ -87,6 +87,23 @@ extern T SocketTLSContext_new_client(const char *ca_file);
 extern void SocketTLSContext_load_certificate(T ctx, const char *cert_file, const char *key_file);
 
 /**
+ * SocketTLSContext_add_certificate - Add certificate mapping for SNI virtual hosting
+ * @ctx: The TLS context instance
+ * @hostname: Hostname this certificate is for (NULL for default certificate)
+ * @cert_file: Certificate file path (PEM format)
+ * @key_file: Private key file path (PEM format)
+ *
+ * Adds a certificate/key pair for SNI-based virtual hosting. Multiple certificates
+ * can be loaded for different hostnames. The first certificate loaded becomes
+ * the default if no hostname match is found.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed on error (file not found, invalid cert/key, allocation)
+ * Thread-safe: No (modifies shared context)
+ */
+extern void SocketTLSContext_add_certificate(T ctx, const char *hostname, const char *cert_file, const char *key_file);
+
+/**
  * SocketTLSContext_load_ca - Load trusted CA certificates
  * @ctx: The TLS context instance
  * @ca_file: Path to CA file or directory containing PEM CA certs
@@ -169,6 +186,26 @@ extern void SocketTLSContext_set_cipher_list(T ctx, const char *ciphers);
  * Note: Protocols advertised in preference order (first preferred).
  */
 extern void SocketTLSContext_set_alpn_protos(T ctx, const char **protos, size_t count);
+
+/* ALPN callback type for customizable protocol selection */
+typedef const char *(*SocketTLSAlpnCallback)(const char **client_protos, size_t client_count, void *user_data);
+
+/**
+ * SocketTLSContext_set_alpn_callback - Set custom ALPN protocol selection callback
+ * @ctx: The TLS context instance
+ * @callback: Function to call for ALPN protocol selection
+ * @user_data: User data passed to callback function
+ *
+ * Sets a custom callback for ALPN protocol selection instead of using default priority order.
+ * The callback receives client-offered protocols and should return the selected protocol string.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed on invalid parameters
+ * Thread-safe: No
+ *
+ * Note: Callback is called during TLS handshake, must be thread-safe if context is shared.
+ */
+extern void SocketTLSContext_set_alpn_callback(T ctx, SocketTLSAlpnCallback callback, void *user_data);
 
 /* Session management */
 /**
