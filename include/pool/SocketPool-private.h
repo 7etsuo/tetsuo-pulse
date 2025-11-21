@@ -29,6 +29,8 @@ struct Connection
 
 typedef struct Connection *Connection_T;
 
+#define SOCKET_HASH_SIZE 1021 /* Hash table size - prime for good distribution */
+
 #define T SocketPool_T
 struct T
 {
