@@ -58,6 +58,15 @@ typedef enum
     REQ_CANCELLED   /* Request cancelled */
 } RequestState;
 
+/* Cleanup levels for partial initialization failure handling */
+enum DnsCleanupLevel {
+    DNS_CLEAN_NONE = 0,
+    DNS_CLEAN_MUTEX,
+    DNS_CLEAN_CONDS,
+    DNS_CLEAN_PIPE,
+    DNS_CLEAN_ARENA
+};
+
 /* DNS request structure */
 struct Request_T
 {
@@ -215,7 +224,11 @@ static int perform_dns_resolution(struct Request_T *req, const struct addrinfo *
 
     if (req->port > 0)
     {
-        snprintf(port_str, sizeof(port_str), "%d", req->port);
+        int sn_res = snprintf(port_str, sizeof(port_str), "%d", req->port);
+        if (sn_res < 0 || (size_t)sn_res >= sizeof(port_str)) {
+            *result = NULL;
+            return EAI_FAIL;
+        }
         res = getaddrinfo(req->host, port_str, hints, result);
     }
     else
@@ -444,16 +457,17 @@ static void cleanup_pipe(T dns)
  * Cleans up partially initialized resolver. cleanup_level indicates how far
  * initialization got before failure.
  */
-static void cleanup_on_init_failure(T dns, int cleanup_level)
+static void cleanup_on_init_failure(T dns, enum DnsCleanupLevel cleanup_level)
 {
-    if (cleanup_level >= 4)
+    if (cleanup_level >= DNS_CLEAN_ARENA)
         Arena_dispose(&dns->arena);
-    if (cleanup_level >= 3)
+    if (cleanup_level >= DNS_CLEAN_PIPE)
         cleanup_pipe(dns);
-    if (cleanup_level >= 2)
+    if (cleanup_level >= DNS_CLEAN_CONDS) {
         cleanup_mutex_cond(dns);
-    if (cleanup_level >= 1)
+    } else if (cleanup_level >= DNS_CLEAN_MUTEX) {
         pthread_mutex_destroy(&dns->mutex);
+    }
     free(dns);
 }
 
@@ -466,7 +480,7 @@ static void initialize_mutex(T dns)
 {
     if (pthread_mutex_init(&dns->mutex, NULL) != 0)
     {
-        cleanup_on_init_failure(dns, 0);
+        cleanup_on_init_failure(dns, DNS_CLEAN_NONE);
         SOCKET_ERROR_MSG("Failed to initialize DNS resolver mutex");
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
@@ -481,7 +495,7 @@ static void initialize_queue_condition(T dns)
 {
     if (pthread_cond_init(&dns->queue_cond, NULL) != 0)
     {
-        cleanup_on_init_failure(dns, 1);
+        cleanup_on_init_failure(dns, DNS_CLEAN_MUTEX);
         SOCKET_ERROR_MSG("Failed to initialize DNS resolver condition variable");
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
@@ -496,7 +510,7 @@ static void initialize_result_condition(T dns)
 {
     if (pthread_cond_init(&dns->result_cond, NULL) != 0)
     {
-        cleanup_on_init_failure(dns, 2);
+        cleanup_on_init_failure(dns, DNS_CLEAN_CONDS);
         SOCKET_ERROR_MSG("Failed to initialize DNS resolver result condition variable");
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
@@ -524,7 +538,7 @@ static void create_completion_pipe(T dns)
 {
     if (pipe(dns->pipefd) < 0)
     {
-        cleanup_on_init_failure(dns, 3);
+        cleanup_on_init_failure(dns, DNS_CLEAN_CONDS);
         SOCKET_ERROR_FMT("Failed to create completion pipe");
         RAISE_DNS_ERROR(SocketDNS_Failed);
     }
@@ -847,6 +861,7 @@ void SocketDNS_free(T *dns)
 {
     T d;
 
+    if (!dns || !*dns) return;
     assert(dns && *dns);
 
     d = *dns;
@@ -901,9 +916,21 @@ static void validate_resolve_params(const char *host, int port)
                 RAISE_DNS_ERROR(SocketDNS_Failed);
             }
         }
+        // Additional structural validation to prevent invalid patterns
+        for (size_t j = 0; j < host_len - 1; ++j) {
+            if (host[j] == '.' && host[j + 1] == '.') {
+                SOCKET_ERROR_MSG("Invalid hostname pattern: consecutive dots detected");
+                RAISE_DNS_ERROR(SocketDNS_Failed);
+            }
+        }
+        // Disallow starting with . or - (common invalid/attack patterns)
+        if (host_len > 0 && (host[0] == '.' || host[0] == '-')) {
+            SOCKET_ERROR_MSG("Invalid hostname: cannot start with . or -");
+            RAISE_DNS_ERROR(SocketDNS_Failed);
+        }
     }
 
-    if (port < 0 || port > 65535)
+    if (!SOCKET_VALID_PORT(port))
     {
         SOCKET_ERROR_MSG("Invalid port number: %d (must be 0-65535)", port);
         RAISE_DNS_ERROR(SocketDNS_Failed);
@@ -1077,6 +1104,10 @@ Request_T SocketDNS_resolve(T dns, const char *host, int port, SocketDNS_Callbac
     struct Request_T *req;
     size_t host_len;
 
+    if (!dns) {
+        SOCKET_ERROR_MSG("Invalid NULL dns resolver");
+        RAISE_DNS_ERROR(SocketDNS_Failed);
+    }
     assert(dns);
 
     host_len = host ? strlen(host) : 0;
@@ -1179,6 +1210,7 @@ void SocketDNS_cancel(T dns, Request_T req)
     int send_signal = 0;
     int cancelled = 0;
 
+    if (!dns || !req) return;
     assert(dns);
     assert(req);
 
@@ -1229,6 +1261,7 @@ size_t SocketDNS_getmaxpending(T dns)
 {
     size_t current;
 
+    if (!dns) return 0;
     assert(dns);
 
     pthread_mutex_lock(&dns->mutex);
@@ -1242,6 +1275,10 @@ void SocketDNS_setmaxpending(T dns, size_t max_pending)
 {
     size_t queue_depth;
 
+    if (!dns) {
+        SOCKET_ERROR_MSG("Invalid NULL dns resolver");
+        RAISE_DNS_ERROR(SocketDNS_Failed);
+    }
     assert(dns);
 
     pthread_mutex_lock(&dns->mutex);
@@ -1261,6 +1298,7 @@ int SocketDNS_gettimeout(T dns)
 {
     int current;
 
+    if (!dns) return 0;
     assert(dns);
 
     pthread_mutex_lock(&dns->mutex);
@@ -1274,6 +1312,7 @@ void SocketDNS_settimeout(T dns, int timeout_ms)
 {
     int sanitized = timeout_ms < 0 ? 0 : timeout_ms;
 
+    if (!dns) return;
     assert(dns);
 
     pthread_mutex_lock(&dns->mutex);
@@ -1283,6 +1322,7 @@ void SocketDNS_settimeout(T dns, int timeout_ms)
 
 int SocketDNS_pollfd(T dns)
 {
+    if (!dns) return -1;
     assert(dns);
     return dns->pipefd[0];
 }
@@ -1293,6 +1333,7 @@ int SocketDNS_check(T dns)
     ssize_t n;
     volatile int count = 0;
 
+    if (!dns) return 0;
     assert(dns);
 
     /* Check if pipe is still valid (may be closed during shutdown) */
@@ -1320,6 +1361,7 @@ struct addrinfo *SocketDNS_getresult(T dns, Request_T req)
     struct Request_T *r = (struct Request_T *)req;
     struct addrinfo *result = NULL;
 
+    if (!dns || !req) return NULL;
     assert(dns);
     assert(req);
 
@@ -1353,6 +1395,7 @@ int SocketDNS_geterror(T dns, Request_T req)
     struct Request_T *r = (struct Request_T *)req;
     int error = 0;
 
+    if (!dns || !req) return 0;
     assert(dns);
     assert(req);
 
@@ -1368,6 +1411,10 @@ Request_T SocketDNS_create_completed_request(T dns, struct addrinfo *result, int
 {
     struct Request_T *req;
 
+    if (!dns || !result) {
+        SOCKET_ERROR_MSG("Invalid NULL dns or result in create_completed_request");
+        RAISE_DNS_ERROR(SocketDNS_Failed);
+    }
     assert(dns);
     assert(result);
 
@@ -1399,6 +1446,7 @@ void SocketDNS_request_settimeout(T dns, Request_T req, int timeout_ms)
     struct Request_T *r = (struct Request_T *)req;
     int sanitized = timeout_ms < 0 ? 0 : timeout_ms;
 
+    if (!dns || !req) return;
     assert(dns);
     assert(req);
 

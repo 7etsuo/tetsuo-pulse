@@ -166,12 +166,11 @@ extern int SocketDNS_pollfd(T dns);
 /**
  * SocketDNS_check - Check for completed requests (non-blocking)
  * @dns: DNS resolver instance
- * Returns: Number of completed requests processed
+ * Returns: Number of completion signals drained (1 byte per completed/cancelled/timeout request)
  * Thread-safe: Yes - safe to call from any thread
- * Processes completed DNS resolution requests. For requests submitted
- * without callbacks, the caller must poll for completion and call this
- * function to retrieve results via SocketDNS_getresult().
- * Should be called when SocketDNS_pollfd() becomes readable.
+ * Drains the signal pipe for completed DNS events. Does not automatically retrieve results.
+ * For poll-mode requests (no callback), track your Request_T handles and call SocketDNS_getresult()
+ * after draining to fetch completed results. Call when SocketDNS_pollfd() is readable.
  */
 extern int SocketDNS_check(T dns);
 
