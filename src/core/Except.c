@@ -149,7 +149,8 @@ static void except_perform_jump(Except_Frame *p)
  * Security: Validates NULL exception pointer to prevent undefined behavior.
  * Uses abort() for uncaught exceptions (appropriate for fatal errors).
  */
-void Except_raise(const T *e, const char *file, int line)
+void
+Except_raise(const T *e, const char *file, int line)
 {
     /* Read Except_stack into local variable - ensures we get current value */
     volatile Except_Frame *volatile_p = Except_stack;

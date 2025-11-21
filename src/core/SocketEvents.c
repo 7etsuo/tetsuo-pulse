@@ -45,6 +45,11 @@ SocketEvent_register(SocketEventCallback callback, void *userdata)
 {
     size_t i;
 
+    if (callback == NULL) {
+        SocketLog_emit(SOCKET_LOG_WARN, "SocketEvents", "NULL callback in register ignored");
+        return;
+    }
+
     assert(callback);
 
     pthread_mutex_lock(&socketevent_mutex);
@@ -76,6 +81,11 @@ void
 SocketEvent_unregister(SocketEventCallback callback, void *userdata)
 {
     size_t i;
+
+    if (callback == NULL) {
+        SocketLog_emit(SOCKET_LOG_WARN, "SocketEvents", "NULL callback in unregister ignored");
+        return;
+    }
 
     assert(callback);
 

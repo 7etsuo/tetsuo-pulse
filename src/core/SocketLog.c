@@ -68,7 +68,8 @@ SocketLogCallback SocketLog_getcallback(void **userdata)
     return callback;
 }
 
-const char *SocketLog_levelname(SocketLogLevel level)
+const char *
+SocketLog_levelname(SocketLogLevel level)
 {
     if (level < SOCKET_LOG_TRACE || level > SOCKET_LOG_FATAL)
         return "UNKNOWN";
