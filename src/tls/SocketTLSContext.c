@@ -1,6 +1,26 @@
 /**
- * SocketTLSContext.c - TLS Context Module
- * OpenSSL SSL_CTX management for TLS socket contexts
+ * SocketTLSContext.c - TLS Context Management Implementation
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
+ *
+ * Manages creation, configuration, and lifecycle of OpenSSL SSL_CTX objects.
+ * Encapsulates secure defaults (TLS1.3-only, PFS ciphers), cert loading,
+ * verification modes, ALPN, and session caching. Uses Arena for internal allocations.
+ * Provides opaque T interface with exception-based errors.
+ *
+ * Key integration:
+ * - Automatic protocol/cipher hardening
+ * - CA cert loading for verification
+ * - ALPN wire-format construction from strings
+ * - Session cache config for perf
+ * - Detailed OpenSSL error formatting in exceptions
+ *
+ * Thread safety: Context modification not thread-safe. After setup, sharing
+ * for SSL_new() is safe (OpenSSL CTX is ref-counted). Use mutex if modifying shared.
+ * Per-connection SSL objects are independent.
+ *
+ * Error handling: Uses SocketTLS_Failed exception with context-specific details.
  */
 
 #ifdef SOCKET_HAS_TLS
@@ -50,10 +70,11 @@ struct T
 };
 
 /* Helper function to format OpenSSL errors and raise TLS context exceptions */
-static void raise_tls_context_error(const char *context)
+static void
+raise_tls_context_error(const char *context)
 {
     unsigned long openssl_error = ERR_get_error();
-    char openssl_error_buf[256];
+    char openssl_error_buf[SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE];
 
     if (openssl_error != 0)
     {
@@ -72,6 +93,80 @@ static void raise_tls_context_error(const char *context)
 }
 
 /**
+ * alloc_and_init_ctx - Allocate and initialize common TLS context structure
+ * @method: OpenSSL method (TLS_server_method() or TLS_client_method())
+ * @is_server: Non-zero for server mode, zero for client
+ *
+ * Shared initialization logic for client and server contexts. Creates SSL_CTX,
+ * configures secure TLS1.3-only settings and ciphersuites, allocates context
+ * struct with calloc, creates arena, initializes fields.
+ *
+ * Returns: New T instance ready for further configuration
+ * Raises: SocketTLS_Failed on any failure (OpenSSL config, memory)
+ * Thread-safe: Yes - independent instances
+ * 
+ * Note: Caller must load certificates and set other options. Uses calloc for
+ * ctx struct (freed separately); arena for internal buffers.
+ */
+static T
+alloc_and_init_ctx(const SSL_METHOD *method, int is_server)
+{
+    T ctx;
+    SSL_CTX *ssl_ctx;
+
+    /* Create SSL_CTX with specified method */
+    ssl_ctx = SSL_CTX_new(method);
+    if (!ssl_ctx)
+    {
+        raise_tls_context_error("Failed to create SSL_CTX");
+    }
+
+    /* Set protocol and cipher configs */
+    if (SSL_CTX_set_min_proto_version(ssl_ctx, SOCKET_TLS_MIN_VERSION) != 1)
+    {
+        SSL_CTX_free(ssl_ctx);
+        raise_tls_context_error("Failed to set TLS1.3 min version");
+    }
+
+    if (SSL_CTX_set_max_proto_version(ssl_ctx, SOCKET_TLS_MAX_VERSION) != 1)
+    {
+        SSL_CTX_free(ssl_ctx);
+        raise_tls_context_error("Failed to enforce TLS1.3 max version");
+    }
+
+    if (SSL_CTX_set_ciphersuites(ssl_ctx, SOCKET_TLS13_CIPHERSUITES) != 1)
+    {
+        SSL_CTX_free(ssl_ctx);
+        raise_tls_context_error("Failed to set secure ciphersuites");
+    }
+
+    /* Allocate and initialize context structure */
+    ctx = calloc(1, sizeof(*ctx));
+    if (!ctx)
+    {
+        SSL_CTX_free(ssl_ctx);
+        raise_tls_context_error("ENOMEM: calloc for context struct");
+    }
+
+    /* Create arena */
+    ctx->arena = Arena_new();
+    if (!ctx->arena)
+    {
+        free(ctx);
+        SSL_CTX_free(ssl_ctx);
+        raise_tls_context_error("Failed to create context arena");
+    }
+
+    /* Initialize fields - transfer ownership of ssl_ctx */
+    ctx->ssl_ctx = ssl_ctx;
+    ctx->is_server = !!is_server;
+    ctx->session_cache_enabled = 0;
+    ctx->session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
+
+    return ctx;
+}
+
+/**
  * SocketTLSContext_new_server - Create a new server TLS context
  * @cert_file: Server certificate file path (PEM format)
  * @key_file: Private key file path (PEM format)
@@ -85,63 +180,16 @@ static void raise_tls_context_error(const char *context)
  * Raises: SocketTLS_Failed on error (file not found, invalid cert/key, etc.)
  * Thread-safe: Yes (creates independent context)
  */
-T SocketTLSContext_new_server(const char *cert_file, const char *key_file, const char *ca_file)
+T
+SocketTLSContext_new_server(const char *cert_file, const char *key_file, const char *ca_file)
 {
     T ctx;
-    SSL_CTX *ssl_ctx;
 
     assert(cert_file);
     assert(key_file);
 
-    /* Create SSL context for server */
-    ssl_ctx = SSL_CTX_new(TLS_server_method());
-    if (!ssl_ctx)
-    {
-        raise_tls_context_error("Failed to create server SSL context");
-    }
-
-    /* Set minimum TLS version */
-    if (SSL_CTX_set_min_proto_version(ssl_ctx, SOCKET_TLS_MIN_VERSION) != 1)
-    {
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to set minimum TLS protocol version");
-    }
-
-    /* Enforce TLS1.3-only (max version) */
-    if (SSL_CTX_set_max_proto_version(ssl_ctx, SOCKET_TLS_MAX_VERSION) != 1)
-    {
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to set maximum TLS protocol version (TLS1.3-only)");
-    }
-
-    /* Enforce modern TLS1.3 ciphersuites (ECDHE-PFS, AES-GCM/ChaCha20) */
-    if (SSL_CTX_set_ciphersuites(ssl_ctx, SOCKET_TLS13_CIPHERSUITES) != 1)
-    {
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to enforce TLS1.3 ciphersuites");
-    }
-
-    /* Allocate context structure */
-    ctx = calloc(1, sizeof(*ctx));
-    if (!ctx)
-    {
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to allocate TLS context structure");
-    }
-
-    /* Create arena for allocations */
-    ctx->arena = Arena_new();
-    if (!ctx->arena)
-    {
-        free(ctx);
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to create TLS context arena");
-    }
-
-    ctx->ssl_ctx = ssl_ctx;
-    ctx->is_server = 1;
-    ctx->session_cache_enabled = 0;
-    ctx->session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
+    /* Allocate and initialize common context structure */
+    ctx = alloc_and_init_ctx(TLS_server_method(), 1);
 
     /* Load server certificate and key */
     TRY
@@ -169,60 +217,13 @@ T SocketTLSContext_new_server(const char *cert_file, const char *key_file, const
  * Raises: SocketTLS_Failed on error
  * Thread-safe: Yes (creates independent context)
  */
-T SocketTLSContext_new_client(const char *ca_file)
+T
+SocketTLSContext_new_client(const char *ca_file)
 {
     T ctx;
-    SSL_CTX *ssl_ctx;
 
-    /* Create SSL context for client */
-    ssl_ctx = SSL_CTX_new(TLS_client_method());
-    if (!ssl_ctx)
-    {
-        raise_tls_context_error("Failed to create client SSL context");
-    }
-
-    /* Set minimum TLS version */
-    if (SSL_CTX_set_min_proto_version(ssl_ctx, SOCKET_TLS_MIN_VERSION) != 1)
-    {
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to set minimum TLS protocol version");
-    }
-
-    /* Enforce TLS1.3-only (max version) */
-    if (SSL_CTX_set_max_proto_version(ssl_ctx, SOCKET_TLS_MAX_VERSION) != 1)
-    {
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to set maximum TLS protocol version (TLS1.3-only)");
-    }
-
-    /* Enforce modern TLS1.3 ciphersuites (ECDHE-PFS, AES-GCM/ChaCha20) */
-    if (SSL_CTX_set_ciphersuites(ssl_ctx, SOCKET_TLS13_CIPHERSUITES) != 1)
-    {
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to enforce TLS1.3 ciphersuites");
-    }
-
-    /* Allocate context structure */
-    ctx = calloc(1, sizeof(*ctx));
-    if (!ctx)
-    {
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to allocate TLS context structure");
-    }
-
-    /* Create arena for allocations */
-    ctx->arena = Arena_new();
-    if (!ctx->arena)
-    {
-        free(ctx);
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to create TLS context arena");
-    }
-
-    ctx->ssl_ctx = ssl_ctx;
-    ctx->is_server = 0;
-    ctx->session_cache_enabled = 0;
-    ctx->session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
+    /* Allocate and initialize common context structure */
+    ctx = alloc_and_init_ctx(TLS_client_method(), 0);
 
     /* Load CA certificates if provided */
     if (ca_file)
@@ -252,7 +253,8 @@ T SocketTLSContext_new_client(const char *ca_file)
  * Raises: SocketTLS_Failed on error (file not found, invalid format, key/cert mismatch)
  * Thread-safe: No (modifies shared context)
  */
-void SocketTLSContext_load_certificate(T ctx, const char *cert_file, const char *key_file)
+void
+SocketTLSContext_load_certificate(T ctx, const char *cert_file, const char *key_file)
 {
     assert(ctx);
     assert(ctx->ssl_ctx);
@@ -629,5 +631,7 @@ int SocketTLSContext_is_server(T ctx)
     assert(ctx);
     return ctx->is_server;
 }
+
+#undef T
 
 #endif /* SOCKET_HAS_TLS */

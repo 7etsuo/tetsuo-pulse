@@ -102,7 +102,10 @@ set(LIB_SOURCES
 # Add TLS sources if enabled
 if(SOCKET_HAS_TLS)
     list(APPEND LIB_SOURCES
-        src/tls/SocketTLS.c
+        src/tls/SocketTLS-base.c
+        src/tls/SocketTLS-handshake.c
+        src/tls/SocketTLS-io.c
+        src/tls/SocketTLS-info.c
         src/tls/SocketTLSContext.c
     )
 endif()
