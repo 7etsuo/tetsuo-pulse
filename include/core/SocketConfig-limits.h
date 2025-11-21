@@ -7,7 +7,7 @@
 
 /* Maximum number of connections in pool (can be overridden at compile time) */
 #ifndef SOCKET_MAX_CONNECTIONS
-#define SOCKET_MAX_CONNECTIONS 10000
+#define SOCKET_MAX_CONNECTIONS 10000UL
 #endif
 
 /* Maximum buffer size per connection (can be overridden at compile time) */

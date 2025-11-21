@@ -65,15 +65,9 @@ time_t safe_time(void)
  * enforce_max_connections - Enforce the maximum connection limit
  * @maxconns: Requested maximum number of connections
  *
- * Returns: Enforced maximum connections value (clamped to SOCKET_MAX_CONNECTIONS)
+ * Returns: Enforced maximum connections value (clamped to SOCKET_MAX_CONNECTIONS, min 1)
  * Thread-safe: Yes - pure function
  */
-static size_t enforce_max_connections(size_t maxconns)
-{
-    if (maxconns > SOCKET_MAX_CONNECTIONS)
-        return SOCKET_MAX_CONNECTIONS;
-    return maxconns;
-}
 
 /**
  * enforce_buffer_size - Enforce buffer size limits

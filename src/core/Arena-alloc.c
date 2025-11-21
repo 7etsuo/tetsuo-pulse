@@ -6,10 +6,18 @@
  * Following C Interfaces and Implementations patterns
  */
 
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
+#include <pthread.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>  /* memset */
 
 #include "core/Arena-private.h"
 #include "core/Except.h"
+#include "core/SocketError.h"  /* For error handling if needed */
 
 /**
  * arena_get_alignment - Get alignment size for memory allocations

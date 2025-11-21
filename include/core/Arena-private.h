@@ -1,9 +1,42 @@
 #ifndef ARENA_PRIVATE_INCLUDED
 #define ARENA_PRIVATE_INCLUDED
 
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
+#include <pthread.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "core/Arena.h"  /* For T, types */
+#include "core/SocketError.h"  /* For Socket_safe_strerror */
 
 #include "core/SocketConfig.h"  /* For constants */
+
+#define T Arena_T
+
+/* Internal structures */
+struct ChunkHeader {
+    struct ChunkHeader *prev;
+    char *avail;
+    char *limit;
+    size_t chunk_size; /* Actual size of this chunk (for proper reuse) */
+};
+
+union header {
+    struct ChunkHeader b;
+    union align a;
+};
+
+/* Main arena structure - includes mutex for thread safety */
+struct T {
+    struct ChunkHeader *prev;
+    char *avail;
+    char *limit;
+    pthread_mutex_t mutex; /* Per-arena mutex for thread-safe allocation */
+};
 
 /**
  * Private internal functions for Arena module - not part of public API.
@@ -48,5 +81,32 @@ extern int arena_validate_allocation_request(T arena, size_t nbytes);
 extern struct ChunkHeader *freechunks;
 extern int nfree;
 extern pthread_mutex_t arena_mutex;
+
+/* Thread-local error handling globals */
+#ifdef _WIN32
+extern __declspec(thread) char arena_error_buf[ARENA_ERROR_BUFSIZE];
+extern __declspec(thread) Except_T Arena_DetailedException;
+#else
+extern __thread char arena_error_buf[ARENA_ERROR_BUFSIZE];
+extern __thread Except_T Arena_DetailedException;
+#endif
+
+/* Overflow and validation macros */
+#define ARENA_CHECK_OVERFLOW_ADD(a, b) (((a) > SIZE_MAX - (b)) ? ARENA_VALIDATION_FAILURE : ARENA_VALIDATION_SUCCESS)
+#define ARENA_CHECK_OVERFLOW_MUL(a, b) \
+    (((a) != 0 && (b) > SIZE_MAX / (a)) ? ARENA_VALIDATION_FAILURE : ARENA_VALIDATION_SUCCESS)
+#define ARENA_VALID_PTR_ARITH(ptr, offset, max) \
+    (((uintptr_t)(ptr) <= UINTPTR_MAX - (offset)) && ((uintptr_t)(ptr) + (offset) <= (uintptr_t)(max)))
+
+/* Error macros */
+#define ARENA_ERROR_MSG(fmt, ...) snprintf(arena_error_buf, ARENA_ERROR_BUFSIZE, fmt, ##__VA_ARGS__)
+#define ARENA_ERROR_FMT(fmt, ...) \
+    snprintf(arena_error_buf, ARENA_ERROR_BUFSIZE, fmt " (errno: %d - %s)", ##__VA_ARGS__, errno, Socket_safe_strerror(errno))
+#define RAISE_ARENA_ERROR(base_exception) \
+    do { \
+        Arena_DetailedException = (base_exception); \
+        Arena_DetailedException.reason = arena_error_buf; \
+        RAISE(Arena_DetailedException); \
+    } while (0)
 
 #endif /* ARENA_PRIVATE_INCLUDED */
