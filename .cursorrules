@@ -1,8 +1,9 @@
-# Socket Library Cursor Rules (Updated for TLS1.3-Only)
+# Socket Library Cursor Rules (Comprehensive Ruleset)
 
 This .cursorrules enforces CII/GNU standards + TLS1.3 hardening for production socket lib.
+It consolidates all architectural, design, and implementation rules for the codebase.
 
-## TLS1.3 Hardening
+## 1. TLS1.3 Hardening (CRITICAL)
 **ALWAYS** use the TLS1.3-only configuration defined in SocketTLSConfig.h:
 
 ```c
@@ -12,3 +13,129 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 ```
 
 **Rationale**: Eliminates legacy protocol/cipher vulnerabilities while enabling faster handshakes and forward secrecy.
+
+## 2. Coding Style (GNU C)
+
+### Header Files
+- **ALWAYS** use include guards with `_INCLUDED` suffix:
+  ```c
+  #ifndef FILENAME_INCLUDED
+  #define FILENAME_INCLUDED
+  ...
+  #endif
+  ```
+- **ALWAYS** include module documentation at the top.
+
+### Functions
+- **ALWAYS** use Doxygen-style comments (`/** ... */`).
+- **ALWAYS** put function return type on a separate line:
+  ```c
+  ReturnType
+  FunctionName(Type1 param1, Type2 param2)
+  {
+      // Body
+  }
+  ```
+- **ALWAYS** use `static` for private helper functions.
+
+### Macros
+- **ALWAYS** use `do { ... } while(0)` for complex macros.
+- **ALWAYS** use ALL_CAPS for constants and macros.
+- **ALWAYS** parenthesize macro arguments: `#define VALID(x) ((x) > 0)`.
+
+## 3. Architecture & Design Patterns
+
+### Layered Architecture
+1. **Foundation**: `Arena` (Memory), `Except` (Errors).
+2. **Core I/O**: `Socket` (TCP/Unix), `SocketDgram` (UDP), `SocketBuf` (Buffers), `SocketDNS` (Async DNS).
+3. **Event System**: `SocketPoll` (epoll/kqueue/poll abstraction).
+4. **Application**: `SocketPool` (Connection management), `SocketError` (Reporting).
+
+### Resource Management
+- **Acquisition Order**: Arena -> Server Socket -> Poll -> Connection Pool -> Buffers.
+- **Cleanup Order**: Reverse of acquisition.
+- **ALWAYS** use `Arena` for memory management of related objects.
+
+### Opaque Types
+- **ALWAYS** use the `T` macro pattern for public opaque types:
+  ```c
+  #define T ModuleName_T
+  typedef struct T *T;
+  /* In .c file: struct T { ... }; */
+  ```
+
+## 4. Error Handling (Exceptions)
+
+### Pattern
+- **ALWAYS** use the `Except_T` system with `TRY`, `EXCEPT`, `FINALLY`, `END_TRY`.
+- **NEVER** return error codes for fatal/exceptional conditions; raise exceptions.
+
+### Thread Safety (CRITICAL)
+- **ALWAYS** use thread-local storage for error buffers and exception copies.
+- **NEVER** modify global exception structures directly.
+- **Pattern**:
+  ```c
+  #ifdef _WIN32
+  static __declspec(thread) Except_T Module_DetailedException;
+  #else
+  static __thread Except_T Module_DetailedException;
+  #endif
+  
+  #define RAISE_MODULE_ERROR(e) do { \
+      Module_DetailedException = (e); \
+      Module_DetailedException.reason = module_error_buf; \
+      RAISE(Module_DetailedException); \
+  } while(0)
+  ```
+
+### Safe System Calls
+- **ALWAYS** use `SAFE_CLOSE(fd)` which handles `EINTR` correctly (per POSIX.1-2008, do NOT retry close on EINTR).
+
+## 5. Memory Management
+
+### Arenas
+- **ALWAYS** use `Arena_alloc` / `Arena_calloc` for object lifecycle management.
+- **ALWAYS** use `Arena_dispose` to free entire contexts.
+
+### Safety
+- **ALWAYS** check for integer overflow before allocation or buffer arithmetic.
+- **ALWAYS** use `SocketBuf_secureclear` for sensitive data.
+- **Alignment**: Use `union align` to ensure proper memory alignment.
+
+## 6. Module Specific Rules
+
+### Socket (TCP/Unix)
+- **Structure**: Contains `fd`, `sockaddr`, and `Arena`.
+- **DNS**: `Socket_bind`/`Socket_connect` may block on DNS. Use `SocketDNS` for non-blocking resolution.
+- **Unix Domain**: Support `AF_UNIX`. Prefer absolute paths. Handle stale socket files (unlink before bind).
+
+### SocketDgram (UDP)
+- **Connectionless**: No `listen`/`accept`.
+- **Sizing**: Respect `UDP_MAX_PAYLOAD`. Prefer `SAFE_UDP_SIZE` (1472) to avoid fragmentation.
+- **Pattern**: Use `recvfrom`/`sendto`.
+
+### SocketPoll (Events)
+- **Edge Triggered**: Always use Edge Triggered mode (`EPOLLET`) where available.
+- **Backends**: Abstract `epoll` (Linux), `kqueue` (BSD/macOS), `poll` (POSIX fallback).
+- **Data Map**: Maintain `Socket` -> `User Data` mapping.
+
+### SocketPool (Connection Pooling)
+- **Lookup**: O(1) hash table lookup for connections.
+- **Thread Safety**: Protect pool operations with mutexes.
+- **Buffer Reuse**: Reuse `SocketBuf` instances to reduce allocation churn.
+
+### SocketDNS (Async)
+- **Thread Pool**: Use worker threads for `getaddrinfo`.
+- **Signaling**: Use pipe to signal completion to `SocketPoll`.
+- **Ownership**: Caller owns `addrinfo` result and MUST call `freeaddrinfo`.
+
+## 7. Naming Conventions
+- **Types**: `ModuleName_T` (e.g., `Socket_T`, `Arena_T`).
+- **Functions**: `Module_Verb` (e.g., `Socket_bind`, `Arena_alloc`).
+- **Private**: `static` functions, lower_snake_case (e.g., `socket_hash`, `translate_events`).
+- **Constants**: `MODULE_NAME` prefix, ALL_CAPS.
+
+## 8. Platform Requirements
+- **Target**: Linux/POSIX.
+- **Threads**: `pthread` support required.
+- **IPv6**: Kernel must support IPv6 (dual-stack used).
