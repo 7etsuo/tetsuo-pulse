@@ -67,6 +67,24 @@ struct T
     int is_server;              /* 1 for server, 0 for client */
     int session_cache_enabled;  /* Session cache flag */
     size_t session_cache_size;  /* Session cache size */
+
+    /* SNI certificate mapping for virtual hosting */
+    struct {
+        char **hostnames;        /* Array of hostname strings */
+        char **cert_files;       /* Array of certificate file paths */
+        char **key_files;        /* Array of private key file paths */
+        size_t count;            /* Number of certificate mappings */
+        size_t capacity;         /* Allocated capacity */
+    } sni_certs;
+
+    /* ALPN configuration */
+    struct {
+        const char **protocols;         /* Array of protocol strings */
+        size_t count;                   /* Number of protocols */
+        const char *selected;           /* Negotiated protocol (for clients) */
+        SocketTLSAlpnCallback callback; /* Custom selection callback */
+        void *callback_user_data;       /* User data for callback */
+    } alpn;
 };
 
 /* Helper function to format OpenSSL errors and raise TLS context exceptions */
@@ -90,6 +108,141 @@ raise_tls_context_error(const char *context)
 
     /* Use SocketTLS_Failed for general TLS context errors */
     RAISE_TLS_CONTEXT_ERROR(SocketTLS_Failed);
+}
+
+/* SNI callback function for hostname-based certificate selection */
+static int
+sni_callback(SSL *ssl, int *ad, void *arg)
+{
+    (void)ssl;  /* unused */
+    (void)ad;   /* unused */
+    T ctx = (T)arg;
+    const char *hostname = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+
+    if (!hostname || !ctx)
+        return SSL_TLSEXT_ERR_NOACK;
+
+    /* Look up certificate for this hostname */
+    for (size_t i = 0; i < ctx->sni_certs.count; i++)
+    {
+        if (strcmp(ctx->sni_certs.hostnames[i], hostname) == 0)
+        {
+            /* Load the certificate and key for this hostname */
+            if (SSL_use_certificate_file(ssl, ctx->sni_certs.cert_files[i], SSL_FILETYPE_PEM) != 1)
+                return SSL_TLSEXT_ERR_NOACK;
+
+            if (SSL_use_PrivateKey_file(ssl, ctx->sni_certs.key_files[i], SSL_FILETYPE_PEM) != 1)
+                return SSL_TLSEXT_ERR_NOACK;
+
+            if (SSL_check_private_key(ssl) != 1)
+                return SSL_TLSEXT_ERR_NOACK;
+
+            return SSL_TLSEXT_ERR_OK;
+        }
+    }
+
+    /* No certificate found for this hostname */
+    return SSL_TLSEXT_ERR_NOACK;
+}
+
+/* ALPN select callback function for customizable protocol selection */
+static int
+alpn_select_callback(SSL *ssl, const unsigned char **out, unsigned char *outlen,
+                     const unsigned char *in, unsigned int inlen, void *arg)
+{
+    (void)ssl;  /* unused */
+    T ctx = (T)arg;
+    const unsigned char *client_protocols = in;
+    unsigned int client_protocols_len = inlen;
+
+    if (!ctx || !ctx->alpn.protocols || ctx->alpn.count == 0)
+        return SSL_TLSEXT_ERR_NOACK;
+
+    /* Parse client protocols from wire format */
+    size_t client_count = 0;
+    const char **client_protos = NULL;
+
+    /* Count client protocols */
+    size_t offset = 0;
+    while (offset < client_protocols_len)
+    {
+        if (offset + 1 > client_protocols_len)
+            break; /* Malformed */
+        unsigned char len = client_protocols[offset++];
+        if (offset + len > client_protocols_len)
+            break; /* Malformed */
+
+        client_count++;
+        offset += len;
+    }
+
+    if (client_count == 0)
+        return SSL_TLSEXT_ERR_NOACK;
+
+    /* Allocate array for client protocols */
+    client_protos = calloc(client_count, sizeof(const char *));
+    if (!client_protos)
+        return SSL_TLSEXT_ERR_NOACK;
+
+    /* Parse client protocols into strings */
+    offset = 0;
+    size_t idx = 0;
+    while (offset < client_protocols_len && idx < client_count)
+    {
+        unsigned char len = client_protocols[offset++];
+        if (offset + len > client_protocols_len)
+            break;
+
+        /* Create null-terminated string */
+        char *proto = malloc(len + 1);
+        if (!proto)
+        {
+            free(client_protos);
+            return SSL_TLSEXT_ERR_NOACK;
+        }
+        memcpy(proto, &client_protocols[offset], len);
+        proto[len] = '\0';
+        client_protos[idx++] = proto;
+        offset += len;
+    }
+
+    /* Call user callback or use default selection */
+    const char *selected = NULL;
+    if (ctx->alpn.callback)
+    {
+        selected = ctx->alpn.callback(client_protos, client_count, ctx->alpn.callback_user_data);
+    }
+    else
+    {
+        /* Default: select first matching protocol in our preference order */
+        for (size_t i = 0; i < ctx->alpn.count && !selected; i++)
+        {
+            for (size_t j = 0; j < client_count && !selected; j++)
+            {
+                if (strcmp(ctx->alpn.protocols[i], client_protos[j]) == 0)
+                {
+                    selected = ctx->alpn.protocols[i];
+                }
+            }
+        }
+    }
+
+    /* Clean up client protocols array */
+    for (size_t i = 0; i < client_count; i++)
+    {
+        free((void *)client_protos[i]);
+    }
+    free(client_protos);
+
+    /* Set selected protocol */
+    if (selected)
+    {
+        *out = (const unsigned char *)selected;
+        *outlen = (unsigned char)strlen(selected);
+        return SSL_TLSEXT_ERR_OK;
+    }
+
+    return SSL_TLSEXT_ERR_NOACK;
 }
 
 /**
@@ -162,6 +315,20 @@ alloc_and_init_ctx(const SSL_METHOD *method, int is_server)
     ctx->is_server = !!is_server;
     ctx->session_cache_enabled = 0;
     ctx->session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
+
+    /* Initialize SNI certificate mapping */
+    ctx->sni_certs.hostnames = NULL;
+    ctx->sni_certs.cert_files = NULL;
+    ctx->sni_certs.key_files = NULL;
+    ctx->sni_certs.count = 0;
+    ctx->sni_certs.capacity = 0;
+
+    /* Initialize ALPN configuration */
+    ctx->alpn.protocols = NULL;
+    ctx->alpn.count = 0;
+    ctx->alpn.selected = NULL;
+    ctx->alpn.callback = NULL;
+    ctx->alpn.callback_user_data = NULL;
 
     return ctx;
 }
@@ -306,6 +473,106 @@ void SocketTLSContext_load_ca(T ctx, const char *ca_file)
         {
             raise_tls_context_error("Failed to load CA certificates");
         }
+    }
+}
+
+/**
+ * SocketTLSContext_add_certificate - Add certificate mapping for SNI virtual hosting
+ * @ctx: TLS context instance
+ * @hostname: Hostname this certificate is for (NULL for default certificate)
+ * @cert_file: Certificate file path (PEM format)
+ * @key_file: Private key file path (PEM format)
+ *
+ * Adds a certificate/key pair for SNI-based virtual hosting. Multiple certificates
+ * can be loaded for different hostnames. The first certificate loaded becomes
+ * the default if no hostname match is found.
+ *
+ * Raises: SocketTLS_Failed on error (file not found, invalid cert/key, allocation)
+ * Thread-safe: No (modifies shared context)
+ */
+void SocketTLSContext_add_certificate(T ctx, const char *hostname, const char *cert_file, const char *key_file)
+{
+    assert(ctx);
+    assert(ctx->ssl_ctx);
+    assert(cert_file);
+    assert(key_file);
+
+    /* Only meaningful for server contexts */
+    if (!ctx->is_server)
+    {
+        raise_tls_context_error("SNI certificates only supported for server contexts");
+    }
+
+    /* Expand capacity if needed */
+    if (ctx->sni_certs.count >= ctx->sni_certs.capacity)
+    {
+        size_t new_capacity = ctx->sni_certs.capacity == 0 ? 4 : ctx->sni_certs.capacity * 2;
+
+        ctx->sni_certs.hostnames = realloc(ctx->sni_certs.hostnames,
+                                          new_capacity * sizeof(char *));
+        ctx->sni_certs.cert_files = realloc(ctx->sni_certs.cert_files,
+                                           new_capacity * sizeof(char *));
+        ctx->sni_certs.key_files = realloc(ctx->sni_certs.key_files,
+                                          new_capacity * sizeof(char *));
+
+        if (!ctx->sni_certs.hostnames || !ctx->sni_certs.cert_files || !ctx->sni_certs.key_files)
+        {
+            raise_tls_context_error("Failed to allocate SNI certificate arrays");
+        }
+
+        ctx->sni_certs.capacity = new_capacity;
+    }
+
+    /* Store hostname (NULL for default) */
+    if (hostname)
+    {
+        size_t hostname_len = strlen(hostname) + 1;
+        char *hostname_copy = Arena_alloc(ctx->arena, hostname_len, __FILE__, __LINE__);
+        if (!hostname_copy)
+        {
+            raise_tls_context_error("Failed to allocate hostname buffer");
+        }
+        memcpy(hostname_copy, hostname, hostname_len);
+        ctx->sni_certs.hostnames[ctx->sni_certs.count] = hostname_copy;
+    }
+    else
+    {
+        ctx->sni_certs.hostnames[ctx->sni_certs.count] = NULL;
+    }
+
+    /* Store certificate file path */
+    size_t cert_len = strlen(cert_file) + 1;
+    char *cert_copy = Arena_alloc(ctx->arena, cert_len, __FILE__, __LINE__);
+    if (!cert_copy)
+    {
+        raise_tls_context_error("Failed to allocate certificate path buffer");
+    }
+    memcpy(cert_copy, cert_file, cert_len);
+    ctx->sni_certs.cert_files[ctx->sni_certs.count] = cert_copy;
+
+    /* Store key file path */
+    size_t key_len = strlen(key_file) + 1;
+    char *key_copy = Arena_alloc(ctx->arena, key_len, __FILE__, __LINE__);
+    if (!key_copy)
+    {
+        raise_tls_context_error("Failed to allocate key path buffer");
+    }
+    memcpy(key_copy, key_file, key_len);
+    ctx->sni_certs.key_files[ctx->sni_certs.count] = key_copy;
+
+    ctx->sni_certs.count++;
+
+    /* If this is the first certificate and no hostname, load it as default */
+    if (ctx->sni_certs.count == 1 && !hostname)
+    {
+        SocketTLSContext_load_certificate(ctx, cert_file, key_file);
+    }
+
+    /* Enable SNI callback if we have multiple certificates or hostname-specific ones */
+    if (ctx->sni_certs.count > 1 || (ctx->sni_certs.count == 1 && hostname))
+    {
+        SSL_CTX_set_tlsext_servername_callback(ctx->ssl_ctx, sni_callback);
+        SSL_CTX_set_tlsext_servername_arg(ctx->ssl_ctx, ctx);
     }
 }
 
@@ -467,8 +734,13 @@ void SocketTLSContext_set_alpn_protos(T ctx, const char **protos, size_t count)
     if (count == 0)
         return;
 
-    /* Calculate total buffer size needed for wire format */
-    size_t total_len = 0;
+    /* Store protocols in context for later reference */
+    ctx->alpn.protocols = Arena_alloc(ctx->arena, count * sizeof(const char *), __FILE__, __LINE__);
+    if (!ctx->alpn.protocols)
+    {
+        raise_tls_context_error("Failed to allocate ALPN protocols array");
+    }
+
     for (size_t i = 0; i < count; i++)
     {
         assert(protos[i]);
@@ -477,6 +749,23 @@ void SocketTLSContext_set_alpn_protos(T ctx, const char **protos, size_t count)
         {
             raise_tls_context_error("Invalid ALPN protocol length");
         }
+
+        /* Copy protocol string to arena */
+        char *proto_copy = Arena_alloc(ctx->arena, len + 1, __FILE__, __LINE__);
+        if (!proto_copy)
+        {
+            raise_tls_context_error("Failed to allocate ALPN protocol buffer");
+        }
+        memcpy(proto_copy, protos[i], len + 1);
+        ctx->alpn.protocols[i] = proto_copy;
+    }
+    ctx->alpn.count = count;
+
+    /* Calculate total buffer size needed for wire format */
+    size_t total_len = 0;
+    for (size_t i = 0; i < count; i++)
+    {
+        size_t len = strlen(protos[i]);
         total_len += 1 + len;  /* 1 byte length + protocol string */
     }
 
@@ -502,6 +791,28 @@ void SocketTLSContext_set_alpn_protos(T ctx, const char **protos, size_t count)
     {
         raise_tls_context_error("Failed to set ALPN protocols");
     }
+
+    /* Set ALPN select callback */
+    SSL_CTX_set_alpn_select_cb(ctx->ssl_ctx, alpn_select_callback, ctx);
+}
+
+/**
+ * SocketTLSContext_set_alpn_callback - Set custom ALPN protocol selection callback
+ * @ctx: TLS context instance
+ * @callback: Function to call for ALPN protocol selection
+ * @user_data: User data passed to callback function
+ *
+ * Sets a custom callback for ALPN protocol selection instead of using default priority order.
+ * The callback receives client-offered protocols and should return the selected protocol string.
+ *
+ * Thread-safe: No (modifies shared context)
+ */
+void SocketTLSContext_set_alpn_callback(T ctx, SocketTLSAlpnCallback callback, void *user_data)
+{
+    assert(ctx);
+
+    ctx->alpn.callback = callback;
+    ctx->alpn.callback_user_data = user_data;
 }
 
 /**
@@ -594,6 +905,23 @@ void SocketTLSContext_free(T *ctx)
         if (c->arena)
         {
             Arena_dispose(&c->arena);
+        }
+
+        /* Free SNI certificate arrays */
+        if (c->sni_certs.hostnames)
+        {
+            free(c->sni_certs.hostnames);
+            c->sni_certs.hostnames = NULL;
+        }
+        if (c->sni_certs.cert_files)
+        {
+            free(c->sni_certs.cert_files);
+            c->sni_certs.cert_files = NULL;
+        }
+        if (c->sni_certs.key_files)
+        {
+            free(c->sni_certs.key_files);
+            c->sni_certs.key_files = NULL;
         }
 
         /* Free context structure */
