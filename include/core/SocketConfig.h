@@ -40,7 +40,7 @@ extern const char *Socket_safe_strerror(int errnum);
 
 /* Maximum number of connections in pool (can be overridden at compile time) */
 #ifndef SOCKET_MAX_CONNECTIONS
-#define SOCKET_MAX_CONNECTIONS 10000
+#define SOCKET_MAX_CONNECTIONS 10000UL
 #endif
 
 /* Maximum buffer size per connection (can be overridden at compile time) */
@@ -120,6 +120,18 @@ extern const char *Socket_safe_strerror(int errnum);
 #ifndef ARENA_ERROR_BUFSIZE
 #define ARENA_ERROR_BUFSIZE 256
 #endif
+
+/* Alignment union - ensures proper alignment for all data types */
+union align {
+    int i;
+    long l;
+    long *lp;
+    void *p;
+    void (*fp)(void);
+    float f;
+    double d;
+    long double ld;
+};
 
 /* Arena alignment size - size of union align for proper alignment */
 #ifndef ARENA_ALIGNMENT_SIZE

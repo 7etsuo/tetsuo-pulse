@@ -6,11 +6,18 @@
  * Following C Interfaces and Implementations patterns
  */
 
-#include <stdlib.h>
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
 #include <pthread.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "core/Arena-private.h"
 #include "core/Except.h"  /* For RAISE if needed */
+#include "core/SocketError.h"  /* For error handling if needed */
 
 /* Global free chunk cache */
 struct ChunkHeader *freechunks = NULL;
