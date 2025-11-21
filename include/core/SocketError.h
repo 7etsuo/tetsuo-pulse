@@ -73,7 +73,7 @@ extern __thread int socket_last_errno;
     {                                                                                                                  \
         socket_last_errno = errno;                                                                                     \
         int _socket_error_ret = snprintf(socket_error_buf, SOCKET_ERROR_BUFSIZE, fmt " (errno: %d - %s)",              \
-                                         ##__VA_ARGS__, socket_last_errno, strerror(socket_last_errno));               \
+                                         ##__VA_ARGS__, socket_last_errno, Socket_safe_strerror(socket_last_errno));               \
         if (_socket_error_ret >= (int)SOCKET_ERROR_BUFSIZE)                                                            \
         {                                                                                                              \
             /* Message was truncated - add truncation marker */                                                        \
@@ -126,6 +126,14 @@ extern int Socket_geterrno(void);
  * Thread-safe: Uses thread-local storage
  */
 extern SocketErrorCode Socket_geterrorcode(void);
+
+/**
+ * Socket_safe_strerror - Thread-safe strerror implementation
+ * @errnum: Error number to convert
+ * Returns: Static thread-local string describing the error
+ * Thread-safe: Yes, uses thread-local buffer and strerror_r
+ */
+const char *Socket_safe_strerror(int errnum);
 
 /* Common error conditions with descriptive messages */
 #define SOCKET_ENOMEM "Out of memory"

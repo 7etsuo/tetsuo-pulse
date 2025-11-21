@@ -80,19 +80,50 @@ __thread int socket_last_errno = 0;
 #endif
 
 /* Get the last error message */
-const char *Socket_GetLastError(void)
+const char *
+Socket_GetLastError(void)
 {
     return socket_error_buf;
 }
 
 /* Get the last captured errno value */
-int Socket_geterrno(void)
+int
+Socket_geterrno(void)
 {
     return socket_last_errno;
 }
 
 /* Get the last error as a SocketErrorCode enum */
-SocketErrorCode Socket_geterrorcode(void)
+SocketErrorCode
+Socket_geterrorcode(void)
 {
     return socket_errno_to_errorcode(socket_last_errno);
+}
+
+/**
+ * Socket_safe_strerror - Get thread-safe error string
+ * @errnum: Error number
+ * Returns: Pointer to thread-local error description string
+ * Thread-safe: Uses __thread buffer and strerror_r
+ */
+const char *
+Socket_safe_strerror(int errnum)
+{
+    static __thread char errbuf[128] = {0};
+
+    if (errnum == 0) {
+        strcpy(errbuf, "No error");
+        return errbuf;
+    }
+
+#ifdef _GNU_SOURCE
+    // GNU extension: returns char*
+    return strerror_r(errnum, errbuf, sizeof(errbuf));
+#else
+    // POSIX: returns int, 0 on success
+    if (strerror_r(errnum, errbuf, sizeof(errbuf)) != 0) {
+        strcpy(errbuf, "Unknown error");
+    }
+    return errbuf;
+#endif
 }

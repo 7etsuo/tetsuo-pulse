@@ -2,6 +2,9 @@
 #include <pthread.h>
 #include <string.h>
 
+#include "core/SocketLog.h"
+
+
 #include "core/SocketMetrics.h"
 
 static pthread_mutex_t socketmetrics_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -26,6 +29,11 @@ static const char *socketmetrics_names[SOCKET_METRIC_COUNT] = {
 void
 SocketMetrics_increment(SocketMetric metric, unsigned long value)
 {
+    if (metric < 0 || metric >= (SocketMetric)SOCKET_METRIC_COUNT) {
+        SocketLog_emitf(SOCKET_LOG_WARN, "SocketMetrics", "Invalid metric %d in increment ignored", (int)metric);
+        return;
+    }
+
     assert(metric >= 0);
     assert(metric < SOCKET_METRIC_COUNT);
 
@@ -37,6 +45,11 @@ SocketMetrics_increment(SocketMetric metric, unsigned long value)
 void
 SocketMetrics_getsnapshot(SocketMetricsSnapshot *snapshot)
 {
+    if (snapshot == NULL) {
+        SocketLog_emit(SOCKET_LOG_WARN, "SocketMetrics", "NULL snapshot in getsnapshot ignored");
+        return;
+    }
+
     assert(snapshot);
 
     pthread_mutex_lock(&socketmetrics_mutex);

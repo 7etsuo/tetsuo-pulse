@@ -71,6 +71,8 @@ endif()
 set(LIB_SOURCES
     # Core foundation
     src/core/Arena.c
+    src/core/Arena-chunk.c
+    src/core/Arena-alloc.c
     src/core/Except.c
     src/core/SocketError.c
     src/core/SocketLog.c
@@ -185,6 +187,7 @@ set(TEST_SOURCES
     test_socketdns
     test_integration
     test_tls_integration
+    test_tls_phase4
     test_threadsafety
     test_socketpool_tls
 )

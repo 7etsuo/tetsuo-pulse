@@ -6,12 +6,16 @@
 #include <stdio.h>
 #include <unistd.h>
 
+extern const char *Socket_safe_strerror(int errnum);
+
 /* Socket header required for IPv6 multicast constants */
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+extern const char *Socket_safe_strerror(int errnum);
 
 /* IOV_MAX fallback if not defined */
 #ifndef IOV_MAX
@@ -408,7 +412,7 @@
             if (_safe_close_result < 0 && errno != EINTR)                                                              \
             {                                                                                                          \
                 /* Log error but don't fail - fd is closed anyway */                                                   \
-                perror("close");                                                                                       \
+                fprintf(stderr, "close failed: %s\n", Socket_safe_strerror(errno));                                                                                       \
             }                                                                                                          \
             /* EINTR is silently treated as success - FD is likely closed */                                           \
         }                                                                                                              \
