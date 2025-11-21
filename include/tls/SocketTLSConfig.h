@@ -1,6 +1,19 @@
 #ifndef SOCKETTLSCONFIG_INCLUDED
 #define SOCKETTLSCONFIG_INCLUDED
 
+/**
+ * SocketTLSConfig.h - TLS Configuration Constants and Stubs
+ *
+ * Defines secure defaults for TLS operations: TLS1.3-only, modern ciphers,
+ * buffer sizes, timeouts, and limits. Provides stub typedefs when TLS disabled
+ * for compilation without OpenSSL.
+ *
+ * All constants can be overridden before including this header.
+ * Enforces high-security posture by default (no legacy protocols/ciphers).
+ *
+ * Thread-safe: Yes - compile-time constants
+ */
+
 #ifdef SOCKET_HAS_TLS
 
 #include <openssl/ssl.h>
@@ -49,6 +62,11 @@
 /* TLS error buffer size for detailed error messages */
 #ifndef SOCKET_TLS_ERROR_BUFSIZE
 #define SOCKET_TLS_ERROR_BUFSIZE 512
+#endif
+
+/* OpenSSL error string buffer size for temporary error formatting */
+#ifndef SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE
+#define SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE 256
 #endif
 
 /* Forward declarations for TLS types */
