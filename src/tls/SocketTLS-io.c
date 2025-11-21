@@ -24,6 +24,31 @@
 
 #define T SocketTLS_T
 
+/* Thread-local exception for detailed TLS error messages
+ * Prevents race conditions when multiple threads raise same exception. */
+#ifdef _WIN32
+static __declspec(thread) Except_T SocketTLS_DetailedException;
+#else
+static __thread Except_T SocketTLS_DetailedException;
+#endif
+
+/* TLS error buffer for detailed error messages */
+#ifdef _WIN32
+__declspec(thread) char tls_io_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
+#else
+__thread char tls_io_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
+#endif
+
+/* Macro to raise TLS exception with detailed error message */
+#define RAISE_TLS_ERROR(exception)                                              \
+    do                                                                          \
+    {                                                                           \
+        SocketTLS_DetailedException = (exception);                              \
+        SocketTLS_DetailedException.reason = tls_io_error_buf;                  \
+        RAISE(SocketTLS_DetailedException);                                     \
+    }                                                                           \
+    while (0)
+
 /* Forward declaration for static helpers if needed */
 static SSL *socket_get_ssl(Socket_T socket);
 
@@ -92,14 +117,14 @@ SocketTLS_send(Socket_T socket, const void *buf, size_t len)
     /* Check if TLS is enabled */
     if (!socket->tls_enabled)
     {
-        snprintf(tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "TLS not enabled on socket");
+        snprintf(tls_io_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "TLS not enabled on socket");
         RAISE_TLS_ERROR(SocketTLS_Failed);
     }
 
     /* Check if handshake is complete */
     if (!socket->tls_handshake_done)
     {
-        snprintf(tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "TLS handshake not complete");
+        snprintf(tls_io_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "TLS handshake not complete");
         RAISE_TLS_ERROR(SocketTLS_Failed);
     }
 
@@ -107,7 +132,7 @@ SocketTLS_send(Socket_T socket, const void *buf, size_t len)
     ssl = socket_get_ssl(socket);
     if (!ssl)
     {
-        snprintf(tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "SSL object not available");
+        snprintf(tls_io_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "SSL object not available");
         RAISE_TLS_ERROR(SocketTLS_Failed);
     }
 
@@ -160,14 +185,14 @@ SocketTLS_recv(Socket_T socket, void *buf, size_t len)
     /* Check if TLS is enabled */
     if (!socket->tls_enabled)
     {
-        snprintf(tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "TLS not enabled on socket");
+        snprintf(tls_io_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "TLS not enabled on socket");
         RAISE_TLS_ERROR(SocketTLS_Failed);
     }
 
     /* Check if handshake is complete */
     if (!socket->tls_handshake_done)
     {
-        snprintf(tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "TLS handshake not complete");
+        snprintf(tls_io_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "TLS handshake not complete");
         RAISE_TLS_ERROR(SocketTLS_Failed);
     }
 
@@ -175,7 +200,7 @@ SocketTLS_recv(Socket_T socket, void *buf, size_t len)
     ssl = socket_get_ssl(socket);
     if (!ssl)
     {
-        snprintf(tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "SSL object not available");
+        snprintf(tls_io_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "SSL object not available");
         RAISE_TLS_ERROR(SocketTLS_Failed);
     }
 
