@@ -43,7 +43,7 @@ set(SOCKET_HAS_TLS OFF)
 set(OPENSSL_LIBRARIES "")
 option(ENABLE_TLS "Enable TLS/SSL support" ON)
 
-if(SOCKET_HAS_TLS)
+if(ENABLE_TLS)
     find_package(OpenSSL QUIET)
     if(OpenSSL_FOUND)
         set(SOCKET_HAS_TLS ON)
@@ -103,7 +103,6 @@ set(LIB_SOURCES
 if(SOCKET_HAS_TLS)
     list(APPEND LIB_SOURCES
         src/tls/SocketTLS-base.c
-        src/tls/SocketTLS-handshake.c
         src/tls/SocketTLS-io.c
         src/tls/SocketTLS-info.c
         src/tls/SocketTLSContext.c
