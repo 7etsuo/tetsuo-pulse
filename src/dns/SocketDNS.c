@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -233,57 +234,7 @@ dequeue_request (T dns)
  * Performs DNS resolution with optional port parameter.
  * Handles NULL host (wildcard bind) by passing NULL to getaddrinfo.
  */
-static int
-cancellable_getaddrinfo (const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res, T dns, struct Request_T *req)
-{
-  pid_t pid = fork ();
-  if (pid < 0)
-    {
-      return EAI_SYSTEM;
-    }
-  if (pid == 0)
-    {
-      // Child process performs DNS resolution
-      int code = getaddrinfo (node, service, hints, res);
-      exit (code == 0 ? 0 : code);
-    }
-
-  // Parent monitors for cancellation or timeout
-  int status;
-  pid_t waited;
-  while ((waited = waitpid (pid, &status, WNOHANG)) == 0)
-    {
-      // Check for cancellation or timeout
-      pthread_mutex_lock (&dns->mutex);
-      if (req->state == REQ_CANCELLED || request_timed_out (dns, req))
-        {
-          pthread_mutex_unlock (&dns->mutex);
-          kill (pid, SIGKILL);
-          waitpid (pid, &status, 0);
-          return req->state == REQ_CANCELLED ? dns_cancellation_error () : EAI_AGAIN;
-        }
-      pthread_mutex_unlock (&dns->mutex);
-
-      // Poll every 10ms
-      usleep (10000);
-    }
-
-  // Child exited or error
-  if (waited < 0)
-    {
-      kill (pid, SIGKILL);
-      waitpid (pid, &status, 0);
-      return EAI_SYSTEM;
-    }
-
-  if (WIFEXITED (status))
-    {
-      int code = WEXITSTATUS (status);
-      return code == 0 ? 0 : code;
-    }
-
-  return EAI_SYSTEM;
-}
+/* TODO: Reimplement cancellable getaddrinfo without fork() for multi-threaded safety and result transfer via IPC */
 
 static int
 perform_dns_resolution (struct Request_T *req, const struct addrinfo *hints,
@@ -291,10 +242,7 @@ perform_dns_resolution (struct Request_T *req, const struct addrinfo *hints,
 {
   char port_str[SOCKET_DNS_PORT_STR_SIZE];
   const char *service = NULL;
-  T dns = req->dns_resolver; // Assume added field or access via global/arg
   int res;
-
-  // Note: dns and req access need to be passed or stored
 
   if (req->port > 0)
     {
@@ -307,8 +255,7 @@ perform_dns_resolution (struct Request_T *req, const struct addrinfo *hints,
       service = port_str;
     }
 
-  res = cancellable_getaddrinfo (req->host, service, hints, result, dns, req);
-
+  res = getaddrinfo (req->host, service, hints, result);
   return res;
 }
 
@@ -1023,6 +970,17 @@ SocketDNS_free (T *dns)
  * @port: Port number to validate
  * Raises: SocketDNS_Failed on invalid parameters
  */
+static bool
+is_ip_address (const char *host)
+{
+  if (!host) return false;
+
+  struct in_addr ipv4;
+  struct in6_addr ipv6;
+
+  return inet_pton (AF_INET, host, &ipv4) == 1 || inet_pton (AF_INET6, host, &ipv6) == 1;
+}
+
 static int
 validate_hostname (const char *hostname)
 {
@@ -1086,7 +1044,7 @@ validate_resolve_params (const char *host, int port)
           RAISE_DNS_ERROR (SocketDNS_Failed);
         }
 
-      if (!validate_hostname (host))
+      if (!is_ip_address(host) && !validate_hostname (host))
         {
           SOCKET_ERROR_MSG ("Invalid hostname format");
           RAISE_DNS_ERROR (SocketDNS_Failed);

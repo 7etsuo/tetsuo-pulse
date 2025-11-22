@@ -216,13 +216,14 @@ extern const char *SocketTLS_get_version (Socket_T socket);
  * @socket: The socket instance with completed handshake
  *
  * Returns OpenSSL's X509 verify result code. 0 (X509_V_OK) indicates
- * successful verification.
+ * successful verification. Non-zero codes detail failures (e.g., untrusted CA).
  *
- * Returns: int verify result code (0 = OK)
- * Raises: None
- * Thread-safe: Yes
+ * Returns: long verify result code (X509_V_OK = 0 on success)
+ * Raises: None (caller checks and may raise SocketTLS_VerifyFailed)
+ * Thread-safe: Yes (read-only post-handshake)
+ * Requires: tls_enabled and tls_handshake_done
  */
-extern int SocketTLS_get_verify_result (Socket_T socket);
+extern long SocketTLS_get_verify_result (Socket_T socket);
 
 /**
  * SocketTLS_is_session_reused - Check if TLS session was resumed

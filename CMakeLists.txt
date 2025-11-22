@@ -138,18 +138,68 @@ endif()
 add_custom_target(lib ALL DEPENDS socket_static socket_shared)
 
 # Installation targets (optional)
+
+# Header files for installation
+set(CORE_HEADERS
+    include/core/Arena.h
+    include/core/Arena-private.h
+    include/core/Except.h
+    include/core/SocketConfig.h
+    include/core/SocketConfig-limits.h
+    include/core/SocketError.h
+    include/core/SocketEvents.h
+    include/core/SocketLog.h
+    include/core/SocketMetrics.h
+)
+
+set(SOCKET_HEADERS
+    include/socket/Socket.h
+    include/socket/Socket-private.h
+    include/socket/SocketAsync.h
+    include/socket/SocketBuf.h
+    include/socket/SocketCommon.h
+    include/socket/SocketDgram.h
+    include/socket/SocketIO.h
+)
+
+set(DNS_HEADERS
+    include/dns/SocketDNS.h
+)
+
+set(POLL_HEADERS
+    include/poll/SocketPoll.h
+    include/poll/SocketPoll-private.h
+    include/poll/SocketPoll_backend.h
+)
+
+set(POOL_HEADERS
+    include/pool/SocketPool.h
+    include/pool/SocketPool-private.h
+    include/pool/SocketPool-core.h
+)
+
+set(TLS_HEADERS
+    include/tls/SocketTLS.h
+    include/tls/SocketTLSConfig.h
+    include/tls/SocketTLSContext.h
+)
+
+set(TEST_HEADERS
+    include/test/Test.h
+)
+
 install(TARGETS socket_static socket_shared
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
 )
 
-install(FILES ${CORE_HEADERS} DESTINATION include/socket/core)
-install(FILES ${SOCKET_HEADERS} DESTINATION include/socket/socket)
-install(FILES ${DNS_HEADERS} DESTINATION include/socket/dns)
-install(FILES ${POLL_HEADERS} DESTINATION include/socket/poll)
-install(FILES ${POOL_HEADERS} DESTINATION include/socket/pool)
-install(FILES ${TLS_HEADERS} DESTINATION include/socket/tls)
-install(FILES ${TEST_HEADERS} DESTINATION include/socket/test)
+install(FILES ${CORE_HEADERS} DESTINATION include/core)
+install(FILES ${SOCKET_HEADERS} DESTINATION include/socket)
+install(FILES ${DNS_HEADERS} DESTINATION include/dns)
+install(FILES ${POLL_HEADERS} DESTINATION include/poll)
+install(FILES ${POOL_HEADERS} DESTINATION include/pool)
+install(FILES ${TLS_HEADERS} DESTINATION include/tls)
+install(FILES ${TEST_HEADERS} DESTINATION include/test)
 
 # Print build configuration
 message(STATUS "Socket Library Configuration:")
@@ -210,7 +260,7 @@ add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES})
 
 # Print test configuration
 message(STATUS "Test Suite Configuration:")
-message(STATUS "  Test files: 11")
+message(STATUS "  Test files: 14")
 message(STATUS "  Total tests: 216+")
 message(STATUS "  Run with: make test (or ctest)")
 
