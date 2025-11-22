@@ -16,8 +16,8 @@
  * - Other POSIX: poll (fallback)
  */
 
-#include "socket/Socket.h"
 #include "poll/SocketPoll.h"
+#include "socket/Socket.h"
 
 /* Forward declaration of backend-specific poll structure */
 typedef struct PollBackend_T *PollBackend_T;
@@ -31,13 +31,13 @@ typedef struct PollBackend_T *PollBackend_T;
  * @maxevents: Maximum events to return per wait
  * Returns: Backend instance or NULL on failure
  */
-extern PollBackend_T backend_new(int maxevents);
+extern PollBackend_T backend_new (int maxevents);
 
 /**
  * backend_free - Free backend instance
  * @backend: Backend to free
  */
-extern void backend_free(PollBackend_T backend);
+extern void backend_free (PollBackend_T backend);
 
 /**
  * backend_add - Add socket to poll set
@@ -46,7 +46,7 @@ extern void backend_free(PollBackend_T backend);
  * @events: Events to monitor (POLL_READ | POLL_WRITE)
  * Returns: 0 on success, -1 on failure (sets errno)
  */
-extern int backend_add(PollBackend_T backend, int fd, unsigned events);
+extern int backend_add (PollBackend_T backend, int fd, unsigned events);
 
 /**
  * backend_mod - Modify monitored events
@@ -55,7 +55,7 @@ extern int backend_add(PollBackend_T backend, int fd, unsigned events);
  * @events: New events to monitor
  * Returns: 0 on success, -1 on failure (sets errno)
  */
-extern int backend_mod(PollBackend_T backend, int fd, unsigned events);
+extern int backend_mod (PollBackend_T backend, int fd, unsigned events);
 
 /**
  * backend_del - Remove socket from poll set
@@ -64,7 +64,7 @@ extern int backend_mod(PollBackend_T backend, int fd, unsigned events);
  * Returns: 0 on success, -1 on failure (sets errno)
  * Note: Should succeed silently if fd not in set
  */
-extern int backend_del(PollBackend_T backend, int fd);
+extern int backend_del (PollBackend_T backend, int fd);
 
 /**
  * backend_wait - Wait for events
@@ -73,7 +73,7 @@ extern int backend_del(PollBackend_T backend, int fd);
  * Returns: Number of events ready (>= 0), or -1 on error (sets errno)
  * Note: Returns 0 on timeout
  */
-extern int backend_wait(PollBackend_T backend, int timeout);
+extern int backend_wait (PollBackend_T backend, int timeout);
 
 /**
  * backend_get_event - Get event details for index
@@ -83,12 +83,13 @@ extern int backend_wait(PollBackend_T backend, int timeout);
  * @events_out: Output - events that occurred
  * Returns: 0 on success, -1 on invalid index
  */
-extern int backend_get_event(PollBackend_T backend, int index, int *fd_out, unsigned *events_out);
+extern int backend_get_event (PollBackend_T backend, int index, int *fd_out,
+                              unsigned *events_out);
 
 /**
  * backend_name - Get backend name for debugging
  * Returns: Static string with backend name ("epoll", "kqueue", "poll")
  */
-extern const char *backend_name(void);
+extern const char *backend_name (void);
 
 #endif /* SOCKETPOLL_BACKEND_INCLUDED */

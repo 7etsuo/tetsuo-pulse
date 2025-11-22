@@ -2,14 +2,15 @@
 #define SOCKETCOMMON_H
 
 /**
- * SocketCommon.h - Common utilities shared between Socket and SocketDgram modules
+ * SocketCommon.h - Common utilities shared between Socket and SocketDgram
+ * modules
  */
 
+#include <fcntl.h>
 #include <netdb.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <fcntl.h>
+#include <sys/types.h>
 
 #include "core/Arena.h"
 
@@ -26,7 +27,8 @@ extern Except_T SocketDgram_Failed;
  * @socktype: Socket type (SOCK_STREAM or SOCK_DGRAM)
  * @flags: Additional flags (0 for connect/sendto, AI_PASSIVE for bind)
  */
-void SocketCommon_setup_hints(struct addrinfo *hints, int socktype, int flags);
+void SocketCommon_setup_hints (struct addrinfo *hints, int socktype,
+                               int flags);
 
 /**
  * SocketCommon_resolve_address - Resolve hostname/port to addrinfo structure
@@ -40,8 +42,11 @@ void SocketCommon_setup_hints(struct addrinfo *hints, int socktype, int flags);
  * Returns: 0 on success, -1 on failure (if not using exceptions)
  * Raises: Specified exception type on failure (if using exceptions)
  */
-int SocketCommon_resolve_address(const char *host, int port, const struct addrinfo *hints, struct addrinfo **res,
-                                 Except_T exception_type, int socket_family, int use_exceptions);
+int SocketCommon_resolve_address (const char *host, int port,
+                                  const struct addrinfo *hints,
+                                  struct addrinfo **res,
+                                  Except_T exception_type, int socket_family,
+                                  int use_exceptions);
 
 /**
  * SocketCommon_validate_port - Validate port number is in valid range
@@ -49,7 +54,7 @@ int SocketCommon_resolve_address(const char *host, int port, const struct addrin
  * @exception_type: Exception type to raise on invalid port
  * Raises: Specified exception type if port is invalid
  */
-void SocketCommon_validate_port(int port, Except_T exception_type);
+void SocketCommon_validate_port (int port, Except_T exception_type);
 
 /**
  * SocketCommon_validate_hostname - Validate hostname length
@@ -57,14 +62,16 @@ void SocketCommon_validate_port(int port, Except_T exception_type);
  * @exception_type: Exception type to raise on invalid hostname
  * Raises: Specified exception type if hostname is too long
  */
-void SocketCommon_validate_hostname(const char *host, Except_T exception_type);
+void SocketCommon_validate_hostname (const char *host,
+                                     Except_T exception_type);
 
 /**
- * SocketCommon_normalize_wildcard_host - Normalize wildcard host addresses to NULL
+ * SocketCommon_normalize_wildcard_host - Normalize wildcard host addresses to
+ * NULL
  * @host: Host string to normalize
  * Returns: NULL if wildcard ("0.0.0.0" or "::"), original host otherwise
  */
-const char *SocketCommon_normalize_wildcard_host(const char *host);
+const char *SocketCommon_normalize_wildcard_host (const char *host);
 
 /**
  * SocketCommon_cache_endpoint - Cache numeric address/port from sockaddr
@@ -75,8 +82,9 @@ const char *SocketCommon_normalize_wildcard_host(const char *host);
  * @port_out: Output integer updated with numeric port (0 if unavailable)
  * Returns: 0 on success, -1 on failure (addr_out unchanged on failure)
  */
-int SocketCommon_cache_endpoint(Arena_T arena, const struct sockaddr *addr, socklen_t addrlen, char **addr_out,
-                                int *port_out);
+int SocketCommon_cache_endpoint (Arena_T arena, const struct sockaddr *addr,
+                                 socklen_t addrlen, char **addr_out,
+                                 int *port_out);
 
 /**
  * SocketCommon_setcloexec - Set close-on-exec flag on file descriptor
@@ -85,7 +93,7 @@ int SocketCommon_cache_endpoint(Arena_T arena, const struct sockaddr *addr, sock
  * Returns: 0 on success, -1 on failure
  * Thread-safe: Yes (operates on single fd)
  */
-int SocketCommon_setcloexec(int fd, int enable);
+int SocketCommon_setcloexec (int fd, int enable);
 
 /**
  * SocketCommon_has_cloexec - Check if close-on-exec flag is set
@@ -93,7 +101,7 @@ int SocketCommon_setcloexec(int fd, int enable);
  * Returns: 1 if CLOEXEC is set, 0 if not set, -1 on error
  * Thread-safe: Yes (operates on single fd)
  */
-int SocketCommon_has_cloexec(int fd);
+int SocketCommon_has_cloexec (int fd);
 
 /**
  * SocketCommon_getoption_int - Get integer socket option
@@ -106,7 +114,8 @@ int SocketCommon_has_cloexec(int fd);
  * Raises: Specified exception type on failure
  * Thread-safe: Yes (operates on single fd)
  */
-int SocketCommon_getoption_int(int fd, int level, int optname, int *value, Except_T exception_type);
+int SocketCommon_getoption_int (int fd, int level, int optname, int *value,
+                                Except_T exception_type);
 
 /**
  * SocketCommon_getoption_timeval - Get timeval socket option
@@ -119,10 +128,13 @@ int SocketCommon_getoption_int(int fd, int level, int optname, int *value, Excep
  * Raises: Specified exception type on failure
  * Thread-safe: Yes (operates on single fd)
  */
-int SocketCommon_getoption_timeval(int fd, int level, int optname, struct timeval *tv, Except_T exception_type);
+int SocketCommon_getoption_timeval (int fd, int level, int optname,
+                                    struct timeval *tv,
+                                    Except_T exception_type);
 
 /**
- * SocketCommon_reverse_lookup - Perform reverse DNS lookup (getnameinfo wrapper)
+ * SocketCommon_reverse_lookup - Perform reverse DNS lookup (getnameinfo
+ * wrapper)
  * @addr: Socket address to look up
  * @addrlen: Length of socket address
  * @host: Output buffer for hostname (NULL to skip)
@@ -137,19 +149,21 @@ int SocketCommon_getoption_timeval(int fd, int level, int optname, struct timeva
  * Note: Wrapper around getnameinfo() for reverse DNS lookups.
  * Use NI_NUMERICHOST flag to get numeric IP address instead of hostname.
  */
-int SocketCommon_reverse_lookup(const struct sockaddr *addr, socklen_t addrlen, char *host, socklen_t hostlen,
-                                char *serv, socklen_t servlen, int flags, Except_T exception_type);
+int SocketCommon_reverse_lookup (const struct sockaddr *addr,
+                                 socklen_t addrlen, char *host,
+                                 socklen_t hostlen, char *serv,
+                                 socklen_t servlen, int flags,
+                                 Except_T exception_type);
 
 /**
  * SocketCommon_parse_ip - Validate and parse IP address string
  * @ip_str: IP address string to validate
- * @family: Output pointer for address family (AF_INET or AF_INET6), can be NULL
- * Returns: 1 if valid IP address, 0 if invalid
- * Thread-safe: Yes
- * Note: Validates both IPv4 and IPv6 addresses.
- * Sets family to AF_INET for IPv4, AF_INET6 for IPv6, or AF_UNSPEC if invalid.
+ * @family: Output pointer for address family (AF_INET or AF_INET6), can be
+ * NULL Returns: 1 if valid IP address, 0 if invalid Thread-safe: Yes Note:
+ * Validates both IPv4 and IPv6 addresses. Sets family to AF_INET for IPv4,
+ * AF_INET6 for IPv6, or AF_UNSPEC if invalid.
  */
-int SocketCommon_parse_ip(const char *ip_str, int *family);
+int SocketCommon_parse_ip (const char *ip_str, int *family);
 
 /**
  * SocketCommon_cidr_match - Check if IP address matches CIDR range
@@ -160,6 +174,6 @@ int SocketCommon_parse_ip(const char *ip_str, int *family);
  * Note: Supports both IPv4 and IPv6 CIDR notation.
  * Returns -1 if IP or CIDR string is invalid.
  */
-int SocketCommon_cidr_match(const char *ip_str, const char *cidr_str);
+int SocketCommon_cidr_match (const char *ip_str, const char *cidr_str);
 
 #endif /* SOCKETCOMMON_H */

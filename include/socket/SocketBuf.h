@@ -27,7 +27,7 @@ typedef struct T *T;
  * @capacity: Buffer capacity in bytes
  * Returns: New buffer instance
  */
-extern T SocketBuf_new(Arena_T arena, size_t capacity);
+extern T SocketBuf_new (Arena_T arena, size_t capacity);
 
 /**
  * SocketBuf_release - Release a buffer reference
@@ -37,9 +37,10 @@ extern T SocketBuf_new(Arena_T arena, size_t capacity);
  * invalidates the buffer pointer to prevent accidental access through stale
  * pointers.
  * The buffer memory will be automatically freed when the arena is disposed.
- * This is the fundamental arena allocation pattern, not a limitation to work around.
+ * This is the fundamental arena allocation pattern, not a limitation to work
+ * around.
  */
-extern void SocketBuf_release(T *buf);
+extern void SocketBuf_release (T *buf);
 
 /**
  * SocketBuf_write - Write data to buffer
@@ -49,7 +50,7 @@ extern void SocketBuf_release(T *buf);
  * Returns: Bytes actually written (may be less if buffer fills)
  * Performance: O(n) where n is bytes written
  */
-extern size_t SocketBuf_write(T buf, const void *data, size_t len);
+extern size_t SocketBuf_write (T buf, const void *data, size_t len);
 
 /**
  * SocketBuf_read - Read and remove data from buffer
@@ -59,7 +60,7 @@ extern size_t SocketBuf_write(T buf, const void *data, size_t len);
  * Returns: Bytes actually read
  * Performance: O(n) where n is bytes read
  */
-extern size_t SocketBuf_read(T buf, void *data, size_t len);
+extern size_t SocketBuf_read (T buf, void *data, size_t len);
 
 /**
  * SocketBuf_peek - Read data without removing it
@@ -69,7 +70,7 @@ extern size_t SocketBuf_read(T buf, void *data, size_t len);
  * Returns: Bytes actually read
  * Performance: O(n) where n is bytes peeked
  */
-extern size_t SocketBuf_peek(T buf, void *data, size_t len);
+extern size_t SocketBuf_peek (T buf, void *data, size_t len);
 
 /**
  * SocketBuf_consume - Remove data without reading
@@ -78,7 +79,7 @@ extern size_t SocketBuf_peek(T buf, void *data, size_t len);
  * Asserts if len > available data
  * Performance: O(1)
  */
-extern void SocketBuf_consume(T buf, size_t len);
+extern void SocketBuf_consume (T buf, size_t len);
 
 /**
  * SocketBuf_available - Get available data size
@@ -86,7 +87,7 @@ extern void SocketBuf_consume(T buf, size_t len);
  * Returns: Bytes available for reading
  * Performance: O(1)
  */
-extern size_t SocketBuf_available(const T buf);
+extern size_t SocketBuf_available (const T buf);
 
 /**
  * SocketBuf_space - Get available space
@@ -94,21 +95,21 @@ extern size_t SocketBuf_available(const T buf);
  * Returns: Bytes available for writing
  * Performance: O(1)
  */
-extern size_t SocketBuf_space(const T buf);
+extern size_t SocketBuf_space (const T buf);
 
 /**
  * SocketBuf_empty - Check if buffer is empty
  * @buf: Buffer instance
  * Returns: Non-zero if empty
  */
-extern int SocketBuf_empty(const T buf);
+extern int SocketBuf_empty (const T buf);
 
 /**
  * SocketBuf_full - Check if buffer is full
  * @buf: Buffer instance
  * Returns: Non-zero if full
  */
-extern int SocketBuf_full(const T buf);
+extern int SocketBuf_full (const T buf);
 
 /**
  * SocketBuf_clear - Clear all data
@@ -118,7 +119,7 @@ extern int SocketBuf_full(const T buf);
  * For security-sensitive data, use SocketBuf_secureclear() instead.
  * Performance: O(1)
  */
-extern void SocketBuf_clear(T buf);
+extern void SocketBuf_clear (T buf);
 
 /**
  * SocketBuf_secureclear - Securely clear all data
@@ -129,7 +130,7 @@ extern void SocketBuf_clear(T buf);
  * Note: Always use secureclear when removing connections that may have
  * handled sensitive data to prevent information disclosure.
  */
-extern void SocketBuf_secureclear(T buf);
+extern void SocketBuf_secureclear (T buf);
 
 /**
  * SocketBuf_readptr - Get direct read pointer
@@ -139,7 +140,7 @@ extern void SocketBuf_secureclear(T buf);
  * Performance: O(1)
  * For zero-copy reads. Data remains in buffer until consumed.
  */
-extern const void *SocketBuf_readptr(T buf, size_t *len);
+extern const void *SocketBuf_readptr (T buf, size_t *len);
 
 /**
  * SocketBuf_writeptr - Get direct write pointer
@@ -149,7 +150,7 @@ extern const void *SocketBuf_readptr(T buf, size_t *len);
  * Performance: O(1)
  * For zero-copy writes. Call SocketBuf_written() after writing.
  */
-extern void *SocketBuf_writeptr(T buf, size_t *len);
+extern void *SocketBuf_writeptr (T buf, size_t *len);
 
 /**
  * SocketBuf_written - Commit written data
@@ -158,7 +159,7 @@ extern void *SocketBuf_writeptr(T buf, size_t *len);
  * Asserts if len > space available
  * Performance: O(1)
  */
-extern void SocketBuf_written(T buf, size_t len);
+extern void SocketBuf_written (T buf, size_t len);
 
 #undef T
 #endif

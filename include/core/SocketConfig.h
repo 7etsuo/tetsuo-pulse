@@ -6,16 +6,16 @@
 #include <stdio.h>
 #include <unistd.h>
 
-extern const char *Socket_safe_strerror(int errnum);
+extern const char *Socket_safe_strerror (int errnum);
 
 /* Socket header required for IPv6 multicast constants */
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
-#include <fcntl.h>
 #include <unistd.h>
 
-extern const char *Socket_safe_strerror(int errnum);
+extern const char *Socket_safe_strerror (int errnum);
 
 /* IOV_MAX fallback if not defined */
 #ifndef IOV_MAX
@@ -23,7 +23,8 @@ extern const char *Socket_safe_strerror(int errnum);
 #endif
 
 /* Remove all remnants of the duplicate platform detection attempt */
-/* The existing platform-specific definitions below are sufficient and correct */
+/* The existing platform-specific definitions below are sufficient and correct
+ */
 
 /* sendmsg/recvmsg are standard POSIX - always available */
 #define SOCKET_HAS_SENDMSG 1
@@ -79,11 +80,15 @@ extern const char *Socket_safe_strerror(int errnum);
 
 /* Pool pre-warm and batch limits */
 #ifndef SOCKET_POOL_DEFAULT_PREWARM_PCT
-#define SOCKET_POOL_DEFAULT_PREWARM_PCT 20  /* Default percentage of slots to pre-warm for latency reduction under burst loads */
+#define SOCKET_POOL_DEFAULT_PREWARM_PCT                                       \
+  20 /* Default percentage of slots to pre-warm for latency reduction under   \
+        burst loads */
 #endif
 
 #ifndef SOCKET_POOL_MAX_BATCH_ACCEPTS
-#define SOCKET_POOL_MAX_BATCH_ACCEPTS 1000  /* Maximum number of accepts per batch call to prevent excessive resource use */
+#define SOCKET_POOL_MAX_BATCH_ACCEPTS                                         \
+  1000 /* Maximum number of accepts per batch call to prevent excessive       \
+          resource use */
 #endif
 
 /* Maximum backlog for listen() */
@@ -91,7 +96,8 @@ extern const char *Socket_safe_strerror(int errnum);
 #define SOCKET_MAX_LISTEN_BACKLOG 1024
 #endif
 
-/* Hash table size for socket data mapping - prime number for better distribution */
+/* Hash table size for socket data mapping - prime number for better
+ * distribution */
 #ifndef SOCKET_HASH_TABLE_SIZE
 #define SOCKET_HASH_TABLE_SIZE 1021
 #endif
@@ -122,20 +128,21 @@ extern const char *Socket_safe_strerror(int errnum);
 #endif
 
 /* Alignment union - ensures proper alignment for all data types */
-union align {
-    int i;
-    long l;
-    long *lp;
-    void *p;
-    void (*fp)(void);
-    float f;
-    double d;
-    long double ld;
+union align
+{
+  int i;
+  long l;
+  long *lp;
+  void *p;
+  void (*fp) (void);
+  float f;
+  double d;
+  long double ld;
 };
 
 /* Arena alignment size - size of union align for proper alignment */
 #ifndef ARENA_ALIGNMENT_SIZE
-#define ARENA_ALIGNMENT_SIZE sizeof(union align)
+#define ARENA_ALIGNMENT_SIZE sizeof (union align)
 #endif
 
 /* Arena validation constants */
@@ -236,18 +243,18 @@ union align {
 
 /* String conversion macros for error messages */
 #define SOCKET_STRINGIFY(x) #x
-#define SOCKET_TO_STRING(x) SOCKET_STRINGIFY(x)
+#define SOCKET_TO_STRING(x) SOCKET_STRINGIFY (x)
 
 /* Predefined range strings */
-#define SOCKET_PORT_VALID_RANGE "1-" SOCKET_TO_STRING(SOCKET_MAX_PORT)
-#define SOCKET_TTL_VALID_RANGE "1-" SOCKET_TO_STRING(SOCKET_MAX_TTL)
+#define SOCKET_PORT_VALID_RANGE "1-" SOCKET_TO_STRING (SOCKET_MAX_PORT)
+#define SOCKET_TTL_VALID_RANGE "1-" SOCKET_TO_STRING (SOCKET_MAX_TTL)
 
 /* IP prefix lengths */
 #define SOCKET_IPV4_MAX_PREFIX 32
 #define SOCKET_IPV6_MAX_PREFIX 128
 
-#define SOCKET_IPV4_PREFIX_RANGE "0-" SOCKET_TO_STRING(SOCKET_IPV4_MAX_PREFIX)
-#define SOCKET_IPV6_PREFIX_RANGE "0-" SOCKET_TO_STRING(SOCKET_IPV6_MAX_PREFIX)
+#define SOCKET_IPV4_PREFIX_RANGE "0-" SOCKET_TO_STRING (SOCKET_IPV4_MAX_PREFIX)
+#define SOCKET_IPV6_PREFIX_RANGE "0-" SOCKET_TO_STRING (SOCKET_IPV6_MAX_PREFIX)
 #endif
 
 /* Socket types */
@@ -301,7 +308,8 @@ union align {
 #define SOCKET_SO_SNDTIMEO SO_SNDTIMEO
 #define SOCKET_SO_RCVBUF SO_RCVBUF
 #define SOCKET_SO_SNDBUF SO_SNDBUF
-/* SO_DOMAIN is Linux-specific - use getsockname() fallback on other platforms */
+/* SO_DOMAIN is Linux-specific - use getsockname() fallback on other platforms
+ */
 #ifdef __linux__
 #define SOCKET_SO_DOMAIN SO_DOMAIN
 #define SOCKET_HAS_SO_DOMAIN 1
@@ -429,9 +437,13 @@ union align {
 /* Validation macros with proper parentheses and overflow protection */
 /* Port 0 is valid - it means "let OS assign ephemeral port" */
 #define SOCKET_VALID_PORT(p) ((int)(p) >= 0 && (int)(p) <= 65535)
-#define SOCKET_VALID_BUFFER_SIZE(s) ((size_t)(s) >= SOCKET_MIN_BUFFER_SIZE && (size_t)(s) <= SOCKET_MAX_BUFFER_SIZE)
-#define SOCKET_VALID_CONNECTION_COUNT(c) ((size_t)(c) > 0 && (size_t)(c) <= SOCKET_MAX_CONNECTIONS)
-#define SOCKET_VALID_POLL_EVENTS(e) ((int)(e) > 0 && (int)(e) <= SOCKET_MAX_POLL_EVENTS)
+#define SOCKET_VALID_BUFFER_SIZE(s)                                           \
+  ((size_t)(s) >= SOCKET_MIN_BUFFER_SIZE                                      \
+   && (size_t)(s) <= SOCKET_MAX_BUFFER_SIZE)
+#define SOCKET_VALID_CONNECTION_COUNT(c)                                      \
+  ((size_t)(c) > 0 && (size_t)(c) <= SOCKET_MAX_CONNECTIONS)
+#define SOCKET_VALID_POLL_EVENTS(e)                                           \
+  ((int)(e) > 0 && (int)(e) <= SOCKET_MAX_POLL_EVENTS)
 
 /* Safe system call wrappers
  *
@@ -445,19 +457,21 @@ union align {
  *
  * Reference: POSIX.1-2008, close() specification, Application Usage
  */
-#define SAFE_CLOSE(fd)                                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if ((fd) >= 0)                                                                                                 \
-        {                                                                                                              \
-            int _safe_close_result = close(fd);                                                                        \
-            if (_safe_close_result < 0 && errno != EINTR)                                                              \
-            {                                                                                                          \
-                /* Log error but don't fail - fd is closed anyway */                                                   \
-                fprintf(stderr, "close failed: %s\n", Socket_safe_strerror(errno));                                                                                       \
-            }                                                                                                          \
-            /* EINTR is silently treated as success - FD is likely closed */                                           \
-        }                                                                                                              \
-    } while (0)
+#define SAFE_CLOSE(fd)                                                        \
+  do                                                                          \
+    {                                                                         \
+      if ((fd) >= 0)                                                          \
+        {                                                                     \
+          int _safe_close_result = close (fd);                                \
+          if (_safe_close_result < 0 && errno != EINTR)                       \
+            {                                                                 \
+              /* Log error but don't fail - fd is closed anyway */            \
+              fprintf (stderr, "close failed: %s\n",                          \
+                       Socket_safe_strerror (errno));                         \
+            }                                                                 \
+          /* EINTR is silently treated as success - FD is likely closed */    \
+        }                                                                     \
+    }                                                                         \
+  while (0)
 
 #endif /* SOCKETCONFIG_INCLUDED */

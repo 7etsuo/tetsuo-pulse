@@ -12,9 +12,9 @@
  * - IPv6 support in kernel (for dual-stack sockets)
  * - POSIX threads (pthread) for thread-safe error reporting
  * - NOT portable to Windows without Winsock adaptation
- * CRITICAL: Applications MUST call signal(SIGPIPE, SIG_IGN) during initialization
- * to prevent process termination on broken pipe errors (required on macOS/BSD).
- * Error Handling:
+ * CRITICAL: Applications MUST call signal(SIGPIPE, SIG_IGN) during
+ * initialization to prevent process termination on broken pipe errors
+ * (required on macOS/BSD). Error Handling:
  * - Socket_Failed: General socket errors
  * - Socket_Closed: Connection terminated by peer
  * - Some functions return NULL/0 for non-blocking EAGAIN/EWOULDBLOCK
@@ -31,13 +31,14 @@ typedef struct T *T;
  * SocketTimeouts_T - Timeout configuration for socket operations
  * @connect_timeout_ms: Connect timeout in milliseconds (0 = infinite)
  * @dns_timeout_ms: DNS resolution timeout in milliseconds (0 = infinite)
- * @operation_timeout_ms: General operation timeout in milliseconds (reserved for future use)
+ * @operation_timeout_ms: General operation timeout in milliseconds (reserved
+ * for future use)
  */
 typedef struct SocketTimeouts
 {
-    int connect_timeout_ms;
-    int dns_timeout_ms;
-    int operation_timeout_ms;
+  int connect_timeout_ms;
+  int dns_timeout_ms;
+  int operation_timeout_ms;
 } SocketTimeouts_T;
 
 /* Exception types */
@@ -52,7 +53,7 @@ extern Except_T Socket_Closed; /**< Connection closed by peer */
  * Returns: New socket instance
  * Raises: Socket_Failed on error
  */
-extern T Socket_new(int domain, int type, int protocol);
+extern T Socket_new (int domain, int type, int protocol);
 
 /**
  * SocketPair_new - Create a pair of connected Unix domain sockets
@@ -66,22 +67,24 @@ extern T Socket_new(int domain, int type, int protocol);
  * Typically used for parent-child or thread communication.
  * Only supports AF_UNIX (Unix domain sockets).
  * Abstract namespace paths (starting with '@') are Linux-only.
- * On macOS/BSD, use regular filesystem paths; attempts with '@' will log a warning and fail.
+ * On macOS/BSD, use regular filesystem paths; attempts with '@' will log a
+ * warning and fail.
  */
-extern void SocketPair_new(int type, T *socket1, T *socket2);
+extern void SocketPair_new (int type, T *socket1, T *socket2);
 
 /**
  * Socket_free - Free a socket and close the connection
  * @socket: Pointer to socket (will be set to NULL)
  */
-extern void Socket_free(T *socket);
+extern void Socket_free (T *socket);
 
 /**
  * Socket_debug_live_count - Get number of live socket instances (test-only)
- * Returns: Current count of allocated Socket_T instances that have not been freed.
- * Notes: Intended for debugging and test instrumentation to detect leaks.
+ * Returns: Current count of allocated Socket_T instances that have not been
+ * freed. Notes: Intended for debugging and test instrumentation to detect
+ * leaks.
  */
-extern int Socket_debug_live_count(void);
+extern int Socket_debug_live_count (void);
 
 /**
  * Socket_bind - Bind socket to address and port
@@ -92,7 +95,7 @@ extern int Socket_debug_live_count(void);
  * Use IP addresses for non-blocking operation.
  * Raises: Socket_Failed on error
  */
-extern void Socket_bind(T socket, const char *host, int port);
+extern void Socket_bind (T socket, const char *host, int port);
 
 /**
  * Socket_listen - Listen for incoming connections
@@ -100,7 +103,7 @@ extern void Socket_bind(T socket, const char *host, int port);
  * @backlog: Maximum pending connections
  * Raises: Socket_Failed on error
  */
-extern void Socket_listen(T socket, int backlog);
+extern void Socket_listen (T socket, int backlog);
 
 /**
  * Socket_new_from_fd - Create Socket_T from existing file descriptor
@@ -111,7 +114,7 @@ extern void Socket_listen(T socket, int backlog);
  * Note: Used internally for batch accept operations. The socket must
  * already be a valid socket file descriptor. Sets socket to non-blocking mode.
  */
-extern T Socket_new_from_fd(int fd);
+extern T Socket_new_from_fd (int fd);
 
 /**
  * Socket_accept - Accept incoming connection
@@ -120,7 +123,7 @@ extern T Socket_new_from_fd(int fd);
  * Raises: Socket_Failed on error
  * Note: Socket must be non-blocking for NULL return on EAGAIN/EWOULDBLOCK
  */
-extern T Socket_accept(T socket);
+extern T Socket_accept (T socket);
 
 /**
  * Socket_connect - Connect to remote host
@@ -128,11 +131,10 @@ extern T Socket_accept(T socket);
  * @host: Remote IP address or hostname
  * @port: Remote port
  * WARNING: May block 30+ seconds during DNS resolution if hostname provided.
- * Use IP addresses for non-blocking operation. Can be exploited for DoS attacks
- * if untrusted hostnames are accepted.
- * Raises: Socket_Failed on error
+ * Use IP addresses for non-blocking operation. Can be exploited for DoS
+ * attacks if untrusted hostnames are accepted. Raises: Socket_Failed on error
  */
-extern void Socket_connect(T socket, const char *host, int port);
+extern void Socket_connect (T socket, const char *host, int port);
 
 /**
  * Socket_send - Send data
@@ -143,7 +145,7 @@ extern void Socket_connect(T socket, const char *host, int port);
  * Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors
  * Note: May send less than requested. Check return value.
  */
-extern ssize_t Socket_send(T socket, const void *buf, size_t len);
+extern ssize_t Socket_send (T socket, const void *buf, size_t len);
 
 /**
  * Socket_recv - Receive data
@@ -153,9 +155,10 @@ extern ssize_t Socket_send(T socket, const void *buf, size_t len);
  * Returns: Bytes received (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
  * Raises: Socket_Closed on peer close (recv returns 0) or ECONNRESET
  * Raises: Socket_Failed on other errors
- * Note: Return value 0 means would-block, NOT connection closed (raises exception)
+ * Note: Return value 0 means would-block, NOT connection closed (raises
+ * exception)
  */
-extern ssize_t Socket_recv(T socket, void *buf, size_t len);
+extern ssize_t Socket_recv (T socket, void *buf, size_t len);
 
 /**
  * Socket_sendall - Send all data (handles partial sends)
@@ -170,7 +173,7 @@ extern ssize_t Socket_recv(T socket, void *buf, size_t len);
  * For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK).
  * Use Socket_isconnected() to verify connection state before calling.
  */
-extern ssize_t Socket_sendall(T socket, const void *buf, size_t len);
+extern ssize_t Socket_sendall (T socket, const void *buf, size_t len);
 
 /**
  * Socket_recvall - Receive all requested data (handles partial receives)
@@ -185,7 +188,7 @@ extern ssize_t Socket_sendall(T socket, const void *buf, size_t len);
  * For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK).
  * Use Socket_isconnected() to verify connection state before calling.
  */
-extern ssize_t Socket_recvall(T socket, void *buf, size_t len);
+extern ssize_t Socket_recvall (T socket, void *buf, size_t len);
 
 /**
  * Socket_sendv - Scatter/gather send (writev wrapper)
@@ -197,9 +200,10 @@ extern ssize_t Socket_recvall(T socket, void *buf, size_t len);
  * Raises: Socket_Failed on other errors
  * Thread-safe: Yes (operates on single socket)
  * Note: Sends data from multiple buffers in a single system call.
- * May send less than requested. Use Socket_sendvall() for guaranteed complete send.
+ * May send less than requested. Use Socket_sendvall() for guaranteed complete
+ * send.
  */
-extern ssize_t Socket_sendv(T socket, const struct iovec *iov, int iovcnt);
+extern ssize_t Socket_sendv (T socket, const struct iovec *iov, int iovcnt);
 
 /**
  * Socket_recvv - Scatter/gather receive (readv wrapper)
@@ -211,9 +215,10 @@ extern ssize_t Socket_sendv(T socket, const struct iovec *iov, int iovcnt);
  * Raises: Socket_Failed on other errors
  * Thread-safe: Yes (operates on single socket)
  * Note: Receives data into multiple buffers in a single system call.
- * May receive less than requested. Use Socket_recvvall() for guaranteed complete receive.
+ * May receive less than requested. Use Socket_recvvall() for guaranteed
+ * complete receive.
  */
-extern ssize_t Socket_recvv(T socket, struct iovec *iov, int iovcnt);
+extern ssize_t Socket_recvv (T socket, struct iovec *iov, int iovcnt);
 
 /**
  * Socket_sendvall - Scatter/gather send all (handles partial sends)
@@ -228,7 +233,7 @@ extern ssize_t Socket_recvv(T socket, struct iovec *iov, int iovcnt);
  * For non-blocking sockets, returns partial progress if would block.
  * Use Socket_isconnected() to verify connection state before calling.
  */
-extern ssize_t Socket_sendvall(T socket, const struct iovec *iov, int iovcnt);
+extern ssize_t Socket_sendvall (T socket, const struct iovec *iov, int iovcnt);
 
 /**
  * Socket_recvvall - Scatter/gather receive all (handles partial receives)
@@ -239,11 +244,11 @@ extern ssize_t Socket_sendvall(T socket, const struct iovec *iov, int iovcnt);
  * Raises: Socket_Closed on peer close (recv returns 0) or ECONNRESET
  * Raises: Socket_Failed on other errors
  * Thread-safe: Yes (operates on single socket)
- * Note: Loops until all requested data is received into all buffers or an error occurs.
- * For non-blocking sockets, returns partial progress if would block.
- * Use Socket_isconnected() to verify connection state before calling.
+ * Note: Loops until all requested data is received into all buffers or an
+ * error occurs. For non-blocking sockets, returns partial progress if would
+ * block. Use Socket_isconnected() to verify connection state before calling.
  */
-extern ssize_t Socket_recvvall(T socket, struct iovec *iov, int iovcnt);
+extern ssize_t Socket_recvvall (T socket, struct iovec *iov, int iovcnt);
 
 /**
  * Socket_sendfile - Zero-copy file-to-socket transfer
@@ -251,22 +256,23 @@ extern ssize_t Socket_recvvall(T socket, struct iovec *iov, int iovcnt);
  * @file_fd: File descriptor to read from (must be a regular file)
  * @offset: File offset to start reading from (NULL for current position)
  * @count: Number of bytes to transfer (0 for entire file from offset)
- * Returns: Total bytes transferred (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK)
- * Raises: Socket_Closed on EPIPE/ECONNRESET
- * Raises: Socket_Failed on other errors
- * Thread-safe: Yes (operates on single socket)
+ * Returns: Total bytes transferred (> 0) or 0 if would block
+ * (EAGAIN/EWOULDBLOCK) Raises: Socket_Closed on EPIPE/ECONNRESET Raises:
+ * Socket_Failed on other errors Thread-safe: Yes (operates on single socket)
  * Note: Uses platform-specific zero-copy mechanism (sendfile/splice).
  * Falls back to read/write loop on platforms without sendfile support.
- * May transfer less than requested. Use Socket_sendfileall() for guaranteed complete transfer.
- * Platform support:
+ * May transfer less than requested. Use Socket_sendfileall() for guaranteed
+ * complete transfer. Platform support:
  * - Linux: Uses sendfile() system call
  * - BSD/macOS: Uses sendfile() system call (different signature)
  * - Other: Falls back to read/write loop
  */
-extern ssize_t Socket_sendfile(T socket, int file_fd, off_t *offset, size_t count);
+extern ssize_t Socket_sendfile (T socket, int file_fd, off_t *offset,
+                                size_t count);
 
 /**
- * Socket_sendfileall - Zero-copy file-to-socket transfer (handles partial transfers)
+ * Socket_sendfileall - Zero-copy file-to-socket transfer (handles partial
+ * transfers)
  * @socket: Connected socket to send to
  * @file_fd: File descriptor to read from (must be a regular file)
  * @offset: File offset to start reading from (NULL for current position)
@@ -279,7 +285,8 @@ extern ssize_t Socket_sendfile(T socket, int file_fd, off_t *offset, size_t coun
  * For non-blocking sockets, returns partial progress if would block.
  * Uses platform-specific zero-copy mechanism when available.
  */
-extern ssize_t Socket_sendfileall(T socket, int file_fd, off_t *offset, size_t count);
+extern ssize_t Socket_sendfileall (T socket, int file_fd, off_t *offset,
+                                   size_t count);
 
 /**
  * Socket_sendmsg - Send message with ancillary data (sendmsg wrapper)
@@ -292,9 +299,10 @@ extern ssize_t Socket_sendfileall(T socket, int file_fd, off_t *offset, size_t c
  * Thread-safe: Yes (operates on single socket)
  * Note: Allows sending data with control messages (CMSG) for advanced features
  * like file descriptor passing, credentials, IP options, etc.
- * May send less than requested. Use Socket_sendmsgall() for guaranteed complete send.
+ * May send less than requested. Use Socket_sendmsgall() for guaranteed
+ * complete send.
  */
-extern ssize_t Socket_sendmsg(T socket, const struct msghdr *msg, int flags);
+extern ssize_t Socket_sendmsg (T socket, const struct msghdr *msg, int flags);
 
 /**
  * Socket_recvmsg - Receive message with ancillary data (recvmsg wrapper)
@@ -305,32 +313,33 @@ extern ssize_t Socket_sendmsg(T socket, const struct msghdr *msg, int flags);
  * Raises: Socket_Closed on peer close (recv returns 0) or ECONNRESET
  * Raises: Socket_Failed on other errors
  * Thread-safe: Yes (operates on single socket)
- * Note: Allows receiving data with control messages (CMSG) for advanced features
- * like file descriptor passing, credentials, IP options, etc.
- * May receive less than requested. Use Socket_recvmsgall() for guaranteed complete receive.
+ * Note: Allows receiving data with control messages (CMSG) for advanced
+ * features like file descriptor passing, credentials, IP options, etc. May
+ * receive less than requested. Use Socket_recvmsgall() for guaranteed complete
+ * receive.
  */
-extern ssize_t Socket_recvmsg(T socket, struct msghdr *msg, int flags);
+extern ssize_t Socket_recvmsg (T socket, struct msghdr *msg, int flags);
 
 /**
  * Socket_setnonblocking - Enable non-blocking mode
  * @socket: Socket to modify
  * Raises: Socket_Failed on error
  */
-extern void Socket_setnonblocking(T socket);
+extern void Socket_setnonblocking (T socket);
 
 /**
  * Socket_setreuseaddr - Enable address reuse
  * @socket: Socket to modify
  * Raises: Socket_Failed on error
  */
-extern void Socket_setreuseaddr(T socket);
+extern void Socket_setreuseaddr (T socket);
 
 /**
  * Socket_setreuseport - Enable port reuse across sockets
  * @socket: Socket to modify
  * Raises: Socket_Failed on error (or if SO_REUSEPORT unsupported)
  */
-extern void Socket_setreuseport(T socket);
+extern void Socket_setreuseport (T socket);
 
 /**
  * Socket_settimeout - Set socket timeout
@@ -339,7 +348,7 @@ extern void Socket_setreuseport(T socket);
  * Sets both send and receive timeouts
  * Raises: Socket_Failed on error
  */
-extern void Socket_settimeout(T socket, int timeout_sec);
+extern void Socket_settimeout (T socket, int timeout_sec);
 
 /**
  * Socket_setkeepalive - Enable TCP keepalive
@@ -349,7 +358,7 @@ extern void Socket_settimeout(T socket, int timeout_sec);
  * @count: Number of probes before declaring dead
  * Raises: Socket_Failed on error
  */
-extern void Socket_setkeepalive(T socket, int idle, int interval, int count);
+extern void Socket_setkeepalive (T socket, int idle, int interval, int count);
 
 /**
  * Socket_setnodelay - Disable Nagle's algorithm
@@ -357,7 +366,7 @@ extern void Socket_setkeepalive(T socket, int idle, int interval, int count);
  * @nodelay: 1 to disable Nagle, 0 to enable
  * Raises: Socket_Failed on error
  */
-extern void Socket_setnodelay(T socket, int nodelay);
+extern void Socket_setnodelay (T socket, int nodelay);
 
 /**
  * Socket_gettimeout - Get socket timeout
@@ -366,7 +375,7 @@ extern void Socket_setnodelay(T socket, int nodelay);
  * Raises: Socket_Failed on error
  * Note: Returns receive timeout (send timeout may differ)
  */
-extern int Socket_gettimeout(T socket);
+extern int Socket_gettimeout (T socket);
 
 /**
  * Socket_getkeepalive - Get TCP keepalive configuration
@@ -377,7 +386,8 @@ extern int Socket_gettimeout(T socket);
  * Raises: Socket_Failed on error
  * Note: Returns 0 for parameters not supported on this platform
  */
-extern void Socket_getkeepalive(T socket, int *idle, int *interval, int *count);
+extern void Socket_getkeepalive (T socket, int *idle, int *interval,
+                                 int *count);
 
 /**
  * Socket_getnodelay - Get TCP_NODELAY setting
@@ -385,7 +395,7 @@ extern void Socket_getkeepalive(T socket, int *idle, int *interval, int *count);
  * Returns: 1 if Nagle's algorithm is disabled, 0 if enabled
  * Raises: Socket_Failed on error
  */
-extern int Socket_getnodelay(T socket);
+extern int Socket_getnodelay (T socket);
 
 /**
  * Socket_getrcvbuf - Get receive buffer size
@@ -393,7 +403,7 @@ extern int Socket_getnodelay(T socket);
  * Returns: Receive buffer size in bytes
  * Raises: Socket_Failed on error
  */
-extern int Socket_getrcvbuf(T socket);
+extern int Socket_getrcvbuf (T socket);
 
 /**
  * Socket_getsndbuf - Get send buffer size
@@ -401,7 +411,7 @@ extern int Socket_getrcvbuf(T socket);
  * Returns: Send buffer size in bytes
  * Raises: Socket_Failed on error
  */
-extern int Socket_getsndbuf(T socket);
+extern int Socket_getsndbuf (T socket);
 
 /**
  * Socket_setrcvbuf - Set receive buffer size
@@ -411,7 +421,7 @@ extern int Socket_getsndbuf(T socket);
  * Note: The kernel may adjust the value to be within system limits.
  * Use Socket_getrcvbuf() to verify the actual size set.
  */
-extern void Socket_setrcvbuf(T socket, int size);
+extern void Socket_setrcvbuf (T socket, int size);
 
 /**
  * Socket_setsndbuf - Set send buffer size
@@ -421,7 +431,7 @@ extern void Socket_setrcvbuf(T socket, int size);
  * Note: The kernel may adjust the value to be within system limits.
  * Use Socket_getsndbuf() to verify the actual size set.
  */
-extern void Socket_setsndbuf(T socket, int size);
+extern void Socket_setsndbuf (T socket, int size);
 
 /**
  * Socket_setcongestion - Set TCP congestion control algorithm
@@ -436,7 +446,7 @@ extern void Socket_setsndbuf(T socket, int size);
  * - "bbr2" (BBR v2, Linux 4.20+)
  * Use Socket_getcongestion() to query current algorithm.
  */
-extern void Socket_setcongestion(T socket, const char *algorithm);
+extern void Socket_setcongestion (T socket, const char *algorithm);
 
 /**
  * Socket_getcongestion - Get TCP congestion control algorithm
@@ -448,7 +458,7 @@ extern void Socket_setcongestion(T socket, const char *algorithm);
  * Note: Only available on Linux 2.6.13+.
  * The algorithm name is written to the provided buffer.
  */
-extern int Socket_getcongestion(T socket, char *algorithm, size_t len);
+extern int Socket_getcongestion (T socket, char *algorithm, size_t len);
 
 /**
  * Socket_setfastopen - Enable TCP Fast Open
@@ -461,7 +471,7 @@ extern int Socket_getcongestion(T socket, char *algorithm, size_t len);
  * Must be set before connect() or listen().
  * Use Socket_getfastopen() to query current setting.
  */
-extern void Socket_setfastopen(T socket, int enable);
+extern void Socket_setfastopen (T socket, int enable);
 
 /**
  * Socket_getfastopen - Get TCP Fast Open setting
@@ -470,7 +480,7 @@ extern void Socket_setfastopen(T socket, int enable);
  * Thread-safe: Yes (operates on single socket)
  * Note: Only available on platforms that support TCP Fast Open.
  */
-extern int Socket_getfastopen(T socket);
+extern int Socket_getfastopen (T socket);
 
 /**
  * Socket_setusertimeout - Set TCP user timeout
@@ -482,7 +492,7 @@ extern int Socket_getfastopen(T socket);
  * closing connection. Only available on Linux 2.6.37+.
  * Use Socket_getusertimeout() to query current timeout.
  */
-extern void Socket_setusertimeout(T socket, unsigned int timeout_ms);
+extern void Socket_setusertimeout (T socket, unsigned int timeout_ms);
 
 /**
  * Socket_getusertimeout - Get TCP user timeout
@@ -491,7 +501,7 @@ extern void Socket_setusertimeout(T socket, unsigned int timeout_ms);
  * Thread-safe: Yes (operates on single socket)
  * Note: Only available on Linux 2.6.37+.
  */
-extern unsigned int Socket_getusertimeout(T socket);
+extern unsigned int Socket_getusertimeout (T socket);
 
 /**
  * Socket_isconnected - Check if socket is connected
@@ -501,7 +511,7 @@ extern unsigned int Socket_getusertimeout(T socket);
  * Note: Uses getpeername() to determine connection state.
  * For TCP sockets, checks if peer address is available.
  */
-extern int Socket_isconnected(T socket);
+extern int Socket_isconnected (T socket);
 
 /**
  * Socket_isbound - Check if socket is bound to an address
@@ -512,7 +522,7 @@ extern int Socket_isconnected(T socket);
  * A socket is bound if getsockname() succeeds and returns a valid address.
  * Wildcard addresses (0.0.0.0 or ::) still count as bound.
  */
-extern int Socket_isbound(T socket);
+extern int Socket_isbound (T socket);
 
 /**
  * Socket_islistening - Check if socket is listening for connections
@@ -522,7 +532,7 @@ extern int Socket_isbound(T socket);
  * Note: Checks if socket is bound and not connected.
  * A socket is listening if it's bound but has no peer address.
  */
-extern int Socket_islistening(T socket);
+extern int Socket_islistening (T socket);
 
 /**
  * Socket_shutdown - Disable further sends and/or receives
@@ -531,7 +541,7 @@ extern int Socket_islistening(T socket);
  * Raises: Socket_Failed on error
  * Thread-safe: No (callers must synchronize concurrent access to the socket)
  */
-extern void Socket_shutdown(T socket, int how);
+extern void Socket_shutdown (T socket, int how);
 
 /**
  * Socket_setcloexec - Control close-on-exec flag
@@ -542,7 +552,7 @@ extern void Socket_shutdown(T socket, int how);
  * Note: By default, all sockets have CLOEXEC enabled. This function
  * allows disabling it if you need to pass the socket to a child process.
  */
-extern void Socket_setcloexec(T socket, int enable);
+extern void Socket_setcloexec (T socket, int enable);
 
 /**
  * Socket_timeouts_get - Retrieve per-socket timeout configuration
@@ -550,7 +560,7 @@ extern void Socket_setcloexec(T socket, int enable);
  * @timeouts: Output timeout structure
  * Returns: Nothing
  */
-extern void Socket_timeouts_get(const T socket, SocketTimeouts_T *timeouts);
+extern void Socket_timeouts_get (const T socket, SocketTimeouts_T *timeouts);
 
 /**
  * Socket_timeouts_set - Set per-socket timeout configuration
@@ -558,37 +568,38 @@ extern void Socket_timeouts_get(const T socket, SocketTimeouts_T *timeouts);
  * @timeouts: Timeout configuration (NULL to reset to defaults)
  * Returns: Nothing
  */
-extern void Socket_timeouts_set(T socket, const SocketTimeouts_T *timeouts);
+extern void Socket_timeouts_set (T socket, const SocketTimeouts_T *timeouts);
 
 /**
  * Socket_timeouts_getdefaults - Get global default timeouts
  * @timeouts: Output timeout structure containing current defaults
  * Returns: Nothing
  */
-extern void Socket_timeouts_getdefaults(SocketTimeouts_T *timeouts);
+extern void Socket_timeouts_getdefaults (SocketTimeouts_T *timeouts);
 
 /**
  * Socket_timeouts_setdefaults - Set global default timeouts
  * @timeouts: New default timeout configuration
  * Returns: Nothing
  */
-extern void Socket_timeouts_setdefaults(const SocketTimeouts_T *timeouts);
+extern void Socket_timeouts_setdefaults (const SocketTimeouts_T *timeouts);
 
 /**
  * Socket_fd - Get underlying file descriptor
  * @socket: Socket instance
  * Returns: File descriptor
  */
-extern int Socket_fd(const T socket);
+extern int Socket_fd (const T socket);
 
 /**
  * Socket_getpeeraddr - Get peer IP address
  * @socket: Connected socket
  * Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable
  * Note: Returns "(unknown)" if address info unavailable during accept/connect.
- * String is owned by socket, must not be freed/modified. Valid until socket freed.
+ * String is owned by socket, must not be freed/modified. Valid until socket
+ * freed.
  */
-extern const char *Socket_getpeeraddr(const T socket);
+extern const char *Socket_getpeeraddr (const T socket);
 
 /**
  * Socket_getpeerport - Get peer port number
@@ -596,7 +607,7 @@ extern const char *Socket_getpeeraddr(const T socket);
  * Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable
  * Note: Returns 0 if port info unavailable during accept/connect.
  */
-extern int Socket_getpeerport(const T socket);
+extern int Socket_getpeerport (const T socket);
 
 /**
  * Socket_getlocaladdr - Get local IP address
@@ -605,14 +616,14 @@ extern int Socket_getpeerport(const T socket);
  * Note: Returns "(unknown)" if address info unavailable. String is owned by
  * socket, must not be freed/modified. Valid until socket freed.
  */
-extern const char *Socket_getlocaladdr(const T socket);
+extern const char *Socket_getlocaladdr (const T socket);
 
 /**
  * Socket_getlocalport - Get local port number
  * @socket: Socket instance
  * Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable
  */
-extern int Socket_getlocalport(const T socket);
+extern int Socket_getlocalport (const T socket);
 
 /**
  * Socket_bind_unix - Bind to Unix domain socket path
@@ -622,7 +633,7 @@ extern int Socket_getlocalport(const T socket);
  * Note: Fails with EADDRINUSE if path exists. Max path length ~108 bytes.
  * Supports abstract namespace sockets on Linux (path starting with '@').
  */
-extern void Socket_bind_unix(T socket, const char *path);
+extern void Socket_bind_unix (T socket, const char *path);
 
 /**
  * Socket_connect_unix - Connect to Unix domain socket path
@@ -631,7 +642,7 @@ extern void Socket_bind_unix(T socket, const char *path);
  * Raises: Socket_Failed on error
  * Note: Supports abstract namespace sockets on Linux (path starting with '@').
  */
-extern void Socket_connect_unix(T socket, const char *path);
+extern void Socket_connect_unix (T socket, const char *path);
 
 /**
  * Socket_getpeerpid - Get peer process ID (Linux only)
@@ -640,7 +651,7 @@ extern void Socket_connect_unix(T socket, const char *path);
  * Note: Only works on Linux with SO_PEERCRED.
  * Returns -1 on other platforms or non-Unix sockets.
  */
-extern int Socket_getpeerpid(const T socket);
+extern int Socket_getpeerpid (const T socket);
 
 /**
  * Socket_getpeeruid - Get peer user ID (Linux only)
@@ -649,7 +660,7 @@ extern int Socket_getpeerpid(const T socket);
  * Note: Only works on Linux with SO_PEERCRED.
  * Returns -1 on other platforms or non-Unix sockets.
  */
-extern int Socket_getpeeruid(const T socket);
+extern int Socket_getpeeruid (const T socket);
 
 /**
  * Socket_getpeergid - Get peer group ID (Linux only)
@@ -658,7 +669,7 @@ extern int Socket_getpeeruid(const T socket);
  * Note: Only works on Linux with SO_PEERCRED.
  * Returns -1 on other platforms or non-Unix sockets.
  */
-extern int Socket_getpeergid(const T socket);
+extern int Socket_getpeergid (const T socket);
 
 /**
  * Socket_bind_async - Start async DNS resolution for bind
@@ -676,7 +687,8 @@ extern int Socket_getpeergid(const T socket);
  *   struct addrinfo *res = SocketDNS_getresult(dns, req);
  *   if (res) Socket_bind_with_addrinfo(socket, res);
  */
-extern SocketDNS_Request_T Socket_bind_async(SocketDNS_T dns, T socket, const char *host, int port);
+extern SocketDNS_Request_T Socket_bind_async (SocketDNS_T dns, T socket,
+                                              const char *host, int port);
 
 /**
  * Socket_bind_async_cancel - Cancel pending async bind resolution
@@ -684,7 +696,8 @@ extern SocketDNS_Request_T Socket_bind_async(SocketDNS_T dns, T socket, const ch
  * @req: Request handle returned by Socket_bind_async
  * Returns: Nothing
  */
-extern void Socket_bind_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req);
+extern void Socket_bind_async_cancel (SocketDNS_T dns,
+                                      SocketDNS_Request_T req);
 
 /**
  * Socket_connect_async - Start async DNS resolution for connect
@@ -697,7 +710,8 @@ extern void Socket_bind_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req);
  * Starts async DNS resolution. Use SocketDNS_getresult() to check completion,
  * then call Socket_connect_with_addrinfo() to perform connect.
  */
-extern SocketDNS_Request_T Socket_connect_async(SocketDNS_T dns, T socket, const char *host, int port);
+extern SocketDNS_Request_T Socket_connect_async (SocketDNS_T dns, T socket,
+                                                 const char *host, int port);
 
 /**
  * Socket_connect_async_cancel - Cancel pending async connect resolution
@@ -705,7 +719,8 @@ extern SocketDNS_Request_T Socket_connect_async(SocketDNS_T dns, T socket, const
  * @req: Request handle returned by Socket_connect_async
  * Returns: Nothing
  */
-extern void Socket_connect_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req);
+extern void Socket_connect_async_cancel (SocketDNS_T dns,
+                                         SocketDNS_Request_T req);
 
 /**
  * Socket_bind_with_addrinfo - Bind socket using resolved address
@@ -715,7 +730,7 @@ extern void Socket_connect_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req
  * Performs bind operation using pre-resolved address. Tries each address
  * in the result list until one succeeds.
  */
-extern void Socket_bind_with_addrinfo(T socket, struct addrinfo *res);
+extern void Socket_bind_with_addrinfo (T socket, struct addrinfo *res);
 
 /**
  * Socket_connect_with_addrinfo - Connect socket using resolved address
@@ -725,7 +740,7 @@ extern void Socket_bind_with_addrinfo(T socket, struct addrinfo *res);
  * Performs connect operation using pre-resolved address. Tries each address
  * in the result list until one succeeds.
  */
-extern void Socket_connect_with_addrinfo(T socket, struct addrinfo *res);
+extern void Socket_connect_with_addrinfo (T socket, struct addrinfo *res);
 
 #undef T
 #endif

@@ -21,7 +21,8 @@
  * Routes through SSL_write() if TLS is enabled, otherwise uses send().
  * Handles partial sends and EAGAIN mapping.
  */
-extern ssize_t socket_send_internal(T socket, const void *buf, size_t len, int flags);
+extern ssize_t socket_send_internal (T socket, const void *buf, size_t len,
+                                     int flags);
 
 /**
  * socket_recv_internal - Internal receive operation (TLS-aware)
@@ -35,7 +36,8 @@ extern ssize_t socket_send_internal(T socket, const void *buf, size_t len, int f
  * Routes through SSL_read() if TLS is enabled, otherwise uses recv().
  * Maps SSL errors to errno (EAGAIN for WANT_READ/WRITE).
  */
-extern ssize_t socket_recv_internal(T socket, void *buf, size_t len, int flags);
+extern ssize_t socket_recv_internal (T socket, void *buf, size_t len,
+                                     int flags);
 
 /**
  * socket_sendv_internal - Internal scatter/gather send (TLS-aware)
@@ -50,7 +52,8 @@ extern ssize_t socket_recv_internal(T socket, void *buf, size_t len, int flags);
  * For non-TLS: Uses writev() directly.
  * Allocates temp buffer via socket->arena if needed.
  */
-extern ssize_t socket_sendv_internal(T socket, const struct iovec *iov, int iovcnt, int flags);
+extern ssize_t socket_sendv_internal (T socket, const struct iovec *iov,
+                                      int iovcnt, int flags);
 
 /**
  * socket_recvv_internal - Internal scatter/gather receive (TLS-aware)
@@ -64,7 +67,8 @@ extern ssize_t socket_sendv_internal(T socket, const struct iovec *iov, int iovc
  * For TLS: Calls SSL_read() into first iov, advances manually.
  * For non-TLS: Uses readv() directly.
  */
-extern ssize_t socket_recvv_internal(T socket, struct iovec *iov, int iovcnt, int flags);
+extern ssize_t socket_recvv_internal (T socket, struct iovec *iov, int iovcnt,
+                                      int flags);
 
 /**
  * socket_is_tls_enabled - Check if TLS is enabled on socket
@@ -72,7 +76,7 @@ extern ssize_t socket_recvv_internal(T socket, struct iovec *iov, int iovcnt, in
  * Returns: 1 if TLS is enabled, 0 otherwise
  * Thread-safe: Yes (read-only flag)
  */
-extern int socket_is_tls_enabled(T socket);
+extern int socket_is_tls_enabled (T socket);
 
 /**
  * socket_tls_want_read - Check if TLS operation wants read
@@ -81,7 +85,7 @@ extern int socket_is_tls_enabled(T socket);
  * Thread-safe: Yes (read last SSL error)
  * Used by SocketPoll to adjust event masks during handshake.
  */
-extern int socket_tls_want_read(T socket);
+extern int socket_tls_want_read (T socket);
 
 /**
  * socket_tls_want_write - Check if TLS operation wants write
@@ -90,7 +94,7 @@ extern int socket_tls_want_read(T socket);
  * Thread-safe: Yes (read last SSL error)
  * Used by SocketPoll to adjust event masks during handshake.
  */
-extern int socket_tls_want_write(T socket);
+extern int socket_tls_want_write (T socket);
 
 #undef T
 

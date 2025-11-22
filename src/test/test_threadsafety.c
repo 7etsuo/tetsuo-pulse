@@ -12,7 +12,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "test/Test.h"
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "dns/SocketDNS.h"
@@ -21,11 +20,13 @@
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 #include "socket/SocketDgram.h"
+#include "test/Test.h"
 
 /* Arena exception - external declaration */
 extern Except_T Arena_Failed;
 
-/* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
+/* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT
+ */
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
@@ -33,850 +34,816 @@ extern Except_T Arena_Failed;
 #define NUM_THREADS 8
 #define OPERATIONS_PER_THREAD 100
 
-static void setup_signals(void)
+static void
+setup_signals (void)
 {
-    signal(SIGPIPE, SIG_IGN);
+  signal (SIGPIPE, SIG_IGN);
 }
 
 /* ==================== Arena Thread Safety Tests ==================== */
 
-static void *thread_arena_operations(void *arg)
+static void *
+thread_arena_operations (void *arg)
 {
-    Arena_T arena = (Arena_T)arg;
-    
-    for (int i = 0; i < OPERATIONS_PER_THREAD; i++)
+  Arena_T arena = (Arena_T)arg;
+
+  for (int i = 0; i < OPERATIONS_PER_THREAD; i++)
     {
-        TRY
-        {
-            void *ptr1 = ALLOC(arena, 100);
-            void *ptr2 = ALLOC(arena, 200);
-            void *ptr3 = CALLOC(arena, 10, sizeof(int));
-            (void)ptr1;
-            (void)ptr2;
-            (void)ptr3;
-        }
-        EXCEPT(Arena_Failed)
-        {
-            break;
-        }
-        END_TRY;
+      TRY
+      {
+        void *ptr1 = ALLOC (arena, 100);
+        void *ptr2 = ALLOC (arena, 200);
+        void *ptr3 = CALLOC (arena, 10, sizeof (int));
+        (void)ptr1;
+        (void)ptr2;
+        (void)ptr3;
+      }
+      EXCEPT (Arena_Failed) { break; }
+      END_TRY;
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_arena_concurrent_alloc)
+TEST (threadsafety_arena_concurrent_alloc)
 {
-    Arena_T arena = Arena_new();
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_arena_operations, arena);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
-    
-    Arena_dispose(&arena);
+  Arena_T arena = Arena_new ();
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_arena_operations, arena);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
+
+  Arena_dispose (&arena);
 }
 
-static void *thread_arena_clear(void *arg)
+static void *
+thread_arena_clear (void *arg)
 {
-    Arena_T arena = (Arena_T)arg;
-    
-    for (int i = 0; i < 50; i++)
+  Arena_T arena = (Arena_T)arg;
+
+  for (int i = 0; i < 50; i++)
     {
-        TRY
-        {
-            ALLOC(arena, 500);
-            if (i % 10 == 0)
-                Arena_clear(arena);
-        }
-        EXCEPT(Arena_Failed)
-        {
-            break;
-        }
-        END_TRY;
-        usleep(100);
+      TRY
+      {
+        ALLOC (arena, 500);
+        if (i % 10 == 0)
+          Arena_clear (arena);
+      }
+      EXCEPT (Arena_Failed) { break; }
+      END_TRY;
+      usleep (100);
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_arena_concurrent_clear)
+TEST (threadsafety_arena_concurrent_clear)
 {
-    Arena_T arena = Arena_new();
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_arena_clear, arena);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
-    
-    Arena_dispose(&arena);
+  Arena_T arena = Arena_new ();
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_arena_clear, arena);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
+
+  Arena_dispose (&arena);
 }
 
 /* ==================== Exception Thread Safety Tests ==================== */
 
-static const Except_T ThreadTest_Exception = {"Thread test exception"};
+static const Except_T ThreadTest_Exception = { "Thread test exception" };
 
-static void *thread_exception_handling(void *arg)
+static void *
+thread_exception_handling (void *arg)
 {
-    (void)arg;
-    
-    for (int i = 0; i < OPERATIONS_PER_THREAD; i++)
+  (void)arg;
+
+  for (int i = 0; i < OPERATIONS_PER_THREAD; i++)
     {
-        TRY
-        {
-            if (i % 2 == 0)
-                RAISE(ThreadTest_Exception);
-        }
-        EXCEPT(ThreadTest_Exception)
-        {
-            /* Exception caught successfully */
-            (void)0;
-        }
-        END_TRY;
+      TRY
+      {
+        if (i % 2 == 0)
+          RAISE (ThreadTest_Exception);
+      }
+      EXCEPT (ThreadTest_Exception)
+      {
+        /* Exception caught successfully */
+        (void)0;
+      }
+      END_TRY;
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_exception_concurrent_raising)
+TEST (threadsafety_exception_concurrent_raising)
 {
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_exception_handling, NULL);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_exception_handling, NULL);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
 }
 
 /* ==================== Socket Thread Safety Tests ==================== */
 
-static void *thread_socket_operations(void *arg)
+static void *
+thread_socket_operations (void *arg)
 {
-    (void)arg;
-    setup_signals();
-    
-    for (int i = 0; i < 50; i++)
+  (void)arg;
+  setup_signals ();
+
+  for (int i = 0; i < 50; i++)
     {
-        Socket_T socket = NULL;
-        TRY
-        {
-            socket = Socket_new(AF_INET, SOCK_STREAM, 0);
-            Socket_setnonblocking(socket);
-            Socket_setreuseaddr(socket);
-            Socket_settimeout(socket, 5);
-        }
-        EXCEPT(Socket_Failed)
-        {
-            (void)0;
-        }
-        FINALLY
-        {
-            if (socket)
-                Socket_free(&socket);
-        }
-        END_TRY;
+      Socket_T socket = NULL;
+      TRY
+      {
+        socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+        Socket_setnonblocking (socket);
+        Socket_setreuseaddr (socket);
+        Socket_settimeout (socket, 5);
+      }
+      EXCEPT (Socket_Failed) { (void)0; }
+      FINALLY
+      {
+        if (socket)
+          Socket_free (&socket);
+      }
+      END_TRY;
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_socket_concurrent_operations)
+TEST (threadsafety_socket_concurrent_operations)
 {
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_socket_operations, NULL);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_socket_operations, NULL);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
 }
 
 /* ==================== SocketBuf Thread Safety Tests ==================== */
 
-typedef struct {
-    Arena_T arena;
-    SocketBuf_T buf;
-    pthread_mutex_t mutex;
+typedef struct
+{
+  Arena_T arena;
+  SocketBuf_T buf;
+  pthread_mutex_t mutex;
 } BufTestData;
 
-static void *thread_buf_writer(void *arg)
+static void *
+thread_buf_writer (void *arg)
 {
-    BufTestData *data = (BufTestData *)arg;
-    SocketBuf_T buf = data->buf;
-    
-    for (int i = 0; i < 100; i++)
+  BufTestData *data = (BufTestData *)arg;
+  SocketBuf_T buf = data->buf;
+
+  for (int i = 0; i < 100; i++)
     {
-        char data_str[32];
-        snprintf(data_str, sizeof(data_str), "Thread data %d", i);
-        pthread_mutex_lock(&data->mutex);
-        SocketBuf_write(buf, data_str, strlen(data_str));
-        pthread_mutex_unlock(&data->mutex);
-        usleep(100);
+      char data_str[32];
+      snprintf (data_str, sizeof (data_str), "Thread data %d", i);
+      pthread_mutex_lock (&data->mutex);
+      SocketBuf_write (buf, data_str, strlen (data_str));
+      pthread_mutex_unlock (&data->mutex);
+      usleep (100);
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-static void *thread_buf_reader(void *arg)
+static void *
+thread_buf_reader (void *arg)
 {
-    BufTestData *data = (BufTestData *)arg;
-    SocketBuf_T buf = data->buf;
-    
-    for (int i = 0; i < 100; i++)
+  BufTestData *data = (BufTestData *)arg;
+  SocketBuf_T buf = data->buf;
+
+  for (int i = 0; i < 100; i++)
     {
-        char data_str[128];
-        pthread_mutex_lock(&data->mutex);
-        SocketBuf_read(buf, data_str, sizeof(data_str));
-        pthread_mutex_unlock(&data->mutex);
-        usleep(100);
+      char data_str[128];
+      pthread_mutex_lock (&data->mutex);
+      SocketBuf_read (buf, data_str, sizeof (data_str));
+      pthread_mutex_unlock (&data->mutex);
+      usleep (100);
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_socketbuf_concurrent_read_write)
+TEST (threadsafety_socketbuf_concurrent_read_write)
 {
-    Arena_T arena = Arena_new();
-    SocketBuf_T buf = SocketBuf_new(arena, 65536);
-    BufTestData data = {arena, buf, PTHREAD_MUTEX_INITIALIZER};
-    pthread_t writers[4], readers[4];
-    
-    for (int i = 0; i < 4; i++)
+  Arena_T arena = Arena_new ();
+  SocketBuf_T buf = SocketBuf_new (arena, 65536);
+  BufTestData data = { arena, buf, PTHREAD_MUTEX_INITIALIZER };
+  pthread_t writers[4], readers[4];
+
+  for (int i = 0; i < 4; i++)
     {
-        pthread_create(&writers[i], NULL, thread_buf_writer, &data);
-        pthread_create(&readers[i], NULL, thread_buf_reader, &data);
+      pthread_create (&writers[i], NULL, thread_buf_writer, &data);
+      pthread_create (&readers[i], NULL, thread_buf_reader, &data);
     }
-    
-    for (int i = 0; i < 4; i++)
+
+  for (int i = 0; i < 4; i++)
     {
-        pthread_join(writers[i], NULL);
-        pthread_join(readers[i], NULL);
+      pthread_join (writers[i], NULL);
+      pthread_join (readers[i], NULL);
     }
-    
-    pthread_mutex_destroy(&data.mutex);
-    Arena_dispose(&arena);
+
+  pthread_mutex_destroy (&data.mutex);
+  Arena_dispose (&arena);
 }
 
 /* ==================== SocketPoll Thread Safety Tests ==================== */
 
-static void *thread_poll_add_remove(void *arg)
+static void *
+thread_poll_add_remove (void *arg)
 {
-    SocketPoll_T poll = (SocketPoll_T)arg;
-    setup_signals();
-    
-    for (int i = 0; i < 50; i++)
+  SocketPoll_T poll = (SocketPoll_T)arg;
+  setup_signals ();
+
+  for (int i = 0; i < 50; i++)
     {
-        Socket_T socket = NULL;
-        TRY
-        {
-            socket = Socket_new(AF_INET, SOCK_STREAM, 0);
-            SocketPoll_add(poll, socket, POLL_READ, NULL);
-            usleep(100);
-            SocketPoll_del(poll, socket);
-        }
-        EXCEPT(SocketPoll_Failed)
-        {
-            (void)0;
-        }
-        EXCEPT(Socket_Failed)
-        {
-            (void)0;
-        }
-        FINALLY
-        {
-            if (socket)
-                Socket_free(&socket);
-        }
-        END_TRY;
+      Socket_T socket = NULL;
+      TRY
+      {
+        socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+        SocketPoll_add (poll, socket, POLL_READ, NULL);
+        usleep (100);
+        SocketPoll_del (poll, socket);
+      }
+      EXCEPT (SocketPoll_Failed) { (void)0; }
+      EXCEPT (Socket_Failed) { (void)0; }
+      FINALLY
+      {
+        if (socket)
+          Socket_free (&socket);
+      }
+      END_TRY;
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_socketpoll_concurrent_add_remove)
+TEST (threadsafety_socketpoll_concurrent_add_remove)
 {
-    SocketPoll_T poll = SocketPoll_new(1000);
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_poll_add_remove, poll);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
-    
-    SocketPoll_free(&poll);
+  SocketPoll_T poll = SocketPoll_new (1000);
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_poll_add_remove, poll);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
+
+  SocketPoll_free (&poll);
 }
 
 /* ==================== SocketPool Thread Safety Tests ==================== */
 
-static void *thread_pool_add_remove(void *arg)
+static void *
+thread_pool_add_remove (void *arg)
 {
-    SocketPool_T pool = (SocketPool_T)arg;
-    setup_signals();
-    
-    for (int i = 0; i < 50; i++)
-    {
-        Socket_T socket = NULL;
-        TRY
-        {
-            socket = Socket_new(AF_INET, SOCK_STREAM, 0);
-            Connection_T conn = SocketPool_add(pool, socket);
-            if (conn)
-            {
-                usleep(100);
-                SocketPool_remove(pool, socket);
-            }
-        }
-        EXCEPT(SocketPool_Failed)
-        {
-            (void)0;
-        }
-        EXCEPT(Socket_Failed)
-        {
-            (void)0;
-        }
-        FINALLY
-        {
-            if (socket)
-                Socket_free(&socket);
-        }
-        END_TRY;
-    }
-    
-    return NULL;
-}
+  SocketPool_T pool = (SocketPool_T)arg;
+  setup_signals ();
 
-TEST(threadsafety_socketpool_concurrent_add_remove)
-{
-    Arena_T arena = Arena_new();
-    SocketPool_T pool = SocketPool_new(arena, 500, 2048);
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_pool_add_remove, pool);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
-    
-    SocketPool_free(&pool);
-    Arena_dispose(&arena);
-}
-
-static void *thread_pool_get_operations(void *arg)
-{
-    SocketPool_T pool = (SocketPool_T)arg;
-    setup_signals();
-    Socket_T socket = NULL;
-    
-    TRY
+  for (int i = 0; i < 50; i++)
     {
-        socket = Socket_new(AF_INET, SOCK_STREAM, 0);
-        Connection_T conn = SocketPool_add(pool, socket);
+      Socket_T socket = NULL;
+      TRY
+      {
+        socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+        Connection_T conn = SocketPool_add (pool, socket);
         if (conn)
-        {
-            for (int i = 0; i < 200; i++)
-            {
-                Connection_T c = SocketPool_get(pool, socket);
-                (void)c;
-                usleep(10);
-            }
-            SocketPool_remove(pool, socket);
-        }
-    }
-    EXCEPT(SocketPool_Failed)
-    {
-        (void)0;
-    }
-    EXCEPT(Socket_Failed)
-    {
-        (void)0;
-    }
-    FINALLY
-    {
+          {
+            usleep (100);
+            SocketPool_remove (pool, socket);
+          }
+      }
+      EXCEPT (SocketPool_Failed) { (void)0; }
+      EXCEPT (Socket_Failed) { (void)0; }
+      FINALLY
+      {
         if (socket)
-            Socket_free(&socket);
+          Socket_free (&socket);
+      }
+      END_TRY;
     }
-    END_TRY;
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_socketpool_concurrent_get)
+TEST (threadsafety_socketpool_concurrent_add_remove)
 {
-    Arena_T arena = Arena_new();
-    SocketPool_T pool = SocketPool_new(arena, 500, 2048);
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_pool_get_operations, pool);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
-    
-    SocketPool_free(&pool);
-    Arena_dispose(&arena);
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 500, 2048);
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_pool_add_remove, pool);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
 }
 
-static void *thread_pool_count(void *arg)
+static void *
+thread_pool_get_operations (void *arg)
 {
-    SocketPool_T pool = (SocketPool_T)arg;
-    
-    for (int i = 0; i < 200; i++)
+  SocketPool_T pool = (SocketPool_T)arg;
+  setup_signals ();
+  Socket_T socket = NULL;
+
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Connection_T conn = SocketPool_add (pool, socket);
+    if (conn)
+      {
+        for (int i = 0; i < 200; i++)
+          {
+            Connection_T c = SocketPool_get (pool, socket);
+            (void)c;
+            usleep (10);
+          }
+        SocketPool_remove (pool, socket);
+      }
+  }
+  EXCEPT (SocketPool_Failed) { (void)0; }
+  EXCEPT (Socket_Failed) { (void)0; }
+  FINALLY
+  {
+    if (socket)
+      Socket_free (&socket);
+  }
+  END_TRY;
+
+  return NULL;
+}
+
+TEST (threadsafety_socketpool_concurrent_get)
+{
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 500, 2048);
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_pool_get_operations, pool);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+static void *
+thread_pool_count (void *arg)
+{
+  SocketPool_T pool = (SocketPool_T)arg;
+
+  for (int i = 0; i < 200; i++)
     {
-        size_t count = SocketPool_count(pool);
-        (void)count;
-        usleep(10);
+      size_t count = SocketPool_count (pool);
+      (void)count;
+      usleep (10);
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_socketpool_concurrent_count)
+TEST (threadsafety_socketpool_concurrent_count)
 {
-    Arena_T arena = Arena_new();
-    SocketPool_T pool = SocketPool_new(arena, 100, 2048);
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_pool_count, pool);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
-    
-    SocketPool_free(&pool);
-    Arena_dispose(&arena);
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 2048);
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_pool_count, pool);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
 }
 
 /* ==================== SocketDNS Thread Safety Tests ==================== */
 
-static void *thread_dns_resolve(void *arg)
+static void *
+thread_dns_resolve (void *arg)
 {
-    SocketDNS_T dns = (SocketDNS_T)arg;
-    
-    for (int i = 0; i < 30; i++)
+  SocketDNS_T dns = (SocketDNS_T)arg;
+
+  for (int i = 0; i < 30; i++)
     {
-        TRY
-        {
-            SocketDNS_Request_T req = SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
-            (void)req;
-            usleep(5000);
-        }
-        EXCEPT(SocketDNS_Failed)
-        {
-            break;
-        }
-        END_TRY;
+      TRY
+      {
+        SocketDNS_Request_T req
+            = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+        (void)req;
+        usleep (5000);
+      }
+      EXCEPT (SocketDNS_Failed) { break; }
+      END_TRY;
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_socketdns_concurrent_resolve)
+TEST (threadsafety_socketdns_concurrent_resolve)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_dns_resolve, dns);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
-    
-    usleep(500000);
-    SocketDNS_check(dns);
-    SocketDNS_free(&dns);
+  SocketDNS_T dns = SocketDNS_new ();
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_dns_resolve, dns);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
+
+  usleep (500000);
+  SocketDNS_check (dns);
+  SocketDNS_free (&dns);
 }
 
-static void *thread_dns_cancel(void *arg)
+static void *
+thread_dns_cancel (void *arg)
 {
-    SocketDNS_T dns = (SocketDNS_T)arg;
-    
-    for (int i = 0; i < 30; i++)
+  SocketDNS_T dns = (SocketDNS_T)arg;
+
+  for (int i = 0; i < 30; i++)
     {
-        TRY
-        {
-            SocketDNS_Request_T req = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
-            usleep(1000);
-            SocketDNS_cancel(dns, req);
-        }
-        EXCEPT(SocketDNS_Failed)
-        {
-            break;
-        }
-        END_TRY;
+      TRY
+      {
+        SocketDNS_Request_T req
+            = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+        usleep (1000);
+        SocketDNS_cancel (dns, req);
+      }
+      EXCEPT (SocketDNS_Failed) { break; }
+      END_TRY;
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_socketdns_concurrent_cancel)
+TEST (threadsafety_socketdns_concurrent_cancel)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_dns_cancel, dns);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
-    
-    SocketDNS_free(&dns);
+  SocketDNS_T dns = SocketDNS_new ();
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_dns_cancel, dns);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
+
+  SocketDNS_free (&dns);
 }
 
-static void *thread_dns_check(void *arg)
+static void *
+thread_dns_check (void *arg)
 {
-    SocketDNS_T dns = (SocketDNS_T)arg;
-    
-    for (int i = 0; i < 100; i++)
+  SocketDNS_T dns = (SocketDNS_T)arg;
+
+  for (int i = 0; i < 100; i++)
     {
-        SocketDNS_check(dns);
-        usleep(5000);
+      SocketDNS_check (dns);
+      usleep (5000);
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_socketdns_concurrent_check)
+TEST (threadsafety_socketdns_concurrent_check)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    pthread_t threads[NUM_THREADS];
-    
-    TRY
-    {
-        for (int i = 0; i < 20; i++)
-            SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
-    }
-    EXCEPT(SocketDNS_Failed)
-    {
-        (void)0;
-    }
-    END_TRY;
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_dns_check, dns);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
-    
-    SocketDNS_free(&dns);
+  SocketDNS_T dns = SocketDNS_new ();
+  pthread_t threads[NUM_THREADS];
+
+  TRY
+  {
+    for (int i = 0; i < 20; i++)
+      SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+  }
+  EXCEPT (SocketDNS_Failed) { (void)0; }
+  END_TRY;
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_dns_check, dns);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
+
+  SocketDNS_free (&dns);
 }
 
-/* ==================== Mixed Operations Thread Safety Tests ==================== */
+/* ==================== Mixed Operations Thread Safety Tests
+ * ==================== */
 
-typedef struct {
-    SocketPoll_T poll;
-    SocketPool_T pool;
+typedef struct
+{
+  SocketPoll_T poll;
+  SocketPool_T pool;
 } MixedTestData;
 
-static void *thread_mixed_operations(void *arg)
+static void *
+thread_mixed_operations (void *arg)
 {
-    MixedTestData *data = (MixedTestData *)arg;
-    setup_signals();
-    
-    for (int i = 0; i < 20; i++)
+  MixedTestData *data = (MixedTestData *)arg;
+  setup_signals ();
+
+  for (int i = 0; i < 20; i++)
     {
-        Socket_T socket = NULL;
-        
-        TRY
-        {
-            socket = Socket_new(AF_INET, SOCK_STREAM, 0);
-            SocketPoll_add(data->poll, socket, POLL_READ, NULL);
-            Connection_T conn = SocketPool_add(data->pool, socket);
+      Socket_T socket = NULL;
 
-            usleep(100);
+      TRY
+      {
+        socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+        SocketPoll_add (data->poll, socket, POLL_READ, NULL);
+        Connection_T conn = SocketPool_add (data->pool, socket);
 
-            if (conn)
-            {
-                SocketBuf_T inbuf = Connection_inbuf(conn);
-                SocketBuf_write(inbuf, "Test", 4);
-            }
+        usleep (100);
 
-            SocketPoll_del(data->poll, socket);
-            SocketPool_remove(data->pool, socket);
-        }
-        EXCEPT(SocketPoll_Failed)
-        {
-            (void)0;
-        }
-        EXCEPT(SocketPool_Failed)
-        {
-            (void)0;
-        }
-        EXCEPT(Socket_Failed)
-        {
-            (void)0;
-        }
-        FINALLY
-        {
-            if (socket)
-                Socket_free(&socket);
-        }
-        END_TRY;
+        if (conn)
+          {
+            SocketBuf_T inbuf = Connection_inbuf (conn);
+            SocketBuf_write (inbuf, "Test", 4);
+          }
+
+        SocketPoll_del (data->poll, socket);
+        SocketPool_remove (data->pool, socket);
+      }
+      EXCEPT (SocketPoll_Failed) { (void)0; }
+      EXCEPT (SocketPool_Failed) { (void)0; }
+      EXCEPT (Socket_Failed) { (void)0; }
+      FINALLY
+      {
+        if (socket)
+          Socket_free (&socket);
+      }
+      END_TRY;
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_mixed_poll_pool_operations)
+TEST (threadsafety_mixed_poll_pool_operations)
 {
-    Arena_T arena = Arena_new();
-    SocketPoll_T poll = SocketPoll_new(1000);
-    SocketPool_T pool = SocketPool_new(arena, 500, 2048);
-    MixedTestData data = {poll, pool};
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_mixed_operations, &data);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
-    
-    SocketPoll_free(&poll);
-    SocketPool_free(&pool);
-    Arena_dispose(&arena);
+  Arena_T arena = Arena_new ();
+  SocketPoll_T poll = SocketPoll_new (1000);
+  SocketPool_T pool = SocketPool_new (arena, 500, 2048);
+  MixedTestData data = { poll, pool };
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_mixed_operations, &data);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
+
+  SocketPoll_free (&poll);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
 }
 
 /* ==================== Stress Tests with Exceptions ==================== */
 
-static void *thread_exception_stress(void *arg)
+static void *
+thread_exception_stress (void *arg)
 {
-    Arena_T arena = (Arena_T)arg;
-    setup_signals();
-    
-    for (int i = 0; i < 50; i++)
+  Arena_T arena = (Arena_T)arg;
+  setup_signals ();
+
+  for (int i = 0; i < 50; i++)
     {
-        Socket_T socket = NULL;
-        
-        TRY
-        {
-            socket = Socket_new(AF_INET, SOCK_STREAM, 0);
-            void *ptr = ALLOC(arena, 100);
-            (void)ptr;
+      Socket_T socket = NULL;
 
-            Socket_setnonblocking(socket);
+      TRY
+      {
+        socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+        void *ptr = ALLOC (arena, 100);
+        (void)ptr;
 
-            if (i % 3 == 0)
-                RAISE(ThreadTest_Exception);
-        }
-        EXCEPT(ThreadTest_Exception)
-        {
-            /* Cleanup in exception path */
-            if (socket)
-                Socket_free(&socket);
-        }
-        EXCEPT(Socket_Failed)
-        {
-            if (socket)
-                Socket_free(&socket);
-        }
-        FINALLY
-        {
-            /* Additional cleanup */
-            (void)0;
-        }
-        END_TRY;
-        
-        if (socket) Socket_free(&socket);
+        Socket_setnonblocking (socket);
+
+        if (i % 3 == 0)
+          RAISE (ThreadTest_Exception);
+      }
+      EXCEPT (ThreadTest_Exception)
+      {
+        /* Cleanup in exception path */
+        if (socket)
+          Socket_free (&socket);
+      }
+      EXCEPT (Socket_Failed)
+      {
+        if (socket)
+          Socket_free (&socket);
+      }
+      FINALLY
+      {
+        /* Additional cleanup */
+        (void)0;
+      }
+      END_TRY;
+
+      if (socket)
+        Socket_free (&socket);
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_exception_with_cleanup)
+TEST (threadsafety_exception_with_cleanup)
 {
-    Arena_T arena = Arena_new();
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_exception_stress, arena);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
-    
-    Arena_dispose(&arena);
+  Arena_T arena = Arena_new ();
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_exception_stress, arena);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
+
+  Arena_dispose (&arena);
 }
 
 /* ==================== UDP Thread Safety Tests ==================== */
 
-static void *thread_udp_operations(void *arg)
+static void *
+thread_udp_operations (void *arg)
 {
-    (void)arg;
-    setup_signals();
-    
-    for (int i = 0; i < 50; i++)
+  (void)arg;
+  setup_signals ();
+
+  for (int i = 0; i < 50; i++)
     {
-        SocketDgram_T socket = NULL;
-        TRY
-        {
-            socket = SocketDgram_new(AF_INET, 0);
-            SocketDgram_setnonblocking(socket);
-            SocketDgram_setreuseaddr(socket);
-            SocketDgram_setttl(socket, 64);
-        }
-        EXCEPT(SocketDgram_Failed)
-        {
-            (void)0;
-        }
-        FINALLY
-        {
-            if (socket)
-                SocketDgram_free(&socket);
-        }
-        END_TRY;
+      SocketDgram_T socket = NULL;
+      TRY
+      {
+        socket = SocketDgram_new (AF_INET, 0);
+        SocketDgram_setnonblocking (socket);
+        SocketDgram_setreuseaddr (socket);
+        SocketDgram_setttl (socket, 64);
+      }
+      EXCEPT (SocketDgram_Failed) { (void)0; }
+      FINALLY
+      {
+        if (socket)
+          SocketDgram_free (&socket);
+      }
+      END_TRY;
     }
-    
-    return NULL;
+
+  return NULL;
 }
 
-TEST(threadsafety_socketdgram_concurrent_operations)
+TEST (threadsafety_socketdgram_concurrent_operations)
 {
-    pthread_t threads[NUM_THREADS];
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_create(&threads[i], NULL, thread_udp_operations, NULL);
-    
-    for (int i = 0; i < NUM_THREADS; i++)
-        pthread_join(threads[i], NULL);
+  pthread_t threads[NUM_THREADS];
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_create (&threads[i], NULL, thread_udp_operations, NULL);
+
+  for (int i = 0; i < NUM_THREADS; i++)
+    pthread_join (threads[i], NULL);
 }
 
 /* ==================== High Load Stress Tests ==================== */
 
-TEST(threadsafety_high_load_server_simulation)
+TEST (threadsafety_high_load_server_simulation)
 {
-    setup_signals();
-    Arena_T arena = Arena_new();
-    SocketPoll_T poll = SocketPoll_new(1000);
-    SocketPool_T pool = SocketPool_new(arena, 500, 4096);
-    volatile Socket_T server = NULL;
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPoll_T poll = SocketPoll_new (1000);
+  SocketPool_T pool = SocketPool_new (arena, 500, 4096);
+  volatile Socket_T server = NULL;
 
-    TRY
-    {
-        server = Socket_new(AF_INET, SOCK_STREAM, 0);
-        Socket_setreuseaddr(server);
-        Socket_bind(server, "127.0.0.1", 0);
-        Socket_listen(server, 100);
-        Socket_setnonblocking(server);
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 100);
+    Socket_setnonblocking (server);
 
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
-        volatile int port = ntohs(addr.sin_port);
+    struct sockaddr_in addr;
+    socklen_t len = sizeof (addr);
+    getsockname (Socket_fd (server), (struct sockaddr *)&addr, &len);
+    volatile int port = ntohs (addr.sin_port);
 
-        /* Cast volatile server to non-volatile for SocketPoll_add */
-        SocketPoll_add(poll, (Socket_T)server, POLL_READ, NULL);
+    /* Cast volatile server to non-volatile for SocketPoll_add */
+    SocketPoll_add (poll, (Socket_T)server, POLL_READ, NULL);
 
-        Socket_T clients[20];
-        volatile int i;
-        volatile int iteration;
-        volatile int nfds;
-        for (i = 0; i < 20; i++)
-            clients[i] = NULL;
+    Socket_T clients[20];
+    volatile int i;
+    volatile int iteration;
+    volatile int nfds;
+    for (i = 0; i < 20; i++)
+      clients[i] = NULL;
 
-        for (i = 0; i < 20; i++)
+    for (i = 0; i < 20; i++)
+      {
+        TRY
         {
-            TRY
-            {
-                clients[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
-                Socket_connect(clients[i], "127.0.0.1", port);
-            }
-            EXCEPT(Socket_Failed)
-            {
-                /* Ignore connection failures under load */
-                if (clients[i])
-                {
-                     Socket_free(&clients[i]);
-                     clients[i] = NULL;
-                }
-            }
-            END_TRY;
+          clients[i] = Socket_new (AF_INET, SOCK_STREAM, 0);
+          Socket_connect (clients[i], "127.0.0.1", port);
         }
-
-        usleep(200000);
-
-        for (iteration = 0; iteration < 5; iteration++)
+        EXCEPT (Socket_Failed)
         {
-            SocketEvent_T *volatile events = NULL;
-            nfds = SocketPoll_wait(poll, (SocketEvent_T **)&events, 50);
-
-            for (i = 0; i < nfds; i++)
+          /* Ignore connection failures under load */
+          if (clients[i])
             {
-                /* Cast volatile server for comparison */
-                if (events[i].socket == (Socket_T)server)
-                {
-                    Socket_T accepted = Socket_accept(server);
-                    if (accepted)
-                    {
-                        SocketPool_add(pool, accepted);
-                        Socket_free(&accepted);
-                    }
-                }
+              Socket_free (&clients[i]);
+              clients[i] = NULL;
             }
         }
+        END_TRY;
+      }
 
-        for (i = 0; i < 20; i++)
-        {
-            if (clients[i])
-                Socket_free(&clients[i]);
-        }
-    }
-    EXCEPT(Socket_Failed)
-    {
-        (void)0;
-    }
-    EXCEPT(SocketPoll_Failed)
-    {
-        (void)0;
-    }
-    FINALLY
-    {
-        if (server)
-            Socket_free((Socket_T *)&server);
-        SocketPool_free(&pool);
-        SocketPoll_free(&poll);
-        Arena_dispose(&arena);
-    }
-    END_TRY;
+    usleep (200000);
+
+    for (iteration = 0; iteration < 5; iteration++)
+      {
+        SocketEvent_T *volatile events = NULL;
+        nfds = SocketPoll_wait (poll, (SocketEvent_T **)&events, 50);
+
+        for (i = 0; i < nfds; i++)
+          {
+            /* Cast volatile server for comparison */
+            if (events[i].socket == (Socket_T)server)
+              {
+                Socket_T accepted = Socket_accept (server);
+                if (accepted)
+                  {
+                    SocketPool_add (pool, accepted);
+                    Socket_free (&accepted);
+                  }
+              }
+          }
+      }
+
+    for (i = 0; i < 20; i++)
+      {
+        if (clients[i])
+          Socket_free (&clients[i]);
+      }
+  }
+  EXCEPT (Socket_Failed) { (void)0; }
+  EXCEPT (SocketPoll_Failed) { (void)0; }
+  FINALLY
+  {
+    if (server)
+      Socket_free ((Socket_T *)&server);
+    SocketPool_free (&pool);
+    SocketPoll_free (&poll);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
 }
 
 /* ==================== Memory Stress Tests ==================== */
 
-TEST(threadsafety_memory_intensive_operations)
+TEST (threadsafety_memory_intensive_operations)
 {
-    Arena_T arenas[10];
-    
-    for (int i = 0; i < 10; i++)
-        arenas[i] = Arena_new();
-    
-    for (int iter = 0; iter < 5; iter++)
+  Arena_T arenas[10];
+
+  for (int i = 0; i < 10; i++)
+    arenas[i] = Arena_new ();
+
+  for (int iter = 0; iter < 5; iter++)
     {
-        for (int i = 0; i < 10; i++)
+      for (int i = 0; i < 10; i++)
         {
-            TRY
-            {
-                for (int j = 0; j < 100; j++)
-                    ALLOC(arenas[i], 1000);
-                Arena_clear(arenas[i]);
-            }
-            EXCEPT(Arena_Failed)
-            {
-                (void)0;
-            }
-            END_TRY;
+          TRY
+          {
+            for (int j = 0; j < 100; j++)
+              ALLOC (arenas[i], 1000);
+            Arena_clear (arenas[i]);
+          }
+          EXCEPT (Arena_Failed) { (void)0; }
+          END_TRY;
         }
     }
-    
-    for (int i = 0; i < 10; i++)
-        Arena_dispose(&arenas[i]);
+
+  for (int i = 0; i < 10; i++)
+    Arena_dispose (&arenas[i]);
 }
 
-int main(void)
+int
+main (void)
 {
-    Test_run_all();
-    return Test_get_failures() > 0 ? 1 : 0;
+  Test_run_all ();
+  return Test_get_failures () > 0 ? 1 : 0;
 }
-

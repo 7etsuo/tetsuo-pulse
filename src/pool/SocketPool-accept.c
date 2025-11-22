@@ -3,7 +3,8 @@
  *
  * Part of the Socket Library
  * Following C Interfaces and Implementations patterns
- * Handles efficient batch acceptance of multiple connections from server socket.
+ * Handles efficient batch acceptance of multiple connections from server
+ * socket.
  */
 
 #include <assert.h>
@@ -14,8 +15,8 @@
 
 #include "core/Except.h"
 #include "core/SocketConfig.h"
-#include "pool/SocketPool.h"
 #include "core/SocketError.h"
+#include "pool/SocketPool.h"
 #include "socket/Socket.h"
 #include "socket/SocketCommon.h"
 #include <pthread.h>
@@ -32,51 +33,53 @@
  * Note: Uses accept4() with SOCK_CLOEXEC | SOCK_NONBLOCK on Linux,
  * falls back to accept() + fcntl() on other platforms.
  */
-static int accept_connection_direct(int server_fd)
+static int
+accept_connection_direct (int server_fd)
 {
-    int newfd;
+  int newfd;
 
 #if SOCKET_HAS_ACCEPT4 && defined(SOCK_NONBLOCK)
-    newfd = accept4(server_fd, NULL, NULL, SOCK_CLOEXEC | SOCK_NONBLOCK);
+  newfd = accept4 (server_fd, NULL, NULL, SOCK_CLOEXEC | SOCK_NONBLOCK);
 #elif SOCKET_HAS_ACCEPT4
-    newfd = accept4(server_fd, NULL, NULL, SOCK_CLOEXEC);
+  newfd = accept4 (server_fd, NULL, NULL, SOCK_CLOEXEC);
 #else
-    newfd = accept(server_fd, NULL, NULL);
+  newfd = accept (server_fd, NULL, NULL);
 #endif
 
-    if (newfd < 0)
+  if (newfd < 0)
     {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return -1;
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
         return -1;
+      return -1;
     }
 
 #if !SOCKET_HAS_ACCEPT4 || !defined(SOCK_NONBLOCK)
-    if (SocketCommon_setcloexec(newfd, 1) < 0)
+  if (SocketCommon_setcloexec (newfd, 1) < 0)
     {
-        SAFE_CLOSE(newfd);
-        return -1;
+      SAFE_CLOSE (newfd);
+      return -1;
     }
 
-    int flags = fcntl(newfd, F_GETFL, 0);
-    if (flags >= 0)
+  int flags = fcntl (newfd, F_GETFL, 0);
+  if (flags >= 0)
     {
-        fcntl(newfd, F_SETFL, flags | O_NONBLOCK);
+      fcntl (newfd, F_SETFL, flags | O_NONBLOCK);
     }
 #endif
 
-    return newfd;
+  return newfd;
 }
 
 /**
  * SocketPool_accept_batch - Accept multiple connections from server socket
  * @pool: Pool instance
  * @server: Server socket to accept from (must be listening and non-blocking)
- * @max_accepts: Maximum number of connections to accept (1-SOCKET_POOL_MAX_BATCH_ACCEPTS)
- * @accepted: Output array of accepted sockets (must be pre-allocated, size >= max_accepts)
- * Returns: Number of connections actually accepted (0 to max_accepts)
- * Raises: SocketPool_Failed on error
- * Thread-safe: Yes - uses internal mutex
+ * @max_accepts: Maximum number of connections to accept
+ * (1-SOCKET_POOL_MAX_BATCH_ACCEPTS)
+ * @accepted: Output array of accepted sockets (must be pre-allocated, size >=
+ * max_accepts) Returns: Number of connections actually accepted (0 to
+ * max_accepts) Raises: SocketPool_Failed on error Thread-safe: Yes - uses
+ * internal mutex
  *
  * Accepts up to max_accepts connections from server socket in a single call.
  * Uses accept4() on Linux (SOCK_CLOEXEC | SOCK_NONBLOCK) for efficiency.
@@ -86,81 +89,85 @@ static int accept_connection_direct(int server_fd)
  * Performance: O(n) where n is number accepted, but much faster than
  * individual SocketPool_add() calls due to reduced mutex contention.
  */
-int SocketPool_accept_batch(T pool, Socket_T server, int max_accepts, Socket_T *accepted)
+int
+SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
+                         Socket_T *accepted)
 {
-    int count = 0;
-    int server_fd;
-    int available;
-    volatile int local_max_accepts = max_accepts;
+  int count = 0;
+  int server_fd;
+  int available;
+  volatile int local_max_accepts = max_accepts;
 
-    if (!pool || !server || !accepted || max_accepts <= 0 || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS) {
-        if (max_accepts <= 0 || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS) {
-            SOCKET_ERROR_MSG("Invalid max_accepts %d (must be 1-%d)", max_accepts, SOCKET_POOL_MAX_BATCH_ACCEPTS);
-        }
-        return 0; /* Or RAISE if void no */
-    }
-    assert(pool);
-    assert(server);
-    assert(max_accepts > 0 && max_accepts <= SOCKET_POOL_MAX_BATCH_ACCEPTS);
-    assert(accepted);
-
-    server_fd = Socket_fd(server);
-
-    /* Check available pool slots */
-    pthread_mutex_lock(&pool->mutex);
-    available = (int)(pool->maxconns - pool->count);
-    pthread_mutex_unlock(&pool->mutex);
-
-    if (available <= 0)
-        return 0;
-
-    if (local_max_accepts > available)
-        local_max_accepts = available;
-
-    /* Accept loop - minimize lock time */
-    for (int i = 0; i < local_max_accepts; i++)
+  if (!pool || !server || !accepted || max_accepts <= 0
+      || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS)
     {
-        int newfd = accept_connection_direct(server_fd);
-        if (newfd < 0)
+      if (max_accepts <= 0 || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS)
         {
-            if (errno != EAGAIN && errno != EWOULDBLOCK)
+          SOCKET_ERROR_MSG ("Invalid max_accepts %d (must be 1-%d)",
+                            max_accepts, SOCKET_POOL_MAX_BATCH_ACCEPTS);
+        }
+      return 0; /* Or RAISE if void no */
+    }
+  assert (pool);
+  assert (server);
+  assert (max_accepts > 0 && max_accepts <= SOCKET_POOL_MAX_BATCH_ACCEPTS);
+  assert (accepted);
+
+  server_fd = Socket_fd (server);
+
+  /* Check available pool slots */
+  pthread_mutex_lock (&pool->mutex);
+  available = (int)(pool->maxconns - pool->count);
+  pthread_mutex_unlock (&pool->mutex);
+
+  if (available <= 0)
+    return 0;
+
+  if (local_max_accepts > available)
+    local_max_accepts = available;
+
+  /* Accept loop - minimize lock time */
+  for (int i = 0; i < local_max_accepts; i++)
+    {
+      int newfd = accept_connection_direct (server_fd);
+      if (newfd < 0)
+        {
+          if (errno != EAGAIN && errno != EWOULDBLOCK)
             {
-                SOCKET_ERROR_MSG("accept() failed during batch (accepted %d so far)", count);
+              SOCKET_ERROR_MSG (
+                  "accept() failed during batch (accepted %d so far)", count);
             }
-            break;
+          break;
         }
 
-        Socket_T sock = NULL;
-        TRY
-        {
-            sock = Socket_new_from_fd(newfd);
-        }
-        EXCEPT(Socket_Failed)
-        {
-            SAFE_CLOSE(newfd);
-            break;
-        }
-        END_TRY;
+      Socket_T sock = NULL;
+      TRY { sock = Socket_new_from_fd (newfd); }
+      EXCEPT (Socket_Failed)
+      {
+        SAFE_CLOSE (newfd);
+        break;
+      }
+      END_TRY;
 
-        if (!sock)
+      if (!sock)
         {
-            SAFE_CLOSE(newfd);
-            break;
+          SAFE_CLOSE (newfd);
+          break;
         }
 
-        Connection_T conn = SocketPool_add(pool, sock);
-        if (conn)
+      Connection_T conn = SocketPool_add (pool, sock);
+      if (conn)
         {
-            accepted[count++] = sock;
+          accepted[count++] = sock;
         }
-        else
+      else
         {
-            Socket_free(&sock);
-            break;
+          Socket_free (&sock);
+          break;
         }
     }
 
-    return count;
+  return count;
 }
 
 #undef T

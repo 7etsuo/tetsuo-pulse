@@ -16,9 +16,11 @@
  * - Simple cleanup - dispose entire arena at once
  * - Thread-safe chunk management with mutex protection
  * Thread Safety:
- * - All operations fully thread-safe with per-arena and global mutex protection
+ * - All operations fully thread-safe with per-arena and global mutex
+ * protection
  * - Multiple threads can safely allocate from the same arena concurrently
- * - Each arena has its own mutex protecting allocation state (avail, limit, prev)
+ * - Each arena has its own mutex protecting allocation state (avail, limit,
+ * prev)
  * - Global free chunk cache protected by separate mutex
  * - Safe to use same arena from multiple threads or one arena per thread
  * Usage:
@@ -44,7 +46,7 @@ extern Except_T Arena_Failed;
  * Note: Returns NULL if malloc fails or mutex initialization fails
  * Thread-safe: Yes
  */
-extern T Arena_new(void);
+extern T Arena_new (void);
 
 /**
  * Arena_dispose - Dispose of an arena and all its allocations
@@ -52,7 +54,7 @@ extern T Arena_new(void);
  * Frees all memory allocated from this arena.
  * Thread-safe: Yes
  */
-extern void Arena_dispose(T *ap);
+extern void Arena_dispose (T *ap);
 
 /**
  * Arena_alloc - Allocate memory from arena
@@ -64,7 +66,7 @@ extern void Arena_dispose(T *ap);
  * Thread-safe: Yes
  * Note: Memory is aligned appropriately for any data type
  */
-extern void *Arena_alloc(T arena, size_t nbytes, const char *file, int line);
+extern void *Arena_alloc (T arena, size_t nbytes, const char *file, int line);
 
 /**
  * Arena_calloc - Allocate and zero memory from arena
@@ -76,7 +78,8 @@ extern void *Arena_alloc(T arena, size_t nbytes, const char *file, int line);
  * Returns: Pointer to zeroed memory, or NULL on failure
  * Thread-safe: Yes
  */
-extern void *Arena_calloc(T arena, size_t count, size_t nbytes, const char *file, int line);
+extern void *Arena_calloc (T arena, size_t count, size_t nbytes,
+                           const char *file, int line);
 
 /**
  * Arena_clear - Clear all allocations in arena but keep arena active
@@ -85,11 +88,13 @@ extern void *Arena_calloc(T arena, size_t count, size_t nbytes, const char *file
  * itself active for future allocations.
  * Thread-safe: Yes
  */
-extern void Arena_clear(T arena);
+extern void Arena_clear (T arena);
 
 /* Allocation macros - automatically pass file/line info */
-#define ALLOC(arena, nbytes) (Arena_alloc((arena), (nbytes), __FILE__, __LINE__))
-#define CALLOC(arena, count, nbytes) (Arena_calloc((arena), (count), (nbytes), __FILE__, __LINE__))
+#define ALLOC(arena, nbytes)                                                  \
+  (Arena_alloc ((arena), (nbytes), __FILE__, __LINE__))
+#define CALLOC(arena, count, nbytes)                                          \
+  (Arena_calloc ((arena), (count), (nbytes), __FILE__, __LINE__))
 
 #undef T
 #endif

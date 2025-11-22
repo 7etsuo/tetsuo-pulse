@@ -1,13 +1,13 @@
 #ifndef SOCKETPOOL_INCLUDED
 #define SOCKETPOOL_INCLUDED
 
-#include <stddef.h>
-#include <time.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketError.h" /* For socket_error_buf in macros */
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
+#include <stddef.h>
+#include <time.h>
 
 /**
  * Socket Connection Pool
@@ -50,7 +50,7 @@ extern Except_T SocketPool_Failed; /**< Pool operation failure */
  * Thread-safe: Yes - returns new instance
  * Automatically pre-warms SOCKET_POOL_DEFAULT_PREWARM_PCT slots.
  */
-extern T SocketPool_new(Arena_T arena, size_t maxconns, size_t bufsize);
+extern T SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize);
 
 /**
  * SocketPool_free - Free a connection pool
@@ -58,7 +58,7 @@ extern T SocketPool_new(Arena_T arena, size_t maxconns, size_t bufsize);
  * Note: Does not close sockets - caller must do that
  * Thread-safe: Yes
  */
-extern void SocketPool_free(T *pool);
+extern void SocketPool_free (T *pool);
 
 /**
  * SocketPool_get - Look up connection by socket
@@ -68,7 +68,7 @@ extern void SocketPool_free(T *pool);
  * Thread-safe: Yes
  * O(1) hash lookup. Updates last_activity timestamp.
  */
-extern Connection_T SocketPool_get(T pool, Socket_T socket);
+extern Connection_T SocketPool_get (T pool, Socket_T socket);
 
 /**
  * SocketPool_add - Add socket to pool
@@ -78,7 +78,7 @@ extern Connection_T SocketPool_get(T pool, Socket_T socket);
  * Thread-safe: Yes
  * Allocates I/O buffers and initializes connection metadata.
  */
-extern Connection_T SocketPool_add(T pool, Socket_T socket);
+extern Connection_T SocketPool_add (T pool, Socket_T socket);
 
 /**
  * SocketPool_accept_batch - Accept multiple connections from server socket
@@ -92,7 +92,8 @@ extern Connection_T SocketPool_add(T pool, Socket_T socket);
  * Efficient batch accept using accept4() where available.
  * Automatically adds accepted sockets to pool.
  */
-extern int SocketPool_accept_batch(T pool, Socket_T server, int max_accepts, Socket_T *accepted);
+extern int SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
+                                    Socket_T *accepted);
 
 /**
  * SocketPool_remove - Remove socket from pool
@@ -101,7 +102,7 @@ extern int SocketPool_accept_batch(T pool, Socket_T server, int max_accepts, Soc
  * Clears buffers but does not close socket
  * Thread-safe: Yes
  */
-extern void SocketPool_remove(T pool, Socket_T socket);
+extern void SocketPool_remove (T pool, Socket_T socket);
 
 /**
  * SocketPool_cleanup - Remove idle connections
@@ -110,7 +111,7 @@ extern void SocketPool_remove(T pool, Socket_T socket);
  * Thread-safe: Yes
  * O(n) scan of all slots; closes/removes idle ones.
  */
-extern void SocketPool_cleanup(T pool, time_t idle_timeout);
+extern void SocketPool_cleanup (T pool, time_t idle_timeout);
 
 /**
  * SocketPool_count - Get active connection count
@@ -118,7 +119,7 @@ extern void SocketPool_cleanup(T pool, time_t idle_timeout);
  * Returns: Number of active connections
  * Thread-safe: Yes
  */
-extern size_t SocketPool_count(T pool);
+extern size_t SocketPool_count (T pool);
 
 /**
  * SocketPool_resize - Resize pool capacity at runtime
@@ -128,7 +129,7 @@ extern size_t SocketPool_count(T pool);
  * Thread-safe: Yes
  * Grows/shrinks pool; closes excess on shrink.
  */
-extern void SocketPool_resize(T pool, size_t new_maxconns);
+extern void SocketPool_resize (T pool, size_t new_maxconns);
 
 /**
  * SocketPool_prewarm - Pre-allocate buffers for % of free slots
@@ -137,7 +138,7 @@ extern void SocketPool_resize(T pool, size_t new_maxconns);
  * Thread-safe: Yes
  * Reduces latency by pre-allocating buffers.
  */
-extern void SocketPool_prewarm(T pool, int percentage);
+extern void SocketPool_prewarm (T pool, int percentage);
 
 /**
  * SocketPool_set_bufsize - Set buffer size for future connections
@@ -146,7 +147,7 @@ extern void SocketPool_prewarm(T pool, int percentage);
  * Thread-safe: Yes
  * Existing connections keep old size.
  */
-extern void SocketPool_set_bufsize(T pool, size_t new_bufsize);
+extern void SocketPool_set_bufsize (T pool, size_t new_bufsize);
 
 /**
  * SocketPool_foreach - Iterate over active connections
@@ -156,7 +157,8 @@ extern void SocketPool_set_bufsize(T pool, size_t new_bufsize);
  * Thread-safe: Yes - holds mutex
  * O(n) scan; callback must not modify pool.
  */
-extern void SocketPool_foreach(T pool, void (*func)(Connection_T, void *), void *arg);
+extern void SocketPool_foreach (T pool, void (*func) (Connection_T, void *),
+                                void *arg);
 
 /* Connection accessors */
 
@@ -165,49 +167,49 @@ extern void SocketPool_foreach(T pool, void (*func)(Connection_T, void *), void 
  * @conn: Connection
  * Returns: Socket
  */
-extern Socket_T Connection_socket(const Connection_T conn);
+extern Socket_T Connection_socket (const Connection_T conn);
 
 /**
  * Connection_inbuf - Get input buffer
  * @conn: Connection
  * Returns: Input buffer
  */
-extern SocketBuf_T Connection_inbuf(const Connection_T conn);
+extern SocketBuf_T Connection_inbuf (const Connection_T conn);
 
 /**
  * Connection_outbuf - Get output buffer
  * @conn: Connection
  * Returns: Output buffer
  */
-extern SocketBuf_T Connection_outbuf(const Connection_T conn);
+extern SocketBuf_T Connection_outbuf (const Connection_T conn);
 
 /**
  * Connection_data - Get user data
  * @conn: Connection
  * Returns: User data
  */
-extern void *Connection_data(const Connection_T conn);
+extern void *Connection_data (const Connection_T conn);
 
 /**
  * Connection_setdata - Set user data
  * @conn: Connection
  * @data: Data
  */
-extern void Connection_setdata(Connection_T conn, void *data);
+extern void Connection_setdata (Connection_T conn, void *data);
 
 /**
  * Connection_lastactivity - Get last activity time
  * @conn: Connection
  * Returns: time_t
  */
-extern time_t Connection_lastactivity(const Connection_T conn);
+extern time_t Connection_lastactivity (const Connection_T conn);
 
 /**
  * Connection_isactive - Check if active
  * @conn: Connection
  * Returns: Non-zero if active
  */
-extern int Connection_isactive(const Connection_T conn);
+extern int Connection_isactive (const Connection_T conn);
 
 #undef T
 #endif
