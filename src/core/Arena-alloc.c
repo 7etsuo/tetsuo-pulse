@@ -1,9 +1,8 @@
 /**
  * Arena-alloc.c - Private allocation logic for Arena allocator
- *
  * Handles size calculation, alignment, overflow validation, and calloc
- * helpers. Part of the Socket Library Following C Interfaces and
- * Implementations patterns
+ * helpers.
+
  */
 
 #include <assert.h>

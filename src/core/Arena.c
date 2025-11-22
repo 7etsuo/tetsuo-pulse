@@ -1,5 +1,5 @@
 /**
- * Arena.c - Arena memory allocator implementation
+ * Arena.c - Arena memory allocator
  */
 
 #include <assert.h>

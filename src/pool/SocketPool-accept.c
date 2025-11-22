@@ -1,8 +1,5 @@
 /**
  * SocketPool-accept.c - Batch connection acceptance functions
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  * Handles efficient batch acceptance of multiple connections from server
  * socket.
  */

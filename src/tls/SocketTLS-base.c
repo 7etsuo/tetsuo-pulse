@@ -1,8 +1,8 @@
 /**
- * SocketTLS.c - TLS Socket Wrapper Implementation
+ * SocketTLS-base.c - TLS Socket Wrapper
  *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
+
+
  *
  * Implements TLS/SSL integration for sockets using OpenSSL. Provides
  * transparent encryption/decryption via wrapper functions

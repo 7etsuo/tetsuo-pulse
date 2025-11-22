@@ -1,8 +1,5 @@
 /**
  * SocketPool-core.c - Core pool lifecycle and tuning functions
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  * Handles pool creation, destruction, resizing, pre-warming, and iteration.
  */
 

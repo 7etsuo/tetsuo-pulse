@@ -1,8 +1,8 @@
 /**
- * SocketTLS-io.c - TLS I/O Operations Implementation
+ * SocketTLS-io.c - TLS I/O Operations
  *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
+
+
  *
  * Implements TLS send/recv wrappers using OpenSSL SSL_write/SSL_read.
  * Handles non-blocking behavior by returning 0 on WANT_READ/WRITE,
