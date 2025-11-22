@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -27,6 +28,8 @@
 #include "core/SocketEvents.h"
 #include "core/SocketMetrics.h"
 #include "socket/SocketCommon.h"
+#include <ctype.h>
+#include <stdbool.h>
 
 #define T SocketDNS_T
 #define Request_T SocketDNS_Request_T
@@ -84,6 +87,7 @@ struct Request_T
   unsigned hash_value;          /* Hash value for lookup */
   struct timespec submit_time;  /* Time request was submitted */
   int timeout_override_ms;      /* Per-request timeout override (ms) */
+  T dns_resolver;                /* Back pointer to owning resolver for cancellation checks */
 };
 
 /* DNS resolver structure */
@@ -230,11 +234,67 @@ dequeue_request (T dns)
  * Handles NULL host (wildcard bind) by passing NULL to getaddrinfo.
  */
 static int
+cancellable_getaddrinfo (const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res, T dns, struct Request_T *req)
+{
+  pid_t pid = fork ();
+  if (pid < 0)
+    {
+      return EAI_SYSTEM;
+    }
+  if (pid == 0)
+    {
+      // Child process performs DNS resolution
+      int code = getaddrinfo (node, service, hints, res);
+      exit (code == 0 ? 0 : code);
+    }
+
+  // Parent monitors for cancellation or timeout
+  int status;
+  pid_t waited;
+  while ((waited = waitpid (pid, &status, WNOHANG)) == 0)
+    {
+      // Check for cancellation or timeout
+      pthread_mutex_lock (&dns->mutex);
+      if (req->state == REQ_CANCELLED || request_timed_out (dns, req))
+        {
+          pthread_mutex_unlock (&dns->mutex);
+          kill (pid, SIGKILL);
+          waitpid (pid, &status, 0);
+          return req->state == REQ_CANCELLED ? dns_cancellation_error () : EAI_AGAIN;
+        }
+      pthread_mutex_unlock (&dns->mutex);
+
+      // Poll every 10ms
+      usleep (10000);
+    }
+
+  // Child exited or error
+  if (waited < 0)
+    {
+      kill (pid, SIGKILL);
+      waitpid (pid, &status, 0);
+      return EAI_SYSTEM;
+    }
+
+  if (WIFEXITED (status))
+    {
+      int code = WEXITSTATUS (status);
+      return code == 0 ? 0 : code;
+    }
+
+  return EAI_SYSTEM;
+}
+
+static int
 perform_dns_resolution (struct Request_T *req, const struct addrinfo *hints,
                         struct addrinfo **result)
 {
   char port_str[SOCKET_DNS_PORT_STR_SIZE];
+  const char *service = NULL;
+  T dns = req->dns_resolver; // Assume added field or access via global/arg
   int res;
+
+  // Note: dns and req access need to be passed or stored
 
   if (req->port > 0)
     {
@@ -244,12 +304,10 @@ perform_dns_resolution (struct Request_T *req, const struct addrinfo *hints,
           *result = NULL;
           return EAI_FAIL;
         }
-      res = getaddrinfo (req->host, port_str, hints, result);
+      service = port_str;
     }
-  else
-    {
-      res = getaddrinfo (req->host, NULL, hints, result);
-    }
+
+  res = cancellable_getaddrinfo (req->host, service, hints, result, dns, req);
 
   return res;
 }
@@ -702,9 +760,18 @@ initialize_dns_components (T dns)
 static int
 create_single_worker_thread (T dns, int thread_index)
 {
-  if (pthread_create (&dns->workers[thread_index], NULL, worker_thread, dns)
-      != 0)
+  pthread_attr_t attr;
+  char thread_name[16];
+
+  pthread_attr_init (&attr);
+  pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_JOINABLE);
+  pthread_attr_setstacksize (&attr, 128 * 1024); /* Conservative stack size for DNS workers */
+
+  snprintf (thread_name, sizeof (thread_name), "dns-worker-%d", thread_index);
+
+  if (pthread_create (&dns->workers[thread_index], &attr, worker_thread, dns) != 0)
     {
+      pthread_attr_destroy (&attr);
       /* Signal shutdown and join already created threads */
       dns->shutdown = 1;
       pthread_cond_broadcast (&dns->queue_cond);
@@ -717,6 +784,13 @@ create_single_worker_thread (T dns, int thread_index)
 
       return -1; /* Signal failure */
     }
+
+  pthread_attr_destroy (&attr);
+
+  /* Set thread name for debugging (non-portable but useful) */
+#ifdef PTHREAD_SET_NAME_SUPPORTED
+  pthread_setname_np (dns->workers[thread_index], thread_name);
+#endif
 
   return 0; /* Success */
 }
@@ -949,6 +1023,55 @@ SocketDNS_free (T *dns)
  * @port: Port number to validate
  * Raises: SocketDNS_Failed on invalid parameters
  */
+static int
+validate_hostname (const char *hostname)
+{
+  if (!hostname)
+    return 0;
+
+  size_t len = strlen (hostname);
+  if (len == 0 || len > SOCKET_ERROR_MAX_HOSTNAME)
+    return 0;
+
+  const char *p = hostname;
+  int label_len = 0;
+  bool new_label = true; /* Start of label */
+
+  while (*p)
+    {
+      if (*p == '.')
+        {
+          if (new_label || label_len == 0 || label_len > 63)
+            return 0; /* Empty label or too long */
+          new_label = true;
+          label_len = 0;
+        }
+      else
+        {
+          if (new_label)
+            {
+              if (!isalnum ((unsigned char)*p))
+                return 0; /* Label must start with alnum */
+              new_label = false;
+            }
+          if (!isalnum ((unsigned char)*p) && *p != '-')
+            return 0; /* Invalid char in label */
+          if (*p == '-' && label_len == 0)
+            return 0; /* Can't start label with - */
+          label_len++;
+          if (label_len > 63)
+            return 0;
+        }
+      p++;
+    }
+
+  /* Final label check */
+  if (new_label || label_len == 0 || label_len > 63)
+    return 0;
+
+  return 1;
+}
+
 static void
 validate_resolve_params (const char *host, int port)
 {
@@ -959,44 +1082,20 @@ validate_resolve_params (const char *host, int port)
       host_len = strlen (host);
       if (host_len == 0 || host_len > SOCKET_ERROR_MAX_HOSTNAME)
         {
-          SOCKET_ERROR_MSG ("Invalid hostname length (max %d characters)",
-                            SOCKET_ERROR_MAX_HOSTNAME);
+          SOCKET_ERROR_MSG ("Invalid hostname length");
           RAISE_DNS_ERROR (SocketDNS_Failed);
         }
 
-      size_t i;
-      for (i = 0; i < host_len; i++)
+      if (!validate_hostname (host))
         {
-          char c = host[i];
-          if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-                || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == ':'
-                || c == '%'))
-            {
-              SOCKET_ERROR_MSG ("Invalid character in hostname: '%c'", c);
-              RAISE_DNS_ERROR (SocketDNS_Failed);
-            }
-        }
-      // Additional structural validation to prevent invalid patterns
-      for (size_t j = 0; j < host_len - 1; ++j)
-        {
-          if (host[j] == '.' && host[j + 1] == '.')
-            {
-              SOCKET_ERROR_MSG (
-                  "Invalid hostname pattern: consecutive dots detected");
-              RAISE_DNS_ERROR (SocketDNS_Failed);
-            }
-        }
-      // Disallow starting with . or - (common invalid/attack patterns)
-      if (host_len > 0 && (host[0] == '.' || host[0] == '-'))
-        {
-          SOCKET_ERROR_MSG ("Invalid hostname: cannot start with . or -");
+          SOCKET_ERROR_MSG ("Invalid hostname format");
           RAISE_DNS_ERROR (SocketDNS_Failed);
         }
     }
 
   if (!SOCKET_VALID_PORT (port))
     {
-      SOCKET_ERROR_MSG ("Invalid port number: %d (must be 0-65535)", port);
+      SOCKET_ERROR_MSG ("Invalid port number");
       RAISE_DNS_ERROR (SocketDNS_Failed);
     }
 }
@@ -1099,6 +1198,7 @@ allocate_request (T dns, const char *host, size_t host_len, int port,
   req = allocate_request_structure (dns);
   allocate_request_hostname (dns, req, host, host_len);
   initialize_request_fields (req, port, callback, data);
+  req->dns_resolver = dns;
 
   return req;
 }
@@ -1525,6 +1625,8 @@ SocketDNS_create_completed_request (T dns, struct addrinfo *result, int port)
     }
   assert (dns);
   assert (result);
+
+  validate_resolve_params (NULL, port);
 
   req = allocate_request_structure (dns);
   req->host = NULL;

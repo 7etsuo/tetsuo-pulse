@@ -8,6 +8,7 @@
 #include "socket/SocketBuf.h"
 #include <stddef.h>
 #include <time.h>
+#include "dns/SocketDNS.h"
 
 /**
  * Socket Connection Pool
@@ -37,6 +38,16 @@ typedef struct T *T;
 /* Opaque connection type - use accessor functions */
 typedef struct Connection *Connection_T;
 
+/**
+ * SocketPool_ConnectCallback - Callback for async connection completion
+ * @conn: Completed connection or NULL on error
+ * @error: 0 on success, error code on failure
+ * @data: User data from SocketPool_connect_async
+ * Called when async connection (DNS resolve + connect + pool add) completes.
+ * Thread-safe: Called from DNS worker thread.
+ */
+typedef void (*SocketPool_ConnectCallback) (Connection_T conn, int error, void *data);
+
 /* Exception types */
 extern Except_T SocketPool_Failed; /**< Pool operation failure */
 
@@ -53,12 +64,52 @@ extern Except_T SocketPool_Failed; /**< Pool operation failure */
 extern T SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize);
 
 /**
+ * SocketPool_prepare_connection - Prepare async connection using DNS
+ * @pool: Pool instance (used for configuration and cleanup)
+ * @dns: DNS resolver instance
+ * @host: Remote hostname or IP
+ * @port: Remote port (1-65535)
+ * @out_socket: Output - new Socket_T instance
+ * @out_req: Output - SocketDNS_Request_T for monitoring
+ * Returns: 0 on success, -1 on error (out_socket/out_req undefined)
+ * Raises: SocketPool_Failed on error
+ * Thread-safe: Yes
+ * Creates a new Socket_T, configures pool defaults (non-blocking, reuseaddr, etc.),
+ * starts async DNS resolution + connect preparation via Socket_connect_async.
+ * User must monitor out_req with SocketDNS (check/pollfd/getresult), then
+ * call Socket_connect_with_addrinfo(out_socket, res) on completion, then
+ * SocketPool_add(pool, out_socket) to add to pool.
+ * On error/cancel, Socket_free(&out_socket) and handle.
+ * Integrates SocketDNS for non-blocking hostname resolution in pooled connections.
+ */
+extern int SocketPool_prepare_connection (T pool, SocketDNS_T dns, const char *host, int port, Socket_T *out_socket, SocketDNS_Request_T *out_req);
+
+/**
  * SocketPool_free - Free a connection pool
  * @pool: Pointer to pool (will be set to NULL)
  * Note: Does not close sockets - caller must do that
  * Thread-safe: Yes
  */
 extern void SocketPool_free (T *pool);
+
+/**
+ * SocketPool_connect_async - Create async connection to remote host
+ * @pool: Pool instance
+ * @host: Remote hostname or IP address
+ * @port: Remote port number
+ * @callback: Completion callback
+ * @data: User data passed to callback
+ * Returns: SocketDNS_Request_T for monitoring completion
+ * Raises: SocketPool_Failed on invalid params or allocation error
+ * Thread-safe: Yes
+ * Starts async DNS resolution + connect + pool add. On completion:
+ * - Success: callback(conn, 0, data) with Connection_T added to pool
+ * - Failure: callback(NULL, error_code, data)
+ * Integrates with SocketDNS for non-blocking resolution.
+ * SocketPool_add is called internally on successful connect.
+ * Caller owns no resources; pool manages connection lifecycle.
+ */
+extern SocketDNS_Request_T SocketPool_connect_async (T pool, const char *host, int port, SocketPool_ConnectCallback callback, void *data);
 
 /**
  * SocketPool_get - Look up connection by socket

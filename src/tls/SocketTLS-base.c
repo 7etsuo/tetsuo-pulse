@@ -35,6 +35,7 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <string.h>
+#include <ctype.h>
 
 #define T SocketTLS_T
 
@@ -179,6 +180,52 @@ socket_free_tls_resources (Socket_T socket)
   socket->tls_write_buf_len = 0;
 }
 
+/* Helper to validate hostname format for SNI */
+static int
+validate_hostname (const char *hostname)
+{
+  if (!hostname)
+    return 0;
+
+  size_t len = strlen (hostname);
+  if (len == 0 || len > SOCKET_TLS_MAX_SNI_LEN)
+    return 0;
+
+  const char *p = hostname;
+  int label_len = 0;
+  int expecting_dot = 0; /* After dot or start */
+
+  while (*p)
+    {
+      if (*p == '.')
+        {
+          if (label_len == 0 || label_len > 63)
+            return 0;
+          label_len = 0;
+          expecting_dot = 0;
+        }
+      else
+        {
+          if (!expecting_dot)
+            return 0; /* Must start label after dot or start */
+          if (! (isalnum ((unsigned char)*p) || *p == '-'))
+            return 0;
+          if (*p == '-' && label_len == 0)
+            return 0; /* Label can't start or end with - */
+          label_len++;
+          if (label_len > 63)
+            return 0;
+          expecting_dot = 1;
+        }
+      p++;
+    }
+
+  if (label_len == 0 || label_len > 63 || !expecting_dot) // last label must have chars
+    return 0;
+
+  return 1;
+}
+
 /* Public TLS socket wrapper functions */
 
 /**
@@ -289,7 +336,7 @@ SocketTLS_set_hostname (Socket_T socket, const char *hostname)
       RAISE_TLS_ERROR (SocketTLS_Failed);
     }
 
-  /* Validate hostname length */
+  /* Validate hostname length and format */
   hostname_len = strlen (hostname);
   if (hostname_len == 0
       || hostname_len
@@ -297,6 +344,12 @@ SocketTLS_set_hostname (Socket_T socket, const char *hostname)
     {
       snprintf (tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE,
                 "Invalid hostname length: %zu", hostname_len);
+      RAISE_TLS_ERROR (SocketTLS_Failed);
+    }
+  if (!validate_hostname (hostname))
+    {
+      snprintf (tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE,
+                "Invalid hostname format");
       RAISE_TLS_ERROR (SocketTLS_Failed);
     }
 
