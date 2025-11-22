@@ -89,6 +89,7 @@ set(LIB_SOURCES
     
     # DNS module
     src/dns/SocketDNS.c
+    src/dns/SocketDNS-worker.c
 
     # Poll module
     src/poll/SocketPoll.c
