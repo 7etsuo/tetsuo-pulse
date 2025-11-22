@@ -87,7 +87,7 @@ extern int Socket_debug_live_count(void);
  * Socket_bind - Bind socket to address and port
  * @socket: Socket to bind
  * @host: IP address or NULL/"0.0.0.0" for any
- * @port: Port number (1-65535)
+ * @port: Port number (1 to SOCKET_MAX_PORT)
  * WARNING: May block 30+ seconds during DNS resolution if hostname provided.
  * Use IP addresses for non-blocking operation.
  * Raises: Socket_Failed on error
@@ -593,7 +593,7 @@ extern const char *Socket_getpeeraddr(const T socket);
 /**
  * Socket_getpeerport - Get peer port number
  * @socket: Connected socket
- * Returns: Port number (1-65535) or 0 if unavailable
+ * Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable
  * Note: Returns 0 if port info unavailable during accept/connect.
  */
 extern int Socket_getpeerport(const T socket);
@@ -610,7 +610,7 @@ extern const char *Socket_getlocaladdr(const T socket);
 /**
  * Socket_getlocalport - Get local port number
  * @socket: Socket instance
- * Returns: Port number (1-65535) or 0 if unavailable
+ * Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable
  */
 extern int Socket_getlocalport(const T socket);
 
@@ -665,7 +665,7 @@ extern int Socket_getpeergid(const T socket);
  * @dns: DNS resolver instance
  * @socket: Socket to bind
  * @host: IP address or hostname (NULL for any)
- * @port: Port number (1-65535)
+ * @port: Port number (1 to SOCKET_MAX_PORT)
  * Returns: DNS request handle
  * Raises: Socket_Failed on error
  * Starts async DNS resolution. Use SocketDNS_getresult() to check completion,
@@ -691,7 +691,7 @@ extern void Socket_bind_async_cancel(SocketDNS_T dns, SocketDNS_Request_T req);
  * @dns: DNS resolver instance
  * @socket: Socket to connect
  * @host: Remote IP address or hostname
- * @port: Remote port (1-65535)
+ * @port: Remote port (1 to SOCKET_MAX_PORT)
  * Returns: DNS request handle
  * Raises: Socket_Failed on error
  * Starts async DNS resolution. Use SocketDNS_getresult() to check completion,

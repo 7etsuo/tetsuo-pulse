@@ -280,7 +280,7 @@ static int detect_async_backend(T async)
             return 0;
         }
 
-        if (io_uring_queue_init(1024, async->ring, 0) == 0)
+        if (io_uring_queue_init(SOCKET_DEFAULT_IO_URING_ENTRIES, async->ring, 0) == 0)
         {
             /* Create eventfd for completion notifications */
             async->io_uring_fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
@@ -583,7 +583,7 @@ static int submit_kqueue_aio(T async, struct AsyncRequest *req)
  */
 static int process_kqueue_completions(T async, int timeout_ms, int max_completions)
 {
-    struct kevent events[100];
+    struct kevent events[SOCKET_MAX_EVENT_BATCH];
     struct timespec timeout;
     int n;
     int count = 0;
@@ -591,11 +591,11 @@ static int process_kqueue_completions(T async, int timeout_ms, int max_completio
     assert(async);
     assert(async->kqueue_fd >= 0);
 
-    if (max_completions > 100)
-        max_completions = 100;
+    if (max_completions > SOCKET_MAX_EVENT_BATCH)
+        max_completions = SOCKET_MAX_EVENT_BATCH;
 
-    timeout.tv_sec = timeout_ms / 1000;
-    timeout.tv_nsec = (timeout_ms % 1000) * 1000000L;
+    timeout.tv_sec = timeout_ms / SOCKET_MS_PER_SECOND;
+    timeout.tv_nsec = (timeout_ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
 
     n = kevent(async->kqueue_fd, NULL, 0, events, max_completions, &timeout);
     if (n < 0)
@@ -979,11 +979,11 @@ int SocketAsync_process_completions(T async, int timeout_ms)
     if (n > 0)
     {
         /* Process completions */
-        count = process_io_uring_completions(async, 100); /* Process up to 100 */
+        count = process_io_uring_completions(async, SOCKET_MAX_EVENT_BATCH); /* Process up to SOCKET_MAX_EVENT_BATCH */
     }
 #elif defined(__APPLE__) || defined(__FreeBSD__)
     /* Process kqueue AIO events */
-    count = process_kqueue_completions(async, timeout_ms, 100);
+    count = process_kqueue_completions(async, timeout_ms, SOCKET_MAX_EVENT_BATCH);
 #else
     /* Fallback mode - no completions to process */
     (void)timeout_ms;

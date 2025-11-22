@@ -218,6 +218,36 @@ union align {
 /* Minimum capacity for circular buffers */
 #ifndef SOCKETBUF_MIN_CAPACITY
 #define SOCKETBUF_MIN_CAPACITY 512
+
+/* Standard limits */
+#define SOCKET_MAX_PORT 65535
+#define SOCKET_MAX_TTL 255
+
+/* Time conversion constants */
+#define SOCKET_MS_PER_SECOND 1000
+#define SOCKET_NS_PER_MS 1000000LL
+
+/* Buffer sizes */
+#define SOCKET_SENDFILE_FALLBACK_BUFFER_SIZE 8192
+
+/* Async I/O defaults */
+#define SOCKET_DEFAULT_IO_URING_ENTRIES 1024
+#define SOCKET_MAX_EVENT_BATCH 100
+
+/* String conversion macros for error messages */
+#define SOCKET_STRINGIFY(x) #x
+#define SOCKET_TO_STRING(x) SOCKET_STRINGIFY(x)
+
+/* Predefined range strings */
+#define SOCKET_PORT_VALID_RANGE "1-" SOCKET_TO_STRING(SOCKET_MAX_PORT)
+#define SOCKET_TTL_VALID_RANGE "1-" SOCKET_TO_STRING(SOCKET_MAX_TTL)
+
+/* IP prefix lengths */
+#define SOCKET_IPV4_MAX_PREFIX 32
+#define SOCKET_IPV6_MAX_PREFIX 128
+
+#define SOCKET_IPV4_PREFIX_RANGE "0-" SOCKET_TO_STRING(SOCKET_IPV4_MAX_PREFIX)
+#define SOCKET_IPV6_PREFIX_RANGE "0-" SOCKET_TO_STRING(SOCKET_IPV6_MAX_PREFIX)
 #endif
 
 /* Socket types */
