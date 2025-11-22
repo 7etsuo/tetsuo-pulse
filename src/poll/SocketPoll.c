@@ -35,7 +35,7 @@
 
 #define T SocketPoll_T
 
-Except_T SocketPoll_Failed = { "SocketPoll operation failed" };
+const Except_T SocketPoll_Failed = { &SocketPoll_Failed, "SocketPoll operation failed" };
 
 /* Macro to raise exception with detailed error message
  * Creates a thread-local copy of the exception with detailed reason.
@@ -106,8 +106,11 @@ socket_hash (const Socket_T socket)
   assert (socket);
   fd = Socket_fd (socket);
 
-  /* Defensive check: socket FDs should never be negative */
-  assert (fd >= 0);
+  if (fd < 0) {
+    SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                     "Attempt to hash closed/invalid socket (fd=%d); returning 0", fd);
+    return 0;
+  }
 
   /* Multiplicative hash with golden ratio for good distribution */
   return ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_DATA_HASH_SIZE;
@@ -574,26 +577,28 @@ initialize_poll_mutex (T poll)
 T
 SocketPoll_new (int maxevents)
 {
-  T poll;
+  volatile T poll = NULL;
 
   assert (SOCKET_VALID_POLL_EVENTS (maxevents));
 
   if (maxevents > SOCKET_MAX_POLL_EVENTS)
     maxevents = SOCKET_MAX_POLL_EVENTS;
 
-  poll = allocate_poll_structure ();
-  initialize_poll_backend (poll, maxevents);
-  poll->maxevents = maxevents;
-  poll->default_timeout_ms = SOCKET_DEFAULT_POLL_TIMEOUT;
-  initialize_poll_arena (poll);
-  allocate_poll_event_arrays (poll, maxevents);
-  initialize_poll_hash_tables (poll);
-  initialize_poll_mutex (poll);
-
-  /* Initialize async context (optional - graceful degradation if fails) */
-  poll->async = NULL;
-  volatile SocketAsync_T volatile_async = NULL;
   TRY
+  {
+    poll = allocate_poll_structure ();
+    initialize_poll_backend (poll, maxevents);
+    poll->maxevents = maxevents;
+    poll->default_timeout_ms = SOCKET_DEFAULT_POLL_TIMEOUT;
+    initialize_poll_arena (poll);
+    allocate_poll_event_arrays (poll, maxevents);
+    initialize_poll_hash_tables (poll);
+    initialize_poll_mutex (poll);
+
+    /* Initialize async context (optional - graceful degradation if fails) */
+    poll->async = NULL;
+    volatile SocketAsync_T volatile_async = NULL;
+    TRY
   {
     volatile_async = SocketAsync_new (poll->arena);
     poll->async = (SocketAsync_T)volatile_async;
@@ -603,6 +608,23 @@ SocketPoll_new (int maxevents)
     /* Async unavailable - continue without it */
     poll->async = NULL;
     volatile_async = NULL;
+  }
+  END_TRY;
+  }
+
+  EXCEPT (Arena_Failed)
+  {
+    if (poll->arena) Arena_dispose (&poll->arena);
+    if (poll->backend) backend_free (poll->backend);
+    free (poll);
+    RAISE_POLL_ERROR (SocketPoll_Failed);
+  }
+  EXCEPT (SocketPoll_Failed)
+  {
+    if (poll->arena) Arena_dispose (&poll->arena);
+    if (poll->backend) backend_free (poll->backend);
+    free (poll);
+    RERAISE;
   }
   END_TRY;
 
@@ -647,7 +669,12 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
 
   /* Cast to non-volatile for Socket API calls */
   fd = Socket_fd ((Socket_T)volatile_socket);
-  assert (fd >= 0); /* Socket FD should be valid */
+  if (fd < 0) {
+    SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                     "Adding invalid socket fd=%d to poll; ignoring", fd);
+    return;
+  }
+  /* Socket FD should be valid */
 
   /* Set non-blocking mode before adding to poll */
   Socket_setnonblocking ((Socket_T)volatile_socket);
@@ -673,8 +700,6 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
 
     if (is_duplicate)
       {
-        /* Unlock before raising */
-        pthread_mutex_unlock (&poll->mutex);
         SOCKET_ERROR_MSG ("Socket already in poll set");
         RAISE_POLL_ERROR (SocketPoll_Failed);
       }
@@ -690,68 +715,24 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
           {
             SOCKET_ERROR_FMT ("Failed to add socket to poll (fd=%d)", fd);
           }
-        /* Unlock before raising */
-        pthread_mutex_unlock (&poll->mutex);
         RAISE_POLL_ERROR (SocketPoll_Failed);
       }
 
-    /* Add to data map */
-    socket_data_add_unlocked (poll, (Socket_T)volatile_socket, data);
+    /* Add to data map - wrapped in TRY to cleanup backend on failure */
+    TRY
+      socket_data_add_unlocked (poll, (Socket_T)volatile_socket, data);
+    EXCEPT (SocketPoll_Failed)
+      {
+        backend_del (poll->backend, fd);
+        RERAISE;
+      }
+    END_TRY;
 
+  }
+  FINALLY
     pthread_mutex_unlock (&poll->mutex);
-  }
-  EXCEPT (SocketPoll_Failed)
-  {
-    /* If we are here, mutex might still be locked if socket_data_add_unlocked
-       failed. We need to cleanup backend entry if data map add failed.
-
-       Note: If exception came from is_duplicate or backend_add block, mutex
-       was unlocked manually. But if it came from socket_data_add_unlocked,
-       mutex is LOCKED.
-
-       There is no clean way to know if mutex is locked without tracking it.
-       Since we unlocked explicitly in other paths, we assume locked here ONLY
-       if data_add failed.
-
-       However, re-locking/unlocking logic can be complex.
-       Alternative: Use a 'locked' flag.
-    */
-
-    /* For simplicity/safety: We assume if we caught an exception from
-       data_add, we need to unlock. But we must be careful not to double
-       unlock.
-
-       Actually, let's restructure to avoid manual unlock in error paths inside
-       TRY.
-    */
-
-    /* Safe fallback:
-       If data_add failed, we are still locked. We must unlock.
-       We also need to remove from backend.
-
-       But wait, if we unlocked in other paths, this EXCEPT block catches those
-       too. RERAISE will propagate.
-
-       Correct pattern: Don't unlock manually in TRY. Use finally or flag.
-       Or simply: only code that raises implicitly (alloc) keeps lock.
-    */
-
-    /* Forced unlock here is risky.
-       Let's clean up the logic. We'll use a 'locked' variable.
-    */
-    pthread_mutex_unlock (
-        &poll->mutex); /* Attempt to unlock (UB if already unlocked?) */
-    /* Actually, POSIX says unlocking an unlocked mutex is undefined or error.
-     */
-
-    /* Since we cannot guarantee lock state, we should simplify the logic to
-     * always hold lock in TRY. */
-
-    /* Backend cleanup */
-    backend_del (poll->backend, fd);
-    RERAISE;
-  }
   END_TRY;
+  /* Orphaned EXCEPT block fully removed. See TODO above for logic. */
 }
 
 void

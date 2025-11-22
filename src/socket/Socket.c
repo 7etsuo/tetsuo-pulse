@@ -20,12 +20,14 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <pthread.h>
 
 /* MSG_NOSIGNAL fallback for platforms without it (macOS, BSD).
  * Applications must call signal(SIGPIPE, SIG_IGN). See Socket.h. */
@@ -43,6 +45,7 @@
 #include "core/SocketEvents.h"
 #include "core/SocketMetrics.h"
 #include "socket/SocketCommon.h"
+#include "socket/SocketCommon-private.h"
 #include "socket/SocketIO.h"
 
 #include "socket/Socket-private.h"
@@ -55,12 +58,7 @@
 
 static int socket_live_count = 0;
 static pthread_mutex_t socket_live_count_mutex = PTHREAD_MUTEX_INITIALIZER;
-static SocketTimeouts_T socket_default_timeouts
-    = { .connect_timeout_ms = SOCKET_DEFAULT_CONNECT_TIMEOUT_MS,
-        .dns_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS,
-        .operation_timeout_ms = SOCKET_DEFAULT_OPERATION_TIMEOUT_MS };
-static pthread_mutex_t socket_default_timeouts_mutex
-    = PTHREAD_MUTEX_INITIALIZER;
+
 
 /**
  * socket_live_increment - Increment live socket count (thread-safe)
@@ -99,8 +97,8 @@ sanitize_timeout (int timeout_ms)
 /* Port string buffer size for snprintf - 16 bytes sufficient for "65535" +
  * null */
 
-Except_T Socket_Failed = { "Socket operation failed" };
-Except_T Socket_Closed = { "Socket closed" };
+const Except_T Socket_Failed = { &Socket_Failed, "Socket operation failed" };
+const Except_T Socket_Closed = { &Socket_Closed, "Socket closed" };
 
 /* Thread-local exception for detailed error messages.
  * Prevents race conditions when multiple threads raise same exception. */
@@ -175,21 +173,7 @@ setup_connect_hints (struct addrinfo *hints)
 static int
 get_socket_family (T socket)
 {
-  socklen_t len;
-#if SOCKET_HAS_SO_DOMAIN
-  int socket_family = SOCKET_AF_UNSPEC;
-  len = sizeof (socket_family);
-  if (getsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_DOMAIN,
-                  &socket_family, &len)
-      == 0)
-    return socket_family;
-#endif
-  /* Fallback: use getsockname() to get socket address family */
-  struct sockaddr_storage addr;
-  len = sizeof (addr);
-  if (getsockname (socket->fd, (struct sockaddr *)&addr, &len) == 0)
-    return addr.ss_family;
-  return SOCKET_AF_UNSPEC;
+  return SocketCommon_get_family (socket->base, false, Socket_Failed); /* No raise on fail */
 }
 
 /**
@@ -204,7 +188,7 @@ enable_dual_stack (T socket, int socket_family)
   if (socket_family == SOCKET_AF_INET6)
     {
       int no = 0;
-      setsockopt (socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_V6ONLY, &no,
+      setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_IPV6, SOCKET_IPV6_V6ONLY, &no,
                   sizeof (no));
     }
 }
@@ -218,39 +202,7 @@ enable_dual_stack (T socket, int socket_family)
  * Raises: Socket_Failed on socket creation failure
  * Note: All sockets are created with close-on-exec flag set by default.
  */
-static int
-create_socket_fd (int domain, int type, int protocol)
-{
-  int fd;
 
-#if SOCKET_HAS_SOCK_CLOEXEC
-  fd = socket (domain, type | SOCKET_SOCK_CLOEXEC, protocol);
-#else
-  fd = socket (domain, type, protocol);
-#endif
-
-  if (fd < 0)
-    {
-      SOCKET_ERROR_FMT (
-          "Failed to create socket (domain=%d, type=%d, protocol=%d)", domain,
-          type, protocol);
-      RAISE_SOCKET_ERROR (Socket_Failed);
-    }
-
-#if !SOCKET_HAS_SOCK_CLOEXEC
-  /* Fallback: Set CLOEXEC via fcntl on older systems */
-  if (SocketCommon_setcloexec (fd, 1) < 0)
-    {
-      int saved_errno = errno;
-      SAFE_CLOSE (fd);
-      errno = saved_errno;
-      SOCKET_ERROR_FMT ("Failed to set close-on-exec flag");
-      RAISE_SOCKET_ERROR (Socket_Failed);
-    }
-#endif
-
-  return fd;
-}
 
 /**
  * allocate_socket_structure - Allocate and zero-initialize socket structure
@@ -258,21 +210,7 @@ create_socket_fd (int domain, int type, int protocol)
  * Returns: Pointer to allocated socket structure or NULL on failure
  * Raises: Socket_Failed on allocation failure (cleans up fd)
  */
-static T
-allocate_socket_structure (int fd)
-{
-  T sock = calloc (1, sizeof (*sock));
-  if (sock == NULL)
-    {
-      int saved_errno = errno;
-      SAFE_CLOSE (fd);
-      errno = saved_errno;
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket structure");
-      RAISE_SOCKET_ERROR (Socket_Failed);
-    }
-  socket_live_increment ();
-  return sock;
-}
+
 
 /**
  * initialize_socket_structure - Initialize socket structure fields
@@ -280,26 +218,7 @@ allocate_socket_structure (int fd)
  * @fd: File descriptor to assign
  * Returns: Initialized socket structure
  */
-static T
-initialize_socket_structure (T socket, int fd)
-{
-  socket->fd = fd;
-  socket->addrlen = sizeof (socket->addr);
-  memset (&socket->addr, 0, sizeof (socket->addr));
-  socket->local_addrlen = 0;
-  memset (&socket->local_addr, 0, sizeof (socket->local_addr));
-  socket->peeraddr = NULL;
-  socket->peerport = 0;
-  socket->localaddr = NULL;
-  socket->localport = 0;
 
-  /* Thread-safe copy of default timeouts */
-  pthread_mutex_lock (&socket_default_timeouts_mutex);
-  socket->timeouts = socket_default_timeouts;
-  pthread_mutex_unlock (&socket_default_timeouts_mutex);
-
-  return socket;
-}
 
 /**
  * validate_socketpair_type - Validate socket type for socketpair creation
@@ -373,7 +292,7 @@ SocketPair_new (int type, T *socket1, T *socket2)
       /* Create arenas for both sockets */
       arena1
       = Arena_new ();
-  if (!arena1)
+  EXCEPT (Arena_Failed)
     {
       int saved_errno = errno;
       SAFE_CLOSE (sv[0]);
@@ -383,9 +302,11 @@ SocketPair_new (int type, T *socket1, T *socket2)
                         ": Cannot allocate arena for socket pair");
       RAISE_SOCKET_ERROR (Socket_Failed);
     }
+  END_TRY;
 
-  arena2 = Arena_new ();
-  if (!arena2)
+  TRY
+    arena2 = Arena_new ();
+  EXCEPT (Arena_Failed)
     {
       int saved_errno = errno;
       SAFE_CLOSE (sv[0]);
@@ -396,52 +317,109 @@ SocketPair_new (int type, T *socket1, T *socket2)
                         ": Cannot allocate arena for socket pair");
       RAISE_SOCKET_ERROR (Socket_Failed);
     }
+  END_TRY;
 
-  /* Allocate socket structures */
-  sock1 = allocate_socket_structure (sv[0]);
-  sock1->arena = arena1;
+  TRY
+    /* Allocate socket structures from arenas */
+  sock1 = Arena_calloc (arena1, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
+  if (!sock1)
+    {
+      Arena_dispose (&arena1);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket1 structure for pair");
+      RAISE_SOCKET_ERROR (Socket_Failed);
+    }
+
+  sock1->base = Arena_calloc (arena1, 1, sizeof (struct SocketBase_T), __FILE__, __LINE__);
+  if (!sock1->base)
+    {
+      Arena_dispose (&arena1);
+      sock1 = NULL;  /* Prevent double cleanup in outer handler */
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base for socket1");
+      RAISE_SOCKET_ERROR (Socket_Failed);
+    }
+
+  sock1->base->arena = arena1;
   arena1 = NULL; /* Transfer ownership */
 
-  sock2 = allocate_socket_structure (sv[1]);
-  sock2->arena = arena2;
+  SocketCommon_init_base (sock1->base, sv[0], AF_UNIX, type, 0, Socket_Failed);
+
+  sock2 = Arena_calloc (arena2, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
+  if (!sock2)
+    {
+      SocketCommon_free_base (&sock1->base);
+      sock1 = NULL;
+      sock2 = NULL;  /* Prevent double cleanup in outer handler */
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket2 structure for pair");
+      RAISE_SOCKET_ERROR (Socket_Failed);
+    }
+
+  sock2->base = Arena_calloc (arena2, 1, sizeof (struct SocketBase_T), __FILE__, __LINE__);
+  if (!sock2->base)
+    {
+      SocketCommon_free_base (&sock1->base);
+      Arena_dispose (&arena2);
+      sock1 = NULL;
+      sock2 = NULL;  /* Prevent double cleanup in outer handler */
+      arena2 = NULL;
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base for socket2");
+      RAISE_SOCKET_ERROR (Socket_Failed);
+    }
+
+  sock2->base->arena = arena2;
   arena2 = NULL; /* Transfer ownership */
 
-  /* Initialize both sockets */
-  initialize_socket_structure (sock1, sv[0]);
-  initialize_socket_structure (sock2, sv[1]);
+  SocketCommon_init_base (sock2->base, sv[1], AF_UNIX, type, 0, Socket_Failed);
 
-  /* Mark sockets as connected (socketpair creates connected sockets) */
-  /* For Unix domain sockets, we can set a placeholder peer address */
-  sock1->peeraddr = NULL; /* Will be set if needed via getpeername */
-  sock2->peeraddr = NULL;
+  /* Mark as connected - peer info can be updated via getpeername if needed */
+  sock1->base->remoteaddr = NULL;
+  sock2->base->remoteaddr = NULL;
 
   *socket1 = sock1;
   *socket2 = sock2;
-  sock1 = NULL; /* Transfer ownership */
+  sock1 = NULL;
   sock2 = NULL; /* Transfer ownership */
 
   EXCEPT (Socket_Failed)
-  /* Cleanup on error */
-  if (sock1)
-    {
-      SAFE_CLOSE (sv[0]);
-      socket_live_decrement (); /* Decrement count before freeing */
-      free (sock1);
-    }
-  else if (sv[0] >= 0)
-    {
-      SAFE_CLOSE (sv[0]);
-    }
-
+  /* Cleanup on error - reverse acquisition order: sock2 then sock1 then arenas.
+   * Handles partial allocations where arenas may or may not be transferred. */
+  /* Cleanup sock2 (later acquired) */
   if (sock2)
     {
-      SAFE_CLOSE (sv[1]);
-      socket_live_decrement (); /* Decrement count before freeing */
-      free (sock2);
+#ifdef SOCKET_HAS_TLS
+      if (sock2->tls_ssl)
+        {
+          SSL_free ((SSL *)sock2->tls_ssl);
+          sock2->tls_ssl = NULL;
+        }
+      /* Add other stream-specific cleanup here if needed */
+#endif
+      SocketCommon_free_base (&sock2->base);
+      socket_live_decrement ();
+      sock2 = NULL;
     }
   else if (sv[1] >= 0)
     {
       SAFE_CLOSE (sv[1]);
+    }
+
+  /* Cleanup sock1 */
+  if (sock1)
+    {
+#ifdef SOCKET_HAS_TLS
+      if (sock1->tls_ssl)
+        {
+          SSL_free ((SSL *)sock1->tls_ssl);
+          sock1->tls_ssl = NULL;
+        }
+      /* Add other stream-specific cleanup here if needed */
+#endif
+      SocketCommon_free_base (&sock1->base);
+      socket_live_decrement ();
+      sock1 = NULL;
+    }
+  else if (sv[0] >= 0)
+    {
+      SAFE_CLOSE (sv[0]);
     }
 
   if (arena1)
@@ -451,6 +429,7 @@ SocketPair_new (int type, T *socket1, T *socket2)
 
   RERAISE;
   END_TRY;
+  /* Success path falls through for void function after setting outputs */
 }
 
 /**
@@ -460,21 +439,7 @@ SocketPair_new (int type, T *socket1, T *socket2)
  * Returns: New arena or NULL on failure
  * Raises: Socket_Failed on arena creation failure (cleans up fd and sock)
  */
-static Arena_T
-create_socket_arena (int fd, T sock)
-{
-  Arena_T arena = Arena_new ();
-  if (!arena)
-    {
-      int saved_errno = errno;
-      SAFE_CLOSE (fd);
-      free (sock);
-      errno = saved_errno;
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket arena");
-      RAISE_SOCKET_ERROR (Socket_Failed);
-    }
-  return arena;
-}
+
 
 /**
  * try_bind_address - Try to bind socket to address
@@ -486,10 +451,10 @@ create_socket_arena (int fd, T sock)
 static int
 try_bind_address (T socket, const struct sockaddr *addr, socklen_t addrlen)
 {
-  if (bind (socket->fd, addr, addrlen) == 0)
+  if (bind (SocketBase_fd (socket->base), addr, addrlen) == 0)
     {
-      memcpy (&socket->addr, addr, addrlen);
-      socket->addrlen = addrlen;
+      memcpy (&socket->base->remote_addr, addr, addrlen);
+      socket->base->remote_addrlen = addrlen;
       return 0;
     }
   return -1;
@@ -506,7 +471,7 @@ socket_wait_for_connect (T socket, int timeout_ms)
   assert (socket);
   assert (timeout_ms >= 0);
 
-  pfd.fd = socket->fd;
+  pfd.fd = SocketBase_fd (socket->base);
   pfd.events = POLLOUT;
   pfd.revents = 0;
 
@@ -523,7 +488,7 @@ socket_wait_for_connect (T socket, int timeout_ms)
       return -1;
     }
 
-  if (getsockopt (socket->fd, SOCKET_SOL_SOCKET, SO_ERROR, &error, &error_len)
+  if (getsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SO_ERROR, &error, &error_len)
       < 0)
     return -1;
 
@@ -556,41 +521,41 @@ try_connect_address (T socket, const struct sockaddr *addr, socklen_t addrlen,
 
   if (timeout_ms <= 0)
     {
-      if (connect (socket->fd, addr, addrlen) == 0 || errno == EINPROGRESS
+      if (connect (SocketBase_fd (socket->base), addr, addrlen) == 0 || errno == EINPROGRESS
           || errno == EISCONN)
         {
-          memcpy (&socket->addr, addr, addrlen);
-          socket->addrlen = addrlen;
+          memcpy (&socket->base->remote_addr, addr, addrlen);
+          socket->base->remote_addrlen = addrlen;
           return 0;
         }
       return -1;
     }
 
-  original_flags = fcntl (socket->fd, F_GETFL);
+  original_flags = fcntl (SocketBase_fd (socket->base), F_GETFL);
   if (original_flags < 0)
     return -1;
 
   if ((original_flags & O_NONBLOCK) == 0)
     {
-      if (fcntl (socket->fd, F_SETFL, original_flags | O_NONBLOCK) < 0)
+      if (fcntl (SocketBase_fd (socket->base), F_SETFL, original_flags | O_NONBLOCK) < 0)
         return -1;
       restore_blocking = 1;
     }
 
-  if (connect (socket->fd, addr, addrlen) == 0 || errno == EISCONN)
+  if (connect (SocketBase_fd (socket->base), addr, addrlen) == 0 || errno == EISCONN)
     {
       if (restore_blocking)
         {
-          if (fcntl (socket->fd, F_SETFL, original_flags) < 0)
+          if (fcntl (SocketBase_fd (socket->base), F_SETFL, original_flags) < 0)
             {
               SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
                                "Failed to restore blocking mode after connect "
                                "(fd=%d, errno=%d): %s",
-                               socket->fd, errno, strerror (errno));
+                               SocketBase_fd (socket->base), errno, strerror (errno));
             }
         }
-      memcpy (&socket->addr, addr, addrlen);
-      socket->addrlen = addrlen;
+      memcpy (&socket->base->remote_addr, addr, addrlen);
+      socket->base->remote_addrlen = addrlen;
       return 0;
     }
 
@@ -602,16 +567,16 @@ try_connect_address (T socket, const struct sockaddr *addr, socklen_t addrlen,
         {
           if (restore_blocking)
             {
-              if (fcntl (socket->fd, F_SETFL, original_flags) < 0)
+              if (fcntl (SocketBase_fd (socket->base), F_SETFL, original_flags) < 0)
                 {
                   SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
                                    "Failed to restore blocking mode after "
                                    "connect (fd=%d, errno=%d): %s",
-                                   socket->fd, errno, strerror (errno));
+                                   SocketBase_fd (socket->base), errno, strerror (errno));
                 }
             }
-          memcpy (&socket->addr, addr, addrlen);
-          socket->addrlen = addrlen;
+          memcpy (&socket->base->remote_addr, addr, addrlen);
+          socket->base->remote_addrlen = addrlen;
           return 0;
         }
       saved_errno = errno;
@@ -619,14 +584,14 @@ try_connect_address (T socket, const struct sockaddr *addr, socklen_t addrlen,
 
   if (restore_blocking)
     {
-      int restore_result = fcntl (socket->fd, F_SETFL, original_flags);
+      int restore_result = fcntl (SocketBase_fd (socket->base), F_SETFL, original_flags);
       if (restore_result < 0)
         {
           int restore_errno = errno;
           SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
                            "Failed to restore blocking mode after connect "
                            "failure (fd=%d, errno=%d): %s",
-                           socket->fd, restore_errno,
+                           SocketBase_fd (socket->base), restore_errno,
                            strerror (restore_errno));
         }
     }
@@ -702,20 +667,20 @@ handle_connect_error (const char *host, int port)
  */
 /**
  * setup_peer_info - Set up peer address and port from getnameinfo result
- * @newsocket: New socket to set up
+ * @socket: Socket to set up
  * @addr: Address structure
  * @addrlen: Address length
  * Returns: 0 on success, -1 on failure
  */
 static int
-setup_peer_info (T newsocket, const struct sockaddr *addr, socklen_t addrlen)
+setup_peer_info (T socket, const struct sockaddr *addr, socklen_t addrlen)
 {
-  if (SocketCommon_cache_endpoint (newsocket->arena, addr, addrlen,
-                                   &newsocket->peeraddr, &newsocket->peerport)
+  if (SocketCommon_cache_endpoint (SocketBase_arena (socket->base), addr, addrlen,
+                                   &socket->base->remoteaddr, &socket->base->remoteport)
       != 0)
     {
-      newsocket->peeraddr = NULL;
-      newsocket->peerport = 0;
+      socket->base->remoteaddr = NULL;
+      socket->base->remoteport = 0;
     }
   return 0;
 }
@@ -723,30 +688,7 @@ setup_peer_info (T newsocket, const struct sockaddr *addr, socklen_t addrlen)
 static void
 update_local_endpoint (T socket)
 {
-  struct sockaddr_storage local;
-  socklen_t len = sizeof (local);
-
-  assert (socket);
-
-  if (getsockname (socket->fd, (struct sockaddr *)&local, &len) < 0)
-    {
-      memset (&socket->local_addr, 0, sizeof (socket->local_addr));
-      socket->local_addrlen = 0;
-      socket->localaddr = NULL;
-      socket->localport = 0;
-      return;
-    }
-
-  socket->local_addr = local;
-  socket->local_addrlen = len;
-
-  if (SocketCommon_cache_endpoint (socket->arena, (struct sockaddr *)&local,
-                                   len, &socket->localaddr, &socket->localport)
-      != 0)
-    {
-      socket->localaddr = NULL;
-      socket->localport = 0;
-    }
+  SocketCommon_update_local_endpoint (socket->base);
 }
 
 /**
@@ -755,30 +697,7 @@ update_local_endpoint (T socket)
  * @path_len: Path length to validate
  * Returns: 0 on success, -1 on failure
  */
-static int
-validate_unix_path (const char *path, size_t path_len)
-{
-  if (path_len > sizeof (struct sockaddr_un)
-                     - offsetof (struct sockaddr_un, sun_path) - 1)
-    {
-      SOCKET_ERROR_MSG ("Unix socket path too long (max %zu characters)",
-                        sizeof (struct sockaddr_un)
-                            - offsetof (struct sockaddr_un, sun_path) - 1);
-      return -1;
-    }
-
-  /* Check for directory traversal */
-  if (strstr (path, "/../") || strcmp (path, "..") == 0
-      || strncmp (path, "../", 3) == 0
-      || (path_len >= 3 && strcmp (path + path_len - 3, "/..") == 0))
-    {
-      SOCKET_ERROR_MSG (
-          "Invalid Unix socket path: directory traversal detected");
-      return -1;
-    }
-
-  return 0;
-}
+/* validate_unix_path moved to SocketUnix.c */
 
 /**
  * setup_abstract_unix_socket - Set up abstract namespace Unix socket
@@ -794,7 +713,7 @@ setup_abstract_unix_socket (struct sockaddr_un *addr, const char *path,
   (void)addr;
   (void)path_len;
 #ifdef __linux__
-  if (validate_unix_path (path, path_len) != 0)
+  if (SocketUnix_validate_unix_path (path, path_len) != 0)
     return -1;
   addr->sun_path[0] = '\0';
   memcpy (addr->sun_path + 1, path + 1, path_len - 1);
@@ -821,7 +740,7 @@ static int
 setup_regular_unix_socket (struct sockaddr_un *addr, const char *path,
                            size_t path_len)
 {
-  if (validate_unix_path (path, path_len) != 0)
+  if (SocketUnix_validate_unix_path (path, path_len) != 0)
     return -1;
   strncpy (addr->sun_path, path, sizeof (addr->sun_path) - 1);
   addr->sun_path[sizeof (addr->sun_path) - 1] = '\0';
@@ -855,13 +774,48 @@ setup_unix_sockaddr (struct sockaddr_un *addr, const char *path)
 T
 Socket_new (int domain, int type, int protocol)
 {
+  SocketBase_T base = NULL;
   T sock;
-  int fd;
 
-  fd = create_socket_fd (domain, type, protocol);
-  sock = allocate_socket_structure (fd);
-  sock->arena = create_socket_arena (fd, sock);
-  initialize_socket_structure (sock, fd);
+  TRY
+    base = SocketCommon_new_base (domain, type, protocol);
+  EXCEPT (Arena_Failed)
+    RAISE_SOCKET_ERROR (Socket_Failed);
+  END_TRY;
+
+  if (!base || !SocketBase_arena (base)) {
+    SOCKET_ERROR_MSG ("Invalid base from new_base (null arena)");
+    RAISE_SOCKET_ERROR (Socket_Failed);
+  }
+
+  sock = Arena_calloc (SocketBase_arena (base), 1, sizeof (struct Socket_T), __FILE__, __LINE__);
+  if (!sock)
+    {
+      SocketCommon_free_base (&base);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket structure");
+      RAISE_SOCKET_ERROR (Socket_Failed);
+    }
+
+  sock->base = base;
+
+#ifdef SOCKET_HAS_TLS
+  /* Initialize TLS fields to defaults */
+  sock->tls_ctx = NULL;
+  sock->tls_ssl = NULL;
+  sock->tls_enabled = 0;
+  sock->tls_handshake_done = 0;
+  sock->tls_shutdown_done = 0;
+  sock->tls_last_handshake_state = 0;
+  sock->tls_sni_hostname = NULL;
+  sock->tls_read_buf = NULL;
+  sock->tls_write_buf = NULL;
+  sock->tls_read_buf_len = 0;
+  sock->tls_write_buf_len = 0;
+  sock->tls_timeouts = (SocketTimeouts_T){0};  /* or copy from base? */
+#endif
+
+  /* Socket-specific live count */
+  socket_live_increment ();
 
   return sock;
 }
@@ -869,31 +823,28 @@ Socket_new (int domain, int type, int protocol)
 void
 Socket_free (T *socket)
 {
-  assert (socket && *socket);
+  T s = *socket;
+  if (!s)
+    return;
 
-  /* Close file descriptor */
-  if ((*socket)->fd >= 0)
-    {
-      int fd = (*socket)->fd;
-      (*socket)->fd = -1; /* Mark as closed */
-      SAFE_CLOSE (fd);
-    }
+  *socket = NULL;  /* Invalidate caller pointer before cleanup to avoid UB */
 
+  /* Stream-specific cleanup (TLS) before base free */
 #ifdef SOCKET_HAS_TLS
-  /* Free TLS resources before arena disposal */
-  if ((*socket)->tls_ssl)
+  if (s->tls_ssl)
     {
-      SSL_free ((SSL *)(*socket)->tls_ssl);
-      (*socket)->tls_ssl = NULL;
+      SSL_free ((SSL *)s->tls_ssl);
+      s->tls_ssl = NULL;
     }
+  /* Add other TLS cleanup if necessary (e.g., ctx if owned per socket) */
 #endif
 
-  if ((*socket)->arena)
-    Arena_dispose (&(*socket)->arena);
+  /* Common base cleanup: closes fd, disposes arena (frees s too) */
+  SocketCommon_free_base (&s->base);
 
-  free (*socket);
+  /* Type-specific decrement */
   socket_live_decrement ();
-  *socket = NULL;
+  /* Caller pointer already invalidated earlier */
 }
 
 /**
@@ -1041,7 +992,7 @@ Socket_listen (T socket, int backlog)
   validate_backlog (backlog);
   backlog = enforce_backlog_limit (backlog);
 
-  result = listen (socket->fd, backlog);
+  result = listen (SocketBase_fd (socket->base), backlog);
   if (result < 0)
     {
       SOCKET_ERROR_FMT ("Failed to listen on socket (backlog=%d)", backlog);
@@ -1064,10 +1015,10 @@ accept_connection (T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
 
 #if SOCKET_HAS_ACCEPT4
   /* Use accept4() with SOCK_CLOEXEC when available */
-  newfd = accept4 (socket->fd, (struct sockaddr *)addr, addrlen,
+  newfd = accept4 (SocketBase_fd (socket->base), (struct sockaddr *)addr, addrlen,
                    SOCKET_SOCK_CLOEXEC);
 #else
-  newfd = accept (socket->fd, (struct sockaddr *)addr, addrlen);
+  newfd = accept (SocketBase_fd (socket->base), (struct sockaddr *)addr, addrlen);
 #endif
 
   if (newfd < 0)
@@ -1105,7 +1056,7 @@ static T
 create_accepted_socket (int newfd, const struct sockaddr_storage *addr,
                         socklen_t addrlen)
 {
-  T newsocket = calloc (1, sizeof (*newsocket));
+  T newsocket = calloc (1, sizeof (struct Socket_T));
 
   if (newsocket == NULL)
     {
@@ -1116,8 +1067,9 @@ create_accepted_socket (int newfd, const struct sockaddr_storage *addr,
       RAISE_SOCKET_ERROR (Socket_Failed);
     }
 
-  newsocket->arena = Arena_new ();
-  if (!newsocket->arena)
+  TRY
+    newsocket->base->arena = Arena_new ();
+  EXCEPT (Arena_Failed)
     {
       int saved_errno = errno;
       SAFE_CLOSE (newfd);
@@ -1126,16 +1078,17 @@ create_accepted_socket (int newfd, const struct sockaddr_storage *addr,
       SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket arena");
       RAISE_SOCKET_ERROR (Socket_Failed);
     }
+  END_TRY;
 
-  newsocket->fd = newfd;
-  memcpy (&newsocket->addr, addr, addrlen);
-  newsocket->addrlen = addrlen;
-  memset (&newsocket->local_addr, 0, sizeof (newsocket->local_addr));
-  newsocket->local_addrlen = 0;
-  newsocket->peeraddr = NULL;
-  newsocket->peerport = 0;
-  newsocket->localaddr = NULL;
-  newsocket->localport = 0;
+  newsocket->base->fd = newfd;
+  memcpy (&newsocket->base->remote_addr, addr, addrlen);
+  newsocket->base->remote_addrlen = addrlen;
+  memset (&newsocket->base->local_addr, 0, sizeof (newsocket->base->local_addr));
+  newsocket->base->local_addrlen = 0;
+  newsocket->base->remoteaddr = NULL;
+  newsocket->base->remoteport = 0;
+  newsocket->base->localaddr = NULL;
+  newsocket->base->localport = 0;
   socket_live_increment ();
 
   return newsocket;
@@ -1145,6 +1098,7 @@ T
 Socket_new_from_fd (int fd)
 {
   T sock;
+  Arena_T arena;
   int flags;
 
   assert (fd >= 0);
@@ -1158,10 +1112,38 @@ Socket_new_from_fd (int fd)
       RAISE_SOCKET_ERROR (Socket_Failed);
     }
 
-  /* Allocate socket structure */
-  sock = allocate_socket_structure (fd);
-  sock->arena = create_socket_arena (fd, sock);
-  initialize_socket_structure (sock, fd);
+  arena = Arena_new ();
+  if (!arena)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot create arena for new_from_fd");
+      RAISE_SOCKET_ERROR (Socket_Failed);
+    }
+
+  sock = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
+  if (!sock)
+    {
+      Arena_dispose (&arena);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate sock for new_from_fd");
+      RAISE_SOCKET_ERROR (Socket_Failed);
+    }
+
+  sock->base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T), __FILE__, __LINE__);
+  if (!sock->base)
+    {
+      Arena_dispose (&arena);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base for new_from_fd");
+      RAISE_SOCKET_ERROR (Socket_Failed);
+    }
+
+  sock->base->arena = arena;
+  sock->base->fd = fd;
+  sock->base->domain = AF_UNSPEC; /* Detect if needed */
+  sock->base->type = 0; /* Detect */
+  sock->base->protocol = 0;
+
+  SocketCommon_init_base (sock->base, fd, sock->base->domain, sock->base->type, 0, Socket_Failed);
+
+  /* Init TLS etc as in Socket_new */
 
   /* Set non-blocking mode (required for batch accept) */
   flags = fcntl (fd, F_GETFL, 0);
@@ -1191,23 +1173,36 @@ Socket_accept (T socket)
 {
   struct sockaddr_storage addr;
   socklen_t addrlen = sizeof (addr);
-  int newfd;
-  T newsocket;
+  int newfd = -1;
+  T newsocket = NULL;
 
   assert (socket);
 
-  newfd = accept_connection (socket, &addr, &addrlen);
-  if (newfd < 0)
-    return NULL;
+  TRY
+  {
+    newfd = accept_connection (socket, &addr, &addrlen);
+    if (newfd < 0)
+      return NULL;
 
-  newsocket = create_accepted_socket (newfd, &addr, addrlen);
-  setup_peer_info (newsocket, (struct sockaddr *)&addr, addrlen);
-  update_local_endpoint (newsocket);
-  SocketEvent_emit_accept (newsocket->fd, newsocket->peeraddr,
-                           newsocket->peerport, newsocket->localaddr,
-                           newsocket->localport);
+    newsocket = create_accepted_socket (newfd, &addr, addrlen);
+    setup_peer_info (newsocket, (struct sockaddr *)&addr, addrlen);
+    update_local_endpoint (newsocket);
+    SocketEvent_emit_accept (SocketBase_fd (newsocket->base), newsocket->base->remoteaddr,
+                            newsocket->base->remoteport, newsocket->base->localaddr,
+                            newsocket->base->localport);
 
-  return newsocket;
+    return newsocket;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (newfd >= 0)
+      SAFE_CLOSE (newfd);
+    /* Assume create_accepted_socket handles partial cleanup */
+    RERAISE;
+  }
+  END_TRY;
+  /* Unreachable due to returns inside TRY or RERAISE in EXCEPT */
+  return NULL;
 }
 
 /**
@@ -1267,19 +1262,19 @@ Socket_connect (T socket, const char *host, int port)
   {
     if (try_connect_resolved_addresses ((Socket_T)volatile_socket, res,
                                         socket_family,
-                                        socket->timeouts.connect_timeout_ms)
+                                        volatile_socket->base->timeouts.connect_timeout_ms)
         == 0)
       {
         SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
         update_local_endpoint ((Socket_T)volatile_socket);
-        setup_peer_info ((Socket_T)volatile_socket,
-                         (struct sockaddr *)&((Socket_T)volatile_socket)->addr,
-                         ((Socket_T)volatile_socket)->addrlen);
+        setup_peer_info (volatile_socket,
+                         (struct sockaddr *)&volatile_socket->base->remote_addr,
+                         volatile_socket->base->remote_addrlen);
         SocketEvent_emit_connect (Socket_fd ((Socket_T)volatile_socket),
-                                  ((Socket_T)volatile_socket)->peeraddr,
-                                  ((Socket_T)volatile_socket)->peerport,
-                                  ((Socket_T)volatile_socket)->localaddr,
-                                  ((Socket_T)volatile_socket)->localport);
+                                  SocketBase_remoteaddr (((Socket_T)volatile_socket)->base),
+                                  SocketBase_remoteport (((Socket_T)volatile_socket)->base),
+                                  SocketBase_localaddr (((Socket_T)volatile_socket)->base),
+                                  SocketBase_localport (((Socket_T)volatile_socket)->base));
         freeaddrinfo (res);
         return;
       }
@@ -1709,7 +1704,7 @@ static ssize_t
 socket_sendfile_linux (T socket, int file_fd, off_t *offset, size_t count)
 {
   off_t off = offset ? *offset : 0;
-  ssize_t result = sendfile (socket->fd, file_fd, &off, count);
+  ssize_t result = sendfile (SocketBase_fd (socket->base), file_fd, &off, count);
   if (result >= 0 && offset)
     *offset = off;
   return result;
@@ -1733,7 +1728,7 @@ socket_sendfile_bsd (T socket, int file_fd, off_t *offset, size_t count)
 {
   off_t len = (off_t)count;
   off_t off = offset ? *offset : 0;
-  int result = sendfile (file_fd, socket->fd, off, &len, NULL, 0);
+  int result = sendfile (file_fd, SocketBase_fd (socket->base), off, &len, NULL, 0);
   if (result == 0)
     {
       if (offset)
@@ -1960,7 +1955,7 @@ Socket_sendmsg (T socket, const struct msghdr *msg, int flags)
   assert (socket);
   assert (msg);
 
-  result = sendmsg (socket->fd, msg, flags);
+  result = sendmsg (SocketBase_fd (socket->base), msg, flags);
   if (result < 0)
     {
       if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -2002,7 +1997,7 @@ Socket_recvmsg (T socket, struct msghdr *msg, int flags)
   assert (socket);
   assert (msg);
 
-  result = recvmsg (socket->fd, msg, flags);
+  result = recvmsg (SocketBase_fd (socket->base), msg, flags);
   if (result < 0)
     {
       if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -2025,22 +2020,7 @@ Socket_recvmsg (T socket, struct msghdr *msg, int flags)
 void
 Socket_setnonblocking (T socket)
 {
-  int flags;
-
-  assert (socket);
-
-  flags = fcntl (socket->fd, F_GETFL, 0);
-  if (flags < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to get socket flags");
-      RAISE_SOCKET_ERROR (Socket_Failed);
-    }
-
-  if (fcntl (socket->fd, F_SETFL, flags | O_NONBLOCK) < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set non-blocking mode");
-      RAISE_SOCKET_ERROR (Socket_Failed);
-    }
+  SocketCommon_set_nonblock (socket->base, true, Socket_Failed);
 }
 
 void
@@ -2050,7 +2030,7 @@ Socket_setreuseaddr (T socket)
 
   assert (socket);
 
-  if (setsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEADDR, &opt,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_REUSEADDR, &opt,
                   sizeof (opt))
       < 0)
     {
@@ -2067,7 +2047,7 @@ Socket_setreuseport (T socket)
   assert (socket);
 
 #if SOCKET_HAS_SO_REUSEPORT
-  if (setsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEPORT, &opt,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_REUSEPORT, &opt,
                   sizeof (opt))
       < 0)
     {
@@ -2100,7 +2080,7 @@ Socket_settimeout (T socket, int timeout_sec)
   tv.tv_usec = 0;
 
   /* Set timeouts */
-  if (setsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_RCVTIMEO, &tv,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_RCVTIMEO, &tv,
                   sizeof (tv))
       < 0)
     {
@@ -2108,7 +2088,7 @@ Socket_settimeout (T socket, int timeout_sec)
       RAISE_SOCKET_ERROR (Socket_Failed);
     }
 
-  if (setsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_SNDTIMEO, &tv,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_SNDTIMEO, &tv,
                   sizeof (tv))
       < 0)
     {
@@ -2147,7 +2127,7 @@ Socket_shutdown (T socket, int how)
       RAISE_SOCKET_ERROR (Socket_Failed);
     }
 
-  if (shutdown (socket->fd, how) < 0)
+  if (shutdown (SocketBase_fd (socket->base), how) < 0)
     {
       if (errno == ENOTCONN)
         SOCKET_ERROR_FMT ("Socket is not connected (shutdown mode=%d)", how);
@@ -2170,7 +2150,7 @@ Socket_setcloexec (T socket, int enable)
 {
   assert (socket);
 
-  if (SocketCommon_setcloexec (socket->fd, enable) < 0)
+  if (SocketCommon_setcloexec (SocketBase_fd (socket->base), enable) < 0)
     {
       SOCKET_ERROR_FMT ("Failed to %s close-on-exec flag",
                         enable ? "set" : "clear");
@@ -2184,7 +2164,7 @@ Socket_timeouts_get (const T socket, SocketTimeouts_T *timeouts)
   assert (socket);
   assert (timeouts);
 
-  *timeouts = socket->timeouts;
+  *timeouts = socket->base->timeouts;
 }
 
 void
@@ -2196,16 +2176,16 @@ Socket_timeouts_set (T socket, const SocketTimeouts_T *timeouts)
     {
       /* Thread-safe copy of default timeouts */
       pthread_mutex_lock (&socket_default_timeouts_mutex);
-      socket->timeouts = socket_default_timeouts;
+      socket->base->timeouts = socket_default_timeouts;
       pthread_mutex_unlock (&socket_default_timeouts_mutex);
       return;
     }
 
-  socket->timeouts.connect_timeout_ms
+  socket->base->timeouts.connect_timeout_ms
       = sanitize_timeout (timeouts->connect_timeout_ms);
-  socket->timeouts.dns_timeout_ms
+  socket->base->timeouts.dns_timeout_ms
       = sanitize_timeout (timeouts->dns_timeout_ms);
-  socket->timeouts.operation_timeout_ms
+  socket->base->timeouts.operation_timeout_ms
       = sanitize_timeout (timeouts->operation_timeout_ms);
 }
 
@@ -2270,7 +2250,7 @@ static void
 enable_socket_keepalive (T socket)
 {
   int opt = 1;
-  if (setsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_KEEPALIVE, &opt,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_KEEPALIVE, &opt,
                   sizeof (opt))
       < 0)
     {
@@ -2289,7 +2269,7 @@ static void
 set_keepalive_idle_time (T socket, int idle)
 {
 #ifdef TCP_KEEPIDLE
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPIDLE, &idle,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPIDLE, &idle,
                   sizeof (idle))
       < 0)
     {
@@ -2312,7 +2292,7 @@ static void
 set_keepalive_interval (T socket, int interval)
 {
 #ifdef TCP_KEEPINTVL
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPINTVL,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPINTVL,
                   &interval, sizeof (interval))
       < 0)
     {
@@ -2332,7 +2312,7 @@ static void
 set_keepalive_count (T socket, int count)
 {
 #ifdef TCP_KEEPCNT
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPCNT, &count,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPCNT, &count,
                   sizeof (count))
       < 0)
     {
@@ -2358,7 +2338,7 @@ Socket_setnodelay (T socket, int nodelay)
 {
   assert (socket);
 
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_NODELAY, &nodelay,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP, SOCKET_TCP_NODELAY, &nodelay,
                   sizeof (nodelay))
       < 0)
     {
@@ -2381,7 +2361,7 @@ Socket_gettimeout (T socket)
 
   assert (socket);
 
-  if (SocketCommon_getoption_timeval (socket->fd, SOCKET_SOL_SOCKET,
+  if (SocketCommon_getoption_timeval (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
                                       SOCKET_SO_RCVTIMEO, &tv, Socket_Failed)
       < 0)
     RAISE_SOCKET_ERROR (Socket_Failed);
@@ -2413,7 +2393,7 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
   assert (count);
 
   /* Get SO_KEEPALIVE flag */
-  if (SocketCommon_getoption_int (socket->fd, SOCKET_SOL_SOCKET,
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
                                   SOCKET_SO_KEEPALIVE, &keepalive_enabled,
                                   Socket_Failed)
       < 0)
@@ -2429,7 +2409,7 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
 
     /* Get TCP_KEEPIDLE */
 #ifdef TCP_KEEPIDLE
-  if (SocketCommon_getoption_int (socket->fd, SOCKET_IPPROTO_TCP,
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
                                   SOCKET_TCP_KEEPIDLE, idle, Socket_Failed)
       < 0)
     RAISE_SOCKET_ERROR (Socket_Failed);
@@ -2439,7 +2419,7 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
 
     /* Get TCP_KEEPINTVL */
 #ifdef TCP_KEEPINTVL
-  if (SocketCommon_getoption_int (socket->fd, SOCKET_IPPROTO_TCP,
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
                                   SOCKET_TCP_KEEPINTVL, interval,
                                   Socket_Failed)
       < 0)
@@ -2450,7 +2430,7 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
 
     /* Get TCP_KEEPCNT */
 #ifdef TCP_KEEPCNT
-  if (SocketCommon_getoption_int (socket->fd, SOCKET_IPPROTO_TCP,
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
                                   SOCKET_TCP_KEEPCNT, count, Socket_Failed)
       < 0)
     RAISE_SOCKET_ERROR (Socket_Failed);
@@ -2475,7 +2455,7 @@ Socket_getnodelay (T socket)
 
   assert (socket);
 
-  if (SocketCommon_getoption_int (socket->fd, SOCKET_IPPROTO_TCP,
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
                                   SOCKET_TCP_NODELAY, &nodelay, Socket_Failed)
       < 0)
     RAISE_SOCKET_ERROR (Socket_Failed);
@@ -2496,7 +2476,7 @@ Socket_getrcvbuf (T socket)
 
   assert (socket);
 
-  if (SocketCommon_getoption_int (socket->fd, SOCKET_SOL_SOCKET,
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
                                   SOCKET_SO_RCVBUF, &bufsize, Socket_Failed)
       < 0)
     RAISE_SOCKET_ERROR (Socket_Failed);
@@ -2517,7 +2497,7 @@ Socket_getsndbuf (T socket)
 
   assert (socket);
 
-  if (SocketCommon_getoption_int (socket->fd, SOCKET_SOL_SOCKET,
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
                                   SOCKET_SO_SNDBUF, &bufsize, Socket_Failed)
       < 0)
     RAISE_SOCKET_ERROR (Socket_Failed);
@@ -2539,7 +2519,7 @@ Socket_setrcvbuf (T socket, int size)
   assert (socket);
   assert (size > 0);
 
-  if (setsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_RCVBUF, &size,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_RCVBUF, &size,
                   sizeof (size))
       < 0)
     {
@@ -2562,7 +2542,7 @@ Socket_setsndbuf (T socket, int size)
   assert (socket);
   assert (size > 0);
 
-  if (setsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_SNDBUF, &size,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_SNDBUF, &size,
                   sizeof (size))
       < 0)
     {
@@ -2591,7 +2571,7 @@ Socket_setcongestion (T socket, const char *algorithm)
   assert (algorithm);
 
 #if SOCKET_HAS_TCP_CONGESTION
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_CONGESTION,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP, SOCKET_TCP_CONGESTION,
                   algorithm, strlen (algorithm) + 1)
       < 0)
     {
@@ -2626,7 +2606,7 @@ Socket_getcongestion (T socket, char *algorithm, size_t len)
 
 #if SOCKET_HAS_TCP_CONGESTION
   optlen = (socklen_t)len;
-  if (getsockopt (socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_CONGESTION,
+  if (getsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP, SOCKET_TCP_CONGESTION,
                   algorithm, &optlen)
       < 0)
     {
@@ -2659,7 +2639,7 @@ Socket_setfastopen (T socket, int enable)
   assert (socket);
 
 #if SOCKET_HAS_TCP_FASTOPEN
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_FASTOPEN, &opt,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP, SOCKET_TCP_FASTOPEN, &opt,
                   sizeof (opt))
       < 0)
     {
@@ -2689,7 +2669,7 @@ Socket_getfastopen (T socket)
   assert (socket);
 
 #if SOCKET_HAS_TCP_FASTOPEN
-  if (getsockopt (socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_FASTOPEN, &opt,
+  if (getsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP, SOCKET_TCP_FASTOPEN, &opt,
                   &optlen)
       < 0)
     {
@@ -2718,7 +2698,7 @@ Socket_setusertimeout (T socket, unsigned int timeout_ms)
   assert (timeout_ms > 0);
 
 #if SOCKET_HAS_TCP_USER_TIMEOUT
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_USER_TIMEOUT,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP, SOCKET_TCP_USER_TIMEOUT,
                   &timeout_ms, sizeof (timeout_ms))
       < 0)
     {
@@ -2749,7 +2729,7 @@ Socket_getusertimeout (T socket)
   assert (socket);
 
 #if SOCKET_HAS_TCP_USER_TIMEOUT
-  if (getsockopt (socket->fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_USER_TIMEOUT,
+  if (getsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP, SOCKET_TCP_USER_TIMEOUT,
                   &timeout_ms, &optlen)
       < 0)
     {
@@ -2779,14 +2759,14 @@ Socket_isconnected (T socket)
   assert (socket);
 
   /* Check if we have cached peer address */
-  if (socket->peeraddr != NULL)
+  if (socket->base->remoteaddr != NULL)
     return 1;
 
   /* Use getpeername() to check connection state */
-  if (getpeername (socket->fd, (struct sockaddr *)&addr, &len) == 0)
+  if (getpeername (SocketBase_fd (socket->base), (struct sockaddr *)&addr, &len) == 0)
     {
       /* Socket is connected - update cached peer info if not already set */
-      if (socket->peeraddr == NULL && socket->arena != NULL)
+      if (socket->base->remoteaddr == NULL && SocketBase_arena (socket->base) != NULL)
         {
           setup_peer_info (socket, (struct sockaddr *)&addr, len);
         }
@@ -2819,11 +2799,11 @@ Socket_isbound (T socket)
   assert (socket);
 
   /* Check if we have cached local address */
-  if (socket->localaddr != NULL)
+  if (socket->base->localaddr != NULL)
     return 1;
 
   /* Use getsockname() to check binding state */
-  if (getsockname (socket->fd, (struct sockaddr *)&addr, &len) == 0)
+  if (getsockname (SocketBase_fd (socket->base), (struct sockaddr *)&addr, &len) == 0)
     {
       /* Socket is bound if getsockname succeeds */
       /* For IPv4/IPv6, check if we have a valid port (address can be wildcard)
@@ -2878,7 +2858,7 @@ Socket_islistening (T socket)
     socklen_t error_len = sizeof (error);
 
     /* Check SO_ERROR - listening sockets should have no error */
-    if (getsockopt (socket->fd, SOCKET_SOL_SOCKET, SO_ERROR, &error,
+    if (getsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SO_ERROR, &error,
                     &error_len)
         == 0)
       {
@@ -2895,35 +2875,35 @@ int
 Socket_fd (const T socket)
 {
   assert (socket);
-  return socket->fd;
+  return SocketBase_fd (socket->base);
 }
 
 const char *
 Socket_getpeeraddr (const T socket)
 {
   assert (socket);
-  return socket->peeraddr ? socket->peeraddr : "(unknown)";
+  return socket->base->remoteaddr ? socket->base->remoteaddr : "(unknown)";
 }
 
 int
 Socket_getpeerport (const T socket)
 {
   assert (socket);
-  return socket->peerport;
+  return socket->base->remoteport;
 }
 
 const char *
 Socket_getlocaladdr (const T socket)
 {
   assert (socket);
-  return socket->localaddr ? socket->localaddr : "(unknown)";
+  return socket->base->localaddr ? socket->base->localaddr : "(unknown)";
 }
 
 int
 Socket_getlocalport (const T socket)
 {
   assert (socket);
-  return socket->localport;
+  return socket->base->localport;
 }
 
 /**
@@ -2951,7 +2931,7 @@ handle_unix_bind_error (const char *path)
 static void
 perform_unix_bind (T socket, const struct sockaddr_un *addr, const char *path)
 {
-  if (bind (socket->fd, (struct sockaddr *)addr, sizeof (*addr)) < 0)
+  if (bind (SocketBase_fd (socket->base), (struct sockaddr *)addr, sizeof (*addr)) < 0)
     {
       handle_unix_bind_error (path);
       RAISE_SOCKET_ERROR (Socket_Failed);
@@ -2970,8 +2950,8 @@ Socket_bind_unix (T socket, const char *path)
     RAISE_SOCKET_ERROR (Socket_Failed);
 
   perform_unix_bind (socket, &addr, path);
-  memcpy (&socket->addr, &addr, sizeof (addr));
-  socket->addrlen = sizeof (addr);
+  memcpy (&socket->base->remote_addr, &addr, sizeof (addr));
+  socket->base->remote_addrlen = sizeof (addr);
   update_local_endpoint (socket);
 }
 
@@ -3001,7 +2981,7 @@ static void
 perform_unix_connect (T socket, const struct sockaddr_un *addr,
                       const char *path)
 {
-  if (connect (socket->fd, (struct sockaddr *)addr, sizeof (*addr)) < 0)
+  if (connect (SocketBase_fd (socket->base), (struct sockaddr *)addr, sizeof (*addr)) < 0)
     {
       handle_unix_connect_error (path);
       RAISE_SOCKET_ERROR (Socket_Failed);
@@ -3020,8 +3000,8 @@ Socket_connect_unix (T socket, const char *path)
     RAISE_SOCKET_ERROR (Socket_Failed);
 
   perform_unix_connect (socket, &addr, path);
-  memcpy (&socket->addr, &addr, sizeof (addr));
-  socket->addrlen = sizeof (addr);
+  memcpy (&socket->base->remote_addr, &addr, sizeof (addr));
+  socket->base->remote_addrlen = sizeof (addr);
   update_local_endpoint (socket);
 }
 
@@ -3034,7 +3014,7 @@ Socket_getpeerpid (const T socket)
   struct ucred cred;
   socklen_t len = sizeof (cred);
 
-  if (getsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_PEERCRED, &cred,
+  if (getsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_PEERCRED, &cred,
                   &len)
       == 0)
     {
@@ -3054,7 +3034,7 @@ Socket_getpeeruid (const T socket)
   struct ucred cred;
   socklen_t len = sizeof (cred);
 
-  if (getsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_PEERCRED, &cred,
+  if (getsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_PEERCRED, &cred,
                   &len)
       == 0)
     {
@@ -3074,7 +3054,7 @@ Socket_getpeergid (const T socket)
   struct ucred cred;
   socklen_t len = sizeof (cred);
 
-  if (getsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_PEERCRED, &cred,
+  if (getsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_PEERCRED, &cred,
                   &len)
       == 0)
     {
@@ -3125,8 +3105,8 @@ Socket_bind_async (SocketDNS_T dns, T socket, const char *host, int port)
   /* For non-wildcard hosts, use async DNS resolution */
   {
     SocketDNS_Request_T req = SocketDNS_resolve (dns, host, port, NULL, NULL);
-    if (socket->timeouts.dns_timeout_ms > 0)
-      SocketDNS_request_settimeout (dns, req, socket->timeouts.dns_timeout_ms);
+    if (socket->base->timeouts.dns_timeout_ms > 0)
+      SocketDNS_request_settimeout (dns, req, socket->base->timeouts.dns_timeout_ms);
     return req;
   }
 }
@@ -3165,8 +3145,8 @@ Socket_connect_async (SocketDNS_T dns, T socket, const char *host, int port)
   /* Start async DNS resolution */
   {
     SocketDNS_Request_T req = SocketDNS_resolve (dns, host, port, NULL, NULL);
-    if (socket->timeouts.dns_timeout_ms > 0)
-      SocketDNS_request_settimeout (dns, req, socket->timeouts.dns_timeout_ms);
+    if (socket->base->timeouts.dns_timeout_ms > 0)
+      SocketDNS_request_settimeout (dns, req, socket->base->timeouts.dns_timeout_ms);
     return req;
   }
 }
@@ -3211,15 +3191,15 @@ Socket_connect_with_addrinfo (T socket, struct addrinfo *res)
   socket_family = get_socket_family (socket);
 
   if (try_connect_resolved_addresses (socket, res, socket_family,
-                                      socket->timeouts.connect_timeout_ms)
+                                      socket->base->timeouts.connect_timeout_ms)
       == 0)
     {
       SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
       update_local_endpoint (socket);
-      setup_peer_info (socket, (struct sockaddr *)&socket->addr,
-                       socket->addrlen);
-      SocketEvent_emit_connect (socket->fd, socket->peeraddr, socket->peerport,
-                                socket->localaddr, socket->localport);
+      setup_peer_info (socket, (struct sockaddr *)&socket->base->remote_addr,
+                       socket->base->remote_addrlen);
+      SocketEvent_emit_connect (SocketBase_fd (socket->base), socket->base->remoteaddr, socket->base->remoteport,
+                                socket->base->localaddr, socket->base->localport);
       return;
     }
 

@@ -23,7 +23,7 @@
 /* Constants for calculations */
 static const size_t PCT_BASE = 100;
 
-Except_T SocketPool_Failed = { "SocketPool operation failed" };
+const Except_T SocketPool_Failed = { &SocketPool_Failed, "SocketPool operation failed" };
 
 /* Thread-local exception for detailed error messages */
 #ifdef _WIN32
@@ -208,8 +208,11 @@ initialize_pool_fields (T pool, Arena_T arena, size_t maxconns, size_t bufsize)
  * Automatically pre-warms SOCKET_POOL_DEFAULT_PREWARM_PCT slots.
  */
 T
-SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
+SocketPool_new (Arena_T arena_, size_t maxconns_, size_t bufsize_)
 {
+  volatile Arena_T arena = arena_;
+  volatile size_t maxconns = maxconns_;
+  volatile size_t bufsize = bufsize_;
   T pool;
 
   if (!arena)
@@ -235,16 +238,27 @@ SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
 
   maxconns = enforce_max_connections (maxconns);
   bufsize = enforce_buffer_size (bufsize);
-  pool = allocate_pool_structure (arena);
-  allocate_pool_components (arena, maxconns, pool);
-  initialize_pool_fields (pool, arena, maxconns, bufsize);
-  initialize_pool_mutex (pool);
-  build_free_list (pool, maxconns);
 
-  /* Pre-warm SOCKET_POOL_DEFAULT_PREWARM_PCT of slots */
-  SocketPool_prewarm (pool, SOCKET_POOL_DEFAULT_PREWARM_PCT);
+  TRY
+  {
+    pool = allocate_pool_structure (arena);
+    allocate_pool_components (arena, maxconns, pool);
+    initialize_pool_fields (pool, arena, maxconns, bufsize);
+    initialize_pool_mutex (pool);
+    build_free_list (pool, maxconns);
 
-  return pool;
+    /* Pre-warm SOCKET_POOL_DEFAULT_PREWARM_PCT of slots */
+    SocketPool_prewarm (pool, SOCKET_POOL_DEFAULT_PREWARM_PCT);
+
+    return pool;
+  }
+  EXCEPT (Arena_Failed)
+  {
+    /* Caller will dispose arena, freeing pool components */
+    RERAISE;
+  }
+  END_TRY;
+  return NULL;  /* Unreachable: either returned success or reraised exception */
 }
 
 /**
