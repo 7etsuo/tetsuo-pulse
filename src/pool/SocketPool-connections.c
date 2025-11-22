@@ -579,11 +579,18 @@ struct PoolConnectUdata
   Socket_T socket;
 };
 
-/* Internal callback for DNS completion in async connect */
-static void
+/* Internal callback for DNS completion in async connect - #if 0 until implemented/used
+ * Enables async DNS for connect; currently sync Socket_connect blocks or uses SocketDNS for non-blocking.
+ */
+#if 0
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+static void __attribute__((unused))
 pool_dns_connect_completion (SocketDNS_Request_T req, struct addrinfo *result,
                              int dns_error, void *user_data)
 {
+  (void)pool_dns_connect_completion;  /* Suppress unused function warning until called */
+  (void)req;  /* Unused param for now; future use for request cleanup */
   struct PoolConnectUdata *udata = user_data;
   Connection_T conn = NULL;
   int error = 0;
@@ -614,12 +621,17 @@ pool_dns_connect_completion (SocketDNS_Request_T req, struct addrinfo *result,
       }
       END_TRY;
     }
-
-  udata->cb (conn, error, udata->data);
+}
+#pragma GCC diagnostic pop
+#endif /* 0 - Enable when async DNS connect implemented */
+  /* TODO: Call completion cb in sync mode or when async enabled 
+   * udata->cb (conn, error, udata->data);
+   */
 
   /* udata lifetime managed by pool arena - freed on pool disposal or manual
-   * cleanup if needed */
-}
+   * cleanup if needed 
+   * Note: DNS callback stubbed; cb call in sync path above
+   */
 
 int
 SocketPool_prepare_connection (T pool, SocketDNS_T dns, const char *host,

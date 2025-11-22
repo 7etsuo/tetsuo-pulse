@@ -28,12 +28,16 @@
 
 #include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"
+#include "socket/Socket-private.h"  /* For Socket_T access in internal verify wrapper */
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <openssl/pem.h>
 #include <openssl/evp.h>
 #include <openssl/bio.h>
+#include <openssl/ssl.h>
+#include <openssl/x509.h>
+#include <openssl/x509_vfy.h>
 #include <stdio.h>
 #include <ctype.h>
 
@@ -57,14 +61,28 @@ static __thread Except_T SocketTLSContext_DetailedException;
 
 /* Macro to raise TLS context exception with detailed error message
  * Creates a thread-local copy of the exception with detailed reason */
-#define RAISE_TLS_CONTEXT_ERROR(exception)                                    \
-  do                                                                          \
-    {                                                                         \
-      SocketTLSContext_DetailedException = (exception);                       \
-      SocketTLSContext_DetailedException.reason = tls_context_error_buf;      \
-      RAISE (SocketTLSContext_DetailedException);                             \
-    }                                                                         \
-  while (0)
+/* RAISE_TLS_CONTEXT_ERROR variants for flexibility */
+#define RAISE_TLS_CONTEXT_ERROR(exception) do { \
+  tls_context_error_buf[0] = '\0'; /* Clear buf for default */ \
+  SocketTLSContext_DetailedException = (exception); \
+  SocketTLSContext_DetailedException.reason = tls_context_error_buf; \
+  RAISE (SocketTLSContext_DetailedException); \
+} while (0)
+
+#define RAISE_TLS_CONTEXT_ERROR_MSG(exception, msg) do { \
+  strncpy (tls_context_error_buf, msg, sizeof (tls_context_error_buf) - 1); \
+  tls_context_error_buf[sizeof (tls_context_error_buf) - 1] = '\0'; \
+  SocketTLSContext_DetailedException = (exception); \
+  SocketTLSContext_DetailedException.reason = tls_context_error_buf; \
+  RAISE (SocketTLSContext_DetailedException); \
+} while (0)
+
+#define RAISE_TLS_CONTEXT_ERROR_FMT(exception, fmt, ...) do { \
+  snprintf (tls_context_error_buf, sizeof (tls_context_error_buf), fmt, __VA_ARGS__); \
+  SocketTLSContext_DetailedException = (exception); \
+  SocketTLSContext_DetailedException.reason = tls_context_error_buf; \
+  RAISE (SocketTLSContext_DetailedException); \
+} while (0)
 
 #define T SocketTLSContext_T
 
@@ -97,6 +115,11 @@ struct T
     SocketTLSAlpnCallback callback; /* Custom selection callback */
     void *callback_user_data;       /* User data for callback */
   } alpn;
+
+  /* Custom verification callback */
+  SocketTLSVerifyCallback verify_callback;
+  void *verify_user_data;
+  TLSVerifyMode verify_mode;  /* Stored verification mode for reconfig */
 };
 
 /* Helper function to format OpenSSL errors and raise TLS context exceptions */
@@ -347,6 +370,45 @@ alpn_select_callback (SSL *ssl, const unsigned char **out,
   return SSL_TLSEXT_ERR_NOACK;
 }
 
+static int
+socket_tls_internal_verify (int pre_ok, X509_STORE_CTX *x509_ctx)
+{
+  /* Get SSL object from X509_STORE_CTX ex_data */
+  SSL *ssl = X509_STORE_CTX_get_ex_data (x509_ctx, SSL_get_ex_data_X509_STORE_CTX_idx ());
+  if (!ssl)
+    return pre_ok;  /* Fallback if no SSL context available */
+
+  /* Get Socket_T from SSL app_data (to be set in SocketTLS_base.c during TLS enable) */
+  Socket_T sock = (Socket_T)SSL_get_app_data (ssl);
+  if (!sock)
+    return pre_ok;
+
+  /* Get TLS context from socket's private tls_ctx field (void* cast to T) */
+  SocketTLSContext_T ctx = (SocketTLSContext_T)sock->tls_ctx;
+  if (!ctx || !ctx->verify_callback)
+    return pre_ok;  /* No custom callback, fallback to default/pre_ok */
+
+  /* Invoke user callback */
+  int result = ctx->verify_callback (pre_ok, x509_ctx, ctx, sock, ctx->verify_user_data);
+
+  if (!result)
+    {
+      /* Capture OpenSSL errors for potential logging or post-check raise */
+      unsigned long err_code = ERR_get_error ();
+      if (err_code != 0)
+        {
+          char err_buf[256];
+          ERR_error_string_n (err_code, err_buf, sizeof (err_buf));
+          /* Callback can raise; here propagate fail to OpenSSL */
+          /* In SocketTLS_handshake or get_verify_result, can raise detailed */
+        }
+      /* Optionally set custom error code for further processing */
+      X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
+    }
+
+  return result;
+}
+
 /**
  * alloc_and_init_ctx - Allocate and initialize common TLS context structure
  * @method: OpenSSL method (TLS_server_method() or TLS_client_method())
@@ -417,6 +479,11 @@ alloc_and_init_ctx (const SSL_METHOD *method, int is_server)
   ctx->is_server = !!is_server;
   ctx->session_cache_enabled = 0;
   ctx->session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
+
+  /* Initialize custom verification */
+  ctx->verify_callback = NULL;
+  ctx->verify_user_data = NULL;
+  ctx->verify_mode = TLS_VERIFY_NONE;  /* Default; overridden in new_server/client */
 
   /* Initialize SNI certificate mapping */
   ctx->sni_certs.hostnames = NULL;
@@ -789,6 +856,8 @@ SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
   assert (ctx);
   assert (ctx->ssl_ctx);
 
+  ctx->verify_mode = mode;  /* Store for reconfig in set_callback */
+
   int openssl_mode = 0;
 
   /* Convert our enum to OpenSSL flags */
@@ -811,7 +880,66 @@ SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
       return;
     }
 
-  SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, NULL);
+  SSL_verify_cb verify_cb = ctx->verify_callback ? (SSL_verify_cb)socket_tls_internal_verify : NULL;
+  ERR_clear_error ();
+  SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, verify_cb);
+}
+
+/**
+ * SocketTLSContext_set_verify_callback - Register custom verification callback
+ * @ctx: The TLS context instance
+ * @callback: User callback function (NULL to disable custom and use default)
+ * @user_data: Opaque data passed to callback (lifetime managed by caller)
+ *
+ * Sets a custom verification callback for certificate validation, invoked during
+ * TLS handshake verification. The internal wrapper handles OpenSSL integration
+ * and provides socket/context access. Compatible with current verify_mode.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if OpenSSL reconfiguration fails (rare)
+ * Thread-safe: No - modifies shared context; call during setup before use
+ * Note: Callback should avoid blocking operations; errors propagate via return 0
+ *       (fails handshake) or user-raised exceptions.
+ */
+void
+SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback, void *user_data)
+{
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+
+  /* Store callback and data */
+  ctx->verify_callback = callback;
+  ctx->verify_user_data = user_data;
+
+  /* Reconfigure OpenSSL verify with current mode and new cb or NULL */
+  int openssl_mode = 0;
+  switch (ctx->verify_mode)  /* Assume ctx->verify_mode stored in set_verify_mode */
+    {
+    case TLS_VERIFY_NONE:
+      openssl_mode = SSL_VERIFY_NONE;
+      break;
+    case TLS_VERIFY_PEER:
+      openssl_mode = SSL_VERIFY_PEER;
+      break;
+    case TLS_VERIFY_FAIL_IF_NO_PEER_CERT:
+      openssl_mode = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+      break;
+    case TLS_VERIFY_CLIENT_ONCE:
+      openssl_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
+      break;
+    default:
+      RAISE_TLS_CONTEXT_ERROR_FMT (SocketTLS_Failed, "Invalid verify mode: %d", (int)ctx->verify_mode);
+    }
+
+  SSL_verify_cb verify_cb = callback ? (SSL_verify_cb)socket_tls_internal_verify : NULL;
+  SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, verify_cb);
+  if (ERR_get_error () != 0)
+    {
+      unsigned long err = ERR_get_error ();
+      char err_buf[256];
+      ERR_error_string_n (err, err_buf, sizeof (err_buf));
+      RAISE_TLS_CONTEXT_ERROR_FMT (SocketTLS_Failed, "Failed to set verify callback: %s", err_buf);
+    }
 }
 
 /**

@@ -7,8 +7,13 @@
 
 #ifdef SOCKET_HAS_TLS
 
+#include <openssl/ssl.h>  /* For SSL_VERIFY_* and X509_STORE_CTX */
+#include <openssl/x509_vfy.h>  /* For X509_STORE_CTX */
+
 #define T SocketTLSContext_T
 typedef struct T *T; /* Opaque pointer to TLS context */
+
+
 
 /**
  * SocketTLSContext - TLS Context Management Module
@@ -142,6 +147,66 @@ extern void SocketTLSContext_load_ca (T ctx, const char *ca_file);
  * Thread-safe: No
  */
 extern void SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode);
+
+/* Custom Verification Support */
+
+/**
+ * SocketTLSVerifyCallback - User-defined certificate verification callback
+ * @preverify_ok: OpenSSL pre-verification result (1=OK, 0=fail)
+ * @x509_ctx: OpenSSL certificate store context (access cert chain via X509_STORE_CTX_get_current_cert())
+ * @tls_ctx: TLS context for shared configuration/data
+ * @socket: Associated socket for connection-specific info (e.g., hostname)
+ * @user_data: Opaque user data from SocketTLSContext_set_verify_callback
+ *
+ * Called during TLS verification to allow custom logic (e.g., pinning, policy checks).
+ * Return 1 to accept/continue verification, 0 to fail (aborts handshake).
+ * Can raise exceptions for detailed errors.
+ */
+typedef int (*SocketTLSVerifyCallback)(int preverify_ok, X509_STORE_CTX *x509_ctx,
+                                       T tls_ctx, Socket_T socket, void *user_data);
+
+/**
+ * SocketTLSContext_set_verify_callback - Register custom verification callback
+ * @ctx: The TLS context instance
+ * @callback: User callback function (NULL to disable custom and use default)
+ * @user_data: Opaque data passed to callback (lifetime managed by caller)
+ *
+ * Sets a custom verification callback, overriding default OpenSSL behavior while
+ * respecting current verify_mode. The wrapper ensures thread-safety and error
+ * propagation via exceptions.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if OpenSSL configuration fails
+ * Thread-safe: No (modifies shared context; call before sharing)
+ */
+
+/**
+ * SocketTLSContext_free - Dispose of TLS context and resources
+ * @ctx_p: Pointer to context pointer (set to NULL on success)
+ *
+ * Frees the SSL_CTX, Arena (internal allocations), SNI arrays/certs/keys, ALPN data.
+ * Caller must not use context after free. Reverse of new_server/client.
+ *
+ * Returns: void
+ * Raises: None (safe for NULL)
+ * Thread-safe: Yes (but avoid concurrent use)
+ */
+extern void SocketTLSContext_free (T *ctx_p);
+extern void SocketTLSContext_set_verify_callback(T ctx, SocketTLSVerifyCallback callback, void *user_data);
+
+/**
+ * SocketTLS_get_verify_result - Get TLS verification result after handshake
+ * @sock: The TLS-enabled socket
+ *
+ * Returns the OpenSSL verification result code (X509_V_OK = 0 on success).
+ * Call after handshake to check peer cert status. Maps to SocketTLS_VerifyFailed
+ * exception if failed and auto-raise option enabled (future).
+ *
+ * Returns: long (X509 verify result code)
+ * Raises: None (caller checks return != X509_V_OK)
+ * Thread-safe: Yes (read-only after handshake)
+ */
+extern long SocketTLS_get_verify_result (Socket_T sock);
 
 /* Protocol configuration */
 /**

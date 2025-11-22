@@ -34,6 +34,7 @@
 #include <assert.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+#include <openssl/x509_vfy.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -161,8 +162,10 @@ socket_free_tls_resources (Socket_T socket)
   /* Free SSL object */
   if (socket->tls_ssl)
     {
+      SSL_set_app_data ((SSL *)socket->tls_ssl, NULL);  /* Clear app_data before free */
       SSL_free ((SSL *)socket->tls_ssl);
       socket->tls_ssl = NULL;
+      socket->tls_ctx = NULL;  /* Clear context reference */
     }
 
   /* Clear TLS flags and state */
@@ -297,6 +300,10 @@ SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
 
   /* Store SSL object in socket */
   socket->tls_ssl = (void *)ssl;
+  socket->tls_ctx = (void *)ctx;  /* Store context reference for callbacks */
+
+  /* Set socket as app_data on SSL object for use in verification callbacks */
+  SSL_set_app_data (ssl, socket);
 
   /* Allocate TLS buffers */
   socket_allocate_tls_buffers (socket);
@@ -546,6 +553,8 @@ SocketTLS_shutdown (Socket_T socket)
       /* WANT_READ/WRITE are expected during shutdown */
     }
 }
+
+
 
 #undef T
 

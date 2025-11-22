@@ -19,6 +19,7 @@
 #include "tls/SocketTLSConfig.h"
 #include <assert.h>
 #include <openssl/ssl.h>
+#include <openssl/x509_vfy.h>  /* For X509_V_ERR_* constants */
 #include <string.h>
 
 #define T SocketTLS_T
@@ -107,37 +108,28 @@ SocketTLS_get_version (Socket_T socket)
 }
 
 /**
- * SocketTLS_get_verify_result - Get the certificate verification result
- * @socket: Socket instance
+ * SocketTLS_get_verify_result - Get peer certificate verification result
+ * @socket: The socket instance with completed handshake
  *
- * Returns the result of certificate verification as defined by OpenSSL's
- * X509_V_* constants. X509_V_OK (0) means verification succeeded.
- * The handshake must be complete for this information to be available.
+ * Returns OpenSSL's X509 verify result code. X509_V_OK (0) indicates
+ * successful verification. Non-zero codes detail failures (e.g., untrusted CA).
  *
- * Returns: Verification result code (X509_V_OK on success)
- * Thread-safe: No (reads socket state)
+ * Returns: long verify result code (X509_V_OK = 0 on success)
+ * Raises: None (caller checks != X509_V_OK and may raise SocketTLS_VerifyFailed)
+ * Thread-safe: Yes (read-only post-handshake)
+ * Requires: tls_enabled and tls_handshake_done
  */
-int
+long
 SocketTLS_get_verify_result (Socket_T socket)
 {
   SSL *ssl;
 
-  assert (socket);
-
-  /* Check if TLS is enabled */
-  if (!socket->tls_enabled)
+  if (!socket || !socket->tls_enabled || !socket->tls_ssl || !socket->tls_handshake_done)
     {
-      return -1; /* Not applicable */
+      return X509_V_ERR_INVALID_CALL;
     }
 
-  /* Get SSL object */
-  ssl = socket_get_ssl (socket);
-  if (!ssl)
-    {
-      return -1; /* Not available */
-    }
-
-  /* Get verification result */
+  ssl = (SSL *)socket->tls_ssl;  /* Direct access for perf */
   return SSL_get_verify_result (ssl);
 }
 
@@ -166,11 +158,11 @@ SocketTLS_is_session_reused (Socket_T socket)
       return -1; /* Not applicable */
     }
 
-  /* Get SSL object */
-  ssl = socket_get_ssl (socket);
+  /* Get SSL object directly from private field */
+  ssl = (SSL *)socket->tls_ssl;
   if (!ssl)
     {
-      return -1; /* Not available */
+      return X509_V_ERR_INVALID_CALL;
     }
 
   /* Check if session was reused */
