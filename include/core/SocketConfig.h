@@ -217,6 +217,16 @@ union align
 #define SOCKET_DNS_PORT_STR_SIZE 16
 #endif
 
+/* DNS label maximum length per RFC 1035 */
+#ifndef SOCKET_DNS_MAX_LABEL_LENGTH
+#define SOCKET_DNS_MAX_LABEL_LENGTH 63
+#endif
+
+/* Conservative stack size for DNS worker threads (128KB) */
+#ifndef SOCKET_DNS_WORKER_STACK_SIZE
+#define SOCKET_DNS_WORKER_STACK_SIZE (128 * 1024)
+#endif
+
 /* Socket port string buffer size for general use */
 #ifndef SOCKET_PORT_STR_BUFSIZE
 #define SOCKET_PORT_STR_BUFSIZE 16
