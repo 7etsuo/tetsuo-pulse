@@ -31,7 +31,7 @@ void SocketCommon_setup_hints(struct addrinfo *hints, int socktype, int flags);
 /**
  * SocketCommon_resolve_address - Resolve hostname/port to addrinfo structure
  * @host: Hostname or IP address (NULL for wildcard)
- * @port: Port number (1-65535)
+ * @port: Port number (1 to SOCKET_MAX_PORT)
  * @hints: Addrinfo hints structure
  * @res: Output pointer to resolved addrinfo
  * @exception_type: Exception type to raise on failure

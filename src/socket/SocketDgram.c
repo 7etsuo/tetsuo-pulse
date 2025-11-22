@@ -190,7 +190,7 @@ static void extract_sender_info(const struct sockaddr_storage *addr, socklen_t a
     {
         char *endptr;
         long port_long = strtol(serv, &endptr, 10);
-        if (*endptr == '\0' && port_long > 0 && port_long <= 65535)
+        if (*endptr == '\0' && port_long > 0 && port_long <= SOCKET_MAX_PORT)
         {
             *port = (int)port_long;
         }
@@ -1235,9 +1235,9 @@ void SocketDgram_leavemulticast(T socket, const char *group, const char *interfa
  */
 static void validate_ttl_value(int ttl)
 {
-    if (ttl < 1 || ttl > 255)
+    if (ttl < 1 || ttl > SOCKET_MAX_TTL)
     {
-        SOCKET_ERROR_MSG("Invalid TTL value: %d (must be 1-255)", ttl);
+        SOCKET_ERROR_MSG("Invalid TTL value: %d (must be " SOCKET_TTL_VALID_RANGE ")", ttl);
         RAISE_DGRAM_ERROR(SocketDgram_Failed);
     }
 }
@@ -1448,7 +1448,7 @@ static void get_ttl_by_family(T socket, int socket_family, int *ttl)
 /**
  * SocketDgram_getttl - Get time-to-live (hop limit)
  * @socket: Socket to query
- * Returns: TTL value (1-255)
+ * Returns: TTL value (1 to SOCKET_MAX_TTL)
  * Raises: SocketDgram_Failed on error
  */
 int SocketDgram_getttl(T socket)

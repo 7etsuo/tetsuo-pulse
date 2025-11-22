@@ -79,7 +79,7 @@ static int socketcommon_parse_port_string(const char *serv)
 
     errno = 0;
     port_long = strtol(serv, &endptr, 10);
-    if (errno == 0 && endptr != serv && *endptr == '\0' && port_long >= 0 && port_long <= 65535)
+    if (errno == 0 && endptr != serv && *endptr == '\0' && port_long >= 0 && port_long <= SOCKET_MAX_PORT)
         return (int)port_long;
     return 0;
 }
@@ -240,7 +240,7 @@ void SocketCommon_setup_hints(struct addrinfo *hints, int socktype, int flags)
 /**
  * SocketCommon_resolve_address - Resolve hostname/port to addrinfo structure
  * @host: Hostname or IP address (NULL for wildcard)
- * @port: Port number (1-65535)
+ * @port: Port number (1 to SOCKET_MAX_PORT)
  * @hints: Addrinfo hints structure
  * @res: Output pointer to resolved addrinfo
  * @exception_type: Exception type to raise on failure
@@ -280,7 +280,7 @@ void SocketCommon_validate_port(int port, Except_T exception_type)
 {
     if (!SOCKET_VALID_PORT(port))
     {
-        SOCKET_ERROR_MSG("Invalid port number: %d (must be 0-65535, 0 = OS-assigned)", port);
+        SOCKET_ERROR_MSG("Invalid port number: %d (must be 0-" SOCKET_TO_STRING(SOCKET_MAX_PORT) ", 0 = OS-assigned)", port);
         RAISE_COMMON_ERROR(exception_type);
     }
 }
@@ -573,7 +573,7 @@ static int socketcommon_parse_cidr(const char *cidr_str, unsigned char *network,
     /* Try IPv6 */
     if (inet_pton(AF_INET6, cidr_copy, &addr6) == 1)
     {
-        if (prefix_long > 128)
+        if (prefix_long > SOCKET_IPV6_MAX_PREFIX)
         {
             free(cidr_copy);
             return -1;
@@ -592,7 +592,7 @@ static int socketcommon_parse_cidr(const char *cidr_str, unsigned char *network,
 /**
  * socketcommon_apply_mask - Apply CIDR mask to IP address
  * @ip: IP address bytes (4 for IPv4, 16 for IPv6)
- * @prefix_len: Prefix length (0-32 for IPv4, 0-128 for IPv6)
+ * @prefix_len: Prefix length (" SOCKET_IPV4_PREFIX_RANGE " for IPv4, " SOCKET_IPV6_PREFIX_RANGE " for IPv6)
  * @family: Address family (AF_INET or AF_INET6)
  * Thread-safe: Yes
  */
@@ -639,7 +639,7 @@ static void socketcommon_apply_mask(unsigned char *ip, int prefix_len, int famil
 /**
  * SocketCommon_cidr_match - Check if IP address matches CIDR range
  * @ip_str: IP address string to check
- * @cidr_str: CIDR notation string (e.g., "192.168.1.0/24" or "2001:db8::/32")
+ * @cidr_str: CIDR notation string (e.g., "192.168.1.0/24" or "2001:db8::/" SOCKET_TO_STRING(SOCKET_IPV6_MAX_PREFIX) ")
  * Returns: 1 if IP matches CIDR range, 0 if not, -1 on error
  * Thread-safe: Yes
  * Note: Supports both IPv4 and IPv6 CIDR notation.

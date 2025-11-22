@@ -281,6 +281,44 @@ static T initialize_socket_structure(T socket, int fd)
 }
 
 /**
+ * validate_socketpair_type - Validate socket type for socketpair creation
+ * @type: Socket type to validate
+ * Raises: Socket_Failed if invalid type (not SOCK_STREAM or SOCK_DGRAM)
+ * Thread-safe: Yes
+ */
+static void
+validate_socketpair_type(int type)
+{
+    if (type != SOCK_STREAM && type != SOCK_DGRAM)
+    {
+        SOCKET_ERROR_MSG("Invalid socket type for socketpair: %d (must be SOCK_STREAM or SOCK_DGRAM)", type);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+}
+
+/**
+ * create_socketpair_fds - Create Unix domain socket pair file descriptors
+ * @type: Socket type (SOCK_STREAM or SOCK_DGRAM)
+ * @sv: Output array for the two file descriptors [2]
+ * Raises: Socket_Failed on creation error
+ * Thread-safe: Yes
+ * Note: Sets SOCK_CLOEXEC flag if supported by platform
+ */
+static void
+create_socketpair_fds(int type, int sv[2])
+{
+#if SOCKET_HAS_SOCK_CLOEXEC
+    if (socketpair(AF_UNIX, type | SOCKET_SOCK_CLOEXEC, 0, sv) < 0)
+#else
+    if (socketpair(AF_UNIX, type, 0, sv) < 0)
+#endif
+    {
+        SOCKET_ERROR_FMT("Failed to create socket pair (type=%d)", type);
+        RAISE_SOCKET_ERROR(Socket_Failed);
+    }
+}
+
+/**
  * SocketPair_new - Create a pair of connected Unix domain sockets
  * @type: Socket type (SOCK_STREAM or SOCK_DGRAM)
  * @socket1: Output - first socket of the pair
@@ -303,23 +341,9 @@ void SocketPair_new(int type, T *socket1, T *socket2)
     assert(socket1);
     assert(socket2);
 
-    /* Validate socket type */
-    if (type != SOCK_STREAM && type != SOCK_DGRAM)
-    {
-        SOCKET_ERROR_MSG("Invalid socket type for socketpair: %d (must be SOCK_STREAM or SOCK_DGRAM)", type);
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
+    validate_socketpair_type(type);
 
-    /* Create socket pair */
-#if SOCKET_HAS_SOCK_CLOEXEC
-    if (socketpair(AF_UNIX, type | SOCKET_SOCK_CLOEXEC, 0, sv) < 0)
-#else
-    if (socketpair(AF_UNIX, type, 0, sv) < 0)
-#endif
-    {
-        SOCKET_ERROR_FMT("Failed to create socket pair (type=%d)", type);
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
+    create_socketpair_fds(type, sv);
 
     TRY
         /* Create arenas for both sockets */
@@ -832,6 +856,19 @@ static int try_bind_resolved_addresses(T socket, struct addrinfo *res, int socke
     return -1;
 }
 
+/**
+ * is_common_bind_error - Check if error is a common non-fatal bind error
+ * @err: Error number from errno or SO_ERROR
+ * Returns: 1 if common bind error (graceful failure), 0 otherwise
+ * Thread-safe: Yes
+ * Note: Allows caller to return without raising exception for expected errors like port in use
+ */
+static int
+is_common_bind_error(int err)
+{
+    return err == EADDRINUSE || err == EACCES || err == EADDRNOTAVAIL || err == EAFNOSUPPORT;
+}
+
 void Socket_bind(T socket, const char *host, int port)
 {
     struct addrinfo hints, *res = NULL;
@@ -869,8 +906,7 @@ void Socket_bind(T socket, const char *host, int port)
         int saved_errno = errno;
         freeaddrinfo(res);
         // Graceful failure for common bind errors - check errno from the underlying bind call
-        if (saved_errno == EADDRINUSE || saved_errno == EACCES || saved_errno == EADDRNOTAVAIL ||
-            saved_errno == EAFNOSUPPORT)
+        if (is_common_bind_error(saved_errno))
         {
             errno = saved_errno; /* Restore errno for caller */
             return;              /* Caller can check errno */
@@ -885,8 +921,7 @@ void Socket_bind(T socket, const char *host, int port)
     // Preserve errno before freeaddrinfo() may modify it
     int saved_errno = errno;
     freeaddrinfo(res);
-    if (saved_errno == EADDRINUSE || saved_errno == EACCES || saved_errno == EADDRNOTAVAIL ||
-        saved_errno == EAFNOSUPPORT)
+    if (is_common_bind_error(saved_errno))
     {
         errno = saved_errno; /* Restore errno for caller */
         return;              /* Graceful failure - caller checks errno */
@@ -1379,6 +1414,7 @@ ssize_t Socket_recvv(T socket, struct iovec *iov, int iovcnt)
  */
 ssize_t Socket_sendvall(T socket, const struct iovec *iov, int iovcnt)
 {
+    Arena_T temp_arena = NULL;
     struct iovec *iov_copy = NULL;
     volatile size_t total_sent = 0;
     size_t total_len;
@@ -1393,54 +1429,55 @@ ssize_t Socket_sendvall(T socket, const struct iovec *iov, int iovcnt)
     /* Calculate total length */
     total_len = socket_calculate_total_iov_len(iov, iovcnt);
 
-    /* Make a copy of iovec array for modification */
-    iov_copy = calloc((size_t)iovcnt, sizeof(struct iovec));
-    if (!iov_copy)
-    {
-        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate iovec copy");
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
-    memcpy(iov_copy, iov, (size_t)iovcnt * sizeof(struct iovec));
-
-    TRY while (total_sent < total_len)
-    {
-        /* Find first non-empty iovec */
-        int active_iovcnt = 0;
-        struct iovec *active_iov = NULL;
-
-        for (i = 0; i < iovcnt; i++)
+    TRY
+        temp_arena = Arena_new();
+        if (!temp_arena)
         {
-            if (iov_copy[i].iov_len > 0)
+            SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate temp arena for iov copy");
+            RAISE_SOCKET_ERROR(Socket_Failed);
+        }
+
+        /* Allocate iovec copy from arena */
+        iov_copy = ALLOC(temp_arena, (size_t)iovcnt * sizeof(struct iovec));
+        memcpy(iov_copy, iov, (size_t)iovcnt * sizeof(struct iovec));
+
+        while (total_sent < total_len)
+        {
+            /* Find first non-empty iovec */
+            int active_iovcnt = 0;
+            struct iovec *active_iov = NULL;
+
+            for (i = 0; i < iovcnt; i++)
             {
-                active_iov = &iov_copy[i];
-                active_iovcnt = iovcnt - i;
-                break;
+                if (iov_copy[i].iov_len > 0)
+                {
+                    active_iov = &iov_copy[i];
+                    active_iovcnt = iovcnt - i;
+                    break;
+                }
             }
-        }
 
-        if (active_iov == NULL)
-            break; /* All buffers sent */
+            if (active_iov == NULL)
+                break; /* All buffers sent */
 
-        sent = Socket_sendv(socket, active_iov, active_iovcnt);
-        if (sent == 0)
-        {
-            /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
-            free(iov_copy);
-            return (ssize_t)total_sent;
+            sent = Socket_sendv(socket, active_iov, active_iovcnt);
+            if (sent == 0)
+            {
+                /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+                return (ssize_t)total_sent;
+            }
+            total_sent += (size_t)sent;
+            socket_advance_iov(iov_copy, iovcnt, (size_t)sent);
         }
-        total_sent += (size_t)sent;
-        socket_advance_iov(iov_copy, iovcnt, (size_t)sent);
-    }
     EXCEPT(Socket_Closed)
-    free(iov_copy);
-    RERAISE;
+        RERAISE;
     EXCEPT(Socket_Failed)
-    free(iov_copy);
-    RERAISE;
+        RERAISE;
+    FINALLY
+        if (temp_arena)
+            Arena_dispose(&temp_arena); /* Frees iov_copy automatically */
     END_TRY;
 
-    free(iov_copy);
     return (ssize_t)total_sent;
 }
 
@@ -1459,6 +1496,7 @@ ssize_t Socket_sendvall(T socket, const struct iovec *iov, int iovcnt)
  */
 ssize_t Socket_recvvall(T socket, struct iovec *iov, int iovcnt)
 {
+    Arena_T temp_arena = NULL;
     struct iovec *iov_copy = NULL;
     volatile size_t total_received = 0;
     size_t total_len;
@@ -1473,75 +1511,76 @@ ssize_t Socket_recvvall(T socket, struct iovec *iov, int iovcnt)
     /* Calculate total length */
     total_len = socket_calculate_total_iov_len(iov, iovcnt);
 
-    /* Make a copy of iovec array for modification */
-    iov_copy = calloc((size_t)iovcnt, sizeof(struct iovec));
-    if (!iov_copy)
-    {
-        SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate iovec copy");
-        RAISE_SOCKET_ERROR(Socket_Failed);
-    }
-
-    memcpy(iov_copy, iov, (size_t)iovcnt * sizeof(struct iovec));
-
-    TRY while (total_received < total_len)
-    {
-        /* Find first non-empty iovec */
-        int active_iovcnt = 0;
-        struct iovec *active_iov = NULL;
-
-        for (i = 0; i < iovcnt; i++)
+    TRY
+        temp_arena = Arena_new();
+        if (!temp_arena)
         {
-            if (iov_copy[i].iov_len > 0)
-            {
-                active_iov = &iov_copy[i];
-                active_iovcnt = iovcnt - i;
-                break;
-            }
+            SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Cannot allocate temp arena for iov copy");
+            RAISE_SOCKET_ERROR(Socket_Failed);
         }
 
-        if (active_iov == NULL)
-            break; /* All buffers filled */
+        /* Allocate iovec copy from arena */
+        iov_copy = ALLOC(temp_arena, (size_t)iovcnt * sizeof(struct iovec));
+        memcpy(iov_copy, iov, (size_t)iovcnt * sizeof(struct iovec));
 
-        received = Socket_recvv(socket, active_iov, active_iovcnt);
-        if (received == 0)
+        while (total_received < total_len)
         {
-            /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
-            /* Copy back partial data */
+            /* Find first non-empty iovec */
+            int active_iovcnt = 0;
+            struct iovec *active_iov = NULL;
+
             for (i = 0; i < iovcnt; i++)
             {
-                if (iov_copy[i].iov_base != iov[i].iov_base)
+                if (iov_copy[i].iov_len > 0)
                 {
-                    size_t copied = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
-                    iov[i].iov_len -= copied;
-                    iov[i].iov_base = (char *)iov[i].iov_base + copied;
+                    active_iov = &iov_copy[i];
+                    active_iovcnt = iovcnt - i;
+                    break;
                 }
             }
-            free(iov_copy);
-            return (ssize_t)total_received;
-        }
-        total_received += (size_t)received;
-        socket_advance_iov(iov_copy, iovcnt, (size_t)received);
-    }
 
-    /* Copy back final data positions */
-    for (i = 0; i < iovcnt; i++)
-    {
-        if (iov_copy[i].iov_base != iov[i].iov_base)
-        {
-            size_t copied = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
-            iov[i].iov_len -= copied;
-            iov[i].iov_base = (char *)iov[i].iov_base + copied;
+            if (active_iov == NULL)
+                break; /* All buffers filled */
+
+            received = Socket_recvv(socket, active_iov, active_iovcnt);
+            if (received == 0)
+            {
+                /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+                /* Copy back partial data */
+                for (i = 0; i < iovcnt; i++)
+                {
+                    if (iov_copy[i].iov_base != iov[i].iov_base)
+                    {
+                        size_t copied = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
+                        iov[i].iov_len -= copied;
+                        iov[i].iov_base = (char *)iov[i].iov_base + copied;
+                    }
+                }
+                return (ssize_t)total_received;
+            }
+            total_received += (size_t)received;
+            socket_advance_iov(iov_copy, iovcnt, (size_t)received);
         }
-    }
+
+        /* Copy back final data positions */
+        for (i = 0; i < iovcnt; i++)
+        {
+            if (iov_copy[i].iov_base != iov[i].iov_base)
+            {
+                size_t copied = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
+                iov[i].iov_len -= copied;
+                iov[i].iov_base = (char *)iov[i].iov_base + copied;
+            }
+        }
     EXCEPT(Socket_Closed)
-    free(iov_copy);
-    RERAISE;
+        RERAISE;
     EXCEPT(Socket_Failed)
-    free(iov_copy);
-    RERAISE;
+        RERAISE;
+    FINALLY
+        if (temp_arena)
+            Arena_dispose(&temp_arena); /* Frees iov_copy automatically */
     END_TRY;
 
-    free(iov_copy);
     return (ssize_t)total_received;
 }
 
@@ -1600,7 +1639,7 @@ static ssize_t socket_sendfile_bsd(T socket, int file_fd, off_t *offset, size_t 
  */
 __attribute__((unused)) static ssize_t socket_sendfile_fallback(T socket, int file_fd, off_t *offset, size_t count)
 {
-    char buffer[8192];
+    char buffer[SOCKET_SENDFILE_FALLBACK_BUFFER_SIZE];
     volatile size_t total_sent = 0;
     ssize_t read_bytes, sent_bytes;
 
@@ -2807,7 +2846,7 @@ SocketDNS_Request_T Socket_bind_async(SocketDNS_T dns, T socket, const char *hos
     /* Validate port */
     if (!SOCKET_VALID_PORT(port))
     {
-        SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
+        SOCKET_ERROR_MSG("Invalid port number: %d (must be " SOCKET_PORT_VALID_RANGE ")", port);
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 
@@ -2859,7 +2898,7 @@ SocketDNS_Request_T Socket_connect_async(SocketDNS_T dns, T socket, const char *
     /* Validate port */
     if (!SOCKET_VALID_PORT(port))
     {
-        SOCKET_ERROR_MSG("Invalid port number: %d (must be 1-65535)", port);
+        SOCKET_ERROR_MSG("Invalid port number: %d (must be " SOCKET_PORT_VALID_RANGE ")", port);
         RAISE_SOCKET_ERROR(Socket_Failed);
     }
 

@@ -61,7 +61,7 @@ extern void SocketDgram_free(T *socket);
  * SocketDgram_bind - Bind socket to address and port
  * @socket: Socket to bind
  * @host: IP address or NULL/"0.0.0.0" for any
- * @port: Port number (1-65535)
+ * @port: Port number (1 to SOCKET_MAX_PORT)
  * Raises: SocketDgram_Failed on error
  * WARNING: This function may block during DNS resolution if hostname is provided.
  * For non-blocking operation, use IP addresses directly.
@@ -376,7 +376,7 @@ extern const char *SocketDgram_getlocaladdr(const T socket);
 /**
  * SocketDgram_getlocalport - Get local port number
  * @socket: Socket instance
- * Returns: Port number (1-65535) or 0 if unavailable
+ * Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable
  */
 extern int SocketDgram_getlocalport(const T socket);
 
