@@ -41,10 +41,10 @@ extern Except_T SocketPoll_Failed;
  */
 typedef enum
 {
-    POLL_READ = 1 << 0,  /**< Data available for reading */
-    POLL_WRITE = 1 << 1, /**< Socket ready for writing */
-    POLL_ERROR = 1 << 2, /**< Error condition */
-    POLL_HANGUP = 1 << 3 /**< Hang up / disconnection */
+  POLL_READ = 1 << 0,  /**< Data available for reading */
+  POLL_WRITE = 1 << 1, /**< Socket ready for writing */
+  POLL_ERROR = 1 << 2, /**< Error condition */
+  POLL_HANGUP = 1 << 3 /**< Hang up / disconnection */
 } SocketPoll_Events;
 
 /**
@@ -52,9 +52,9 @@ typedef enum
  */
 typedef struct SocketEvent
 {
-    Socket_T socket; /**< Socket that triggered event */
-    void *data;      /**< User data associated with socket */
-    unsigned events; /**< Bitmask of events that occurred */
+  Socket_T socket; /**< Socket that triggered event */
+  void *data;      /**< User data associated with socket */
+  unsigned events; /**< Bitmask of events that occurred */
 } SocketEvent_T;
 
 #define SOCKET_POLL_TIMEOUT_USE_DEFAULT (-2)
@@ -67,14 +67,14 @@ typedef struct SocketEvent
  * Thread-safe: Yes - returns new instance
  * Creates an edge-triggered epoll instance for high-performance I/O.
  */
-extern T SocketPoll_new(int maxevents);
+extern T SocketPoll_new (int maxevents);
 
 /**
  * SocketPoll_free - Free an event poll
  * @poll: Pointer to poll (will be set to NULL)
  * Closes the underlying epoll descriptor
  */
-extern void SocketPoll_free(T *poll);
+extern void SocketPoll_free (T *poll);
 
 /**
  * SocketPoll_add - Add socket to poll set
@@ -86,7 +86,8 @@ extern void SocketPoll_free(T *poll);
  * Raises: SocketPoll_Failed if socket already added or epoll_ctl fails
  * Thread-safe: Yes - uses internal mutex for socket data mapping
  */
-extern void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data);
+extern void SocketPoll_add (T poll, Socket_T socket, unsigned events,
+                            void *data);
 
 /**
  * SocketPoll_mod - Modify monitored events
@@ -97,7 +98,8 @@ extern void SocketPoll_add(T poll, Socket_T socket, unsigned events, void *data)
  * Raises: SocketPoll_Failed if socket not in poll or epoll_ctl fails
  * Thread-safe: Yes - atomic update of socket data mapping
  */
-extern void SocketPoll_mod(T poll, Socket_T socket, unsigned events, void *data);
+extern void SocketPoll_mod (T poll, Socket_T socket, unsigned events,
+                            void *data);
 
 /**
  * SocketPoll_del - Remove socket from poll set
@@ -106,14 +108,14 @@ extern void SocketPoll_mod(T poll, Socket_T socket, unsigned events, void *data)
  * Silently succeeds if socket not in poll
  * Thread-safe: Yes - uses internal mutex for socket data mapping
  */
-extern void SocketPoll_del(T poll, Socket_T socket);
+extern void SocketPoll_del (T poll, Socket_T socket);
 
 /**
  * SocketPoll_getdefaulttimeout - Get default wait timeout in milliseconds
  * @poll: Poll instance
  * Returns: Default timeout in milliseconds
  */
-extern int SocketPoll_getdefaulttimeout(T poll);
+extern int SocketPoll_getdefaulttimeout (T poll);
 
 /**
  * SocketPoll_setdefaulttimeout - Set default wait timeout in milliseconds
@@ -121,7 +123,7 @@ extern int SocketPoll_getdefaulttimeout(T poll);
  * @timeout: Timeout in milliseconds (0 = immediate, -1 = infinite)
  * Returns: Nothing
  */
-extern void SocketPoll_setdefaulttimeout(T poll, int timeout);
+extern void SocketPoll_setdefaulttimeout (T poll, int timeout);
 
 /**
  * SocketPoll_wait - Wait for events
@@ -134,7 +136,7 @@ extern void SocketPoll_setdefaulttimeout(T poll, int timeout);
  * The events array points to internal memory - do not free
  * Note: Also processes async I/O completions automatically
  */
-extern int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout);
+extern int SocketPoll_wait (T poll, SocketEvent_T **events, int timeout);
 
 /**
  * SocketPoll_get_async - Get async I/O context from poll
@@ -143,7 +145,7 @@ extern int SocketPoll_wait(T poll, SocketEvent_T **events, int timeout);
  * Thread-safe: Yes
  * Note: Returns NULL if async I/O is not available on this platform
  */
-extern SocketAsync_T SocketPoll_get_async(T poll);
+extern SocketAsync_T SocketPoll_get_async (T poll);
 
 #undef T
 #endif

@@ -6,8 +6,8 @@
  *
  * Manages creation, configuration, and lifecycle of OpenSSL SSL_CTX objects.
  * Encapsulates secure defaults (TLS1.3-only, PFS ciphers), cert loading,
- * verification modes, ALPN, and session caching. Uses Arena for internal allocations.
- * Provides opaque T interface with exception-based errors.
+ * verification modes, ALPN, and session caching. Uses Arena for internal
+ * allocations. Provides opaque T interface with exception-based errors.
  *
  * Key integration:
  * - Automatic protocol/cipher hardening
@@ -17,24 +17,27 @@
  * - Detailed OpenSSL error formatting in exceptions
  *
  * Thread safety: Context modification not thread-safe. After setup, sharing
- * for SSL_new() is safe (OpenSSL CTX is ref-counted). Use mutex if modifying shared.
- * Per-connection SSL objects are independent.
+ * for SSL_new() is safe (OpenSSL CTX is ref-counted). Use mutex if modifying
+ * shared. Per-connection SSL objects are independent.
  *
- * Error handling: Uses SocketTLS_Failed exception with context-specific details.
+ * Error handling: Uses SocketTLS_Failed exception with context-specific
+ * details.
  */
 
 #ifdef SOCKET_HAS_TLS
 
-#include "tls/SocketTLSContext.h"
 #include "tls/SocketTLSConfig.h"
+#include "tls/SocketTLSContext.h"
 #include <assert.h>
-#include <string.h>
 #include <errno.h>
+#include <string.h>
 
 /* Thread-local error buffer for detailed error messages
- * Prevents race conditions when multiple threads raise TLS context errors simultaneously */
+ * Prevents race conditions when multiple threads raise TLS context errors
+ * simultaneously */
 #ifdef _WIN32
-static __declspec(thread) char tls_context_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
+static
+    __declspec (thread) char tls_context_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
 #else
 static __thread char tls_context_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
 #endif
@@ -42,207 +45,216 @@ static __thread char tls_context_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
 /* Thread-local exception for detailed TLS context error messages
  * Prevents race conditions when multiple threads raise same exception type. */
 #ifdef _WIN32
-static __declspec(thread) Except_T SocketTLSContext_DetailedException;
+static __declspec (thread) Except_T SocketTLSContext_DetailedException;
 #else
 static __thread Except_T SocketTLSContext_DetailedException;
 #endif
 
 /* Macro to raise TLS context exception with detailed error message
  * Creates a thread-local copy of the exception with detailed reason */
-#define RAISE_TLS_CONTEXT_ERROR(exception)                                     \
-    do                                                                        \
+#define RAISE_TLS_CONTEXT_ERROR(exception)                                    \
+  do                                                                          \
     {                                                                         \
-        SocketTLSContext_DetailedException = (exception);                    \
-        SocketTLSContext_DetailedException.reason = tls_context_error_buf;   \
-        RAISE(SocketTLSContext_DetailedException);                            \
+      SocketTLSContext_DetailedException = (exception);                       \
+      SocketTLSContext_DetailedException.reason = tls_context_error_buf;      \
+      RAISE (SocketTLSContext_DetailedException);                             \
     }                                                                         \
-    while (0)
+  while (0)
 
 #define T SocketTLSContext_T
 
 struct T
 {
-    SSL_CTX *ssl_ctx;           /* OpenSSL context */
-    Arena_T arena;              /* Arena for allocations */
-    int is_server;              /* 1 for server, 0 for client */
-    int session_cache_enabled;  /* Session cache flag */
-    size_t session_cache_size;  /* Session cache size */
+  SSL_CTX *ssl_ctx;          /* OpenSSL context */
+  Arena_T arena;             /* Arena for allocations */
+  int is_server;             /* 1 for server, 0 for client */
+  int session_cache_enabled; /* Session cache flag */
+  size_t session_cache_size; /* Session cache size */
 
-    /* SNI certificate mapping for virtual hosting */
-    struct {
-        char **hostnames;        /* Array of hostname strings */
-        char **cert_files;       /* Array of certificate file paths */
-        char **key_files;        /* Array of private key file paths */
-        size_t count;            /* Number of certificate mappings */
-        size_t capacity;         /* Allocated capacity */
-    } sni_certs;
+  /* SNI certificate mapping for virtual hosting */
+  struct
+  {
+    char **hostnames;  /* Array of hostname strings */
+    char **cert_files; /* Array of certificate file paths */
+    char **key_files;  /* Array of private key file paths */
+    size_t count;      /* Number of certificate mappings */
+    size_t capacity;   /* Allocated capacity */
+  } sni_certs;
 
-    /* ALPN configuration */
-    struct {
-        const char **protocols;         /* Array of protocol strings */
-        size_t count;                   /* Number of protocols */
-        const char *selected;           /* Negotiated protocol (for clients) */
-        SocketTLSAlpnCallback callback; /* Custom selection callback */
-        void *callback_user_data;       /* User data for callback */
-    } alpn;
+  /* ALPN configuration */
+  struct
+  {
+    const char **protocols;         /* Array of protocol strings */
+    size_t count;                   /* Number of protocols */
+    const char *selected;           /* Negotiated protocol (for clients) */
+    SocketTLSAlpnCallback callback; /* Custom selection callback */
+    void *callback_user_data;       /* User data for callback */
+  } alpn;
 };
 
 /* Helper function to format OpenSSL errors and raise TLS context exceptions */
 static void
-raise_tls_context_error(const char *context)
+raise_tls_context_error (const char *context)
 {
-    unsigned long openssl_error = ERR_get_error();
-    char openssl_error_buf[SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE];
+  unsigned long openssl_error = ERR_get_error ();
+  char openssl_error_buf[SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE];
 
-    if (openssl_error != 0)
+  if (openssl_error != 0)
     {
-        ERR_error_string_n(openssl_error, openssl_error_buf, sizeof(openssl_error_buf));
-        snprintf(tls_context_error_buf, SOCKET_TLS_ERROR_BUFSIZE,
+      ERR_error_string_n (openssl_error, openssl_error_buf,
+                          sizeof (openssl_error_buf));
+      snprintf (tls_context_error_buf, SOCKET_TLS_ERROR_BUFSIZE,
                 "%s: OpenSSL error: %s", context, openssl_error_buf);
     }
-    else
+  else
     {
-        snprintf(tls_context_error_buf, SOCKET_TLS_ERROR_BUFSIZE,
+      snprintf (tls_context_error_buf, SOCKET_TLS_ERROR_BUFSIZE,
                 "%s: Unknown TLS error", context);
     }
 
-    /* Use SocketTLS_Failed for general TLS context errors */
-    RAISE_TLS_CONTEXT_ERROR(SocketTLS_Failed);
+  /* Use SocketTLS_Failed for general TLS context errors */
+  RAISE_TLS_CONTEXT_ERROR (SocketTLS_Failed);
 }
 
 /* SNI callback function for hostname-based certificate selection */
 static int
-sni_callback(SSL *ssl, int *ad, void *arg)
+sni_callback (SSL *ssl, int *ad, void *arg)
 {
-    (void)ssl;  /* unused */
-    (void)ad;   /* unused */
-    T ctx = (T)arg;
-    const char *hostname = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+  (void)ssl; /* unused */
+  (void)ad;  /* unused */
+  T ctx = (T)arg;
+  const char *hostname = SSL_get_servername (ssl, TLSEXT_NAMETYPE_host_name);
 
-    if (!hostname || !ctx)
-        return SSL_TLSEXT_ERR_NOACK;
+  if (!hostname || !ctx)
+    return SSL_TLSEXT_ERR_NOACK;
 
-    /* Look up certificate for this hostname */
-    for (size_t i = 0; i < ctx->sni_certs.count; i++)
+  /* Look up certificate for this hostname */
+  for (size_t i = 0; i < ctx->sni_certs.count; i++)
     {
-        if (strcmp(ctx->sni_certs.hostnames[i], hostname) == 0)
+      if (strcmp (ctx->sni_certs.hostnames[i], hostname) == 0)
         {
-            /* Load the certificate and key for this hostname */
-            if (SSL_use_certificate_file(ssl, ctx->sni_certs.cert_files[i], SSL_FILETYPE_PEM) != 1)
-                return SSL_TLSEXT_ERR_NOACK;
+          /* Load the certificate and key for this hostname */
+          if (SSL_use_certificate_file (ssl, ctx->sni_certs.cert_files[i],
+                                        SSL_FILETYPE_PEM)
+              != 1)
+            return SSL_TLSEXT_ERR_NOACK;
 
-            if (SSL_use_PrivateKey_file(ssl, ctx->sni_certs.key_files[i], SSL_FILETYPE_PEM) != 1)
-                return SSL_TLSEXT_ERR_NOACK;
+          if (SSL_use_PrivateKey_file (ssl, ctx->sni_certs.key_files[i],
+                                       SSL_FILETYPE_PEM)
+              != 1)
+            return SSL_TLSEXT_ERR_NOACK;
 
-            if (SSL_check_private_key(ssl) != 1)
-                return SSL_TLSEXT_ERR_NOACK;
+          if (SSL_check_private_key (ssl) != 1)
+            return SSL_TLSEXT_ERR_NOACK;
 
-            return SSL_TLSEXT_ERR_OK;
+          return SSL_TLSEXT_ERR_OK;
         }
     }
 
-    /* No certificate found for this hostname */
-    return SSL_TLSEXT_ERR_NOACK;
+  /* No certificate found for this hostname */
+  return SSL_TLSEXT_ERR_NOACK;
 }
 
 /* ALPN select callback function for customizable protocol selection */
 static int
-alpn_select_callback(SSL *ssl, const unsigned char **out, unsigned char *outlen,
-                     const unsigned char *in, unsigned int inlen, void *arg)
+alpn_select_callback (SSL *ssl, const unsigned char **out,
+                      unsigned char *outlen, const unsigned char *in,
+                      unsigned int inlen, void *arg)
 {
-    (void)ssl;  /* unused */
-    T ctx = (T)arg;
-    const unsigned char *client_protocols = in;
-    unsigned int client_protocols_len = inlen;
+  (void)ssl; /* unused */
+  T ctx = (T)arg;
+  const unsigned char *client_protocols = in;
+  unsigned int client_protocols_len = inlen;
 
-    if (!ctx || !ctx->alpn.protocols || ctx->alpn.count == 0)
-        return SSL_TLSEXT_ERR_NOACK;
+  if (!ctx || !ctx->alpn.protocols || ctx->alpn.count == 0)
+    return SSL_TLSEXT_ERR_NOACK;
 
-    /* Parse client protocols from wire format */
-    size_t client_count = 0;
-    const char **client_protos = NULL;
+  /* Parse client protocols from wire format */
+  size_t client_count = 0;
+  const char **client_protos = NULL;
 
-    /* Count client protocols */
-    size_t offset = 0;
-    while (offset < client_protocols_len)
+  /* Count client protocols */
+  size_t offset = 0;
+  while (offset < client_protocols_len)
     {
-        if (offset + 1 > client_protocols_len)
-            break; /* Malformed */
-        unsigned char len = client_protocols[offset++];
-        if (offset + len > client_protocols_len)
-            break; /* Malformed */
+      if (offset + 1 > client_protocols_len)
+        break; /* Malformed */
+      unsigned char len = client_protocols[offset++];
+      if (offset + len > client_protocols_len)
+        break; /* Malformed */
 
-        client_count++;
-        offset += len;
+      client_count++;
+      offset += len;
     }
 
-    if (client_count == 0)
-        return SSL_TLSEXT_ERR_NOACK;
+  if (client_count == 0)
+    return SSL_TLSEXT_ERR_NOACK;
 
-    /* Allocate array for client protocols */
-    client_protos = calloc(client_count, sizeof(const char *));
-    if (!client_protos)
-        return SSL_TLSEXT_ERR_NOACK;
+  /* Allocate array for client protocols */
+  client_protos = calloc (client_count, sizeof (const char *));
+  if (!client_protos)
+    return SSL_TLSEXT_ERR_NOACK;
 
-    /* Parse client protocols into strings */
-    offset = 0;
-    size_t idx = 0;
-    while (offset < client_protocols_len && idx < client_count)
+  /* Parse client protocols into strings */
+  offset = 0;
+  size_t idx = 0;
+  while (offset < client_protocols_len && idx < client_count)
     {
-        unsigned char len = client_protocols[offset++];
-        if (offset + len > client_protocols_len)
-            break;
+      unsigned char len = client_protocols[offset++];
+      if (offset + len > client_protocols_len)
+        break;
 
-        /* Create null-terminated string */
-        char *proto = malloc(len + 1);
-        if (!proto)
+      /* Create null-terminated string */
+      char *proto = malloc (len + 1);
+      if (!proto)
         {
-            free(client_protos);
-            return SSL_TLSEXT_ERR_NOACK;
+          free (client_protos);
+          return SSL_TLSEXT_ERR_NOACK;
         }
-        memcpy(proto, &client_protocols[offset], len);
-        proto[len] = '\0';
-        client_protos[idx++] = proto;
-        offset += len;
+      memcpy (proto, &client_protocols[offset], len);
+      proto[len] = '\0';
+      client_protos[idx++] = proto;
+      offset += len;
     }
 
-    /* Call user callback or use default selection */
-    const char *selected = NULL;
-    if (ctx->alpn.callback)
+  /* Call user callback or use default selection */
+  const char *selected = NULL;
+  if (ctx->alpn.callback)
     {
-        selected = ctx->alpn.callback(client_protos, client_count, ctx->alpn.callback_user_data);
+      selected = ctx->alpn.callback (client_protos, client_count,
+                                     ctx->alpn.callback_user_data);
     }
-    else
+  else
     {
-        /* Default: select first matching protocol in our preference order */
-        for (size_t i = 0; i < ctx->alpn.count && !selected; i++)
+      /* Default: select first matching protocol in our preference order */
+      for (size_t i = 0; i < ctx->alpn.count && !selected; i++)
         {
-            for (size_t j = 0; j < client_count && !selected; j++)
+          for (size_t j = 0; j < client_count && !selected; j++)
             {
-                if (strcmp(ctx->alpn.protocols[i], client_protos[j]) == 0)
+              if (strcmp (ctx->alpn.protocols[i], client_protos[j]) == 0)
                 {
-                    selected = ctx->alpn.protocols[i];
+                  selected = ctx->alpn.protocols[i];
                 }
             }
         }
     }
 
-    /* Clean up client protocols array */
-    for (size_t i = 0; i < client_count; i++)
+  /* Clean up client protocols array */
+  for (size_t i = 0; i < client_count; i++)
     {
-        free((void *)client_protos[i]);
+      free ((void *)client_protos[i]);
     }
-    free(client_protos);
+  free (client_protos);
 
-    /* Set selected protocol */
-    if (selected)
+  /* Set selected protocol */
+  if (selected)
     {
-        *out = (const unsigned char *)selected;
-        *outlen = (unsigned char)strlen(selected);
-        return SSL_TLSEXT_ERR_OK;
+      *out = (const unsigned char *)selected;
+      *outlen = (unsigned char)strlen (selected);
+      return SSL_TLSEXT_ERR_OK;
     }
 
-    return SSL_TLSEXT_ERR_NOACK;
+  return SSL_TLSEXT_ERR_NOACK;
 }
 
 /**
@@ -257,80 +269,80 @@ alpn_select_callback(SSL *ssl, const unsigned char **out, unsigned char *outlen,
  * Returns: New T instance ready for further configuration
  * Raises: SocketTLS_Failed on any failure (OpenSSL config, memory)
  * Thread-safe: Yes - independent instances
- * 
+ *
  * Note: Caller must load certificates and set other options. Uses calloc for
  * ctx struct (freed separately); arena for internal buffers.
  */
 static T
-alloc_and_init_ctx(const SSL_METHOD *method, int is_server)
+alloc_and_init_ctx (const SSL_METHOD *method, int is_server)
 {
-    T ctx;
-    SSL_CTX *ssl_ctx;
+  T ctx;
+  SSL_CTX *ssl_ctx;
 
-    /* Create SSL_CTX with specified method */
-    ssl_ctx = SSL_CTX_new(method);
-    if (!ssl_ctx)
+  /* Create SSL_CTX with specified method */
+  ssl_ctx = SSL_CTX_new (method);
+  if (!ssl_ctx)
     {
-        raise_tls_context_error("Failed to create SSL_CTX");
+      raise_tls_context_error ("Failed to create SSL_CTX");
     }
 
-    /* Set protocol and cipher configs */
-    if (SSL_CTX_set_min_proto_version(ssl_ctx, SOCKET_TLS_MIN_VERSION) != 1)
+  /* Set protocol and cipher configs */
+  if (SSL_CTX_set_min_proto_version (ssl_ctx, SOCKET_TLS_MIN_VERSION) != 1)
     {
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to set TLS1.3 min version");
+      SSL_CTX_free (ssl_ctx);
+      raise_tls_context_error ("Failed to set TLS1.3 min version");
     }
 
-    if (SSL_CTX_set_max_proto_version(ssl_ctx, SOCKET_TLS_MAX_VERSION) != 1)
+  if (SSL_CTX_set_max_proto_version (ssl_ctx, SOCKET_TLS_MAX_VERSION) != 1)
     {
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to enforce TLS1.3 max version");
+      SSL_CTX_free (ssl_ctx);
+      raise_tls_context_error ("Failed to enforce TLS1.3 max version");
     }
 
-    if (SSL_CTX_set_ciphersuites(ssl_ctx, SOCKET_TLS13_CIPHERSUITES) != 1)
+  if (SSL_CTX_set_ciphersuites (ssl_ctx, SOCKET_TLS13_CIPHERSUITES) != 1)
     {
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to set secure ciphersuites");
+      SSL_CTX_free (ssl_ctx);
+      raise_tls_context_error ("Failed to set secure ciphersuites");
     }
 
-    /* Allocate and initialize context structure */
-    ctx = calloc(1, sizeof(*ctx));
-    if (!ctx)
+  /* Allocate and initialize context structure */
+  ctx = calloc (1, sizeof (*ctx));
+  if (!ctx)
     {
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("ENOMEM: calloc for context struct");
+      SSL_CTX_free (ssl_ctx);
+      raise_tls_context_error ("ENOMEM: calloc for context struct");
     }
 
-    /* Create arena */
-    ctx->arena = Arena_new();
-    if (!ctx->arena)
+  /* Create arena */
+  ctx->arena = Arena_new ();
+  if (!ctx->arena)
     {
-        free(ctx);
-        SSL_CTX_free(ssl_ctx);
-        raise_tls_context_error("Failed to create context arena");
+      free (ctx);
+      SSL_CTX_free (ssl_ctx);
+      raise_tls_context_error ("Failed to create context arena");
     }
 
-    /* Initialize fields - transfer ownership of ssl_ctx */
-    ctx->ssl_ctx = ssl_ctx;
-    ctx->is_server = !!is_server;
-    ctx->session_cache_enabled = 0;
-    ctx->session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
+  /* Initialize fields - transfer ownership of ssl_ctx */
+  ctx->ssl_ctx = ssl_ctx;
+  ctx->is_server = !!is_server;
+  ctx->session_cache_enabled = 0;
+  ctx->session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
 
-    /* Initialize SNI certificate mapping */
-    ctx->sni_certs.hostnames = NULL;
-    ctx->sni_certs.cert_files = NULL;
-    ctx->sni_certs.key_files = NULL;
-    ctx->sni_certs.count = 0;
-    ctx->sni_certs.capacity = 0;
+  /* Initialize SNI certificate mapping */
+  ctx->sni_certs.hostnames = NULL;
+  ctx->sni_certs.cert_files = NULL;
+  ctx->sni_certs.key_files = NULL;
+  ctx->sni_certs.count = 0;
+  ctx->sni_certs.capacity = 0;
 
-    /* Initialize ALPN configuration */
-    ctx->alpn.protocols = NULL;
-    ctx->alpn.count = 0;
-    ctx->alpn.selected = NULL;
-    ctx->alpn.callback = NULL;
-    ctx->alpn.callback_user_data = NULL;
+  /* Initialize ALPN configuration */
+  ctx->alpn.protocols = NULL;
+  ctx->alpn.count = 0;
+  ctx->alpn.selected = NULL;
+  ctx->alpn.callback = NULL;
+  ctx->alpn.callback_user_data = NULL;
 
-    return ctx;
+  return ctx;
 }
 
 /**
@@ -348,34 +360,35 @@ alloc_and_init_ctx(const SSL_METHOD *method, int is_server)
  * Thread-safe: Yes (creates independent context)
  */
 T
-SocketTLSContext_new_server(const char *cert_file, const char *key_file, const char *ca_file)
+SocketTLSContext_new_server (const char *cert_file, const char *key_file,
+                             const char *ca_file)
 {
-    T ctx;
+  T ctx;
 
-    assert(cert_file);
-    assert(key_file);
+  assert (cert_file);
+  assert (key_file);
 
-    /* Allocate and initialize common context structure */
-    ctx = alloc_and_init_ctx(TLS_server_method(), 1);
+  /* Allocate and initialize common context structure */
+  ctx = alloc_and_init_ctx (TLS_server_method (), 1);
 
-    /* Load server certificate and key */
-    TRY
-        SocketTLSContext_load_certificate(ctx, cert_file, key_file);
-        if (ca_file)
-        {
-            SocketTLSContext_load_ca(ctx, ca_file);
-        }
-    EXCEPT(SocketTLS_Failed)
-        SocketTLSContext_free(&ctx);
-        RERAISE;
-    END_TRY;
+  /* Load server certificate and key */
+  TRY SocketTLSContext_load_certificate (ctx, cert_file, key_file);
+  if (ca_file)
+    {
+      SocketTLSContext_load_ca (ctx, ca_file);
+    }
+  EXCEPT (SocketTLS_Failed)
+  SocketTLSContext_free (&ctx);
+  RERAISE;
+  END_TRY;
 
-    return ctx;
+  return ctx;
 }
 
 /**
  * SocketTLSContext_new_client - Create a new client TLS context
- * @ca_file: CA certificate file path for server verification (optional, may be NULL)
+ * @ca_file: CA certificate file path for server verification (optional, may be
+ * NULL)
  *
  * Creates a new SSL_CTX for client-side TLS operations. Optionally loads CA
  * certificates for server certificate verification.
@@ -385,27 +398,26 @@ SocketTLSContext_new_server(const char *cert_file, const char *key_file, const c
  * Thread-safe: Yes (creates independent context)
  */
 T
-SocketTLSContext_new_client(const char *ca_file)
+SocketTLSContext_new_client (const char *ca_file)
 {
-    T ctx;
+  T ctx;
 
-    /* Allocate and initialize common context structure */
-    ctx = alloc_and_init_ctx(TLS_client_method(), 0);
+  /* Allocate and initialize common context structure */
+  ctx = alloc_and_init_ctx (TLS_client_method (), 0);
 
-    /* Load CA certificates if provided */
-    if (ca_file)
+  /* Load CA certificates if provided */
+  if (ca_file)
     {
-        TRY
-            SocketTLSContext_load_ca(ctx, ca_file);
-            /* Enable verification by default when CA is provided */
-            SocketTLSContext_set_verify_mode(ctx, TLS_VERIFY_PEER);
-        EXCEPT(SocketTLS_Failed)
-            SocketTLSContext_free(&ctx);
-            RERAISE;
-        END_TRY;
+      TRY SocketTLSContext_load_ca (ctx, ca_file);
+      /* Enable verification by default when CA is provided */
+      SocketTLSContext_set_verify_mode (ctx, TLS_VERIFY_PEER);
+      EXCEPT (SocketTLS_Failed)
+      SocketTLSContext_free (&ctx);
+      RERAISE;
+      END_TRY;
     }
 
-    return ctx;
+  return ctx;
 }
 
 /**
@@ -414,36 +426,39 @@ SocketTLSContext_new_client(const char *ca_file)
  * @cert_file: Certificate file path (PEM format)
  * @key_file: Private key file path (PEM format)
  *
- * Loads a server certificate and its corresponding private key into the TLS context.
- * Both files must be in PEM format.
+ * Loads a server certificate and its corresponding private key into the TLS
+ * context. Both files must be in PEM format.
  *
- * Raises: SocketTLS_Failed on error (file not found, invalid format, key/cert mismatch)
- * Thread-safe: No (modifies shared context)
+ * Raises: SocketTLS_Failed on error (file not found, invalid format, key/cert
+ * mismatch) Thread-safe: No (modifies shared context)
  */
 void
-SocketTLSContext_load_certificate(T ctx, const char *cert_file, const char *key_file)
+SocketTLSContext_load_certificate (T ctx, const char *cert_file,
+                                   const char *key_file)
 {
-    assert(ctx);
-    assert(ctx->ssl_ctx);
-    assert(cert_file);
-    assert(key_file);
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+  assert (cert_file);
+  assert (key_file);
 
-    /* Load certificate */
-    if (SSL_CTX_use_certificate_file(ctx->ssl_ctx, cert_file, SSL_FILETYPE_PEM) != 1)
+  /* Load certificate */
+  if (SSL_CTX_use_certificate_file (ctx->ssl_ctx, cert_file, SSL_FILETYPE_PEM)
+      != 1)
     {
-        raise_tls_context_error("Failed to load certificate file");
+      raise_tls_context_error ("Failed to load certificate file");
     }
 
-    /* Load private key */
-    if (SSL_CTX_use_PrivateKey_file(ctx->ssl_ctx, key_file, SSL_FILETYPE_PEM) != 1)
+  /* Load private key */
+  if (SSL_CTX_use_PrivateKey_file (ctx->ssl_ctx, key_file, SSL_FILETYPE_PEM)
+      != 1)
     {
-        raise_tls_context_error("Failed to load private key file");
+      raise_tls_context_error ("Failed to load private key file");
     }
 
-    /* Verify that the private key matches the certificate */
-    if (SSL_CTX_check_private_key(ctx->ssl_ctx) != 1)
+  /* Verify that the private key matches the certificate */
+  if (SSL_CTX_check_private_key (ctx->ssl_ctx) != 1)
     {
-        raise_tls_context_error("Private key does not match certificate");
+      raise_tls_context_error ("Private key does not match certificate");
     }
 }
 
@@ -459,120 +474,130 @@ SocketTLSContext_load_certificate(T ctx, const char *cert_file, const char *key_
  * Raises: SocketTLS_Failed on error (file not found, invalid format)
  * Thread-safe: No (modifies shared context)
  */
-void SocketTLSContext_load_ca(T ctx, const char *ca_file)
+void
+SocketTLSContext_load_ca (T ctx, const char *ca_file)
 {
-    assert(ctx);
-    assert(ctx->ssl_ctx);
-    assert(ca_file);
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+  assert (ca_file);
 
-    /* Load CA certificates */
-    if (SSL_CTX_load_verify_locations(ctx->ssl_ctx, ca_file, NULL) != 1)
+  /* Load CA certificates */
+  if (SSL_CTX_load_verify_locations (ctx->ssl_ctx, ca_file, NULL) != 1)
     {
-        /* Try as directory if file loading failed */
-        if (SSL_CTX_load_verify_locations(ctx->ssl_ctx, NULL, ca_file) != 1)
+      /* Try as directory if file loading failed */
+      if (SSL_CTX_load_verify_locations (ctx->ssl_ctx, NULL, ca_file) != 1)
         {
-            raise_tls_context_error("Failed to load CA certificates");
+          raise_tls_context_error ("Failed to load CA certificates");
         }
     }
 }
 
 /**
- * SocketTLSContext_add_certificate - Add certificate mapping for SNI virtual hosting
+ * SocketTLSContext_add_certificate - Add certificate mapping for SNI virtual
+ * hosting
  * @ctx: TLS context instance
  * @hostname: Hostname this certificate is for (NULL for default certificate)
  * @cert_file: Certificate file path (PEM format)
  * @key_file: Private key file path (PEM format)
  *
- * Adds a certificate/key pair for SNI-based virtual hosting. Multiple certificates
- * can be loaded for different hostnames. The first certificate loaded becomes
- * the default if no hostname match is found.
+ * Adds a certificate/key pair for SNI-based virtual hosting. Multiple
+ * certificates can be loaded for different hostnames. The first certificate
+ * loaded becomes the default if no hostname match is found.
  *
- * Raises: SocketTLS_Failed on error (file not found, invalid cert/key, allocation)
- * Thread-safe: No (modifies shared context)
+ * Raises: SocketTLS_Failed on error (file not found, invalid cert/key,
+ * allocation) Thread-safe: No (modifies shared context)
  */
-void SocketTLSContext_add_certificate(T ctx, const char *hostname, const char *cert_file, const char *key_file)
+void
+SocketTLSContext_add_certificate (T ctx, const char *hostname,
+                                  const char *cert_file, const char *key_file)
 {
-    assert(ctx);
-    assert(ctx->ssl_ctx);
-    assert(cert_file);
-    assert(key_file);
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+  assert (cert_file);
+  assert (key_file);
 
-    /* Only meaningful for server contexts */
-    if (!ctx->is_server)
+  /* Only meaningful for server contexts */
+  if (!ctx->is_server)
     {
-        raise_tls_context_error("SNI certificates only supported for server contexts");
+      raise_tls_context_error (
+          "SNI certificates only supported for server contexts");
     }
 
-    /* Expand capacity if needed */
-    if (ctx->sni_certs.count >= ctx->sni_certs.capacity)
+  /* Expand capacity if needed */
+  if (ctx->sni_certs.count >= ctx->sni_certs.capacity)
     {
-        size_t new_capacity = ctx->sni_certs.capacity == 0 ? 4 : ctx->sni_certs.capacity * 2;
+      size_t new_capacity
+          = ctx->sni_certs.capacity == 0 ? 4 : ctx->sni_certs.capacity * 2;
 
-        ctx->sni_certs.hostnames = realloc(ctx->sni_certs.hostnames,
-                                          new_capacity * sizeof(char *));
-        ctx->sni_certs.cert_files = realloc(ctx->sni_certs.cert_files,
-                                           new_capacity * sizeof(char *));
-        ctx->sni_certs.key_files = realloc(ctx->sni_certs.key_files,
-                                          new_capacity * sizeof(char *));
+      ctx->sni_certs.hostnames
+          = realloc (ctx->sni_certs.hostnames, new_capacity * sizeof (char *));
+      ctx->sni_certs.cert_files = realloc (ctx->sni_certs.cert_files,
+                                           new_capacity * sizeof (char *));
+      ctx->sni_certs.key_files
+          = realloc (ctx->sni_certs.key_files, new_capacity * sizeof (char *));
 
-        if (!ctx->sni_certs.hostnames || !ctx->sni_certs.cert_files || !ctx->sni_certs.key_files)
+      if (!ctx->sni_certs.hostnames || !ctx->sni_certs.cert_files
+          || !ctx->sni_certs.key_files)
         {
-            raise_tls_context_error("Failed to allocate SNI certificate arrays");
+          raise_tls_context_error (
+              "Failed to allocate SNI certificate arrays");
         }
 
-        ctx->sni_certs.capacity = new_capacity;
+      ctx->sni_certs.capacity = new_capacity;
     }
 
-    /* Store hostname (NULL for default) */
-    if (hostname)
+  /* Store hostname (NULL for default) */
+  if (hostname)
     {
-        size_t hostname_len = strlen(hostname) + 1;
-        char *hostname_copy = Arena_alloc(ctx->arena, hostname_len, __FILE__, __LINE__);
-        if (!hostname_copy)
+      size_t hostname_len = strlen (hostname) + 1;
+      char *hostname_copy
+          = Arena_alloc (ctx->arena, hostname_len, __FILE__, __LINE__);
+      if (!hostname_copy)
         {
-            raise_tls_context_error("Failed to allocate hostname buffer");
+          raise_tls_context_error ("Failed to allocate hostname buffer");
         }
-        memcpy(hostname_copy, hostname, hostname_len);
-        ctx->sni_certs.hostnames[ctx->sni_certs.count] = hostname_copy;
+      memcpy (hostname_copy, hostname, hostname_len);
+      ctx->sni_certs.hostnames[ctx->sni_certs.count] = hostname_copy;
     }
-    else
+  else
     {
-        ctx->sni_certs.hostnames[ctx->sni_certs.count] = NULL;
-    }
-
-    /* Store certificate file path */
-    size_t cert_len = strlen(cert_file) + 1;
-    char *cert_copy = Arena_alloc(ctx->arena, cert_len, __FILE__, __LINE__);
-    if (!cert_copy)
-    {
-        raise_tls_context_error("Failed to allocate certificate path buffer");
-    }
-    memcpy(cert_copy, cert_file, cert_len);
-    ctx->sni_certs.cert_files[ctx->sni_certs.count] = cert_copy;
-
-    /* Store key file path */
-    size_t key_len = strlen(key_file) + 1;
-    char *key_copy = Arena_alloc(ctx->arena, key_len, __FILE__, __LINE__);
-    if (!key_copy)
-    {
-        raise_tls_context_error("Failed to allocate key path buffer");
-    }
-    memcpy(key_copy, key_file, key_len);
-    ctx->sni_certs.key_files[ctx->sni_certs.count] = key_copy;
-
-    ctx->sni_certs.count++;
-
-    /* If this is the first certificate and no hostname, load it as default */
-    if (ctx->sni_certs.count == 1 && !hostname)
-    {
-        SocketTLSContext_load_certificate(ctx, cert_file, key_file);
+      ctx->sni_certs.hostnames[ctx->sni_certs.count] = NULL;
     }
 
-    /* Enable SNI callback if we have multiple certificates or hostname-specific ones */
-    if (ctx->sni_certs.count > 1 || (ctx->sni_certs.count == 1 && hostname))
+  /* Store certificate file path */
+  size_t cert_len = strlen (cert_file) + 1;
+  char *cert_copy = Arena_alloc (ctx->arena, cert_len, __FILE__, __LINE__);
+  if (!cert_copy)
     {
-        SSL_CTX_set_tlsext_servername_callback(ctx->ssl_ctx, sni_callback);
-        SSL_CTX_set_tlsext_servername_arg(ctx->ssl_ctx, ctx);
+      raise_tls_context_error ("Failed to allocate certificate path buffer");
+    }
+  memcpy (cert_copy, cert_file, cert_len);
+  ctx->sni_certs.cert_files[ctx->sni_certs.count] = cert_copy;
+
+  /* Store key file path */
+  size_t key_len = strlen (key_file) + 1;
+  char *key_copy = Arena_alloc (ctx->arena, key_len, __FILE__, __LINE__);
+  if (!key_copy)
+    {
+      raise_tls_context_error ("Failed to allocate key path buffer");
+    }
+  memcpy (key_copy, key_file, key_len);
+  ctx->sni_certs.key_files[ctx->sni_certs.count] = key_copy;
+
+  ctx->sni_certs.count++;
+
+  /* If this is the first certificate and no hostname, load it as default */
+  if (ctx->sni_certs.count == 1 && !hostname)
+    {
+      SocketTLSContext_load_certificate (ctx, cert_file, key_file);
+    }
+
+  /* Enable SNI callback if we have multiple certificates or hostname-specific
+   * ones */
+  if (ctx->sni_certs.count > 1 || (ctx->sni_certs.count == 1 && hostname))
+    {
+      SSL_CTX_set_tlsext_servername_callback (ctx->ssl_ctx, sni_callback);
+      SSL_CTX_set_tlsext_servername_arg (ctx->ssl_ctx, ctx);
     }
 }
 
@@ -582,38 +607,40 @@ void SocketTLSContext_add_certificate(T ctx, const char *hostname, const char *c
  * @mode: Verification mode (TLS_VERIFY_NONE, TLS_VERIFY_PEER, etc.)
  *
  * Sets the certificate verification mode for TLS connections. This controls
- * whether peer certificates are verified and what happens when verification fails.
+ * whether peer certificates are verified and what happens when verification
+ * fails.
  *
  * Thread-safe: No (modifies shared context)
  */
-void SocketTLSContext_set_verify_mode(T ctx, TLSVerifyMode mode)
+void
+SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
 {
-    assert(ctx);
-    assert(ctx->ssl_ctx);
+  assert (ctx);
+  assert (ctx->ssl_ctx);
 
-    int openssl_mode = 0;
+  int openssl_mode = 0;
 
-    /* Convert our enum to OpenSSL flags */
-    switch (mode)
+  /* Convert our enum to OpenSSL flags */
+  switch (mode)
     {
     case TLS_VERIFY_NONE:
-        openssl_mode = SSL_VERIFY_NONE;
-        break;
+      openssl_mode = SSL_VERIFY_NONE;
+      break;
     case TLS_VERIFY_PEER:
-        openssl_mode = SSL_VERIFY_PEER;
-        break;
+      openssl_mode = SSL_VERIFY_PEER;
+      break;
     case TLS_VERIFY_FAIL_IF_NO_PEER_CERT:
-        openssl_mode = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-        break;
+      openssl_mode = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+      break;
     case TLS_VERIFY_CLIENT_ONCE:
-        openssl_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-        break;
+      openssl_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
+      break;
     default:
-        raise_tls_context_error("Invalid TLS verification mode");
-        return;
+      raise_tls_context_error ("Invalid TLS verification mode");
+      return;
     }
 
-    SSL_CTX_set_verify(ctx->ssl_ctx, openssl_mode, NULL);
+  SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, NULL);
 }
 
 /**
@@ -627,34 +654,38 @@ void SocketTLSContext_set_verify_mode(T ctx, TLSVerifyMode mode)
  *
  * Thread-safe: No (modifies shared context)
  */
-void SocketTLSContext_set_min_protocol(T ctx, int version)
+void
+SocketTLSContext_set_min_protocol (T ctx, int version)
 {
-    assert(ctx);
-    assert(ctx->ssl_ctx);
+  assert (ctx);
+  assert (ctx->ssl_ctx);
 
-    /* Try the modern API first (OpenSSL 1.1.0+) */
-    if (SSL_CTX_set_min_proto_version(ctx->ssl_ctx, version) != 1)
+  /* Try the modern API first (OpenSSL 1.1.0+) */
+  if (SSL_CTX_set_min_proto_version (ctx->ssl_ctx, version) != 1)
     {
 #if defined(SSL_OP_NO_SSLv2) && defined(SSL_OP_NO_SSLv3)
-        /* Fall back to disabling older protocols via options */
-        long options = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
+      /* Fall back to disabling older protocols via options */
+      long options = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
 
-        if (version > TLS1_VERSION)
-            options |= SSL_OP_NO_TLSv1;
-        if (version > TLS1_1_VERSION)
-            options |= SSL_OP_NO_TLSv1_1;
-        if (version > TLS1_2_VERSION)
-            options |= SSL_OP_NO_TLSv1_2;
+      if (version > TLS1_VERSION)
+        options |= SSL_OP_NO_TLSv1;
+      if (version > TLS1_1_VERSION)
+        options |= SSL_OP_NO_TLSv1_1;
+      if (version > TLS1_2_VERSION)
+        options |= SSL_OP_NO_TLSv1_2;
 
-        long current_options = SSL_CTX_set_options(ctx->ssl_ctx, options);
-        if (!(current_options & options))
+      long current_options = SSL_CTX_set_options (ctx->ssl_ctx, options);
+      if (!(current_options & options))
         {
-            raise_tls_context_error("Failed to set minimum TLS protocol version");
+          raise_tls_context_error (
+              "Failed to set minimum TLS protocol version");
         }
 #else
-        /* On modern OpenSSL without deprecated macros, assume set_min_proto_version works 
-         * or we are stuck. If it failed above, we can't fallback easily. */
-        raise_tls_context_error("Failed to set minimum TLS protocol version (fallback unavailable)");
+      /* On modern OpenSSL without deprecated macros, assume
+       * set_min_proto_version works or we are stuck. If it failed above, we
+       * can't fallback easily. */
+      raise_tls_context_error (
+          "Failed to set minimum TLS protocol version (fallback unavailable)");
 #endif
     }
 }
@@ -669,45 +700,51 @@ void SocketTLSContext_set_min_protocol(T ctx, int version)
  *
  * Thread-safe: No (modifies shared context)
  */
-void SocketTLSContext_set_max_protocol(T ctx, int version)
+void
+SocketTLSContext_set_max_protocol (T ctx, int version)
 {
-    assert(ctx);
-    assert(ctx->ssl_ctx);
+  assert (ctx);
+  assert (ctx->ssl_ctx);
 
-    if (SSL_CTX_set_max_proto_version(ctx->ssl_ctx, version) != 1)
+  if (SSL_CTX_set_max_proto_version (ctx->ssl_ctx, version) != 1)
     {
-        raise_tls_context_error("Failed to set maximum TLS protocol version");
+      raise_tls_context_error ("Failed to set maximum TLS protocol version");
     }
 }
 
 /**
  * SocketTLSContext_set_cipher_list - Configure allowed cipher suites
  * @ctx: TLS context instance
- * @ciphers: OpenSSL cipher list string (e.g., "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA")
+ * @ciphers: OpenSSL cipher list string (e.g.,
+ * "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA")
  *
  * Sets the list of allowed cipher suites for TLS connections. Uses OpenSSL's
  * cipher list format. Pass NULL to use OpenSSL defaults.
  *
  * Thread-safe: No (modifies shared context)
  */
-void SocketTLSContext_set_cipher_list(T ctx, const char *ciphers)
+void
+SocketTLSContext_set_cipher_list (T ctx, const char *ciphers)
 {
-    assert(ctx);
-    assert(ctx->ssl_ctx);
+  assert (ctx);
+  assert (ctx->ssl_ctx);
 
-    if (ciphers)
+  if (ciphers)
     {
-        if (SSL_CTX_set_cipher_list(ctx->ssl_ctx, ciphers) != 1)
+      if (SSL_CTX_set_cipher_list (ctx->ssl_ctx, ciphers) != 1)
         {
-            raise_tls_context_error("Failed to set cipher list");
+          raise_tls_context_error ("Failed to set cipher list");
         }
     }
-    else
+  else
     {
-        /* Use default cipher list */
-        if (SSL_CTX_set_cipher_list(ctx->ssl_ctx, "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA") != 1)
+      /* Use default cipher list */
+      if (SSL_CTX_set_cipher_list (
+              ctx->ssl_ctx,
+              "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA")
+          != 1)
         {
-            raise_tls_context_error("Failed to set default cipher list");
+          raise_tls_context_error ("Failed to set default cipher list");
         }
     }
 }
@@ -725,94 +762,102 @@ void SocketTLSContext_set_cipher_list(T ctx, const char *ciphers)
  *
  * Thread-safe: No (modifies shared context)
  */
-void SocketTLSContext_set_alpn_protos(T ctx, const char **protos, size_t count)
+void
+SocketTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
 {
-    assert(ctx);
-    assert(ctx->ssl_ctx);
-    assert(protos || count == 0);
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+  assert (protos || count == 0);
 
-    if (count == 0)
-        return;
+  if (count == 0)
+    return;
 
-    /* Store protocols in context for later reference */
-    ctx->alpn.protocols = Arena_alloc(ctx->arena, count * sizeof(const char *), __FILE__, __LINE__);
-    if (!ctx->alpn.protocols)
+  /* Store protocols in context for later reference */
+  ctx->alpn.protocols = Arena_alloc (ctx->arena, count * sizeof (const char *),
+                                     __FILE__, __LINE__);
+  if (!ctx->alpn.protocols)
     {
-        raise_tls_context_error("Failed to allocate ALPN protocols array");
+      raise_tls_context_error ("Failed to allocate ALPN protocols array");
     }
 
-    for (size_t i = 0; i < count; i++)
+  for (size_t i = 0; i < count; i++)
     {
-        assert(protos[i]);
-        size_t len = strlen(protos[i]);
-        if (len == 0 || len > SOCKET_TLS_MAX_ALPN_LEN)
+      assert (protos[i]);
+      size_t len = strlen (protos[i]);
+      if (len == 0 || len > SOCKET_TLS_MAX_ALPN_LEN)
         {
-            raise_tls_context_error("Invalid ALPN protocol length");
+          raise_tls_context_error ("Invalid ALPN protocol length");
         }
 
-        /* Copy protocol string to arena */
-        char *proto_copy = Arena_alloc(ctx->arena, len + 1, __FILE__, __LINE__);
-        if (!proto_copy)
+      /* Copy protocol string to arena */
+      char *proto_copy = Arena_alloc (ctx->arena, len + 1, __FILE__, __LINE__);
+      if (!proto_copy)
         {
-            raise_tls_context_error("Failed to allocate ALPN protocol buffer");
+          raise_tls_context_error ("Failed to allocate ALPN protocol buffer");
         }
-        memcpy(proto_copy, protos[i], len + 1);
-        ctx->alpn.protocols[i] = proto_copy;
+      memcpy (proto_copy, protos[i], len + 1);
+      ctx->alpn.protocols[i] = proto_copy;
     }
-    ctx->alpn.count = count;
+  ctx->alpn.count = count;
 
-    /* Calculate total buffer size needed for wire format */
-    size_t total_len = 0;
-    for (size_t i = 0; i < count; i++)
+  /* Calculate total buffer size needed for wire format */
+  size_t total_len = 0;
+  for (size_t i = 0; i < count; i++)
     {
-        size_t len = strlen(protos[i]);
-        total_len += 1 + len;  /* 1 byte length + protocol string */
+      size_t len = strlen (protos[i]);
+      total_len += 1 + len; /* 1 byte length + protocol string */
     }
 
-    /* Allocate buffer from context arena */
-    unsigned char *wire_buf = Arena_alloc(ctx->arena, total_len, __FILE__, __LINE__);
-    if (!wire_buf)
+  /* Allocate buffer from context arena */
+  unsigned char *wire_buf
+      = Arena_alloc (ctx->arena, total_len, __FILE__, __LINE__);
+  if (!wire_buf)
     {
-        raise_tls_context_error("Failed to allocate ALPN buffer");
+      raise_tls_context_error ("Failed to allocate ALPN buffer");
     }
 
-    /* Convert to wire format (length-prefixed strings) */
-    size_t offset = 0;
-    for (size_t i = 0; i < count; i++)
+  /* Convert to wire format (length-prefixed strings) */
+  size_t offset = 0;
+  for (size_t i = 0; i < count; i++)
     {
-        size_t len = strlen(protos[i]);
-        wire_buf[offset++] = (unsigned char)len;
-        memcpy(wire_buf + offset, protos[i], len);
-        offset += len;
+      size_t len = strlen (protos[i]);
+      wire_buf[offset++] = (unsigned char)len;
+      memcpy (wire_buf + offset, protos[i], len);
+      offset += len;
     }
 
-    /* Set ALPN protocols */
-    if (SSL_CTX_set_alpn_protos(ctx->ssl_ctx, wire_buf, (unsigned int)total_len) != 0)
+  /* Set ALPN protocols */
+  if (SSL_CTX_set_alpn_protos (ctx->ssl_ctx, wire_buf, (unsigned int)total_len)
+      != 0)
     {
-        raise_tls_context_error("Failed to set ALPN protocols");
+      raise_tls_context_error ("Failed to set ALPN protocols");
     }
 
-    /* Set ALPN select callback */
-    SSL_CTX_set_alpn_select_cb(ctx->ssl_ctx, alpn_select_callback, ctx);
+  /* Set ALPN select callback */
+  SSL_CTX_set_alpn_select_cb (ctx->ssl_ctx, alpn_select_callback, ctx);
 }
 
 /**
- * SocketTLSContext_set_alpn_callback - Set custom ALPN protocol selection callback
+ * SocketTLSContext_set_alpn_callback - Set custom ALPN protocol selection
+ * callback
  * @ctx: TLS context instance
  * @callback: Function to call for ALPN protocol selection
  * @user_data: User data passed to callback function
  *
- * Sets a custom callback for ALPN protocol selection instead of using default priority order.
- * The callback receives client-offered protocols and should return the selected protocol string.
+ * Sets a custom callback for ALPN protocol selection instead of using default
+ * priority order. The callback receives client-offered protocols and should
+ * return the selected protocol string.
  *
  * Thread-safe: No (modifies shared context)
  */
-void SocketTLSContext_set_alpn_callback(T ctx, SocketTLSAlpnCallback callback, void *user_data)
+void
+SocketTLSContext_set_alpn_callback (T ctx, SocketTLSAlpnCallback callback,
+                                    void *user_data)
 {
-    assert(ctx);
+  assert (ctx);
 
-    ctx->alpn.callback = callback;
-    ctx->alpn.callback_user_data = user_data;
+  ctx->alpn.callback = callback;
+  ctx->alpn.callback_user_data = user_data;
 }
 
 /**
@@ -825,28 +870,29 @@ void SocketTLSContext_set_alpn_callback(T ctx, SocketTLSAlpnCallback callback, v
  *
  * Thread-safe: No (modifies shared context)
  */
-void SocketTLSContext_enable_session_cache(T ctx)
+void
+SocketTLSContext_enable_session_cache (T ctx)
 {
-    assert(ctx);
-    assert(ctx->ssl_ctx);
+  assert (ctx);
+  assert (ctx->ssl_ctx);
 
-    long mode;
+  long mode;
 
-    if (ctx->is_server)
+  if (ctx->is_server)
     {
-        mode = SSL_SESS_CACHE_SERVER;
+      mode = SSL_SESS_CACHE_SERVER;
     }
-    else
+  else
     {
-        mode = SSL_SESS_CACHE_CLIENT;
-    }
-
-    if (SSL_CTX_set_session_cache_mode(ctx->ssl_ctx, mode) == 0)
-    {
-        raise_tls_context_error("Failed to enable session cache");
+      mode = SSL_SESS_CACHE_CLIENT;
     }
 
-    ctx->session_cache_enabled = 1;
+  if (SSL_CTX_set_session_cache_mode (ctx->ssl_ctx, mode) == 0)
+    {
+      raise_tls_context_error ("Failed to enable session cache");
+    }
+
+  ctx->session_cache_enabled = 1;
 }
 
 /**
@@ -855,26 +901,28 @@ void SocketTLSContext_enable_session_cache(T ctx)
  * @size: Maximum number of cached sessions
  *
  * Sets the maximum number of sessions that can be cached. This helps control
- * memory usage for session caching. The default is SOCKET_TLS_SESSION_CACHE_SIZE.
+ * memory usage for session caching. The default is
+ * SOCKET_TLS_SESSION_CACHE_SIZE.
  *
  * Thread-safe: No (modifies shared context)
  */
-void SocketTLSContext_set_session_cache_size(T ctx, size_t size)
+void
+SocketTLSContext_set_session_cache_size (T ctx, size_t size)
 {
-    assert(ctx);
-    assert(ctx->ssl_ctx);
+  assert (ctx);
+  assert (ctx->ssl_ctx);
 
-    if (size == 0)
+  if (size == 0)
     {
-        raise_tls_context_error("Session cache size cannot be zero");
+      raise_tls_context_error ("Session cache size cannot be zero");
     }
 
-    if (SSL_CTX_sess_set_cache_size(ctx->ssl_ctx, (long)size) == 0)
+  if (SSL_CTX_sess_set_cache_size (ctx->ssl_ctx, (long)size) == 0)
     {
-        raise_tls_context_error("Failed to set session cache size");
+      raise_tls_context_error ("Failed to set session cache size");
     }
 
-    ctx->session_cache_size = size;
+  ctx->session_cache_size = size;
 }
 
 /**
@@ -886,47 +934,48 @@ void SocketTLSContext_set_session_cache_size(T ctx, size_t size)
  *
  * Thread-safe: No (not safe to free while in use by other threads)
  */
-void SocketTLSContext_free(T *ctx)
+void
+SocketTLSContext_free (T *ctx)
 {
-    assert(ctx);
+  assert (ctx);
 
-    if (*ctx)
+  if (*ctx)
     {
-        T c = *ctx;
+      T c = *ctx;
 
-        /* Free OpenSSL context */
-        if (c->ssl_ctx)
+      /* Free OpenSSL context */
+      if (c->ssl_ctx)
         {
-            SSL_CTX_free(c->ssl_ctx);
-            c->ssl_ctx = NULL;
-        }
-
-        /* Free arena (this cleans up all arena allocations) */
-        if (c->arena)
-        {
-            Arena_dispose(&c->arena);
+          SSL_CTX_free (c->ssl_ctx);
+          c->ssl_ctx = NULL;
         }
 
-        /* Free SNI certificate arrays */
-        if (c->sni_certs.hostnames)
+      /* Free arena (this cleans up all arena allocations) */
+      if (c->arena)
         {
-            free(c->sni_certs.hostnames);
-            c->sni_certs.hostnames = NULL;
-        }
-        if (c->sni_certs.cert_files)
-        {
-            free(c->sni_certs.cert_files);
-            c->sni_certs.cert_files = NULL;
-        }
-        if (c->sni_certs.key_files)
-        {
-            free(c->sni_certs.key_files);
-            c->sni_certs.key_files = NULL;
+          Arena_dispose (&c->arena);
         }
 
-        /* Free context structure */
-        free(c);
-        *ctx = NULL;
+      /* Free SNI certificate arrays */
+      if (c->sni_certs.hostnames)
+        {
+          free (c->sni_certs.hostnames);
+          c->sni_certs.hostnames = NULL;
+        }
+      if (c->sni_certs.cert_files)
+        {
+          free (c->sni_certs.cert_files);
+          c->sni_certs.cert_files = NULL;
+        }
+      if (c->sni_certs.key_files)
+        {
+          free (c->sni_certs.key_files);
+          c->sni_certs.key_files = NULL;
+        }
+
+      /* Free context structure */
+      free (c);
+      *ctx = NULL;
     }
 }
 
@@ -941,10 +990,11 @@ void SocketTLSContext_free(T *ctx)
  * Returns: SSL_CTX pointer (cast to void* for opacity)
  * Thread-safe: Yes (reading pointer is safe)
  */
-void *SocketTLSContext_get_ssl_ctx(T ctx)
+void *
+SocketTLSContext_get_ssl_ctx (T ctx)
 {
-    assert(ctx);
-    return (void *)ctx->ssl_ctx;
+  assert (ctx);
+  return (void *)ctx->ssl_ctx;
 }
 
 /**
@@ -954,10 +1004,11 @@ void *SocketTLSContext_get_ssl_ctx(T ctx)
  * Returns: 1 if server context, 0 if client context
  * Thread-safe: Yes
  */
-int SocketTLSContext_is_server(T ctx)
+int
+SocketTLSContext_is_server (T ctx)
 {
-    assert(ctx);
-    return ctx->is_server;
+  assert (ctx);
+  return ctx->is_server;
 }
 
 #undef T

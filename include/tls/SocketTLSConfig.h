@@ -16,27 +16,30 @@
 
 #ifdef SOCKET_HAS_TLS
 
-#include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <openssl/ssl.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
-/* TLS Protocol Versions - STRICT TLS1.3-ONLY (recommended for high-perf servers) */
+/* TLS Protocol Versions - STRICT TLS1.3-ONLY (recommended for high-perf
+ * servers) */
 /* Compatibility mode removed to enforce strict security standards */
 #define SOCKET_TLS_MIN_VERSION TLS1_3_VERSION
 #define SOCKET_TLS_MAX_VERSION TLS1_3_VERSION
 
 /* TLS1.3 Modern Ciphersuites (ECDHE-PFS only, AES-GCM/ChaCha20-Poly1305) */
-#define SOCKET_TLS13_CIPHERSUITES "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256"
+#define SOCKET_TLS13_CIPHERSUITES                                             \
+  "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_"      \
+  "SHA256"
 
 /* TLS handshake timeout defaults */
 #ifndef SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS
-#define SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS 30000  /* 30 seconds */
+#define SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS 30000 /* 30 seconds */
 #endif
 
 /* TLS read/write buffer sizes */
 #ifndef SOCKET_TLS_BUFFER_SIZE
-#define SOCKET_TLS_BUFFER_SIZE 16384  /* 16KB - TLS record max */
+#define SOCKET_TLS_BUFFER_SIZE 16384 /* 16KB - TLS record max */
 #endif
 
 /* Maximum certificate chain depth */
@@ -70,7 +73,8 @@
 #endif
 
 /* Forward declarations for TLS types */
-/* OpenSSL types are already defined by the includes above when SOCKET_HAS_TLS is set */
+/* OpenSSL types are already defined by the includes above when SOCKET_HAS_TLS
+ * is set */
 #ifndef SOCKET_HAS_TLS
 typedef void SSL_CTX;
 typedef void SSL;

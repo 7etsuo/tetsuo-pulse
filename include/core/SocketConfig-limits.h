@@ -30,7 +30,8 @@
 #define SOCKET_MAX_LISTEN_BACKLOG 1024
 #endif
 
-/* Hash table size for socket data mapping - prime number for better distribution */
+/* Hash table size for socket data mapping - prime number for better
+ * distribution */
 #ifndef SOCKET_HASH_TABLE_SIZE
 #define SOCKET_HASH_TABLE_SIZE 1021
 #endif
@@ -113,7 +114,7 @@
 #endif
 
 #ifndef SOCKET_ERROR_TRUNCATION_SIZE
-#define SOCKET_ERROR_TRUNCATION_SIZE (sizeof(SOCKET_ERROR_TRUNCATION_MARKER))
+#define SOCKET_ERROR_TRUNCATION_SIZE (sizeof (SOCKET_ERROR_TRUNCATION_MARKER))
 #endif
 
 #endif /* SOCKETCONFIG_LIMITS_INCLUDED */

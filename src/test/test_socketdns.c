@@ -1,598 +1,590 @@
 /**
  * test_socketdns.c - Comprehensive SocketDNS unit tests
  * Industry-standard test coverage for SocketDNS async DNS module.
- * Tests async resolution, callbacks, cancellation, queue management, and thread pool.
+ * Tests async resolution, callbacks, cancellation, queue management, and
+ * thread pool.
  */
 
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "test/Test.h"
 #include "core/Except.h"
 #include "dns/SocketDNS.h"
 #include "socket/SocketCommon.h"
+#include "test/Test.h"
 
-/* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT */
+/* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT
+ */
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
 /* ==================== Basic Resolver Tests ==================== */
 
-TEST(socketdns_new_creates_resolver)
+TEST (socketdns_new_creates_resolver)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    ASSERT_NOT_NULL(dns);
-    SocketDNS_free(&dns);
-    ASSERT_NULL(dns);
+  SocketDNS_T dns = SocketDNS_new ();
+  ASSERT_NOT_NULL (dns);
+  SocketDNS_free (&dns);
+  ASSERT_NULL (dns);
 }
 
-TEST(socketdns_pollfd)
+TEST (socketdns_pollfd)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    ASSERT_NOT_NULL(dns);
-    int fd = SocketDNS_pollfd(dns);
-    ASSERT_NE(fd, -1);
-    SocketDNS_free(&dns);
+  SocketDNS_T dns = SocketDNS_new ();
+  ASSERT_NOT_NULL (dns);
+  int fd = SocketDNS_pollfd (dns);
+  ASSERT_NE (fd, -1);
+  SocketDNS_free (&dns);
 }
 
 /* ==================== Resolution Tests ==================== */
 
-TEST(socketdns_resolve_localhost)
+TEST (socketdns_resolve_localhost)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY req = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
-    ASSERT_NOT_NULL(req);
+  TRY req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+  ASSERT_NOT_NULL (req);
 
-    usleep(100000);
-    SocketDNS_check(dns);
+  usleep (100000);
+  SocketDNS_check (dns);
 
-    struct addrinfo *result = SocketDNS_getresult(dns, req);
-    if (result)
+  struct addrinfo *result = SocketDNS_getresult (dns, req);
+  if (result)
     {
-        ASSERT_NOT_NULL(result);
-        freeaddrinfo(result);
+      ASSERT_NOT_NULL (result);
+      freeaddrinfo (result);
     }
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
-TEST(socketdns_resolve_loopback_ip)
+TEST (socketdns_resolve_loopback_ip)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY req = SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
-    ASSERT_NOT_NULL(req);
+  TRY req = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+  ASSERT_NOT_NULL (req);
 
-    usleep(100000);
-    SocketDNS_check(dns);
+  usleep (100000);
+  SocketDNS_check (dns);
 
-    struct addrinfo *result = SocketDNS_getresult(dns, req);
-    if (result)
+  struct addrinfo *result = SocketDNS_getresult (dns, req);
+  if (result)
     {
-        ASSERT_NOT_NULL(result);
-        freeaddrinfo(result);
+      ASSERT_NOT_NULL (result);
+      freeaddrinfo (result);
     }
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
-TEST(socketdns_resolve_ipv6_loopback)
+TEST (socketdns_resolve_ipv6_loopback)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY req = SocketDNS_resolve(dns, "::1", 80, NULL, NULL);
-    ASSERT_NOT_NULL(req);
+  TRY req = SocketDNS_resolve (dns, "::1", 80, NULL, NULL);
+  ASSERT_NOT_NULL (req);
 
-    usleep(100000);
-    SocketDNS_check(dns);
+  usleep (100000);
+  SocketDNS_check (dns);
 
-    struct addrinfo *result = SocketDNS_getresult(dns, req);
-    if (result)
+  struct addrinfo *result = SocketDNS_getresult (dns, req);
+  if (result)
     {
-        ASSERT_NOT_NULL(result);
-        freeaddrinfo(result);
+      ASSERT_NOT_NULL (result);
+      freeaddrinfo (result);
     }
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
-TEST(socketdns_resolve_with_port)
+TEST (socketdns_resolve_with_port)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY req = SocketDNS_resolve(dns, "localhost", 8080, NULL, NULL);
-    ASSERT_NOT_NULL(req);
+  TRY req = SocketDNS_resolve (dns, "localhost", 8080, NULL, NULL);
+  ASSERT_NOT_NULL (req);
 
-    usleep(100000);
-    SocketDNS_check(dns);
+  usleep (100000);
+  SocketDNS_check (dns);
 
-    struct addrinfo *result = SocketDNS_getresult(dns, req);
-    if (result)
-        freeaddrinfo(result);
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  struct addrinfo *result = SocketDNS_getresult (dns, req);
+  if (result)
+    freeaddrinfo (result);
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
-TEST(socketdns_resolve_without_port)
+TEST (socketdns_resolve_without_port)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY req = SocketDNS_resolve(dns, "localhost", 0, NULL, NULL);
-    ASSERT_NOT_NULL(req);
+  TRY req = SocketDNS_resolve (dns, "localhost", 0, NULL, NULL);
+  ASSERT_NOT_NULL (req);
 
-    usleep(100000);
-    SocketDNS_check(dns);
+  usleep (100000);
+  SocketDNS_check (dns);
 
-    struct addrinfo *result = SocketDNS_getresult(dns, req);
-    if (result)
-        freeaddrinfo(result);
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  struct addrinfo *result = SocketDNS_getresult (dns, req);
+  if (result)
+    freeaddrinfo (result);
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
 /* ==================== Multiple Resolution Tests ==================== */
 
-TEST(socketdns_multiple_resolutions)
+TEST (socketdns_multiple_resolutions)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req1 = NULL, req2 = NULL, req3 = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req1 = NULL, req2 = NULL, req3 = NULL;
 
-    TRY req1 = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
-    req2 = SocketDNS_resolve(dns, "127.0.0.1", 443, NULL, NULL);
-    req3 = SocketDNS_resolve(dns, "::1", 8080, NULL, NULL);
+  TRY req1 = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+  req2 = SocketDNS_resolve (dns, "127.0.0.1", 443, NULL, NULL);
+  req3 = SocketDNS_resolve (dns, "::1", 8080, NULL, NULL);
 
-    ASSERT_NOT_NULL(req1);
-    ASSERT_NOT_NULL(req2);
-    ASSERT_NOT_NULL(req3);
+  ASSERT_NOT_NULL (req1);
+  ASSERT_NOT_NULL (req2);
+  ASSERT_NOT_NULL (req3);
 
-    usleep(200000);
-    SocketDNS_check(dns);
+  usleep (200000);
+  SocketDNS_check (dns);
 
-    struct addrinfo *res1 = SocketDNS_getresult(dns, req1);
-    struct addrinfo *res2 = SocketDNS_getresult(dns, req2);
-    struct addrinfo *res3 = SocketDNS_getresult(dns, req3);
+  struct addrinfo *res1 = SocketDNS_getresult (dns, req1);
+  struct addrinfo *res2 = SocketDNS_getresult (dns, req2);
+  struct addrinfo *res3 = SocketDNS_getresult (dns, req3);
 
-    if (res1)
-        freeaddrinfo(res1);
-    if (res2)
-        freeaddrinfo(res2);
-    if (res3)
-        freeaddrinfo(res3);
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  if (res1)
+    freeaddrinfo (res1);
+  if (res2)
+    freeaddrinfo (res2);
+  if (res3)
+    freeaddrinfo (res3);
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
-TEST(socketdns_sequential_resolutions)
+TEST (socketdns_sequential_resolutions)
 {
-    SocketDNS_T dns = SocketDNS_new();
+  SocketDNS_T dns = SocketDNS_new ();
 
-    TRY volatile int i;
-    for (i = 0; i < 10; i++)
+  TRY volatile int i;
+  for (i = 0; i < 10; i++)
     {
-        SocketDNS_Request_T req = SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
-        ASSERT_NOT_NULL(req);
-        usleep(50000);
-        SocketDNS_check(dns);
-        struct addrinfo *result = SocketDNS_getresult(dns, req);
-        if (result)
-            freeaddrinfo(result);
+      SocketDNS_Request_T req
+          = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+      ASSERT_NOT_NULL (req);
+      usleep (50000);
+      SocketDNS_check (dns);
+      struct addrinfo *result = SocketDNS_getresult (dns, req);
+      if (result)
+        freeaddrinfo (result);
     }
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
 /* ==================== Callback Tests ==================== */
 
-static void slow_queue_callback(SocketDNS_Request_T req, struct addrinfo *result, int error, void *data)
+static void
+slow_queue_callback (SocketDNS_Request_T req, struct addrinfo *result,
+                     int error, void *data)
 {
-    (void)req;
-    (void)error;
-    if (data)
-        *(int *)data = 1;
-    usleep(50000);
-    if (result)
-        freeaddrinfo(result);
+  (void)req;
+  (void)error;
+  if (data)
+    *(int *)data = 1;
+  usleep (50000);
+  if (result)
+    freeaddrinfo (result);
 }
 
 static int callback_invoked;
-static void test_callback(SocketDNS_Request_T req, struct addrinfo *result, int error, void *data)
+static void
+test_callback (SocketDNS_Request_T req, struct addrinfo *result, int error,
+               void *data)
 {
-    (void)req;
-    (void)error;
-    (void)data;
-    callback_invoked = 1;
-    if (result)
-        freeaddrinfo(result);
+  (void)req;
+  (void)error;
+  (void)data;
+  callback_invoked = 1;
+  if (result)
+    freeaddrinfo (result);
 }
 
-TEST(socketdns_callback_invoked)
+TEST (socketdns_callback_invoked)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY callback_invoked = 0;
-    req = SocketDNS_resolve(dns, "127.0.0.1", 80, test_callback, NULL);
-    ASSERT_NOT_NULL(req);
+  TRY callback_invoked = 0;
+  req = SocketDNS_resolve (dns, "127.0.0.1", 80, test_callback, NULL);
+  ASSERT_NOT_NULL (req);
 
-    usleep(200000);
-    SocketDNS_check(dns);
+  usleep (200000);
+  SocketDNS_check (dns);
 
-    ASSERT_NE(callback_invoked, 0);
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  ASSERT_NE (callback_invoked, 0);
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
 static int test_received_data;
 
-static void callback_check_data(SocketDNS_Request_T r, struct addrinfo *res, int err, void *d)
+static void
+callback_check_data (SocketDNS_Request_T r, struct addrinfo *res, int err,
+                     void *d)
 {
-    (void)r;
-    (void)err;
-    if (d)
-        test_received_data = *(int *)d;
-    if (res)
-        freeaddrinfo(res);
+  (void)r;
+  (void)err;
+  if (d)
+    test_received_data = *(int *)d;
+  if (res)
+    freeaddrinfo (res);
 }
 
-TEST(socketdns_callback_with_user_data)
+TEST (socketdns_callback_with_user_data)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
-    int user_data = 12345;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
+  int user_data = 12345;
 
-    TRY test_received_data = 0;
-    req = SocketDNS_resolve(dns, "localhost", 80, callback_check_data, &user_data);
-    ASSERT_NOT_NULL(req);
+  TRY test_received_data = 0;
+  req = SocketDNS_resolve (dns, "localhost", 80, callback_check_data,
+                           &user_data);
+  ASSERT_NOT_NULL (req);
 
-    usleep(200000);
-    SocketDNS_check(dns);
+  usleep (200000);
+  SocketDNS_check (dns);
 
-    ASSERT_EQ(test_received_data, user_data);
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  ASSERT_EQ (test_received_data, user_data);
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
 /* ==================== Cancellation Tests ==================== */
 
-TEST(socketdns_cancel_request)
+TEST (socketdns_cancel_request)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY req = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
-    ASSERT_NOT_NULL(req);
-    SocketDNS_cancel(dns, req);
-    usleep(100000);
-    struct addrinfo *result = SocketDNS_getresult(dns, req);
-    ASSERT_NULL(result);
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  TRY req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+  ASSERT_NOT_NULL (req);
+  SocketDNS_cancel (dns, req);
+  usleep (100000);
+  struct addrinfo *result = SocketDNS_getresult (dns, req);
+  ASSERT_NULL (result);
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
-TEST(socketdns_cancel_multiple)
+TEST (socketdns_cancel_multiple)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req1 = NULL, req2 = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req1 = NULL, req2 = NULL;
 
-    TRY req1 = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
-    req2 = SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
+  TRY req1 = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+  req2 = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
 
-    SocketDNS_cancel(dns, req1);
-    SocketDNS_cancel(dns, req2);
+  SocketDNS_cancel (dns, req1);
+  SocketDNS_cancel (dns, req2);
 
-    usleep(100000);
-    ASSERT_NULL(SocketDNS_getresult(dns, req1));
-    ASSERT_NULL(SocketDNS_getresult(dns, req2));
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  usleep (100000);
+  ASSERT_NULL (SocketDNS_getresult (dns, req1));
+  ASSERT_NULL (SocketDNS_getresult (dns, req2));
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
 /* ==================== Check Operation Tests ==================== */
 
-TEST(socketdns_check_returns_completion_count)
+TEST (socketdns_check_returns_completion_count)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY
-    {
-        volatile int count;
+  TRY
+  {
+    volatile int count;
 
-        req = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
-        usleep(100000);
-        count = SocketDNS_check(dns);
-        ASSERT_NE(count, -1);
+    req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+    usleep (100000);
+    count = SocketDNS_check (dns);
+    ASSERT_NE (count, -1);
 
-        /* Drain result to release getaddrinfo allocation */
-        struct addrinfo *result = SocketDNS_getresult(dns, req);
-        if (result)
-            freeaddrinfo(result);
-    }
-    EXCEPT(SocketDNS_Failed)
-    {
-        (void)0;
-    }
-    FINALLY
-    {
-        SocketDNS_free(&dns);
-    }
-    END_TRY;
+    /* Drain result to release getaddrinfo allocation */
+    struct addrinfo *result = SocketDNS_getresult (dns, req);
+    if (result)
+      freeaddrinfo (result);
+  }
+  EXCEPT (SocketDNS_Failed) { (void)0; }
+  FINALLY { SocketDNS_free (&dns); }
+  END_TRY;
 }
 
-TEST(socketdns_check_before_completion)
+TEST (socketdns_check_before_completion)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY
-    {
-        volatile int count;
+  TRY
+  {
+    volatile int count;
 
-        req = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
-        count = SocketDNS_check(dns);
-        (void)count;
+    req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+    count = SocketDNS_check (dns);
+    (void)count;
 
-        /* Allow resolver to finish, then drain result */
-        usleep(100000);
-        SocketDNS_check(dns);
-        struct addrinfo *result = SocketDNS_getresult(dns, req);
-        if (result)
-            freeaddrinfo(result);
-    }
-    EXCEPT(SocketDNS_Failed)
-    {
-        (void)0;
-    }
-    FINALLY
-    {
-        SocketDNS_free(&dns);
-    }
-    END_TRY;
+    /* Allow resolver to finish, then drain result */
+    usleep (100000);
+    SocketDNS_check (dns);
+    struct addrinfo *result = SocketDNS_getresult (dns, req);
+    if (result)
+      freeaddrinfo (result);
+  }
+  EXCEPT (SocketDNS_Failed) { (void)0; }
+  FINALLY { SocketDNS_free (&dns); }
+  END_TRY;
 }
 
 /* ==================== GetResult Tests ==================== */
 
-TEST(socketdns_getresult_before_completion)
+TEST (socketdns_getresult_before_completion)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY req = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
-    struct addrinfo *result = SocketDNS_getresult(dns, req);
-    ASSERT_NULL(result);
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  TRY req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+  struct addrinfo *result = SocketDNS_getresult (dns, req);
+  ASSERT_NULL (result);
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
-TEST(socketdns_getresult_after_completion)
+TEST (socketdns_getresult_after_completion)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY req = SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
-    ASSERT_NOT_NULL(req);
+  TRY req = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+  ASSERT_NOT_NULL (req);
 
-    usleep(100000);
-    SocketDNS_check(dns);
+  usleep (100000);
+  SocketDNS_check (dns);
 
-    struct addrinfo *result = SocketDNS_getresult(dns, req);
-    if (result)
+  struct addrinfo *result = SocketDNS_getresult (dns, req);
+  if (result)
     {
-        ASSERT_NOT_NULL(result);
-        freeaddrinfo(result);
+      ASSERT_NOT_NULL (result);
+      freeaddrinfo (result);
     }
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
-TEST(socketdns_getresult_clears_result)
+TEST (socketdns_getresult_clears_result)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY req = SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
-    usleep(100000);
-    SocketDNS_check(dns);
+  TRY req = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+  usleep (100000);
+  SocketDNS_check (dns);
 
-    struct addrinfo *result1 = SocketDNS_getresult(dns, req);
-    if (result1)
+  struct addrinfo *result1 = SocketDNS_getresult (dns, req);
+  if (result1)
     {
-        freeaddrinfo(result1);
-        struct addrinfo *result2 = SocketDNS_getresult(dns, req);
-        ASSERT_NULL(result2);
+      freeaddrinfo (result1);
+      struct addrinfo *result2 = SocketDNS_getresult (dns, req);
+      ASSERT_NULL (result2);
     }
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
 /* ==================== Concurrent Resolution Tests ==================== */
 
-TEST(socketdns_many_concurrent_resolutions)
+TEST (socketdns_many_concurrent_resolutions)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T requests[20];
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T requests[20];
 
-    TRY volatile int i;
-    volatile int completed = 0;
-    for (i = 0; i < 20; i++)
+  TRY volatile int i;
+  volatile int completed = 0;
+  for (i = 0; i < 20; i++)
     {
-        requests[i] = SocketDNS_resolve(dns, "127.0.0.1", 80 + i, NULL, NULL);
-        ASSERT_NOT_NULL(requests[i]);
+      requests[i] = SocketDNS_resolve (dns, "127.0.0.1", 80 + i, NULL, NULL);
+      ASSERT_NOT_NULL (requests[i]);
     }
 
-    usleep(500000);
-    SocketDNS_check(dns);
+  usleep (500000);
+  SocketDNS_check (dns);
 
-    for (i = 0; i < 20; i++)
+  for (i = 0; i < 20; i++)
     {
-        struct addrinfo *result = SocketDNS_getresult(dns, requests[i]);
-        if (result)
+      struct addrinfo *result = SocketDNS_getresult (dns, requests[i]);
+      if (result)
         {
-            completed++;
-            freeaddrinfo(result);
+          completed++;
+          freeaddrinfo (result);
         }
     }
-    ASSERT_NE(completed, 0);
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  ASSERT_NE (completed, 0);
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
 /* ==================== Stress Tests ==================== */
 
-TEST(socketdns_rapid_resolution_requests)
+TEST (socketdns_rapid_resolution_requests)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T requests[50] = {0};
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T requests[50] = { 0 };
 
-    TRY
-    {
-        volatile int i;
-        for (i = 0; i < 50; i++)
-        {
-            requests[i] = SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
-            ASSERT_NOT_NULL(requests[i]);
-        }
-        usleep(500000);
-        SocketDNS_check(dns);
+  TRY
+  {
+    volatile int i;
+    for (i = 0; i < 50; i++)
+      {
+        requests[i] = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+        ASSERT_NOT_NULL (requests[i]);
+      }
+    usleep (500000);
+    SocketDNS_check (dns);
 
-        for (i = 0; i < 50; i++)
-        {
-            struct addrinfo *result = SocketDNS_getresult(dns, requests[i]);
-            if (result)
-                freeaddrinfo(result);
-        }
-    }
-    EXCEPT(SocketDNS_Failed)
-    {
-        ASSERT(0);
-    }
-    FINALLY
-    {
-        SocketDNS_free(&dns);
-    }
-    END_TRY;
+    for (i = 0; i < 50; i++)
+      {
+        struct addrinfo *result = SocketDNS_getresult (dns, requests[i]);
+        if (result)
+          freeaddrinfo (result);
+      }
+  }
+  EXCEPT (SocketDNS_Failed) { ASSERT (0); }
+  FINALLY { SocketDNS_free (&dns); }
+  END_TRY;
 }
 
-TEST(socketdns_resolve_cancel_cycle)
+TEST (socketdns_resolve_cancel_cycle)
 {
-    SocketDNS_T dns = SocketDNS_new();
+  SocketDNS_T dns = SocketDNS_new ();
 
-    TRY volatile int i;
-    for (i = 0; i < 20; i++)
+  TRY volatile int i;
+  for (i = 0; i < 20; i++)
     {
-        SocketDNS_Request_T req = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
-        SocketDNS_cancel(dns, req);
+      SocketDNS_Request_T req
+          = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+      SocketDNS_cancel (dns, req);
     }
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
 /* ==================== Thread Safety Tests ==================== */
 
-static void *thread_resolve_requests(void *arg)
+static void *
+thread_resolve_requests (void *arg)
 {
-    SocketDNS_T dns = (SocketDNS_T)arg;
+  SocketDNS_T dns = (SocketDNS_T)arg;
 
-    for (volatile int i = 0; i < 10; i++)
+  for (volatile int i = 0; i < 10; i++)
     {
-        int stop = 0;
-        SocketDNS_Request_T req = NULL;
-        struct addrinfo *result = NULL;
+      int stop = 0;
+      SocketDNS_Request_T req = NULL;
+      struct addrinfo *result = NULL;
 
-        TRY
-        {
-            req = SocketDNS_resolve(dns, "127.0.0.1", 80, NULL, NULL);
-            if (req == NULL)
-            {
-                /* Use test framework failure reporting and abort this thread's work
-                 * NOTE: Use RETURN to properly unwind exception stack inside TRY block. */
-                Test_fail("Assertion failed: req is NULL", __FILE__, __LINE__);
-                RETURN NULL;
-            }
+      TRY
+      {
+        req = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+        if (req == NULL)
+          {
+            /* Use test framework failure reporting and abort this thread's
+             * work NOTE: Use RETURN to properly unwind exception stack inside
+             * TRY block. */
+            Test_fail ("Assertion failed: req is NULL", __FILE__, __LINE__);
+            RETURN NULL;
+          }
 
-            while (result == NULL)
-            {
-                usleep(10000);
-                SocketDNS_check(dns);
-                result = SocketDNS_getresult(dns, req);
-            }
+        while (result == NULL)
+          {
+            usleep (10000);
+            SocketDNS_check (dns);
+            result = SocketDNS_getresult (dns, req);
+          }
 
-            freeaddrinfo(result);
-            result = NULL;
-        }
-        EXCEPT(SocketDNS_Failed)
-        {
-            stop = 1;
-        }
-        FINALLY
-        {
-            if (result)
-                freeaddrinfo(result);
-        }
-        END_TRY;
+        freeaddrinfo (result);
+        result = NULL;
+      }
+      EXCEPT (SocketDNS_Failed) { stop = 1; }
+      FINALLY
+      {
+        if (result)
+          freeaddrinfo (result);
+      }
+      END_TRY;
 
-        if (stop)
-            break;
+      if (stop)
+        break;
     }
 
-    return NULL;
+  return NULL;
 }
 
-TEST(socketdns_concurrent_resolutions)
+TEST (socketdns_concurrent_resolutions)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    pthread_t threads[4];
+  SocketDNS_T dns = SocketDNS_new ();
+  pthread_t threads[4];
 
-    volatile int i;
-    for (i = 0; i < 4; i++)
-        pthread_create(&threads[i], NULL, thread_resolve_requests, dns);
+  volatile int i;
+  for (i = 0; i < 4; i++)
+    pthread_create (&threads[i], NULL, thread_resolve_requests, dns);
 
-    for (i = 0; i < 4; i++)
-        pthread_join(threads[i], NULL);
+  for (i = 0; i < 4; i++)
+    pthread_join (threads[i], NULL);
 
-    usleep(500000);
-    SocketDNS_check(dns);
-    SocketDNS_free(&dns);
+  usleep (500000);
+  SocketDNS_check (dns);
+  SocketDNS_free (&dns);
 }
 
 #if 0 /* Temporarily disabled - segfault in exception frame handling */
@@ -632,40 +624,42 @@ TEST(socketdns_concurrent_check)
 }
 #endif
 
-static void *thread_cancel_requests(void *arg)
+static void *
+thread_cancel_requests (void *arg)
 {
-    SocketDNS_T dns = (SocketDNS_T)arg;
+  SocketDNS_T dns = (SocketDNS_T)arg;
 
-    for (volatile int i = 0; i < 10; i++)
+  for (volatile int i = 0; i < 10; i++)
     {
-        int stop = 0;
-        TRY SocketDNS_Request_T req = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
-        usleep(5000);
-        SocketDNS_cancel(dns, req);
-        EXCEPT(SocketDNS_Failed)
-        stop = 1;
-        END_TRY;
+      int stop = 0;
+      TRY SocketDNS_Request_T req
+          = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+      usleep (5000);
+      SocketDNS_cancel (dns, req);
+      EXCEPT (SocketDNS_Failed)
+      stop = 1;
+      END_TRY;
 
-        if (stop)
-            break;
+      if (stop)
+        break;
     }
 
-    return NULL;
+  return NULL;
 }
 
-TEST(socketdns_concurrent_cancel)
+TEST (socketdns_concurrent_cancel)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    pthread_t threads[4];
+  SocketDNS_T dns = SocketDNS_new ();
+  pthread_t threads[4];
 
-    volatile int i;
-    for (i = 0; i < 4; i++)
-        pthread_create(&threads[i], NULL, thread_cancel_requests, dns);
+  volatile int i;
+  for (i = 0; i < 4; i++)
+    pthread_create (&threads[i], NULL, thread_cancel_requests, dns);
 
-    for (i = 0; i < 4; i++)
-        pthread_join(threads[i], NULL);
+  for (i = 0; i < 4; i++)
+    pthread_join (threads[i], NULL);
 
-    SocketDNS_free(&dns);
+  SocketDNS_free (&dns);
 }
 
 /* ==================== Thread Pool Tests ==================== */
@@ -704,362 +698,341 @@ TEST(socketdns_thread_pool_processes_requests)
 
 /* ==================== Parameter Validation Tests ==================== */
 
-TEST(socketdns_resolve_null_hostname)
+TEST (socketdns_resolve_null_hostname)
 {
-    SocketDNS_T dns = SocketDNS_new();
+  SocketDNS_T dns = SocketDNS_new ();
 
-    /* NULL hostname causes assert() - cannot test exception in debug builds */
-    /* In release builds (NDEBUG), this would cause crash via strlen(NULL) */
-    /* This test verifies that assert() prevents NULL hostname */
-    (void)dns; /* Suppress unused warning */
+  /* NULL hostname causes assert() - cannot test exception in debug builds */
+  /* In release builds (NDEBUG), this would cause crash via strlen(NULL) */
+  /* This test verifies that assert() prevents NULL hostname */
+  (void)dns; /* Suppress unused warning */
 
-    SocketDNS_free(&dns);
+  SocketDNS_free (&dns);
 }
 
-TEST(socketdns_resolve_empty_hostname)
+TEST (socketdns_resolve_empty_hostname)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
-    int caught = 0;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
+  int caught = 0;
 
+  TRY
+  {
     TRY
     {
-        TRY
-        {
-            req = SocketDNS_resolve(dns, "", 80, NULL, NULL);
-            ASSERT_NULL(req); /* Should not reach here */
-        }
-        EXCEPT(Test_Failed)
-        {
-            RERAISE;
-        }
-        ELSE
-        {
-            ASSERT_NOT_NULL(Except_frame.exception);
-            ASSERT_NOT_NULL(strstr(Except_frame.exception->reason, "Invalid hostname length"));
-            caught = 1;
-        }
-        END_TRY;
+      req = SocketDNS_resolve (dns, "", 80, NULL, NULL);
+      ASSERT_NULL (req); /* Should not reach here */
     }
-    FINALLY
+    EXCEPT (Test_Failed) { RERAISE; }
+    ELSE
     {
-        SocketDNS_free(&dns);
+      ASSERT_NOT_NULL (Except_frame.exception);
+      ASSERT_NOT_NULL (
+          strstr (Except_frame.exception->reason, "Invalid hostname length"));
+      caught = 1;
     }
     END_TRY;
+  }
+  FINALLY { SocketDNS_free (&dns); }
+  END_TRY;
 
-    ASSERT(caught);
+  ASSERT (caught);
 }
 
-TEST(socketdns_resolve_invalid_port_negative)
+TEST (socketdns_resolve_invalid_port_negative)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
-    int caught = 0;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
+  int caught = 0;
 
+  TRY
+  {
     TRY
     {
-        TRY
-        {
-            req = SocketDNS_resolve(dns, "localhost", -1, NULL, NULL);
-            ASSERT_NULL(req); /* Should not reach here */
-        }
-        EXCEPT(Test_Failed)
-        {
-            RERAISE;
-        }
-        ELSE
-        {
-            ASSERT_NOT_NULL(Except_frame.exception);
-            ASSERT_NOT_NULL(strstr(Except_frame.exception->reason, "Invalid port number"));
-            caught = 1;
-        }
-        END_TRY;
+      req = SocketDNS_resolve (dns, "localhost", -1, NULL, NULL);
+      ASSERT_NULL (req); /* Should not reach here */
     }
-    FINALLY
+    EXCEPT (Test_Failed) { RERAISE; }
+    ELSE
     {
-        SocketDNS_free(&dns);
+      ASSERT_NOT_NULL (Except_frame.exception);
+      ASSERT_NOT_NULL (
+          strstr (Except_frame.exception->reason, "Invalid port number"));
+      caught = 1;
     }
     END_TRY;
+  }
+  FINALLY { SocketDNS_free (&dns); }
+  END_TRY;
 
-    ASSERT(caught);
+  ASSERT (caught);
 }
 
-TEST(socketdns_resolve_invalid_port_too_large)
+TEST (socketdns_resolve_invalid_port_too_large)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
-    int caught = 0;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
+  int caught = 0;
 
+  TRY
+  {
     TRY
     {
-        TRY
-        {
-            req = SocketDNS_resolve(dns, "localhost", 65536, NULL, NULL);
-            ASSERT_NULL(req); /* Should not reach here */
-        }
-        EXCEPT(Test_Failed)
-        {
-            RERAISE;
-        }
-        ELSE
-        {
-            ASSERT_NOT_NULL(Except_frame.exception);
-            ASSERT_NOT_NULL(strstr(Except_frame.exception->reason, "Invalid port number"));
-            caught = 1;
-        }
-        END_TRY;
+      req = SocketDNS_resolve (dns, "localhost", 65536, NULL, NULL);
+      ASSERT_NULL (req); /* Should not reach here */
     }
-    FINALLY
+    EXCEPT (Test_Failed) { RERAISE; }
+    ELSE
     {
-        SocketDNS_free(&dns);
+      ASSERT_NOT_NULL (Except_frame.exception);
+      ASSERT_NOT_NULL (
+          strstr (Except_frame.exception->reason, "Invalid port number"));
+      caught = 1;
     }
     END_TRY;
+  }
+  FINALLY { SocketDNS_free (&dns); }
+  END_TRY;
 
-    ASSERT(caught);
+  ASSERT (caught);
 }
 
-TEST(socketdns_resolve_valid_port_zero)
+TEST (socketdns_resolve_valid_port_zero)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
-    struct addrinfo *result = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
+  struct addrinfo *result = NULL;
 
-    TRY
-    {
-        req = SocketDNS_resolve(dns, "localhost", 0, NULL, NULL);
-        ASSERT_NOT_NULL(req);
+  TRY
+  {
+    req = SocketDNS_resolve (dns, "localhost", 0, NULL, NULL);
+    ASSERT_NOT_NULL (req);
 
-        usleep(100000);
-        SocketDNS_check(dns);
-        result = SocketDNS_getresult(dns, req);
-        if (result)
-            freeaddrinfo(result);
-        result = NULL;
-    }
-    EXCEPT(SocketDNS_Failed)
-    {
-        ASSERT(0); /* Port 0 should be valid */
-    }
-    FINALLY
-    {
-        if (result)
-            freeaddrinfo(result);
-        SocketDNS_free(&dns);
-    }
-    END_TRY;
+    usleep (100000);
+    SocketDNS_check (dns);
+    result = SocketDNS_getresult (dns, req);
+    if (result)
+      freeaddrinfo (result);
+    result = NULL;
+  }
+  EXCEPT (SocketDNS_Failed) { ASSERT (0); /* Port 0 should be valid */ }
+  FINALLY
+  {
+    if (result)
+      freeaddrinfo (result);
+    SocketDNS_free (&dns);
+  }
+  END_TRY;
 }
 
-TEST(socketdns_resolve_valid_port_max)
+TEST (socketdns_resolve_valid_port_max)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
-    struct addrinfo *result = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
+  struct addrinfo *result = NULL;
 
-    TRY
-    {
-        req = SocketDNS_resolve(dns, "127.0.0.1", 65535, NULL, NULL);
-        ASSERT_NOT_NULL(req);
+  TRY
+  {
+    req = SocketDNS_resolve (dns, "127.0.0.1", 65535, NULL, NULL);
+    ASSERT_NOT_NULL (req);
 
-        usleep(100000);
-        SocketDNS_check(dns);
-        result = SocketDNS_getresult(dns, req);
-        if (result)
-            freeaddrinfo(result);
-        result = NULL;
-    }
-    EXCEPT(SocketDNS_Failed)
-    {
-        ASSERT(0); /* Maximum port should be valid */
-    }
-    FINALLY
-    {
-        if (result)
-            freeaddrinfo(result);
-        SocketDNS_free(&dns);
-    }
-    END_TRY;
+    usleep (100000);
+    SocketDNS_check (dns);
+    result = SocketDNS_getresult (dns, req);
+    if (result)
+      freeaddrinfo (result);
+    result = NULL;
+  }
+  EXCEPT (SocketDNS_Failed) { ASSERT (0); /* Maximum port should be valid */ }
+  FINALLY
+  {
+    if (result)
+      freeaddrinfo (result);
+    SocketDNS_free (&dns);
+  }
+  END_TRY;
 }
 
-TEST(socketdns_resolve_null_dns)
+TEST (socketdns_resolve_null_dns)
 {
-    /* NULL DNS resolver causes assert() - cannot test exception in debug builds */
-    /* This test verifies that assert() prevents NULL DNS resolver */
-    (void)0; /* Test placeholder - actual test requires assert override */
+  /* NULL DNS resolver causes assert() - cannot test exception in debug builds
+   */
+  /* This test verifies that assert() prevents NULL DNS resolver */
+  (void)0; /* Test placeholder - actual test requires assert override */
 }
 
-TEST(socketdns_cancel_null_request)
+TEST (socketdns_cancel_null_request)
 {
-    SocketDNS_T dns = SocketDNS_new();
+  SocketDNS_T dns = SocketDNS_new ();
 
-    /* NULL request causes assert() - cannot test exception in debug builds */
-    /* This test verifies that assert() prevents NULL request */
-    (void)0; /* Test placeholder - actual test requires assert override */
+  /* NULL request causes assert() - cannot test exception in debug builds */
+  /* This test verifies that assert() prevents NULL request */
+  (void)0; /* Test placeholder - actual test requires assert override */
 
-    SocketDNS_free(&dns);
+  SocketDNS_free (&dns);
 }
 
 /* ==================== Error Handling Tests ==================== */
 
-TEST(socketdns_getresult_null_request)
+TEST (socketdns_getresult_null_request)
 {
-    SocketDNS_T dns = SocketDNS_new();
+  SocketDNS_T dns = SocketDNS_new ();
 
-    /* NULL request causes assert() - cannot test exception in debug builds */
-    /* This test verifies that assert() prevents NULL request */
-    (void)0; /* Test placeholder - actual test requires assert override */
+  /* NULL request causes assert() - cannot test exception in debug builds */
+  /* This test verifies that assert() prevents NULL request */
+  (void)0; /* Test placeholder - actual test requires assert override */
 
-    SocketDNS_free(&dns);
+  SocketDNS_free (&dns);
 }
 
-TEST(socketdns_getresult_pending_request)
+TEST (socketdns_getresult_pending_request)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY req = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
-    ASSERT_NOT_NULL(req);
+  TRY req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+  ASSERT_NOT_NULL (req);
 
-    /* Request should still be pending */
-    struct addrinfo *result = SocketDNS_getresult(dns, req);
-    ASSERT_NULL(result);
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  /* Request should still be pending */
+  struct addrinfo *result = SocketDNS_getresult (dns, req);
+  ASSERT_NULL (result);
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
-TEST(socketdns_getresult_cancelled_request)
+TEST (socketdns_getresult_cancelled_request)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
 
-    TRY req = SocketDNS_resolve(dns, "localhost", 80, NULL, NULL);
-    ASSERT_NOT_NULL(req);
+  TRY req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+  ASSERT_NOT_NULL (req);
 
-    SocketDNS_cancel(dns, req);
+  SocketDNS_cancel (dns, req);
 
-    /* Cancelled request should return NULL */
-    struct addrinfo *result = SocketDNS_getresult(dns, req);
-    ASSERT_NULL(result);
-    EXCEPT(SocketDNS_Failed)(void) 0;
-    FINALLY
-    SocketDNS_free(&dns);
-    END_TRY;
+  /* Cancelled request should return NULL */
+  struct addrinfo *result = SocketDNS_getresult (dns, req);
+  ASSERT_NULL (result);
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY
+  SocketDNS_free (&dns);
+  END_TRY;
 }
 
 /* ==================== Queue Management Tests ==================== */
 
-TEST(socketdns_queue_full_handling)
+TEST (socketdns_queue_full_handling)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T req = NULL;
-    size_t original_limit = 0;
-    int limit_overridden = 0;
-    int queue_full_triggered = 0;
+  SocketDNS_T dns = SocketDNS_new ();
+  SocketDNS_Request_T req = NULL;
+  size_t original_limit = 0;
+  int limit_overridden = 0;
+  int queue_full_triggered = 0;
+
+  TRY
+  {
+    original_limit = SocketDNS_getmaxpending (dns);
+    SocketDNS_setmaxpending (dns, 0);
+    limit_overridden = 1;
 
     TRY
     {
-        original_limit = SocketDNS_getmaxpending(dns);
-        SocketDNS_setmaxpending(dns, 0);
-        limit_overridden = 1;
-
-        TRY
-        {
-            req = SocketDNS_resolve(dns, "127.0.0.1", 80, slow_queue_callback, NULL);
-            (void)req;
-            ASSERT(0);
-        }
-        EXCEPT(Test_Failed)
-        {
-            RERAISE;
-        }
-        ELSE
-        {
-            ASSERT_NOT_NULL(Except_frame.exception);
-            ASSERT_NOT_NULL(strstr(Except_frame.exception->reason, "queue full"));
-            queue_full_triggered = 1;
-        }
-        END_TRY;
-
-        SocketDNS_setmaxpending(dns, original_limit);
-        limit_overridden = 0;
-
-        req = SocketDNS_resolve(dns, "127.0.0.1", 80, slow_queue_callback, NULL);
-        ASSERT_NOT_NULL(req);
-        usleep(100000);
-        SocketDNS_cancel(dns, req);
-        SocketDNS_check(dns);
+      req = SocketDNS_resolve (dns, "127.0.0.1", 80, slow_queue_callback,
+                               NULL);
+      (void)req;
+      ASSERT (0);
     }
-    FINALLY
+    EXCEPT (Test_Failed) { RERAISE; }
+    ELSE
     {
-        if (dns && limit_overridden)
-            SocketDNS_setmaxpending(dns, original_limit);
-        SocketDNS_free(&dns);
+      ASSERT_NOT_NULL (Except_frame.exception);
+      ASSERT_NOT_NULL (strstr (Except_frame.exception->reason, "queue full"));
+      queue_full_triggered = 1;
     }
     END_TRY;
 
-    ASSERT_NE(queue_full_triggered, 0);
+    SocketDNS_setmaxpending (dns, original_limit);
+    limit_overridden = 0;
+
+    req = SocketDNS_resolve (dns, "127.0.0.1", 80, slow_queue_callback, NULL);
+    ASSERT_NOT_NULL (req);
+    usleep (100000);
+    SocketDNS_cancel (dns, req);
+    SocketDNS_check (dns);
+  }
+  FINALLY
+  {
+    if (dns && limit_overridden)
+      SocketDNS_setmaxpending (dns, original_limit);
+    SocketDNS_free (&dns);
+  }
+  END_TRY;
+
+  ASSERT_NE (queue_full_triggered, 0);
 }
 
-TEST(socketdns_multiple_resolvers_independent)
+TEST (socketdns_multiple_resolvers_independent)
 {
-    SocketDNS_T dns1 = SocketDNS_new();
-    SocketDNS_T dns2 = SocketDNS_new();
-    SocketDNS_Request_T req1 = NULL;
-    SocketDNS_Request_T req2 = NULL;
-    struct addrinfo *res1 = NULL;
-    struct addrinfo *res2 = NULL;
+  SocketDNS_T dns1 = SocketDNS_new ();
+  SocketDNS_T dns2 = SocketDNS_new ();
+  SocketDNS_Request_T req1 = NULL;
+  SocketDNS_Request_T req2 = NULL;
+  struct addrinfo *res1 = NULL;
+  struct addrinfo *res2 = NULL;
 
-    TRY
-    {
-        req1 = SocketDNS_resolve(dns1, "localhost", 80, NULL, NULL);
-        req2 = SocketDNS_resolve(dns2, "127.0.0.1", 443, NULL, NULL);
+  TRY
+  {
+    req1 = SocketDNS_resolve (dns1, "localhost", 80, NULL, NULL);
+    req2 = SocketDNS_resolve (dns2, "127.0.0.1", 443, NULL, NULL);
 
-        ASSERT_NOT_NULL(req1);
-        ASSERT_NOT_NULL(req2);
+    ASSERT_NOT_NULL (req1);
+    ASSERT_NOT_NULL (req2);
 
-        usleep(100000);
-        SocketDNS_check(dns1);
-        SocketDNS_check(dns2);
+    usleep (100000);
+    SocketDNS_check (dns1);
+    SocketDNS_check (dns2);
 
-        res1 = SocketDNS_getresult(dns1, req1);
-        res2 = SocketDNS_getresult(dns2, req2);
-    }
-    EXCEPT(SocketDNS_Failed)
-    {
-        ASSERT(0); /* Both resolutions should succeed */
-    }
-    FINALLY
-    {
-        if (res1)
-            freeaddrinfo(res1);
-        if (res2)
-            freeaddrinfo(res2);
-        SocketDNS_free(&dns1);
-        SocketDNS_free(&dns2);
-    }
-    END_TRY;
+    res1 = SocketDNS_getresult (dns1, req1);
+    res2 = SocketDNS_getresult (dns2, req2);
+  }
+  EXCEPT (SocketDNS_Failed)
+  {
+    ASSERT (0); /* Both resolutions should succeed */
+  }
+  FINALLY
+  {
+    if (res1)
+      freeaddrinfo (res1);
+    if (res2)
+      freeaddrinfo (res2);
+    SocketDNS_free (&dns1);
+    SocketDNS_free (&dns2);
+  }
+  END_TRY;
 }
 
 /* ==================== Close-on-Exec Tests ==================== */
 
-TEST(socketdns_pipe_has_cloexec)
+TEST (socketdns_pipe_has_cloexec)
 {
-    SocketDNS_T dns = SocketDNS_new();
-    ASSERT_NOT_NULL(dns);
-    
-    int pollfd = SocketDNS_pollfd(dns);
-    ASSERT_NE(pollfd, -1);
-    
-    /* Verify pipe read end has CLOEXEC set */
-    int has_cloexec = SocketCommon_has_cloexec(pollfd);
-    ASSERT_EQ(has_cloexec, 1);
-    
-    SocketDNS_free(&dns);
+  SocketDNS_T dns = SocketDNS_new ();
+  ASSERT_NOT_NULL (dns);
+
+  int pollfd = SocketDNS_pollfd (dns);
+  ASSERT_NE (pollfd, -1);
+
+  /* Verify pipe read end has CLOEXEC set */
+  int has_cloexec = SocketCommon_has_cloexec (pollfd);
+  ASSERT_EQ (has_cloexec, 1);
+
+  SocketDNS_free (&dns);
 }
 
-int main(void)
+int
+main (void)
 {
-    Test_run_all();
-    return Test_get_failures() > 0 ? 1 : 0;
+  Test_run_all ();
+  return Test_get_failures () > 0 ? 1 : 0;
 }

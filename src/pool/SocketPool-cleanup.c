@@ -15,9 +15,9 @@
 
 #include "core/Except.h"
 #include "core/SocketConfig.h"
-#include "pool/SocketPool.h"
-#include "pool/SocketPool-private.h" /* For structs */
 #include "core/SocketError.h"
+#include "pool/SocketPool-private.h" /* For structs */
+#include "pool/SocketPool.h"
 #include "socket/Socket.h"
 
 #include "pool/SocketPool-core.h"    /* For safe_time */
@@ -28,13 +28,14 @@
 extern Except_T SocketPool_Failed;
 extern __thread Except_T SocketPool_DetailedException;
 
-#define RAISE_POOL_ERROR(exception)                                                                                    \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        SocketPool_DetailedException = (exception);                                                                    \
-        SocketPool_DetailedException.reason = socket_error_buf;                                                        \
-        RAISE(SocketPool_DetailedException);                                                                           \
-    } while (0)
+#define RAISE_POOL_ERROR(exception)                                           \
+  do                                                                          \
+    {                                                                         \
+      SocketPool_DetailedException = (exception);                             \
+      SocketPool_DetailedException.reason = socket_error_buf;                 \
+      RAISE (SocketPool_DetailedException);                                   \
+    }                                                                         \
+  while (0)
 
 /**
  * should_close_connection - Determine if connection should be closed
@@ -44,11 +45,12 @@ extern __thread Except_T SocketPool_DetailedException;
  * Returns: 1 if close, 0 otherwise
  * Thread-safe: Yes - pure function
  */
-static int should_close_connection(time_t idle_timeout, time_t now, time_t last_activity)
+static int
+should_close_connection (time_t idle_timeout, time_t now, time_t last_activity)
 {
-    if (idle_timeout == 0)
-        return 1;
-    return difftime(now, last_activity) > (double)idle_timeout;
+  if (idle_timeout == 0)
+    return 1;
+  return difftime (now, last_activity) > (double)idle_timeout;
 }
 
 /**
@@ -58,12 +60,14 @@ static int should_close_connection(time_t idle_timeout, time_t now, time_t last_
  * @now: Time
  * Returns: 1 if collect
  */
-static int should_collect_socket(const Connection_T conn, time_t idle_timeout, time_t now)
+static int
+should_collect_socket (const Connection_T conn, time_t idle_timeout,
+                       time_t now)
 {
-    if (!conn->active || !conn->socket)
-        return 0;
+  if (!conn->active || !conn->socket)
+    return 0;
 
-    return should_close_connection(idle_timeout, now, conn->last_activity);
+  return should_close_connection (idle_timeout, now, conn->last_activity);
 }
 
 /**
@@ -74,19 +78,20 @@ static int should_collect_socket(const Connection_T conn, time_t idle_timeout, t
  * Returns: Count collected
  * Thread-safe: Mutex held
  */
-static size_t collect_idle_sockets(T pool, time_t idle_timeout, time_t now)
+static size_t
+collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
 {
-    size_t i;
-    size_t close_count = 0;
+  size_t i;
+  size_t close_count = 0;
 
-    for (i = 0; i < pool->maxconns; i++)
+  for (i = 0; i < pool->maxconns; i++)
     {
-        if (should_collect_socket(&pool->connections[i], idle_timeout, now))
+      if (should_collect_socket (&pool->connections[i], idle_timeout, now))
         {
-            pool->cleanup_buffer[close_count++] = pool->connections[i].socket;
+          pool->cleanup_buffer[close_count++] = pool->connections[i].socket;
         }
     }
-    return close_count;
+  return close_count;
 }
 
 /**
@@ -95,26 +100,21 @@ static size_t collect_idle_sockets(T pool, time_t idle_timeout, time_t now)
  * @close_count: Count
  * Thread-safe: No mutex - call outside lock
  */
-static void close_collected_sockets(T pool, size_t close_count)
+static void
+close_collected_sockets (T pool, size_t close_count)
 {
-    volatile size_t i;
+  volatile size_t i;
 
-    for (i = 0; i < close_count; i++)
+  for (i = 0; i < close_count; i++)
     {
-        TRY
-        {
-            SocketPool_remove(pool, pool->cleanup_buffer[i]);
-            Socket_free(&pool->cleanup_buffer[i]);
-        }
-        EXCEPT(SocketPool_Failed)
-        {
-            /* Ignore - may already removed */
-        }
-        EXCEPT(Socket_Failed)
-        {
-            /* Ignore free fail */
-        }
-        END_TRY;
+      TRY
+      {
+        SocketPool_remove (pool, pool->cleanup_buffer[i]);
+        Socket_free (&pool->cleanup_buffer[i]);
+      }
+      EXCEPT (SocketPool_Failed) { /* Ignore - may already removed */ }
+      EXCEPT (Socket_Failed) { /* Ignore free fail */ }
+      END_TRY;
     }
 }
 
@@ -125,29 +125,27 @@ static void close_collected_sockets(T pool, size_t close_count)
  * Thread-safe: Yes
  * Performance: O(n) scan
  */
-void SocketPool_cleanup(T pool, time_t idle_timeout)
+void
+SocketPool_cleanup (T pool, time_t idle_timeout)
 {
-    time_t now;
-    size_t close_count;
+  time_t now;
+  size_t close_count;
 
-    assert(pool);
-    assert(pool->cleanup_buffer);
+  assert (pool);
+  assert (pool->cleanup_buffer);
 
-    TRY
-    {
-        now = safe_time();
+  TRY
+  {
+    now = safe_time ();
 
-        pthread_mutex_lock(&pool->mutex);
-        close_count = collect_idle_sockets(pool, idle_timeout, now);
-        pthread_mutex_unlock(&pool->mutex);
+    pthread_mutex_lock (&pool->mutex);
+    close_count = collect_idle_sockets (pool, idle_timeout, now);
+    pthread_mutex_unlock (&pool->mutex);
 
-        close_collected_sockets(pool, close_count);
-    }
-    EXCEPT(SocketPool_Failed)
-    {
-        /* Already raised */
-    }
-    END_TRY;
+    close_collected_sockets (pool, close_count);
+  }
+  EXCEPT (SocketPool_Failed) { /* Already raised */ }
+  END_TRY;
 }
 
 #undef T

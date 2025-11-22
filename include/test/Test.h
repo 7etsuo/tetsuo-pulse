@@ -38,13 +38,13 @@ extern Except_T Test_Failed;
  * Executes all tests registered via TEST() macro and prints summary.
  * Tests are executed in registration order.
  */
-extern void Test_run_all(void);
+extern void Test_run_all (void);
 
 /**
  * Test_get_failures - Get number of failed tests
  * Returns: Number of tests that failed (0 if all passed)
  */
-extern int Test_get_failures(void);
+extern int Test_get_failures (void);
 
 /**
  * Test registration macro - declares and registers a test function
@@ -54,31 +54,32 @@ extern int Test_get_failures(void);
  *       // test code
  *   }
  */
-#define TEST(name)                                                                                                     \
-    static void test_##name(void);                                                                                     \
-    static void __attribute__((constructor)) test_register_##name(void)                                                \
-    {                                                                                                                  \
-        Test_register(#name, test_##name);                                                                             \
-    }                                                                                                                  \
-    static void test_##name(void)
+#define TEST(name)                                                            \
+  static void test_##name (void);                                             \
+  static void __attribute__ ((constructor)) test_register_##name (void)       \
+  {                                                                           \
+    Test_register (#name, test_##name);                                       \
+  }                                                                           \
+  static void test_##name (void)
 
 /* Internal registration function - do not call directly */
-extern void Test_register(const char *name, void (*func)(void));
+extern void Test_register (const char *name, void (*func) (void));
 
 /**
  * ASSERT - Basic assertion macro
  * @condition: Condition that must be true
  * Raises Test_Failed if condition is false and aborts the current test.
  */
-#define ASSERT(condition)                                                                                              \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (!(condition))                                                                                              \
-        {                                                                                                              \
-            Test_fail("Assertion failed: " #condition, __FILE__, __LINE__);                                            \
-            return;                                                                                                    \
-        }                                                                                                              \
-    } while (0)
+#define ASSERT(condition)                                                     \
+  do                                                                          \
+    {                                                                         \
+      if (!(condition))                                                       \
+        {                                                                     \
+          Test_fail ("Assertion failed: " #condition, __FILE__, __LINE__);    \
+          return;                                                             \
+        }                                                                     \
+    }                                                                         \
+  while (0)
 
 /**
  * ASSERT_EQ - Equality assertion macro
@@ -87,15 +88,16 @@ extern void Test_register(const char *name, void (*func)(void));
  * Raises Test_Failed if values are not equal and aborts the current test.
  * Works with any comparable types.
  */
-#define ASSERT_EQ(expected, actual)                                                                                    \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if ((expected) != (actual))                                                                                    \
-        {                                                                                                              \
-            Test_fail_eq(#expected, #actual, __FILE__, __LINE__);                                                      \
-            return;                                                                                                    \
-        }                                                                                                              \
-    } while (0)
+#define ASSERT_EQ(expected, actual)                                           \
+  do                                                                          \
+    {                                                                         \
+      if ((expected) != (actual))                                             \
+        {                                                                     \
+          Test_fail_eq (#expected, #actual, __FILE__, __LINE__);              \
+          return;                                                             \
+        }                                                                     \
+    }                                                                         \
+  while (0)
 
 /**
  * ASSERT_NE - Inequality assertion macro
@@ -103,50 +105,57 @@ extern void Test_register(const char *name, void (*func)(void));
  * @actual: Actual value
  * Raises Test_Failed if values are equal and aborts the current test.
  */
-#define ASSERT_NE(expected, actual)                                                                                    \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if ((expected) == (actual))                                                                                    \
-        {                                                                                                              \
-            Test_fail_ne(#expected, #actual, __FILE__, __LINE__);                                                      \
-            return;                                                                                                    \
-        }                                                                                                              \
-    } while (0)
+#define ASSERT_NE(expected, actual)                                           \
+  do                                                                          \
+    {                                                                         \
+      if ((expected) == (actual))                                             \
+        {                                                                     \
+          Test_fail_ne (#expected, #actual, __FILE__, __LINE__);              \
+          return;                                                             \
+        }                                                                     \
+    }                                                                         \
+  while (0)
 
 /**
  * ASSERT_NULL - NULL pointer assertion macro
  * @ptr: Pointer that must be NULL
  * Raises Test_Failed if pointer is not NULL and aborts the current test.
  */
-#define ASSERT_NULL(ptr)                                                                                               \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if ((ptr) != NULL)                                                                                             \
-        {                                                                                                              \
-            Test_fail("Assertion failed: " #ptr " is not NULL", __FILE__, __LINE__);                                   \
-            return;                                                                                                    \
-        }                                                                                                              \
-    } while (0)
+#define ASSERT_NULL(ptr)                                                      \
+  do                                                                          \
+    {                                                                         \
+      if ((ptr) != NULL)                                                      \
+        {                                                                     \
+          Test_fail ("Assertion failed: " #ptr " is not NULL", __FILE__,      \
+                     __LINE__);                                               \
+          return;                                                             \
+        }                                                                     \
+    }                                                                         \
+  while (0)
 
 /**
  * ASSERT_NOT_NULL - Non-NULL pointer assertion macro
  * @ptr: Pointer that must not be NULL
  * Raises Test_Failed if pointer is NULL and aborts the current test.
  */
-#define ASSERT_NOT_NULL(ptr)                                                                                           \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if ((ptr) == NULL)                                                                                             \
-        {                                                                                                              \
-            Test_fail("Assertion failed: " #ptr " is NULL", __FILE__, __LINE__);                                       \
-            return;                                                                                                    \
-        }                                                                                                              \
-    } while (0)
+#define ASSERT_NOT_NULL(ptr)                                                  \
+  do                                                                          \
+    {                                                                         \
+      if ((ptr) == NULL)                                                      \
+        {                                                                     \
+          Test_fail ("Assertion failed: " #ptr " is NULL", __FILE__,          \
+                     __LINE__);                                               \
+          return;                                                             \
+        }                                                                     \
+    }                                                                         \
+  while (0)
 
 /* Internal failure reporting functions - do not call directly */
-extern void Test_fail(const char *message, const char *file, int line);
-extern void Test_fail_eq(const char *expected_str, const char *actual_str, const char *file, int line);
-extern void Test_fail_ne(const char *expected_str, const char *actual_str, const char *file, int line);
+extern void Test_fail (const char *message, const char *file, int line);
+extern void Test_fail_eq (const char *expected_str, const char *actual_str,
+                          const char *file, int line);
+extern void Test_fail_ne (const char *expected_str, const char *actual_str,
+                          const char *file, int line);
 
 #undef T
 #endif

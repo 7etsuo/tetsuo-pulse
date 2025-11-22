@@ -1,13 +1,14 @@
 #ifndef SOCKETASYNC_INCLUDED
 #define SOCKETASYNC_INCLUDED
 
-#include "socket/Socket.h"
 #include "core/Except.h"
+#include "socket/Socket.h"
 
 /**
  * SocketAsync - Asynchronous I/O Operations
  *
- * Provides non-blocking I/O operations using platform-optimized async mechanisms:
+ * Provides non-blocking I/O operations using platform-optimized async
+ * mechanisms:
  * - Linux: io_uring (kernel 5.1+)
  * - macOS/BSD: kqueue AIO
  * - Fallback: Edge-triggered polling (if async unavailable)
@@ -19,7 +20,8 @@
  * - Thread-safe operation
  *
  * PLATFORM REQUIREMENTS:
- * - Linux: kernel 5.1+ for io_uring (falls back to edge-triggered if unavailable)
+ * - Linux: kernel 5.1+ for io_uring (falls back to edge-triggered if
+ * unavailable)
  * - macOS/BSD: kqueue with AIO support
  * - All platforms: Non-blocking sockets (automatically handled)
  *
@@ -35,7 +37,8 @@
  *       // Process completion
  *   }
  *
- *   unsigned req_id = SocketAsync_send(sock, buf, len, send_callback, user_data, 0);
+ *   unsigned req_id = SocketAsync_send(sock, buf, len, send_callback,
+ * user_data, 0);
  */
 
 #define T SocketAsync_T
@@ -59,16 +62,19 @@ extern Except_T SocketAsync_Failed; /**< Async operation failure */
  * Callback is invoked from SocketPoll_wait() context - keep it fast!
  * Thread-safe: Yes - invoked from single-threaded poll context
  */
-typedef void (*SocketAsync_Callback)(Socket_T socket, ssize_t bytes, int err, void *user_data);
+typedef void (*SocketAsync_Callback) (Socket_T socket, ssize_t bytes, int err,
+                                      void *user_data);
 
 /**
  * Async operation flags
  */
 typedef enum
 {
-    ASYNC_FLAG_NONE = 0,           /**< No special flags */
-    ASYNC_FLAG_ZERO_COPY = 1 << 0, /**< Use zero-copy (sendfile/splice) if available */
-    ASYNC_FLAG_URGENT = 1 << 1     /**< High-priority operation (io_uring IOSQE_IO_LINK) */
+  ASYNC_FLAG_NONE = 0, /**< No special flags */
+  ASYNC_FLAG_ZERO_COPY
+  = 1 << 0, /**< Use zero-copy (sendfile/splice) if available */
+  ASYNC_FLAG_URGENT
+  = 1 << 1 /**< High-priority operation (io_uring IOSQE_IO_LINK) */
 } SocketAsync_Flags;
 
 /**
@@ -81,14 +87,14 @@ typedef enum
  * Creates an async context with platform-specific backend initialization.
  * Falls back gracefully if async I/O is unavailable on this platform.
  */
-extern T SocketAsync_new(Arena_T arena);
+extern T SocketAsync_new (Arena_T arena);
 
 /**
  * SocketAsync_free - Free an async I/O context
  * @async: Pointer to async context (will be set to NULL)
  * Thread-safe: Yes - frees resources
  */
-extern void SocketAsync_free(T *async);
+extern void SocketAsync_free (T *async);
 
 /**
  * SocketAsync_send - Submit asynchronous send operation
@@ -112,13 +118,15 @@ extern void SocketAsync_free(T *async);
  * Partial sends: If only part of data is sent, callback is called with
  * partial byte count. Use SocketAsync_send_continue() to send remainder.
  *
- * Fallback mode: If async I/O is unavailable (SocketAsync_is_available() == 0),
- * the request is queued but not submitted to kernel. Application must complete
- * the operation manually using regular Socket_send()/Socket_recv() and then
- * invoke the callback. Check SocketAsync_is_available() to determine mode.
+ * Fallback mode: If async I/O is unavailable (SocketAsync_is_available() ==
+ * 0), the request is queued but not submitted to kernel. Application must
+ * complete the operation manually using regular Socket_send()/Socket_recv()
+ * and then invoke the callback. Check SocketAsync_is_available() to determine
+ * mode.
  */
-extern unsigned SocketAsync_send(T async, Socket_T socket, const void *buf, size_t len, SocketAsync_Callback cb,
-                                 void *user_data, SocketAsync_Flags flags);
+extern unsigned SocketAsync_send (T async, Socket_T socket, const void *buf,
+                                  size_t len, SocketAsync_Callback cb,
+                                  void *user_data, SocketAsync_Flags flags);
 
 /**
  * SocketAsync_recv - Submit asynchronous receive operation
@@ -138,8 +146,9 @@ extern unsigned SocketAsync_send(T async, Socket_T socket, const void *buf, size
  * Note: Callback receives bytes received (0 = EOF, < 0 = error).
  * Buffer must remain valid until callback is invoked.
  */
-extern unsigned SocketAsync_recv(T async, Socket_T socket, void *buf, size_t len, SocketAsync_Callback cb,
-                                 void *user_data, SocketAsync_Flags flags);
+extern unsigned SocketAsync_recv (T async, Socket_T socket, void *buf,
+                                  size_t len, SocketAsync_Callback cb,
+                                  void *user_data, SocketAsync_Flags flags);
 
 /**
  * SocketAsync_cancel - Cancel pending async operation
@@ -153,7 +162,7 @@ extern unsigned SocketAsync_recv(T async, Socket_T socket, void *buf, size_t len
  * Note: Cancellation is best-effort. Operation may complete before
  * cancellation takes effect.
  */
-extern int SocketAsync_cancel(T async, unsigned request_id);
+extern int SocketAsync_cancel (T async, unsigned request_id);
 
 /**
  * SocketAsync_process_completions - Process pending async completions
@@ -167,7 +176,7 @@ extern int SocketAsync_cancel(T async, unsigned request_id);
  * Note: This is called automatically by SocketPoll_wait(). Applications
  * typically don't need to call this directly.
  */
-extern int SocketAsync_process_completions(T async, int timeout_ms);
+extern int SocketAsync_process_completions (T async, int timeout_ms);
 
 /**
  * SocketAsync_is_available - Check if async I/O is available on this platform
@@ -177,7 +186,7 @@ extern int SocketAsync_process_completions(T async, int timeout_ms);
  *
  * Thread-safe: Yes
  */
-extern int SocketAsync_is_available(T async);
+extern int SocketAsync_is_available (T async);
 
 /**
  * SocketAsync_backend_name - Get name of async backend in use
@@ -187,7 +196,7 @@ extern int SocketAsync_is_available(T async);
  *
  * Thread-safe: Yes
  */
-extern const char *SocketAsync_backend_name(T async);
+extern const char *SocketAsync_backend_name (T async);
 
 #undef T
 #endif

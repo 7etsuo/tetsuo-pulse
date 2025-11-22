@@ -13,19 +13,19 @@
 
 #ifdef SOCKET_HAS_TLS
 
-#include "tls/SocketTLS.h"
 #include "socket/Socket-private.h"
-#include <openssl/ssl.h>
+#include "tls/SocketTLS.h"
 #include <assert.h>
+#include <openssl/ssl.h>
 
 #define T SocketTLS_T
 
 static SSL *
-socket_get_ssl(Socket_T socket)
+socket_get_ssl (Socket_T socket)
 {
-    if (!socket || !socket->tls_enabled || !socket->tls_ssl)
-        return NULL;
-    return (SSL *)socket->tls_ssl;
+  if (!socket || !socket->tls_enabled || !socket->tls_ssl)
+    return NULL;
+  return (SSL *)socket->tls_ssl;
 }
 
 /**
@@ -39,34 +39,34 @@ socket_get_ssl(Socket_T socket)
  * Thread-safe: No (reads socket state)
  */
 const char *
-SocketTLS_get_cipher(Socket_T socket)
+SocketTLS_get_cipher (Socket_T socket)
 {
-    SSL *ssl;
-    const SSL_CIPHER *cipher;
+  SSL *ssl;
+  const SSL_CIPHER *cipher;
 
-    assert(socket);
+  assert (socket);
 
-    /* Check if TLS is enabled */
-    if (!socket->tls_enabled)
+  /* Check if TLS is enabled */
+  if (!socket->tls_enabled)
     {
-        return NULL;
+      return NULL;
     }
 
-    /* Get SSL object */
-    ssl = socket_get_ssl(socket);
-    if (!ssl)
+  /* Get SSL object */
+  ssl = socket_get_ssl (socket);
+  if (!ssl)
     {
-        return NULL;
+      return NULL;
     }
 
-    /* Get cipher information */
-    cipher = SSL_get_current_cipher(ssl);
-    if (!cipher)
+  /* Get cipher information */
+  cipher = SSL_get_current_cipher (ssl);
+  if (!cipher)
     {
-        return NULL;
+      return NULL;
     }
 
-    return SSL_CIPHER_get_name(cipher);
+  return SSL_CIPHER_get_name (cipher);
 }
 
 /**
@@ -80,27 +80,27 @@ SocketTLS_get_cipher(Socket_T socket)
  * Thread-safe: No (reads socket state)
  */
 const char *
-SocketTLS_get_version(Socket_T socket)
+SocketTLS_get_version (Socket_T socket)
 {
-    SSL *ssl;
+  SSL *ssl;
 
-    assert(socket);
+  assert (socket);
 
-    /* Check if TLS is enabled */
-    if (!socket->tls_enabled)
+  /* Check if TLS is enabled */
+  if (!socket->tls_enabled)
     {
-        return NULL;
+      return NULL;
     }
 
-    /* Get SSL object */
-    ssl = socket_get_ssl(socket);
-    if (!ssl)
+  /* Get SSL object */
+  ssl = socket_get_ssl (socket);
+  if (!ssl)
     {
-        return NULL;
+      return NULL;
     }
 
-    /* Get version information */
-    return SSL_get_version(ssl);
+  /* Get version information */
+  return SSL_get_version (ssl);
 }
 
 /**
@@ -115,27 +115,27 @@ SocketTLS_get_version(Socket_T socket)
  * Thread-safe: No (reads socket state)
  */
 int
-SocketTLS_get_verify_result(Socket_T socket)
+SocketTLS_get_verify_result (Socket_T socket)
 {
-    SSL *ssl;
+  SSL *ssl;
 
-    assert(socket);
+  assert (socket);
 
-    /* Check if TLS is enabled */
-    if (!socket->tls_enabled)
+  /* Check if TLS is enabled */
+  if (!socket->tls_enabled)
     {
-        return -1; /* Not applicable */
+      return -1; /* Not applicable */
     }
 
-    /* Get SSL object */
-    ssl = socket_get_ssl(socket);
-    if (!ssl)
+  /* Get SSL object */
+  ssl = socket_get_ssl (socket);
+  if (!ssl)
     {
-        return -1; /* Not available */
+      return -1; /* Not available */
     }
 
-    /* Get verification result */
-    return SSL_get_verify_result(ssl);
+  /* Get verification result */
+  return SSL_get_verify_result (ssl);
 }
 
 /**
@@ -151,27 +151,27 @@ SocketTLS_get_verify_result(Socket_T socket)
  * Thread-safe: No (reads socket state)
  */
 int
-SocketTLS_is_session_reused(Socket_T socket)
+SocketTLS_is_session_reused (Socket_T socket)
 {
-    SSL *ssl;
+  SSL *ssl;
 
-    assert(socket);
+  assert (socket);
 
-    /* Check if TLS is enabled */
-    if (!socket->tls_enabled)
+  /* Check if TLS is enabled */
+  if (!socket->tls_enabled)
     {
-        return -1; /* Not applicable */
+      return -1; /* Not applicable */
     }
 
-    /* Get SSL object */
-    ssl = socket_get_ssl(socket);
-    if (!ssl)
+  /* Get SSL object */
+  ssl = socket_get_ssl (socket);
+  if (!ssl)
     {
-        return -1; /* Not available */
+      return -1; /* Not available */
     }
 
-    /* Check if session was reused */
-    return SSL_session_reused(ssl) ? 1 : 0;
+  /* Check if session was reused */
+  return SSL_session_reused (ssl) ? 1 : 0;
 }
 
 /**
@@ -179,45 +179,46 @@ SocketTLS_is_session_reused(Socket_T socket)
  * @socket: Socket instance with completed handshake
  *
  * Returns the ALPN protocol that was negotiated during the TLS handshake.
- * This is useful for determining which application protocol to use (e.g., "h2", "http/1.1").
+ * This is useful for determining which application protocol to use (e.g.,
+ * "h2", "http/1.1").
  *
- * Returns: Negotiated protocol string, or NULL if none negotiated or unavailable
- * Raises: None
- * Thread-safe: Yes - reads immutable post-handshake state
+ * Returns: Negotiated protocol string, or NULL if none negotiated or
+ * unavailable Raises: None Thread-safe: Yes - reads immutable post-handshake
+ * state
  */
 const char *
-SocketTLS_get_alpn_selected(Socket_T socket)
+SocketTLS_get_alpn_selected (Socket_T socket)
 {
-    SSL *ssl;
-    const unsigned char *alpn_data;
-    unsigned int alpn_len;
+  SSL *ssl;
+  const unsigned char *alpn_data;
+  unsigned int alpn_len;
 
-    assert(socket);
+  assert (socket);
 
-    /* Check if TLS is enabled */
-    if (!socket->tls_enabled)
+  /* Check if TLS is enabled */
+  if (!socket->tls_enabled)
     {
-        return NULL;
+      return NULL;
     }
 
-    /* Get SSL object */
-    ssl = socket_get_ssl(socket);
-    if (!ssl)
+  /* Get SSL object */
+  ssl = socket_get_ssl (socket);
+  if (!ssl)
     {
-        return NULL;
+      return NULL;
     }
 
-    /* Get negotiated ALPN protocol */
-    SSL_get0_alpn_selected(ssl, &alpn_data, &alpn_len);
-    if (!alpn_data || alpn_len == 0)
+  /* Get negotiated ALPN protocol */
+  SSL_get0_alpn_selected (ssl, &alpn_data, &alpn_len);
+  if (!alpn_data || alpn_len == 0)
     {
-        return NULL;
+      return NULL;
     }
 
-    /* Note: OpenSSL returns the protocol in wire format (length-prefixed)
-     * For simplicity, we assume it's a valid string and return it directly.
-     * In production, you might want to validate the format. */
-    return (const char *)alpn_data;
+  /* Note: OpenSSL returns the protocol in wire format (length-prefixed)
+   * For simplicity, we assume it's a valid string and return it directly.
+   * In production, you might want to validate the format. */
+  return (const char *)alpn_data;
 }
 
 #undef T

@@ -14,1061 +14,1044 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-#include "test/Test.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
-#include "socket/SocketDgram.h"
 #include "socket/SocketCommon.h"
+#include "socket/SocketDgram.h"
+#include "test/Test.h"
 
 #define TEST_BUFFER_SIZE 4096
 #define TEST_MULTICAST_GROUP "239.0.0.1"
 
-static void setup_signals(void)
+static void
+setup_signals (void)
 {
-    signal(SIGPIPE, SIG_IGN);
+  signal (SIGPIPE, SIG_IGN);
 }
 
 /* ==================== Basic Socket Tests ==================== */
 
-TEST(socketdgram_new_creates_ipv4_socket)
+TEST (socketdgram_new_creates_ipv4_socket)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
-    SocketDgram_free(&socket);
-    ASSERT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
+  SocketDgram_free (&socket);
+  ASSERT_NULL (socket);
 }
 
-TEST(socketdgram_new_creates_ipv6_socket)
+TEST (socketdgram_new_creates_ipv6_socket)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET6, 0);
-    ASSERT_NOT_NULL(socket);
-    SocketDgram_free(&socket);
-    ASSERT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET6, 0);
+  ASSERT_NOT_NULL (socket);
+  SocketDgram_free (&socket);
+  ASSERT_NULL (socket);
 }
 
-TEST(socketdgram_fd_access)
+TEST (socketdgram_fd_access)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
-    int fd = SocketDgram_fd(socket);
-    ASSERT_NE(fd, -1);
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
+  int fd = SocketDgram_fd (socket);
+  ASSERT_NE (fd, -1);
+  SocketDgram_free (&socket);
 }
 
 /* ==================== Bind Tests ==================== */
 
-TEST(socketdgram_bind_localhost)
+TEST (socketdgram_bind_localhost)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
-    TRY
-    {
-        SocketDgram_bind(socket, "127.0.0.1", 0);
-    }
-    EXCEPT(SocketDgram_Failed)
-    {
-        ASSERT(0);
-    }
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
+  TRY { SocketDgram_bind (socket, "127.0.0.1", 0); }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_bind_any)
+TEST (socketdgram_bind_any)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
-    TRY
-    {
-        SocketDgram_bind(socket, NULL, 0);
-    }
-    EXCEPT(SocketDgram_Failed)
-    {
-        ASSERT(0);
-    }
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
+  TRY { SocketDgram_bind (socket, NULL, 0); }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_bind_wildcard_ipv4)
+TEST (socketdgram_bind_wildcard_ipv4)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    TRY
-    {
-        SocketDgram_bind(socket, "0.0.0.0", 0);
-    }
-    EXCEPT(SocketDgram_Failed)
-    {
-        ASSERT(0);
-    }
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  TRY { SocketDgram_bind (socket, "0.0.0.0", 0); }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_bind_ipv6_localhost)
+TEST (socketdgram_bind_ipv6_localhost)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET6, 0);
-    TRY
-    {
-        SocketDgram_bind(socket, "::1", 0);
-    }
-    EXCEPT(SocketDgram_Failed)
-    {
-        ASSERT(0);
-    }
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET6, 0);
+  TRY { SocketDgram_bind (socket, "::1", 0); }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_bind_ipv6_any)
+TEST (socketdgram_bind_ipv6_any)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET6, 0);
-    TRY
-    {
-        SocketDgram_bind(socket, "::", 0);
-    }
-    EXCEPT(SocketDgram_Failed)
-    {
-        ASSERT(0);
-    }
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET6, 0);
+  TRY { SocketDgram_bind (socket, "::", 0); }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
 /* ==================== Sendto/Recvfrom Tests ==================== */
 
-TEST(socketdgram_sendto_recvfrom_localhost)
+TEST (socketdgram_sendto_recvfrom_localhost)
 {
-    setup_signals();
-    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
-    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
 
-    TRY
-    {
-        SocketDgram_bind(receiver, "127.0.0.1", 0);
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
+  TRY
+  {
+    SocketDgram_bind (receiver, "127.0.0.1", 0);
+    struct sockaddr_in addr;
+    socklen_t len = sizeof (addr);
+    getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+    int port = ntohs (addr.sin_port);
 
-        const char *msg = "UDP test message";
-        ssize_t sent = SocketDgram_sendto(sender, msg, strlen(msg), "127.0.0.1", port);
-        ASSERT_NE(sent, -1);
+    const char *msg = "UDP test message";
+    ssize_t sent
+        = SocketDgram_sendto (sender, msg, strlen (msg), "127.0.0.1", port);
+    ASSERT_NE (sent, -1);
 
-        usleep(10000);
-        char recv_host[256] = {0};
-        int recv_port = 0;
-        char buf[TEST_BUFFER_SIZE] = {0};
-        ssize_t received =
-            SocketDgram_recvfrom(receiver, buf, sizeof(buf) - 1, recv_host, sizeof(recv_host), &recv_port);
+    usleep (10000);
+    char recv_host[256] = { 0 };
+    int recv_port = 0;
+    char buf[TEST_BUFFER_SIZE] = { 0 };
+    ssize_t received
+        = SocketDgram_recvfrom (receiver, buf, sizeof (buf) - 1, recv_host,
+                                sizeof (recv_host), &recv_port);
 
-        if (received > 0)
-        {
-            ASSERT_EQ(strcmp(buf, msg), 0);
-            ASSERT_NE(recv_port, 0);
-        }
-    }
-    EXCEPT(SocketDgram_Failed)
-    {
-        (void)0;
-    }
-    FINALLY
-    {
-        SocketDgram_free(&sender);
-        SocketDgram_free(&receiver);
-    }
-    END_TRY;
+    if (received > 0)
+      {
+        ASSERT_EQ (strcmp (buf, msg), 0);
+        ASSERT_NE (recv_port, 0);
+      }
+  }
+  EXCEPT (SocketDgram_Failed) { (void)0; }
+  FINALLY
+  {
+    SocketDgram_free (&sender);
+    SocketDgram_free (&receiver);
+  }
+  END_TRY;
 }
 
-TEST(socketdgram_sendto_recvfrom_large_data)
+TEST (socketdgram_sendto_recvfrom_large_data)
 {
-    setup_signals();
-    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
-    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
 
-    TRY SocketDgram_bind(receiver, "127.0.0.1", 0);
-    struct sockaddr_in addr;
-    socklen_t len = sizeof(addr);
-    getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-    int port = ntohs(addr.sin_port);
+  TRY SocketDgram_bind (receiver, "127.0.0.1", 0);
+  struct sockaddr_in addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  int port = ntohs (addr.sin_port);
 
-    char large_buf[4096];
-    memset(large_buf, 'B', sizeof(large_buf));
-    ssize_t sent = SocketDgram_sendto(sender, large_buf, sizeof(large_buf), "127.0.0.1", port);
-    ASSERT_NE(sent, -1);
-    EXCEPT(SocketDgram_Failed)(void) 0;
-    FINALLY
-    SocketDgram_free(&sender);
-    SocketDgram_free(&receiver);
-    END_TRY;
+  char large_buf[4096];
+  memset (large_buf, 'B', sizeof (large_buf));
+  ssize_t sent = SocketDgram_sendto (sender, large_buf, sizeof (large_buf),
+                                     "127.0.0.1", port);
+  ASSERT_NE (sent, -1);
+  EXCEPT (SocketDgram_Failed) (void) 0;
+  FINALLY
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
+  END_TRY;
 }
 
-TEST(socketdgram_multiple_datagrams)
+TEST (socketdgram_multiple_datagrams)
 {
-    setup_signals();
-    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
-    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
 
-    TRY SocketDgram_bind(receiver, "127.0.0.1", 0);
-    SocketDgram_setnonblocking(receiver);
-    struct sockaddr_in addr;
-    socklen_t len = sizeof(addr);
-    getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-    int port = ntohs(addr.sin_port);
+  TRY SocketDgram_bind (receiver, "127.0.0.1", 0);
+  SocketDgram_setnonblocking (receiver);
+  struct sockaddr_in addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  int port = ntohs (addr.sin_port);
 
-    for (int i = 0; i < 5; i++)
+  for (int i = 0; i < 5; i++)
     {
-        char msg[32];
-        snprintf(msg, sizeof(msg), "Datagram %d", i);
-        SocketDgram_sendto(sender, msg, strlen(msg), "127.0.0.1", port);
+      char msg[32];
+      snprintf (msg, sizeof (msg), "Datagram %d", i);
+      SocketDgram_sendto (sender, msg, strlen (msg), "127.0.0.1", port);
     }
 
-    usleep(50000);
-    int received_count = 0;
-    for (int i = 0; i < 5; i++)
+  usleep (50000);
+  int received_count = 0;
+  for (int i = 0; i < 5; i++)
     {
-        char buf[TEST_BUFFER_SIZE];
-        ssize_t received = SocketDgram_recvfrom(receiver, buf, sizeof(buf), NULL, 0, NULL);
-        if (received > 0)
-            received_count++;
+      char buf[TEST_BUFFER_SIZE];
+      ssize_t received
+          = SocketDgram_recvfrom (receiver, buf, sizeof (buf), NULL, 0, NULL);
+      if (received > 0)
+        received_count++;
     }
-    ASSERT_NE(received_count, 0);
-    EXCEPT(SocketDgram_Failed)(void) 0;
-    FINALLY
-    SocketDgram_free(&sender);
-    SocketDgram_free(&receiver);
-    END_TRY;
+  ASSERT_NE (received_count, 0);
+  EXCEPT (SocketDgram_Failed) (void) 0;
+  FINALLY
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
+  END_TRY;
 }
 
 /* ==================== Connected Mode Tests ==================== */
 
-TEST(socketdgram_connect_send_recv)
+TEST (socketdgram_connect_send_recv)
 {
-    setup_signals();
-    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
-    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
 
-    TRY SocketDgram_bind(receiver, "127.0.0.1", 0);
-    struct sockaddr_in addr;
-    socklen_t len = sizeof(addr);
-    getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-    int port = ntohs(addr.sin_port);
+  TRY SocketDgram_bind (receiver, "127.0.0.1", 0);
+  struct sockaddr_in addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  int port = ntohs (addr.sin_port);
 
-    SocketDgram_connect(sender, "127.0.0.1", port);
+  SocketDgram_connect (sender, "127.0.0.1", port);
 
-    const char *msg = "Connected UDP";
-    ssize_t sent = SocketDgram_send(sender, msg, strlen(msg));
-    ASSERT_NE(sent, -1);
+  const char *msg = "Connected UDP";
+  ssize_t sent = SocketDgram_send (sender, msg, strlen (msg));
+  ASSERT_NE (sent, -1);
 
-    usleep(10000);
-    char buf[TEST_BUFFER_SIZE] = {0};
-    ssize_t received = SocketDgram_recv(receiver, buf, sizeof(buf) - 1);
-    if (received > 0)
-        ASSERT_EQ(strcmp(buf, msg), 0);
-    EXCEPT(SocketDgram_Failed)(void) 0;
-    FINALLY
-    SocketDgram_free(&sender);
-    SocketDgram_free(&receiver);
-    END_TRY;
+  usleep (10000);
+  char buf[TEST_BUFFER_SIZE] = { 0 };
+  ssize_t received = SocketDgram_recv (receiver, buf, sizeof (buf) - 1);
+  if (received > 0)
+    ASSERT_EQ (strcmp (buf, msg), 0);
+  EXCEPT (SocketDgram_Failed) (void) 0;
+  FINALLY
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
+  END_TRY;
 }
 
-TEST(socketdgram_connected_bidirectional)
+TEST (socketdgram_connected_bidirectional)
 {
-    setup_signals();
-    SocketDgram_T sock1 = SocketDgram_new(AF_INET, 0);
-    SocketDgram_T sock2 = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T sock1 = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T sock2 = SocketDgram_new (AF_INET, 0);
 
-    TRY SocketDgram_bind(sock1, "127.0.0.1", 0);
-    SocketDgram_bind(sock2, "127.0.0.1", 0);
+  TRY SocketDgram_bind (sock1, "127.0.0.1", 0);
+  SocketDgram_bind (sock2, "127.0.0.1", 0);
 
-    struct sockaddr_in addr1, addr2;
-    socklen_t len = sizeof(addr1);
-    getsockname(SocketDgram_fd(sock1), (struct sockaddr *)&addr1, &len);
-    getsockname(SocketDgram_fd(sock2), (struct sockaddr *)&addr2, &len);
-    int port1 = ntohs(addr1.sin_port);
-    int port2 = ntohs(addr2.sin_port);
+  struct sockaddr_in addr1, addr2;
+  socklen_t len = sizeof (addr1);
+  getsockname (SocketDgram_fd (sock1), (struct sockaddr *)&addr1, &len);
+  getsockname (SocketDgram_fd (sock2), (struct sockaddr *)&addr2, &len);
+  int port1 = ntohs (addr1.sin_port);
+  int port2 = ntohs (addr2.sin_port);
 
-    SocketDgram_connect(sock1, "127.0.0.1", port2);
-    SocketDgram_connect(sock2, "127.0.0.1", port1);
+  SocketDgram_connect (sock1, "127.0.0.1", port2);
+  SocketDgram_connect (sock2, "127.0.0.1", port1);
 
-    SocketDgram_send(sock1, "Msg1", 4);
-    SocketDgram_send(sock2, "Msg2", 4);
-    usleep(10000);
+  SocketDgram_send (sock1, "Msg1", 4);
+  SocketDgram_send (sock2, "Msg2", 4);
+  usleep (10000);
 
-    char buf1[128], buf2[128];
-    SocketDgram_recv(sock1, buf1, sizeof(buf1));
-    SocketDgram_recv(sock2, buf2, sizeof(buf2));
-    EXCEPT(SocketDgram_Failed)(void) 0;
-    FINALLY
-    SocketDgram_free(&sock1);
-    SocketDgram_free(&sock2);
-    END_TRY;
+  char buf1[128], buf2[128];
+  SocketDgram_recv (sock1, buf1, sizeof (buf1));
+  SocketDgram_recv (sock2, buf2, sizeof (buf2));
+  EXCEPT (SocketDgram_Failed) (void) 0;
+  FINALLY
+  SocketDgram_free (&sock1);
+  SocketDgram_free (&sock2);
+  END_TRY;
 }
 
 /* ==================== Socket Options Tests ==================== */
 
-TEST(socketdgram_setnonblocking)
+TEST (socketdgram_setnonblocking)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    TRY SocketDgram_setnonblocking(socket);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  TRY SocketDgram_setnonblocking (socket);
+  EXCEPT (SocketDgram_Failed) ASSERT (0);
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_setreuseaddr)
+TEST (socketdgram_setreuseaddr)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    TRY SocketDgram_setreuseaddr(socket);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  TRY SocketDgram_setreuseaddr (socket);
+  EXCEPT (SocketDgram_Failed) ASSERT (0);
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_setbroadcast_enable)
+TEST (socketdgram_setbroadcast_enable)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    TRY SocketDgram_setbroadcast(socket, 1);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  TRY SocketDgram_setbroadcast (socket, 1);
+  EXCEPT (SocketDgram_Failed) ASSERT (0);
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_setbroadcast_disable)
+TEST (socketdgram_setbroadcast_disable)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    TRY SocketDgram_setbroadcast(socket, 0);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  TRY SocketDgram_setbroadcast (socket, 0);
+  EXCEPT (SocketDgram_Failed) ASSERT (0);
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_settimeout)
+TEST (socketdgram_settimeout)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    TRY SocketDgram_settimeout(socket, 5);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  TRY SocketDgram_settimeout (socket, 5);
+  EXCEPT (SocketDgram_Failed) ASSERT (0);
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
 /* ==================== Close-on-Exec Tests ==================== */
 
-TEST(socketdgram_new_sets_cloexec_by_default)
+TEST (socketdgram_new_sets_cloexec_by_default)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
 
-    int has_cloexec = SocketCommon_has_cloexec(SocketDgram_fd(socket));
-    ASSERT_EQ(has_cloexec, 1);
+  int has_cloexec = SocketCommon_has_cloexec (SocketDgram_fd (socket));
+  ASSERT_EQ (has_cloexec, 1);
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_setcloexec_enable_disable)
+TEST (socketdgram_setcloexec_enable_disable)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
 
-    /* Verify CLOEXEC is set by default */
-    int has_cloexec = SocketCommon_has_cloexec(SocketDgram_fd(socket));
-    ASSERT_EQ(has_cloexec, 1);
+  /* Verify CLOEXEC is set by default */
+  int has_cloexec = SocketCommon_has_cloexec (SocketDgram_fd (socket));
+  ASSERT_EQ (has_cloexec, 1);
 
-    /* Disable CLOEXEC */
-    TRY SocketDgram_setcloexec(socket, 0);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
-    END_TRY;
+  /* Disable CLOEXEC */
+  TRY SocketDgram_setcloexec (socket, 0);
+  EXCEPT (SocketDgram_Failed) ASSERT (0);
+  END_TRY;
 
-    has_cloexec = SocketCommon_has_cloexec(SocketDgram_fd(socket));
-    ASSERT_EQ(has_cloexec, 0);
+  has_cloexec = SocketCommon_has_cloexec (SocketDgram_fd (socket));
+  ASSERT_EQ (has_cloexec, 0);
 
-    /* Re-enable CLOEXEC */
-    TRY SocketDgram_setcloexec(socket, 1);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
-    END_TRY;
+  /* Re-enable CLOEXEC */
+  TRY SocketDgram_setcloexec (socket, 1);
+  EXCEPT (SocketDgram_Failed) ASSERT (0);
+  END_TRY;
 
-    has_cloexec = SocketCommon_has_cloexec(SocketDgram_fd(socket));
-    ASSERT_EQ(has_cloexec, 1);
+  has_cloexec = SocketCommon_has_cloexec (SocketDgram_fd (socket));
+  ASSERT_EQ (has_cloexec, 1);
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_setttl)
+TEST (socketdgram_setttl)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    TRY SocketDgram_setttl(socket, 64);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  TRY SocketDgram_setttl (socket, 64);
+  EXCEPT (SocketDgram_Failed) ASSERT (0);
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_setttl_min_max)
+TEST (socketdgram_setttl_min_max)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    TRY SocketDgram_setttl(socket, 1);
-    SocketDgram_setttl(socket, 255);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  TRY SocketDgram_setttl (socket, 1);
+  SocketDgram_setttl (socket, 255);
+  EXCEPT (SocketDgram_Failed) ASSERT (0);
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
 /* ==================== Socket Option Getter Tests ==================== */
 
-TEST(socketdgram_gettimeout_returns_set_value)
+TEST (socketdgram_gettimeout_returns_set_value)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
 
-    SocketDgram_settimeout(socket, 5);
-    int timeout = SocketDgram_gettimeout(socket);
-    ASSERT_EQ(timeout, 5);
+  SocketDgram_settimeout (socket, 5);
+  int timeout = SocketDgram_gettimeout (socket);
+  ASSERT_EQ (timeout, 5);
 
-    SocketDgram_settimeout(socket, 0);
-    timeout = SocketDgram_gettimeout(socket);
-    ASSERT_EQ(timeout, 0);
+  SocketDgram_settimeout (socket, 0);
+  timeout = SocketDgram_gettimeout (socket);
+  ASSERT_EQ (timeout, 0);
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_getbroadcast_returns_set_value)
+TEST (socketdgram_getbroadcast_returns_set_value)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
 
-    int broadcast;
+  int broadcast;
 
-    SocketDgram_setbroadcast(socket, 1);
+  SocketDgram_setbroadcast (socket, 1);
 
-    TRY
-    {
-        broadcast = SocketDgram_getbroadcast(socket);
+  TRY
+  {
+    broadcast = SocketDgram_getbroadcast (socket);
 #if SOCKET_PLATFORM_MACOS
-        /* On macOS, getsockopt() doesn't reliably return set values */
-        /* Verify that getsockopt succeeded (no exception) but don't assert value */
-        (void)broadcast;
+    /* On macOS, getsockopt() doesn't reliably return set values */
+    /* Verify that getsockopt succeeded (no exception) but don't assert value
+     */
+    (void)broadcast;
 #else
-        ASSERT_EQ(broadcast, 1);
+    ASSERT_EQ (broadcast, 1);
 #endif
-    }
-    EXCEPT(SocketDgram_Failed)
-    {
-        (void)0;
-    }
-    END_TRY;
+  }
+  EXCEPT (SocketDgram_Failed) { (void)0; }
+  END_TRY;
 
-    SocketDgram_setbroadcast(socket, 0);
+  SocketDgram_setbroadcast (socket, 0);
 
-    TRY
-    {
-        broadcast = SocketDgram_getbroadcast(socket);
+  TRY
+  {
+    broadcast = SocketDgram_getbroadcast (socket);
 #if SOCKET_PLATFORM_MACOS
-        /* On macOS, getsockopt() doesn't reliably return set values */
-        (void)broadcast;
+    /* On macOS, getsockopt() doesn't reliably return set values */
+    (void)broadcast;
 #else
-        ASSERT_EQ(broadcast, 0);
+    ASSERT_EQ (broadcast, 0);
 #endif
-    }
-    EXCEPT(SocketDgram_Failed)
-    {
-        (void)0;
-    }
-    END_TRY;
+  }
+  EXCEPT (SocketDgram_Failed) { (void)0; }
+  END_TRY;
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_getttl_returns_set_value)
+TEST (socketdgram_getttl_returns_set_value)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
 
-    SocketDgram_setttl(socket, 64);
-    int ttl = SocketDgram_getttl(socket);
-    ASSERT_EQ(ttl, 64);
+  SocketDgram_setttl (socket, 64);
+  int ttl = SocketDgram_getttl (socket);
+  ASSERT_EQ (ttl, 64);
 
-    SocketDgram_setttl(socket, 128);
-    ttl = SocketDgram_getttl(socket);
-    ASSERT_EQ(ttl, 128);
+  SocketDgram_setttl (socket, 128);
+  ttl = SocketDgram_getttl (socket);
+  ASSERT_EQ (ttl, 128);
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_getrcvbuf_returns_positive_value)
+TEST (socketdgram_getrcvbuf_returns_positive_value)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
 
-    int rcvbuf = SocketDgram_getrcvbuf(socket);
-    ASSERT(rcvbuf > 0);
+  int rcvbuf = SocketDgram_getrcvbuf (socket);
+  ASSERT (rcvbuf > 0);
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_getsndbuf_returns_positive_value)
+TEST (socketdgram_getsndbuf_returns_positive_value)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
 
-    int sndbuf = SocketDgram_getsndbuf(socket);
-    ASSERT(sndbuf > 0);
+  int sndbuf = SocketDgram_getsndbuf (socket);
+  ASSERT (sndbuf > 0);
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
 /* ==================== Connection State Query Tests ==================== */
 
-TEST(socketdgram_isbound_returns_false_for_new_socket)
+TEST (socketdgram_isbound_returns_false_for_new_socket)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
 
-    ASSERT_EQ(0, SocketDgram_isbound(socket));
+  ASSERT_EQ (0, SocketDgram_isbound (socket));
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_isbound_returns_true_after_bind)
+TEST (socketdgram_isbound_returns_true_after_bind)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
 
-    SocketDgram_bind(socket, "127.0.0.1", 0);
-    ASSERT_EQ(1, SocketDgram_isbound(socket));
+  SocketDgram_bind (socket, "127.0.0.1", 0);
+  ASSERT_EQ (1, SocketDgram_isbound (socket));
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_isconnected_returns_false_for_new_socket)
+TEST (socketdgram_isconnected_returns_false_for_new_socket)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
 
-    ASSERT_EQ(0, SocketDgram_isconnected(socket));
+  ASSERT_EQ (0, SocketDgram_isconnected (socket));
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_isconnected_returns_true_after_connect)
+TEST (socketdgram_isconnected_returns_true_after_connect)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
 
-    SocketDgram_bind(socket, "127.0.0.1", 0);
-    SocketDgram_connect(socket, "127.0.0.1", 5000);
-    ASSERT_EQ(1, SocketDgram_isconnected(socket));
+  SocketDgram_bind (socket, "127.0.0.1", 0);
+  SocketDgram_connect (socket, "127.0.0.1", 5000);
+  ASSERT_EQ (1, SocketDgram_isconnected (socket));
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_isbound_after_connect)
+TEST (socketdgram_isbound_after_connect)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    ASSERT_NOT_NULL(socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
 
-    /* Socket is not bound initially */
-    ASSERT_EQ(0, SocketDgram_isbound(socket));
+  /* Socket is not bound initially */
+  ASSERT_EQ (0, SocketDgram_isbound (socket));
 
-    /* Connect without bind - OS will auto-bind */
-    SocketDgram_connect(socket, "127.0.0.1", 5000);
-    ASSERT_EQ(1, SocketDgram_isconnected(socket));
-    /* Socket may or may not be bound after connect (OS-dependent) */
+  /* Connect without bind - OS will auto-bind */
+  SocketDgram_connect (socket, "127.0.0.1", 5000);
+  ASSERT_EQ (1, SocketDgram_isconnected (socket));
+  /* Socket may or may not be bound after connect (OS-dependent) */
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
 /* ==================== Multicast Tests ==================== */
 
-TEST(socketdgram_joinmulticast_ipv4)
+TEST (socketdgram_joinmulticast_ipv4)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-    TRY SocketDgram_setreuseaddr(socket);
-    SocketDgram_bind(socket, "0.0.0.0", 0);
-    SocketDgram_joinmulticast(socket, TEST_MULTICAST_GROUP, NULL);
-    SocketDgram_leavemulticast(socket, TEST_MULTICAST_GROUP, NULL);
-    EXCEPT(SocketDgram_Failed)(void) 0;
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  TRY SocketDgram_setreuseaddr (socket);
+  SocketDgram_bind (socket, "0.0.0.0", 0);
+  SocketDgram_joinmulticast (socket, TEST_MULTICAST_GROUP, NULL);
+  SocketDgram_leavemulticast (socket, TEST_MULTICAST_GROUP, NULL);
+  EXCEPT (SocketDgram_Failed) (void) 0;
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_multicast_send_receive)
+TEST (socketdgram_multicast_send_receive)
 {
-    setup_signals();
-    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
-    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
 
-    TRY SocketDgram_setreuseaddr(receiver);
-    SocketDgram_bind(receiver, "0.0.0.0", 0);
-    struct sockaddr_in addr;
-    socklen_t len = sizeof(addr);
-    getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-    int port = ntohs(addr.sin_port);
+  TRY SocketDgram_setreuseaddr (receiver);
+  SocketDgram_bind (receiver, "0.0.0.0", 0);
+  struct sockaddr_in addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  int port = ntohs (addr.sin_port);
 
-    SocketDgram_joinmulticast(receiver, TEST_MULTICAST_GROUP, NULL);
-    SocketDgram_setnonblocking(receiver);
+  SocketDgram_joinmulticast (receiver, TEST_MULTICAST_GROUP, NULL);
+  SocketDgram_setnonblocking (receiver);
 
-    const char *msg = "Multicast message";
-    TRY SocketDgram_sendto(sender, msg, strlen(msg), TEST_MULTICAST_GROUP, port);
-    usleep(50000);
+  const char *msg = "Multicast message";
+  TRY SocketDgram_sendto (sender, msg, strlen (msg), TEST_MULTICAST_GROUP,
+                          port);
+  usleep (50000);
 
-    char buf[TEST_BUFFER_SIZE] = {0};
-    ssize_t received = SocketDgram_recvfrom(receiver, buf, sizeof(buf) - 1, NULL, 0, NULL);
-    if (received > 0)
-        ASSERT_EQ(strcmp(buf, msg), 0);
-    EXCEPT(SocketDgram_Failed)
-    /* Multicast may fail if routing is not configured (e.g., macOS without multicast routing) */
-    /* This is acceptable - test passes if we can join/leave multicast group */
-    (void)0;
-    END_TRY;
+  char buf[TEST_BUFFER_SIZE] = { 0 };
+  ssize_t received
+      = SocketDgram_recvfrom (receiver, buf, sizeof (buf) - 1, NULL, 0, NULL);
+  if (received > 0)
+    ASSERT_EQ (strcmp (buf, msg), 0);
+  EXCEPT (SocketDgram_Failed)
+  /* Multicast may fail if routing is not configured (e.g., macOS without
+   * multicast routing) */
+  /* This is acceptable - test passes if we can join/leave multicast group */
+  (void)0;
+  END_TRY;
 
-    SocketDgram_leavemulticast(receiver, TEST_MULTICAST_GROUP, NULL);
-    EXCEPT(SocketDgram_Failed)(void) 0;
-    FINALLY
-    SocketDgram_free(&sender);
-    SocketDgram_free(&receiver);
-    END_TRY;
+  SocketDgram_leavemulticast (receiver, TEST_MULTICAST_GROUP, NULL);
+  EXCEPT (SocketDgram_Failed) (void) 0;
+  FINALLY
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
+  END_TRY;
 }
 
 /* ==================== IPv6 Tests ==================== */
 
-TEST(socketdgram_ipv6_sendto_recvfrom)
+TEST (socketdgram_ipv6_sendto_recvfrom)
 {
-    setup_signals();
-    SocketDgram_T sender = SocketDgram_new(AF_INET6, 0);
-    SocketDgram_T receiver = SocketDgram_new(AF_INET6, 0);
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET6, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET6, 0);
 
-    TRY SocketDgram_bind(receiver, "::1", 0);
-    struct sockaddr_in6 addr;
-    socklen_t len = sizeof(addr);
-    getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-    int port = ntohs(addr.sin6_port);
+  TRY SocketDgram_bind (receiver, "::1", 0);
+  struct sockaddr_in6 addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  int port = ntohs (addr.sin6_port);
 
-    const char *msg = "IPv6 UDP test";
-    ssize_t sent = SocketDgram_sendto(sender, msg, strlen(msg), "::1", port);
-    ASSERT_NE(sent, -1);
+  const char *msg = "IPv6 UDP test";
+  ssize_t sent = SocketDgram_sendto (sender, msg, strlen (msg), "::1", port);
+  ASSERT_NE (sent, -1);
 
-    usleep(10000);
-    char buf[TEST_BUFFER_SIZE] = {0};
-    ssize_t received = SocketDgram_recvfrom(receiver, buf, sizeof(buf) - 1, NULL, 0, NULL);
-    if (received > 0)
-        ASSERT_EQ(strcmp(buf, msg), 0);
-    EXCEPT(SocketDgram_Failed)(void) 0;
-    FINALLY
-    SocketDgram_free(&sender);
-    SocketDgram_free(&receiver);
-    END_TRY;
+  usleep (10000);
+  char buf[TEST_BUFFER_SIZE] = { 0 };
+  ssize_t received
+      = SocketDgram_recvfrom (receiver, buf, sizeof (buf) - 1, NULL, 0, NULL);
+  if (received > 0)
+    ASSERT_EQ (strcmp (buf, msg), 0);
+  EXCEPT (SocketDgram_Failed) (void) 0;
+  FINALLY
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
+  END_TRY;
 }
 
-TEST(socketdgram_ipv6_setttl)
+TEST (socketdgram_ipv6_setttl)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET6, 0);
-    TRY SocketDgram_setttl(socket, 128);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
-    END_TRY;
-    SocketDgram_free(&socket);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET6, 0);
+  TRY SocketDgram_setttl (socket, 128);
+  EXCEPT (SocketDgram_Failed) ASSERT (0);
+  END_TRY;
+  SocketDgram_free (&socket);
 }
 
 /* ==================== Nonblocking Tests ==================== */
 
-TEST(socketdgram_recvfrom_nonblocking_returns_zero)
+TEST (socketdgram_recvfrom_nonblocking_returns_zero)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
 
-    TRY SocketDgram_bind(socket, "127.0.0.1", 0);
-    SocketDgram_setnonblocking(socket);
+  TRY SocketDgram_bind (socket, "127.0.0.1", 0);
+  SocketDgram_setnonblocking (socket);
 
-    char buf[TEST_BUFFER_SIZE];
-    ssize_t received = SocketDgram_recvfrom(socket, buf, sizeof(buf), NULL, 0, NULL);
-    ASSERT_EQ(received, 0);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
-    END_TRY;
+  char buf[TEST_BUFFER_SIZE];
+  ssize_t received
+      = SocketDgram_recvfrom (socket, buf, sizeof (buf), NULL, 0, NULL);
+  ASSERT_EQ (received, 0);
+  EXCEPT (SocketDgram_Failed) ASSERT (0);
+  END_TRY;
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
-TEST(socketdgram_recv_nonblocking_returns_zero)
+TEST (socketdgram_recv_nonblocking_returns_zero)
 {
-    setup_signals();
-    SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
 
-    TRY SocketDgram_bind(socket, "127.0.0.1", 0);
-    SocketDgram_connect(socket, "127.0.0.1", 9999);
-    SocketDgram_setnonblocking(socket);
+  TRY SocketDgram_bind (socket, "127.0.0.1", 0);
+  SocketDgram_connect (socket, "127.0.0.1", 9999);
+  SocketDgram_setnonblocking (socket);
 
-    char buf[TEST_BUFFER_SIZE];
-    ssize_t received = SocketDgram_recv(socket, buf, sizeof(buf));
-    ASSERT_EQ(received, 0);
-    EXCEPT(SocketDgram_Failed) ASSERT(0);
-    END_TRY;
+  char buf[TEST_BUFFER_SIZE];
+  ssize_t received = SocketDgram_recv (socket, buf, sizeof (buf));
+  ASSERT_EQ (received, 0);
+  EXCEPT (SocketDgram_Failed) ASSERT (0);
+  END_TRY;
 
-    SocketDgram_free(&socket);
+  SocketDgram_free (&socket);
 }
 
 /* ==================== Stress Tests ==================== */
 
-TEST(socketdgram_many_sequential_datagrams)
+TEST (socketdgram_many_sequential_datagrams)
 {
-    setup_signals();
-    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
-    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
 
-    TRY SocketDgram_bind(receiver, "127.0.0.1", 0);
-    SocketDgram_setnonblocking(receiver);
-    struct sockaddr_in addr;
-    socklen_t len = sizeof(addr);
-    getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-    int port = ntohs(addr.sin_port);
+  TRY SocketDgram_bind (receiver, "127.0.0.1", 0);
+  SocketDgram_setnonblocking (receiver);
+  struct sockaddr_in addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  int port = ntohs (addr.sin_port);
 
-    for (int i = 0; i < 100; i++)
+  for (int i = 0; i < 100; i++)
     {
-        char msg[16];
-        snprintf(msg, sizeof(msg), "Msg%d", i);
-        SocketDgram_sendto(sender, msg, strlen(msg), "127.0.0.1", port);
+      char msg[16];
+      snprintf (msg, sizeof (msg), "Msg%d", i);
+      SocketDgram_sendto (sender, msg, strlen (msg), "127.0.0.1", port);
     }
-    EXCEPT(SocketDgram_Failed)(void) 0;
-    FINALLY
-    SocketDgram_free(&sender);
-    SocketDgram_free(&receiver);
-    END_TRY;
+  EXCEPT (SocketDgram_Failed) (void) 0;
+  FINALLY
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
+  END_TRY;
 }
 
-TEST(socketdgram_rapid_open_close)
+TEST (socketdgram_rapid_open_close)
 {
-    setup_signals();
-    for (int i = 0; i < 100; i++)
+  setup_signals ();
+  for (int i = 0; i < 100; i++)
     {
-        SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-        ASSERT_NOT_NULL(socket);
-        SocketDgram_free(&socket);
-        ASSERT_NULL(socket);
+      SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+      ASSERT_NOT_NULL (socket);
+      SocketDgram_free (&socket);
+      ASSERT_NULL (socket);
     }
 }
 
 /* ==================== Thread Safety Tests ==================== */
 
-static void *thread_create_dgram_sockets(void *arg)
+static void *
+thread_create_dgram_sockets (void *arg)
 {
-    (void)arg;
-    for (int i = 0; i < 50; i++)
+  (void)arg;
+  for (int i = 0; i < 50; i++)
     {
-        SocketDgram_T socket = SocketDgram_new(AF_INET, 0);
-        if (socket)
-            SocketDgram_free(&socket);
+      SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+      if (socket)
+        SocketDgram_free (&socket);
     }
-    return NULL;
+  return NULL;
 }
 
-TEST(socketdgram_concurrent_creation)
+TEST (socketdgram_concurrent_creation)
 {
-    setup_signals();
-    pthread_t threads[4];
+  setup_signals ();
+  pthread_t threads[4];
 
-    for (int i = 0; i < 4; i++)
-        pthread_create(&threads[i], NULL, thread_create_dgram_sockets, NULL);
+  for (int i = 0; i < 4; i++)
+    pthread_create (&threads[i], NULL, thread_create_dgram_sockets, NULL);
 
-    for (int i = 0; i < 4; i++)
-        pthread_join(threads[i], NULL);
+  for (int i = 0; i < 4; i++)
+    pthread_join (threads[i], NULL);
 }
 
-static void *thread_sendto_datagrams(void *arg)
+static void *
+thread_sendto_datagrams (void *arg)
 {
-    int port = *(int *)arg;
-    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
+  int port = *(int *)arg;
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
 
-    for (int i = 0; i < 20; i++)
+  for (int i = 0; i < 20; i++)
     {
-        char msg[32];
-        snprintf(msg, sizeof(msg), "Thread msg %d", i);
-        TRY SocketDgram_sendto(sender, msg, strlen(msg), "127.0.0.1", port);
-        EXCEPT(SocketDgram_Failed) break;
-        END_TRY;
-        usleep(1000);
+      char msg[32];
+      snprintf (msg, sizeof (msg), "Thread msg %d", i);
+      TRY SocketDgram_sendto (sender, msg, strlen (msg), "127.0.0.1", port);
+      EXCEPT (SocketDgram_Failed) break;
+      END_TRY;
+      usleep (1000);
     }
 
-    SocketDgram_free(&sender);
-    return NULL;
+  SocketDgram_free (&sender);
+  return NULL;
 }
 
-TEST(socketdgram_concurrent_sendto)
+TEST (socketdgram_concurrent_sendto)
 {
-    setup_signals();
-    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
-    pthread_t threads[4];
-    int port = 0;
+  setup_signals ();
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
+  pthread_t threads[4];
+  int port = 0;
 
-    TRY SocketDgram_bind(receiver, "127.0.0.1", 0);
-    SocketDgram_setnonblocking(receiver);
-    struct sockaddr_in addr;
-    socklen_t len = sizeof(addr);
-    getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-    port = ntohs(addr.sin_port);
+  TRY SocketDgram_bind (receiver, "127.0.0.1", 0);
+  SocketDgram_setnonblocking (receiver);
+  struct sockaddr_in addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  port = ntohs (addr.sin_port);
 
-    for (int i = 0; i < 4; i++)
-        pthread_create(&threads[i], NULL, thread_sendto_datagrams, &port);
+  for (int i = 0; i < 4; i++)
+    pthread_create (&threads[i], NULL, thread_sendto_datagrams, &port);
 
-    for (int i = 0; i < 4; i++)
-        pthread_join(threads[i], NULL);
-    EXCEPT(SocketDgram_Failed)(void) 0;
-    END_TRY;
+  for (int i = 0; i < 4; i++)
+    pthread_join (threads[i], NULL);
+  EXCEPT (SocketDgram_Failed) (void) 0;
+  END_TRY;
 
-    SocketDgram_free(&receiver);
+  SocketDgram_free (&receiver);
 }
 
 /* ==================== Partial I/O Helper Tests ==================== */
 
-TEST(socketdgram_sendall_sends_all_data)
+TEST (socketdgram_sendall_sends_all_data)
 {
-    setup_signals();
-    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
-    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
 
-    TRY
-        SocketDgram_bind(receiver, "127.0.0.1", 0);
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
+  TRY SocketDgram_bind (receiver, "127.0.0.1", 0);
+  struct sockaddr_in addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  int port = ntohs (addr.sin_port);
 
-        SocketDgram_connect(sender, "127.0.0.1", port);
-        SocketDgram_connect(receiver, "127.0.0.1", SocketDgram_getlocalport(sender));
+  SocketDgram_connect (sender, "127.0.0.1", port);
+  SocketDgram_connect (receiver, "127.0.0.1",
+                       SocketDgram_getlocalport (sender));
 
-        /* Send large data */
-        char send_buf[4096];
-        memset(send_buf, 'X', sizeof(send_buf));
-        ssize_t sent = SocketDgram_sendall(sender, send_buf, sizeof(send_buf));
-        ASSERT_EQ((ssize_t)sizeof(send_buf), sent);
+  /* Send large data */
+  char send_buf[4096];
+  memset (send_buf, 'X', sizeof (send_buf));
+  ssize_t sent = SocketDgram_sendall (sender, send_buf, sizeof (send_buf));
+  ASSERT_EQ ((ssize_t)sizeof (send_buf), sent);
 
-        /* Receive all data */
-        char recv_buf[4096] = {0};
-        ssize_t received = SocketDgram_recvall(receiver, recv_buf, sizeof(recv_buf));
-        ASSERT_EQ((ssize_t)sizeof(recv_buf), received);
-        ASSERT_EQ(0, memcmp(send_buf, recv_buf, sizeof(send_buf)));
-    EXCEPT(SocketDgram_Failed)
-        (void)0;
-    END_TRY;
+  /* Receive all data */
+  char recv_buf[4096] = { 0 };
+  ssize_t received
+      = SocketDgram_recvall (receiver, recv_buf, sizeof (recv_buf));
+  ASSERT_EQ ((ssize_t)sizeof (recv_buf), received);
+  ASSERT_EQ (0, memcmp (send_buf, recv_buf, sizeof (send_buf)));
+  EXCEPT (SocketDgram_Failed)
+  (void)0;
+  END_TRY;
 
-    SocketDgram_free(&sender);
-    SocketDgram_free(&receiver);
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
 }
 
-TEST(socketdgram_recvall_receives_all_data)
+TEST (socketdgram_recvall_receives_all_data)
 {
-    setup_signals();
-    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
-    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
 
-    TRY
-        SocketDgram_bind(receiver, "127.0.0.1", 0);
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
+  TRY SocketDgram_bind (receiver, "127.0.0.1", 0);
+  struct sockaddr_in addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  int port = ntohs (addr.sin_port);
 
-        SocketDgram_connect(sender, "127.0.0.1", port);
-        SocketDgram_connect(receiver, "127.0.0.1", SocketDgram_getlocalport(sender));
+  SocketDgram_connect (sender, "127.0.0.1", port);
+  SocketDgram_connect (receiver, "127.0.0.1",
+                       SocketDgram_getlocalport (sender));
 
-        /* Send data */
-        const char *msg = "Test message for recvall";
-        ssize_t sent = SocketDgram_sendall(sender, msg, strlen(msg));
-        ASSERT_EQ((ssize_t)strlen(msg), sent);
+  /* Send data */
+  const char *msg = "Test message for recvall";
+  ssize_t sent = SocketDgram_sendall (sender, msg, strlen (msg));
+  ASSERT_EQ ((ssize_t)strlen (msg), sent);
 
-        /* Receive all data */
-        char recv_buf[256] = {0};
-        ssize_t received = SocketDgram_recvall(receiver, recv_buf, strlen(msg));
-        ASSERT_EQ((ssize_t)strlen(msg), received);
-        ASSERT_EQ(0, strcmp(msg, recv_buf));
-    EXCEPT(SocketDgram_Failed)
-        (void)0;
-    END_TRY;
+  /* Receive all data */
+  char recv_buf[256] = { 0 };
+  ssize_t received = SocketDgram_recvall (receiver, recv_buf, strlen (msg));
+  ASSERT_EQ ((ssize_t)strlen (msg), received);
+  ASSERT_EQ (0, strcmp (msg, recv_buf));
+  EXCEPT (SocketDgram_Failed)
+  (void)0;
+  END_TRY;
 
-    SocketDgram_free(&sender);
-    SocketDgram_free(&receiver);
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
 }
 
 /* ==================== Scatter/Gather I/O Tests ==================== */
 
-TEST(socketdgram_sendv_sends_from_multiple_buffers)
+TEST (socketdgram_sendv_sends_from_multiple_buffers)
 {
-    setup_signals();
-    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
-    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
 
-    TRY
-        SocketDgram_bind(receiver, "127.0.0.1", 0);
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
+  TRY SocketDgram_bind (receiver, "127.0.0.1", 0);
+  struct sockaddr_in addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  int port = ntohs (addr.sin_port);
 
-        SocketDgram_connect(sender, "127.0.0.1", port);
-        SocketDgram_connect(receiver, "127.0.0.1", SocketDgram_getlocalport(sender));
+  SocketDgram_connect (sender, "127.0.0.1", port);
+  SocketDgram_connect (receiver, "127.0.0.1",
+                       SocketDgram_getlocalport (sender));
 
-        /* Prepare scatter buffers */
-        char buf1[] = "Hello, ";
-        char buf2[] = "UDP";
-        char buf3[] = " World!";
-        struct iovec iov[3];
-        iov[0].iov_base = buf1;
-        iov[0].iov_len = strlen(buf1);
-        iov[1].iov_base = buf2;
-        iov[1].iov_len = strlen(buf2);
-        iov[2].iov_base = buf3;
-        iov[2].iov_len = strlen(buf3);
+  /* Prepare scatter buffers */
+  char buf1[] = "Hello, ";
+  char buf2[] = "UDP";
+  char buf3[] = " World!";
+  struct iovec iov[3];
+  iov[0].iov_base = buf1;
+  iov[0].iov_len = strlen (buf1);
+  iov[1].iov_base = buf2;
+  iov[1].iov_len = strlen (buf2);
+  iov[2].iov_base = buf3;
+  iov[2].iov_len = strlen (buf3);
 
-        ssize_t sent = SocketDgram_sendv(sender, iov, 3);
-        ASSERT(sent > 0);
+  ssize_t sent = SocketDgram_sendv (sender, iov, 3);
+  ASSERT (sent > 0);
 
-        /* Receive all data */
-        char recv_buf[256] = {0};
-        ssize_t received = SocketDgram_recvall(receiver, recv_buf, sent);
-        ASSERT_EQ(sent, received);
-        ASSERT_EQ(0, strcmp(recv_buf, "Hello, UDP World!"));
-    EXCEPT(SocketDgram_Failed)
-        (void)0;
-    END_TRY;
+  /* Receive all data */
+  char recv_buf[256] = { 0 };
+  ssize_t received = SocketDgram_recvall (receiver, recv_buf, sent);
+  ASSERT_EQ (sent, received);
+  ASSERT_EQ (0, strcmp (recv_buf, "Hello, UDP World!"));
+  EXCEPT (SocketDgram_Failed)
+  (void)0;
+  END_TRY;
 
-    SocketDgram_free(&sender);
-    SocketDgram_free(&receiver);
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
 }
 
-TEST(socketdgram_recvv_receives_into_multiple_buffers)
+TEST (socketdgram_recvv_receives_into_multiple_buffers)
 {
-    setup_signals();
-    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
-    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
 
-    TRY
-        SocketDgram_bind(receiver, "127.0.0.1", 0);
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
+  TRY SocketDgram_bind (receiver, "127.0.0.1", 0);
+  struct sockaddr_in addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  int port = ntohs (addr.sin_port);
 
-        SocketDgram_connect(sender, "127.0.0.1", port);
-        SocketDgram_connect(receiver, "127.0.0.1", SocketDgram_getlocalport(sender));
+  SocketDgram_connect (sender, "127.0.0.1", port);
+  SocketDgram_connect (receiver, "127.0.0.1",
+                       SocketDgram_getlocalport (sender));
 
-        /* Send data */
-        const char *msg = "UDP Scatter Test";
-        ssize_t sent = SocketDgram_sendall(sender, msg, strlen(msg));
-        ASSERT_EQ((ssize_t)strlen(msg), sent);
+  /* Send data */
+  const char *msg = "UDP Scatter Test";
+  ssize_t sent = SocketDgram_sendall (sender, msg, strlen (msg));
+  ASSERT_EQ ((ssize_t)strlen (msg), sent);
 
-        /* Receive into scatter buffers */
-        char buf1[5] = {0};
-        char buf2[6] = {0};
-        char buf3[6] = {0};
-        struct iovec iov[3];
-        iov[0].iov_base = buf1;
-        iov[0].iov_len = sizeof(buf1) - 1;
-        iov[1].iov_base = buf2;
-        iov[1].iov_len = sizeof(buf2) - 1;
-        iov[2].iov_base = buf3;
-        iov[2].iov_len = sizeof(buf3) - 1;
+  /* Receive into scatter buffers */
+  char buf1[5] = { 0 };
+  char buf2[6] = { 0 };
+  char buf3[6] = { 0 };
+  struct iovec iov[3];
+  iov[0].iov_base = buf1;
+  iov[0].iov_len = sizeof (buf1) - 1;
+  iov[1].iov_base = buf2;
+  iov[1].iov_len = sizeof (buf2) - 1;
+  iov[2].iov_base = buf3;
+  iov[2].iov_len = sizeof (buf3) - 1;
 
-        ssize_t received = SocketDgram_recvv(receiver, iov, 3);
-        ASSERT(received > 0);
-        /* readv may receive less than requested, so verify we got at least some data */
-        ASSERT(received <= (ssize_t)strlen(msg));
+  ssize_t received = SocketDgram_recvv (receiver, iov, 3);
+  ASSERT (received > 0);
+  /* readv may receive less than requested, so verify we got at least some data
+   */
+  ASSERT (received <= (ssize_t)strlen (msg));
 
-        /* Calculate how much was received in each buffer */
-        size_t buf1_received = (received > (ssize_t)(sizeof(buf1) - 1)) ? (sizeof(buf1) - 1) : (size_t)received;
-        size_t remaining = (received > (ssize_t)(sizeof(buf1) - 1)) ? (size_t)received - buf1_received : 0;
-        size_t buf2_received = (remaining > (sizeof(buf2) - 1)) ? (sizeof(buf2) - 1) : remaining;
-        size_t buf3_received = (remaining > (sizeof(buf2) - 1)) ? remaining - buf2_received : 0;
+  /* Calculate how much was received in each buffer */
+  size_t buf1_received = (received > (ssize_t)(sizeof (buf1) - 1))
+                             ? (sizeof (buf1) - 1)
+                             : (size_t)received;
+  size_t remaining = (received > (ssize_t)(sizeof (buf1) - 1))
+                         ? (size_t)received - buf1_received
+                         : 0;
+  size_t buf2_received
+      = (remaining > (sizeof (buf2) - 1)) ? (sizeof (buf2) - 1) : remaining;
+  size_t buf3_received
+      = (remaining > (sizeof (buf2) - 1)) ? remaining - buf2_received : 0;
 
-        char combined[17] = {0};
-        memcpy(combined, buf1, buf1_received);
-        if (buf2_received > 0)
-            memcpy(combined + buf1_received, buf2, buf2_received);
-        if (buf3_received > 0)
-            memcpy(combined + buf1_received + buf2_received, buf3, buf3_received);
-        /* Verify received data matches the sent message */
-        ASSERT_EQ(0, memcmp(combined, msg, (size_t)received));
-    EXCEPT(SocketDgram_Failed)
-        (void)0;
-    END_TRY;
+  char combined[17] = { 0 };
+  memcpy (combined, buf1, buf1_received);
+  if (buf2_received > 0)
+    memcpy (combined + buf1_received, buf2, buf2_received);
+  if (buf3_received > 0)
+    memcpy (combined + buf1_received + buf2_received, buf3, buf3_received);
+  /* Verify received data matches the sent message */
+  ASSERT_EQ (0, memcmp (combined, msg, (size_t)received));
+  EXCEPT (SocketDgram_Failed)
+  (void)0;
+  END_TRY;
 
-    SocketDgram_free(&sender);
-    SocketDgram_free(&receiver);
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
 }
 
-TEST(socketdgram_sendvall_sends_all_from_multiple_buffers)
+TEST (socketdgram_sendvall_sends_all_from_multiple_buffers)
 {
-    setup_signals();
-    SocketDgram_T sender = SocketDgram_new(AF_INET, 0);
-    SocketDgram_T receiver = SocketDgram_new(AF_INET, 0);
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
 
-    TRY
-        SocketDgram_bind(receiver, "127.0.0.1", 0);
-        struct sockaddr_in addr;
-        socklen_t len = sizeof(addr);
-        getsockname(SocketDgram_fd(receiver), (struct sockaddr *)&addr, &len);
-        int port = ntohs(addr.sin_port);
+  TRY SocketDgram_bind (receiver, "127.0.0.1", 0);
+  struct sockaddr_in addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  int port = ntohs (addr.sin_port);
 
-        SocketDgram_connect(sender, "127.0.0.1", port);
-        SocketDgram_connect(receiver, "127.0.0.1", SocketDgram_getlocalport(sender));
+  SocketDgram_connect (sender, "127.0.0.1", port);
+  SocketDgram_connect (receiver, "127.0.0.1",
+                       SocketDgram_getlocalport (sender));
 
-        /* Prepare scatter buffers */
-        char buf1[512];
-        char buf2[512];
-        memset(buf1, 'A', sizeof(buf1));
-        memset(buf2, 'B', sizeof(buf2));
+  /* Prepare scatter buffers */
+  char buf1[512];
+  char buf2[512];
+  memset (buf1, 'A', sizeof (buf1));
+  memset (buf2, 'B', sizeof (buf2));
 
-        struct iovec iov[2];
-        iov[0].iov_base = buf1;
-        iov[0].iov_len = sizeof(buf1);
-        iov[1].iov_base = buf2;
-        iov[1].iov_len = sizeof(buf2);
+  struct iovec iov[2];
+  iov[0].iov_base = buf1;
+  iov[0].iov_len = sizeof (buf1);
+  iov[1].iov_base = buf2;
+  iov[1].iov_len = sizeof (buf2);
 
-        size_t total_len = sizeof(buf1) + sizeof(buf2);
-        ssize_t sent = SocketDgram_sendvall(sender, iov, 2);
-        ASSERT_EQ((ssize_t)total_len, sent);
+  size_t total_len = sizeof (buf1) + sizeof (buf2);
+  ssize_t sent = SocketDgram_sendvall (sender, iov, 2);
+  ASSERT_EQ ((ssize_t)total_len, sent);
 
-        /* Receive all data */
-        char recv_buf[1024] = {0};
-        ssize_t received = SocketDgram_recvall(receiver, recv_buf, total_len);
-        ASSERT_EQ((ssize_t)total_len, received);
+  /* Receive all data */
+  char recv_buf[1024] = { 0 };
+  ssize_t received = SocketDgram_recvall (receiver, recv_buf, total_len);
+  ASSERT_EQ ((ssize_t)total_len, received);
 
-        /* Verify data */
-        ASSERT(memcmp(recv_buf, buf1, sizeof(buf1)) == 0);
-        ASSERT(memcmp(recv_buf + sizeof(buf1), buf2, sizeof(buf2)) == 0);
-    EXCEPT(SocketDgram_Failed)
-        (void)0;
-    END_TRY;
+  /* Verify data */
+  ASSERT (memcmp (recv_buf, buf1, sizeof (buf1)) == 0);
+  ASSERT (memcmp (recv_buf + sizeof (buf1), buf2, sizeof (buf2)) == 0);
+  EXCEPT (SocketDgram_Failed)
+  (void)0;
+  END_TRY;
 
-    SocketDgram_free(&sender);
-    SocketDgram_free(&receiver);
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
 }
 
-int main(void)
+int
+main (void)
 {
-    Test_run_all();
-    return Test_get_failures() > 0 ? 1 : 0;
+  Test_run_all ();
+  return Test_get_failures () > 0 ? 1 : 0;
 }
