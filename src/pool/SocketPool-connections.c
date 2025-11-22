@@ -1,8 +1,5 @@
 /**
  * SocketPool-connections.c - Connection add/get/remove and hash management
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  * Handles adding sockets to pool, retrieving connections, removing, and hash
  * operations.
  */
@@ -19,9 +16,9 @@
 #include "core/SocketConfig.h"
 #include "core/SocketError.h"
 #include "core/SocketMetrics.h"
+#include "dns/SocketDNS.h"
 #include "pool/SocketPool-private.h"
 #include "pool/SocketPool.h"
-#include "dns/SocketDNS.h"
 #include "socket/SocketBuf.h"
 
 #include "pool/SocketPool-core.h" /* For safe_time */
@@ -598,29 +595,30 @@ pool_dns_connect_completion (SocketDNS_Request_T req, struct addrinfo *result,
   else
     {
       TRY
-        {
-          Socket_connect_with_addrinfo (udata->socket, result);
-          freeaddrinfo (result);
-          conn = SocketPool_add (udata->pool, udata->socket);
-          if (!conn)
-            {
-              error = errno ? errno : ENOMEM;
-              Socket_free (&udata->socket);
-            }
-        }
+      {
+        Socket_connect_with_addrinfo (udata->socket, result);
+        freeaddrinfo (result);
+        conn = SocketPool_add (udata->pool, udata->socket);
+        if (!conn)
+          {
+            error = errno ? errno : ENOMEM;
+            Socket_free (&udata->socket);
+          }
+      }
       EXCEPT (Socket_Failed)
-        {
-          error = errno ? errno : ECONNREFUSED;
-          if (result)
-            freeaddrinfo (result);
-          Socket_free (&udata->socket);
-        }
+      {
+        error = errno ? errno : ECONNREFUSED;
+        if (result)
+          freeaddrinfo (result);
+        Socket_free (&udata->socket);
+      }
       END_TRY;
     }
 
   udata->cb (conn, error, udata->data);
 
-  /* udata lifetime managed by pool arena - freed on pool disposal or manual cleanup if needed */
+  /* udata lifetime managed by pool arena - freed on pool disposal or manual
+   * cleanup if needed */
 }
 
 int
@@ -631,41 +629,42 @@ SocketPool_prepare_connection (T pool, SocketDNS_T dns, const char *host,
   Socket_T socket = NULL;
   SocketDNS_Request_T req = NULL;
 
-  if (!pool || !dns || !host || !SOCKET_VALID_PORT (port) || !out_socket || !out_req)
+  if (!pool || !dns || !host || !SOCKET_VALID_PORT (port) || !out_socket
+      || !out_req)
     {
       RAISE_POOL_ERROR (SocketPool_Failed);
     }
 
   TRY
-    {
-      socket = Socket_new (AF_UNSPEC, SOCK_STREAM, 0);
-      if (!socket)
-        RAISE_POOL_ERROR (SocketPool_Failed);
+  {
+    socket = Socket_new (AF_UNSPEC, SOCK_STREAM, 0);
+    if (!socket)
+      RAISE_POOL_ERROR (SocketPool_Failed);
 
-      Socket_setnonblocking (socket);
-      Socket_setreuseaddr (socket); /* Pool default */
+    Socket_setnonblocking (socket);
+    Socket_setreuseaddr (socket); /* Pool default */
 
-      /* Apply pool defaults (nodelay, keepalive, timeouts, etc.) from config */
-      SocketTimeouts_T timeouts;
-      Socket_timeouts_getdefaults (&timeouts);
-      Socket_timeouts_set (socket, &timeouts);
+    /* Apply pool defaults (nodelay, keepalive, timeouts, etc.) from config */
+    SocketTimeouts_T timeouts;
+    Socket_timeouts_getdefaults (&timeouts);
+    Socket_timeouts_set (socket, &timeouts);
 
-      req = Socket_connect_async (dns, socket, host, port);
-      if (!req)
-        {
-          Socket_free (&socket);
-          RAISE_POOL_ERROR (SocketPool_Failed);
-        }
-
-      *out_socket = socket;
-      *out_req = req;
-    }
-  EXCEPT (Socket_Failed)
-    {
-      if (socket)
+    req = Socket_connect_async (dns, socket, host, port);
+    if (!req)
+      {
         Socket_free (&socket);
-      RERAISE;
-    }
+        RAISE_POOL_ERROR (SocketPool_Failed);
+      }
+
+    *out_socket = socket;
+    *out_req = req;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (socket)
+      Socket_free (&socket);
+    RERAISE;
+  }
   END_TRY;
 
   return 0;

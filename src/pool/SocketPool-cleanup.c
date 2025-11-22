@@ -1,8 +1,5 @@
 /**
  * SocketPool-cleanup.c - Idle connection cleanup functions
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  * Handles automatic cleanup of idle connections to manage resources.
  */
 

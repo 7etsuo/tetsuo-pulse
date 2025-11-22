@@ -1,8 +1,8 @@
 /**
- * SocketTLSContext.c - TLS Context Management Implementation
+ * SocketTLSContext.c - TLS Context Management
  *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
+
+
  *
  * Manages creation, configuration, and lifecycle of OpenSSL SSL_CTX objects.
  * Encapsulates secure defaults (TLS1.3-only, PFS ciphers), cert loading,

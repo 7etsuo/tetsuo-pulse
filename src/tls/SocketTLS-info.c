@@ -1,8 +1,8 @@
 /**
  * SocketTLS-info.c - TLS Connection Information Functions
  *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
+
+
  *
  * Provides query functions for TLS connection details post-handshake:
  * cipher suite, protocol version, verification result, session reuse status.

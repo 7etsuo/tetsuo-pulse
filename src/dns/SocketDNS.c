@@ -1,5 +1,5 @@
 /**
- * SocketDNS.c - Async DNS resolution implementation
+ * SocketDNS.c - Async DNS resolution
  * PLATFORM: POSIX-compliant systems (Linux, BSD, macOS)
  * - POSIX threads (pthread) for thread pool
  * - getaddrinfo() for DNS resolution

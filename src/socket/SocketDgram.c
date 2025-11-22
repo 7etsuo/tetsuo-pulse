@@ -1,5 +1,5 @@
 /**
- * SocketDgram.c - UDP/datagram socket implementation
+ * SocketDgram.c - UDP/datagram socket
  */
 
 #include <arpa/inet.h>

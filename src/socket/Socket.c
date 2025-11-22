@@ -1,5 +1,5 @@
 /**
- * Socket.c - Socket abstraction layer implementation
+ * Socket.c - Socket abstraction layer
  */
 
 /* Feature test macros for accept4() on Linux */
@@ -1697,7 +1697,7 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
 }
 
 /**
- * socket_sendfile_linux - Linux sendfile() implementation
+ * socket_sendfile_linux - Linux sendfile()
  * @socket: Socket to send to
  * @file_fd: File descriptor to read from
  * @offset: File offset pointer (may be NULL)
@@ -1717,7 +1717,7 @@ socket_sendfile_linux (T socket, int file_fd, off_t *offset, size_t count)
 #endif
 
 /**
- * socket_sendfile_bsd - BSD/macOS sendfile() implementation
+ * socket_sendfile_bsd - BSD/macOS sendfile()
  * @socket: Socket to send to
  * @file_fd: File descriptor to read from
  * @offset: File offset pointer (may be NULL)
@@ -1745,7 +1745,7 @@ socket_sendfile_bsd (T socket, int file_fd, off_t *offset, size_t count)
 #endif
 
 /**
- * socket_sendfile_fallback - Fallback implementation using read/write
+ * socket_sendfile_fallback - Fallback using read/write
  * @socket: Socket to send to
  * @file_fd: File descriptor to read from
  * @offset: File offset pointer (may be NULL)

@@ -1,5 +1,5 @@
 /**
- * Except.c - Exception handling implementation
+ * Except.c - Exception handling
  * Thread Safety:
  * This implementation uses thread-local storage (TLS) for the exception stack.
  * On POSIX systems, this requires __thread (C11/GCC extension). On Windows,

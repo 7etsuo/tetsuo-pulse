@@ -1,5 +1,5 @@
 /**
- * Test.c - Test framework implementation
+ * Test.c - Test framework
  */
 
 #include <assert.h>

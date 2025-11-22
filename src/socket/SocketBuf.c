@@ -1,5 +1,5 @@
 /**
- * SocketBuf.c - Circular buffer implementation for socket I/O
+ * SocketBuf.c - Circular buffer for socket I/O
  */
 
 #include <assert.h>

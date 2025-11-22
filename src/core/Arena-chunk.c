@@ -1,9 +1,6 @@
 /**
  * Arena-chunk.c - Private chunk management for Arena allocator
- *
  * Handles chunk allocation, reuse, linking, and cleanup.
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  */
 
 #include <assert.h>

@@ -1,10 +1,6 @@
 /**
  * SocketPool.c - Main entry point for SocketPool module (delegates to split
  * files)
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- * This file is now a thin wrapper; core logic split for maintainability.
  */
 
 #include "pool/SocketPool-accept.h"

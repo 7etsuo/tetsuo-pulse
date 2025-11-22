@@ -1,5 +1,5 @@
 /**
- * SocketPoll.c - Event polling implementation with backend abstraction
+ * SocketPoll.c - Event polling with backend abstraction
  * PLATFORM: Cross-platform (Linux/BSD/macOS/POSIX)
  * - Linux: epoll backend (best performance)
  * - BSD/macOS: kqueue backend (best performance)
@@ -73,7 +73,7 @@ typedef struct FdSocketEntry
 
 struct T
 {
-  PollBackend_T backend; /* Backend-specific poll implementation */
+  PollBackend_T backend;
   int maxevents;
   int default_timeout_ms;
   SocketEvent_T *socketevents;

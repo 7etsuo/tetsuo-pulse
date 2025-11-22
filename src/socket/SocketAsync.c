@@ -1,5 +1,5 @@
 /**
- * SocketAsync.c - Asynchronous I/O Implementation
+ * SocketAsync.c - Asynchronous I/O
  */
 
 #include <assert.h>
@@ -754,7 +754,7 @@ process_kqueue_completions (T async, int timeout_ms, int max_completions)
 }
 #endif
 
-/* ==================== Public API Implementation ==================== */
+/* ==================== Public API ==================== */
 
 unsigned
 SocketAsync_send (T async, Socket_T socket, const void *buf, size_t len,
