@@ -72,6 +72,16 @@
 #define SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE 256
 #endif
 
+/* Maximum number of SNI certificates */
+#ifndef SOCKET_TLS_MAX_SNI_CERTS
+#define SOCKET_TLS_MAX_SNI_CERTS 100
+#endif
+
+/* Maximum number of ALPN protocols */
+#ifndef SOCKET_TLS_MAX_ALPN_PROTOCOLS
+#define SOCKET_TLS_MAX_ALPN_PROTOCOLS 16
+#endif
+
 /* Forward declarations for TLS types */
 /* OpenSSL types are already defined by the includes above when SOCKET_HAS_TLS
  * is set */

@@ -13,10 +13,13 @@
 
 #ifdef SOCKET_HAS_TLS
 
+#include "core/Arena.h"
 #include "socket/Socket-private.h"
 #include "tls/SocketTLS.h"
+#include "tls/SocketTLSConfig.h"
 #include <assert.h>
 #include <openssl/ssl.h>
+#include <string.h>
 
 #define T SocketTLS_T
 
@@ -215,10 +218,22 @@ SocketTLS_get_alpn_selected (Socket_T socket)
       return NULL;
     }
 
-  /* Note: OpenSSL returns the protocol in wire format (length-prefixed)
-   * For simplicity, we assume it's a valid string and return it directly.
-   * In production, you might want to validate the format. */
-  return (const char *)alpn_data;
+  if (alpn_len > SOCKET_TLS_MAX_ALPN_LEN)
+    {
+      return NULL; /* Invalid length */
+    }
+
+  /* Allocate null-terminated copy in socket arena for safe string usage */
+  char *proto_copy = Arena_alloc (socket->arena, alpn_len + 1, __FILE__, __LINE__);
+  if (!proto_copy)
+    {
+      return NULL; /* Allocation failed */
+    }
+
+  memcpy (proto_copy, alpn_data, alpn_len);
+  proto_copy[alpn_len] = '\0';
+
+  return proto_copy;
 }
 
 #undef T

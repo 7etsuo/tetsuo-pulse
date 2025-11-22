@@ -31,6 +31,11 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <openssl/pem.h>
+#include <openssl/evp.h>
+#include <openssl/bio.h>
+#include <stdio.h>
+#include <ctype.h>
 
 /* Thread-local error buffer for detailed error messages
  * Prevents race conditions when multiple threads raise TLS context errors
@@ -77,6 +82,8 @@ struct T
     char **hostnames;  /* Array of hostname strings */
     char **cert_files; /* Array of certificate file paths */
     char **key_files;  /* Array of private key file paths */
+    X509 **certs;      /* Pre-loaded certificate objects */
+    EVP_PKEY **pkeys;  /* Pre-loaded private key objects */
     size_t count;      /* Number of certificate mappings */
     size_t capacity;   /* Allocated capacity */
   } sni_certs;
@@ -116,32 +123,115 @@ raise_tls_context_error (const char *context)
   RAISE_TLS_CONTEXT_ERROR (SocketTLS_Failed);
 }
 
+/**
+ * validate_file_path - Basic validation for certificate/key/CA file paths
+ * @path: File path string to validate
+ *
+ * Performs security checks to prevent path traversal and unreasonable paths.
+ * Checks for non-empty, reasonable length, no ".." sequences.
+ *
+ * Returns: 1 if valid, 0 if invalid
+ */
+static int
+validate_file_path (const char *path)
+{
+  if (!path || !*path)
+    return 0;
+
+  size_t len = strlen (path);
+  if (len == 0 || len > 4096) /* Reasonable max path length */
+    return 0;
+
+  if (strstr (path, "..") != NULL)
+    return 0; /* Prevent potential path traversal */
+
+  /* Additional checks can be added: no null bytes, valid chars, etc. */
+
+  return 1;
+}
+
+/**
+ * validate_hostname - Validate SNI hostname format
+ * @hostname: Hostname string to validate
+ *
+ * Validates hostname according to DNS rules: labels with alphanum/-, length limits.
+ *
+ * Returns: 1 if valid, 0 if invalid
+ */
+static int
+validate_hostname (const char *hostname)
+{
+  if (!hostname)
+    return 0;
+
+  size_t len = strlen (hostname);
+  if (len == 0 || len > SOCKET_TLS_MAX_SNI_LEN)
+    return 0;
+
+  const char *p = hostname;
+  int label_len = 0;
+  int expecting_dot = 0; /* After dot or start */
+
+  while (*p)
+    {
+      if (*p == '.')
+        {
+          if (label_len == 0 || label_len > 63)
+            return 0;
+          label_len = 0;
+          expecting_dot = 0;
+        }
+      else
+        {
+          if (expecting_dot)
+            return 0; /* Non-dot after dot? No, after dot expect label char
+ */
+          if (! (isalnum ((unsigned char)*p) || *p == '-'))
+            return 0;
+          if (*p == '-' && label_len == 0)
+            return 0; /* Label can't start with - */
+          label_len++;
+          if (label_len > 63)
+            return 0;
+          expecting_dot = 1; /* Can have dot next */
+        }
+      p++;
+    }
+
+  if (label_len == 0 || label_len > 63)
+    return 0;
+
+  return 1;
+}
+
 /* SNI callback function for hostname-based certificate selection */
 static int
 sni_callback (SSL *ssl, int *ad, void *arg)
 {
-  (void)ssl; /* unused */
   (void)ad;  /* unused */
   T ctx = (T)arg;
-  const char *hostname = SSL_get_servername (ssl, TLSEXT_NAMETYPE_host_name);
+  const char *sni_hostname = SSL_get_servername (ssl, TLSEXT_NAMETYPE_host_name);
 
-  if (!hostname || !ctx)
+  if (!sni_hostname || !ctx)
     return SSL_TLSEXT_ERR_NOACK;
 
-  /* Look up certificate for this hostname */
+  /* Look up certificate for this hostname using pre-loaded objects */
   for (size_t i = 0; i < ctx->sni_certs.count; i++)
     {
-      if (strcmp (ctx->sni_certs.hostnames[i], hostname) == 0)
+      const char *stored_hostname = ctx->sni_certs.hostnames[i];
+      if (stored_hostname && strcmp (stored_hostname, sni_hostname) == 0)
         {
-          /* Load the certificate and key for this hostname */
-          if (SSL_use_certificate_file (ssl, ctx->sni_certs.cert_files[i],
-                                        SSL_FILETYPE_PEM)
-              != 1)
+          X509 *cert = ctx->sni_certs.certs[i];
+          EVP_PKEY *pkey = ctx->sni_certs.pkeys[i];
+
+          if (!cert || !pkey)
             return SSL_TLSEXT_ERR_NOACK;
 
-          if (SSL_use_PrivateKey_file (ssl, ctx->sni_certs.key_files[i],
-                                       SSL_FILETYPE_PEM)
-              != 1)
+          /* Use pre-loaded certificate and key */
+          if (SSL_use_certificate (ssl, cert) != 1)
+            return SSL_TLSEXT_ERR_NOACK;
+
+          if (SSL_use_PrivateKey (ssl, pkey) != 1)
             return SSL_TLSEXT_ERR_NOACK;
 
           if (SSL_check_private_key (ssl) != 1)
@@ -151,7 +241,7 @@ sni_callback (SSL *ssl, int *ad, void *arg)
         }
     }
 
-  /* No certificate found for this hostname */
+  /* No matching certificate found; fallback to default in context */
   return SSL_TLSEXT_ERR_NOACK;
 }
 
@@ -332,6 +422,8 @@ alloc_and_init_ctx (const SSL_METHOD *method, int is_server)
   ctx->sni_certs.hostnames = NULL;
   ctx->sni_certs.cert_files = NULL;
   ctx->sni_certs.key_files = NULL;
+  ctx->sni_certs.certs = NULL;
+  ctx->sni_certs.pkeys = NULL;
   ctx->sni_certs.count = 0;
   ctx->sni_certs.capacity = 0;
 
@@ -441,6 +533,11 @@ SocketTLSContext_load_certificate (T ctx, const char *cert_file,
   assert (cert_file);
   assert (key_file);
 
+  if (!validate_file_path (cert_file) || !validate_file_path (key_file))
+    {
+      raise_tls_context_error ("Invalid certificate or key file path");
+    }
+
   /* Load certificate */
   if (SSL_CTX_use_certificate_file (ctx->ssl_ctx, cert_file, SSL_FILETYPE_PEM)
       != 1)
@@ -481,6 +578,11 @@ SocketTLSContext_load_ca (T ctx, const char *ca_file)
   assert (ctx->ssl_ctx);
   assert (ca_file);
 
+  if (!validate_file_path (ca_file))
+    {
+      raise_tls_context_error ("Invalid CA file path");
+    }
+
   /* Load CA certificates */
   if (SSL_CTX_load_verify_locations (ctx->ssl_ctx, ca_file, NULL) != 1)
     {
@@ -516,11 +618,22 @@ SocketTLSContext_add_certificate (T ctx, const char *hostname,
   assert (cert_file);
   assert (key_file);
 
+  if (!validate_file_path (cert_file) || !validate_file_path (key_file))
+    {
+      raise_tls_context_error ("Invalid certificate or key file path");
+    }
+
   /* Only meaningful for server contexts */
   if (!ctx->is_server)
     {
       raise_tls_context_error (
           "SNI certificates only supported for server contexts");
+    }
+
+  /* Limit number of SNI certificates to prevent memory exhaustion */
+  if (ctx->sni_certs.count >= SOCKET_TLS_MAX_SNI_CERTS)
+    {
+      raise_tls_context_error ("Too many SNI certificates");
     }
 
   /* Expand capacity if needed */
@@ -535,9 +648,14 @@ SocketTLSContext_add_certificate (T ctx, const char *hostname,
                                            new_capacity * sizeof (char *));
       ctx->sni_certs.key_files
           = realloc (ctx->sni_certs.key_files, new_capacity * sizeof (char *));
+      ctx->sni_certs.certs
+          = realloc (ctx->sni_certs.certs, new_capacity * sizeof (X509 *));
+      ctx->sni_certs.pkeys
+          = realloc (ctx->sni_certs.pkeys, new_capacity * sizeof (EVP_PKEY *));
 
       if (!ctx->sni_certs.hostnames || !ctx->sni_certs.cert_files
-          || !ctx->sni_certs.key_files)
+          || !ctx->sni_certs.key_files || !ctx->sni_certs.certs
+          || !ctx->sni_certs.pkeys)
         {
           raise_tls_context_error (
               "Failed to allocate SNI certificate arrays");
@@ -549,7 +667,16 @@ SocketTLSContext_add_certificate (T ctx, const char *hostname,
   /* Store hostname (NULL for default) */
   if (hostname)
     {
-      size_t hostname_len = strlen (hostname) + 1;
+      size_t host_len = strlen (hostname);
+      if (host_len == 0 || host_len > SOCKET_TLS_MAX_SNI_LEN)
+        {
+          raise_tls_context_error ("Invalid SNI hostname length");
+        }
+      if (!validate_hostname (hostname))
+        {
+          raise_tls_context_error ("Invalid SNI hostname format");
+        }
+      size_t hostname_len = host_len + 1;
       char *hostname_copy
           = Arena_alloc (ctx->arena, hostname_len, __FILE__, __LINE__);
       if (!hostname_copy)
@@ -584,13 +711,57 @@ SocketTLSContext_add_certificate (T ctx, const char *hostname,
   memcpy (key_copy, key_file, key_len);
   ctx->sni_certs.key_files[ctx->sni_certs.count] = key_copy;
 
-  ctx->sni_certs.count++;
+  /* Load and store certificate and private key objects */
+  X509 *cert = NULL;
+  EVP_PKEY *pkey = NULL;
 
-  /* If this is the first certificate and no hostname, load it as default */
-  if (ctx->sni_certs.count == 1 && !hostname)
+  /* Load certificate */
+  FILE *cert_fp = fopen (cert_file, "r");
+  if (!cert_fp)
+    {
+      raise_tls_context_error ("Cannot open certificate file");
+    }
+  cert = PEM_read_X509 (cert_fp, NULL, NULL, NULL);
+  fclose (cert_fp);
+  if (!cert)
+    {
+      raise_tls_context_error ("Failed to parse certificate PEM");
+    }
+
+  /* Load private key */
+  FILE *key_fp = fopen (key_file, "r");
+  if (!key_fp)
+    {
+      X509_free (cert);
+      raise_tls_context_error ("Cannot open private key file");
+    }
+  pkey = PEM_read_PrivateKey (key_fp, NULL, NULL, NULL);
+  fclose (key_fp);
+  if (!pkey)
+    {
+      X509_free (cert);
+      raise_tls_context_error ("Failed to parse private key PEM");
+    }
+
+  /* Validate key matches certificate */
+  if (X509_check_private_key (cert, pkey) != 1)
+    {
+      EVP_PKEY_free (pkey);
+      X509_free (cert);
+      raise_tls_context_error ("Private key does not match certificate");
+    }
+
+  /* Store loaded objects (OpenSSL will manage refs during use) */
+  ctx->sni_certs.certs[ctx->sni_certs.count] = cert;
+  ctx->sni_certs.pkeys[ctx->sni_certs.count] = pkey;
+
+  /* If default certificate (no hostname), also load into context using file for fallback */
+  if (!hostname)
     {
       SocketTLSContext_load_certificate (ctx, cert_file, key_file);
     }
+
+  ctx->sni_certs.count++;
 
   /* Enable SNI callback if we have multiple certificates or hostname-specific
    * ones */
@@ -771,6 +942,11 @@ SocketTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
 
   if (count == 0)
     return;
+
+  if (count > SOCKET_TLS_MAX_ALPN_PROTOCOLS)
+    {
+      raise_tls_context_error ("Too many ALPN protocols");
+    }
 
   /* Store protocols in context for later reference */
   ctx->alpn.protocols = Arena_alloc (ctx->arena, count * sizeof (const char *),
@@ -956,7 +1132,7 @@ SocketTLSContext_free (T *ctx)
           Arena_dispose (&c->arena);
         }
 
-      /* Free SNI certificate arrays */
+      /* Free SNI path arrays */
       if (c->sni_certs.hostnames)
         {
           free (c->sni_certs.hostnames);
@@ -971,6 +1147,28 @@ SocketTLSContext_free (T *ctx)
         {
           free (c->sni_certs.key_files);
           c->sni_certs.key_files = NULL;
+        }
+
+      /* Free pre-loaded OpenSSL objects */
+      if (c->sni_certs.certs)
+        {
+          for (size_t i = 0; i < c->sni_certs.count; ++i)
+            {
+              if (c->sni_certs.certs[i])
+                X509_free (c->sni_certs.certs[i]);
+            }
+          free (c->sni_certs.certs);
+          c->sni_certs.certs = NULL;
+        }
+      if (c->sni_certs.pkeys)
+        {
+          for (size_t i = 0; i < c->sni_certs.count; ++i)
+            {
+              if (c->sni_certs.pkeys[i])
+                EVP_PKEY_free (c->sni_certs.pkeys[i]);
+            }
+          free (c->sni_certs.pkeys);
+          c->sni_certs.pkeys = NULL;
         }
 
       /* Free context structure */
