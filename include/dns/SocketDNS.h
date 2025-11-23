@@ -50,7 +50,7 @@ typedef struct T *T;
 typedef struct Request_T *Request_T;
 
 /* Exception types */
-extern Except_T SocketDNS_Failed; /**< DNS resolution operation failure */
+extern const Except_T SocketDNS_Failed; /**< DNS resolution operation failure */
 
 /**
  * SocketDNS_Callback - Callback function for async DNS resolution

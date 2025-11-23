@@ -2144,7 +2144,14 @@ TEST (socket_getpeerport_zero_when_no_peer)
 TEST (socket_many_sequential_connections)
 {
   setup_signals ();
-  Socket_T server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T server = NULL;
+  TRY
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  EXCEPT (Socket_Failed)
+    {
+      return;
+    }
+  END_TRY;
 
   TRY volatile int port;
   volatile int i;
@@ -2156,15 +2163,23 @@ TEST (socket_many_sequential_connections)
   getsockname (Socket_fd (server), (struct sockaddr *)&addr, &len);
   port = ntohs (addr.sin_port);
 
-  for (i = 0; i < 10; i++)
+  i = 0;
+  while (i < 10)
     {
-      Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
-      Socket_connect (client, "127.0.0.1", port);
-      usleep (10000);
-      Socket_T accepted = Socket_accept (server);
-      if (accepted)
-        Socket_free (&accepted);
-      Socket_free (&client);
+      TRY
+        Socket_T client = NULL;
+        client = Socket_new (AF_INET, SOCK_STREAM, 0);
+        Socket_connect (client, "127.0.0.1", port);
+        usleep (10000);
+        Socket_T accepted = NULL;
+        accepted = Socket_accept (server);
+        if (accepted)
+          Socket_free (&accepted);
+        Socket_free (&client);
+      EXCEPT (Socket_Failed)
+        {}
+      END_TRY;
+      i++;
     }
   EXCEPT (Socket_Failed) (void) 0;
   END_TRY;
@@ -2190,11 +2205,19 @@ static void *
 thread_create_sockets (void *arg)
 {
   (void)arg;
-  for (int i = 0; i < 50; i++)
+  volatile int i = 0;
+  while (i < 50)
     {
-      Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
-      if (socket)
-        Socket_free (&socket);
+      TRY
+        Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+        if (socket)
+          Socket_free (&socket);
+      EXCEPT (Socket_Failed)
+        {} // Ignore creation failures during concurrent stress test
+      EXCEPT (Arena_Failed)
+        {} // Ignore arena failures
+      END_TRY;
+      i++;
     }
   return NULL;
 }

@@ -28,11 +28,11 @@ extern __thread char tls_error_buf[];
 typedef struct T *T;
 
 /* TLS-specific exception types */
-extern Except_T SocketTLS_Failed;          /* General TLS operation failure */
-extern Except_T SocketTLS_HandshakeFailed; /* TLS handshake failure */
-extern Except_T SocketTLS_VerifyFailed;  /* Certificate verification failure */
-extern Except_T SocketTLS_ProtocolError; /* TLS protocol error */
-extern Except_T SocketTLS_ShutdownFailed; /* TLS shutdown failure */
+extern const Except_T SocketTLS_Failed;          /* General TLS operation failure */
+extern const Except_T SocketTLS_HandshakeFailed; /* TLS handshake failure */
+extern const Except_T SocketTLS_VerifyFailed;  /* Certificate verification failure */
+extern const Except_T SocketTLS_ProtocolError; /* TLS protocol error */
+extern const Except_T SocketTLS_ShutdownFailed; /* TLS shutdown failure */
 
 /* TLS handshake state (for polling/integration) */
 typedef enum

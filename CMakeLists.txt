@@ -86,6 +86,7 @@ set(LIB_SOURCES
     src/socket/SocketCommon.c
     src/socket/SocketAsync.c
     src/socket/SocketIO.c
+    src/socket/SocketUnix.c
     
     # DNS module
     src/dns/SocketDNS.c

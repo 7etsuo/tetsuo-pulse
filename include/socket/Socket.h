@@ -2,7 +2,9 @@
 #define SOCKET_INCLUDED
 
 #include "core/Except.h"
+#include "core/SocketConfig.h"  /* For SocketTimeouts_T */
 #include "dns/SocketDNS.h"
+#include "socket/SocketUnix.h"  /* For Unix domain ops */
 
 /**
  * Socket Abstraction Layer
@@ -27,23 +29,11 @@
 #define T Socket_T
 typedef struct T *T;
 
-/**
- * SocketTimeouts_T - Timeout configuration for socket operations
- * @connect_timeout_ms: Connect timeout in milliseconds (0 = infinite)
- * @dns_timeout_ms: DNS resolution timeout in milliseconds (0 = infinite)
- * @operation_timeout_ms: General operation timeout in milliseconds (reserved
- * for future use)
- */
-typedef struct SocketTimeouts
-{
-  int connect_timeout_ms;
-  int dns_timeout_ms;
-  int operation_timeout_ms;
-} SocketTimeouts_T;
+/* SocketTimeouts_T defined in SocketConfig.h */
 
 /* Exception types */
-extern Except_T Socket_Failed; /**< General socket operation failure */
-extern Except_T Socket_Closed; /**< Connection closed by peer */
+extern const Except_T Socket_Failed; /**< General socket operation failure */
+extern const Except_T Socket_Closed; /**< Connection closed by peer */
 
 /**
  * Socket_new - Create a new socket

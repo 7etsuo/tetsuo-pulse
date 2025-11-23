@@ -36,7 +36,7 @@ static char test_failure_message[512];
 
 /* Exception type for test failures - kept for compatibility but not used for
  * failures */
-Except_T Test_Failed = { "Test assertion failed" };
+const Except_T Test_Failed = { &Test_Failed, "Test assertion failed" };
 
 /**
  * Test_register - Register a test function

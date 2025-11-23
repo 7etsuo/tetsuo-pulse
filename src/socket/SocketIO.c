@@ -18,6 +18,10 @@
 #include "socket/Socket-private.h"
 #include "socket/Socket.h"
 #include "socket/SocketIO.h"
+#include "socket/SocketCommon.h"
+#include "socket/SocketCommon-private.h"
+#undef SOCKET_LOG_COMPONENT
+#define SOCKET_LOG_COMPONENT "SocketIO"
 
 #include <assert.h>
 #include <errno.h>
@@ -36,14 +40,11 @@ static __thread Except_T SocketIO_DetailedException;
 #endif
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_SOCKETIO_ERROR(exception)                                       \
-  do                                                                          \
-    {                                                                         \
-      SocketIO_DetailedException = (exception);                               \
-      SocketIO_DetailedException.reason = socket_error_buf;                   \
-      RAISE (SocketIO_DetailedException);                                     \
-    }                                                                         \
-  while (0)
+#define RAISE_MODULE_ERROR(e) do { \
+  SocketIO_DetailedException = (e); \
+  SocketIO_DetailedException.reason = socket_error_buf; \
+  RAISE(SocketIO_DetailedException); \
+} while(0)
 
 #ifdef SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
@@ -144,14 +145,14 @@ socket_send_internal (T socket, const void *buf, size_t len, int flags)
       if (!ssl)
         {
           SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-          RAISE_SOCKETIO_ERROR (Socket_Failed);
+          RAISE_MODULE_ERROR (Socket_Failed);
         }
 
       /* Check if handshake is complete */
       if (!socket->tls_handshake_done)
         {
           SOCKET_ERROR_MSG ("TLS handshake not complete");
-          RAISE_SOCKETIO_ERROR (SocketTLS_HandshakeFailed);
+          RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
         }
 
       /* Use SSL_write() for TLS */
@@ -170,7 +171,7 @@ socket_send_internal (T socket, const void *buf, size_t len, int flags)
       if (ssl_result < 0)
         {
           SOCKET_ERROR_FMT ("TLS send failed (len=%zu)", len);
-          RAISE_SOCKETIO_ERROR (SocketTLS_Failed);
+          RAISE_MODULE_ERROR (SocketTLS_Failed);
         }
 
       return (ssize_t)ssl_result;
@@ -189,7 +190,7 @@ socket_send_internal (T socket, const void *buf, size_t len, int flags)
       if (errno == ECONNRESET)
         RAISE (Socket_Closed);
       SOCKET_ERROR_FMT ("Send failed (len=%zu)", len);
-      RAISE_SOCKETIO_ERROR (Socket_Failed);
+      RAISE_MODULE_ERROR (Socket_Failed);
     }
 
   return result;
@@ -218,14 +219,14 @@ socket_recv_internal (T socket, void *buf, size_t len, int flags)
       if (!ssl)
         {
           SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-          RAISE_SOCKETIO_ERROR (Socket_Failed);
+          RAISE_MODULE_ERROR (Socket_Failed);
         }
 
       /* Check if handshake is complete */
       if (!socket->tls_handshake_done)
         {
           SOCKET_ERROR_MSG ("TLS handshake not complete");
-          RAISE_SOCKETIO_ERROR (SocketTLS_HandshakeFailed);
+          RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
         }
 
       /* Use SSL_read() for TLS */
@@ -246,7 +247,7 @@ socket_recv_internal (T socket, void *buf, size_t len, int flags)
       if (ssl_result < 0)
         {
           SOCKET_ERROR_FMT ("TLS receive failed (len=%zu)", len);
-          RAISE_SOCKETIO_ERROR (SocketTLS_Failed);
+          RAISE_MODULE_ERROR (SocketTLS_Failed);
         }
 
       if (ssl_result == 0)
@@ -269,7 +270,7 @@ socket_recv_internal (T socket, void *buf, size_t len, int flags)
       if (errno == ECONNRESET)
         RAISE (Socket_Closed);
       SOCKET_ERROR_FMT ("Receive failed (len=%zu)", len);
-      RAISE_SOCKETIO_ERROR (Socket_Failed);
+      RAISE_MODULE_ERROR (Socket_Failed);
     }
   else if (result == 0)
     {
@@ -306,36 +307,27 @@ socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
       if (!ssl)
         {
           SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-          RAISE_SOCKETIO_ERROR (Socket_Failed);
+          RAISE_MODULE_ERROR (Socket_Failed);
         }
 
       /* Check if handshake is complete */
       if (!socket->tls_handshake_done)
         {
           SOCKET_ERROR_MSG ("TLS handshake not complete");
-          RAISE_SOCKETIO_ERROR (SocketTLS_HandshakeFailed);
+          RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
         }
 
-      /* Calculate total length with overflow protection */
-      size_t total_len = 0;
-      for (int i = 0; i < iovcnt; i++)
-        {
-          /* Check for overflow */
-          if (iov[i].iov_len > SIZE_MAX - total_len)
-            {
-              SOCKET_ERROR_MSG ("Scatter/gather total length overflow");
-              RAISE_SOCKETIO_ERROR (Socket_Failed);
-            }
-          total_len += iov[i].iov_len;
-        }
+      /* Calculate total length with overflow protection via common helper (raises on error) */
+      size_t total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
-      /* Allocate temp buffer */
-      void *temp_buf = malloc (total_len);
+      /* Allocate temp buffer from socket arena (security zero-init, lifecycle managed) */
+      Arena_T arena = SocketBase_arena (socket->base);
+      void *temp_buf = Arena_calloc (arena, total_len, 1, __FILE__, __LINE__);
       if (!temp_buf)
         {
           SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                            ": Cannot allocate temp buffer for TLS sendv");
-          RAISE_SOCKETIO_ERROR (Socket_Failed);
+                            ": Cannot Arena_calloc temp buffer for TLS sendv (total_len=%zu)", total_len);
+          RAISE_MODULE_ERROR (Socket_Failed);
         }
 
       /* Copy iovec data to temp buffer */
@@ -350,7 +342,7 @@ socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
       int ssl_result = SSL_write (ssl, temp_buf, (int)total_len);
 
       /* Free temp buffer immediately */
-      free (temp_buf);
+      /* arena-managed temp_buf: no free needed */
 
       if (ssl_result <= 0)
         {
@@ -366,7 +358,7 @@ socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
         {
           SOCKET_ERROR_FMT ("TLS sendv failed (iovcnt=%d, total_len=%zu)",
                             iovcnt, total_len);
-          RAISE_SOCKETIO_ERROR (SocketTLS_Failed);
+          RAISE_MODULE_ERROR (SocketTLS_Failed);
         }
 
       return (ssize_t)ssl_result;
@@ -384,7 +376,7 @@ socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
       if (errno == ECONNRESET)
         RAISE (Socket_Closed);
       SOCKET_ERROR_FMT ("Scatter/gather send failed (iovcnt=%d)", iovcnt);
-      RAISE_SOCKETIO_ERROR (Socket_Failed);
+      RAISE_MODULE_ERROR (Socket_Failed);
     }
 
   return result;
@@ -416,36 +408,28 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
       if (!ssl)
         {
           SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-          RAISE_SOCKETIO_ERROR (Socket_Failed);
+          RAISE_MODULE_ERROR (Socket_Failed);
         }
 
       /* Check if handshake is complete */
       if (!socket->tls_handshake_done)
         {
           SOCKET_ERROR_MSG ("TLS handshake not complete");
-          RAISE_SOCKETIO_ERROR (SocketTLS_HandshakeFailed);
+          RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
         }
 
       /* Calculate total capacity with overflow protection */
-      size_t total_capacity = 0;
-      for (int i = 0; i < iovcnt; i++)
-        {
-          /* Check for overflow */
-          if (iov[i].iov_len > SIZE_MAX - total_capacity)
-            {
-              SOCKET_ERROR_MSG ("Scatter/gather total capacity overflow");
-              RAISE_SOCKETIO_ERROR (Socket_Failed);
-            }
-          total_capacity += iov[i].iov_len;
-        }
+      /* Calculate total capacity via common helper (raises on overflow/invalid) */
+      size_t total_capacity = SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
-      /* Allocate temp buffer */
-      void *temp_buf = malloc (total_capacity);
+      /* Allocate temp buffer from socket arena (security zero-init) */
+      Arena_T arena = SocketBase_arena (socket->base);
+      void *temp_buf = Arena_calloc (arena, total_capacity, 1, __FILE__, __LINE__);
       if (!temp_buf)
         {
           SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                            ": Cannot allocate temp buffer for TLS recvv");
-          RAISE_SOCKETIO_ERROR (Socket_Failed);
+                            ": Cannot Arena_calloc temp buffer for TLS recvv (total_capacity=%zu)", total_capacity);
+          RAISE_MODULE_ERROR (Socket_Failed);
         }
 
       /* Read up to total capacity into temp buffer */
@@ -453,7 +437,7 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
 
       if (ssl_result <= 0)
         {
-          free (temp_buf); /* Free before error handling */
+          /* arena-managed temp_buf: no free needed */ /* Free before error handling */
 
           if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
             {
@@ -470,7 +454,7 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
 
           SOCKET_ERROR_FMT ("TLS recvv failed (iovcnt=%d, capacity=%zu)",
                             iovcnt, total_capacity);
-          RAISE_SOCKETIO_ERROR (SocketTLS_Failed);
+          RAISE_MODULE_ERROR (SocketTLS_Failed);
         }
 
       /* Distribute data across iovecs */
@@ -485,7 +469,7 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
           remaining -= chunk;
         }
 
-      free (temp_buf);
+      /* arena-managed temp_buf: no free needed */
 
       return (ssize_t)ssl_result;
     }
@@ -500,7 +484,7 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
       if (errno == ECONNRESET)
         RAISE (Socket_Closed);
       SOCKET_ERROR_FMT ("Scatter/gather receive failed (iovcnt=%d)", iovcnt);
-      RAISE_SOCKETIO_ERROR (Socket_Failed);
+      RAISE_MODULE_ERROR (Socket_Failed);
     }
   else if (result == 0)
     {

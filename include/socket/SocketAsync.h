@@ -45,7 +45,7 @@
 typedef struct T *T;
 
 /* Exception types */
-extern Except_T SocketAsync_Failed; /**< Async operation failure */
+extern const Except_T SocketAsync_Failed; /**< Async operation failure */
 
 /**
  * SocketAsync_Callback - Callback function for async operation completion

@@ -84,7 +84,7 @@ struct T
 };
 
 /* Exception */
-Except_T SocketAsync_Failed = { "SocketAsync operation failed" };
+const Except_T SocketAsync_Failed = { &SocketAsync_Failed, "SocketAsync operation failed" };
 
 /* Thread-local exception for detailed error messages */
 #ifdef _WIN32
@@ -94,14 +94,11 @@ static __thread Except_T SocketAsync_DetailedException;
 #endif
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_ASYNC_ERROR(exception)                                          \
-  do                                                                          \
-    {                                                                         \
-      SocketAsync_DetailedException = (exception);                            \
-      SocketAsync_DetailedException.reason = socket_error_buf;                \
-      RAISE (SocketAsync_DetailedException);                                  \
-    }                                                                         \
-  while (0)
+#define RAISE_MODULE_ERROR(e) do { \
+  SocketAsync_DetailedException = (e); \
+  SocketAsync_DetailedException.reason = socket_error_buf; \
+  RAISE(SocketAsync_DetailedException); \
+} while(0)
 
 /* Forward declarations */
 static unsigned generate_request_id (T async);
@@ -176,7 +173,7 @@ allocate_request (T async)
   EXCEPT (Arena_Failed)
   {
     SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async request");
-    RAISE_ASYNC_ERROR (SocketAsync_Failed);
+    RAISE_MODULE_ERROR (SocketAsync_Failed);
   }
   END_TRY;
 
@@ -350,7 +347,7 @@ SocketAsync_new (Arena_T arena)
   EXCEPT (Arena_Failed)
   {
     SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async context");
-    RAISE_ASYNC_ERROR (SocketAsync_Failed);
+    RAISE_MODULE_ERROR (SocketAsync_Failed);
   }
   END_TRY;
 
@@ -363,7 +360,7 @@ SocketAsync_new (Arena_T arena)
   if (pthread_mutex_init (&async->mutex, NULL) != 0)
     {
       SOCKET_ERROR_MSG ("Failed to initialize async mutex");
-      RAISE_ASYNC_ERROR (SocketAsync_Failed);
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
   /* Detect and initialize backend */
@@ -775,7 +772,7 @@ SocketAsync_send (T async, Socket_T socket, const void *buf, size_t len,
   if (!req)
     {
       SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async request");
-      RAISE_ASYNC_ERROR (SocketAsync_Failed);
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
   req->socket = socket;
@@ -843,7 +840,7 @@ SocketAsync_send (T async, Socket_T socket, const void *buf, size_t len,
       free_request (async, req);
 
       SOCKET_ERROR_FMT ("Failed to submit async send (errno=%d)", errno);
-      RAISE_ASYNC_ERROR (SocketAsync_Failed);
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
   return req->request_id;
@@ -868,7 +865,7 @@ SocketAsync_recv (T async, Socket_T socket, void *buf, size_t len,
   if (!req)
     {
       SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async request");
-      RAISE_ASYNC_ERROR (SocketAsync_Failed);
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
   req->socket = socket;
@@ -935,7 +932,7 @@ SocketAsync_recv (T async, Socket_T socket, void *buf, size_t len,
       free_request (async, req);
 
       SOCKET_ERROR_FMT ("Failed to submit async recv (errno=%d)", errno);
-      RAISE_ASYNC_ERROR (SocketAsync_Failed);
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
   return req->request_id;

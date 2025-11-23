@@ -22,7 +22,7 @@
 
 #define T SocketPool_T
 
-extern Except_T SocketPool_Failed;
+extern const Except_T SocketPool_Failed;
 extern __thread Except_T SocketPool_DetailedException;
 
 #define RAISE_POOL_ERROR(exception)                                           \

@@ -31,7 +31,7 @@
 typedef struct T *T;
 
 /* Exception type for test failures */
-extern Except_T Test_Failed;
+extern const Except_T Test_Failed;
 
 /**
  * Test_run_all - Run all registered tests

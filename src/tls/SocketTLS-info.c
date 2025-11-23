@@ -216,7 +216,7 @@ SocketTLS_get_alpn_selected (Socket_T socket)
     }
 
   /* Allocate null-terminated copy in socket arena for safe string usage */
-  char *proto_copy = Arena_alloc (socket->arena, alpn_len + 1, __FILE__, __LINE__);
+  char *proto_copy = Arena_alloc (SocketBase_arena (socket->base), alpn_len + 1, __FILE__, __LINE__);
   if (!proto_copy)
     {
       return NULL; /* Allocation failed */

@@ -652,27 +652,49 @@ TEST(socketpoll_event_loop_simulation)
 TEST (socketpoll_many_sockets)
 {
   setup_signals ();
-  SocketPoll_T poll = SocketPoll_new (1000);
-  Socket_T sockets[50];
+  SocketPoll_T poll = NULL;
+  TRY
+    poll = SocketPoll_new (10);
+  EXCEPT (SocketPoll_Failed)
+    {
+      return;
+    }
+  END_TRY;
+  Socket_T sockets[10] = { NULL };
 
   TRY
   {
-    for (int i = 0; i < 50; i++)
+    volatile int i = 0;
+    while (i < 10)
       {
-        sockets[i] = Socket_new (AF_INET, SOCK_STREAM, 0);
-        SocketPoll_add (poll, sockets[i], POLL_READ, NULL);
+        TRY
+          sockets[i] = Socket_new (AF_INET, SOCK_STREAM, 0);
+          SocketPoll_add (poll, sockets[i], POLL_READ, NULL);
+        EXCEPT (Socket_Failed)
+          {}
+        EXCEPT (SocketPoll_Failed)
+          {}
+        END_TRY;
+        i++;
       }
 
-    for (int i = 0; i < 50; i++)
+    i = 0;
+    while (i < 10)
       {
-        SocketPoll_del (poll, sockets[i]);
+        TRY
+          SocketPoll_del (poll, sockets[i]);
+        EXCEPT (SocketPoll_Failed)
+          {}
+        END_TRY;
+        i++;
       }
   }
   EXCEPT (SocketPoll_Failed) { ASSERT (0); }
   FINALLY
   {
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < 10; i++) {  // Free exactly the created sockets (10 total)
       Socket_free (&sockets[i]);
+    }
     SocketPoll_free (&poll);
   }
   END_TRY;

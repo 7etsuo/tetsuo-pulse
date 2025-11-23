@@ -49,7 +49,7 @@ typedef struct Connection *Connection_T;
 typedef void (*SocketPool_ConnectCallback) (Connection_T conn, int error, void *data);
 
 /* Exception types */
-extern Except_T SocketPool_Failed; /**< Pool operation failure */
+extern const Except_T SocketPool_Failed; /**< Pool operation failure */
 
 /**
  * SocketPool_new - Create a new connection pool

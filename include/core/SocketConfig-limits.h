@@ -18,6 +18,35 @@
 /* Minimum buffer size per connection */
 #ifndef SOCKET_MIN_BUFFER_SIZE
 #define SOCKET_MIN_BUFFER_SIZE 512
+
+/* UDP limits to avoid fragmentation and respect protocol max */
+#ifndef UDP_MAX_PAYLOAD
+#define UDP_MAX_PAYLOAD 65507UL /* IPv4/6 max UDP payload excluding headers */
+#endif
+
+#ifndef SAFE_UDP_SIZE
+#define SAFE_UDP_SIZE 1472UL /* Safe size for Ethernet MTU (1500 - IP/UDP headers ~28) */
+#endif
+
+#ifndef SOCKET_SENDFILE_FALLBACK_BUFFER_SIZE
+#define SOCKET_SENDFILE_FALLBACK_BUFFER_SIZE 8192 /* Default fallback buffer for sendfile emulation */
+#endif
+
+#ifndef SOCKET_MAX_TTL
+#define SOCKET_MAX_TTL 255 /* Standard IP TTL max */
+#endif
+
+#ifndef SOCKET_IPV6_MAX_PREFIX
+#define SOCKET_IPV6_MAX_PREFIX 128 /* IPv6 address bits */
+#endif
+
+#ifndef SOCKET_IPV4_MAX_PREFIX
+#define SOCKET_IPV4_MAX_PREFIX 32 /* IPv4 address bits */
+#endif
+
+#ifndef SOCKET_MAX_PORT
+#define SOCKET_MAX_PORT 65535 /* Standard TCP/UDP port max */
+#endif
 #endif
 
 /* Maximum events per poll */

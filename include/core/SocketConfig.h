@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "SocketConfig-limits.h"
+
 extern const char *Socket_safe_strerror (int errnum);
 
 /* Socket header required for IPv6 multicast constants */
@@ -48,6 +50,29 @@ extern const char *Socket_safe_strerror (int errnum);
 #ifndef SOCKET_MAX_BUFFER_SIZE
 #define SOCKET_MAX_BUFFER_SIZE (1024 * 1024) /* 1MB */
 #endif
+
+/* Default timeout values in ms */
+#ifndef SOCKET_DEFAULT_CONNECT_TIMEOUT_MS
+#define SOCKET_DEFAULT_CONNECT_TIMEOUT_MS 30000  /* 30 seconds */
+#endif
+
+#ifndef SOCKET_DEFAULT_DNS_TIMEOUT_MS
+#define SOCKET_DEFAULT_DNS_TIMEOUT_MS 5000  /* 5 seconds */
+#endif
+
+#ifndef SOCKET_DEFAULT_OPERATION_TIMEOUT_MS
+#define SOCKET_DEFAULT_OPERATION_TIMEOUT_MS 0  /* Infinite */
+#endif
+
+/**
+ * SocketTimeouts_T - Timeout configuration structure
+ */
+typedef struct SocketTimeouts
+{
+  int connect_timeout_ms;     /**< Connect timeout in ms (0 = infinite) */
+  int dns_timeout_ms;         /**< DNS resolution timeout in ms (0 = infinite) */
+  int operation_timeout_ms;   /**< General operation timeout in ms (0 = infinite) */
+} SocketTimeouts_T;
 
 /* Minimum buffer size per connection */
 #ifndef SOCKET_MIN_BUFFER_SIZE
@@ -237,15 +262,15 @@ union align
 #define SOCKETBUF_MIN_CAPACITY 512
 
 /* Standard limits */
-#define SOCKET_MAX_PORT 65535
-#define SOCKET_MAX_TTL 255
+/* Moved to limits.h */
+/* Moved to limits.h */
 
 /* Time conversion constants */
 #define SOCKET_MS_PER_SECOND 1000
 #define SOCKET_NS_PER_MS 1000000LL
 
 /* Buffer sizes */
-#define SOCKET_SENDFILE_FALLBACK_BUFFER_SIZE 8192
+/* Moved to SocketConfig-limits.h */
 
 /* Async I/O defaults */
 #define SOCKET_DEFAULT_IO_URING_ENTRIES 1024
@@ -261,7 +286,7 @@ union align
 
 /* IP prefix lengths */
 #define SOCKET_IPV4_MAX_PREFIX 32
-#define SOCKET_IPV6_MAX_PREFIX 128
+/* Moved to limits.h */
 
 #define SOCKET_IPV4_PREFIX_RANGE "0-" SOCKET_TO_STRING (SOCKET_IPV4_MAX_PREFIX)
 #define SOCKET_IPV6_PREFIX_RANGE "0-" SOCKET_TO_STRING (SOCKET_IPV6_MAX_PREFIX)

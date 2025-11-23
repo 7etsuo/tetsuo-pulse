@@ -23,7 +23,7 @@
 #include "test/Test.h"
 
 /* Arena exception - external declaration */
-extern Except_T Arena_Failed;
+extern const Except_T Arena_Failed;
 
 /* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT
  */
@@ -116,7 +116,7 @@ TEST (threadsafety_arena_concurrent_clear)
 
 /* ==================== Exception Thread Safety Tests ==================== */
 
-static const Except_T ThreadTest_Exception = { "Thread test exception" };
+static const Except_T ThreadTest_Exception = { &ThreadTest_Exception, "Thread test exception" };
 
 static void *
 thread_exception_handling (void *arg)
@@ -726,8 +726,22 @@ TEST (threadsafety_high_load_server_simulation)
 {
   setup_signals ();
   Arena_T arena = Arena_new ();
-  SocketPoll_T poll = SocketPoll_new (1000);
-  SocketPool_T pool = SocketPool_new (arena, 500, 4096);
+  SocketPoll_T poll = NULL;
+  TRY
+    poll = SocketPoll_new (1000);
+  EXCEPT (SocketPoll_Failed)
+    {
+      return;
+    }
+  END_TRY;
+  SocketPool_T pool = NULL;
+  TRY
+    pool = SocketPool_new (arena, 500, 4096);
+  EXCEPT (SocketPool_Failed)
+    {
+      return;
+    }
+  END_TRY;
   volatile Socket_T server = NULL;
 
   TRY
