@@ -92,6 +92,11 @@ socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result)
     case SSL_ERROR_NONE:
       return 0; /* Success */
 
+    case SSL_ERROR_SSL:
+      /* Internal OpenSSL protocol error */
+      errno = EPROTO;
+      return -1;
+
     case SSL_ERROR_WANT_READ:
       socket->tls_handshake_done = 0; /* Handshake not complete */
       errno = EAGAIN;
@@ -99,6 +104,11 @@ socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result)
 
     case SSL_ERROR_WANT_WRITE:
       socket->tls_handshake_done = 0; /* Handshake not complete */
+      errno = EAGAIN;
+      return -1;
+
+    case SSL_ERROR_WANT_X509_LOOKUP:
+      /* Certificate lookup needed - retry after loading certs */
       errno = EAGAIN;
       return -1;
 
@@ -113,8 +123,36 @@ socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result)
         errno = ECONNRESET; /* EOF */
       return -1;
 
+    case SSL_ERROR_WANT_CONNECT:
+      /* Underlying BIO wants connect */
+      socket->tls_handshake_done = 0;
+      errno = EINPROGRESS;
+      return -1;
+
+    case SSL_ERROR_WANT_ACCEPT:
+      /* Underlying BIO wants accept */
+      socket->tls_handshake_done = 0;
+      errno = EAGAIN;
+      return -1;
+
+    case SSL_ERROR_WANT_ASYNC:
+    case SSL_ERROR_WANT_ASYNC_JOB:
+      /* Async operation pending */
+      errno = EAGAIN;
+      return -1;
+
+    case SSL_ERROR_WANT_CLIENT_HELLO_CB:
+      /* Client Hello callback needed */
+      errno = EAGAIN;
+      return -1;
+
+    case SSL_ERROR_WANT_RETRY_VERIFY:
+      /* Retry verification */
+      errno = EAGAIN;
+      return -1;
+
     default:
-      /* Other SSL errors */
+      /* Unexpected SSL errors */
       errno = EPROTO;
       return -1;
     }

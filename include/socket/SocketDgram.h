@@ -28,6 +28,7 @@
  * - Connectionless: No three-way handshake required
  * - Unreliable: Packets may be lost, duplicated, or reordered
  * - Message-oriented: Preserves message boundaries
+ * - Unix domain sockets: Not supported for datagram (UDP Unix possible but omitted per architectural focus on IP networks and TCP/Unix in Socket module). Use Socket module for Unix stream sockets.
  * - Lower latency: No connection setup or ACK delays
  * - Use cases: DNS, gaming, streaming, service discovery
  * Error Handling:

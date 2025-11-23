@@ -227,6 +227,28 @@ extern void SocketCommon_set_option_int (SocketBase_T base, int level, int optna
 extern void SocketCommon_set_ttl (SocketBase_T base, int family, int ttl, Except_T exc_type);
 
 /**
+ * SocketCommon_join_multicast - Join multicast group
+ * @base: Socket base with fd (must be datagram for standard use)
+ * @group: Multicast group string (e.g., "239.0.0.1" or "ff02::1")
+ * @interface: Interface IP or NULL for default
+ * @exc_type: Exception to raise on failure
+ * Resolves group, joins via setsockopt based on family (IPv4/IPv6)
+ * Handles resolution, interface setup, family-specific mreq
+ * Thread-safe for own fd
+ */
+extern void SocketCommon_join_multicast (SocketBase_T base, const char *group, const char *interface, Except_T exc_type);
+
+/**
+ * SocketCommon_leave_multicast - Leave multicast group
+ * @base: Socket base with fd
+ * @group: Multicast group string
+ * @interface: Interface IP or NULL
+ * @exc_type: Exception to raise on failure
+ * Symmetric to join; drops membership via setsockopt
+ */
+extern void SocketCommon_leave_multicast (SocketBase_T base, const char *group, const char *interface, Except_T exc_type);
+
+/**
  * SocketCommon_set_nonblock - Set non-blocking mode
  * @base: Base with fd
  * @enable: True to enable non-block
