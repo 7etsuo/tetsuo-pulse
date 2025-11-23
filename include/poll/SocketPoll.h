@@ -34,7 +34,7 @@ typedef struct SocketAsync_T *SocketAsync_T;
 typedef struct T *T;
 
 /* Exception for poll failures */
-extern Except_T SocketPoll_Failed;
+extern const Except_T SocketPoll_Failed;
 
 /**
  * Event types that can be monitored

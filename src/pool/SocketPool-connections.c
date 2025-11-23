@@ -30,7 +30,7 @@
 
 #define T SocketPool_T
 
-extern Except_T SocketPool_Failed;
+extern const Except_T SocketPool_Failed;
 extern __thread Except_T SocketPool_DetailedException; /* From core */
 
 #define RAISE_POOL_ERROR(exception)                                           \
@@ -60,7 +60,11 @@ socket_hash (const Socket_T socket)
 
   assert (socket);
   fd = Socket_fd (socket);
-  assert (fd >= 0);
+  if (fd < 0) {
+    SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                     "Attempt to hash closed/invalid socket (fd=%d); returning 0", fd);
+    return 0;
+  }
 
   return ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_HASH_SIZE;
 }

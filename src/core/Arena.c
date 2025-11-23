@@ -26,7 +26,7 @@ __thread char arena_error_buf[ARENA_ERROR_BUFSIZE];
 #endif
 
 /* Arena exception definition */
-Except_T Arena_Failed = { "Arena operation failed" };
+const Except_T Arena_Failed = { &Arena_Failed, "Arena operation failed" };
 
 /* Thread-local exception for detailed error messages
  * This is a COPY of the base exception with thread-local reason string.

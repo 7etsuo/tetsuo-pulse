@@ -77,7 +77,7 @@ struct SocketDNS_T {
 #define COMPLETION_SIGNAL_BYTE 1
 
 /* Thread-local exception */
-extern Except_T SocketDNS_Failed;
+extern const Except_T SocketDNS_Failed;
 #ifdef _WIN32
 extern __declspec(thread) Except_T SocketDNS_DetailedException;
 #else

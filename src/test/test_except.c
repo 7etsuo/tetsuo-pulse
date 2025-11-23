@@ -16,7 +16,7 @@
 #endif
 
 /* Test exception type for testing */
-static const Except_T TestException = { "Test exception" };
+static const Except_T TestException = { &TestException, "Test exception" };
 
 /* Test basic exception raising and catching */
 TEST (except_basic_try_except)
@@ -120,8 +120,8 @@ TEST (except_nested_exception_handling)
 /* Test multiple exception types */
 TEST (except_multiple_exception_types)
 {
-  static const Except_T Exception1 = { "Exception 1" };
-  static const Except_T Exception2 = { "Exception 2" };
+  static const Except_T Exception1 = { &Exception1, "Exception 1" };
+  static const Except_T Exception2 = { &Exception2, "Exception 2" };
 
   volatile int caught1 = 0;
   volatile int caught2 = 0;
@@ -138,8 +138,8 @@ TEST (except_multiple_exception_types)
 /* Test ELSE clause */
 TEST (except_else_clause)
 {
-  static const Except_T Exception1 = { "Exception 1" };
-  static const Except_T Exception2 = { "Exception 2" };
+  static const Except_T Exception1 = { &Exception1, "Exception 1" };
+  static const Except_T Exception2 = { &Exception2, "Exception 2" };
 
   volatile int else_caught = 0;
 

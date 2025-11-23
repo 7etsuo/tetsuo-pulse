@@ -78,7 +78,10 @@ backend_add (PollBackend_T backend, int fd, unsigned events)
   int nev = 0;
 
   assert (backend);
-  assert (fd >= 0);
+  if (fd < 0) {
+    errno = EBADF;
+    return -1;
+  }
 
   /* Add read event if requested
    * EV_ADD: Add event to kqueue
@@ -170,7 +173,10 @@ int
 backend_mod (PollBackend_T backend, int fd, unsigned events)
 {
   assert (backend);
-  assert (fd >= 0);
+  if (fd < 0) {
+    errno = EBADF;
+    return -1;
+  }
 
   delete_existing_filters (backend, fd);
   return add_new_filters (backend, fd, events);
@@ -183,7 +189,10 @@ backend_del (PollBackend_T backend, int fd)
   int nev = 0;
 
   assert (backend);
-  assert (fd >= 0);
+  if (fd < 0) {
+    errno = EBADF;
+    return -1;
+  }
 
   /* Delete both read and write filters
    * EV_DELETE silently succeeds if filter doesn't exist */

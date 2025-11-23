@@ -32,19 +32,24 @@
 #include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"
 #include <assert.h>
+#include <ctype.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/x509_vfy.h>
 #include <string.h>
-#include <ctype.h>
 
 #define T SocketTLS_T
 
-Except_T SocketTLS_Failed = { "TLS operation failed" };
-Except_T SocketTLS_HandshakeFailed = { "TLS handshake failed" };
-Except_T SocketTLS_VerifyFailed = { "TLS certificate verification failed" };
-Except_T SocketTLS_ProtocolError = { "TLS protocol error" };
-Except_T SocketTLS_ShutdownFailed = { "TLS shutdown failed" };
+const Except_T SocketTLS_Failed
+    = { &SocketTLS_Failed, "TLS operation failed" };
+const Except_T SocketTLS_HandshakeFailed
+    = { &SocketTLS_HandshakeFailed, "TLS handshake failed" };
+const Except_T SocketTLS_VerifyFailed
+    = { &SocketTLS_VerifyFailed, "TLS certificate verification failed" };
+const Except_T SocketTLS_ProtocolError
+    = { &SocketTLS_ProtocolError, "TLS protocol error" };
+const Except_T SocketTLS_ShutdownFailed
+    = { &SocketTLS_ShutdownFailed, "TLS shutdown failed" };
 
 /* Thread-local exception for detailed TLS error messages
  * Prevents race conditions when multiple threads raise same exception. */
@@ -130,21 +135,23 @@ static void
 socket_allocate_tls_buffers (Socket_T socket)
 {
   assert (socket);
-  assert (socket->arena);
+  assert (SocketBase_arena (socket->base));
 
   /* Allocate read buffer */
   if (!socket->tls_read_buf)
     {
-      socket->tls_read_buf = Arena_alloc (
-          socket->arena, SOCKET_TLS_BUFFER_SIZE, __FILE__, __LINE__);
+      socket->tls_read_buf
+          = Arena_alloc (SocketBase_arena (socket->base),
+                         SOCKET_TLS_BUFFER_SIZE, __FILE__, __LINE__);
       socket->tls_read_buf_len = 0;
     }
 
   /* Allocate write buffer */
   if (!socket->tls_write_buf)
     {
-      socket->tls_write_buf = Arena_alloc (
-          socket->arena, SOCKET_TLS_BUFFER_SIZE, __FILE__, __LINE__);
+      socket->tls_write_buf
+          = Arena_alloc (SocketBase_arena (socket->base),
+                         SOCKET_TLS_BUFFER_SIZE, __FILE__, __LINE__);
       socket->tls_write_buf_len = 0;
     }
 }
@@ -162,10 +169,11 @@ socket_free_tls_resources (Socket_T socket)
   /* Free SSL object */
   if (socket->tls_ssl)
     {
-      SSL_set_app_data ((SSL *)socket->tls_ssl, NULL);  /* Clear app_data before free */
+      SSL_set_app_data ((SSL *)socket->tls_ssl,
+                        NULL); /* Clear app_data before free */
       SSL_free ((SSL *)socket->tls_ssl);
       socket->tls_ssl = NULL;
-      socket->tls_ctx = NULL;  /* Clear context reference */
+      socket->tls_ctx = NULL; /* Clear context reference */
     }
 
   /* Clear TLS flags and state */
@@ -211,7 +219,7 @@ validate_hostname (const char *hostname)
         {
           if (!expecting_dot)
             return 0; /* Must start label after dot or start */
-          if (! (isalnum ((unsigned char)*p) || *p == '-'))
+          if (!(isalnum ((unsigned char)*p) || *p == '-'))
             return 0;
           if (*p == '-' && label_len == 0)
             return 0; /* Label can't start or end with - */
@@ -223,7 +231,8 @@ validate_hostname (const char *hostname)
       p++;
     }
 
-  if (label_len == 0 || label_len > 63 || !expecting_dot) // last label must have chars
+  if (label_len == 0 || label_len > 63
+      || !expecting_dot) // last label must have chars
     return 0;
 
   return 1;
@@ -262,7 +271,7 @@ SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
     }
 
   /* Get socket file descriptor */
-  fd = socket->fd;
+  fd = SocketBase_fd (socket->base);
   if (fd < 0)
     {
       snprintf (tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE,
@@ -300,7 +309,7 @@ SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
 
   /* Store SSL object in socket */
   socket->tls_ssl = (void *)ssl;
-  socket->tls_ctx = (void *)ctx;  /* Store context reference for callbacks */
+  socket->tls_ctx = (void *)ctx; /* Store context reference for callbacks */
 
   /* Set socket as app_data on SSL object for use in verification callbacks */
   SSL_set_app_data (ssl, socket);
@@ -361,8 +370,8 @@ SocketTLS_set_hostname (Socket_T socket, const char *hostname)
     }
 
   /* Allocate hostname string in socket arena */
-  socket->tls_sni_hostname
-      = Arena_alloc (socket->arena, hostname_len + 1, __FILE__, __LINE__);
+  socket->tls_sni_hostname = Arena_alloc (
+      SocketBase_arena (socket->base), hostname_len + 1, __FILE__, __LINE__);
   if (!socket->tls_sni_hostname)
     {
       snprintf (tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE,
@@ -553,8 +562,6 @@ SocketTLS_shutdown (Socket_T socket)
       /* WANT_READ/WRITE are expected during shutdown */
     }
 }
-
-
 
 #undef T
 

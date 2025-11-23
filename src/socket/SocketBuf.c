@@ -10,6 +10,25 @@
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
 #include "socket/SocketBuf.h"
+#include "core/Except.h"
+#include "core/SocketError.h"
+
+#undef SOCKET_LOG_COMPONENT
+#define SOCKET_LOG_COMPONENT "SocketBuf"
+
+const Except_T SocketBuf_Failed = { &SocketBuf_Failed, "SocketBuf operation failed" };
+
+#ifdef _WIN32
+static __declspec(thread) Except_T SocketBuf_DetailedException;
+#else
+static __thread Except_T SocketBuf_DetailedException;
+#endif
+
+#define RAISE_MODULE_ERROR(e) do { \
+  SocketBuf_DetailedException = (e); \
+  SocketBuf_DetailedException.reason = socket_error_buf; \
+  RAISE(SocketBuf_DetailedException); \
+} while(0)
 
 #define T SocketBuf_T
 
@@ -48,20 +67,26 @@ SocketBuf_new (Arena_T arena, size_t capacity)
   assert (capacity > 0);
 
   /* Limit capacity to SIZE_MAX/2 to prevent overflow in pointer arithmetic */
-  if (capacity > SIZE_MAX / 2)
-    return NULL;
+  if (capacity > SIZE_MAX / 2) {
+    SOCKET_ERROR_MSG("SocketBuf_new: capacity %zu too large (> SIZE_MAX/2 = %zu)", capacity, SIZE_MAX / 2);
+    RAISE_MODULE_ERROR(SocketBuf_Failed);
+  }
 
   /* Note: No minimum capacity enforced - allows small buffers for testing.
    * Production code should use SOCKET_MIN_BUFFER_SIZE (512) for efficiency. */
 
   buf = ALLOC (arena, sizeof (*buf));
-  if (!buf)
-    return NULL;
+  if (!buf) {
+    SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Failed to ALLOC SocketBuf struct (size %zu)", sizeof (*buf));
+    RAISE_MODULE_ERROR(SocketBuf_Failed);
+  }
 
   /* Use CALLOC to zero buffer */
   buf->data = CALLOC (arena, capacity, 1);
-  if (!buf->data)
-    return NULL;
+  if (!buf->data) {
+    SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Failed to CALLOC SocketBuf data (capacity %zu)", capacity);
+    RAISE_MODULE_ERROR(SocketBuf_Failed);
+  }
 
   buf->capacity = capacity;
   buf->head = 0;

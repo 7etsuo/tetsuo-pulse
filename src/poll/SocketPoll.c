@@ -127,7 +127,7 @@ allocate_socket_data_entry (T poll)
 {
   SocketData *volatile volatile_entry = NULL;
 
-  TRY { volatile_entry = ALLOC (poll->arena, sizeof (SocketData)); }
+  TRY { volatile_entry = CALLOC (poll->arena, 1, sizeof (SocketData)); }
   EXCEPT (Arena_Failed)
   {
     SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket data mapping");
@@ -147,7 +147,7 @@ allocate_fd_socket_entry (T poll)
 {
   FdSocketEntry *volatile volatile_entry = NULL;
 
-  TRY { volatile_entry = ALLOC (poll->arena, sizeof (FdSocketEntry)); }
+  TRY { volatile_entry = CALLOC (poll->arena, 1, sizeof (FdSocketEntry)); }
   EXCEPT (Arena_Failed)
   {
     SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate fd to socket mapping");
@@ -312,7 +312,7 @@ add_fallback_socket_data_entry (T poll, unsigned hash, Socket_T socket,
            Socket_fd (socket));
 #endif
 
-  TRY { volatile_entry = ALLOC (poll->arena, sizeof (SocketData)); }
+  TRY { volatile_entry = CALLOC (poll->arena, 1, sizeof (SocketData)); }
   EXCEPT (Arena_Failed)
   {
     /* Don't unlock mutex here - caller is responsible for unlocking */

@@ -38,7 +38,7 @@
 typedef struct T *T;
 
 /* Arena exception types */
-extern Except_T Arena_Failed;
+extern const Except_T Arena_Failed;
 
 /**
  * Arena_new - Create a new memory arena

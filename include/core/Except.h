@@ -29,11 +29,10 @@
  *   END_TRY;
  */
 
-#define T Except_T
-typedef struct T
-{
+typedef struct Except_T {
+  const struct Except_T *type;
   const char *reason; /**< Human-readable error description */
-} T;
+} Except_T;
 
 typedef struct Except_Frame Except_Frame;
 struct Except_Frame
@@ -42,7 +41,7 @@ struct Except_Frame
   jmp_buf env;
   const char *file;
   int line;
-  const T *exception;
+  const Except_T *exception;
 };
 
 enum
@@ -61,7 +60,7 @@ extern __thread Except_Frame *Except_stack;
 #endif
 extern const Except_T Assert_Failed;
 
-void Except_raise (const T *e, const char *file, int line);
+void Except_raise (const Except_T *e, const char *file, int line);
 
 #define RAISE(e) Except_raise (&(e), __FILE__, __LINE__)
 #define RERAISE                                                               \
@@ -115,7 +114,7 @@ void Except_raise (const T *e, const char *file, int line);
       Except_stack = prev_frame;                                              \
     }                                                                         \
   }                                                                           \
-  else if ((const Except_T *)Except_frame.exception == &(e))                  \
+  else if (Except_frame.exception && Except_frame.exception->type == &(e)) \
   {                                                                           \
     Except_flag = Except_handled;
 

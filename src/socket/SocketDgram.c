@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -21,16 +22,18 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
+#include "core/SocketConfig-limits.h"
 #include "socket/SocketDgram.h"
 #define SOCKET_LOG_COMPONENT "SocketDgram"
 #include "core/SocketError.h"
 #include "socket/SocketCommon.h"
+#include "socket/SocketCommon-private.h"
 
 #define T SocketDgram_T
 
 /* Port string buffer size for snprintf */
 
-Except_T SocketDgram_Failed = { "Datagram socket operation failed" };
+const Except_T SocketDgram_Failed = { &SocketDgram_Failed, "Datagram socket operation failed" };
 
 /* Thread-local exception for detailed error messages */
 #ifdef _WIN32
@@ -40,25 +43,16 @@ static __thread Except_T SocketDgram_DetailedException;
 #endif
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_DGRAM_ERROR(exception)                                          \
-  do                                                                          \
-    {                                                                         \
-      SocketDgram_DetailedException = (exception);                            \
-      SocketDgram_DetailedException.reason = socket_error_buf;                \
-      RAISE (SocketDgram_DetailedException);                                  \
-    }                                                                         \
-  while (0)
+#define RAISE_MODULE_ERROR(e) do { \
+  SocketDgram_DetailedException = (e); \
+  SocketDgram_DetailedException.reason = socket_error_buf; \
+  RAISE(SocketDgram_DetailedException); \
+} while(0)
 
 struct T
 {
-  int fd;
-  struct sockaddr_storage addr;
-  socklen_t addrlen;
-  struct sockaddr_storage local_addr;
-  socklen_t local_addrlen;
-  char *localaddr;
-  int localport;
-  Arena_T arena;
+  SocketBase_T base;  /* Embedded common base with fd, arena, endpoints, timeouts, metrics */
+  /* Datagram-specific fields can be added here if needed (e.g., multicast groups, TTL cache) */
 };
 
 /* Static helper functions */
@@ -118,7 +112,7 @@ resolve_sendto_address (const char *host, int port, struct addrinfo **res)
       SOCKET_ERROR_MSG ("Invalid host/IP address: %.*s (%s)",
                         SOCKET_ERROR_MAX_HOSTNAME, host,
                         gai_strerror (result));
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
   return 0;
@@ -136,8 +130,15 @@ resolve_sendto_address (const char *host, int port, struct addrinfo **res)
 static ssize_t
 perform_sendto (T socket, const void *buf, size_t len, struct addrinfo *res)
 {
+  /* Enforce UDP sizing to avoid fragmentation and respect protocol limits */
+  if (len > SAFE_UDP_SIZE) {
+    SOCKET_ERROR_MSG("Datagram len %zu > SAFE_UDP_SIZE %zu (risk of fragmentation; max allowed %zu)",
+                     len, SAFE_UDP_SIZE, UDP_MAX_PAYLOAD);
+    RAISE_MODULE_ERROR(SocketDgram_Failed);
+  }
+
   ssize_t sent
-      = sendto (socket->fd, buf, len, 0, res->ai_addr, res->ai_addrlen);
+      = sendto (SocketBase_fd (socket->base), buf, len, 0, res->ai_addr, res->ai_addrlen);
 
   if (sent < 0)
     {
@@ -146,7 +147,7 @@ perform_sendto (T socket, const void *buf, size_t len, struct addrinfo *res)
 
       /* Note: We can't include host/port in error since res is freed */
       SOCKET_ERROR_FMT ("Failed to send datagram");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
   return sent;
@@ -167,7 +168,7 @@ perform_recvfrom (T socket, void *buf, size_t len,
                   struct sockaddr_storage *addr, socklen_t *addrlen)
 {
   ssize_t received
-      = recvfrom (socket->fd, buf, len, 0, (struct sockaddr *)addr, addrlen);
+      = recvfrom (SocketBase_fd (socket->base), buf, len, 0, (struct sockaddr *)addr, addrlen);
 
   if (received < 0)
     {
@@ -175,7 +176,7 @@ perform_recvfrom (T socket, void *buf, size_t len,
         return 0;
 
       SOCKET_ERROR_FMT ("Failed to receive datagram");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
   return received;
@@ -244,7 +245,7 @@ resolve_multicast_group (const char *group, struct addrinfo **res)
     {
       SOCKET_ERROR_MSG ("Invalid multicast group address: %s (%s)", group,
                         gai_strerror (result));
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 }
 
@@ -260,7 +261,7 @@ setup_ipv4_multicast_interface (struct ip_mreq *mreq, const char *interface)
       if (inet_pton (SOCKET_AF_INET, interface, &mreq->imr_interface) <= 0)
         {
           SOCKET_ERROR_MSG ("Invalid interface address: %s", interface);
-          RAISE_DGRAM_ERROR (SocketDgram_Failed);
+          RAISE_MODULE_ERROR (SocketDgram_Failed);
         }
     }
   else
@@ -285,12 +286,12 @@ join_ipv4_multicast (T socket, struct in_addr group_addr,
   mreq.imr_multiaddr = group_addr;
   setup_ipv4_multicast_interface (&mreq, interface);
 
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_ADD_MEMBERSHIP,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_IP, SOCKET_IP_ADD_MEMBERSHIP,
                   &mreq, sizeof (mreq))
       < 0)
     {
       SOCKET_ERROR_FMT ("Failed to join IPv4 multicast group");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 }
 
@@ -308,12 +309,12 @@ join_ipv6_multicast (T socket, struct in6_addr group_addr)
   mreq6.ipv6mr_multiaddr = group_addr;
   mreq6.ipv6mr_interface = SOCKET_MULTICAST_DEFAULT_INTERFACE;
 
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_ADD_MEMBERSHIP,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_IPV6, SOCKET_IPV6_ADD_MEMBERSHIP,
                   &mreq6, sizeof (mreq6))
       < 0)
     {
       SOCKET_ERROR_FMT ("Failed to join IPv6 multicast group");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 }
 
@@ -333,12 +334,12 @@ leave_ipv4_multicast (T socket, struct in_addr group_addr,
   mreq.imr_multiaddr = group_addr;
   setup_ipv4_multicast_interface (&mreq, interface);
 
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_DROP_MEMBERSHIP,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_IP, SOCKET_IP_DROP_MEMBERSHIP,
                   &mreq, sizeof (mreq))
       < 0)
     {
       SOCKET_ERROR_FMT ("Failed to leave IPv4 multicast group");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 }
 
@@ -356,12 +357,12 @@ leave_ipv6_multicast (T socket, struct in6_addr group_addr)
   mreq6.ipv6mr_multiaddr = group_addr;
   mreq6.ipv6mr_interface = SOCKET_MULTICAST_DEFAULT_INTERFACE;
 
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_DROP_MEMBERSHIP,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_IPV6, SOCKET_IPV6_DROP_MEMBERSHIP,
                   &mreq6, sizeof (mreq6))
       < 0)
     {
       SOCKET_ERROR_FMT ("Failed to leave IPv6 multicast group");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 }
 
@@ -403,14 +404,14 @@ try_dgram_bind_addresses (T socket, struct addrinfo *res, int socket_family)
       if (rp->ai_family == SOCKET_AF_INET6 && socket_family == SOCKET_AF_INET6)
         {
           int no = 0;
-          setsockopt (socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_V6ONLY, &no,
+          setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_IPV6, SOCKET_IPV6_V6ONLY, &no,
                       sizeof (no));
         }
 
-      if (bind (socket->fd, rp->ai_addr, rp->ai_addrlen) == 0)
+      if (bind (SocketBase_fd (socket->base), rp->ai_addr, rp->ai_addrlen) == 0)
         {
-          memcpy (&socket->addr, rp->ai_addr, rp->ai_addrlen);
-          socket->addrlen = rp->ai_addrlen;
+          memcpy (&socket->base->remote_addr, rp->ai_addr, rp->ai_addrlen);
+          socket->base->remote_addrlen = rp->ai_addrlen;
           return 0;
         }
     }
@@ -461,10 +462,10 @@ try_dgram_connect_addresses (T socket, struct addrinfo *res, int socket_family)
       if (socket_family != SOCKET_AF_UNSPEC && rp->ai_family != socket_family)
         continue;
 
-      if (connect (socket->fd, rp->ai_addr, rp->ai_addrlen) == 0)
+      if (connect (SocketBase_fd (socket->base), rp->ai_addr, rp->ai_addrlen) == 0)
         {
-          memcpy (&socket->addr, rp->ai_addr, rp->ai_addrlen);
-          socket->addrlen = rp->ai_addrlen;
+          memcpy (&socket->base->remote_addr, rp->ai_addr, rp->ai_addrlen);
+          socket->base->remote_addrlen = rp->ai_addrlen;
           return 0;
         }
     }
@@ -478,84 +479,40 @@ try_dgram_connect_addresses (T socket, struct addrinfo *res, int socket_family)
 static int
 get_dgram_socket_family (T socket)
 {
-  socklen_t len;
-#if SOCKET_HAS_SO_DOMAIN
-  int socket_family = SOCKET_AF_UNSPEC;
-  len = sizeof (socket_family);
-  if (getsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_DOMAIN,
-                  &socket_family, &len)
-      == 0)
-    return socket_family;
-#endif
-  /* Fallback: use getsockname() to get socket address family */
-  struct sockaddr_storage addr;
-  len = sizeof (addr);
-  if (getsockname (socket->fd, (struct sockaddr *)&addr, &len) == 0)
-    return addr.ss_family;
-  return SOCKET_AF_UNSPEC;
+  return SocketCommon_get_family (socket->base, false, SocketDgram_Failed); /* No raise on fail */
 }
 
 T
 SocketDgram_new (int domain, int protocol)
 {
+  SocketBase_T base = NULL;
   T sock;
-  int fd;
 
-#if SOCKET_HAS_SOCK_CLOEXEC
-  fd = socket (domain, SOCKET_DGRAM_TYPE | SOCKET_SOCK_CLOEXEC, protocol);
-#else
-  fd = socket (domain, SOCKET_DGRAM_TYPE, protocol);
-#endif
+  TRY
+    base = SocketCommon_new_base (domain, SOCKET_DGRAM_TYPE, protocol);
+  EXCEPT (Arena_Failed)
+    RAISE_MODULE_ERROR (SocketDgram_Failed);
+  EXCEPT (Socket_Failed)
+    RAISE_MODULE_ERROR (SocketDgram_Failed);
+  END_TRY;
 
-  if (fd < 0)
+  if (!base || !SocketBase_arena (base)) {
+    SOCKET_ERROR_MSG ("Invalid base from new_base (null arena)");
+    RAISE_MODULE_ERROR (SocketDgram_Failed);
+  }
+
+  sock = Arena_calloc (SocketBase_arena (base), 1, sizeof (struct T), __FILE__, __LINE__);
+  if (!sock)
     {
-      SOCKET_ERROR_FMT (
-          "Failed to create datagram socket (domain=%d, protocol=%d)", domain,
-          protocol);
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      SocketCommon_free_base (&base);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate dgram structure");
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
-#if !SOCKET_HAS_SOCK_CLOEXEC
-  /* Fallback: Set CLOEXEC via fcntl on older systems */
-  if (SocketCommon_setcloexec (fd, 1) < 0)
-    {
-      int saved_errno = errno;
-      SAFE_CLOSE (fd);
-      errno = saved_errno;
-      SOCKET_ERROR_FMT ("Failed to set close-on-exec flag");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
-    }
-#endif
+  sock->base = base;
 
-  sock = calloc (1, sizeof (*sock));
-  if (sock == NULL)
-    {
-      int saved_errno = errno;
-      SAFE_CLOSE (fd);
-      errno = saved_errno;
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket structure");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
-    }
-
-  sock->fd = -1;
-  sock->addrlen = sizeof (sock->addr);
-
-  sock->arena = Arena_new ();
-  if (!sock->arena)
-    {
-      int saved_errno = errno;
-      SAFE_CLOSE (fd);
-      free (sock);
-      errno = saved_errno;
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket arena");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
-    }
-
-  sock->fd = fd;
-  sock->local_addrlen = 0;
-  memset (&sock->local_addr, 0, sizeof (sock->local_addr));
-  sock->localaddr = NULL;
-  sock->localport = 0;
+  /* Datagram-specific initialization if needed */
+  /* e.g., ensure addrlen set, but handled in base init */
 
   return sock;
 }
@@ -563,19 +520,17 @@ SocketDgram_new (int domain, int protocol)
 void
 SocketDgram_free (T *socket)
 {
-  assert (socket && *socket);
+  T s = *socket;
+  if (!s)
+    return;
 
-  if ((*socket)->fd >= 0)
-    {
-      int fd = (*socket)->fd;
-      (*socket)->fd = -1;
-      SAFE_CLOSE (fd);
-    }
+  assert (s);
 
-  if ((*socket)->arena)
-    Arena_dispose (&(*socket)->arena);
+  /* Datagram-specific cleanup if any (none currently) */
 
-  free (*socket);
+  /* Common base cleanup */
+  SocketCommon_free_base (&s->base);
+
   *socket = NULL;
 }
 
@@ -591,35 +546,6 @@ normalize_dgram_host (const char *host)
       && strcmp (host, "::") != 0)
     return host;
   return NULL;
-}
-
-static void
-update_local_endpoint (T socket)
-{
-  struct sockaddr_storage local;
-  socklen_t len = sizeof (local);
-
-  assert (socket);
-
-  if (getsockname (socket->fd, (struct sockaddr *)&local, &len) < 0)
-    {
-      memset (&socket->local_addr, 0, sizeof (socket->local_addr));
-      socket->local_addrlen = 0;
-      socket->localaddr = NULL;
-      socket->localport = 0;
-      return;
-    }
-
-  socket->local_addr = local;
-  socket->local_addrlen = len;
-
-  if (SocketCommon_cache_endpoint (socket->arena, (struct sockaddr *)&local,
-                                   len, &socket->localaddr, &socket->localport)
-      != 0)
-    {
-      socket->localaddr = NULL;
-      socket->localport = 0;
-    }
 }
 
 void
@@ -643,14 +569,14 @@ SocketDgram_bind (T socket, const char *host, int port)
 
   if (try_dgram_bind_addresses (socket, res, socket_family) == 0)
     {
-      update_local_endpoint (socket);
+      SocketCommon_update_local_endpoint (socket->base);
       freeaddrinfo (res);
       return;
     }
 
   handle_dgram_bind_error (host, port);
   freeaddrinfo (res);
-  RAISE_DGRAM_ERROR (SocketDgram_Failed);
+  RAISE_MODULE_ERROR (SocketDgram_Failed);
 }
 
 /**
@@ -684,14 +610,14 @@ SocketDgram_connect (T socket, const char *host, int port)
 
   if (try_dgram_connect_addresses (socket, res, socket_family) == 0)
     {
-      update_local_endpoint (socket);
+      SocketCommon_update_local_endpoint (socket->base);
       freeaddrinfo (res);
       return;
     }
 
   handle_dgram_connect_error (host, port);
   freeaddrinfo (res);
-  RAISE_DGRAM_ERROR (SocketDgram_Failed);
+  RAISE_MODULE_ERROR (SocketDgram_Failed);
 }
 
 ssize_t
@@ -748,7 +674,7 @@ SocketDgram_send (T socket, const void *buf, size_t len)
   assert (buf);
   assert (len > 0);
 
-  sent = send (socket->fd, buf, len, 0);
+  sent = send (SocketBase_fd (socket->base), buf, len, 0);
 
   if (sent < 0)
     {
@@ -756,7 +682,7 @@ SocketDgram_send (T socket, const void *buf, size_t len)
         return 0;
 
       SOCKET_ERROR_FMT ("Failed to send datagram");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
   return sent;
@@ -771,7 +697,7 @@ SocketDgram_recv (T socket, void *buf, size_t len)
   assert (buf);
   assert (len > 0);
 
-  received = recv (socket->fd, buf, len, 0);
+  received = recv (SocketBase_fd (socket->base), buf, len, 0);
 
   if (received < 0)
     {
@@ -779,7 +705,7 @@ SocketDgram_recv (T socket, void *buf, size_t len)
         return 0;
 
       SOCKET_ERROR_FMT ("Failed to receive datagram");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
   return received;
@@ -866,56 +792,9 @@ SocketDgram_recvall (T socket, void *buf, size_t len)
   return (ssize_t)total_received;
 }
 
-/**
- * dgram_calculate_total_iov_len - Calculate total length of iovec array
- * @iov: Array of iovec structures
- * @iovcnt: Number of iovec structures
- * Returns: Total length in bytes
- * Thread-safe: Yes
- */
-static size_t
-dgram_calculate_total_iov_len (const struct iovec *iov, int iovcnt)
-{
-  size_t total = 0;
-  int i;
+/* dgram_calculate_total_iov_len (renamed) removed: use shared SocketCommon_calculate_total_iov_len */
 
-  for (i = 0; i < iovcnt; i++)
-    {
-      total += iov[i].iov_len;
-    }
-
-  return total;
-}
-
-/**
- * dgram_advance_iov - Advance iovec array past sent/received bytes
- * @iov: Array of iovec structures (modified in place)
- * @iovcnt: Number of iovec structures
- * @bytes: Number of bytes to advance past
- * Thread-safe: Yes (operates on local copy)
- */
-static void
-dgram_advance_iov (struct iovec *iov, int iovcnt, size_t bytes)
-{
-  size_t remaining = bytes;
-  int i;
-
-  for (i = 0; i < iovcnt && remaining > 0; i++)
-    {
-      if (remaining >= iov[i].iov_len)
-        {
-          remaining -= iov[i].iov_len;
-          iov[i].iov_base = NULL;
-          iov[i].iov_len = 0;
-        }
-      else
-        {
-          iov[i].iov_base = (char *)iov[i].iov_base + remaining;
-          iov[i].iov_len -= remaining;
-          remaining = 0;
-        }
-    }
-}
+/* dgram_advance_iov (renamed) removed: use shared SocketCommon_advance_iov */
 
 /**
  * SocketDgram_sendv - Scatter/gather send (writev wrapper)
@@ -939,14 +818,22 @@ SocketDgram_sendv (T socket, const struct iovec *iov, int iovcnt)
   assert (iovcnt > 0);
   assert (iovcnt <= IOV_MAX);
 
-  result = writev (socket->fd, iov, iovcnt);
+  /* Enforce UDP total payload sizing for sendv */
+  size_t total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
+  if (total_len > SAFE_UDP_SIZE) {
+    SOCKET_ERROR_MSG ("Sendv total %zu > SAFE_UDP_SIZE %zu (frag risk; max %zu)",
+                      total_len, SAFE_UDP_SIZE, UDP_MAX_PAYLOAD);
+    RAISE_MODULE_ERROR (SocketDgram_Failed);
+  }
+
+  result = writev (SocketBase_fd (socket->base), iov, iovcnt);
   if (result < 0)
     {
       if (errno == EAGAIN || errno == EWOULDBLOCK)
         return 0;
 
       SOCKET_ERROR_FMT ("Scatter/gather send failed (iovcnt=%d)", iovcnt);
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
   return result;
@@ -974,14 +861,14 @@ SocketDgram_recvv (T socket, struct iovec *iov, int iovcnt)
   assert (iovcnt > 0);
   assert (iovcnt <= IOV_MAX);
 
-  result = readv (socket->fd, iov, iovcnt);
+  result = readv (SocketBase_fd (socket->base), iov, iovcnt);
   if (result < 0)
     {
       if (errno == EAGAIN || errno == EWOULDBLOCK)
         return 0;
 
       SOCKET_ERROR_FMT ("Scatter/gather receive failed (iovcnt=%d)", iovcnt);
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
   return result;
@@ -1014,14 +901,14 @@ SocketDgram_sendvall (T socket, const struct iovec *iov, int iovcnt)
   assert (iovcnt <= IOV_MAX);
 
   /* Calculate total length */
-  total_len = dgram_calculate_total_iov_len (iov, iovcnt);
+  total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
   /* Make a copy of iovec array for modification */
   iov_copy = calloc ((size_t)iovcnt, sizeof (struct iovec));
   if (!iov_copy)
     {
       SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate iovec copy");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
   memcpy (iov_copy, iov, (size_t)iovcnt * sizeof (struct iovec));
@@ -1053,7 +940,7 @@ SocketDgram_sendvall (T socket, const struct iovec *iov, int iovcnt)
         return (ssize_t)total_sent;
       }
     total_sent += (size_t)sent;
-    dgram_advance_iov (iov_copy, iovcnt, (size_t)sent);
+    SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)sent);
   }
   EXCEPT (SocketDgram_Failed)
   free (iov_copy);
@@ -1092,14 +979,14 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
   assert (iovcnt <= IOV_MAX);
 
   /* Calculate total length */
-  total_len = dgram_calculate_total_iov_len (iov, iovcnt);
+  total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
   /* Make a copy of iovec array for modification */
   iov_copy = calloc ((size_t)iovcnt, sizeof (struct iovec));
   if (!iov_copy)
     {
       SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate iovec copy");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
   memcpy (iov_copy, iov, (size_t)iovcnt * sizeof (struct iovec));
@@ -1142,7 +1029,7 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
         return (ssize_t)total_received;
       }
     total_received += (size_t)received;
-    dgram_advance_iov (iov_copy, iovcnt, (size_t)received);
+    SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)received);
   }
 
   /* Copy back final data positions */
@@ -1168,59 +1055,34 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
 void
 SocketDgram_setnonblocking (T socket)
 {
-  int flags;
-
   assert (socket);
 
-  flags = fcntl (socket->fd, F_GETFL, 0);
-  if (flags < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to get socket flags");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
-    }
-
-  if (fcntl (socket->fd, F_SETFL, flags | O_NONBLOCK) < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set non-blocking mode");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
-    }
+  SocketCommon_set_nonblock (socket->base, true, SocketDgram_Failed);
 }
 
 void
 SocketDgram_setreuseaddr (T socket)
 {
-  int optval = 1;
+
 
   assert (socket);
 
-  if (setsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEADDR, &optval,
-                  sizeof (optval))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set SO_REUSEADDR");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
-    }
+  SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEADDR, 1, SocketDgram_Failed);
 }
 
 void
 SocketDgram_setreuseport (T socket)
 {
-  int optval = 1;
+
 
   assert (socket);
 
 #if SOCKET_HAS_SO_REUSEPORT
-  if (setsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEPORT, &optval,
-                  sizeof (optval))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set SO_REUSEPORT");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
-    }
+  SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEPORT, 1, SocketDgram_Failed);
 #else
   (void)optval;
   SOCKET_ERROR_MSG ("SO_REUSEPORT not supported on this platform");
-  RAISE_DGRAM_ERROR (SocketDgram_Failed);
+  RAISE_MODULE_ERROR (SocketDgram_Failed);
 #endif
 }
 
@@ -1231,12 +1093,12 @@ SocketDgram_setbroadcast (T socket, int enable)
 
   assert (socket);
 
-  if (setsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_BROADCAST, &optval,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_BROADCAST, &optval,
                   sizeof (optval))
       < 0)
     {
       SOCKET_ERROR_FMT ("Failed to set SO_BROADCAST");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 }
 
@@ -1264,7 +1126,7 @@ join_multicast_by_family (T socket, struct addrinfo *res,
   else
     {
       SOCKET_ERROR_MSG ("Unsupported address family for multicast");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 }
 
@@ -1305,7 +1167,7 @@ leave_multicast_by_family (T socket, struct addrinfo *res,
   else
     {
       SOCKET_ERROR_MSG ("Unsupported address family for multicast");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 }
 
@@ -1329,11 +1191,11 @@ SocketDgram_leavemulticast (T socket, const char *group, const char *interface)
 static void
 validate_ttl_value (int ttl)
 {
-  if (ttl < 1 || ttl > SOCKET_MAX_TTL)
+  if (ttl < 1 || ttl > 255)
     {
       SOCKET_ERROR_MSG (
-          "Invalid TTL value: %d (must be " SOCKET_TTL_VALID_RANGE ")", ttl);
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+          "Invalid TTL value: %d (must be 1-255)", ttl);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 }
 
@@ -1345,56 +1207,12 @@ validate_ttl_value (int ttl)
 static int
 get_socket_domain (T socket)
 {
-  socklen_t len;
-#if SOCKET_HAS_SO_DOMAIN
-  int socket_family = SOCKET_AF_UNSPEC;
-  len = sizeof (socket_family);
-  if (getsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_DOMAIN,
-                  &socket_family, &len)
-      == 0)
-    return socket_family;
-#endif
-  /* Fallback: use getsockname() to get socket address family */
-  struct sockaddr_storage addr;
-  len = sizeof (addr);
-  if (getsockname (socket->fd, (struct sockaddr *)&addr, &len) == 0)
-    return addr.ss_family;
-  SOCKET_ERROR_FMT ("Failed to get socket domain");
-  RAISE_DGRAM_ERROR (SocketDgram_Failed);
-  return SOCKET_AF_UNSPEC; /* Never reached, but satisfies compiler */
+  return SocketCommon_get_family (socket->base, true, SocketDgram_Failed); /* Raise on fail */
 }
 
-/**
- * set_ipv4_ttl
- * Raises: SocketDgram_Failed on failure
- */
-static void
-set_ipv4_ttl (T socket, int ttl)
-{
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_TTL, &ttl,
-                  sizeof (ttl))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set IPv4 TTL");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
-    }
-}
 
-/**
- * set_ipv6_hop_limit
- * Raises: SocketDgram_Failed on failure
- */
-static void
-set_ipv6_hop_limit (T socket, int ttl)
-{
-  if (setsockopt (socket->fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_UNICAST_HOPS,
-                  &ttl, sizeof (ttl))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set IPv6 hop limit");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
-    }
-}
+
+
 
 /**
  * set_ttl_by_family
@@ -1403,15 +1221,7 @@ set_ipv6_hop_limit (T socket, int ttl)
 static void
 set_ttl_by_family (T socket, int socket_family, int ttl)
 {
-  if (socket_family == SOCKET_AF_INET)
-    set_ipv4_ttl (socket, ttl);
-  else if (socket_family == SOCKET_AF_INET6)
-    set_ipv6_hop_limit (socket, ttl);
-  else
-    {
-      SOCKET_ERROR_MSG ("Unsupported address family for TTL");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
-    }
+  SocketCommon_set_ttl (socket->base, socket_family, ttl, SocketDgram_Failed);
 }
 
 void
@@ -1435,20 +1245,20 @@ SocketDgram_settimeout (T socket, int timeout_sec)
   tv.tv_sec = timeout_sec;
   tv.tv_usec = 0;
 
-  if (setsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_RCVTIMEO, &tv,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_RCVTIMEO, &tv,
                   sizeof (tv))
       < 0)
     {
       SOCKET_ERROR_FMT ("Failed to set receive timeout");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
-  if (setsockopt (socket->fd, SOCKET_SOL_SOCKET, SOCKET_SO_SNDTIMEO, &tv,
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SOCKET_SO_SNDTIMEO, &tv,
                   sizeof (tv))
       < 0)
     {
       SOCKET_ERROR_FMT ("Failed to set send timeout");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 }
 
@@ -1456,21 +1266,21 @@ int
 SocketDgram_fd (const T socket)
 {
   assert (socket);
-  return socket->fd;
+  return SocketBase_fd (socket->base);
 }
 
 const char *
 SocketDgram_getlocaladdr (const T socket)
 {
   assert (socket);
-  return socket->localaddr ? socket->localaddr : "(unknown)";
+  return socket->base->localaddr ? socket->base->localaddr : "(unknown)";
 }
 
 int
 SocketDgram_getlocalport (const T socket)
 {
   assert (socket);
-  return socket->localport;
+  return socket->base->localport;
 }
 
 /**
@@ -1487,11 +1297,11 @@ SocketDgram_gettimeout (T socket)
 
   assert (socket);
 
-  if (SocketCommon_getoption_timeval (socket->fd, SOCKET_SOL_SOCKET,
+  if (SocketCommon_getoption_timeval (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
                                       SOCKET_SO_RCVTIMEO, &tv,
                                       SocketDgram_Failed)
       < 0)
-    RAISE_DGRAM_ERROR (SocketDgram_Failed);
+    RAISE_MODULE_ERROR (SocketDgram_Failed);
 
   return (int)tv.tv_sec;
 }
@@ -1512,11 +1322,11 @@ SocketDgram_getbroadcast (T socket)
 
   assert (socket);
 
-  if (SocketCommon_getoption_int (socket->fd, SOCKET_SOL_SOCKET,
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
                                   SOCKET_SO_BROADCAST, &broadcast,
                                   SocketDgram_Failed)
       < 0)
-    RAISE_DGRAM_ERROR (SocketDgram_Failed);
+    RAISE_MODULE_ERROR (SocketDgram_Failed);
 
   return broadcast;
 }
@@ -1530,10 +1340,10 @@ SocketDgram_getbroadcast (T socket)
 static void
 get_ipv4_ttl (T socket, int *ttl)
 {
-  if (SocketCommon_getoption_int (socket->fd, SOCKET_IPPROTO_IP, SOCKET_IP_TTL,
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_IPPROTO_IP, SOCKET_IP_TTL,
                                   ttl, SocketDgram_Failed)
       < 0)
-    RAISE_DGRAM_ERROR (SocketDgram_Failed);
+    RAISE_MODULE_ERROR (SocketDgram_Failed);
 }
 
 /**
@@ -1545,11 +1355,11 @@ get_ipv4_ttl (T socket, int *ttl)
 static void
 get_ipv6_hop_limit (T socket, int *ttl)
 {
-  if (SocketCommon_getoption_int (socket->fd, SOCKET_IPPROTO_IPV6,
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_IPPROTO_IPV6,
                                   SOCKET_IPV6_UNICAST_HOPS, ttl,
                                   SocketDgram_Failed)
       < 0)
-    RAISE_DGRAM_ERROR (SocketDgram_Failed);
+    RAISE_MODULE_ERROR (SocketDgram_Failed);
 }
 
 /**
@@ -1569,7 +1379,7 @@ get_ttl_by_family (T socket, int socket_family, int *ttl)
   else
     {
       SOCKET_ERROR_MSG ("Unsupported address family for TTL");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 }
 
@@ -1606,11 +1416,11 @@ SocketDgram_getrcvbuf (T socket)
 
   assert (socket);
 
-  if (SocketCommon_getoption_int (socket->fd, SOCKET_SOL_SOCKET,
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
                                   SOCKET_SO_RCVBUF, &bufsize,
                                   SocketDgram_Failed)
       < 0)
-    RAISE_DGRAM_ERROR (SocketDgram_Failed);
+    RAISE_MODULE_ERROR (SocketDgram_Failed);
 
   return bufsize;
 }
@@ -1628,11 +1438,11 @@ SocketDgram_getsndbuf (T socket)
 
   assert (socket);
 
-  if (SocketCommon_getoption_int (socket->fd, SOCKET_SOL_SOCKET,
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
                                   SOCKET_SO_SNDBUF, &bufsize,
                                   SocketDgram_Failed)
       < 0)
-    RAISE_DGRAM_ERROR (SocketDgram_Failed);
+    RAISE_MODULE_ERROR (SocketDgram_Failed);
 
   return bufsize;
 }
@@ -1648,11 +1458,11 @@ SocketDgram_setcloexec (T socket, int enable)
 {
   assert (socket);
 
-  if (SocketCommon_setcloexec (socket->fd, enable) < 0)
+  if (SocketCommon_setcloexec (SocketBase_fd (socket->base), enable) < 0)
     {
       SOCKET_ERROR_FMT ("Failed to %s close-on-exec flag",
                         enable ? "set" : "clear");
-      RAISE_DGRAM_ERROR (SocketDgram_Failed);
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 }
 
@@ -1673,7 +1483,7 @@ SocketDgram_isconnected (T socket)
   assert (socket);
 
   /* Use getpeername() to check connection state */
-  if (getpeername (socket->fd, (struct sockaddr *)&addr, &len) == 0)
+  if (getpeername (SocketBase_fd (socket->base), (struct sockaddr *)&addr, &len) == 0)
     return 1;
 
   /* Not connected or error occurred */
@@ -1702,11 +1512,11 @@ SocketDgram_isbound (T socket)
   assert (socket);
 
   /* Check if we have cached local address */
-  if (socket->localaddr != NULL)
+  if (socket->base->localaddr != NULL)
     return 1;
 
   /* Use getsockname() to check binding state */
-  if (getsockname (socket->fd, (struct sockaddr *)&addr, &len) == 0)
+  if (getsockname (SocketBase_fd (socket->base), (struct sockaddr *)&addr, &len) == 0)
     {
       /* Socket is bound if getsockname succeeds */
       /* For IPv4/IPv6, check if we have a valid port (address can be wildcard)

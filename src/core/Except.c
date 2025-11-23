@@ -25,7 +25,7 @@
 
 #include "core/Except.h"
 
-#define T Except_T
+/* T Except_T removed, use Except_T directly */
 
 /* Use thread-local storage for exception stack
  * Each thread has its own exception stack - no synchronization needed */
@@ -35,14 +35,14 @@ __declspec (thread) Except_Frame *Except_stack = NULL;
 __thread Except_Frame *Except_stack = NULL;
 #endif
 
-const Except_T Assert_Failed = { "Assertion failed" };
+const Except_T Assert_Failed = { &Assert_Failed, "Assertion failed" };
 
 /**
  * except_validate_pointer - Validate exception pointer is not NULL
  * @e: Exception pointer to validate
  */
 static void
-except_validate_pointer (const T *e)
+except_validate_pointer (const Except_T *e)
 {
   if (e == NULL)
     {
@@ -61,7 +61,7 @@ except_validate_pointer (const T *e)
  * @e: Exception with reason to print
  */
 static void
-except_print_reason (const T *e)
+except_print_reason (const Except_T *e)
 {
   if (e->reason)
     fprintf (stderr, ": %s", e->reason);
@@ -101,7 +101,7 @@ except_print_location (const char *file, int line)
  * @line: Line number where exception was raised
  */
 static void
-except_handle_uncaught (const T *e, const char *file, int line)
+except_handle_uncaught (const Except_T *e, const char *file, int line)
 {
   fprintf (stderr, "Uncaught exception");
   except_print_reason (e);
@@ -119,7 +119,7 @@ except_handle_uncaught (const T *e, const char *file, int line)
  * @line: Line number location
  */
 static void
-except_store_in_frame (Except_Frame *p, const T *e, const char *file, int line)
+except_store_in_frame (Except_Frame *p, const Except_T *e, const char *file, int line)
 {
   p->exception = e;
   p->file = file ? file : "unknown";
@@ -162,7 +162,7 @@ except_perform_jump (Except_Frame *p)
  * Uses abort() for uncaught exceptions (appropriate for fatal errors).
  */
 void
-Except_raise (const T *e, const char *file, int line)
+Except_raise (const Except_T *e, const char *file, int line)
 {
   /* Read Except_stack into local variable - ensures we get current value */
   volatile Except_Frame *volatile_p = Except_stack;
