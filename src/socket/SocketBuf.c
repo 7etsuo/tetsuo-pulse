@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
@@ -35,18 +36,13 @@ static __thread Except_T SocketBuf_DetailedException;
 /* Minimum buffer capacity for practical network I/O
  * Matches SOCKET_MIN_BUFFER_SIZE from SocketConfig.h for consistency */
 
-/* Validation macro for buffer invariants */
-#define SOCKETBUF_INVARIANTS(buf)                                             \
-  do                                                                          \
-    {                                                                         \
-      assert ((buf) != NULL);                                                 \
-      assert ((buf)->data != NULL);                                           \
-      assert ((buf)->capacity > 0);                                           \
-      assert ((buf)->size <= (buf)->capacity);                                \
-      assert ((buf)->tail < (buf)->capacity);                                 \
-      assert ((buf)->head < (buf)->capacity);                                 \
-    }                                                                         \
-  while (0)
+
+
+#define SOCKETBUF_INVARIANTS(buf) do { \
+  if (!SocketBuf_check_invariants (buf)) { \
+    SOCKET_ERROR_MSG ("SocketBuf invariants violated"); \
+    RAISE_MODULE_ERROR (SocketBuf_Failed); \
+  } } while (0)
 
 struct T
 {
@@ -57,6 +53,69 @@ struct T
   size_t size;
   Arena_T arena;
 };
+
+/* Runtime invariant check (rules: prefer over asserts for prod security) */
+bool
+SocketBuf_check_invariants (T buf)
+{
+  if (!buf || !buf->data || buf->capacity == 0 || buf->size > buf->capacity ||
+      buf->tail >= buf->capacity || buf->head >= buf->capacity)
+    {
+      return false;
+    }
+  return true;
+}
+
+/**
+ * SocketBuf_reserve - Dynamically resize buffer to ensure min_space available
+ * Raises on realloc fail or overflow
+ * Doubles capacity or min_space, rebase circular data to start if head >0
+ * Called automatically in write if needed
+ */
+void
+SocketBuf_reserve (T buf, size_t min_space)
+{
+  size_t needed = buf->size + min_space;
+  if (needed <= buf->capacity)
+    return;
+
+  /* Calculate new capacity with overflow check */
+  size_t new_cap = buf->capacity ? buf->capacity * 2 : 1024;
+  if (new_cap < min_space || new_cap > SIZE_MAX - 64) /* Overhead */
+    {
+      SOCKET_ERROR_MSG ("SocketBuf reserve overflow: needed %zu current %zu", needed, buf->capacity);
+      RAISE_MODULE_ERROR (SocketBuf_Failed);
+    }
+  new_cap = new_cap > min_space ? new_cap : min_space;
+
+  char *old_data = buf->data;
+  size_t old_cap = buf->capacity;
+  char *new_data = Arena_calloc (buf->arena, 1, new_cap, __FILE__, __LINE__);
+  if (!new_data)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Failed to calloc SocketBuf to %zu", new_cap);
+      RAISE_MODULE_ERROR (SocketBuf_Failed);
+    }
+
+  /* Copy existing data to start of new buffer */
+  if (buf->size > 0)
+    {
+      memcpy (new_data, old_data + buf->head, buf->size);
+    }
+
+  /* Zero old data for security (abandoned until arena dispose) */
+  if (old_data && old_cap > 0)
+    {
+      memset (old_data, 0, old_cap);
+    }
+
+  buf->data = new_data;
+  buf->capacity = new_cap;
+  buf->head = 0;
+  buf->tail = buf->size;
+
+  SOCKETBUF_INVARIANTS (buf); /* Validate after resize */
+}
 
 T
 SocketBuf_new (Arena_T arena, size_t capacity)
@@ -288,7 +347,12 @@ SocketBuf_secureclear (T buf)
    * assertions are disabled in production builds. Recommended for all
    * operations involving sensitive data (passwords, keys, tokens, etc.). */
   if (buf->data && buf->capacity > 0)
-    memset (buf->data, 0, buf->capacity);
+    {
+      /* Secure clear with volatile to prevent compiler optimization removal */
+      volatile char *vdata = (volatile char *)buf->data;
+      for (size_t i = 0; i < buf->capacity; i++)
+        vdata[i] = 0;
+    }
 
   buf->head = 0;
   buf->tail = 0;

@@ -29,6 +29,7 @@ struct SocketBase_T
   int domain;                          /**< Address domain (AF_INET, AF_INET6, AF_UNIX) */
   int type;                            /**< Socket type (SOCK_STREAM, SOCK_DGRAM) */
   int protocol;                        /**< Protocol (0 for default) */
+  pthread_mutex_t mutex;               /**< Mutex for thread-safe base access (options, endpoints) */
   
   /* Endpoint information */
   struct sockaddr_storage local_addr;  /**< Local bound address */

@@ -3,6 +3,7 @@
 
 #include "core/Arena.h"
 #include <stddef.h>
+#include <stdbool.h>
 
 /**
  * Circular Buffer for Socket I/O
@@ -131,6 +132,24 @@ extern void SocketBuf_clear (T buf);
  * handled sensitive data to prevent information disclosure.
  */
 extern void SocketBuf_secureclear (T buf);
+
+/**
+ * SocketBuf_reserve - Ensure minimum available space (dynamic resize)
+ * @buf: Buffer to resize
+ * @min_space: Minimum space needed after resize
+ * Raises: SocketBuf_Failed on realloc fail or overflow
+ * Doubles capacity or sets to min_space, rebase circular data if needed
+ * Runtime invariants checked before/after
+ */
+extern void SocketBuf_reserve (T buf, size_t min_space);
+
+/**
+ * SocketBuf_check_invariants - Runtime validation (no asserts)
+ * @buf: Buffer to check
+ * Returns: true if valid invariants hold
+ * Used for runtime security checks in production (rules preference)
+ */
+extern bool SocketBuf_check_invariants (T buf);
 
 /**
  * SocketBuf_readptr - Get direct read pointer
