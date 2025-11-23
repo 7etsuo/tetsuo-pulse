@@ -7,6 +7,7 @@
  */
 
 #include <assert.h>
+#include "core/SocketConfig.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -261,7 +262,14 @@ void store_resolution_result (struct SocketDNS_T *dns, struct SocketDNS_Request_
   if (req->state == REQ_PROCESSING)
     {
       req->state = REQ_COMPLETE;
-      req->result = result;
+      req->result = SocketCommon_copy_addrinfo (result);
+      if (!req->result) {
+        freeaddrinfo (result);
+        req->error = EAI_MEMORY;
+        req->state = REQ_COMPLETE; // still complete, but error
+      } else {
+        freeaddrinfo (result); // transfer by copy and free original
+      }
       req->error = error;
 
       if (error == 0)
@@ -335,8 +343,8 @@ int request_timed_out (struct SocketDNS_T *dns, const struct SocketDNS_Request_T
 
   clock_gettime (CLOCK_MONOTONIC, &now);
 
-  elapsed_ms = (now.tv_sec - req->submit_time.tv_sec) * (long long) SOCKET_MS_PER_SECOND;
-  elapsed_ms += (now.tv_nsec - req->submit_time.tv_nsec) / SOCKET_NS_PER_MS;
+  elapsed_ms = (now.tv_sec - req->submit_time.tv_sec) * 1000LL; /* SOCKET_MS_PER_SECOND */
+  elapsed_ms += (now.tv_nsec - req->submit_time.tv_nsec) / 1000000LL; /* SOCKET_NS_PER_MS */
 
   return elapsed_ms >= timeout_ms;
 }

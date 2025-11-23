@@ -4,6 +4,7 @@
 #include "core/Except.h"
 #include <stddef.h>
 #include <sys/socket.h>
+#include "socket/SocketUnix.h"  /* For Unix domain support */
 
 /**
  * UDP/Datagram Socket Abstraction Layer
@@ -39,7 +40,7 @@
 typedef struct T *T;
 
 /* Exception types */
-extern Except_T
+extern const Except_T
     SocketDgram_Failed; /**< General datagram socket operation failure */
 
 /**

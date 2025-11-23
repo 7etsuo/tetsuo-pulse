@@ -18,6 +18,9 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <time.h>
+#include "core/Arena.h"
+#include "socket/SocketCommon-private.h"
+#include "core/Except.h" /* if not already for RAISE */
 #include <unistd.h>
 
 #include "core/Arena.h"
@@ -37,7 +40,7 @@
 #include <stdbool.h>
 
 /* SocketDNS module exceptions and thread-local detailed exception */
-Except_T SocketDNS_Failed = { "SocketDNS operation failed" };
+const Except_T SocketDNS_Failed = { &SocketDNS_Failed, "SocketDNS operation failed" };
 
 #ifdef _WIN32
 __declspec(thread) Except_T SocketDNS_DetailedException;
@@ -1231,7 +1234,11 @@ SocketDNS_create_completed_request (struct SocketDNS_T *dns, struct addrinfo *re
   req->callback = NULL;
   req->callback_data = NULL;
   req->state = REQ_COMPLETE;
-  req->result = result;
+  req->result = SocketCommon_copy_addrinfo (result);
+  if (!req->result) {
+    RAISE_DNS_ERROR (SocketDNS_Failed);
+  }
+  freeaddrinfo (result);
   req->error = 0;
   req->queue_next = NULL;
   req->hash_next = NULL;
