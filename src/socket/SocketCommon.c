@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -635,10 +636,10 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
   /**
    * SocketCommon_parse_ip - Validate and parse IP address string
    * @ip_str: IP address string to validate
-   * @family: Output pointer for address family (AF_INET or AF_INET6), can be
+   * @family: Output pointer for address family (SOCKET_AF_INET or SOCKET_AF_INET6), can be
    * NULL Returns: 1 if valid IP address, 0 if invalid Thread-safe: Yes Note:
-   * Validates both IPv4 and IPv6 addresses. Sets family to AF_INET for IPv4,
-   * AF_INET6 for IPv6, or AF_UNSPEC if invalid.
+   * Validates both IPv4 and IPv6 addresses. Sets family to SOCKET_AF_INET for IPv4,
+   * SOCKET_AF_INET6 for IPv6, or AF_UNSPEC if invalid.
    */
   int SocketCommon_parse_ip (const char *ip_str, int *family)
   {
@@ -651,18 +652,18 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
       *family = AF_UNSPEC;
 
     /* Try IPv4 first */
-    if (inet_pton (AF_INET, ip_str, &addr4) == 1)
+    if (inet_pton (SOCKET_AF_INET, ip_str, &addr4) == 1)
       {
         if (family)
-          *family = AF_INET;
+          *family = SOCKET_AF_INET;
         return 1;
       }
 
     /* Try IPv6 */
-    if (inet_pton (AF_INET6, ip_str, &addr6) == 1)
+    if (inet_pton (SOCKET_AF_INET6, ip_str, &addr6) == 1)
       {
         if (family)
-          *family = AF_INET6;
+          *family = SOCKET_AF_INET6;
         return 1;
       }
 
@@ -720,7 +721,7 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
       }
 
     /* Try IPv4 first */
-    if (inet_pton (AF_INET, cidr_copy, &addr4) == 1)
+    if (inet_pton (SOCKET_AF_INET, cidr_copy, &addr4) == 1)
       {
         if (prefix_long > 32)
           {
@@ -729,13 +730,13 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
           }
         memcpy (network, &addr4, 4);
         *prefix_len = (int)prefix_long;
-        *family = AF_INET;
+        *family = SOCKET_AF_INET;
         free (cidr_copy);
         return 0;
       }
 
     /* Try IPv6 */
-    if (inet_pton (AF_INET6, cidr_copy, &addr6) == 1)
+    if (inet_pton (SOCKET_AF_INET6, cidr_copy, &addr6) == 1)
       {
         if (prefix_long > 128)
           {
@@ -744,7 +745,7 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
           }
         memcpy (network, &addr6, 16);
         *prefix_len = (int)prefix_long;
-        *family = AF_INET6;
+        *family = SOCKET_AF_INET6;
         free (cidr_copy);
         return 0;
       }
@@ -758,7 +759,7 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
    * @ip: IP address bytes (4 for IPv4, 16 for IPv6)
    * @prefix_len: Prefix length (" SOCKET_IPV4_PREFIX_RANGE " for IPv4, "
    * SOCKET_IPV6_PREFIX_RANGE " for IPv6)
-   * @family: Address family (AF_INET or AF_INET6)
+   * @family: Address family (SOCKET_AF_INET or SOCKET_AF_INET6)
    * Thread-safe: Yes
    */
   static void socketcommon_apply_mask (unsigned char *ip, int prefix_len,
@@ -768,7 +769,7 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
     int bits_to_mask;
     int i;
 
-    if (family == AF_INET)
+    if (family == SOCKET_AF_INET)
       {
         bytes_to_mask = prefix_len / 8;
         bits_to_mask = prefix_len % 8;
@@ -784,7 +785,7 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
             ip[bytes_to_mask] &= mask;
           }
       }
-    else if (family == AF_INET6)
+    else if (family == SOCKET_AF_INET6)
       {
         bytes_to_mask = prefix_len / 8;
         bits_to_mask = prefix_len % 8;
@@ -836,17 +837,17 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
       return 0;
 
     /* Convert IP string to bytes */
-    if (ip_family == AF_INET)
+    if (ip_family == SOCKET_AF_INET)
       {
         struct in_addr addr4;
-        if (inet_pton (AF_INET, ip_str, &addr4) != 1)
+        if (inet_pton (SOCKET_AF_INET, ip_str, &addr4) != 1)
           return -1;
         memcpy (ip, &addr4, 4);
       }
-    else if (ip_family == AF_INET6)
+    else if (ip_family == SOCKET_AF_INET6)
       {
         struct in6_addr addr6;
-        if (inet_pton (AF_INET6, ip_str, &addr6) != 1)
+        if (inet_pton (SOCKET_AF_INET6, ip_str, &addr6) != 1)
           return -1;
         memcpy (ip, &addr6, 16);
       }
@@ -859,7 +860,7 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
     socketcommon_apply_mask (ip, prefix_len, ip_family);
 
     /* Compare network addresses */
-    if (ip_family == AF_INET)
+    if (ip_family == SOCKET_AF_INET)
       {
         for (i = 0; i < 4; i++)
           {
@@ -867,7 +868,7 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
               return 0;
           }
       }
-    else if (ip_family == AF_INET6)
+    else if (ip_family == SOCKET_AF_INET6)
       {
         for (i = 0; i < 16; i++)
           {
@@ -1181,12 +1182,12 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
                              Except_T exc_type)
   {
     int level = 0, opt = 0;
-    if (family == AF_INET)
+    if (family == SOCKET_AF_INET)
       {
         level = IPPROTO_IP;
         opt = IP_TTL;
       }
-    else if (family == AF_INET6)
+    else if (family == SOCKET_AF_INET6)
       {
         level = IPPROTO_IPV6;
         opt = IPV6_UNICAST_HOPS;
@@ -1198,6 +1199,214 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
       }
 
     SocketCommon_set_option_int (base, level, opt, ttl, exc_type);
+  }
+
+  /**
+   * common_resolve_multicast_group - Resolve multicast group address (private)
+   * @group: Multicast group address
+   * @res: Output resolved address info
+   * @exc_type: Exception to raise on failure
+   * Raises on resolution failure
+   */
+  static void
+  common_resolve_multicast_group (const char *group, struct addrinfo **res, Except_T exc_type)
+  {
+    struct addrinfo hints;
+    int result;
+
+    memset (&hints, 0, sizeof (hints));
+    hints.ai_family = SOCKET_AF_UNSPEC;
+    hints.ai_socktype = SOCKET_DGRAM_TYPE;
+    hints.ai_flags = SOCKET_AI_NUMERICHOST;
+
+    result = getaddrinfo (group, NULL, &hints, res);
+    if (result != 0)
+      {
+        SOCKET_ERROR_MSG ("Invalid multicast group address: %s (%s)", group,
+                          gai_strerror (result));
+        RAISE_MODULE_ERROR (exc_type);
+      }
+  }
+
+  /**
+   * common_setup_ipv4_multicast_interface - Setup IPv4 mreq interface (private)
+   * @mreq: IP mreq structure
+   * @interface: Interface IP or NULL
+   * @exc_type: Raise on invalid
+   */
+  static void
+  common_setup_ipv4_multicast_interface (struct ip_mreq *mreq, const char *interface, Except_T exc_type)
+  {
+    if (interface)
+      {
+        if (inet_pton (SOCKET_AF_INET, interface, &mreq->imr_interface) <= 0)
+          {
+            SOCKET_ERROR_MSG ("Invalid interface address: %s", interface);
+            RAISE_MODULE_ERROR (exc_type);
+          }
+      }
+    else
+      {
+        mreq->imr_interface.s_addr = INADDR_ANY;
+      }
+  }
+
+  /**
+   * common_join_ipv4_multicast - Join IPv4 multicast (private)
+   * @base: Socket base
+   * @group_addr: Group addr
+   * @interface: Interface or NULL
+   * @exc_type: Raise on fail
+   */
+  static void
+  common_join_ipv4_multicast (SocketBase_T base, struct in_addr group_addr,
+                              const char *interface, Except_T exc_type)
+  {
+    struct ip_mreq mreq;
+    memset (&mreq, 0, sizeof (mreq));
+    mreq.imr_multiaddr = group_addr;
+    common_setup_ipv4_multicast_interface (&mreq, interface, exc_type);
+
+    if (setsockopt (SocketBase_fd (base), SOCKET_IPPROTO_IP, SOCKET_IP_ADD_MEMBERSHIP,
+                    &mreq, sizeof (mreq)) < 0)
+      {
+        SOCKET_ERROR_FMT ("Failed to join IPv4 multicast group");
+        RAISE_MODULE_ERROR (exc_type);
+      }
+  }
+
+  /**
+   * common_join_ipv6_multicast - Join IPv6 multicast (private)
+   * @base: Socket base
+   * @group_addr: Group addr
+   * @exc_type: Raise on fail
+   * Note: Interface not used for IPv6 in basic impl (advanced needs if_index)
+   */
+  static void
+  common_join_ipv6_multicast (SocketBase_T base, struct in6_addr group_addr,
+                              Except_T exc_type)
+  {
+    struct ipv6_mreq mreq6;
+    memset (&mreq6, 0, sizeof (mreq6));
+    mreq6.ipv6mr_multiaddr = group_addr;
+    mreq6.ipv6mr_interface = SOCKET_MULTICAST_DEFAULT_INTERFACE; /* Default */
+
+    if (setsockopt (SocketBase_fd (base), SOCKET_IPPROTO_IPV6, SOCKET_IPV6_ADD_MEMBERSHIP,
+                    &mreq6, sizeof (mreq6)) < 0)
+      {
+        SOCKET_ERROR_FMT ("Failed to join IPv6 multicast group");
+        RAISE_MODULE_ERROR (exc_type);
+      }
+  }
+
+  /**
+   * common_leave_ipv4_multicast - Leave IPv4 multicast (private)
+   * Symmetric to join
+   */
+  static void
+  common_leave_ipv4_multicast (SocketBase_T base, struct in_addr group_addr,
+                               const char *interface, Except_T exc_type)
+  {
+    struct ip_mreq mreq;
+    memset (&mreq, 0, sizeof (mreq));
+    mreq.imr_multiaddr = group_addr;
+    common_setup_ipv4_multicast_interface (&mreq, interface, exc_type);
+
+    if (setsockopt (SocketBase_fd (base), SOCKET_IPPROTO_IP, SOCKET_IP_DROP_MEMBERSHIP,
+                    &mreq, sizeof (mreq)) < 0)
+      {
+        SOCKET_ERROR_FMT ("Failed to leave IPv4 multicast group");
+        RAISE_MODULE_ERROR (exc_type);
+      }
+  }
+
+  /**
+   * common_leave_ipv6_multicast - Leave IPv6 multicast (private)
+   */
+  static void
+  common_leave_ipv6_multicast (SocketBase_T base, struct in6_addr group_addr,
+                               Except_T exc_type)
+  {
+    struct ipv6_mreq mreq6;
+    memset (&mreq6, 0, sizeof (mreq6));
+    mreq6.ipv6mr_multiaddr = group_addr;
+    mreq6.ipv6mr_interface = SOCKET_MULTICAST_DEFAULT_INTERFACE; /* Default */
+
+    if (setsockopt (SocketBase_fd (base), SOCKET_IPPROTO_IPV6, SOCKET_IPV6_DROP_MEMBERSHIP,
+                    &mreq6, sizeof (mreq6)) < 0)
+      {
+        SOCKET_ERROR_FMT ("Failed to leave IPv6 multicast group");
+        RAISE_MODULE_ERROR (exc_type);
+      }
+  }
+
+  /**
+   * SocketCommon_join_multicast - Public join multicast
+   */
+  void SocketCommon_join_multicast (SocketBase_T base, const char *group, const char *interface, Except_T exc_type)
+  {
+    struct addrinfo *res = NULL;
+    int family;
+
+    assert (base);
+    assert (group);
+
+    common_resolve_multicast_group (group, &res, exc_type);
+
+    family = SocketCommon_get_family (base, true, exc_type);
+
+    if (family == SOCKET_AF_INET)
+      {
+        struct sockaddr_in *sin = (struct sockaddr_in *)res->ai_addr;
+        common_join_ipv4_multicast (base, sin->sin_addr, interface, exc_type);
+      }
+    else if (family == SOCKET_AF_INET6)
+      {
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)res->ai_addr;
+        common_join_ipv6_multicast (base, sin6->sin6_addr, exc_type);
+      }
+    else
+      {
+        SOCKET_ERROR_MSG ("Unsupported address family %d for multicast", family);
+        RAISE_MODULE_ERROR (exc_type);
+      }
+
+    freeaddrinfo (res);
+  }
+
+  /**
+   * SocketCommon_leave_multicast - Public leave multicast
+   * Symmetric to join
+   */
+  void SocketCommon_leave_multicast (SocketBase_T base, const char *group, const char *interface, Except_T exc_type)
+  {
+    struct addrinfo *res = NULL;
+    int family;
+
+    assert (base);
+    assert (group);
+
+    common_resolve_multicast_group (group, &res, exc_type);
+
+    family = SocketCommon_get_family (base, true, exc_type);
+
+    if (family == SOCKET_AF_INET)
+      {
+        struct sockaddr_in *sin = (struct sockaddr_in *)res->ai_addr;
+        common_leave_ipv4_multicast (base, sin->sin_addr, interface, exc_type);
+      }
+    else if (family == SOCKET_AF_INET6)
+      {
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)res->ai_addr;
+        common_leave_ipv6_multicast (base, sin6->sin6_addr, exc_type);
+      }
+    else
+      {
+        SOCKET_ERROR_MSG ("Unsupported address family %d for multicast", family);
+        RAISE_MODULE_ERROR (exc_type);
+      }
+
+    freeaddrinfo (res);
   }
 
   void SocketCommon_set_nonblock (SocketBase_T base, bool enable,

@@ -7,7 +7,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)  # Enable GNU extensions (_GNU_SOURCE)
 
 # Compiler flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -D_GNU_SOURCE -pthread -fno-strict-aliasing -fPIC")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -D_GNU_SOURCE -pthread -fno-strict-aliasing -fPIC")
 set(CMAKE_C_FLAGS_DEBUG "-g -Og")
 set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
 
