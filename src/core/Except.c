@@ -1,21 +1,28 @@
 /**
- * Except.c - Exception handling
- * Thread Safety:
- * This implementation uses thread-local storage (TLS) for the exception stack.
- * On POSIX systems, this requires __thread (C11/GCC extension). On Windows,
- * it uses __declspec(thread). The thread-local storage provides proper memory
- * ordering guarantees - each thread has its own independent exception stack
- * with no cross-thread visibility or synchronization needed.
- * Requirements:
+ * Except.c - Exception handling implementation
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns (Hanson, 1996)
+ *
+ * This module provides a structured exception handling mechanism for C,
+ * enabling non-local jumps with proper cleanup semantics via TRY/EXCEPT/
+ * FINALLY/END_TRY macros defined in Except.h.
+ *
+ * THREAD SAFETY:
+ * Uses thread-local storage (TLS) for the exception stack. Each thread
+ * maintains its own independent exception stack with no cross-thread
+ * visibility or synchronization needed. The TLS provides proper memory
+ * ordering guarantees.
+ *
+ * REQUIREMENTS:
  * - C11 or later, OR
  * - GCC/Clang with __thread support, OR
  * - MSVC with __declspec(thread) support
- * Security Notes:
- * - Thread-local exception stack prevents race conditions in multithreaded
- * code
+ *
+ * SECURITY:
+ * - Thread-local exception stack prevents race conditions
  * - NULL exception pointer validation prevents undefined behavior
- * - Uses abort() for fatal errors (uncaught exceptions) - appropriate for
- * safety
+ * - Uses abort() for uncaught exceptions (fail-fast for safety)
  */
 
 #include <assert.h>
@@ -24,8 +31,6 @@
 #include <string.h>
 
 #include "core/Except.h"
-
-/* T Except_T removed, use Except_T directly */
 
 /* Use thread-local storage for exception stack
  * Each thread has its own exception stack - no synchronization needed */
@@ -177,5 +182,3 @@ Except_raise (const Except_T *e, const char *file, int line)
   except_unwind_stack (p);
   except_perform_jump (p);
 }
-
-#undef T

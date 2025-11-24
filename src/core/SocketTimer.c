@@ -344,18 +344,28 @@ SocketTimer_heap_peek (SocketTimer_heap_T *heap)
 
   pthread_mutex_lock (&heap->mutex);
 
-  /* Skip cancelled timers */
-  size_t i = 0;
-  while (i < heap->count && heap->timers[i]->cancelled)
-    i++;
+  /* Pop cancelled timers until we find the first valid timer */
+  while (heap->count > 0 && heap->timers[0]->cancelled)
+    {
+      /* Remove cancelled timer from root */
+      struct SocketTimer_T *cancelled = heap->timers[0];
+      heap->timers[0] = heap->timers[heap->count - 1];
+      heap->count--;
 
-  if (i >= heap->count)
+      /* Restore heap property */
+      if (heap->count > 0)
+        sockettimer_heap_sift_down (heap->timers, heap->count, 0);
+
+      /* Cancelled timer will be freed when arena is disposed */
+    }
+
+  if (heap->count == 0)
     {
       pthread_mutex_unlock (&heap->mutex);
       return NULL;
     }
 
-  result = heap->timers[i];
+  result = heap->timers[0];
   pthread_mutex_unlock (&heap->mutex);
   return result;
 }
@@ -395,37 +405,18 @@ SocketTimer_process_expired (SocketTimer_heap_T *heap)
       SocketTimerCallback callback;
       void *userdata;
 
-      /* Get next expired timer */
-      pthread_mutex_lock (&heap->mutex);
+      /* Get next expired timer using proper heap pop (which handles cancelled timers) */
+      timer = SocketTimer_heap_pop (heap);
+      if (!timer)
+        break; /* No more timers */
 
-      /* Find first non-cancelled timer */
-      size_t i = 0;
-      while (i < heap->count && heap->timers[i]->cancelled)
-        i++;
-
-      if (i >= heap->count)
-        {
-          pthread_mutex_unlock (&heap->mutex);
-          break;
-        }
-
-      timer = heap->timers[i];
+      /* Check if this timer is actually expired */
       if (timer->expiry_ms > now_ms)
         {
-          /* No more expired timers */
-          pthread_mutex_unlock (&heap->mutex);
+          /* Timer is not expired, put it back */
+          SocketTimer_heap_push (heap, timer);
           break;
         }
-
-      /* Remove timer from heap (same logic as pop) */
-      timer = heap->timers[0];
-      heap->timers[0] = heap->timers[heap->count - 1];
-      heap->count--;
-
-      if (heap->count > 0)
-        sockettimer_heap_sift_down (heap->timers, heap->count, 0);
-
-      pthread_mutex_unlock (&heap->mutex);
 
       /* Store callback info before freeing timer */
       callback = timer->callback;
