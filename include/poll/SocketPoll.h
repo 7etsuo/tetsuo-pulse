@@ -2,6 +2,7 @@
 #define SOCKETPOLL_INCLUDED
 
 #include "core/Except.h"
+#include "core/SocketTimer.h" /* Re-export timer functions */
 #include "socket/Socket.h"
 
 /* Forward declaration for async I/O */

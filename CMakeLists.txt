@@ -78,6 +78,7 @@ set(LIB_SOURCES
     src/core/SocketLog.c
     src/core/SocketMetrics.c
     src/core/SocketEvents.c
+    src/core/SocketTimer.c
     
     # Socket core
     src/socket/Socket.c
@@ -152,6 +153,8 @@ set(CORE_HEADERS
     include/core/SocketEvents.h
     include/core/SocketLog.h
     include/core/SocketMetrics.h
+    include/core/SocketTimer.h
+    include/core/SocketTimer-private.h
 )
 
 set(SOCKET_HEADERS
