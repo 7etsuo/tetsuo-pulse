@@ -323,13 +323,18 @@ arena_ensure_allocation_space (T arena, size_t aligned_size, size_t nbytes)
  * @arena: Arena to allocate from
  * @aligned_size: Aligned size to allocate
  * @nbytes: Original requested size (for error messages)
- * Returns: Pointer to allocated memory
- * Thread-safe: Must be called without holding arena mutex
+ * Returns: Pointer to allocated memory, or NULL on failure
+ * Raises: Arena_Failed if space cannot be ensured
+ * Thread-safe: Yes (acquires arena mutex internally)
+ *
+ * Acquires mutex, ensures space, performs allocation, releases mutex.
+ * On exception, mutex is released before exception propagates.
  */
 void *
 arena_execute_allocation (T arena, size_t aligned_size, size_t nbytes)
 {
-  void *result = NULL;
+  /* Pointer must be volatile (not pointed-to value) for longjmp safety */
+  void *volatile result = NULL;
 
   pthread_mutex_lock (&arena->mutex);
 
@@ -337,14 +342,14 @@ arena_execute_allocation (T arena, size_t aligned_size, size_t nbytes)
   {
     arena_ensure_allocation_space (arena, aligned_size, nbytes);
     result = arena_perform_allocation (arena, aligned_size);
-    pthread_mutex_unlock (&arena->mutex);
-    RETURN result;
   }
   FINALLY
-  pthread_mutex_unlock (&arena->mutex);
+  {
+    pthread_mutex_unlock (&arena->mutex);
+  }
   END_TRY;
 
-  return NULL;
+  return (void *)result;
 }
 
 /**

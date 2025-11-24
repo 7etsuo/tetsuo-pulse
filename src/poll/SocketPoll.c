@@ -10,6 +10,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1052,7 +1053,21 @@ SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
     {
       int64_t next_timer_ms = SocketTimer_heap_peek_delay (poll->timer_heap);
       if (next_timer_ms >= 0 && (timeout < 0 || next_timer_ms < timeout))
-        timeout = (int)next_timer_ms;
+        {
+          /* Define maximum reasonable timeout for timer-based wakeups
+           * Prevents excessive wait times for timers far in the future */
+          const int64_t MAX_TIMER_TIMEOUT_MS = 300000; /* 5 minutes */
+
+          /* Clamp timer delay to maximum reasonable timeout */
+          if (next_timer_ms > MAX_TIMER_TIMEOUT_MS)
+            next_timer_ms = MAX_TIMER_TIMEOUT_MS;
+
+          /* Ensure the clamped value fits in int */
+          if (next_timer_ms > INT_MAX)
+            next_timer_ms = INT_MAX;
+
+          timeout = (int)next_timer_ms;
+        }
     }
 
   /* Process async completions first (non-blocking) */

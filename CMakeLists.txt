@@ -89,8 +89,10 @@ set(LIB_SOURCES
     src/socket/SocketIO.c
     src/socket/SocketUnix.c
     
-    # DNS module
+    # DNS module - split files
     src/dns/SocketDNS.c
+    src/dns/SocketDNS-init.c
+    src/dns/SocketDNS-request.c
     src/dns/SocketDNS-worker.c
 
     # Poll module
