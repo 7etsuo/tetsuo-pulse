@@ -17,6 +17,9 @@
 #include "pool/SocketPool.h"
 #include "socket/Socket.h"
 
+#ifdef SOCKET_HAS_TLS
+#include <openssl/ssl.h>
+#endif
 #include "pool/SocketPool-core.h"    /* For safe_time */
 #include "pool/SocketPool-private.h" /* For Connection_T and structs */
 
@@ -83,6 +86,9 @@ collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
 
   for (i = 0; i < pool->maxconns; i++)
     {
+#ifdef SOCKET_HAS_TLS
+      validate_saved_session (&pool->connections[i]);
+#endif
       if (should_collect_socket (&pool->connections[i], idle_timeout, now))
         {
           pool->cleanup_buffer[close_count++] = pool->connections[i].socket;

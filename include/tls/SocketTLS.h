@@ -226,6 +226,22 @@ extern const char *SocketTLS_get_version (Socket_T socket);
 extern long SocketTLS_get_verify_result (Socket_T socket);
 
 /**
+ * SocketTLS_get_verify_error_string - Get detailed verification error string
+ * @socket: TLS socket
+ * @buf: Output buffer for error description
+ * @size: Buffer size (including null terminator)
+ *
+ * Provides human-readable string for the last verification error (from CRL/OCSP/custom verify).
+ * Uses X509_verify_cert_error_string or OpenSSL ERR queue.
+ *
+ * Returns: buf if error found, NULL if no error or invalid args
+ * Raises: None
+ * Thread-safe: No (ERR queue shared)
+ * Requires: tls_handshake_done
+ */
+extern const char *SocketTLS_get_verify_error_string (Socket_T socket, char *buf, size_t size);
+
+/**
  * SocketTLS_is_session_reused - Check if TLS session was resumed
  * @socket: The socket instance with completed handshake
  *

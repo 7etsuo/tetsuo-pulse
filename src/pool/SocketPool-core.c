@@ -276,6 +276,15 @@ SocketPool_free (T *pool)
   /* Free connections array (malloc'ed, not arena) */
   if ((*pool)->connections)
     {
+#ifdef SOCKET_HAS_TLS
+      for (size_t i = 0; i < (*pool)->maxconns; i++) {
+        Connection_T conn = &(*pool)->connections[i];
+        if (conn->tls_session) {
+          SSL_SESSION_free (conn->tls_session);
+          conn->tls_session = NULL;
+        }
+      }
+#endif
       free ((*pool)->connections);
       (*pool)->connections = NULL;
     }

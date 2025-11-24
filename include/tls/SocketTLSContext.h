@@ -37,7 +37,7 @@ typedef struct T *T; /* Opaque pointer to TLS context */
  *   SocketTLSContext_T server_ctx = SocketTLSContext_new_server("server.crt",
  * "server.key", "ca-bundle.pem"); SocketTLSContext_set_alpn_protos(server_ctx,
  * (const char*[]){"h2", "http/1.1"}, 2);
- *   SocketTLSContext_enable_session_cache(server_ctx);
+ *   SocketTLSContext_enable_session_cache(server_ctx, SOCKET_TLS_SESSION_CACHE_SIZE, 300);
  *
  *   // Client context
  *   SocketTLSContext_T client_ctx =
@@ -195,6 +195,83 @@ extern void SocketTLSContext_free (T *ctx_p);
 extern void SocketTLSContext_set_verify_callback(T ctx, SocketTLSVerifyCallback callback, void *user_data);
 
 /**
+ * SocketTLSContext_load_crl - Load CRL file or directory into verification store
+ * @ctx: TLS context instance
+ * @crl_path: Path to CRL file (PEM/DER) or directory of CRL files (hashed names)
+ *
+ * Loads CRL data into the context's X509_STORE for revocation checking during peer
+ * verification. Supports single file or directory (auto-detect via stat). Multiple
+ * calls append additional CRLs. Enables CRL_CHECK flags automatically.
+ * CRL refresh not implemented (manual reload via re-call).
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if load/path invalid or OpenSSL error
+ * Thread-safe: No - modifies shared store; call during setup
+ * Note: Effective only if verify_mode requires peer cert check (PEER/FAIL_IF_NO_PEER)
+ */
+extern void SocketTLSContext_load_crl(T ctx, const char *crl_path);
+
+/**
+ * SocketTLSContext_refresh_crl - Refresh a specific CRL (re-load)
+ * @ctx: TLS context
+ * @crl_path: Path to refresh
+ *
+ * Re-loads the CRL from path (appends to store). Use for periodic refresh.
+ * For full store refresh, recreate context (CRLs accumulate).
+ * Thread-safe: No
+ * Raises: SocketTLS_Failed on load error
+ */
+extern void SocketTLSContext_refresh_crl(T ctx, const char *crl_path);
+
+/* OCSP Stapling Support */
+
+/**
+ * SocketTLSContext_set_ocsp_response - Set static OCSP response for stapling (server)
+ * @ctx: TLS context instance
+ * @response: OCSP response bytes (DER encoded)
+ * @len: Length of response
+ *
+ * Sets a static OCSP response to staple in server handshakes. Multiple calls override.
+ * Validates basic response format.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if invalid response (len=0 or parse fail)
+ * Thread-safe: No
+ * Note: For dynamic, use set_ocsp_callback.
+ */
+extern void SocketTLSContext_set_ocsp_response(T ctx, const unsigned char *response, size_t len);
+
+/* OCSP generation callback for dynamic stapling (server) */
+typedef OCSP_RESPONSE *(*SocketTLSOcspGenCallback)(SSL *ssl, void *arg);
+
+/**
+ * SocketTLSContext_set_ocsp_gen_callback - Register dynamic OCSP response generator
+ * @ctx: TLS context (server)
+ * @cb: Callback to generate OCSP response during handshake
+ * @arg: User data passed to cb
+ *
+ * Enables dynamic OCSP stapling. Called during handshake to generate response.
+ * Wrapper handles serialization and SSL_set_tlsext_status_ocsp_resp.
+ * Thread-safe: cb must be; called in handshake thread.
+ * Raises: SocketTLS_Failed if OpenSSL cb set fails
+ */
+extern void SocketTLSContext_set_ocsp_gen_callback(T ctx, SocketTLSOcspGenCallback cb, void *arg);
+
+/**
+ * SocketTLS_get_ocsp_status - Get OCSP status after handshake (client)
+ * @socket: TLS socket with completed handshake
+ *
+ * Parses stapled OCSP response from server, validates, returns status.
+ * Returns OCSP_STATUS_GOOD=1, REVOKED=2, UNKNOWN=3, NONE=0 if no response.
+ * Caller can check for revocation.
+ *
+ * Returns: int (OCSP status code)
+ * Raises: None (returns error code on parse fail)
+ * Thread-safe: Yes (post-handshake)
+ */
+extern int SocketTLS_get_ocsp_status(Socket_T socket);
+
+/**
  * SocketTLS_get_verify_result - Get TLS verification result after handshake
  * @sock: The TLS-enabled socket
  *
@@ -296,17 +373,20 @@ extern void SocketTLSContext_set_alpn_callback (T ctx,
 
 /* Session management */
 /**
- * SocketTLSContext_enable_session_cache - Enable session resumption cache
+ * SocketTLSContext_enable_session_cache - Enable session caching infrastructure
  * @ctx: The TLS context instance
+ * @max_sessions: Maximum number of sessions to cache (>0), 0 for default
+ * @timeout_seconds: Session timeout in seconds, 0 for OpenSSL default (300s)
  *
- * Enables server or client session cache for faster handshakes on reconnects.
- * Sets appropriate mode based on context type.
+ * Extends `SocketTLSContext_T` with session cache configuration.
+ * Implements session cache using OpenSSL's built-in caching with thread-safe storage.
+ * Adds cache size and timeout configuration. Enables statistics tracking.
  *
  * Returns: void
- * Raises: SocketTLS_Failed if cannot enable
- * Thread-safe: No
+ * Raises: SocketTLS_Failed if cannot enable or configure
+ * Thread-safe: No - modifies shared context during setup
  */
-extern void SocketTLSContext_enable_session_cache (T ctx);
+extern void SocketTLSContext_enable_session_cache(T ctx, size_t max_sessions, long timeout_seconds);
 
 /**
  * SocketTLSContext_set_session_cache_size - Limit cached sessions
@@ -320,6 +400,40 @@ extern void SocketTLSContext_enable_session_cache (T ctx);
  * Thread-safe: No
  */
 extern void SocketTLSContext_set_session_cache_size (T ctx, size_t size);
+
+/**
+ * SocketTLSContext_get_cache_stats - Get session cache statistics
+ * @ctx: The TLS context instance
+ * @hits: Output: number of cache hits
+ * @misses: Output: number of cache misses
+ * @stores: Output: number of sessions stored
+ *
+ * Fills provided pointers with current session cache statistics.
+ * Statistics are thread-safe and cumulative since cache enable.
+ * If pointers NULL, skipped.
+ *
+ * Returns: void
+ * Raises: None
+ * Thread-safe: Yes
+ */
+extern void SocketTLSContext_get_cache_stats(T ctx, size_t *hits, size_t *misses, size_t *stores);
+
+/**
+ * SocketTLSContext_enable_session_tickets - Enable stateless session resumption using tickets
+ * @ctx: The TLS context instance
+ * @key: Ticket encryption key material (48 bytes for AES256 + HMAC recommended)
+ * @key_len: Length of key (must be 48 for basic support)
+ *
+ * Implements stateless session resumption using encrypted session tickets.
+ * Configures ticket key management, encryption/decryption using provided key.
+ * Supports ticket lifetime matching session timeout, and basic rotation.
+ * Requires cache enabled for full effect.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if invalid key length or OpenSSL config fails
+ * Thread-safe: No
+ */
+extern void SocketTLSContext_enable_session_tickets(T ctx, const unsigned char *key, size_t key_len);
 
 /* Context lifecycle */
 /**

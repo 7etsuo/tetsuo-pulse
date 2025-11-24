@@ -9,6 +9,7 @@
 
 #ifdef SOCKET_HAS_TLS
 #include "tls/SocketTLSContext.h"
+#include <openssl/ssl.h>
 #endif
 
 #include "SocketPool.h"
@@ -26,6 +27,7 @@ struct Connection
 #ifdef SOCKET_HAS_TLS
   SocketTLSContext_T tls_ctx; /* TLS context for this connection */
   int tls_handshake_complete; /* TLS handshake state */
+  SSL_SESSION *tls_session; /* Saved TLS session for potential reuse */
 #endif
 };
 
@@ -93,6 +95,10 @@ extern void SocketPool_connections_release_buffers (Connection_T conn);
 extern void SocketPool_connections_reset_slot (Connection_T conn);
 
 extern void decrement_pool_count (SocketPool_T pool);
+
+#ifdef SOCKET_HAS_TLS
+extern void validate_saved_session (Connection_T conn);
+#endif
 
 extern Socket_T *SocketPool_cleanup_allocate_buffer (Arena_T arena,
                                                      size_t maxconns);
