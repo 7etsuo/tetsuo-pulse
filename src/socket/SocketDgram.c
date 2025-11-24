@@ -243,7 +243,8 @@ extract_sender_info (const struct sockaddr_storage *addr, socklen_t addrlen,
   else
     {
       /* Failed to get address info - set defaults */
-      if (host_len > 0) host[0] = '\0';
+      if (host_len > 0)
+        host[0] = '\0';
       *port = 0;
     }
 }
@@ -357,7 +358,8 @@ try_dgram_connect_addresses (T socket, struct addrinfo *res, int socket_family)
 static int
 get_dgram_socket_family (T socket)
 {
-  return SocketCommon_get_family (socket->base, false, SocketDgram_Failed); /* No raise on fail */
+  return SocketCommon_get_family (socket->base, false,
+                                  SocketDgram_Failed); /* No raise on fail */
 }
 T
 SocketDgram_new (int domain, int protocol)
@@ -505,9 +507,9 @@ SocketDgram_recvfrom (T socket, void *buf, size_t len, char *host,
   received = perform_recvfrom (socket, buf, len, &addr, &addrlen);
   /* Get sender address and port if requested */
   if (host && host_len > 0 && port)
-  {
-    extract_sender_info (&addr, addrlen, host, host_len, port);
-  }
+    {
+      extract_sender_info (&addr, addrlen, host, host_len, port);
+    }
   return received;
 }
 ssize_t
@@ -648,8 +650,9 @@ SocketDgram_sendv (T socket, const struct iovec *iov, int iovcnt)
   size_t total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
   if (total_len > SAFE_UDP_SIZE)
     {
-      SOCKET_ERROR_MSG ("Sendv total %zu > SAFE_UDP_SIZE %zu (frag risk; max %zu)",
-                        total_len, SAFE_UDP_SIZE, UDP_MAX_PAYLOAD);
+      SOCKET_ERROR_MSG (
+          "Sendv total %zu > SAFE_UDP_SIZE %zu (frag risk; max %zu)",
+          total_len, SAFE_UDP_SIZE, UDP_MAX_PAYLOAD);
       RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
   result = writev (SocketBase_fd (socket->base), iov, iovcnt);
@@ -822,16 +825,18 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
     received = SocketDgram_recvv (socket, active_iov, active_iovcnt);
     if (received == 0)
       {
-        /* Would block (EAGAIN / EWOULDBLOCK) - return partial progress: Copy back partial data */
+        /* Would block (EAGAIN / EWOULDBLOCK) - return partial progress: Copy
+         * back partial data */
         for (i = 0; i < iovcnt; i++)
-        {
-          if (iov_copy[i].iov_base != iov[i].iov_base)
-            {
-              size_t copied = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
-              iov[i].iov_len -= copied;
-              iov[i].iov_base = (char *)iov[i].iov_base + copied;
-            }
-        }
+          {
+            if (iov_copy[i].iov_base != iov[i].iov_base)
+              {
+                size_t copied
+                    = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
+                iov[i].iov_len -= copied;
+                iov[i].iov_base = (char *)iov[i].iov_base + copied;
+              }
+          }
         free (iov_copy);
         return (ssize_t)total_received;
       }
@@ -840,14 +845,15 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
   }
   /* Copy back final data positions */
   for (i = 0; i < iovcnt; i++)
-  {
-    if (iov_copy[i].iov_base != iov[i].iov_base)
-      {
-        size_t copied = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
-        iov[i].iov_len -= copied;
-        iov[i].iov_base = (char *)iov[i].iov_base + copied;
-      }
-  }
+    {
+      if (iov_copy[i].iov_base != iov[i].iov_base)
+        {
+          size_t copied
+              = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
+          iov[i].iov_len -= copied;
+          iov[i].iov_base = (char *)iov[i].iov_base + copied;
+        }
+    }
   EXCEPT (SocketDgram_Failed)
   free (iov_copy);
   RERAISE;
@@ -907,13 +913,13 @@ SocketDgram_joinmulticast (T socket, const char *group, const char *interface)
                                SocketDgram_Failed);
 }
 
-
 void
 SocketDgram_leavemulticast (T socket, const char *group, const char *interface)
 {
   assert (socket);
   assert (group);
-  SocketCommon_leave_multicast (socket->base, group, interface, SocketDgram_Failed);
+  SocketCommon_leave_multicast (socket->base, group, interface,
+                                SocketDgram_Failed);
 }
 
 /**
@@ -925,7 +931,10 @@ SocketDgram_leavemulticast (T socket, const char *group, const char *interface)
 static int
 get_socket_domain (T socket)
 {
-  return SocketCommon_get_family (socket->base, true, SocketDgram_Failed); /* raises on fail - comment removed to fix compiler warning */
+  return SocketCommon_get_family (
+      socket->base, true,
+      SocketDgram_Failed); /* raises on fail - comment removed to fix compiler
+                              warning */
 }
 
 /**
@@ -1196,7 +1205,9 @@ SocketDgram_isconnected (T socket)
   socklen_t len = sizeof (addr);
   assert (socket);
   /* Use getpeername() to check connection state */
-  if (getpeername (SocketBase_fd (socket->base), (struct sockaddr *)&addr, &len) == 0)
+  if (getpeername (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
+                   &len)
+      == 0)
     return 1;
   /* Not connected or error occurred */
   if (errno == ENOTCONN)
@@ -1224,23 +1235,25 @@ SocketDgram_isbound (T socket)
   if (socket->base->localaddr != NULL)
     return 1;
   /* Use getsockname() to check binding state */
-  if (getsockname (SocketBase_fd (socket->base), (struct sockaddr *)&addr, &len) == 0)
-  {
-    /* Socket is bound if getsockname succeeds. For IPv4/IPv6,
-     * check if we have a valid port (address can be wildcard) */
-    if (addr.ss_family == AF_INET)
+  if (getsockname (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
+                   &len)
+      == 0)
     {
-      struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
-      if (sin->sin_port != 0)
-        return 1;
+      /* Socket is bound if getsockname succeeds. For IPv4/IPv6,
+       * check if we have a valid port (address can be wildcard) */
+      if (addr.ss_family == AF_INET)
+        {
+          struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
+          if (sin->sin_port != 0)
+            return 1;
+        }
+      else if (addr.ss_family == AF_INET6)
+        {
+          struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&addr;
+          if (sin6->sin6_port != 0)
+            return 1;
+        }
     }
-    else if (addr.ss_family == AF_INET6)
-    {
-      struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&addr;
-      if (sin6->sin6_port != 0)
-        return 1;
-    }
-  }
   return 0;
 }
 #undef T

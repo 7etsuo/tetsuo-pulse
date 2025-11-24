@@ -1,18 +1,19 @@
+#include <errno.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/un.h>
-#include <string.h>
-#include <errno.h>
 
 #include "core/Arena.h"
 #include "core/SocketError.h"
 #include "socket/SocketCommon.h"
-#include "socket/SocketUnix.h"
 #include "socket/SocketUnix-private.h"
+#include "socket/SocketUnix.h"
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketUnix"
 
-const Except_T SocketUnix_Failed = { &SocketUnix_Failed, "Unix socket operation failed" };
+const Except_T SocketUnix_Failed
+    = { &SocketUnix_Failed, "Unix socket operation failed" };
 
 /* Thread-local exception */
 #ifdef _WIN32
@@ -21,14 +22,18 @@ static __declspec (thread) Except_T SocketUnix_DetailedException;
 static __thread Except_T SocketUnix_DetailedException;
 #endif
 
-#define RAISE_MODULE_ERROR(e) do { \
-  SocketUnix_DetailedException = (e); \
-  SocketUnix_DetailedException.reason = socket_error_buf; \
-  RAISE(SocketUnix_DetailedException); \
-} while(0)
+#define RAISE_MODULE_ERROR(e)                                                 \
+  do                                                                          \
+    {                                                                         \
+      SocketUnix_DetailedException = (e);                                     \
+      SocketUnix_DetailedException.reason = socket_error_buf;                 \
+      RAISE (SocketUnix_DetailedException);                                   \
+    }                                                                         \
+  while (0)
 
 /**
- * SocketUnix_validate_unix_path - Validate Unix socket path length and security
+ * SocketUnix_validate_unix_path - Validate Unix socket path length and
+ * security
  * @path: Path string
  * @path_len: Length
  * Returns: 0 on valid, -1 on invalid
@@ -59,7 +64,8 @@ SocketUnix_validate_unix_path (const char *path, size_t path_len)
   return 0;
 }
 
-/* More functions to move: setup_abstract_unix_socket, setup_regular_unix_socket, bind_unix, connect_unix etc. */
+/* More functions to move: setup_abstract_unix_socket,
+ * setup_regular_unix_socket, bind_unix, connect_unix etc. */
 
 /* Example public impl */
 void
@@ -96,4 +102,5 @@ SocketUnix_bind (SocketBase_T base, const char *path, Except_T exc_type)
 
 /* Similar for SocketUnix_connect */
 
- /* TODO: Move remaining Unix ops from Socket.c to here, update calls in Socket.c / Dgram.c to SocketUnix_* (base, ...) */
+/* TODO: Move remaining Unix ops from Socket.c to here, update calls in
+ * Socket.c / Dgram.c to SocketUnix_* (base, ...) */

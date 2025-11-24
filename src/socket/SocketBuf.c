@@ -3,46 +3,53 @@
  */
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include "core/Arena.h"
-#include "core/SocketConfig.h"
-#include "socket/SocketBuf.h"
 #include "core/Except.h"
+#include "core/SocketConfig.h"
 #include "core/SocketError.h"
+#include "socket/SocketBuf.h"
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketBuf"
 
-const Except_T SocketBuf_Failed = { &SocketBuf_Failed, "SocketBuf operation failed" };
+const Except_T SocketBuf_Failed
+    = { &SocketBuf_Failed, "SocketBuf operation failed" };
 
 #ifdef _WIN32
-static __declspec(thread) Except_T SocketBuf_DetailedException;
+static __declspec (thread) Except_T SocketBuf_DetailedException;
 #else
 static __thread Except_T SocketBuf_DetailedException;
 #endif
 
-#define RAISE_MODULE_ERROR(e) do { \
-  SocketBuf_DetailedException = (e); \
-  SocketBuf_DetailedException.reason = socket_error_buf; \
-  RAISE(SocketBuf_DetailedException); \
-} while(0)
+#define RAISE_MODULE_ERROR(e)                                                 \
+  do                                                                          \
+    {                                                                         \
+      SocketBuf_DetailedException = (e);                                      \
+      SocketBuf_DetailedException.reason = socket_error_buf;                  \
+      RAISE (SocketBuf_DetailedException);                                    \
+    }                                                                         \
+  while (0)
 
 #define T SocketBuf_T
 
 /* Minimum buffer capacity for practical network I/O
  * Matches SOCKET_MIN_BUFFER_SIZE from SocketConfig.h for consistency */
 
-
-
-#define SOCKETBUF_INVARIANTS(buf) do { \
-  if (!SocketBuf_check_invariants (buf)) { \
-    SOCKET_ERROR_MSG ("SocketBuf invariants violated"); \
-    RAISE_MODULE_ERROR (SocketBuf_Failed); \
-  } } while (0)
+#define SOCKETBUF_INVARIANTS(buf)                                             \
+  do                                                                          \
+    {                                                                         \
+      if (!SocketBuf_check_invariants (buf))                                  \
+        {                                                                     \
+          SOCKET_ERROR_MSG ("SocketBuf invariants violated");                 \
+          RAISE_MODULE_ERROR (SocketBuf_Failed);                              \
+        }                                                                     \
+    }                                                                         \
+  while (0)
 
 struct T
 {
@@ -58,8 +65,8 @@ struct T
 bool
 SocketBuf_check_invariants (T buf)
 {
-  if (!buf || !buf->data || buf->capacity == 0 || buf->size > buf->capacity ||
-      buf->tail >= buf->capacity || buf->head >= buf->capacity)
+  if (!buf || !buf->data || buf->capacity == 0 || buf->size > buf->capacity
+      || buf->tail >= buf->capacity || buf->head >= buf->capacity)
     {
       return false;
     }
@@ -83,7 +90,8 @@ SocketBuf_reserve (T buf, size_t min_space)
   size_t new_cap = buf->capacity ? buf->capacity * 2 : 1024;
   if (new_cap < min_space || new_cap > SIZE_MAX - 64) /* Overhead */
     {
-      SOCKET_ERROR_MSG ("SocketBuf reserve overflow: needed %zu current %zu", needed, buf->capacity);
+      SOCKET_ERROR_MSG ("SocketBuf reserve overflow: needed %zu current %zu",
+                        needed, buf->capacity);
       RAISE_MODULE_ERROR (SocketBuf_Failed);
     }
   new_cap = new_cap > min_space ? new_cap : min_space;
@@ -93,7 +101,8 @@ SocketBuf_reserve (T buf, size_t min_space)
   char *new_data = Arena_calloc (buf->arena, 1, new_cap, __FILE__, __LINE__);
   if (!new_data)
     {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Failed to calloc SocketBuf to %zu", new_cap);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Failed to calloc SocketBuf to %zu",
+                        new_cap);
       RAISE_MODULE_ERROR (SocketBuf_Failed);
     }
 
@@ -126,26 +135,35 @@ SocketBuf_new (Arena_T arena, size_t capacity)
   assert (capacity > 0);
 
   /* Limit capacity to SIZE_MAX/2 to prevent overflow in pointer arithmetic */
-  if (capacity > SIZE_MAX / 2) {
-    SOCKET_ERROR_MSG("SocketBuf_new: capacity %zu too large (> SIZE_MAX/2 = %zu)", capacity, SIZE_MAX / 2);
-    RAISE_MODULE_ERROR(SocketBuf_Failed);
-  }
+  if (capacity > SIZE_MAX / 2)
+    {
+      SOCKET_ERROR_MSG (
+          "SocketBuf_new: capacity %zu too large (> SIZE_MAX/2 = %zu)",
+          capacity, SIZE_MAX / 2);
+      RAISE_MODULE_ERROR (SocketBuf_Failed);
+    }
 
   /* Note: No minimum capacity enforced - allows small buffers for testing.
    * Production code should use SOCKET_MIN_BUFFER_SIZE (512) for efficiency. */
 
   buf = ALLOC (arena, sizeof (*buf));
-  if (!buf) {
-    SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Failed to ALLOC SocketBuf struct (size %zu)", sizeof (*buf));
-    RAISE_MODULE_ERROR(SocketBuf_Failed);
-  }
+  if (!buf)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM
+                        ": Failed to ALLOC SocketBuf struct (size %zu)",
+                        sizeof (*buf));
+      RAISE_MODULE_ERROR (SocketBuf_Failed);
+    }
 
   /* Use CALLOC to zero buffer */
   buf->data = CALLOC (arena, capacity, 1);
-  if (!buf->data) {
-    SOCKET_ERROR_MSG(SOCKET_ENOMEM ": Failed to CALLOC SocketBuf data (capacity %zu)", capacity);
-    RAISE_MODULE_ERROR(SocketBuf_Failed);
-  }
+  if (!buf->data)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM
+                        ": Failed to CALLOC SocketBuf data (capacity %zu)",
+                        capacity);
+      RAISE_MODULE_ERROR (SocketBuf_Failed);
+    }
 
   buf->capacity = capacity;
   buf->head = 0;

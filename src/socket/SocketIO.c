@@ -17,9 +17,9 @@
 #include "core/SocketError.h"
 #include "socket/Socket-private.h"
 #include "socket/Socket.h"
-#include "socket/SocketIO.h"
-#include "socket/SocketCommon.h"
 #include "socket/SocketCommon-private.h"
+#include "socket/SocketCommon.h"
+#include "socket/SocketIO.h"
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketIO"
 
@@ -40,11 +40,14 @@ static __thread Except_T SocketIO_DetailedException;
 #endif
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e) do { \
-  SocketIO_DetailedException = (e); \
-  SocketIO_DetailedException.reason = socket_error_buf; \
-  RAISE(SocketIO_DetailedException); \
-} while(0)
+#define RAISE_MODULE_ERROR(e)                                                 \
+  do                                                                          \
+    {                                                                         \
+      SocketIO_DetailedException = (e);                                       \
+      SocketIO_DetailedException.reason = socket_error_buf;                   \
+      RAISE (SocketIO_DetailedException);                                     \
+    }                                                                         \
+  while (0)
 
 #ifdef SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
@@ -355,16 +358,19 @@ socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
           RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
         }
 
-      /* Calculate total length with overflow protection via common helper (raises on error) */
+      /* Calculate total length with overflow protection via common helper
+       * (raises on error) */
       size_t total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
-      /* Allocate temp buffer from socket arena (security zero-init, lifecycle managed) */
+      /* Allocate temp buffer from socket arena (security zero-init, lifecycle
+       * managed) */
       Arena_T arena = SocketBase_arena (socket->base);
       void *temp_buf = Arena_calloc (arena, total_len, 1, __FILE__, __LINE__);
       if (!temp_buf)
         {
-          SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                            ": Cannot Arena_calloc temp buffer for TLS sendv (total_len=%zu)", total_len);
+          SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot Arena_calloc temp buffer "
+                                          "for TLS sendv (total_len=%zu)",
+                            total_len);
           RAISE_MODULE_ERROR (Socket_Failed);
         }
 
@@ -457,16 +463,20 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
         }
 
       /* Calculate total capacity with overflow protection */
-      /* Calculate total capacity via common helper (raises on overflow/invalid) */
-      size_t total_capacity = SocketCommon_calculate_total_iov_len (iov, iovcnt);
+      /* Calculate total capacity via common helper (raises on
+       * overflow/invalid) */
+      size_t total_capacity
+          = SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
       /* Allocate temp buffer from socket arena (security zero-init) */
       Arena_T arena = SocketBase_arena (socket->base);
-      void *temp_buf = Arena_calloc (arena, total_capacity, 1, __FILE__, __LINE__);
+      void *temp_buf
+          = Arena_calloc (arena, total_capacity, 1, __FILE__, __LINE__);
       if (!temp_buf)
         {
-          SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                            ": Cannot Arena_calloc temp buffer for TLS recvv (total_capacity=%zu)", total_capacity);
+          SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot Arena_calloc temp buffer "
+                                          "for TLS recvv (total_capacity=%zu)",
+                            total_capacity);
           RAISE_MODULE_ERROR (Socket_Failed);
         }
 
@@ -475,7 +485,8 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
 
       if (ssl_result <= 0)
         {
-          /* arena-managed temp_buf: no free needed */ /* Free before error handling */
+          /* arena-managed temp_buf: no free needed */ /* Free before error
+                                                          handling */
 
           if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
             {

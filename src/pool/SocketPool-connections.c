@@ -24,9 +24,9 @@
 #include "pool/SocketPool-core.h" /* For safe_time */
 
 #ifdef SOCKET_HAS_TLS
+#include "socket/Socket-private.h"
 #include "socket/SocketIO.h"
 #include "tls/SocketTLS.h"
-#include "socket/Socket-private.h"
 #endif
 
 #define T SocketPool_T
@@ -61,11 +61,13 @@ socket_hash (const Socket_T socket)
 
   assert (socket);
   fd = Socket_fd (socket);
-  if (fd < 0) {
-    SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                     "Attempt to hash closed/invalid socket (fd=%d); returning 0", fd);
-    return 0;
-  }
+  if (fd < 0)
+    {
+      SocketLog_emitf (
+          SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+          "Attempt to hash closed/invalid socket (fd=%d); returning 0", fd);
+      return 0;
+    }
 
   return ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_HASH_SIZE;
 }
@@ -430,7 +432,7 @@ SocketPool_add (T pool, Socket_T socket)
 #ifdef SOCKET_HAS_TLS
   if (conn && socket_is_tls_enabled (socket) && conn->tls_session)
     {
-      SSL *ssl = (SSL *) socket->tls_ssl;
+      SSL *ssl = (SSL *)socket->tls_ssl;
       if (ssl)
         {
           if (SSL_set_session (ssl, conn->tls_session) != 1)
@@ -554,13 +556,15 @@ SocketPool_remove (T pool, Socket_T socket)
       END_TRY;
 
       /* Save session for potential reuse in future connections */
-      SSL *ssl = (SSL *) socket->tls_ssl;
-      if (ssl) {
-        SSL_SESSION *sess = SSL_get1_session(ssl);
-        if (sess) {
-          conn->tls_session = sess;
+      SSL *ssl = (SSL *)socket->tls_ssl;
+      if (ssl)
+        {
+          SSL_SESSION *sess = SSL_get1_session (ssl);
+          if (sess)
+            {
+              conn->tls_session = sess;
+            }
         }
-      }
     }
 #endif
 
@@ -632,8 +636,9 @@ struct PoolConnectUdata
   Socket_T socket;
 };
 
-/* Internal callback for DNS completion in async connect - #if 0 until implemented/used
- * Enables async DNS for connect; currently sync Socket_connect blocks or uses SocketDNS for non-blocking.
+/* Internal callback for DNS completion in async connect - #if 0 until
+ * implemented/used Enables async DNS for connect; currently sync
+ * Socket_connect blocks or uses SocketDNS for non-blocking.
  */
 #if 0
 #pragma GCC diagnostic push
@@ -677,14 +682,14 @@ pool_dns_connect_completion (SocketDNS_Request_T req, struct addrinfo *result,
 }
 #pragma GCC diagnostic pop
 #endif /* 0 - Enable when async DNS connect implemented */
-  /* TODO: Call completion cb in sync mode or when async enabled 
-   * udata->cb (conn, error, udata->data);
-   */
+/* TODO: Call completion cb in sync mode or when async enabled
+ * udata->cb (conn, error, udata->data);
+ */
 
-  /* udata lifetime managed by pool arena - freed on pool disposal or manual
-   * cleanup if needed 
-   * Note: DNS callback stubbed; cb call in sync path above
-   */
+/* udata lifetime managed by pool arena - freed on pool disposal or manual
+ * cleanup if needed
+ * Note: DNS callback stubbed; cb call in sync path above
+ */
 
 int
 SocketPool_prepare_connection (T pool, SocketDNS_T dns, const char *host,

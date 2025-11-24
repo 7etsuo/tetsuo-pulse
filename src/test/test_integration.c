@@ -813,28 +813,16 @@ TEST (integration_rapid_connect_disconnect)
   reset_tracked_sockets ();
   Arena_T arena = Arena_new ();
   SocketPoll_T poll = NULL;
-  TRY
-    poll = SocketPoll_new (100);
-  EXCEPT (SocketPoll_Failed)
-    {
-      return;
-    }
+  TRY poll = SocketPoll_new (100);
+  EXCEPT (SocketPoll_Failed) { return; }
   END_TRY;
   SocketPool_T pool = NULL;
-  TRY
-    pool = SocketPool_new (arena, 50, 2048);
-  EXCEPT (SocketPool_Failed)
-    {
-      return;
-    }
+  TRY pool = SocketPool_new (arena, 50, 2048);
+  EXCEPT (SocketPool_Failed) { return; }
   END_TRY;
   Socket_T server = NULL;
-  TRY
-    server = Socket_new (AF_INET, SOCK_STREAM, 0);
-  EXCEPT (Socket_Failed)
-    {
-      return;
-    }
+  TRY server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  EXCEPT (Socket_Failed) { return; }
   END_TRY;
 
   TRY Socket_setreuseaddr (server);

@@ -110,10 +110,11 @@ backend_add (PollBackend_T backend, int fd, unsigned events)
   struct epoll_event ev;
 
   assert (backend);
-  if (fd < 0) {
-    errno = EBADF;
-    return -1;
-  }
+  if (fd < 0)
+    {
+      errno = EBADF;
+      return -1;
+    }
 
   memset (&ev, 0, sizeof (ev));
   ev.events = translate_to_epoll (events);
@@ -131,10 +132,11 @@ backend_mod (PollBackend_T backend, int fd, unsigned events)
   struct epoll_event ev;
 
   assert (backend);
-  if (fd < 0) {
-    errno = EBADF;
-    return -1;
-  }
+  if (fd < 0)
+    {
+      errno = EBADF;
+      return -1;
+    }
 
   memset (&ev, 0, sizeof (ev));
   ev.events = translate_to_epoll (events);
@@ -150,10 +152,11 @@ int
 backend_del (PollBackend_T backend, int fd)
 {
   assert (backend);
-  if (fd < 0) {
-    errno = EBADF;
-    return -1;
-  }
+  if (fd < 0)
+    {
+      errno = EBADF;
+      return -1;
+    }
 
   /* Note: event parameter is ignored in Linux 2.6.9+, but we pass NULL
    * for older kernels compatibility */

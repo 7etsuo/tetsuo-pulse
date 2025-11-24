@@ -35,7 +35,8 @@
 
 #define T SocketPoll_T
 
-const Except_T SocketPoll_Failed = { &SocketPoll_Failed, "SocketPoll operation failed" };
+const Except_T SocketPoll_Failed
+    = { &SocketPoll_Failed, "SocketPoll operation failed" };
 
 /* Macro to raise exception with detailed error message
  * Creates a thread-local copy of the exception with detailed reason.
@@ -106,11 +107,13 @@ socket_hash (const Socket_T socket)
   assert (socket);
   fd = Socket_fd (socket);
 
-  if (fd < 0) {
-    SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                     "Attempt to hash closed/invalid socket (fd=%d); returning 0", fd);
-    return 0;
-  }
+  if (fd < 0)
+    {
+      SocketLog_emitf (
+          SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+          "Attempt to hash closed/invalid socket (fd=%d); returning 0", fd);
+      return 0;
+    }
 
   /* Multiplicative hash with golden ratio for good distribution */
   return ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_DATA_HASH_SIZE;
@@ -599,30 +602,34 @@ SocketPoll_new (int maxevents)
     poll->async = NULL;
     volatile SocketAsync_T volatile_async = NULL;
     TRY
-  {
-    volatile_async = SocketAsync_new (poll->arena);
-    poll->async = (SocketAsync_T)volatile_async;
-  }
-  EXCEPT (SocketAsync_Failed)
-  {
-    /* Async unavailable - continue without it */
-    poll->async = NULL;
-    volatile_async = NULL;
-  }
-  END_TRY;
+    {
+      volatile_async = SocketAsync_new (poll->arena);
+      poll->async = (SocketAsync_T)volatile_async;
+    }
+    EXCEPT (SocketAsync_Failed)
+    {
+      /* Async unavailable - continue without it */
+      poll->async = NULL;
+      volatile_async = NULL;
+    }
+    END_TRY;
   }
 
   EXCEPT (Arena_Failed)
   {
-    if (poll->arena) Arena_dispose (&poll->arena);
-    if (poll->backend) backend_free (poll->backend);
+    if (poll->arena)
+      Arena_dispose (&poll->arena);
+    if (poll->backend)
+      backend_free (poll->backend);
     free (poll);
     RAISE_POLL_ERROR (SocketPoll_Failed);
   }
   EXCEPT (SocketPoll_Failed)
   {
-    if (poll->arena) Arena_dispose (&poll->arena);
-    if (poll->backend) backend_free (poll->backend);
+    if (poll->arena)
+      Arena_dispose (&poll->arena);
+    if (poll->backend)
+      backend_free (poll->backend);
     free (poll);
     RERAISE;
   }
@@ -669,11 +676,12 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
 
   /* Cast to non-volatile for Socket API calls */
   fd = Socket_fd ((Socket_T)volatile_socket);
-  if (fd < 0) {
-    SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                     "Adding invalid socket fd=%d to poll; ignoring", fd);
-    return;
-  }
+  if (fd < 0)
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                       "Adding invalid socket fd=%d to poll; ignoring", fd);
+      return;
+    }
   /* Socket FD should be valid */
 
   /* Set non-blocking mode before adding to poll */
@@ -719,18 +727,16 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
       }
 
     /* Add to data map - wrapped in TRY to cleanup backend on failure */
-    TRY
-      socket_data_add_unlocked (poll, (Socket_T)volatile_socket, data);
+    TRY socket_data_add_unlocked (poll, (Socket_T)volatile_socket, data);
     EXCEPT (SocketPoll_Failed)
-      {
-        backend_del (poll->backend, fd);
-        RERAISE;
-      }
+    {
+      backend_del (poll->backend, fd);
+      RERAISE;
+    }
     END_TRY;
-
   }
   FINALLY
-    pthread_mutex_unlock (&poll->mutex);
+  pthread_mutex_unlock (&poll->mutex);
   END_TRY;
   /* Orphaned EXCEPT block fully removed. See TODO above for logic. */
 }
