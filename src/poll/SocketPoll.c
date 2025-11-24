@@ -27,6 +27,9 @@
 #include "core/SocketEvents.h"
 #include "core/SocketMetrics.h"
 
+/* Include timer private header after struct definition to avoid circular deps */
+#include "core/SocketTimer-private.h"
+
 #ifdef SOCKET_HAS_TLS
 #include "socket/Socket-private.h"
 #include "socket/SocketIO.h"
@@ -87,6 +90,7 @@ struct T
                                                    fd->socket mapping */
   pthread_mutex_t mutex; /* Mutex for thread-safe socket data mapping */
   SocketAsync_T async;   /* Optional async I/O context */
+  SocketTimer_heap_T *timer_heap; /* Timer heap for integrated timers */
 };
 
 /* ==================== Hash Functions ==================== */
@@ -598,6 +602,17 @@ SocketPoll_new (int maxevents)
     initialize_poll_hash_tables (poll);
     initialize_poll_mutex (poll);
 
+  /* Initialize timer heap */
+  poll->timer_heap = SocketTimer_heap_new (poll->arena);
+  if (!poll->timer_heap)
+    {
+      backend_free (poll->backend);
+      Arena_dispose (&poll->arena);
+      free (poll);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate timer heap");
+      RAISE_POLL_ERROR (SocketPoll_Failed);
+    }
+
     /* Initialize async context (optional - graceful degradation if fails) */
     poll->async = NULL;
     volatile SocketAsync_T volatile_async = NULL;
@@ -650,6 +665,10 @@ SocketPoll_free (T *poll)
   /* Free async context if exists */
   if ((*poll)->async)
     SocketAsync_free (&(*poll)->async);
+
+  /* Free timer heap */
+  if ((*poll)->timer_heap)
+    SocketTimer_heap_free (&(*poll)->timer_heap);
 
   /* Destroy mutex */
   pthread_mutex_destroy (&(*poll)->mutex);
@@ -1020,12 +1039,21 @@ SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
 {
   int nfds;
   int async_completions = 0;
+  int timer_completions = 0;
 
   assert (poll);
   assert (events);
 
   if (timeout == SOCKET_POLL_TIMEOUT_USE_DEFAULT)
     timeout = poll->default_timeout_ms;
+
+  /* Calculate effective timeout considering timers */
+  if (poll->timer_heap)
+    {
+      int64_t next_timer_ms = SocketTimer_heap_peek_delay (poll->timer_heap);
+      if (next_timer_ms >= 0 && (timeout < 0 || next_timer_ms < timeout))
+        timeout = (int)next_timer_ms;
+    }
 
   /* Process async completions first (non-blocking) */
   if (poll->async)
@@ -1052,6 +1080,12 @@ SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
   if (poll->async)
     {
       async_completions += SocketAsync_process_completions (poll->async, 0);
+    }
+
+  /* Process expired timers after backend wait */
+  if (poll->timer_heap)
+    {
+      timer_completions = SocketTimer_process_expired (poll->timer_heap);
     }
 
   /* If no events, return immediately */
@@ -1097,6 +1131,7 @@ SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
    * in SocketEvent_T array. The nfds return value only counts backend events.
    */
   (void)async_completions; /* Suppress unused warning */
+  (void)timer_completions; /* Suppress unused warning */
 
   *events = poll->socketevents;
   return nfds;
@@ -1107,6 +1142,19 @@ SocketPoll_get_async (T poll)
 {
   assert (poll);
   return poll->async;
+}
+
+/**
+ * socketpoll_get_timer_heap - Get timer heap from poll (private function)
+ * @poll: Poll instance
+ * Returns: Timer heap pointer or NULL if not available
+ * Thread-safe: No (internal use only)
+ */
+SocketTimer_heap_T *
+socketpoll_get_timer_heap (T poll)
+{
+  assert (poll);
+  return poll->timer_heap;
 }
 
 #undef T

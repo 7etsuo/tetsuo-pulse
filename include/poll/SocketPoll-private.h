@@ -2,6 +2,7 @@
 #define SOCKETPOLL_PRIVATE_INCLUDED
 
 #include "core/Arena.h" /* For memory */
+#include "core/SocketTimer-private.h" /* For timer heap integration */
 #include "poll/SocketPoll.h"
 #include "poll/SocketPoll_backend.h"
 
@@ -40,6 +41,9 @@ extern unsigned poll_translate_from_backend (unsigned backend_events);
 
 /* Event processing */
 extern int process_events (T poll, int nev, SocketEvent_T **out_events);
+
+/* Timer heap access for SocketTimer integration */
+extern SocketTimer_heap_T *socketpoll_get_timer_heap (T poll);
 
 /* Global constants */
 #define MAP_LOAD_FACTOR 0.7f /* Resize threshold */
