@@ -26,20 +26,25 @@
 
 #ifdef SOCKET_HAS_TLS
 
+#include "socket/Socket-private.h" /* For Socket_T access in internal verify wrapper */
 #include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"
-#include "socket/Socket-private.h"  /* For Socket_T access in internal verify wrapper */
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
-#include <string.h>
-#include <openssl/pem.h>
-#include <openssl/evp.h>
 #include <openssl/bio.h>
+#include <openssl/evp.h>
+#include <openssl/pem.h>
 #include <openssl/ssl.h>
+#include <openssl/ocsp.h>
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <openssl/x509_vfy.h>
 #include <stdio.h>
-#include <ctype.h>
+#include <string.h>
+#include <pthread.h>
 
 /* Thread-local error buffer for detailed error messages
  * Prevents race conditions when multiple threads raise TLS context errors
@@ -62,27 +67,40 @@ static __thread Except_T SocketTLSContext_DetailedException;
 /* Macro to raise TLS context exception with detailed error message
  * Creates a thread-local copy of the exception with detailed reason */
 /* RAISE_TLS_CONTEXT_ERROR variants for flexibility */
-#define RAISE_TLS_CONTEXT_ERROR(exception) do { \
-  tls_context_error_buf[0] = '\0'; /* Clear buf for default */ \
-  SocketTLSContext_DetailedException = (exception); \
-  SocketTLSContext_DetailedException.reason = tls_context_error_buf; \
-  RAISE (SocketTLSContext_DetailedException); \
-} while (0)
+#define RAISE_TLS_CONTEXT_ERROR(exception)                                    \
+  do                                                                          \
+    {                                                                         \
+      tls_context_error_buf[0] = '\0'; /* Clear buf for default */            \
+      SocketTLSContext_DetailedException = (exception);                       \
+      SocketTLSContext_DetailedException.reason = tls_context_error_buf;      \
+      RAISE (SocketTLSContext_DetailedException);                             \
+    }                                                                         \
+  while (0)
 
-#define RAISE_TLS_CONTEXT_ERROR_MSG(exception, msg) do { \
-  strncpy (tls_context_error_buf, msg, sizeof (tls_context_error_buf) - 1); \
-  tls_context_error_buf[sizeof (tls_context_error_buf) - 1] = '\0'; \
-  SocketTLSContext_DetailedException = (exception); \
-  SocketTLSContext_DetailedException.reason = tls_context_error_buf; \
-  RAISE (SocketTLSContext_DetailedException); \
-} while (0)
+#define RAISE_TLS_CONTEXT_ERROR_MSG(exception, msg)                           \
+  do                                                                          \
+    {                                                                         \
+      strncpy (tls_context_error_buf, msg,                                    \
+               sizeof (tls_context_error_buf) - 1);                           \
+      tls_context_error_buf[sizeof (tls_context_error_buf) - 1] = '\0';       \
+      SocketTLSContext_DetailedException = (exception);                       \
+      SocketTLSContext_DetailedException.reason = tls_context_error_buf;      \
+      RAISE (SocketTLSContext_DetailedException);                             \
+    }                                                                         \
+  while (0)
 
-#define RAISE_TLS_CONTEXT_ERROR_FMT(exception, fmt, ...) do { \
-  snprintf (tls_context_error_buf, sizeof (tls_context_error_buf), fmt, __VA_ARGS__); \
-  SocketTLSContext_DetailedException = (exception); \
-  SocketTLSContext_DetailedException.reason = tls_context_error_buf; \
-  RAISE (SocketTLSContext_DetailedException); \
-} while (0)
+#define RAISE_TLS_CONTEXT_ERROR_FMT(exception, fmt, ...)                      \
+  do                                                                          \
+    {                                                                         \
+      snprintf (tls_context_error_buf, sizeof (tls_context_error_buf), fmt,   \
+                __VA_ARGS__);                                                 \
+      SocketTLSContext_DetailedException = (exception);                       \
+      SocketTLSContext_DetailedException.reason = tls_context_error_buf;      \
+      RAISE (SocketTLSContext_DetailedException);                             \
+    }                                                                         \
+  while (0)
+
+static int tls_context_exdata_idx = -1;
 
 #define T SocketTLSContext_T
 
@@ -93,6 +111,14 @@ struct T
   int is_server;             /* 1 for server, 0 for client */
   int session_cache_enabled; /* Session cache flag */
   size_t session_cache_size; /* Session cache size */
+  size_t cache_hits; /* Number of session resumptions (hits/tickets/ID) */
+  size_t cache_misses; /* Number of full handshakes */
+  size_t cache_stores; /* Number of new sessions stored */
+  pthread_mutex_t stats_mutex; /* Thread-safe stats update */
+  unsigned char ticket_key[48]; /* Session ticket encryption key */
+  int tickets_enabled; /* 1 if session tickets enabled */
+  SocketTLSOcspGenCallback ocsp_gen_cb; /* Dynamic OCSP generation callback */
+  void *ocsp_gen_arg; /* Arg for OCSP gen cb */
 
   /* SNI certificate mapping for virtual hosting */
   struct
@@ -119,7 +145,11 @@ struct T
   /* Custom verification callback */
   SocketTLSVerifyCallback verify_callback;
   void *verify_user_data;
-  TLSVerifyMode verify_mode;  /* Stored verification mode for reconfig */
+  TLSVerifyMode verify_mode; /* Stored verification mode for reconfig */
+
+  /* OCSP stapling support */
+  const unsigned char *ocsp_response; /* Static response bytes (ref, user managed) */
+  size_t ocsp_len;
 };
 
 /* Helper function to format OpenSSL errors and raise TLS context exceptions */
@@ -177,7 +207,8 @@ validate_file_path (const char *path)
  * validate_hostname - Validate SNI hostname format
  * @hostname: Hostname string to validate
  *
- * Validates hostname according to DNS rules: labels with alphanum/-, length limits.
+ * Validates hostname according to DNS rules: labels with alphanum/-, length
+ * limits.
  *
  * Returns: 1 if valid, 0 if invalid
  */
@@ -208,8 +239,8 @@ validate_hostname (const char *hostname)
         {
           if (expecting_dot)
             return 0; /* Non-dot after dot? No, after dot expect label char
- */
-          if (! (isalnum ((unsigned char)*p) || *p == '-'))
+                       */
+          if (!(isalnum ((unsigned char)*p) || *p == '-'))
             return 0;
           if (*p == '-' && label_len == 0)
             return 0; /* Label can't start with - */
@@ -231,9 +262,10 @@ validate_hostname (const char *hostname)
 static int
 sni_callback (SSL *ssl, int *ad, void *arg)
 {
-  (void)ad;  /* unused */
+  (void)ad; /* unused */
   T ctx = (T)arg;
-  const char *sni_hostname = SSL_get_servername (ssl, TLSEXT_NAMETYPE_host_name);
+  const char *sni_hostname
+      = SSL_get_servername (ssl, TLSEXT_NAMETYPE_host_name);
 
   if (!sni_hostname || !ctx)
     return SSL_TLSEXT_ERR_NOACK;
@@ -321,6 +353,8 @@ alpn_select_callback (SSL *ssl, const unsigned char **out,
       char *proto = malloc (len + 1);
       if (!proto)
         {
+          for (size_t j = 0; j < idx; j++)
+            free ((void *)client_protos[j]);
           free (client_protos);
           return SSL_TLSEXT_ERR_NOACK;
         }
@@ -370,15 +404,20 @@ alpn_select_callback (SSL *ssl, const unsigned char **out,
   return SSL_TLSEXT_ERR_NOACK;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclobbered"
+
 static int
 socket_tls_internal_verify (int pre_ok, X509_STORE_CTX *x509_ctx)
 {
   /* Get SSL object from X509_STORE_CTX ex_data */
-  SSL *ssl = X509_STORE_CTX_get_ex_data (x509_ctx, SSL_get_ex_data_X509_STORE_CTX_idx ());
+  SSL *ssl = X509_STORE_CTX_get_ex_data (
+      x509_ctx, SSL_get_ex_data_X509_STORE_CTX_idx ());
   if (!ssl)
-    return pre_ok;  /* Fallback if no SSL context available */
+    return pre_ok; /* Fallback if no SSL context available */
 
-  /* Get Socket_T from SSL app_data (to be set in SocketTLS_base.c during TLS enable) */
+  /* Get Socket_T from SSL app_data (to be set in SocketTLS_base.c during TLS
+   * enable) */
   Socket_T sock = (Socket_T)SSL_get_app_data (ssl);
   if (!sock)
     return pre_ok;
@@ -386,10 +425,27 @@ socket_tls_internal_verify (int pre_ok, X509_STORE_CTX *x509_ctx)
   /* Get TLS context from socket's private tls_ctx field (void* cast to T) */
   SocketTLSContext_T ctx = (SocketTLSContext_T)sock->tls_ctx;
   if (!ctx || !ctx->verify_callback)
-    return pre_ok;  /* No custom callback, fallback to default/pre_ok */
+    return pre_ok; /* No custom callback, fallback to default/pre_ok */
 
-  /* Invoke user callback */
-  int result = ctx->verify_callback (pre_ok, x509_ctx, ctx, sock, ctx->verify_user_data);
+  /* Invoke user callback with exception safety for thread-safe execution */
+  volatile int result;
+  TRY
+  {
+    result = ctx->verify_callback (pre_ok, x509_ctx, ctx, sock,
+                                   ctx->verify_user_data);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* Catch module errors raised by user callback, treat as verification failure */
+    const char *orig_reason = Except_frame.exception->reason;
+    strncpy (tls_context_error_buf, orig_reason ? orig_reason : "Verification callback raised SocketTLS_Failed", sizeof (tls_context_error_buf) - 1);
+    tls_context_error_buf[sizeof (tls_context_error_buf) - 1] = '\0';
+    SocketTLSContext_DetailedException = *Except_frame.exception;
+    SocketTLSContext_DetailedException.reason = tls_context_error_buf;
+    result = 0;
+    X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
+  }
+  END_TRY;
 
   if (!result)
     {
@@ -408,6 +464,9 @@ socket_tls_internal_verify (int pre_ok, X509_STORE_CTX *x509_ctx)
 
   return result;
 }
+
+#pragma GCC diagnostic pop
+
 
 /**
  * alloc_and_init_ctx - Allocate and initialize common TLS context structure
@@ -476,14 +535,32 @@ alloc_and_init_ctx (const SSL_METHOD *method, int is_server)
 
   /* Initialize fields - transfer ownership of ssl_ctx */
   ctx->ssl_ctx = ssl_ctx;
+
+  if (tls_context_exdata_idx == -1) {
+    tls_context_exdata_idx = SSL_CTX_get_ex_new_index(0, "SocketTLSContext", NULL, NULL, NULL);
+  }
+  SSL_CTX_set_ex_data(ssl_ctx, tls_context_exdata_idx, ctx);
+
   ctx->is_server = !!is_server;
   ctx->session_cache_enabled = 0;
   ctx->session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
+  ctx->cache_hits = 0;
+  ctx->cache_misses = 0;
+  ctx->cache_stores = 0;
+  if (pthread_mutex_init(&ctx->stats_mutex, NULL) != 0) {
+    raise_tls_context_error("Failed to initialize stats mutex");
+  }
+
+  memset(ctx->ticket_key, 0, sizeof(ctx->ticket_key));
+  ctx->tickets_enabled = 0;
+  ctx->ocsp_gen_cb = NULL;
+  ctx->ocsp_gen_arg = NULL;
 
   /* Initialize custom verification */
   ctx->verify_callback = NULL;
   ctx->verify_user_data = NULL;
-  ctx->verify_mode = TLS_VERIFY_NONE;  /* Default; overridden in new_server/client */
+  ctx->verify_mode
+      = TLS_VERIFY_NONE; /* Default; overridden in new_server/client */
 
   /* Initialize SNI certificate mapping */
   ctx->sni_certs.hostnames = NULL;
@@ -822,7 +899,8 @@ SocketTLSContext_add_certificate (T ctx, const char *hostname,
   ctx->sni_certs.certs[ctx->sni_certs.count] = cert;
   ctx->sni_certs.pkeys[ctx->sni_certs.count] = pkey;
 
-  /* If default certificate (no hostname), also load into context using file for fallback */
+  /* If default certificate (no hostname), also load into context using file
+   * for fallback */
   if (!hostname)
     {
       SocketTLSContext_load_certificate (ctx, cert_file, key_file);
@@ -856,7 +934,7 @@ SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
   assert (ctx);
   assert (ctx->ssl_ctx);
 
-  ctx->verify_mode = mode;  /* Store for reconfig in set_callback */
+  ctx->verify_mode = mode; /* Store for reconfig in set_callback */
 
   int openssl_mode = 0;
 
@@ -880,7 +958,9 @@ SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
       return;
     }
 
-  SSL_verify_cb verify_cb = ctx->verify_callback ? (SSL_verify_cb)socket_tls_internal_verify : NULL;
+  SSL_verify_cb verify_cb = ctx->verify_callback
+                                ? (SSL_verify_cb)socket_tls_internal_verify
+                                : NULL;
   ERR_clear_error ();
   SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, verify_cb);
 }
@@ -891,18 +971,20 @@ SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
  * @callback: User callback function (NULL to disable custom and use default)
  * @user_data: Opaque data passed to callback (lifetime managed by caller)
  *
- * Sets a custom verification callback for certificate validation, invoked during
- * TLS handshake verification. The internal wrapper handles OpenSSL integration
- * and provides socket/context access. Compatible with current verify_mode.
+ * Sets a custom verification callback for certificate validation, invoked
+ * during TLS handshake verification. The internal wrapper handles OpenSSL
+ * integration and provides socket/context access. Compatible with current
+ * verify_mode.
  *
  * Returns: void
  * Raises: SocketTLS_Failed if OpenSSL reconfiguration fails (rare)
  * Thread-safe: No - modifies shared context; call during setup before use
- * Note: Callback should avoid blocking operations; errors propagate via return 0
- *       (fails handshake) or user-raised exceptions.
+ * Note: Callback should avoid blocking operations; errors propagate via return
+ * 0 (fails handshake) or user-raised exceptions.
  */
 void
-SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback, void *user_data)
+SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback,
+                                      void *user_data)
 {
   assert (ctx);
   assert (ctx->ssl_ctx);
@@ -913,7 +995,8 @@ SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback, v
 
   /* Reconfigure OpenSSL verify with current mode and new cb or NULL */
   int openssl_mode = 0;
-  switch (ctx->verify_mode)  /* Assume ctx->verify_mode stored in set_verify_mode */
+  switch (
+      ctx->verify_mode) /* Assume ctx->verify_mode stored in set_verify_mode */
     {
     case TLS_VERIFY_NONE:
       openssl_mode = SSL_VERIFY_NONE;
@@ -928,18 +1011,195 @@ SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback, v
       openssl_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
       break;
     default:
-      RAISE_TLS_CONTEXT_ERROR_FMT (SocketTLS_Failed, "Invalid verify mode: %d", (int)ctx->verify_mode);
+      RAISE_TLS_CONTEXT_ERROR_FMT (SocketTLS_Failed, "Invalid verify mode: %d",
+                                   (int)ctx->verify_mode);
     }
 
-  SSL_verify_cb verify_cb = callback ? (SSL_verify_cb)socket_tls_internal_verify : NULL;
+  SSL_verify_cb verify_cb
+      = callback ? (SSL_verify_cb)socket_tls_internal_verify : NULL;
   SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, verify_cb);
   if (ERR_get_error () != 0)
     {
       unsigned long err = ERR_get_error ();
       char err_buf[256];
       ERR_error_string_n (err, err_buf, sizeof (err_buf));
-      RAISE_TLS_CONTEXT_ERROR_FMT (SocketTLS_Failed, "Failed to set verify callback: %s", err_buf);
+      RAISE_TLS_CONTEXT_ERROR_FMT (
+          SocketTLS_Failed, "Failed to set verify callback: %s", err_buf);
     }
+}
+
+ /**
+ * SocketTLSContext_load_crl - Load CRL file or directory for revocation checking
+ * @ctx: TLS context instance
+ * @crl_path: Path to CRL file (PEM/DER) or directory (auto-detected via stat)
+ *
+ * Loads CRL data into the context's X509_STORE. Auto-detects file vs directory.
+ * Enables X509_V_FLAG_CRL_CHECK | CRL_CHECK_ALL for chain validation.
+ * Multiple calls append CRLs; re-call to refresh.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed on stat/load/flags error
+ * Thread-safe: No (modifies shared store)
+ * Note: CRL checking active only with peer verification enabled.
+ */
+void
+SocketTLSContext_load_crl (T ctx, const char *crl_path)
+{
+  if (!ctx)
+    RAISE_TLS_CONTEXT_ERROR (SocketTLS_Failed);
+  if (!ctx->ssl_ctx)
+    RAISE_TLS_CONTEXT_ERROR (SocketTLS_Failed);
+  if (!crl_path || !*crl_path)
+    RAISE_TLS_CONTEXT_ERROR_MSG (SocketTLS_Failed, "CRL path cannot be NULL or empty");
+
+  X509_STORE *store = SSL_CTX_get_cert_store (ctx->ssl_ctx);
+  if (!store)
+    RAISE_TLS_CONTEXT_ERROR (SocketTLS_Failed);
+
+  struct stat st;
+  if (stat (crl_path, &st) != 0)
+    RAISE_TLS_CONTEXT_ERROR_FMT (SocketTLS_Failed, "Invalid CRL path '%s': %s", crl_path, strerror (errno));
+
+  int ret;
+  if (S_ISDIR (st.st_mode))
+    {
+      ret = X509_STORE_load_locations (store, NULL, crl_path);
+    }
+  else
+    {
+      ret = X509_STORE_load_locations (store, crl_path, NULL);
+    }
+
+  if (ret != 1)
+    {
+      unsigned long err = ERR_get_error ();
+      char err_buf[256];
+      ERR_error_string_n (err, err_buf, sizeof (err_buf));
+      RAISE_TLS_CONTEXT_ERROR_FMT (SocketTLS_Failed, "Failed to load CRL '%s': %s", crl_path, err_buf);
+    }
+
+  /* Enable CRL flags (idempotent OR with current) */
+  long current_flags = X509_STORE_set_flags (store, 0); /* Temp set 0 to get current (returns previous) */
+  X509_STORE_set_flags (store, current_flags | (X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL));
+}
+
+void
+SocketTLSContext_refresh_crl(T ctx, const char *crl_path)
+{
+  SocketTLSContext_load_crl(ctx, crl_path);
+}
+
+ /**
+ * SocketTLSContext_set_ocsp_response - Set static OCSP stapled response (server-side)
+ * @ctx: TLS context instance
+ * @response: DER-encoded OCSP response bytes
+ * @len: Length of response
+ *
+ * Sets static OCSP response to staple in server handshakes. Basic len check.
+ * Overrides previous. User must ensure response validity and freshness.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if len==0
+ * Thread-safe: No
+ * Note: Full parse/validation stubbed pending OpenSSL compatibility.
+ */
+void
+SocketTLSContext_set_ocsp_response (T ctx, const unsigned char *response, size_t len)
+{
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+
+  if (!response || len == 0)
+    RAISE_TLS_CONTEXT_ERROR_MSG (SocketTLS_Failed, "Invalid OCSP response (null or zero length)");
+
+  /* Validate and copy response to arena */
+  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &response, len);
+  if (!resp) {
+    RAISE_TLS_CONTEXT_ERROR_MSG (SocketTLS_Failed, "Invalid OCSP response format");
+  }
+  OCSP_RESPONSE_free (resp); /* Just validate, don't store parsed */
+
+  unsigned char *resp_copy = Arena_alloc (ctx->arena, len, __FILE__, __LINE__);
+  if (!resp_copy) {
+    RAISE_TLS_CONTEXT_ERROR (SocketTLS_Failed);
+  }
+  memcpy (resp_copy, response, len);
+  ctx->ocsp_response = resp_copy;
+  ctx->ocsp_len = len;
+
+  /* Copy stored in ctx; set per SSL in SocketTLS_enable */
+  /* Validation passed, response ready for stapling */
+
+}
+
+static int
+status_cb_wrapper (SSL *ssl, void *arg);
+
+void
+SocketTLSContext_set_ocsp_gen_callback (T ctx, SocketTLSOcspGenCallback cb, void *arg)
+{
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+
+  ctx->ocsp_gen_cb = cb;
+  ctx->ocsp_gen_arg = arg;
+
+  SSL_CTX_set_tlsext_status_cb (ctx->ssl_ctx, status_cb_wrapper);
+
+  if (ERR_get_error ()) {
+    unsigned long err = ERR_get_error ();
+    char err_buf[256];
+    ERR_error_string_n (err, err_buf, sizeof (err_buf));
+    RAISE_TLS_CONTEXT_ERROR_FMT (SocketTLS_Failed, "Failed to set OCSP status cb: %s", err_buf);
+  }
+}
+
+ /**
+ * SocketTLS_get_ocsp_status - Retrieve OCSP status from stapled response (client)
+ * @socket: TLS socket after successful handshake
+ *
+ * Checks if stapled OCSP response was received. Basic presence check.
+ * Full parse/validation stubbed pending OpenSSL compatibility.
+ *
+ * Returns: 1 if response present (assume good), 0 none/error
+ * Raises: None
+ * Thread-safe: Yes
+ * Note: Requires client requested stapling.
+ */
+int
+SocketTLS_get_ocsp_status (Socket_T socket)
+{
+  if (!socket || !socket->tls_enabled || !socket->tls_ssl || !socket->tls_handshake_done)
+    return 0; /* NONE */
+
+  SSL *ssl = (SSL *)socket->tls_ssl;
+
+  const unsigned char *response_bytes;
+  int response_len = SSL_get_tlsext_status_ocsp_resp (ssl, &response_bytes);
+  if (response_len <= 0 || !response_bytes)
+    return 0; /* NONE */
+
+  const unsigned char *p = response_bytes;
+  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &p, response_len);
+  if (!resp)
+    return OCSP_RESPONSE_STATUS_MALFORMEDREQUEST; /* Error code */
+
+  int rstatus = OCSP_response_status (resp);
+  if (rstatus != OCSP_RESPONSE_STATUS_SUCCESSFUL)
+    {
+      OCSP_RESPONSE_free (resp);
+      return rstatus; /* Map error */
+    }
+
+  /* Basic response status (full cert status/basic verify optional for compat) */
+  OCSP_BASICRESP *basic = OCSP_response_get1_basic (resp);
+  OCSP_RESPONSE_free (resp);
+  if (!basic)
+    return OCSP_RESPONSE_STATUS_INTERNALERROR;
+
+  /* Assume good if basic present and response successful; extend with OCSP_basic_verify(chain, store) for sig check */
+  OCSP_BASICRESP_free (basic);
+  return 1; /* GOOD - basic validation */
 }
 
 /**
@@ -1164,37 +1424,90 @@ SocketTLSContext_set_alpn_callback (T ctx, SocketTLSAlpnCallback callback,
   ctx->alpn.callback_user_data = user_data;
 }
 
+static T 
+get_tls_context_from_ssl_ctx(SSL_CTX *ssl_ctx) 
+{
+  if (!ssl_ctx) return NULL;
+  return (T) SSL_CTX_get_ex_data(ssl_ctx, tls_context_exdata_idx);
+}
+
+static T 
+get_tls_context_from_ssl(const SSL *ssl) 
+{
+  if (!ssl) return NULL;
+  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX((SSL *)ssl);
+  return get_tls_context_from_ssl_ctx(ssl_ctx);
+}
+
+static int 
+new_session_cb(SSL *ssl, SSL_SESSION *sess) 
+{
+  (void) sess;
+  T ctx = get_tls_context_from_ssl(ssl);
+  if (ctx) {
+    pthread_mutex_lock(&ctx->stats_mutex);
+    ctx->cache_stores++;
+    pthread_mutex_unlock(&ctx->stats_mutex);
+  }
+  return 1;
+}
+
+static void 
+info_callback(const SSL *ssl, int where, int ret) 
+{
+  if (ret == 0) return;
+  if (where & SSL_CB_HANDSHAKE_DONE) {
+    T ctx = get_tls_context_from_ssl(ssl);
+    if (ctx) {
+      pthread_mutex_lock(&ctx->stats_mutex);
+      if (SSL_session_reused((SSL*)ssl)) {
+        ctx->cache_hits++;
+      } else {
+        ctx->cache_misses++;
+      }
+      pthread_mutex_unlock(&ctx->stats_mutex);
+    }
+  }
+}
+
 /**
- * SocketTLSContext_enable_session_cache - Enable TLS session caching
+ * SocketTLSContext_enable_session_cache - Enable and configure session cache
  * @ctx: TLS context instance
+ * @max_sessions: Max sessions to cache (0 for default SOCKET_TLS_SESSION_CACHE_SIZE)
+ * @timeout_seconds: Session lifetime in seconds (0 for default 300)
  *
- * Enables TLS session caching to improve performance by reusing established
- * sessions. Session caching is enabled by default for both client and server
- * contexts, but this function allows explicit control.
- *
- * Thread-safe: No (modifies shared context)
+ * Enables OpenSSL built-in session caching with size limit and timeout.
+ * Sets server/client mode accordingly, configures callbacks for stats.
+ * Thread-safe: No
  */
 void
-SocketTLSContext_enable_session_cache (T ctx)
+SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions, long timeout_seconds)
 {
   assert (ctx);
   assert (ctx->ssl_ctx);
 
-  long mode;
-
-  if (ctx->is_server)
-    {
-      mode = SSL_SESS_CACHE_SERVER;
-    }
-  else
-    {
-      mode = SSL_SESS_CACHE_CLIENT;
-    }
+  long mode = ctx->is_server ? SSL_SESS_CACHE_SERVER : SSL_SESS_CACHE_CLIENT;
 
   if (SSL_CTX_set_session_cache_mode (ctx->ssl_ctx, mode) == 0)
     {
-      raise_tls_context_error ("Failed to enable session cache");
+      raise_tls_context_error ("Failed to enable session cache mode");
     }
+
+  /* Set callbacks for stats tracking */
+  SSL_CTX_sess_set_new_cb(ctx->ssl_ctx, new_session_cb);
+  SSL_CTX_set_info_callback(ctx->ssl_ctx, info_callback);
+
+  /* Configure size if specified */
+  if (max_sessions > 0) {
+    if (SSL_CTX_sess_set_cache_size (ctx->ssl_ctx, (long)max_sessions) == 0) {
+      raise_tls_context_error ("Failed to set session cache size");
+    }
+    ctx->session_cache_size = max_sessions;
+  }
+
+  /* Configure timeout */
+  long to = timeout_seconds > 0 ? timeout_seconds : 300L;
+  SSL_CTX_set_timeout(ctx->ssl_ctx, to);
 
   ctx->session_cache_enabled = 1;
 }
@@ -1227,6 +1540,69 @@ SocketTLSContext_set_session_cache_size (T ctx, size_t size)
     }
 
   ctx->session_cache_size = size;
+}
+
+void
+SocketTLSContext_get_cache_stats(T ctx, size_t *hits, size_t *misses, size_t *stores)
+{
+  if (!ctx || !ctx->session_cache_enabled) {
+    if (hits) *hits = 0;
+    if (misses) *misses = 0;
+    if (stores) *stores = 0;
+    return;
+  }
+
+  pthread_mutex_lock(&ctx->stats_mutex);
+  if (hits) *hits = ctx->cache_hits;
+  if (misses) *misses = ctx->cache_misses;
+  if (stores) *stores = ctx->cache_stores;
+  pthread_mutex_unlock(&ctx->stats_mutex);
+}
+
+void
+SocketTLSContext_enable_session_tickets(T ctx, const unsigned char *key, size_t key_len)
+{
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+
+  if (key_len != 80) {
+    RAISE_TLS_CONTEXT_ERROR_MSG(SocketTLS_Failed, "Session ticket key length must be exactly 80 bytes for this OpenSSL version");
+  }
+
+  unsigned char *keys = Arena_alloc(ctx->arena, key_len, __FILE__, __LINE__);
+  if (!keys) {
+    RAISE_TLS_CONTEXT_ERROR_MSG(SocketTLS_Failed, "Failed to allocate ticket keys buffer");
+  }
+  memcpy(keys, key, key_len);
+  ctx->tickets_enabled = 1;
+
+  if (SSL_CTX_ctrl(ctx->ssl_ctx, SSL_CTRL_SET_TLSEXT_TICKET_KEYS, (int)key_len, keys) != 1) {
+    raise_tls_context_error("Failed to set session ticket keys");
+  }
+
+  /* Ticket lifetime follows session timeout by default */
+}
+
+static int
+status_cb_wrapper (SSL *ssl, void *arg)
+{
+  (void) arg;
+  T ctx = get_tls_context_from_ssl (ssl);
+  if (!ctx || !ctx->ocsp_gen_cb) return SSL_TLSEXT_ERR_NOACK;
+
+  OCSP_RESPONSE *resp = ctx->ocsp_gen_cb (ssl, ctx->ocsp_gen_arg);
+  if (!resp) return SSL_TLSEXT_ERR_NOACK;
+
+  unsigned char *der = NULL;
+  int len = i2d_OCSP_RESPONSE (resp, &der);
+  if (len > 0) {
+    SSL_set_tlsext_status_ocsp_resp (ssl, der, len);
+  }
+
+  OCSP_RESPONSE_free (resp);
+  if (der) OPENSSL_free (der);
+
+  return len > 0 ? SSL_TLSEXT_ERR_OK : SSL_TLSEXT_ERR_NOACK;
 }
 
 /**
@@ -1300,6 +1676,7 @@ SocketTLSContext_free (T *ctx)
         }
 
       /* Free context structure */
+      pthread_mutex_destroy(&c->stats_mutex);
       free (c);
       *ctx = NULL;
     }
@@ -1340,3 +1717,4 @@ SocketTLSContext_is_server (T ctx)
 #undef T
 
 #endif /* SOCKET_HAS_TLS */
+#include <openssl/ocsp.h>

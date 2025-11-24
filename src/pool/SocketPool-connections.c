@@ -26,6 +26,7 @@
 #ifdef SOCKET_HAS_TLS
 #include "socket/SocketIO.h"
 #include "tls/SocketTLS.h"
+#include "socket/Socket-private.h"
 #endif
 
 #define T SocketPool_T
@@ -375,10 +376,31 @@ SocketPool_get (T pool, Socket_T socket)
   pthread_mutex_lock (&pool->mutex);
   conn = find_slot (pool, socket);
   if (conn)
-    conn->last_activity = now;
+    {
+      conn->last_activity = now;
+      validate_saved_session (conn);
+    }
   pthread_mutex_unlock (&pool->mutex);
 
   return conn;
+}
+
+void
+validate_saved_session (Connection_T conn)
+{
+#ifdef SOCKET_HAS_TLS
+  if (conn->tls_session)
+    {
+      time_t now = time (NULL);
+      time_t sess_time = SSL_SESSION_get_time (conn->tls_session);
+      long sess_timeout = SSL_SESSION_get_timeout (conn->tls_session);
+      if (now >= sess_time + sess_timeout)
+        {
+          SSL_SESSION_free (conn->tls_session);
+          conn->tls_session = NULL;
+        }
+    }
+#endif
 }
 
 /**
@@ -404,6 +426,23 @@ SocketPool_add (T pool, Socket_T socket)
 
   pthread_mutex_lock (&pool->mutex);
   conn = find_or_create_slot (pool, socket, now);
+
+#ifdef SOCKET_HAS_TLS
+  if (conn && socket_is_tls_enabled (socket) && conn->tls_session)
+    {
+      SSL *ssl = (SSL *) socket->tls_ssl;
+      if (ssl)
+        {
+          if (SSL_set_session (ssl, conn->tls_session) != 1)
+            {
+              SSL_SESSION_free (conn->tls_session);
+              conn->tls_session = NULL;
+            }
+          // else resumption setup successful
+        }
+    }
+#endif
+
   pthread_mutex_unlock (&pool->mutex);
 
   return conn;
@@ -465,6 +504,7 @@ SocketPool_connections_reset_slot (Connection_T conn)
 #ifdef SOCKET_HAS_TLS
   conn->tls_ctx = NULL;
   conn->tls_handshake_complete = 0;
+  /* Keep tls_session for potential reuse in future socket on this slot */
 #endif
 }
 
@@ -512,6 +552,15 @@ SocketPool_remove (T pool, Socket_T socket)
       TRY { SocketTLS_shutdown (socket); }
       ELSE { /* Consume exception - we are closing anyway */ }
       END_TRY;
+
+      /* Save session for potential reuse in future connections */
+      SSL *ssl = (SSL *) socket->tls_ssl;
+      if (ssl) {
+        SSL_SESSION *sess = SSL_get1_session(ssl);
+        if (sess) {
+          conn->tls_session = sess;
+        }
+      }
     }
 #endif
 

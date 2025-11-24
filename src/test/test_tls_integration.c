@@ -85,7 +85,7 @@ TEST(tls_context_creation)
         const char *protos[] = {"h2", "http/1.1"};
         SocketTLSContext_set_alpn_protos(server_ctx, protos, 2);
         
-        SocketTLSContext_enable_session_cache(server_ctx);
+        SocketTLSContext_enable_session_cache(server_ctx, 100, 300);
         SocketTLSContext_set_session_cache_size(server_ctx, 100);
 
         SocketTLSContext_free(&server_ctx);
