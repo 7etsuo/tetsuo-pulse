@@ -188,10 +188,11 @@ backend_add (PollBackend_T backend, int fd, unsigned events)
   int index;
 
   assert (backend);
-  if (fd < 0) {
-    errno = EBADF;
-    return -1;
-  }
+  if (fd < 0)
+    {
+      errno = EBADF;
+      return -1;
+    }
 
   /* Check if already added */
   if (find_fd_index (backend, fd) >= 0)
@@ -228,10 +229,11 @@ backend_mod (PollBackend_T backend, int fd, unsigned events)
   int index;
 
   assert (backend);
-  if (fd < 0) {
-    errno = EBADF;
-    return -1;
-  }
+  if (fd < 0)
+    {
+      errno = EBADF;
+      return -1;
+    }
 
   index = find_fd_index (backend, fd);
   if (index < 0)
@@ -259,10 +261,11 @@ backend_del (PollBackend_T backend, int fd)
       return 0; // Invalid FD - silently succeed (already closed)
     }
 
-  if (fd < 0) {
-    errno = EBADF;
-    return -1;
-  }
+  if (fd < 0)
+    {
+      errno = EBADF;
+      return -1;
+    }
 
   index = find_fd_index (backend, fd);
   if (index < 0)

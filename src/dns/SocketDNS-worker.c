@@ -3,18 +3,19 @@
  * Part of the Socket Library
  * Following C Interfaces and Implementations patterns
  *
- * Contains worker thread logic, request processing, and DNS resolution functions.
+ * Contains worker thread logic, request processing, and DNS resolution
+ * functions.
  */
 
-#include <assert.h>
 #include "core/SocketConfig.h"
+#include <arpa/inet.h>
+#include <assert.h>
+#include <netdb.h>
 #include <pthread.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -86,7 +87,9 @@ worker_thread (void *arg)
  * Thread-safe: Uses mutex internally
  * Marks request as timed out, signals completion, emits event.
  */
-void handle_request_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+void
+handle_request_timeout (struct SocketDNS_T *dns,
+                        struct SocketDNS_Request_T *req)
 {
   pthread_mutex_lock (&dns->mutex);
   mark_request_timeout (dns, req);
@@ -99,7 +102,10 @@ void handle_request_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T
  * @base_hints: Base hints to copy from
  * @req: Request determining flags (e.g., AI_PASSIVE for NULL host)
  */
-void prepare_local_hints (struct addrinfo *local_hints, const struct addrinfo *base_hints, const struct SocketDNS_Request_T *req)
+void
+prepare_local_hints (struct addrinfo *local_hints,
+                     const struct addrinfo *base_hints,
+                     const struct SocketDNS_Request_T *req)
 {
   memcpy (local_hints, base_hints, sizeof (*local_hints));
   if (req->host == NULL)
@@ -115,9 +121,13 @@ void prepare_local_hints (struct addrinfo *local_hints, const struct addrinfo *b
  * @result: Resolution result (may be freed if timed out)
  * @res: Resolution error code (may be overridden if timed out)
  * Thread-safe: Must be called with mutex locked? No, locks internally.
- * Checks for timeout after resolution, frees result if timed out, stores result.
+ * Checks for timeout after resolution, frees result if timed out, stores
+ * result.
  */
-void handle_resolution_result (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req, struct addrinfo *result, int res)
+void
+handle_resolution_result (struct SocketDNS_T *dns,
+                          struct SocketDNS_Request_T *req,
+                          struct addrinfo *result, int res)
 {
   pthread_mutex_lock (&dns->mutex);
   if (request_timed_out (dns, req))
@@ -138,12 +148,15 @@ void handle_resolution_result (struct SocketDNS_T *dns, struct SocketDNS_Request
  * @dns: DNS resolver instance
  * @req: Request to process
  * @base_hints: Base getaddrinfo hints structure
- * Performs DNS resolution for one request: timeout check, hints prep, resolution,
- * result handling, callback invocation.
- * Thread-safe: No - called from worker thread, uses mutex for shared state.
- * Raises: None directly, uses exceptions via helpers.
+ * Performs DNS resolution for one request: timeout check, hints prep,
+ * resolution, result handling, callback invocation. Thread-safe: No - called
+ * from worker thread, uses mutex for shared state. Raises: None directly, uses
+ * exceptions via helpers.
  */
-void process_single_request (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req, struct addrinfo *base_hints)
+void
+process_single_request (struct SocketDNS_T *dns,
+                        struct SocketDNS_Request_T *req,
+                        struct addrinfo *base_hints)
 {
   if (request_timed_out (dns, req))
     {
@@ -168,7 +181,8 @@ void process_single_request (struct SocketDNS_T *dns, struct SocketDNS_Request_T
  * Returns: Next request or NULL if queue empty
  * Thread-safe: Must be called with mutex locked
  */
-Request_T dequeue_request (struct SocketDNS_T *dns)
+Request_T
+dequeue_request (struct SocketDNS_T *dns)
 {
   struct SocketDNS_Request_T *req;
 
@@ -192,7 +206,8 @@ Request_T dequeue_request (struct SocketDNS_T *dns)
  * Returns: Request to process, or NULL if shutdown
  * Thread-safe: Must be called with mutex locked, unlocks on return
  */
-Request_T wait_for_request (struct SocketDNS_T *dns)
+Request_T
+wait_for_request (struct SocketDNS_T *dns)
 {
   while (dns->queue_head == NULL && !dns->shutdown)
     {
@@ -212,10 +227,12 @@ Request_T wait_for_request (struct SocketDNS_T *dns)
  * mark_request_timeout - Mark request as timed out
  * @dns: DNS resolver instance
  * @req: Request to mark as timed out
- * Sets state to complete with timeout error, frees result if any, signals completion.
- * Thread-safe: Must be called with mutex locked? No, but callers lock.
+ * Sets state to complete with timeout error, frees result if any, signals
+ * completion. Thread-safe: Must be called with mutex locked? No, but callers
+ * lock.
  */
-void mark_request_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+void
+mark_request_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   req->state = REQ_COMPLETE;
   req->error = EAI_AGAIN;
@@ -238,7 +255,8 @@ void mark_request_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *
  * Pipe may be full, which is acceptable - signals are cumulative.
  * Thread-safe: Yes - write to pipe[1] is atomic for 1 byte
  */
-void signal_completion (struct SocketDNS_T *dns)
+void
+signal_completion (struct SocketDNS_T *dns)
 {
   char byte = COMPLETION_SIGNAL_BYTE;
   ssize_t n;
@@ -257,19 +275,25 @@ void signal_completion (struct SocketDNS_T *dns)
  * Stores result if request still processing; otherwise frees if cancelled.
  * Updates metrics, signals completion.
  */
-void store_resolution_result (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req, struct addrinfo *result, int error)
+void
+store_resolution_result (struct SocketDNS_T *dns,
+                         struct SocketDNS_Request_T *req,
+                         struct addrinfo *result, int error)
 {
   if (req->state == REQ_PROCESSING)
     {
       req->state = REQ_COMPLETE;
       req->result = SocketCommon_copy_addrinfo (result);
-      if (!req->result) {
-        freeaddrinfo (result);
-        req->error = EAI_MEMORY;
-        req->state = REQ_COMPLETE; // still complete, but error
-      } else {
-        freeaddrinfo (result); // transfer by copy and free original
-      }
+      if (!req->result)
+        {
+          freeaddrinfo (result);
+          req->error = EAI_MEMORY;
+          req->state = REQ_COMPLETE; // still complete, but error
+        }
+      else
+        {
+          freeaddrinfo (result); // transfer by copy and free original
+        }
       req->error = error;
 
       if (error == 0)
@@ -317,7 +341,9 @@ dns_cancellation_error (void)
  * @req: Request
  * Returns: Per-request timeout override or default resolver timeout (ms)
  */
-int request_effective_timeout_ms (struct SocketDNS_T *dns, const struct SocketDNS_Request_T *req)
+int
+request_effective_timeout_ms (struct SocketDNS_T *dns,
+                              const struct SocketDNS_Request_T *req)
 {
   if (req->timeout_override_ms >= 0)
     return req->timeout_override_ms;
@@ -332,7 +358,9 @@ int request_effective_timeout_ms (struct SocketDNS_T *dns, const struct SocketDN
  * Uses CLOCK_MONOTONIC for monotonic time calculation.
  * Thread-safe: Yes - read-only for req state
  */
-int request_timed_out (struct SocketDNS_T *dns, const struct SocketDNS_Request_T *req)
+int
+request_timed_out (struct SocketDNS_T *dns,
+                   const struct SocketDNS_Request_T *req)
 {
   int timeout_ms = request_effective_timeout_ms (dns, req);
   struct timespec now;
@@ -343,8 +371,10 @@ int request_timed_out (struct SocketDNS_T *dns, const struct SocketDNS_Request_T
 
   clock_gettime (CLOCK_MONOTONIC, &now);
 
-  elapsed_ms = (now.tv_sec - req->submit_time.tv_sec) * 1000LL; /* SOCKET_MS_PER_SECOND */
-  elapsed_ms += (now.tv_nsec - req->submit_time.tv_nsec) / 1000000LL; /* SOCKET_NS_PER_MS */
+  elapsed_ms = (now.tv_sec - req->submit_time.tv_sec)
+               * 1000LL; /* SOCKET_MS_PER_SECOND */
+  elapsed_ms += (now.tv_nsec - req->submit_time.tv_nsec)
+                / 1000000LL; /* SOCKET_NS_PER_MS */
 
   return elapsed_ms >= timeout_ms;
 }
@@ -354,14 +384,14 @@ int request_timed_out (struct SocketDNS_T *dns, const struct SocketDNS_Request_T
  * @req: Request to resolve
  * @hints: getaddrinfo hints structure
  * Returns: getaddrinfo result code
- * @result: Set to resolved addresses (or NULL on error); caller owns on success
- * Performs DNS resolution with optional port parameter.
- * Handles NULL host (wildcard bind) by passing NULL to getaddrinfo.
- * Note: getaddrinfo() is called directly and is not interruptible.
+ * @result: Set to resolved addresses (or NULL on error); caller owns on
+ * success Performs DNS resolution with optional port parameter. Handles NULL
+ * host (wildcard bind) by passing NULL to getaddrinfo. Note: getaddrinfo() is
+ * called directly and is not interruptible.
  */
 int
-perform_dns_resolution (struct SocketDNS_Request_T *req, const struct addrinfo *hints,
-                        struct addrinfo **result)
+perform_dns_resolution (struct SocketDNS_Request_T *req,
+                        const struct addrinfo *hints, struct addrinfo **result)
 {
   char port_str[SOCKET_DNS_PORT_STR_SIZE];
   const char *service = NULL;
@@ -386,11 +416,13 @@ perform_dns_resolution (struct SocketDNS_Request_T *req, const struct addrinfo *
  * invoke_callback - Invoke completion callback if provided
  * @dns: DNS resolver instance
  * @req: Completed request
- * Thread-safe: Called without mutex held (callback may take time); locks briefly to clear result
- * Note: Callback receives ownership of result. Clears req->result after to prevent use-after-free.
- * SocketDNS_getresult() returns NULL if callback provided.
+ * Thread-safe: Called without mutex held (callback may take time); locks
+ * briefly to clear result Note: Callback receives ownership of result. Clears
+ * req->result after to prevent use-after-free. SocketDNS_getresult() returns
+ * NULL if callback provided.
  */
-void invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+void
+invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   if (req->callback && req->state == REQ_COMPLETE)
     {

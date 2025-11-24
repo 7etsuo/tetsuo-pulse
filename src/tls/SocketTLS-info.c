@@ -19,8 +19,8 @@
 #include "tls/SocketTLSConfig.h"
 #include <assert.h>
 #include <openssl/err.h>
-#include <openssl/x509_vfy.h>
 #include <openssl/ssl.h>
+#include <openssl/x509_vfy.h>
 #include <openssl/x509_vfy.h> /* For X509_V_ERR_* constants */
 #include <string.h>
 
@@ -137,14 +137,14 @@ SocketTLS_get_verify_result (Socket_T socket)
   return SSL_get_verify_result (ssl);
 }
 
- /**
+/**
  * SocketTLS_get_verify_error_string - Get human-readable verification error
  * @socket: TLS socket
  * @buf: Buffer for error string
  * @size: Buffer size
  *
- * Fills buf with string for last verify error from get_verify_result or OpenSSL ERR queue.
- * Enhances reporting for CRL/OCSP/verify fails.
+ * Fills buf with string for last verify error from get_verify_result or
+ * OpenSSL ERR queue. Enhances reporting for CRL/OCSP/verify fails.
  *
  * Returns: buf or NULL on no error/buf too small
  * Raises: None

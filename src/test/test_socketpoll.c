@@ -653,12 +653,8 @@ TEST (socketpoll_many_sockets)
 {
   setup_signals ();
   SocketPoll_T poll = NULL;
-  TRY
-    poll = SocketPoll_new (10);
-  EXCEPT (SocketPoll_Failed)
-    {
-      return;
-    }
+  TRY poll = SocketPoll_new (10);
+  EXCEPT (SocketPoll_Failed) { return; }
   END_TRY;
   Socket_T sockets[10] = { NULL };
 
@@ -667,13 +663,10 @@ TEST (socketpoll_many_sockets)
     volatile int i = 0;
     while (i < 10)
       {
-        TRY
-          sockets[i] = Socket_new (AF_INET, SOCK_STREAM, 0);
-          SocketPoll_add (poll, sockets[i], POLL_READ, NULL);
-        EXCEPT (Socket_Failed)
-          {}
-        EXCEPT (SocketPoll_Failed)
-          {}
+        TRY sockets[i] = Socket_new (AF_INET, SOCK_STREAM, 0);
+        SocketPoll_add (poll, sockets[i], POLL_READ, NULL);
+        EXCEPT (Socket_Failed) {}
+        EXCEPT (SocketPoll_Failed) {}
         END_TRY;
         i++;
       }
@@ -681,10 +674,8 @@ TEST (socketpoll_many_sockets)
     i = 0;
     while (i < 10)
       {
-        TRY
-          SocketPoll_del (poll, sockets[i]);
-        EXCEPT (SocketPoll_Failed)
-          {}
+        TRY SocketPoll_del (poll, sockets[i]);
+        EXCEPT (SocketPoll_Failed) {}
         END_TRY;
         i++;
       }
@@ -692,9 +683,10 @@ TEST (socketpoll_many_sockets)
   EXCEPT (SocketPoll_Failed) { ASSERT (0); }
   FINALLY
   {
-    for (int i = 0; i < 10; i++) {  // Free exactly the created sockets (10 total)
-      Socket_free (&sockets[i]);
-    }
+    for (int i = 0; i < 10; i++)
+      { // Free exactly the created sockets (10 total)
+        Socket_free (&sockets[i]);
+      }
     SocketPoll_free (&poll);
   }
   END_TRY;

@@ -8,8 +8,8 @@
 #include "test/Test.h"
 /* Access internal structure to verify fields */
 #include "pool/SocketPool-private.h"
-#include "socket/Socket.h"
 #include "socket/Socket-private.h"
+#include "socket/Socket.h"
 #include <time.h>
 
 #ifdef SOCKET_HAS_TLS
@@ -64,28 +64,29 @@ TEST (socketpool_tls_session_persistence)
 {
 #ifdef SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
-  SocketPool_T pool = SocketPool_new (arena, 1, 1024); /* Small to reuse slot */
+  SocketPool_T pool
+      = SocketPool_new (arena, 1, 1024); /* Small to reuse slot */
   Socket_T socket1 = Socket_new (AF_INET, SOCK_STREAM, 0);
 
   /* Mock TLS enabled and session */
-  SSL_CTX *ctx1 = SSL_CTX_new(TLS_method());
-  ASSERT_NOT_NULL(ctx1);
-  SSL *ssl1 = SSL_new(ctx1);
-  ASSERT_NOT_NULL(ssl1);
+  SSL_CTX *ctx1 = SSL_CTX_new (TLS_method ());
+  ASSERT_NOT_NULL (ctx1);
+  SSL *ssl1 = SSL_new (ctx1);
+  ASSERT_NOT_NULL (ssl1);
   socket1->tls_enabled = 1;
-  socket1->tls_ctx = (void*)ctx1;
-  socket1->tls_ssl = (void*)ssl1;
+  socket1->tls_ctx = (void *)ctx1;
+  socket1->tls_ssl = (void *)ssl1;
 
   /* Add to pool */
   Connection_T conn1 = SocketPool_add (pool, socket1);
   ASSERT_NOT_NULL (conn1);
 
   /* Mock save session in conn (as done in remove) */
-  time_t now = time(NULL);
-  SSL_SESSION *mock_session = SSL_SESSION_new();
-  ASSERT_NOT_NULL(mock_session);
-  SSL_SESSION_set_time(mock_session, now - 100L);
-  SSL_SESSION_set_timeout(mock_session, 3600L);
+  time_t now = time (NULL);
+  SSL_SESSION *mock_session = SSL_SESSION_new ();
+  ASSERT_NOT_NULL (mock_session);
+  SSL_SESSION_set_time (mock_session, now - 100L);
+  SSL_SESSION_set_timeout (mock_session, 3600L);
   conn1->tls_session = mock_session;
 
   /* Remove - saves session (already in code) */
@@ -99,13 +100,13 @@ TEST (socketpool_tls_session_persistence)
 
   /* Add new socket to same slot - reuse attempt (in add code) */
   Socket_T socket2 = Socket_new (AF_INET, SOCK_STREAM, 0);
-  SSL_CTX *ctx2 = SSL_CTX_new(TLS_method());
-  ASSERT_NOT_NULL(ctx2);
-  SSL *ssl2 = SSL_new(ctx2);
-  ASSERT_NOT_NULL(ssl2);
+  SSL_CTX *ctx2 = SSL_CTX_new (TLS_method ());
+  ASSERT_NOT_NULL (ctx2);
+  SSL *ssl2 = SSL_new (ctx2);
+  ASSERT_NOT_NULL (ssl2);
   socket2->tls_enabled = 1;
-  socket2->tls_ctx = (void*)ctx2;
-  socket2->tls_ssl = (void*)ssl2;
+  socket2->tls_ctx = (void *)ctx2;
+  socket2->tls_ssl = (void *)ssl2;
   Connection_T conn2 = SocketPool_add (pool, socket2);
   ASSERT_NOT_NULL (conn2);
   ASSERT_EQ (conn2->tls_session, mock_session); /* Persisted */
@@ -114,8 +115,8 @@ TEST (socketpool_tls_session_persistence)
   Socket_free (&socket1); /* frees ssl1 */
   Socket_free (&socket2); /* frees ssl2 */
   /* Free ctx not owned by socket */
-  SSL_CTX_free(ctx1);
-  SSL_CTX_free(ctx2);
+  SSL_CTX_free (ctx1);
+  SSL_CTX_free (ctx2);
   /* Pool now frees the persisted session */
   SocketPool_free (&pool);
   Arena_dispose (&arena);
@@ -136,19 +137,19 @@ TEST (socketpool_tls_session_validation)
   ASSERT_NOT_NULL (conn);
 
   /* Mock expired session */
-  SSL_CTX *mock_ctx = SSL_CTX_new(TLS_method());
-  ASSERT_NOT_NULL(mock_ctx);
-  SSL_SESSION *mock_session = SSL_SESSION_new();
-  ASSERT_NOT_NULL(mock_session);
-  SSL_SESSION_set_time(mock_session, 0L);
-  SSL_SESSION_set_timeout(mock_session, 1L);
+  SSL_CTX *mock_ctx = SSL_CTX_new (TLS_method ());
+  ASSERT_NOT_NULL (mock_ctx);
+  SSL_SESSION *mock_session = SSL_SESSION_new ();
+  ASSERT_NOT_NULL (mock_session);
+  SSL_SESSION_set_time (mock_session, 0L);
+  SSL_SESSION_set_timeout (mock_session, 1L);
   conn->tls_session = mock_session;
-  SSL_CTX_free(mock_ctx);
+  SSL_CTX_free (mock_ctx);
 
   /* Call validate directly (internal) */
   validate_saved_session (conn);
   /* Expired session should be freed */
-  ASSERT_NULL(conn->tls_session);
+  ASSERT_NULL (conn->tls_session);
 
   /* Get validates too */
   Connection_T got = SocketPool_get (pool, socket);
@@ -161,7 +162,6 @@ TEST (socketpool_tls_session_validation)
   ASSERT (1);
 #endif
 }
-
 
 int
 main (void)

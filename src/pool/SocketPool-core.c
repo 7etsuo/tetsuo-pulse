@@ -23,7 +23,8 @@
 /* Constants for calculations */
 static const size_t PCT_BASE = 100;
 
-const Except_T SocketPool_Failed = { &SocketPool_Failed, "SocketPool operation failed" };
+const Except_T SocketPool_Failed
+    = { &SocketPool_Failed, "SocketPool operation failed" };
 
 /* Thread-local exception for detailed error messages */
 #ifdef _WIN32
@@ -258,7 +259,7 @@ SocketPool_new (Arena_T arena_, size_t maxconns_, size_t bufsize_)
     RERAISE;
   }
   END_TRY;
-  return NULL;  /* Unreachable: either returned success or reraised exception */
+  return NULL; /* Unreachable: either returned success or reraised exception */
 }
 
 /**
@@ -277,13 +278,15 @@ SocketPool_free (T *pool)
   if ((*pool)->connections)
     {
 #ifdef SOCKET_HAS_TLS
-      for (size_t i = 0; i < (*pool)->maxconns; i++) {
-        Connection_T conn = &(*pool)->connections[i];
-        if (conn->tls_session) {
-          SSL_SESSION_free (conn->tls_session);
-          conn->tls_session = NULL;
+      for (size_t i = 0; i < (*pool)->maxconns; i++)
+        {
+          Connection_T conn = &(*pool)->connections[i];
+          if (conn->tls_session)
+            {
+              SSL_SESSION_free (conn->tls_session);
+              conn->tls_session = NULL;
+            }
         }
-      }
 #endif
       free ((*pool)->connections);
       (*pool)->connections = NULL;

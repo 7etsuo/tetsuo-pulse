@@ -6,6 +6,9 @@
  * - pipe() for completion signaling
  */
 
+#include "core/Arena.h"
+#include "core/Except.h" /* if not already for RAISE */
+#include "socket/SocketCommon-private.h"
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
@@ -18,9 +21,6 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <time.h>
-#include "core/Arena.h"
-#include "socket/SocketCommon-private.h"
-#include "core/Except.h" /* if not already for RAISE */
 #include <unistd.h>
 
 #include "core/Arena.h"
@@ -31,24 +31,23 @@
 #define SOCKET_LOG_COMPONENT "SocketDNS"
 #define T SocketDNS_T
 #define Request_T SocketDNS_Request_T
-#include "dns/SocketDNS-private.h"
 #include "core/SocketError.h"
 #include "core/SocketEvents.h"
 #include "core/SocketMetrics.h"
+#include "dns/SocketDNS-private.h"
 #include "socket/SocketCommon.h"
 #include <ctype.h>
 #include <stdbool.h>
 
 /* SocketDNS module exceptions and thread-local detailed exception */
-const Except_T SocketDNS_Failed = { &SocketDNS_Failed, "SocketDNS operation failed" };
+const Except_T SocketDNS_Failed
+    = { &SocketDNS_Failed, "SocketDNS operation failed" };
 
 #ifdef _WIN32
-__declspec(thread) Except_T SocketDNS_DetailedException;
+__declspec (thread) Except_T SocketDNS_DetailedException;
 #else
 __thread Except_T SocketDNS_DetailedException;
 #endif
-
-
 
 /**
  * request_hash_function - Calculate hash for request pointer
@@ -63,20 +62,6 @@ request_hash_function (struct SocketDNS_Request_T *req)
   return ((unsigned)ptr * HASH_GOLDEN_RATIO) % SOCKET_DNS_REQUEST_HASH_SIZE;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * perform_dns_resolution - Perform actual DNS lookup
  * @req: Request to resolve
@@ -86,32 +71,20 @@ request_hash_function (struct SocketDNS_Request_T *req)
  * Performs DNS resolution with optional port parameter.
  * Handles NULL host (wildcard bind) by passing NULL to getaddrinfo.
  */
-/* Note: getaddrinfo() is called directly and is not interruptible. Cancellation
- * during resolution is cooperative: the worker completes the query but discards
- * the result if cancelled. For true cancellability, consider using a process-per-query
- * model or external async DNS library like c-ares. Current design limits DoS exposure
- * via bounded thread pool and timeouts. */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* Note: getaddrinfo() is called directly and is not interruptible.
+ * Cancellation during resolution is cooperative: the worker completes the
+ * query but discards the result if cancelled. For true cancellability,
+ * consider using a process-per-query model or external async DNS library like
+ * c-ares. Current design limits DoS exposure via bounded thread pool and
+ * timeouts. */
 
 /**
  * cleanup_mutex_cond - Cleanup mutex and condition variables
  * @dns: DNS resolver instance
  * Destroys mutex and condition variables in reverse order of creation.
  */
-void cleanup_mutex_cond (struct SocketDNS_T *dns)
+void
+cleanup_mutex_cond (struct SocketDNS_T *dns)
 {
   pthread_cond_destroy (&dns->result_cond);
   pthread_cond_destroy (&dns->queue_cond);
@@ -123,7 +96,8 @@ void cleanup_mutex_cond (struct SocketDNS_T *dns)
  * @dns: DNS resolver instance
  * Safely closes both pipe file descriptors.
  */
-void cleanup_pipe (struct SocketDNS_T *dns)
+void
+cleanup_pipe (struct SocketDNS_T *dns)
 {
   /* Close pipe file descriptors and mark as invalid */
   if (dns->pipefd[0] >= 0)
@@ -145,7 +119,9 @@ void cleanup_pipe (struct SocketDNS_T *dns)
  * 4=arena) Cleans up partially initialized resolver. cleanup_level indicates
  * how far initialization got before failure.
  */
-void cleanup_on_init_failure (struct SocketDNS_T *dns, enum DnsCleanupLevel cleanup_level)
+void
+cleanup_on_init_failure (struct SocketDNS_T *dns,
+                         enum DnsCleanupLevel cleanup_level)
 {
   if (cleanup_level >= DNS_CLEAN_ARENA)
     Arena_dispose (&dns->arena);
@@ -167,7 +143,8 @@ void cleanup_on_init_failure (struct SocketDNS_T *dns, enum DnsCleanupLevel clea
  * @dns: DNS resolver instance
  * Raises: SocketDNS_Failed on initialization failure
  */
-void initialize_mutex (struct SocketDNS_T *dns)
+void
+initialize_mutex (struct SocketDNS_T *dns)
 {
   if (pthread_mutex_init (&dns->mutex, NULL) != 0)
     {
@@ -182,7 +159,8 @@ void initialize_mutex (struct SocketDNS_T *dns)
  * @dns: DNS resolver instance
  * Raises: SocketDNS_Failed on initialization failure
  */
-void initialize_queue_condition (struct SocketDNS_T *dns)
+void
+initialize_queue_condition (struct SocketDNS_T *dns)
 {
   if (pthread_cond_init (&dns->queue_cond, NULL) != 0)
     {
@@ -198,7 +176,8 @@ void initialize_queue_condition (struct SocketDNS_T *dns)
  * @dns: DNS resolver instance
  * Raises: SocketDNS_Failed on initialization failure
  */
-void initialize_result_condition (struct SocketDNS_T *dns)
+void
+initialize_result_condition (struct SocketDNS_T *dns)
 {
   if (pthread_cond_init (&dns->result_cond, NULL) != 0)
     {
@@ -214,7 +193,8 @@ void initialize_result_condition (struct SocketDNS_T *dns)
  * @dns: DNS resolver instance
  * Raises: SocketDNS_Failed on initialization failure
  */
-void initialize_synchronization (struct SocketDNS_T *dns)
+void
+initialize_synchronization (struct SocketDNS_T *dns)
 {
   initialize_mutex (dns);
   initialize_queue_condition (dns);
@@ -227,7 +207,8 @@ void initialize_synchronization (struct SocketDNS_T *dns)
  * Raises: SocketDNS_Failed on pipe creation failure
  * Note: Both pipe ends are created with close-on-exec flag set.
  */
-void create_completion_pipe (struct SocketDNS_T *dns)
+void
+create_completion_pipe (struct SocketDNS_T *dns)
 {
   if (pipe (dns->pipefd) < 0)
     {
@@ -257,7 +238,8 @@ void create_completion_pipe (struct SocketDNS_T *dns)
  * @dns: DNS resolver instance
  * Raises: SocketDNS_Failed on fcntl failure
  */
-void set_pipe_nonblocking (struct SocketDNS_T *dns)
+void
+set_pipe_nonblocking (struct SocketDNS_T *dns)
 {
   int flags = fcntl (dns->pipefd[0], F_GETFL);
   if (flags < 0)
@@ -280,7 +262,8 @@ void set_pipe_nonblocking (struct SocketDNS_T *dns)
  * @dns: DNS resolver instance
  * Raises: SocketDNS_Failed on pipe creation failure
  */
-void initialize_pipe (struct SocketDNS_T *dns)
+void
+initialize_pipe (struct SocketDNS_T *dns)
 {
   create_completion_pipe (dns);
   set_pipe_nonblocking (dns);
@@ -292,7 +275,8 @@ void initialize_pipe (struct SocketDNS_T *dns)
  * Raises: SocketDNS_Failed on allocation failure
  * Allocates DNS resolver structure and sets up basic fields.
  */
-T allocate_dns_resolver (void)
+T
+allocate_dns_resolver (void)
 {
   struct SocketDNS_T *dns;
 
@@ -311,7 +295,8 @@ T allocate_dns_resolver (void)
  * @dns: DNS resolver instance
  * Initializes configuration fields to default values.
  */
-void initialize_dns_fields (struct SocketDNS_T *dns)
+void
+initialize_dns_fields (struct SocketDNS_T *dns)
 {
   dns->num_workers = SOCKET_DNS_THREAD_COUNT;
   dns->max_pending = SOCKET_DNS_MAX_PENDING;
@@ -331,7 +316,8 @@ void initialize_dns_fields (struct SocketDNS_T *dns)
  * Sets up arena, mutex, condition variables, and pipe for completion
  * signaling.
  */
-void initialize_dns_components (struct SocketDNS_T *dns)
+void
+initialize_dns_components (struct SocketDNS_T *dns)
 {
   dns->arena = Arena_new ();
   if (!dns->arena)
@@ -361,7 +347,8 @@ create_single_worker_thread (struct SocketDNS_T *dns, int thread_index)
   pthread_attr_init (&attr);
   pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_JOINABLE);
   pthread_attr_setstacksize (
-      &attr, SOCKET_DNS_WORKER_STACK_SIZE); /* Conservative stack size for DNS workers */
+      &attr, SOCKET_DNS_WORKER_STACK_SIZE); /* Conservative stack size for DNS
+                                               workers */
 
   snprintf (thread_name, sizeof (thread_name), "dns-worker-%d", thread_index);
 
@@ -398,7 +385,8 @@ create_single_worker_thread (struct SocketDNS_T *dns, int thread_index)
  * Raises: SocketDNS_Failed on thread creation failure
  * Creates all worker threads, with proper cleanup on partial failure.
  */
-void create_worker_threads (struct SocketDNS_T *dns)
+void
+create_worker_threads (struct SocketDNS_T *dns)
 {
   for (int i = 0; i < dns->num_workers; i++)
     {
@@ -418,7 +406,8 @@ void create_worker_threads (struct SocketDNS_T *dns)
  * Raises: SocketDNS_Failed on thread creation failure
  * Creates worker threads and allocates thread array from arena.
  */
-void start_dns_workers (struct SocketDNS_T *dns)
+void
+start_dns_workers (struct SocketDNS_T *dns)
 {
   dns->workers = ALLOC (dns->arena, dns->num_workers * sizeof (pthread_t));
   if (!dns->workers)
@@ -451,7 +440,8 @@ SocketDNS_new (void)
  * Frees getaddrinfo results for all requests in list.
  * Request structures themselves are in Arena, so not freed here.
  */
-void free_request_list (Request_T head, int use_hash_next)
+void
+free_request_list (Request_T head, int use_hash_next)
 {
   Request_T curr = head;
   Request_T next;
@@ -474,7 +464,8 @@ void free_request_list (Request_T head, int use_hash_next)
  * Thread-safe: Must be called with mutex locked
  * Frees all requests currently in the processing queue.
  */
-void free_queued_requests (T d)
+void
+free_queued_requests (T d)
 {
   free_request_list (d->queue_head, 0);
 }
@@ -485,7 +476,8 @@ void free_queued_requests (T d)
  * Thread-safe: Must be called with mutex locked
  * Frees all requests currently registered in the hash table.
  */
-void free_hash_table_requests (T d)
+void
+free_hash_table_requests (T d)
 {
   for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
     {
@@ -499,7 +491,8 @@ void free_hash_table_requests (T d)
  * Thread-safe: Must be called with mutex locked
  * Frees all requests from both queue and hash table.
  */
-void free_all_requests (T d)
+void
+free_all_requests (T d)
 {
   free_queued_requests (d);
   free_hash_table_requests (d);
@@ -510,7 +503,8 @@ void free_all_requests (T d)
  * @d: DNS resolver instance
  * Signals shutdown and joins all worker threads.
  */
-void shutdown_workers (T d)
+void
+shutdown_workers (T d)
 {
   int i;
 
@@ -531,7 +525,8 @@ void shutdown_workers (T d)
  * Reads and discards any remaining completion notifications so that
  * subsequent close operations do not leave unread data in the pipe.
  */
-void drain_completion_pipe (struct SocketDNS_T *dns)
+void
+drain_completion_pipe (struct SocketDNS_T *dns)
 {
   char buffer[SOCKET_DNS_PIPE_BUFFER_SIZE];
   ssize_t n;
@@ -554,7 +549,8 @@ void drain_completion_pipe (struct SocketDNS_T *dns)
  * retrieve results (e.g., cancelled or overflowed requests).
  * Thread-safe: Must be called with mutex locked.
  */
-void drain_completed_requests (struct SocketDNS_T *dns)
+void
+drain_completed_requests (struct SocketDNS_T *dns)
 {
   int i;
 
@@ -578,9 +574,11 @@ void drain_completed_requests (struct SocketDNS_T *dns)
  * reset_dns_state - Reset internal DNS resolver state for shutdown
  * @d: DNS resolver instance
  * Thread-safe: Uses mutex to protect shared state
- * Drains completed requests, frees pending requests, resets queue and hash table.
+ * Drains completed requests, frees pending requests, resets queue and hash
+ * table.
  */
-void reset_dns_state (T d)
+void
+reset_dns_state (T d)
 {
   pthread_mutex_lock (&d->mutex);
   drain_completed_requests (d);
@@ -599,7 +597,8 @@ void reset_dns_state (T d)
  * Frees synchronization primitives, arena, and resolver structure itself.
  * Called after state reset and worker shutdown.
  */
-void destroy_dns_resources (T d)
+void
+destroy_dns_resources (T d)
 {
   cleanup_pipe (d);
   cleanup_mutex_cond (d);
@@ -607,7 +606,8 @@ void destroy_dns_resources (T d)
   free (d);
 }
 
-void SocketDNS_free (T *dns)
+void
+SocketDNS_free (T *dns)
 {
   T d;
 
@@ -661,7 +661,8 @@ validate_hostname (const char *hostname)
     {
       if (*p == '.')
         {
-          if (new_label || label_len == 0 || label_len > SOCKET_DNS_MAX_LABEL_LENGTH)
+          if (new_label || label_len == 0
+              || label_len > SOCKET_DNS_MAX_LABEL_LENGTH)
             return 0; /* Empty label or too long */
           new_label = true;
           label_len = 0;
@@ -692,7 +693,8 @@ validate_hostname (const char *hostname)
   return 1;
 }
 
-void validate_resolve_params (const char *host, int port)
+void
+validate_resolve_params (const char *host, int port)
 {
   size_t host_len;
 
@@ -726,10 +728,9 @@ void validate_resolve_params (const char *host, int port)
  * Raises: SocketDNS_Failed on allocation failure
  * Allocates memory for the request structure from arena.
  */
- Request_T
+Request_T
 allocate_request_structure (struct SocketDNS_T *dns)
 {
-
 
   Request_T req;
   req = ALLOC (dns->arena, sizeof (*req));
@@ -752,7 +753,9 @@ allocate_request_structure (struct SocketDNS_T *dns)
  * Allocates memory for hostname and copies it. Sets req->host to NULL if host
  * is NULL.
  */
-void allocate_request_hostname (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req, const char *host,
+void
+allocate_request_hostname (struct SocketDNS_T *dns,
+                           struct SocketDNS_Request_T *req, const char *host,
                            size_t host_len)
 {
   if (host == NULL)
@@ -780,7 +783,8 @@ void allocate_request_hostname (struct SocketDNS_T *dns, struct SocketDNS_Reques
  * @data: User data for callback
  * Sets all request fields to initial values.
  */
-void initialize_request_fields (struct SocketDNS_Request_T *req, int port,
+void
+initialize_request_fields (struct SocketDNS_Request_T *req, int port,
                            SocketDNS_Callback callback, void *data)
 {
   req->port = port;
@@ -807,11 +811,10 @@ void initialize_request_fields (struct SocketDNS_Request_T *req, int port,
  * Raises: SocketDNS_Failed on allocation failure
  * Allocates and fully initializes a DNS request structure.
  */
- Request_T
-allocate_request (struct SocketDNS_T *dns, const char *host, size_t host_len, int port,
-                  SocketDNS_Callback callback, void *data)
+Request_T
+allocate_request (struct SocketDNS_T *dns, const char *host, size_t host_len,
+                  int port, SocketDNS_Callback callback, void *data)
 {
-
 
   Request_T req = allocate_request_structure (dns);
   allocate_request_hostname (dns, req, host, host_len);
@@ -827,7 +830,8 @@ allocate_request (struct SocketDNS_T *dns, const char *host, size_t host_len, in
  * @req: Request to insert
  * Thread-safe: Must be called with mutex locked
  */
-void hash_table_insert (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+void
+hash_table_insert (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   unsigned hash;
 
@@ -843,7 +847,8 @@ void hash_table_insert (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req
  * @req: Request to append
  * Thread-safe: Must be called with mutex locked
  */
-void queue_append (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+void
+queue_append (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   if (dns->queue_tail)
     {
@@ -864,7 +869,8 @@ void queue_append (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
  * Raises: SocketDNS_Failed if queue is full
  * Thread-safe: Must be called with mutex locked
  */
-void check_queue_limit (struct SocketDNS_T *dns)
+void
+check_queue_limit (struct SocketDNS_T *dns)
 {
   if (dns->queue_size >= dns->max_pending)
     {
@@ -882,7 +888,8 @@ void check_queue_limit (struct SocketDNS_T *dns)
  * Thread-safe: Must be called with mutex locked
  * Inserts request into hash table, appends to queue, and signals workers.
  */
-void submit_dns_request (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+void
+submit_dns_request (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   hash_table_insert (dns, req);
   queue_append (dns, req);
@@ -922,10 +929,11 @@ SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
  * @req: Request to remove
  * Thread-safe: Must be called with mutex locked
  */
-void hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+void
+hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   unsigned hash;
-  Request_T*pp;
+  Request_T *pp;
 
   hash = req->hash_value;
   pp = &dns->request_hash[hash];
@@ -945,7 +953,9 @@ void hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req
  * @dns: DNS resolver instance
  * @req: Request to remove
  */
-void remove_from_queue_head (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+void
+remove_from_queue_head (struct SocketDNS_T *dns,
+                        struct SocketDNS_Request_T *req)
 {
   dns->queue_head = req->queue_next;
   if (!dns->queue_head)
@@ -957,7 +967,9 @@ void remove_from_queue_head (struct SocketDNS_T *dns, struct SocketDNS_Request_T
  * @dns: DNS resolver instance
  * @req: Request to remove
  */
-void remove_from_queue_middle (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+void
+remove_from_queue_middle (struct SocketDNS_T *dns,
+                          struct SocketDNS_Request_T *req)
 {
   Request_T prev = dns->queue_head;
   while (prev && prev->queue_next != req)
@@ -976,7 +988,8 @@ void remove_from_queue_middle (struct SocketDNS_T *dns, struct SocketDNS_Request
  * @req: Request to remove
  * Thread-safe: Must be called with mutex locked
  */
-void queue_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+void
+queue_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   if (dns->queue_head == req)
     remove_from_queue_head (dns, req);
@@ -991,13 +1004,16 @@ void queue_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
  * @req: Request to cancel
  * Thread-safe: Must be called with mutex locked
  */
-void cancel_pending_request (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+void
+cancel_pending_request (struct SocketDNS_T *dns,
+                        struct SocketDNS_Request_T *req)
 {
   queue_remove (dns, req);
   req->state = REQ_CANCELLED;
 }
 
-void SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+void
+SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   Request_T r = req;
   int send_signal = 0;
@@ -1051,7 +1067,8 @@ void SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   pthread_mutex_unlock (&dns->mutex);
 }
 
-size_t SocketDNS_getmaxpending (struct SocketDNS_T *dns)
+size_t
+SocketDNS_getmaxpending (struct SocketDNS_T *dns)
 {
   size_t current;
 
@@ -1066,7 +1083,8 @@ size_t SocketDNS_getmaxpending (struct SocketDNS_T *dns)
   return current;
 }
 
-void SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
+void
+SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
 {
   size_t queue_depth;
 
@@ -1092,7 +1110,8 @@ void SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
   pthread_mutex_unlock (&dns->mutex);
 }
 
-int SocketDNS_gettimeout (struct SocketDNS_T *dns)
+int
+SocketDNS_gettimeout (struct SocketDNS_T *dns)
 {
   int current;
 
@@ -1107,7 +1126,8 @@ int SocketDNS_gettimeout (struct SocketDNS_T *dns)
   return current;
 }
 
-void SocketDNS_settimeout (struct SocketDNS_T *dns, int timeout_ms)
+void
+SocketDNS_settimeout (struct SocketDNS_T *dns, int timeout_ms)
 {
   int sanitized = timeout_ms < 0 ? 0 : timeout_ms;
 
@@ -1120,7 +1140,8 @@ void SocketDNS_settimeout (struct SocketDNS_T *dns, int timeout_ms)
   pthread_mutex_unlock (&dns->mutex);
 }
 
-int SocketDNS_pollfd (struct SocketDNS_T *dns)
+int
+SocketDNS_pollfd (struct SocketDNS_T *dns)
 {
   if (!dns)
     return -1;
@@ -1128,7 +1149,8 @@ int SocketDNS_pollfd (struct SocketDNS_T *dns)
   return dns->pipefd[0];
 }
 
-int SocketDNS_check (struct SocketDNS_T *dns)
+int
+SocketDNS_check (struct SocketDNS_T *dns)
 {
   char buffer[SOCKET_DNS_PIPE_BUFFER_SIZE];
   ssize_t n;
@@ -1158,7 +1180,8 @@ int SocketDNS_check (struct SocketDNS_T *dns)
   return count;
 }
 
-struct addrinfo * SocketDNS_getresult (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+struct addrinfo *
+SocketDNS_getresult (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   Request_T r = req;
   struct addrinfo *result = NULL;
@@ -1194,7 +1217,8 @@ struct addrinfo * SocketDNS_getresult (struct SocketDNS_T *dns, struct SocketDNS
   return result;
 }
 
-int SocketDNS_geterror (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
+int
+SocketDNS_geterror (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   Request_T r = req;
   int error = 0;
@@ -1213,9 +1237,9 @@ int SocketDNS_geterror (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req
 }
 
 Request_T
-SocketDNS_create_completed_request (struct SocketDNS_T *dns, struct addrinfo *result, int port)
+SocketDNS_create_completed_request (struct SocketDNS_T *dns,
+                                    struct addrinfo *result, int port)
 {
-
 
   if (!dns || !result)
     {
@@ -1235,9 +1259,10 @@ SocketDNS_create_completed_request (struct SocketDNS_T *dns, struct addrinfo *re
   req->callback_data = NULL;
   req->state = REQ_COMPLETE;
   req->result = SocketCommon_copy_addrinfo (result);
-  if (!req->result) {
-    RAISE_DNS_ERROR (SocketDNS_Failed);
-  }
+  if (!req->result)
+    {
+      RAISE_DNS_ERROR (SocketDNS_Failed);
+    }
   freeaddrinfo (result);
   req->error = 0;
   req->queue_next = NULL;
@@ -1255,7 +1280,9 @@ SocketDNS_create_completed_request (struct SocketDNS_T *dns, struct addrinfo *re
   return req;
 }
 
-void SocketDNS_request_settimeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req, int timeout_ms)
+void
+SocketDNS_request_settimeout (struct SocketDNS_T *dns,
+                              struct SocketDNS_Request_T *req, int timeout_ms)
 {
   Request_T r = req;
   int sanitized = timeout_ms < 0 ? 0 : timeout_ms;

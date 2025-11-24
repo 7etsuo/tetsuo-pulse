@@ -755,25 +755,18 @@ thread_create_dgram_sockets (void *arg)
     for (int i = 0; i < 50; i++)
       {
         SocketDgram_T socket = NULL;
-        TRY
-          socket = SocketDgram_new (AF_INET, 0);
-        EXCEPT (SocketDgram_Failed)
-          {}
-        EXCEPT (Arena_Failed)
-          {}
-        EXCEPT (Socket_Failed)
-          {}
+        TRY socket = SocketDgram_new (AF_INET, 0);
+        EXCEPT (SocketDgram_Failed) {}
+        EXCEPT (Arena_Failed) {}
+        EXCEPT (Socket_Failed) {}
         END_TRY;
         if (socket)
           SocketDgram_free (&socket);
       }
   }
-  EXCEPT (SocketDgram_Failed)
-    {}
-  EXCEPT (Arena_Failed)
-    {}
-  EXCEPT (Socket_Failed)
-    {}
+  EXCEPT (SocketDgram_Failed) {}
+  EXCEPT (Arena_Failed) {}
+  EXCEPT (Socket_Failed) {}
   END_TRY;
   return NULL;
 }

@@ -84,7 +84,8 @@ struct T
 };
 
 /* Exception */
-const Except_T SocketAsync_Failed = { &SocketAsync_Failed, "SocketAsync operation failed" };
+const Except_T SocketAsync_Failed
+    = { &SocketAsync_Failed, "SocketAsync operation failed" };
 
 /* Thread-local exception for detailed error messages */
 #ifdef _WIN32
@@ -94,11 +95,14 @@ static __thread Except_T SocketAsync_DetailedException;
 #endif
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e) do { \
-  SocketAsync_DetailedException = (e); \
-  SocketAsync_DetailedException.reason = socket_error_buf; \
-  RAISE(SocketAsync_DetailedException); \
-} while(0)
+#define RAISE_MODULE_ERROR(e)                                                 \
+  do                                                                          \
+    {                                                                         \
+      SocketAsync_DetailedException = (e);                                    \
+      SocketAsync_DetailedException.reason = socket_error_buf;                \
+      RAISE (SocketAsync_DetailedException);                                  \
+    }                                                                         \
+  while (0)
 
 /* Forward declarations */
 static unsigned generate_request_id (T async);
