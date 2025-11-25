@@ -103,6 +103,32 @@ SOCKET_DECLARE_MODULE_EXCEPTION(Socket);
 
 /* Static helper functions */
 
+#ifdef SOCKET_HAS_TLS
+/**
+ * socket_init_tls_fields - Initialize TLS fields to defaults
+ * @sock: Socket instance to initialize
+ *
+ * Sets all TLS-related fields to safe default values (NULL/0).
+ * Thread-safe: No (operates on single socket during construction)
+ */
+static void
+socket_init_tls_fields (Socket_T sock)
+{
+  sock->tls_ctx = NULL;
+  sock->tls_ssl = NULL;
+  sock->tls_enabled = 0;
+  sock->tls_handshake_done = 0;
+  sock->tls_shutdown_done = 0;
+  sock->tls_last_handshake_state = 0;
+  sock->tls_sni_hostname = NULL;
+  sock->tls_read_buf = NULL;
+  sock->tls_write_buf = NULL;
+  sock->tls_read_buf_len = 0;
+  sock->tls_write_buf_len = 0;
+  sock->tls_timeouts = (SocketTimeouts_T){ 0 };
+}
+#endif
+
 /**
  * validate_fd_is_socket - Validate file descriptor is a socket
  * @fd: File descriptor to validate
@@ -221,22 +247,9 @@ Socket_new (int domain, int type, int protocol)
   sock->base = base;
 
 #ifdef SOCKET_HAS_TLS
-  /* Initialize TLS fields to defaults */
-  sock->tls_ctx = NULL;
-  sock->tls_ssl = NULL;
-  sock->tls_enabled = 0;
-  sock->tls_handshake_done = 0;
-  sock->tls_shutdown_done = 0;
-  sock->tls_last_handshake_state = 0;
-  sock->tls_sni_hostname = NULL;
-  sock->tls_read_buf = NULL;
-  sock->tls_write_buf = NULL;
-  sock->tls_read_buf_len = 0;
-  sock->tls_write_buf_len = 0;
-  sock->tls_timeouts = (SocketTimeouts_T){ 0 }; /* or copy from base? */
+  socket_init_tls_fields (sock);
 #endif
 
-  /* Socket-specific live count */
   socket_live_increment ();
 
   return sock;

@@ -84,12 +84,20 @@ handle_bind_error (const char *host, int port)
 
 /* ==================== Bind Operations ==================== */
 
+/**
+ * bind_resolve_address - Resolve hostname for binding
+ * @sock: Socket instance (volatile-safe)
+ * @host: Hostname to resolve (NULL for wildcard)
+ * @port: Port number
+ * @res: Output for resolved addresses
+ *
+ * Sets errno to EAI_FAIL on resolution failure without raising.
+ */
 static void
-bind_resolve_address (T socket, const char *host, int port,
-                     struct addrinfo **res, volatile Socket_T *volatile_socket)
+bind_resolve_address (T sock, const char *host, int port,
+                      struct addrinfo **res)
 {
-  (void)socket; /* Suppress unused parameter warning */
-  int socket_family = SocketCommon_get_socket_family ((*volatile_socket)->base);
+  int socket_family = SocketCommon_get_socket_family (sock->base);
 
   if (SocketCommon_resolve_address (host, port, NULL, res, Socket_Failed,
                                     socket_family, 0)
@@ -100,26 +108,31 @@ bind_resolve_address (T socket, const char *host, int port,
     }
 }
 
+/**
+ * bind_try_addresses - Attempt bind to resolved addresses
+ * @sock: Socket instance (volatile-safe)
+ * @res: Resolved address list
+ * @socket_family: Socket address family
+ *
+ * Raises: Socket_Failed on non-common errors
+ */
 static void
-bind_try_addresses (T socket, struct addrinfo *res, int socket_family,
-                   volatile Socket_T *volatile_socket)
+bind_try_addresses (T sock, struct addrinfo *res, int socket_family)
 {
-  (void)socket; /* Suppress unused parameter warning */
-  int bind_result
-      = SocketCommon_try_bind_resolved_addresses ((*volatile_socket)->base, res,
-                                                 socket_family, Socket_Failed);
+  int bind_result = SocketCommon_try_bind_resolved_addresses (
+      sock->base, res, socket_family, Socket_Failed);
+
   if (bind_result == 0)
     {
-      SocketCommon_update_local_endpoint ((*volatile_socket)->base);
+      SocketCommon_update_local_endpoint (sock->base);
       return;
     }
 
-  /* If bind failed, check errno for common errors before raising */
   int saved_errno = errno;
   if (is_common_bind_error (saved_errno))
     {
-      errno = saved_errno; /* Restore errno for caller */
-      return;              /* Graceful failure - caller checks errno */
+      errno = saved_errno;
+      return;
     }
 
   handle_bind_error (NULL, 0);
@@ -131,8 +144,7 @@ Socket_bind (T socket, const char *host, int port)
 {
   struct addrinfo hints, *res = NULL;
   int socket_family;
-  volatile Socket_T volatile_socket
-      = socket; /* Preserve across exception boundaries */
+  volatile T vsock = socket; /* Preserve across exception boundaries */
 
   assert (socket);
 
@@ -142,28 +154,25 @@ Socket_bind (T socket, const char *host, int port)
 
   TRY
   {
-    bind_resolve_address (socket, host, port, &res, &volatile_socket);
+    bind_resolve_address ((T)vsock, host, port, &res);
     if (!res)
-      return; /* Resolution failed */
+      return;
 
-    socket_family = SocketCommon_get_socket_family (((Socket_T)volatile_socket)->base);
-    bind_try_addresses (socket, res, socket_family, &volatile_socket);
+    socket_family = SocketCommon_get_socket_family (((T)vsock)->base);
+    bind_try_addresses ((T)vsock, res, socket_family);
 
     freeaddrinfo (res);
   }
   EXCEPT (Socket_Failed)
   {
-    // Preserve errno before freeaddrinfo() may modify it
     int saved_errno = errno;
     freeaddrinfo (res);
-    // Check errno and return gracefully for common bind errors
     if (is_common_bind_error (saved_errno))
       {
-        errno = saved_errno; /* Restore errno for caller */
-        return;              /* Caller can check errno */
+        errno = saved_errno;
+        return;
       }
-    // For unexpected errors, re-raise
-    errno = saved_errno; /* Restore errno before re-raising */
+    errno = saved_errno;
     RERAISE;
   }
   END_TRY;

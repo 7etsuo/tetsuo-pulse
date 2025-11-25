@@ -182,6 +182,78 @@ handle_connect_error (const char *host, int port)
     }
 }
 
+/* ==================== Connect Success Handling ==================== */
+
+/**
+ * cache_remote_endpoint - Cache remote endpoint information
+ * @socket: Socket instance
+ *
+ * Caches remote address and port strings in arena. Sets defensive
+ * NULL values on failure.
+ * Thread-safe: No (operates on single socket)
+ */
+static void
+cache_remote_endpoint (T socket)
+{
+  if (SocketCommon_cache_endpoint (
+          SocketBase_arena (socket->base),
+          (struct sockaddr *)&socket->base->remote_addr,
+          socket->base->remote_addrlen, &socket->base->remoteaddr,
+          &socket->base->remoteport)
+      != 0)
+    {
+      socket->base->remoteaddr = NULL;
+      socket->base->remoteport = 0;
+    }
+}
+
+/**
+ * emit_connect_event - Emit socket connect event
+ * @socket: Socket instance
+ *
+ * Emits connect event with local and remote endpoint information.
+ * Thread-safe: Yes (event system is thread-safe)
+ */
+static void
+emit_connect_event (T socket)
+{
+  SocketEvent_emit_connect (Socket_fd (socket),
+                            SocketBase_remoteaddr (socket->base),
+                            SocketBase_remoteport (socket->base),
+                            SocketBase_localaddr (socket->base),
+                            SocketBase_localport (socket->base));
+}
+
+/**
+ * handle_successful_connect - Handle successful connection
+ * @socket: Socket instance
+ *
+ * Updates metrics, endpoints, and emits connect event.
+ * Thread-safe: Yes (individual operations are thread-safe)
+ */
+static void
+handle_successful_connect (T socket)
+{
+  SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
+  SocketCommon_update_local_endpoint (socket->base);
+  cache_remote_endpoint (socket);
+  emit_connect_event (socket);
+}
+
+/**
+ * is_retriable_connect_error - Check if connect error is retriable
+ * @saved_errno: Saved errno value
+ *
+ * Returns: 1 if error is retriable (caller should not raise), 0 otherwise
+ */
+static int
+is_retriable_connect_error (int saved_errno)
+{
+  return saved_errno == ECONNREFUSED || saved_errno == ETIMEDOUT
+         || saved_errno == ENETUNREACH || saved_errno == EHOSTUNREACH
+         || saved_errno == ECONNABORTED;
+}
+
 /* ==================== Connect Operations ==================== */
 
 static int
@@ -275,62 +347,55 @@ try_connect_resolved_addresses (T socket, struct addrinfo *res,
   return -1;
 }
 
+/**
+ * connect_resolve_address - Resolve hostname for connection
+ * @sock: Socket instance (volatile-safe)
+ * @host: Hostname to resolve
+ * @port: Port number
+ * @res: Output for resolved addresses
+ *
+ * Sets errno to EAI_FAIL on resolution failure without raising.
+ */
 static void
-connect_resolve_address (T socket, const char *host, int port,
-                        struct addrinfo **res, volatile Socket_T *volatile_socket)
+connect_resolve_address (T sock, const char *host, int port,
+                         struct addrinfo **res)
 {
-  (void)socket; /* Suppress unused parameter warning */
-  int socket_family = SocketCommon_get_socket_family ((*volatile_socket)->base);
+  int socket_family = SocketCommon_get_socket_family (sock->base);
 
   if (SocketCommon_resolve_address (host, port, NULL, res, Socket_Failed,
                                     socket_family, 0)
       != 0)
-    { // Don't raise on resolve fail
+    {
       errno = EAI_FAIL;
       return;
     }
 }
 
+/**
+ * connect_try_addresses - Attempt connection to resolved addresses
+ * @sock: Socket instance (volatile-safe)
+ * @res: Resolved address list
+ * @socket_family: Socket address family
+ * @timeout_ms: Connection timeout in milliseconds
+ *
+ * Raises: Socket_Failed on non-retriable errors
+ */
 static void
-connect_try_addresses (T socket, struct addrinfo *res, int socket_family,
-                      int timeout_ms, volatile Socket_T *volatile_socket)
+connect_try_addresses (T sock, struct addrinfo *res, int socket_family,
+                       int timeout_ms)
 {
-  (void)socket; /* Suppress unused parameter warning */
-  if (try_connect_resolved_addresses (
-          (Socket_T)*volatile_socket, res, socket_family, timeout_ms)
+  if (try_connect_resolved_addresses (sock, res, socket_family, timeout_ms)
       == 0)
     {
-      SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
-      SocketCommon_update_local_endpoint (((Socket_T)*volatile_socket)->base);
-      if (SocketCommon_cache_endpoint (
-              SocketBase_arena (((Socket_T)*volatile_socket)->base),
-              (struct sockaddr *)&((Socket_T)*volatile_socket)->base->remote_addr,
-              ((Socket_T)*volatile_socket)->base->remote_addrlen,
-              &((Socket_T)*volatile_socket)->base->remoteaddr,
-              &((Socket_T)*volatile_socket)->base->remoteport)
-          != 0)
-        {
-          /* Cache endpoint failed - set defensive values */
-          ((Socket_T)*volatile_socket)->base->remoteaddr = NULL;
-          ((Socket_T)*volatile_socket)->base->remoteport = 0;
-        }
-      SocketEvent_emit_connect (
-          Socket_fd ((Socket_T)*volatile_socket),
-          SocketBase_remoteaddr (((Socket_T)*volatile_socket)->base),
-          SocketBase_remoteport (((Socket_T)*volatile_socket)->base),
-          SocketBase_localaddr (((Socket_T)*volatile_socket)->base),
-          SocketBase_localport (((Socket_T)*volatile_socket)->base));
+      handle_successful_connect (sock);
       return;
     }
 
-  /* If connect failed, check errno for common errors before raising */
   int saved_errno = errno;
-  if (saved_errno == ECONNREFUSED || saved_errno == ETIMEDOUT
-      || saved_errno == ENETUNREACH || saved_errno == EHOSTUNREACH
-      || saved_errno == ECONNABORTED)
+  if (is_retriable_connect_error (saved_errno))
     {
-      errno = saved_errno; /* Restore errno for caller */
-      return;              /* Graceful failure - caller can retry */
+      errno = saved_errno;
+      return;
     }
 
   handle_connect_error ("resolved", 0);
@@ -342,8 +407,7 @@ Socket_connect (T socket, const char *host, int port)
 {
   struct addrinfo hints, *res = NULL;
   int socket_family;
-  volatile Socket_T volatile_socket
-      = socket; /* Preserve across exception boundaries */
+  volatile T vsock = socket; /* Preserve across exception boundaries */
 
   assert (socket);
   assert (host);
@@ -354,35 +418,29 @@ Socket_connect (T socket, const char *host, int port)
 
   TRY
   {
-    connect_resolve_address (socket, host, port, &res, &volatile_socket);
+    connect_resolve_address ((T)vsock, host, port, &res);
     if (!res)
-      { // Don't raise on resolve fail
+      {
         errno = EAI_FAIL;
         return;
       }
 
-    socket_family = SocketCommon_get_socket_family (((Socket_T)volatile_socket)->base);
-    connect_try_addresses (socket, res, socket_family,
-                          ((Socket_T)volatile_socket)->base->timeouts.connect_timeout_ms,
-                          &volatile_socket);
+    socket_family = SocketCommon_get_socket_family (((T)vsock)->base);
+    connect_try_addresses ((T)vsock, res, socket_family,
+                           ((T)vsock)->base->timeouts.connect_timeout_ms);
 
     freeaddrinfo (res);
   }
   EXCEPT (Socket_Failed)
   {
-    // Preserve errno before freeaddrinfo() may modify it
     int saved_errno = errno;
     freeaddrinfo (res);
-    // Check errno and return gracefully for common connection errors
-    if (saved_errno == ECONNREFUSED || saved_errno == ETIMEDOUT
-        || saved_errno == ENETUNREACH || saved_errno == EHOSTUNREACH
-        || saved_errno == ECONNABORTED)
+    if (is_retriable_connect_error (saved_errno))
       {
-        errno = saved_errno; /* Restore errno for caller */
-        return;              /* Caller can retry */
+        errno = saved_errno;
+        return;
       }
-    // For other errors, re-raise
-    errno = saved_errno; /* Restore errno before re-raising */
+    errno = saved_errno;
     RERAISE;
   }
   END_TRY;
@@ -403,22 +461,7 @@ Socket_connect_with_addrinfo (T socket, struct addrinfo *res)
           socket->base->timeouts.connect_timeout_ms)
       == 0)
     {
-      SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
-      if (SocketCommon_cache_endpoint (SocketBase_arena (socket->base),
-                                       (struct sockaddr *)&socket->base->remote_addr,
-                                       socket->base->remote_addrlen,
-                                       &socket->base->remoteaddr,
-                                       &socket->base->remoteport)
-          != 0)
-        {
-          /* Cache endpoint failed - set defensive values */
-          socket->base->remoteaddr = NULL;
-          socket->base->remoteport = 0;
-        }
-      SocketEvent_emit_connect (
-          SocketBase_fd (socket->base), socket->base->remoteaddr,
-          socket->base->remoteport, socket->base->localaddr,
-          socket->base->localport);
+      handle_successful_connect (socket);
       return;
     }
 
