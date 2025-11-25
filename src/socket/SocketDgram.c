@@ -140,7 +140,6 @@ SocketDgram_free (T *socket)
   T s = *socket;
   if (!s)
     return;
-  assert (s);
   /* Datagram-specific cleanup if any (none currently) */
   dgram_live_decrement ();
   /* Common base cleanup */

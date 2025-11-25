@@ -46,47 +46,7 @@ safe_time (void)
   return t;
 }
 
-/**
- * enforce_range - Clamp value to min/max bounds
- * @val: Value to clamp
- * @minv: Minimum allowed
- * @maxv: Maximum allowed
- *
- * Returns: Clamped value
- * Thread-safe: Yes - pure function
- */
-static size_t
-enforce_range (size_t val, size_t minv, size_t maxv)
-{
-  return val < minv ? minv : (val > maxv ? maxv : val);
-}
-
-/**
- * enforce_max_connections - Enforce the maximum connection limit
- * @maxconns: Requested maximum number of connections
- *
- * Returns: Enforced value (clamped to SOCKET_MAX_CONNECTIONS, min 1)
- * Thread-safe: Yes - pure function
- */
-static size_t
-enforce_max_connections (size_t maxconns)
-{
-  return enforce_range (maxconns, 1, SOCKET_MAX_CONNECTIONS);
-}
-
-/**
- * enforce_buffer_size - Enforce buffer size limits
- * @bufsize: Requested buffer size
- *
- * Returns: Enforced buffer size (clamped between min and max)
- * Thread-safe: Yes - pure function
- */
-static size_t
-enforce_buffer_size (size_t bufsize)
-{
-  return enforce_range (bufsize, SOCKET_MIN_BUFFER_SIZE,
-                        SOCKET_MAX_BUFFER_SIZE);
-}
+/* Range enforcement functions moved to SocketPool-private.h as inline */
 
 /**
  * allocate_pool_structure - Allocate the main pool structure
@@ -137,7 +97,7 @@ build_free_list (T pool, size_t maxconns)
     {
       struct Connection *conn = &pool->connections[i - 1];
       SocketPool_connections_initialize_slot (conn);
-      conn->free_next = (struct Connection *)pool->free_list;
+      conn->free_next = pool->free_list;
       pool->free_list = conn;
     }
 }
@@ -214,28 +174,25 @@ validate_pool_params (Arena_T arena, size_t maxconns, size_t bufsize)
  * Automatically pre-warms SOCKET_POOL_DEFAULT_PREWARM_PCT slots.
  */
 T
-SocketPool_new (Arena_T arena_, size_t maxconns_, size_t bufsize_)
+SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
 {
-  volatile Arena_T arena = arena_;
-  volatile size_t maxconns = maxconns_;
-  volatile size_t bufsize = bufsize_;
   T pool;
 
   validate_pool_params (arena, maxconns, bufsize);
-  assert (arena);
-  assert (SOCKET_VALID_CONNECTION_COUNT (maxconns));
-  assert (SOCKET_VALID_BUFFER_SIZE (bufsize));
 
-  maxconns = enforce_max_connections (maxconns);
-  bufsize = enforce_buffer_size (bufsize);
+  /* Clamp to valid ranges (validation already raised on invalid)
+   * Use volatile locals to prevent longjmp clobbering warnings */
+  volatile size_t safe_maxconns
+      = socketpool_enforce_max_connections (maxconns);
+  volatile size_t safe_bufsize = socketpool_enforce_buffer_size (bufsize);
 
   TRY
   {
     pool = allocate_pool_structure (arena);
-    allocate_pool_components (arena, maxconns, pool);
-    initialize_pool_fields (pool, arena, maxconns, bufsize);
+    allocate_pool_components (arena, safe_maxconns, pool);
+    initialize_pool_fields (pool, arena, safe_maxconns, safe_bufsize);
     initialize_pool_mutex (pool);
-    build_free_list (pool, maxconns);
+    build_free_list (pool, safe_maxconns);
     SocketPool_prewarm (pool, SOCKET_POOL_DEFAULT_PREWARM_PCT);
     return pool;
   }
@@ -284,8 +241,6 @@ SocketPool_free (T *pool)
 {
   if (!pool || !*pool)
     return;
-
-  assert (pool && *pool);
 
   free_tls_sessions (*pool);
 

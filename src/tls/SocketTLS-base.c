@@ -98,54 +98,35 @@ free_tls_resources (Socket_T socket)
 void
 SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
 {
-  SSL *ssl;
-  int fd;
-
   assert (socket);
   assert (ctx);
   assert (SocketTLSContext_get_ssl_ctx (ctx));
 
   if (socket->tls_enabled)
-    {
-      TLS_ERROR_MSG ("TLS already enabled on socket");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "TLS already enabled on socket");
 
-  fd = SocketBase_fd (socket->base);
+  int fd = SocketBase_fd (socket->base);
   if (fd < 0)
-    {
-      TLS_ERROR_MSG ("Socket not connected (invalid file descriptor)");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Socket not connected (invalid fd)");
 
-  ssl = SSL_new ((SSL_CTX *)SocketTLSContext_get_ssl_ctx (ctx));
+  SSL *ssl = SSL_new ((SSL_CTX *)SocketTLSContext_get_ssl_ctx (ctx));
   if (!ssl)
-    {
-      TLS_ERROR_MSG ("Failed to create SSL object");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to create SSL object");
 
   if (SocketTLSContext_is_server (ctx))
-    {
-      SSL_set_accept_state (ssl);
-    }
+    SSL_set_accept_state (ssl);
   else
-    {
-      SSL_set_connect_state (ssl);
-    }
+    SSL_set_connect_state (ssl);
 
   if (SSL_set_fd (ssl, fd) != 1)
     {
       SSL_free (ssl);
-      TLS_ERROR_MSG ("Failed to associate SSL with socket file descriptor");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
+      RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to associate SSL with fd");
     }
 
   socket->tls_ssl = (void *)ssl;
   socket->tls_ctx = (void *)ctx;
-
   SSL_set_app_data (ssl, socket);
-
   allocate_tls_buffers (socket);
 
   socket->tls_enabled = 1;
@@ -156,19 +137,12 @@ SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
 void
 SocketTLS_set_hostname (Socket_T socket, const char *hostname)
 {
-  SSL *ssl;
-  size_t hostname_len;
-
   assert (socket);
   assert (hostname);
 
-  if (!socket->tls_enabled)
-    {
-      TLS_ERROR_MSG ("TLS not enabled on socket");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
+  REQUIRE_TLS_ENABLED (socket, SocketTLS_Failed);
 
-  hostname_len = strlen (hostname);
+  size_t hostname_len = strlen (hostname);
   if (hostname_len == 0 || hostname_len > SOCKET_TLS_MAX_SNI_LEN)
     {
       TLS_ERROR_FMT ("Invalid hostname length: %zu", hostname_len);
@@ -176,134 +150,84 @@ SocketTLS_set_hostname (Socket_T socket, const char *hostname)
     }
 
   if (!tls_validate_hostname (hostname))
-    {
-      TLS_ERROR_MSG ("Invalid hostname format");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Invalid hostname format");
 
   socket->tls_sni_hostname = Arena_alloc (SocketBase_arena (socket->base),
                                           hostname_len + 1, __FILE__, __LINE__);
   if (!socket->tls_sni_hostname)
-    {
-      TLS_ERROR_MSG ("Failed to allocate hostname buffer");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to allocate hostname buffer");
 
   memcpy ((char *)socket->tls_sni_hostname, hostname, hostname_len + 1);
 
-  ssl = tls_socket_get_ssl (socket);
+  SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
-    {
-      TLS_ERROR_MSG ("SSL object not available");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "SSL object not available");
 
   if (SSL_set_tlsext_host_name (ssl, hostname) != 1)
-    {
-      TLS_ERROR_MSG ("Failed to set SNI hostname");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to set SNI hostname");
 
   if (SSL_set1_host (ssl, hostname) != 1)
-    {
-      TLS_ERROR_MSG ("Failed to enable hostname verification");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to enable hostname verification");
 }
 
 TLSHandshakeState
 SocketTLS_handshake (Socket_T socket)
 {
-  SSL *ssl;
-  int result;
-
   assert (socket);
 
-  if (!socket->tls_enabled)
-    {
-      TLS_ERROR_MSG ("TLS not enabled on socket");
-      RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
-    }
+  REQUIRE_TLS_ENABLED (socket, SocketTLS_HandshakeFailed);
 
   if (socket->tls_handshake_done)
-    {
-      return TLS_HANDSHAKE_COMPLETE;
-    }
+    return TLS_HANDSHAKE_COMPLETE;
 
-  ssl = tls_socket_get_ssl (socket);
+  SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
-    {
-      TLS_ERROR_MSG ("SSL object not available");
-      RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
-    }
+    RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed, "SSL object not available");
 
-  result = SSL_do_handshake (ssl);
-
+  int result = SSL_do_handshake (ssl);
   if (result == 1)
     {
       socket->tls_handshake_done = 1;
       socket->tls_last_handshake_state = TLS_HANDSHAKE_COMPLETE;
       return TLS_HANDSHAKE_COMPLETE;
     }
-  else
+
+  TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
+  if (state == TLS_HANDSHAKE_ERROR)
     {
-      TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
-
-      if (state == TLS_HANDSHAKE_ERROR)
-        {
-          tls_format_openssl_error ("Handshake failed");
-          RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
-        }
-
-      socket->tls_last_handshake_state = state;
-      return state;
+      tls_format_openssl_error ("Handshake failed");
+      RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
     }
+
+  socket->tls_last_handshake_state = state;
+  return state;
 }
 
 void
 SocketTLS_shutdown (Socket_T socket)
 {
-  SSL *ssl;
-  int result;
-
   assert (socket);
 
-  if (!socket->tls_enabled)
-    {
-      TLS_ERROR_MSG ("TLS not enabled on socket");
-      RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
-    }
+  REQUIRE_TLS_ENABLED (socket, SocketTLS_ShutdownFailed);
 
   if (socket->tls_shutdown_done)
-    {
-      return;
-    }
+    return;
 
-  ssl = tls_socket_get_ssl (socket);
+  SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
-    {
-      TLS_ERROR_MSG ("SSL object not available");
-      RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
-    }
+    RAISE_TLS_ERROR_MSG (SocketTLS_ShutdownFailed, "SSL object not available");
 
-  result = SSL_shutdown (ssl);
-
+  int result = SSL_shutdown (ssl);
   if (result == 1)
     {
       socket->tls_shutdown_done = 1;
       free_tls_resources (socket);
     }
-  else if (result == 0)
-    {
-      return;
-    }
-  else
+  else if (result < 0)
     {
       TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
       if (state == TLS_HANDSHAKE_ERROR)
-        {
-          RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
-        }
+        RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
     }
 }
 

@@ -22,33 +22,12 @@
 ssize_t
 SocketTLS_send (Socket_T socket, const void *buf, size_t len)
 {
-  SSL *ssl;
-  int result;
-
   assert (socket);
   assert (buf);
   assert (len > 0);
 
-  if (!socket->tls_enabled)
-    {
-      TLS_ERROR_MSG ("TLS not enabled on socket");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
-
-  if (!socket->tls_handshake_done)
-    {
-      TLS_ERROR_MSG ("TLS handshake not complete");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
-
-  ssl = tls_socket_get_ssl (socket);
-  if (!ssl)
-    {
-      TLS_ERROR_MSG ("SSL object not available");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
-
-  result = SSL_write (ssl, buf, (int)len);
+  SSL *ssl = VALIDATE_TLS_IO_READY (socket, SocketTLS_Failed);
+  int result = SSL_write (ssl, buf, (int)len);
 
   if (result > 0)
     {
@@ -70,33 +49,12 @@ SocketTLS_send (Socket_T socket, const void *buf, size_t len)
 ssize_t
 SocketTLS_recv (Socket_T socket, void *buf, size_t len)
 {
-  SSL *ssl;
-  int result;
-
   assert (socket);
   assert (buf);
   assert (len > 0);
 
-  if (!socket->tls_enabled)
-    {
-      TLS_ERROR_MSG ("TLS not enabled on socket");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
-
-  if (!socket->tls_handshake_done)
-    {
-      TLS_ERROR_MSG ("TLS handshake not complete");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
-
-  ssl = tls_socket_get_ssl (socket);
-  if (!ssl)
-    {
-      TLS_ERROR_MSG ("SSL object not available");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
-
-  result = SSL_read (ssl, buf, (int)len);
+  SSL *ssl = VALIDATE_TLS_IO_READY (socket, SocketTLS_Failed);
+  int result = SSL_read (ssl, buf, (int)len);
 
   if (result > 0)
     {

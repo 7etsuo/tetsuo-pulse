@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <string.h>
 
+#include "core/SocketConfig-limits.h"
 #include "core/SocketLog.h"
 
 /**
@@ -42,16 +43,8 @@ typedef enum SocketErrorCode
   SOCKET_ERROR_UNKNOWN
 } SocketErrorCode;
 
-/* Error buffer size - increased for safety */
-#define SOCKET_ERROR_BUFSIZE 1024
-
-/* Truncation marker for error messages - size calculated from marker itself */
-#define SOCKET_ERROR_TRUNCATION_MARKER "... (truncated)"
-#define SOCKET_ERROR_TRUNCATION_SIZE (sizeof (SOCKET_ERROR_TRUNCATION_MARKER))
-
-/* Maximum field sizes for error messages to prevent truncation */
-#define SOCKET_ERROR_MAX_HOSTNAME 255
-#define SOCKET_ERROR_MAX_MESSAGE 512
+/* Constants SOCKET_ERROR_BUFSIZE, SOCKET_ERROR_TRUNCATION_*, SOCKET_ERROR_MAX_*
+ * are defined in SocketConfig-limits.h (single source of truth for limits) */
 
 /* Thread-local error buffer for detailed messages */
 #ifdef _WIN32

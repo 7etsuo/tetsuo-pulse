@@ -49,6 +49,48 @@ const Except_T SocketTimer_Failed
 struct SocketTimer_heap_T *socketpoll_get_timer_heap (SocketPoll_T poll);
 
 /* ============================================================================
+ * Internal Timer Creation
+ * ============================================================================ */
+
+/**
+ * sockettimer_add_internal - Internal helper to add a timer
+ * @poll: Event poll instance
+ * @delay_ms: Initial delay in milliseconds
+ * @interval_ms: Interval for repeating (0 for one-shot)
+ * @callback: Callback function
+ * @userdata: User data for callback
+ * @validate_fn: Validation function for timing parameter
+ *
+ * Returns: Timer handle
+ * Raises: SocketTimer_Failed on error
+ */
+static SocketTimer_T
+sockettimer_add_internal (SocketPoll_T poll, int64_t delay_ms,
+                          int64_t interval_ms, SocketTimerCallback callback,
+                          void *userdata, void (*validate_fn) (int64_t))
+{
+  SocketTimer_heap_T *heap;
+  struct SocketTimer_T *timer;
+
+  assert (poll);
+  assert (callback);
+
+  heap = sockettimer_validate_heap (poll);
+  validate_fn (delay_ms);
+
+  timer = sockettimer_allocate_timer (heap->arena);
+
+  if (interval_ms > 0)
+    sockettimer_init_repeating (timer, interval_ms, callback, userdata);
+  else
+    sockettimer_init_oneshot (timer, delay_ms, callback, userdata);
+
+  SocketTimer_heap_push (heap, timer);
+
+  return timer;
+}
+
+/* ============================================================================
  * Public Timer API
  * ============================================================================ */
 
@@ -70,21 +112,8 @@ SocketTimer_T
 SocketTimer_add (SocketPoll_T poll, int64_t delay_ms,
                  SocketTimerCallback callback, void *userdata)
 {
-  SocketTimer_heap_T *heap;
-  struct SocketTimer_T *timer;
-
-  assert (poll);
-  assert (callback);
-
-  heap = sockettimer_validate_heap (poll);
-  sockettimer_validate_delay (delay_ms);
-
-  timer = sockettimer_allocate_timer (heap->arena);
-  sockettimer_init_oneshot (timer, delay_ms, callback, userdata);
-
-  SocketTimer_heap_push (heap, timer);
-
-  return timer;
+  return sockettimer_add_internal (poll, delay_ms, 0, callback, userdata,
+                                   sockettimer_validate_delay);
 }
 
 /**
@@ -105,21 +134,8 @@ SocketTimer_T
 SocketTimer_add_repeating (SocketPoll_T poll, int64_t interval_ms,
                            SocketTimerCallback callback, void *userdata)
 {
-  SocketTimer_heap_T *heap;
-  struct SocketTimer_T *timer;
-
-  assert (poll);
-  assert (callback);
-
-  heap = sockettimer_validate_heap (poll);
-  sockettimer_validate_interval (interval_ms);
-
-  timer = sockettimer_allocate_timer (heap->arena);
-  sockettimer_init_repeating (timer, interval_ms, callback, userdata);
-
-  SocketTimer_heap_push (heap, timer);
-
-  return timer;
+  return sockettimer_add_internal (poll, interval_ms, interval_ms, callback,
+                                   userdata, sockettimer_validate_interval);
 }
 
 /**

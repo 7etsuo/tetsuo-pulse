@@ -15,7 +15,7 @@
 
 #define T SocketPool_T
 
-extern const Except_T SocketPool_Failed;
+/* SocketPool_Failed declared in SocketPool.h (included via private header) */
 
 /**
  * validate_prepare_params - Validate parameters for prepare_connection

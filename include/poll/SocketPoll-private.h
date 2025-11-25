@@ -186,12 +186,6 @@ extern void initialize_poll_arena (T poll);
 extern void allocate_poll_event_arrays (T poll, int maxevents);
 
 /**
- * initialize_poll_hash_tables - Initialize hash tables to zero
- * @poll: Poll instance
- */
-extern void initialize_poll_hash_tables (T poll);
-
-/**
  * initialize_poll_mutex - Initialize mutex
  * @poll: Poll instance
  * Raises: SocketPoll_Failed on failure

@@ -22,6 +22,23 @@
 /* Forward declaration of backend-specific poll structure */
 typedef struct PollBackend_T *PollBackend_T;
 
+/* ==================== Common Backend Macros ==================== */
+
+/**
+ * VALIDATE_FD - Validate file descriptor and return error if invalid
+ * Used by all backends to eliminate duplicate fd validation code.
+ */
+#define VALIDATE_FD(fd)                                                        \
+  do                                                                           \
+    {                                                                          \
+      if ((fd) < 0)                                                            \
+        {                                                                      \
+          errno = EBADF;                                                       \
+          return -1;                                                           \
+        }                                                                      \
+    }                                                                          \
+  while (0)
+
 /**
  * Backend interface - all backends must implement these functions
  */

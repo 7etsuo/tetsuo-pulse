@@ -90,6 +90,16 @@ void Except_raise (const Except_T *e, const char *file, int line);
   default:                                                                    \
     return
 
+/* Helper macro to pop exception frame if still in entered state */
+#define EXCEPT_POP_FRAME_IF_ENTERED                                           \
+  if (Except_flag == Except_entered)                                          \
+    {                                                                         \
+      Except_Frame *prev_frame = NULL;                                        \
+      if (Except_stack != NULL)                                               \
+        prev_frame = Except_stack->prev;                                      \
+      Except_stack = prev_frame;                                              \
+    }
+
 #define TRY                                                                   \
   do                                                                          \
     {                                                                         \
@@ -106,52 +116,28 @@ void Except_raise (const Except_T *e, const char *file, int line);
         {
 
 #define EXCEPT(e)                                                             \
-  if (Except_flag == Except_entered)                                          \
-    {                                                                         \
-      Except_Frame *prev_frame = NULL;                                        \
-      if (Except_stack != NULL)                                               \
-        prev_frame = Except_stack->prev;                                      \
-      Except_stack = prev_frame;                                              \
-    }                                                                         \
+  EXCEPT_POP_FRAME_IF_ENTERED                                                 \
   }                                                                           \
-  else if (Except_frame.exception && Except_frame.exception->type == &(e)) \
+  else if (Except_frame.exception && Except_frame.exception->type == &(e))    \
   {                                                                           \
     Except_flag = Except_handled;
 
 #define ELSE                                                                  \
-  if (Except_flag == Except_entered)                                          \
-    {                                                                         \
-      Except_Frame *prev_frame = NULL;                                        \
-      if (Except_stack != NULL)                                               \
-        prev_frame = Except_stack->prev;                                      \
-      Except_stack = prev_frame;                                              \
-    }                                                                         \
+  EXCEPT_POP_FRAME_IF_ENTERED                                                 \
   }                                                                           \
   else                                                                        \
   {                                                                           \
     Except_flag = Except_handled;
 
 #define FINALLY                                                               \
-  if (Except_flag == Except_entered)                                          \
-    {                                                                         \
-      Except_Frame *prev_frame = NULL;                                        \
-      if (Except_stack != NULL)                                               \
-        prev_frame = Except_stack->prev;                                      \
-      Except_stack = prev_frame;                                              \
-    }                                                                         \
+  EXCEPT_POP_FRAME_IF_ENTERED                                                 \
   }                                                                           \
   {                                                                           \
     if (Except_flag == Except_entered)                                        \
       Except_flag = Except_finalized;
 
 #define END_TRY                                                               \
-  if (Except_flag == Except_entered)                                          \
-    {                                                                         \
-      Except_Frame *prev_frame = NULL;                                        \
-      if (Except_stack != NULL)                                               \
-        prev_frame = Except_stack->prev;                                      \
-      Except_stack = prev_frame;                                              \
-    }                                                                         \
+  EXCEPT_POP_FRAME_IF_ENTERED                                                 \
   }                                                                           \
   if (Except_flag == Except_raised)                                           \
     RERAISE;                                                                  \

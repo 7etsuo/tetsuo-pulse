@@ -109,6 +109,11 @@ extern const char *socketcommon_get_safe_host (const char *host);
 extern int socketcommon_validate_hostname_internal (const char *host, int use_exceptions, Except_T exception_type);
 extern void socketcommon_convert_port_to_string (int port, char *port_str, size_t bufsize);
 
+/* Forward declarations of module exceptions - avoids duplicating in each .c file */
+extern const Except_T Socket_Failed;
+extern const Except_T SocketDgram_Failed;
+extern const Except_T SocketCommon_Failed;
+
 /* Shared timeout sanitization function */
 extern int socketcommon_sanitize_timeout (int timeout_ms);
 

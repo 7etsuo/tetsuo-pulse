@@ -7,21 +7,21 @@
  * Contains cleanup, shutdown, and resource deallocation functions.
  */
 
-#include "core/SocketConfig.h"
-#include <netdb.h>
-#include <pthread.h>
+/* All includes before T macro definition to avoid redefinition warnings */
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "core/Arena.h"
-#include "core/Except.h"
-#include "core/SocketError.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNS-private.h"
+
+/* Redefine T after all includes (Arena.h and SocketDNS.h both undef T at end) */
+#undef T
+#define T SocketDNS_T
+#undef Request_T
+#define Request_T SocketDNS_Request_T
+
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS-cleanup"
-#define T SocketDNS_T
-#define Request_T SocketDNS_Request_T
-#include "dns/SocketDNS-private.h"
 
 /**
  * cleanup_mutex_cond - Cleanup mutex and condition variables
@@ -127,46 +127,17 @@ drain_completion_pipe (struct SocketDNS_T *dns)
 }
 
 /**
- * drain_completed_requests - Release results for completed requests
- * @dns: DNS resolver instance
- * Ensures any outstanding getaddrinfo() results owned by the resolver are
- * released prior to arena disposal. This is necessary when callers never
- * retrieve results (e.g., cancelled or overflowed requests).
- * Thread-safe: Must be called with mutex locked.
- */
-void
-drain_completed_requests (struct SocketDNS_T *dns)
-{
-  int i;
-
-  for (i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
-    {
-      struct SocketDNS_Request_T *req = dns->request_hash[i];
-
-      while (req)
-        {
-          if (req->result)
-            {
-              freeaddrinfo (req->result);
-              req->result = NULL;
-            }
-          req = req->hash_next;
-        }
-    }
-}
-
-/**
  * reset_dns_state - Reset internal DNS resolver state for shutdown
  * @d: DNS resolver instance
  * Thread-safe: Uses mutex to protect shared state
- * Drains completed requests, frees pending requests, resets queue and hash
- * table.
+ * Frees all requests (including their results), resets queue and hash table.
+ * Note: drain_completed_requests was removed as redundant - free_all_requests
+ * already frees results via free_request_list.
  */
 void
 reset_dns_state (T d)
 {
   pthread_mutex_lock (&d->mutex);
-  drain_completed_requests (d);
   free_all_requests (d);
   d->queue_head = NULL;
   d->queue_tail = NULL;

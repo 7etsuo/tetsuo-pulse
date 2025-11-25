@@ -32,20 +32,20 @@ SOCKET_DECLARE_MODULE_EXCEPTION(SocketIO_TLS);
 #ifdef SOCKET_HAS_TLS
 
 /* Forward declarations for internal functions */
-static SSL *validate_tls_ready (T socket);
 static int is_recoverable_tls_error (void);
 SSL *socket_get_ssl (T socket);
 int socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result);
 
 /**
- * validate_tls_ready - Validate TLS is ready for I/O
+ * socket_validate_tls_ready - Validate TLS is ready for I/O
  * @socket: Socket instance
  *
  * Returns: SSL pointer if ready, raises exception otherwise
  * Thread-safe: Yes (operates on single socket)
+ * Note: Exported for use by SocketIO-tls-iov.c
  */
-static SSL *
-validate_tls_ready (T socket)
+SSL *
+socket_validate_tls_ready (T socket)
 {
   SSL *ssl = socket_get_ssl (socket);
   if (!ssl)
@@ -62,13 +62,14 @@ validate_tls_ready (T socket)
 }
 
 /**
- * is_recoverable_tls_error - Check if errno indicates recoverable I/O
+ * socket_is_recoverable_io_error - Check if errno indicates recoverable I/O
  *
  * Returns: 1 if EAGAIN/EWOULDBLOCK, 0 otherwise
  * Thread-safe: Yes (reads errno)
+ * Note: Exported for use by SocketIO-tls-iov.c
  */
-static int
-is_recoverable_tls_error (void)
+int
+socket_is_recoverable_io_error (void)
 {
   return errno == EAGAIN || errno == EWOULDBLOCK;
 }
@@ -86,17 +87,14 @@ is_recoverable_tls_error (void)
 ssize_t
 socket_send_tls (T socket, const void *buf, size_t len)
 {
-  SSL *ssl = validate_tls_ready (socket);
+  SSL *ssl = socket_validate_tls_ready (socket);
   int ssl_result = SSL_write (ssl, buf, (int)len);
 
   if (ssl_result <= 0)
     {
       socket_handle_ssl_error (socket, ssl, ssl_result);
-      if (is_recoverable_tls_error ())
+      if (socket_is_recoverable_io_error ())
         return 0;
-    }
-  if (ssl_result < 0)
-    {
       SOCKET_ERROR_FMT ("TLS send failed (len=%zu)", len);
       RAISE_MODULE_ERROR (SocketTLS_Failed);
     }
@@ -116,25 +114,19 @@ socket_send_tls (T socket, const void *buf, size_t len)
 ssize_t
 socket_recv_tls (T socket, void *buf, size_t len)
 {
-  SSL *ssl = validate_tls_ready (socket);
+  SSL *ssl = socket_validate_tls_ready (socket);
   int ssl_result = SSL_read (ssl, buf, (int)len);
 
   if (ssl_result <= 0)
     {
       socket_handle_ssl_error (socket, ssl, ssl_result);
-      if (is_recoverable_tls_error ())
+      if (socket_is_recoverable_io_error ())
         return 0;
-      if (errno == ECONNRESET)
+      if (ssl_result == 0 || errno == ECONNRESET)
         RAISE (Socket_Closed);
-    }
-  if (ssl_result < 0)
-    {
       SOCKET_ERROR_FMT ("TLS receive failed (len=%zu)", len);
       RAISE_MODULE_ERROR (SocketTLS_Failed);
     }
-  if (ssl_result == 0)
-    RAISE (Socket_Closed);
-
   return (ssize_t)ssl_result;
 }
 
@@ -152,91 +144,117 @@ socket_get_ssl (T socket)
   return (SSL *)socket->tls_ssl;
 }
 
+/* ==================== SSL Error Mapping ==================== */
+
 /**
- * socket_handle_ssl_error - Helper to handle SSL error codes
+ * SSLErrorMapping - Mapping from SSL error code to errno and state
+ *
+ * Provides data-driven error handling for SSL operations. Each entry
+ * maps an SSL_ERROR_* code to the corresponding errno value and
+ * indicates whether the error clears the handshake completion flag.
+ */
+typedef struct
+{
+  int ssl_error;       /**< SSL_ERROR_* constant */
+  int mapped_errno;    /**< Corresponding errno value */
+  int clears_handshake; /**< 1 if this error resets handshake_done */
+} SSLErrorMapping;
+
+/**
+ * SSL error mapping table - data-driven error classification
+ *
+ * This table maps SSL error codes to errno values. Using a table instead
+ * of a switch statement makes it easier to add new error codes and
+ * ensures consistent handling across all TLS operations.
+ */
+static const SSLErrorMapping ssl_error_map[] = {
+  { SSL_ERROR_NONE,              0,            0 },
+  { SSL_ERROR_SSL,               EPROTO,       0 },
+  { SSL_ERROR_WANT_READ,         EAGAIN,       1 },
+  { SSL_ERROR_WANT_WRITE,        EAGAIN,       1 },
+  { SSL_ERROR_WANT_X509_LOOKUP,  EAGAIN,       0 },
+  { SSL_ERROR_ZERO_RETURN,       ECONNRESET,   0 },
+  { SSL_ERROR_WANT_CONNECT,      EINPROGRESS,  1 },
+  { SSL_ERROR_WANT_ACCEPT,       EAGAIN,       1 },
+  { SSL_ERROR_WANT_ASYNC,        EAGAIN,       0 },
+  { SSL_ERROR_WANT_ASYNC_JOB,    EAGAIN,       0 },
+  { SSL_ERROR_WANT_CLIENT_HELLO_CB, EAGAIN,    0 },
+  { SSL_ERROR_WANT_RETRY_VERIFY, EAGAIN,       0 },
+};
+
+#define SSL_ERROR_MAP_SIZE (sizeof (ssl_error_map) / sizeof (ssl_error_map[0]))
+
+/**
+ * ssl_lookup_error - Find mapping for SSL error code
+ * @ssl_error: SSL_ERROR_* constant to look up
+ *
+ * Returns: Pointer to mapping entry, or NULL if not found
+ */
+static const SSLErrorMapping *
+ssl_lookup_error (int ssl_error)
+{
+  for (size_t i = 0; i < SSL_ERROR_MAP_SIZE; i++)
+    {
+      if (ssl_error_map[i].ssl_error == ssl_error)
+        return &ssl_error_map[i];
+    }
+  return NULL;
+}
+
+/**
+ * ssl_handle_syscall_error - Handle SSL_ERROR_SYSCALL specially
+ *
+ * Returns: -1 (always an error)
+ *
+ * SSL_ERROR_SYSCALL requires special handling: if errno is 0,
+ * the connection was closed (EOF). Otherwise, keep the existing errno.
+ */
+static int
+ssl_handle_syscall_error (void)
+{
+  if (errno == 0)
+    errno = ECONNRESET;
+  return -1;
+}
+
+/**
+ * socket_handle_ssl_error - Map SSL error codes to errno values
  * @socket: Socket instance
  * @ssl: SSL object
  * @ssl_result: Result from SSL operation
  *
- * Returns: 0 on success, -1 on error (sets errno)
+ * Returns: 0 on SSL_ERROR_NONE, -1 on error (sets errno)
  * Thread-safe: Yes (operates on single socket)
- * Maps SSL error codes to errno values and updates socket state.
- * Used by TLS-aware I/O functions for consistent error handling.
+ *
+ * Uses data-driven mapping table to convert SSL error codes to
+ * appropriate errno values. Updates socket handshake state when
+ * SSL indicates the handshake needs to continue.
  */
 int
 socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result)
 {
   int ssl_error = SSL_get_error (ssl, ssl_result);
+  const SSLErrorMapping *mapping;
 
-  switch (ssl_error)
+  /* Handle syscall error specially - errno may already be set */
+  if (ssl_error == SSL_ERROR_SYSCALL)
+    return ssl_handle_syscall_error ();
+
+  mapping = ssl_lookup_error (ssl_error);
+  if (!mapping)
     {
-    case SSL_ERROR_NONE:
-      return 0; /* Success */
-
-    case SSL_ERROR_SSL:
-      /* Internal OpenSSL protocol error */
-      errno = EPROTO;
-      return -1;
-
-    case SSL_ERROR_WANT_READ:
-      socket->tls_handshake_done = 0; /* Handshake not complete */
-      errno = EAGAIN;
-      return -1;
-
-    case SSL_ERROR_WANT_WRITE:
-      socket->tls_handshake_done = 0; /* Handshake not complete */
-      errno = EAGAIN;
-      return -1;
-
-    case SSL_ERROR_WANT_X509_LOOKUP:
-      /* Certificate lookup needed - retry after loading certs */
-      errno = EAGAIN;
-      return -1;
-
-    case SSL_ERROR_ZERO_RETURN:
-      /* TLS connection closed cleanly */
-      errno = ECONNRESET;
-      return -1;
-
-    case SSL_ERROR_SYSCALL:
-      /* System call error - check errno */
-      if (errno == 0)
-        errno = ECONNRESET; /* EOF */
-      return -1;
-
-    case SSL_ERROR_WANT_CONNECT:
-      /* Underlying BIO wants connect */
-      socket->tls_handshake_done = 0;
-      errno = EINPROGRESS;
-      return -1;
-
-    case SSL_ERROR_WANT_ACCEPT:
-      /* Underlying BIO wants accept */
-      socket->tls_handshake_done = 0;
-      errno = EAGAIN;
-      return -1;
-
-    case SSL_ERROR_WANT_ASYNC:
-    case SSL_ERROR_WANT_ASYNC_JOB:
-      /* Async operation pending */
-      errno = EAGAIN;
-      return -1;
-
-    case SSL_ERROR_WANT_CLIENT_HELLO_CB:
-      /* Client Hello callback needed */
-      errno = EAGAIN;
-      return -1;
-
-    case SSL_ERROR_WANT_RETRY_VERIFY:
-      /* Retry verification */
-      errno = EAGAIN;
-      return -1;
-
-    default:
-      /* Unexpected SSL errors */
       errno = EPROTO;
       return -1;
     }
+
+  if (mapping->ssl_error == SSL_ERROR_NONE)
+    return 0;
+
+  if (mapping->clears_handshake)
+    socket->tls_handshake_done = 0;
+
+  errno = mapping->mapped_errno;
+  return -1;
 }
 
 /* socket_sendv_tls and socket_recvv_tls are in SocketIO-tls-iov.c */
@@ -244,3 +262,4 @@ socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result)
 #endif /* SOCKET_HAS_TLS */
 
 #undef T
+

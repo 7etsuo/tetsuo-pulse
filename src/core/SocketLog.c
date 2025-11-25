@@ -189,9 +189,6 @@ SocketLog_emit (SocketLogLevel level, const char *component,
   void *userdata = NULL;
   SocketLogCallback callback = SocketLog_getcallback (&userdata);
 
-  if (!callback)
-    callback = default_logger;
-
   callback (userdata, level, component, message);
 }
 

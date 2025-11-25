@@ -72,6 +72,25 @@ info_callback (const SSL *ssl, int where, int ret)
     }
 }
 
+/**
+ * set_cache_size - Set session cache size with validation
+ * @ctx: TLS context
+ * @size: Cache size (must be > 0)
+ *
+ * Raises: SocketTLS_Failed on invalid size or OpenSSL error
+ */
+static void
+set_cache_size (T ctx, size_t size)
+{
+  if (size == 0)
+    ctx_raise_openssl_error ("Session cache size cannot be zero");
+
+  if (SSL_CTX_sess_set_cache_size (ctx->ssl_ctx, (long)size) == 0)
+    ctx_raise_openssl_error ("Failed to set session cache size");
+
+  ctx->session_cache_size = size;
+}
+
 void
 SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
                                        long timeout_seconds)
@@ -80,28 +99,18 @@ SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
   assert (ctx->ssl_ctx);
 
   long mode = ctx->is_server ? SSL_SESS_CACHE_SERVER : SSL_SESS_CACHE_CLIENT;
-
   if (SSL_CTX_set_session_cache_mode (ctx->ssl_ctx, mode) == 0)
-    {
-      ctx_raise_openssl_error ("Failed to enable session cache mode");
-    }
+    ctx_raise_openssl_error ("Failed to enable session cache mode");
 
   SSL_CTX_sess_set_new_cb (ctx->ssl_ctx, new_session_cb);
   SSL_CTX_set_info_callback (ctx->ssl_ctx, info_callback);
 
   if (max_sessions > 0)
-    {
-      if (SSL_CTX_sess_set_cache_size (ctx->ssl_ctx, (long)max_sessions) == 0)
-        {
-          ctx_raise_openssl_error ("Failed to set session cache size");
-        }
-      ctx->session_cache_size = max_sessions;
-    }
+    set_cache_size (ctx, max_sessions);
 
-  long timeout = timeout_seconds > 0 ? timeout_seconds
-                                     : SOCKET_TLS_SESSION_TIMEOUT_DEFAULT;
-  SSL_CTX_set_timeout (ctx->ssl_ctx, timeout);
-
+  SSL_CTX_set_timeout (ctx->ssl_ctx, timeout_seconds > 0
+                                         ? timeout_seconds
+                                         : SOCKET_TLS_SESSION_TIMEOUT_DEFAULT);
   ctx->session_cache_enabled = 1;
 }
 
@@ -110,18 +119,7 @@ SocketTLSContext_set_session_cache_size (T ctx, size_t size)
 {
   assert (ctx);
   assert (ctx->ssl_ctx);
-
-  if (size == 0)
-    {
-      ctx_raise_openssl_error ("Session cache size cannot be zero");
-    }
-
-  if (SSL_CTX_sess_set_cache_size (ctx->ssl_ctx, (long)size) == 0)
-    {
-      ctx_raise_openssl_error ("Failed to set session cache size");
-    }
-
-  ctx->session_cache_size = size;
+  set_cache_size (ctx, size);
 }
 
 void

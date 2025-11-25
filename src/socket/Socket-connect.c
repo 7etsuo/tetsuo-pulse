@@ -196,16 +196,16 @@ try_connect_resolved_addresses (T socket, struct addrinfo *res,
  * @sock: Socket instance
  * @host: Hostname to resolve
  * @port: Port number
+ * @socket_family: Socket address family
  * @res: Output for resolved addresses
  *
  * Sets errno to EAI_FAIL on resolution failure without raising.
  */
 static void
-connect_resolve_address (T sock, const char *host, int port,
+connect_resolve_address (T sock, const char *host, int port, int socket_family,
                          struct addrinfo **res)
 {
-  int socket_family = SocketCommon_get_socket_family (sock->base);
-
+  (void)sock; /* Used for consistency, family passed in */
   if (SocketCommon_resolve_address (host, port, NULL, res, Socket_Failed,
                                     socket_family, 0)
       != 0)
@@ -262,11 +262,11 @@ connect_validate_params (T socket, const char *host, int port)
  * connect_execute - Execute connection attempt
  * @sock: Socket instance
  * @res: Resolved address info
+ * @socket_family: Socket address family
  */
 static void
-connect_execute (T sock, struct addrinfo *res)
+connect_execute (T sock, struct addrinfo *res, int socket_family)
 {
-  int socket_family = SocketCommon_get_socket_family (sock->base);
   int timeout_ms = sock->base->timeouts.connect_timeout_ms;
   connect_try_addresses (sock, res, socket_family, timeout_ms);
 }
@@ -278,18 +278,20 @@ Socket_connect (T socket, const char *host, int port)
 {
   struct addrinfo *res = NULL;
   volatile T vsock = socket;
+  int socket_family;
 
   connect_validate_params (socket, host, port);
+  socket_family = SocketCommon_get_socket_family (socket->base);
 
   TRY
   {
-    connect_resolve_address ((T)vsock, host, port, &res);
+    connect_resolve_address ((T)vsock, host, port, socket_family, &res);
     if (!res)
       {
         errno = EAI_FAIL;
         return;
       }
-    connect_execute ((T)vsock, res);
+    connect_execute ((T)vsock, res, socket_family);
     freeaddrinfo (res);
   }
   EXCEPT (Socket_Failed)

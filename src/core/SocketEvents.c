@@ -100,8 +100,6 @@ SocketEvent_register (SocketEventCallback callback, void *userdata)
       return;
     }
 
-  assert (callback);
-
   pthread_mutex_lock (&socketevent_mutex);
 
   /* Check for duplicate */
@@ -153,8 +151,6 @@ SocketEvent_unregister (SocketEventCallback callback, void *userdata)
                       "NULL callback in unregister ignored");
       return;
     }
-
-  assert (callback);
 
   pthread_mutex_lock (&socketevent_mutex);
 

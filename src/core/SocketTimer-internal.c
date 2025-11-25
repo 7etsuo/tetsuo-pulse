@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <time.h>
 
 #include "core/Arena.h"
@@ -150,6 +151,30 @@ sockettimer_allocate_timer (Arena_T arena)
 }
 
 /**
+ * sockettimer_init_timer - Initialize a timer (one-shot or repeating)
+ * @timer: Timer to initialize
+ * @delay_ms: Initial delay in milliseconds
+ * @interval_ms: Interval for repeating (0 for one-shot)
+ * @callback: Callback function
+ * @userdata: User data for callback
+ *
+ * Internal helper that consolidates one-shot and repeating timer init.
+ */
+static void
+sockettimer_init_timer (struct SocketTimer_T *timer, int64_t delay_ms,
+                        int64_t interval_ms, SocketTimerCallback callback,
+                        void *userdata)
+{
+  int64_t now_ms = sockettimer_now_ms ();
+
+  timer->expiry_ms = now_ms + delay_ms;
+  timer->interval_ms = interval_ms;
+  timer->callback = callback;
+  timer->userdata = userdata;
+  timer->cancelled = 0;
+}
+
+/**
  * sockettimer_init_oneshot - Initialize a one-shot timer
  * @timer: Timer to initialize
  * @delay_ms: Delay in milliseconds
@@ -160,13 +185,7 @@ void
 sockettimer_init_oneshot (struct SocketTimer_T *timer, int64_t delay_ms,
                           SocketTimerCallback callback, void *userdata)
 {
-  int64_t now_ms = sockettimer_now_ms ();
-
-  timer->expiry_ms = now_ms + delay_ms;
-  timer->interval_ms = 0; /* One-shot */
-  timer->callback = callback;
-  timer->userdata = userdata;
-  timer->cancelled = 0;
+  sockettimer_init_timer (timer, delay_ms, 0, callback, userdata);
 }
 
 /**
@@ -180,13 +199,7 @@ void
 sockettimer_init_repeating (struct SocketTimer_T *timer, int64_t interval_ms,
                             SocketTimerCallback callback, void *userdata)
 {
-  int64_t now_ms = sockettimer_now_ms ();
-
-  timer->expiry_ms = now_ms + interval_ms;
-  timer->interval_ms = interval_ms; /* Repeating */
-  timer->callback = callback;
-  timer->userdata = userdata;
-  timer->cancelled = 0;
+  sockettimer_init_timer (timer, interval_ms, interval_ms, callback, userdata);
 }
 
 /* ============================================================================
@@ -343,14 +356,14 @@ sockettimer_skip_cancelled (SocketTimer_heap_T *heap)
 }
 
 /**
- * sockettimer_find_in_heap - Find timer in heap
+ * sockettimer_find_in_heap - Find timer in heap and return its index
  * @heap: Timer heap
  * @timer: Timer to find
  *
- * Returns: 1 if found and not cancelled, 0 otherwise
+ * Returns: Index of timer if found and not cancelled, -1 otherwise
  * Thread-safe: No (caller must hold heap->mutex)
  */
-int
+ssize_t
 sockettimer_find_in_heap (SocketTimer_heap_T *heap,
                           const struct SocketTimer_T *timer)
 {
@@ -359,9 +372,9 @@ sockettimer_find_in_heap (SocketTimer_heap_T *heap,
   for (i = 0; i < heap->count; i++)
     {
       if (heap->timers[i] == timer && !heap->timers[i]->cancelled)
-        return 1;
+        return (ssize_t)i;
     }
 
-  return 0;
+  return -1;
 }
 

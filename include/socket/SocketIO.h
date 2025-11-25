@@ -112,6 +112,24 @@ extern int socket_tls_want_write (T socket);
  * Used by TLS-aware I/O functions for consistent error handling.
  */
 extern int socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result);
+
+/**
+ * socket_get_ssl - Get SSL object from socket
+ * @socket: Socket instance
+ * Returns: SSL object or NULL if TLS not enabled
+ * Thread-safe: Yes (read-only access)
+ */
+extern SSL *socket_get_ssl (T socket);
+
+/**
+ * socket_validate_tls_ready - Validate TLS is ready for I/O
+ * @socket: Socket instance
+ * Returns: SSL pointer if ready
+ * Raises: Socket_Failed or SocketTLS_HandshakeFailed if not ready
+ * Thread-safe: Yes (operates on single socket)
+ * Shared helper for TLS I/O functions.
+ */
+extern SSL *socket_validate_tls_ready (T socket);
 #endif
 
 #undef T

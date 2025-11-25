@@ -20,10 +20,6 @@
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 
-/* Forward declarations for exception types */
-extern const Except_T Socket_Failed;
-extern const Except_T SocketDgram_Failed;
-
 /* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION(SocketCommon);
 
@@ -207,50 +203,24 @@ socketcommon_parse_cidr (const char *cidr_str, unsigned char *network,
 /**
  * socketcommon_apply_mask - Apply CIDR mask to IP address
  * @ip: IP address bytes (4 for IPv4, 16 for IPv6)
- * @prefix_len: Prefix length (" SOCKET_IPV4_PREFIX_RANGE " for IPv4, "
- * SOCKET_IPV6_PREFIX_RANGE " for IPv6)
+ * @prefix_len: Prefix length (0-32 for IPv4, 0-128 for IPv6)
  * @family: Address family (SOCKET_AF_INET or SOCKET_AF_INET6)
  * Thread-safe: Yes
  */
 static void
 socketcommon_apply_mask (unsigned char *ip, int prefix_len, int family)
 {
-  int bytes_to_mask;
-  int bits_to_mask;
-  int i;
+  int addr_bytes = (family == SOCKET_AF_INET) ? 4 : 16;
+  int bytes_to_mask = prefix_len / 8;
+  int bits_to_mask = prefix_len % 8;
 
-  if (family == SOCKET_AF_INET)
-    {
-      bytes_to_mask = prefix_len / 8;
-      bits_to_mask = prefix_len % 8;
+  /* Mask full bytes after prefix */
+  for (int i = bytes_to_mask; i < addr_bytes; i++)
+    ip[i] = 0;
 
-      /* Mask full bytes */
-      for (i = bytes_to_mask; i < 4; i++)
-        ip[i] = 0;
-
-      /* Mask partial byte */
-      if (bits_to_mask > 0 && bytes_to_mask < 4)
-        {
-          unsigned char mask = (0xFF << (8 - bits_to_mask)) & 0xFF;
-          ip[bytes_to_mask] &= mask;
-        }
-    }
-  else if (family == SOCKET_AF_INET6)
-    {
-      bytes_to_mask = prefix_len / 8;
-      bits_to_mask = prefix_len % 8;
-
-      /* Mask full bytes */
-      for (i = bytes_to_mask; i < 16; i++)
-        ip[i] = 0;
-
-      /* Mask partial byte */
-      if (bits_to_mask > 0 && bytes_to_mask < 16)
-        {
-          unsigned char mask = (0xFF << (8 - bits_to_mask)) & 0xFF;
-          ip[bytes_to_mask] &= mask;
-        }
-    }
+  /* Mask partial byte at prefix boundary */
+  if (bits_to_mask > 0 && bytes_to_mask < addr_bytes)
+    ip[bytes_to_mask] &= (unsigned char)(0xFF << (8 - bits_to_mask));
 }
 
 /**
@@ -310,23 +280,15 @@ SocketCommon_cidr_match (const char *ip_str, const char *cidr_str)
   /* Apply mask to IP */
   socketcommon_apply_mask (ip, prefix_len, ip_family);
 
-  /* Compare network addresses */
-  if (ip_family == SOCKET_AF_INET)
-    {
-      for (i = 0; i < 4; i++)
-        {
-          if (ip[i] != network[i])
-            return 0;
-        }
-    }
-  else if (ip_family == SOCKET_AF_INET6)
-    {
-      for (i = 0; i < 16; i++)
-        {
-          if (ip[i] != network[i])
-            return 0;
-        }
-    }
+  /* Compare network addresses - unified loop for IPv4/IPv6 */
+  {
+    int addr_bytes = (ip_family == SOCKET_AF_INET) ? 4 : 16;
+    for (i = 0; i < addr_bytes; i++)
+      {
+        if (ip[i] != network[i])
+          return 0;
+      }
+  }
 
   return 1;
 }

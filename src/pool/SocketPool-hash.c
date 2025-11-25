@@ -16,7 +16,7 @@
 
 #define T SocketPool_T
 
-extern const Except_T SocketPool_Failed;
+/* SocketPool_Failed declared in SocketPool.h (included via private header) */
 
 /**
  * socket_hash - Compute hash value for socket file descriptor
@@ -121,6 +121,12 @@ SocketPool_connections_initialize_slot (struct Connection *conn)
   conn->last_activity = 0;
   conn->active = 0;
   conn->hash_next = NULL;
+  conn->free_next = NULL;
+#ifdef SOCKET_HAS_TLS
+  conn->tls_ctx = NULL;
+  conn->tls_handshake_complete = 0;
+  conn->tls_session = NULL;
+#endif
 }
 
 /**

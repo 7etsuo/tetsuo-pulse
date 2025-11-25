@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
 #include "core/Arena.h"
 #include "core/Except.h"
@@ -259,27 +260,19 @@ SocketTimer_heap_peek_delay (const SocketTimer_heap_T *heap)
 int
 SocketTimer_heap_cancel (SocketTimer_heap_T *heap, struct SocketTimer_T *timer)
 {
-  int found;
-  size_t i;
+  ssize_t idx;
 
   assert (heap);
   assert (timer);
 
   pthread_mutex_lock (&heap->mutex);
 
-  found = 0;
-  for (i = 0; i < heap->count; i++)
-    {
-      if (heap->timers[i] == timer && !heap->timers[i]->cancelled)
-        {
-          heap->timers[i]->cancelled = 1;
-          found = 1;
-          break;
-        }
-    }
+  idx = sockettimer_find_in_heap (heap, timer);
+  if (idx >= 0)
+    heap->timers[idx]->cancelled = 1;
 
   pthread_mutex_unlock (&heap->mutex);
-  return found ? 0 : -1;
+  return (idx >= 0) ? 0 : -1;
 }
 
 /**
@@ -296,16 +289,16 @@ SocketTimer_heap_remaining (SocketTimer_heap_T *heap,
 {
   int64_t now_ms;
   int64_t remaining;
-  int found;
+  ssize_t idx;
 
   assert (heap);
   assert (timer);
 
   pthread_mutex_lock (&heap->mutex);
 
-  found = sockettimer_find_in_heap (heap, timer);
+  idx = sockettimer_find_in_heap (heap, timer);
 
-  if (!found)
+  if (idx < 0)
     {
       pthread_mutex_unlock (&heap->mutex);
       return -1;

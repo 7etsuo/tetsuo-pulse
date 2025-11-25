@@ -1,7 +1,11 @@
 /**
  * SocketPool-accept.c - Batch connection acceptance functions
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
+ *
  * Handles efficient batch acceptance of multiple connections from server
- * socket.
+ * socket using accept4() on Linux for optimal performance.
  */
 
 #include <assert.h>
@@ -10,15 +14,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "core/Except.h"
-#include "core/SocketConfig.h"
-#include "core/SocketError.h"
-#include "pool/SocketPool.h"
-#include "socket/Socket.h"
-#include "socket/SocketCommon.h"
-#include <pthread.h>
-
 #include "pool/SocketPool-private.h"
+#include "socket/SocketCommon.h"
 
 #define T SocketPool_T
 
@@ -91,20 +88,15 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
   int available;
   volatile int local_max_accepts = max_accepts;
 
-  if (!pool || !server || !accepted || max_accepts <= 0
-      || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS)
+  if (!pool || !server || !accepted)
+    return 0;
+
+  if (max_accepts <= 0 || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS)
     {
-      if (max_accepts <= 0 || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS)
-        {
-          SOCKET_ERROR_MSG ("Invalid max_accepts %d (must be 1-%d)",
-                            max_accepts, SOCKET_POOL_MAX_BATCH_ACCEPTS);
-        }
-      return 0; /* Or RAISE if void no */
+      SOCKET_ERROR_MSG ("Invalid max_accepts %d (must be 1-%d)", max_accepts,
+                        SOCKET_POOL_MAX_BATCH_ACCEPTS);
+      return 0;
     }
-  assert (pool);
-  assert (server);
-  assert (max_accepts > 0 && max_accepts <= SOCKET_POOL_MAX_BATCH_ACCEPTS);
-  assert (accepted);
 
   server_fd = Socket_fd (server);
 
@@ -142,12 +134,7 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
       }
       END_TRY;
 
-      if (!sock)
-        {
-          SAFE_CLOSE (newfd);
-          break;
-        }
-
+      /* sock is valid here - Socket_new_from_fd raises on failure */
       Connection_T conn = SocketPool_add (pool, sock);
       if (conn)
         {

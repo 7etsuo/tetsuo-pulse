@@ -125,7 +125,6 @@ set(LIB_SOURCES
     src/socket/SocketIO.c
     src/socket/SocketIO-tls.c
     src/socket/SocketIO-tls-iov.c
-    src/socket/SocketIO-iov.c
     src/socket/SocketUnix.c
     
     # DNS module - split files

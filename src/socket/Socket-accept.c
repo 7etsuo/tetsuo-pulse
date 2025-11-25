@@ -14,25 +14,10 @@
  * - Memory management using Arena allocation
  */
 
-#include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <poll.h>
-#include <pthread.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <sys/un.h>
 #include <unistd.h>
 
 #include "core/Arena.h"
@@ -66,17 +51,160 @@ SOCKET_DECLARE_MODULE_EXCEPTION(Socket);
 /* Macro to raise exception with detailed error message */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(Socket, e)
 
-/* Forward declarations for functions moved to other files */
-static int accept_connection(T socket, struct sockaddr_storage *addr, socklen_t *addrlen);
-static T create_accepted_socket(int newfd, const struct sockaddr_storage *addr, socklen_t addrlen);
+/* Forward declarations */
+static int accept_connection (T socket, struct sockaddr_storage *addr,
+                              socklen_t *addrlen);
+static T create_accepted_socket (int newfd, const struct sockaddr_storage *addr,
+                                 socklen_t addrlen);
+
+/* ==================== Accept Helper Functions ==================== */
+
+/**
+ * accept_create_arena - Create arena for accepted socket
+ * @newfd: File descriptor to close on failure
+ *
+ * Returns: New arena
+ * Raises: Socket_Failed on allocation failure
+ */
+static Arena_T
+accept_create_arena (int newfd)
+{
+  volatile Arena_T arena = NULL;
+  int saved_errno;
+
+  TRY arena = Arena_new ();
+  EXCEPT (Arena_Failed)
+  {
+    saved_errno = errno;
+    SAFE_CLOSE (newfd);
+    errno = saved_errno;
+    SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate arena");
+    RAISE_MODULE_ERROR (Socket_Failed);
+  }
+  END_TRY;
+
+  return (Arena_T)arena;
+}
+
+/**
+ * accept_alloc_socket - Allocate socket structure from arena
+ * @arena: Memory arena
+ *
+ * Returns: Allocated socket structure
+ * Raises: Socket_Failed on allocation failure (disposes arena)
+ */
+static T
+accept_alloc_socket (Arena_T arena)
+{
+  T newsocket = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__,
+                              __LINE__);
+  if (!newsocket)
+    {
+      Arena_dispose (&arena);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket structure");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  return newsocket;
+}
+
+/**
+ * accept_alloc_base - Allocate base structure from arena
+ * @arena: Memory arena
+ *
+ * Returns: Allocated base structure
+ * Raises: Socket_Failed on allocation failure (disposes arena)
+ */
+static SocketBase_T
+accept_alloc_base (Arena_T arena)
+{
+  SocketBase_T base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T),
+                                    __FILE__, __LINE__);
+  if (!base)
+    {
+      Arena_dispose (&arena);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base structure");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  return base;
+}
+
+/**
+ * accept_infer_socket_type - Get SO_TYPE from accepted socket
+ * @newfd: File descriptor
+ * @arena: Arena for cleanup on failure
+ *
+ * Returns: Socket type (SOCK_STREAM, etc.)
+ * Raises: Socket_Failed on getsockopt failure
+ */
+static int
+accept_infer_socket_type (int newfd, Arena_T arena)
+{
+  int type_opt;
+  socklen_t opt_len = sizeof (type_opt);
+
+  if (getsockopt (newfd, SOL_SOCKET, SO_TYPE, &type_opt, &opt_len) < 0)
+    {
+      int saved_errno = errno;
+      Arena_dispose (&arena);
+      SAFE_CLOSE (newfd);
+      errno = saved_errno;
+      SOCKET_ERROR_MSG ("Failed to get SO_TYPE: %s", strerror (saved_errno));
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  return type_opt;
+}
+
+/**
+ * accept_init_socket - Initialize accepted socket structure
+ * @newsocket: Socket to initialize
+ * @base: Base to attach
+ * @arena: Memory arena
+ * @newfd: File descriptor
+ * @addr: Peer address
+ * @addrlen: Address length
+ * @type_opt: Socket type from SO_TYPE
+ *
+ * Initializes all socket fields and increments live count.
+ */
+static void
+accept_init_socket (T newsocket, SocketBase_T base, Arena_T arena, int newfd,
+                    const struct sockaddr_storage *addr, socklen_t addrlen,
+                    int type_opt)
+{
+  int domain = ((const struct sockaddr *)addr)->sa_family;
+
+  newsocket->base = base;
+  base->arena = arena;
+  base->fd = newfd;
+
+  SocketCommon_init_base (base, newfd, domain, type_opt, 0, Socket_Failed);
+
+  memcpy (&base->remote_addr, addr, addrlen);
+  base->remote_addrlen = addrlen;
+  base->remoteaddr = NULL;
+  base->remoteport = 0;
+  base->localaddr = NULL;
+  base->localport = 0;
+
+#ifdef SOCKET_HAS_TLS
+  socket_init_tls_fields (newsocket);
+#endif
+
+  socket_live_increment ();
+}
+
+/* ==================== Accept Connection ==================== */
 
 /**
  * accept_connection - Accept a new connection
  * @socket: Listening socket
  * @addr: Output address structure
  * @addrlen: Input/output address length
- * Returns: New file descriptor or -1 on error
- * Note: All accepted sockets have close-on-exec flag set by default.
+ *
+ * Returns: New file descriptor or -1 on EAGAIN/EWOULDBLOCK
+ * Raises: Socket_Failed on other errors
+ *
+ * All accepted sockets have close-on-exec flag set by default.
  */
 static int
 accept_connection (T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
@@ -84,7 +212,6 @@ accept_connection (T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
   int newfd;
 
 #if SOCKET_HAS_ACCEPT4
-  /* Use accept4() with SOCK_CLOEXEC when available */
   newfd = accept4 (SocketBase_fd (socket->base), (struct sockaddr *)addr,
                    addrlen, SOCKET_SOCK_CLOEXEC);
 #else
@@ -101,13 +228,12 @@ accept_connection (T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
     }
 
 #if !SOCKET_HAS_ACCEPT4
-  /* Fallback: Set CLOEXEC via fcntl on older systems */
   if (SocketCommon_setcloexec (newfd, 1) < 0)
     {
       int saved_errno = errno;
       SAFE_CLOSE (newfd);
       errno = saved_errno;
-      SOCKET_ERROR_FMT ("Failed to set close-on-exec flag on accepted socket");
+      SOCKET_ERROR_FMT ("Failed to set close-on-exec flag");
       RAISE_MODULE_ERROR (Socket_Failed);
     }
 #endif
@@ -115,101 +241,30 @@ accept_connection (T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
   return newfd;
 }
 
+/* ==================== Create Accepted Socket ==================== */
+
 /**
  * create_accepted_socket - Create socket structure for accepted connection
  * @newfd: Accepted file descriptor
  * @addr: Peer address
  * @addrlen: Address length
- * Returns: New socket or NULL on failure
- * Raises: Socket_Failed on allocation failure
+ *
+ * Returns: New socket instance
+ * Raises: Socket_Failed on allocation or initialization failure
+ *
+ * Orchestrates arena creation, structure allocation, type inference,
+ * and initialization via focused helper functions.
  */
 static T
 create_accepted_socket (int newfd, const struct sockaddr_storage *addr,
                         socklen_t addrlen)
 {
-  Arena_T arena = NULL;
-  T newsocket = NULL;
-  SocketBase_T base = NULL;
-  int domain;
-  int type_opt;
-  socklen_t opt_len = sizeof (type_opt);
-  int protocol = 0;
-  int saved_errno;
+  Arena_T arena = accept_create_arena (newfd);
+  T newsocket = accept_alloc_socket (arena);
+  SocketBase_T base = accept_alloc_base (arena);
+  int type_opt = accept_infer_socket_type (newfd, arena);
 
-  TRY arena = Arena_new ();
-  EXCEPT (Arena_Failed)
-  {
-    saved_errno = errno;
-    SAFE_CLOSE (newfd);
-    errno = saved_errno;
-    SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                      ": Cannot allocate arena for accepted socket");
-    RAISE_MODULE_ERROR (Socket_Failed);
-  }
-  END_TRY;
-
-  newsocket
-      = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
-  if (!newsocket)
-    {
-      Arena_dispose (&arena);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                        ": Cannot allocate accepted socket structure");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T), __FILE__,
-                       __LINE__);
-  if (!base)
-    {
-      Arena_dispose (&arena);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                        ": Cannot allocate base for accepted socket");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  newsocket->base = base;
-  base->arena = arena;
-  base->fd = newfd;
-
-  /* Infer domain from peer address */
-  domain = ((const struct sockaddr *)addr)->sa_family;
-
-  /* Infer type from socket option */
-  if (getsockopt (newfd, SOL_SOCKET, SO_TYPE, &type_opt, &opt_len) < 0)
-    {
-      saved_errno = errno;
-      Arena_dispose (&arena);
-      SAFE_CLOSE (newfd);
-      errno = saved_errno;
-      SOCKET_ERROR_MSG ("Failed to get SO_TYPE for accepted socket: %s",
-                        strerror (saved_errno));
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  /* Initialize base with inferred values */
-  SocketCommon_init_base (base, newfd, domain, type_opt, protocol,
-                          Socket_Failed);
-
-  /* Set remote endpoint from accept addr */
-  memcpy (&base->remote_addr, addr, addrlen);
-  base->remote_addrlen = addrlen;
-
-  /* Local endpoint already updated in init_base via update_local_endpoint */
-
-  /* Reset cached strings/ports for remote (will be set in setup_peer_info
-     * later) */
-  base->remoteaddr = NULL;
-  base->remoteport = 0;
-  base->localaddr = NULL;
-  base->localport = 0;
-
-#ifdef SOCKET_HAS_TLS
-  /* Initialize TLS fields for accepted connection using shared helper */
-  socket_init_tls_fields (newsocket);
-#endif
-
-  socket_live_increment ();
+  accept_init_socket (newsocket, base, arena, newfd, addr, addrlen, type_opt);
 
   return newsocket;
 }

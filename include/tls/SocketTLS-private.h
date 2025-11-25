@@ -65,6 +65,32 @@ extern __thread Except_T SocketTLS_DetailedException;
   while (0)
 
 /**
+ * RAISE_TLS_ERROR_MSG - Raise TLS exception with specific message
+ * @exception: Exception type to raise
+ * @msg: Error message string
+ */
+#define RAISE_TLS_ERROR_MSG(exception, msg)                                   \
+  do                                                                          \
+    {                                                                         \
+      TLS_ERROR_MSG (msg);                                                    \
+      RAISE_TLS_ERROR (exception);                                            \
+    }                                                                         \
+  while (0)
+
+/**
+ * REQUIRE_TLS_ENABLED - Validate TLS is enabled on socket
+ * @socket: Socket to validate
+ * @exception: Exception to raise on failure
+ */
+#define REQUIRE_TLS_ENABLED(socket, exception)                                \
+  do                                                                          \
+    {                                                                         \
+      if (!(socket)->tls_enabled)                                             \
+        RAISE_TLS_ERROR_MSG (exception, "TLS not enabled on socket");         \
+    }                                                                         \
+  while (0)
+
+/**
  * TLS_ERROR_MSG - Format simple error message
  * @msg: Message string
  */
@@ -78,6 +104,35 @@ extern __thread Except_T SocketTLS_DetailedException;
  */
 #define TLS_ERROR_FMT(fmt, ...)                                               \
   snprintf (tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, fmt, __VA_ARGS__)
+
+/**
+ * VALIDATE_TLS_IO_READY - Validate socket is ready for TLS I/O
+ * @socket: Socket to validate
+ * @exception: Exception to raise on failure
+ *
+ * Checks tls_enabled, handshake_done, and SSL object availability.
+ * Returns SSL* on success, raises exception on failure.
+ */
+#define VALIDATE_TLS_IO_READY(socket, exception)                              \
+  ({                                                                          \
+    if (!(socket)->tls_enabled)                                               \
+      {                                                                       \
+        TLS_ERROR_MSG ("TLS not enabled on socket");                          \
+        RAISE_TLS_ERROR (exception);                                          \
+      }                                                                       \
+    if (!(socket)->tls_handshake_done)                                        \
+      {                                                                       \
+        TLS_ERROR_MSG ("TLS handshake not complete");                         \
+        RAISE_TLS_ERROR (exception);                                          \
+      }                                                                       \
+    SSL *_ssl = tls_socket_get_ssl (socket);                                  \
+    if (!_ssl)                                                                \
+      {                                                                       \
+        TLS_ERROR_MSG ("SSL object not available");                           \
+        RAISE_TLS_ERROR (exception);                                          \
+      }                                                                       \
+    _ssl;                                                                     \
+  })
 
 /* ============================================================================
  * SSL Object Access

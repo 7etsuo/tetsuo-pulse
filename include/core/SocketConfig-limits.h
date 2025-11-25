@@ -100,6 +100,22 @@
 #define SOCKETBUF_ALLOC_OVERHEAD 64
 #endif
 
+/**
+ * SOCKETBUF_MAX_CAPACITY - Maximum buffer capacity
+ *
+ * This limit (SIZE_MAX/2) is conservative but provides guaranteed safety:
+ * - On 32-bit systems: max buffer ~2GB (sufficient for network buffers)
+ * - On 64-bit systems: max buffer ~9 exabytes (effectively unlimited)
+ *
+ * The limit prevents integer overflow when calculating buffer sizes.
+ * For applications requiring larger buffers (extremely rare), use
+ * multiple buffer instances or memory-mapped files.
+ */
+#ifndef SOCKETBUF_MAX_CAPACITY
+#include <stddef.h>
+#define SOCKETBUF_MAX_CAPACITY (SIZE_MAX / 2)
+#endif
+
 /* Socket port string buffer size for general use */
 #ifndef SOCKET_PORT_STR_BUFSIZE
 #define SOCKET_PORT_STR_BUFSIZE 16
