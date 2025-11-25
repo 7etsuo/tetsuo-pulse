@@ -33,6 +33,13 @@
 
 #define T SocketAsync_T
 
+/* Request type enumeration */
+enum AsyncRequestType
+{
+  REQ_SEND,
+  REQ_RECV
+};
+
 /* Request tracking structure */
 struct AsyncRequest
 {
@@ -40,11 +47,7 @@ struct AsyncRequest
   Socket_T socket;
   SocketAsync_Callback cb;
   void *user_data;
-  enum
-  {
-    REQ_SEND,
-    REQ_RECV
-  } type;
+  enum AsyncRequestType type;
   const void *send_buf; /* For send: data to send */
   void *recv_buf;       /* For recv: user's buffer (must remain valid) */
   size_t len;           /* Original length */
@@ -108,6 +111,15 @@ static unsigned request_hash (unsigned request_id);
 int submit_async_operation (T async, struct AsyncRequest *req);
 int process_async_completions (T async, int timeout_ms);
 void SocketAsync_initialize_backend (T async);
+
+/* Helper functions for common async request operations */
+static struct AsyncRequest *setup_async_request (T async, Socket_T socket,
+                                                 SocketAsync_Callback cb, void *user_data,
+                                                 enum AsyncRequestType type,
+                                                 const void *send_buf, void *recv_buf,
+                                                 size_t len, SocketAsync_Flags flags);
+static unsigned submit_and_track_request (T async, struct AsyncRequest *req);
+static void cleanup_failed_request (T async, struct AsyncRequest *req, unsigned hash);
 
 /* ==================== Request Management ==================== */
 
@@ -245,6 +257,107 @@ handle_completion (T async, unsigned request_id, ssize_t result, int err)
   free_request (async, req);
 }
 
+/**
+ * setup_async_request - Initialize async request structure
+ * @async: Async context
+ * @socket: Socket for operation
+ * @cb: Completion callback
+ * @user_data: User data for callback
+ * @type: Request type (REQ_SEND or REQ_RECV)
+ * @send_buf: Buffer for send operations (NULL for recv)
+ * @recv_buf: Buffer for recv operations (NULL for send)
+ * @len: Buffer length
+ * @flags: Operation flags
+ * Returns: Initialized request or NULL on allocation failure
+ * Thread-safe: No (caller handles allocation)
+ */
+static struct AsyncRequest *
+setup_async_request (T async, Socket_T socket, SocketAsync_Callback cb, void *user_data,
+                     enum AsyncRequestType type,
+                     const void *send_buf, void *recv_buf,
+                     size_t len, SocketAsync_Flags flags)
+{
+  struct AsyncRequest *req = allocate_request (async);
+  if (!req)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async request");
+      return NULL;
+    }
+
+  req->socket = socket;
+  req->cb = cb;
+  req->user_data = user_data;
+  req->type = type;
+  req->send_buf = send_buf;
+  req->recv_buf = recv_buf;
+  req->len = len;
+  req->completed = 0;
+  req->flags = flags;
+  req->submitted_at = time (NULL);
+
+  return req;
+}
+
+/**
+ * submit_and_track_request - Submit request and track in hash table
+ * @async: Async context
+ * @req: Request to submit and track
+ * Returns: Request ID on success, 0 on failure
+ * Thread-safe: Yes (handles mutex locking)
+ */
+static unsigned
+submit_and_track_request (T async, struct AsyncRequest *req)
+{
+  int result;
+  unsigned hash;
+
+  pthread_mutex_lock (&async->mutex);
+
+  /* Generate request ID */
+  req->request_id = generate_request_id (async);
+
+  /* Insert into hash table */
+  hash = request_hash (req->request_id);
+  req->next = async->requests[hash];
+  async->requests[hash] = req;
+
+  pthread_mutex_unlock (&async->mutex);
+
+  /* Submit to backend */
+  result = async->available ? submit_async_operation (async, req) : 0;
+
+  if (result < 0)
+    {
+      /* Remove from hash table on failure */
+      cleanup_failed_request (async, req, hash);
+      return 0;
+    }
+
+  return req->request_id;
+}
+
+/**
+ * cleanup_failed_request - Clean up failed request submission
+ * @async: Async context
+ * @req: Request that failed
+ * @hash: Hash value for request ID
+ * Thread-safe: Yes (handles mutex locking)
+ */
+static void
+cleanup_failed_request (T async, struct AsyncRequest *req, unsigned hash)
+{
+  pthread_mutex_lock (&async->mutex);
+  struct AsyncRequest **pp = &async->requests[hash];
+  while (*pp != req)
+    {
+      pp = &(*pp)->next;
+    }
+  *pp = req->next;
+  pthread_mutex_unlock (&async->mutex);
+
+  free_request (async, req);
+}
+
 /* ==================== Public API ==================== */
 
 T
@@ -327,7 +440,7 @@ SocketAsync_send (T async, Socket_T socket, const void *buf, size_t len,
                   SocketAsync_Flags flags)
 {
   struct AsyncRequest *req;
-  int result;
+  unsigned request_id;
 
   assert (async);
   assert (socket);
@@ -335,58 +448,19 @@ SocketAsync_send (T async, Socket_T socket, const void *buf, size_t len,
   assert (len > 0);
   assert (cb);
 
-  /* Allocate request */
-  req = allocate_request (async);
+  req = setup_async_request (async, socket, cb, user_data, REQ_SEND,
+                            buf, NULL, len, flags);
   if (!req)
+    RAISE_MODULE_ERROR (SocketAsync_Failed);
+
+  request_id = submit_and_track_request (async, req);
+  if (request_id == 0)
     {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async request");
-      RAISE_MODULE_ERROR (SocketAsync_Failed);
-    }
-
-  req->socket = socket;
-  req->cb = cb;
-  req->user_data = user_data;
-  req->type = REQ_SEND;
-  req->send_buf = buf;
-  req->len = len;
-  req->completed = 0;
-  req->flags = flags;
-  req->submitted_at = time (NULL);
-
-  pthread_mutex_lock (&async->mutex);
-
-  /* Generate request ID */
-  req->request_id = generate_request_id (async);
-
-  /* Insert into hash table */
-  unsigned hash = request_hash (req->request_id);
-  req->next = async->requests[hash];
-  async->requests[hash] = req;
-
-  pthread_mutex_unlock (&async->mutex);
-
-  /* Submit to backend - this will be implemented in backend-specific files */
-  result = async->available ? submit_async_operation (async, req) : 0;
-
-  if (result < 0)
-    {
-      /* Remove from hash table */
-      pthread_mutex_lock (&async->mutex);
-      struct AsyncRequest **pp = &async->requests[hash];
-      while (*pp != req)
-        {
-          pp = &(*pp)->next;
-        }
-      *pp = req->next;
-      pthread_mutex_unlock (&async->mutex);
-
-      free_request (async, req);
-
       SOCKET_ERROR_FMT ("Failed to submit async send (errno=%d)", errno);
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
-  return req->request_id;
+  return request_id;
 }
 
 unsigned
@@ -395,7 +469,7 @@ SocketAsync_recv (T async, Socket_T socket, void *buf, size_t len,
                   SocketAsync_Flags flags)
 {
   struct AsyncRequest *req;
-  int result;
+  unsigned request_id;
 
   assert (async);
   assert (socket);
@@ -403,58 +477,19 @@ SocketAsync_recv (T async, Socket_T socket, void *buf, size_t len,
   assert (len > 0);
   assert (cb);
 
-  /* Allocate request */
-  req = allocate_request (async);
+  req = setup_async_request (async, socket, cb, user_data, REQ_RECV,
+                            NULL, buf, len, flags);
   if (!req)
+    RAISE_MODULE_ERROR (SocketAsync_Failed);
+
+  request_id = submit_and_track_request (async, req);
+  if (request_id == 0)
     {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async request");
-      RAISE_MODULE_ERROR (SocketAsync_Failed);
-    }
-
-  req->socket = socket;
-  req->cb = cb;
-  req->user_data = user_data;
-  req->type = REQ_RECV;
-  req->recv_buf = buf;
-  req->len = len;
-  req->completed = 0;
-  req->flags = flags;
-  req->submitted_at = time (NULL);
-
-  pthread_mutex_lock (&async->mutex);
-
-  /* Generate request ID */
-  req->request_id = generate_request_id (async);
-
-  /* Insert into hash table */
-  unsigned hash = request_hash (req->request_id);
-  req->next = async->requests[hash];
-  async->requests[hash] = req;
-
-  pthread_mutex_unlock (&async->mutex);
-
-  /* Submit to backend */
-  result = async->available ? submit_async_operation (async, req) : 0;
-
-  if (result < 0)
-    {
-      /* Remove from hash table */
-      pthread_mutex_lock (&async->mutex);
-      struct AsyncRequest **pp = &async->requests[hash];
-      while (*pp != req)
-        {
-          pp = &(*pp)->next;
-        }
-      *pp = req->next;
-      pthread_mutex_unlock (&async->mutex);
-
-      free_request (async, req);
-
       SOCKET_ERROR_FMT ("Failed to submit async recv (errno=%d)", errno);
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
-  return req->request_id;
+  return request_id;
 }
 
 int

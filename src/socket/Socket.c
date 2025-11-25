@@ -114,6 +114,129 @@ static __thread Except_T Socket_DetailedException;
 /* Static helper functions */
 
 /**
+ * validate_fd_is_socket - Validate file descriptor is a socket
+ * @fd: File descriptor to validate
+ * Raises: Socket_Failed if fd is not a socket
+ */
+static void
+validate_fd_is_socket (int fd)
+{
+  int optval;
+  socklen_t optlen = sizeof (optval);
+  if (getsockopt (fd, SOL_SOCKET, SO_TYPE, &optval, &optlen) < 0)
+    {
+      SOCKET_ERROR_FMT ("Invalid file descriptor (not a socket): fd=%d", fd);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+}
+
+/**
+ * allocate_socket_from_fd - Allocate socket structure from existing fd
+ * @arena: Arena for allocations
+ * @fd: File descriptor to wrap
+ * Returns: Allocated socket structure
+ * Raises: Socket_Failed on allocation failure
+ */
+static T
+allocate_socket_from_fd (Arena_T arena, int fd)
+{
+  T sock;
+
+  sock = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
+  if (!sock)
+    {
+      Arena_dispose (&arena);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate sock for new_from_fd");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  sock->base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T), __FILE__,
+                             __LINE__);
+  if (!sock->base)
+    {
+      Arena_dispose (&arena);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base for new_from_fd");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  sock->base->arena = arena;
+  sock->base->fd = fd;
+  sock->base->domain = AF_UNSPEC; /* Detect if needed */
+  sock->base->type = 0;           /* Detect */
+  sock->base->protocol = 0;
+
+  SocketCommon_init_base (sock->base, fd, sock->base->domain, sock->base->type,
+                          0, Socket_Failed);
+
+  return sock;
+}
+
+/**
+ * setup_socket_nonblocking - Set socket to non-blocking mode
+ * @socket: Socket to configure
+ * Raises: Socket_Failed on failure
+ */
+static void
+setup_socket_nonblocking (T socket)
+{
+  int flags = fcntl (SocketBase_fd (socket->base), F_GETFL, 0);
+  if (flags < 0)
+    {
+      int saved_errno = errno;
+      Socket_free (&socket);
+      errno = saved_errno;
+      SOCKET_ERROR_FMT ("Failed to get socket flags for fd=%d",
+                        SocketBase_fd (socket->base));
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  if (fcntl (SocketBase_fd (socket->base), F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+      int saved_errno = errno;
+      Socket_free (&socket);
+      errno = saved_errno;
+      SOCKET_ERROR_FMT ("Failed to set non-blocking mode for fd=%d",
+                        SocketBase_fd (socket->base));
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+}
+
+/**
+ * check_bound_ipv4 - Check if IPv4 socket is bound
+ * @addr: sockaddr_storage containing address
+ * Returns: 1 if bound, 0 otherwise
+ */
+static int
+check_bound_ipv4 (const struct sockaddr_storage *addr)
+{
+  struct sockaddr_in *sin = (struct sockaddr_in *)addr;
+  return sin->sin_port != 0;
+}
+
+/**
+ * check_bound_ipv6 - Check if IPv6 socket is bound
+ * @addr: sockaddr_storage containing address
+ * Returns: 1 if bound, 0 otherwise
+ */
+static int
+check_bound_ipv6 (const struct sockaddr_storage *addr)
+{
+  struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)addr;
+  return sin6->sin6_port != 0;
+}
+
+/**
+ * check_bound_unix - Check if Unix socket is bound
+ * @addr: sockaddr_storage containing address (unused)
+ * Returns: 1 if bound (Unix sockets are bound if getsockname succeeds)
+ */
+static int
+check_bound_unix (const struct sockaddr_storage *addr __attribute__((unused)))
+{
+  return 1; /* Unix domain sockets are bound if getsockname succeeds */
+}
+
+/**
  * setup_peer_info - Set up peer address and port from getnameinfo result
  * @socket: Socket to set up
  * @addr: Address structure
@@ -214,20 +337,11 @@ Socket_free (T *socket)
 T
 Socket_new_from_fd (int fd)
 {
-  T sock;
   Arena_T arena;
-  int flags;
 
   assert (fd >= 0);
 
-  /* Validate fd is a socket */
-  int optval;
-  socklen_t optlen = sizeof (optval);
-  if (getsockopt (fd, SOL_SOCKET, SO_TYPE, &optval, &optlen) < 0)
-    {
-      SOCKET_ERROR_FMT ("Invalid file descriptor (not a socket): fd=%d", fd);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+  validate_fd_is_socket (fd);
 
   arena = Arena_new ();
   if (!arena)
@@ -236,55 +350,12 @@ Socket_new_from_fd (int fd)
       RAISE_MODULE_ERROR (Socket_Failed);
     }
 
-  sock = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
-  if (!sock)
-    {
-      Arena_dispose (&arena);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                        ": Cannot allocate sock for new_from_fd");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  sock->base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T), __FILE__,
-                             __LINE__);
-  if (!sock->base)
-    {
-      Arena_dispose (&arena);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                        ": Cannot allocate base for new_from_fd");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  sock->base->arena = arena;
-  sock->base->fd = fd;
-  sock->base->domain = AF_UNSPEC; /* Detect if needed */
-  sock->base->type = 0;           /* Detect */
-  sock->base->protocol = 0;
-
-  SocketCommon_init_base (sock->base, fd, sock->base->domain, sock->base->type,
-                          0, Socket_Failed);
+  T sock = allocate_socket_from_fd (arena, fd);
 
   /* Init TLS etc as in Socket_new */
 
   /* Set non-blocking mode (required for batch accept) */
-  flags = fcntl (fd, F_GETFL, 0);
-  if (flags < 0)
-    {
-      int saved_errno = errno;
-      Socket_free (&sock);
-      errno = saved_errno;
-      SOCKET_ERROR_FMT ("Failed to get socket flags for fd=%d", fd);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  if (fcntl (fd, F_SETFL, flags | O_NONBLOCK) < 0)
-    {
-      int saved_errno = errno;
-      Socket_free (&sock);
-      errno = saved_errno;
-      SOCKET_ERROR_FMT ("Failed to set non-blocking mode for fd=%d", fd);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+  setup_socket_nonblocking (sock);
 
   return sock;
 }
@@ -452,22 +523,11 @@ Socket_isbound (T socket)
       /* For IPv4/IPv6, check if we have a valid port (address can be wildcard)
        */
       if (addr.ss_family == AF_INET)
-        {
-          struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
-          if (sin->sin_port != 0)
-            return 1;
-        }
+        return check_bound_ipv4 (&addr);
       else if (addr.ss_family == AF_INET6)
-        {
-          struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&addr;
-          if (sin6->sin6_port != 0)
-            return 1;
-        }
+        return check_bound_ipv6 (&addr);
       else if (addr.ss_family == AF_UNIX)
-        {
-          /* Unix domain sockets are bound if getsockname succeeds */
-          return 1;
-        }
+        return check_bound_unix (&addr);
     }
 
   return 0;

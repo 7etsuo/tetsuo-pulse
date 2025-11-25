@@ -5,6 +5,10 @@
 #include <stddef.h>
 #include <sys/uio.h>
 
+#ifdef SOCKET_HAS_TLS
+#include <openssl/ssl.h>
+#endif
+
 #define T Socket_T
 
 /* Internal I/O abstraction - routes through TLS when enabled */
@@ -95,6 +99,20 @@ extern int socket_tls_want_read (T socket);
  * Used by SocketPoll to adjust event masks during handshake.
  */
 extern int socket_tls_want_write (T socket);
+
+#ifdef SOCKET_HAS_TLS
+/**
+ * socket_handle_ssl_error - Helper to handle SSL error codes
+ * @socket: Socket instance
+ * @ssl: SSL object
+ * @ssl_result: Result from SSL operation
+ * @returns: 0 on success, -1 on error (sets errno)
+ * Thread-safe: Yes (operates on single socket)
+ * Maps SSL error codes to errno values and updates socket state.
+ * Used by TLS-aware I/O functions for consistent error handling.
+ */
+extern int socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result);
+#endif
 
 #undef T
 
