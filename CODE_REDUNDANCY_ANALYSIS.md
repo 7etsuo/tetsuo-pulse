@@ -41,7 +41,7 @@ void Socket_timeouts_setdefaults(const SocketTimeouts_T *timeouts) {
 ### Description
 Three near-identical implementations of bind error handling:
 - `handle_bind_error()` in Socket-bind.c
-- `handle_dgram_bind_error()` in SocketDgram-bind.c (near duplicate of handle_bind_error)
+- `handle_dgram_bind_error()` in SocketDgram-bind.c (implements same logic)
 - `SocketCommon_handle_bind_error()` in SocketCommon-bind.c (slightly different)
 
 ### Recommendation
@@ -110,7 +110,7 @@ Export a single `SocketCommon_is_wouldblock_error()` function and use it through
 - Handle ENOTCONN error
 - Return 1/0 based on result
 
-`SocketDgram_isbound()` duplicates inline the logic from `check_bound_ipv4()` and `check_bound_ipv6()` static functions defined in Socket-state.c.
+`SocketDgram_isbound()` inlines the logic from `check_bound_ipv4()` and `check_bound_ipv6()` static functions defined in Socket-state.c.
 
 ### Recommendation
 Create shared helper functions in SocketCommon:
@@ -177,7 +177,7 @@ ssize_t name(T socket, const void *buf, size_t len) { \
 - `src/socket/SocketDgram-iov.c` (lines 191-325)
 
 ### Description
-Both Socket-iov-all.c and SocketDgram-iov.c have complex iovec advancement logic after partial sends/receives. While `SocketCommon_advance_iov()` exists in SocketCommon-iov.c, Socket-iov-all.c doesn't use it and implements its own inline logic.
+Both Socket-iov-all.c and SocketDgram-iov.c have complex iovec advancement logic after partial sends/receives. Socket-iov-all.c implements its own inline logic instead of using the existing `SocketCommon_advance_iov()` function from SocketCommon-iov.c.
 
 ### Recommendation
 Refactor Socket-iov-all.c to use `SocketCommon_advance_iov()` and `SocketCommon_calculate_total_iov_len()`.
@@ -248,7 +248,7 @@ These are acceptable thin wrappers for readability, but could be consolidated in
 ### Medium Priority (Maintainability)
 4. **EAGAIN/EWOULDBLOCK checks** - Create shared helper
 5. **isconnected/isbound** - Create shared base implementations
-6. **sendvall/recvvall IOV advancement** - Use SocketCommon_advance_iov
+6. **IOV advancement logic** - Use SocketCommon_advance_iov
 
 ### Low Priority (Minor Cleanup)
 7. **Setup hints helpers** - Could be inlined
