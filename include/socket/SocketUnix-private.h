@@ -35,16 +35,29 @@ SocketUnix_unlink_stale (const char *path, Except_T exc_type)
 static inline void
 setup_abstract_unix_socket (struct sockaddr_un *addr, const char *path, size_t path_len)
 {
+  /* Calculate the actual name length (excluding the '@' prefix) */
+  size_t name_len = path_len > 0 ? path_len - 1 : 0;
+  /* Ensure name fits in sun_path after the leading null byte */
+  size_t max_name_len = sizeof (addr->sun_path) - 1;
+  if (name_len > max_name_len)
+    name_len = max_name_len;
+
   memset (addr, 0, sizeof (*addr));
   addr->sun_family = AF_UNIX;
   addr->sun_path[0] = '\0'; /* Abstract namespace marker */
-  memcpy (addr->sun_path + 1, path, path_len);
-  addr->sun_path[path_len + 1] = '\0';
+  /* Skip the '@' prefix when copying to sun_path */
+  if (name_len > 0)
+    memcpy (addr->sun_path + 1, path + 1, name_len);
 }
 
 static inline void
 setup_regular_unix_socket (struct sockaddr_un *addr, const char *path, size_t path_len)
 {
+  /* Ensure path fits in sun_path with null terminator */
+  size_t max_path_len = sizeof (addr->sun_path) - 1;
+  if (path_len > max_path_len)
+    path_len = max_path_len;
+
   memset (addr, 0, sizeof (*addr));
   addr->sun_family = AF_UNIX;
   memcpy (addr->sun_path, path, path_len);
