@@ -52,106 +52,13 @@ SOCKET_DECLARE_MODULE_EXCEPTION(SocketIO);
 extern int Socket_fd (const T socket);
 
 #ifdef SOCKET_HAS_TLS
-/* TLS functions moved to SocketIO-tls.c */
+/* TLS functions in SocketIO-tls.c */
 extern int socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result);
 extern ssize_t socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt);
 extern ssize_t socket_recvv_tls (T socket, struct iovec *iov, int iovcnt);
 extern SSL *socket_get_ssl (T socket);
-
-/**
- * socket_send_tls - TLS send operation
- * @socket: Socket instance with TLS enabled
- * @buf: Data to send
- * @len: Length of data
- *
- * Returns: Bytes sent or 0 if would block
- * Raises: Socket_Failed, SocketTLS_Failed, SocketTLS_HandshakeFailed
- */
-static ssize_t
-socket_send_tls (T socket, const void *buf, size_t len)
-{
-  SSL *ssl = socket_get_ssl (socket);
-  if (!ssl)
-    {
-      SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  if (!socket->tls_handshake_done)
-    {
-      SOCKET_ERROR_MSG ("TLS handshake not complete");
-      RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
-    }
-
-  int ssl_result = SSL_write (ssl, buf, (int)len);
-
-  if (ssl_result <= 0)
-    {
-      if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
-        {
-          if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 0;
-        }
-    }
-
-  if (ssl_result < 0)
-    {
-      SOCKET_ERROR_FMT ("TLS send failed (len=%zu)", len);
-      RAISE_MODULE_ERROR (SocketTLS_Failed);
-    }
-
-  return (ssize_t)ssl_result;
-}
-
-/**
- * socket_recv_tls - TLS receive operation
- * @socket: Socket instance with TLS enabled
- * @buf: Buffer for received data
- * @len: Buffer size
- *
- * Returns: Bytes received or 0 if would block
- * Raises: Socket_Failed, Socket_Closed, SocketTLS_Failed
- */
-static ssize_t
-socket_recv_tls (T socket, void *buf, size_t len)
-{
-  SSL *ssl = socket_get_ssl (socket);
-  if (!ssl)
-    {
-      SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  if (!socket->tls_handshake_done)
-    {
-      SOCKET_ERROR_MSG ("TLS handshake not complete");
-      RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
-    }
-
-  int ssl_result = SSL_read (ssl, buf, (int)len);
-
-  if (ssl_result <= 0)
-    {
-      if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
-        {
-          if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 0;
-          if (errno == ECONNRESET)
-            RAISE (Socket_Closed);
-        }
-    }
-
-  if (ssl_result < 0)
-    {
-      SOCKET_ERROR_FMT ("TLS receive failed (len=%zu)", len);
-      RAISE_MODULE_ERROR (SocketTLS_Failed);
-    }
-
-  if (ssl_result == 0)
-    RAISE (Socket_Closed);
-
-  return (ssize_t)ssl_result;
-}
+extern ssize_t socket_send_tls (T socket, const void *buf, size_t len);
+extern ssize_t socket_recv_tls (T socket, void *buf, size_t len);
 #endif
 
 /**
@@ -395,10 +302,22 @@ socket_is_tls_enabled (T socket)
 #endif
 }
 
+#ifdef SOCKET_HAS_TLS
+/**
+ * tls_is_active - Check if TLS is enabled and active
+ * @socket: Socket instance
+ * Returns: 1 if TLS active, 0 otherwise
+ */
+static int
+tls_is_active (T socket)
+{
+  return socket->tls_enabled && socket->tls_ssl;
+}
+#endif
+
 /**
  * socket_tls_want_read - Check if TLS wants read
  * @socket: Socket instance
- *
  * Returns: 1 if want read, 0 otherwise
  */
 int
@@ -406,22 +325,12 @@ socket_tls_want_read (T socket)
 {
   assert (socket);
 #ifdef SOCKET_HAS_TLS
-  if (!socket->tls_enabled || !socket->tls_ssl)
+  if (!tls_is_active (socket))
     return 0;
-
-  /* Check if handshake is in progress and wants read */
   if (!socket->tls_handshake_done)
-    {
-      return (socket->tls_last_handshake_state == TLS_HANDSHAKE_WANT_READ) ? 1
-                                                                           : 0;
-    }
-
-  /* For established connections, SSL_pending indicates data available */
+    return socket->tls_last_handshake_state == TLS_HANDSHAKE_WANT_READ;
   SSL *ssl = socket_get_ssl (socket);
-  if (ssl && SSL_pending (ssl) > 0)
-    return 1;
-
-  return 0;
+  return ssl && SSL_pending (ssl) > 0;
 #else
   return 0;
 #endif
@@ -430,7 +339,6 @@ socket_tls_want_read (T socket)
 /**
  * socket_tls_want_write - Check if TLS wants write
  * @socket: Socket instance
- *
  * Returns: 1 if want write, 0 otherwise
  */
 int
@@ -438,17 +346,10 @@ socket_tls_want_write (T socket)
 {
   assert (socket);
 #ifdef SOCKET_HAS_TLS
-  if (!socket->tls_enabled || !socket->tls_ssl)
+  if (!tls_is_active (socket))
     return 0;
-
-  /* Check if handshake is in progress and wants write */
   if (!socket->tls_handshake_done)
-    {
-      return (socket->tls_last_handshake_state == TLS_HANDSHAKE_WANT_WRITE)
-                 ? 1
-                 : 0;
-    }
-
+    return socket->tls_last_handshake_state == TLS_HANDSHAKE_WANT_WRITE;
   return 0;
 #else
   return 0;

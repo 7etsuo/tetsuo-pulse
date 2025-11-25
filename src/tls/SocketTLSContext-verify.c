@@ -128,7 +128,7 @@ SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback,
   if (ERR_get_error () != 0)
     {
       unsigned long err = ERR_get_error ();
-      char err_buf[256];
+      char err_buf[SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE];
       ERR_error_string_n (err, err_buf, sizeof (err_buf));
       RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
                            "Failed to set verify callback: %s", err_buf);
@@ -167,7 +167,7 @@ SocketTLSContext_load_crl (T ctx, const char *crl_path)
   if (ret != 1)
     {
       unsigned long err = ERR_get_error ();
-      char err_buf[256];
+      char err_buf[SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE];
       ERR_error_string_n (err, err_buf, sizeof (err_buf));
       RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Failed to load CRL '%s': %s",
                            crl_path, err_buf);

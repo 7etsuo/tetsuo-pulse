@@ -40,6 +40,57 @@ static void *socketlog_userdata = NULL;
 static const char *default_level_names[]
     = { "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL" };
 
+/* Timestamp formatting constants */
+#define SOCKETLOG_DEFAULT_TIMESTAMP "1970-01-01 00:00:00"
+#define SOCKETLOG_TIMESTAMP_FORMAT "%Y-%m-%d %H:%M:%S"
+#define SOCKETLOG_TIMESTAMP_BUFSIZE 32
+
+/**
+ * socketlog_format_timestamp - Format current time as timestamp string
+ * @buf: Buffer to write timestamp to
+ * @bufsize: Size of buffer
+ *
+ * Returns: Pointer to buf with formatted timestamp
+ * Thread-safe: Yes
+ *
+ * Uses localtime_r/localtime_s for thread-safe time conversion.
+ * Falls back to default timestamp on failure.
+ */
+static const char *
+socketlog_format_timestamp (char *buf, size_t bufsize)
+{
+  time_t raw;
+  struct tm tm_buf;
+  int time_ok = 0;
+
+  raw = time (NULL);
+
+#ifdef _WIN32
+  time_ok = (localtime_s (&tm_buf, &raw) == 0);
+#else
+  time_ok = (localtime_r (&raw, &tm_buf) != NULL);
+#endif
+
+  if (!time_ok
+      || strftime (buf, bufsize, SOCKETLOG_TIMESTAMP_FORMAT, &tm_buf) == 0)
+    strncpy (buf, SOCKETLOG_DEFAULT_TIMESTAMP, bufsize);
+
+  return buf;
+}
+
+/**
+ * socketlog_get_stream - Get appropriate output stream for log level
+ * @level: Log level
+ *
+ * Returns: stderr for ERROR/FATAL, stdout otherwise
+ * Thread-safe: Yes
+ */
+static FILE *
+socketlog_get_stream (SocketLogLevel level)
+{
+  return level >= SOCKET_LOG_ERROR ? stderr : stdout;
+}
+
 /**
  * default_logger - Default logging implementation
  * @userdata: User data (unused)
@@ -56,34 +107,15 @@ static void
 default_logger (void *userdata, SocketLogLevel level, const char *component,
                 const char *message)
 {
-  FILE *stream = level >= SOCKET_LOG_ERROR ? stderr : stdout;
-  time_t raw = time (NULL);
-  struct tm tm_buf;
-  char ts[32];
-  int time_ok = 0;
+  char ts[SOCKETLOG_TIMESTAMP_BUFSIZE];
 
   (void)userdata;
 
-#ifdef _WIN32
-  if (localtime_s (&tm_buf, &raw) == 0)
-    time_ok = 1;
-#else
-  if (localtime_r (&raw, &tm_buf) != NULL)
-    time_ok = 1;
-#endif
-
-  if (time_ok)
-    {
-      if (strftime (ts, sizeof (ts), "%Y-%m-%d %H:%M:%S", &tm_buf) == 0)
-        strncpy (ts, "1970-01-01 00:00:00", sizeof (ts));
-    }
-  else
-    {
-      strncpy (ts, "1970-01-01 00:00:00", sizeof (ts));
-    }
-
-  fprintf (stream, "%s [%s] %s: %s\n", ts, SocketLog_levelname (level),
-           component ? component : "(unknown)", message ? message : "(null)");
+  fprintf (socketlog_get_stream (level), "%s [%s] %s: %s\n",
+           socketlog_format_timestamp (ts, sizeof (ts)),
+           SocketLog_levelname (level),
+           component ? component : "(unknown)",
+           message ? message : "(null)");
 }
 
 /**

@@ -98,7 +98,8 @@ SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
       ctx->session_cache_size = max_sessions;
     }
 
-  long timeout = timeout_seconds > 0 ? timeout_seconds : 300L;
+  long timeout = timeout_seconds > 0 ? timeout_seconds
+                                     : SOCKET_TLS_SESSION_TIMEOUT_DEFAULT;
   SSL_CTX_set_timeout (ctx->ssl_ctx, timeout);
 
   ctx->session_cache_enabled = 1;

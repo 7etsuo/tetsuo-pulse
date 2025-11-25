@@ -36,10 +36,13 @@ __thread Except_T SocketDNS_DetailedException;
 #endif
 
 /**
- * cancel_pending_state - Handle cancellation of pending request
+ * cancel_pending_state - Handle cancellation of pending (queued) request
  * @dns: DNS resolver instance
  * @req: Request to cancel
+ *
  * Thread-safe: Must be called with mutex locked
+ *
+ * Removes request from queue and marks as cancelled with appropriate error.
  */
 static void
 cancel_pending_state (struct SocketDNS_T *dns,
@@ -50,10 +53,14 @@ cancel_pending_state (struct SocketDNS_T *dns,
 }
 
 /**
- * cancel_processing_state - Handle cancellation of processing request
- * @dns: DNS resolver instance
+ * cancel_processing_state - Handle cancellation of in-progress request
+ * @dns: DNS resolver instance (unused but kept for consistency)
  * @req: Request to cancel
+ *
  * Thread-safe: Must be called with mutex locked
+ *
+ * Marks request as cancelled. The worker thread will detect this state
+ * after resolution completes and discard the result.
  */
 static void
 cancel_processing_state (struct SocketDNS_T *dns,
@@ -67,7 +74,11 @@ cancel_processing_state (struct SocketDNS_T *dns,
 /**
  * cancel_complete_state - Handle cancellation of completed request
  * @req: Request to cancel
+ *
  * Thread-safe: Must be called with mutex locked
+ *
+ * Frees any stored result (ownership not yet transferred to caller)
+ * and sets cancellation error code.
  */
 static void
 cancel_complete_state (struct SocketDNS_Request_T *req)
@@ -145,10 +156,47 @@ SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
   return req;
 }
 
+/**
+ * handle_cancel_by_state - Handle cancellation based on request state
+ * @dns: DNS resolver instance
+ * @req: Request to cancel
+ * @send_signal: Output flag indicating if completion signal needed
+ * @cancelled: Output flag indicating if cancellation metrics needed
+ *
+ * Thread-safe: Must be called with mutex locked
+ */
+static void
+handle_cancel_by_state (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
+                        int *send_signal, int *cancelled)
+{
+  switch (req->state)
+    {
+    case REQ_PENDING:
+      cancel_pending_state (dns, req);
+      *send_signal = 1;
+      *cancelled = 1;
+      break;
+
+    case REQ_PROCESSING:
+      cancel_processing_state (dns, req);
+      *send_signal = 1;
+      *cancelled = 1;
+      break;
+
+    case REQ_COMPLETE:
+      cancel_complete_state (req);
+      break;
+
+    case REQ_CANCELLED:
+      if (req->error == 0)
+        req->error = dns_cancellation_error ();
+      break;
+    }
+}
+
 void
 SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
-  Request_T r = req;
   int send_signal = 0;
   int cancelled = 0;
 
@@ -159,27 +207,7 @@ SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 
   pthread_mutex_lock (&dns->mutex);
 
-  if (r->state == REQ_PENDING)
-    {
-      cancel_pending_state (dns, r);
-      send_signal = 1;
-      cancelled = 1;
-    }
-  else if (r->state == REQ_PROCESSING)
-    {
-      cancel_processing_state (dns, r);
-      send_signal = 1;
-      cancelled = 1;
-    }
-  else if (r->state == REQ_COMPLETE)
-    {
-      cancel_complete_state (r);
-    }
-  else if (r->state == REQ_CANCELLED)
-    {
-      if (r->error == 0)
-        r->error = dns_cancellation_error ();
-    }
+  handle_cancel_by_state (dns, req, &send_signal, &cancelled);
 
   if (send_signal)
     {
@@ -187,9 +215,11 @@ SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
       pthread_cond_broadcast (&dns->result_cond);
     }
 
-  hash_table_remove (dns, r);
+  hash_table_remove (dns, req);
+
   if (cancelled)
     SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_CANCELLED, 1);
+
   pthread_mutex_unlock (&dns->mutex);
 }
 

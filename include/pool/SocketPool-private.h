@@ -1,9 +1,24 @@
 #ifndef SOCKETPOOL_PRIVATE_H_INCLUDED
 #define SOCKETPOOL_PRIVATE_H_INCLUDED
 
+/**
+ * SocketPool-private.h - Private implementation details for SocketPool
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
+ *
+ * Contains internal structures, macros, and function declarations shared
+ * across SocketPool implementation files. Not for public use.
+ */
+
+#include <pthread.h>
 #include <time.h>
 
 #include "core/Arena.h"
+#include "core/Except.h"
+#include "core/SocketConfig.h"
+#include "core/SocketError.h"
+#include "pool/SocketPool.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 
@@ -12,7 +27,46 @@
 #include <openssl/ssl.h>
 #endif
 
-#include "SocketPool.h"
+/* ============================================================================
+ * Hash Table Configuration
+ * ============================================================================ */
+
+/** Hash table size - uses central configuration for consistency */
+#define SOCKET_HASH_SIZE SOCKET_HASH_TABLE_SIZE
+
+/* ============================================================================
+ * Thread-Local Exception Handling
+ * ============================================================================ */
+
+/**
+ * Thread-local exception for detailed error messages.
+ * Each thread gets its own copy to prevent race conditions.
+ */
+#ifdef _WIN32
+extern __declspec (thread) Except_T SocketPool_DetailedException;
+#else
+extern __thread Except_T SocketPool_DetailedException;
+#endif
+
+/**
+ * RAISE_POOL_ERROR - Raise exception with thread-local detailed message
+ * @exception: Base exception type to raise
+ *
+ * Creates a thread-local copy of the exception with detailed reason
+ * from socket_error_buf, then raises it.
+ */
+#define RAISE_POOL_ERROR(exception)                                           \
+  do                                                                          \
+    {                                                                         \
+      SocketPool_DetailedException = (exception);                             \
+      SocketPool_DetailedException.reason = socket_error_buf;                 \
+      RAISE (SocketPool_DetailedException);                                   \
+    }                                                                         \
+  while (0)
+
+/* ============================================================================
+ * Connection Structure
+ * ============================================================================ */
 
 struct Connection
 {
@@ -25,29 +79,30 @@ struct Connection
   struct Connection *hash_next;
   struct Connection *free_next;
 #ifdef SOCKET_HAS_TLS
-  SocketTLSContext_T tls_ctx; /* TLS context for this connection */
-  int tls_handshake_complete; /* TLS handshake state */
-  SSL_SESSION *tls_session; /* Saved TLS session for potential reuse */
+  SocketTLSContext_T tls_ctx;       /**< TLS context for this connection */
+  int tls_handshake_complete;       /**< TLS handshake state */
+  SSL_SESSION *tls_session;         /**< Saved session for potential reuse */
 #endif
 };
 
 typedef struct Connection *Connection_T;
 
-#define SOCKET_HASH_SIZE                                                      \
-  1021 /* Hash table size - prime for good distribution */
+/* ============================================================================
+ * Pool Structure
+ * ============================================================================ */
 
 #define T SocketPool_T
 struct T
 {
-  struct Connection *connections;
-  Connection_T *hash_table;
-  Connection_T free_list;
-  Socket_T *cleanup_buffer;
-  size_t maxconns;
-  size_t bufsize;
-  size_t count;
-  Arena_T arena;
-  pthread_mutex_t mutex;
+  struct Connection *connections;   /**< Pre-allocated connection array */
+  Connection_T *hash_table;         /**< Hash table for O(1) lookup */
+  Connection_T free_list;           /**< Linked list of free slots */
+  Socket_T *cleanup_buffer;         /**< Buffer for cleanup operations */
+  size_t maxconns;                  /**< Maximum connections */
+  size_t bufsize;                   /**< Buffer size per connection */
+  size_t count;                     /**< Active connection count */
+  Arena_T arena;                    /**< Memory arena */
+  pthread_mutex_t mutex;            /**< Thread safety mutex */
 };
 #undef T
 
@@ -96,11 +151,30 @@ extern void SocketPool_connections_reset_slot (Connection_T conn);
 
 extern void decrement_pool_count (SocketPool_T pool);
 
-#ifdef SOCKET_HAS_TLS
 extern void validate_saved_session (Connection_T conn);
-#endif
 
 extern Socket_T *SocketPool_cleanup_allocate_buffer (Arena_T arena,
                                                      size_t maxconns);
+
+/**
+ * socketpool_hash - Compute hash for socket (internal)
+ * @socket: Socket to hash
+ *
+ * Returns: Hash value
+ */
+extern unsigned socketpool_hash (const Socket_T socket);
+
+/* ============================================================================
+ * Core Functions (from SocketPool-core.h)
+ * ============================================================================ */
+
+/**
+ * safe_time - Get current time with error handling
+ *
+ * Returns: Current time
+ * Raises: SocketPool_Failed on system error
+ * Thread-safe: Yes
+ */
+extern time_t safe_time (void);
 
 #endif /* SOCKETPOOL_PRIVATE_H_INCLUDED */

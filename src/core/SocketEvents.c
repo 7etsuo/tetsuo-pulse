@@ -178,6 +178,36 @@ SocketEvent_unregister (SocketEventCallback callback, void *userdata)
 }
 
 /**
+ * socketevent_init_connection - Initialize connection event record
+ * @event: Event record to initialize
+ * @type: Event type (ACCEPTED or CONNECTED)
+ * @component: Component name
+ * @fd: File descriptor
+ * @peer_addr: Peer IP address string
+ * @peer_port: Peer port number
+ * @local_addr: Local IP address string
+ * @local_port: Local port number
+ *
+ * Thread-safe: Yes
+ *
+ * Helper to eliminate duplication in emit_accept and emit_connect.
+ */
+static void
+socketevent_init_connection (SocketEventRecord *event, SocketEventType type,
+                             const char *component, int fd,
+                             const char *peer_addr, int peer_port,
+                             const char *local_addr, int local_port)
+{
+  event->type = type;
+  event->component = component;
+  event->data.connection.fd = fd;
+  event->data.connection.peer_addr = peer_addr;
+  event->data.connection.peer_port = peer_port;
+  event->data.connection.local_addr = local_addr;
+  event->data.connection.local_port = local_port;
+}
+
+/**
  * SocketEvent_emit_accept - Emit connection accepted event
  * @fd: File descriptor of accepted socket
  * @peer_addr: Peer IP address string
@@ -193,14 +223,8 @@ SocketEvent_emit_accept (int fd, const char *peer_addr, int peer_port,
 {
   SocketEventRecord event;
 
-  event.type = SOCKET_EVENT_ACCEPTED;
-  event.component = "Socket";
-  event.data.connection.fd = fd;
-  event.data.connection.peer_addr = peer_addr;
-  event.data.connection.peer_port = peer_port;
-  event.data.connection.local_addr = local_addr;
-  event.data.connection.local_port = local_port;
-
+  socketevent_init_connection (&event, SOCKET_EVENT_ACCEPTED, "Socket", fd,
+                               peer_addr, peer_port, local_addr, local_port);
   socketevent_dispatch (&event);
 }
 
@@ -220,14 +244,8 @@ SocketEvent_emit_connect (int fd, const char *peer_addr, int peer_port,
 {
   SocketEventRecord event;
 
-  event.type = SOCKET_EVENT_CONNECTED;
-  event.component = "Socket";
-  event.data.connection.fd = fd;
-  event.data.connection.peer_addr = peer_addr;
-  event.data.connection.peer_port = peer_port;
-  event.data.connection.local_addr = local_addr;
-  event.data.connection.local_port = local_port;
-
+  socketevent_init_connection (&event, SOCKET_EVENT_CONNECTED, "Socket", fd,
+                               peer_addr, peer_port, local_addr, local_port);
   socketevent_dispatch (&event);
 }
 

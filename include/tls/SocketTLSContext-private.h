@@ -71,7 +71,7 @@ struct T
   pthread_mutex_t stats_mutex; /* Thread-safe stats update */
 
   /* Session tickets */
-  unsigned char ticket_key[48]; /* Session ticket encryption key */
+  unsigned char ticket_key[SOCKET_TLS_TICKET_KEY_LEN]; /* Session ticket key */
   int tickets_enabled;          /* 1 if session tickets enabled */
 
   /* OCSP stapling */

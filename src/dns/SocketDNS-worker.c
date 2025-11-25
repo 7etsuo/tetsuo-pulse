@@ -184,7 +184,10 @@ dequeue_request (struct SocketDNS_T *dns)
  * wait_for_request - Wait for next request or shutdown
  * @dns: DNS resolver instance
  * Returns: Request to process, or NULL if shutdown
- * Thread-safe: Must be called with mutex locked, unlocks on return
+ * Thread-safe: Must be called with mutex locked, returns with mutex locked
+ *
+ * NOTE: Caller is responsible for unlocking the mutex after this returns.
+ * This function does NOT unlock the mutex on any path.
  */
 Request_T
 wait_for_request (struct SocketDNS_T *dns)
@@ -195,10 +198,7 @@ wait_for_request (struct SocketDNS_T *dns)
     }
 
   if (dns->shutdown && dns->queue_head == NULL)
-    {
-      pthread_mutex_unlock (&dns->mutex);
-      return NULL;
-    }
+    return NULL;
 
   return dequeue_request (dns);
 }
@@ -221,14 +221,76 @@ signal_completion (struct SocketDNS_T *dns)
 }
 
 /**
- * store_resolution_result - Store completed resolution result
- * @dns: DNS resolver instance
- * @req: Completed request
- * @result: Resolution result (caller transfers ownership if stored)
- * @error: Error code from getaddrinfo
+ * copy_and_store_result - Copy result and store in request
+ * @req: Request to store result in
+ * @result: Original result to copy and free
+ * @error: Error code from resolution
+ *
  * Thread-safe: Must be called with mutex locked
- * Stores result if request still processing; otherwise frees if cancelled.
- * Updates metrics, signals completion.
+ */
+static void
+copy_and_store_result (struct SocketDNS_Request_T *req,
+                       struct addrinfo *result, int error)
+{
+  req->state = REQ_COMPLETE;
+  req->result = SocketCommon_copy_addrinfo (result);
+
+  if (!req->result)
+    {
+      freeaddrinfo (result);
+      req->error = EAI_MEMORY;
+    }
+  else
+    {
+      freeaddrinfo (result);
+      req->error = error;
+    }
+}
+
+/**
+ * update_completion_metrics - Update metrics for completed request
+ * @error: Error code (0 on success)
+ */
+static void
+update_completion_metrics (int error)
+{
+  if (error == 0)
+    SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_COMPLETED, 1);
+  else
+    SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_FAILED, 1);
+}
+
+/**
+ * handle_cancelled_result - Handle result for cancelled request
+ * @dns: DNS resolver instance
+ * @req: Cancelled request
+ * @result: Result to free
+ *
+ * Thread-safe: Must be called with mutex locked
+ */
+static void
+handle_cancelled_result (struct SocketDNS_T *dns,
+                         struct SocketDNS_Request_T *req,
+                         struct addrinfo *result)
+{
+  if (result)
+    freeaddrinfo (result);
+
+  if (req->state == REQ_CANCELLED && req->error == 0)
+    req->error = dns_cancellation_error ();
+
+  signal_completion (dns);
+  pthread_cond_broadcast (&dns->result_cond);
+}
+
+/**
+ * store_resolution_result - Store completed DNS resolution result
+ * @dns: DNS resolver instance
+ * @req: Request being completed
+ * @result: Resolution result from getaddrinfo (ownership transferred)
+ * @error: Error code from getaddrinfo (0 on success)
+ *
+ * Thread-safe: Must be called with mutex locked
  */
 void
 store_resolution_result (struct SocketDNS_T *dns,
@@ -237,41 +299,14 @@ store_resolution_result (struct SocketDNS_T *dns,
 {
   if (req->state == REQ_PROCESSING)
     {
-      req->state = REQ_COMPLETE;
-      req->result = SocketCommon_copy_addrinfo (result);
-      if (!req->result)
-        {
-          freeaddrinfo (result);
-          req->error = EAI_MEMORY;
-          req->state = REQ_COMPLETE; /* still complete, but error */
-        }
-      else
-        {
-          freeaddrinfo (result); /* transfer by copy and free original */
-        }
-      req->error = error;
-
-      if (error == 0)
-        SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_COMPLETED, 1);
-      else
-        SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_FAILED, 1);
-
+      copy_and_store_result (req, result, error);
+      update_completion_metrics (error);
       signal_completion (dns);
       pthread_cond_broadcast (&dns->result_cond);
     }
   else
     {
-      /* Request was cancelled, free result */
-      if (result)
-        freeaddrinfo (result);
-
-      if (req->state == REQ_CANCELLED)
-        {
-          if (req->error == 0)
-            req->error = dns_cancellation_error ();
-          signal_completion (dns);
-          pthread_cond_broadcast (&dns->result_cond);
-        }
+      handle_cancelled_result (dns, req, result);
     }
 }
 

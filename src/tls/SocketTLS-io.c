@@ -105,6 +105,7 @@ SocketTLS_recv (Socket_T socket, void *buf, size_t len)
   else if (result == 0)
     {
       RAISE (Socket_Closed);
+      return -1; /* Unreachable - RAISE performs longjmp */
     }
   else
     {
@@ -117,7 +118,6 @@ SocketTLS_recv (Socket_T socket, void *buf, size_t len)
       errno = EAGAIN;
       return 0;
     }
-  return -1;
 }
 
 #undef T

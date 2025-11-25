@@ -97,11 +97,20 @@ extern void SocketCommon_init_base (SocketBase_T base, int fd, int domain, int t
 
 extern int SocketCommon_get_family (SocketBase_T base, bool raise_on_fail, Except_T exc_type); /* Unifies family detection, raises or returns AF_UNSPEC */
 
+/* Shared socket option functions - consolidate duplicate implementations */
+extern void SocketCommon_setreuseaddr (SocketBase_T base, Except_T exc_type);
+extern void SocketCommon_setreuseport (SocketBase_T base, Except_T exc_type);
+extern void SocketCommon_settimeout (SocketBase_T base, int timeout_sec, Except_T exc_type);
+extern void SocketCommon_setcloexec_with_error (SocketBase_T base, int enable, Except_T exc_type);
+
 extern struct addrinfo *SocketCommon_copy_addrinfo (const struct addrinfo *src); /* Implementation of public deep copy function - see SocketCommon.h */
 
 /* Internal helper functions shared between SocketCommon-resolve.c and SocketCommon-utils.c */
 extern const char *socketcommon_get_safe_host (const char *host);
 extern int socketcommon_validate_hostname_internal (const char *host, int use_exceptions, Except_T exception_type);
 extern void socketcommon_convert_port_to_string (int port, char *port_str, size_t bufsize);
+
+/* Shared timeout sanitization function */
+extern int socketcommon_sanitize_timeout (int timeout_ms);
 
 #endif /* SOCKETCOMMON_PRIVATE_INCLUDED */
