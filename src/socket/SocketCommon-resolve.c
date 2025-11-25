@@ -22,10 +22,6 @@
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 
-/* Forward declarations for exception types */
-extern const Except_T Socket_Failed;
-extern const Except_T SocketDgram_Failed;
-
 /**
  * copy_single_addrinfo_node - Copy a single addrinfo node with all fields
  * @src: Source addrinfo node to copy

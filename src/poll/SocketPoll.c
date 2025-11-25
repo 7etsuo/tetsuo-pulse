@@ -20,17 +20,12 @@
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "core/Arena.h"
-#include "core/Except.h"
-#include "poll/SocketPoll.h"
 #include "poll/SocketPoll-private.h"
 #include "poll/SocketPoll_backend.h"
-#include "socket/Socket.h"
-#include "socket/SocketAsync.h"
+/* Arena.h, Except.h, Socket.h, SocketAsync.h included via SocketPoll-private.h */
 
 #define SOCKET_LOG_COMPONENT "SocketPoll"
 #include "core/SocketConfig.h"
@@ -45,6 +40,9 @@
 
 const Except_T SocketPoll_Failed
     = { &SocketPoll_Failed, "SocketPoll operation failed" };
+
+/* Cleanup helper declared in SocketPoll-init.c and used during construction */
+extern void cleanup_poll_partial (T poll);
 
 /* ==================== Constructor ==================== */
 
@@ -66,28 +64,16 @@ SocketPoll_new (int maxevents)
     poll->default_timeout_ms = SOCKET_DEFAULT_POLL_TIMEOUT;
     initialize_poll_arena (poll);
     allocate_poll_event_arrays (poll, maxevents);
-    initialize_poll_hash_tables (poll);
+    /* Note: Hash tables already zeroed by calloc in allocate_poll_structure */
     initialize_poll_mutex (poll);
     initialize_poll_timer_heap (poll);
     initialize_poll_async (poll);
   }
   EXCEPT (Arena_Failed)
-  {
-    if (poll->arena)
-      Arena_dispose (&poll->arena);
-    if (poll->backend)
-      backend_free (poll->backend);
-    free (poll);
-    RAISE_POLL_ERROR (SocketPoll_Failed);
-  }
   EXCEPT (SocketPoll_Failed)
   {
-    if (poll->arena)
-      Arena_dispose (&poll->arena);
-    if (poll->backend)
-      backend_free (poll->backend);
-    free (poll);
-    RERAISE;
+    cleanup_poll_partial ((T)poll);
+    RAISE_POLL_ERROR (SocketPoll_Failed);
   }
   END_TRY;
 
@@ -125,16 +111,14 @@ SocketPoll_free (T *poll)
 void
 SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
 {
-  volatile int fd;
-  volatile Socket_T volatile_socket = socket;
-  volatile unsigned hash;
-  volatile int is_duplicate = 0;
-  volatile SocketData *volatile_entry;
+  int fd;
+  unsigned hash;
+  SocketData *entry;
 
   assert (poll);
   assert (socket);
 
-  fd = Socket_fd ((Socket_T)volatile_socket);
+  fd = Socket_fd (socket);
   if (fd < 0)
     {
       SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
@@ -142,28 +126,22 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
       return;
     }
 
-  Socket_setnonblocking ((Socket_T)volatile_socket);
-  hash = socket_hash ((Socket_T)volatile_socket);
+  Socket_setnonblocking (socket);
+  hash = socket_hash (socket);
 
   pthread_mutex_lock (&poll->mutex);
   TRY
   {
     /* Check for duplicates */
-    volatile_entry = poll->socket_data_map[hash];
-    while (volatile_entry)
+    entry = poll->socket_data_map[hash];
+    while (entry)
       {
-        if (volatile_entry->socket == (Socket_T)volatile_socket)
+        if (entry->socket == socket)
           {
-            is_duplicate = 1;
-            break;
+            SOCKET_ERROR_MSG ("Socket already in poll set");
+            RAISE_POLL_ERROR (SocketPoll_Failed);
           }
-        volatile_entry = volatile_entry->next;
-      }
-
-    if (is_duplicate)
-      {
-        SOCKET_ERROR_MSG ("Socket already in poll set");
-        RAISE_POLL_ERROR (SocketPoll_Failed);
+        entry = entry->next;
       }
 
     /* Add to backend */
@@ -178,7 +156,7 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
 
     /* Add to data map */
     TRY
-    socket_data_add_unlocked (poll, (Socket_T)volatile_socket, data);
+    socket_data_add_unlocked (poll, socket, data);
     EXCEPT (SocketPoll_Failed)
     {
       backend_del (poll->backend, fd);
@@ -197,12 +175,11 @@ void
 SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data)
 {
   int fd;
-  volatile Socket_T volatile_socket = socket;
 
   assert (poll);
   assert (socket);
 
-  fd = Socket_fd ((Socket_T)volatile_socket);
+  fd = Socket_fd (socket);
 
   pthread_mutex_lock (&poll->mutex);
   TRY
@@ -216,7 +193,7 @@ SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data)
         RAISE_POLL_ERROR (SocketPoll_Failed);
       }
 
-    socket_data_update_unlocked (poll, (Socket_T)volatile_socket, data);
+    socket_data_update_unlocked (poll, socket, data);
   }
   FINALLY
   pthread_mutex_unlock (&poll->mutex);
@@ -229,24 +206,20 @@ void
 SocketPoll_del (T poll, Socket_T socket)
 {
   int fd;
-  volatile Socket_T volatile_socket = socket;
 
   assert (poll);
   assert (socket);
 
-  fd = Socket_fd ((Socket_T)volatile_socket);
+  fd = Socket_fd (socket);
 
   pthread_mutex_lock (&poll->mutex);
-  socket_data_remove_unlocked (poll, (Socket_T)volatile_socket);
+  socket_data_remove_unlocked (poll, socket);
   pthread_mutex_unlock (&poll->mutex);
 
-  if (backend_del (poll->backend, fd) < 0)
+  if (backend_del (poll->backend, fd) < 0 && errno != ENOENT)
     {
-      if (errno != ENOENT)
-        {
-          SOCKET_ERROR_FMT ("Failed to remove socket from poll (fd=%d)", fd);
-          RAISE_POLL_ERROR (SocketPoll_Failed);
-        }
+      SOCKET_ERROR_FMT ("Failed to remove socket from poll (fd=%d)", fd);
+      RAISE_POLL_ERROR (SocketPoll_Failed);
     }
 }
 
@@ -269,15 +242,13 @@ SocketPoll_getdefaulttimeout (T poll)
 void
 SocketPoll_setdefaulttimeout (T poll, int timeout)
 {
-  int sanitized = timeout;
-
   assert (poll);
 
-  if (sanitized < -1)
-    sanitized = 0;
+  if (timeout < -1)
+    timeout = 0;
 
   pthread_mutex_lock (&poll->mutex);
-  poll->default_timeout_ms = sanitized;
+  poll->default_timeout_ms = timeout;
   pthread_mutex_unlock (&poll->mutex);
 }
 
@@ -287,8 +258,6 @@ int
 SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
 {
   int nfds;
-  int async_completions = 0;
-  int timer_completions = 0;
 
   assert (poll);
   assert (events);
@@ -300,21 +269,20 @@ SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
   if (poll->timer_heap)
     {
       int64_t next_timer_ms = SocketTimer_heap_peek_delay (poll->timer_heap);
+
       if (next_timer_ms >= 0 && (timeout < 0 || next_timer_ms < timeout))
         {
           if (next_timer_ms > SOCKET_MAX_TIMER_TIMEOUT_MS)
             next_timer_ms = SOCKET_MAX_TIMER_TIMEOUT_MS;
-
           if (next_timer_ms > INT_MAX)
             next_timer_ms = INT_MAX;
-
           timeout = (int)next_timer_ms;
         }
     }
 
   /* Process async completions first */
   if (poll->async)
-    async_completions = SocketAsync_process_completions (poll->async, 0);
+    SocketAsync_process_completions (poll->async, 0);
 
   /* Wait for events from backend */
   nfds = backend_wait (poll->backend, timeout);
@@ -334,11 +302,11 @@ SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
 
   /* Process async completions after wait */
   if (poll->async)
-    async_completions += SocketAsync_process_completions (poll->async, 0);
+    SocketAsync_process_completions (poll->async, 0);
 
   /* Process expired timers */
   if (poll->timer_heap)
-    timer_completions = SocketTimer_process_expired (poll->timer_heap);
+    SocketTimer_process_expired (poll->timer_heap);
 
   if (nfds == 0)
     {
@@ -348,24 +316,17 @@ SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
 
   /* Translate backend events */
   nfds = translate_backend_events_to_socket_events (poll, nfds);
+
   if (nfds > 0)
     SocketMetrics_increment (SOCKET_METRIC_POLL_EVENTS_DISPATCHED,
                              (unsigned long)nfds);
+
   SocketEvent_emit_poll_wakeup (nfds, timeout);
 
 #ifdef SOCKET_HAS_TLS
   /* Update poll events for TLS sockets in handshake */
   socketpoll_process_tls_handshakes (poll, nfds);
 #endif
-
-  if (!poll || !poll->socketevents)
-    {
-      *events = NULL;
-      return 0;
-    }
-
-  (void)async_completions;
-  (void)timer_completions;
 
   *events = poll->socketevents;
   return nfds;

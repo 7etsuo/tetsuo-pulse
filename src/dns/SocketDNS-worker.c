@@ -7,27 +7,22 @@
  * functions. Timeout handling is in SocketDNS-timeout.c.
  */
 
-#include "core/SocketConfig.h"
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <pthread.h>
+/* All includes before T macro definition to avoid redefinition warnings */
 #include <stdio.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
 
 #include "core/Arena.h"
-#include "core/Except.h"
-#include "core/SocketError.h"
-#include "core/SocketEvents.h"
-#include "core/SocketMetrics.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNS-private.h"
+
+/* Redefine T after all includes (Arena.h and SocketDNS.h both undef T at end) */
+#undef T
+#define T SocketDNS_T
+#undef Request_T
+#define Request_T SocketDNS_Request_T
+
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS-worker"
-#define T SocketDNS_T
-#define Request_T SocketDNS_Request_T
-#include "dns/SocketDNS-private.h"
-#include "socket/SocketCommon.h"
 
 /**
  * initialize_addrinfo_hints - Initialize getaddrinfo hints structure
@@ -234,17 +229,8 @@ copy_and_store_result (struct SocketDNS_Request_T *req,
 {
   req->state = REQ_COMPLETE;
   req->result = SocketCommon_copy_addrinfo (result);
-
-  if (!req->result)
-    {
-      freeaddrinfo (result);
-      req->error = EAI_MEMORY;
-    }
-  else
-    {
-      freeaddrinfo (result);
-      req->error = error;
-    }
+  req->error = req->result ? error : EAI_MEMORY;
+  freeaddrinfo (result); /* Always free original after copy attempt */
 }
 
 /**
@@ -279,8 +265,7 @@ handle_cancelled_result (struct SocketDNS_T *dns,
   if (req->state == REQ_CANCELLED && req->error == 0)
     req->error = dns_cancellation_error ();
 
-  signal_completion (dns);
-  pthread_cond_broadcast (&dns->result_cond);
+  SIGNAL_DNS_COMPLETION (dns);
 }
 
 /**

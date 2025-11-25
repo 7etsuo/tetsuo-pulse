@@ -12,11 +12,9 @@
 #include <poll.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "poll/SocketPoll_backend.h"
-
-/* Initial pollfd array size - use configured constant */
-#define INITIAL_POLLFDS POLL_INITIAL_FDS
 
 /* Backend instance structure */
 struct PollBackend_T
@@ -41,7 +39,7 @@ backend_new (int maxevents)
   if (!backend)
     return NULL;
 
-  backend->capacity = INITIAL_POLLFDS;
+  backend->capacity = POLL_INITIAL_FDS;
   backend->fds = calloc (backend->capacity, sizeof (struct pollfd));
   if (!backend->fds)
     {
@@ -188,11 +186,7 @@ backend_add (PollBackend_T backend, int fd, unsigned events)
   int index;
 
   assert (backend);
-  if (fd < 0)
-    {
-      errno = EBADF;
-      return -1;
-    }
+  VALIDATE_FD (fd);
 
   /* Check if already added */
   if (find_fd_index (backend, fd) >= 0)
@@ -229,11 +223,7 @@ backend_mod (PollBackend_T backend, int fd, unsigned events)
   int index;
 
   assert (backend);
-  if (fd < 0)
-    {
-      errno = EBADF;
-      return -1;
-    }
+  VALIDATE_FD (fd);
 
   index = find_fd_index (backend, fd);
   if (index < 0)

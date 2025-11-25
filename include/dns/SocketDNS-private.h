@@ -10,14 +10,17 @@
 #include <time.h>
 #include <unistd.h>
 
-/* Project headers */
-#include "core/Arena.h"
+/* Project headers - Arena.h NOT included to avoid T macro conflicts.
+ * Each .c file must include Arena.h before defining T. */
 #include "core/Except.h"
 #include "core/SocketConfig.h"
 #include "core/SocketError.h"
 #include "core/SocketEvents.h"
 #include "core/SocketMetrics.h"
 #include "socket/SocketCommon.h"
+
+/* Forward declaration - full definition in Arena.h */
+typedef struct Arena_T *Arena_T;
 
 /* Forward typedef for callback */
 typedef void (*SocketDNS_Callback) (struct SocketDNS_Request_T *, struct addrinfo *, int, void *);
@@ -76,7 +79,28 @@ struct SocketDNS_T {
 /* Internal macros - use centralized constant */
 #define COMPLETION_SIGNAL_BYTE SOCKET_DNS_COMPLETION_SIGNAL_BYTE
 
-/* Thread-local exception */
+/**
+ * SIGNAL_DNS_COMPLETION - Signal completion and wake waiters
+ * @dns: DNS resolver instance
+ * Consolidates repeated signal_completion + pthread_cond_broadcast pattern.
+ */
+#define SIGNAL_DNS_COMPLETION(dns)                                            \
+  do                                                                          \
+    {                                                                         \
+      signal_completion (dns);                                                \
+      pthread_cond_broadcast (&(dns)->result_cond);                           \
+    }                                                                         \
+  while (0)
+
+/**
+ * SANITIZE_TIMEOUT_MS - Sanitize timeout value (negative -> 0)
+ * @timeout_ms: Timeout in milliseconds
+ * Returns: 0 if negative, otherwise original value
+ */
+#define SANITIZE_TIMEOUT_MS(timeout_ms)                                       \
+  ((timeout_ms) < 0 ? 0 : (timeout_ms))
+
+/* Thread-local exception - extern declaration (defined in SocketDNS.c) */
 extern const Except_T SocketDNS_Failed;
 #ifdef _WIN32
 extern __declspec(thread) Except_T SocketDNS_DetailedException;
@@ -84,6 +108,7 @@ extern __declspec(thread) Except_T SocketDNS_DetailedException;
 extern __thread Except_T SocketDNS_DetailedException;
 #endif
 
+/* Raise DNS error using thread-local exception copy */
 #define RAISE_DNS_ERROR(exception)                                            \
   do                                                                          \
     {                                                                         \
@@ -99,7 +124,7 @@ extern __thread Except_T SocketDNS_DetailedException;
 extern struct SocketDNS_T * allocate_dns_resolver (void);
 extern void initialize_dns_fields (struct SocketDNS_T *dns);
 extern void initialize_dns_components (struct SocketDNS_T *dns);
-extern void setup_thread_attributes (pthread_attr_t *attr, int thread_index);
+extern void setup_thread_attributes (pthread_attr_t *attr);
 extern int create_single_worker_thread (struct SocketDNS_T *dns, int idx);
 extern void create_worker_threads (struct SocketDNS_T *dns);
 extern void start_dns_workers (struct SocketDNS_T *dns);
@@ -120,7 +145,7 @@ extern void cleanup_on_init_failure (struct SocketDNS_T *dns,
                                      enum DnsCleanupLevel cleanup_level);
 extern void shutdown_workers (struct SocketDNS_T *d);
 extern void drain_completion_pipe (struct SocketDNS_T *dns);
-extern void drain_completed_requests (struct SocketDNS_T *dns);
+/* drain_completed_requests removed - redundant with free_all_requests */
 extern void reset_dns_state (struct SocketDNS_T *d);
 extern void destroy_dns_resources (struct SocketDNS_T *d);
 extern void free_request_list (struct SocketDNS_Request_T *head,

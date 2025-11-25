@@ -27,6 +27,9 @@
  *
  * Returns: OpenSSL SSL_VERIFY_* flags
  */
+/* Forward declaration for OpenSSL callback */
+static int internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx);
+
 static int
 verify_mode_to_openssl (TLSVerifyMode mode)
 {
@@ -43,6 +46,22 @@ verify_mode_to_openssl (TLSVerifyMode mode)
     default:
       return SSL_VERIFY_NONE;
     }
+}
+
+/**
+ * apply_verify_settings - Apply verification mode and callback to context
+ * @ctx: TLS context
+ *
+ * Consolidates the SSL_CTX_set_verify call used by both set_verify_mode
+ * and set_verify_callback.
+ */
+static void
+apply_verify_settings (T ctx)
+{
+  int openssl_mode = verify_mode_to_openssl (ctx->verify_mode);
+  SSL_verify_cb cb
+      = ctx->verify_callback ? (SSL_verify_cb)internal_verify_callback : NULL;
+  SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, cb);
 }
 
 #pragma GCC diagnostic push
@@ -101,13 +120,8 @@ SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
   assert (ctx->ssl_ctx);
 
   ctx->verify_mode = mode;
-
-  int openssl_mode = verify_mode_to_openssl (mode);
-  SSL_verify_cb cb
-      = ctx->verify_callback ? (SSL_verify_cb)internal_verify_callback : NULL;
-
   ERR_clear_error ();
-  SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, cb);
+  apply_verify_settings (ctx);
 }
 
 void
@@ -119,63 +133,35 @@ SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback,
 
   ctx->verify_callback = callback;
   ctx->verify_user_data = user_data;
-
-  int openssl_mode = verify_mode_to_openssl (ctx->verify_mode);
-  SSL_verify_cb cb = callback ? (SSL_verify_cb)internal_verify_callback : NULL;
-
-  SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, cb);
-
-  if (ERR_get_error () != 0)
-    {
-      unsigned long err = ERR_get_error ();
-      char err_buf[SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE];
-      ERR_error_string_n (err, err_buf, sizeof (err_buf));
-      RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                           "Failed to set verify callback: %s", err_buf);
-    }
+  apply_verify_settings (ctx);
 }
 
 void
 SocketTLSContext_load_crl (T ctx, const char *crl_path)
 {
-  if (!ctx)
-    RAISE_CTX_ERROR (SocketTLS_Failed);
-  if (!ctx->ssl_ctx)
-    RAISE_CTX_ERROR (SocketTLS_Failed);
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+
   if (!crl_path || !*crl_path)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL path cannot be NULL or empty");
 
   X509_STORE *store = SSL_CTX_get_cert_store (ctx->ssl_ctx);
   if (!store)
-    RAISE_CTX_ERROR (SocketTLS_Failed);
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Failed to get certificate store");
 
   struct stat st;
   if (stat (crl_path, &st) != 0)
     RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Invalid CRL path '%s': %s",
                          crl_path, strerror (errno));
 
-  int ret;
-  if (S_ISDIR (st.st_mode))
-    {
-      ret = X509_STORE_load_locations (store, NULL, crl_path);
-    }
-  else
-    {
-      ret = X509_STORE_load_locations (store, crl_path, NULL);
-    }
+  int ret = S_ISDIR (st.st_mode)
+                ? X509_STORE_load_locations (store, NULL, crl_path)
+                : X509_STORE_load_locations (store, crl_path, NULL);
 
   if (ret != 1)
-    {
-      unsigned long err = ERR_get_error ();
-      char err_buf[SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE];
-      ERR_error_string_n (err, err_buf, sizeof (err_buf));
-      RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Failed to load CRL '%s': %s",
-                           crl_path, err_buf);
-    }
+    ctx_raise_openssl_error ("Failed to load CRL");
 
-  long current = X509_STORE_set_flags (store, 0);
-  X509_STORE_set_flags (store,
-                        current | X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+  X509_STORE_set_flags (store, X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
 }
 
 void

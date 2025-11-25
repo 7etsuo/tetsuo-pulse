@@ -12,25 +12,12 @@
  * - Live count tracking for debugging
  */
 
-#include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <limits.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <poll.h>
 #include <pthread.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <sys/un.h>
 #include <unistd.h>
 
 /* MSG_NOSIGNAL fallback for platforms without it (macOS, BSD).
@@ -110,8 +97,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION(Socket);
  *
  * Sets all TLS-related fields to safe default values (NULL/0).
  * Thread-safe: No (operates on single socket during construction)
+ * Note: Exported for use by Socket-accept.c
  */
-static void
+void
 socket_init_tls_fields (Socket_T sock)
 {
   sock->tls_ctx = NULL;
@@ -176,13 +164,9 @@ allocate_socket_from_fd (Arena_T arena, int fd)
     }
 
   sock->base->arena = arena;
-  sock->base->fd = fd;
-  sock->base->domain = AF_UNSPEC; /* Detect if needed */
-  sock->base->type = 0;           /* Detect */
-  sock->base->protocol = 0;
 
-  SocketCommon_init_base (sock->base, fd, sock->base->domain, sock->base->type,
-                          0, Socket_Failed);
+  /* init_base sets fd, domain, type, protocol and initializes all endpoints */
+  SocketCommon_init_base (sock->base, fd, AF_UNSPEC, 0, 0, Socket_Failed);
 
   return sock;
 }
@@ -342,12 +326,16 @@ Socket_listen (Socket_T socket, int backlog)
     }
 }
 
+/**
+ * Socket_debug_live_count - Get count of live sockets (thread-safe)
+ * Returns: Current number of live Socket_T instances
+ * Thread-safe: Yes - protected by mutex
+ */
 int
-socket_debug_live_count (void)
+Socket_debug_live_count (void)
 {
   int count;
 
-  /* Thread-safe read of live socket count */
   pthread_mutex_lock (&socket_live_count_mutex);
   count = socket_live_count;
   pthread_mutex_unlock (&socket_live_count_mutex);
@@ -367,10 +355,4 @@ void
 Socket_connect_unix (Socket_T socket, const char *path)
 {
   SocketUnix_connect (socket->base, path, Socket_Failed);
-}
-
-int
-Socket_debug_live_count (void)
-{
-  return socket_debug_live_count();
 }

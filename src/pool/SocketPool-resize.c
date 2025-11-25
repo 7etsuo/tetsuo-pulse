@@ -15,7 +15,7 @@
 
 #define T SocketPool_T
 
-extern const Except_T SocketPool_Failed;
+/* SocketPool_Failed declared in SocketPool.h (included via private header) */
 
 /**
  * collect_excess_connections - Collect excess active connections for closing
@@ -129,11 +129,6 @@ relink_free_slots (T pool, size_t maxconns)
 static void
 initialize_new_slots (T pool, size_t old_maxconns, size_t new_maxconns)
 {
-  size_t growth = new_maxconns - old_maxconns;
-
-  memset (&pool->connections[old_maxconns], 0,
-          growth * sizeof (struct Connection));
-
   for (size_t i = old_maxconns; i < new_maxconns; i++)
     {
       struct Connection *conn = &pool->connections[i];
@@ -143,7 +138,7 @@ initialize_new_slots (T pool, size_t old_maxconns, size_t new_maxconns)
                                                 conn)
           == 0)
         {
-          conn->free_next = (struct Connection *)pool->free_list;
+          conn->free_next = pool->free_list;
           pool->free_list = conn;
         }
     }
@@ -234,12 +229,8 @@ SocketPool_resize (T pool, size_t new_maxconns)
   size_t old_maxconns;
 
   assert (pool);
-  assert (SOCKET_VALID_CONNECTION_COUNT (new_maxconns));
 
-  if (new_maxconns < 1)
-    new_maxconns = 1;
-  if (new_maxconns > SOCKET_MAX_CONNECTIONS)
-    new_maxconns = SOCKET_MAX_CONNECTIONS;
+  new_maxconns = socketpool_enforce_max_connections (new_maxconns);
 
   pthread_mutex_lock (&pool->mutex);
 
@@ -260,7 +251,12 @@ SocketPool_resize (T pool, size_t new_maxconns)
       RAISE_POOL_ERROR (SocketPool_Failed);
     }
 
-  rehash_active_connections (pool, new_maxconns);
+  /* Rehash only valid slots: min of old and new size.
+   * When growing, new slots are uninitialized until initialize_new_slots.
+   * When shrinking, array was truncated to new_maxconns. */
+  rehash_active_connections (pool,
+                             old_maxconns < new_maxconns ? old_maxconns
+                                                         : new_maxconns);
 
   if (new_maxconns > old_maxconns)
     initialize_new_slots (pool, old_maxconns, new_maxconns);

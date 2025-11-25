@@ -38,21 +38,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION(SocketBind);
 /* Macro to raise exception with detailed error message */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(SocketBind, e)
 
-/* ==================== Validation ==================== */
-
-static void
-validate_port_number (int port)
-{
-  SocketCommon_validate_port (port, Socket_Failed);
-}
-
-/* ==================== Bind Setup ==================== */
-
-static void
-setup_bind_hints (struct addrinfo *hints)
-{
-  SocketCommon_setup_hints (hints, SOCKET_STREAM_TYPE, SOCKET_AI_PASSIVE);
-}
+/* Bind setup uses SocketCommon_validate_port and SocketCommon_setup_hints directly */
 
 static int
 is_common_bind_error (int err)
@@ -89,16 +75,16 @@ handle_bind_error (const char *host, int port)
  * @sock: Socket instance (volatile-safe)
  * @host: Hostname to resolve (NULL for wildcard)
  * @port: Port number
+ * @socket_family: Socket address family
  * @res: Output for resolved addresses
  *
  * Sets errno to EAI_FAIL on resolution failure without raising.
  */
 static void
-bind_resolve_address (T sock, const char *host, int port,
+bind_resolve_address (T sock, const char *host, int port, int socket_family,
                       struct addrinfo **res)
 {
-  int socket_family = SocketCommon_get_socket_family (sock->base);
-
+  (void)sock; /* Used for consistency, family passed in */
   if (SocketCommon_resolve_address (host, port, NULL, res, Socket_Failed,
                                     socket_family, 0)
       != 0)
@@ -142,23 +128,22 @@ bind_try_addresses (T sock, struct addrinfo *res, int socket_family)
 void
 Socket_bind (T socket, const char *host, int port)
 {
-  struct addrinfo hints, *res = NULL;
+  struct addrinfo *res = NULL;
   int socket_family;
   volatile T vsock = socket; /* Preserve across exception boundaries */
 
   assert (socket);
 
-  validate_port_number (port);
+  SocketCommon_validate_port (port, Socket_Failed);
   host = SocketCommon_normalize_wildcard_host (host);
-  setup_bind_hints (&hints);
+  socket_family = SocketCommon_get_socket_family (socket->base);
 
   TRY
   {
-    bind_resolve_address ((T)vsock, host, port, &res);
+    bind_resolve_address ((T)vsock, host, port, socket_family, &res);
     if (!res)
       return;
 
-    socket_family = SocketCommon_get_socket_family (((T)vsock)->base);
     bind_try_addresses ((T)vsock, res, socket_family);
 
     freeaddrinfo (res);
@@ -209,25 +194,17 @@ Socket_bind_async (SocketDNS_T dns, T socket, const char *host, int port)
   assert (dns);
   assert (socket);
 
-  /* Validate port */
-  if (!SOCKET_VALID_PORT (port))
-    {
-      SOCKET_ERROR_MSG ("Invalid port number: %d (must be 1-65535)", port);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+  /* Validate port using common validator for consistent error handling */
+  SocketCommon_validate_port (port, Socket_Failed);
 
-  /* Normalize wildcard addresses to NULL */
-  if (host == NULL || strcmp (host, "0.0.0.0") == 0
-      || strcmp (host, "::") == 0)
-    {
-      host = NULL;
-    }
+  /* Normalize wildcard addresses to NULL - use existing utility */
+  host = SocketCommon_normalize_wildcard_host (host);
 
   /* For wildcard bind (NULL host), resolve synchronously and create completed
    * request */
   if (host == NULL)
     {
-      setup_bind_hints (&hints);
+      SocketCommon_setup_hints (&hints, SOCKET_STREAM_TYPE, SOCKET_AI_PASSIVE);
       if (SocketCommon_resolve_address (NULL, port, &hints, &res,
                                         Socket_Failed, SOCKET_AF_UNSPEC, 1)
           != 0)

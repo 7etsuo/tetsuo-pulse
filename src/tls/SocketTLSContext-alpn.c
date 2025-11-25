@@ -216,10 +216,19 @@ copy_protocol_to_arena (T ctx, const char *proto)
 static unsigned char *
 build_wire_format (T ctx, const char **protos, size_t count, size_t *len_out)
 {
+  /* Cache protocol lengths to avoid redundant strlen calls */
+  size_t *lengths = Arena_alloc (ctx->arena, count * sizeof (size_t),
+                                 __FILE__, __LINE__);
+  if (!lengths)
+    {
+      ctx_raise_openssl_error ("Failed to allocate ALPN length cache");
+    }
+
   size_t total = 0;
   for (size_t i = 0; i < count; i++)
     {
-      total += 1 + strlen (protos[i]);
+      lengths[i] = strlen (protos[i]);
+      total += 1 + lengths[i];
     }
 
   unsigned char *buf = Arena_alloc (ctx->arena, total, __FILE__, __LINE__);
@@ -231,10 +240,9 @@ build_wire_format (T ctx, const char **protos, size_t count, size_t *len_out)
   size_t offset = 0;
   for (size_t i = 0; i < count; i++)
     {
-      size_t len = strlen (protos[i]);
-      buf[offset++] = (unsigned char)len;
-      memcpy (buf + offset, protos[i], len);
-      offset += len;
+      buf[offset++] = (unsigned char)lengths[i];
+      memcpy (buf + offset, protos[i], lengths[i]);
+      offset += lengths[i];
     }
 
   *len_out = total;

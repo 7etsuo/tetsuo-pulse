@@ -76,14 +76,18 @@ SocketBuf_check_invariants (T buf)
 /**
  * new_validate_capacity - Validate capacity for new buffer
  * @capacity: Requested capacity
- * Raises: SocketBuf_Failed if capacity too large
+ *
+ * Raises: SocketBuf_Failed if capacity exceeds SOCKETBUF_MAX_CAPACITY
+ *
+ * The maximum capacity limit prevents integer overflow in buffer
+ * arithmetic operations. See SocketConfig-limits.h for details.
  */
 static void
 new_validate_capacity (size_t capacity)
 {
-  if (capacity > SIZE_MAX / 2)
+  if (capacity > SOCKETBUF_MAX_CAPACITY)
     {
-      SOCKET_ERROR_MSG ("SocketBuf_new: capacity too large");
+      SOCKET_ERROR_MSG ("SocketBuf_new: capacity exceeds SOCKETBUF_MAX_CAPACITY");
       RAISE_MODULE_ERROR (SocketBuf_Failed);
     }
 }
@@ -388,8 +392,8 @@ SocketBuf_secureclear (T buf)
 {
   assert (buf && buf->data);
 
-  if (buf->data && buf->capacity > 0)
-    secure_zero_memory (buf->data, buf->capacity);
+  /* buf->data and buf->capacity guaranteed by assert and invariants */
+  secure_zero_memory (buf->data, buf->capacity);
 
   buf->head = 0;
   buf->tail = 0;

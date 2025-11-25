@@ -201,25 +201,8 @@ alloc_and_init_ctx (const SSL_METHOD *method, int is_server)
   register_exdata (ctx);
 
   ctx->is_server = !!is_server;
-  ctx->session_cache_enabled = 0;
   ctx->session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
-  ctx->cache_hits = 0;
-  ctx->cache_misses = 0;
-  ctx->cache_stores = 0;
-
   init_stats_mutex (ctx);
-
-  memset (ctx->ticket_key, 0, sizeof (ctx->ticket_key));
-  ctx->tickets_enabled = 0;
-  ctx->ocsp_gen_cb = NULL;
-  ctx->ocsp_gen_arg = NULL;
-  ctx->ocsp_response = NULL;
-  ctx->ocsp_len = 0;
-
-  ctx->verify_callback = NULL;
-  ctx->verify_user_data = NULL;
-  ctx->verify_mode = TLS_VERIFY_NONE;
-
   init_sni_certs (&ctx->sni_certs);
   init_alpn (&ctx->alpn);
 
@@ -282,18 +265,9 @@ SocketTLSContext_new_client (const char *ca_file)
 static void
 free_sni_arrays (T ctx)
 {
-  if (ctx->sni_certs.hostnames)
-    {
-      free (ctx->sni_certs.hostnames);
-    }
-  if (ctx->sni_certs.cert_files)
-    {
-      free (ctx->sni_certs.cert_files);
-    }
-  if (ctx->sni_certs.key_files)
-    {
-      free (ctx->sni_certs.key_files);
-    }
+  free (ctx->sni_certs.hostnames);
+  free (ctx->sni_certs.cert_files);
+  free (ctx->sni_certs.key_files);
 }
 
 /**

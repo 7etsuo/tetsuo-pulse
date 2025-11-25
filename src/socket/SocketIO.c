@@ -61,6 +61,28 @@ extern ssize_t socket_send_tls (T socket, const void *buf, size_t len);
 extern ssize_t socket_recv_tls (T socket, void *buf, size_t len);
 #endif
 
+/* ==================== Common I/O Error Helpers ==================== */
+
+/**
+ * is_wouldblock_error - Check if error indicates operation would block
+ * Returns: 1 if EAGAIN/EWOULDBLOCK, 0 otherwise
+ */
+static inline int
+is_wouldblock_error (void)
+{
+  return errno == EAGAIN || errno == EWOULDBLOCK;
+}
+
+/**
+ * is_connection_closed_send - Check if send error indicates closed connection
+ * Returns: 1 if EPIPE/ECONNRESET, 0 otherwise
+ */
+static inline int
+is_connection_closed_send (void)
+{
+  return errno == EPIPE || errno == ECONNRESET;
+}
+
 /**
  * socket_send_raw - Raw socket send operation
  * @socket: Socket instance
@@ -78,9 +100,9 @@ socket_send_raw (T socket, const void *buf, size_t len, int flags)
 
   if (result < 0)
     {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
+      if (is_wouldblock_error ())
         return 0;
-      if (errno == EPIPE || errno == ECONNRESET)
+      if (is_connection_closed_send ())
         RAISE (Socket_Closed);
       SOCKET_ERROR_FMT ("Send failed (len=%zu)", len);
       RAISE_MODULE_ERROR (Socket_Failed);
@@ -106,7 +128,7 @@ socket_recv_raw (T socket, void *buf, size_t len, int flags)
 
   if (result < 0)
     {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
+      if (is_wouldblock_error ())
         return 0;
       if (errno == ECONNRESET)
         RAISE (Socket_Closed);
@@ -187,11 +209,9 @@ socket_sendv_raw (T socket, const struct iovec *iov, int iovcnt, int flags)
   ssize_t result = writev (Socket_fd (socket), iov, iovcnt);
   if (result < 0)
     {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
+      if (is_wouldblock_error ())
         return 0;
-      if (errno == EPIPE)
-        RAISE (Socket_Closed);
-      if (errno == ECONNRESET)
+      if (is_connection_closed_send ())
         RAISE (Socket_Closed);
       SOCKET_ERROR_FMT ("Scatter/gather send failed (iovcnt=%d)", iovcnt);
       RAISE_MODULE_ERROR (Socket_Failed);
@@ -217,7 +237,7 @@ socket_recvv_raw (T socket, struct iovec *iov, int iovcnt, int flags)
   ssize_t result = readv (Socket_fd (socket), iov, iovcnt);
   if (result < 0)
     {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
+      if (is_wouldblock_error ())
         return 0;
       if (errno == ECONNRESET)
         RAISE (Socket_Closed);
@@ -302,19 +322,6 @@ socket_is_tls_enabled (T socket)
 #endif
 }
 
-#ifdef SOCKET_HAS_TLS
-/**
- * tls_is_active - Check if TLS is enabled and active
- * @socket: Socket instance
- * Returns: 1 if TLS active, 0 otherwise
- */
-static int
-tls_is_active (T socket)
-{
-  return socket->tls_enabled && socket->tls_ssl;
-}
-#endif
-
 /**
  * socket_tls_want_read - Check if TLS wants read
  * @socket: Socket instance
@@ -325,12 +332,12 @@ socket_tls_want_read (T socket)
 {
   assert (socket);
 #ifdef SOCKET_HAS_TLS
-  if (!tls_is_active (socket))
+  SSL *ssl = socket_get_ssl (socket);
+  if (!ssl)
     return 0;
   if (!socket->tls_handshake_done)
     return socket->tls_last_handshake_state == TLS_HANDSHAKE_WANT_READ;
-  SSL *ssl = socket_get_ssl (socket);
-  return ssl && SSL_pending (ssl) > 0;
+  return SSL_pending (ssl) > 0;
 #else
   return 0;
 #endif
@@ -346,7 +353,7 @@ socket_tls_want_write (T socket)
 {
   assert (socket);
 #ifdef SOCKET_HAS_TLS
-  if (!tls_is_active (socket))
+  if (!socket_get_ssl (socket))
     return 0;
   if (!socket->tls_handshake_done)
     return socket->tls_last_handshake_state == TLS_HANDSHAKE_WANT_WRITE;

@@ -103,16 +103,6 @@
 #define SOCKET_TLS_MAX_LABEL_LEN 63
 #endif
 
-/* Forward declarations for TLS types */
-/* OpenSSL types are already defined by the includes above when SOCKET_HAS_TLS
- * is set */
-#ifndef SOCKET_HAS_TLS
-typedef void SSL_CTX;
-typedef void SSL;
-typedef void X509;
-typedef void X509_STORE;
-#endif
-
 #else /* SOCKET_HAS_TLS not defined */
 
 /* Stub definitions when TLS is disabled */

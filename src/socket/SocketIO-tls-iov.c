@@ -43,6 +43,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketIO_TLS_IOV);
 /* Forward declarations for TLS helper functions in SocketIO-tls.c */
 extern SSL *socket_get_ssl (T socket);
 extern int socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result);
+extern SSL *socket_validate_tls_ready (T socket);
+extern int socket_is_recoverable_io_error (void);
 
 /**
  * copy_iov_to_buffer - Copy iovec array to contiguous buffer
@@ -116,19 +118,7 @@ distribute_buffer_to_iov (const void *buffer, size_t buffer_len,
 ssize_t
 socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
 {
-  SSL *ssl = socket_get_ssl (socket);
-  if (!ssl)
-    {
-      SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  if (!socket->tls_handshake_done)
-    {
-      SOCKET_ERROR_MSG ("TLS handshake not complete");
-      RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
-    }
-
+  SSL *ssl = socket_validate_tls_ready (socket);
   size_t total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
   Arena_T arena = SocketBase_arena (socket->base);
@@ -145,15 +135,9 @@ socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
 
   if (ssl_result <= 0)
     {
-      if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
-        {
-          if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 0;
-        }
-    }
-
-  if (ssl_result < 0)
-    {
+      socket_handle_ssl_error (socket, ssl, ssl_result);
+      if (socket_is_recoverable_io_error ())
+        return 0;
       SOCKET_ERROR_FMT ("TLS sendv failed (iovcnt=%d)", iovcnt);
       RAISE_MODULE_ERROR (SocketTLS_Failed);
     }
@@ -174,19 +158,7 @@ socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
 ssize_t
 socket_recvv_tls (T socket, struct iovec *iov, int iovcnt)
 {
-  SSL *ssl = socket_get_ssl (socket);
-  if (!ssl)
-    {
-      SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  if (!socket->tls_handshake_done)
-    {
-      SOCKET_ERROR_MSG ("TLS handshake not complete");
-      RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
-    }
-
+  SSL *ssl = socket_validate_tls_ready (socket);
   size_t total_capacity = SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
   Arena_T arena = SocketBase_arena (socket->base);
@@ -201,17 +173,11 @@ socket_recvv_tls (T socket, struct iovec *iov, int iovcnt)
 
   if (ssl_result <= 0)
     {
-      if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
-        {
-          if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 0;
-          if (errno == ECONNRESET)
-            RAISE (Socket_Closed);
-        }
-
-      if (ssl_result == 0)
+      socket_handle_ssl_error (socket, ssl, ssl_result);
+      if (socket_is_recoverable_io_error ())
+        return 0;
+      if (ssl_result == 0 || errno == ECONNRESET)
         RAISE (Socket_Closed);
-
       SOCKET_ERROR_FMT ("TLS recvv failed (iovcnt=%d)", iovcnt);
       RAISE_MODULE_ERROR (SocketTLS_Failed);
     }

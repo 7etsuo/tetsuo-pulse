@@ -8,9 +8,6 @@
  */
 
 #include <assert.h>
-#include <errno.h>
-#include <math.h>
-#include <stdlib.h>
 #include <time.h>
 
 #include "core/SocketLog.h"
@@ -18,7 +15,7 @@
 
 #define T SocketPool_T
 
-extern const Except_T SocketPool_Failed;
+/* SocketPool_Failed declared in SocketPool.h (included via private header) */
 
 /**
  * should_close_connection - Determine if connection should be closed
@@ -90,7 +87,6 @@ static void
 close_collected_sockets (T pool, size_t close_count)
 {
   volatile size_t i;
-
   for (i = 0; i < close_count; i++)
     {
       TRY

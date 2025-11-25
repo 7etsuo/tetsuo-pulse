@@ -10,22 +10,63 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "core/Arena.h"
-#include "core/Except.h"
 #include "core/SocketConfig.h"
 
 #define SOCKET_LOG_COMPONENT "SocketPoll"
 #include "core/SocketError.h"
 #include "poll/SocketPoll-private.h"
 #include "poll/SocketPoll_backend.h"
-
-#include "core/SocketTimer-private.h"
-#include "socket/SocketAsync.h"
+/* Arena.h, Except.h, SocketTimer-private.h, SocketAsync.h via private header */
 
 #define T SocketPoll_T
 
-extern const Except_T SocketPoll_Failed;
-extern const Except_T SocketAsync_Failed;
+/* ==================== Init Failure Macro ==================== */
+
+/**
+ * INIT_FAIL - Cleanup and raise exception during init
+ * Reduces repeated error handling pattern in init functions.
+ */
+#define INIT_FAIL(msg)                                                         \
+  do                                                                           \
+    {                                                                          \
+      SOCKET_ERROR_MSG (msg);                                                  \
+      cleanup_poll_partial (poll);                                             \
+      RAISE_POLL_ERROR (SocketPoll_Failed);                                    \
+    }                                                                          \
+  while (0)
+
+#define INIT_FAIL_FMT(fmt, ...)                                                \
+  do                                                                           \
+    {                                                                          \
+      SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__);                                   \
+      cleanup_poll_partial (poll);                                             \
+      RAISE_POLL_ERROR (SocketPoll_Failed);                                    \
+    }                                                                          \
+  while (0)
+
+/* ==================== Cleanup Helper ==================== */
+
+/**
+ * cleanup_poll_partial - Free partially initialized poll structure
+ * @poll: Poll instance to clean up
+ *
+ * Cleans up resources in reverse order of acquisition.
+ * Safe to call with NULL members. Exported for use by SocketPoll.c constructor.
+ */
+void
+cleanup_poll_partial (T poll)
+{
+  if (!poll)
+    return;
+
+  if (poll->backend)
+    backend_free (poll->backend);
+
+  if (poll->arena)
+    Arena_dispose (&poll->arena);
+
+  free (poll);
+}
 
 /* ==================== Structure Allocation ==================== */
 
@@ -37,14 +78,14 @@ extern const Except_T SocketAsync_Failed;
 T
 allocate_poll_structure (void)
 {
-  T poll = malloc (sizeof (*poll));
-  if (poll == NULL)
+  T poll = calloc (1, sizeof (*poll));
+
+  if (!poll)
     {
       SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate poll structure");
-      RAISE_POLL_ERROR (SocketPoll_Failed);
+      RAISE_POLL_ERROR (SocketPoll_Failed); /* No cleanup needed yet */
     }
-  /* Zero-initialize to ensure all fields start in a known state */
-  memset (poll, 0, sizeof (*poll));
+
   return poll;
 }
 
@@ -60,12 +101,9 @@ void
 initialize_poll_backend (T poll, int maxevents)
 {
   poll->backend = backend_new (maxevents);
+
   if (!poll->backend)
-    {
-      SOCKET_ERROR_FMT ("Failed to create %s backend", backend_name ());
-      free (poll);
-      RAISE_POLL_ERROR (SocketPoll_Failed);
-    }
+    INIT_FAIL_FMT ("Failed to create %s backend", backend_name ());
 }
 
 /* ==================== Arena Initialization ==================== */
@@ -79,13 +117,9 @@ void
 initialize_poll_arena (T poll)
 {
   poll->arena = Arena_new ();
+
   if (!poll->arena)
-    {
-      backend_free (poll->backend);
-      free (poll);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate poll arena");
-      RAISE_POLL_ERROR (SocketPoll_Failed);
-    }
+    INIT_FAIL (SOCKET_ENOMEM ": Cannot allocate poll arena");
 }
 
 /* ==================== Event Array Allocation ==================== */
@@ -101,50 +135,19 @@ allocate_poll_event_arrays (T poll, int maxevents)
 {
   size_t array_size;
 
-  /* Validate maxevents before allocation */
   if (maxevents <= 0 || maxevents > SOCKET_MAX_POLL_EVENTS)
-    {
-      backend_free (poll->backend);
-      Arena_dispose (&poll->arena);
-      free (poll);
-      SOCKET_ERROR_MSG ("Invalid maxevents value");
-      RAISE_POLL_ERROR (SocketPoll_Failed);
-    }
+    INIT_FAIL ("Invalid maxevents value");
 
   /* Calculate array size with overflow check */
   array_size = (size_t)maxevents * sizeof (*poll->socketevents);
   if (array_size / sizeof (*poll->socketevents) != (size_t)maxevents)
-    {
-      backend_free (poll->backend);
-      Arena_dispose (&poll->arena);
-      free (poll);
-      SOCKET_ERROR_MSG ("Array size overflow");
-      RAISE_POLL_ERROR (SocketPoll_Failed);
-    }
+    INIT_FAIL ("Array size overflow");
 
   poll->socketevents
       = CALLOC (poll->arena, maxevents, sizeof (*poll->socketevents));
+
   if (!poll->socketevents)
-    {
-      backend_free (poll->backend);
-      Arena_dispose (&poll->arena);
-      free (poll);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate event arrays");
-      RAISE_POLL_ERROR (SocketPoll_Failed);
-    }
-}
-
-/* ==================== Hash Table Initialization ==================== */
-
-/**
- * initialize_poll_hash_tables - Initialize hash tables to zero
- * @poll: Poll instance
- */
-void
-initialize_poll_hash_tables (T poll)
-{
-  memset (poll->socket_data_map, 0, sizeof (poll->socket_data_map));
-  memset (poll->fd_to_socket_map, 0, sizeof (poll->fd_to_socket_map));
+    INIT_FAIL (SOCKET_ENOMEM ": Cannot allocate event arrays");
 }
 
 /* ==================== Mutex Initialization ==================== */
@@ -158,13 +161,7 @@ void
 initialize_poll_mutex (T poll)
 {
   if (pthread_mutex_init (&poll->mutex, NULL) != 0)
-    {
-      backend_free (poll->backend);
-      Arena_dispose (&poll->arena);
-      free (poll);
-      SOCKET_ERROR_MSG ("Failed to initialize poll mutex");
-      RAISE_POLL_ERROR (SocketPoll_Failed);
-    }
+    INIT_FAIL ("Failed to initialize poll mutex");
 }
 
 /**
@@ -176,14 +173,9 @@ void
 initialize_poll_timer_heap (T poll)
 {
   poll->timer_heap = SocketTimer_heap_new (poll->arena);
+
   if (!poll->timer_heap)
-    {
-      backend_free (poll->backend);
-      Arena_dispose (&poll->arena);
-      free (poll);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate timer heap");
-      RAISE_POLL_ERROR (SocketPoll_Failed);
-    }
+    INIT_FAIL (SOCKET_ENOMEM ": Cannot allocate timer heap");
 }
 
 /**
@@ -196,22 +188,12 @@ initialize_poll_timer_heap (T poll)
 void
 initialize_poll_async (T poll)
 {
-  volatile SocketAsync_T volatile_async = NULL;
-
-  poll->async = NULL;
-
+  /* async starts NULL from calloc; only set if init succeeds */
   TRY
-  {
-    volatile_async = SocketAsync_new (poll->arena);
-    poll->async = (SocketAsync_T)volatile_async;
-  }
+  poll->async = SocketAsync_new (poll->arena);
   EXCEPT (SocketAsync_Failed)
-  {
-    poll->async = NULL;
-    volatile_async = NULL;
-  }
+  poll->async = NULL; /* Graceful degradation - async is optional */
   END_TRY;
 }
 
 #undef T
-

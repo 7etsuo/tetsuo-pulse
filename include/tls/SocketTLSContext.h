@@ -271,20 +271,6 @@ extern void SocketTLSContext_set_ocsp_gen_callback(T ctx, SocketTLSOcspGenCallba
  */
 extern int SocketTLS_get_ocsp_status(Socket_T socket);
 
-/**
- * SocketTLS_get_verify_result - Get TLS verification result after handshake
- * @sock: The TLS-enabled socket
- *
- * Returns the OpenSSL verification result code (X509_V_OK = 0 on success).
- * Call after handshake to check peer cert status. Maps to SocketTLS_VerifyFailed
- * exception if failed and auto-raise option enabled (future).
- *
- * Returns: long (X509 verify result code)
- * Raises: None (caller checks return != X509_V_OK)
- * Thread-safe: Yes (read-only after handshake)
- */
-extern long SocketTLS_get_verify_result (Socket_T sock);
-
 /* Protocol configuration */
 /**
  * SocketTLSContext_set_min_protocol - Set minimum supported TLS version
@@ -435,19 +421,6 @@ extern void SocketTLSContext_get_cache_stats(T ctx, size_t *hits, size_t *misses
  * Thread-safe: No
  */
 extern void SocketTLSContext_enable_session_tickets(T ctx, const unsigned char *key, size_t key_len);
-
-/* Context lifecycle */
-/**
- * SocketTLSContext_free - Destroy TLS context
- * @ctx: Pointer to context pointer (set to NULL on free)
- *
- * Frees SSL_CTX, arena (all allocations), and struct. Safe to call on NULL.
- *
- * Returns: void
- * Raises: None
- * Thread-safe: No - do not free while in use by connections
- */
-extern void SocketTLSContext_free (T *ctx);
 
 /* Internal functions (not part of public API) */
 /**

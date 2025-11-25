@@ -7,22 +7,22 @@
  * Contains mutex, condition variable, and pipe initialization functions.
  */
 
-#include "core/SocketConfig.h"
+/* All includes before T macro definition to avoid redefinition warnings */
 #include <errno.h>
 #include <fcntl.h>
-#include <pthread.h>
-#include <unistd.h>
 
 #include "core/Arena.h"
-#include "core/Except.h"
-#include "core/SocketError.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNS-private.h"
+
+/* Redefine T after all includes (Arena.h and SocketDNS.h both undef T at end) */
+#undef T
+#define T SocketDNS_T
+#undef Request_T
+#define Request_T SocketDNS_Request_T
+
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS-sync"
-#define T SocketDNS_T
-#define Request_T SocketDNS_Request_T
-#include "dns/SocketDNS-private.h"
-#include "socket/SocketCommon.h"
 
 /**
  * initialize_mutex - Initialize mutex for DNS resolver

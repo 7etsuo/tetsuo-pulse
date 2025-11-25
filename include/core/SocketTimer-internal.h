@@ -13,6 +13,7 @@
 
 #include <pthread.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 #include "core/Arena.h"
 #include "core/Except.h"
@@ -200,15 +201,15 @@ extern void sockettimer_heap_resize (SocketTimer_heap_T *heap,
 extern void sockettimer_skip_cancelled (SocketTimer_heap_T *heap);
 
 /**
- * sockettimer_find_in_heap - Find timer in heap
+ * sockettimer_find_in_heap - Find timer in heap and return its index
  * @heap: Timer heap
  * @timer: Timer to find
  *
- * Returns: 1 if found and not cancelled, 0 otherwise
+ * Returns: Index of timer if found and not cancelled, -1 otherwise
  * Thread-safe: No (caller must hold heap->mutex)
  */
-extern int sockettimer_find_in_heap (SocketTimer_heap_T *heap,
-                                     const struct SocketTimer_T *timer);
+extern ssize_t sockettimer_find_in_heap (SocketTimer_heap_T *heap,
+                                         const struct SocketTimer_T *timer);
 
 #endif /* SOCKETTIMER_INTERNAL_INCLUDED */
 

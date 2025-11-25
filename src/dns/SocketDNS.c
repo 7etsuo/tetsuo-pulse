@@ -8,24 +8,19 @@
  * management. Accessor functions are in SocketDNS-accessors.c.
  */
 
-#include <assert.h>
-#include <netdb.h>
-#include <pthread.h>
-#include <string.h>
-
-#include "core/Arena.h"
-#include "core/Except.h"
-#include "core/SocketError.h"
-#include "core/SocketEvents.h"
-#include "core/SocketMetrics.h"
+/* All includes must come before T macro definition to avoid conflicts */
 #include "dns/SocketDNS.h"
-#undef SOCKET_LOG_COMPONENT
-#define SOCKET_LOG_COMPONENT "SocketDNS"
-#define T SocketDNS_T
-#define Request_T SocketDNS_Request_T
 #include "dns/SocketDNS-private.h"
 
-/* SocketDNS module exceptions and thread-local detailed exception */
+/* Undefine T from Arena.h, then define our module's T */
+#undef T
+#define T SocketDNS_T
+#define Request_T SocketDNS_Request_T
+
+#undef SOCKET_LOG_COMPONENT
+#define SOCKET_LOG_COMPONENT "SocketDNS"
+
+/* SocketDNS module exception and thread-local detailed exception */
 const Except_T SocketDNS_Failed
     = { &SocketDNS_Failed, "SocketDNS operation failed" };
 
@@ -111,7 +106,7 @@ SocketDNS_free (T *dns)
 
   if (!dns || !*dns)
     return;
-  assert (dns && *dns);
+  /* assert removed - null check above guarantees validity */
 
   d = *dns;
 
@@ -134,7 +129,7 @@ SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
       SOCKET_ERROR_MSG ("Invalid NULL dns resolver");
       RAISE_DNS_ERROR (SocketDNS_Failed);
     }
-  assert (dns);
+  /* assert removed - null check above guarantees validity */
 
   host_len = host ? strlen (host) : 0;
   validate_resolve_params (host, port);
@@ -202,18 +197,14 @@ SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 
   if (!dns || !req)
     return;
-  assert (dns);
-  assert (req);
+  /* asserts removed - null checks above guarantee validity */
 
   pthread_mutex_lock (&dns->mutex);
 
   handle_cancel_by_state (dns, req, &send_signal, &cancelled);
 
   if (send_signal)
-    {
-      signal_completion (dns);
-      pthread_cond_broadcast (&dns->result_cond);
-    }
+    SIGNAL_DNS_COMPLETION (dns);
 
   hash_table_remove (dns, req);
 

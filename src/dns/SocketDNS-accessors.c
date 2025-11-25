@@ -8,25 +8,21 @@
  * result retrieval, and status checking.
  */
 
-#include <assert.h>
+/* All includes before T macro definition to avoid redefinition warnings */
 #include <errno.h>
-#include <netdb.h>
-#include <pthread.h>
-#include <time.h>
-#include <unistd.h>
 
 #include "core/Arena.h"
-#include "core/Except.h"
-#include "core/SocketError.h"
-#include "core/SocketEvents.h"
-#include "core/SocketMetrics.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNS-private.h"
+
+/* Redefine T after all includes (Arena.h and SocketDNS.h both undef T at end) */
+#undef T
+#define T SocketDNS_T
+#undef Request_T
+#define Request_T SocketDNS_Request_T
+
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS-accessors"
-#define T SocketDNS_T
-#define Request_T SocketDNS_Request_T
-#include "dns/SocketDNS-private.h"
-#include "socket/SocketCommon.h"
 
 /**
  * transfer_result_ownership - Handle result ownership transfer to caller
@@ -41,20 +37,14 @@ transfer_result_ownership (struct SocketDNS_Request_T *r)
 
   if (r->state == REQ_COMPLETE)
     {
-      /* If callback was provided, result ownership was transferred to callback */
-      if (r->callback)
+      /* If no callback, transfer ownership to caller; else callback consumed it */
+      if (!r->callback)
         {
-          /* Callback already received the result - it's been consumed */
-          result = NULL;
-        }
-      else
-        {
-          /* No callback - transfer ownership to caller */
           result = r->result;
           r->result = NULL;
         }
 
-      hash_table_remove ((struct SocketDNS_T *)r->dns_resolver, r);
+      hash_table_remove (r->dns_resolver, r);
     }
 
   return result;
@@ -99,7 +89,6 @@ SocketDNS_getmaxpending (struct SocketDNS_T *dns)
 
   if (!dns)
     return 0;
-  assert (dns);
 
   pthread_mutex_lock (&dns->mutex);
   current = dns->max_pending;
@@ -118,7 +107,6 @@ SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
       SOCKET_ERROR_MSG ("Invalid NULL dns resolver");
       RAISE_DNS_ERROR (SocketDNS_Failed);
     }
-  assert (dns);
 
   pthread_mutex_lock (&dns->mutex);
   queue_depth = dns->queue_size;
@@ -142,7 +130,6 @@ SocketDNS_gettimeout (struct SocketDNS_T *dns)
 
   if (!dns)
     return 0;
-  assert (dns);
 
   pthread_mutex_lock (&dns->mutex);
   current = dns->request_timeout_ms;
@@ -154,14 +141,11 @@ SocketDNS_gettimeout (struct SocketDNS_T *dns)
 void
 SocketDNS_settimeout (struct SocketDNS_T *dns, int timeout_ms)
 {
-  int sanitized = timeout_ms < 0 ? 0 : timeout_ms;
-
   if (!dns)
     return;
-  assert (dns);
 
   pthread_mutex_lock (&dns->mutex);
-  dns->request_timeout_ms = sanitized;
+  dns->request_timeout_ms = SANITIZE_TIMEOUT_MS (timeout_ms);
   pthread_mutex_unlock (&dns->mutex);
 }
 
@@ -170,7 +154,6 @@ SocketDNS_pollfd (struct SocketDNS_T *dns)
 {
   if (!dns)
     return -1;
-  assert (dns);
   return dns->pipefd[0];
 }
 
@@ -183,7 +166,6 @@ SocketDNS_check (struct SocketDNS_T *dns)
 
   if (!dns)
     return 0;
-  assert (dns);
 
   /* Check if pipe is still valid (may be closed during shutdown) */
   if (dns->pipefd[0] < 0)
@@ -208,16 +190,13 @@ SocketDNS_check (struct SocketDNS_T *dns)
 struct addrinfo *
 SocketDNS_getresult (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
-  Request_T r = req;
   struct addrinfo *result = NULL;
 
   if (!dns || !req)
     return NULL;
-  assert (dns);
-  assert (req);
 
   pthread_mutex_lock (&dns->mutex);
-  result = transfer_result_ownership (r);
+  result = transfer_result_ownership (req);
   pthread_mutex_unlock (&dns->mutex);
 
   return result;
@@ -226,17 +205,14 @@ SocketDNS_getresult (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 int
 SocketDNS_geterror (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
-  Request_T r = req;
   int error = 0;
 
   if (!dns || !req)
     return 0;
-  assert (dns);
-  assert (req);
 
   pthread_mutex_lock (&dns->mutex);
-  if (r->state == REQ_COMPLETE || r->state == REQ_CANCELLED)
-    error = r->error;
+  if (req->state == REQ_COMPLETE || req->state == REQ_CANCELLED)
+    error = req->error;
   pthread_mutex_unlock (&dns->mutex);
 
   return error;
@@ -252,8 +228,6 @@ SocketDNS_create_completed_request (struct SocketDNS_T *dns,
           "Invalid NULL dns or result in create_completed_request");
       RAISE_DNS_ERROR (SocketDNS_Failed);
     }
-  assert (dns);
-  assert (result);
 
   Request_T req = allocate_request_structure (dns);
   init_completed_request_fields (req, dns, result, port);
@@ -261,8 +235,7 @@ SocketDNS_create_completed_request (struct SocketDNS_T *dns,
   pthread_mutex_lock (&dns->mutex);
   hash_table_insert (dns, req);
   SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_COMPLETED, 1);
-  signal_completion (dns);
-  pthread_cond_broadcast (&dns->result_cond);
+  SIGNAL_DNS_COMPLETION (dns);
   pthread_mutex_unlock (&dns->mutex);
 
   return req;
@@ -272,17 +245,12 @@ void
 SocketDNS_request_settimeout (struct SocketDNS_T *dns,
                               struct SocketDNS_Request_T *req, int timeout_ms)
 {
-  Request_T r = req;
-  int sanitized = timeout_ms < 0 ? 0 : timeout_ms;
-
   if (!dns || !req)
     return;
-  assert (dns);
-  assert (req);
 
   pthread_mutex_lock (&dns->mutex);
-  if (r->state == REQ_PENDING || r->state == REQ_PROCESSING)
-    r->timeout_override_ms = sanitized;
+  if (req->state == REQ_PENDING || req->state == REQ_PROCESSING)
+    req->timeout_override_ms = SANITIZE_TIMEOUT_MS (timeout_ms);
   pthread_mutex_unlock (&dns->mutex);
 }
 

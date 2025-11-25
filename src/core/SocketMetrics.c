@@ -61,9 +61,6 @@ SocketMetrics_increment (SocketMetric metric, unsigned long value)
       return;
     }
 
-  assert (metric >= 0);
-  assert (metric < SOCKET_METRIC_COUNT);
-
   pthread_mutex_lock (&socketmetrics_mutex);
   socketmetrics_values[metric] += value;
   pthread_mutex_unlock (&socketmetrics_mutex);
@@ -87,8 +84,6 @@ SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot)
                       "NULL snapshot in getsnapshot ignored");
       return;
     }
-
-  assert (snapshot);
 
   pthread_mutex_lock (&socketmetrics_mutex);
   memcpy (snapshot->values, socketmetrics_values,

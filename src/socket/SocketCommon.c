@@ -35,10 +35,6 @@ SocketTimeouts_T socket_default_timeouts
         .operation_timeout_ms = SOCKET_DEFAULT_OPERATION_TIMEOUT_MS };
 pthread_mutex_t socket_default_timeouts_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* Forward declarations for exception types */
-extern const Except_T Socket_Failed;
-extern const Except_T SocketDgram_Failed;
-
 const Except_T SocketCommon_Failed
     = { &SocketCommon_Failed, "SocketCommon operation failed" };
 
@@ -256,36 +252,6 @@ SocketBase_set_timeouts (SocketBase_T base, const SocketTimeouts_T *timeouts)
 {
   if (base && timeouts)
     base->timeouts = *timeouts;
-}
-
-/**
- * SocketBase_update_local_endpoint - Update local endpoint info
- * @base: Base to update
- * Stub implementation that only calls getsockname to check if socket is bound,
- * but doesn't populate formatted fields. This avoids interfering with
- * Socket_isbound/Socket_islistening logic for unbound sockets.
- * Thread-safe: Yes (operates on single socket)
- */
-void
-SocketBase_update_local_endpoint (SocketBase_T base)
-{
-  socklen_t len = sizeof (base->local_addr);
-  if (getsockname (base->fd, (struct sockaddr *)&base->local_addr, &len) == 0)
-    {
-      base->local_addrlen = len;
-      /* Don't populate formatted fields here - let them be populated lazily
-       * when actually requested (e.g., Socket_getlocaladdr) */
-    }
-  else
-    {
-      SOCKET_ERROR_MSG ("Failed to update local endpoint: %s",
-                        strerror (errno));
-      /* Reset all local endpoint fields on failure */
-      memset (&base->local_addr, 0, sizeof (base->local_addr));
-      base->local_addrlen = 0;
-      base->localaddr = NULL;
-      base->localport = 0;
-    }
 }
 
 /**

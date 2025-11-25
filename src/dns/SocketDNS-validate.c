@@ -7,21 +7,23 @@
  * Contains hostname and parameter validation functions.
  */
 
-#include "core/SocketConfig.h"
+/* All includes before T macro definition to avoid redefinition warnings */
 #include <arpa/inet.h>
 #include <ctype.h>
-#include <stdbool.h>
 #include <string.h>
 
 #include "core/Arena.h"
-#include "core/Except.h"
-#include "core/SocketError.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNS-private.h"
+
+/* Redefine T after all includes (Arena.h and SocketDNS.h both undef T at end) */
+#undef T
+#define T SocketDNS_T
+#undef Request_T
+#define Request_T SocketDNS_Request_T
+
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS-validate"
-#define T SocketDNS_T
-#define Request_T SocketDNS_Request_T
-#include "dns/SocketDNS-private.h"
 
 /**
  * is_ip_address - Check if string is a valid IP address (IPv4 or IPv6)
@@ -148,17 +150,10 @@ validate_hostname (const char *hostname)
 void
 validate_resolve_params (const char *host, int port)
 {
-  size_t host_len;
-
+  /* Host validation - NULL is allowed for wildcard bind with AI_PASSIVE */
   if (host != NULL)
     {
-      host_len = strlen (host);
-      if (host_len == 0 || host_len > SOCKET_ERROR_MAX_HOSTNAME)
-        {
-          SOCKET_ERROR_MSG ("Invalid hostname length");
-          RAISE_DNS_ERROR (SocketDNS_Failed);
-        }
-
+      /* validate_hostname handles all length and format checks - no duplication */
       if (!is_ip_address (host) && !validate_hostname (host))
         {
           SOCKET_ERROR_MSG ("Invalid hostname format");

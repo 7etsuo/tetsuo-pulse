@@ -7,20 +7,21 @@
  * Contains DNS resolver allocation and initialization functions.
  */
 
-#include "core/SocketConfig.h"
-#include <pthread.h>
+/* All includes before T macro definition to avoid redefinition warnings */
 #include <stdlib.h>
-#include <string.h>
 
 #include "core/Arena.h"
-#include "core/Except.h"
-#include "core/SocketError.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNS-private.h"
+
+/* Redefine T after all includes (Arena.h and SocketDNS.h both undef T at end) */
+#undef T
+#define T SocketDNS_T
+#undef Request_T
+#define Request_T SocketDNS_Request_T
+
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS-init"
-#define T SocketDNS_T
-#define Request_T SocketDNS_Request_T
-#include "dns/SocketDNS-private.h"
 
 /**
  * allocate_dns_resolver - Allocate and initialize basic DNS resolver structure
@@ -47,19 +48,16 @@ allocate_dns_resolver (void)
  * initialize_dns_fields - Set default field values for DNS resolver
  * @dns: DNS resolver instance
  * Initializes configuration fields to default values.
+ * Note: dns was allocated with calloc, so zero/NULL fields are already set.
+ * Only non-zero defaults need explicit initialization.
  */
 void
 initialize_dns_fields (struct SocketDNS_T *dns)
 {
   dns->num_workers = SOCKET_DNS_THREAD_COUNT;
   dns->max_pending = SOCKET_DNS_MAX_PENDING;
-  dns->shutdown = 0;
-  dns->request_counter = 0;
-
-  dns->queue_head = NULL;
-  dns->queue_tail = NULL;
-  dns->queue_size = 0;
   dns->request_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
+  /* shutdown, request_counter, queue_head/tail/size already 0/NULL from calloc */
 }
 
 /**
@@ -87,14 +85,11 @@ initialize_dns_components (struct SocketDNS_T *dns)
 /**
  * setup_thread_attributes - Configure pthread attributes for worker threads
  * @attr: Thread attributes to configure
- * @thread_index: Thread index for naming
  * Raises: SocketDNS_Failed on attribute setup failure
  */
 void
-setup_thread_attributes (pthread_attr_t *attr, int thread_index)
+setup_thread_attributes (pthread_attr_t *attr)
 {
-  (void)thread_index; /* Thread naming done in create_single_worker_thread */
-
   pthread_attr_init (attr);
   pthread_attr_setdetachstate (attr, PTHREAD_CREATE_JOINABLE);
   pthread_attr_setstacksize (attr, SOCKET_DNS_WORKER_STACK_SIZE);
@@ -145,7 +140,7 @@ create_single_worker_thread (struct SocketDNS_T *dns, int thread_index)
 {
   pthread_attr_t attr;
 
-  setup_thread_attributes (&attr, thread_index);
+  setup_thread_attributes (&attr);
 
   int result = pthread_create (&dns->workers[thread_index], &attr,
                                worker_thread, dns);
@@ -198,8 +193,7 @@ start_dns_workers (struct SocketDNS_T *dns)
       SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate worker thread array");
       RAISE_DNS_ERROR (SocketDNS_Failed);
     }
-
-  memset (dns->request_hash, 0, sizeof (dns->request_hash));
+  /* memset removed - dns was allocated with calloc, already zeroed */
   create_worker_threads (dns);
 }
 

@@ -165,7 +165,7 @@ extern Socket_T *SocketPool_cleanup_allocate_buffer (Arena_T arena,
 extern unsigned socketpool_hash (const Socket_T socket);
 
 /* ============================================================================
- * Core Functions (from SocketPool-core.h)
+ * Core Functions (from SocketPool-core.c)
  * ============================================================================ */
 
 /**
@@ -176,5 +176,49 @@ extern unsigned socketpool_hash (const Socket_T socket);
  * Thread-safe: Yes
  */
 extern time_t safe_time (void);
+
+/* ============================================================================
+ * Shared Range Enforcement (inline to avoid duplicate definitions)
+ * ============================================================================ */
+
+/**
+ * socketpool_enforce_range - Clamp value to min/max bounds
+ * @val: Value to clamp
+ * @minv: Minimum allowed
+ * @maxv: Maximum allowed
+ *
+ * Returns: Clamped value
+ * Thread-safe: Yes - pure function
+ */
+static inline size_t
+socketpool_enforce_range (size_t val, size_t minv, size_t maxv)
+{
+  return val < minv ? minv : (val > maxv ? maxv : val);
+}
+
+/**
+ * socketpool_enforce_max_connections - Enforce the maximum connection limit
+ * @maxconns: Requested maximum number of connections
+ *
+ * Returns: Enforced value (clamped to SOCKET_MAX_CONNECTIONS, min 1)
+ */
+static inline size_t
+socketpool_enforce_max_connections (size_t maxconns)
+{
+  return socketpool_enforce_range (maxconns, 1, SOCKET_MAX_CONNECTIONS);
+}
+
+/**
+ * socketpool_enforce_buffer_size - Enforce buffer size limits
+ * @bufsize: Requested buffer size
+ *
+ * Returns: Enforced buffer size (clamped between min and max)
+ */
+static inline size_t
+socketpool_enforce_buffer_size (size_t bufsize)
+{
+  return socketpool_enforce_range (bufsize, SOCKET_MIN_BUFFER_SIZE,
+                                   SOCKET_MAX_BUFFER_SIZE);
+}
 
 #endif /* SOCKETPOOL_PRIVATE_H_INCLUDED */

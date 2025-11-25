@@ -71,142 +71,76 @@ backend_free (PollBackend_T backend)
   free (backend);
 }
 
+/**
+ * setup_event_filters - Setup kqueue event filters for read/write
+ * @backend: Backend instance
+ * @fd: File descriptor
+ * @events: Events to monitor (POLL_READ | POLL_WRITE)
+ * @action: EV_ADD or EV_DELETE
+ * Returns: 0 on success, -1 on failure
+ *
+ * Common helper for add/mod operations to eliminate duplicate code.
+ * EV_CLEAR enables edge-triggered mode matching epoll's EPOLLET.
+ */
+static int
+setup_event_filters (PollBackend_T backend, int fd, unsigned events,
+                     unsigned short action)
+{
+  struct kevent ev[2];
+  int nev = 0;
+  unsigned short flags = action | (action == EV_ADD ? EV_CLEAR : 0);
+
+  if (events & POLL_READ)
+    {
+      EV_SET (&ev[nev], fd, EVFILT_READ, flags, 0, 0, NULL);
+      nev++;
+    }
+
+  if (events & POLL_WRITE)
+    {
+      EV_SET (&ev[nev], fd, EVFILT_WRITE, flags, 0, 0, NULL);
+      nev++;
+    }
+
+  if (nev == 0)
+    return 0; /* No events - success */
+
+  if (kevent (backend->kq, ev, nev, NULL, 0, NULL) < 0)
+    return -1;
+
+  return 0;
+}
+
 int
 backend_add (PollBackend_T backend, int fd, unsigned events)
 {
-  struct kevent ev[2];
-  int nev = 0;
-
   assert (backend);
-  if (fd < 0)
-    {
-      errno = EBADF;
-      return -1;
-    }
+  VALIDATE_FD (fd);
 
-  /* Add read event if requested
-   * EV_ADD: Add event to kqueue
-   * EV_CLEAR: Edge-triggered mode (clear after delivery)
-   * This matches epoll's EPOLLET behavior */
-  if (events & POLL_READ)
-    {
-      EV_SET (&ev[nev], fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, NULL);
-      nev++;
-    }
-
-  /* Add write event if requested */
-  if (events & POLL_WRITE)
-    {
-      EV_SET (&ev[nev], fd, EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, NULL);
-      nev++;
-    }
-
-  if (nev == 0)
-    {
-      /* No events to add - treat as success */
-      return 0;
-    }
-
-  /* Register events with kqueue */
-  if (kevent (backend->kq, ev, nev, NULL, 0, NULL) < 0)
-    return -1;
-
-  return 0;
-}
-
-/**
- * delete_existing_filters - Delete existing read/write filters
- * @backend: Backend instance
- * @fd: File descriptor
- * kqueue doesn't have a "modify" operation like epoll.
- * Instead, we delete existing events and add new ones.
- * This is safe because EV_DELETE silently succeeds if event doesn't exist.
- */
-static void
-delete_existing_filters (PollBackend_T backend, int fd)
-{
-  struct kevent ev[2];
-  int nev = 0;
-
-  EV_SET (&ev[nev], fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-  nev++;
-  EV_SET (&ev[nev], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-  nev++;
-
-  kevent (backend->kq, ev, nev, NULL, 0, NULL);
-}
-
-/**
- * add_new_filters - Add new event filters
- * @backend: Backend instance
- * @fd: File descriptor
- * @events: Events to monitor
- * Returns: 0 on success, -1 on failure
- */
-static int
-add_new_filters (PollBackend_T backend, int fd, unsigned events)
-{
-  struct kevent ev[2];
-  int nev = 0;
-
-  if (events & POLL_READ)
-    {
-      EV_SET (&ev[nev], fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, NULL);
-      nev++;
-    }
-
-  if (events & POLL_WRITE)
-    {
-      EV_SET (&ev[nev], fd, EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, NULL);
-      nev++;
-    }
-
-  if (nev == 0)
-    return 0;
-
-  if (kevent (backend->kq, ev, nev, NULL, 0, NULL) < 0)
-    return -1;
-
-  return 0;
+  return setup_event_filters (backend, fd, events, EV_ADD);
 }
 
 int
 backend_mod (PollBackend_T backend, int fd, unsigned events)
 {
   assert (backend);
-  if (fd < 0)
-    {
-      errno = EBADF;
-      return -1;
-    }
+  VALIDATE_FD (fd);
 
-  delete_existing_filters (backend, fd);
-  return add_new_filters (backend, fd, events);
+  /* kqueue doesn't have EPOLL_CTL_MOD equivalent - delete and re-add.
+   * Delete both filters first (silently succeeds if not present). */
+  (void)setup_event_filters (backend, fd, POLL_READ | POLL_WRITE, EV_DELETE);
+
+  return setup_event_filters (backend, fd, events, EV_ADD);
 }
 
 int
 backend_del (PollBackend_T backend, int fd)
 {
-  struct kevent ev[2];
-  int nev = 0;
-
   assert (backend);
-  if (fd < 0)
-    {
-      errno = EBADF;
-      return -1;
-    }
+  VALIDATE_FD (fd);
 
-  /* Delete both read and write filters
-   * EV_DELETE silently succeeds if filter doesn't exist */
-  EV_SET (&ev[nev], fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-  nev++;
-
-  EV_SET (&ev[nev], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-  nev++;
-
-  /* Apply deletions - ignore errors since we want silent success */
-  kevent (backend->kq, ev, nev, NULL, 0, NULL);
+  /* Delete both filters - ignore errors (silent success if not present) */
+  (void)setup_event_filters (backend, fd, POLL_READ | POLL_WRITE, EV_DELETE);
 
   return 0;
 }

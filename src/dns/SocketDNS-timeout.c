@@ -7,22 +7,19 @@
  * Contains timeout calculation and request timeout handling functions.
  */
 
-#include "core/SocketConfig.h"
-#include <netdb.h>
-#include <pthread.h>
-#include <time.h>
-#include <unistd.h>
-
+/* All includes before T macro definition to avoid redefinition warnings */
 #include "core/Arena.h"
-#include "core/Except.h"
-#include "core/SocketEvents.h"
-#include "core/SocketMetrics.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNS-private.h"
+
+/* Redefine T after all includes (Arena.h and SocketDNS.h both undef T at end) */
+#undef T
+#define T SocketDNS_T
+#undef Request_T
+#define Request_T SocketDNS_Request_T
+
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS-timeout"
-#define T SocketDNS_T
-#define Request_T SocketDNS_Request_T
-#include "dns/SocketDNS-private.h"
 
 /**
  * request_effective_timeout_ms - Get effective timeout for request
@@ -84,8 +81,7 @@ mark_request_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
       freeaddrinfo (req->result);
       req->result = NULL;
     }
-  signal_completion (dns);
-  pthread_cond_broadcast (&dns->result_cond);
+  SIGNAL_DNS_COMPLETION (dns);
   SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_TIMEOUT, 1);
   SocketEvent_emit_dns_timeout (req->host ? req->host : "(wildcard)",
                                 req->port);

@@ -22,7 +22,7 @@
 
 #define T SocketPool_T
 
-extern const Except_T SocketPool_Failed;
+/* SocketPool_Failed declared in SocketPool.h (included via private header) */
 
 /**
  * find_free_slot - Get next free slot from free list
@@ -57,7 +57,7 @@ check_pool_full (T pool)
 void
 remove_from_free_list (T pool, Connection_T conn)
 {
-  pool->free_list = (struct Connection *)conn->free_next;
+  pool->free_list = conn->free_next;
 }
 
 /**
@@ -68,7 +68,7 @@ remove_from_free_list (T pool, Connection_T conn)
 void
 return_to_free_list (T pool, Connection_T conn)
 {
-  conn->free_next = (struct Connection *)pool->free_list;
+  conn->free_next = pool->free_list;
   pool->free_list = conn;
 }
 

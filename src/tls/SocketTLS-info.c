@@ -23,40 +23,23 @@
 const char *
 SocketTLS_get_cipher (Socket_T socket)
 {
-  SSL *ssl;
-  const SSL_CIPHER *cipher;
-
   assert (socket);
 
-  if (!socket->tls_enabled)
-    return NULL;
-
-  ssl = tls_socket_get_ssl (socket);
+  SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
     return NULL;
 
-  cipher = SSL_get_current_cipher (ssl);
-  if (!cipher)
-    return NULL;
-
-  return SSL_CIPHER_get_name (cipher);
+  const SSL_CIPHER *cipher = SSL_get_current_cipher (ssl);
+  return cipher ? SSL_CIPHER_get_name (cipher) : NULL;
 }
 
 const char *
 SocketTLS_get_version (Socket_T socket)
 {
-  SSL *ssl;
-
   assert (socket);
 
-  if (!socket->tls_enabled)
-    return NULL;
-
-  ssl = tls_socket_get_ssl (socket);
-  if (!ssl)
-    return NULL;
-
-  return SSL_get_version (ssl);
+  SSL *ssl = tls_socket_get_ssl (socket);
+  return ssl ? SSL_get_version (ssl) : NULL;
 }
 
 long
@@ -107,41 +90,26 @@ SocketTLS_get_verify_error_string (Socket_T socket, char *buf, size_t size)
 int
 SocketTLS_is_session_reused (Socket_T socket)
 {
-  SSL *ssl;
-
   assert (socket);
 
-  if (!socket->tls_enabled)
-    return -1;
-
-  ssl = (SSL *)socket->tls_ssl;
-  if (!ssl)
-    return X509_V_ERR_INVALID_CALL;
-
-  return SSL_session_reused (ssl) ? 1 : 0;
+  SSL *ssl = tls_socket_get_ssl (socket);
+  return ssl ? (SSL_session_reused (ssl) ? 1 : 0) : -1;
 }
 
 const char *
 SocketTLS_get_alpn_selected (Socket_T socket)
 {
-  SSL *ssl;
-  const unsigned char *alpn_data;
-  unsigned int alpn_len;
-
   assert (socket);
 
-  if (!socket->tls_enabled)
-    return NULL;
-
-  ssl = tls_socket_get_ssl (socket);
+  SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
     return NULL;
 
+  const unsigned char *alpn_data;
+  unsigned int alpn_len;
   SSL_get0_alpn_selected (ssl, &alpn_data, &alpn_len);
-  if (!alpn_data || alpn_len == 0)
-    return NULL;
 
-  if (alpn_len > SOCKET_TLS_MAX_ALPN_LEN)
+  if (!alpn_data || alpn_len == 0 || alpn_len > SOCKET_TLS_MAX_ALPN_LEN)
     return NULL;
 
   char *proto_copy = Arena_alloc (SocketBase_arena (socket->base),
@@ -151,7 +119,6 @@ SocketTLS_get_alpn_selected (Socket_T socket)
 
   memcpy (proto_copy, alpn_data, alpn_len);
   proto_copy[alpn_len] = '\0';
-
   return proto_copy;
 }
 

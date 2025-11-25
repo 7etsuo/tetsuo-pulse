@@ -16,11 +16,6 @@
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 
-/* Forward declarations for exception types */
-extern const Except_T Socket_Failed;
-extern const Except_T SocketDgram_Failed;
-extern const Except_T SocketCommon_Failed;
-
 /* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION(SocketCommon);
 

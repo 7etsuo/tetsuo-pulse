@@ -47,7 +47,7 @@ SocketPool_prewarm (T pool, int percentage)
               == 0)
             allocated++;
         }
-      conn = (struct Connection *)conn->free_next;
+      conn = conn->free_next;
     }
 
   pthread_mutex_unlock (&pool->mutex);
@@ -64,12 +64,8 @@ void
 SocketPool_set_bufsize (T pool, size_t new_bufsize)
 {
   assert (pool);
-  assert (SOCKET_VALID_BUFFER_SIZE (new_bufsize));
 
-  if (new_bufsize < SOCKET_MIN_BUFFER_SIZE)
-    new_bufsize = SOCKET_MIN_BUFFER_SIZE;
-  if (new_bufsize > SOCKET_MAX_BUFFER_SIZE)
-    new_bufsize = SOCKET_MAX_BUFFER_SIZE;
+  new_bufsize = socketpool_enforce_buffer_size (new_bufsize);
 
   pthread_mutex_lock (&pool->mutex);
   pool->bufsize = new_bufsize;

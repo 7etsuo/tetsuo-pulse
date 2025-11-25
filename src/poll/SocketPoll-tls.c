@@ -88,11 +88,9 @@ socketpoll_process_tls_handshakes (T poll, int nfds)
   for (i = 0; i < nfds; i++)
     {
       socket = poll->socketevents[i].socket;
-      if (socket && socket_is_tls_enabled (socket))
-        {
-          if (!socket->tls_handshake_done)
-            socketpoll_update_tls_events (poll, socket);
-        }
+      /* socketpoll_update_tls_events handles TLS check internally */
+      if (socket && !socket->tls_handshake_done)
+        socketpoll_update_tls_events (poll, socket);
     }
 }
 

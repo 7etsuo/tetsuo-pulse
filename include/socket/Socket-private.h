@@ -11,6 +11,11 @@ extern void socket_live_increment(void);
 extern void socket_live_decrement(void);
 extern int socket_debug_live_count(void);
 
+#ifdef SOCKET_HAS_TLS
+/* TLS field initialization - shared between Socket.c and Socket-accept.c */
+extern void socket_init_tls_fields(Socket_T sock);
+#endif
+
 /* Socket structure definition - embeds common base */
 struct Socket_T
 {
