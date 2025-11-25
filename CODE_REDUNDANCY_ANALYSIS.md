@@ -31,7 +31,7 @@ void Socket_timeouts_setdefaults(const SocketTimeouts_T *timeouts) {
 
 ---
 
-## 2. Bind Error Handling Functions (Near Duplicates)
+## 2. Bind Error Handling Functions (Functionally Identical)
 
 ### Files Affected
 - `src/socket/Socket-bind.c` (`handle_bind_error`, lines 51-69)
@@ -41,7 +41,7 @@ void Socket_timeouts_setdefaults(const SocketTimeouts_T *timeouts) {
 ### Description
 Three near-identical implementations of bind error handling:
 - `handle_bind_error()` in Socket-bind.c
-- `handle_dgram_bind_error()` in SocketDgram-bind.c (functionally identical)
+- `handle_dgram_bind_error()` in SocketDgram-bind.c (near duplicate of handle_bind_error)
 - `SocketCommon_handle_bind_error()` in SocketCommon-bind.c (slightly different)
 
 ### Recommendation
@@ -56,7 +56,7 @@ Consolidate into a single `SocketCommon_handle_bind_error()` function and call i
 - `src/socket/SocketCommon-validate.c` (`SocketCommon_normalize_wildcard_host`, lines 72-78)
 
 ### Description
-`normalize_dgram_host()` duplicates `SocketCommon_normalize_wildcard_host()` with equivalent logic using different conditional structure:
+`normalize_dgram_host()` duplicates `SocketCommon_normalize_wildcard_host()`, implementing equivalent logic with inverted conditional structure:
 ```c
 // SocketDgram-bind.c - normalize_dgram_host
 if (host != NULL && strcmp(host, "0.0.0.0") != 0 && strcmp(host, "::") != 0)
@@ -177,7 +177,7 @@ ssize_t name(T socket, const void *buf, size_t len) { \
 - `src/socket/SocketDgram-iov.c` (lines 191-325)
 
 ### Description
-Both files have complex iovec advancement logic after partial sends/receives. While `SocketCommon_advance_iov()` exists in SocketCommon-iov.c, Socket-iov-all.c doesn't use it and implements its own inline logic.
+Both Socket-iov-all.c and SocketDgram-iov.c have complex iovec advancement logic after partial sends/receives. While `SocketCommon_advance_iov()` exists in SocketCommon-iov.c, Socket-iov-all.c doesn't use it and implements its own inline logic.
 
 ### Recommendation
 Refactor Socket-iov-all.c to use `SocketCommon_advance_iov()` and `SocketCommon_calculate_total_iov_len()`.
@@ -248,7 +248,7 @@ These are acceptable thin wrappers for readability, but could be consolidated in
 ### Medium Priority (Maintainability)
 4. **EAGAIN/EWOULDBLOCK checks** - Create shared helper
 5. **isconnected/isbound** - Create shared base implementations
-6. **sendvall/recvvall** - Use SocketCommon_advance_iov
+6. **sendvall/recvvall IOV advancement** - Use SocketCommon_advance_iov
 
 ### Low Priority (Minor Cleanup)
 7. **Setup hints helpers** - Could be inlined
