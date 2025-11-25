@@ -1,1 +1,0 @@
-/home/runner/work/tetsuo-socket/.codeql-scratch/dbs/cpp/working/autobuild/bin/cc  -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -D_GNU_SOURCE -pthread -fno-strict-aliasing -fPIC -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/benchmark_raw.dir/link.d CMakeFiles/benchmark_raw.dir/src/test/benchmark_raw.c.o -o benchmark_raw  -lpthread
