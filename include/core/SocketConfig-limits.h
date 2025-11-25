@@ -90,6 +90,11 @@
 #define SOCKETBUF_MIN_CAPACITY 512
 #endif
 
+/* Allocation overhead for arena bookkeeping during buffer resize */
+#ifndef SOCKETBUF_ALLOC_OVERHEAD
+#define SOCKETBUF_ALLOC_OVERHEAD 64
+#endif
+
 /* Socket port string buffer size for general use */
 #ifndef SOCKET_PORT_STR_BUFSIZE
 #define SOCKET_PORT_STR_BUFSIZE 16

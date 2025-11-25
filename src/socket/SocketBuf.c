@@ -52,7 +52,20 @@ struct T
   Arena_T arena;
 };
 
-/* Runtime invariant check (rules: prefer over asserts for prod security) */
+/**
+ * SocketBuf_check_invariants - Validate buffer invariants
+ * @buf: Buffer to check
+ *
+ * Returns: true if all invariants hold, false otherwise
+ *
+ * Verifies:
+ * - Buffer and data pointer are non-NULL
+ * - Capacity is non-zero
+ * - Size does not exceed capacity
+ * - Head and tail positions are within valid bounds
+ *
+ * Thread-safe: No (caller must ensure exclusive access)
+ */
 bool
 SocketBuf_check_invariants (T buf)
 {
@@ -79,7 +92,7 @@ SocketBuf_reserve (T buf, size_t min_space)
 
   /* Calculate new capacity with overflow check */
   size_t new_cap = buf->capacity ? buf->capacity * 2 : 1024;
-  if (new_cap < min_space || new_cap > SIZE_MAX - 64) /* Overhead */
+  if (new_cap < min_space || new_cap > SIZE_MAX - SOCKETBUF_ALLOC_OVERHEAD)
     {
       SOCKET_ERROR_MSG ("SocketBuf reserve overflow: needed %zu current %zu",
                         needed, buf->capacity);

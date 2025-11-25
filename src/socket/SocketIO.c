@@ -57,7 +57,162 @@ extern int socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result);
 extern ssize_t socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt);
 extern ssize_t socket_recvv_tls (T socket, struct iovec *iov, int iovcnt);
 extern SSL *socket_get_ssl (T socket);
+
+/**
+ * socket_send_tls - TLS send operation
+ * @socket: Socket instance with TLS enabled
+ * @buf: Data to send
+ * @len: Length of data
+ *
+ * Returns: Bytes sent or 0 if would block
+ * Raises: Socket_Failed, SocketTLS_Failed, SocketTLS_HandshakeFailed
+ */
+static ssize_t
+socket_send_tls (T socket, const void *buf, size_t len)
+{
+  SSL *ssl = socket_get_ssl (socket);
+  if (!ssl)
+    {
+      SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  if (!socket->tls_handshake_done)
+    {
+      SOCKET_ERROR_MSG ("TLS handshake not complete");
+      RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
+    }
+
+  int ssl_result = SSL_write (ssl, buf, (int)len);
+
+  if (ssl_result <= 0)
+    {
+      if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
+        {
+          if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0;
+        }
+    }
+
+  if (ssl_result < 0)
+    {
+      SOCKET_ERROR_FMT ("TLS send failed (len=%zu)", len);
+      RAISE_MODULE_ERROR (SocketTLS_Failed);
+    }
+
+  return (ssize_t)ssl_result;
+}
+
+/**
+ * socket_recv_tls - TLS receive operation
+ * @socket: Socket instance with TLS enabled
+ * @buf: Buffer for received data
+ * @len: Buffer size
+ *
+ * Returns: Bytes received or 0 if would block
+ * Raises: Socket_Failed, Socket_Closed, SocketTLS_Failed
+ */
+static ssize_t
+socket_recv_tls (T socket, void *buf, size_t len)
+{
+  SSL *ssl = socket_get_ssl (socket);
+  if (!ssl)
+    {
+      SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  if (!socket->tls_handshake_done)
+    {
+      SOCKET_ERROR_MSG ("TLS handshake not complete");
+      RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
+    }
+
+  int ssl_result = SSL_read (ssl, buf, (int)len);
+
+  if (ssl_result <= 0)
+    {
+      if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
+        {
+          if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0;
+          if (errno == ECONNRESET)
+            RAISE (Socket_Closed);
+        }
+    }
+
+  if (ssl_result < 0)
+    {
+      SOCKET_ERROR_FMT ("TLS receive failed (len=%zu)", len);
+      RAISE_MODULE_ERROR (SocketTLS_Failed);
+    }
+
+  if (ssl_result == 0)
+    RAISE (Socket_Closed);
+
+  return (ssize_t)ssl_result;
+}
 #endif
+
+/**
+ * socket_send_raw - Raw socket send operation
+ * @socket: Socket instance
+ * @buf: Data to send
+ * @len: Length of data
+ * @flags: Send flags
+ *
+ * Returns: Bytes sent or 0 if would block
+ * Raises: Socket_Failed, Socket_Closed
+ */
+static ssize_t
+socket_send_raw (T socket, const void *buf, size_t len, int flags)
+{
+  ssize_t result = send (Socket_fd (socket), buf, len, flags);
+
+  if (result < 0)
+    {
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return 0;
+      if (errno == EPIPE || errno == ECONNRESET)
+        RAISE (Socket_Closed);
+      SOCKET_ERROR_FMT ("Send failed (len=%zu)", len);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  return result;
+}
+
+/**
+ * socket_recv_raw - Raw socket receive operation
+ * @socket: Socket instance
+ * @buf: Buffer for received data
+ * @len: Buffer size
+ * @flags: Receive flags
+ *
+ * Returns: Bytes received or 0 if would block
+ * Raises: Socket_Failed, Socket_Closed
+ */
+static ssize_t
+socket_recv_raw (T socket, void *buf, size_t len, int flags)
+{
+  ssize_t result = recv (Socket_fd (socket), buf, len, flags);
+
+  if (result < 0)
+    {
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return 0;
+      if (errno == ECONNRESET)
+        RAISE (Socket_Closed);
+      SOCKET_ERROR_FMT ("Receive failed (len=%zu)", len);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  else if (result == 0)
+    {
+      RAISE (Socket_Closed);
+    }
+
+  return result;
+}
 
 /**
  * socket_send_internal - Internal send operation
@@ -77,60 +232,10 @@ socket_send_internal (T socket, const void *buf, size_t len, int flags)
 
 #ifdef SOCKET_HAS_TLS
   if (socket->tls_enabled && socket->tls_ssl)
-    {
-      SSL *ssl = socket_get_ssl (socket);
-      if (!ssl)
-        {
-          SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
-
-      /* Check if handshake is complete */
-      if (!socket->tls_handshake_done)
-        {
-          SOCKET_ERROR_MSG ("TLS handshake not complete");
-          RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
-        }
-
-      /* Use SSL_write() for TLS */
-      int ssl_result = SSL_write (ssl, buf, (int)len);
-
-      if (ssl_result <= 0)
-        {
-          if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
-            {
-              if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return 0; /* Would block */
-                          /* Other errors will raise exception below */
-            }
-        }
-
-      if (ssl_result < 0)
-        {
-          SOCKET_ERROR_FMT ("TLS send failed (len=%zu)", len);
-          RAISE_MODULE_ERROR (SocketTLS_Failed);
-        }
-
-      return (ssize_t)ssl_result;
-    }
+    return socket_send_tls (socket, buf, len);
 #endif
 
-  /* Non-TLS path: use standard send() */
-  ssize_t result = send (Socket_fd (socket), buf, len, flags);
-
-  if (result < 0)
-    {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
-        return 0;
-      if (errno == EPIPE)
-        RAISE (Socket_Closed);
-      if (errno == ECONNRESET)
-        RAISE (Socket_Closed);
-      SOCKET_ERROR_FMT ("Send failed (len=%zu)", len);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  return result;
+  return socket_send_raw (socket, buf, len, flags);
 }
 
 /**
@@ -151,70 +256,10 @@ socket_recv_internal (T socket, void *buf, size_t len, int flags)
 
 #ifdef SOCKET_HAS_TLS
   if (socket->tls_enabled && socket->tls_ssl)
-    {
-      SSL *ssl = socket_get_ssl (socket);
-      if (!ssl)
-        {
-          SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
-
-      /* Check if handshake is complete */
-      if (!socket->tls_handshake_done)
-        {
-          SOCKET_ERROR_MSG ("TLS handshake not complete");
-          RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
-        }
-
-      /* Use SSL_read() for TLS */
-      int ssl_result = SSL_read (ssl, buf, (int)len);
-
-      if (ssl_result <= 0)
-        {
-          if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
-            {
-              if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return 0; /* Would block */
-              if (errno == ECONNRESET)
-                RAISE (Socket_Closed);
-              /* Other errors will raise exception below */
-            }
-        }
-
-      if (ssl_result < 0)
-        {
-          SOCKET_ERROR_FMT ("TLS receive failed (len=%zu)", len);
-          RAISE_MODULE_ERROR (SocketTLS_Failed);
-        }
-
-      if (ssl_result == 0)
-        {
-          /* TLS connection closed cleanly */
-          RAISE (Socket_Closed);
-        }
-
-      return (ssize_t)ssl_result;
-    }
+    return socket_recv_tls (socket, buf, len);
 #endif
 
-  /* Non-TLS path: use standard recv() */
-  ssize_t result = recv (Socket_fd (socket), buf, len, flags);
-
-  if (result < 0)
-    {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
-        return 0;
-      if (errno == ECONNRESET)
-        RAISE (Socket_Closed);
-      SOCKET_ERROR_FMT ("Receive failed (len=%zu)", len);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-  else if (result == 0)
-    {
-      RAISE (Socket_Closed);
-    }
-
-  return result;
+  return socket_recv_raw (socket, buf, len, flags);
 }
 
 

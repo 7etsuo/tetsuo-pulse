@@ -13,11 +13,7 @@
  * - Memory management using Arena allocation
  */
 
-#include "core/Arena.h"
-#include "core/Except.h"
-#include "core/SocketConfig-limits.h"
-#include "core/SocketConfig.h"
-#include "socket/SocketDgram.h"
+/* System headers first - per CII style */
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
@@ -35,10 +31,17 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
+
+/* Project headers */
+#include "core/Arena.h"
+#include "core/Except.h"
+#include "core/SocketConfig-limits.h"
+#include "core/SocketConfig.h"
 #define SOCKET_LOG_COMPONENT "SocketDgram"
 #include "core/SocketError.h"
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
+#include "socket/SocketDgram.h"
 #define T SocketDgram_T
 /* Port string buffer size for snprintf */
 const Except_T SocketDgram_Failed
