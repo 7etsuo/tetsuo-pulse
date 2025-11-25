@@ -59,21 +59,11 @@
 
 /* Thread-local exception for detailed error messages.
  * Prevents race conditions when multiple threads raise same exception. */
-#ifdef _WIN32
-static __declspec (thread) Except_T Socket_DetailedException;
-#else
-static __thread Except_T Socket_DetailedException;
-#endif
+/* Declare module-specific exception using centralized macros */
+SOCKET_DECLARE_MODULE_EXCEPTION(Socket);
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e)                                                 \
-  do                                                                          \
-    {                                                                         \
-      Socket_DetailedException = (e);                                         \
-      Socket_DetailedException.reason = socket_error_buf;                     \
-      RAISE (Socket_DetailedException);                                       \
-    }                                                                         \
-  while (0)
+#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(Socket, e)
 
 /**
  * SocketPair_new - Create a pair of connected Unix domain sockets

@@ -43,22 +43,11 @@ extern const Except_T SocketTLS_HandshakeFailed;
 
 #define T Socket_T
 
-/* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-static __declspec (thread) Except_T SocketIO_DetailedException;
-#else
-static __thread Except_T SocketIO_DetailedException;
-#endif
+/* Declare module-specific exception using centralized macros */
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketIO);
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e)                                                 \
-  do                                                                          \
-    {                                                                         \
-      SocketIO_DetailedException = (e);                                       \
-      SocketIO_DetailedException.reason = socket_error_buf;                  \
-      RAISE (SocketIO_DetailedException);                                    \
-    }                                                                         \
-  while (0)
+#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(SocketIO, e)
 
 /**
  * socket_get_ssl - Helper to get SSL object from socket

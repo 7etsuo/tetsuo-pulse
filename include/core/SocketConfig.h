@@ -1,67 +1,73 @@
 #ifndef SOCKETCONFIG_INCLUDED
 #define SOCKETCONFIG_INCLUDED
 
-/* Standard includes required for SAFE_CLOSE macro */
+/**
+ * SocketConfig.h - Socket Library Configuration
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
+ *
+ * This header provides compile-time configuration for the socket library.
+ * Limit constants are defined in SocketConfig-limits.h.
+ * Platform detection and socket option mappings are defined here.
+ */
+
+/* Standard includes required for configuration macros */
 #include <errno.h>
-#include <stdio.h>
-#include <unistd.h>
-
-#include "SocketConfig-limits.h"
-
-extern const char *Socket_safe_strerror (int errnum);
-
-/* Socket header required for IPv6 multicast constants */
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <stdio.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
 #include <unistd.h>
 
+/* Include limit constants - single source of truth */
+#include "SocketConfig-limits.h"
+
+/* Forward declaration */
 extern const char *Socket_safe_strerror (int errnum);
 
-/* IOV_MAX fallback if not defined */
-#ifndef IOV_MAX
-#define IOV_MAX 1024 /* Reasonable default, typically 1024 on Linux */
-#endif
+/* ============================================================================
+ * Platform Detection
+ * ============================================================================ */
 
-/* Remove all remnants of the duplicate platform detection attempt */
-/* The existing platform-specific definitions below are sufficient and correct
- */
-
-/* sendmsg/recvmsg are standard POSIX - always available */
-#define SOCKET_HAS_SENDMSG 1
-#define SOCKET_HAS_RECVMSG 1
-
-/* Platform detection */
 #ifdef __APPLE__
 #define SOCKET_PLATFORM_MACOS 1
 #else
 #define SOCKET_PLATFORM_MACOS 0
 #endif
 
-/* Socket library configuration limits */
-
-/* Maximum number of connections in pool (can be overridden at compile time) */
-#ifndef SOCKET_MAX_CONNECTIONS
-#define SOCKET_MAX_CONNECTIONS 10000UL
+/* IOV_MAX fallback if not defined */
+#ifndef IOV_MAX
+#define IOV_MAX 1024
 #endif
 
-/* Maximum buffer size per connection (can be overridden at compile time) */
-#ifndef SOCKET_MAX_BUFFER_SIZE
-#define SOCKET_MAX_BUFFER_SIZE (1024 * 1024) /* 1MB */
-#endif
+/* sendmsg/recvmsg are standard POSIX - always available */
+#define SOCKET_HAS_SENDMSG 1
+#define SOCKET_HAS_RECVMSG 1
 
-/* Default timeout values in ms */
+/* ============================================================================
+ * Timeout Configuration
+ * ============================================================================ */
+
 #ifndef SOCKET_DEFAULT_CONNECT_TIMEOUT_MS
-#define SOCKET_DEFAULT_CONNECT_TIMEOUT_MS 30000  /* 30 seconds */
+#define SOCKET_DEFAULT_CONNECT_TIMEOUT_MS 30000 /* 30 seconds */
 #endif
 
 #ifndef SOCKET_DEFAULT_DNS_TIMEOUT_MS
-#define SOCKET_DEFAULT_DNS_TIMEOUT_MS 5000  /* 5 seconds */
+#define SOCKET_DEFAULT_DNS_TIMEOUT_MS 5000 /* 5 seconds */
 #endif
 
 #ifndef SOCKET_DEFAULT_OPERATION_TIMEOUT_MS
-#define SOCKET_DEFAULT_OPERATION_TIMEOUT_MS 0  /* Infinite */
+#define SOCKET_DEFAULT_OPERATION_TIMEOUT_MS 0 /* Infinite */
+#endif
+
+#ifndef SOCKET_DEFAULT_IDLE_TIMEOUT
+#define SOCKET_DEFAULT_IDLE_TIMEOUT 300 /* 5 minutes */
+#endif
+
+#ifndef SOCKET_DEFAULT_POLL_TIMEOUT
+#define SOCKET_DEFAULT_POLL_TIMEOUT 1000 /* 1 second */
 #endif
 
 /**
@@ -69,32 +75,15 @@ extern const char *Socket_safe_strerror (int errnum);
  */
 typedef struct SocketTimeouts
 {
-  int connect_timeout_ms;     /**< Connect timeout in ms (0 = infinite) */
-  int dns_timeout_ms;         /**< DNS resolution timeout in ms (0 = infinite) */
-  int operation_timeout_ms;   /**< General operation timeout in ms (0 = infinite) */
+  int connect_timeout_ms;   /**< Connect timeout in ms (0 = infinite) */
+  int dns_timeout_ms;       /**< DNS resolution timeout in ms (0 = infinite) */
+  int operation_timeout_ms; /**< General operation timeout in ms (0 = infinite) */
 } SocketTimeouts_T;
 
-/* Minimum buffer size per connection */
-#ifndef SOCKET_MIN_BUFFER_SIZE
-#define SOCKET_MIN_BUFFER_SIZE 512
-#endif
+/* ============================================================================
+ * Pool Configuration
+ * ============================================================================ */
 
-/* Maximum events per poll */
-#ifndef SOCKET_MAX_POLL_EVENTS
-#define SOCKET_MAX_POLL_EVENTS 10000
-#endif
-
-/* Default idle timeout in seconds */
-#ifndef SOCKET_DEFAULT_IDLE_TIMEOUT
-#define SOCKET_DEFAULT_IDLE_TIMEOUT 300 /* 5 minutes */
-#endif
-
-/* Default poll timeout in milliseconds */
-#ifndef SOCKET_DEFAULT_POLL_TIMEOUT
-#define SOCKET_DEFAULT_POLL_TIMEOUT 1000 /* 1 second */
-#endif
-
-/* Default connection pool settings */
 #ifndef SOCKET_DEFAULT_POOL_SIZE
 #define SOCKET_DEFAULT_POOL_SIZE 1000
 #endif
@@ -103,54 +92,26 @@ typedef struct SocketTimeouts
 #define SOCKET_DEFAULT_POOL_BUFSIZE 8192
 #endif
 
-/* Pool pre-warm and batch limits */
 #ifndef SOCKET_POOL_DEFAULT_PREWARM_PCT
-#define SOCKET_POOL_DEFAULT_PREWARM_PCT                                       \
-  20 /* Default percentage of slots to pre-warm for latency reduction under   \
-        burst loads */
+#define SOCKET_POOL_DEFAULT_PREWARM_PCT 20
 #endif
 
 #ifndef SOCKET_POOL_MAX_BATCH_ACCEPTS
-#define SOCKET_POOL_MAX_BATCH_ACCEPTS                                         \
-  1000 /* Maximum number of accepts per batch call to prevent excessive       \
-          resource use */
+#define SOCKET_POOL_MAX_BATCH_ACCEPTS 1000
 #endif
 
-/* Maximum backlog for listen() */
-#ifndef SOCKET_MAX_LISTEN_BACKLOG
-#define SOCKET_MAX_LISTEN_BACKLOG 1024
-#endif
-
-/* Hash table size for socket data mapping - prime number for better
- * distribution */
-#ifndef SOCKET_HASH_TABLE_SIZE
-#define SOCKET_HASH_TABLE_SIZE 1021
-#endif
+/* ============================================================================
+ * Hash and Algorithm Constants
+ * ============================================================================ */
 
 /* Golden ratio constant for multiplicative hashing (2^32 * (sqrt(5)-1)/2) */
 #ifndef HASH_GOLDEN_RATIO
 #define HASH_GOLDEN_RATIO 2654435761u
 #endif
 
-/* Arena chunk size */
-#ifndef ARENA_CHUNK_SIZE
-#define ARENA_CHUNK_SIZE (10 * 1024) /* 10KB */
-#endif
-
-/* Maximum allocation size for arena */
-#ifndef ARENA_MAX_ALLOC_SIZE
-#define ARENA_MAX_ALLOC_SIZE (100 * 1024 * 1024) /* 100MB */
-#endif
-
-/* Maximum number of free chunks to cache for reuse */
-#ifndef ARENA_MAX_FREE_CHUNKS
-#define ARENA_MAX_FREE_CHUNKS 10
-#endif
-
-/* Arena error buffer size for detailed error messages */
-#ifndef ARENA_ERROR_BUFSIZE
-#define ARENA_ERROR_BUFSIZE 256
-#endif
+/* ============================================================================
+ * Arena Memory Alignment
+ * ============================================================================ */
 
 /* Alignment union - ensures proper alignment for all data types */
 union align
@@ -165,12 +126,11 @@ union align
   long double ld;
 };
 
-/* Arena alignment size - size of union align for proper alignment */
 #ifndef ARENA_ALIGNMENT_SIZE
 #define ARENA_ALIGNMENT_SIZE sizeof (union align)
 #endif
 
-/* Arena validation constants */
+/* Arena validation and return codes */
 #ifndef ARENA_VALIDATION_SUCCESS
 #define ARENA_VALIDATION_SUCCESS 1
 #endif
@@ -179,7 +139,6 @@ union align
 #define ARENA_VALIDATION_FAILURE 0
 #endif
 
-/* Arena operation return codes */
 #ifndef ARENA_SUCCESS
 #define ARENA_SUCCESS 0
 #endif
@@ -188,7 +147,6 @@ union align
 #define ARENA_FAILURE -1
 #endif
 
-/* Arena reuse chunk return codes */
 #ifndef ARENA_CHUNK_REUSED
 #define ARENA_CHUNK_REUSED 1
 #endif
@@ -197,7 +155,6 @@ union align
 #define ARENA_CHUNK_NOT_REUSED 0
 #endif
 
-/* Arena size validation return codes */
 #ifndef ARENA_SIZE_VALID
 #define ARENA_SIZE_VALID 1
 #endif
@@ -206,12 +163,14 @@ union align
 #define ARENA_SIZE_INVALID 0
 #endif
 
-/* Arena error message constants */
 #ifndef ARENA_ENOMEM
 #define ARENA_ENOMEM "Out of memory"
 #endif
 
-/* Async DNS resolution configuration */
+/* ============================================================================
+ * DNS Configuration
+ * ============================================================================ */
+
 #ifndef SOCKET_DNS_THREAD_COUNT
 #define SOCKET_DNS_THREAD_COUNT 4
 #endif
@@ -220,97 +179,64 @@ union align
 #define SOCKET_DNS_MAX_PENDING 1000
 #endif
 
-#ifndef SOCKET_DEFAULT_CONNECT_TIMEOUT_MS
-#define SOCKET_DEFAULT_CONNECT_TIMEOUT_MS 10000 /* 10 seconds */
-#endif
-
-#ifndef SOCKET_DEFAULT_DNS_TIMEOUT_MS
-#define SOCKET_DEFAULT_DNS_TIMEOUT_MS 5000 /* 5 seconds */
-#endif
-
-#ifndef SOCKET_DEFAULT_OPERATION_TIMEOUT_MS
-#define SOCKET_DEFAULT_OPERATION_TIMEOUT_MS 0 /* Disabled */
-#endif
-
-/* DNS request hash table size - prime number for better distribution */
-#ifndef SOCKET_DNS_REQUEST_HASH_SIZE
-#define SOCKET_DNS_REQUEST_HASH_SIZE 1021
-#endif
-
-/* Port number string buffer size (sufficient for "65535" + null terminator) */
-#ifndef SOCKET_DNS_PORT_STR_SIZE
-#define SOCKET_DNS_PORT_STR_SIZE 16
-#endif
-
-/* DNS label maximum length per RFC 1035 */
 #ifndef SOCKET_DNS_MAX_LABEL_LENGTH
 #define SOCKET_DNS_MAX_LABEL_LENGTH 63
 #endif
 
-/* Conservative stack size for DNS worker threads (128KB) */
 #ifndef SOCKET_DNS_WORKER_STACK_SIZE
 #define SOCKET_DNS_WORKER_STACK_SIZE (128 * 1024)
 #endif
 
-/* Socket port string buffer size for general use */
-#ifndef SOCKET_PORT_STR_BUFSIZE
-#define SOCKET_PORT_STR_BUFSIZE 16
-#endif
+/* ============================================================================
+ * Time Conversion Constants
+ * ============================================================================ */
 
-/* Minimum capacity for circular buffers */
-#ifndef SOCKETBUF_MIN_CAPACITY
-#define SOCKETBUF_MIN_CAPACITY 512
-
-/* Standard limits */
-/* Moved to limits.h */
-/* Moved to limits.h */
-
-/* Time conversion constants */
 #define SOCKET_MS_PER_SECOND 1000
 #define SOCKET_NS_PER_MS 1000000LL
 
-/* Buffer sizes */
-/* Moved to SocketConfig-limits.h */
+/* ============================================================================
+ * Async I/O Configuration
+ * ============================================================================ */
 
-/* Async I/O defaults */
 #define SOCKET_DEFAULT_IO_URING_ENTRIES 1024
 #define SOCKET_MAX_EVENT_BATCH 100
 
-/* String conversion macros for error messages */
+/* ============================================================================
+ * String Conversion Macros
+ * ============================================================================ */
+
 #define SOCKET_STRINGIFY(x) #x
 #define SOCKET_TO_STRING(x) SOCKET_STRINGIFY (x)
 
-/* Predefined range strings */
 #define SOCKET_PORT_VALID_RANGE "1-" SOCKET_TO_STRING (SOCKET_MAX_PORT)
 #define SOCKET_TTL_VALID_RANGE "1-" SOCKET_TO_STRING (SOCKET_MAX_TTL)
-
-/* IP prefix lengths */
-#define SOCKET_IPV4_MAX_PREFIX 32
-/* Moved to limits.h */
-
 #define SOCKET_IPV4_PREFIX_RANGE "0-" SOCKET_TO_STRING (SOCKET_IPV4_MAX_PREFIX)
 #define SOCKET_IPV6_PREFIX_RANGE "0-" SOCKET_TO_STRING (SOCKET_IPV6_MAX_PREFIX)
-#endif
 
-/* Socket types */
+/* ============================================================================
+ * Socket Type and Family Constants
+ * ============================================================================ */
+
 #define SOCKET_STREAM_TYPE SOCK_STREAM
 #define SOCKET_DGRAM_TYPE SOCK_DGRAM
 
-/* Address family constants */
 #define SOCKET_AF_UNSPEC AF_UNSPEC
 #define SOCKET_AF_INET AF_INET
 #define SOCKET_AF_INET6 AF_INET6
 #define SOCKET_AF_UNIX AF_UNIX
 
-/* Protocol constants */
 #define SOCKET_IPPROTO_TCP IPPROTO_TCP
 #define SOCKET_IPPROTO_UDP IPPROTO_UDP
 #define SOCKET_IPPROTO_IP IPPROTO_IP
 #define SOCKET_IPPROTO_IPV6 IPPROTO_IPV6
 
-/* Socket options */
+/* ============================================================================
+ * Socket Options
+ * ============================================================================ */
+
 #define SOCKET_SOL_SOCKET SOL_SOCKET
 #define SOCKET_SO_REUSEADDR SO_REUSEADDR
+
 #ifdef SO_REUSEPORT
 #define SOCKET_SO_REUSEPORT SO_REUSEPORT
 #define SOCKET_HAS_SO_REUSEPORT 1
@@ -319,7 +245,6 @@ union align
 #define SOCKET_HAS_SO_REUSEPORT 0
 #endif
 
-/* Close-on-exec support */
 #ifdef SOCK_CLOEXEC
 #define SOCKET_SOCK_CLOEXEC SOCK_CLOEXEC
 #define SOCKET_HAS_SOCK_CLOEXEC 1
@@ -328,14 +253,15 @@ union align
 #define SOCKET_HAS_SOCK_CLOEXEC 0
 #endif
 
-/* accept4() support detection */
 #ifdef __linux__
 #define SOCKET_HAS_ACCEPT4 1
+#define SOCKET_SO_DOMAIN SO_DOMAIN
+#define SOCKET_HAS_SO_DOMAIN 1
 #else
 #define SOCKET_HAS_ACCEPT4 0
+#define SOCKET_HAS_SO_DOMAIN 0
 #endif
 
-/* FD_CLOEXEC constant */
 #define SOCKET_FD_CLOEXEC FD_CLOEXEC
 #define SOCKET_SO_BROADCAST SO_BROADCAST
 #define SOCKET_SO_KEEPALIVE SO_KEEPALIVE
@@ -343,23 +269,17 @@ union align
 #define SOCKET_SO_SNDTIMEO SO_SNDTIMEO
 #define SOCKET_SO_RCVBUF SO_RCVBUF
 #define SOCKET_SO_SNDBUF SO_SNDBUF
-/* SO_DOMAIN is Linux-specific - use getsockname() fallback on other platforms
- */
-#ifdef __linux__
-#define SOCKET_SO_DOMAIN SO_DOMAIN
-#define SOCKET_HAS_SO_DOMAIN 1
-#else
-#define SOCKET_HAS_SO_DOMAIN 0
-#endif
 #define SOCKET_SO_PEERCRED SO_PEERCRED
 
-/* TCP options */
+/* ============================================================================
+ * TCP Options
+ * ============================================================================ */
+
 #define SOCKET_TCP_NODELAY TCP_NODELAY
 #define SOCKET_TCP_KEEPIDLE TCP_KEEPIDLE
 #define SOCKET_TCP_KEEPINTVL TCP_KEEPINTVL
 #define SOCKET_TCP_KEEPCNT TCP_KEEPCNT
 
-/* TCP congestion control (Linux 2.6.13+) */
 #ifdef TCP_CONGESTION
 #define SOCKET_TCP_CONGESTION TCP_CONGESTION
 #define SOCKET_HAS_TCP_CONGESTION 1
@@ -367,19 +287,16 @@ union align
 #define SOCKET_HAS_TCP_CONGESTION 0
 #endif
 
-/* TCP Fast Open (Linux 3.7+, FreeBSD 10.0+) */
 #ifdef TCP_FASTOPEN
 #define SOCKET_TCP_FASTOPEN TCP_FASTOPEN
 #define SOCKET_HAS_TCP_FASTOPEN 1
 #elif defined(TCP_FASTOPEN_CONNECT)
-/* macOS uses TCP_FASTOPEN_CONNECT */
 #define SOCKET_TCP_FASTOPEN TCP_FASTOPEN_CONNECT
 #define SOCKET_HAS_TCP_FASTOPEN 1
 #else
 #define SOCKET_HAS_TCP_FASTOPEN 0
 #endif
 
-/* TCP User Timeout (Linux 2.6.37+) */
 #ifdef TCP_USER_TIMEOUT
 #define SOCKET_TCP_USER_TIMEOUT TCP_USER_TIMEOUT
 #define SOCKET_HAS_TCP_USER_TIMEOUT 1
@@ -387,124 +304,87 @@ union align
 #define SOCKET_HAS_TCP_USER_TIMEOUT 0
 #endif
 
-/* IPv6 options */
+/* ============================================================================
+ * IPv6 Options
+ * ============================================================================ */
+
 #define SOCKET_IPV6_V6ONLY IPV6_V6ONLY
-/* IPv6 multicast - use platform-specific names */
+
 #ifdef IPV6_ADD_MEMBERSHIP
-/* Linux uses IPV6_ADD_MEMBERSHIP */
 #define SOCKET_IPV6_ADD_MEMBERSHIP IPV6_ADD_MEMBERSHIP
 #elif defined(IPV6_JOIN_GROUP)
-/* macOS/BSD use IPV6_JOIN_GROUP */
 #define SOCKET_IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
 #else
 #error "IPv6 multicast add membership not supported on this platform"
 #endif
+
 #ifdef IPV6_DROP_MEMBERSHIP
-/* Linux uses IPV6_DROP_MEMBERSHIP */
 #define SOCKET_IPV6_DROP_MEMBERSHIP IPV6_DROP_MEMBERSHIP
 #elif defined(IPV6_LEAVE_GROUP)
-/* macOS/BSD use IPV6_LEAVE_GROUP */
 #define SOCKET_IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
 #else
 #error "IPv6 multicast drop membership not supported on this platform"
 #endif
+
 #define SOCKET_IPV6_UNICAST_HOPS IPV6_UNICAST_HOPS
 
-/* IP options */
+/* ============================================================================
+ * IP Options
+ * ============================================================================ */
+
 #define SOCKET_IP_TTL IP_TTL
 #define SOCKET_IP_ADD_MEMBERSHIP IP_ADD_MEMBERSHIP
 #define SOCKET_IP_DROP_MEMBERSHIP IP_DROP_MEMBERSHIP
 
-/* Address info flags */
+/* ============================================================================
+ * Address and Name Info Flags
+ * ============================================================================ */
+
 #define SOCKET_AI_PASSIVE AI_PASSIVE
 #define SOCKET_AI_NUMERICHOST AI_NUMERICHOST
 #define SOCKET_AI_NUMERICSERV AI_NUMERICSERV
-
-/* Name info flags */
 #define SOCKET_NI_NUMERICHOST NI_NUMERICHOST
 #define SOCKET_NI_NUMERICSERV NI_NUMERICSERV
-
-/* Shutdown modes */
-#define SOCKET_SHUT_RD SHUT_RD
-#define SOCKET_SHUT_WR SHUT_WR
-#define SOCKET_SHUT_RDWR SHUT_RDWR
-
-/* Maximum lengths for name info */
 #define SOCKET_NI_MAXHOST NI_MAXHOST
 #define SOCKET_NI_MAXSERV NI_MAXSERV
 
-/* Message flags */
+/* ============================================================================
+ * Shutdown and Message Flags
+ * ============================================================================ */
+
+#define SOCKET_SHUT_RD SHUT_RD
+#define SOCKET_SHUT_WR SHUT_WR
+#define SOCKET_SHUT_RDWR SHUT_RDWR
 #define SOCKET_MSG_NOSIGNAL MSG_NOSIGNAL
 
-/* Default keepalive parameters */
+/* ============================================================================
+ * Default Parameters
+ * ============================================================================ */
+
 #define SOCKET_DEFAULT_KEEPALIVE_IDLE 60
 #define SOCKET_DEFAULT_KEEPALIVE_INTERVAL 10
 #define SOCKET_DEFAULT_KEEPALIVE_COUNT 3
-
-/* Default TTL for datagrams */
 #define SOCKET_DEFAULT_DATAGRAM_TTL 64
-
-/* Multicast interface index */
 #define SOCKET_MULTICAST_DEFAULT_INTERFACE 0
 
-/* Completion pipe read buffer size */
-#ifndef SOCKET_DNS_PIPE_BUFFER_SIZE
-#define SOCKET_DNS_PIPE_BUFFER_SIZE 256
-#endif
-
-/* Poll backend configuration */
-
-/* Initial pollfd array size for poll(2) backend */
-#ifndef POLL_INITIAL_FDS
-#define POLL_INITIAL_FDS 64
-#endif
-
-/* Initial file descriptor mapping table size for poll backend */
-#ifndef POLL_INITIAL_FD_MAP_SIZE
-#define POLL_INITIAL_FD_MAP_SIZE 1024
-#endif
-
-/* File descriptor mapping table expansion increment */
-#ifndef POLL_FD_MAP_EXPAND_INCREMENT
-#define POLL_FD_MAP_EXPAND_INCREMENT 1024
-#endif
-
-/* Validation macros with proper parentheses and overflow protection */
-/* Port 0 is valid - it means "let OS assign ephemeral port" */
+/* Validation macros */
 #define SOCKET_VALID_PORT(p) ((int)(p) >= 0 && (int)(p) <= 65535)
 #define SOCKET_VALID_BUFFER_SIZE(s)                                           \
-  ((size_t)(s) >= SOCKET_MIN_BUFFER_SIZE                                      \
-   && (size_t)(s) <= SOCKET_MAX_BUFFER_SIZE)
+  ((size_t)(s) >= SOCKET_MIN_BUFFER_SIZE && (size_t)(s) <= SOCKET_MAX_BUFFER_SIZE)
 #define SOCKET_VALID_CONNECTION_COUNT(c)                                      \
   ((size_t)(c) > 0 && (size_t)(c) <= SOCKET_MAX_CONNECTIONS)
 #define SOCKET_VALID_POLL_EVENTS(e)                                           \
   ((int)(e) > 0 && (int)(e) <= SOCKET_MAX_POLL_EVENTS)
 
-/* Safe system call wrappers
- *
- * SAFE_CLOSE: Close file descriptor with proper EINTR handling
- *
- * Per POSIX.1-2008: Do NOT retry close() on EINTR. The file descriptor
- * state is unspecified after close() returns with EINTR - it may or may
- * not be closed. Retrying could close a different FD if the descriptor
- * was reused by another thread. We treat EINTR as success (don't log error)
- * since the FD is likely closed anyway.
- *
- * Reference: POSIX.1-2008, close() specification, Application Usage
- */
+/* SAFE_CLOSE - Close fd with POSIX.1-2008 EINTR handling (no retry) */
 #define SAFE_CLOSE(fd)                                                        \
   do                                                                          \
     {                                                                         \
       if ((fd) >= 0)                                                          \
         {                                                                     \
-          int _safe_close_result = close (fd);                                \
-          if (_safe_close_result < 0 && errno != EINTR)                       \
-            {                                                                 \
-              /* Log error but don't fail - fd is closed anyway */            \
-              fprintf (stderr, "close failed: %s\n",                          \
-                       Socket_safe_strerror (errno));                         \
-            }                                                                 \
-          /* EINTR is silently treated as success - FD is likely closed */    \
+          int _r = close (fd);                                                \
+          if (_r < 0 && errno != EINTR)                                       \
+            fprintf (stderr, "close failed: %s\n", Socket_safe_strerror (errno)); \
         }                                                                     \
     }                                                                         \
   while (0)

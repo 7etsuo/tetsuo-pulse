@@ -1,22 +1,60 @@
+/**
+ * SocketEvents.c - Event dispatching subsystem
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
+ *
+ * Provides event notification mechanism for socket library operations.
+ * Applications can register callbacks to receive events like connection
+ * accepted, connection established, DNS timeout, and poll wakeups.
+ *
+ * FEATURES:
+ * - Multiple handler registration
+ * - Event-specific data structures
+ * - Thread-safe handler management
+ * - Duplicate registration prevention
+ *
+ * THREAD SAFETY:
+ * - Handler registration/unregistration is mutex protected
+ * - Event dispatch copies handlers to avoid holding mutex during callbacks
+ *
+ * LIMITATIONS:
+ * - Maximum SOCKET_EVENT_MAX_HANDLERS handlers
+ */
+
 #include <assert.h>
 #include <pthread.h>
 #include <string.h>
 
+#include "core/SocketConfig.h"
 #include "core/SocketEvents.h"
 #include "core/SocketLog.h"
 
-#define SOCKET_EVENT_MAX_HANDLERS 8
-
+/**
+ * SocketEventHandler - Internal handler registration structure
+ */
 typedef struct SocketEventHandler
 {
   SocketEventCallback callback;
   void *userdata;
 } SocketEventHandler;
 
+/* Mutex protecting handler array */
 static pthread_mutex_t socketevent_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* Registered handlers */
 static SocketEventHandler socketevent_handlers[SOCKET_EVENT_MAX_HANDLERS];
 static size_t socketevent_handler_count = 0;
 
+/**
+ * socketevent_dispatch - Dispatch event to all registered handlers
+ * @event: Event record to dispatch
+ *
+ * Thread-safe: Yes
+ *
+ * Copies handlers under mutex, then invokes each callback outside mutex
+ * to prevent deadlocks. Callbacks must not block indefinitely.
+ */
 static void
 socketevent_dispatch (const SocketEventRecord *event)
 {
@@ -35,12 +73,21 @@ socketevent_dispatch (const SocketEventRecord *event)
   for (i = 0; i < count; i++)
     {
       if (local_handlers[i].callback)
-        {
-          local_handlers[i].callback (local_handlers[i].userdata, event);
-        }
+        local_handlers[i].callback (local_handlers[i].userdata, event);
     }
 }
 
+/**
+ * SocketEvent_register - Register an event handler
+ * @callback: Callback function to register
+ * @userdata: User data passed to callback
+ *
+ * Thread-safe: Yes (mutex protected)
+ *
+ * Registers a callback to receive socket events. Duplicate registrations
+ * (same callback and userdata) are silently ignored. If the handler limit
+ * is reached, the registration is logged and ignored.
+ */
 void
 SocketEvent_register (SocketEventCallback callback, void *userdata)
 {
@@ -57,6 +104,7 @@ SocketEvent_register (SocketEventCallback callback, void *userdata)
 
   pthread_mutex_lock (&socketevent_mutex);
 
+  /* Check for duplicate */
   for (i = 0; i < socketevent_handler_count; i++)
     {
       if (socketevent_handlers[i].callback == callback
@@ -67,6 +115,7 @@ SocketEvent_register (SocketEventCallback callback, void *userdata)
         }
     }
 
+  /* Check capacity */
   if (socketevent_handler_count >= SOCKET_EVENT_MAX_HANDLERS)
     {
       pthread_mutex_unlock (&socketevent_mutex);
@@ -75,6 +124,7 @@ SocketEvent_register (SocketEventCallback callback, void *userdata)
       return;
     }
 
+  /* Add handler */
   socketevent_handlers[socketevent_handler_count].callback = callback;
   socketevent_handlers[socketevent_handler_count].userdata = userdata;
   socketevent_handler_count++;
@@ -82,6 +132,16 @@ SocketEvent_register (SocketEventCallback callback, void *userdata)
   pthread_mutex_unlock (&socketevent_mutex);
 }
 
+/**
+ * SocketEvent_unregister - Unregister an event handler
+ * @callback: Callback function to unregister
+ * @userdata: User data that was passed to register
+ *
+ * Thread-safe: Yes (mutex protected)
+ *
+ * Removes a previously registered handler. Both callback and userdata
+ * must match. If not found, the call is silently ignored.
+ */
 void
 SocketEvent_unregister (SocketEventCallback callback, void *userdata)
 {
@@ -97,6 +157,7 @@ SocketEvent_unregister (SocketEventCallback callback, void *userdata)
   assert (callback);
 
   pthread_mutex_lock (&socketevent_mutex);
+
   for (i = 0; i < socketevent_handler_count; i++)
     {
       if (socketevent_handlers[i].callback == callback
@@ -112,9 +173,20 @@ SocketEvent_unregister (SocketEventCallback callback, void *userdata)
           break;
         }
     }
+
   pthread_mutex_unlock (&socketevent_mutex);
 }
 
+/**
+ * SocketEvent_emit_accept - Emit connection accepted event
+ * @fd: File descriptor of accepted socket
+ * @peer_addr: Peer IP address string
+ * @peer_port: Peer port number
+ * @local_addr: Local IP address string
+ * @local_port: Local port number
+ *
+ * Thread-safe: Yes
+ */
 void
 SocketEvent_emit_accept (int fd, const char *peer_addr, int peer_port,
                          const char *local_addr, int local_port)
@@ -132,6 +204,16 @@ SocketEvent_emit_accept (int fd, const char *peer_addr, int peer_port,
   socketevent_dispatch (&event);
 }
 
+/**
+ * SocketEvent_emit_connect - Emit connection established event
+ * @fd: File descriptor of connected socket
+ * @peer_addr: Peer IP address string
+ * @peer_port: Peer port number
+ * @local_addr: Local IP address string
+ * @local_port: Local port number
+ *
+ * Thread-safe: Yes
+ */
 void
 SocketEvent_emit_connect (int fd, const char *peer_addr, int peer_port,
                           const char *local_addr, int local_port)
@@ -149,6 +231,13 @@ SocketEvent_emit_connect (int fd, const char *peer_addr, int peer_port,
   socketevent_dispatch (&event);
 }
 
+/**
+ * SocketEvent_emit_dns_timeout - Emit DNS resolution timeout event
+ * @host: Hostname that timed out
+ * @port: Port number being resolved
+ *
+ * Thread-safe: Yes
+ */
 void
 SocketEvent_emit_dns_timeout (const char *host, int port)
 {
@@ -162,6 +251,13 @@ SocketEvent_emit_dns_timeout (const char *host, int port)
   socketevent_dispatch (&event);
 }
 
+/**
+ * SocketEvent_emit_poll_wakeup - Emit poll wakeup event
+ * @nfds: Number of file descriptors with events
+ * @timeout_ms: Timeout that was used for poll
+ *
+ * Thread-safe: Yes
+ */
 void
 SocketEvent_emit_poll_wakeup (int nfds, int timeout_ms)
 {

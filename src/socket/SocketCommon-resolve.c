@@ -93,69 +93,11 @@ free_partial_addrinfo_chain (struct addrinfo *head)
     freeaddrinfo (head);
 }
 
-/* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-static __declspec (thread) Except_T SocketCommon_DetailedException;
-#else
-static __thread Except_T SocketCommon_DetailedException;
-#endif
+/* Declare module-specific exception using centralized macros */
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketCommon);
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e)                                                 \
-  do                                                                          \
-    {                                                                         \
-      SocketCommon_DetailedException = (e);                                   \
-      SocketCommon_DetailedException.reason = socket_error_buf;               \
-      RAISE (SocketCommon_DetailedException);                                 \
-    }                                                                         \
-  while (0)
-
-/**
- * socketcommon_get_safe_host
- * @host: Host string (may be NULL)
- * Thread-safe: Yes
- */
-static const char *
-socketcommon_get_safe_host (const char *host)
-{
-  return host ? host : "any";
-}
-
-static char *
-socketcommon_duplicate_address (Arena_T arena, const char *addr_str)
-{
-  size_t addr_len;
-  char *copy = NULL;
-
-  assert (arena);
-  assert (addr_str);
-
-  addr_len = strlen (addr_str) + 1;
-  copy = ALLOC (arena, addr_len);
-  if (!copy)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate address buffer");
-      return NULL;
-    }
-  memcpy (copy, addr_str, addr_len);
-  return copy;
-}
-
-static int
-socketcommon_parse_port_string (const char *serv)
-{
-  char *endptr = NULL;
-  long port_long = 0;
-
-  assert (serv);
-
-  errno = 0;
-  port_long = strtol (serv, &endptr, 10);
-  if (errno == 0 && endptr != serv && *endptr == '\0' && port_long >= 0
-      && port_long <= SOCKET_MAX_PORT)
-    return (int)port_long;
-  return 0;
-}
+#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(SocketCommon, e)
 
 /**
  * socketcommon_validate_hostname_internal - Validate hostname length and
@@ -167,7 +109,7 @@ socketcommon_parse_port_string (const char *serv)
  * Raises: Specified exception type if hostname invalid (if using exceptions)
  * Thread-safe: Yes
  */
-static int
+int
 socketcommon_validate_hostname_internal (const char *host, int use_exceptions,
                                          Except_T exception_type)
 {
@@ -198,22 +140,6 @@ socketcommon_validate_hostname_internal (const char *host, int use_exceptions,
     }
 
   return 0;
-}
-
-/**
- * socketcommon_convert_port_to_string - Convert port number to string
- * @port: Port number
- * @port_str: Output buffer for port string
- * @bufsize: Size of output buffer
- * Thread-safe: Yes
- */
-static void
-socketcommon_convert_port_to_string (int port, char *port_str, size_t bufsize)
-{
-  int result;
-
-  result = snprintf (port_str, bufsize, "%d", port);
-  assert (result > 0 && result < (int)bufsize);
 }
 
 /**
@@ -307,22 +233,6 @@ socketcommon_validate_address_family (struct addrinfo **res, int socket_family,
   return -1;
 }
 
-/**
- * SocketCommon_setup_hints - Initialize addrinfo hints structure
- * @hints: Hints structure to initialize
- * @socktype: Socket type (SOCK_STREAM or SOCK_DGRAM)
- * @flags: Additional flags (0 for connect/sendto, AI_PASSIVE for bind)
- * Thread-safe: Yes
- */
-void
-SocketCommon_setup_hints (struct addrinfo *hints, int socktype, int flags)
-{
-  memset (hints, 0, sizeof (*hints));
-  hints->ai_family = SOCKET_AF_UNSPEC;
-  hints->ai_socktype = socktype;
-  hints->ai_flags = flags;
-  hints->ai_protocol = 0;
-}
 
 /**
  * SocketCommon_resolve_address - Resolve hostname/port to addrinfo structure
@@ -365,62 +275,6 @@ SocketCommon_resolve_address (const char *host, int port,
   return 0;
 }
 
-/**
- * SocketCommon_validate_hostname - Validate hostname length
- * @host: Hostname to validate
- * @exception_type: Exception type to raise on invalid hostname
- * Raises: Specified exception type if hostname is too long
- * Thread-safe: Yes
- */
-void
-SocketCommon_validate_hostname (const char *host, Except_T exception_type)
-{
-  if (socketcommon_validate_hostname_internal (host, 1, exception_type) != 0)
-    return; /* Exception already raised */
-}
-
-/**
- * SocketCommon_cache_endpoint - Cache endpoint address and port from sockaddr
- * @arena: Arena for string allocation
- * @addr: Socket address to cache
- * @addrlen: Length of address
- * @addr_out: Output pointer for address string
- * @port_out: Output pointer for port number
- * Returns: 0 on success, -1 on failure
- * Thread-safe: Yes (arena operations are thread-safe)
- */
-int
-SocketCommon_cache_endpoint (Arena_T arena, const struct sockaddr *addr,
-                             socklen_t addrlen, char **addr_out, int *port_out)
-{
-  char host[SOCKET_NI_MAXHOST];
-  char serv[SOCKET_NI_MAXSERV];
-  char *copy = NULL;
-  int result;
-
-  assert (arena);
-  assert (addr);
-  assert (addr_out);
-  assert (port_out);
-
-  result
-      = getnameinfo (addr, addrlen, host, sizeof (host), serv, sizeof (serv),
-                     SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
-  if (result != 0)
-    {
-      SOCKET_ERROR_MSG ("Failed to format socket address: %s",
-                        gai_strerror (result));
-      return -1;
-    }
-
-  copy = socketcommon_duplicate_address (arena, host);
-  if (!copy)
-    return -1;
-
-  *addr_out = copy;
-  *port_out = socketcommon_parse_port_string (serv);
-  return 0;
-}
 
 /**
  * SocketCommon_copy_addrinfo - Deep copy addrinfo chain to heap memory

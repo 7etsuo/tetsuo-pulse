@@ -44,23 +44,11 @@
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 #define T SocketDgram_T
-/* Port string buffer size for snprintf */
-/* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-static __declspec (thread) Except_T SocketDgram_DetailedException;
-#else
-static __thread Except_T SocketDgram_DetailedException;
-#endif
+/* Declare module-specific exception using centralized macros */
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketDgram);
 
-/** Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e)                                                 \
-  do                                                                          \
-    {                                                                         \
-      SocketDgram_DetailedException = (e);                                    \
-      SocketDgram_DetailedException.reason = socket_error_buf;               \
-      RAISE (SocketDgram_DetailedException);                                  \
-    }                                                                         \
-  while (0)
+/* Macro to raise exception with detailed error message */
+#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(SocketDgram, e)
 
 void
 SocketDgram_setnonblocking (T socket)

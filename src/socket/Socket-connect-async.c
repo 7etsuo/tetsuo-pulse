@@ -28,22 +28,11 @@
 
 #define T Socket_T
 
-/* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-static __declspec (thread) Except_T SocketConnect_DetailedException;
-#else
-static __thread Except_T SocketConnect_DetailedException;
-#endif
+/* Declare module-specific exception using centralized macros */
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketConnect);
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e)                                                 \
-  do                                                                          \
-    {                                                                         \
-      SocketConnect_DetailedException = (e);                                  \
-      SocketConnect_DetailedException.reason = socket_error_buf;             \
-      RAISE (SocketConnect_DetailedException);                               \
-    }                                                                         \
-  while (0)
+#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(SocketConnect, e)
 
 SocketDNS_Request_T
 Socket_connect_async (SocketDNS_T dns, T socket, const char *host, int port)

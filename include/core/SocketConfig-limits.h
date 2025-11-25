@@ -146,4 +146,41 @@
 #define SOCKET_ERROR_TRUNCATION_SIZE (sizeof (SOCKET_ERROR_TRUNCATION_MARKER))
 #endif
 
+/* ============================================================================
+ * Timer Subsystem Configuration
+ * ============================================================================ */
+
+/* Timer error buffer size for detailed error messages */
+#ifndef SOCKET_TIMER_ERROR_BUFSIZE
+#define SOCKET_TIMER_ERROR_BUFSIZE 256
+#endif
+
+/* Initial capacity for timer heap array */
+#ifndef SOCKET_TIMER_HEAP_INITIAL_CAPACITY
+#define SOCKET_TIMER_HEAP_INITIAL_CAPACITY 16
+#endif
+
+/* Growth factor when resizing timer heap (must be > 1) */
+#ifndef SOCKET_TIMER_HEAP_GROWTH_FACTOR
+#define SOCKET_TIMER_HEAP_GROWTH_FACTOR 2
+#endif
+
+/* ============================================================================
+ * Event Subsystem Configuration
+ * ============================================================================ */
+
+/* Maximum number of event handlers that can be registered */
+#ifndef SOCKET_EVENT_MAX_HANDLERS
+#define SOCKET_EVENT_MAX_HANDLERS 8
+#endif
+
+/* ============================================================================
+ * Logging Subsystem Configuration
+ * ============================================================================ */
+
+/* Buffer size for formatted log messages */
+#ifndef SOCKET_LOG_BUFFER_SIZE
+#define SOCKET_LOG_BUFFER_SIZE 1024
+#endif
+
 #endif /* SOCKETCONFIG_LIMITS_INCLUDED */

@@ -43,21 +43,11 @@ const Except_T SocketCommon_Failed
     = { &SocketCommon_Failed, "SocketCommon operation failed" };
 
 /* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-static __declspec (thread) Except_T SocketCommon_DetailedException;
-#else
-static __thread Except_T SocketCommon_DetailedException;
-#endif
+/* Declare module-specific exception using centralized macros */
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketCommon);
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e)                                                 \
-  do                                                                          \
-    {                                                                         \
-      SocketCommon_DetailedException = (e);                                   \
-      SocketCommon_DetailedException.reason = socket_error_buf;               \
-      RAISE (SocketCommon_DetailedException);                                 \
-    }                                                                         \
-  while (0)
+#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(SocketCommon, e)
 
 /* Static timeout sanitizer function */
 static int

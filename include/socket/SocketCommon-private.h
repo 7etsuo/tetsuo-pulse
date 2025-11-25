@@ -99,4 +99,9 @@ extern int SocketCommon_get_family (SocketBase_T base, bool raise_on_fail, Excep
 
 extern struct addrinfo *SocketCommon_copy_addrinfo (const struct addrinfo *src); /* Implementation of public deep copy function - see SocketCommon.h */
 
+/* Internal helper functions shared between SocketCommon-resolve.c and SocketCommon-utils.c */
+extern const char *socketcommon_get_safe_host (const char *host);
+extern int socketcommon_validate_hostname_internal (const char *host, int use_exceptions, Except_T exception_type);
+extern void socketcommon_convert_port_to_string (int port, char *port_str, size_t bufsize);
+
 #endif /* SOCKETCOMMON_PRIVATE_INCLUDED */
