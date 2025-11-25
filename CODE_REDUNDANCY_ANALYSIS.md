@@ -41,7 +41,7 @@ void Socket_timeouts_setdefaults(const SocketTimeouts_T *timeouts) {
 ### Description
 Three near-identical implementations of bind error handling:
 - `handle_bind_error()` in Socket-bind.c
-- `handle_dgram_bind_error()` in SocketDgram-bind.c (exact copy)
+- `handle_dgram_bind_error()` in SocketDgram-bind.c (functionally identical)
 - `SocketCommon_handle_bind_error()` in SocketCommon-bind.c (slightly different)
 
 ### Recommendation
@@ -49,14 +49,14 @@ Consolidate into a single `SocketCommon_handle_bind_error()` function and call i
 
 ---
 
-## 3. Wildcard Host Normalization (Logical Duplicates)
+## 3. Wildcard Host Normalization (Logically Equivalent)
 
 ### Files Affected
 - `src/socket/SocketDgram-bind.c` (`normalize_dgram_host`, lines 403-410)
 - `src/socket/SocketCommon-validate.c` (`SocketCommon_normalize_wildcard_host`, lines 72-78)
 
 ### Description
-`normalize_dgram_host()` duplicates `SocketCommon_normalize_wildcard_host()` with inverted logic:
+`normalize_dgram_host()` duplicates `SocketCommon_normalize_wildcard_host()` with equivalent logic using different conditional structure:
 ```c
 // SocketDgram-bind.c - normalize_dgram_host
 if (host != NULL && strcmp(host, "0.0.0.0") != 0 && strcmp(host, "::") != 0)
