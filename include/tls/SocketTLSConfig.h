@@ -82,6 +82,22 @@
 #define SOCKET_TLS_MAX_ALPN_PROTOCOLS 16
 #endif
 
+/* Session ticket key length (OpenSSL uses 80 bytes: 16 name + 32 AES + 32 HMAC)
+ */
+#ifndef SOCKET_TLS_TICKET_KEY_LEN
+#define SOCKET_TLS_TICKET_KEY_LEN 80
+#endif
+
+/* Maximum file path length for certificates/keys */
+#ifndef SOCKET_TLS_MAX_PATH_LEN
+#define SOCKET_TLS_MAX_PATH_LEN 4096
+#endif
+
+/* Maximum DNS label length per RFC 1035 */
+#ifndef SOCKET_TLS_MAX_LABEL_LEN
+#define SOCKET_TLS_MAX_LABEL_LEN 63
+#endif
+
 /* Forward declarations for TLS types */
 /* OpenSSL types are already defined by the includes above when SOCKET_HAS_TLS
  * is set */

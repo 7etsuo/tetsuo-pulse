@@ -137,12 +137,20 @@ set(LIB_SOURCES
 
     # Poll module
     src/poll/SocketPoll.c
+    src/poll/SocketPoll-data.c
+    src/poll/SocketPoll-init.c
+    src/poll/SocketPoll-events.c
 
     ${POLL_BACKEND_SRC}
     
     # Pool module - split files
     src/pool/SocketPool-core.c
+    src/pool/SocketPool-resize.c
+    src/pool/SocketPool-tuning.c
+    src/pool/SocketPool-hash.c
     src/pool/SocketPool-connections.c
+    src/pool/SocketPool-accessors.c
+    src/pool/SocketPool-async.c
     src/pool/SocketPool-accept.c
     src/pool/SocketPool-cleanup.c
 )
@@ -153,7 +161,12 @@ if(SOCKET_HAS_TLS)
         src/tls/SocketTLS-base.c
         src/tls/SocketTLS-io.c
         src/tls/SocketTLS-info.c
-        src/tls/SocketTLSContext.c
+        src/tls/SocketTLSContext-alpn.c
+        src/tls/SocketTLSContext-certs.c
+        src/tls/SocketTLSContext-core.c
+        src/tls/SocketTLSContext-ocsp.c
+        src/tls/SocketTLSContext-session.c
+        src/tls/SocketTLSContext-verify.c
     )
 endif()
 
