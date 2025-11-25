@@ -32,22 +32,11 @@
 
 #define T Socket_T
 
-/* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-static __declspec (thread) Except_T SocketOptions_DetailedException;
-#else
-static __thread Except_T SocketOptions_DetailedException;
-#endif
+/* Declare module-specific exception using centralized macros */
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketOptions);
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e)                                                 \
-  do                                                                          \
-    {                                                                         \
-      SocketOptions_DetailedException = (e);                                  \
-      SocketOptions_DetailedException.reason = socket_error_buf;             \
-      RAISE (SocketOptions_DetailedException);                               \
-    }                                                                         \
-  while (0)
+#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(SocketOptions, e)
 
 /* ==================== Keepalive Operations ==================== */
 

@@ -36,22 +36,11 @@
 /* Forward declarations */
 ssize_t socket_send_internal (T socket, const void *buf, size_t len, int flags);
 
-/* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-static __declspec (thread) Except_T SocketSendfile_DetailedException;
-#else
-static __thread Except_T SocketSendfile_DetailedException;
-#endif
+/* Declare module-specific exception using centralized macros */
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketSendfile);
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e)                                                 \
-  do                                                                          \
-    {                                                                         \
-      SocketSendfile_DetailedException = (e);                                 \
-      SocketSendfile_DetailedException.reason = socket_error_buf;            \
-      RAISE (SocketSendfile_DetailedException);                              \
-    }                                                                         \
-  while (0)
+#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(SocketSendfile, e)
 
 #ifdef __linux__
 #include <sys/sendfile.h>

@@ -24,21 +24,11 @@
 const Except_T SocketUnix_Failed
     = { &SocketUnix_Failed, "Unix socket operation failed" };
 
-/* Thread-local exception */
-#ifdef _WIN32
-static __declspec (thread) Except_T SocketUnix_DetailedException;
-#else
-static __thread Except_T SocketUnix_DetailedException;
-#endif
+/* Declare module-specific exception using centralized macros */
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketUnix);
 
-#define RAISE_MODULE_ERROR(e)                                                 \
-  do                                                                          \
-    {                                                                         \
-      SocketUnix_DetailedException = (e);                                     \
-      SocketUnix_DetailedException.reason = socket_error_buf;                 \
-      RAISE (SocketUnix_DetailedException);                                   \
-    }                                                                         \
-  while (0)
+/* Macro to raise exception with detailed error message */
+#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(SocketUnix, e)
 
 /**
  * SocketUnix_validate_unix_path - Validate Unix socket path length and

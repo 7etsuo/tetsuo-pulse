@@ -1,10 +1,38 @@
 /**
  * SocketError.c - Thread-local error message handling
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
+ *
+ * Provides thread-safe error message storage and retrieval. Each thread
+ * maintains its own error buffer and errno capture for detailed error
+ * reporting.
+ *
+ * FEATURES:
+ * - Thread-local error buffers
+ * - errno to SocketErrorCode mapping
+ * - Thread-safe strerror implementation
+ * - Last error message retrieval
+ *
+ * THREAD SAFETY:
+ * - All operations use thread-local storage
+ * - No mutex required for error handling
  */
+
+#include <string.h>
 
 #include "core/SocketError.h"
 
-/* Map errno value to SocketErrorCode enum */
+/**
+ * socket_errno_to_errorcode - Map errno value to SocketErrorCode
+ * @errno_val: errno value to map
+ *
+ * Returns: Corresponding SocketErrorCode enum value
+ * Thread-safe: Yes (pure function)
+ *
+ * Maps common POSIX errno values to structured SocketErrorCode values
+ * for programmatic error handling.
+ */
 static SocketErrorCode
 socket_errno_to_errorcode (int errno_val)
 {
@@ -80,21 +108,45 @@ __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE] = { 0 };
 __thread int socket_last_errno = 0;
 #endif
 
-/* Get the last error message */
+/**
+ * Socket_GetLastError - Get the last error message
+ *
+ * Returns: Pointer to thread-local error message buffer
+ * Thread-safe: Yes (returns thread-local data)
+ *
+ * Returns the most recent error message set by SOCKET_ERROR_FMT or
+ * SOCKET_ERROR_MSG macros.
+ */
 const char *
 Socket_GetLastError (void)
 {
   return socket_error_buf;
 }
 
-/* Get the last captured errno value */
+/**
+ * Socket_geterrno - Get the last captured errno value
+ *
+ * Returns: Last errno value captured by error macros (0 if no error)
+ * Thread-safe: Yes (uses thread-local storage)
+ *
+ * Returns the errno value that was captured when the last error message
+ * was formatted.
+ */
 int
 Socket_geterrno (void)
 {
   return socket_last_errno;
 }
 
-/* Get the last error as a SocketErrorCode enum */
+/**
+ * Socket_geterrorcode - Get the last error as a SocketErrorCode enum
+ *
+ * Returns: SocketErrorCode enum value corresponding to last captured errno
+ * Thread-safe: Yes (uses thread-local storage)
+ *
+ * Converts the last captured errno to a structured SocketErrorCode
+ * for programmatic error handling.
+ */
 SocketErrorCode
 Socket_geterrorcode (void)
 {
@@ -102,10 +154,14 @@ Socket_geterrorcode (void)
 }
 
 /**
- * Socket_safe_strerror - Get thread-safe error string
- * @errnum: Error number
- * Returns: Pointer to thread-local error description string
- * Thread-safe: Uses __thread buffer and strerror_r
+ * Socket_safe_strerror - Thread-safe strerror implementation
+ * @errnum: Error number to convert
+ *
+ * Returns: Pointer to thread-local string describing the error
+ * Thread-safe: Yes (uses thread-local buffer and strerror_r)
+ *
+ * Provides a thread-safe alternative to strerror() which is not
+ * guaranteed to be thread-safe on all platforms.
  */
 const char *
 Socket_safe_strerror (int errnum)
@@ -119,14 +175,12 @@ Socket_safe_strerror (int errnum)
     }
 
 #ifdef _GNU_SOURCE
-  // GNU extension: returns char*
+  /* GNU extension: returns char* */
   return strerror_r (errnum, errbuf, sizeof (errbuf));
 #else
-  // POSIX: returns int, 0 on success
+  /* POSIX: returns int, 0 on success */
   if (strerror_r (errnum, errbuf, sizeof (errbuf)) != 0)
-    {
-      strcpy (errbuf, "Unknown error");
-    }
+    strcpy (errbuf, "Unknown error");
   return errbuf;
 #endif
 }

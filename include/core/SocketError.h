@@ -158,4 +158,52 @@ const char *Socket_safe_strerror (int errnum);
 #define SOCKET_EPIPE "Broken pipe"
 #define SOCKET_ECONNRESET "Connection reset by peer"
 
+/* ============================================================================
+ * Centralized Exception Infrastructure
+ * ============================================================================
+ *
+ * To eliminate massive duplication across 34+ socket source files, all modules
+ * now use these centralized exception macros instead of copy-pasted boilerplate.
+ *
+ * Usage in source files:
+ * 1. Include this header
+ * 2. Use SOCKET_DECLARE_MODULE_EXCEPTION(MODULE_NAME) instead of:
+ *    #ifdef _WIN32
+ *    static __declspec(thread) Except_T Module_DetailedException;
+ *    #else
+ *    static __thread Except_T Module_DetailedException;
+ *    #endif
+ *
+ * 3. Use SOCKET_RAISE_MODULE_ERROR(MODULE_NAME, exception) instead of:
+ *    #define RAISE_MODULE_ERROR(exception) \
+ *      do { \
+ *        Module_DetailedException = (exception); \
+ *        Module_DetailedException.reason = socket_error_buf; \
+ *        RAISE(Module_DetailedException); \
+ *      } while (0)
+ */
+
+/**
+ * SOCKET_DECLARE_MODULE_EXCEPTION - Declare thread-local exception for a module
+ * @module_name: Module name (e.g., Socket, SocketBuf, SocketPoll)
+ *
+ * Creates a thread-local Except_T variable named module_name_DetailedException
+ */
+#define SOCKET_DECLARE_MODULE_EXCEPTION(module_name)                           \
+  static __thread Except_T module_name##_DetailedException
+
+/**
+ * SOCKET_RAISE_MODULE_ERROR - Raise a module-specific exception with detailed error
+ * @module_name: Module name (e.g., Socket, SocketBuf, SocketPoll)
+ * @exception: Exception to raise (e.g., Socket_Failed, SocketBuf_Failed)
+ *
+ * Thread-safe: Creates thread-local copy of exception with detailed reason string
+ */
+#define SOCKET_RAISE_MODULE_ERROR(module_name, exception)                      \
+  do {                                                                         \
+    module_name##_DetailedException = (exception);                             \
+    module_name##_DetailedException.reason = socket_error_buf;                 \
+    RAISE(module_name##_DetailedException);                                    \
+  } while (0)
+
 #endif /* SOCKETERROR_INCLUDED */
