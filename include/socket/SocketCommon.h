@@ -324,6 +324,23 @@ extern int SocketCommon_handle_bind_error (int err, const char *addr_str, Except
 extern void SocketCommon_update_local_endpoint (SocketBase_T base); /* Common endpoint update, non-raising */
 
 /**
+ * SocketCommon_get_socket_family - Get socket's address family
+ * @base: Socket base to query
+ * Returns: Socket family or AF_UNSPEC on error
+ * Uses SO_DOMAIN on Linux, falls back to getsockname() on other platforms.
+ */
+extern int SocketCommon_get_socket_family (SocketBase_T base);
+
+/**
+ * SocketCommon_validate_host_not_null - Validate host is not NULL
+ * @host: Host string to validate
+ * @exception_type: Exception type to raise on NULL host
+ * Raises: Specified exception type if host is NULL
+ * Thread-safe: Yes
+ */
+extern void SocketCommon_validate_host_not_null (const char *host, Except_T exception_type);
+
+/**
  * SocketCommon_copy_addrinfo - Deep copy of addrinfo linked list
  * @src: Source chain to copy (may be NULL)
  * @return: malloc-allocated deep copy, or NULL on error

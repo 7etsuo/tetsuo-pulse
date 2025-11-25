@@ -139,7 +139,7 @@ extern void queue_append (struct SocketDNS_T *dns, struct SocketDNS_Request_T *r
 extern void remove_from_queue_head (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req);
 extern void remove_from_queue_middle (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req);
 extern void queue_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req);
-extern void check_queue_limit (struct SocketDNS_T *dns);
+extern int check_queue_limit (struct SocketDNS_T *dns);
 extern void submit_dns_request (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req);
 extern void cancel_pending_request (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req);
 

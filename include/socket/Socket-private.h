@@ -6,6 +6,11 @@
 #include "socket/SocketCommon-private.h"  /* For SocketBase_T */
 #include "socket/Socket.h"
 
+/* Socket live count management - shared across socket modules */
+extern void socket_live_increment(void);
+extern void socket_live_decrement(void);
+extern int socket_debug_live_count(void);
+
 /* Socket structure definition - embeds common base */
 struct Socket_T
 {

@@ -188,6 +188,7 @@ SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
                    SocketDNS_Callback callback, void *data)
 {
   size_t host_len;
+  int queue_full;
 
   if (!dns)
     {
@@ -201,7 +202,14 @@ SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
   Request_T req = allocate_request (dns, host, host_len, port, callback, data);
 
   pthread_mutex_lock (&dns->mutex);
-  check_queue_limit (dns);
+  queue_full = check_queue_limit (dns);
+  if (queue_full)
+    {
+      size_t max_pending = dns->max_pending;
+      pthread_mutex_unlock (&dns->mutex);
+      SOCKET_ERROR_MSG ("DNS request queue full (max %zu pending)", max_pending);
+      RAISE_DNS_ERROR (SocketDNS_Failed);
+    }
   submit_dns_request (dns, req);
   SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_SUBMITTED, 1);
   pthread_mutex_unlock (&dns->mutex);
