@@ -84,8 +84,11 @@ socket_get_ssl (T socket)
  * @ssl_result: Result from SSL operation
  *
  * Returns: 0 on success, -1 on error (sets errno)
+ * Thread-safe: Yes (operates on single socket)
+ * Maps SSL error codes to errno values and updates socket state.
+ * Used by TLS-aware I/O functions for consistent error handling.
  */
-static int
+int
 socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result)
 {
   int ssl_error = SSL_get_error (ssl, ssl_result);
@@ -322,94 +325,136 @@ socket_recv_internal (T socket, void *buf, size_t len, int flags)
 }
 
 /**
- * socket_sendv_internal - Internal scatter/gather send
+ * copy_iov_to_buffer - Copy iovec array to contiguous buffer
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ * @buffer: Destination buffer
+ * @buffer_size: Size of destination buffer
+ * Returns: Total bytes copied
+ * Raises: Socket_Failed if buffer too small
+ */
+static size_t
+copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer, size_t buffer_size)
+{
+  size_t offset = 0;
+
+  for (int i = 0; i < iovcnt; i++)
+    {
+      if (offset + iov[i].iov_len > buffer_size)
+        {
+          SOCKET_ERROR_MSG ("Buffer too small for iovec copy");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+      memcpy ((char *)buffer + offset, iov[i].iov_base, iov[i].iov_len);
+      offset += iov[i].iov_len;
+    }
+
+  return offset;
+}
+
+/**
+ * distribute_buffer_to_iov - Distribute buffer data across iovec array
+ * @buffer: Source buffer
+ * @buffer_len: Length of data in buffer
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ * Returns: Total bytes distributed
+ */
+static size_t
+distribute_buffer_to_iov (const void *buffer, size_t buffer_len,
+                         struct iovec *iov, int iovcnt)
+{
+  size_t remaining = buffer_len;
+  size_t src_offset = 0;
+
+  for (int i = 0; i < iovcnt && remaining > 0; i++)
+    {
+      size_t chunk = (remaining > iov[i].iov_len) ? iov[i].iov_len : remaining;
+      memcpy (iov[i].iov_base, (char *)buffer + src_offset, chunk);
+      src_offset += chunk;
+      remaining -= chunk;
+    }
+
+  return buffer_len - remaining;
+}
+
+/**
+ * socket_sendv_tls - TLS scatter/gather send implementation
+ * @socket: Socket instance
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ * Returns: Total bytes sent or 0 if would block
+ * Raises: Socket_Failed or SocketTLS_Failed
+ */
+static ssize_t
+socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
+{
+  SSL *ssl = socket_get_ssl (socket);
+  if (!ssl)
+    {
+      SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  /* Check if handshake is complete */
+  if (!socket->tls_handshake_done)
+    {
+      SOCKET_ERROR_MSG ("TLS handshake not complete");
+      RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
+    }
+
+  /* Calculate total length with overflow protection */
+  size_t total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
+
+  /* Allocate temp buffer from socket arena */
+  Arena_T arena = SocketBase_arena (socket->base);
+  void *temp_buf = Arena_calloc (arena, total_len, 1, __FILE__, __LINE__);
+  if (!temp_buf)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot Arena_calloc temp buffer "
+                                      "for TLS sendv (total_len=%zu)",
+                        total_len);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  /* Copy iovec data to temp buffer */
+  copy_iov_to_buffer (iov, iovcnt, temp_buf, total_len);
+
+  /* Use SSL_write() */
+  int ssl_result = SSL_write (ssl, temp_buf, (int)total_len);
+
+  if (ssl_result <= 0)
+    {
+      if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
+        {
+          if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0; /* Would block */
+        }
+    }
+
+  if (ssl_result < 0)
+    {
+      SOCKET_ERROR_FMT ("TLS sendv failed (iovcnt=%d, total_len=%zu)",
+                        iovcnt, total_len);
+      RAISE_MODULE_ERROR (SocketTLS_Failed);
+    }
+
+  return (ssize_t)ssl_result;
+}
+
+/**
+ * socket_sendv_raw - Raw scatter/gather send implementation
  * @socket: Socket instance
  * @iov: Array of iovec structures
  * @iovcnt: Number of iovec structures
  * @flags: Send flags
- *
  * Returns: Total bytes sent or 0 if would block
+ * Raises: Socket_Failed
  */
-ssize_t
-socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
-                       int flags)
+static ssize_t
+socket_sendv_raw (T socket, const struct iovec *iov, int iovcnt, int flags)
 {
   (void)flags; /* Suppress unused parameter warning */
-
-  assert (socket);
-  assert (iov);
-  assert (iovcnt > 0);
-  assert (iovcnt <= IOV_MAX);
-
-#ifdef SOCKET_HAS_TLS
-  if (socket->tls_enabled && socket->tls_ssl)
-    {
-      SSL *ssl = socket_get_ssl (socket);
-      if (!ssl)
-        {
-          SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
-
-      /* Check if handshake is complete */
-      if (!socket->tls_handshake_done)
-        {
-          SOCKET_ERROR_MSG ("TLS handshake not complete");
-          RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
-        }
-
-      /* Calculate total length with overflow protection via common helper
-       * (raises on error) */
-      size_t total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
-
-      /* Allocate temp buffer from socket arena (security zero-init, lifecycle
-       * managed) */
-      Arena_T arena = SocketBase_arena (socket->base);
-      void *temp_buf = Arena_calloc (arena, total_len, 1, __FILE__, __LINE__);
-      if (!temp_buf)
-        {
-          SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot Arena_calloc temp buffer "
-                                          "for TLS sendv (total_len=%zu)",
-                            total_len);
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
-
-      /* Copy iovec data to temp buffer */
-      size_t offset = 0;
-      for (int i = 0; i < iovcnt; i++)
-        {
-          memcpy ((char *)temp_buf + offset, iov[i].iov_base, iov[i].iov_len);
-          offset += iov[i].iov_len;
-        }
-
-      /* Use SSL_write() */
-      int ssl_result = SSL_write (ssl, temp_buf, (int)total_len);
-
-      /* Free temp buffer immediately */
-      /* arena-managed temp_buf: no free needed */
-
-      if (ssl_result <= 0)
-        {
-          if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
-            {
-              if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return 0; /* Would block */
-                          /* Other errors will raise exception below */
-            }
-        }
-
-      if (ssl_result < 0)
-        {
-          SOCKET_ERROR_FMT ("TLS sendv failed (iovcnt=%d, total_len=%zu)",
-                            iovcnt, total_len);
-          RAISE_MODULE_ERROR (SocketTLS_Failed);
-        }
-
-      return (ssize_t)ssl_result;
-    }
-#endif
-
-  /* Non-TLS path: use standard writev() */
   ssize_t result = writev (Socket_fd (socket), iov, iovcnt);
   if (result < 0)
     {
@@ -427,104 +472,83 @@ socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
 }
 
 /**
- * socket_recvv_internal - Internal scatter/gather receive
+ * socket_recvv_tls - TLS scatter/gather receive implementation
+ * @socket: Socket instance
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ * Returns: Total bytes received or 0 if would block
+ * Raises: Socket_Failed, SocketTLS_Failed, or Socket_Closed
+ */
+static ssize_t
+socket_recvv_tls (T socket, struct iovec *iov, int iovcnt)
+{
+  SSL *ssl = socket_get_ssl (socket);
+  if (!ssl)
+    {
+      SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  /* Check if handshake is complete */
+  if (!socket->tls_handshake_done)
+    {
+      SOCKET_ERROR_MSG ("TLS handshake not complete");
+      RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
+    }
+
+  /* Calculate total capacity */
+  size_t total_capacity = SocketCommon_calculate_total_iov_len (iov, iovcnt);
+
+  /* Allocate temp buffer from socket arena */
+  Arena_T arena = SocketBase_arena (socket->base);
+  void *temp_buf = Arena_calloc (arena, total_capacity, 1, __FILE__, __LINE__);
+  if (!temp_buf)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot Arena_calloc temp buffer "
+                                      "for TLS recvv (total_capacity=%zu)",
+                        total_capacity);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  /* Read up to total capacity into temp buffer */
+  int ssl_result = SSL_read (ssl, temp_buf, (int)total_capacity);
+
+  if (ssl_result <= 0)
+    {
+      if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
+        {
+          if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0; /* Would block */
+          if (errno == ECONNRESET)
+            RAISE (Socket_Closed);
+        }
+
+      /* If we get here, it's an error that wasn't EAGAIN/ECONNRESET */
+      if (ssl_result == 0)
+        RAISE (Socket_Closed);
+
+      SOCKET_ERROR_FMT ("TLS recvv failed (iovcnt=%d, capacity=%zu)",
+                        iovcnt, total_capacity);
+      RAISE_MODULE_ERROR (SocketTLS_Failed);
+    }
+
+  /* Distribute data across iovecs */
+  return (ssize_t)distribute_buffer_to_iov (temp_buf, (size_t)ssl_result, iov, iovcnt);
+}
+
+/**
+ * socket_recvv_raw - Raw scatter/gather receive implementation
  * @socket: Socket instance
  * @iov: Array of iovec structures
  * @iovcnt: Number of iovec structures
  * @flags: Receive flags
- *
  * Returns: Total bytes received or 0 if would block
+ * Raises: Socket_Failed or Socket_Closed
  */
-ssize_t
-socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
+static ssize_t
+socket_recvv_raw (T socket, struct iovec *iov, int iovcnt, int flags)
 {
   (void)flags; /* Suppress unused parameter warning */
-
-  assert (socket);
-  assert (iov);
-  assert (iovcnt > 0);
-  assert (iovcnt <= IOV_MAX);
-
-#ifdef SOCKET_HAS_TLS
-  if (socket->tls_enabled && socket->tls_ssl)
-    {
-      SSL *ssl = socket_get_ssl (socket);
-      if (!ssl)
-        {
-          SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
-
-      /* Check if handshake is complete */
-      if (!socket->tls_handshake_done)
-        {
-          SOCKET_ERROR_MSG ("TLS handshake not complete");
-          RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
-        }
-
-      /* Calculate total capacity with overflow protection */
-      /* Calculate total capacity via common helper (raises on
-       * overflow/invalid) */
-      size_t total_capacity
-          = SocketCommon_calculate_total_iov_len (iov, iovcnt);
-
-      /* Allocate temp buffer from socket arena (security zero-init) */
-      Arena_T arena = SocketBase_arena (socket->base);
-      void *temp_buf
-          = Arena_calloc (arena, total_capacity, 1, __FILE__, __LINE__);
-      if (!temp_buf)
-        {
-          SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot Arena_calloc temp buffer "
-                                          "for TLS recvv (total_capacity=%zu)",
-                            total_capacity);
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
-
-      /* Read up to total capacity into temp buffer */
-      int ssl_result = SSL_read (ssl, temp_buf, (int)total_capacity);
-
-      if (ssl_result <= 0)
-        {
-          /* arena-managed temp_buf: no free needed */ /* Free before error
-                                                          handling */
-
-          if (socket_handle_ssl_error (socket, ssl, ssl_result) < 0)
-            {
-              if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return 0; /* Would block */
-              if (errno == ECONNRESET)
-                RAISE (Socket_Closed);
-              /* Other errors will raise exception below */
-            }
-
-          /* If we get here, it's an error that wasn't EAGAIN/ECONNRESET */
-          if (ssl_result == 0)
-            RAISE (Socket_Closed);
-
-          SOCKET_ERROR_FMT ("TLS recvv failed (iovcnt=%d, capacity=%zu)",
-                            iovcnt, total_capacity);
-          RAISE_MODULE_ERROR (SocketTLS_Failed);
-        }
-
-      /* Distribute data across iovecs */
-      size_t remaining = (size_t)ssl_result;
-      size_t src_offset = 0;
-      for (int i = 0; i < iovcnt && remaining > 0; i++)
-        {
-          size_t chunk
-              = (remaining > iov[i].iov_len) ? iov[i].iov_len : remaining;
-          memcpy (iov[i].iov_base, (char *)temp_buf + src_offset, chunk);
-          src_offset += chunk;
-          remaining -= chunk;
-        }
-
-      /* arena-managed temp_buf: no free needed */
-
-      return (ssize_t)ssl_result;
-    }
-#endif
-
-  /* Non-TLS path: use standard readv() */
   ssize_t result = readv (Socket_fd (socket), iov, iovcnt);
   if (result < 0)
     {
@@ -541,6 +565,59 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
     }
 
   return result;
+}
+
+/**
+ * socket_sendv_internal - Internal scatter/gather send
+ * @socket: Socket instance
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ * @flags: Send flags
+ *
+ * Returns: Total bytes sent or 0 if would block
+ */
+ssize_t
+socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
+                       int flags)
+{
+  assert (socket);
+  assert (iov);
+  assert (iovcnt > 0);
+  assert (iovcnt <= IOV_MAX);
+
+#ifdef SOCKET_HAS_TLS
+  if (socket->tls_enabled && socket->tls_ssl)
+    return socket_sendv_tls (socket, iov, iovcnt);
+#endif
+
+  /* Non-TLS path: use standard writev() */
+  return socket_sendv_raw (socket, iov, iovcnt, flags);
+}
+
+/**
+ * socket_recvv_internal - Internal scatter/gather receive
+ * @socket: Socket instance
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ * @flags: Receive flags
+ *
+ * Returns: Total bytes received or 0 if would block
+ */
+ssize_t
+socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
+{
+  assert (socket);
+  assert (iov);
+  assert (iovcnt > 0);
+  assert (iovcnt <= IOV_MAX);
+
+#ifdef SOCKET_HAS_TLS
+  if (socket->tls_enabled && socket->tls_ssl)
+    return socket_recvv_tls (socket, iov, iovcnt);
+#endif
+
+  /* Non-TLS path: use standard readv() */
+  return socket_recvv_raw (socket, iov, iovcnt, flags);
 }
 
 /**

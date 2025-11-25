@@ -55,6 +55,67 @@ static __thread Except_T SocketConnect_DetailedException;
 
 /* Forward declarations for functions moved to other files */
 
+/* Forward declaration for socket_wait_for_connect */
+static int socket_wait_for_connect (T socket, int timeout_ms);
+
+/**
+ * restore_blocking_mode - Restore socket blocking mode after operation
+ * @socket: Socket instance
+ * @original_flags: Original fcntl flags
+ * @operation: Operation name for logging
+ * Thread-safe: Yes (operates on single socket)
+ */
+static void
+restore_blocking_mode (T socket, int original_flags, const char *operation)
+{
+  if (fcntl (SocketBase_fd (socket->base), F_SETFL, original_flags) < 0)
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                       "Failed to restore blocking mode after %s "
+                       "(fd=%d, errno=%d): %s",
+                       operation, SocketBase_fd (socket->base), errno,
+                       strerror (errno));
+    }
+}
+
+/**
+ * connect_with_poll_wait - Perform connect with timeout using poll
+ * @socket: Socket instance
+ * @addr: Address to connect to
+ * @addrlen: Address length
+ * @timeout_ms: Timeout in milliseconds
+ * Returns: 0 on success, -1 on failure
+ * Thread-safe: Yes (operates on single socket)
+ */
+static int
+connect_with_poll_wait (T socket, const struct sockaddr *addr,
+                       socklen_t addrlen, int timeout_ms)
+{
+  if (connect (SocketBase_fd (socket->base), addr, addrlen) == 0
+      || errno == EISCONN)
+    {
+      memcpy (&socket->base->remote_addr, addr, addrlen);
+      socket->base->remote_addrlen = addrlen;
+      return 0;
+    }
+
+  int saved_errno = errno;
+
+  if (saved_errno == EINPROGRESS || saved_errno == EINTR)
+    {
+      if (socket_wait_for_connect (socket, timeout_ms) == 0)
+        {
+          memcpy (&socket->base->remote_addr, addr, addrlen);
+          socket->base->remote_addrlen = addrlen;
+          return 0;
+        }
+      saved_errno = errno;
+    }
+
+  errno = saved_errno;
+  return -1;
+}
+
 /* ==================== Connect Setup ==================== */
 
 static void
@@ -170,69 +231,18 @@ connect_wait_completion (T socket, const struct sockaddr *addr,
                         socklen_t addrlen, int timeout_ms, int original_flags)
 {
   int restore_blocking = (original_flags & O_NONBLOCK) == 0;
+  int result = connect_with_poll_wait (socket, addr, addrlen, timeout_ms);
 
-  if (connect (SocketBase_fd (socket->base), addr, addrlen) == 0
-      || errno == EISCONN)
+  if (result == 0 && restore_blocking)
     {
-      if (restore_blocking)
-        {
-          if (fcntl (SocketBase_fd (socket->base), F_SETFL, original_flags)
-              < 0)
-            {
-              SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                               "Failed to restore blocking mode after connect "
-                               "(fd=%d, errno=%d): %s",
-                               SocketBase_fd (socket->base), errno,
-                               strerror (errno));
-            }
-        }
-      memcpy (&socket->base->remote_addr, addr, addrlen);
-      socket->base->remote_addrlen = addrlen;
-      return 0;
+      restore_blocking_mode (socket, original_flags, "connect");
+    }
+  else if (result != 0 && restore_blocking)
+    {
+      restore_blocking_mode (socket, original_flags, "connect failure");
     }
 
-  int saved_errno = errno;
-
-  if (saved_errno == EINPROGRESS || saved_errno == EINTR)
-    {
-      if (socket_wait_for_connect (socket, timeout_ms) == 0)
-        {
-          if (restore_blocking)
-            {
-              if (fcntl (SocketBase_fd (socket->base), F_SETFL, original_flags)
-                  < 0)
-                {
-                  SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                                   "Failed to restore blocking mode after "
-                                   "connect (fd=%d, errno=%d): %s",
-                                   SocketBase_fd (socket->base), errno,
-                                   strerror (errno));
-                }
-            }
-          memcpy (&socket->base->remote_addr, addr, addrlen);
-          socket->base->remote_addrlen = addrlen;
-          return 0;
-        }
-      saved_errno = errno;
-    }
-
-  if (restore_blocking)
-    {
-      int restore_result
-          = fcntl (SocketBase_fd (socket->base), F_SETFL, original_flags);
-      if (restore_result < 0)
-        {
-          int restore_errno = errno;
-          SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                           "Failed to restore blocking mode after connect "
-                           "failure (fd=%d, errno=%d): %s",
-                           SocketBase_fd (socket->base), restore_errno,
-                           strerror (restore_errno));
-        }
-    }
-
-  errno = saved_errno;
-  return -1;
+  return result;
 }
 
 static int

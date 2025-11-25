@@ -26,6 +26,73 @@
 extern const Except_T Socket_Failed;
 extern const Except_T SocketDgram_Failed;
 
+/**
+ * copy_single_addrinfo_node - Copy a single addrinfo node with all fields
+ * @src: Source addrinfo node to copy
+ * Returns: New addrinfo node or NULL on allocation failure
+ * Thread-safe: Yes
+ */
+static struct addrinfo *
+copy_single_addrinfo_node (const struct addrinfo *src)
+{
+  struct addrinfo *new_node = malloc (sizeof (struct addrinfo));
+  if (!new_node)
+    return NULL;
+
+  memcpy (new_node, src, sizeof (struct addrinfo));
+  new_node->ai_next = NULL;
+
+  /* Copy address */
+  if (src->ai_addr && src->ai_addrlen > 0)
+    {
+      new_node->ai_addr = malloc (src->ai_addrlen);
+      if (!new_node->ai_addr)
+        {
+          free (new_node);
+          return NULL;
+        }
+      memcpy (new_node->ai_addr, src->ai_addr, src->ai_addrlen);
+    }
+  else
+    {
+      new_node->ai_addr = NULL;
+      new_node->ai_addrlen = 0;
+    }
+
+  /* Copy canonical name */
+  if (src->ai_canonname)
+    {
+      size_t len = strlen (src->ai_canonname) + 1;
+      new_node->ai_canonname = malloc (len);
+      if (!new_node->ai_canonname)
+        {
+          if (new_node->ai_addr)
+            free (new_node->ai_addr);
+          free (new_node);
+          return NULL;
+        }
+      memcpy (new_node->ai_canonname, src->ai_canonname, len);
+    }
+  else
+    {
+      new_node->ai_canonname = NULL;
+    }
+
+  return new_node;
+}
+
+/**
+ * free_partial_addrinfo_chain - Free partially constructed addrinfo chain
+ * @head: Head of chain to free
+ * Thread-safe: Yes
+ */
+static void
+free_partial_addrinfo_chain (struct addrinfo *head)
+{
+  if (head)
+    freeaddrinfo (head);
+}
+
 /* Thread-local exception for detailed error messages */
 #ifdef _WIN32
 static __declspec (thread) Except_T SocketCommon_DetailedException;
@@ -377,7 +444,6 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
 {
   struct addrinfo *head = NULL;
   struct addrinfo *tail = NULL;
-  struct addrinfo *new_node = NULL;
   const struct addrinfo *p;
 
   if (!src)
@@ -386,56 +452,13 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src)
   p = src;
   while (p)
     {
-      new_node = malloc (sizeof (struct addrinfo));
+      struct addrinfo *new_node = copy_single_addrinfo_node (p);
       if (!new_node)
         {
           /* Allocation failed - free partial chain */
-          if (head)
-            freeaddrinfo (head);
+          free_partial_addrinfo_chain (head);
           return NULL;
         }
-      memcpy (new_node, p, sizeof (struct addrinfo));
-      new_node->ai_next = NULL;
-
-      if (p->ai_addr && p->ai_addrlen > 0)
-        {
-          new_node->ai_addr = malloc (p->ai_addrlen);
-          if (!new_node->ai_addr)
-            {
-              free (new_node);
-              if (head)
-                freeaddrinfo (head);
-              return NULL;
-            }
-          memcpy (new_node->ai_addr, p->ai_addr, p->ai_addrlen);
-        }
-      else
-        {
-          new_node->ai_addr = NULL;
-          new_node->ai_addrlen = 0;
-        }
-
-      if (p->ai_canonname)
-        {
-          size_t len = strlen (p->ai_canonname) + 1;
-          new_node->ai_canonname = malloc (len);
-          if (!new_node->ai_canonname)
-            {
-              if (new_node->ai_addr)
-                free (new_node->ai_addr);
-              free (new_node);
-              if (head)
-                freeaddrinfo (head);
-              return NULL;
-            }
-          memcpy (new_node->ai_canonname, p->ai_canonname, len);
-        }
-      else
-        {
-          new_node->ai_canonname = NULL;
-        }
-
-      new_node->ai_addrlen = p->ai_addrlen;
 
       if (!head)
         {
