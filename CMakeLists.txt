@@ -81,12 +81,37 @@ set(LIB_SOURCES
     src/core/SocketTimer.c
     
     # Socket core
-    src/socket/Socket.c
-    src/socket/SocketDgram.c
+     src/socket/Socket.c
+     src/socket/Socket-accept.c
+     src/socket/Socket-pair.c
+    src/socket/Socket-bind.c
+    src/socket/Socket-connect.c
+    src/socket/Socket-connect-async.c
+    src/socket/Socket-iov.c
+    src/socket/Socket-sendfile.c
+    src/socket/Socket-options.c
+    src/socket/Socket-options-keepalive.c
+    src/socket/Socket-options-tcp.c
+     src/socket/SocketDgram.c
+     src/socket/SocketDgram-bind.c
+     src/socket/SocketDgram-iov.c
+     src/socket/SocketDgram-options.c
+     src/socket/SocketDgram-state.c
     src/socket/SocketBuf.c
     src/socket/SocketCommon.c
-    src/socket/SocketAsync.c
+    src/socket/SocketCommon-resolve.c
+    src/socket/SocketCommon-cache.c
+    src/socket/SocketCommon-validate.c
+    src/socket/SocketCommon-multicast.c
+    src/socket/SocketCommon-options.c
+    src/socket/SocketCommon-iov.c
+    src/socket/SocketCommon-bind.c
+     src/socket/SocketAsync.c
+     src/socket/SocketAsync-backend.c
+     src/socket/SocketAsync-iouring.c
+     src/socket/SocketAsync-kqueue.c
     src/socket/SocketIO.c
+    src/socket/SocketIO-iov.c
     src/socket/SocketUnix.c
     
     # DNS module - split files

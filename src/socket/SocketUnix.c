@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -5,9 +6,17 @@
 
 #include "core/Arena.h"
 #include "core/SocketError.h"
+#include "socket/Socket.h"
 #include "socket/SocketCommon.h"
 #include "socket/SocketUnix-private.h"
 #include "socket/SocketUnix.h"
+
+#ifdef SOCKET_HAS_TLS
+#include <openssl/ssl.h>
+#endif
+
+
+#define T Socket_T
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketUnix"
@@ -102,5 +111,56 @@ SocketUnix_bind (SocketBase_T base, const char *path, Except_T exc_type)
 
 /* Similar for SocketUnix_connect */
 
-/* TODO: Move remaining Unix ops from Socket.c to here, update calls in
- * Socket.c / Dgram.c to SocketUnix_* (base, ...) */
+/* ==================== Unix Socket Setup ==================== */
+
+static int
+setup_unix_sockaddr (struct sockaddr_un *addr, const char *path)
+{
+  size_t path_len;
+
+  assert (addr);
+  assert (path);
+
+  memset (addr, 0, sizeof (*addr));
+  addr->sun_family = AF_UNIX;
+  path_len = strlen (path);
+
+  if (path[0] == '@') {
+    setup_abstract_unix_socket (addr, path, path_len);
+    return 0;
+  } else {
+    setup_regular_unix_socket (addr, path, path_len);
+    return 0;
+  }
+}
+
+/* ==================== Unix Socket Operations ==================== */
+
+void
+SocketUnix_connect (SocketBase_T base, const char *path, Except_T exc_type)
+{
+  struct sockaddr_un addr;
+
+  if (setup_unix_sockaddr (&addr, path) != 0)
+    RAISE_MODULE_ERROR (exc_type);
+
+  if (connect (SocketBase_fd (base), (struct sockaddr *)&addr, sizeof (addr))
+      < 0)
+    {
+      if (errno == ENOENT)
+        SOCKET_ERROR_FMT ("Unix socket does not exist: %s", path);
+      else if (errno == ECONNREFUSED)
+        SOCKET_ERROR_FMT (SOCKET_ECONNREFUSED ": %s", path);
+      else
+        SOCKET_ERROR_FMT ("Failed to connect to Unix socket %s", path);
+      RAISE_MODULE_ERROR (exc_type);
+    }
+
+  /* Update remote endpoint */
+  memcpy (&base->remote_addr, &addr, sizeof (addr));
+  base->remote_addrlen = sizeof (addr);
+  SocketCommon_update_local_endpoint (base);
+}
+
+/* ==================== Socket Pair Operations ==================== */
+

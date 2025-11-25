@@ -389,19 +389,14 @@ queue_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 /**
  * check_queue_limit - Check if queue has reached limit
  * @dns: DNS resolver instance
- * Raises: SocketDNS_Failed if queue is full
+ * Returns: 1 if queue is full, 0 otherwise
  * Thread-safe: Must be called with mutex locked
+ * Note: Does NOT unlock mutex - caller is responsible for cleanup
  */
-void
+int
 check_queue_limit (struct SocketDNS_T *dns)
 {
-  if (dns->queue_size >= dns->max_pending)
-    {
-      pthread_mutex_unlock (&dns->mutex);
-      SOCKET_ERROR_MSG ("DNS request queue full (max %zu pending)",
-                        dns->max_pending);
-      RAISE_DNS_ERROR (SocketDNS_Failed);
-    }
+  return dns->queue_size >= dns->max_pending;
 }
 
 /**
