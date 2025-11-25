@@ -256,16 +256,9 @@ backend_del (PollBackend_T backend, int fd)
 
   assert (backend);
 
+  /* Invalid FD - silently succeed (already closed) */
   if (fd < 0)
-    {
-      return 0; // Invalid FD - silently succeed (already closed)
-    }
-
-  if (fd < 0)
-    {
-      errno = EBADF;
-      return -1;
-    }
+    return 0;
 
   index = find_fd_index (backend, fd);
   if (index < 0)

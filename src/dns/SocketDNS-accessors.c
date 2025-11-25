@@ -179,7 +179,7 @@ SocketDNS_check (struct SocketDNS_T *dns)
 {
   char buffer[SOCKET_DNS_PIPE_BUFFER_SIZE];
   ssize_t n;
-  volatile int count = 0;
+  int count = 0;
 
   if (!dns)
     return 0;

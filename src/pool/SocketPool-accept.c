@@ -44,11 +44,7 @@ accept_connection_direct (int server_fd)
 #endif
 
   if (newfd < 0)
-    {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
-        return -1;
-      return -1;
-    }
+    return -1;
 
 #if !SOCKET_HAS_ACCEPT4 || !defined(SOCK_NONBLOCK)
   if (SocketCommon_setcloexec (newfd, 1) < 0)

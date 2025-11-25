@@ -42,50 +42,77 @@ is_ip_address (const char *host)
 }
 
 /**
- * validate_hostname_label - Validate a single hostname label
- * @label: Label string to validate
- * @len: Length of label (output)
- * Returns: 1 if valid label, 0 otherwise
- * Validates label characters, length, and format according to DNS rules.
+ * is_valid_label_char - Check if character is valid in hostname label
+ * @c: Character to check
+ * Returns: true if valid (alphanumeric or hyphen)
+ */
+static bool
+is_valid_label_char (char c)
+{
+  return isalnum ((unsigned char)c) || c == '-';
+}
+
+/**
+ * is_valid_label_start - Check if character can start a label
+ * @c: Character to check
+ * Returns: true if valid label start (alphanumeric only)
+ */
+static bool
+is_valid_label_start (char c)
+{
+  return isalnum ((unsigned char)c);
+}
+
+/**
+ * check_label_bounds - Check label length is within bounds
+ * @label_len: Current label length
+ * Returns: true if within bounds
+ */
+static bool
+check_label_bounds (int label_len)
+{
+  return label_len > 0 && label_len <= SOCKET_DNS_MAX_LABEL_LENGTH;
+}
+
+/**
+ * validate_hostname_label - Validate hostname labels per RFC 1123
+ * @label: Hostname string containing one or more dot-separated labels
+ * @len: Output parameter for total validated length (can be NULL)
+ *
+ * Returns: 1 if all labels valid, 0 otherwise
+ *
+ * Thread-safe: Yes - no shared state modified
  */
 int
 validate_hostname_label (const char *label, size_t *len)
 {
   const char *p = label;
   int label_len = 0;
-  bool new_label = true; /* Start of label */
+  bool at_label_start = true;
 
   while (*p)
     {
       if (*p == '.')
         {
-          if (new_label || label_len == 0
-              || label_len > SOCKET_DNS_MAX_LABEL_LENGTH)
-            return 0; /* Empty label or too long */
-          new_label = true;
+          if (!check_label_bounds (label_len))
+            return 0;
+          at_label_start = true;
           label_len = 0;
         }
       else
         {
-          if (new_label)
-            {
-              if (!isalnum ((unsigned char)*p))
-                return 0; /* Label must start with alnum */
-              new_label = false;
-            }
-          if (!isalnum ((unsigned char)*p) && *p != '-')
-            return 0; /* Invalid char in label */
-          if (*p == '-' && label_len == 0)
-            return 0; /* Can't start label with - */
-          label_len++;
-          if (label_len > SOCKET_DNS_MAX_LABEL_LENGTH)
+          if (at_label_start && !is_valid_label_start (*p))
             return 0;
+          if (!is_valid_label_char (*p))
+            return 0;
+
+          at_label_start = false;
+          label_len++;
         }
       p++;
     }
 
-  /* Final label check */
-  if (new_label || label_len == 0 || label_len > SOCKET_DNS_MAX_LABEL_LENGTH)
+  if (!check_label_bounds (label_len))
     return 0;
 
   if (len)

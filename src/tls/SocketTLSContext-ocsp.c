@@ -97,7 +97,7 @@ SocketTLSContext_set_ocsp_gen_callback (T ctx, SocketTLSOcspGenCallback cb,
   if (ERR_get_error ())
     {
       unsigned long err = ERR_get_error ();
-      char err_buf[256];
+      char err_buf[SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE];
       ERR_error_string_n (err, err_buf, sizeof (err_buf));
       RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Failed to set OCSP status cb: %s",
                            err_buf);

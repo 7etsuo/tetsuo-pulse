@@ -88,6 +88,11 @@
 #define SOCKET_TLS_TICKET_KEY_LEN 80
 #endif
 
+/* Default session cache timeout in seconds */
+#ifndef SOCKET_TLS_SESSION_TIMEOUT_DEFAULT
+#define SOCKET_TLS_SESSION_TIMEOUT_DEFAULT 300L
+#endif
+
 /* Maximum file path length for certificates/keys */
 #ifndef SOCKET_TLS_MAX_PATH_LEN
 #define SOCKET_TLS_MAX_PATH_LEN 4096

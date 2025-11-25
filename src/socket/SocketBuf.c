@@ -57,118 +57,89 @@ struct T
  * @buf: Buffer to check
  *
  * Returns: true if all invariants hold, false otherwise
- *
- * Verifies:
- * - Buffer and data pointer are non-NULL
- * - Capacity is non-zero
- * - Size does not exceed capacity
- * - Head and tail positions are within valid bounds
- *
  * Thread-safe: No (caller must ensure exclusive access)
  */
 bool
 SocketBuf_check_invariants (T buf)
 {
-  if (!buf || !buf->data || buf->capacity == 0 || buf->size > buf->capacity
-      || buf->tail >= buf->capacity || buf->head >= buf->capacity)
-    {
-      return false;
-    }
+  if (!buf || !buf->data || buf->capacity == 0)
+    return false;
+  if (buf->size > buf->capacity)
+    return false;
+  if (buf->tail >= buf->capacity || buf->head >= buf->capacity)
+    return false;
   return true;
 }
 
+/* SocketBuf_reserve is implemented in SocketBuf-reserve.c */
+
 /**
- * SocketBuf_reserve - Dynamically resize buffer to ensure min_space available
- * Raises on realloc fail or overflow
- * Doubles capacity or min_space, rebase circular data to start if head >0
- * Called automatically in write if needed
+ * new_validate_capacity - Validate capacity for new buffer
+ * @capacity: Requested capacity
+ * Raises: SocketBuf_Failed if capacity too large
  */
-void
-SocketBuf_reserve (T buf, size_t min_space)
+static void
+new_validate_capacity (size_t capacity)
 {
-  size_t needed = buf->size + min_space;
-  if (needed <= buf->capacity)
-    return;
-
-  /* Calculate new capacity with overflow check */
-  size_t new_cap = buf->capacity ? buf->capacity * 2 : 1024;
-  if (new_cap < min_space || new_cap > SIZE_MAX - SOCKETBUF_ALLOC_OVERHEAD)
+  if (capacity > SIZE_MAX / 2)
     {
-      SOCKET_ERROR_MSG ("SocketBuf reserve overflow: needed %zu current %zu",
-                        needed, buf->capacity);
+      SOCKET_ERROR_MSG ("SocketBuf_new: capacity too large");
       RAISE_MODULE_ERROR (SocketBuf_Failed);
     }
-  new_cap = new_cap > min_space ? new_cap : min_space;
-
-  char *old_data = buf->data;
-  size_t old_cap = buf->capacity;
-  char *new_data = Arena_calloc (buf->arena, 1, new_cap, __FILE__, __LINE__);
-  if (!new_data)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Failed to calloc SocketBuf to %zu",
-                        new_cap);
-      RAISE_MODULE_ERROR (SocketBuf_Failed);
-    }
-
-  /* Copy existing data to start of new buffer */
-  if (buf->size > 0)
-    {
-      memcpy (new_data, old_data + buf->head, buf->size);
-    }
-
-  /* Zero old data for security (abandoned until arena dispose) */
-  if (old_data && old_cap > 0)
-    {
-      memset (old_data, 0, old_cap);
-    }
-
-  buf->data = new_data;
-  buf->capacity = new_cap;
-  buf->head = 0;
-  buf->tail = buf->size;
-
-  SOCKETBUF_INVARIANTS (buf); /* Validate after resize */
 }
 
+/**
+ * new_alloc_struct - Allocate buffer structure
+ * @arena: Memory arena
+ * Returns: Allocated buffer or raises on failure
+ */
+static T
+new_alloc_struct (Arena_T arena)
+{
+  T buf = ALLOC (arena, sizeof (*buf));
+  if (!buf)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Failed to ALLOC SocketBuf struct");
+      RAISE_MODULE_ERROR (SocketBuf_Failed);
+    }
+  return buf;
+}
+
+/**
+ * new_alloc_data - Allocate buffer data
+ * @arena: Memory arena
+ * @capacity: Buffer capacity
+ * Returns: Allocated data or raises on failure
+ */
+static char *
+new_alloc_data (Arena_T arena, size_t capacity)
+{
+  char *data = CALLOC (arena, capacity, 1);
+  if (!data)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Failed to CALLOC SocketBuf data");
+      RAISE_MODULE_ERROR (SocketBuf_Failed);
+    }
+  return data;
+}
+
+/**
+ * SocketBuf_new - Create new circular buffer
+ * @arena: Memory arena for allocations
+ * @capacity: Buffer capacity in bytes
+ * Returns: New buffer instance
+ * Raises: SocketBuf_Failed on allocation failure or invalid capacity
+ */
 T
 SocketBuf_new (Arena_T arena, size_t capacity)
 {
-  T buf;
-
   assert (arena);
   assert (capacity > 0);
 
-  /* Limit capacity to SIZE_MAX/2 to prevent overflow in pointer arithmetic */
-  if (capacity > SIZE_MAX / 2)
-    {
-      SOCKET_ERROR_MSG (
-          "SocketBuf_new: capacity %zu too large (> SIZE_MAX/2 = %zu)",
-          capacity, SIZE_MAX / 2);
-      RAISE_MODULE_ERROR (SocketBuf_Failed);
-    }
+  new_validate_capacity (capacity);
 
-  /* Note: No minimum capacity enforced - allows small buffers for testing.
-   * Production code should use SOCKET_MIN_BUFFER_SIZE (512) for efficiency. */
-
-  buf = ALLOC (arena, sizeof (*buf));
-  if (!buf)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                        ": Failed to ALLOC SocketBuf struct (size %zu)",
-                        sizeof (*buf));
-      RAISE_MODULE_ERROR (SocketBuf_Failed);
-    }
-
-  /* Use CALLOC to zero buffer */
-  buf->data = CALLOC (arena, capacity, 1);
-  if (!buf->data)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                        ": Failed to CALLOC SocketBuf data (capacity %zu)",
-                        capacity);
-      RAISE_MODULE_ERROR (SocketBuf_Failed);
-    }
-
+  T buf = new_alloc_struct (arena);
+  buf->data = new_alloc_data (arena, capacity);
   buf->capacity = capacity;
   buf->head = 0;
   buf->tail = 0;
@@ -185,36 +156,62 @@ SocketBuf_release (T *buf)
   *buf = NULL;
 }
 
+/**
+ * circular_calc_chunk - Calculate chunk size for circular buffer transfer
+ * @capacity: Buffer capacity
+ * @pos: Current position in buffer
+ * @remaining: Remaining bytes to transfer
+ * Returns: Chunk size for this iteration
+ */
+static size_t
+circular_calc_chunk (size_t capacity, size_t pos, size_t remaining)
+{
+  size_t chunk = capacity - pos;
+  return chunk > remaining ? remaining : chunk;
+}
+
+/**
+ * circular_copy_to_buffer - Copy data to circular buffer at position
+ * @buf: Target buffer
+ * @src: Source data
+ * @pos: Position in buffer
+ * @len: Length to copy
+ */
+static void
+circular_copy_to_buffer (T buf, const char *src, size_t pos, size_t len)
+{
+  assert (pos + len <= buf->capacity);
+  memcpy (buf->data + pos, src, len);
+}
+
+/**
+ * SocketBuf_write - Write data to circular buffer
+ * @buf: Buffer to write to
+ * @data: Source data
+ * @len: Maximum bytes to write
+ * Returns: Bytes actually written
+ */
 size_t
 SocketBuf_write (T buf, const void *data, size_t len)
 {
-  size_t space;
-  size_t written = 0;
-  const char *src = data;
-
-  assert (buf);
-  assert (buf->data);
+  assert (buf && buf->data);
   assert (data || len == 0);
   SOCKETBUF_INVARIANTS (buf);
 
-  space = buf->capacity - buf->size;
+  size_t space = buf->capacity - buf->size;
   if (len > space)
     len = space;
 
+  const char *src = data;
+  size_t written = 0;
+
   while (written < len)
     {
-      size_t chunk = buf->capacity - buf->tail;
-
-      if (chunk > len - written)
-        chunk = len - written;
-
+      size_t chunk = circular_calc_chunk (buf->capacity, buf->tail,
+                                          len - written);
       if (chunk == 0)
         break;
-
-      /* This should only be zero if len == written (loop condition false) */
-      assert (chunk > 0 || len == written);
-      assert (buf->tail + chunk <= buf->capacity);
-      memcpy (buf->data + buf->tail, src + written, chunk);
+      circular_copy_to_buffer (buf, src + written, buf->tail, chunk);
       buf->tail = (buf->tail + chunk) % buf->capacity;
       written += chunk;
     }
@@ -224,79 +221,89 @@ SocketBuf_write (T buf, const void *data, size_t len)
   return written;
 }
 
+/**
+ * circular_copy_from_buffer - Copy data from circular buffer at position
+ * @buf: Source buffer
+ * @dst: Destination data
+ * @pos: Position in buffer
+ * @len: Length to copy
+ */
+static void
+circular_copy_from_buffer (T buf, char *dst, size_t pos, size_t len)
+{
+  assert (pos + len <= buf->capacity);
+  memcpy (dst, buf->data + pos, len);
+}
+
+/**
+ * SocketBuf_read - Read data from circular buffer (destructive)
+ * @buf: Buffer to read from
+ * @data: Destination buffer
+ * @len: Maximum bytes to read
+ * Returns: Bytes actually read
+ */
 size_t
 SocketBuf_read (T buf, void *data, size_t len)
 {
-  size_t read = 0;
-  char *dst = data;
-
-  assert (buf);
-  assert (buf->data);
+  assert (buf && buf->data);
   assert (data || len == 0);
   SOCKETBUF_INVARIANTS (buf);
 
   if (len > buf->size)
     len = buf->size;
 
-  while (read < len)
+  char *dst = data;
+  size_t bytes_read = 0;
+
+  while (bytes_read < len)
     {
-      size_t chunk = buf->capacity - buf->head;
-
-      if (chunk > len - read)
-        chunk = len - read;
-
+      size_t chunk = circular_calc_chunk (buf->capacity, buf->head,
+                                          len - bytes_read);
       if (chunk == 0)
         break;
-
-      /* This should only be zero if len == read (loop condition false) */
-      assert (chunk > 0 || len == read);
-      assert (buf->head + chunk <= buf->capacity);
-      memcpy (dst + read, buf->data + buf->head, chunk);
+      circular_copy_from_buffer (buf, dst + bytes_read, buf->head, chunk);
       buf->head = (buf->head + chunk) % buf->capacity;
-      read += chunk;
+      bytes_read += chunk;
     }
 
-  buf->size -= read;
+  buf->size -= bytes_read;
   SOCKETBUF_INVARIANTS (buf);
-  return read;
+  return bytes_read;
 }
 
+/**
+ * SocketBuf_peek - Peek data from circular buffer (non-destructive)
+ * @buf: Buffer to peek from
+ * @data: Destination buffer
+ * @len: Maximum bytes to peek
+ * Returns: Bytes actually peeked
+ */
 size_t
 SocketBuf_peek (T buf, void *data, size_t len)
 {
-  size_t read = 0;
-  char *dst = data;
-  size_t head;
-
-  assert (buf);
-  assert (buf->data);
+  assert (buf && buf->data);
   assert (data || len == 0);
   SOCKETBUF_INVARIANTS (buf);
 
   if (len > buf->size)
     len = buf->size;
 
-  head = buf->head;
-  while (read < len)
+  char *dst = data;
+  size_t head = buf->head;
+  size_t bytes_peeked = 0;
+
+  while (bytes_peeked < len)
     {
-      size_t chunk = buf->capacity - head;
-
-      if (chunk > len - read)
-        chunk = len - read;
-
+      size_t chunk = circular_calc_chunk (buf->capacity, head,
+                                          len - bytes_peeked);
       if (chunk == 0)
         break;
-
-      /* This should only be zero if len == read (loop condition false) */
-      assert (chunk > 0 || len == read);
-      assert (head < buf->capacity);
-      assert (head + chunk <= buf->capacity);
-      memcpy (dst + read, buf->data + head, chunk);
+      circular_copy_from_buffer (buf, dst + bytes_peeked, head, chunk);
       head = (head + chunk) % buf->capacity;
-      read += chunk;
+      bytes_peeked += chunk;
     }
 
-  return read;
+  return bytes_peeked;
 }
 
 void
@@ -355,26 +362,34 @@ SocketBuf_clear (T buf)
   buf->size = 0;
 }
 
+/**
+ * secure_zero_memory - Zero memory with volatile to prevent optimization
+ * @data: Memory to zero
+ * @len: Length to zero
+ */
+static void
+secure_zero_memory (char *data, size_t len)
+{
+  volatile char *vdata = (volatile char *)data;
+  for (size_t i = 0; i < len; i++)
+    vdata[i] = 0;
+}
+
+/**
+ * SocketBuf_secureclear - Securely clear buffer (for sensitive data)
+ * @buf: Buffer to clear
+ *
+ * Zeros memory contents before resetting pointers. Uses volatile
+ * to prevent compiler optimization removal. Use for sensitive data
+ * (passwords, keys, tokens).
+ */
 void
 SocketBuf_secureclear (T buf)
 {
-  assert (buf);
-  assert (buf->data);
+  assert (buf && buf->data);
 
-  /* Secure clear - zero memory contents before resetting pointers
-   * SECURITY PATTERN: Defense-in-depth with assertion + runtime check
-   * - Debug builds: assertion catches programming errors early
-   * - Release builds (NDEBUG): runtime check prevents security vulnerabilities
-   * This pattern ensures security-critical operations work correctly even when
-   * assertions are disabled in production builds. Recommended for all
-   * operations involving sensitive data (passwords, keys, tokens, etc.). */
   if (buf->data && buf->capacity > 0)
-    {
-      /* Secure clear with volatile to prevent compiler optimization removal */
-      volatile char *vdata = (volatile char *)buf->data;
-      for (size_t i = 0; i < buf->capacity; i++)
-        vdata[i] = 0;
-    }
+    secure_zero_memory (buf->data, buf->capacity);
 
   buf->head = 0;
   buf->tail = 0;

@@ -40,14 +40,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION(SocketOptions);
 
 /* Default timeouts are declared in SocketCommon.c */
 
-/* Static timeout sanitizer function */
-static int
-sanitize_timeout (int timeout_ms)
-{
-  if (timeout_ms < 0)
-    return 0;
-  return timeout_ms;
-}
+/* sanitize_timeout is defined in SocketCommon.c - use extern declaration */
+extern int socketcommon_sanitize_timeout (int timeout_ms);
 
 /* ==================== Socket Flags ==================== */
 
@@ -60,52 +54,22 @@ Socket_setnonblocking (T socket)
 void
 Socket_setreuseaddr (T socket)
 {
-  int opt = 1;
-
   assert (socket);
-
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                  SOCKET_SO_REUSEADDR, &opt, sizeof (opt))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set SO_REUSEADDR");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+  SocketCommon_setreuseaddr (socket->base, Socket_Failed);
 }
 
 void
 Socket_setreuseport (T socket)
 {
-  int opt = 1;
-
   assert (socket);
-
-#if SOCKET_HAS_SO_REUSEPORT
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                  SOCKET_SO_REUSEPORT, &opt, sizeof (opt))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set SO_REUSEPORT");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-#else
-  (void)opt;
-  SOCKET_ERROR_MSG ("SO_REUSEPORT not supported on this platform");
-  RAISE_MODULE_ERROR (Socket_Failed);
-#endif
+  SocketCommon_setreuseport (socket->base, Socket_Failed);
 }
 
 void
 Socket_setcloexec (T socket, int enable)
 {
   assert (socket);
-
-  if (SocketCommon_setcloexec (SocketBase_fd (socket->base), enable) < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to %s close-on-exec flag",
-                        enable ? "set" : "clear");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+  SocketCommon_setcloexec_with_error (socket->base, enable, Socket_Failed);
 }
 
 /* ==================== Timeout Operations ==================== */
@@ -113,37 +77,8 @@ Socket_setcloexec (T socket, int enable)
 void
 Socket_settimeout (T socket, int timeout_sec)
 {
-  struct timeval tv;
-
   assert (socket);
-
-  /* Validate timeout */
-  if (timeout_sec < 0)
-    {
-      SOCKET_ERROR_MSG ("Invalid timeout value: %d (must be >= 0)",
-                        timeout_sec);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  tv.tv_sec = timeout_sec;
-  tv.tv_usec = 0;
-
-  /* Set timeouts */
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                  SOCKET_SO_RCVTIMEO, &tv, sizeof (tv))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set receive timeout");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                  SOCKET_SO_SNDTIMEO, &tv, sizeof (tv))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set send timeout");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+  SocketCommon_settimeout (socket->base, timeout_sec, Socket_Failed);
 }
 
 int
@@ -188,11 +123,11 @@ Socket_timeouts_set (T socket, const SocketTimeouts_T *timeouts)
     }
 
   socket->base->timeouts.connect_timeout_ms
-      = sanitize_timeout (timeouts->connect_timeout_ms);
+      = socketcommon_sanitize_timeout (timeouts->connect_timeout_ms);
   socket->base->timeouts.dns_timeout_ms
-      = sanitize_timeout (timeouts->dns_timeout_ms);
+      = socketcommon_sanitize_timeout (timeouts->dns_timeout_ms);
   socket->base->timeouts.operation_timeout_ms
-      = sanitize_timeout (timeouts->operation_timeout_ms);
+      = socketcommon_sanitize_timeout (timeouts->operation_timeout_ms);
 }
 
 void
@@ -218,10 +153,12 @@ Socket_timeouts_setdefaults (const SocketTimeouts_T *timeouts)
   local = socket_default_timeouts;
   pthread_mutex_unlock (&socket_default_timeouts_mutex);
 
-  local.connect_timeout_ms = sanitize_timeout (timeouts->connect_timeout_ms);
-  local.dns_timeout_ms = sanitize_timeout (timeouts->dns_timeout_ms);
+  local.connect_timeout_ms
+      = socketcommon_sanitize_timeout (timeouts->connect_timeout_ms);
+  local.dns_timeout_ms
+      = socketcommon_sanitize_timeout (timeouts->dns_timeout_ms);
   local.operation_timeout_ms
-      = sanitize_timeout (timeouts->operation_timeout_ms);
+      = socketcommon_sanitize_timeout (timeouts->operation_timeout_ms);
 
   pthread_mutex_lock (&socket_default_timeouts_mutex);
   socket_default_timeouts = local;

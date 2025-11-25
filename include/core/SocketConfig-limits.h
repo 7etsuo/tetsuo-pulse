@@ -18,6 +18,7 @@
 /* Minimum buffer size per connection */
 #ifndef SOCKET_MIN_BUFFER_SIZE
 #define SOCKET_MIN_BUFFER_SIZE 512
+#endif
 
 /* UDP limits to avoid fragmentation and respect protocol max */
 #ifndef UDP_MAX_PAYLOAD
@@ -46,7 +47,6 @@
 
 #ifndef SOCKET_MAX_PORT
 #define SOCKET_MAX_PORT 65535 /* Standard TCP/UDP port max */
-#endif
 #endif
 
 /* Maximum events per poll */
@@ -90,6 +90,11 @@
 #define SOCKETBUF_MIN_CAPACITY 512
 #endif
 
+/* Initial capacity when buffer reserve grows from zero */
+#ifndef SOCKETBUF_INITIAL_CAPACITY
+#define SOCKETBUF_INITIAL_CAPACITY 1024
+#endif
+
 /* Allocation overhead for arena bookkeeping during buffer resize */
 #ifndef SOCKETBUF_ALLOC_OVERHEAD
 #define SOCKETBUF_ALLOC_OVERHEAD 64
@@ -123,9 +128,19 @@
 #define SOCKET_DNS_REQUEST_HASH_SIZE 1021
 #endif
 
+/* Completion signal byte value for DNS pipe signaling */
+#ifndef SOCKET_DNS_COMPLETION_SIGNAL_BYTE
+#define SOCKET_DNS_COMPLETION_SIGNAL_BYTE 1
+#endif
+
 /* Port number string buffer size */
 #ifndef SOCKET_DNS_PORT_STR_SIZE
 #define SOCKET_DNS_PORT_STR_SIZE 16
+#endif
+
+/* Thread name buffer size (POSIX requires max 16 chars including null) */
+#ifndef SOCKET_DNS_THREAD_NAME_SIZE
+#define SOCKET_DNS_THREAD_NAME_SIZE 16
 #endif
 
 /* Error buffer size - increased for safety */
@@ -154,6 +169,11 @@
 /* ============================================================================
  * Timer Subsystem Configuration
  * ============================================================================ */
+
+/* Maximum timer timeout to prevent indefinite blocking (5 minutes) */
+#ifndef SOCKET_MAX_TIMER_TIMEOUT_MS
+#define SOCKET_MAX_TIMER_TIMEOUT_MS 300000
+#endif
 
 /* Timer error buffer size for detailed error messages */
 #ifndef SOCKET_TIMER_ERROR_BUFSIZE

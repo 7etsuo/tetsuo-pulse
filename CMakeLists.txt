@@ -91,6 +91,8 @@ set(LIB_SOURCES
     src/socket/Socket-bind.c
     src/socket/Socket-connect.c
     src/socket/Socket-connect-async.c
+    src/socket/Socket-connect-poll.c
+    src/socket/Socket-connect-util.c
     src/socket/Socket-iov.c
     src/socket/Socket-iov-all.c
     src/socket/Socket-sendfile.c
@@ -104,6 +106,7 @@ set(LIB_SOURCES
      src/socket/SocketDgram-state.c
     src/socket/SocketBuf.c
     src/socket/SocketBuf-ptr.c
+    src/socket/SocketBuf-reserve.c
     src/socket/SocketCommon.c
     src/socket/SocketCommon-hints.c
     src/socket/SocketCommon-resolve.c
@@ -121,6 +124,7 @@ set(LIB_SOURCES
      src/socket/SocketAsync-kqueue.c
     src/socket/SocketIO.c
     src/socket/SocketIO-tls.c
+    src/socket/SocketIO-tls-iov.c
     src/socket/SocketIO-iov.c
     src/socket/SocketUnix.c
     
@@ -140,6 +144,7 @@ set(LIB_SOURCES
     src/poll/SocketPoll-data.c
     src/poll/SocketPoll-init.c
     src/poll/SocketPoll-events.c
+    src/poll/SocketPoll-tls.c
 
     ${POLL_BACKEND_SRC}
     

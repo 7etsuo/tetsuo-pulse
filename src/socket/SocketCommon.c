@@ -49,9 +49,13 @@ SOCKET_DECLARE_MODULE_EXCEPTION(SocketCommon);
 /* Macro to raise exception with detailed error message */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(SocketCommon, e)
 
-/* Static timeout sanitizer function */
-static int
-sanitize_timeout (int timeout_ms)
+/**
+ * socketcommon_sanitize_timeout - Sanitize timeout value
+ * @timeout_ms: Timeout in milliseconds (negative values become 0)
+ * Returns: Sanitized timeout value (>= 0)
+ */
+int
+socketcommon_sanitize_timeout (int timeout_ms)
 {
   if (timeout_ms < 0)
     return 0;
@@ -317,10 +321,12 @@ SocketCommon_timeouts_setdefaults (const SocketTimeouts_T *timeouts)
   local = socket_default_timeouts;
   pthread_mutex_unlock (&socket_default_timeouts_mutex);
 
-  local.connect_timeout_ms = sanitize_timeout (timeouts->connect_timeout_ms);
-  local.dns_timeout_ms = sanitize_timeout (timeouts->dns_timeout_ms);
+  local.connect_timeout_ms
+      = socketcommon_sanitize_timeout (timeouts->connect_timeout_ms);
+  local.dns_timeout_ms
+      = socketcommon_sanitize_timeout (timeouts->dns_timeout_ms);
   local.operation_timeout_ms
-      = sanitize_timeout (timeouts->operation_timeout_ms);
+      = socketcommon_sanitize_timeout (timeouts->operation_timeout_ms);
 
   pthread_mutex_lock (&socket_default_timeouts_mutex);
   socket_default_timeouts = local;

@@ -421,10 +421,11 @@ extern void SocketTLSContext_get_cache_stats(T ctx, size_t *hits, size_t *misses
 /**
  * SocketTLSContext_enable_session_tickets - Enable stateless session resumption using tickets
  * @ctx: The TLS context instance
- * @key: Ticket encryption key material (48 bytes for AES256 + HMAC recommended)
- * @key_len: Length of key (must be 48 for basic support)
+ * @key: Ticket encryption key material (SOCKET_TLS_TICKET_KEY_LEN bytes required)
+ * @key_len: Length of key (must be SOCKET_TLS_TICKET_KEY_LEN = 80 bytes)
  *
  * Implements stateless session resumption using encrypted session tickets.
+ * OpenSSL requires 80 bytes: 16 (name) + 32 (AES) + 32 (HMAC).
  * Configures ticket key management, encryption/decryption using provided key.
  * Supports ticket lifetime matching session timeout, and basic rotation.
  * Requires cache enabled for full effect.

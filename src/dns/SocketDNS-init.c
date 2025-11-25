@@ -93,15 +93,11 @@ initialize_dns_components (struct SocketDNS_T *dns)
 void
 setup_thread_attributes (pthread_attr_t *attr, int thread_index)
 {
-  char thread_name[16];
+  (void)thread_index; /* Thread naming done in create_single_worker_thread */
 
   pthread_attr_init (attr);
   pthread_attr_setdetachstate (attr, PTHREAD_CREATE_JOINABLE);
-  pthread_attr_setstacksize (
-      attr, SOCKET_DNS_WORKER_STACK_SIZE); /* Conservative stack size for DNS
-                                              workers */
-
-  snprintf (thread_name, sizeof (thread_name), "dns-worker-%d", thread_index);
+  pthread_attr_setstacksize (attr, SOCKET_DNS_WORKER_STACK_SIZE);
 }
 
 /**
@@ -111,40 +107,58 @@ setup_thread_attributes (pthread_attr_t *attr, int thread_index)
  * Returns: 0 on success, -1 on failure
  * Creates one worker thread and handles partial cleanup on failure.
  */
+/**
+ * cleanup_partial_workers - Join already-created workers on failure
+ * @dns: DNS resolver instance
+ * @created_count: Number of threads successfully created
+ */
+static void
+cleanup_partial_workers (struct SocketDNS_T *dns, int created_count)
+{
+  dns->shutdown = 1;
+  pthread_cond_broadcast (&dns->queue_cond);
+
+  for (int j = 0; j < created_count; j++)
+    pthread_join (dns->workers[j], NULL);
+}
+
+/**
+ * set_worker_thread_name - Set thread name for debugging
+ * @dns: DNS resolver instance
+ * @thread_index: Index of thread to name
+ */
+static void
+set_worker_thread_name (struct SocketDNS_T *dns, int thread_index)
+{
+#ifdef PTHREAD_SET_NAME_SUPPORTED
+  char thread_name[SOCKET_DNS_THREAD_NAME_SIZE];
+  snprintf (thread_name, sizeof (thread_name), "dns-worker-%d", thread_index);
+  pthread_setname_np (dns->workers[thread_index], thread_name);
+#else
+  (void)dns;
+  (void)thread_index;
+#endif
+}
+
 int
 create_single_worker_thread (struct SocketDNS_T *dns, int thread_index)
 {
   pthread_attr_t attr;
-  char thread_name[16];
 
   setup_thread_attributes (&attr, thread_index);
-  snprintf (thread_name, sizeof (thread_name), "dns-worker-%d", thread_index);
 
-  if (pthread_create (&dns->workers[thread_index], &attr, worker_thread, dns)
-      != 0)
-    {
-      pthread_attr_destroy (&attr);
-      /* Signal shutdown and join already created threads */
-      dns->shutdown = 1;
-      pthread_cond_broadcast (&dns->queue_cond);
-
-      /* Join previously created threads */
-      for (int j = 0; j < thread_index; j++)
-        {
-          pthread_join (dns->workers[j], NULL);
-        }
-
-      return -1; /* Signal failure */
-    }
-
+  int result = pthread_create (&dns->workers[thread_index], &attr,
+                               worker_thread, dns);
   pthread_attr_destroy (&attr);
 
-  /* Set thread name for debugging (non-portable but useful) */
-#ifdef PTHREAD_SET_NAME_SUPPORTED
-  pthread_setname_np (dns->workers[thread_index], thread_name);
-#endif
+  if (result != 0)
+    {
+      cleanup_partial_workers (dns, thread_index);
+      return -1;
+    }
 
-  return 0; /* Success */
+  set_worker_thread_name (dns, thread_index);
+  return 0;
 }
 
 /**

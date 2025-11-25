@@ -1,41 +1,24 @@
 /**
  * SocketPool-cleanup.c - Idle connection cleanup functions
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
+ *
  * Handles automatic cleanup of idle connections to manage resources.
  */
 
 #include <assert.h>
 #include <errno.h>
 #include <math.h>
-#include <pthread.h>
 #include <stdlib.h>
 #include <time.h>
 
-#include "core/Except.h"
-#include "core/SocketConfig.h"
-#include "core/SocketError.h"
-#include "pool/SocketPool-private.h" /* For structs */
-#include "pool/SocketPool.h"
-#include "socket/Socket.h"
-
-#ifdef SOCKET_HAS_TLS
-#include <openssl/ssl.h>
-#endif
-#include "pool/SocketPool-core.h"    /* For safe_time */
-#include "pool/SocketPool-private.h" /* For Connection_T and structs */
+#include "core/SocketLog.h"
+#include "pool/SocketPool-private.h"
 
 #define T SocketPool_T
 
 extern const Except_T SocketPool_Failed;
-extern __thread Except_T SocketPool_DetailedException;
-
-#define RAISE_POOL_ERROR(exception)                                           \
-  do                                                                          \
-    {                                                                         \
-      SocketPool_DetailedException = (exception);                             \
-      SocketPool_DetailedException.reason = socket_error_buf;                 \
-      RAISE (SocketPool_DetailedException);                                   \
-    }                                                                         \
-  while (0)
 
 /**
  * should_close_connection - Determine if connection should be closed
@@ -86,9 +69,7 @@ collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
 
   for (i = 0; i < pool->maxconns; i++)
     {
-#ifdef SOCKET_HAS_TLS
       validate_saved_session (&pool->connections[i]);
-#endif
       if (should_collect_socket (&pool->connections[i], idle_timeout, now))
         {
           pool->cleanup_buffer[close_count++] = pool->connections[i].socket;
@@ -102,6 +83,8 @@ collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
  * @pool: Pool
  * @close_count: Count
  * Thread-safe: No mutex - call outside lock
+ *
+ * Logs errors at DEBUG level rather than silently ignoring them.
  */
 static void
 close_collected_sockets (T pool, size_t close_count)
@@ -115,8 +98,16 @@ close_collected_sockets (T pool, size_t close_count)
         SocketPool_remove (pool, pool->cleanup_buffer[i]);
         Socket_free (&pool->cleanup_buffer[i]);
       }
-      EXCEPT (SocketPool_Failed) { /* Ignore - may already removed */ }
-      EXCEPT (Socket_Failed) { /* Ignore free fail */ }
+      EXCEPT (SocketPool_Failed)
+      {
+        SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                         "Cleanup: socket already removed from pool");
+      }
+      EXCEPT (Socket_Failed)
+      {
+        SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                         "Cleanup: socket free failed (may be closed)");
+      }
       END_TRY;
     }
 }

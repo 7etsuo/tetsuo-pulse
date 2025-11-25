@@ -60,39 +60,15 @@ SocketDgram_setnonblocking (T socket)
 void
 SocketDgram_setreuseaddr (T socket)
 {
-  int opt = 1;
-
   assert (socket);
-
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                  SOCKET_SO_REUSEADDR, &opt, sizeof (opt))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set SO_REUSEADDR");
-      RAISE_MODULE_ERROR (SocketDgram_Failed);
-    }
+  SocketCommon_setreuseaddr (socket->base, SocketDgram_Failed);
 }
 
 void
 SocketDgram_setreuseport (T socket)
 {
-  int opt = 1;
-
   assert (socket);
-
-#if SOCKET_HAS_SO_REUSEPORT
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                  SOCKET_SO_REUSEPORT, &opt, sizeof (opt))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set SO_REUSEPORT");
-      RAISE_MODULE_ERROR (SocketDgram_Failed);
-    }
-#else
-  (void)opt;
-  SOCKET_ERROR_MSG ("SO_REUSEPORT not supported on this platform");
-  RAISE_MODULE_ERROR (SocketDgram_Failed);
-#endif
+  SocketCommon_setreuseport (socket->base, SocketDgram_Failed);
 }
 
 void
@@ -177,24 +153,8 @@ SocketDgram_setttl (T socket, int ttl)
 void
 SocketDgram_settimeout (T socket, int timeout_sec)
 {
-  struct timeval tv;
   assert (socket);
-  tv.tv_sec = timeout_sec;
-  tv.tv_usec = 0;
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                  SOCKET_SO_RCVTIMEO, &tv, sizeof (tv))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set receive timeout");
-      RAISE_MODULE_ERROR (SocketDgram_Failed);
-    }
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                  SOCKET_SO_SNDTIMEO, &tv, sizeof (tv))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set send timeout");
-      RAISE_MODULE_ERROR (SocketDgram_Failed);
-    }
+  SocketCommon_settimeout (socket->base, timeout_sec, SocketDgram_Failed);
 }
 
 /**
@@ -254,12 +214,7 @@ void
 SocketDgram_setcloexec (T socket, int enable)
 {
   assert (socket);
-  if (SocketCommon_setcloexec (SocketBase_fd (socket->base), enable) < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to %s close-on-exec flag",
-                        enable ? "set" : "clear");
-      RAISE_MODULE_ERROR (SocketDgram_Failed);
-    }
+  SocketCommon_setcloexec_with_error (socket->base, enable, SocketDgram_Failed);
 }
 
 /**

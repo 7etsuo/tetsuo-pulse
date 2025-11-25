@@ -73,8 +73,8 @@ struct SocketDNS_T {
   int request_timeout_ms;       /* Default request timeout (ms) */
 };
 
-/* Internal macros */
-#define COMPLETION_SIGNAL_BYTE 1
+/* Internal macros - use centralized constant */
+#define COMPLETION_SIGNAL_BYTE SOCKET_DNS_COMPLETION_SIGNAL_BYTE
 
 /* Thread-local exception */
 extern const Except_T SocketDNS_Failed;

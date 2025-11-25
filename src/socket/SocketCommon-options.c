@@ -5,15 +5,15 @@
  * extracted from the main SocketCommon.c file.
  */
 
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/tcp.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#include <assert.h>
 
 #include "core/SocketConfig.h"
 #define SOCKET_LOG_COMPONENT "SocketCommon"
@@ -295,37 +295,19 @@ SocketCommon_get_family (SocketBase_T base, bool raise_on_fail,
 }
 
 /**
- * SocketCommon_get_socket_family - Get socket's address family
+ * SocketCommon_get_socket_family - Get socket's address family (no exception)
  * @base: Socket base to query
  * Returns: Socket family or AF_UNSPEC on error
- * Uses SO_DOMAIN on Linux, falls back to getsockname() on other platforms.
+ *
+ * Convenience wrapper around SocketCommon_get_family for callers that
+ * don't want exceptions raised on failure.
  */
 int
 SocketCommon_get_socket_family (SocketBase_T base)
 {
-  struct sockaddr_storage addr;
-  socklen_t len = sizeof (addr);
-
-  /* Try SO_DOMAIN first (Linux-specific) */
-#ifdef SO_DOMAIN
-  int domain;
-  socklen_t optlen = sizeof (domain);
-  if (getsockopt (SocketBase_fd (base), SOL_SOCKET, SO_DOMAIN,
-                  &domain, &optlen)
-      == 0)
-    {
-      return domain;
-    }
-#endif
-
-  /* Fallback: use getsockname */
-  if (getsockname (SocketBase_fd (base), (struct sockaddr *)&addr, &len)
-      == 0)
-    {
-      return addr.ss_family;
-    }
-
-  return AF_UNSPEC;
+  /* Dummy exception - never raised because raise_on_fail is false */
+  Except_T dummy = { NULL, NULL };
+  return SocketCommon_get_family (base, false, dummy);
 }
 
 /**
@@ -347,6 +329,102 @@ SocketCommon_set_option_int (SocketBase_T base, int level, int optname,
       SOCKET_ERROR_FMT (
           "Failed to set socket option level=%d optname=%d value=%d: %s",
           level, optname, value, strerror (errno));
+      RAISE_MODULE_ERROR (exc_type);
+    }
+}
+
+/**
+ * SocketCommon_setreuseaddr - Set SO_REUSEADDR socket option
+ * @base: Socket base
+ * @exc_type: Exception type to raise on failure
+ * Thread-safe: Yes
+ */
+void
+SocketCommon_setreuseaddr (SocketBase_T base, Except_T exc_type)
+{
+  assert (base);
+  SocketCommon_set_option_int (base, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEADDR, 1,
+                               exc_type);
+}
+
+/**
+ * SocketCommon_setreuseport - Set SO_REUSEPORT socket option
+ * @base: Socket base
+ * @exc_type: Exception type to raise on failure
+ * Thread-safe: Yes
+ */
+void
+SocketCommon_setreuseport (SocketBase_T base, Except_T exc_type)
+{
+  assert (base);
+
+#if SOCKET_HAS_SO_REUSEPORT
+  SocketCommon_set_option_int (base, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEPORT, 1,
+                               exc_type);
+#else
+  SOCKET_ERROR_MSG ("SO_REUSEPORT not supported on this platform");
+  RAISE_MODULE_ERROR (exc_type);
+#endif
+}
+
+/**
+ * SocketCommon_settimeout - Set socket send/receive timeouts
+ * @base: Socket base
+ * @timeout_sec: Timeout in seconds (must be >= 0)
+ * @exc_type: Exception type to raise on failure
+ * Thread-safe: Yes
+ */
+void
+SocketCommon_settimeout (SocketBase_T base, int timeout_sec, Except_T exc_type)
+{
+  struct timeval tv;
+
+  assert (base);
+
+  if (timeout_sec < 0)
+    {
+      SOCKET_ERROR_MSG ("Invalid timeout value: %d (must be >= 0)",
+                        timeout_sec);
+      RAISE_MODULE_ERROR (exc_type);
+    }
+
+  tv.tv_sec = timeout_sec;
+  tv.tv_usec = 0;
+
+  if (setsockopt (SocketBase_fd (base), SOCKET_SOL_SOCKET, SOCKET_SO_RCVTIMEO,
+                  &tv, sizeof (tv))
+      < 0)
+    {
+      SOCKET_ERROR_FMT ("Failed to set receive timeout");
+      RAISE_MODULE_ERROR (exc_type);
+    }
+
+  if (setsockopt (SocketBase_fd (base), SOCKET_SOL_SOCKET, SOCKET_SO_SNDTIMEO,
+                  &tv, sizeof (tv))
+      < 0)
+    {
+      SOCKET_ERROR_FMT ("Failed to set send timeout");
+      RAISE_MODULE_ERROR (exc_type);
+    }
+}
+
+/**
+ * SocketCommon_setcloexec_with_error - Set CLOEXEC with exception on failure
+ * @base: Socket base
+ * @enable: 1 to enable, 0 to disable
+ * @exc_type: Exception type to raise on failure
+ * Thread-safe: Yes
+ */
+void
+SocketCommon_setcloexec_with_error (SocketBase_T base, int enable,
+                                    Except_T exc_type)
+{
+  assert (base);
+
+  if (SocketCommon_setcloexec (SocketBase_fd (base), enable) < 0)
+    {
+      SOCKET_ERROR_FMT ("Failed to %s close-on-exec flag",
+                        enable ? "set" : "clear");
       RAISE_MODULE_ERROR (exc_type);
     }
 }
