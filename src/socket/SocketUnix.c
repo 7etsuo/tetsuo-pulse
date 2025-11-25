@@ -130,6 +130,11 @@ void
 SocketUnix_connect (SocketBase_T base, const char *path, Except_T exc_type)
 {
   struct sockaddr_un addr;
+  size_t path_len = strlen (path);
+
+  /* Validate path before use (same as SocketUnix_bind) */
+  if (SocketUnix_validate_unix_path (path, path_len) < 0)
+    RAISE_MODULE_ERROR (exc_type);
 
   if (setup_unix_sockaddr (&addr, path) != 0)
     RAISE_MODULE_ERROR (exc_type);
