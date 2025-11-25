@@ -69,7 +69,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION(Socket);
 /* Forward declarations for functions moved to other files */
 static int accept_connection(T socket, struct sockaddr_storage *addr, socklen_t *addrlen);
 static T create_accepted_socket(int newfd, const struct sockaddr_storage *addr, socklen_t addrlen);
-static int setup_peer_info(T socket, const struct sockaddr *addr, socklen_t addrlen);
 
 /**
  * accept_connection - Accept a new connection
@@ -206,45 +205,13 @@ create_accepted_socket (int newfd, const struct sockaddr_storage *addr,
   base->localport = 0;
 
 #ifdef SOCKET_HAS_TLS
-  /* Initialize TLS fields for accepted connection */
-  newsocket->tls_ctx = NULL;
-  newsocket->tls_ssl = NULL;
-  newsocket->tls_enabled = 0;
-  newsocket->tls_handshake_done = 0;
-  newsocket->tls_shutdown_done = 0;
-  newsocket->tls_last_handshake_state = 0;
-  newsocket->tls_sni_hostname = NULL;
-  newsocket->tls_read_buf = NULL;
-  newsocket->tls_write_buf = NULL;
-  newsocket->tls_read_buf_len = 0;
-  newsocket->tls_write_buf_len = 0;
-  newsocket->tls_timeouts = (SocketTimeouts_T){ 0 };
+  /* Initialize TLS fields for accepted connection using shared helper */
+  socket_init_tls_fields (newsocket);
 #endif
 
   socket_live_increment ();
 
   return newsocket;
-}
-
-/**
- * setup_peer_info - Set up peer address and port from getnameinfo result
- * @socket: Socket to set up
- * @addr: Address structure
- * @addrlen: Address length
- * Returns: 0 on success, -1 on failure
- */
-static int
-setup_peer_info (T socket, const struct sockaddr *addr, socklen_t addrlen)
-{
-  if (SocketCommon_cache_endpoint (SocketBase_arena (socket->base), addr,
-                                   addrlen, &socket->base->remoteaddr,
-                                   &socket->base->remoteport)
-      != 0)
-    {
-      socket->base->remoteaddr = NULL;
-      socket->base->remoteport = 0;
-    }
-  return 0;
 }
 
 T
@@ -264,7 +231,18 @@ Socket_accept (T socket)
       return NULL;
 
     newsocket = create_accepted_socket (newfd, &addr, addrlen);
-    setup_peer_info (newsocket, (struct sockaddr *)&addr, addrlen);
+
+    /* Cache peer info from accepted address (inline - single use) */
+    if (SocketCommon_cache_endpoint (SocketBase_arena (newsocket->base),
+                                     (struct sockaddr *)&addr, addrlen,
+                                     &newsocket->base->remoteaddr,
+                                     &newsocket->base->remoteport)
+        != 0)
+      {
+        newsocket->base->remoteaddr = NULL;
+        newsocket->base->remoteport = 0;
+      }
+
     SocketCommon_update_local_endpoint (newsocket->base);
     SocketEvent_emit_accept (
         SocketBase_fd (newsocket->base), newsocket->base->remoteaddr,
