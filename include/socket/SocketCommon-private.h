@@ -87,7 +87,6 @@ SocketBase_timeouts (SocketBase_T base)
 
 /* Add more as needed for endpoint fields */
 extern void SocketBase_set_timeouts (SocketBase_T base, const SocketTimeouts_T *timeouts);
-extern void SocketBase_update_local_endpoint (SocketBase_T base);
 
 /* ... add more extern decls for getters/setters as needed */
 

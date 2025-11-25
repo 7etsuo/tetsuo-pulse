@@ -12,11 +12,10 @@
 #include <string.h>
 
 #include "core/SocketConfig.h"
+#define SOCKET_LOG_COMPONENT "Socket"
 #include "core/SocketError.h"
 #include "socket/Socket-private.h"
 #include "socket/SocketCommon.h"
-#define SOCKET_LOG_COMPONENT "Socket"
-#include "core/SocketError.h"
 
 #define T Socket_T
 
@@ -62,27 +61,6 @@ check_bound_unix (const struct sockaddr_storage *addr __attribute__((unused)))
   return 1; /* Unix domain sockets are bound if getsockname succeeds */
 }
 
-/**
- * setup_peer_info - Set up peer address and port from getnameinfo result
- * @socket: Socket to set up
- * @addr: Address structure
- * @addrlen: Address length
- * Returns: 0 on success, -1 on failure
- */
-static int
-setup_peer_info (T socket, const struct sockaddr *addr, socklen_t addrlen)
-{
-  if (SocketCommon_cache_endpoint (SocketBase_arena (socket->base), addr,
-                                   addrlen, &socket->base->remoteaddr,
-                                   &socket->base->remoteport)
-      != 0)
-    {
-      socket->base->remoteaddr = NULL;
-      socket->base->remoteport = 0;
-    }
-  return 0;
-}
-
 int
 Socket_isconnected (T socket)
 {
@@ -100,11 +78,20 @@ Socket_isconnected (T socket)
                    &len)
       == 0)
     {
-      /* Socket is connected - update cached peer info if not already set */
+      /* Socket is connected - cache peer info if not already set */
       if (socket->base->remoteaddr == NULL
           && SocketBase_arena (socket->base) != NULL)
         {
-          setup_peer_info (socket, (struct sockaddr *)&addr, len);
+          /* Cache peer info from getpeername result (inline - single use) */
+          if (SocketCommon_cache_endpoint (SocketBase_arena (socket->base),
+                                           (struct sockaddr *)&addr, len,
+                                           &socket->base->remoteaddr,
+                                           &socket->base->remoteport)
+              != 0)
+            {
+              socket->base->remoteaddr = NULL;
+              socket->base->remoteport = 0;
+            }
         }
       return 1;
     }
