@@ -2,6 +2,7 @@
 #define SOCKETIO_INCLUDED
 
 #include "socket/Socket.h"
+#include <errno.h>
 #include <stddef.h>
 #include <sys/uio.h>
 
@@ -131,6 +132,44 @@ extern SSL *socket_get_ssl (T socket);
  */
 extern SSL *socket_validate_tls_ready (T socket);
 #endif
+
+/* ==================== Common I/O Error Helpers ==================== */
+
+/**
+ * socketio_is_wouldblock - Check if errno indicates operation would block
+ * Returns: 1 if EAGAIN/EWOULDBLOCK, 0 otherwise
+ * Thread-safe: Yes (reads errno)
+ * Use this instead of inline errno checks for consistency.
+ */
+static inline int
+socketio_is_wouldblock (void)
+{
+  return errno == EAGAIN || errno == EWOULDBLOCK;
+}
+
+/**
+ * socketio_is_connection_closed_send - Check if send error indicates closed
+ * Returns: 1 if EPIPE/ECONNRESET, 0 otherwise
+ * Thread-safe: Yes (reads errno)
+ * Use after send() failure to check for connection close.
+ */
+static inline int
+socketio_is_connection_closed_send (void)
+{
+  return errno == EPIPE || errno == ECONNRESET;
+}
+
+/**
+ * socketio_is_connection_closed_recv - Check if recv error indicates closed
+ * Returns: 1 if ECONNRESET, 0 otherwise
+ * Thread-safe: Yes (reads errno)
+ * Use after recv() failure to check for connection close.
+ */
+static inline int
+socketio_is_connection_closed_recv (void)
+{
+  return errno == ECONNRESET;
+}
 
 #undef T
 

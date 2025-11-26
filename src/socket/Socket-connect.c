@@ -14,14 +14,16 @@
  * - Async DNS resolution integration
  * - Error classification and graceful handling
  * - Timeout support for DNS and connection operations
- *
- * Note: Poll/wait helpers are in Socket-connect-poll.c
+ * - Poll/wait helpers for non-blocking connect
+ * - Socket error checking after async connect
+ * - Blocking mode restoration
  */
 
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
+#include <poll.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -30,10 +32,12 @@
 #include "core/SocketConfig.h"
 #include "core/SocketError.h"
 #include "core/SocketEvents.h"
+#include "core/SocketLog.h"
 #include "core/SocketMetrics.h"
 #include "dns/SocketDNS.h"
 #include "socket/Socket-private.h"
 #include "socket/Socket.h"
+#include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 
 #define T Socket_T
@@ -44,20 +48,253 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketConnect);
 /* Macro to raise exception with detailed error message */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketConnect, e)
 
-/* Forward declarations for poll helpers (in Socket-connect-poll.c) */
-extern int socket_wait_for_connect (T socket, int timeout_ms);
-extern void socket_restore_blocking_mode (T socket, int original_flags,
-                                          const char *operation);
-extern int socket_connect_with_poll_wait (T socket, const struct sockaddr *addr,
-                                          socklen_t addrlen, int timeout_ms);
+/* ==================== Poll/Wait Helpers ==================== */
 
-/* Forward declarations for utility functions (in Socket-connect-util.c) */
-extern const char *socket_get_connect_error_msg (int saved_errno);
-extern void socket_handle_connect_error (const char *host, int port);
-extern int socket_is_retriable_connect_error (int saved_errno);
-extern void socket_cache_remote_endpoint (T socket);
-extern void socket_emit_connect_event (T socket);
-extern void socket_handle_successful_connect (T socket);
+/**
+ * socket_wait_poll_with_retry - Wait for socket writability with EINTR retry
+ * @fd: File descriptor
+ * @timeout_ms: Timeout in milliseconds
+ *
+ * Returns: poll() result (0 on timeout, >0 on ready, -1 on error)
+ * Thread-safe: Yes (operates on single fd)
+ */
+static int
+socket_wait_poll_with_retry (int fd, int timeout_ms)
+{
+  struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
+  int result;
+
+  while ((result = poll (&pfd, 1, timeout_ms)) < 0 && errno == EINTR)
+    continue;
+
+  return result;
+}
+
+/**
+ * socket_check_connect_error - Check SO_ERROR after async connect
+ * @fd: File descriptor
+ *
+ * Returns: 0 on success, -1 on error (sets errno)
+ * Thread-safe: Yes (operates on single fd)
+ */
+static int
+socket_check_connect_error (int fd)
+{
+  int error = 0;
+  socklen_t error_len = sizeof (error);
+
+  if (getsockopt (fd, SOCKET_SOL_SOCKET, SO_ERROR, &error, &error_len) < 0)
+    return -1;
+
+  if (error != 0)
+    {
+      errno = error;
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * socket_wait_for_connect - Wait for connect to complete with timeout
+ * @socket: Socket instance
+ * @timeout_ms: Timeout in milliseconds
+ *
+ * Returns: 0 on success, -1 on failure (sets errno)
+ * Thread-safe: Yes (operates on single socket)
+ */
+static int
+socket_wait_for_connect (T socket, int timeout_ms)
+{
+  assert (socket);
+  assert (timeout_ms >= 0);
+
+  int fd = SocketBase_fd (socket->base);
+  int result = socket_wait_poll_with_retry (fd, timeout_ms);
+
+  if (result < 0)
+    return -1;
+
+  if (result == 0)
+    {
+      errno = ETIMEDOUT;
+      return -1;
+    }
+
+  return socket_check_connect_error (fd);
+}
+
+/**
+ * socket_restore_blocking_mode - Restore socket blocking mode after operation
+ * @socket: Socket instance
+ * @original_flags: Original fcntl flags to restore
+ * @operation: Operation name for logging
+ *
+ * Thread-safe: Yes (operates on single socket)
+ */
+static void
+socket_restore_blocking_mode (T socket, int original_flags,
+                              const char *operation)
+{
+  if (fcntl (SocketBase_fd (socket->base), F_SETFL, original_flags) < 0)
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN, "SocketConnect",
+                       "Failed to restore blocking mode after %s "
+                       "(fd=%d, errno=%d): %s",
+                       operation, SocketBase_fd (socket->base), errno,
+                       strerror (errno));
+    }
+}
+
+/**
+ * socket_connect_with_poll_wait - Perform connect with timeout using poll
+ * @socket: Socket instance
+ * @addr: Address to connect to
+ * @addrlen: Address length
+ * @timeout_ms: Timeout in milliseconds
+ *
+ * Returns: 0 on success, -1 on failure
+ * Thread-safe: Yes (operates on single socket)
+ */
+static int
+socket_connect_with_poll_wait (T socket, const struct sockaddr *addr,
+                               socklen_t addrlen, int timeout_ms)
+{
+  if (connect (SocketBase_fd (socket->base), addr, addrlen) == 0
+      || errno == EISCONN)
+    {
+      memcpy (&socket->base->remote_addr, addr, addrlen);
+      socket->base->remote_addrlen = addrlen;
+      return 0;
+    }
+
+  int saved_errno = errno;
+
+  if (saved_errno == EINPROGRESS || saved_errno == EINTR)
+    {
+      if (socket_wait_for_connect (socket, timeout_ms) == 0)
+        {
+          memcpy (&socket->base->remote_addr, addr, addrlen);
+          socket->base->remote_addrlen = addrlen;
+          return 0;
+        }
+      saved_errno = errno;
+    }
+
+  errno = saved_errno;
+  return -1;
+}
+
+/* ==================== Connect Error/Success Utilities ==================== */
+
+/**
+ * socket_get_connect_error_msg - Get error prefix for connect failure
+ * @saved_errno: Saved errno value
+ *
+ * Returns: Error message prefix string
+ * Thread-safe: Yes (stateless)
+ */
+static const char *
+socket_get_connect_error_msg (int saved_errno)
+{
+  switch (saved_errno)
+    {
+    case ECONNREFUSED:
+      return SOCKET_ECONNREFUSED;
+    case ENETUNREACH:
+      return SOCKET_ENETUNREACH;
+    case ETIMEDOUT:
+      return SOCKET_ETIMEDOUT;
+    default:
+      return "Connect failed";
+    }
+}
+
+/**
+ * socket_is_retriable_connect_error - Check if connect error is retriable
+ * @saved_errno: Saved errno value
+ *
+ * Returns: 1 if error is retriable (caller should not raise), 0 otherwise
+ * Thread-safe: Yes (stateless)
+ */
+static int
+socket_is_retriable_connect_error (int saved_errno)
+{
+  return saved_errno == ECONNREFUSED || saved_errno == ETIMEDOUT
+         || saved_errno == ENETUNREACH || saved_errno == EHOSTUNREACH
+         || saved_errno == ECONNABORTED;
+}
+
+/**
+ * socket_handle_connect_error - Handle and log connect error
+ * @host: Hostname for error message
+ * @port: Port number for error message
+ *
+ * Thread-safe: Yes (metrics are thread-safe)
+ */
+static void
+socket_handle_connect_error (const char *host, int port)
+{
+  SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_FAILURE, 1);
+  SOCKET_ERROR_FMT ("%s: %.*s:%d", socket_get_connect_error_msg (errno),
+                    SOCKET_ERROR_MAX_HOSTNAME, host, port);
+}
+
+/**
+ * socket_cache_remote_endpoint - Cache remote endpoint information
+ * @socket: Socket instance
+ *
+ * Caches remote address and port strings in arena. Sets defensive
+ * NULL values on failure.
+ * Thread-safe: No (operates on single socket)
+ */
+static void
+socket_cache_remote_endpoint (T socket)
+{
+  if (SocketCommon_cache_endpoint (
+          SocketBase_arena (socket->base),
+          (struct sockaddr *)&socket->base->remote_addr,
+          socket->base->remote_addrlen, &socket->base->remoteaddr,
+          &socket->base->remoteport)
+      != 0)
+    {
+      socket->base->remoteaddr = NULL;
+      socket->base->remoteport = 0;
+    }
+}
+
+/**
+ * socket_emit_connect_event - Emit socket connect event
+ * @socket: Socket instance
+ *
+ * Emits connect event with local and remote endpoint information.
+ * Thread-safe: Yes (event system is thread-safe)
+ */
+static void
+socket_emit_connect_event (T socket)
+{
+  SocketEvent_emit_connect (Socket_fd (socket),
+                            SocketBase_remoteaddr (socket->base),
+                            SocketBase_remoteport (socket->base),
+                            SocketBase_localaddr (socket->base),
+                            SocketBase_localport (socket->base));
+}
+
+/**
+ * socket_handle_successful_connect - Handle successful connection
+ * @socket: Socket instance
+ *
+ * Updates metrics, endpoints, and emits connect event.
+ * Thread-safe: Yes (individual operations are thread-safe)
+ */
+static void
+socket_handle_successful_connect (T socket)
+{
+  SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
+  SocketCommon_update_local_endpoint (socket->base);
+  socket_cache_remote_endpoint (socket);
+  socket_emit_connect_event (socket);
+}
 
 /* ==================== Connect Operations ==================== */
 
@@ -330,6 +567,53 @@ Socket_connect_with_addrinfo (T socket, struct addrinfo *res)
 
   socket_handle_connect_error ("resolved", 0);
   RAISE_MODULE_ERROR (Socket_Failed);
+}
+
+/* ==================== Async Connect Operations ==================== */
+
+/**
+ * Socket_connect_async - Start async DNS resolution for connect
+ * @dns: DNS resolver instance
+ * @socket: Socket to connect
+ * @host: Hostname to resolve
+ * @port: Port number
+ *
+ * Returns: DNS request handle for completion tracking
+ * Raises: Socket_Failed on invalid parameters
+ *
+ * Caller should wait for DNS completion then call Socket_connect_with_addrinfo
+ */
+SocketDNS_Request_T
+Socket_connect_async (SocketDNS_T dns, T socket, const char *host, int port)
+{
+  SocketDNS_Request_T req;
+
+  assert (dns);
+  assert (socket);
+
+  /* Use common validation functions for consistent error handling */
+  SocketCommon_validate_host_not_null (host, Socket_Failed);
+  SocketCommon_validate_port (port, Socket_Failed);
+
+  req = SocketDNS_resolve (dns, host, port, NULL, NULL);
+  if (socket->base->timeouts.dns_timeout_ms > 0)
+    SocketDNS_request_settimeout (dns, req,
+                                  socket->base->timeouts.dns_timeout_ms);
+  return req;
+}
+
+/**
+ * Socket_connect_async_cancel - Cancel async DNS resolution
+ * @dns: DNS resolver instance
+ * @req: Request to cancel
+ */
+void
+Socket_connect_async_cancel (SocketDNS_T dns, SocketDNS_Request_T req)
+{
+  assert (dns);
+
+  if (req)
+    SocketDNS_cancel (dns, req);
 }
 
 #undef T

@@ -41,6 +41,7 @@
 #include "socket/SocketIO.h"
 
 #include "socket/Socket-private.h"
+#include "socket/SocketLiveCount.h"
 
 #ifdef SOCKET_HAS_TLS
 #include <openssl/ssl.h>
@@ -48,34 +49,11 @@
 
 #define T Socket_T
 
-static int socket_live_count = 0;
-static pthread_mutex_t socket_live_count_mutex = PTHREAD_MUTEX_INITIALIZER;
+/* Shared live count tracker - see SocketLiveCount.h */
+static struct SocketLiveCount socket_live_tracker = SOCKETLIVECOUNT_STATIC_INIT;
 
-/**
- * socket_live_increment - Increment live socket count (thread-safe)
- * Thread-safe: Yes - protected by mutex
- */
-void
-socket_live_increment (void)
-{
-  pthread_mutex_lock (&socket_live_count_mutex);
-  socket_live_count++;
-  pthread_mutex_unlock (&socket_live_count_mutex);
-}
-
-/**
- * socket_live_decrement - Decrement live socket count (thread-safe)
- * Thread-safe: Yes - protected by mutex
- * Prevents TOCTOU race condition by atomically checking and decrementing
- */
-void
-socket_live_decrement (void)
-{
-  pthread_mutex_lock (&socket_live_count_mutex);
-  if (socket_live_count > 0)
-    socket_live_count--;
-  pthread_mutex_unlock (&socket_live_count_mutex);
-}
+#define socket_live_increment() SocketLiveCount_increment (&socket_live_tracker)
+#define socket_live_decrement() SocketLiveCount_decrement (&socket_live_tracker)
 
 const Except_T Socket_Failed = { &Socket_Failed, "Socket operation failed" };
 const Except_T Socket_Closed = { &Socket_Closed, "Socket closed" };
@@ -304,8 +282,6 @@ Socket_recv (T socket, void *buf, size_t len)
   return socket_recv_internal (socket, buf, len, 0);
 }
 
-#undef T
-
 /* ==================== Wrapper Functions for Split APIs ==================== */
 
 void
@@ -334,13 +310,7 @@ Socket_listen (Socket_T socket, int backlog)
 int
 Socket_debug_live_count (void)
 {
-  int count;
-
-  pthread_mutex_lock (&socket_live_count_mutex);
-  count = socket_live_count;
-  pthread_mutex_unlock (&socket_live_count_mutex);
-
-  return count;
+  return SocketLiveCount_get (&socket_live_tracker);
 }
 
 /* ==================== Unix Domain Socket Wrappers ==================== */
@@ -356,3 +326,842 @@ Socket_connect_unix (Socket_T socket, const char *path)
 {
   SocketUnix_connect (socket->base, path, Socket_Failed);
 }
+
+
+/* ==================== State Queries ====================
+ * Merged from Socket-state.c */
+
+/* check_bound_* helpers moved to SocketCommon.h as inline functions:
+ * - SocketCommon_check_bound_ipv4()
+ * - SocketCommon_check_bound_ipv6()
+ * - SocketCommon_check_bound_unix()
+ * - SocketCommon_check_bound_by_family()
+ */
+
+int
+Socket_isconnected (T socket)
+{
+  struct sockaddr_storage addr;
+  socklen_t len = sizeof (addr);
+
+  assert (socket);
+
+  /* Check if we have cached peer address */
+  if (socket->base->remoteaddr != NULL)
+    return 1;
+
+  /* Use getpeername() to check connection state */
+  if (getpeername (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
+                   &len)
+      == 0)
+    {
+      /* Socket is connected - cache peer info if not already set */
+      if (socket->base->remoteaddr == NULL
+          && SocketBase_arena (socket->base) != NULL)
+        {
+          /* Cache peer info from getpeername result (inline - single use) */
+          if (SocketCommon_cache_endpoint (SocketBase_arena (socket->base),
+                                           (struct sockaddr *)&addr, len,
+                                           &socket->base->remoteaddr,
+                                           &socket->base->remoteport)
+              != 0)
+            {
+              socket->base->remoteaddr = NULL;
+              socket->base->remoteport = 0;
+            }
+        }
+      return 1;
+    }
+
+  /* Not connected or error occurred */
+  if (errno == ENOTCONN)
+    return 0;
+
+  /* Other errors (EBADF, etc.) - treat as not connected */
+  return 0;
+}
+
+int
+Socket_isbound (T socket)
+{
+  struct sockaddr_storage addr;
+  socklen_t len = sizeof (addr);
+
+  assert (socket);
+
+  /* Check if we have cached local address */
+  if (socket->base->localaddr != NULL)
+    return 1;
+
+  /* Use getsockname() to check binding state */
+  if (getsockname (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
+                   &len)
+      == 0)
+    return SocketCommon_check_bound_by_family (&addr);
+
+  return 0;
+}
+
+int
+Socket_islistening (T socket)
+{
+  assert (socket);
+
+  /* Socket must be bound to be listening */
+  if (!Socket_isbound (socket))
+    return 0;
+
+  /* Socket must not be connected to be listening */
+  if (Socket_isconnected (socket))
+    return 0;
+
+  /* Additional check: verify socket is actually in listening state
+   * by checking if accept() would work (non-blocking check) */
+  {
+    int error = 0;
+    socklen_t error_len = sizeof (error);
+
+    /* Check SO_ERROR - listening sockets should have no error */
+    if (getsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SO_ERROR,
+                    &error, &error_len)
+        == 0)
+      {
+        /* If there's a connection error, socket might be in wrong state */
+        if (error != 0 && error != ENOTCONN)
+          return 0;
+      }
+  }
+
+  return 1;
+}
+
+int
+Socket_fd (const T socket)
+{
+  assert (socket);
+  return SocketBase_fd (socket->base);
+}
+
+const char *
+Socket_getpeeraddr (const T socket)
+{
+  assert (socket);
+  return socket->base->remoteaddr ? socket->base->remoteaddr : "(unknown)";
+}
+
+int
+Socket_getpeerport (const T socket)
+{
+  assert (socket);
+  return socket->base->remoteport;
+}
+
+const char *
+Socket_getlocaladdr (const T socket)
+{
+  assert (socket);
+  return socket->base->localaddr ? socket->base->localaddr : "(unknown)";
+}
+
+int
+Socket_getlocalport (const T socket)
+{
+  assert (socket);
+  return socket->base->localport;
+}
+
+/* ==================== Bind Operations ====================
+ * Merged from Socket-bind.c */
+
+/* Bind setup uses SocketCommon_validate_port and SocketCommon_setup_hints directly */
+
+static int
+is_common_bind_error (int err)
+{
+  return err == EADDRINUSE || err == EACCES || err == EADDRNOTAVAIL
+         || err == EAFNOSUPPORT;
+}
+
+/* handle_bind_error removed - use SocketCommon_format_bind_error() instead */
+
+/* ==================== Bind Operations ==================== */
+
+/**
+ * bind_resolve_address - Resolve hostname for binding
+ * @sock: Socket instance (volatile-safe)
+ * @host: Hostname to resolve (NULL for wildcard)
+ * @port: Port number
+ * @socket_family: Socket address family
+ * @res: Output for resolved addresses
+ *
+ * Sets errno to EAI_FAIL on resolution failure without raising.
+ */
+static void
+bind_resolve_address (T sock, const char *host, int port, int socket_family,
+                      struct addrinfo **res)
+{
+  (void)sock; /* Used for consistency, family passed in */
+  if (SocketCommon_resolve_address (host, port, NULL, res, Socket_Failed,
+                                    socket_family, 0)
+      != 0)
+    {
+      errno = EAI_FAIL;
+      return;
+    }
+}
+
+/**
+ * bind_try_addresses - Attempt bind to resolved addresses
+ * @sock: Socket instance (volatile-safe)
+ * @res: Resolved address list
+ * @socket_family: Socket address family
+ *
+ * Raises: Socket_Failed on non-common errors
+ */
+static void
+bind_try_addresses (T sock, struct addrinfo *res, int socket_family)
+{
+  int bind_result = SocketCommon_try_bind_resolved_addresses (
+      sock->base, res, socket_family, Socket_Failed);
+
+  if (bind_result == 0)
+    {
+      SocketCommon_update_local_endpoint (sock->base);
+      return;
+    }
+
+  int saved_errno = errno;
+  if (is_common_bind_error (saved_errno))
+    {
+      errno = saved_errno;
+      return;
+    }
+
+  SocketCommon_format_bind_error (NULL, 0);
+  RAISE_MODULE_ERROR (Socket_Failed);
+}
+
+void
+Socket_bind (T socket, const char *host, int port)
+{
+  struct addrinfo *res = NULL;
+  int socket_family;
+  volatile T vsock = socket; /* Preserve across exception boundaries */
+
+  assert (socket);
+
+  SocketCommon_validate_port (port, Socket_Failed);
+  host = SocketCommon_normalize_wildcard_host (host);
+  socket_family = SocketCommon_get_socket_family (socket->base);
+
+  TRY
+  {
+    bind_resolve_address ((T)vsock, host, port, socket_family, &res);
+    if (!res)
+      return;
+
+    bind_try_addresses ((T)vsock, res, socket_family);
+
+    freeaddrinfo (res);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    int saved_errno = errno;
+    freeaddrinfo (res);
+    if (is_common_bind_error (saved_errno))
+      {
+        errno = saved_errno;
+        return;
+      }
+    errno = saved_errno;
+    RERAISE;
+  }
+  END_TRY;
+}
+
+void
+Socket_bind_with_addrinfo (T socket, struct addrinfo *res)
+{
+  int socket_family;
+
+  assert (socket);
+  assert (res);
+
+  socket_family = SocketCommon_get_socket_family (socket->base);
+
+  if (SocketCommon_try_bind_resolved_addresses (socket->base, res,
+                                                socket_family, Socket_Failed)
+      == 0)
+    {
+      return;
+    }
+
+  SocketCommon_format_bind_error (NULL, 0);
+  RAISE_MODULE_ERROR (Socket_Failed);
+}
+
+/* ==================== Async Bind Operations ==================== */
+
+SocketDNS_Request_T
+Socket_bind_async (SocketDNS_T dns, T socket, const char *host, int port)
+{
+  struct addrinfo hints, *res = NULL;
+
+  assert (dns);
+  assert (socket);
+
+  /* Validate port using common validator for consistent error handling */
+  SocketCommon_validate_port (port, Socket_Failed);
+
+  /* Normalize wildcard addresses to NULL - use existing utility */
+  host = SocketCommon_normalize_wildcard_host (host);
+
+  /* For wildcard bind (NULL host), resolve synchronously and create completed
+   * request */
+  if (host == NULL)
+    {
+      SocketCommon_setup_hints (&hints, SOCKET_STREAM_TYPE, SOCKET_AI_PASSIVE);
+      if (SocketCommon_resolve_address (NULL, port, &hints, &res,
+                                        Socket_Failed, SOCKET_AF_UNSPEC, 1)
+          != 0)
+        RAISE_MODULE_ERROR (Socket_Failed);
+
+      return SocketDNS_create_completed_request (dns, res, port);
+    }
+
+  /* For non-wildcard hosts, use async DNS resolution */
+  {
+    SocketDNS_Request_T req = SocketDNS_resolve (dns, host, port, NULL, NULL);
+    if (socket->base->timeouts.dns_timeout_ms > 0)
+      SocketDNS_request_settimeout (dns, req,
+                                    socket->base->timeouts.dns_timeout_ms);
+    return req;
+  }
+}
+
+void
+Socket_bind_async_cancel (SocketDNS_T dns, SocketDNS_Request_T req)
+{
+  assert (dns);
+
+  if (req)
+    SocketDNS_cancel (dns, req);
+}
+
+/* ==================== Accept Operations ====================
+ * Merged from Socket-accept.c */
+
+/* Forward declarations */
+static int accept_connection (T socket, struct sockaddr_storage *addr,
+                              socklen_t *addrlen);
+static T create_accepted_socket (int newfd, const struct sockaddr_storage *addr,
+                                 socklen_t addrlen);
+
+/* ==================== Accept Helper Functions ==================== */
+
+/**
+ * accept_create_arena - Create arena for accepted socket
+ * @newfd: File descriptor to close on failure
+ *
+ * Returns: New arena
+ * Raises: Socket_Failed on allocation failure
+ */
+static Arena_T
+accept_create_arena (int newfd)
+{
+  volatile Arena_T arena = NULL;
+  int saved_errno;
+
+  TRY arena = Arena_new ();
+  EXCEPT (Arena_Failed)
+  {
+    saved_errno = errno;
+    SAFE_CLOSE (newfd);
+    errno = saved_errno;
+    SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate arena");
+    RAISE_MODULE_ERROR (Socket_Failed);
+  }
+  END_TRY;
+
+  return (Arena_T)arena;
+}
+
+/**
+ * accept_alloc_socket - Allocate socket structure from arena
+ * @arena: Memory arena
+ *
+ * Returns: Allocated socket structure
+ * Raises: Socket_Failed on allocation failure (disposes arena)
+ */
+static T
+accept_alloc_socket (Arena_T arena)
+{
+  T newsocket = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__,
+                              __LINE__);
+  if (!newsocket)
+    {
+      Arena_dispose (&arena);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket structure");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  return newsocket;
+}
+
+/**
+ * accept_alloc_base - Allocate base structure from arena
+ * @arena: Memory arena
+ *
+ * Returns: Allocated base structure
+ * Raises: Socket_Failed on allocation failure (disposes arena)
+ */
+static SocketBase_T
+accept_alloc_base (Arena_T arena)
+{
+  SocketBase_T base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T),
+                                    __FILE__, __LINE__);
+  if (!base)
+    {
+      Arena_dispose (&arena);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base structure");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  return base;
+}
+
+/**
+ * accept_infer_socket_type - Get SO_TYPE from accepted socket
+ * @newfd: File descriptor
+ * @arena: Arena for cleanup on failure
+ *
+ * Returns: Socket type (SOCK_STREAM, etc.)
+ * Raises: Socket_Failed on getsockopt failure
+ */
+static int
+accept_infer_socket_type (int newfd, Arena_T arena)
+{
+  int type_opt;
+  socklen_t opt_len = sizeof (type_opt);
+
+  if (getsockopt (newfd, SOL_SOCKET, SO_TYPE, &type_opt, &opt_len) < 0)
+    {
+      int saved_errno = errno;
+      Arena_dispose (&arena);
+      SAFE_CLOSE (newfd);
+      errno = saved_errno;
+      SOCKET_ERROR_MSG ("Failed to get SO_TYPE: %s", strerror (saved_errno));
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  return type_opt;
+}
+
+/**
+ * accept_init_socket - Initialize accepted socket structure
+ * @newsocket: Socket to initialize
+ * @base: Base to attach
+ * @arena: Memory arena
+ * @newfd: File descriptor
+ * @addr: Peer address
+ * @addrlen: Address length
+ * @type_opt: Socket type from SO_TYPE
+ *
+ * Initializes all socket fields and increments live count.
+ */
+static void
+accept_init_socket (T newsocket, SocketBase_T base, Arena_T arena, int newfd,
+                    const struct sockaddr_storage *addr, socklen_t addrlen,
+                    int type_opt)
+{
+  int domain = ((const struct sockaddr *)addr)->sa_family;
+
+  newsocket->base = base;
+  base->arena = arena;
+  base->fd = newfd;
+
+  SocketCommon_init_base (base, newfd, domain, type_opt, 0, Socket_Failed);
+
+  memcpy (&base->remote_addr, addr, addrlen);
+  base->remote_addrlen = addrlen;
+  base->remoteaddr = NULL;
+  base->remoteport = 0;
+  base->localaddr = NULL;
+  base->localport = 0;
+
+#ifdef SOCKET_HAS_TLS
+  socket_init_tls_fields (newsocket);
+#endif
+
+  socket_live_increment ();
+}
+
+/* ==================== Accept Connection ==================== */
+
+/**
+ * accept_connection - Accept a new connection
+ * @socket: Listening socket
+ * @addr: Output address structure
+ * @addrlen: Input/output address length
+ *
+ * Returns: New file descriptor or -1 on EAGAIN/EWOULDBLOCK
+ * Raises: Socket_Failed on other errors
+ *
+ * All accepted sockets have close-on-exec flag set by default.
+ */
+static int
+accept_connection (T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
+{
+  int newfd;
+
+#if SOCKET_HAS_ACCEPT4
+  newfd = accept4 (SocketBase_fd (socket->base), (struct sockaddr *)addr,
+                   addrlen, SOCKET_SOCK_CLOEXEC);
+#else
+  newfd = accept (SocketBase_fd (socket->base), (struct sockaddr *)addr,
+                  addrlen);
+#endif
+
+  if (newfd < 0)
+    {
+      if (socketio_is_wouldblock ())
+        return -1;
+      SOCKET_ERROR_FMT ("Failed to accept connection");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+#if !SOCKET_HAS_ACCEPT4
+  if (SocketCommon_setcloexec (newfd, 1) < 0)
+    {
+      int saved_errno = errno;
+      SAFE_CLOSE (newfd);
+      errno = saved_errno;
+      SOCKET_ERROR_FMT ("Failed to set close-on-exec flag");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+#endif
+
+  return newfd;
+}
+
+/* ==================== Create Accepted Socket ==================== */
+
+/**
+ * create_accepted_socket - Create socket structure for accepted connection
+ * @newfd: Accepted file descriptor
+ * @addr: Peer address
+ * @addrlen: Address length
+ *
+ * Returns: New socket instance
+ * Raises: Socket_Failed on allocation or initialization failure
+ *
+ * Orchestrates arena creation, structure allocation, type inference,
+ * and initialization via focused helper functions.
+ */
+static T
+create_accepted_socket (int newfd, const struct sockaddr_storage *addr,
+                        socklen_t addrlen)
+{
+  Arena_T arena = accept_create_arena (newfd);
+  T newsocket = accept_alloc_socket (arena);
+  SocketBase_T base = accept_alloc_base (arena);
+  int type_opt = accept_infer_socket_type (newfd, arena);
+
+  accept_init_socket (newsocket, base, arena, newfd, addr, addrlen, type_opt);
+
+  return newsocket;
+}
+
+T
+Socket_accept (T socket)
+{
+  struct sockaddr_storage addr;
+  socklen_t addrlen = sizeof (addr);
+  int newfd = -1;
+  T newsocket = NULL;
+
+  assert (socket);
+
+  TRY
+  {
+    newfd = accept_connection (socket, &addr, &addrlen);
+    if (newfd < 0)
+      return NULL;
+
+    newsocket = create_accepted_socket (newfd, &addr, addrlen);
+
+    /* Cache peer info from accepted address (inline - single use) */
+    if (SocketCommon_cache_endpoint (SocketBase_arena (newsocket->base),
+                                     (struct sockaddr *)&addr, addrlen,
+                                     &newsocket->base->remoteaddr,
+                                     &newsocket->base->remoteport)
+        != 0)
+      {
+        newsocket->base->remoteaddr = NULL;
+        newsocket->base->remoteport = 0;
+      }
+
+    SocketCommon_update_local_endpoint (newsocket->base);
+    SocketEvent_emit_accept (
+        SocketBase_fd (newsocket->base), newsocket->base->remoteaddr,
+        newsocket->base->remoteport, newsocket->base->localaddr,
+        newsocket->base->localport);
+
+    return newsocket;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (newfd >= 0)
+      SAFE_CLOSE (newfd);
+    /* Assume create_accepted_socket handles partial cleanup */
+    RERAISE;
+  }
+  END_TRY;
+  /* Unreachable due to returns inside TRY or RERAISE in EXCEPT */
+  return NULL;
+}
+
+/* ==================== Pair Operations ====================
+ * Merged from Socket-pair.c */
+
+/**
+ * SocketPair_new - Create a pair of connected Unix domain sockets
+ * @type: Socket type (SOCK_STREAM or SOCK_DGRAM)
+ * @socket1: Output - first socket of the pair
+ * @socket2: Output - second socket of the pair
+ * Raises: Socket_Failed on error
+ * Thread-safe: Yes (creates new sockets)
+ * Note: Creates two connected Unix domain sockets for IPC.
+ * Both sockets are ready to use - no bind/connect needed.
+ * Typically used for parent-child or thread communication.
+ * Only supports AF_UNIX (Unix domain sockets).
+ */
+void
+SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
+{
+  int sv[2];
+  Socket_T sock1 = NULL;
+  Socket_T sock2 = NULL;
+  Arena_T arena1 = NULL;
+  Arena_T arena2 = NULL;
+
+  assert (socket1);
+  assert (socket2);
+
+  if (type != SOCK_STREAM && type != SOCK_DGRAM)
+    {
+      SOCKET_ERROR_MSG ("Invalid socket type for socketpair: %d (must be "
+                        "SOCK_STREAM or SOCK_DGRAM)",
+                        type);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+#if SOCKET_HAS_SOCK_CLOEXEC
+  if (socketpair (AF_UNIX, type | SOCKET_SOCK_CLOEXEC, 0, sv) < 0)
+#else
+  if (socketpair (AF_UNIX, type, 0, sv) < 0)
+#endif
+    {
+      SOCKET_ERROR_FMT ("Failed to create socket pair (type=%d)", type);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+#if !SOCKET_HAS_SOCK_CLOEXEC
+  /* Fallback: Set CLOEXEC on both fds */
+  SocketCommon_set_cloexec_fd (sv[0], true, Socket_Failed);
+  SocketCommon_set_cloexec_fd (sv[1], true, Socket_Failed);
+#endif
+
+  TRY
+    {
+      /* Create arenas for both sockets */
+      arena1 = Arena_new ();
+      if (!arena1)
+        {
+          SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+
+      arena2 = Arena_new ();
+      if (!arena2)
+        {
+          Arena_dispose (&arena1);
+          SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+
+      /* Allocate socket structures from arenas */
+      sock1 = Arena_calloc (arena1, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
+      if (!sock1)
+        {
+          Arena_dispose (&arena1);
+          SOCKET_ERROR_MSG (SOCKET_ENOMEM
+                            ": Cannot allocate socket1 structure for pair");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+
+      sock1->base = Arena_calloc (arena1, 1, sizeof (struct SocketBase_T),
+                                  __FILE__, __LINE__);
+      if (!sock1->base)
+        {
+          Arena_dispose (&arena1);
+          sock1 = NULL; /* Prevent double cleanup in outer handler */
+          SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base for socket1");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+
+      sock1->base->arena = arena1;
+      arena1 = NULL; /* Transfer ownership */
+
+      SocketCommon_init_base (sock1->base, sv[0], AF_UNIX, type, 0, Socket_Failed);
+
+      sock2 = Arena_calloc (arena2, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
+      if (!sock2)
+        {
+          SocketCommon_free_base (&sock1->base);
+          sock1 = NULL;
+          sock2 = NULL; /* Prevent double cleanup in outer handler */
+          SOCKET_ERROR_MSG (SOCKET_ENOMEM
+                            ": Cannot allocate socket2 structure for pair");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+
+      sock2->base = Arena_calloc (arena2, 1, sizeof (struct SocketBase_T),
+                                  __FILE__, __LINE__);
+      if (!sock2->base)
+        {
+          SocketCommon_free_base (&sock1->base);
+          Arena_dispose (&arena2);
+          sock1 = NULL;
+          sock2 = NULL; /* Prevent double cleanup in outer handler */
+          arena2 = NULL;
+          SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base for socket2");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+
+      sock2->base->arena = arena2;
+      arena2 = NULL; /* Transfer ownership */
+
+      SocketCommon_init_base (sock2->base, sv[1], AF_UNIX, type, 0, Socket_Failed);
+
+      /* Mark as connected - peer info can be updated via getpeername if needed */
+      sock1->base->remoteaddr = NULL;
+      sock2->base->remoteaddr = NULL;
+
+      *socket1 = sock1;
+      *socket2 = sock2;
+      sock1 = NULL;
+      sock2 = NULL; /* Transfer ownership */
+    }
+  EXCEPT (Socket_Failed)
+    {
+      // Cleanup on error - reverse acquisition order: sock2 then sock1 then arenas.
+      // Handles partial allocations where arenas may or may not be transferred.
+      /* Cleanup sock2 (later acquired) */
+      if (sock2)
+        {
+#ifdef SOCKET_HAS_TLS
+          if (sock2->tls_ssl)
+            {
+              SSL_free ((SSL *)sock2->tls_ssl);
+              sock2->tls_ssl = NULL;
+            }
+            /* Add other stream-specific cleanup here if needed */
+#endif
+          SocketCommon_free_base (&sock2->base);
+          socket_live_decrement ();
+          sock2 = NULL;
+        }
+      else if (sv[1] >= 0)
+        {
+          SAFE_CLOSE (sv[1]);
+        }
+
+      /* Cleanup sock1 */
+      if (sock1)
+        {
+#ifdef SOCKET_HAS_TLS
+          if (sock1->tls_ssl)
+            {
+              SSL_free ((SSL *)sock1->tls_ssl);
+              sock1->tls_ssl = NULL;
+            }
+            /* Add other stream-specific cleanup here if needed */
+#endif
+          SocketCommon_free_base (&sock1->base);
+          socket_live_decrement ();
+          sock1 = NULL;
+        }
+      else if (sv[0] >= 0)
+        {
+          SAFE_CLOSE (sv[0]);
+        }
+
+      if (arena1)
+        Arena_dispose (&arena1);
+      if (arena2)
+        Arena_dispose (&arena2);
+
+      RERAISE;
+    }
+  END_TRY;
+}
+
+int
+Socket_getpeerpid (const Socket_T socket)
+{
+  assert (socket);
+
+#ifdef SO_PEERCRED
+  struct ucred cred;
+  socklen_t len = sizeof (cred);
+
+  if (getsockopt (SocketBase_fd (socket->base), SOL_SOCKET,
+                  SO_PEERCRED, &cred, &len)
+      == 0)
+    {
+      return cred.pid;
+    }
+#endif
+
+  return -1;
+}
+
+int
+Socket_getpeeruid (const Socket_T socket)
+{
+  assert (socket);
+
+#ifdef SO_PEERCRED
+  struct ucred cred;
+  socklen_t len = sizeof (cred);
+
+  if (getsockopt (SocketBase_fd (socket->base), SOL_SOCKET,
+                  SO_PEERCRED, &cred, &len)
+      == 0)
+    {
+      return cred.uid;
+    }
+#endif
+
+  return -1;
+}
+
+int
+Socket_getpeergid (const Socket_T socket)
+{
+  assert (socket);
+
+#ifdef SO_PEERCRED
+  struct ucred cred;
+  socklen_t len = sizeof (cred);
+
+  if (getsockopt (SocketBase_fd (socket->base), SOL_SOCKET,
+                  SO_PEERCRED, &cred, &len)
+      == 0)
+    {
+      return cred.gid;
+    }
+#endif
+
+  return -1;
+}
+
+#undef T

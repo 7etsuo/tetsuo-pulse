@@ -82,49 +82,17 @@ set(LIB_SOURCES
     src/core/SocketTimer-internal.c
     src/core/SocketTimer-heap.c
     
-    # Socket core
-     src/socket/Socket.c
-     src/socket/Socket-all.c
-     src/socket/Socket-state.c
-     src/socket/Socket-accept.c
-     src/socket/Socket-pair.c
-    src/socket/Socket-bind.c
+    # Socket core (consolidated)
+    src/socket/Socket.c
     src/socket/Socket-connect.c
-    src/socket/Socket-connect-async.c
-    src/socket/Socket-connect-poll.c
-    src/socket/Socket-connect-util.c
     src/socket/Socket-iov.c
-    src/socket/Socket-iov-all.c
-    src/socket/Socket-sendfile.c
     src/socket/Socket-options.c
-    src/socket/Socket-options-keepalive.c
-    src/socket/Socket-options-tcp.c
-     src/socket/SocketDgram.c
-     src/socket/SocketDgram-bind.c
-     src/socket/SocketDgram-iov.c
-     src/socket/SocketDgram-options.c
-     src/socket/SocketDgram-state.c
+    src/socket/SocketDgram.c
     src/socket/SocketBuf.c
-    src/socket/SocketBuf-ptr.c
-    src/socket/SocketBuf-reserve.c
     src/socket/SocketCommon.c
-    src/socket/SocketCommon-hints.c
-    src/socket/SocketCommon-resolve.c
-    src/socket/SocketCommon-utils.c
-    src/socket/SocketCommon-cache.c
-    src/socket/SocketCommon-validate.c
-    src/socket/SocketCommon-multicast.c
-    src/socket/SocketCommon-options.c
-    src/socket/SocketCommon-iov.c
-    src/socket/SocketCommon-bind.c
-     src/socket/SocketAsync.c
-     src/socket/SocketAsync-request.c
-     src/socket/SocketAsync-backend.c
-     src/socket/SocketAsync-iouring.c
-     src/socket/SocketAsync-kqueue.c
+    src/socket/SocketCommon-net.c
+    src/socket/SocketAsync.c
     src/socket/SocketIO.c
-    src/socket/SocketIO-tls.c
-    src/socket/SocketIO-tls-iov.c
     src/socket/SocketUnix.c
     
     # DNS module - split files
