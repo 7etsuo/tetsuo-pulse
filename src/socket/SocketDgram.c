@@ -751,14 +751,7 @@ SocketDgram_sendvall (T socket, const struct iovec *iov, int iovcnt)
   assert (iovcnt <= IOV_MAX);
 
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
-
-  iov_copy = calloc ((size_t)iovcnt, sizeof (struct iovec));
-  if (!iov_copy)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate iovec copy");
-      RAISE_MODULE_ERROR (SocketDgram_Failed);
-    }
-  memcpy (iov_copy, iov, (size_t)iovcnt * sizeof (struct iovec));
+  iov_copy = SocketCommon_alloc_iov_copy (iov, iovcnt, SocketDgram_Failed);
 
   TRY while (total_sent < total_len)
   {
@@ -800,14 +793,7 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
   assert (iovcnt <= IOV_MAX);
 
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
-
-  iov_copy = calloc ((size_t)iovcnt, sizeof (struct iovec));
-  if (!iov_copy)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate iovec copy");
-      RAISE_MODULE_ERROR (SocketDgram_Failed);
-    }
-  memcpy (iov_copy, iov, (size_t)iovcnt * sizeof (struct iovec));
+  iov_copy = SocketCommon_alloc_iov_copy (iov, iovcnt, SocketDgram_Failed);
 
   TRY while (total_received < total_len)
   {

@@ -450,15 +450,7 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
   assert (iovcnt <= IOV_MAX);
 
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
-
-  /* Allocate working copy for SocketCommon_advance_iov */
-  iov_copy = calloc ((size_t)iovcnt, sizeof (struct iovec));
-  if (!iov_copy)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate iovec copy");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-  memcpy (iov_copy, iov, (size_t)iovcnt * sizeof (struct iovec));
+  iov_copy = SocketCommon_alloc_iov_copy (iov, iovcnt, Socket_Failed);
 
   TRY while (total_received < total_len)
   {
