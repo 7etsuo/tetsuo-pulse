@@ -4,40 +4,882 @@
  * Part of the Socket Library
  * Following C Interfaces and Implementations patterns
  *
- * This file contains the public API implementation for the Arena allocator.
- * Internal helper functions are delegated to Arena-alloc.c and Arena-chunk.c.
+ * An arena (also called a memory pool or region) is a memory management
+ * technique where allocations are made from a large chunk of memory.
+ * All allocations in an arena can be freed at once by disposing the arena.
+ *
+ * Features:
+ * - Fast allocation (no per-allocation overhead)
+ * - No memory fragmentation within the arena
+ * - Simple cleanup - dispose entire arena at once
+ * - Thread-safe chunk management with mutex protection
+ *
+ * Thread Safety:
+ * - All operations fully thread-safe with per-arena and global mutex protection
+ * - Multiple threads can safely allocate from the same arena concurrently
+ * - Each arena has its own mutex protecting allocation state
+ * - Global free chunk cache protected by separate mutex
  */
 
 #include <assert.h>
+#include <errno.h>
+#include <limits.h>
 #include <pthread.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "core/Arena-private.h"
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
+#include "core/SocketError.h"
 
-/* Thread-local error buffer - exported for use by Arena-alloc.c/Arena-chunk.c */
+#define T Arena_T
+
+/* ==================== Internal Structures ==================== */
+
+/**
+ * ChunkHeader - Header for memory chunks in the arena
+ *
+ * Each chunk stores a linked list pointer and allocation state.
+ * chunk_size tracks actual usable size for proper reuse.
+ */
+struct ChunkHeader
+{
+  struct ChunkHeader *prev;
+  char *avail;
+  char *limit;
+  size_t chunk_size;
+};
+
+/**
+ * header - Union for proper memory alignment
+ *
+ * Ensures all allocations are aligned for any data type.
+ */
+union header
+{
+  struct ChunkHeader b;
+  union align a;
+};
+
+/**
+ * Arena structure - Main arena instance
+ *
+ * Contains allocation state and per-arena mutex for thread safety.
+ */
+struct T
+{
+  struct ChunkHeader *prev;
+  char *avail;
+  char *limit;
+  pthread_mutex_t mutex;
+};
+
+/* ==================== Thread-Local Storage ==================== */
+
+/* Thread-local error buffer for detailed error messages */
 #ifdef _WIN32
-__declspec (thread) char arena_error_buf[ARENA_ERROR_BUFSIZE];
+static __declspec (thread) char arena_error_buf[ARENA_ERROR_BUFSIZE];
 #else
-__thread char arena_error_buf[ARENA_ERROR_BUFSIZE];
+static __thread char arena_error_buf[ARENA_ERROR_BUFSIZE];
 #endif
+
+/* Thread-local exception for detailed error messages
+ * Each thread gets its own exception instance, preventing race conditions
+ * when multiple threads raise the same exception type simultaneously. */
+#ifdef _WIN32
+static __declspec (thread) Except_T Arena_DetailedException;
+#else
+static __thread Except_T Arena_DetailedException;
+#endif
+
+/* ==================== Global State ==================== */
 
 /* Arena exception definition */
 const Except_T Arena_Failed = { &Arena_Failed, "Arena operation failed" };
 
-/* Thread-local exception for detailed error messages
- * This is a COPY of the base exception with thread-local reason string.
- * Each thread gets its own exception instance, preventing race conditions
- * when multiple threads raise the same exception type simultaneously. */
-#ifdef _WIN32
-__declspec (thread) Except_T Arena_DetailedException;
-#else
-__thread Except_T Arena_DetailedException;
-#endif
+/* Global free chunk cache for efficient memory reuse */
+static struct ChunkHeader *freechunks = NULL;
+static int nfree = 0;
+static pthread_mutex_t arena_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* Macros are defined in Arena-private.h to avoid duplication */
+/* ==================== Error Macros ==================== */
+
+#define ARENA_ERROR_MSG(fmt, ...)                                             \
+  snprintf (arena_error_buf, ARENA_ERROR_BUFSIZE, fmt, ##__VA_ARGS__)
+#define ARENA_ERROR_FMT(fmt, ...)                                             \
+  snprintf (arena_error_buf, ARENA_ERROR_BUFSIZE, fmt " (errno: %d - %s)",    \
+            ##__VA_ARGS__, errno, Socket_safe_strerror (errno))
+#define RAISE_ARENA_ERROR(base_exception)                                     \
+  do                                                                          \
+    {                                                                         \
+      Arena_DetailedException = (base_exception);                             \
+      Arena_DetailedException.reason = arena_error_buf;                       \
+      RAISE (Arena_DetailedException);                                        \
+    }                                                                         \
+  while (0)
+
+/* ==================== Validation Macros ==================== */
+
+#define ARENA_CHECK_OVERFLOW_ADD(a, b)                                        \
+  (((a) > SIZE_MAX - (b)) ? ARENA_VALIDATION_FAILURE                          \
+                          : ARENA_VALIDATION_SUCCESS)
+#define ARENA_CHECK_OVERFLOW_MUL(a, b)                                        \
+  (((a) != 0 && (b) > SIZE_MAX / (a)) ? ARENA_VALIDATION_FAILURE              \
+                                      : ARENA_VALIDATION_SUCCESS)
+#define ARENA_VALID_PTR_ARITH(ptr, offset, max)                               \
+  (((uintptr_t)(ptr) <= UINTPTR_MAX - (offset))                               \
+   && ((uintptr_t)(ptr) + (offset) <= (uintptr_t)(max)))
+
+/* ==================== Forward Declarations ==================== */
+
+/* Chunk management */
+static int arena_reuse_free_chunk (struct ChunkHeader **ptr_out,
+                                   char **limit_out);
+static size_t arena_calculate_chunk_size (size_t min_size);
+static size_t arena_validate_chunk_size (size_t chunk_size);
+static int arena_allocate_new_chunk (size_t total_size,
+                                     struct ChunkHeader **ptr_out,
+                                     char **limit_out);
+static void arena_link_chunk (T arena, struct ChunkHeader *ptr, char *limit);
+static int arena_allocate_chunk (T arena, size_t min_size);
+static void arena_return_chunk_to_pool (struct ChunkHeader *chunk);
+static int arena_process_chunk (T arena);
+static void arena_clear_all_chunks (T arena);
+static void arena_verify_initial_state (T arena);
+
+/* Allocation helpers */
+static size_t arena_get_alignment (void);
+static int arena_check_size_overflow (size_t nbytes, size_t alignment);
+static size_t arena_calculate_aligned_bytes (size_t nbytes, size_t alignment);
+static size_t arena_calculate_final_size (size_t aligned_bytes,
+                                          size_t alignment);
+static int arena_validate_allocation_size (size_t size);
+static size_t arena_calculate_aligned_size (size_t nbytes);
+static size_t arena_prepare_allocation (size_t nbytes);
+static void arena_validate_calloc_overflow (size_t count, size_t nbytes);
+static void arena_validate_calloc_size (size_t total);
+static void arena_zero_memory (void *ptr, size_t total);
+static int arena_has_space (T arena, size_t aligned_size);
+static int arena_ensure_space (T arena, size_t aligned_size);
+static void *arena_perform_allocation (T arena, size_t aligned_size);
+static T arena_allocate_structure (void);
+static int arena_initialize_mutex (T arena);
+static void arena_initialize_state (T arena);
+static void arena_ensure_allocation_space (T arena, size_t aligned_size,
+                                           size_t nbytes);
+static void *arena_execute_allocation (T arena, size_t aligned_size,
+                                       size_t nbytes);
+
+/* ================================================================
+ * CHUNK MANAGEMENT IMPLEMENTATION
+ * ================================================================ */
+
+/**
+ * chunk_calculate_limit - Calculate chunk limit from header and size
+ * @ptr: Chunk header pointer
+ * @total_size: Total chunk size including header
+ * Returns: Pointer to end of chunk
+ * Thread-safe: Yes
+ */
+static char *
+chunk_calculate_limit (struct ChunkHeader *ptr, size_t total_size)
+{
+  return (char *)ptr + total_size;
+}
+
+/**
+ * chunk_get_from_cache_unlocked - Get chunk from cache (caller holds mutex)
+ * @ptr_out: Output pointer for chunk header
+ * @limit_out: Output pointer for chunk limit
+ * Returns: ARENA_CHUNK_REUSED if found, ARENA_CHUNK_NOT_REUSED otherwise
+ * Thread-safe: No (caller must hold arena_mutex)
+ */
+static int
+chunk_get_from_cache_unlocked (struct ChunkHeader **ptr_out, char **limit_out)
+{
+  struct ChunkHeader *ptr;
+  size_t total_size;
+
+  if ((ptr = freechunks) == NULL)
+    return ARENA_CHUNK_NOT_REUSED;
+
+  freechunks = freechunks->prev;
+  nfree--;
+  *ptr_out = ptr;
+
+  total_size = sizeof (union header) + ptr->chunk_size;
+  *limit_out = chunk_calculate_limit (ptr, total_size);
+
+  return ARENA_CHUNK_REUSED;
+}
+
+/**
+ * chunk_add_to_cache_unlocked - Add chunk to cache (caller holds mutex)
+ * @chunk: Chunk to add
+ * Returns: 1 if added to cache, 0 if cache full
+ * Thread-safe: No (caller must hold arena_mutex)
+ */
+static int
+chunk_add_to_cache_unlocked (struct ChunkHeader *chunk)
+{
+  if (nfree >= ARENA_MAX_FREE_CHUNKS)
+    return 0;
+
+  chunk->prev = freechunks;
+  freechunks = chunk;
+  nfree++;
+  return 1;
+}
+
+/**
+ * chunk_validate_pointer - Validate pointer arithmetic for chunk
+ * @ptr: Allocated chunk pointer
+ * @total_size: Total size of allocation
+ * Returns: 1 if valid, 0 if overflow would occur
+ * Thread-safe: Yes
+ */
+static int
+chunk_validate_pointer (struct ChunkHeader *ptr, size_t total_size)
+{
+  return ARENA_VALID_PTR_ARITH (ptr, total_size, (void *)UINTPTR_MAX);
+}
+
+/**
+ * chunk_init_metadata - Initialize chunk metadata
+ * @ptr: Chunk header to initialize
+ * @chunk_size: Usable size (excluding header)
+ * Thread-safe: Yes
+ */
+static void
+chunk_init_metadata (struct ChunkHeader *ptr, size_t chunk_size)
+{
+  ptr->chunk_size = chunk_size;
+}
+
+/**
+ * arena_reuse_free_chunk - Try to get a chunk from the free chunk pool
+ * @ptr_out: Output pointer for chunk header
+ * @limit_out: Output pointer for chunk limit
+ *
+ * Returns: ARENA_CHUNK_REUSED if chunk was reused,
+ *          ARENA_CHUNK_NOT_REUSED otherwise
+ * Thread-safe: Yes (uses global arena_mutex)
+ *
+ * Attempts to retrieve a previously freed chunk from the global cache
+ * for reuse, avoiding the overhead of malloc().
+ */
+static int
+arena_reuse_free_chunk (struct ChunkHeader **ptr_out, char **limit_out)
+{
+  int result;
+
+  pthread_mutex_lock (&arena_mutex);
+  result = chunk_get_from_cache_unlocked (ptr_out, limit_out);
+  pthread_mutex_unlock (&arena_mutex);
+
+  return result;
+}
+
+/**
+ * arena_calculate_chunk_size - Calculate size for new chunk allocation
+ * @min_size: Minimum size required
+ *
+ * Returns: Chunk size to allocate (at least ARENA_CHUNK_SIZE)
+ * Thread-safe: Yes
+ *
+ * Returns the larger of ARENA_CHUNK_SIZE and min_size to ensure
+ * chunks are at least the default size for efficiency.
+ */
+static size_t
+arena_calculate_chunk_size (size_t min_size)
+{
+  return (ARENA_CHUNK_SIZE < min_size) ? min_size : ARENA_CHUNK_SIZE;
+}
+
+/**
+ * arena_validate_chunk_size - Validate chunk size won't cause overflow
+ * @chunk_size: Requested chunk size
+ *
+ * Returns: Total size including header, or 0 on overflow/invalid
+ * Thread-safe: Yes
+ *
+ * Validates that adding the header size won't overflow and that
+ * the total doesn't exceed the maximum allocation size.
+ */
+static size_t
+arena_validate_chunk_size (size_t chunk_size)
+{
+  size_t total_size;
+
+  if (ARENA_CHECK_OVERFLOW_ADD (sizeof (union header), chunk_size)
+      == ARENA_VALIDATION_FAILURE)
+    return 0;
+
+  total_size = sizeof (union header) + chunk_size;
+
+  if (total_size > ARENA_MAX_ALLOC_SIZE)
+    return 0;
+
+  return total_size;
+}
+
+/**
+ * arena_allocate_new_chunk - Allocate a new chunk from system memory
+ * @total_size: Total size including header
+ * @ptr_out: Output pointer for chunk header
+ * @limit_out: Output pointer for chunk limit
+ *
+ * Returns: ARENA_SUCCESS on success, ARENA_FAILURE on failure
+ * Thread-safe: Yes
+ *
+ * Allocates a new chunk from the system heap and validates
+ * pointer arithmetic to prevent overflow issues.
+ */
+static int
+arena_allocate_new_chunk (size_t total_size, struct ChunkHeader **ptr_out,
+                          char **limit_out)
+{
+  struct ChunkHeader *ptr;
+
+  ptr = malloc (total_size);
+  if (ptr == NULL)
+    {
+      ARENA_ERROR_MSG ("Cannot allocate new chunk: %zu bytes", total_size);
+      return ARENA_FAILURE;
+    }
+
+  if (!chunk_validate_pointer (ptr, total_size))
+    {
+      free (ptr);
+      ARENA_ERROR_MSG ("Invalid pointer arithmetic for chunk allocation");
+      return ARENA_FAILURE;
+    }
+
+  chunk_init_metadata (ptr, total_size - sizeof (union header));
+  *ptr_out = ptr;
+  *limit_out = chunk_calculate_limit (ptr, total_size);
+
+  return ARENA_SUCCESS;
+}
+
+/**
+ * arena_link_chunk - Link a chunk into the arena structure
+ * @arena: Arena to link chunk into
+ * @ptr: Chunk header to link
+ * @limit: Chunk limit pointer
+ *
+ * Thread-safe: No (must be called with arena->mutex held)
+ *
+ * Saves current arena state into the chunk header and updates
+ * the arena to use the new chunk for allocations.
+ */
+static void
+arena_link_chunk (T arena, struct ChunkHeader *ptr, char *limit)
+{
+  ptr->prev = arena->prev;
+  ptr->avail = arena->avail;
+  ptr->limit = arena->limit;
+
+  arena->avail = (char *)((union header *)ptr + 1);
+  arena->limit = limit;
+  arena->prev = ptr;
+}
+
+/**
+ * arena_try_allocate_fresh_chunk - Try to allocate a fresh chunk
+ * @min_size: Minimum size needed
+ * @ptr_out: Output pointer for chunk header
+ * @limit_out: Output pointer for chunk limit
+ *
+ * Returns: ARENA_SUCCESS on success, ARENA_FAILURE on failure
+ * Thread-safe: Yes
+ *
+ * Calculates appropriate chunk size, validates it, and allocates
+ * a new chunk from system memory.
+ */
+static int
+arena_try_allocate_fresh_chunk (size_t min_size, struct ChunkHeader **ptr_out,
+                                char **limit_out)
+{
+  size_t chunk_size;
+  size_t total_size;
+
+  chunk_size = arena_calculate_chunk_size (min_size);
+  total_size = arena_validate_chunk_size (chunk_size);
+
+  if (total_size == 0)
+    {
+      ARENA_ERROR_MSG ("Invalid chunk size calculation: %zu", chunk_size);
+      return ARENA_FAILURE;
+    }
+
+  return arena_allocate_new_chunk (total_size, ptr_out, limit_out);
+}
+
+/**
+ * arena_allocate_chunk - Allocate a new chunk for the arena
+ * @arena: Arena needing new chunk
+ * @min_size: Minimum size needed in chunk
+ *
+ * Returns: ARENA_SUCCESS on success, ARENA_FAILURE on failure
+ * Thread-safe: No (must be called with arena->mutex held)
+ *
+ * First attempts to reuse a cached chunk, falling back to fresh
+ * allocation if the cache is empty.
+ */
+static int
+arena_allocate_chunk (T arena, size_t min_size)
+{
+  struct ChunkHeader *ptr;
+  char *limit;
+
+  /* Try cache first */
+  if (arena_reuse_free_chunk (&ptr, &limit) == ARENA_CHUNK_REUSED)
+    {
+      arena_link_chunk (arena, ptr, limit);
+      return ARENA_SUCCESS;
+    }
+
+  /* Allocate fresh chunk */
+  if (arena_try_allocate_fresh_chunk (min_size, &ptr, &limit) != ARENA_SUCCESS)
+    return ARENA_FAILURE;
+
+  arena_link_chunk (arena, ptr, limit);
+  return ARENA_SUCCESS;
+}
+
+/**
+ * arena_return_chunk_to_pool - Return chunk to global free pool or free it
+ * @chunk: Chunk to return
+ *
+ * Thread-safe: Yes (uses global arena_mutex)
+ *
+ * Adds the chunk to the free cache for reuse. If the cache is full,
+ * the chunk is freed back to the system.
+ */
+static void
+arena_return_chunk_to_pool (struct ChunkHeader *chunk)
+{
+  int added;
+
+  assert (chunk);
+
+  pthread_mutex_lock (&arena_mutex);
+  added = chunk_add_to_cache_unlocked (chunk);
+  pthread_mutex_unlock (&arena_mutex);
+
+  if (!added)
+    free (chunk);
+}
+
+/**
+ * arena_process_chunk - Process and remove one chunk from arena
+ * @arena: Arena to process chunk from
+ *
+ * Returns: ARENA_VALIDATION_SUCCESS if chunk was processed,
+ *          ARENA_VALIDATION_FAILURE if no more chunks
+ * Thread-safe: No (must be called with arena->mutex held)
+ *
+ * Removes the most recently allocated chunk and restores the
+ * arena state to the previous chunk.
+ */
+static int
+arena_process_chunk (T arena)
+{
+  struct ChunkHeader *chunk_to_process;
+  struct ChunkHeader saved_state;
+
+  if (arena->prev == NULL)
+    return ARENA_VALIDATION_FAILURE;
+
+  chunk_to_process = arena->prev;
+  saved_state = *chunk_to_process;
+
+  arena->prev = saved_state.prev;
+  arena->avail = saved_state.avail;
+  arena->limit = saved_state.limit;
+
+  arena_return_chunk_to_pool (chunk_to_process);
+  return ARENA_VALIDATION_SUCCESS;
+}
+
+/**
+ * arena_clear_all_chunks - Clear all chunks from arena
+ * @arena: Arena to clear
+ *
+ * Thread-safe: No (must be called with arena->mutex held)
+ *
+ * Iteratively processes and removes all chunks, returning them
+ * to the free pool or freeing them.
+ */
+static void
+arena_clear_all_chunks (T arena)
+{
+  while (arena_process_chunk (arena) == ARENA_VALIDATION_SUCCESS)
+    ;
+}
+
+/**
+ * arena_verify_initial_state - Verify arena is in initial empty state
+ * @arena: Arena to verify
+ *
+ * Thread-safe: No (must be called with arena->mutex held)
+ *
+ * Asserts that the arena has been properly cleared to its initial
+ * state with no allocated chunks.
+ */
+static void
+arena_verify_initial_state (T arena)
+{
+  assert (arena->prev == NULL);
+  assert (arena->avail == NULL);
+  assert (arena->limit == NULL);
+}
+
+/* ================================================================
+ * ALLOCATION HELPERS IMPLEMENTATION
+ * ================================================================ */
+
+/**
+ * arena_get_alignment - Get alignment size for memory allocations
+ * Returns: Alignment size in bytes (guaranteed to be at least 1)
+ * Thread-safe: Yes
+ */
+static size_t
+arena_get_alignment (void)
+{
+  size_t alignment = ARENA_ALIGNMENT_SIZE;
+  return (alignment == 0) ? 1 : alignment;
+}
+
+/**
+ * arena_check_size_overflow - Check if size calculation would overflow
+ * @nbytes: Base size
+ * @alignment: Alignment requirement
+ * Returns: Non-zero if overflow, zero otherwise
+ * Thread-safe: Yes
+ */
+static int
+arena_check_size_overflow (size_t nbytes, size_t alignment)
+{
+  return ARENA_CHECK_OVERFLOW_ADD (nbytes, alignment - 1);
+}
+
+/**
+ * arena_calculate_aligned_bytes - Calculate number of aligned units needed
+ * @nbytes: Requested size
+ * @alignment: Alignment requirement
+ * Returns: Number of aligned units, or 0 on overflow
+ * Thread-safe: Yes
+ */
+static size_t
+arena_calculate_aligned_bytes (size_t nbytes, size_t alignment)
+{
+  size_t sum;
+
+  if (arena_check_size_overflow (nbytes, alignment)
+      == ARENA_VALIDATION_FAILURE)
+    return 0;
+
+  sum = nbytes + alignment - 1;
+  return sum / alignment;
+}
+
+/**
+ * arena_calculate_final_size - Calculate final aligned size
+ * @aligned_bytes: Number of aligned units
+ * @alignment: Alignment requirement
+ * Returns: Final aligned size, or 0 on overflow
+ * Thread-safe: Yes
+ */
+static size_t
+arena_calculate_final_size (size_t aligned_bytes, size_t alignment)
+{
+  if (ARENA_CHECK_OVERFLOW_MUL (aligned_bytes, alignment)
+      == ARENA_VALIDATION_FAILURE)
+    return 0;
+
+  return aligned_bytes * alignment;
+}
+
+/**
+ * arena_validate_allocation_size - Validate allocation size meets requirements
+ * @size: Size to validate
+ * Returns: ARENA_SIZE_VALID if size is acceptable, ARENA_SIZE_INVALID otherwise
+ * Thread-safe: Yes
+ */
+static int
+arena_validate_allocation_size (size_t size)
+{
+  return (size > 0 && size <= ARENA_MAX_ALLOC_SIZE) ? ARENA_SIZE_VALID
+                                                    : ARENA_SIZE_INVALID;
+}
+
+/**
+ * arena_calculate_aligned_size - Calculate properly aligned allocation size
+ * @nbytes: Requested allocation size
+ * Returns: Aligned size, or 0 on overflow/underflow/invalid size
+ * Thread-safe: Yes
+ */
+static size_t
+arena_calculate_aligned_size (size_t nbytes)
+{
+  size_t alignment;
+  size_t aligned_bytes;
+  size_t final_size;
+
+  /* Validate input size */
+  if (arena_validate_allocation_size (nbytes) == ARENA_SIZE_INVALID)
+    return 0;
+
+  /* Get alignment requirement */
+  alignment = arena_get_alignment ();
+
+  /* Calculate aligned byte count */
+  aligned_bytes = arena_calculate_aligned_bytes (nbytes, alignment);
+  if (aligned_bytes == 0)
+    return 0;
+
+  /* Calculate final aligned size */
+  final_size = arena_calculate_final_size (aligned_bytes, alignment);
+  if (final_size == 0)
+    return 0;
+
+  /* Final validation of aligned size */
+  if (arena_validate_allocation_size (final_size) == ARENA_SIZE_INVALID)
+    return 0;
+
+  return final_size;
+}
+
+/**
+ * arena_prepare_allocation - Prepare allocation by calculating aligned size
+ * @nbytes: Number of bytes requested
+ * Returns: Aligned size for allocation, or 0 on error
+ * Thread-safe: Yes
+ */
+static size_t
+arena_prepare_allocation (size_t nbytes)
+{
+  size_t aligned_size;
+
+  aligned_size = arena_calculate_aligned_size (nbytes);
+  if (aligned_size == 0)
+    {
+      ARENA_ERROR_MSG (
+          "Invalid allocation size: %zu bytes (alignment/overflow error)",
+          nbytes);
+      return 0;
+    }
+
+  return aligned_size;
+}
+
+/**
+ * arena_validate_calloc_overflow - Validate calloc parameters for overflow
+ * @count: Number of elements
+ * @nbytes: Size of each element
+ * Raises: Arena_Failed if overflow detected
+ */
+static void
+arena_validate_calloc_overflow (size_t count, size_t nbytes)
+{
+  if (ARENA_CHECK_OVERFLOW_MUL (count, nbytes) == ARENA_VALIDATION_FAILURE)
+    {
+      ARENA_ERROR_MSG ("calloc overflow: count=%zu, nbytes=%zu", count,
+                       nbytes);
+      RAISE_ARENA_ERROR (Arena_Failed);
+    }
+}
+
+/**
+ * arena_validate_calloc_size - Validate calloc total size
+ * @total: Total size to validate
+ * Raises: Arena_Failed if size exceeds maximum
+ */
+static void
+arena_validate_calloc_size (size_t total)
+{
+  if (total > ARENA_MAX_ALLOC_SIZE)
+    {
+      ARENA_ERROR_MSG ("calloc size exceeds maximum: %zu", total);
+      RAISE_ARENA_ERROR (Arena_Failed);
+    }
+}
+
+/**
+ * arena_zero_memory - Zero allocated memory
+ * @ptr: Pointer to memory
+ * @total: Size to zero
+ */
+static void
+arena_zero_memory (void *ptr, size_t total)
+{
+  memset (ptr, 0, total);
+}
+
+/**
+ * arena_has_space - Check if current chunk has enough space
+ * @arena: Arena to check
+ * @aligned_size: Required aligned size
+ * Returns: ARENA_VALIDATION_SUCCESS if space available,
+ *          ARENA_VALIDATION_FAILURE otherwise
+ * Thread-safe: Must be called with arena->mutex held
+ */
+static int
+arena_has_space (T arena, size_t aligned_size)
+{
+  if (arena->avail == NULL || arena->limit == NULL)
+    return ARENA_VALIDATION_FAILURE;
+
+  return ((size_t)(arena->limit - arena->avail) >= aligned_size)
+             ? ARENA_VALIDATION_SUCCESS
+             : ARENA_VALIDATION_FAILURE;
+}
+
+/**
+ * arena_ensure_space - Ensure arena has enough space for allocation
+ * @arena: Arena needing space
+ * @aligned_size: Required aligned size
+ * Returns: ARENA_SUCCESS on success, ARENA_FAILURE on failure
+ * Thread-safe: Must be called with arena->mutex held
+ */
+static int
+arena_ensure_space (T arena, size_t aligned_size)
+{
+  while (arena_has_space (arena, aligned_size) == ARENA_VALIDATION_FAILURE)
+    {
+      if (arena_allocate_chunk (arena, aligned_size) != ARENA_SUCCESS)
+        return ARENA_FAILURE;
+    }
+  return ARENA_SUCCESS;
+}
+
+/**
+ * arena_perform_allocation - Perform the actual memory allocation
+ * @arena: Arena to allocate from
+ * @aligned_size: Aligned size to allocate
+ * Returns: Pointer to allocated memory
+ * Thread-safe: Must be called with arena->mutex held and validated state
+ */
+static void *
+arena_perform_allocation (T arena, size_t aligned_size)
+{
+  void *result = arena->avail;
+  arena->avail += aligned_size;
+  return result;
+}
+
+/**
+ * arena_allocate_structure - Allocate and initialize arena structure
+ * Returns: Pointer to allocated arena structure, or NULL on failure
+ * Thread-safe: Yes
+ */
+static T
+arena_allocate_structure (void)
+{
+  T arena;
+
+  arena = malloc (sizeof (*arena));
+  if (arena == NULL)
+    {
+      ARENA_ERROR_MSG (ARENA_ENOMEM ": Cannot allocate arena structure");
+      return NULL;
+    }
+
+  return arena;
+}
+
+/**
+ * arena_initialize_mutex - Initialize arena mutex
+ * @arena: Arena structure to initialize
+ * Returns: ARENA_SUCCESS on success, ARENA_FAILURE on failure
+ * Thread-safe: Yes
+ */
+static int
+arena_initialize_mutex (T arena)
+{
+  if (pthread_mutex_init (&arena->mutex, NULL) != 0)
+    {
+      ARENA_ERROR_MSG ("Failed to initialize arena mutex");
+      return ARENA_FAILURE;
+    }
+
+  return ARENA_SUCCESS;
+}
+
+/**
+ * arena_initialize_state - Initialize arena state to empty
+ * @arena: Arena structure to initialize
+ * Thread-safe: Yes
+ */
+static void
+arena_initialize_state (T arena)
+{
+  arena->prev = NULL;
+  arena->avail = NULL;
+  arena->limit = NULL;
+}
+
+/**
+ * arena_ensure_allocation_space - Ensure arena has space for allocation
+ * @arena: Arena to check
+ * @aligned_size: Required aligned size
+ * @nbytes: Original requested size (for error messages)
+ * Raises: Arena_Failed if space cannot be ensured
+ * Thread-safe: Must be called with arena->mutex held
+ */
+static void
+arena_ensure_allocation_space (T arena, size_t aligned_size, size_t nbytes)
+{
+  if (arena_ensure_space (arena, aligned_size) != ARENA_SUCCESS)
+    {
+      ARENA_ERROR_MSG ("Failed to ensure space for %zu-byte allocation",
+                       nbytes);
+      RAISE_ARENA_ERROR (Arena_Failed);
+    }
+}
+
+/**
+ * arena_execute_allocation - Execute the allocation under mutex protection
+ * @arena: Arena to allocate from
+ * @aligned_size: Aligned size to allocate
+ * @nbytes: Original requested size (for error messages)
+ * Returns: Pointer to allocated memory, or NULL on failure
+ * Raises: Arena_Failed if space cannot be ensured
+ * Thread-safe: Yes (acquires arena mutex internally)
+ *
+ * Acquires mutex, ensures space, performs allocation, releases mutex.
+ * On exception, mutex is released before exception propagates.
+ */
+static void *
+arena_execute_allocation (T arena, size_t aligned_size, size_t nbytes)
+{
+  /* Pointer must be volatile (not pointed-to value) for longjmp safety */
+  void *volatile result = NULL;
+
+  pthread_mutex_lock (&arena->mutex);
+
+  TRY
+  {
+    arena_ensure_allocation_space (arena, aligned_size, nbytes);
+    result = arena_perform_allocation (arena, aligned_size);
+  }
+  FINALLY
+  {
+    pthread_mutex_unlock (&arena->mutex);
+  }
+  END_TRY;
+
+  return (void *)result;
+}
+
+/* ================================================================
+ * PUBLIC API IMPLEMENTATION
+ * ================================================================ */
 
 /**
  * Arena_new - Create a new arena instance

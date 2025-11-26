@@ -1,18 +1,18 @@
 /**
- * SocketTimer.c - Public timer API
+ * SocketTimer.c - Timer subsystem with min-heap implementation
  *
  * Part of the Socket Library
  * Following C Interfaces and Implementations patterns
  *
- * This file contains the public API for the timer subsystem.
- * Internal helpers are in SocketTimer-internal.c.
- * Heap implementation is in SocketTimer-heap.c.
+ * This module provides a timer subsystem for scheduling callbacks
+ * using a min-heap data structure for efficient O(log n) operations.
  *
  * FEATURES:
  * - One-shot and repeating timers
  * - Monotonic clock timestamps (immune to wall-clock changes)
- * - Integrated with SocketPoll event loop
- * - Thread-safe operations
+ * - O(log n) insert/delete, O(1) next-timer lookup
+ * - Lazy cancellation (timers marked cancelled, removed when popped)
+ * - Thread-safe operations with mutex protection
  * - Arena-based memory management
  *
  * TIMING PRECISION:
@@ -21,7 +21,7 @@
  * - Timers may fire slightly after their deadline
  *
  * THREAD SAFETY:
- * - All operations are thread-safe
+ * - All public operations are thread-safe
  * - Callbacks execute in the calling thread
  * - Do not call SocketTimer_cancel() from within timer callbacks
  */
@@ -32,25 +32,763 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <time.h>
 
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
-#include "core/SocketTimer-internal.h"
 #include "core/SocketTimer-private.h"
 #include "core/SocketTimer.h"
+
+/* ===========================================================================
+ * Thread-Local Error Handling
+ * ===========================================================================*/
+
+/* Thread-local error buffer */
+#ifdef _WIN32
+__declspec (thread) char sockettimer_error_buf[SOCKET_TIMER_ERROR_BUFSIZE];
+__declspec (thread) Except_T SocketTimer_DetailedException;
+#else
+__thread char sockettimer_error_buf[SOCKET_TIMER_ERROR_BUFSIZE];
+__thread Except_T SocketTimer_DetailedException;
+#endif
 
 /* Timer exception definition */
 const Except_T SocketTimer_Failed
     = { &SocketTimer_Failed, "Timer operation failed" };
 
+/* Error formatting macros */
+#define SOCKETTIMER_ERROR_FMT(fmt, ...)                                       \
+  snprintf (sockettimer_error_buf, SOCKET_TIMER_ERROR_BUFSIZE,                \
+            fmt " (errno: %d - %s)", ##__VA_ARGS__, errno, strerror (errno))
+
+#define SOCKETTIMER_ERROR_MSG(fmt, ...)                                       \
+  snprintf (sockettimer_error_buf, SOCKET_TIMER_ERROR_BUFSIZE, fmt,           \
+            ##__VA_ARGS__)
+
+#define RAISE_SOCKETTIMER_ERROR(base_exception)                               \
+  do                                                                          \
+    {                                                                         \
+      SocketTimer_DetailedException = (base_exception);                       \
+      SocketTimer_DetailedException.reason = sockettimer_error_buf;           \
+      RAISE (SocketTimer_DetailedException);                                  \
+    }                                                                         \
+  while (0)
+
 /* Forward declaration for timer heap getter */
 struct SocketTimer_heap_T *socketpoll_get_timer_heap (SocketPoll_T poll);
 
-/* ============================================================================
- * Internal Timer Creation
- * ============================================================================ */
+/* ===========================================================================
+ * Time Utilities (Static)
+ * ===========================================================================*/
+
+/**
+ * sockettimer_now_ms - Get current monotonic time in milliseconds
+ *
+ * Returns: Current time in milliseconds since arbitrary monotonic epoch
+ * Raises: SocketTimer_Failed if clock_gettime fails
+ * Thread-safe: Yes
+ */
+static int64_t
+sockettimer_now_ms (void)
+{
+  struct timespec ts;
+
+  if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0)
+    {
+      SOCKETTIMER_ERROR_FMT ("Failed to get monotonic time");
+      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+    }
+
+  return (int64_t)ts.tv_sec * SOCKET_MS_PER_SECOND
+         + (int64_t)ts.tv_nsec / SOCKET_NS_PER_MS;
+}
+
+/* ===========================================================================
+ * Validation Helpers (Static)
+ * ===========================================================================*/
+
+/**
+ * sockettimer_validate_heap - Validate heap is available from poll
+ * @poll: Poll instance
+ *
+ * Returns: Heap pointer
+ * Raises: SocketTimer_Failed if heap not available
+ */
+static SocketTimer_heap_T *
+sockettimer_validate_heap (SocketPoll_T poll)
+{
+  SocketTimer_heap_T *heap;
+
+  heap = socketpoll_get_timer_heap (poll);
+  if (!heap)
+    {
+      SOCKETTIMER_ERROR_MSG ("Timer heap not available");
+      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+    }
+
+  return heap;
+}
+
+/**
+ * sockettimer_validate_delay - Validate delay parameter
+ * @delay_ms: Delay in milliseconds
+ *
+ * Raises: SocketTimer_Failed if delay is invalid
+ */
+static void
+sockettimer_validate_delay (int64_t delay_ms)
+{
+  if (delay_ms < 0)
+    {
+      SOCKETTIMER_ERROR_MSG ("Invalid delay: %" PRId64 " (must be >= 0)",
+                            delay_ms);
+      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+    }
+}
+
+/**
+ * sockettimer_validate_interval - Validate interval parameter
+ * @interval_ms: Interval in milliseconds
+ *
+ * Raises: SocketTimer_Failed if interval is invalid
+ */
+static void
+sockettimer_validate_interval (int64_t interval_ms)
+{
+  if (interval_ms < 1)
+    {
+      SOCKETTIMER_ERROR_MSG ("Invalid interval: %" PRId64 " (must be >= 1)",
+                            interval_ms);
+      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+    }
+}
+
+/* ===========================================================================
+ * Timer Allocation and Initialization (Static)
+ * ===========================================================================*/
+
+/**
+ * sockettimer_allocate_timer - Allocate timer structure from arena
+ * @arena: Arena to allocate from
+ *
+ * Returns: Allocated timer structure
+ * Raises: SocketTimer_Failed on allocation failure
+ */
+static struct SocketTimer_T *
+sockettimer_allocate_timer (Arena_T arena)
+{
+  struct SocketTimer_T *timer;
+
+  timer = CALLOC (arena, 1, sizeof (*timer));
+  if (!timer)
+    {
+      SOCKETTIMER_ERROR_MSG ("Failed to allocate timer structure");
+      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+    }
+
+  return timer;
+}
+
+/**
+ * sockettimer_init_timer - Initialize a timer (one-shot or repeating)
+ * @timer: Timer to initialize
+ * @delay_ms: Initial delay in milliseconds
+ * @interval_ms: Interval for repeating (0 for one-shot)
+ * @callback: Callback function
+ * @userdata: User data for callback
+ *
+ * Internal helper that consolidates one-shot and repeating timer init.
+ */
+static void
+sockettimer_init_timer (struct SocketTimer_T *timer, int64_t delay_ms,
+                        int64_t interval_ms, SocketTimerCallback callback,
+                        void *userdata)
+{
+  int64_t now_ms = sockettimer_now_ms ();
+
+  timer->expiry_ms = now_ms + delay_ms;
+  timer->interval_ms = interval_ms;
+  timer->callback = callback;
+  timer->userdata = userdata;
+  timer->cancelled = 0;
+}
+
+/**
+ * sockettimer_init_oneshot - Initialize a one-shot timer
+ * @timer: Timer to initialize
+ * @delay_ms: Delay in milliseconds
+ * @callback: Callback function
+ * @userdata: User data for callback
+ */
+static void
+sockettimer_init_oneshot (struct SocketTimer_T *timer, int64_t delay_ms,
+                          SocketTimerCallback callback, void *userdata)
+{
+  sockettimer_init_timer (timer, delay_ms, 0, callback, userdata);
+}
+
+/**
+ * sockettimer_init_repeating - Initialize a repeating timer
+ * @timer: Timer to initialize
+ * @interval_ms: Interval in milliseconds
+ * @callback: Callback function
+ * @userdata: User data for callback
+ */
+static void
+sockettimer_init_repeating (struct SocketTimer_T *timer, int64_t interval_ms,
+                            SocketTimerCallback callback, void *userdata)
+{
+  sockettimer_init_timer (timer, interval_ms, interval_ms, callback, userdata);
+}
+
+/* ===========================================================================
+ * Heap Index Calculations (Static)
+ * ===========================================================================*/
+
+/**
+ * sockettimer_heap_parent - Get parent index in heap
+ * @index: Current index
+ *
+ * Returns: Parent index
+ */
+static size_t
+sockettimer_heap_parent (size_t index)
+{
+  return (index - 1) / 2;
+}
+
+/**
+ * sockettimer_heap_left_child - Get left child index in heap
+ * @index: Current index
+ *
+ * Returns: Left child index
+ */
+static size_t
+sockettimer_heap_left_child (size_t index)
+{
+  return 2 * index + 1;
+}
+
+/**
+ * sockettimer_heap_right_child - Get right child index in heap
+ * @index: Current index
+ *
+ * Returns: Right child index
+ */
+static size_t
+sockettimer_heap_right_child (size_t index)
+{
+  return 2 * index + 2;
+}
+
+/**
+ * sockettimer_heap_swap - Swap two timers in heap array
+ * @timers: Timer array
+ * @i: First index
+ * @j: Second index
+ */
+static void
+sockettimer_heap_swap (struct SocketTimer_T **timers, size_t i, size_t j)
+{
+  struct SocketTimer_T *temp = timers[i];
+  timers[i] = timers[j];
+  timers[j] = temp;
+}
+
+/* ===========================================================================
+ * Heap Operations (Static)
+ * ===========================================================================*/
+
+/**
+ * sockettimer_heap_sift_up - Restore heap property by moving element up
+ * @timers: Timer array
+ * @index: Starting index
+ */
+static void
+sockettimer_heap_sift_up (struct SocketTimer_T **timers, size_t index)
+{
+  while (index > 0)
+    {
+      size_t parent = sockettimer_heap_parent (index);
+      if (timers[index]->expiry_ms >= timers[parent]->expiry_ms)
+        break;
+      sockettimer_heap_swap (timers, index, parent);
+      index = parent;
+    }
+}
+
+/**
+ * sockettimer_heap_sift_down - Restore heap property by moving element down
+ * @timers: Timer array
+ * @count: Number of elements
+ * @index: Starting index
+ */
+static void
+sockettimer_heap_sift_down (struct SocketTimer_T **timers, size_t count,
+                            size_t index)
+{
+  while (1)
+    {
+      size_t left = sockettimer_heap_left_child (index);
+      size_t right = sockettimer_heap_right_child (index);
+      size_t smallest = index;
+
+      if (left < count
+          && timers[left]->expiry_ms < timers[smallest]->expiry_ms)
+        smallest = left;
+
+      if (right < count
+          && timers[right]->expiry_ms < timers[smallest]->expiry_ms)
+        smallest = right;
+
+      if (smallest == index)
+        break;
+
+      sockettimer_heap_swap (timers, index, smallest);
+      index = smallest;
+    }
+}
+
+/**
+ * sockettimer_heap_resize - Resize heap array to new capacity
+ * @heap: Heap to resize
+ * @new_capacity: New capacity (must be > current count)
+ *
+ * Raises: SocketTimer_Failed on allocation failure
+ */
+static void
+sockettimer_heap_resize (SocketTimer_heap_T *heap, size_t new_capacity)
+{
+  struct SocketTimer_T **new_timers;
+
+  assert (new_capacity > heap->count);
+
+  new_timers = CALLOC (heap->arena, new_capacity, sizeof (*new_timers));
+  if (!new_timers)
+    {
+      SOCKETTIMER_ERROR_MSG ("Failed to resize timer heap array");
+      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+    }
+
+  memcpy (new_timers, heap->timers, heap->count * sizeof (*new_timers));
+  heap->timers = new_timers;
+  heap->capacity = new_capacity;
+}
+
+/**
+ * sockettimer_skip_cancelled - Skip cancelled timers at root of heap
+ * @heap: Timer heap
+ *
+ * Thread-safe: No (caller must hold heap->mutex)
+ */
+static void
+sockettimer_skip_cancelled (SocketTimer_heap_T *heap)
+{
+  while (heap->count > 0 && heap->timers[0]->cancelled)
+    {
+      heap->timers[0] = heap->timers[heap->count - 1];
+      heap->count--;
+
+      if (heap->count > 0)
+        sockettimer_heap_sift_down (heap->timers, heap->count, 0);
+    }
+}
+
+/**
+ * sockettimer_find_in_heap - Find timer in heap and return its index
+ * @heap: Timer heap
+ * @timer: Timer to find
+ *
+ * Returns: Index of timer if found and not cancelled, -1 otherwise
+ * Thread-safe: No (caller must hold heap->mutex)
+ */
+static ssize_t
+sockettimer_find_in_heap (SocketTimer_heap_T *heap,
+                          const struct SocketTimer_T *timer)
+{
+  size_t i;
+
+  for (i = 0; i < heap->count; i++)
+    {
+      if (heap->timers[i] == timer && !heap->timers[i]->cancelled)
+        return (ssize_t)i;
+    }
+
+  return -1;
+}
+
+/**
+ * sockettimer_ensure_capacity - Ensure heap has capacity for new element
+ * @heap: Timer heap
+ *
+ * Raises: SocketTimer_Failed on capacity overflow or allocation failure
+ * Thread-safe: No (caller must hold heap->mutex)
+ */
+static void
+sockettimer_ensure_capacity (SocketTimer_heap_T *heap)
+{
+  size_t new_capacity;
+
+  if (heap->count < heap->capacity)
+    return;
+
+  new_capacity = heap->capacity * SOCKET_TIMER_HEAP_GROWTH_FACTOR;
+  if (new_capacity <= heap->capacity)
+    {
+      SOCKETTIMER_ERROR_MSG ("Timer heap capacity overflow");
+      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+    }
+
+  sockettimer_heap_resize (heap, new_capacity);
+}
+
+/**
+ * sockettimer_assign_id - Assign unique ID to timer
+ * @heap: Timer heap
+ * @timer: Timer to assign ID to
+ *
+ * Thread-safe: No (caller must hold heap->mutex)
+ */
+static void
+sockettimer_assign_id (SocketTimer_heap_T *heap, struct SocketTimer_T *timer)
+{
+  timer->id = heap->next_id++;
+  if (heap->next_id == 0)
+    heap->next_id = 1;
+}
+
+/**
+ * sockettimer_extract_root - Extract root timer from heap
+ * @heap: Timer heap
+ *
+ * Returns: Root timer
+ * Thread-safe: No (caller must hold heap->mutex)
+ */
+static struct SocketTimer_T *
+sockettimer_extract_root (SocketTimer_heap_T *heap)
+{
+  struct SocketTimer_T *result = heap->timers[0];
+
+  heap->timers[0] = heap->timers[heap->count - 1];
+  heap->count--;
+
+  if (heap->count > 0)
+    sockettimer_heap_sift_down (heap->timers, heap->count, 0);
+
+  return result;
+}
+
+/**
+ * sockettimer_handle_expired - Handle a single expired timer
+ * @heap: Timer heap
+ * @timer: Expired timer
+ * @now_ms: Current time
+ *
+ * Returns: 1 if timer was fired, 0 if timer not yet expired
+ * Thread-safe: No (caller should not hold mutex during callback)
+ */
+static int
+sockettimer_handle_expired (SocketTimer_heap_T *heap,
+                            struct SocketTimer_T *timer, int64_t now_ms)
+{
+  SocketTimerCallback callback;
+  void *userdata;
+
+  if (timer->expiry_ms > now_ms)
+    {
+      SocketTimer_heap_push (heap, timer);
+      return 0;
+    }
+
+  callback = timer->callback;
+  userdata = timer->userdata;
+
+  if (timer->interval_ms > 0)
+    {
+      timer->expiry_ms += timer->interval_ms;
+      SocketTimer_heap_push (heap, timer);
+    }
+
+  if (callback)
+    callback (userdata);
+
+  return 1;
+}
+
+/* ===========================================================================
+ * Heap Public API
+ * ===========================================================================*/
+
+/**
+ * SocketTimer_heap_new - Create a new timer heap
+ * @arena: Arena to allocate from
+ *
+ * Returns: New heap instance or NULL on error
+ * Thread-safe: No (heap not yet initialized)
+ */
+SocketTimer_heap_T *
+SocketTimer_heap_new (Arena_T arena)
+{
+  SocketTimer_heap_T *heap;
+
+  if (!arena)
+    return NULL;
+
+  heap = CALLOC (arena, 1, sizeof (*heap));
+  if (!heap)
+    return NULL;
+
+  heap->timers
+      = CALLOC (arena, SOCKET_TIMER_HEAP_INITIAL_CAPACITY, sizeof (*heap->timers));
+  if (!heap->timers)
+    return NULL;
+
+  heap->count = 0;
+  heap->capacity = SOCKET_TIMER_HEAP_INITIAL_CAPACITY;
+  heap->next_id = 1;
+  heap->arena = arena;
+
+  if (pthread_mutex_init (&heap->mutex, NULL) != 0)
+    return NULL;
+
+  return heap;
+}
+
+/**
+ * SocketTimer_heap_free - Free timer heap and all timers
+ * @heap: Heap to free (may be NULL)
+ *
+ * Thread-safe: No (caller must ensure no concurrent access)
+ */
+void
+SocketTimer_heap_free (SocketTimer_heap_T **heap)
+{
+  if (!heap || !*heap)
+    return;
+
+  pthread_mutex_destroy (&(*heap)->mutex);
+  *heap = NULL;
+}
+
+/**
+ * SocketTimer_heap_push - Add timer to heap
+ * @heap: Timer heap
+ * @timer: Timer to add (takes ownership)
+ *
+ * Raises: SocketTimer_Failed on allocation failure
+ * Thread-safe: Yes - uses heap mutex
+ */
+void
+SocketTimer_heap_push (SocketTimer_heap_T *heap, struct SocketTimer_T *timer)
+{
+  assert (heap);
+  assert (timer);
+
+  pthread_mutex_lock (&heap->mutex);
+
+  TRY
+    {
+      sockettimer_ensure_capacity (heap);
+      sockettimer_assign_id (heap, timer);
+
+      heap->timers[heap->count] = timer;
+      heap->count++;
+
+      sockettimer_heap_sift_up (heap->timers, heap->count - 1);
+    }
+  FINALLY
+    {
+      pthread_mutex_unlock (&heap->mutex);
+    }
+  END_TRY;
+}
+
+/**
+ * SocketTimer_heap_pop - Remove and return earliest timer
+ * @heap: Timer heap
+ *
+ * Returns: Earliest timer or NULL if heap empty
+ * Thread-safe: Yes - uses heap mutex
+ */
+struct SocketTimer_T *
+SocketTimer_heap_pop (SocketTimer_heap_T *heap)
+{
+  struct SocketTimer_T *result;
+
+  assert (heap);
+
+  pthread_mutex_lock (&heap->mutex);
+
+  sockettimer_skip_cancelled (heap);
+
+  if (heap->count == 0)
+    {
+      pthread_mutex_unlock (&heap->mutex);
+      return NULL;
+    }
+
+  result = sockettimer_extract_root (heap);
+
+  pthread_mutex_unlock (&heap->mutex);
+  return result;
+}
+
+/**
+ * SocketTimer_heap_peek - Get earliest timer without removing
+ * @heap: Timer heap
+ *
+ * Returns: Earliest timer or NULL if heap empty
+ * Thread-safe: Yes - uses heap mutex
+ */
+struct SocketTimer_T *
+SocketTimer_heap_peek (SocketTimer_heap_T *heap)
+{
+  struct SocketTimer_T *result;
+
+  assert (heap);
+
+  pthread_mutex_lock (&heap->mutex);
+
+  sockettimer_skip_cancelled (heap);
+
+  result = (heap->count > 0) ? heap->timers[0] : NULL;
+
+  pthread_mutex_unlock (&heap->mutex);
+  return result;
+}
+
+/**
+ * SocketTimer_heap_peek_delay - Get milliseconds until next timer expiry
+ * @heap: Timer heap
+ *
+ * Returns: Milliseconds until next timer (>= 0), or -1 if no timers
+ * Thread-safe: Yes - uses heap mutex
+ */
+int64_t
+SocketTimer_heap_peek_delay (const SocketTimer_heap_T *heap)
+{
+  struct SocketTimer_T *timer;
+  int64_t now_ms;
+  int64_t delay_ms;
+
+  assert (heap);
+
+  timer = SocketTimer_heap_peek ((SocketTimer_heap_T *)heap);
+  if (!timer)
+    return -1;
+
+  now_ms = sockettimer_now_ms ();
+  delay_ms = timer->expiry_ms - now_ms;
+
+  return delay_ms > 0 ? delay_ms : 0;
+}
+
+/**
+ * SocketTimer_heap_cancel - Mark timer as cancelled (lazy deletion)
+ * @heap: Timer heap
+ * @timer: Timer to cancel
+ *
+ * Returns: 0 on success, -1 if timer not found
+ * Thread-safe: Yes - uses heap mutex
+ */
+int
+SocketTimer_heap_cancel (SocketTimer_heap_T *heap, struct SocketTimer_T *timer)
+{
+  ssize_t idx;
+
+  assert (heap);
+  assert (timer);
+
+  pthread_mutex_lock (&heap->mutex);
+
+  idx = sockettimer_find_in_heap (heap, timer);
+  if (idx >= 0)
+    heap->timers[idx]->cancelled = 1;
+
+  pthread_mutex_unlock (&heap->mutex);
+  return (idx >= 0) ? 0 : -1;
+}
+
+/**
+ * SocketTimer_heap_remaining - Get milliseconds until timer expiry
+ * @heap: Timer heap
+ * @timer: Timer to query
+ *
+ * Returns: Milliseconds until expiry (>= 0), or -1 if timer not found/cancelled
+ * Thread-safe: Yes - uses heap mutex
+ */
+int64_t
+SocketTimer_heap_remaining (SocketTimer_heap_T *heap,
+                            const struct SocketTimer_T *timer)
+{
+  int64_t now_ms;
+  int64_t remaining;
+  ssize_t idx;
+
+  assert (heap);
+  assert (timer);
+
+  pthread_mutex_lock (&heap->mutex);
+
+  idx = sockettimer_find_in_heap (heap, timer);
+
+  if (idx < 0)
+    {
+      pthread_mutex_unlock (&heap->mutex);
+      return -1;
+    }
+
+  now_ms = sockettimer_now_ms ();
+  remaining = timer->expiry_ms - now_ms;
+
+  pthread_mutex_unlock (&heap->mutex);
+
+  return remaining > 0 ? remaining : 0;
+}
+
+/**
+ * SocketTimer_process_expired - Fire all expired timers and return count
+ * @heap: Timer heap
+ *
+ * Returns: Number of timers that fired
+ * Thread-safe: Yes - uses heap mutex
+ *
+ * Callbacks are invoked outside the mutex to prevent deadlocks.
+ * Repeating timers are rescheduled after firing.
+ */
+int
+SocketTimer_process_expired (SocketTimer_heap_T *heap)
+{
+  int fired_count = 0;
+  int64_t now_ms;
+  struct SocketTimer_T *timer;
+
+  assert (heap);
+
+  now_ms = sockettimer_now_ms ();
+
+  while (1)
+    {
+      timer = SocketTimer_heap_pop (heap);
+      if (!timer)
+        break;
+
+      if (!sockettimer_handle_expired (heap, timer, now_ms))
+        break;
+
+      fired_count++;
+    }
+
+  return fired_count;
+}
+
+/* ===========================================================================
+ * Internal Timer Creation Helper
+ * ===========================================================================*/
 
 /**
  * sockettimer_add_internal - Internal helper to add a timer
@@ -90,9 +828,9 @@ sockettimer_add_internal (SocketPoll_T poll, int64_t delay_ms,
   return timer;
 }
 
-/* ============================================================================
+/* ===========================================================================
  * Public Timer API
- * ============================================================================ */
+ * ===========================================================================*/
 
 /**
  * SocketTimer_add - Add a one-shot timer
