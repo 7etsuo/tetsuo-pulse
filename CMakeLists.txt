@@ -77,6 +77,8 @@ set(LIB_SOURCES
     src/core/Except.c
     src/core/SocketUtil.c
     src/core/SocketTimer.c
+    src/core/SocketRateLimit.c
+    src/core/SocketIPTracker.c
     
     # Socket core (consolidated)
     src/socket/Socket.c
@@ -103,6 +105,7 @@ set(LIB_SOURCES
     src/pool/SocketPool-core.c
     src/pool/SocketPool-connections.c
     src/pool/SocketPool-ops.c
+    src/pool/SocketPool-ratelimit.c
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -152,6 +155,9 @@ set(CORE_HEADERS
     include/core/SocketUtil.h
     include/core/SocketTimer.h
     include/core/SocketTimer-private.h
+    include/core/SocketRateLimit.h
+    include/core/SocketRateLimit-private.h
+    include/core/SocketIPTracker.h
 )
 
 set(SOCKET_HEADERS
@@ -249,6 +255,7 @@ set(TEST_SOURCES
     test_socketpool_tls
     test_happy_eyeballs
     test_reconnect
+    test_ratelimit
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
@@ -268,8 +275,8 @@ add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES})
 
 # Print test configuration
 message(STATUS "Test Suite Configuration:")
-message(STATUS "  Test files: 16")
-message(STATUS "  Total tests: 230+")
+message(STATUS "  Test files: 17")
+message(STATUS "  Total tests: 240+")
 message(STATUS "  Run with: make test (or ctest)")
 
 # Documentation generation (Doxygen)

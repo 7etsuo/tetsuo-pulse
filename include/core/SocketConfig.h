@@ -238,6 +238,40 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /* ============================================================================
+ * Rate Limiting Configuration
+ * ============================================================================ */
+
+/* Default connection rate limit (new connections per second) */
+#ifndef SOCKET_RATELIMIT_DEFAULT_CONN_PER_SEC
+#define SOCKET_RATELIMIT_DEFAULT_CONN_PER_SEC 100
+#endif
+
+/* Default burst capacity for connection rate limiter */
+#ifndef SOCKET_RATELIMIT_DEFAULT_BURST
+#define SOCKET_RATELIMIT_DEFAULT_BURST 50
+#endif
+
+/* Default maximum connections per IP address (0 = unlimited) */
+#ifndef SOCKET_RATELIMIT_DEFAULT_MAX_PER_IP
+#define SOCKET_RATELIMIT_DEFAULT_MAX_PER_IP 10
+#endif
+
+/* Default bandwidth limit in bytes per second (0 = unlimited) */
+#ifndef SOCKET_RATELIMIT_DEFAULT_BANDWIDTH_BPS
+#define SOCKET_RATELIMIT_DEFAULT_BANDWIDTH_BPS 0
+#endif
+
+/* IP tracker hash table size - prime number for good distribution */
+#ifndef SOCKET_IP_TRACKER_HASH_SIZE
+#define SOCKET_IP_TRACKER_HASH_SIZE 1021
+#endif
+
+/* Maximum IP address string length (IPv6 with scope) */
+#ifndef SOCKET_IP_MAX_LEN
+#define SOCKET_IP_MAX_LEN 64
+#endif
+
+/* ============================================================================
  * Logging Configuration
  * ============================================================================ */
 

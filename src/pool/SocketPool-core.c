@@ -240,6 +240,7 @@ SocketPool_connections_initialize_slot (struct Connection *conn)
   conn->hash_next = NULL;
   conn->free_next = NULL;
   conn->reconnect = NULL;
+  conn->tracked_ip = NULL;  /* Per-IP tracking */
 #ifdef SOCKET_HAS_TLS
   conn->tls_ctx = NULL;
   conn->tls_handshake_complete = 0;
@@ -359,8 +360,12 @@ initialize_pool_fields (T pool, Arena_T arena, size_t maxconns, size_t bufsize)
   pool->bufsize = bufsize;
   pool->count = 0;
   pool->arena = arena;
-  pool->dns = NULL;      /* Lazy init on first async connect */
+  pool->dns = NULL;       /* Lazy init on first async connect */
   pool->async_ctx = NULL; /* No pending async connects */
+  
+  /* Rate limiting (disabled by default) */
+  pool->conn_limiter = NULL;
+  pool->ip_tracker = NULL;
 }
 
 /**

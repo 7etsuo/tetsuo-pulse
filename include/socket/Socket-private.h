@@ -3,6 +3,7 @@
 
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
+#include "core/SocketRateLimit.h"  /* For bandwidth limiting */
 #include "socket/SocketCommon-private.h"  /* For SocketBase_T */
 #include "socket/Socket.h"
 
@@ -20,6 +21,9 @@ extern void socket_init_tls_fields(Socket_T sock);
 struct Socket_T
 {
   SocketBase_T base;  /**< Common base with fd, arena, endpoints, timeouts, metrics */
+
+  /* Bandwidth limiting */
+  SocketRateLimit_T bandwidth_limiter;  /**< Rate limiter for bandwidth (NULL if unlimited) */
 
 #ifdef SOCKET_HAS_TLS
   /* TLS-specific fields (retained as stream-only) */

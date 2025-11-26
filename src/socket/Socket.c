@@ -1348,4 +1348,148 @@ Socket_getpeergid (const Socket_T socket)
   return -1;
 }
 
+/* ==================== Bandwidth Limiting ==================== */
+
+void
+Socket_setbandwidth (T socket, size_t bytes_per_sec)
+{
+  assert (socket);
+  assert (socket->base);
+
+  if (bytes_per_sec == 0)
+    {
+      /* Disable bandwidth limiting */
+      if (socket->bandwidth_limiter)
+        {
+          /* Arena-allocated, so just set to NULL - will be freed with arena */
+          socket->bandwidth_limiter = NULL;
+        }
+      return;
+    }
+
+  if (socket->bandwidth_limiter)
+    {
+      /* Reconfigure existing limiter */
+      SocketRateLimit_configure (socket->bandwidth_limiter, bytes_per_sec,
+                                 bytes_per_sec);
+    }
+  else
+    {
+      /* Create new limiter using socket's arena */
+      TRY
+        socket->bandwidth_limiter
+            = SocketRateLimit_new (SocketBase_arena (socket->base),
+                                   bytes_per_sec, bytes_per_sec);
+      EXCEPT (SocketRateLimit_Failed)
+        RAISE_MODULE_ERROR (Socket_Failed);
+      END_TRY;
+    }
+}
+
+size_t
+Socket_getbandwidth (T socket)
+{
+  assert (socket);
+
+  if (!socket->bandwidth_limiter)
+    {
+      return 0; /* Unlimited */
+    }
+
+  return SocketRateLimit_get_rate (socket->bandwidth_limiter);
+}
+
+ssize_t
+Socket_send_limited (T socket, const void *buf, size_t len)
+{
+  size_t allowed;
+
+  assert (socket);
+  assert (buf || len == 0);
+
+  /* If no bandwidth limit, behave like Socket_send */
+  if (!socket->bandwidth_limiter)
+    {
+      return Socket_send (socket, buf, len);
+    }
+
+  /* Try to acquire tokens for the full length */
+  if (SocketRateLimit_try_acquire (socket->bandwidth_limiter, len))
+    {
+      /* Full amount allowed */
+      return Socket_send (socket, buf, len);
+    }
+
+  /* Check how many tokens are available */
+  allowed = SocketRateLimit_available (socket->bandwidth_limiter);
+  if (allowed == 0)
+    {
+      /* Rate limited - return 0 to indicate caller should wait */
+      return 0;
+    }
+
+  /* Send partial amount */
+  if (SocketRateLimit_try_acquire (socket->bandwidth_limiter, allowed))
+    {
+      return Socket_send (socket, buf, allowed);
+    }
+
+  /* Shouldn't reach here, but handle gracefully */
+  return 0;
+}
+
+ssize_t
+Socket_recv_limited (T socket, void *buf, size_t len)
+{
+  ssize_t received;
+  size_t allowed;
+
+  assert (socket);
+  assert (buf || len == 0);
+
+  /* If no bandwidth limit, behave like Socket_recv */
+  if (!socket->bandwidth_limiter)
+    {
+      return Socket_recv (socket, buf, len);
+    }
+
+  /* Check how much we're allowed to receive */
+  allowed = SocketRateLimit_available (socket->bandwidth_limiter);
+  if (allowed == 0)
+    {
+      /* Rate limited - return 0 to indicate caller should wait */
+      return 0;
+    }
+
+  /* Limit receive to allowed amount */
+  if (allowed < len)
+    {
+      len = allowed;
+    }
+
+  /* Receive data */
+  received = Socket_recv (socket, buf, len);
+
+  /* Consume tokens for what we actually received */
+  if (received > 0)
+    {
+      SocketRateLimit_try_acquire (socket->bandwidth_limiter, (size_t)received);
+    }
+
+  return received;
+}
+
+int64_t
+Socket_bandwidth_wait_ms (T socket, size_t bytes)
+{
+  assert (socket);
+
+  if (!socket->bandwidth_limiter)
+    {
+      return 0; /* No limit - immediate */
+    }
+
+  return SocketRateLimit_wait_time_ms (socket->bandwidth_limiter, bytes);
+}
+
 #undef T

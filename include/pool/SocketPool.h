@@ -352,5 +352,121 @@ extern SocketReconnect_T Connection_reconnect (const Connection_T conn);
  */
 extern int Connection_has_reconnect (const Connection_T conn);
 
+/* ============================================================================
+ * Rate Limiting
+ * ============================================================================ */
+
+/**
+ * SocketPool_setconnrate - Set connection rate limit
+ * @pool: Pool instance
+ * @conns_per_sec: Maximum new connections per second (0 to disable)
+ * @burst: Burst capacity (0 for default = conns_per_sec)
+ *
+ * Thread-safe: Yes
+ *
+ * Enables connection rate limiting using token bucket algorithm.
+ * New connections via SocketPool_add() or SocketPool_accept_limited()
+ * will be rejected if rate is exceeded.
+ */
+extern void SocketPool_setconnrate (T pool, int conns_per_sec, int burst);
+
+/**
+ * SocketPool_getconnrate - Get connection rate limit
+ * @pool: Pool instance
+ *
+ * Returns: Connections per second limit (0 if disabled)
+ * Thread-safe: Yes
+ */
+extern int SocketPool_getconnrate (T pool);
+
+/**
+ * SocketPool_setmaxperip - Set maximum connections per IP
+ * @pool: Pool instance
+ * @max_conns: Maximum connections per IP (0 = unlimited)
+ *
+ * Thread-safe: Yes
+ *
+ * Enables per-IP connection limiting to prevent single-source attacks.
+ * New connections from IPs that exceed the limit will be rejected.
+ */
+extern void SocketPool_setmaxperip (T pool, int max_conns);
+
+/**
+ * SocketPool_getmaxperip - Get maximum connections per IP
+ * @pool: Pool instance
+ *
+ * Returns: Maximum connections per IP (0 = unlimited)
+ * Thread-safe: Yes
+ */
+extern int SocketPool_getmaxperip (T pool);
+
+/**
+ * SocketPool_accept_allowed - Check if accepting is allowed
+ * @pool: Pool instance
+ * @client_ip: Client IP address (NULL to skip IP check)
+ *
+ * Returns: 1 if allowed, 0 if rate limited or IP limit reached
+ * Thread-safe: Yes
+ *
+ * Checks both connection rate and per-IP limits.
+ * Does NOT consume rate limit tokens - use SocketPool_accept_limited() for that.
+ */
+extern int SocketPool_accept_allowed (T pool, const char *client_ip);
+
+/**
+ * SocketPool_accept_limited - Rate-limited accept
+ * @pool: Pool instance
+ * @server: Server socket to accept from
+ *
+ * Returns: New socket if allowed, NULL if rate limited or would block
+ * Raises: SocketPool_Failed on actual errors (not rate limiting)
+ * Thread-safe: Yes
+ *
+ * Like Socket_accept() but respects rate limits:
+ * - Checks connection rate limit (if enabled)
+ * - Checks per-IP limit (if enabled)
+ * - Returns NULL without raising if rate limited
+ * - Returns NULL without raising if would block (EAGAIN)
+ *
+ * Note: Caller must add returned socket to pool with SocketPool_add()
+ * and handle the IP tracking themselves, OR use the returned socket directly.
+ */
+extern Socket_T SocketPool_accept_limited (T pool, Socket_T server);
+
+/**
+ * SocketPool_track_ip - Manually track IP for per-IP limiting
+ * @pool: Pool instance
+ * @ip: IP address to track
+ *
+ * Returns: 1 if under limit and tracked, 0 if limit reached
+ * Thread-safe: Yes
+ *
+ * Use when manually managing connections not via SocketPool_accept_limited().
+ * Call SocketPool_release_ip() when connection closes.
+ */
+extern int SocketPool_track_ip (T pool, const char *ip);
+
+/**
+ * SocketPool_release_ip - Release tracked IP when connection closes
+ * @pool: Pool instance
+ * @ip: IP address to release
+ *
+ * Thread-safe: Yes
+ *
+ * Decrements the connection count for the IP address.
+ * Safe to call with NULL or untracked IP.
+ */
+extern void SocketPool_release_ip (T pool, const char *ip);
+
+/**
+ * SocketPool_ip_count - Get connection count for IP
+ * @pool: Pool instance
+ * @ip: IP address to query
+ *
+ * Returns: Number of tracked connections from this IP
+ * Thread-safe: Yes
+ */
+extern int SocketPool_ip_count (T pool, const char *ip);
+
 #undef T
 #endif
