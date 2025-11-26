@@ -280,8 +280,20 @@ SocketPool_connections_reset_slot (Connection_T conn)
 static int
 session_is_expired (SSL_SESSION *sess, time_t now)
 {
-  time_t sess_time = SSL_SESSION_get_time (sess);
-  long sess_timeout = SSL_SESSION_get_timeout (sess);
+  time_t sess_time;
+  long sess_timeout;
+
+  /* Suppress deprecated warnings for SSL_SESSION_get_time/get_timeout
+   * These are deprecated in OpenSSL 3.x but no replacement exists yet */
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+  sess_time = SSL_SESSION_get_time (sess);
+  sess_timeout = SSL_SESSION_get_timeout (sess);
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
   /* Security: Avoid overflow by using subtraction instead of addition.
    * If now < sess_time (clock went backwards), session is not expired. */
