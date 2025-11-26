@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "core/Arena.h"
@@ -664,11 +665,17 @@ TEST (ratelimit_thread_safety)
   Arena_T arena = Arena_new ();
   pthread_t threads[4];
   int i;
+  struct timespec start_ts, end_ts;
+  double elapsed_s;
+  int expected_max;
 
   TRY
     /* Create limiter: 500 tokens/sec, bucket of 50 */
     thread_test_limiter = SocketRateLimit_new (arena, 500, 50);
     thread_acquired_count = 0;
+
+    /* Record start time */
+    clock_gettime (CLOCK_MONOTONIC, &start_ts);
 
     /* Start 4 threads competing for tokens */
     for (i = 0; i < 4; i++)
@@ -682,10 +689,21 @@ TEST (ratelimit_thread_safety)
         pthread_join (threads[i], NULL);
       }
 
+    /* Record end time and compute elapsed seconds */
+    clock_gettime (CLOCK_MONOTONIC, &end_ts);
+    elapsed_s = (double)(end_ts.tv_sec - start_ts.tv_sec)
+                + (double)(end_ts.tv_nsec - start_ts.tv_nsec) / 1e9;
+
     /* Should have acquired some tokens (exact count varies) */
     ASSERT (thread_acquired_count > 0);
-    /* Should not exceed what's possible (~500/sec for 400ms = ~200 + 50 burst) */
-    ASSERT (thread_acquired_count <= 300);
+
+    /* Compute realistic maximum based on actual elapsed time:
+     * allowed = rate * elapsed_seconds + bucket_size
+     * Add 20% margin for measurement granularity and scheduler jitter */
+    expected_max = (int)(500.0 * elapsed_s) + 50;
+    expected_max = (int)(expected_max * 1.20) + 10;
+
+    ASSERT (thread_acquired_count <= expected_max);
   EXCEPT (SocketRateLimit_Failed)
     Arena_dispose (&arena);
     ASSERT (0);
