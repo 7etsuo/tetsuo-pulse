@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  ASAN_OPTIONS: detect_leaks=1:abort_on_error=1:halt_on_error=1
+  # UBSAN_OPTIONS apply globally; ASAN_OPTIONS set per-job (detect_leaks unsupported on macOS)
   UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
 
 jobs:
@@ -39,10 +39,12 @@ jobs:
         working-directory: build
         run: ctest --output-on-failure --parallel $(nproc)
 
-  # Sanitizer builds
+  # Sanitizer builds (Linux)
   sanitizers:
     name: Sanitizers (${{ matrix.sanitizer }})
     runs-on: ubuntu-latest
+    env:
+      ASAN_OPTIONS: detect_leaks=1:abort_on_error=1:halt_on_error=1
     strategy:
       fail-fast: false
       matrix:
@@ -112,7 +114,10 @@ jobs:
   macos-sanitizers:
     name: macOS Sanitizers
     runs-on: macos-latest
-    
+    env:
+      # detect_leaks not supported on macOS
+      ASAN_OPTIONS: abort_on_error=1:halt_on_error=1
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
