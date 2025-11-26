@@ -506,6 +506,7 @@ arena_verify_initial_state (T arena)
   assert (arena->prev == NULL);
   assert (arena->avail == NULL);
   assert (arena->limit == NULL);
+  (void)arena; /* Suppress unused warning when assertions disabled */
 }
 
 /* ================================================================
