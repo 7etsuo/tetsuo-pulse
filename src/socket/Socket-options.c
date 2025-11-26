@@ -144,6 +144,12 @@ Socket_timeouts_setdefaults (const SocketTimeouts_T *timeouts)
 
 /* ==================== Shutdown ==================== */
 
+/**
+ * socket_shutdown_mode_valid - Validate shutdown mode argument
+ * @how: Shutdown mode (SHUT_RD, SHUT_WR, or SHUT_RDWR)
+ *
+ * Returns: Non-zero if valid, 0 if invalid
+ */
 static int
 socket_shutdown_mode_valid (int how)
 {
@@ -172,6 +178,14 @@ Socket_shutdown (T socket, int how)
 /* ==================== Keepalive Operations ====================
  * Moved from Socket-options-keepalive.c for consolidation */
 
+/**
+ * validate_keepalive_parameters - Validate keepalive configuration
+ * @idle: Time before first probe (seconds)
+ * @interval: Interval between probes (seconds)
+ * @count: Number of failed probes before disconnect
+ *
+ * Raises: Socket_Failed if any parameter is <= 0
+ */
 static void
 validate_keepalive_parameters (int idle, int interval, int count)
 {
@@ -184,6 +198,12 @@ validate_keepalive_parameters (int idle, int interval, int count)
     }
 }
 
+/**
+ * enable_socket_keepalive - Enable SO_KEEPALIVE option
+ * @socket: Socket instance
+ *
+ * Raises: Socket_Failed on setsockopt failure
+ */
 static void
 enable_socket_keepalive (T socket)
 {
@@ -191,6 +211,14 @@ enable_socket_keepalive (T socket)
                                SOCKET_SO_KEEPALIVE, 1, Socket_Failed);
 }
 
+/**
+ * set_keepalive_idle_time - Set TCP_KEEPIDLE option
+ * @socket: Socket instance
+ * @idle: Idle time in seconds
+ *
+ * Raises: Socket_Failed on setsockopt failure
+ * Note: No-op on platforms without TCP_KEEPIDLE
+ */
 static void
 set_keepalive_idle_time (T socket, int idle)
 {
@@ -205,6 +233,14 @@ set_keepalive_idle_time (T socket, int idle)
 #endif
 }
 
+/**
+ * set_keepalive_interval - Set TCP_KEEPINTVL option
+ * @socket: Socket instance
+ * @interval: Probe interval in seconds
+ *
+ * Raises: Socket_Failed on setsockopt failure
+ * Note: No-op on platforms without TCP_KEEPINTVL
+ */
 static void
 set_keepalive_interval (T socket, int interval)
 {
@@ -219,6 +255,14 @@ set_keepalive_interval (T socket, int interval)
 #endif
 }
 
+/**
+ * set_keepalive_count - Set TCP_KEEPCNT option
+ * @socket: Socket instance
+ * @count: Number of probes before disconnect
+ *
+ * Raises: Socket_Failed on setsockopt failure
+ * Note: No-op on platforms without TCP_KEEPCNT
+ */
 static void
 set_keepalive_count (T socket, int count)
 {

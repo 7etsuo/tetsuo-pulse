@@ -902,6 +902,62 @@ SocketCommon_resolve_address (const char *host, int port,
   return 0;
 }
 
+/**
+ * copy_addrinfo_address - Copy address from addrinfo node
+ * @dst: Destination node (must be allocated)
+ * @src: Source node
+ *
+ * Returns: 0 on success, -1 on allocation failure
+ */
+static int
+copy_addrinfo_address (struct addrinfo *dst, const struct addrinfo *src)
+{
+  if (src->ai_addr && src->ai_addrlen > 0)
+    {
+      dst->ai_addr = malloc (src->ai_addrlen);
+      if (!dst->ai_addr)
+        return -1;
+      memcpy (dst->ai_addr, src->ai_addr, src->ai_addrlen);
+    }
+  else
+    {
+      dst->ai_addr = NULL;
+      dst->ai_addrlen = 0;
+    }
+  return 0;
+}
+
+/**
+ * copy_addrinfo_canonname - Copy canonical name from addrinfo node
+ * @dst: Destination node (must be allocated)
+ * @src: Source node
+ *
+ * Returns: 0 on success, -1 on allocation failure
+ */
+static int
+copy_addrinfo_canonname (struct addrinfo *dst, const struct addrinfo *src)
+{
+  if (src->ai_canonname)
+    {
+      size_t len = strlen (src->ai_canonname) + 1;
+      dst->ai_canonname = malloc (len);
+      if (!dst->ai_canonname)
+        return -1;
+      memcpy (dst->ai_canonname, src->ai_canonname, len);
+    }
+  else
+    {
+      dst->ai_canonname = NULL;
+    }
+  return 0;
+}
+
+/**
+ * copy_single_addrinfo_node - Copy a single addrinfo node
+ * @src: Source node to copy
+ *
+ * Returns: Newly allocated copy, or NULL on failure
+ */
 static struct addrinfo *
 copy_single_addrinfo_node (const struct addrinfo *src)
 {
@@ -912,38 +968,18 @@ copy_single_addrinfo_node (const struct addrinfo *src)
   memcpy (new_node, src, sizeof (struct addrinfo));
   new_node->ai_next = NULL;
 
-  if (src->ai_addr && src->ai_addrlen > 0)
+  if (copy_addrinfo_address (new_node, src) < 0)
     {
-      new_node->ai_addr = malloc (src->ai_addrlen);
-      if (!new_node->ai_addr)
-        {
-          free (new_node);
-          return NULL;
-        }
-      memcpy (new_node->ai_addr, src->ai_addr, src->ai_addrlen);
-    }
-  else
-    {
-      new_node->ai_addr = NULL;
-      new_node->ai_addrlen = 0;
+      free (new_node);
+      return NULL;
     }
 
-  if (src->ai_canonname)
+  if (copy_addrinfo_canonname (new_node, src) < 0)
     {
-      size_t len = strlen (src->ai_canonname) + 1;
-      new_node->ai_canonname = malloc (len);
-      if (!new_node->ai_canonname)
-        {
-          if (new_node->ai_addr)
-            free (new_node->ai_addr);
-          free (new_node);
-          return NULL;
-        }
-      memcpy (new_node->ai_canonname, src->ai_canonname, len);
-    }
-  else
-    {
-      new_node->ai_canonname = NULL;
+      if (new_node->ai_addr)
+        free (new_node->ai_addr);
+      free (new_node);
+      return NULL;
     }
 
   return new_node;
