@@ -18,8 +18,6 @@
 #include "core/SocketIPTracker.h"
 #include "core/SocketRateLimit.h"
 #include <assert.h>
-#include <errno.h>
-#include <string.h>
 
 #define T SocketPool_T
 
@@ -29,6 +27,24 @@
 
 /** Tokens consumed per connection attempt for rate limiting */
 #define RATELIMIT_TOKENS_PER_ACCEPT 1
+
+/* ============================================================================
+ * Static Helper Functions - IP Address Validation
+ * ============================================================================ */
+
+/**
+ * is_valid_ip_for_tracking - Check if IP is valid for tracking
+ * @ip: IP address string (may be NULL)
+ *
+ * Returns: 1 if IP is valid (non-NULL and non-empty), 0 otherwise
+ *
+ * Centralizes the IP validation pattern used throughout this module.
+ */
+static int
+is_valid_ip_for_tracking (const char *ip)
+{
+  return ip != NULL && ip[0] != '\0';
+}
 
 /* ============================================================================
  * Static Helper Functions - Rate Limiter Management
@@ -58,8 +74,7 @@ static int
 create_rate_limiter_unlocked (T pool, size_t rate, size_t burst)
 {
   TRY
-    pool->conn_limiter
-        = SocketRateLimit_new (pool->arena, rate, burst);
+    pool->conn_limiter = SocketRateLimit_new (pool->arena, rate, burst);
   EXCEPT (SocketRateLimit_Failed)
     return 0;
   END_TRY;
@@ -85,6 +100,21 @@ configure_rate_limiter (T pool, size_t rate, size_t burst)
     }
 
   return create_rate_limiter_unlocked (pool, rate, burst);
+}
+
+/**
+ * sanitize_burst_capacity - Sanitize burst capacity value
+ * @burst: User-provided burst capacity
+ * @rate: Rate value to use as default if burst <= 0
+ *
+ * Returns: Sanitized burst capacity (defaults to rate if invalid)
+ *
+ * If burst is zero or negative, defaults to the rate value.
+ */
+static int
+sanitize_burst_capacity (int burst, int rate)
+{
+  return (burst <= 0) ? rate : burst;
 }
 
 /* ============================================================================
@@ -172,12 +202,13 @@ check_rate_limit_unlocked (const T pool)
 static int
 check_ip_limit_unlocked (const T pool, const char *client_ip)
 {
-  int count, max;
+  int count;
+  int max;
 
   if (!pool->ip_tracker)
     return 1;
 
-  if (!client_ip || !client_ip[0])
+  if (!is_valid_ip_for_tracking (client_ip))
     return 1;
 
   count = SocketIPTracker_count (pool->ip_tracker, client_ip);
@@ -215,10 +246,55 @@ track_client_ip_unlocked (T pool, const char *client_ip)
   if (!pool->ip_tracker)
     return 1;
 
-  if (!client_ip || !client_ip[0])
+  if (!is_valid_ip_for_tracking (client_ip))
     return 1;
 
   return SocketIPTracker_track (pool->ip_tracker, client_ip);
+}
+
+/* ============================================================================
+ * Static Helper Functions - Accept Operations
+ * ============================================================================ */
+
+/**
+ * try_consume_rate_token - Try to consume rate token with mutex
+ * @pool: Connection pool
+ *
+ * Returns: 1 if token consumed, 0 if rate limited
+ *
+ * Acquires mutex, attempts token consumption, releases mutex.
+ */
+static int
+try_consume_rate_token (T pool)
+{
+  int rate_ok;
+
+  pthread_mutex_lock (&pool->mutex);
+  rate_ok = consume_rate_token_unlocked (pool);
+  pthread_mutex_unlock (&pool->mutex);
+
+  return rate_ok;
+}
+
+/**
+ * try_track_client_ip - Try to track client IP with mutex
+ * @pool: Connection pool
+ * @client_ip: Client IP address to track
+ *
+ * Returns: 1 if tracked successfully, 0 if IP limit reached
+ *
+ * Acquires mutex, attempts IP tracking, releases mutex.
+ */
+static int
+try_track_client_ip (T pool, const char *client_ip)
+{
+  int tracked;
+
+  pthread_mutex_lock (&pool->mutex);
+  tracked = track_client_ip_unlocked (pool, client_ip);
+  pthread_mutex_unlock (&pool->mutex);
+
+  return tracked;
 }
 
 /* ============================================================================
@@ -236,31 +312,32 @@ track_client_ip_unlocked (T pool, const char *client_ip)
 void
 SocketPool_setconnrate (T pool, int conns_per_sec, int burst)
 {
-  int safe_burst = burst;
-  int safe_rate = conns_per_sec;
+  int safe_burst;
+  int config_ok;
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
-
-  if (safe_rate <= 0)
+  /* Disable if rate is zero or negative */
+  if (conns_per_sec <= 0)
     {
+      pthread_mutex_lock (&pool->mutex);
       disable_rate_limiter_unlocked (pool);
       pthread_mutex_unlock (&pool->mutex);
       return;
     }
 
-  if (safe_burst <= 0)
-    safe_burst = safe_rate;
+  safe_burst = sanitize_burst_capacity (burst, conns_per_sec);
 
-  if (!configure_rate_limiter (pool, (size_t)safe_rate, (size_t)safe_burst))
+  pthread_mutex_lock (&pool->mutex);
+  config_ok = configure_rate_limiter (pool, (size_t)conns_per_sec,
+                                      (size_t)safe_burst);
+  pthread_mutex_unlock (&pool->mutex);
+
+  if (!config_ok)
     {
-      pthread_mutex_unlock (&pool->mutex);
       SOCKET_ERROR_MSG ("Failed to create connection rate limiter");
       RAISE_POOL_ERROR (SocketPool_Failed);
     }
-
-  pthread_mutex_unlock (&pool->mutex);
 }
 
 /**
@@ -300,25 +377,28 @@ SocketPool_getconnrate (T pool)
 void
 SocketPool_setmaxperip (T pool, int max_conns)
 {
+  int config_ok;
+
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
-
+  /* Disable if max is zero or negative */
   if (max_conns <= 0)
     {
+      pthread_mutex_lock (&pool->mutex);
       disable_ip_tracker_unlocked (pool);
       pthread_mutex_unlock (&pool->mutex);
       return;
     }
 
-  if (!configure_ip_tracker (pool, max_conns))
+  pthread_mutex_lock (&pool->mutex);
+  config_ok = configure_ip_tracker (pool, max_conns);
+  pthread_mutex_unlock (&pool->mutex);
+
+  if (!config_ok)
     {
-      pthread_mutex_unlock (&pool->mutex);
       SOCKET_ERROR_MSG ("Failed to create IP tracker");
       RAISE_POOL_ERROR (SocketPool_Failed);
     }
-
-  pthread_mutex_unlock (&pool->mutex);
 }
 
 /**
@@ -364,10 +444,8 @@ SocketPool_accept_allowed (T pool, const char *client_ip)
   assert (pool);
 
   pthread_mutex_lock (&pool->mutex);
-
   allowed = check_rate_limit_unlocked (pool)
             && check_ip_limit_unlocked (pool, client_ip);
-
   pthread_mutex_unlock (&pool->mutex);
 
   return allowed;
@@ -389,17 +467,12 @@ SocketPool_accept_limited (T pool, Socket_T server)
 {
   Socket_T client;
   const char *client_ip;
-  int rate_ok;
 
   assert (pool);
   assert (server);
 
   /* Check and consume rate token */
-  pthread_mutex_lock (&pool->mutex);
-  rate_ok = consume_rate_token_unlocked (pool);
-  pthread_mutex_unlock (&pool->mutex);
-
-  if (!rate_ok)
+  if (!try_consume_rate_token (pool))
     return NULL;
 
   /* Accept the connection */
@@ -410,16 +483,11 @@ SocketPool_accept_limited (T pool, Socket_T server)
   /* Check per-IP limit and track */
   client_ip = Socket_getpeeraddr (client);
 
-  pthread_mutex_lock (&pool->mutex);
-
-  if (!track_client_ip_unlocked (pool, client_ip))
+  if (!try_track_client_ip (pool, client_ip))
     {
-      pthread_mutex_unlock (&pool->mutex);
       Socket_free (&client);
       return NULL;
     }
-
-  pthread_mutex_unlock (&pool->mutex);
 
   return client;
 }
@@ -443,7 +511,7 @@ SocketPool_track_ip (T pool, const char *ip)
 
   assert (pool);
 
-  if (!ip || !ip[0])
+  if (!is_valid_ip_for_tracking (ip))
     return 1;
 
   pthread_mutex_lock (&pool->mutex);
@@ -465,7 +533,7 @@ SocketPool_release_ip (T pool, const char *ip)
 {
   assert (pool);
 
-  if (!ip || !ip[0])
+  if (!is_valid_ip_for_tracking (ip))
     return;
 
   pthread_mutex_lock (&pool->mutex);
@@ -491,7 +559,7 @@ SocketPool_ip_count (T pool, const char *ip)
 
   assert (pool);
 
-  if (!ip || !ip[0])
+  if (!is_valid_ip_for_tracking (ip))
     return 0;
 
   pthread_mutex_lock (&pool->mutex);

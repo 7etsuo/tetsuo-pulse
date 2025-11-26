@@ -191,7 +191,7 @@ static int
 alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
                 const unsigned char *in, unsigned int inlen, void *arg)
 {
-  (void)ssl;
+  TLS_UNUSED (ssl);
   T ctx = (T)arg;
 
   if (!ctx || !ctx->alpn.protocols || ctx->alpn.count == 0)
@@ -232,26 +232,7 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
  * ============================================================================
  */
 
-/**
- * copy_protocol_to_arena - Copy protocol string to context arena
- * @ctx: Context with arena
- * @proto: Protocol string to copy
- *
- * Returns: Arena-allocated copy
- * Raises: SocketTLS_Failed on allocation failure
- */
-static char *
-copy_protocol_to_arena (T ctx, const char *proto)
-{
-  size_t len = strlen (proto);
-  char *copy = Arena_alloc (ctx->arena, len + 1, __FILE__, __LINE__);
-  if (!copy)
-    {
-      ctx_raise_openssl_error ("Failed to allocate ALPN protocol buffer");
-    }
-  memcpy (copy, proto, len + 1);
-  return copy;
-}
+/* copy_protocol_to_arena removed - use ctx_arena_strdup from private header */
 
 /**
  * build_wire_format - Build ALPN wire format from protocol list
@@ -350,7 +331,8 @@ copy_alpn_protocols (T ctx, const char **protos, size_t count)
       size_t len = strlen (protos[i]);
       if (len == 0 || len > SOCKET_TLS_MAX_ALPN_LEN)
         ctx_raise_openssl_error ("Invalid ALPN protocol length");
-      ctx->alpn.protocols[i] = copy_protocol_to_arena (ctx, protos[i]);
+      ctx->alpn.protocols[i]
+          = ctx_arena_strdup (ctx, protos[i], "Failed to allocate ALPN buffer");
     }
 }
 

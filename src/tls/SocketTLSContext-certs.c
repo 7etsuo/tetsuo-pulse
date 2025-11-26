@@ -144,7 +144,7 @@ find_sni_cert_index (T ctx, const char *hostname)
 static int
 sni_callback (SSL *ssl, int *ad, void *arg)
 {
-  (void)ad;
+  TLS_UNUSED (ad);
   T ctx = (T)arg;
   const char *hostname = SSL_get_servername (ssl, TLSEXT_NAMETYPE_host_name);
 
@@ -205,25 +205,13 @@ expand_sni_capacity (T ctx)
 static char *
 validate_and_copy_hostname (T ctx, const char *hostname)
 {
-  size_t len = strlen (hostname);
-  if (len == 0 || len > SOCKET_TLS_MAX_SNI_LEN)
-    {
-      ctx_raise_openssl_error ("Invalid SNI hostname length");
-    }
-
+  /* tls_validate_hostname checks length internally */
   if (!tls_validate_hostname (hostname))
     {
-      ctx_raise_openssl_error ("Invalid SNI hostname format");
+      ctx_raise_openssl_error ("Invalid SNI hostname format or length");
     }
 
-  char *copy = Arena_alloc (ctx->arena, len + 1, __FILE__, __LINE__);
-  if (!copy)
-    {
-      ctx_raise_openssl_error ("Failed to allocate hostname buffer");
-    }
-
-  memcpy (copy, hostname, len + 1);
-  return copy;
+  return ctx_arena_strdup (ctx, hostname, "Failed to allocate hostname buffer");
 }
 
 /**
@@ -245,27 +233,7 @@ store_sni_hostname (T ctx, const char *hostname)
     }
 }
 
-/**
- * copy_path_to_arena - Copy file path to context arena
- * @ctx: Context with arena
- * @path: Path to copy
- * @error_msg: Error message for allocation failure
- *
- * Returns: Arena-allocated copy of path
- * Raises: SocketTLS_Failed on allocation failure
- */
-static char *
-copy_path_to_arena (T ctx, const char *path, const char *error_msg)
-{
-  size_t len = strlen (path) + 1;
-  char *copy = Arena_alloc (ctx->arena, len, __FILE__, __LINE__);
-  if (!copy)
-    {
-      ctx_raise_openssl_error (error_msg);
-    }
-  memcpy (copy, path, len);
-  return copy;
-}
+/* copy_path_to_arena removed - use ctx_arena_strdup from private header */
 
 /**
  * store_sni_paths - Store cert/key paths in SNI arrays
@@ -277,12 +245,11 @@ static void
 store_sni_paths (T ctx, const char *cert_file, const char *key_file)
 {
   ctx->sni_certs.cert_files[ctx->sni_certs.count]
-      = copy_path_to_arena (ctx, cert_file,
-                            "Failed to allocate certificate path buffer");
+      = ctx_arena_strdup (ctx, cert_file,
+                          "Failed to allocate certificate path buffer");
 
   ctx->sni_certs.key_files[ctx->sni_certs.count]
-      = copy_path_to_arena (ctx, key_file,
-                            "Failed to allocate key path buffer");
+      = ctx_arena_strdup (ctx, key_file, "Failed to allocate key path buffer");
 }
 
 /**

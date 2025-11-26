@@ -217,7 +217,7 @@ SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
 static void
 validate_hostname_length (const char *hostname, size_t len)
 {
-  (void)hostname;
+  TLS_UNUSED (hostname);
   if (len == 0 || len > SOCKET_TLS_MAX_SNI_LEN)
     {
       TLS_ERROR_FMT ("Invalid hostname length: %zu", len);

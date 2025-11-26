@@ -19,10 +19,8 @@
 #include "core/SocketRateLimit.h"
 #include "core/SocketUtil.h"
 #include <assert.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #define T SocketRateLimit_T
 
@@ -33,36 +31,8 @@
 const Except_T SocketRateLimit_Failed
     = { &SocketRateLimit_Failed, "Rate limiter operation failed" };
 
-/* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-__declspec (thread) Except_T SocketRateLimit_DetailedException;
-#else
-__thread Except_T SocketRateLimit_DetailedException;
-#endif
-
-/* ============================================================================
- * Internal Helper Functions - Time Operations
- * ============================================================================ */
-
-/**
- * ratelimit_get_monotonic_ms - Get monotonic timestamp in milliseconds
- *
- * Returns: Current monotonic time in milliseconds, or 0 on failure
- */
-int64_t
-ratelimit_get_monotonic_ms (void)
-{
-  struct timespec ts;
-
-  if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0)
-    {
-      if (clock_gettime (CLOCK_REALTIME, &ts) < 0)
-        return 0;
-    }
-
-  return (int64_t)ts.tv_sec * SOCKET_MS_PER_SECOND
-         + (int64_t)ts.tv_nsec / SOCKET_NS_PER_MS;
-}
+/* Thread-local exception using centralized macro */
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketRateLimit);
 
 /* ============================================================================
  * Internal Helper Functions - Token Calculations
@@ -70,28 +40,33 @@ ratelimit_get_monotonic_ms (void)
 
 /**
  * ratelimit_calculate_tokens_to_add - Calculate tokens from elapsed time
+ * @elapsed_ms: Elapsed time in milliseconds
+ * @tokens_per_sec: Token refill rate
+ *
+ * Returns: Number of tokens to add
  */
-size_t
+static size_t
 ratelimit_calculate_tokens_to_add (int64_t elapsed_ms, size_t tokens_per_sec)
 {
-  /* Use 64-bit math to avoid overflow: (elapsed_ms * tokens_per_sec) / 1000 */
   return (size_t)(((uint64_t)elapsed_ms * tokens_per_sec)
                   / SOCKET_MS_PER_SECOND);
 }
 
 /**
  * ratelimit_calculate_wait_ms - Calculate wait time for needed tokens
+ * @needed: Number of additional tokens needed
+ * @tokens_per_sec: Token refill rate
+ *
+ * Returns: Milliseconds to wait (minimum SOCKET_RATELIMIT_MIN_WAIT_MS)
  */
-int64_t
+static int64_t
 ratelimit_calculate_wait_ms (size_t needed, size_t tokens_per_sec)
 {
   int64_t wait_ms;
 
-  /* Use 64-bit math: (needed * 1000) / tokens_per_sec */
   wait_ms
       = (int64_t)(((uint64_t)needed * SOCKET_MS_PER_SECOND) / tokens_per_sec);
 
-  /* Ensure minimum wait time if any wait is needed */
   if (wait_ms == 0)
     wait_ms = SOCKET_RATELIMIT_MIN_WAIT_MS;
 
@@ -103,10 +78,47 @@ ratelimit_calculate_wait_ms (size_t needed, size_t tokens_per_sec)
  * ============================================================================ */
 
 /**
+ * ratelimit_calculate_elapsed - Calculate elapsed time since last refill
+ * @limiter: Rate limiter instance
+ * @now_ms: Current time in milliseconds
+ *
+ * Returns: Elapsed milliseconds (0 if negative or clock backward)
+ */
+static int64_t
+ratelimit_calculate_elapsed (T limiter, int64_t now_ms)
+{
+  int64_t elapsed_ms;
+
+  assert (limiter);
+  elapsed_ms = now_ms - limiter->last_refill_ms;
+
+  return (elapsed_ms > 0) ? elapsed_ms : 0;
+}
+
+/**
+ * ratelimit_add_tokens_to_bucket - Add calculated tokens to bucket
+ * @limiter: Rate limiter instance
+ * @tokens_to_add: Number of tokens to add
+ * @now_ms: Current timestamp to record
+ */
+static void
+ratelimit_add_tokens_to_bucket (T limiter, size_t tokens_to_add, int64_t now_ms)
+{
+  assert (limiter);
+
+  limiter->tokens += tokens_to_add;
+
+  if (limiter->tokens > limiter->bucket_size)
+    limiter->tokens = limiter->bucket_size;
+
+  limiter->last_refill_ms = now_ms;
+}
+
+/**
  * ratelimit_refill_bucket - Refill bucket based on elapsed time
  * @limiter: Rate limiter instance (caller must hold mutex)
  */
-void
+static void
 ratelimit_refill_bucket (T limiter)
 {
   int64_t now_ms;
@@ -115,22 +127,17 @@ ratelimit_refill_bucket (T limiter)
 
   assert (limiter);
 
-  now_ms = ratelimit_get_monotonic_ms ();
-  elapsed_ms = now_ms - limiter->last_refill_ms;
+  now_ms = Socket_get_monotonic_ms ();
+  elapsed_ms = ratelimit_calculate_elapsed (limiter, now_ms);
 
-  if (elapsed_ms <= 0)
-    return; /* No time elapsed or clock went backwards */
+  if (elapsed_ms == 0)
+    return;
 
   tokens_to_add
       = ratelimit_calculate_tokens_to_add (elapsed_ms, limiter->tokens_per_sec);
 
   if (tokens_to_add > 0)
-    {
-      limiter->tokens += tokens_to_add;
-      if (limiter->tokens > limiter->bucket_size)
-        limiter->tokens = limiter->bucket_size;
-      limiter->last_refill_ms = now_ms;
-    }
+    ratelimit_add_tokens_to_bucket (limiter, tokens_to_add, now_ms);
 }
 
 /* ============================================================================
@@ -139,8 +146,12 @@ ratelimit_refill_bucket (T limiter)
 
 /**
  * ratelimit_init_structure - Initialize limiter structure fields
+ * @limiter: Rate limiter instance to initialize
+ * @tokens_per_sec: Token refill rate
+ * @bucket_size: Maximum bucket capacity
+ * @arena: Arena for allocation (may be NULL)
  */
-void
+static void
 ratelimit_init_structure (T limiter, size_t tokens_per_sec, size_t bucket_size,
                           Arena_T arena)
 {
@@ -149,8 +160,8 @@ ratelimit_init_structure (T limiter, size_t tokens_per_sec, size_t bucket_size,
   memset (limiter, 0, sizeof (*limiter));
   limiter->tokens_per_sec = tokens_per_sec;
   limiter->bucket_size = bucket_size;
-  limiter->tokens = bucket_size; /* Start with full bucket */
-  limiter->last_refill_ms = ratelimit_get_monotonic_ms ();
+  limiter->tokens = bucket_size;
+  limiter->last_refill_ms = Socket_get_monotonic_ms ();
   limiter->arena = arena;
   limiter->initialized = SOCKET_RATELIMIT_MUTEX_UNINITIALIZED;
 }
@@ -197,7 +208,39 @@ ratelimit_free_on_error (T limiter, Arena_T arena)
 {
   if (!arena && limiter)
     free (limiter);
-  /* Arena-allocated memory freed when arena disposed */
+}
+
+/* ============================================================================
+ * Internal Helper Functions - Parameter Validation
+ * ============================================================================ */
+
+/**
+ * ratelimit_validate_tokens_per_sec - Validate tokens_per_sec parameter
+ * @tokens_per_sec: Token rate to validate
+ *
+ * Raises: SocketRateLimit_Failed if tokens_per_sec is 0
+ */
+static void
+ratelimit_validate_tokens_per_sec (size_t tokens_per_sec)
+{
+  if (tokens_per_sec == 0)
+    {
+      SOCKET_ERROR_MSG ("tokens_per_sec must be > 0");
+      RAISE_RATELIMIT_ERROR (SocketRateLimit_Failed);
+    }
+}
+
+/**
+ * ratelimit_normalize_bucket_size - Normalize bucket_size parameter
+ * @bucket_size: Input bucket size (0 = use default)
+ * @tokens_per_sec: Token rate to use as default
+ *
+ * Returns: Normalized bucket size
+ */
+static size_t
+ratelimit_normalize_bucket_size (size_t bucket_size, size_t tokens_per_sec)
+{
+  return (bucket_size == 0) ? tokens_per_sec : bucket_size;
 }
 
 /* ============================================================================
@@ -206,24 +249,22 @@ ratelimit_free_on_error (T limiter, Arena_T arena)
 
 /**
  * SocketRateLimit_new - Create a new token bucket rate limiter
+ * @arena: Arena for memory allocation (NULL to use malloc)
+ * @tokens_per_sec: Token refill rate (tokens added per second)
+ * @bucket_size: Maximum bucket capacity (burst limit, 0 = use tokens_per_sec)
+ *
+ * Returns: New rate limiter instance
+ * Raises: SocketRateLimit_Failed on allocation failure or invalid parameters
+ * Thread-safe: Yes - returns new independent instance
  */
 T
 SocketRateLimit_new (Arena_T arena, size_t tokens_per_sec, size_t bucket_size)
 {
   T limiter;
 
-  /* Validate parameters */
-  if (tokens_per_sec == 0)
-    {
-      SOCKET_ERROR_MSG ("tokens_per_sec must be > 0");
-      RAISE_RATELIMIT_ERROR (SocketRateLimit_Failed);
-    }
+  ratelimit_validate_tokens_per_sec (tokens_per_sec);
+  bucket_size = ratelimit_normalize_bucket_size (bucket_size, tokens_per_sec);
 
-  /* Default burst capacity to 1 second of tokens */
-  if (bucket_size == 0)
-    bucket_size = tokens_per_sec;
-
-  /* Allocate structure */
   limiter = ratelimit_allocate (arena);
   if (!limiter)
     {
@@ -231,10 +272,8 @@ SocketRateLimit_new (Arena_T arena, size_t tokens_per_sec, size_t bucket_size)
       RAISE_RATELIMIT_ERROR (SocketRateLimit_Failed);
     }
 
-  /* Initialize structure fields */
   ratelimit_init_structure (limiter, tokens_per_sec, bucket_size, arena);
 
-  /* Initialize mutex */
   if (ratelimit_init_mutex (limiter) != 0)
     {
       ratelimit_free_on_error (limiter, arena);
@@ -247,6 +286,9 @@ SocketRateLimit_new (Arena_T arena, size_t tokens_per_sec, size_t bucket_size)
 
 /**
  * SocketRateLimit_free - Free a rate limiter
+ * @limiter: Pointer to limiter (will be set to NULL)
+ *
+ * Thread-safe: Yes (acquires mutex during cleanup)
  */
 void
 SocketRateLimit_free (T *limiter)
@@ -258,11 +300,9 @@ SocketRateLimit_free (T *limiter)
 
   l = *limiter;
 
-  /* Destroy mutex if initialized */
   if (l->initialized == SOCKET_RATELIMIT_MUTEX_INITIALIZED)
     pthread_mutex_destroy (&l->mutex);
 
-  /* Free memory only if allocated with malloc */
   if (!l->arena)
     free (l);
 
@@ -274,64 +314,114 @@ SocketRateLimit_free (T *limiter)
  * ============================================================================ */
 
 /**
- * SocketRateLimit_try_acquire - Try to consume tokens (non-blocking)
+ * ratelimit_try_consume_tokens - Try to consume tokens from bucket
+ * @limiter: Rate limiter instance (caller must hold mutex)
+ * @tokens: Number of tokens to consume
+ *
+ * Returns: 1 if tokens consumed, 0 if insufficient tokens
  */
-int
-SocketRateLimit_try_acquire (T limiter, size_t tokens)
+static int
+ratelimit_try_consume_tokens (T limiter, size_t tokens)
 {
-  int result = 0;
-
   assert (limiter);
-
-  /* Zero tokens always succeeds */
-  if (tokens == 0)
-    return 1;
-
-  pthread_mutex_lock (&limiter->mutex);
-
-  ratelimit_refill_bucket (limiter);
 
   if (limiter->tokens >= tokens)
     {
       limiter->tokens -= tokens;
-      result = 1;
+      return 1;
     }
+  return 0;
+}
 
+/**
+ * SocketRateLimit_try_acquire - Try to consume tokens (non-blocking)
+ * @limiter: Rate limiter instance
+ * @tokens: Number of tokens to consume
+ *
+ * Returns: 1 if tokens acquired successfully, 0 if rate limited
+ * Thread-safe: Yes - uses internal mutex
+ */
+int
+SocketRateLimit_try_acquire (T limiter, size_t tokens)
+{
+  int result;
+
+  assert (limiter);
+
+  if (tokens == 0)
+    return 1;
+
+  pthread_mutex_lock (&limiter->mutex);
+  ratelimit_refill_bucket (limiter);
+  result = ratelimit_try_consume_tokens (limiter, tokens);
   pthread_mutex_unlock (&limiter->mutex);
+
   return result;
 }
 
 /**
+ * ratelimit_check_impossible_request - Check if request exceeds bucket
+ * @limiter: Rate limiter instance (caller must hold mutex)
+ * @tokens: Number of tokens requested
+ *
+ * Returns: 1 if impossible (tokens > bucket_size), 0 if possible
+ */
+static int
+ratelimit_check_impossible_request (T limiter, size_t tokens)
+{
+  assert (limiter);
+  return (tokens > limiter->bucket_size) ? 1 : 0;
+}
+
+/**
+ * ratelimit_compute_wait_time - Compute wait time for needed tokens
+ * @limiter: Rate limiter instance (caller must hold mutex)
+ * @tokens: Number of tokens needed
+ *
+ * Returns: Wait time in milliseconds (0 if tokens available)
+ */
+static int64_t
+ratelimit_compute_wait_time (T limiter, size_t tokens)
+{
+  size_t needed;
+
+  assert (limiter);
+
+  if (limiter->tokens >= tokens)
+    return 0;
+
+  needed = tokens - limiter->tokens;
+  return ratelimit_calculate_wait_ms (needed, limiter->tokens_per_sec);
+}
+
+/**
  * SocketRateLimit_wait_time_ms - Calculate wait time for tokens
+ * @limiter: Rate limiter instance
+ * @tokens: Number of tokens needed
+ *
+ * Returns: Milliseconds to wait, 0 if immediate, -1 if impossible
+ * Thread-safe: Yes - uses internal mutex
  */
 int64_t
 SocketRateLimit_wait_time_ms (T limiter, size_t tokens)
 {
-  int64_t wait_ms = 0;
+  int64_t wait_ms;
 
   assert (limiter);
 
-  /* Zero tokens - no wait needed */
   if (tokens == 0)
     return 0;
 
   pthread_mutex_lock (&limiter->mutex);
 
-  /* Check if request is impossible */
-  if (tokens > limiter->bucket_size)
+  if (ratelimit_check_impossible_request (limiter, tokens))
     {
       pthread_mutex_unlock (&limiter->mutex);
       return SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
     }
 
   ratelimit_refill_bucket (limiter);
-
-  /* Calculate wait time if insufficient tokens */
-  if (limiter->tokens < tokens)
-    {
-      size_t needed = tokens - limiter->tokens;
-      wait_ms = ratelimit_calculate_wait_ms (needed, limiter->tokens_per_sec);
-    }
+  wait_ms = ratelimit_compute_wait_time (limiter, tokens);
 
   pthread_mutex_unlock (&limiter->mutex);
   return wait_ms;
@@ -339,6 +429,10 @@ SocketRateLimit_wait_time_ms (T limiter, size_t tokens)
 
 /**
  * SocketRateLimit_available - Get current available tokens
+ * @limiter: Rate limiter instance
+ *
+ * Returns: Number of tokens currently available
+ * Thread-safe: Yes - uses internal mutex
  */
 size_t
 SocketRateLimit_available (T limiter)
@@ -361,6 +455,9 @@ SocketRateLimit_available (T limiter)
 
 /**
  * SocketRateLimit_reset - Reset limiter to full bucket
+ * @limiter: Rate limiter instance
+ *
+ * Thread-safe: Yes - uses internal mutex
  */
 void
 SocketRateLimit_reset (T limiter)
@@ -369,12 +466,49 @@ SocketRateLimit_reset (T limiter)
 
   pthread_mutex_lock (&limiter->mutex);
   limiter->tokens = limiter->bucket_size;
-  limiter->last_refill_ms = ratelimit_get_monotonic_ms ();
+  limiter->last_refill_ms = Socket_get_monotonic_ms ();
   pthread_mutex_unlock (&limiter->mutex);
 }
 
 /**
+ * ratelimit_apply_rate_config - Apply new rate configuration
+ * @limiter: Rate limiter instance (caller must hold mutex)
+ * @tokens_per_sec: New rate (0 to keep current)
+ */
+static void
+ratelimit_apply_rate_config (T limiter, size_t tokens_per_sec)
+{
+  assert (limiter);
+
+  if (tokens_per_sec > 0)
+    limiter->tokens_per_sec = tokens_per_sec;
+}
+
+/**
+ * ratelimit_apply_bucket_config - Apply new bucket size configuration
+ * @limiter: Rate limiter instance (caller must hold mutex)
+ * @bucket_size: New bucket size (0 to keep current)
+ */
+static void
+ratelimit_apply_bucket_config (T limiter, size_t bucket_size)
+{
+  assert (limiter);
+
+  if (bucket_size > 0)
+    {
+      limiter->bucket_size = bucket_size;
+      if (limiter->tokens > bucket_size)
+        limiter->tokens = bucket_size;
+    }
+}
+
+/**
  * SocketRateLimit_configure - Reconfigure rate limiter
+ * @limiter: Rate limiter instance
+ * @tokens_per_sec: New token refill rate (0 to keep current)
+ * @bucket_size: New bucket capacity (0 to keep current)
+ *
+ * Thread-safe: Yes - uses internal mutex
  */
 void
 SocketRateLimit_configure (T limiter, size_t tokens_per_sec, size_t bucket_size)
@@ -382,23 +516,17 @@ SocketRateLimit_configure (T limiter, size_t tokens_per_sec, size_t bucket_size)
   assert (limiter);
 
   pthread_mutex_lock (&limiter->mutex);
-
-  if (tokens_per_sec > 0)
-    limiter->tokens_per_sec = tokens_per_sec;
-
-  if (bucket_size > 0)
-    {
-      limiter->bucket_size = bucket_size;
-      /* Cap current tokens to new bucket size */
-      if (limiter->tokens > bucket_size)
-        limiter->tokens = bucket_size;
-    }
-
+  ratelimit_apply_rate_config (limiter, tokens_per_sec);
+  ratelimit_apply_bucket_config (limiter, bucket_size);
   pthread_mutex_unlock (&limiter->mutex);
 }
 
 /**
  * SocketRateLimit_get_rate - Get current tokens per second rate
+ * @limiter: Rate limiter instance
+ *
+ * Returns: Tokens per second rate
+ * Thread-safe: Yes - uses internal mutex
  */
 size_t
 SocketRateLimit_get_rate (T limiter)
@@ -416,6 +544,10 @@ SocketRateLimit_get_rate (T limiter)
 
 /**
  * SocketRateLimit_get_bucket_size - Get current bucket size
+ * @limiter: Rate limiter instance
+ *
+ * Returns: Maximum bucket capacity
+ * Thread-safe: Yes - uses internal mutex
  */
 size_t
 SocketRateLimit_get_bucket_size (T limiter)
