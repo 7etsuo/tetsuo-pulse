@@ -45,6 +45,23 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketConnect);
 /* Macro to raise exception with detailed error message */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketConnect, e)
 
+/* ==================== Internal Helpers ==================== */
+
+/**
+ * store_remote_addr - Store remote address in socket base
+ * @socket: Socket instance
+ * @addr: Address to store
+ * @addrlen: Address length
+ *
+ * Consolidates duplicate memcpy pattern for remote endpoint storage.
+ */
+static void
+store_remote_addr (T socket, const struct sockaddr *addr, socklen_t addrlen)
+{
+  memcpy (&socket->base->remote_addr, addr, addrlen);
+  socket->base->remote_addrlen = addrlen;
+}
+
 /* ==================== Poll/Wait Helpers ==================== */
 
 /**
@@ -160,8 +177,7 @@ socket_connect_with_poll_wait (T socket, const struct sockaddr *addr,
   if (connect (SocketBase_fd (socket->base), addr, addrlen) == 0
       || errno == EISCONN)
     {
-      memcpy (&socket->base->remote_addr, addr, addrlen);
-      socket->base->remote_addrlen = addrlen;
+      store_remote_addr (socket, addr, addrlen);
       return 0;
     }
 
@@ -171,8 +187,7 @@ socket_connect_with_poll_wait (T socket, const struct sockaddr *addr,
     {
       if (socket_wait_for_connect (socket, timeout_ms) == 0)
         {
-          memcpy (&socket->base->remote_addr, addr, addrlen);
-          socket->base->remote_addrlen = addrlen;
+          store_remote_addr (socket, addr, addrlen);
           return 0;
         }
       saved_errno = errno;
@@ -310,8 +325,7 @@ connect_attempt_immediate (T socket, const struct sockaddr *addr,
   if (connect (SocketBase_fd (socket->base), addr, addrlen) == 0
       || errno == EINPROGRESS || errno == EISCONN)
     {
-      memcpy (&socket->base->remote_addr, addr, addrlen);
-      socket->base->remote_addrlen = addrlen;
+      store_remote_addr (socket, addr, addrlen);
       return 0;
     }
   return -1;
