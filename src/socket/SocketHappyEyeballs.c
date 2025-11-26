@@ -51,20 +51,29 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHE);
  * Forward Declarations
  * ============================================================================ */
 
-static void he_cleanup_attempts (T he);
+/* DNS and address management */
 static void he_cancel_dns (T he);
 static int he_start_dns_resolution (T he);
 static void he_process_dns_completion (T he);
 static void he_sort_addresses (T he);
 static SocketHE_AddressEntry_T *he_get_next_address (T he);
+
+/* Connection attempt management */
 static int he_start_attempt (T he, SocketHE_AddressEntry_T *entry);
 static void he_check_attempts (T he);
+static void he_cleanup_attempts (T he);
 static void he_declare_winner (T he, SocketHE_Attempt_T *attempt);
 static void he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error);
 static int he_all_attempts_done (T he);
+
+/* State and timeout management */
 static void he_transition_to_failed (T he, const char *reason);
 static int he_should_start_fallback (T he);
 static int he_check_total_timeout (T he);
+
+/* Sync API helpers */
+static int sync_handle_timeout_check (T he);
+static int sync_do_poll (struct pollfd *pfds, int nfds, int timeout);
 
 /* ============================================================================
  * Configuration Defaults
@@ -107,8 +116,8 @@ he_init_config (T he, const SocketHE_Config_T *config)
 
 /**
  * he_copy_hostname - Copy hostname into context arena
- * @he: Context
- * @host: Hostname to copy
+ * @he: Context (must not be NULL)
+ * @host: Hostname to copy (must not be NULL)
  *
  * Returns: 0 on success, -1 on failure
  */
@@ -1714,6 +1723,41 @@ sync_check_all_failed (T he)
 }
 
 /**
+ * sync_handle_timeout_check - Check for total timeout in sync loop
+ * @he: Happy Eyeballs context
+ *
+ * Returns: 1 if timed out, 0 otherwise
+ */
+static int
+sync_handle_timeout_check (T he)
+{
+  if (!he_check_total_timeout (he))
+    return 0;
+
+  snprintf (he->error_buf, sizeof (he->error_buf), "Connection timed out");
+  return 1;
+}
+
+/**
+ * sync_do_poll - Execute poll syscall with error handling
+ * @pfds: Poll file descriptors
+ * @nfds: Number of descriptors
+ * @timeout: Timeout in milliseconds
+ *
+ * Returns: poll() result, or 0 on EINTR
+ */
+static int
+sync_do_poll (struct pollfd *pfds, int nfds, int timeout)
+{
+  int result = poll (pfds, nfds, timeout);
+
+  if (result < 0 && errno == EINTR)
+    return 0;
+
+  return result;
+}
+
+/**
  * sync_run_connection_loop - Run synchronous connection loop
  * @he: Happy Eyeballs context
  */
@@ -1725,12 +1769,8 @@ sync_run_connection_loop (T he)
 
   while (he->state == HE_STATE_CONNECTING)
     {
-      if (he_check_total_timeout (he))
-        {
-          snprintf (he->error_buf, sizeof (he->error_buf),
-                    "Connection timed out");
-          break;
-        }
+      if (sync_handle_timeout_check (he))
+        break;
 
       he_start_first_attempt (he);
       if (he->state == HE_STATE_CONNECTED)
@@ -1742,12 +1782,10 @@ sync_run_connection_loop (T he)
       if (sync_should_exit_loop (he, nfds))
         break;
 
-      int result = poll (pfds, nfds, timeout);
-      if (result < 0 && errno != EINTR)
+      if (sync_do_poll (pfds, nfds, timeout) < 0)
         break;
 
       sync_process_poll_results (he, pfds, attempt_map, nfds);
-
       if (sync_try_start_fallback (he))
         break;
 

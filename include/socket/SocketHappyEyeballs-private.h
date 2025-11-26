@@ -19,7 +19,7 @@
 
 #include <netdb.h>
 #include <stdint.h>
-#include <sys/time.h>
+#include <time.h>
 
 /* ============================================================================
  * Internal Constants
@@ -34,9 +34,6 @@
 #ifndef SOCKET_HE_ERROR_BUFSIZE
 #define SOCKET_HE_ERROR_BUFSIZE 256
 #endif
-
-/** Microseconds per millisecond for time conversion */
-#define SOCKET_HE_USEC_PER_MS 1000
 
 /** Milliseconds per second for time conversion */
 #define SOCKET_HE_MS_PER_SEC 1000
@@ -146,30 +143,41 @@ struct SocketHE_T
  * Internal Helper Functions
  * ============================================================================ */
 
+/** Nanoseconds per millisecond for time conversion */
+#define SOCKET_HE_NS_PER_MS 1000000LL
+
 /**
- * sockethe_get_time_ms - Get current time in milliseconds
+ * sockethe_get_time_ms - Get monotonic time in milliseconds
  *
- * Returns: Current time in milliseconds since epoch
+ * Uses CLOCK_MONOTONIC for reliable elapsed time measurement that is
+ * not affected by system clock adjustments (NTP, manual changes).
+ *
+ * Returns: Current monotonic time in milliseconds
  */
 static inline int64_t
 sockethe_get_time_ms (void)
 {
-  struct timeval tv;
-  gettimeofday (&tv, NULL);
-  return (int64_t)tv.tv_sec * SOCKET_HE_MS_PER_SEC
-         + (int64_t)tv.tv_usec / SOCKET_HE_USEC_PER_MS;
+  struct timespec ts;
+
+  if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0)
+    return 0;
+
+  return (int64_t)ts.tv_sec * SOCKET_HE_MS_PER_SEC
+         + (int64_t)ts.tv_nsec / SOCKET_HE_NS_PER_MS;
 }
 
 /**
  * sockethe_elapsed_ms - Calculate elapsed time in milliseconds
  * @start_ms: Start time from sockethe_get_time_ms()
  *
- * Returns: Elapsed milliseconds
+ * Returns: Elapsed milliseconds (non-negative)
  */
 static inline int64_t
 sockethe_elapsed_ms (int64_t start_ms)
 {
-  return sockethe_get_time_ms () - start_ms;
+  int64_t elapsed = sockethe_get_time_ms () - start_ms;
+
+  return (elapsed < 0) ? 0 : elapsed;
 }
 
 #endif /* SOCKETHAPPYEYEBALLS_PRIVATE_INCLUDED */
