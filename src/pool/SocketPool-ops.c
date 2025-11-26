@@ -254,8 +254,10 @@ handle_shrink_excess (T pool, size_t new_maxconns)
       RAISE_POOL_ERROR (SocketPool_Failed);
     }
 
-  (void)collect_excess_connections (pool, new_maxconns, excess_sockets);
+  size_t collected
+      = collect_excess_connections (pool, new_maxconns, excess_sockets);
   assert (collected == excess_count);
+  (void)collected; /* Suppress warning when NDEBUG disables assert */
 
   pthread_mutex_unlock (&pool->mutex);
   close_excess_sockets (pool, excess_sockets, excess_count);
