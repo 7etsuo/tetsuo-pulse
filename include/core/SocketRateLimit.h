@@ -54,14 +54,15 @@ extern const Except_T SocketRateLimit_Failed; /**< Rate limiter operation failur
  * SocketRateLimit_new - Create a new token bucket rate limiter
  * @arena: Arena for memory allocation (NULL to use malloc)
  * @tokens_per_sec: Token refill rate (tokens added per second)
- * @bucket_size: Maximum bucket capacity (burst limit)
+ * @bucket_size: Maximum bucket capacity (burst limit, 0 = use tokens_per_sec)
  *
  * Returns: New rate limiter instance
- * Raises: SocketRateLimit_Failed on allocation failure
- * Thread-safe: Yes - returns new instance
+ * Raises: SocketRateLimit_Failed on allocation failure or invalid parameters
+ * Thread-safe: Yes - returns new independent instance
  *
  * The bucket starts full (at bucket_size tokens).
  * Use bucket_size >= tokens_per_sec for reasonable burst handling.
+ * If bucket_size is 0, defaults to tokens_per_sec (1 second burst).
  */
 extern T SocketRateLimit_new (Arena_T arena, size_t tokens_per_sec,
                               size_t bucket_size);
@@ -70,10 +71,11 @@ extern T SocketRateLimit_new (Arena_T arena, size_t tokens_per_sec,
  * SocketRateLimit_free - Free a rate limiter
  * @limiter: Pointer to limiter (will be set to NULL)
  *
- * Thread-safe: Yes
+ * Thread-safe: Yes (acquires mutex during cleanup)
  *
- * Note: Only frees if allocated with malloc (arena == NULL).
+ * Note: Only frees memory if allocated with malloc (arena == NULL).
  * Arena-allocated limiters are freed when arena is disposed.
+ * Always destroys the mutex regardless of allocation method.
  */
 extern void SocketRateLimit_free (T *limiter);
 
@@ -87,6 +89,7 @@ extern void SocketRateLimit_free (T *limiter);
  *
  * Refills bucket based on elapsed time, then attempts to consume tokens.
  * Does not block - returns immediately with result.
+ * Requesting 0 tokens always succeeds.
  */
 extern int SocketRateLimit_try_acquire (T limiter, size_t tokens);
 
@@ -96,11 +99,11 @@ extern int SocketRateLimit_try_acquire (T limiter, size_t tokens);
  * @tokens: Number of tokens needed
  *
  * Returns: Milliseconds to wait before tokens available, or 0 if immediate
+ *          Returns -1 if tokens > bucket_size (impossible to acquire)
  * Thread-safe: Yes - uses internal mutex
  *
  * Does not consume tokens - just calculates wait time.
  * Returns 0 if tokens are already available.
- * Returns -1 if tokens > bucket_size (impossible to acquire).
  */
 extern int64_t SocketRateLimit_wait_time_ms (T limiter, size_t tokens);
 
@@ -144,7 +147,7 @@ extern void SocketRateLimit_configure (T limiter, size_t tokens_per_sec,
  * @limiter: Rate limiter instance
  *
  * Returns: Tokens per second rate
- * Thread-safe: Yes
+ * Thread-safe: Yes - uses internal mutex
  */
 extern size_t SocketRateLimit_get_rate (T limiter);
 
@@ -153,10 +156,9 @@ extern size_t SocketRateLimit_get_rate (T limiter);
  * @limiter: Rate limiter instance
  *
  * Returns: Maximum bucket capacity
- * Thread-safe: Yes
+ * Thread-safe: Yes - uses internal mutex
  */
 extern size_t SocketRateLimit_get_bucket_size (T limiter);
 
 #undef T
 #endif /* SOCKETRATELIMIT_INCLUDED */
-

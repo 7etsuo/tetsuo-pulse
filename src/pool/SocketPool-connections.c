@@ -48,6 +48,7 @@ find_free_slot (T pool)
  * @pool: Pool instance
  *
  * Returns: Non-zero if full
+ * Thread-safe: Call with mutex held
  */
 int
 check_pool_full (T pool)
@@ -59,6 +60,8 @@ check_pool_full (T pool)
  * remove_from_free_list - Remove connection from free list
  * @pool: Pool instance
  * @conn: Connection to remove
+ *
+ * Thread-safe: Call with mutex held
  */
 void
 remove_from_free_list (T pool, Connection_T conn)
@@ -70,12 +73,36 @@ remove_from_free_list (T pool, Connection_T conn)
  * return_to_free_list - Return connection to free list
  * @pool: Pool instance
  * @conn: Connection to return
+ *
+ * Thread-safe: Call with mutex held
  */
 void
 return_to_free_list (T pool, Connection_T conn)
 {
   conn->free_next = pool->free_list;
   pool->free_list = conn;
+}
+
+/**
+ * allocate_connection_buffers - Allocate buffers if needed
+ * @pool: Pool instance
+ * @conn: Connection requiring buffers
+ *
+ * Returns: 0 on success, -1 on failure
+ * Thread-safe: Call with mutex held
+ */
+static int
+allocate_connection_buffers (T pool, Connection_T conn)
+{
+  if (conn->inbuf && conn->outbuf)
+    {
+      SocketBuf_secureclear (conn->inbuf);
+      SocketBuf_secureclear (conn->outbuf);
+      return 0;
+    }
+
+  return SocketPool_connections_alloc_buffers (pool->arena, pool->bufsize,
+                                               conn);
 }
 
 /**
@@ -91,20 +118,10 @@ prepare_free_slot (T pool, Connection_T conn)
 {
   remove_from_free_list (pool, conn);
 
-  if (conn->inbuf && conn->outbuf)
+  if (allocate_connection_buffers (pool, conn) != 0)
     {
-      SocketBuf_secureclear (conn->inbuf);
-      SocketBuf_secureclear (conn->outbuf);
-    }
-  else
-    {
-      if (SocketPool_connections_alloc_buffers (pool->arena, pool->bufsize,
-                                                conn)
-          != 0)
-        {
-          return_to_free_list (pool, conn);
-          return -1;
-        }
+      return_to_free_list (pool, conn);
+      return -1;
     }
 
   return 0;
@@ -118,6 +135,8 @@ prepare_free_slot (T pool, Connection_T conn)
  * update_existing_slot - Update activity timestamp
  * @conn: Connection to update
  * @now: Current time
+ *
+ * Thread-safe: Call with mutex held
  */
 void
 update_existing_slot (Connection_T conn, time_t now)
@@ -128,6 +147,8 @@ update_existing_slot (Connection_T conn, time_t now)
 /**
  * increment_pool_count - Increment active connection count
  * @pool: Pool instance
+ *
+ * Thread-safe: Call with mutex held
  */
 void
 increment_pool_count (T pool)
@@ -138,6 +159,8 @@ increment_pool_count (T pool)
 /**
  * decrement_pool_count - Decrement active connection count
  * @pool: Pool instance
+ *
+ * Thread-safe: Call with mutex held
  */
 void
 decrement_pool_count (T pool)
@@ -150,6 +173,8 @@ decrement_pool_count (T pool)
  * @conn: Connection to initialize
  * @socket: Socket to associate
  * @now: Current time
+ *
+ * Thread-safe: Call with mutex held
  */
 void
 initialize_connection (Connection_T conn, Socket_T socket, time_t now)
@@ -163,6 +188,8 @@ initialize_connection (Connection_T conn, Socket_T socket, time_t now)
 /**
  * SocketPool_connections_release_buffers - Securely clear buffers
  * @conn: Connection whose buffers to clear
+ *
+ * Thread-safe: Call with mutex held
  */
 void
 SocketPool_connections_release_buffers (Connection_T conn)
@@ -176,6 +203,8 @@ SocketPool_connections_release_buffers (Connection_T conn)
 /**
  * SocketPool_connections_reset_slot - Reset connection slot to inactive
  * @conn: Connection to reset
+ *
+ * Thread-safe: Call with mutex held
  */
 void
 SocketPool_connections_reset_slot (Connection_T conn)
@@ -184,7 +213,7 @@ SocketPool_connections_reset_slot (Connection_T conn)
   conn->data = NULL;
   conn->last_activity = 0;
   conn->active = 0;
-  conn->tracked_ip = NULL;  /* Clear tracked IP reference */
+  conn->tracked_ip = NULL;
 #ifdef SOCKET_HAS_TLS
   conn->tls_ctx = NULL;
   conn->tls_handshake_complete = 0;
@@ -206,17 +235,17 @@ void
 validate_saved_session (Connection_T conn)
 {
 #ifdef SOCKET_HAS_TLS
-  if (conn->tls_session)
-    {
-      time_t now = time (NULL);
-      time_t sess_time = SSL_SESSION_get_time (conn->tls_session);
-      long sess_timeout = SSL_SESSION_get_timeout (conn->tls_session);
+  if (!conn->tls_session)
+    return;
 
-      if (now >= sess_time + sess_timeout)
-        {
-          SSL_SESSION_free (conn->tls_session);
-          conn->tls_session = NULL;
-        }
+  time_t now = time (NULL);
+  time_t sess_time = SSL_SESSION_get_time (conn->tls_session);
+  long sess_timeout = SSL_SESSION_get_timeout (conn->tls_session);
+
+  if (now >= sess_time + sess_timeout)
+    {
+      SSL_SESSION_free (conn->tls_session);
+      conn->tls_session = NULL;
     }
 #else
   (void)conn;
@@ -228,18 +257,54 @@ validate_saved_session (Connection_T conn)
  * setup_tls_session_resumption - Try to resume saved TLS session
  * @conn: Connection with potential saved session
  * @socket: Socket to configure
+ *
+ * Thread-safe: Call with mutex held
  */
 static void
 setup_tls_session_resumption (Connection_T conn, Socket_T socket)
 {
-  if (socket_is_tls_enabled (socket) && conn->tls_session)
+  if (!socket_is_tls_enabled (socket) || !conn->tls_session)
+    return;
+
+  SSL *ssl = (SSL *)socket->tls_ssl;
+  if (ssl && SSL_set_session (ssl, conn->tls_session) != 1)
     {
-      SSL *ssl = (SSL *)socket->tls_ssl;
-      if (ssl && SSL_set_session (ssl, conn->tls_session) != 1)
-        {
-          SSL_SESSION_free (conn->tls_session);
-          conn->tls_session = NULL;
-        }
+      SSL_SESSION_free (conn->tls_session);
+      conn->tls_session = NULL;
+    }
+}
+
+/**
+ * shutdown_tls_connection - Shutdown TLS gracefully
+ * @socket: Socket with TLS to shutdown
+ *
+ * Thread-safe: Call with mutex held
+ * Ignores errors during shutdown - connection is closing anyway.
+ */
+static void
+shutdown_tls_connection (Socket_T socket)
+{
+  TRY { SocketTLS_shutdown (socket); }
+  ELSE { /* Ignore errors during cleanup */ }
+  END_TRY;
+}
+
+/**
+ * save_tls_session - Save TLS session for potential reuse
+ * @conn: Connection to save session to
+ * @socket: Socket with TLS session
+ *
+ * Thread-safe: Call with mutex held
+ */
+static void
+save_tls_session (Connection_T conn, Socket_T socket)
+{
+  SSL *ssl = (SSL *)socket->tls_ssl;
+  if (ssl)
+    {
+      SSL_SESSION *sess = SSL_get1_session (ssl);
+      if (sess)
+        conn->tls_session = sess;
     }
 }
 
@@ -247,24 +312,17 @@ setup_tls_session_resumption (Connection_T conn, Socket_T socket)
  * cleanup_tls_and_save_session - Shutdown TLS and save session
  * @conn: Connection
  * @socket: Socket with TLS
+ *
+ * Thread-safe: Call with mutex held
  */
 static void
 cleanup_tls_and_save_session (Connection_T conn, Socket_T socket)
 {
-  if (socket_is_tls_enabled (socket))
-    {
-      TRY { SocketTLS_shutdown (socket); }
-      ELSE { /* Ignore errors during cleanup */ }
-      END_TRY;
+  if (!socket_is_tls_enabled (socket))
+    return;
 
-      SSL *ssl = (SSL *)socket->tls_ssl;
-      if (ssl)
-        {
-          SSL_SESSION *sess = SSL_get1_session (ssl);
-          if (sess)
-            conn->tls_session = sess;
-        }
-    }
+  shutdown_tls_connection (socket);
+  save_tls_session (conn, socket);
 }
 #endif
 
@@ -326,7 +384,6 @@ SocketPool_add (T pool, Socket_T socket)
 
   pthread_mutex_lock (&pool->mutex);
 
-  /* Check pool full under mutex to prevent race condition */
   if (check_pool_full (pool))
     {
       pthread_mutex_unlock (&pool->mutex);
@@ -375,11 +432,55 @@ SocketPool_get (T pool, Socket_T socket)
 }
 
 /**
+ * release_ip_tracking - Release IP tracking for connection
+ * @pool: Pool instance
+ * @conn: Connection with potential IP tracking
+ *
+ * Thread-safe: Call with mutex held
+ */
+static void
+release_ip_tracking (T pool, Connection_T conn)
+{
+  if (conn->tracked_ip && pool->ip_tracker)
+    {
+      SocketIPTracker_release (pool->ip_tracker, conn->tracked_ip);
+      conn->tracked_ip = NULL;
+    }
+}
+
+/**
+ * release_connection_resources - Release all connection resources
+ * @pool: Pool instance
+ * @conn: Connection to release
+ * @socket: Associated socket
+ *
+ * Thread-safe: Call with mutex held
+ *
+ * Handles TLS cleanup, IP tracking release, buffer clearing, and slot reset.
+ */
+static void
+release_connection_resources (T pool, Connection_T conn, Socket_T socket)
+{
+#ifdef SOCKET_HAS_TLS
+  cleanup_tls_and_save_session (conn, socket);
+#else
+  (void)socket;
+#endif
+
+  release_ip_tracking (pool, conn);
+  SocketPool_connections_release_buffers (conn);
+  SocketPool_connections_reset_slot (conn);
+}
+
+/**
  * SocketPool_remove - Remove socket from pool
  * @pool: Pool instance
  * @socket: Socket to remove
  *
  * Thread-safe: Yes - uses internal mutex
+ *
+ * Handles TLS session save, IP tracking release, buffer clearing,
+ * and returns slot to free list.
  */
 void
 SocketPool_remove (T pool, Socket_T socket)
@@ -399,20 +500,7 @@ SocketPool_remove (T pool, Socket_T socket)
     }
 
   remove_from_hash_table (pool, conn, socket);
-
-#ifdef SOCKET_HAS_TLS
-  cleanup_tls_and_save_session (conn, socket);
-#endif
-
-  /* Release tracked IP for per-IP limiting */
-  if (conn->tracked_ip && pool->ip_tracker)
-    {
-      SocketIPTracker_release (pool->ip_tracker, conn->tracked_ip);
-      conn->tracked_ip = NULL;
-    }
-
-  SocketPool_connections_release_buffers (conn);
-  SocketPool_connections_reset_slot (conn);
+  release_connection_resources (pool, conn, socket);
   return_to_free_list (pool, conn);
   decrement_pool_count (pool);
   SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REMOVED, 1);
@@ -430,7 +518,7 @@ SocketPool_remove (T pool, Socket_T socket)
  * @now: Current time
  * @last_activity: Last activity time
  *
- * Returns: 1 if close, 0 otherwise
+ * Returns: 1 if connection should be closed, 0 otherwise
  * Thread-safe: Yes - pure function
  */
 static int
@@ -442,16 +530,16 @@ should_close_connection (time_t idle_timeout, time_t now, time_t last_activity)
 }
 
 /**
- * should_collect_socket - Check if socket should be collected
- * @conn: Connection
- * @idle_timeout: Timeout
- * @now: Time
+ * is_connection_idle - Check if connection is active and idle
+ * @conn: Connection to check
+ * @idle_timeout: Idle timeout in seconds
+ * @now: Current time
  *
- * Returns: 1 if collect
+ * Returns: 1 if connection should be collected for cleanup
+ * Thread-safe: Call with mutex held
  */
 static int
-should_collect_socket (const Connection_T conn, time_t idle_timeout,
-                       time_t now)
+is_connection_idle (const Connection_T conn, time_t idle_timeout, time_t now)
 {
   if (!conn->active || !conn->socket)
     return 0;
@@ -461,12 +549,12 @@ should_collect_socket (const Connection_T conn, time_t idle_timeout,
 
 /**
  * collect_idle_sockets - Collect idle sockets into buffer
- * @pool: Pool
- * @idle_timeout: Timeout
- * @now: Time
+ * @pool: Pool instance
+ * @idle_timeout: Idle timeout in seconds
+ * @now: Current time
  *
- * Returns: Count collected
- * Thread-safe: Mutex held
+ * Returns: Number of sockets collected
+ * Thread-safe: Call with mutex held
  */
 static size_t
 collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
@@ -477,54 +565,66 @@ collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
   for (i = 0; i < pool->maxconns; i++)
     {
       validate_saved_session (&pool->connections[i]);
-      if (should_collect_socket (&pool->connections[i], idle_timeout, now))
-        {
-          pool->cleanup_buffer[close_count++] = pool->connections[i].socket;
-        }
+      if (is_connection_idle (&pool->connections[i], idle_timeout, now))
+        pool->cleanup_buffer[close_count++] = pool->connections[i].socket;
     }
   return close_count;
 }
 
 /**
- * close_collected_sockets - Close and remove collected
- * @pool: Pool
- * @close_count: Count
+ * close_single_socket - Close and remove a single socket from pool
+ * @pool: Pool instance
+ * @socket: Socket to close
  *
- * Thread-safe: No mutex - call outside lock
- * Logs errors at DEBUG level rather than silently ignoring them.
+ * Thread-safe: Yes - acquires mutex internally
+ * Logs errors at DEBUG level rather than propagating.
+ */
+static void
+close_single_socket (T pool, Socket_T socket)
+{
+  TRY
+  {
+    SocketPool_remove (pool, socket);
+    Socket_free (&socket);
+  }
+  EXCEPT (SocketPool_Failed)
+  {
+    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                     "Cleanup: socket already removed from pool");
+  }
+  EXCEPT (Socket_Failed)
+  {
+    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                     "Cleanup: socket free failed (may be closed)");
+  }
+  END_TRY;
+}
+
+/**
+ * close_collected_sockets - Close and remove collected sockets
+ * @pool: Pool instance
+ * @close_count: Number of sockets to close
+ *
+ * Thread-safe: Yes - each socket operation is thread-safe
  */
 static void
 close_collected_sockets (T pool, size_t close_count)
 {
-  volatile size_t i;
+  size_t i;
   for (i = 0; i < close_count; i++)
-    {
-      TRY
-      {
-        SocketPool_remove (pool, pool->cleanup_buffer[i]);
-        Socket_free (&pool->cleanup_buffer[i]);
-      }
-      EXCEPT (SocketPool_Failed)
-      {
-        SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                         "Cleanup: socket already removed from pool");
-      }
-      EXCEPT (Socket_Failed)
-      {
-        SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                         "Cleanup: socket free failed (may be closed)");
-      }
-      END_TRY;
-    }
+    close_single_socket (pool, pool->cleanup_buffer[i]);
 }
 
 /**
  * SocketPool_cleanup - Remove idle connections
- * @pool: Pool
- * @idle_timeout: Seconds idle before removal (0 = all)
+ * @pool: Pool instance
+ * @idle_timeout: Seconds idle before removal (0 = remove all)
  *
  * Thread-safe: Yes
- * Performance: O(n) scan
+ * Performance: O(n) scan of all connection slots
+ *
+ * Collects idle sockets under mutex, then closes them outside mutex
+ * to avoid deadlock with socket operations.
  */
 void
 SocketPool_cleanup (T pool, time_t idle_timeout)
