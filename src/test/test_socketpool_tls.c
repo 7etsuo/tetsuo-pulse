@@ -85,8 +85,16 @@ TEST (socketpool_tls_session_persistence)
   time_t now = time (NULL);
   SSL_SESSION *mock_session = SSL_SESSION_new ();
   ASSERT_NOT_NULL (mock_session);
+  /* Suppress deprecated warnings for SSL_SESSION_set_time/set_timeout (OpenSSL 3.4+) */
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
   SSL_SESSION_set_time (mock_session, now - 100L);
   SSL_SESSION_set_timeout (mock_session, 3600L);
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
   conn1->tls_session = mock_session;
 
   /* Remove - saves session (already in code) */
@@ -141,8 +149,16 @@ TEST (socketpool_tls_session_validation)
   ASSERT_NOT_NULL (mock_ctx);
   SSL_SESSION *mock_session = SSL_SESSION_new ();
   ASSERT_NOT_NULL (mock_session);
+  /* Suppress deprecated warnings for SSL_SESSION_set_time/set_timeout (OpenSSL 3.4+) */
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
   SSL_SESSION_set_time (mock_session, 0L);
   SSL_SESSION_set_timeout (mock_session, 1L);
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
   conn->tls_session = mock_session;
   SSL_CTX_free (mock_ctx);
 
