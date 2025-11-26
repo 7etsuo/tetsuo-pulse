@@ -897,15 +897,28 @@ void
 SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data)
 {
   int fd;
+  unsigned hash;
+  SocketData *entry;
 
   assert (poll);
   assert (socket);
 
   fd = Socket_fd (socket);
+  hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
 
   pthread_mutex_lock (&poll->mutex);
   TRY
   {
+    /* Check socket is in poll set BEFORE modifying backend.
+     * This is required because kqueue's mod uses delete+add which would
+     * silently succeed for sockets never added to the poll set. */
+    entry = find_socket_data_entry (poll, hash, socket);
+    if (!entry)
+      {
+        SOCKET_ERROR_FMT ("Socket not in poll set (fd=%d)", fd);
+        RAISE_POLL_ERROR (SocketPoll_Failed);
+      }
+
     if (backend_mod (poll->backend, fd, events) < 0)
       {
         if (errno == ENOENT)
@@ -915,7 +928,7 @@ SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data)
         RAISE_POLL_ERROR (SocketPoll_Failed);
       }
 
-    socket_data_update_unlocked (poll, socket, data);
+    entry->data = data; /* Update data directly since we found the entry */
   }
   FINALLY
   pthread_mutex_unlock (&poll->mutex);
