@@ -1337,17 +1337,18 @@ he_all_attempts_done (const T he)
  * @he: Happy Eyeballs context
  * @reason: Error message
  *
- * Uses strncpy instead of snprintf to avoid -Wrestrict warnings when
- * GCC aggressively inlines and detects potential overlap with he->error_buf.
+ * Checks if reason already points to error_buf to avoid self-copy which
+ * triggers -Wrestrict warnings with GCC 13's aggressive inlining + fortify.
  */
 static void
 he_set_error (T he, const char *reason)
 {
-  if (reason && he->error_buf[0] == '\0')
-    {
-      strncpy (he->error_buf, reason, sizeof (he->error_buf) - 1);
-      he->error_buf[sizeof (he->error_buf) - 1] = '\0';
-    }
+  /* Skip if no reason, already set, or reason IS the error_buf */
+  if (!reason || he->error_buf[0] != '\0' || reason == he->error_buf)
+    return;
+
+  strncpy (he->error_buf, reason, sizeof (he->error_buf) - 1);
+  he->error_buf[sizeof (he->error_buf) - 1] = '\0';
 }
 
 /**
