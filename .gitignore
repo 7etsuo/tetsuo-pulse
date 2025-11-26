@@ -46,3 +46,9 @@ core.*
 *.bak
 *.log
 
+# Clangd cache
+.cache/
+
+# CMake compile_commands.json symlink (generated)
+compile_commands.json
+

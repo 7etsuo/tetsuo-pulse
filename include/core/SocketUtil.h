@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "core/Except.h"
 #include "core/SocketConfig.h"
 
 /* ============================================================================
