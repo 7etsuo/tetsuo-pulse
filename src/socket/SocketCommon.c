@@ -874,6 +874,32 @@ socketcommon_validate_address_family (struct addrinfo **res, int socket_family,
   return -1;
 }
 
+/**
+ * resolve_prepare_params - Validate hostname and prepare port string
+ * @host: Hostname to validate
+ * @port: Port number to convert
+ * @port_str: Output buffer for port string
+ * @port_str_size: Size of port string buffer
+ * @use_exceptions: If true, raise exceptions on error
+ * @exception_type: Exception type to raise
+ *
+ * Returns: 0 on success, -1 on validation failure
+ * Thread-safe: Yes (uses thread-local error buffer)
+ */
+static int
+resolve_prepare_params (const char *host, int port, char *port_str,
+                        size_t port_str_size, int use_exceptions,
+                        Except_T exception_type)
+{
+  if (socketcommon_validate_hostname_internal (host, use_exceptions,
+                                               exception_type)
+      != 0)
+    return -1;
+
+  socketcommon_convert_port_to_string (port, port_str, port_str_size);
+  return 0;
+}
+
 int
 SocketCommon_resolve_address (const char *host, int port,
                               const struct addrinfo *hints,
@@ -882,12 +908,10 @@ SocketCommon_resolve_address (const char *host, int port,
 {
   char port_str[SOCKET_PORT_STR_BUFSIZE];
 
-  if (socketcommon_validate_hostname_internal (host, use_exceptions,
-                                               exception_type)
+  if (resolve_prepare_params (host, port, port_str, sizeof (port_str),
+                              use_exceptions, exception_type)
       != 0)
     return -1;
-
-  socketcommon_convert_port_to_string (port, port_str, sizeof (port_str));
 
   if (socketcommon_perform_getaddrinfo (host, port_str, hints, res,
                                         use_exceptions, exception_type)
