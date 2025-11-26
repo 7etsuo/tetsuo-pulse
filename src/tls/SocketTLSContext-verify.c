@@ -70,8 +70,11 @@ apply_verify_settings (T ctx)
   SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, cb);
 }
 
+/* Suppress -Wclobbered warning for setjmp/longjmp usage (GCC only, Clang doesn't have this) */
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclobbered"
+#endif
 
 /**
  * internal_verify_callback - OpenSSL verification wrapper
@@ -130,7 +133,9 @@ internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx)
   return result;
 }
 
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
+#endif
 
 void
 SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
