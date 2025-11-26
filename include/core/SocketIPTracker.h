@@ -162,4 +162,3 @@ extern void SocketIPTracker_clear (T tracker);
 
 #undef T
 #endif /* SOCKETIPTRACKER_INCLUDED */
-
