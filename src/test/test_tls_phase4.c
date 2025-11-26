@@ -48,6 +48,15 @@ remove_test_certs (const char *cert_file, const char *key_file)
   unlink (key_file);
 }
 
+/* Mock OCSP gen callback for testing - must be at file scope */
+static OCSP_RESPONSE *
+mock_ocsp_gen_cb (SSL *s, void *a)
+{
+  (void)s;
+  (void)a;
+  return NULL; /* Mock no response */
+}
+
 TEST (tls_sni_certificate_selection)
 {
   (void)0; /* SNI testing requires full client/server handshake setup - covered
@@ -407,14 +416,7 @@ TEST (ocsp_gen_callback_api)
   /* Set NULL no raise */
   SocketTLSContext_set_ocsp_gen_callback (ctx, NULL, NULL);
 
-  /* Set mock cb no raise */
-  /* Mock OCSP gen cb - defined outside for compilation */
-  OCSP_RESPONSE *mock_ocsp_gen_cb (SSL * s, void *a)
-  {
-    (void)s;
-    (void)a;
-    return NULL; /* Mock no resp */
-  }
+  /* Set mock cb no raise (mock_ocsp_gen_cb defined at file scope) */
   SocketTLSContext_set_ocsp_gen_callback (ctx, mock_ocsp_gen_cb, NULL);
   SocketTLSContext_set_ocsp_gen_callback (ctx, mock_ocsp_gen_cb, NULL);
 
