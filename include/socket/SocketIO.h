@@ -77,29 +77,29 @@ extern ssize_t socket_recvv_internal (T socket, struct iovec *iov, int iovcnt,
 
 /**
  * socket_is_tls_enabled - Check if TLS is enabled on socket
- * @socket: Socket instance
+ * @socket: Socket instance (read-only)
  * Returns: 1 if TLS is enabled, 0 otherwise
  * Thread-safe: Yes (read-only flag)
  */
-extern int socket_is_tls_enabled (T socket);
+extern int socket_is_tls_enabled (const T socket);
 
 /**
  * socket_tls_want_read - Check if TLS operation wants read
- * @socket: Socket instance
+ * @socket: Socket instance (read-only)
  * Returns: 1 if SSL_ERROR_WANT_READ pending, 0 otherwise
  * Thread-safe: Yes (read last SSL error)
  * Used by SocketPoll to adjust event masks during handshake.
  */
-extern int socket_tls_want_read (T socket);
+extern int socket_tls_want_read (const T socket);
 
 /**
  * socket_tls_want_write - Check if TLS operation wants write
- * @socket: Socket instance
+ * @socket: Socket instance (read-only)
  * Returns: 1 if SSL_ERROR_WANT_WRITE pending, 0 otherwise
  * Thread-safe: Yes (read last SSL error)
  * Used by SocketPoll to adjust event masks during handshake.
  */
-extern int socket_tls_want_write (T socket);
+extern int socket_tls_want_write (const T socket);
 
 #ifdef SOCKET_HAS_TLS
 /**

@@ -180,23 +180,23 @@ extern int SocketAsync_process_completions (T async, int timeout_ms);
 
 /**
  * SocketAsync_is_available - Check if async I/O is available on this platform
- * @async: Async context
+ * @async: Async context (read-only)
  *
  * Returns: Non-zero if async I/O is available, 0 if fallback mode
  *
  * Thread-safe: Yes
  */
-extern int SocketAsync_is_available (T async);
+extern int SocketAsync_is_available (const T async);
 
 /**
  * SocketAsync_backend_name - Get name of async backend in use
- * @async: Async context
+ * @async: Async context (read-only)
  *
  * Returns: String describing backend ("io_uring", "kqueue", "edge-triggered")
  *
  * Thread-safe: Yes
  */
-extern const char *SocketAsync_backend_name (T async);
+extern const char *SocketAsync_backend_name (const T async);
 
 #undef T
 #endif

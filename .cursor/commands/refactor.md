@@ -7,10 +7,23 @@ You are an expert C developer with extensive experience in secure coding practic
 This codebase follows **C Interfaces and Implementations** patterns with:
 - **Arena-based memory management** (`Arena_T`, `ALLOC`, `CALLOC`)
 - **Exception-based error handling** (`TRY`, `EXCEPT`, `FINALLY`, `RAISE`)
-- **Module-prefixed naming** (`Socket_*`, `Arena_*`, `Except_*`, `SocketPoll_*`, `SocketPool_*`)
+- **Module-prefixed naming** (`Socket_*`, `Arena_*`, `Except_*`, `SocketPoll_*`, `SocketPool_*`, `SocketDNS_*`, `SocketTLS_*`, `SocketDgram_*`, `SocketTimer_*`)
 - **Thread-safe design** (thread-local storage, mutex protection, and zero-leak socket lifecycles confirmed via `Socket_debug_live_count()`)
 - **GNU C coding style** (8-space indentation, return types on separate lines)
 - **Opaque types** with `T` macro pattern (`#define T ModuleName_T`)
+- **TLS1.3-only security** (strict TLS version/cipher enforcement via `SocketTLSConfig.h`)
+- **Cross-platform event backends** (epoll/kqueue/poll abstraction in SocketPoll)
+- **Async DNS resolution** (non-blocking hostname resolution via `SocketDNS` thread pool)
+
+**Detailed Rules Reference**: For in-depth patterns, consult `.cursor/rules/` directory:
+- `architecture-patterns.mdc` - Layered architecture and module design
+- `async-dns.mdc` - Async DNS patterns and thread pool design
+- `cross-platform-backends.mdc` - Event backend abstraction (epoll/kqueue/poll)
+- `error-handling.mdc` - Thread-safe exception patterns
+- `memory-management.mdc` - Arena allocation and overflow protection
+- `module-patterns.mdc` - Module design patterns for each component
+- `udp-sockets.mdc` - UDP/datagram-specific patterns
+- `unix-domain-sockets.mdc` - AF_UNIX socket patterns
 
 ## Step-by-Step Refactoring Process
 
@@ -218,6 +231,90 @@ This codebase follows **C Interfaces and Implementations** patterns with:
    - Repeated error checking patterns that should be extracted to helpers
    - System call error handling that should use `SAFE_CLOSE` and similar patterns
 
+### 10. **Const Correctness (IMPORTANT)**
+   - Function parameters that should be `const` (read-only pointers, read-only objects)
+   - Pointer parameters that don't modify target should use `const Type *`
+   - String parameters should use `const char *` unless modified
+   - Callback function pointers with const data parameters
+   - Structure members that should be const after initialization
+   - Local variables that don't change after assignment
+   - Array parameters that are read-only
+   - **Pattern**: `static unsigned socket_hash(const Socket_T socket)` - input-only parameters
+   - **Pattern**: `const char *Socket_getpeeraddr(Socket_T socket)` - return read-only strings
+
+### 11. **Async I/O and Event-Driven Patterns**
+   - Blocking DNS calls (`getaddrinfo`) that should use `SocketDNS` module
+   - Blocking socket operations that should be non-blocking with event polling
+   - Code that could benefit from async DNS resolution (`Socket_bind_async`, `Socket_connect_async`)
+   - Event loops that don't handle edge-triggered events correctly (must drain until EAGAIN)
+   - Missing timeout handling for async operations (`SocketDNS_request_settimeout`)
+   - Callback patterns that could benefit from completion signaling via pipe FD
+   - Poll integration missing for DNS completion (`SocketDNS_pollfd`)
+   - Missing cancellation support for long-running async operations
+   - Async resource cleanup patterns (must call `freeaddrinfo()` on resolved addresses)
+
+### 12. **TLS/SSL Refactoring (Security Critical)**
+   - TLS code not using TLS1.3-only configuration from `SocketTLSConfig.h`
+   - Legacy cipher suites or protocol versions (must use `SOCKET_TLS13_CIPHERSUITES`)
+   - Missing SNI (Server Name Indication) handling for virtual hosts
+   - Missing ALPN (Application-Layer Protocol Negotiation) support
+   - Certificate verification not properly configured
+   - Missing hostname validation in client connections
+   - Session resumption not properly implemented
+   - TLS handshake timeout not respected (`SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS`)
+   - Error handling not using OpenSSL error queue properly
+   - Missing secure memory clearing for sensitive TLS data (`SocketBuf_secureclear`)
+   - Buffer sizes not respecting TLS record limits (`SOCKET_TLS_BUFFER_SIZE`)
+
+### 13. **Cross-Platform Backend Patterns**
+   - Platform-specific code that should use backend abstraction
+   - Direct epoll/kqueue/poll usage instead of `SocketPoll` API
+   - Missing event flag translation (POLL_READ/POLL_WRITE to platform-specific)
+   - Backend-specific optimizations exposed outside backend files
+   - Edge-triggered mode not properly used (must use EPOLLET/EV_CLEAR)
+   - Event retrieval not following backend interface pattern
+   - Platform detection that should be at compile-time via Makefile
+   - Code assuming specific backend (epoll) that should be portable
+
+### 14. **UDP/Datagram Socket Patterns (SocketDgram)**
+   - TCP patterns incorrectly applied to UDP (no listen/accept for UDP)
+   - Missing message boundary handling (UDP preserves boundaries, TCP doesn't)
+   - Buffer sizes exceeding `UDP_MAX_PAYLOAD` (65507 bytes)
+   - Not using safe UDP size (`SAFE_UDP_SIZE` 1472) to avoid fragmentation
+   - Missing sender address handling in `recvfrom` operations
+   - Connected UDP mode vs connectionless mode confusion
+   - Missing MTU considerations for large datagrams
+   - Error handling not accounting for UDP-specific errors (EMSGSIZE)
+
+### 15. **Unix Domain Socket Patterns (AF_UNIX)**
+   - Missing stale socket file cleanup before bind (`unlink` before `bind`)
+   - Relative paths instead of absolute paths for socket files
+   - Missing file permission handling for socket files
+   - Socket path length exceeding `sizeof(sun_path)` (usually 108 chars)
+   - Missing `SO_PASSCRED` for credential passing when needed
+   - Missing abstract namespace support on Linux (`\0` prefix)
+   - Not using proper cleanup patterns for socket files on exit
+
+### 16. **Timeout and Timer Patterns**
+   - Missing per-socket timeout configuration (`SocketTimeouts_T`)
+   - Hardcoded timeout values instead of configurable constants
+   - Missing timeout sanitization (negative values should become zero)
+   - Blocking operations not respecting timeout configuration
+   - DNS timeout not propagated to async requests (`timeouts.dns_timeout_ms`)
+   - Connect timeout not implemented via non-blocking + poll pattern
+   - Missing `SocketTimer` usage for deadline tracking
+   - Poll default timeout not configurable (`SocketPoll_setdefaulttimeout`)
+
+### 17. **Buffer Safety Patterns (CRITICAL)**
+   - Circular buffer operations not checking bounds before access
+   - Missing wrap-around handling in read/write operations
+   - Buffer size validation not using `SOCKET_VALID_BUFFER_SIZE` macro
+   - Missing `SIZE_MAX/2` limit check for buffer allocations
+   - Not using `SocketBuf_secureclear` for sensitive data before reuse
+   - Zero-copy operations returning pointers without proper length checks
+   - Buffer reuse not following `SocketBuf_clear` + `SocketBuf_secureclear` pattern
+   - Missing contiguous region calculations for efficient I/O
+
 ## Socket Library-Specific Patterns
 
 ### Arena Allocation Pattern
@@ -275,13 +372,20 @@ static __thread Except_T Socket_DetailedException;
 ### Module Prefix Pattern
 **ALWAYS** use consistent module prefixes:
 - `Arena_*` for arena memory management
+- `Except_*` for exception handling
 - `Socket_*` for TCP/Unix domain sockets
-- `SocketDgram_*` for UDP sockets
+- `SocketAsync_*` for async socket operations
 - `SocketBuf_*` for buffer operations
+- `SocketDgram_*` for UDP sockets
+- `SocketDNS_*` for async DNS resolution
+- `SocketIO_*` for I/O operations (vectored I/O)
 - `SocketPoll_*` for event polling
 - `SocketPool_*` for connection pooling
-- `SocketDNS_*` for DNS resolution
-- `Except_*` for exception handling
+- `SocketTimer_*` for timer and deadline management
+- `SocketTLS_*` for TLS/SSL operations
+- `SocketTLSContext_*` for TLS context management
+- `SocketUnix_*` for Unix domain socket specifics
+- `Connection_*` for connection pool entries (accessor functions)
 
 ### Type Definition Pattern
 **ALWAYS** use the T macro pattern:
@@ -306,6 +410,167 @@ __declspec(thread) char socket_error_buf[SOCKET_ERROR_BUFSIZE] = {0};
 #else
 __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE] = {0};
 #endif
+```
+
+### Async DNS Resolution Pattern
+**ALWAYS** use SocketDNS for non-blocking hostname resolution:
+```c
+SocketDNS_T dns = SocketDNS_new();
+Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+/* Start async resolution with timeout */
+SocketDNS_Request_T req = Socket_bind_async(dns, socket, "example.com", 8080);
+SocketDNS_request_settimeout(dns, req, 2000);  /* 2s timeout */
+
+/* Check completion in event loop */
+int dns_fd = SocketDNS_pollfd(dns);
+/* Add dns_fd to poll set, handle POLLIN */
+
+/* When complete: */
+SocketDNS_check(dns);
+struct addrinfo *res = SocketDNS_getresult(dns, req);
+if (res) {
+    Socket_bind_with_addrinfo(socket, res);
+    freeaddrinfo(res);  /* REQUIRED: caller owns result */
+}
+```
+
+### TLS1.3 Hardening Pattern
+**ALWAYS** use TLS1.3-only configuration:
+```c
+#include "tls/SocketTLSConfig.h"
+
+SSL_CTX_set_min_proto_version(ctx, SOCKET_TLS_MIN_VERSION);  /* TLS1.3 */
+SSL_CTX_set_max_proto_version(ctx, SOCKET_TLS_MAX_VERSION);  /* TLS1.3 */
+SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS */
+
+/* Respect buffer limits */
+char buffer[SOCKET_TLS_BUFFER_SIZE];  /* 16KB TLS record max */
+
+/* Secure cleanup */
+SocketBuf_secureclear(sensitive_buffer);
+```
+
+### Cross-Platform Backend Pattern
+**ALWAYS** use SocketPoll API, never direct epoll/kqueue/poll:
+```c
+/* CORRECT: Platform-agnostic */
+SocketPoll_T poll = SocketPoll_new(1000);
+SocketPoll_add(poll, socket, POLL_READ | POLL_WRITE, data);
+int n = SocketPoll_wait(poll, &events, timeout);
+
+/* WRONG: Platform-specific */
+int epfd = epoll_create1(0);  /* Not portable! */
+```
+
+### Edge-Triggered Event Pattern
+**ALWAYS** drain until EAGAIN in edge-triggered mode:
+```c
+/* Edge-triggered requires reading/writing until EAGAIN */
+while (1) {
+    ssize_t n = Socket_recv(socket, buffer, sizeof(buffer));
+    if (n == 0)  /* EAGAIN in non-blocking mode */
+        break;
+    if (n < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            break;  /* No more data */
+        /* Handle error */
+    }
+    /* Process data */
+}
+```
+
+### Timeout Configuration Pattern
+**ALWAYS** use configurable timeouts with sanitization:
+```c
+/* Per-socket timeout configuration */
+SocketTimeouts_T timeouts;
+Socket_timeouts_getdefaults(&timeouts);
+
+/* Sanitize negative values to zero */
+timeouts.connect_timeout_ms = (timeout_ms < 0) ? 0 : timeout_ms;
+timeouts.dns_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
+
+/* Propagate to async DNS requests */
+SocketDNS_request_settimeout(dns, req, timeouts.dns_timeout_ms);
+```
+
+### Safe System Call Pattern
+**ALWAYS** use safe wrappers for system calls:
+```c
+/* SAFE_CLOSE: Per POSIX.1-2008, do NOT retry on EINTR */
+SAFE_CLOSE(fd);
+
+/* Safe non-blocking check */
+ssize_t n = recv(fd, buf, len, 0);
+if (n < 0) {
+    if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return 0;  /* Would block - not an error */
+    if (errno == EINTR)
+        continue;  /* Interrupted - retry */
+    /* Real error */
+    SOCKET_ERROR_FMT("recv failed");
+    RAISE_SOCKET_ERROR(Socket_Failed);
+}
+```
+
+### Buffer Bounds Safety Pattern
+**ALWAYS** check bounds before buffer operations:
+```c
+/* Validate buffer size before allocation */
+if (!SOCKET_VALID_BUFFER_SIZE(requested_size))
+    RAISE_ERROR(Module_InvalidInput);
+
+/* Check for overflow before arithmetic */
+if (nbytes > SIZE_MAX / 2)  /* Conservative limit */
+    return NULL;
+
+/* Circular buffer wrap-around */
+size_t chunk = capacity - tail;
+if (chunk > len - written)
+    chunk = len - written;
+
+/* Safety check: ensure indices are valid */
+if (tail >= capacity) {
+    tail = 0;
+    continue;
+}
+
+/* Secure clear before reuse */
+SocketBuf_secureclear(buf);
+```
+
+### UDP Datagram Pattern
+**ALWAYS** use proper datagram semantics:
+```c
+/* UDP: No listen/accept, use sendto/recvfrom */
+SocketDgram_T dgram = SocketDgram_new(AF_INET, 0);
+SocketDgram_bind(dgram, NULL, 5000);
+
+/* Receive with sender info */
+char sender_host[NI_MAXHOST];
+int sender_port;
+ssize_t n = SocketDgram_recvfrom(dgram, buffer, SAFE_UDP_SIZE,
+                                  sender_host, sizeof(sender_host),
+                                  &sender_port);
+
+/* Reply to sender */
+SocketDgram_sendto(dgram, response, len, sender_host, sender_port);
+```
+
+### Unix Domain Socket Pattern
+**ALWAYS** handle socket file cleanup:
+```c
+/* Remove stale socket file before bind */
+const char *path = "/tmp/my_socket.sock";
+unlink(path);  /* Ignore errors - file may not exist */
+
+Socket_T unix_sock = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+Socket_bind_unix(unix_sock, path);
+
+/* Cleanup on exit */
+Socket_free(&unix_sock);
+unlink(path);  /* Remove socket file */
 ```
 
 ## Refactoring Output Format
@@ -335,24 +600,45 @@ For each refactoring suggestion, provide:
 
 ## Refactoring Principles
 
+### Core Principles
 - **Preserve functionality** - All refactorings must maintain existing behavior
 - **Small Single-Use Functions** - CRITICAL: Functions MUST be under 20 lines and do ONE thing. Extract aggressively.
 - **No Magic Numbers** - CRITICAL: ALL numeric constants must be named. Use `#define` in `SocketConfig.h` or module headers.
 - **Improve readability** - Code should be easier to understand after refactoring
-- **Maintain C Interfaces and Implementations style** - CRITICAL: All changes must strictly follow C Interfaces and Implementations patterns (Hanson, 1996). This includes header organization, type definitions, function documentation, and module structure.
-- **Maintain GNU C style** - All changes must follow GNU C coding standards (return types on separate lines, 8-space indentation, etc.)
 - **Enhance maintainability** - Code should be easier to modify and extend
-- **Optimize performance** - Where possible, improve efficiency without sacrificing clarity
-- **Reduce duplication** - Extract common patterns to avoid code repetition
 - **Single responsibility** - Functions should do one thing well - enforce strictly
 - **DRY principle** - Don't Repeat Yourself
-- **Security first** - Eliminate vulnerabilities before optimizing
-- **Leverage existing codebase** - Reuse existing functions and patterns (Arena, Exception system, SocketError, SocketConfig), don't reinvent
-- **Use Arena allocation** - Prefer `Arena_alloc` over `malloc` for related objects
-- **Use exception system** - Prefer `TRY/EXCEPT/FINALLY` over return codes
-- **Follow module patterns** - Adhere to established module design patterns
+
+### Style & Documentation
+- **Maintain C Interfaces and Implementations style** - CRITICAL: All changes must strictly follow C Interfaces and Implementations patterns (Hanson, 1996). This includes header organization, type definitions, function documentation, and module structure.
+- **Maintain GNU C style** - All changes must follow GNU C coding standards (return types on separate lines, 8-space indentation, etc.)
 - **Opaque types only** - Headers must expose only opaque pointer types, never structure definitions
 - **Comprehensive documentation** - All public functions must have Doxygen-style comments with @param, @returns, Raises:, Thread-safe: notes
+- **Const correctness** - Use `const` for read-only parameters and return values
+
+### Memory & Safety
+- **Security first** - Eliminate vulnerabilities before optimizing
+- **Use Arena allocation** - Prefer `Arena_alloc` over `malloc` for related objects
+- **Overflow protection** - Always check for integer overflow before arithmetic
+- **Buffer bounds checking** - Validate indices before buffer access
+- **Secure clearing** - Use `SocketBuf_secureclear` for sensitive data
+
+### Error Handling & Thread Safety
+- **Use exception system** - Prefer `TRY/EXCEPT/FINALLY` over return codes
+- **Thread-local exceptions** - Copy exceptions to thread-local storage before modifying
+- **Safe system calls** - Use `SAFE_CLOSE` and similar wrappers
+
+### Integration & Performance
+- **Leverage existing codebase** - Reuse existing functions and patterns (Arena, Exception system, SocketError, SocketConfig, SocketDNS), don't reinvent
+- **Follow module patterns** - Adhere to established module design patterns
+- **Reduce duplication** - Extract common patterns to avoid code repetition
+- **Optimize performance** - Where possible, improve efficiency without sacrificing clarity
+
+### Async & Platform Patterns
+- **Non-blocking DNS** - Use `SocketDNS` for hostname resolution to avoid blocking
+- **Edge-triggered handling** - Drain until EAGAIN in edge-triggered event loops
+- **Platform abstraction** - Use `SocketPoll` API, never direct epoll/kqueue/poll
+- **TLS1.3 enforcement** - Always use `SocketTLSConfig.h` constants for TLS configuration
 
 ## Example Refactoring Patterns
 
@@ -476,14 +762,206 @@ Risks: Need to ensure both use cases are compatible
 Reference: See SocketDNS module for async DNS resolution patterns
 ```
 
+### Const Correctness Example
+```
+[Style/Medium] SocketPoll.c:85
+Current Code: static unsigned socket_hash(Socket_T socket)
+Issue: Parameter is read-only but not marked const
+Suggestion: Add const qualifier to read-only parameters
+Proposed Change:
+  static unsigned socket_hash(const Socket_T socket)
+  {
+      int fd;
+      assert(socket);
+      fd = Socket_fd(socket);
+      assert(fd >= 0);  /* Defensive check */
+      return ((unsigned)fd * 2654435761u) % SOCKET_HASH_SIZE;
+  }
+Benefits: Compiler can optimize, documents intent, catches accidental modifications
+Risks: None - pure improvement
+Reference: See SocketPool.c socket_hash() pattern
+```
+
+### Async DNS Migration Example
+```
+[Async I/O/High] Module.c:120-150
+Current Code: Uses blocking getaddrinfo() directly
+Issue: getaddrinfo() can block for 30+ seconds during DNS failures - DoS vulnerability
+Suggestion: Migrate to SocketDNS async resolution
+Proposed Change:
+  /* Before (blocking - DANGEROUS) */
+  Socket_bind(socket, "example.com", 8080);  /* Blocks! */
+
+  /* After (non-blocking) */
+  SocketDNS_T dns = SocketDNS_new();
+  SocketDNS_Request_T req = Socket_bind_async(dns, socket, "example.com", 8080);
+  SocketDNS_request_settimeout(dns, req, 2000);  /* 2s timeout */
+  
+  /* In event loop: check SocketDNS_pollfd(dns) for completion */
+  SocketDNS_check(dns);
+  struct addrinfo *res = SocketDNS_getresult(dns, req);
+  if (res) {
+      Socket_bind_with_addrinfo(socket, res);
+      freeaddrinfo(res);  /* REQUIRED */
+  }
+Benefits: Non-blocking, timeout protection, DoS resistant
+Risks: More complex code flow - document async pattern clearly
+Reference: See .cursor/rules/async-dns.mdc for complete patterns
+```
+
+### TLS Security Hardening Example
+```
+[TLS/Critical] TLSModule.c:45-60
+Current Code: Uses TLS1.2 or allows legacy cipher suites
+Issue: Not using TLS1.3-only configuration - security risk
+Suggestion: Use SocketTLSConfig.h constants for TLS1.3-only
+Proposed Change:
+  #include "tls/SocketTLSConfig.h"
+  
+  /* Configure TLS1.3-only (REQUIRED) */
+  SSL_CTX_set_min_proto_version(ctx, SOCKET_TLS_MIN_VERSION);
+  SSL_CTX_set_max_proto_version(ctx, SOCKET_TLS_MAX_VERSION);
+  SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);
+  
+  /* Verify peer certificate */
+  SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
+Benefits: Eliminates legacy protocol vulnerabilities, faster handshakes, forward secrecy
+Risks: TLS1.3 requires OpenSSL 1.1.1+ - verify minimum supported version
+Reference: See SocketTLSConfig.h for all configuration constants
+```
+
+### Cross-Platform Backend Example
+```
+[Cross-Platform/Medium] EventHandler.c:80-100
+Current Code: Direct epoll_create1() and epoll_wait() calls
+Issue: Not portable to BSD/macOS (requires kqueue) or POSIX fallback (poll)
+Suggestion: Use SocketPoll abstraction for portability
+Proposed Change:
+  /* Before (Linux-only) */
+  int epfd = epoll_create1(0);
+  struct epoll_event ev = {.events = EPOLLIN | EPOLLET};
+  epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
+  int n = epoll_wait(epfd, events, maxevents, timeout);
+  
+  /* After (portable) */
+  SocketPoll_T poll = SocketPoll_new(maxevents);
+  SocketPoll_add(poll, socket, POLL_READ, user_data);
+  SocketEvent_T *events;
+  int n = SocketPoll_wait(poll, &events, timeout);
+Benefits: Works on Linux (epoll), BSD/macOS (kqueue), and all POSIX (poll fallback)
+Risks: Slight abstraction overhead - negligible in practice
+Reference: See .cursor/rules/cross-platform-backends.mdc
+```
+
+### Edge-Triggered Event Handling Example
+```
+[Performance/High] EventLoop.c:200-220
+Current Code: Single read on POLL_READ event
+Issue: Edge-triggered mode requires draining until EAGAIN
+Suggestion: Loop until EAGAIN to handle all available data
+Proposed Change:
+  /* Handle readable socket in edge-triggered mode */
+  while (1) {
+      ssize_t n = Socket_recv(socket, buffer, sizeof(buffer));
+      if (n > 0) {
+          process_data(buffer, n);
+          continue;
+      }
+      if (n == 0 || errno == EAGAIN || errno == EWOULDBLOCK)
+          break;  /* No more data or would block */
+      /* Real error */
+      SOCKET_ERROR_FMT("recv failed");
+      RAISE_SOCKET_ERROR(Socket_Failed);
+  }
+Benefits: Correctly handles edge-triggered semantics, no missed events
+Risks: Must handle partial reads properly
+Reference: See SocketPoll documentation for edge-triggered behavior
+```
+
+### Buffer Safety Example
+```
+[Security/Critical] BufferOps.c:150-180
+Current Code: No bounds checking before buffer arithmetic
+Issue: Potential buffer overflow if indices become invalid
+Suggestion: Add comprehensive bounds checking
+Proposed Change:
+  size_t SocketBuf_write(T buf, const void *data, size_t len)
+  {
+      assert(buf && buf->data);
+      assert(data || len == 0);
+      assert(buf->size <= buf->capacity);
+      
+      /* Check space available */
+      size_t space = buf->capacity - buf->size;
+      if (len > space)
+          len = space;
+      
+      while (written < len) {
+          size_t chunk = buf->capacity - buf->tail;
+          if (chunk > len - written)
+              chunk = len - written;
+          
+          /* Safety: ensure tail is valid */
+          if (buf->tail >= buf->capacity) {
+              buf->tail = 0;
+              continue;
+          }
+          
+          /* Safety: don't write beyond buffer */
+          if (buf->tail + chunk > buf->capacity)
+              chunk = buf->capacity - buf->tail;
+          
+          memcpy(buf->data + buf->tail, src + written, chunk);
+          buf->tail = (buf->tail + chunk) % buf->capacity;
+          written += chunk;
+      }
+      
+      buf->size += written;
+      return written;
+  }
+Benefits: Prevents buffer overflows, handles wrap-around safely
+Risks: None - defensive programming
+Reference: See SocketBuf.c for complete circular buffer implementation
+```
+
 ## Focus Areas by File Type
 
-- **Socket.c / SocketDgram.c**: Function extraction, socket operation abstraction, DNS resolution patterns, error handling conversion to exceptions
-- **Arena.c**: Already well-refactored; use as reference for patterns
-- **SocketPoll.c / SocketPool.c**: Event handling extraction, hash table optimizations, thread safety patterns
-- **SocketBuf.c**: Buffer operation extraction, circular buffer safety improvements
-- **SocketDNS.c**: Thread pool patterns, request queue management, async operation extraction
-- **Headers**: Organization, forward declarations, dependency reduction, include guard patterns (`_INCLUDED` suffix)
+### Core Modules
+- **Arena.c**: Already well-refactored; use as reference for patterns. Chunk management, overflow protection.
+- **Except.c**: Exception handling foundation. Thread-local stack, RAISE/TRY/EXCEPT implementation.
+
+### Socket Modules
+- **Socket.c / Socket-*.c**: Function extraction, socket operation abstraction, timeout configuration, option setters.
+- **SocketDgram.c**: UDP-specific patterns, sendto/recvfrom semantics, message boundary handling.
+- **SocketUnix.c**: AF_UNIX patterns, socket file cleanup, abstract namespace (Linux).
+- **SocketAsync.c**: Async operation patterns, non-blocking mode, completion callbacks.
+- **SocketBuf.c**: Circular buffer safety, bounds checking, secure clearing, zero-copy operations.
+- **SocketIO.c**: Vectored I/O (iovec), scatter-gather patterns.
+
+### DNS Module
+- **SocketDNS.c / SocketDNS-internal.c**: Thread pool patterns, request queue management, completion signaling via pipe, timeout enforcement.
+
+### Event System
+- **SocketPoll.c**: Frontend event loop, socket→data mapping, default timeout handling.
+- **SocketPoll_epoll.c**: Linux epoll backend, edge-triggered mode, event translation.
+- **SocketPoll_kqueue.c**: BSD/macOS kqueue backend, EV_CLEAR for edge-trigger behavior.
+- **SocketPoll_poll.c**: POSIX poll(2) fallback, FD→index mapping for O(1) lookup.
+
+### Connection Management
+- **SocketPool-*.c**: Connection pool patterns, hash table optimizations, buffer reuse, thread safety with mutexes.
+
+### TLS/SSL Modules
+- **SocketTLS.c**: TLS1.3 operations, handshake handling, secure I/O wrappers.
+- **SocketTLSContext.c**: SSL_CTX management, certificate loading, SNI callbacks.
+- **SocketTLSConfig.h**: Configuration constants, cipher suites, buffer sizes - DO NOT weaken security settings.
+
+### Timer Module
+- **SocketTimer.c**: Deadline tracking, monotonic clock usage, timeout calculations.
+
+### Headers
+- **Organization**: Include guards with `_INCLUDED` suffix, system headers first, module documentation.
+- **Private headers** (`*-private.h`): Internal structures, not part of public API.
+- **Public headers**: Opaque types only, `extern` function declarations, comprehensive Doxygen comments.
 
 ## Output Format for Refactored Code
 
@@ -507,29 +985,66 @@ When refactoring a file, provide:
 
 Before completing refactoring, verify:
 
-- [ ] All functions are under 20 lines
+### Code Structure
+- [ ] All functions are under 20 lines (extract helpers aggressively)
+- [ ] All functions have single responsibility
 - [ ] All magic numbers replaced with named constants (preferably in SocketConfig.h)
 - [ ] All TODOs/FIXMEs removed or implemented
-- [ ] Security vulnerabilities addressed
-- [ ] Error handling uses exception system (TRY/EXCEPT/FINALLY) where appropriate
-- [ ] Code follows C Interfaces and Implementations style (header organization, type definitions, documentation, opaque types)
-- [ ] Code follows GNU C style (return types on separate lines, indentation, spacing)
-- [ ] Existing codebase functions are leveraged (Arena, Exception system, SocketError, SocketConfig)
-- [ ] No functionality changed (only refactored)
-- [ ] All functions have single responsibility
 - [ ] All .c and .h files are under 20000 lines of code
 - [ ] Each .c and .h file serves a single purpose
-- [ ] Memory allocations use Arena where appropriate (for related objects)
-- [ ] Thread safety patterns followed (thread-local storage for per-thread data)
+- [ ] No functionality changed (only refactored)
+- [ ] Code is production-ready
+
+### Style Compliance
+- [ ] Code follows C Interfaces and Implementations style (header organization, type definitions, documentation, opaque types)
+- [ ] Code follows GNU C style (return types on separate lines, 8-space indentation, spacing)
 - [ ] Module naming conventions followed (ModuleName_ prefix pattern)
-- [ ] Type definitions use T macro pattern with #undef T at end
+- [ ] Type definitions use T macro pattern with `#undef T` at end
 - [ ] Include guards use `_INCLUDED` suffix pattern
 - [ ] Header files expose only opaque types (no structure definitions in headers)
 - [ ] All public functions have comprehensive Doxygen-style documentation
 - [ ] Function declarations use `extern` keyword in headers
-- [ ] Type definitions follow `T` macro pattern with `#undef T` at end
-- [ ] Code is production-ready
-- [ ] Socket lifecycle verified (no outstanding sockets; `Socket_debug_live_count()` is zero at teardown)
+- [ ] Static functions documented with Doxygen comments
+
+### Memory Management
+- [ ] Memory allocations use Arena where appropriate (for related objects)
+- [ ] Buffer sizes validated with `SOCKET_VALID_BUFFER_SIZE`
+- [ ] Overflow protection before arithmetic (check `SIZE_MAX/2` limit)
+- [ ] Sensitive data cleared with `SocketBuf_secureclear`
+- [ ] Socket lifecycle verified (`Socket_debug_live_count()` is zero at teardown)
+
+### Error Handling
+- [ ] Error handling uses exception system (TRY/EXCEPT/FINALLY)
+- [ ] Thread-safe exception patterns (thread-local `Module_DetailedException`)
+- [ ] System calls use safe wrappers (`SAFE_CLOSE`, etc.)
+- [ ] Error messages use standardized format (`MODULE_ERROR_FMT`/`MODULE_ERROR_MSG`)
+
+### Thread Safety
+- [ ] Thread-local storage for per-thread data
+- [ ] Mutex protection for shared data structures
+- [ ] No modification of global exception structures directly
+- [ ] Const correctness for read-only parameters
+
+### Security
+- [ ] Security vulnerabilities addressed (buffer overflows, integer overflows)
+- [ ] TLS code uses TLS1.3-only configuration from `SocketTLSConfig.h`
+- [ ] No legacy cipher suites or protocol versions
+- [ ] Input validation at API boundaries
+
+### Async & Event Patterns
+- [ ] Blocking DNS uses `SocketDNS` async resolution
+- [ ] Edge-triggered events drain until EAGAIN
+- [ ] Timeout configuration respected and propagated
+- [ ] Async resources properly cleaned up (`freeaddrinfo`)
+
+### Platform Compatibility
+- [ ] Uses `SocketPoll` API, not direct epoll/kqueue/poll
+- [ ] Platform-specific code isolated to backend files
+- [ ] No assumptions about specific backend
+
+### Existing Codebase Integration
+- [ ] Existing codebase functions leveraged (Arena, Exception system, SocketError, SocketConfig)
+- [ ] Patterns match existing modules (consult `.cursor/rules/` for details)
 
 ## C Interfaces and Implementations Style Examples
 

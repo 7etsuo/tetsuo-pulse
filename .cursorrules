@@ -47,14 +47,34 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 
 ### Layered Architecture
 1. **Foundation**: `Arena` (Memory), `Except` (Errors).
-2. **Core I/O**: `Socket` (TCP/Unix), `SocketDgram` (UDP), `SocketBuf` (Buffers), `SocketDNS` (Async DNS).
-3. **Event System**: `SocketPoll` (epoll/kqueue/poll abstraction).
-4. **Application**: `SocketPool` (Connection management), `SocketError` (Reporting).
+2. **Utilities**: `SocketUtil` (Logging, Metrics, Events, Error Handling - consolidated).
+3. **Base Abstraction**: `SocketCommon` (Shared base for Socket/SocketDgram).
+4. **Core I/O**: `Socket` (TCP/Unix), `SocketDgram` (UDP), `SocketBuf` (Buffers), `SocketDNS` (Async DNS).
+5. **Event System**: `SocketPoll` (epoll/kqueue/poll abstraction).
+6. **Application**: `SocketPool` (Connection management).
 
 ### Resource Management
 - **Acquisition Order**: Arena -> Server Socket -> Poll -> Connection Pool -> Buffers.
 - **Cleanup Order**: Reverse of acquisition.
 - **ALWAYS** use `Arena` for memory management of related objects.
+
+### Socket Base Delegation Pattern
+- **ALWAYS** use `SocketBase_T` for shared socket state (fd, arena, endpoints, timeouts):
+  ```c
+  struct SocketBase_T
+  {
+      int fd;                              /* Socket file descriptor */
+      Arena_T arena;                       /* Per-socket memory arena */
+      int domain;                          /* AF_INET, AF_INET6, AF_UNIX */
+      int type;                            /* SOCK_STREAM, SOCK_DGRAM */
+      struct sockaddr_storage local_addr;  /* Local endpoint */
+      struct sockaddr_storage remote_addr; /* Remote endpoint */
+      SocketTimeouts_T timeouts;           /* Timeout configuration */
+      /* ... */
+  };
+  ```
+- Stream sockets (`Socket_T`) add TLS fields via composition.
+- Datagram sockets (`SocketDgram_T`) use base directly.
 
 ### Opaque Types
 - **ALWAYS** use the `T` macro pattern for public opaque types:
@@ -73,20 +93,19 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 ### Thread Safety (CRITICAL)
 - **ALWAYS** use thread-local storage for error buffers and exception copies.
 - **NEVER** modify global exception structures directly.
-- **Pattern**:
+- **Use Centralized Macros** from `SocketUtil.h`:
   ```c
-  #ifdef _WIN32
-  static __declspec(thread) Except_T Module_DetailedException;
-  #else
-  static __thread Except_T Module_DetailedException;
-  #endif
+  /* Declare thread-local exception (use once per module) */
+  SOCKET_DECLARE_MODULE_EXCEPTION(ModuleName);
   
-  #define RAISE_MODULE_ERROR(e) do { \
-      Module_DetailedException = (e); \
-      Module_DetailedException.reason = module_error_buf; \
-      RAISE(Module_DetailedException); \
-  } while(0)
+  /* Raise with detailed error message (uses socket_error_buf) */
+  #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(ModuleName, e)
   ```
+
+### Error Formatting
+- **Use** `SOCKET_ERROR_FMT(fmt, ...)` for errors with errno information.
+- **Use** `SOCKET_ERROR_MSG(fmt, ...)` for errors without errno.
+- Both macros auto-emit to logging and handle truncation.
 
 ### Safe System Calls
 - **ALWAYS** use `SAFE_CLOSE(fd)` which handles `EINTR` correctly (per POSIX.1-2008, do NOT retry close on EINTR).
@@ -104,23 +123,31 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 
 ## 6. Module Specific Rules
 
+### SocketCommon (Base Abstraction)
+- **Purpose**: Shared functionality between `Socket` and `SocketDgram`.
+- **Functions**: `SocketCommon_new_base()`, `SocketCommon_free_base()`, address resolution, socket options.
+- **Pattern**: Both Socket_T and SocketDgram_T contain a `SocketBase_T base` pointer.
+
 ### Socket (TCP/Unix)
-- **Structure**: Contains `fd`, `sockaddr`, and `Arena`.
+- **Structure**: Contains `SocketBase_T base` + TLS fields (when `SOCKET_HAS_TLS` defined).
 - **DNS**: `Socket_bind`/`Socket_connect` may block on DNS. Use `SocketDNS` for non-blocking resolution.
 - **Unix Domain**: Support `AF_UNIX`. Prefer absolute paths. Handle stale socket files (unlink before bind).
+- **Lifecycle**: Use `Socket_new()`, `Socket_free()`. Track with `Socket_debug_live_count()`.
 
 ### SocketDgram (UDP)
+- **Structure**: Contains `SocketBase_T base` only (simpler than Socket_T).
 - **Connectionless**: No `listen`/`accept`.
-- **Sizing**: Respect `UDP_MAX_PAYLOAD`. Prefer `SAFE_UDP_SIZE` (1472) to avoid fragmentation.
-- **Pattern**: Use `recvfrom`/`sendto`.
+- **Sizing**: Respect `UDP_MAX_PAYLOAD` (65507). Prefer `SAFE_UDP_SIZE` (1472) to avoid fragmentation.
+- **Pattern**: Use `SocketDgram_recvfrom`/`SocketDgram_sendto`.
 
 ### SocketPoll (Events)
 - **Edge Triggered**: Always use Edge Triggered mode (`EPOLLET`) where available.
 - **Backends**: Abstract `epoll` (Linux), `kqueue` (BSD/macOS), `poll` (POSIX fallback).
-- **Data Map**: Maintain `Socket` -> `User Data` mapping.
+- **Data Map**: Hash table mapping `Socket` -> `User Data` with `SOCKET_DATA_HASH_SIZE` buckets.
+- **Hash Function**: Golden ratio multiplicative hash (`HASH_GOLDEN_RATIO = 2654435761u`).
 
 ### SocketPool (Connection Pooling)
-- **Lookup**: O(1) hash table lookup for connections.
+- **Lookup**: O(1) hash table lookup for connections (`SOCKET_HASH_TABLE_SIZE = 1021`).
 - **Thread Safety**: Protect pool operations with mutexes.
 - **Buffer Reuse**: Reuse `SocketBuf` instances to reduce allocation churn.
 
@@ -128,6 +155,7 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 - **Thread Pool**: Use worker threads for `getaddrinfo`.
 - **Signaling**: Use pipe to signal completion to `SocketPoll`.
 - **Ownership**: Caller owns `addrinfo` result and MUST call `freeaddrinfo`.
+- **Timeout**: Propagate via `SocketDNS_request_settimeout()`.
 
 ## 7. Naming Conventions
 - **Types**: `ModuleName_T` (e.g., `Socket_T`, `Arena_T`).
