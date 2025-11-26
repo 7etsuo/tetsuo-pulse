@@ -255,6 +255,11 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_ERROR_BUFSIZE 1024
 #endif
 
+/* Thread-safe strerror buffer size */
+#ifndef SOCKET_STRERROR_BUFSIZE
+#define SOCKET_STRERROR_BUFSIZE 128
+#endif
+
 /* Maximum field sizes for error messages */
 #ifndef SOCKET_ERROR_MAX_HOSTNAME
 #define SOCKET_ERROR_MAX_HOSTNAME 255

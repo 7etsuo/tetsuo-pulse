@@ -183,7 +183,7 @@ Socket_geterrorcode (void)
 const char *
 Socket_safe_strerror (int errnum)
 {
-  static __thread char errbuf[128] = { 0 };
+  static __thread char errbuf[SOCKET_STRERROR_BUFSIZE] = { 0 };
 
   if (errnum == 0)
     {
