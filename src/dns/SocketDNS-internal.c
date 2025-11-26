@@ -572,14 +572,12 @@ destroy_dns_resources (T d)
  * Returns: Hash value in range [0, SOCKET_DNS_REQUEST_HASH_SIZE)
  * Thread-safe: Yes - no shared state modified, pure function
  *
- * Uses golden ratio multiplicative hashing (2^32 * (sqrt(5)-1)/2)
- * for good distribution of pointer values across hash buckets.
+ * Uses socket_util_hash_ptr() for golden ratio multiplicative hashing.
  */
 unsigned
 request_hash_function (const struct SocketDNS_Request_T *req)
 {
-  uintptr_t ptr = (uintptr_t)req;
-  return ((unsigned)ptr * HASH_GOLDEN_RATIO) % SOCKET_DNS_REQUEST_HASH_SIZE;
+  return socket_util_hash_ptr (req, SOCKET_DNS_REQUEST_HASH_SIZE);
 }
 
 /**

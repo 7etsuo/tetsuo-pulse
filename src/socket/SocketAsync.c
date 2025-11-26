@@ -124,11 +124,13 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketAsync);
  * request_hash - Hash function for request IDs
  * @request_id: Request ID to hash
  * Returns: Hash value in range [0, SOCKET_HASH_TABLE_SIZE)
+ *
+ * Uses socket_util_hash_uint() for golden ratio multiplicative hashing.
  */
 static unsigned
 request_hash (unsigned request_id)
 {
-  return ((unsigned)request_id * HASH_GOLDEN_RATIO) % SOCKET_HASH_TABLE_SIZE;
+  return socket_util_hash_uint (request_id, SOCKET_HASH_TABLE_SIZE);
 }
 
 /**
