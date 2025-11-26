@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "core/SocketConfig.h"
@@ -503,6 +504,61 @@ const char *Socket_safe_strerror (int errnum);
  *   #define RAISE_FMT(e, fmt, ...) SOCKET_RAISE_FMT(MyModule, e, fmt, ##__VA_ARGS__)
  *   #define RAISE_MSG(e, fmt, ...) SOCKET_RAISE_MSG(MyModule, e, fmt, ##__VA_ARGS__)
  */
+
+/* ============================================================================
+ * HASH UTILITIES (Consolidated from multiple modules)
+ * ============================================================================ */
+
+/**
+ * socket_util_hash_fd - Hash file descriptor using golden ratio multiplicative
+ * @fd: File descriptor to hash (non-negative)
+ * @table_size: Hash table size (should be prime for best distribution)
+ *
+ * Returns: Hash value in range [0, table_size)
+ * Thread-safe: Yes (pure function, no shared state)
+ *
+ * Uses the golden ratio constant (2^32 * (sqrt(5)-1)/2) for excellent
+ * distribution properties. Suitable for file descriptors, socket IDs,
+ * and other small integer keys.
+ */
+static inline unsigned
+socket_util_hash_fd (int fd, unsigned table_size)
+{
+  return ((unsigned)fd * HASH_GOLDEN_RATIO) % table_size;
+}
+
+/**
+ * socket_util_hash_ptr - Hash pointer using golden ratio multiplicative
+ * @ptr: Pointer to hash (may be NULL)
+ * @table_size: Hash table size (should be prime for best distribution)
+ *
+ * Returns: Hash value in range [0, table_size)
+ * Thread-safe: Yes (pure function, no shared state)
+ *
+ * Converts pointer to integer and applies golden ratio hash.
+ * Suitable for hashing opaque handles and memory addresses.
+ */
+static inline unsigned
+socket_util_hash_ptr (const void *ptr, unsigned table_size)
+{
+  return ((unsigned)(uintptr_t)ptr * HASH_GOLDEN_RATIO) % table_size;
+}
+
+/**
+ * socket_util_hash_uint - Hash unsigned integer using golden ratio
+ * @value: Unsigned integer to hash
+ * @table_size: Hash table size (should be prime for best distribution)
+ *
+ * Returns: Hash value in range [0, table_size)
+ * Thread-safe: Yes (pure function, no shared state)
+ *
+ * General-purpose hash for unsigned integers including request IDs.
+ */
+static inline unsigned
+socket_util_hash_uint (unsigned value, unsigned table_size)
+{
+  return (value * HASH_GOLDEN_RATIO) % table_size;
+}
 
 #endif /* SOCKETUTIL_INCLUDED */
 

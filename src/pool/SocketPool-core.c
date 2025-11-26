@@ -71,7 +71,7 @@ safe_time (void)
  * Thread-safe: Yes - pure function
  * Performance: O(1)
  *
- * Uses golden ratio multiplicative hashing for good distribution.
+ * Uses socket_util_hash_fd() for golden ratio multiplicative hashing.
  */
 unsigned
 socketpool_hash (const Socket_T socket)
@@ -88,7 +88,7 @@ socketpool_hash (const Socket_T socket)
       return 0;
     }
 
-  return ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_HASH_SIZE;
+  return socket_util_hash_fd (fd, SOCKET_HASH_SIZE);
 }
 
 /**

@@ -60,25 +60,11 @@ static void cleanup_poll_partial (T poll);
 /* ==================== Hash Functions ==================== */
 
 /**
- * compute_fd_hash - Compute hash for file descriptor
- * @fd: File descriptor
- * Returns: Hash value in range [0, SOCKET_DATA_HASH_SIZE)
- *
- * Uses multiplicative hashing with the golden ratio constant for
- * good distribution across hash buckets.
- */
-static unsigned
-compute_fd_hash (const int fd)
-{
-  return ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_DATA_HASH_SIZE;
-}
-
-/**
  * socket_hash - Hash function for socket file descriptors
  * @socket: Socket to hash
  * Returns: Hash value in range [0, SOCKET_DATA_HASH_SIZE)
  *
- * Delegates to compute_fd_hash after extracting file descriptor.
+ * Uses socket_util_hash_fd() for golden ratio multiplicative hashing.
  * Provides O(1) average case performance for socket data lookups.
  */
 static unsigned
@@ -97,7 +83,7 @@ socket_hash (const Socket_T socket)
       return 0;
     }
 
-  return compute_fd_hash (fd);
+  return socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
 }
 
 /* ==================== Allocation Helpers ==================== */
@@ -297,7 +283,7 @@ socket_data_add_unlocked (T poll, Socket_T socket, void *data)
 {
   int fd = Socket_fd (socket);
   unsigned hash = socket_hash (socket);
-  unsigned fd_hash = compute_fd_hash (fd);
+  unsigned fd_hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
   SocketData *data_entry = allocate_socket_data_entry (poll);
   FdSocketEntry *fd_entry = allocate_fd_socket_entry (poll);
 
@@ -352,7 +338,7 @@ socket_data_remove_unlocked (T poll, Socket_T socket)
 {
   int fd = Socket_fd (socket);
   unsigned hash = socket_hash (socket);
-  unsigned fd_hash = compute_fd_hash (fd);
+  unsigned fd_hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
 
   remove_socket_data_entry (poll, hash, socket);
   remove_fd_socket_entry (poll, fd_hash, fd);
@@ -536,7 +522,7 @@ initialize_poll_async (T poll)
 static Socket_T
 find_socket_by_fd (const T poll, const int fd)
 {
-  unsigned fd_hash = compute_fd_hash (fd);
+  unsigned fd_hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
   FdSocketEntry *entry = poll->fd_to_socket_map[fd_hash];
 
   while (entry)
