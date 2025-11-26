@@ -60,11 +60,17 @@ static SocketHE_AddressEntry_T *he_get_next_address (T he);
 
 /* Connection attempt management */
 static int he_start_attempt (T he, SocketHE_AddressEntry_T *entry);
+static int he_initiate_connect (T he, SocketHE_Attempt_T *attempt,
+                                SocketHE_AddressEntry_T *entry);
 static void he_check_attempts (T he);
 static void he_cleanup_attempts (T he);
 static void he_declare_winner (T he, SocketHE_Attempt_T *attempt);
 static void he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error);
 static int he_all_attempts_done (const T he);
+
+/* Attempt completion checking */
+static int he_process_poll_result (T he, SocketHE_Attempt_T *attempt, int fd,
+                                   int poll_result, short revents);
 
 /* State and timeout management */
 static void he_transition_to_failed (T he, const char *reason);
@@ -74,6 +80,12 @@ static int he_check_total_timeout (const T he);
 /* Sync API helpers */
 static int sync_handle_timeout_check (T he);
 static int sync_do_poll (struct pollfd *pfds, int nfds, int timeout);
+static int sync_execute_poll_cycle (T he, struct pollfd *pfds,
+                                    SocketHE_Attempt_T **attempt_map);
+static T sync_create_and_resolve (const char *host, int port,
+                                  const SocketHE_Config_T *config,
+                                  char *errmsg, size_t errmsg_size);
+static void sync_prepare_connections (T he);
 
 /* ============================================================================
  * Configuration Defaults
@@ -869,6 +881,30 @@ he_register_attempt (T he, SocketHE_Attempt_T *attempt,
 }
 
 /**
+ * he_initiate_connect - Initiate non-blocking connect
+ * @he: Happy Eyeballs context
+ * @attempt: Attempt structure
+ * @entry: Address entry
+ *
+ * Returns: 0 on success/in-progress, -1 on failure
+ */
+static int
+he_initiate_connect (T he, SocketHE_Attempt_T *attempt,
+                     SocketHE_AddressEntry_T *entry)
+{
+  int result = connect (Socket_fd (attempt->socket), entry->addr->ai_addr,
+                        entry->addr->ai_addrlen);
+
+  if (he_handle_connect_result (he, attempt, entry, result) < 0)
+    return -1;
+
+  if (he->state == HE_STATE_CONNECTED)
+    return 0;
+
+  return he_register_attempt (he, attempt, entry);
+}
+
+/**
  * he_start_attempt - Start connection attempt for address
  * @he: Happy Eyeballs context
  * @entry: Address entry to connect to
@@ -880,7 +916,6 @@ he_start_attempt (T he, SocketHE_AddressEntry_T *entry)
 {
   Socket_T sock;
   SocketHE_Attempt_T *attempt;
-  int result;
 
   if (entry->tried)
     return -1;
@@ -900,16 +935,7 @@ he_start_attempt (T he, SocketHE_AddressEntry_T *entry)
       return -1;
     }
 
-  result = connect (Socket_fd (sock), entry->addr->ai_addr,
-                    entry->addr->ai_addrlen);
-
-  if (he_handle_connect_result (he, attempt, entry, result) < 0)
-    return -1;
-
-  if (he->state == HE_STATE_CONNECTED)
-    return 0;
-
-  return he_register_attempt (he, attempt, entry);
+  return he_initiate_connect (he, attempt, entry);
 }
 
 /* ============================================================================
@@ -1131,6 +1157,42 @@ he_handle_poll_success (T he, SocketHE_Attempt_T *attempt, int fd)
 }
 
 /**
+ * he_process_poll_result - Process poll result for attempt
+ * @he: Happy Eyeballs context
+ * @attempt: Attempt being checked
+ * @fd: File descriptor
+ * @poll_result: Result from poll (0=pending, >0=ready, <0=error)
+ * @revents: Poll events if ready
+ *
+ * Returns: 1 if connected, 0 if pending, -1 if failed
+ */
+static int
+he_process_poll_result (T he, SocketHE_Attempt_T *attempt, int fd,
+                        int poll_result, short revents)
+{
+  if (poll_result < 0)
+    {
+      he_fail_attempt (he, attempt, errno);
+      return -1;
+    }
+
+  if (poll_result == 0)
+    {
+      if (he_check_attempt_timeout (he, attempt))
+        {
+          he_fail_attempt (he, attempt, ETIMEDOUT);
+          return -1;
+        }
+      return 0;
+    }
+
+  if (revents & (POLLERR | POLLHUP | POLLNVAL))
+    return he_handle_poll_error (he, attempt, fd);
+
+  return he_handle_poll_success (he, attempt, fd);
+}
+
+/**
  * he_check_attempt_completion - Check if attempt has completed
  * @he: Happy Eyeballs context
  * @attempt: Attempt to check
@@ -1152,26 +1214,7 @@ he_check_attempt_completion (T he, SocketHE_Attempt_T *attempt)
   fd = Socket_fd (attempt->socket);
   result = he_poll_attempt_status (fd, &revents);
 
-  if (result < 0)
-    {
-      he_fail_attempt (he, attempt, errno);
-      return -1;
-    }
-
-  if (result == 0)
-    {
-      if (he_check_attempt_timeout (he, attempt))
-        {
-          he_fail_attempt (he, attempt, ETIMEDOUT);
-          return -1;
-        }
-      return 0;
-    }
-
-  if (revents & (POLLERR | POLLHUP | POLLNVAL))
-    return he_handle_poll_error (he, attempt, fd);
-
-  return he_handle_poll_success (he, attempt, fd);
+  return he_process_poll_result (he, attempt, fd, result, revents);
 }
 
 /**
@@ -1782,6 +1825,31 @@ sync_do_poll (struct pollfd *pfds, int nfds, int timeout)
 }
 
 /**
+ * sync_execute_poll_cycle - Execute poll cycle and process results
+ * @he: Happy Eyeballs context
+ * @pfds: Poll fd array
+ * @attempt_map: Attempt map array
+ *
+ * Returns: 1 if should exit loop, 0 to continue
+ */
+static int
+sync_execute_poll_cycle (T he, struct pollfd *pfds,
+                         SocketHE_Attempt_T **attempt_map)
+{
+  int timeout = sync_calculate_poll_timeout (he);
+  int nfds = sync_build_poll_set (he, pfds, attempt_map);
+
+  if (sync_should_exit_loop (he, nfds))
+    return 1;
+
+  if (sync_do_poll (pfds, nfds, timeout) < 0)
+    return 1;
+
+  sync_process_poll_results (he, pfds, attempt_map, nfds);
+  return 0;
+}
+
+/**
  * sync_loop_iteration - Execute one iteration of the sync loop
  * @he: Happy Eyeballs context
  * @pfds: Poll fd array
@@ -1793,8 +1861,6 @@ static int
 sync_loop_iteration (T he, struct pollfd *pfds,
                      SocketHE_Attempt_T **attempt_map)
 {
-  int timeout, nfds;
-
   if (sync_handle_timeout_check (he))
     return 1;
 
@@ -1802,16 +1868,9 @@ sync_loop_iteration (T he, struct pollfd *pfds,
   if (he->state == HE_STATE_CONNECTED)
     return 1;
 
-  timeout = sync_calculate_poll_timeout (he);
-  nfds = sync_build_poll_set (he, pfds, attempt_map);
-
-  if (sync_should_exit_loop (he, nfds))
+  if (sync_execute_poll_cycle (he, pfds, attempt_map))
     return 1;
 
-  if (sync_do_poll (pfds, nfds, timeout) < 0)
-    return 1;
-
-  sync_process_poll_results (he, pfds, attempt_map, nfds);
   if (sync_try_start_fallback (he))
     return 1;
 
@@ -1860,14 +1919,49 @@ sync_finalize_result (T he)
  * ============================================================================ */
 
 /**
- * sync_raise_error - Raise error for sync API failure
- * @errmsg: Error message to include
+ * sync_create_and_resolve - Create context and perform blocking DNS
+ * @host: Hostname to resolve
+ * @port: Target port
+ * @config: Configuration options
+ * @errmsg: Buffer for error message on failure
+ * @errmsg_size: Size of error buffer
+ *
+ * Returns: Context on success, NULL on failure (errmsg set)
+ */
+static T
+sync_create_and_resolve (const char *host, int port,
+                         const SocketHE_Config_T *config, char *errmsg,
+                         size_t errmsg_size)
+{
+  T he = he_create_context (NULL, NULL, host, port, config);
+
+  if (!he)
+    {
+      snprintf (errmsg, errmsg_size, "Failed to create Happy Eyeballs context");
+      return NULL;
+    }
+
+  if (he_dns_blocking_resolve (he) < 0)
+    {
+      snprintf (errmsg, errmsg_size, "%s", he->error_buf);
+      SocketHappyEyeballs_free (&he);
+      return NULL;
+    }
+
+  return he;
+}
+
+/**
+ * sync_prepare_connections - Prepare context for connection attempts
+ * @he: Happy Eyeballs context
+ *
+ * Sorts addresses and transitions to connecting state.
  */
 static void
-sync_raise_error (const char *errmsg)
+sync_prepare_connections (T he)
 {
-  SOCKET_ERROR_MSG ("%s", errmsg[0] ? errmsg : "Happy Eyeballs failed");
-  RAISE_MODULE_ERROR (SocketHE_Failed);
+  he_sort_addresses (he);
+  he->state = HE_STATE_CONNECTING;
 }
 
 /**
@@ -1891,23 +1985,15 @@ SocketHappyEyeballs_connect (const char *host, int port,
   assert (host);
   assert (port > 0 && port <= SOCKET_MAX_PORT);
 
-  he = he_create_context (NULL, NULL, host, port, config);
+  he = sync_create_and_resolve (host, port, config, errmsg_copy,
+                                sizeof (errmsg_copy));
   if (!he)
     {
-      SOCKET_ERROR_MSG ("Failed to create Happy Eyeballs context");
+      SOCKET_ERROR_MSG ("%s", errmsg_copy);
       RAISE_MODULE_ERROR (SocketHE_Failed);
     }
 
-  if (he_dns_blocking_resolve (he) < 0)
-    {
-      snprintf (errmsg_copy, sizeof (errmsg_copy), "%s", he->error_buf);
-      SocketHappyEyeballs_free (&he);
-      sync_raise_error (errmsg_copy);
-    }
-
-  he_sort_addresses (he);
-  he->state = HE_STATE_CONNECTING;
-
+  sync_prepare_connections (he);
   sync_run_connection_loop (he);
   result = sync_finalize_result (he);
 
@@ -1917,7 +2003,11 @@ SocketHappyEyeballs_connect (const char *host, int port,
   SocketHappyEyeballs_free (&he);
 
   if (!result)
-    sync_raise_error (errmsg_copy);
+    {
+      SOCKET_ERROR_MSG ("%s",
+                        errmsg_copy[0] ? errmsg_copy : "Happy Eyeballs failed");
+      RAISE_MODULE_ERROR (SocketHE_Failed);
+    }
 
   return result;
 }
