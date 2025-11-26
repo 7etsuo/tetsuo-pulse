@@ -331,7 +331,7 @@ start_connect (T conn)
     Socket_connect (conn->socket, conn->host, conn->port);
     /* Immediate success (rare, usually localhost) */
     conn->connect_in_progress = 0;
-    return 1;
+    RETURN 1;
   }
   EXCEPT (Socket_Failed)
   {

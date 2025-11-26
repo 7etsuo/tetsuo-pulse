@@ -324,11 +324,11 @@ TEST (socketbuf_write_read_cycle)
 
   for (int i = 0; i < 10; i++)
     {
-      char write_data[10];
+      char write_data[16];
       snprintf (write_data, sizeof (write_data), "Data%d", i);
       SocketBuf_write (buf, write_data, strlen (write_data));
 
-      char read_data[10] = { 0 };
+      char read_data[16] = { 0 };
       size_t read = SocketBuf_read (buf, read_data, sizeof (read_data));
       ASSERT_EQ (read, strlen (write_data));
       ASSERT_EQ (strcmp (read_data, write_data), 0);

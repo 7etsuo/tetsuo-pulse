@@ -56,7 +56,7 @@ TEST (socketdns_resolve_localhost)
   if (result)
     {
       ASSERT_NOT_NULL (result);
-      freeaddrinfo (result);
+      SocketCommon_free_addrinfo (result);
     }
   EXCEPT (SocketDNS_Failed) (void) 0;
   FINALLY
@@ -79,7 +79,7 @@ TEST (socketdns_resolve_loopback_ip)
   if (result)
     {
       ASSERT_NOT_NULL (result);
-      freeaddrinfo (result);
+      SocketCommon_free_addrinfo (result);
     }
   EXCEPT (SocketDNS_Failed) (void) 0;
   FINALLY
@@ -102,7 +102,7 @@ TEST (socketdns_resolve_ipv6_loopback)
   if (result)
     {
       ASSERT_NOT_NULL (result);
-      freeaddrinfo (result);
+      SocketCommon_free_addrinfo (result);
     }
   EXCEPT (SocketDNS_Failed) (void) 0;
   FINALLY
@@ -123,7 +123,7 @@ TEST (socketdns_resolve_with_port)
 
   struct addrinfo *result = SocketDNS_getresult (dns, req);
   if (result)
-    freeaddrinfo (result);
+    SocketCommon_free_addrinfo (result);
   EXCEPT (SocketDNS_Failed) (void) 0;
   FINALLY
   SocketDNS_free (&dns);
@@ -143,7 +143,7 @@ TEST (socketdns_resolve_without_port)
 
   struct addrinfo *result = SocketDNS_getresult (dns, req);
   if (result)
-    freeaddrinfo (result);
+    SocketCommon_free_addrinfo (result);
   EXCEPT (SocketDNS_Failed) (void) 0;
   FINALLY
   SocketDNS_free (&dns);
@@ -173,11 +173,11 @@ TEST (socketdns_multiple_resolutions)
   struct addrinfo *res3 = SocketDNS_getresult (dns, req3);
 
   if (res1)
-    freeaddrinfo (res1);
+    SocketCommon_free_addrinfo (res1);
   if (res2)
-    freeaddrinfo (res2);
+    SocketCommon_free_addrinfo (res2);
   if (res3)
-    freeaddrinfo (res3);
+    SocketCommon_free_addrinfo (res3);
   EXCEPT (SocketDNS_Failed) (void) 0;
   FINALLY
   SocketDNS_free (&dns);
@@ -198,7 +198,7 @@ TEST (socketdns_sequential_resolutions)
       SocketDNS_check (dns);
       struct addrinfo *result = SocketDNS_getresult (dns, req);
       if (result)
-        freeaddrinfo (result);
+        SocketCommon_free_addrinfo (result);
     }
   EXCEPT (SocketDNS_Failed) (void) 0;
   FINALLY
@@ -218,7 +218,7 @@ slow_queue_callback (SocketDNS_Request_T req, struct addrinfo *result,
     *(int *)data = 1;
   usleep (50000);
   if (result)
-    freeaddrinfo (result);
+    SocketCommon_free_addrinfo (result);
 }
 
 static int callback_invoked;
@@ -231,7 +231,7 @@ test_callback (SocketDNS_Request_T req, struct addrinfo *result, int error,
   (void)data;
   callback_invoked = 1;
   if (result)
-    freeaddrinfo (result);
+    SocketCommon_free_addrinfo (result);
 }
 
 TEST (socketdns_callback_invoked)
@@ -264,7 +264,7 @@ callback_check_data (SocketDNS_Request_T r, struct addrinfo *res, int err,
   if (d)
     test_received_data = *(int *)d;
   if (res)
-    freeaddrinfo (res);
+    SocketCommon_free_addrinfo (res);
 }
 
 TEST (socketdns_callback_with_user_data)
@@ -346,7 +346,7 @@ TEST (socketdns_check_returns_completion_count)
     /* Drain result to release getaddrinfo allocation */
     struct addrinfo *result = SocketDNS_getresult (dns, req);
     if (result)
-      freeaddrinfo (result);
+      SocketCommon_free_addrinfo (result);
   }
   EXCEPT (SocketDNS_Failed) { (void)0; }
   FINALLY { SocketDNS_free (&dns); }
@@ -371,7 +371,7 @@ TEST (socketdns_check_before_completion)
     SocketDNS_check (dns);
     struct addrinfo *result = SocketDNS_getresult (dns, req);
     if (result)
-      freeaddrinfo (result);
+      SocketCommon_free_addrinfo (result);
   }
   EXCEPT (SocketDNS_Failed) { (void)0; }
   FINALLY { SocketDNS_free (&dns); }
@@ -409,7 +409,7 @@ TEST (socketdns_getresult_after_completion)
   if (result)
     {
       ASSERT_NOT_NULL (result);
-      freeaddrinfo (result);
+      SocketCommon_free_addrinfo (result);
     }
   EXCEPT (SocketDNS_Failed) (void) 0;
   FINALLY
@@ -429,7 +429,7 @@ TEST (socketdns_getresult_clears_result)
   struct addrinfo *result1 = SocketDNS_getresult (dns, req);
   if (result1)
     {
-      freeaddrinfo (result1);
+      SocketCommon_free_addrinfo (result1);
       struct addrinfo *result2 = SocketDNS_getresult (dns, req);
       ASSERT_NULL (result2);
     }
@@ -463,7 +463,7 @@ TEST (socketdns_many_concurrent_resolutions)
       if (result)
         {
           completed++;
-          freeaddrinfo (result);
+          SocketCommon_free_addrinfo (result);
         }
     }
   ASSERT_NE (completed, 0);
@@ -495,7 +495,7 @@ TEST (socketdns_rapid_resolution_requests)
       {
         struct addrinfo *result = SocketDNS_getresult (dns, requests[i]);
         if (result)
-          freeaddrinfo (result);
+          SocketCommon_free_addrinfo (result);
       }
   }
   EXCEPT (SocketDNS_Failed) { ASSERT (0); }
@@ -552,14 +552,14 @@ thread_resolve_requests (void *arg)
             result = SocketDNS_getresult (dns, req);
           }
 
-        freeaddrinfo (result);
+        SocketCommon_free_addrinfo (result);
         result = NULL;
       }
       EXCEPT (SocketDNS_Failed) { stop = 1; }
       FINALLY
       {
         if (result)
-          freeaddrinfo (result);
+          SocketCommon_free_addrinfo (result);
       }
       END_TRY;
 
@@ -685,7 +685,7 @@ TEST(socketdns_thread_pool_processes_requests)
             if (result)
             {
                 completed++;
-                freeaddrinfo(result);
+                SocketCommon_free_addrinfo(result);
             }
         }
         ASSERT_NE(completed, 0);
@@ -812,14 +812,14 @@ TEST (socketdns_resolve_valid_port_zero)
     SocketDNS_check (dns);
     result = SocketDNS_getresult (dns, req);
     if (result)
-      freeaddrinfo (result);
+      SocketCommon_free_addrinfo (result);
     result = NULL;
   }
   EXCEPT (SocketDNS_Failed) { ASSERT (0); /* Port 0 should be valid */ }
   FINALLY
   {
     if (result)
-      freeaddrinfo (result);
+      SocketCommon_free_addrinfo (result);
     SocketDNS_free (&dns);
   }
   END_TRY;
@@ -840,14 +840,14 @@ TEST (socketdns_resolve_valid_port_max)
     SocketDNS_check (dns);
     result = SocketDNS_getresult (dns, req);
     if (result)
-      freeaddrinfo (result);
+      SocketCommon_free_addrinfo (result);
     result = NULL;
   }
   EXCEPT (SocketDNS_Failed) { ASSERT (0); /* Maximum port should be valid */ }
   FINALLY
   {
     if (result)
-      freeaddrinfo (result);
+      SocketCommon_free_addrinfo (result);
     SocketDNS_free (&dns);
   }
   END_TRY;
@@ -1004,9 +1004,9 @@ TEST (socketdns_multiple_resolvers_independent)
   FINALLY
   {
     if (res1)
-      freeaddrinfo (res1);
+      SocketCommon_free_addrinfo (res1);
     if (res2)
-      freeaddrinfo (res2);
+      SocketCommon_free_addrinfo (res2);
     SocketDNS_free (&dns1);
     SocketDNS_free (&dns2);
   }

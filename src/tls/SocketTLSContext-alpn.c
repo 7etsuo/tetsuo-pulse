@@ -134,10 +134,13 @@ free_client_protos (const char **protos, size_t count)
  * @client_count: Number of client protocols
  *
  * Returns: Selected protocol string or NULL
+ *
+ * Server-preference ordering: iterates server protos first, returns
+ * the first match found in client list.
  */
 static const char *
-find_matching_proto (const char **server_protos, size_t server_count,
-                     const char **client_protos, size_t client_count)
+find_matching_proto (const char *const *server_protos, size_t server_count,
+                     const char *const *client_protos, size_t client_count)
 {
   for (size_t i = 0; i < server_count; i++)
     {
@@ -215,15 +218,18 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
 /**
  * build_wire_format - Build ALPN wire format from protocol list
  * @ctx: Context with arena
- * @protos: Protocol strings
+ * @protos: Protocol strings (read-only)
  * @count: Number of protocols
  * @len_out: Output: wire format length
  *
+ * Wire format: [len1][proto1][len2][proto2]... (length-prefixed strings)
+ *
  * Returns: Wire format buffer (arena-allocated)
- * Raises: SocketTLS_Failed on allocation failure
+ * Raises: SocketTLS_Failed on allocation failure or overflow
  */
 static unsigned char *
-build_wire_format (T ctx, const char **protos, size_t count, size_t *len_out)
+build_wire_format (T ctx, const char *const *protos, size_t count,
+                   size_t *len_out)
 {
   /* Cache protocol lengths to avoid redundant strlen calls */
   size_t *lengths = ctx_arena_alloc (ctx, count * sizeof (size_t),
@@ -290,11 +296,16 @@ alloc_alpn_array (T ctx, size_t count)
 /**
  * copy_alpn_protocols - Validate and copy protocols to context
  * @ctx: TLS context
- * @protos: Source protocol strings
+ * @protos: Source protocol strings (read-only)
  * @count: Number of protocols
+ *
+ * Validates each protocol length (0 < len <= SOCKET_TLS_MAX_ALPN_LEN)
+ * and copies to context arena.
+ *
+ * Raises: SocketTLS_Failed on invalid protocol length or allocation failure
  */
 static void
-copy_alpn_protocols (T ctx, const char **protos, size_t count)
+copy_alpn_protocols (T ctx, const char *const *protos, size_t count)
 {
   for (size_t i = 0; i < count; i++)
     {
@@ -310,11 +321,16 @@ copy_alpn_protocols (T ctx, const char **protos, size_t count)
 /**
  * apply_alpn_to_ssl_ctx - Apply ALPN configuration to OpenSSL context
  * @ctx: TLS context
- * @protos: Protocol strings
+ * @protos: Protocol strings (read-only)
  * @count: Number of protocols
+ *
+ * Builds wire format, sets ALPN protos on SSL_CTX, and registers
+ * server-side selection callback.
+ *
+ * Raises: SocketTLS_Failed on OpenSSL error
  */
 static void
-apply_alpn_to_ssl_ctx (T ctx, const char **protos, size_t count)
+apply_alpn_to_ssl_ctx (T ctx, const char *const *protos, size_t count)
 {
   size_t wire_len;
   unsigned char *wire = build_wire_format (ctx, protos, count, &wire_len);

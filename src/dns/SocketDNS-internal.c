@@ -476,7 +476,7 @@ free_request_list (Request_T head, int use_hash_next)
       next = use_hash_next ? curr->hash_next : curr->queue_next;
       if (curr->result)
         {
-          freeaddrinfo (curr->result);
+          SocketCommon_free_addrinfo (curr->result);
           curr->result = NULL;
         }
       curr = next;
@@ -914,7 +914,7 @@ mark_request_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   req->error = EAI_AGAIN;
   if (req->result)
     {
-      freeaddrinfo (req->result);
+      SocketCommon_free_addrinfo (req->result);
       req->result = NULL;
     }
   SIGNAL_DNS_COMPLETION (dns);

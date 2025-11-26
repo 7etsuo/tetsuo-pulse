@@ -403,12 +403,22 @@ extern void SocketCommon_validate_host_not_null (const char *host, Except_T exce
  * @return: malloc-allocated deep copy, or NULL on error
  *
  * Deep copies the entire chain including ai_addr and ai_canonname fields.
- * All allocations use malloc() for compatibility with freeaddrinfo().
- * Caller takes ownership and must free with freeaddrinfo() when done.
+ * Caller takes ownership and MUST free with SocketCommon_free_addrinfo().
+ * Do NOT use freeaddrinfo() on the result - it's undefined behavior.
  * No exceptions raised; returns NULL on malloc failure or src==NULL.
  * Thread-safe: Yes
  */
 extern struct addrinfo *SocketCommon_copy_addrinfo (const struct addrinfo *src);
+
+/**
+ * SocketCommon_free_addrinfo - Free addrinfo chain created by copy_addrinfo
+ * @ai: Chain to free (may be NULL, safe no-op)
+ *
+ * Frees all nodes in the chain including ai_addr and ai_canonname fields.
+ * Use this instead of freeaddrinfo() for chains from SocketCommon_copy_addrinfo.
+ * Thread-safe: Yes
+ */
+extern void SocketCommon_free_addrinfo (struct addrinfo *ai);
 
 /* Internal helpers defined in SocketCommon-private.h for module use (getters/setters for base fields) */
 

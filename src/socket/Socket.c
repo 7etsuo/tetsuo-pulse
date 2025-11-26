@@ -754,7 +754,7 @@ Socket_bind (T socket, const char *host, int port)
   {
     bind_resolve_address ((T)vsock, host, port, socket_family, &res);
     if (!res)
-      return;
+      RETURN;
 
     bind_try_addresses ((T)vsock, res, socket_family);
 
@@ -767,6 +767,7 @@ Socket_bind (T socket, const char *host, int port)
     if (is_common_bind_error (saved_errno))
       {
         errno = saved_errno;
+        /* Frame already popped by EXCEPT macro, safe to use plain return */
         return;
       }
     errno = saved_errno;
@@ -1079,7 +1080,7 @@ Socket_accept (T socket)
   {
     newfd = accept_connection (socket, &addr, &addrlen);
     if (newfd < 0)
-      return NULL;
+      RETURN NULL;
 
     newsocket = create_accepted_socket (newfd, &addr, addrlen);
 
@@ -1100,7 +1101,7 @@ Socket_accept (T socket)
         newsocket->base->remoteport, newsocket->base->localaddr,
         newsocket->base->localport);
 
-    return newsocket;
+    RETURN newsocket;
   }
   EXCEPT (Socket_Failed)
   {

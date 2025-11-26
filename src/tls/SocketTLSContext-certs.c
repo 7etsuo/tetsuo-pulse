@@ -117,12 +117,15 @@ apply_sni_cert (SSL *ssl, X509 *cert, EVP_PKEY *pkey)
 /**
  * find_sni_cert_index - Find certificate index matching hostname
  * @ctx: TLS context with SNI certificates
- * @hostname: Hostname to match
+ * @hostname: Hostname to match (exact case-sensitive match)
  *
  * Returns: Index of matching certificate, or -1 if not found
+ *
+ * Note: Uses O(n) linear scan. Sufficient for typical SNI certificate
+ * counts (< 100). For high-volume virtual hosting, consider hash table.
  */
 static int
-find_sni_cert_index (T ctx, const char *hostname)
+find_sni_cert_index (const T ctx, const char *hostname)
 {
   for (size_t i = 0; i < ctx->sni_certs.count; i++)
     {

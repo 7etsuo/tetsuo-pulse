@@ -157,6 +157,7 @@ TEST (socketpool_tls_session_validation)
   /* Assume validated */
 
   SocketPool_free (&pool);
+  Socket_free (&socket);
   Arena_dispose (&arena);
 #else
   ASSERT (1);

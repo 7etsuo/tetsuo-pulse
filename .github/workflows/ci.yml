@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  ASAN_OPTIONS: detect_leaks=1:abort_on_error=1:halt_on_error=1
+  UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+
+jobs:
+  # Standard builds (Debug and Release)
+  build:
+    name: Build (${{ matrix.build_type }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libssl-dev libevent-dev doxygen
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TLS=ON
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Run tests
+        working-directory: build
+        run: ctest --output-on-failure --parallel $(nproc)
+
+  # Sanitizer builds
+  sanitizers:
+    name: Sanitizers (${{ matrix.sanitizer }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sanitizer: asan
+            cmake_flags: -DENABLE_ASAN=ON
+            name: AddressSanitizer
+          - sanitizer: ubsan
+            cmake_flags: -DENABLE_UBSAN=ON
+            name: UBSanitizer
+          - sanitizer: asan+ubsan
+            cmake_flags: -DENABLE_SANITIZERS=ON
+            name: ASan+UBSan
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libssl-dev libevent-dev
+
+      - name: Configure CMake with ${{ matrix.name }}
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_TLS=ON ${{ matrix.cmake_flags }}
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Run tests with ${{ matrix.name }}
+        working-directory: build
+        run: ctest --output-on-failure --parallel 1
+        # Note: Parallel=1 for sanitizers to get clearer error output
+
+  # macOS build (kqueue backend)
+  macos:
+    name: macOS Build
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install openssl@3 libevent doxygen
+          echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_TLS=ON -DOPENSSL_ROOT_DIR=$OPENSSL_ROOT_DIR
+
+      - name: Build
+        run: cmake --build build --parallel $(sysctl -n hw.ncpu)
+
+      - name: Run tests
+        working-directory: build
+        run: ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)
+
+  # macOS sanitizers
+  macos-sanitizers:
+    name: macOS Sanitizers
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install openssl@3 libevent
+          echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
+
+      - name: Configure CMake with ASan+UBSan
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_TLS=ON -DENABLE_SANITIZERS=ON -DOPENSSL_ROOT_DIR=$OPENSSL_ROOT_DIR
+
+      - name: Build
+        run: cmake --build build --parallel $(sysctl -n hw.ncpu)
+
+      - name: Run tests with sanitizers
+        working-directory: build
+        run: ctest --output-on-failure --parallel 1

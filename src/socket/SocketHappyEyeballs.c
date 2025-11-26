@@ -220,7 +220,7 @@ he_free_resolved (T he)
 {
   if (he->resolved)
     {
-      freeaddrinfo (he->resolved);
+      SocketCommon_free_addrinfo (he->resolved);
       he->resolved = NULL;
     }
 }
@@ -383,19 +383,30 @@ static int
 he_dns_blocking_resolve (T he)
 {
   struct addrinfo hints;
+  struct addrinfo *original = NULL;
   char port_str[SOCKET_HE_PORT_STR_SIZE];
   int result;
 
   he_setup_dns_hints (&hints);
   he_format_port_string (he->port, port_str, sizeof (port_str));
 
-  result = getaddrinfo (he->host, port_str, &hints, &he->resolved);
+  result = getaddrinfo (he->host, port_str, &hints, &original);
   if (result != 0)
     return he_handle_dns_resolve_error (he, result);
 
-  if (!he->resolved)
+  if (!original)
     {
       snprintf (he->error_buf, sizeof (he->error_buf), "No addresses found");
+      return -1;
+    }
+
+  /* Copy the result so he->resolved is always a copy we can free uniformly */
+  he->resolved = SocketCommon_copy_addrinfo (original);
+  freeaddrinfo (original);
+
+  if (!he->resolved)
+    {
+      snprintf (he->error_buf, sizeof (he->error_buf), "Memory allocation failed");
       return -1;
     }
 

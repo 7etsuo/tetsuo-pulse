@@ -98,6 +98,10 @@ allocate_tls_buffers (Socket_T socket)
 /**
  * free_tls_resources - Cleanup TLS resources
  * @socket: Socket instance
+ *
+ * Securely clears sensitive TLS buffers using OPENSSL_cleanse() before
+ * releasing them. This prevents potential exposure of decrypted application
+ * data through memory disclosure attacks (core dumps, cold boot, etc.).
  */
 static void
 free_tls_resources (Socket_T socket)
@@ -110,6 +114,23 @@ free_tls_resources (Socket_T socket)
       SSL_free ((SSL *)socket->tls_ssl);
       socket->tls_ssl = NULL;
       socket->tls_ctx = NULL;
+    }
+
+  /* Securely clear TLS buffers that may contain sensitive decrypted data */
+  if (socket->tls_read_buf)
+    {
+      OPENSSL_cleanse (socket->tls_read_buf, SOCKET_TLS_BUFFER_SIZE);
+    }
+  if (socket->tls_write_buf)
+    {
+      OPENSSL_cleanse (socket->tls_write_buf, SOCKET_TLS_BUFFER_SIZE);
+    }
+
+  /* Clear SNI hostname (may contain sensitive connection info) */
+  if (socket->tls_sni_hostname)
+    {
+      size_t hostname_len = strlen (socket->tls_sni_hostname);
+      OPENSSL_cleanse ((void *)socket->tls_sni_hostname, hostname_len);
     }
 
   socket->tls_enabled = 0;
@@ -390,20 +411,16 @@ SocketTLS_send (Socket_T socket, const void *buf, size_t len)
   int result = SSL_write (ssl, buf, write_len);
 
   if (result > 0)
+    return (ssize_t)result;
+
+  TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
+  if (state == TLS_HANDSHAKE_ERROR)
     {
-      return (ssize_t)result;
+      tls_format_openssl_error ("TLS send failed");
+      RAISE_TLS_ERROR (SocketTLS_Failed);
     }
-  else
-    {
-      TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
-      if (state == TLS_HANDSHAKE_ERROR)
-        {
-          tls_format_openssl_error ("TLS send failed");
-          RAISE_TLS_ERROR (SocketTLS_Failed);
-        }
-      errno = EAGAIN;
-      return 0;
-    }
+  errno = EAGAIN;
+  return 0;
 }
 
 ssize_t
@@ -419,25 +436,19 @@ SocketTLS_recv (Socket_T socket, void *buf, size_t len)
   int result = SSL_read (ssl, buf, read_len);
 
   if (result > 0)
+    return (ssize_t)result;
+
+  if (result == 0)
+    RAISE (Socket_Closed); /* longjmp - does not return */
+
+  TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
+  if (state == TLS_HANDSHAKE_ERROR)
     {
-      return (ssize_t)result;
+      tls_format_openssl_error ("TLS recv failed");
+      RAISE_TLS_ERROR (SocketTLS_Failed);
     }
-  else if (result == 0)
-    {
-      RAISE (Socket_Closed);
-      return -1; /* Unreachable - RAISE performs longjmp */
-    }
-  else
-    {
-      TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
-      if (state == TLS_HANDSHAKE_ERROR)
-        {
-          tls_format_openssl_error ("TLS recv failed");
-          RAISE_TLS_ERROR (SocketTLS_Failed);
-        }
-      errno = EAGAIN;
-      return 0;
-    }
+  errno = EAGAIN;
+  return 0;
 }
 
 /* ============================================================================

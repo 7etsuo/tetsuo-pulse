@@ -252,7 +252,7 @@ cancel_complete_state (struct SocketDNS_Request_T *req)
 {
   if (req->result)
     {
-      freeaddrinfo (req->result);
+      SocketCommon_free_addrinfo (req->result);
       req->result = NULL;
     }
   req->error = dns_cancellation_error ();
@@ -308,9 +308,9 @@ handle_cancel_by_state (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req
  *
  * Ownership semantics:
  * - If callback was provided during SocketDNS_resolve(), the callback receives
- *   ownership of the result and must call freeaddrinfo().
+ *   ownership of the result and must call SocketCommon_free_addrinfo().
  * - If no callback was provided (polling mode), this function transfers
- *   ownership to the caller who must call freeaddrinfo().
+ *   ownership to the caller who must call SocketCommon_free_addrinfo().
  * - After successful transfer, the request is removed from the hash table
  *   and the request handle becomes invalid.
  */

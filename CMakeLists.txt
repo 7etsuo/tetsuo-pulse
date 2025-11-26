@@ -14,6 +14,33 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -Wno-unused-function -
 set(CMAKE_C_FLAGS_DEBUG "-g -Og")
 set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
 
+# Sanitizer options for debugging memory/undefined behavior issues
+option(ENABLE_ASAN "Enable AddressSanitizer (ASan)" OFF)
+option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer (UBSan)" OFF)
+option(ENABLE_SANITIZERS "Enable both ASan and UBSan" OFF)
+
+# If ENABLE_SANITIZERS is ON, enable both
+if(ENABLE_SANITIZERS)
+    set(ENABLE_ASAN ON)
+    set(ENABLE_UBSAN ON)
+endif()
+
+# AddressSanitizer flags
+if(ENABLE_ASAN)
+    message(STATUS "AddressSanitizer (ASan) enabled")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+endif()
+
+# UndefinedBehaviorSanitizer flags
+if(ENABLE_UBSAN)
+    message(STATUS "UndefinedBehaviorSanitizer (UBSan) enabled")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined -fno-omit-frame-pointer")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=undefined")
+endif()
+
 # Default to Debug build
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
@@ -228,6 +255,12 @@ if(SOCKET_HAS_TLS)
     message(STATUS "  TLS Support: Enabled (${OPENSSL_LIBRARIES})")
 else()
     message(STATUS "  TLS Support: Disabled")
+endif()
+if(ENABLE_ASAN)
+    message(STATUS "  AddressSanitizer: Enabled")
+endif()
+if(ENABLE_UBSAN)
+    message(STATUS "  UBSanitizer: Enabled")
 endif()
 
 # Enable testing
