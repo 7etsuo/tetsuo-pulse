@@ -97,6 +97,7 @@ socketpool_hash (const Socket_T socket)
  * @socket: Associated socket (for hash computation)
  *
  * Thread-safe: Call with mutex held
+ * Performance: O(1) average
  */
 void
 insert_into_hash_table (T pool, Connection_T conn, Socket_T socket)
@@ -113,6 +114,7 @@ insert_into_hash_table (T pool, Connection_T conn, Socket_T socket)
  * @socket: Associated socket (for hash computation)
  *
  * Thread-safe: Call with mutex held
+ * Performance: O(k) where k is chain length at hash bucket
  */
 void
 remove_from_hash_table (T pool, Connection_T conn, Socket_T socket)
@@ -240,7 +242,7 @@ SocketPool_connections_initialize_slot (struct Connection *conn)
   conn->hash_next = NULL;
   conn->free_next = NULL;
   conn->reconnect = NULL;
-  conn->tracked_ip = NULL;  /* Per-IP tracking */
+  conn->tracked_ip = NULL;
 #ifdef SOCKET_HAS_TLS
   conn->tls_ctx = NULL;
   conn->tls_handshake_complete = 0;
@@ -347,9 +349,9 @@ allocate_pool_components (Arena_T arena, size_t maxconns, T pool)
 }
 
 /**
- * initialize_pool_fields - Initialize fields of the pool structure
+ * initialize_pool_fields - Initialize scalar fields of the pool structure
  * @pool: Pool instance to initialize
- * @arena: Memory arena for allocation
+ * @arena: Memory arena reference
  * @maxconns: Maximum number of connections
  * @bufsize: Buffer size for new connections
  */
@@ -360,12 +362,34 @@ initialize_pool_fields (T pool, Arena_T arena, size_t maxconns, size_t bufsize)
   pool->bufsize = bufsize;
   pool->count = 0;
   pool->arena = arena;
-  pool->dns = NULL;       /* Lazy init on first async connect */
-  pool->async_ctx = NULL; /* No pending async connects */
-  
-  /* Rate limiting (disabled by default) */
+  pool->dns = NULL;
+  pool->async_ctx = NULL;
+}
+
+/**
+ * initialize_pool_rate_limiting - Initialize rate limiting fields
+ * @pool: Pool instance to initialize
+ *
+ * Sets rate limiting fields to disabled by default.
+ */
+static void
+initialize_pool_rate_limiting (T pool)
+{
   pool->conn_limiter = NULL;
   pool->ip_tracker = NULL;
+}
+
+/**
+ * initialize_pool_reconnect - Initialize reconnection support fields
+ * @pool: Pool instance to initialize
+ *
+ * Sets reconnection to disabled by default.
+ */
+static void
+initialize_pool_reconnect (T pool)
+{
+  pool->reconnect_enabled = 0;
+  memset (&pool->reconnect_policy, 0, sizeof (pool->reconnect_policy));
 }
 
 /**
@@ -398,6 +422,28 @@ validate_pool_params (Arena_T arena, size_t maxconns, size_t bufsize)
     }
 }
 
+/**
+ * construct_pool - Core pool construction logic
+ * @arena: Memory arena for allocation
+ * @maxconns: Maximum number of connections (already validated/clamped)
+ * @bufsize: Buffer size per connection (already validated/clamped)
+ *
+ * Returns: Fully initialized pool instance
+ * Raises: SocketPool_Failed or Arena_Failed on error
+ */
+static T
+construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
+{
+  T pool = allocate_pool_structure (arena);
+  allocate_pool_components (arena, maxconns, pool);
+  initialize_pool_fields (pool, arena, maxconns, bufsize);
+  initialize_pool_rate_limiting (pool);
+  initialize_pool_reconnect (pool);
+  initialize_pool_mutex (pool);
+  build_free_list (pool, maxconns);
+  return pool;
+}
+
 /* ============================================================================
  * Pool Lifecycle API
  * ============================================================================ */
@@ -417,22 +463,17 @@ T
 SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
 {
   T pool;
+  volatile size_t safe_maxconns;
+  volatile size_t safe_bufsize;
 
   validate_pool_params (arena, maxconns, bufsize);
 
-  /* Clamp to valid ranges (validation already raised on invalid)
-   * Use volatile locals to prevent longjmp clobbering warnings */
-  volatile size_t safe_maxconns
-      = socketpool_enforce_max_connections (maxconns);
-  volatile size_t safe_bufsize = socketpool_enforce_buffer_size (bufsize);
+  safe_maxconns = socketpool_enforce_max_connections (maxconns);
+  safe_bufsize = socketpool_enforce_buffer_size (bufsize);
 
   TRY
   {
-    pool = allocate_pool_structure (arena);
-    allocate_pool_components (arena, safe_maxconns, pool);
-    initialize_pool_fields (pool, arena, safe_maxconns, safe_bufsize);
-    initialize_pool_mutex (pool);
-    build_free_list (pool, safe_maxconns);
+    pool = construct_pool (arena, safe_maxconns, safe_bufsize);
     SocketPool_prewarm (pool, SOCKET_POOL_DEFAULT_PREWARM_PCT);
     return pool;
   }
@@ -442,8 +483,12 @@ SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
   }
   END_TRY;
 
-  return NULL; /* Unreachable */
+  return NULL;
 }
+
+/* ============================================================================
+ * Pool Destruction Helpers (static)
+ * ============================================================================ */
 
 /**
  * free_tls_sessions - Free all TLS sessions in pool
@@ -479,12 +524,8 @@ static void
 free_dns_resolver (T pool)
 {
   if (pool->dns)
-    {
-      /* Cancel pending async connects - their sockets will be freed
-       * when DNS resolver drains, but callbacks won't be invoked */
-      SocketDNS_free (&pool->dns);
-    }
-  pool->async_ctx = NULL; /* Contexts are arena-allocated */
+    SocketDNS_free (&pool->dns);
+  pool->async_ctx = NULL;
 }
 
 /**
@@ -498,9 +539,21 @@ free_reconnect_contexts (T pool)
     {
       Connection_T conn = &pool->connections[i];
       if (conn->reconnect)
-        {
-          SocketReconnect_free (&conn->reconnect);
-        }
+        SocketReconnect_free (&conn->reconnect);
+    }
+}
+
+/**
+ * free_connections_array - Free the connections array
+ * @pool: Pool instance
+ */
+static void
+free_connections_array (T pool)
+{
+  if (pool->connections)
+    {
+      free (pool->connections);
+      pool->connections = NULL;
     }
 }
 
@@ -520,20 +573,35 @@ SocketPool_free (T *pool)
   free_dns_resolver (*pool);
   free_reconnect_contexts (*pool);
   free_tls_sessions (*pool);
-
-  if ((*pool)->connections)
-    {
-      free ((*pool)->connections);
-      (*pool)->connections = NULL;
-    }
-
+  free_connections_array (*pool);
   pthread_mutex_destroy (&(*pool)->mutex);
   *pool = NULL;
 }
 
 /* ============================================================================
- * Reconnection Support
+ * Reconnection Support - Internal Helpers
  * ============================================================================ */
+
+/**
+ * update_connection_socket - Update connection with new socket after reconnect
+ * @conn: Connection to update
+ * @conn_r: Reconnection context with new socket
+ *
+ * Called when reconnection succeeds to update the connection's socket.
+ */
+static void
+update_connection_socket (Connection_T conn, SocketReconnect_T conn_r)
+{
+  Socket_T new_socket = SocketReconnect_socket (conn_r);
+
+  if (new_socket && new_socket != conn->socket)
+    {
+      conn->socket = new_socket;
+      conn->last_activity = time (NULL);
+      SocketLog_emitf (SOCKET_LOG_INFO, "SocketPool",
+                       "Connection reconnected successfully");
+    }
+}
 
 /**
  * reconnect_state_callback - Internal callback for reconnection state changes
@@ -545,32 +613,70 @@ SocketPool_free (T *pool)
 static void
 reconnect_state_callback (SocketReconnect_T conn_r,
                           SocketReconnect_State old_state,
-                          SocketReconnect_State new_state,
-                          void *userdata)
+                          SocketReconnect_State new_state, void *userdata)
 {
   Connection_T conn = (Connection_T)userdata;
-  
-  (void)conn_r;
+
   (void)old_state;
 
   if (!conn)
     return;
 
-  /* When reconnected, update the connection's socket */
   if (new_state == RECONNECT_CONNECTED)
-    {
-      Socket_T new_socket = SocketReconnect_socket (conn_r);
-      if (new_socket && new_socket != conn->socket)
-        {
-          /* Socket was replaced during reconnection */
-          conn->socket = new_socket;
-          conn->last_activity = time (NULL);
-          SocketLog_emitf (SOCKET_LOG_INFO, "SocketPool",
-                           "Connection reconnected successfully");
-        }
-    }
+    update_connection_socket (conn, conn_r);
 }
 
+/**
+ * free_existing_reconnect - Free existing reconnection context if present
+ * @conn: Connection to check
+ */
+static void
+free_existing_reconnect (Connection_T conn)
+{
+  if (conn->reconnect)
+    SocketReconnect_free (&conn->reconnect);
+}
+
+/**
+ * get_reconnect_policy - Get effective reconnection policy
+ * @pool: Pool instance
+ *
+ * Returns: Pointer to pool policy if enabled, NULL otherwise
+ */
+static SocketReconnect_Policy_T *
+get_reconnect_policy (T pool)
+{
+  return pool->reconnect_enabled ? &pool->reconnect_policy : NULL;
+}
+
+/**
+ * create_reconnect_context - Create new reconnection context for connection
+ * @conn: Connection to enable reconnection for
+ * @host: Hostname for reconnection
+ * @port: Port for reconnection
+ * @policy: Reconnection policy (may be NULL)
+ *
+ * Raises: SocketReconnect_Failed on error
+ */
+static void
+create_reconnect_context (Connection_T conn, const char *host, int port,
+                          SocketReconnect_Policy_T *policy)
+{
+  conn->reconnect
+      = SocketReconnect_new (host, port, policy, reconnect_state_callback, conn);
+}
+
+/* ============================================================================
+ * Reconnection Support - Public API
+ * ============================================================================ */
+
+/**
+ * SocketPool_set_reconnect_policy - Set default reconnection policy for pool
+ * @pool: Pool instance
+ * @policy: Reconnection policy (NULL to disable)
+ *
+ * Thread-safe: Yes
+ */
 void
 SocketPool_set_reconnect_policy (T pool, const SocketReconnect_Policy_T *policy)
 {
@@ -591,32 +697,34 @@ SocketPool_set_reconnect_policy (T pool, const SocketReconnect_Policy_T *policy)
   pthread_mutex_unlock (&pool->mutex);
 }
 
+/**
+ * SocketPool_enable_reconnect - Enable auto-reconnect for a connection
+ * @pool: Pool instance
+ * @conn: Connection to enable reconnection for
+ * @host: Original hostname for reconnection
+ * @port: Original port for reconnection
+ *
+ * Thread-safe: Yes
+ * Raises: SocketReconnect_Failed on error
+ */
 void
-SocketPool_enable_reconnect (T pool, Connection_T conn,
-                             const char *host, int port)
+SocketPool_enable_reconnect (T pool, Connection_T conn, const char *host,
+                             int port)
 {
   SocketReconnect_Policy_T *policy;
 
   assert (pool);
   assert (conn);
   assert (host);
-  assert (port > 0 && port <= 65535);
+  assert (port > 0 && port <= SOCKET_MAX_PORT);
 
   pthread_mutex_lock (&pool->mutex);
-
-  /* Free existing reconnection context if any */
-  if (conn->reconnect)
-    {
-      SocketReconnect_free (&conn->reconnect);
-    }
-
-  /* Use pool's default policy if available */
-  policy = pool->reconnect_enabled ? &pool->reconnect_policy : NULL;
+  free_existing_reconnect (conn);
+  policy = get_reconnect_policy (pool);
 
   TRY
   {
-    conn->reconnect = SocketReconnect_new (host, port, policy,
-                                           reconnect_state_callback, conn);
+    create_reconnect_context (conn, host, port, policy);
   }
   EXCEPT (SocketReconnect_Failed)
   {
@@ -628,10 +736,17 @@ SocketPool_enable_reconnect (T pool, Connection_T conn,
   pthread_mutex_unlock (&pool->mutex);
 
   SocketLog_emitf (SOCKET_LOG_DEBUG, "SocketPool",
-                   "Enabled auto-reconnect for connection to %s:%d",
-                   host, port);
+                   "Enabled auto-reconnect for connection to %s:%d", host,
+                   port);
 }
 
+/**
+ * SocketPool_disable_reconnect - Disable auto-reconnect for a connection
+ * @pool: Pool instance
+ * @conn: Connection to disable reconnection for
+ *
+ * Thread-safe: Yes
+ */
 void
 SocketPool_disable_reconnect (T pool, Connection_T conn)
 {
@@ -639,60 +754,98 @@ SocketPool_disable_reconnect (T pool, Connection_T conn)
   assert (conn);
 
   pthread_mutex_lock (&pool->mutex);
-
-  if (conn->reconnect)
-    {
-      SocketReconnect_free (&conn->reconnect);
-    }
-
+  free_existing_reconnect (conn);
   pthread_mutex_unlock (&pool->mutex);
 }
 
+/**
+ * process_single_reconnect - Process reconnection for single connection
+ * @conn: Connection with reconnection enabled
+ *
+ * Processes state machine and timer tick.
+ */
+static void
+process_single_reconnect (Connection_T conn)
+{
+  SocketReconnect_process (conn->reconnect);
+  SocketReconnect_tick (conn->reconnect);
+}
+
+/**
+ * SocketPool_process_reconnects - Process reconnection state machines
+ * @pool: Pool instance
+ *
+ * Thread-safe: Yes
+ * Must be called periodically in event loop.
+ */
 void
 SocketPool_process_reconnects (T pool)
 {
-  size_t i;
-
   assert (pool);
 
   pthread_mutex_lock (&pool->mutex);
 
-  for (i = 0; i < pool->maxconns; i++)
+  for (size_t i = 0; i < pool->maxconns; i++)
     {
       Connection_T conn = &pool->connections[i];
       if (conn->active && conn->reconnect)
-        {
-          SocketReconnect_process (conn->reconnect);
-          SocketReconnect_tick (conn->reconnect);
-        }
+        process_single_reconnect (conn);
     }
 
   pthread_mutex_unlock (&pool->mutex);
 }
 
+/**
+ * get_connection_timeout - Get timeout for single connection's reconnection
+ * @conn: Connection to check
+ *
+ * Returns: Timeout in ms, or -1 if no timeout pending
+ */
+static int
+get_connection_timeout (Connection_T conn)
+{
+  if (conn->active && conn->reconnect)
+    return SocketReconnect_next_timeout_ms (conn->reconnect);
+  return -1;
+}
+
+/**
+ * update_min_timeout - Update minimum timeout tracker
+ * @current_min: Current minimum timeout (-1 means none)
+ * @new_timeout: New timeout to compare (-1 means none)
+ *
+ * Returns: New minimum timeout
+ */
+static int
+update_min_timeout (int current_min, int new_timeout)
+{
+  if (new_timeout < 0)
+    return current_min;
+  if (current_min < 0)
+    return new_timeout;
+  return (new_timeout < current_min) ? new_timeout : current_min;
+}
+
+/**
+ * SocketPool_reconnect_timeout_ms - Get time until next reconnection action
+ * @pool: Pool instance
+ *
+ * Returns: Milliseconds until next timeout, or -1 if none pending
+ * Thread-safe: Yes
+ */
 int
 SocketPool_reconnect_timeout_ms (T pool)
 {
-  size_t i;
   int min_timeout = -1;
-  int timeout;
 
   assert (pool);
 
   pthread_mutex_lock (&pool->mutex);
 
-  for (i = 0; i < pool->maxconns; i++)
+  for (size_t i = 0; i < pool->maxconns; i++)
     {
-      Connection_T conn = &pool->connections[i];
-      if (conn->active && conn->reconnect)
-        {
-          timeout = SocketReconnect_next_timeout_ms (conn->reconnect);
-          if (timeout >= 0)
-            {
-              if (min_timeout < 0 || timeout < min_timeout)
-                min_timeout = timeout;
-            }
-        }
+      int timeout = get_connection_timeout (&pool->connections[i]);
+      min_timeout = update_min_timeout (min_timeout, timeout);
     }
 
   pthread_mutex_unlock (&pool->mutex);
@@ -700,6 +853,17 @@ SocketPool_reconnect_timeout_ms (T pool)
   return min_timeout;
 }
 
+/* ============================================================================
+ * Connection Reconnection Accessors
+ * ============================================================================ */
+
+/**
+ * Connection_reconnect - Get reconnection context for connection
+ * @conn: Connection
+ *
+ * Returns: SocketReconnect_T context, or NULL if not enabled
+ * Thread-safe: Yes (but returned context is not thread-safe)
+ */
 SocketReconnect_T
 Connection_reconnect (const Connection_T conn)
 {
@@ -708,6 +872,13 @@ Connection_reconnect (const Connection_T conn)
   return conn->reconnect;
 }
 
+/**
+ * Connection_has_reconnect - Check if connection has auto-reconnect enabled
+ * @conn: Connection
+ *
+ * Returns: Non-zero if auto-reconnect is enabled
+ * Thread-safe: Yes
+ */
 int
 Connection_has_reconnect (const Connection_T conn)
 {
