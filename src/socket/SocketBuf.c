@@ -20,7 +20,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
-#include "core/SocketError.h"
+#include "core/SocketUtil.h"
 #include "socket/SocketBuf.h"
 
 #undef SOCKET_LOG_COMPONENT

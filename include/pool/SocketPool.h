@@ -3,7 +3,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "core/SocketError.h" /* For socket_error_buf in macros */
+#include "core/SocketUtil.h" /* For socket_error_buf in macros */
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 #include <stddef.h>

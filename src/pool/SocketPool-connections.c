@@ -16,8 +16,7 @@
 #include <errno.h>
 #include <time.h>
 
-#include "core/SocketLog.h"
-#include "core/SocketMetrics.h"
+#include "core/SocketUtil.h"
 #include "pool/SocketPool-private.h"
 
 #ifdef SOCKET_HAS_TLS

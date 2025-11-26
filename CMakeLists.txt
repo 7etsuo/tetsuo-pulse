@@ -138,14 +138,9 @@ add_custom_target(lib ALL DEPENDS socket_static socket_shared)
 # Header files for installation
 set(CORE_HEADERS
     include/core/Arena.h
-    include/core/Arena-private.h
     include/core/Except.h
     include/core/SocketConfig.h
-    include/core/SocketConfig-limits.h
-    include/core/SocketError.h
-    include/core/SocketEvents.h
-    include/core/SocketLog.h
-    include/core/SocketMetrics.h
+    include/core/SocketUtil.h
     include/core/SocketTimer.h
     include/core/SocketTimer-private.h
 )

@@ -17,7 +17,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
-#include "core/SocketError.h"
+#include "core/SocketUtil.h"
 #include "pool/SocketPool.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
@@ -91,6 +91,10 @@ typedef struct Connection *Connection_T;
  * Pool Structure
  * ============================================================================ */
 
+/* Forward declaration for async connect context */
+struct AsyncConnectContext;
+typedef struct AsyncConnectContext *AsyncConnectContext_T;
+
 #define T SocketPool_T
 struct T
 {
@@ -103,6 +107,8 @@ struct T
   size_t count;                     /**< Active connection count */
   Arena_T arena;                    /**< Memory arena */
   pthread_mutex_t mutex;            /**< Thread safety mutex */
+  SocketDNS_T dns;                  /**< Internal DNS resolver (lazy init) */
+  AsyncConnectContext_T async_ctx;  /**< Linked list of pending async connects */
 };
 #undef T
 

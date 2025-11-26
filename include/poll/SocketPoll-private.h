@@ -70,19 +70,26 @@ struct T
 /* ==================== Exception Handling ==================== */
 
 /**
+ * Thread-local exception for detailed error messages.
+ * Persists across longjmp, unlike stack-local variables.
+ */
+#ifdef _WIN32
+extern __declspec (thread) Except_T SocketPoll_DetailedException;
+#else
+extern __thread Except_T SocketPoll_DetailedException;
+#endif
+
+/**
  * RAISE_POLL_ERROR - Raise exception with detailed error message
  * Creates a thread-local copy of the exception with detailed reason.
- * CRITICAL: Uses volatile local variable on ARM64 to prevent corruption
- * across setjmp/longjmp.
+ * Uses thread-local storage to ensure the exception persists across longjmp.
  */
 #define RAISE_POLL_ERROR(exception)                                            \
   do                                                                           \
     {                                                                          \
-      volatile Except_T volatile_exception = (exception);                      \
-      volatile_exception.reason = socket_error_buf;                            \
-      Except_T non_volatile_exception                                          \
-          = *(const Except_T *)&volatile_exception;                            \
-      RAISE (non_volatile_exception);                                          \
+      SocketPoll_DetailedException = (exception);                              \
+      SocketPoll_DetailedException.reason = socket_error_buf;                  \
+      RAISE (SocketPoll_DetailedException);                                    \
     }                                                                          \
   while (0)
 

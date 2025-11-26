@@ -118,20 +118,33 @@ free_tls_resources (Socket_T socket)
  * ============================================================================
  */
 
-void
-SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
+/**
+ * validate_tls_enable_preconditions - Validate socket is ready for TLS
+ * @socket: Socket to validate
+ *
+ * Raises: SocketTLS_Failed if TLS already enabled or fd invalid
+ */
+static void
+validate_tls_enable_preconditions (Socket_T socket)
 {
-  assert (socket);
-  assert (ctx);
-  assert (SocketTLSContext_get_ssl_ctx (ctx));
-
   if (socket->tls_enabled)
     RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "TLS already enabled on socket");
 
   int fd = SocketBase_fd (socket->base);
   if (fd < 0)
     RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Socket not connected (invalid fd)");
+}
 
+/**
+ * create_ssl_object - Create and configure SSL object from context
+ * @ctx: TLS context
+ *
+ * Returns: Configured SSL object
+ * Raises: SocketTLS_Failed on creation failure
+ */
+static SSL *
+create_ssl_object (SocketTLSContext_T ctx)
+{
   SSL *ssl = SSL_new ((SSL_CTX *)SocketTLSContext_get_ssl_ctx (ctx));
   if (!ssl)
     RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to create SSL object");
@@ -141,12 +154,35 @@ SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
   else
     SSL_set_connect_state (ssl);
 
+  return ssl;
+}
+
+/**
+ * associate_ssl_with_fd - Associate SSL object with socket file descriptor
+ * @ssl: SSL object
+ * @fd: File descriptor
+ *
+ * Raises: SocketTLS_Failed on failure (frees SSL on error)
+ */
+static void
+associate_ssl_with_fd (SSL *ssl, int fd)
+{
   if (SSL_set_fd (ssl, fd) != 1)
     {
       SSL_free (ssl);
       RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to associate SSL with fd");
     }
+}
 
+/**
+ * finalize_tls_state - Set final TLS state on socket
+ * @socket: Socket to configure
+ * @ssl: SSL object to associate
+ * @ctx: TLS context
+ */
+static void
+finalize_tls_state (Socket_T socket, SSL *ssl, SocketTLSContext_T ctx)
+{
   socket->tls_ssl = (void *)ssl;
   socket->tls_ctx = (void *)ctx;
   SSL_set_app_data (ssl, socket);
@@ -158,6 +194,72 @@ SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
 }
 
 void
+SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
+{
+  assert (socket);
+  assert (ctx);
+  assert (SocketTLSContext_get_ssl_ctx (ctx));
+
+  validate_tls_enable_preconditions (socket);
+
+  SSL *ssl = create_ssl_object (ctx);
+  associate_ssl_with_fd (ssl, SocketBase_fd (socket->base));
+  finalize_tls_state (socket, ssl, ctx);
+}
+
+/**
+ * validate_hostname_length - Validate hostname length is within bounds
+ * @hostname: Hostname to validate
+ * @len: Length of hostname
+ *
+ * Raises: SocketTLS_Failed if invalid length
+ */
+static void
+validate_hostname_length (const char *hostname, size_t len)
+{
+  (void)hostname;
+  if (len == 0 || len > SOCKET_TLS_MAX_SNI_LEN)
+    {
+      TLS_ERROR_FMT ("Invalid hostname length: %zu", len);
+      RAISE_TLS_ERROR (SocketTLS_Failed);
+    }
+}
+
+/**
+ * copy_hostname_to_socket - Copy hostname to socket arena
+ * @socket: Socket instance
+ * @hostname: Hostname to copy
+ * @len: Length of hostname
+ */
+static void
+copy_hostname_to_socket (Socket_T socket, const char *hostname, size_t len)
+{
+  socket->tls_sni_hostname = Arena_alloc (SocketBase_arena (socket->base),
+                                          len + 1, __FILE__, __LINE__);
+  if (!socket->tls_sni_hostname)
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to allocate hostname buffer");
+
+  memcpy ((char *)socket->tls_sni_hostname, hostname, len + 1);
+}
+
+/**
+ * apply_sni_to_ssl - Apply SNI hostname to SSL connection
+ * @ssl: SSL object
+ * @hostname: Hostname for SNI
+ *
+ * Raises: SocketTLS_Failed on OpenSSL error
+ */
+static void
+apply_sni_to_ssl (SSL *ssl, const char *hostname)
+{
+  if (SSL_set_tlsext_host_name (ssl, hostname) != 1)
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to set SNI hostname");
+
+  if (SSL_set1_host (ssl, hostname) != 1)
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to enable hostname verification");
+}
+
+void
 SocketTLS_set_hostname (Socket_T socket, const char *hostname)
 {
   assert (socket);
@@ -166,31 +268,18 @@ SocketTLS_set_hostname (Socket_T socket, const char *hostname)
   REQUIRE_TLS_ENABLED (socket, SocketTLS_Failed);
 
   size_t hostname_len = strlen (hostname);
-  if (hostname_len == 0 || hostname_len > SOCKET_TLS_MAX_SNI_LEN)
-    {
-      TLS_ERROR_FMT ("Invalid hostname length: %zu", hostname_len);
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
+  validate_hostname_length (hostname, hostname_len);
 
   if (!tls_validate_hostname (hostname))
     RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Invalid hostname format");
 
-  socket->tls_sni_hostname = Arena_alloc (SocketBase_arena (socket->base),
-                                          hostname_len + 1, __FILE__, __LINE__);
-  if (!socket->tls_sni_hostname)
-    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to allocate hostname buffer");
-
-  memcpy ((char *)socket->tls_sni_hostname, hostname, hostname_len + 1);
+  copy_hostname_to_socket (socket, hostname, hostname_len);
 
   SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
     RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "SSL object not available");
 
-  if (SSL_set_tlsext_host_name (ssl, hostname) != 1)
-    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to set SNI hostname");
-
-  if (SSL_set1_host (ssl, hostname) != 1)
-    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to enable hostname verification");
+  apply_sni_to_ssl (ssl, hostname);
 }
 
 /* ============================================================================

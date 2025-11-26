@@ -30,10 +30,7 @@
 
 #define SOCKET_LOG_COMPONENT "SocketPoll"
 #include "core/SocketConfig.h"
-#include "core/SocketError.h"
-#include "core/SocketEvents.h"
-#include "core/SocketLog.h"
-#include "core/SocketMetrics.h"
+#include "core/SocketUtil.h"
 
 /* Include timer private header after struct definition */
 #include "core/SocketTimer-private.h"
@@ -48,6 +45,13 @@
 
 const Except_T SocketPoll_Failed
     = { &SocketPoll_Failed, "SocketPoll operation failed" };
+
+/* Thread-local exception for detailed error messages */
+#ifdef _WIN32
+__declspec (thread) Except_T SocketPoll_DetailedException = { NULL, NULL };
+#else
+__thread Except_T SocketPoll_DetailedException = { NULL, NULL };
+#endif
 
 /* ==================== Forward Declarations ==================== */
 
@@ -64,7 +68,7 @@ static void cleanup_poll_partial (T poll);
  * good distribution across hash buckets.
  */
 static unsigned
-compute_fd_hash (int fd)
+compute_fd_hash (const int fd)
 {
   return ((unsigned)fd * HASH_GOLDEN_RATIO) % SOCKET_DATA_HASH_SIZE;
 }
@@ -186,7 +190,7 @@ insert_fd_socket_entry (T poll, unsigned fd_hash, FdSocketEntry *entry)
  * Performs O(1) average case lookup in the socket data hash table.
  */
 static void *
-socket_data_lookup_unlocked (T poll, Socket_T socket)
+socket_data_lookup_unlocked (const T poll, const Socket_T socket)
 {
   unsigned hash;
   SocketData *entry;
@@ -216,7 +220,8 @@ socket_data_lookup_unlocked (T poll, Socket_T socket)
  * Thread-safe: No (caller must hold mutex)
  */
 static SocketData *
-find_socket_data_entry (T poll, unsigned hash, Socket_T socket)
+find_socket_data_entry (const T poll, const unsigned hash,
+                        const Socket_T socket)
 {
   SocketData *entry = poll->socket_data_map[hash];
 
@@ -529,7 +534,7 @@ initialize_poll_async (T poll)
  * Performs O(1) lookup using the fd_to_socket_map hash table.
  */
 static Socket_T
-find_socket_by_fd (T poll, int fd)
+find_socket_by_fd (const T poll, const int fd)
 {
   unsigned fd_hash = compute_fd_hash (fd);
   FdSocketEntry *entry = poll->fd_to_socket_map[fd_hash];
@@ -547,65 +552,57 @@ find_socket_by_fd (T poll, int fd)
 /* ==================== Event Translation ==================== */
 
 /**
- * get_backend_event - Get event from backend
+ * get_backend_event_safe - Get event from backend (no exception)
  * @poll: Poll instance
  * @index: Event index
  * @fd_out: Output file descriptor
  * @events_out: Output event flags
- * Raises: SocketPoll_Failed on backend error
+ * Returns: 0 on success, -1 on failure
  */
-static void
-get_backend_event (T poll, int index, int *fd_out, unsigned *events_out)
+static int
+get_backend_event_safe (T poll, int index, int *fd_out, unsigned *events_out)
 {
-  if (backend_get_event (poll->backend, index, fd_out, events_out) < 0)
-    {
-      SOCKET_ERROR_MSG ("Failed to get event from backend");
-      RAISE_POLL_ERROR (SocketPoll_Failed);
-    }
+  return backend_get_event (poll->backend, index, fd_out, events_out);
 }
 
 /**
- * translate_single_event - Translate single backend event to SocketEvent_T
+ * lookup_socket_and_data - Look up socket and user data by FD
  * @poll: Poll instance
- * @index: Backend event index
- * @translated_index: Index in translated events array
- * @max_events: Maximum events (bounds check)
- * Returns: 1 if event was translated, 0 if skipped
- * Raises: SocketPoll_Failed on backend error
+ * @fd: File descriptor
+ * @socket_out: Output socket (NULL if not found)
+ * @data_out: Output user data (NULL if not found)
+ * Thread-safe: No (caller must hold mutex)
  */
-static int
-translate_single_event (T poll, int index, int translated_index, int max_events)
+static void
+lookup_socket_and_data (T poll, int fd, Socket_T *socket_out, void **data_out)
 {
-  int fd;
-  unsigned event_flags;
-  Socket_T socket;
-  void *data;
-  SocketEvent_T *event;
-
-  /* Bounds check */
-  if (translated_index >= max_events)
-    return 0;
-
-  get_backend_event (poll, index, &fd, &event_flags);
-
-  pthread_mutex_lock (&poll->mutex);
-  socket = find_socket_by_fd (poll, fd);
+  Socket_T socket = find_socket_by_fd (poll, fd);
 
   if (!socket)
     {
-      pthread_mutex_unlock (&poll->mutex);
-      return 0;
+      *socket_out = NULL;
+      *data_out = NULL;
+      return;
     }
 
-  data = socket_data_lookup_unlocked (poll, socket);
-  pthread_mutex_unlock (&poll->mutex);
+  *socket_out = socket;
+  *data_out = socket_data_lookup_unlocked (poll, socket);
+}
 
-  event = &poll->socketevents[translated_index];
+/**
+ * populate_socket_event - Populate a SocketEvent_T structure
+ * @event: Event structure to populate
+ * @socket: Socket
+ * @data: User data
+ * @event_flags: Event flags from backend
+ */
+static void
+populate_socket_event (SocketEvent_T *event, const Socket_T socket,
+                       void *const data, const unsigned event_flags)
+{
   event->socket = socket;
   event->data = data;
   event->events = event_flags;
-
-  return 1;
 }
 
 /**
@@ -613,19 +610,18 @@ translate_single_event (T poll, int index, int translated_index, int max_events)
  * @poll: Poll instance
  * @nfds: Number of events to process
  * Returns: Number of successfully translated events
- * Raises: SocketPoll_Failed on backend error
- * Thread-safe: Yes (socket_data_lookup handles its own mutex locking)
+ * Thread-safe: Yes (uses batched mutex acquisition)
  *
  * Translates events from the backend-specific format to the
- * standardized SocketEvent_T format used by the public API.
+ * standardized SocketEvent_T format. Uses batched mutex handling
+ * to minimize lock contention.
  */
 static int
 translate_backend_events_to_socket_events (T poll, int nfds)
 {
-  /* volatile to prevent clobbering by setjmp/longjmp in TRY/EXCEPT */
-  volatile int translated_count = 0;
-  volatile int nfds_local;
+  int translated_count = 0;
   int max_events;
+  int nfds_local;
   int i;
 
   assert (poll);
@@ -634,23 +630,31 @@ translate_backend_events_to_socket_events (T poll, int nfds)
     return 0;
 
   max_events = poll->maxevents;
-
-  /* Copy nfds to volatile local and clamp to max_events */
   nfds_local = (nfds > max_events) ? max_events : nfds;
 
-  TRY
-  {
-    for (i = 0; i < nfds_local && translated_count < max_events; i++)
-      {
-        if (translate_single_event (poll, i, translated_count, max_events))
-          translated_count++;
-      }
-  }
-  EXCEPT (SocketPoll_Failed)
-  {
-    /* Exception already handled, return partial results */
-  }
-  END_TRY;
+  pthread_mutex_lock (&poll->mutex);
+
+  for (i = 0; i < nfds_local && translated_count < max_events; i++)
+    {
+      int fd;
+      unsigned event_flags;
+      Socket_T socket;
+      void *data;
+
+      if (get_backend_event_safe (poll, i, &fd, &event_flags) < 0)
+        continue;
+
+      lookup_socket_and_data (poll, fd, &socket, &data);
+
+      if (!socket)
+        continue;
+
+      populate_socket_event (&poll->socketevents[translated_count], socket,
+                             data, event_flags);
+      translated_count++;
+    }
+
+  pthread_mutex_unlock (&poll->mutex);
 
   return translated_count;
 }
@@ -796,6 +800,95 @@ SocketPoll_free (T *poll)
   *poll = NULL;
 }
 
+/* ==================== Add Socket Helpers ==================== */
+
+/**
+ * validate_socket_fd_for_add - Validate socket FD is usable
+ * @socket: Socket to validate
+ * Returns: FD if valid, -1 if invalid (logs warning)
+ */
+static int
+validate_socket_fd_for_add (const Socket_T socket)
+{
+  int fd = Socket_fd (socket);
+
+  if (fd < 0)
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                       "Adding invalid socket fd=%d to poll; ignoring", fd);
+      return -1;
+    }
+
+  return fd;
+}
+
+/**
+ * check_socket_not_duplicate - Check socket not already in poll set
+ * @poll: Poll instance
+ * @hash: Hash bucket index
+ * @socket: Socket to check
+ * Raises: SocketPoll_Failed if socket already present
+ * Thread-safe: No (caller must hold mutex)
+ */
+static void
+check_socket_not_duplicate (T poll, unsigned hash, Socket_T socket)
+{
+  SocketData *entry = poll->socket_data_map[hash];
+
+  while (entry)
+    {
+      if (entry->socket == socket)
+        {
+          SOCKET_ERROR_MSG ("Socket already in poll set");
+          RAISE_POLL_ERROR (SocketPoll_Failed);
+        }
+      entry = entry->next;
+    }
+}
+
+/**
+ * add_socket_to_backend - Add socket FD to backend
+ * @poll: Poll instance
+ * @fd: File descriptor
+ * @events: Events to monitor
+ * Raises: SocketPoll_Failed on backend error
+ */
+static void
+add_socket_to_backend (T poll, int fd, unsigned events)
+{
+  if (backend_add (poll->backend, fd, events) < 0)
+    {
+      if (errno == EEXIST)
+        SOCKET_ERROR_FMT ("Socket already in poll set (fd=%d)", fd);
+      else
+        SOCKET_ERROR_FMT ("Failed to add socket to poll (fd=%d)", fd);
+      RAISE_POLL_ERROR (SocketPoll_Failed);
+    }
+}
+
+/**
+ * add_socket_to_data_map_with_rollback - Add to data map, rollback on failure
+ * @poll: Poll instance
+ * @socket: Socket
+ * @data: User data
+ * @fd: File descriptor (for rollback)
+ * Raises: SocketPoll_Failed on allocation failure
+ * Thread-safe: No (caller must hold mutex)
+ */
+static void
+add_socket_to_data_map_with_rollback (T poll, Socket_T socket, void *data,
+                                      int fd)
+{
+  TRY
+  socket_data_add_unlocked (poll, socket, data);
+  EXCEPT (SocketPoll_Failed)
+  {
+    backend_del (poll->backend, fd);
+    RERAISE;
+  }
+  END_TRY;
+}
+
 /* ==================== Add Socket to Poll ==================== */
 
 void
@@ -803,18 +896,13 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
 {
   int fd;
   unsigned hash;
-  SocketData *entry;
 
   assert (poll);
   assert (socket);
 
-  fd = Socket_fd (socket);
+  fd = validate_socket_fd_for_add (socket);
   if (fd < 0)
-    {
-      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                       "Adding invalid socket fd=%d to poll; ignoring", fd);
-      return;
-    }
+    return;
 
   Socket_setnonblocking (socket);
   hash = socket_hash (socket);
@@ -822,37 +910,9 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
   pthread_mutex_lock (&poll->mutex);
   TRY
   {
-    /* Check for duplicates */
-    entry = poll->socket_data_map[hash];
-    while (entry)
-      {
-        if (entry->socket == socket)
-          {
-            SOCKET_ERROR_MSG ("Socket already in poll set");
-            RAISE_POLL_ERROR (SocketPoll_Failed);
-          }
-        entry = entry->next;
-      }
-
-    /* Add to backend */
-    if (backend_add (poll->backend, fd, events) < 0)
-      {
-        if (errno == EEXIST)
-          SOCKET_ERROR_FMT ("Socket already in poll set (fd=%d)", fd);
-        else
-          SOCKET_ERROR_FMT ("Failed to add socket to poll (fd=%d)", fd);
-        RAISE_POLL_ERROR (SocketPoll_Failed);
-      }
-
-    /* Add to data map */
-    TRY
-    socket_data_add_unlocked (poll, socket, data);
-    EXCEPT (SocketPoll_Failed)
-    {
-      backend_del (poll->backend, fd);
-      RERAISE;
-    }
-    END_TRY;
+    check_socket_not_duplicate (poll, hash, socket);
+    add_socket_to_backend (poll, fd, events);
+    add_socket_to_data_map_with_rollback (poll, socket, data, fd);
   }
   FINALLY
   pthread_mutex_unlock (&poll->mutex);
@@ -942,6 +1002,133 @@ SocketPoll_setdefaulttimeout (T poll, int timeout)
   pthread_mutex_unlock (&poll->mutex);
 }
 
+/* ==================== Wait Helper Functions ==================== */
+
+/**
+ * resolve_timeout_from_default - Resolve timeout using default if requested
+ * @poll: Poll instance
+ * @timeout: Input timeout (may be SOCKET_POLL_TIMEOUT_USE_DEFAULT)
+ * Returns: Resolved timeout value
+ */
+static int
+resolve_timeout_from_default (const T poll, const int timeout)
+{
+  if (timeout == SOCKET_POLL_TIMEOUT_USE_DEFAULT)
+    return poll->default_timeout_ms;
+  return timeout;
+}
+
+/**
+ * clamp_timer_timeout - Clamp timer delay to safe range
+ * @next_timer_ms: Timer delay in milliseconds
+ * Returns: Clamped timeout value safe for int conversion
+ */
+static int
+clamp_timer_timeout (const int64_t next_timer_ms)
+{
+  int64_t clamped = next_timer_ms;
+
+  if (clamped > SOCKET_MAX_TIMER_TIMEOUT_MS)
+    clamped = SOCKET_MAX_TIMER_TIMEOUT_MS;
+  if (clamped > INT_MAX)
+    clamped = INT_MAX;
+
+  return (int)clamped;
+}
+
+/**
+ * calculate_effective_timeout - Compute timeout considering timers
+ * @poll: Poll instance
+ * @timeout: Requested timeout
+ * Returns: Effective timeout that respects pending timers
+ */
+static int
+calculate_effective_timeout (const T poll, const int timeout)
+{
+  int64_t next_timer_ms;
+
+  if (!poll->timer_heap)
+    return timeout;
+
+  next_timer_ms = SocketTimer_heap_peek_delay (poll->timer_heap);
+
+  if (next_timer_ms >= 0 && (timeout < 0 || next_timer_ms < timeout))
+    return clamp_timer_timeout (next_timer_ms);
+
+  return timeout;
+}
+
+/**
+ * process_async_completions_if_available - Process async completions
+ * @poll: Poll instance
+ *
+ * Processes any pending async I/O completions if async context exists.
+ */
+static void
+process_async_completions_if_available (T poll)
+{
+  if (poll->async)
+    SocketAsync_process_completions (poll->async, 0);
+}
+
+/**
+ * wait_for_backend_events - Wait for events from backend
+ * @poll: Poll instance
+ * @timeout: Timeout in milliseconds
+ * Returns: Number of ready events, or -1 on error
+ */
+static int
+wait_for_backend_events (T poll, int timeout)
+{
+  int nfds = backend_wait (poll->backend, timeout);
+  SocketMetrics_increment (SOCKET_METRIC_POLL_WAKEUPS, 1);
+  return nfds;
+}
+
+/**
+ * handle_backend_wait_error - Handle error from backend_wait
+ * @timeout: Timeout that was used
+ * Returns: 0 if EINTR (caller should return), otherwise raises
+ * Raises: SocketPoll_Failed on non-EINTR errors
+ */
+static int
+handle_backend_wait_error (int timeout)
+{
+  if (errno == EINTR)
+    return 0;
+
+  SOCKET_ERROR_FMT ("%s backend wait failed (timeout=%d)", backend_name (),
+                    timeout);
+  RAISE_POLL_ERROR (SocketPoll_Failed);
+  return -1; /* Not reached */
+}
+
+/**
+ * process_timers_if_available - Process expired timers
+ * @poll: Poll instance
+ */
+static void
+process_timers_if_available (T poll)
+{
+  if (poll->timer_heap)
+    SocketTimer_process_expired (poll->timer_heap);
+}
+
+/**
+ * emit_event_metrics - Emit metrics for dispatched events
+ * @nfds: Number of events
+ * @timeout: Timeout used
+ */
+static void
+emit_event_metrics (const int nfds, const int timeout)
+{
+  if (nfds > 0)
+    SocketMetrics_increment (SOCKET_METRIC_POLL_EVENTS_DISPATCHED,
+                             (unsigned long)nfds);
+
+  SocketEvent_emit_poll_wakeup (nfds, timeout);
+}
+
 /* ==================== Wait for Events ==================== */
 
 int
@@ -952,51 +1139,21 @@ SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
   assert (poll);
   assert (events);
 
-  if (timeout == SOCKET_POLL_TIMEOUT_USE_DEFAULT)
-    timeout = poll->default_timeout_ms;
+  timeout = resolve_timeout_from_default (poll, timeout);
+  timeout = calculate_effective_timeout (poll, timeout);
 
-  /* Calculate effective timeout considering timers */
-  if (poll->timer_heap)
-    {
-      int64_t next_timer_ms = SocketTimer_heap_peek_delay (poll->timer_heap);
+  process_async_completions_if_available (poll);
 
-      if (next_timer_ms >= 0 && (timeout < 0 || next_timer_ms < timeout))
-        {
-          if (next_timer_ms > SOCKET_MAX_TIMER_TIMEOUT_MS)
-            next_timer_ms = SOCKET_MAX_TIMER_TIMEOUT_MS;
-          if (next_timer_ms > INT_MAX)
-            next_timer_ms = INT_MAX;
-          timeout = (int)next_timer_ms;
-        }
-    }
-
-  /* Process async completions first */
-  if (poll->async)
-    SocketAsync_process_completions (poll->async, 0);
-
-  /* Wait for events from backend */
-  nfds = backend_wait (poll->backend, timeout);
-  SocketMetrics_increment (SOCKET_METRIC_POLL_WAKEUPS, 1);
+  nfds = wait_for_backend_events (poll, timeout);
 
   if (nfds < 0)
     {
-      if (errno == EINTR)
-        {
-          *events = NULL;
-          return 0;
-        }
-      SOCKET_ERROR_FMT ("%s backend wait failed (timeout=%d)", backend_name (),
-                        timeout);
-      RAISE_POLL_ERROR (SocketPoll_Failed);
+      *events = NULL;
+      return handle_backend_wait_error (timeout);
     }
 
-  /* Process async completions after wait */
-  if (poll->async)
-    SocketAsync_process_completions (poll->async, 0);
-
-  /* Process expired timers */
-  if (poll->timer_heap)
-    SocketTimer_process_expired (poll->timer_heap);
+  process_async_completions_if_available (poll);
+  process_timers_if_available (poll);
 
   if (nfds == 0)
     {
@@ -1004,17 +1161,10 @@ SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
       return 0;
     }
 
-  /* Translate backend events */
   nfds = translate_backend_events_to_socket_events (poll, nfds);
-
-  if (nfds > 0)
-    SocketMetrics_increment (SOCKET_METRIC_POLL_EVENTS_DISPATCHED,
-                             (unsigned long)nfds);
-
-  SocketEvent_emit_poll_wakeup (nfds, timeout);
+  emit_event_metrics (nfds, timeout);
 
 #ifdef SOCKET_HAS_TLS
-  /* Update poll events for TLS sockets in handshake */
   socketpoll_process_tls_handshakes (poll, nfds);
 #endif
 

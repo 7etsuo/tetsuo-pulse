@@ -49,7 +49,7 @@
 #include "socket/SocketAsync.h"
 #include "socket/SocketIO.h" /* For TLS-aware I/O functions */
 #define SOCKET_LOG_COMPONENT "SocketAsync"
-#include "core/SocketError.h"
+#include "core/SocketUtil.h"
 
 #ifdef SOCKET_HAS_TLS
 #include "tls/SocketTLS.h" /* For TLS exception types */

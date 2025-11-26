@@ -28,20 +28,16 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "core/SocketConfig-limits.h"
 #include "core/SocketConfig.h"
 #include "dns/SocketDNS.h"
 #include "socket/Socket.h"
 #define SOCKET_LOG_COMPONENT "Socket"
-#include "core/SocketError.h"
-#include "core/SocketEvents.h"
-#include "core/SocketMetrics.h"
+#include "core/SocketUtil.h"
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 #include "socket/SocketIO.h"
 
 #include "socket/Socket-private.h"
-#include "socket/SocketLiveCount.h"
 
 #include <sys/stat.h>
 #include <sys/un.h>
@@ -1122,29 +1118,14 @@ Socket_accept (T socket)
  * Merged from Socket-pair.c */
 
 /**
- * SocketPair_new - Create a pair of connected Unix domain sockets
- * @type: Socket type (SOCK_STREAM or SOCK_DGRAM)
- * @socket1: Output - first socket of the pair
- * @socket2: Output - second socket of the pair
- * Raises: Socket_Failed on error
- * Thread-safe: Yes (creates new sockets)
- * Note: Creates two connected Unix domain sockets for IPC.
- * Both sockets are ready to use - no bind/connect needed.
- * Typically used for parent-child or thread communication.
- * Only supports AF_UNIX (Unix domain sockets).
+ * socketpair_validate_type - Validate socket type for socketpair
+ * @type: Socket type to validate
+ *
+ * Raises: Socket_Failed if type is invalid
  */
-void
-SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
+static void
+socketpair_validate_type (int type)
 {
-  int sv[2];
-  Socket_T sock1 = NULL;
-  Socket_T sock2 = NULL;
-  Arena_T arena1 = NULL;
-  Arena_T arena2 = NULL;
-
-  assert (socket1);
-  assert (socket2);
-
   if (type != SOCK_STREAM && type != SOCK_DGRAM)
     {
       SOCKET_ERROR_MSG ("Invalid socket type for socketpair: %d (must be "
@@ -1152,7 +1133,18 @@ SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
                         type);
       RAISE_MODULE_ERROR (Socket_Failed);
     }
+}
 
+/**
+ * socketpair_create_fds - Create the underlying socket pair file descriptors
+ * @type: Socket type (SOCK_STREAM or SOCK_DGRAM)
+ * @sv: Output array for the two file descriptors
+ *
+ * Raises: Socket_Failed on error
+ */
+static void
+socketpair_create_fds (int type, int sv[2])
+{
 #if SOCKET_HAS_SOCK_CLOEXEC
   if (socketpair (AF_UNIX, type | SOCKET_SOCK_CLOEXEC, 0, sv) < 0)
 #else
@@ -1168,137 +1160,133 @@ SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
   SocketCommon_set_cloexec_fd (sv[0], true, Socket_Failed);
   SocketCommon_set_cloexec_fd (sv[1], true, Socket_Failed);
 #endif
+}
+
+/**
+ * socketpair_allocate_socket - Allocate a single socket for socketpair
+ * @fd: File descriptor to associate
+ * @type: Socket type
+ * @out_socket: Output for allocated socket
+ *
+ * Returns: The arena used (caller may transfer ownership)
+ * Raises: Socket_Failed on allocation failure
+ */
+static Arena_T
+socketpair_allocate_socket (int fd, int type, Socket_T *out_socket)
+{
+  Arena_T arena = Arena_new ();
+  if (!arena)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  Socket_T sock = Arena_calloc (arena, 1, sizeof (struct Socket_T),
+                                __FILE__, __LINE__);
+  if (!sock)
+    {
+      Arena_dispose (&arena);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket structure for pair");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  sock->base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T),
+                             __FILE__, __LINE__);
+  if (!sock->base)
+    {
+      Arena_dispose (&arena);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base for socket");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  sock->base->arena = arena;
+  SocketCommon_init_base (sock->base, fd, AF_UNIX, type, 0, Socket_Failed);
+  sock->base->remoteaddr = NULL; /* Pair sockets are connected */
+
+  *out_socket = sock;
+  return arena;
+}
+
+/**
+ * socketpair_cleanup_socket - Cleanup a socket on error
+ * @sock: Socket to cleanup (may be NULL)
+ * @fd: File descriptor to close if socket not allocated
+ */
+static void
+socketpair_cleanup_socket (Socket_T sock, int fd)
+{
+  if (sock)
+    {
+#ifdef SOCKET_HAS_TLS
+      if (sock->tls_ssl)
+        {
+          SSL_free ((SSL *)sock->tls_ssl);
+          sock->tls_ssl = NULL;
+        }
+#endif
+      SocketCommon_free_base (&sock->base);
+      socket_live_decrement ();
+    }
+  else if (fd >= 0)
+    {
+      SAFE_CLOSE (fd);
+    }
+}
+
+/**
+ * SocketPair_new - Create a pair of connected Unix domain sockets
+ * @type: Socket type (SOCK_STREAM or SOCK_DGRAM)
+ * @socket1: Output - first socket of the pair
+ * @socket2: Output - second socket of the pair
+ * Raises: Socket_Failed on error
+ * Thread-safe: Yes (creates new sockets)
+ * Note: Creates two connected Unix domain sockets for IPC.
+ * Both sockets are ready to use - no bind/connect needed.
+ * Typically used for parent-child or thread communication.
+ * Only supports AF_UNIX (Unix domain sockets).
+ */
+void
+SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
+{
+  int sv[2] = { -1, -1 };
+  Socket_T sock1 = NULL;
+  Socket_T sock2 = NULL;
+  Arena_T arena1 = NULL;
+  Arena_T arena2 = NULL;
+
+  assert (socket1);
+  assert (socket2);
+
+  socketpair_validate_type (type);
+  socketpair_create_fds (type, sv);
 
   TRY
     {
-      /* Create arenas for both sockets */
-      arena1 = Arena_new ();
-      if (!arena1)
-        {
-          SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
+      /* Allocate first socket */
+      arena1 = socketpair_allocate_socket (sv[0], type, &sock1);
+      sv[0] = -1; /* FD now owned by sock1 */
+      arena1 = NULL; /* Arena owned by sock1->base */
 
-      arena2 = Arena_new ();
-      if (!arena2)
-        {
-          Arena_dispose (&arena1);
-          SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
+      /* Allocate second socket */
+      arena2 = socketpair_allocate_socket (sv[1], type, &sock2);
+      sv[1] = -1; /* FD now owned by sock2 */
+      arena2 = NULL; /* Arena owned by sock2->base */
 
-      /* Allocate socket structures from arenas */
-      sock1 = Arena_calloc (arena1, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
-      if (!sock1)
-        {
-          Arena_dispose (&arena1);
-          SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                            ": Cannot allocate socket1 structure for pair");
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
-
-      sock1->base = Arena_calloc (arena1, 1, sizeof (struct SocketBase_T),
-                                  __FILE__, __LINE__);
-      if (!sock1->base)
-        {
-          Arena_dispose (&arena1);
-          sock1 = NULL; /* Prevent double cleanup in outer handler */
-          SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base for socket1");
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
-
-      sock1->base->arena = arena1;
-      arena1 = NULL; /* Transfer ownership */
-
-      SocketCommon_init_base (sock1->base, sv[0], AF_UNIX, type, 0, Socket_Failed);
-
-      sock2 = Arena_calloc (arena2, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
-      if (!sock2)
-        {
-          SocketCommon_free_base (&sock1->base);
-          sock1 = NULL;
-          sock2 = NULL; /* Prevent double cleanup in outer handler */
-          SOCKET_ERROR_MSG (SOCKET_ENOMEM
-                            ": Cannot allocate socket2 structure for pair");
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
-
-      sock2->base = Arena_calloc (arena2, 1, sizeof (struct SocketBase_T),
-                                  __FILE__, __LINE__);
-      if (!sock2->base)
-        {
-          SocketCommon_free_base (&sock1->base);
-          Arena_dispose (&arena2);
-          sock1 = NULL;
-          sock2 = NULL; /* Prevent double cleanup in outer handler */
-          arena2 = NULL;
-          SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base for socket2");
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
-
-      sock2->base->arena = arena2;
-      arena2 = NULL; /* Transfer ownership */
-
-      SocketCommon_init_base (sock2->base, sv[1], AF_UNIX, type, 0, Socket_Failed);
-
-      /* Mark as connected - peer info can be updated via getpeername if needed */
-      sock1->base->remoteaddr = NULL;
-      sock2->base->remoteaddr = NULL;
-
+      /* Transfer ownership to caller */
       *socket1 = sock1;
       *socket2 = sock2;
       sock1 = NULL;
-      sock2 = NULL; /* Transfer ownership */
+      sock2 = NULL;
     }
   EXCEPT (Socket_Failed)
     {
-      // Cleanup on error - reverse acquisition order: sock2 then sock1 then arenas.
-      // Handles partial allocations where arenas may or may not be transferred.
-      /* Cleanup sock2 (later acquired) */
-      if (sock2)
-        {
-#ifdef SOCKET_HAS_TLS
-          if (sock2->tls_ssl)
-            {
-              SSL_free ((SSL *)sock2->tls_ssl);
-              sock2->tls_ssl = NULL;
-            }
-            /* Add other stream-specific cleanup here if needed */
-#endif
-          SocketCommon_free_base (&sock2->base);
-          socket_live_decrement ();
-          sock2 = NULL;
-        }
-      else if (sv[1] >= 0)
-        {
-          SAFE_CLOSE (sv[1]);
-        }
-
-      /* Cleanup sock1 */
-      if (sock1)
-        {
-#ifdef SOCKET_HAS_TLS
-          if (sock1->tls_ssl)
-            {
-              SSL_free ((SSL *)sock1->tls_ssl);
-              sock1->tls_ssl = NULL;
-            }
-            /* Add other stream-specific cleanup here if needed */
-#endif
-          SocketCommon_free_base (&sock1->base);
-          socket_live_decrement ();
-          sock1 = NULL;
-        }
-      else if (sv[0] >= 0)
-        {
-          SAFE_CLOSE (sv[0]);
-        }
-
-      if (arena1)
-        Arena_dispose (&arena1);
+      /* Cleanup in reverse acquisition order */
+      socketpair_cleanup_socket (sock2, sv[1]);
+      socketpair_cleanup_socket (sock1, sv[0]);
       if (arena2)
         Arena_dispose (&arena2);
-
+      if (arena1)
+        Arena_dispose (&arena1);
       RERAISE;
     }
   END_TRY;

@@ -520,6 +520,52 @@ sockettimer_handle_expired (SocketTimer_heap_T *heap,
 }
 
 /* ===========================================================================
+ * Heap Allocation Helpers (Static)
+ * ===========================================================================*/
+
+/**
+ * sockettimer_heap_alloc_structure - Allocate heap structure from arena
+ * @arena: Arena to allocate from
+ *
+ * Returns: Allocated heap or NULL on failure
+ */
+static SocketTimer_heap_T *
+sockettimer_heap_alloc_structure (Arena_T arena)
+{
+  return CALLOC (arena, 1, sizeof (SocketTimer_heap_T));
+}
+
+/**
+ * sockettimer_heap_alloc_timers - Allocate timers array from arena
+ * @arena: Arena to allocate from
+ *
+ * Returns: Allocated timer array or NULL on failure
+ */
+static struct SocketTimer_T **
+sockettimer_heap_alloc_timers (Arena_T arena)
+{
+  return CALLOC (arena, SOCKET_TIMER_HEAP_INITIAL_CAPACITY,
+                 sizeof (struct SocketTimer_T *));
+}
+
+/**
+ * sockettimer_heap_init_state - Initialize heap state fields
+ * @heap: Heap to initialize
+ * @timers: Timer array to assign
+ * @arena: Arena to store
+ */
+static void
+sockettimer_heap_init_state (SocketTimer_heap_T *heap,
+                             struct SocketTimer_T **timers, Arena_T arena)
+{
+  heap->timers = timers;
+  heap->count = 0;
+  heap->capacity = SOCKET_TIMER_HEAP_INITIAL_CAPACITY;
+  heap->next_id = 1;
+  heap->arena = arena;
+}
+
+/* ===========================================================================
  * Heap Public API
  * ===========================================================================*/
 
@@ -534,23 +580,20 @@ SocketTimer_heap_T *
 SocketTimer_heap_new (Arena_T arena)
 {
   SocketTimer_heap_T *heap;
+  struct SocketTimer_T **timers;
 
   if (!arena)
     return NULL;
 
-  heap = CALLOC (arena, 1, sizeof (*heap));
+  heap = sockettimer_heap_alloc_structure (arena);
   if (!heap)
     return NULL;
 
-  heap->timers
-      = CALLOC (arena, SOCKET_TIMER_HEAP_INITIAL_CAPACITY, sizeof (*heap->timers));
-  if (!heap->timers)
+  timers = sockettimer_heap_alloc_timers (arena);
+  if (!timers)
     return NULL;
 
-  heap->count = 0;
-  heap->capacity = SOCKET_TIMER_HEAP_INITIAL_CAPACITY;
-  heap->next_id = 1;
-  heap->arena = arena;
+  sockettimer_heap_init_state (heap, timers, arena);
 
   if (pthread_mutex_init (&heap->mutex, NULL) != 0)
     return NULL;

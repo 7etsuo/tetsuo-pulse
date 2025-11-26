@@ -567,12 +567,16 @@ destroy_dns_resources (T d)
 
 /**
  * request_hash_function - Calculate hash for request pointer
- * @req: Request pointer to hash
+ * @req: Request pointer to hash (read-only, const)
+ *
  * Returns: Hash value in range [0, SOCKET_DNS_REQUEST_HASH_SIZE)
- * Uses golden ratio multiplicative hashing for good distribution.
+ * Thread-safe: Yes - no shared state modified, pure function
+ *
+ * Uses golden ratio multiplicative hashing (2^32 * (sqrt(5)-1)/2)
+ * for good distribution of pointer values across hash buckets.
  */
 unsigned
-request_hash_function (struct SocketDNS_Request_T *req)
+request_hash_function (const struct SocketDNS_Request_T *req)
 {
   uintptr_t ptr = (uintptr_t)req;
   return ((unsigned)ptr * HASH_GOLDEN_RATIO) % SOCKET_DNS_REQUEST_HASH_SIZE;
@@ -844,12 +848,17 @@ cancel_pending_request (struct SocketDNS_T *dns,
 
 /**
  * request_effective_timeout_ms - Get effective timeout for request
- * @dns: DNS resolver instance
- * @req: Request
- * Returns: Per-request timeout override or default resolver timeout (ms)
+ * @dns: DNS resolver instance (read-only for default timeout)
+ * @req: Request to check (read-only)
+ *
+ * Returns: Per-request timeout override if >= 0, else default resolver timeout
+ * Thread-safe: Must be called with mutex locked (reads dns->request_timeout_ms)
+ *
+ * Allows per-request timeout customization while falling back to resolver-wide
+ * default when no override is specified (timeout_override_ms < 0).
  */
 int
-request_effective_timeout_ms (struct SocketDNS_T *dns,
+request_effective_timeout_ms (const struct SocketDNS_T *dns,
                               const struct SocketDNS_Request_T *req)
 {
   if (req->timeout_override_ms >= 0)
@@ -859,14 +868,18 @@ request_effective_timeout_ms (struct SocketDNS_T *dns,
 
 /**
  * request_timed_out - Check if request has timed out
- * @dns: DNS resolver instance
- * @req: Request to check
- * Returns: 1 if timed out, 0 otherwise
- * Uses CLOCK_MONOTONIC for monotonic time calculation.
- * Thread-safe: Yes - read-only for req state
+ * @dns: DNS resolver instance (read-only for timeout config)
+ * @req: Request to check (read-only)
+ *
+ * Returns: 1 if timed out, 0 otherwise (including when timeout disabled)
+ * Thread-safe: Yes - read-only access to req state
+ *
+ * Uses CLOCK_MONOTONIC for reliable elapsed time calculation that is
+ * immune to system clock adjustments. Returns 0 if effective timeout <= 0
+ * (timeout disabled).
  */
 int
-request_timed_out (struct SocketDNS_T *dns,
+request_timed_out (const struct SocketDNS_T *dns,
                    const struct SocketDNS_Request_T *req)
 {
   int timeout_ms = request_effective_timeout_ms (dns, req);
@@ -1026,16 +1039,19 @@ dns_cancellation_error (void)
 
 /**
  * perform_dns_resolution - Perform actual DNS lookup
- * @req: Request to resolve
- * @hints: getaddrinfo hints structure
- * @result: Set to resolved addresses (or NULL on error); caller owns on success
- * Returns: getaddrinfo result code
+ * @req: Request containing hostname and port (read-only)
+ * @hints: getaddrinfo hints structure (read-only)
+ * @result: Output - set to resolved addresses (caller owns) or NULL on error
+ *
+ * Returns: getaddrinfo result code (0 on success, EAI_* on failure)
+ * Thread-safe: Yes - getaddrinfo is thread-safe per POSIX
+ *
  * Performs DNS resolution with optional port parameter. Handles NULL
- * host (wildcard bind) by passing NULL to getaddrinfo.
- * Note: getaddrinfo() is called directly and is not interruptible.
+ * host (wildcard bind) by passing NULL to getaddrinfo with AI_PASSIVE flag.
+ * Note: getaddrinfo() is a blocking call and is not interruptible.
  */
 int
-perform_dns_resolution (struct SocketDNS_Request_T *req,
+perform_dns_resolution (const struct SocketDNS_Request_T *req,
                         const struct addrinfo *hints, struct addrinfo **result)
 {
   char port_str[SOCKET_DNS_PORT_STR_SIZE];
@@ -1139,9 +1155,13 @@ store_resolution_result (struct SocketDNS_T *dns,
 
 /**
  * prepare_local_hints - Prepare local hints copy with request-specific flags
- * @local_hints: Output local hints structure
- * @base_hints: Base hints to copy from
- * @req: Request determining flags (e.g., AI_PASSIVE for NULL host)
+ * @local_hints: Output - local hints structure to initialize
+ * @base_hints: Base hints to copy from (read-only)
+ * @req: Request determining flags (read-only)
+ *
+ * Thread-safe: Yes - no shared state
+ *
+ * Copies base hints and adds AI_PASSIVE flag when host is NULL (wildcard bind).
  */
 void
 prepare_local_hints (struct addrinfo *local_hints,

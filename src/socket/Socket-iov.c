@@ -33,9 +33,8 @@
 
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
-#include "core/SocketError.h"
+#include "core/SocketUtil.h"
 #include "socket/Socket.h"
-#include "core/SocketMetrics.h"
 #include "socket/SocketIO.h" /* TLS-aware I/O functions */
 #include "socket/Socket-private.h"
 #include "socket/SocketCommon.h"
@@ -399,7 +398,6 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
   volatile size_t total_sent = 0;
   size_t total_len;
   ssize_t sent;
-  int i;
 
   assert (socket);
   assert (iov);
@@ -407,31 +405,13 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
   assert (iovcnt <= IOV_MAX);
 
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
-
-  /* Allocate working copy for SocketCommon_advance_iov */
-  iov_copy = calloc ((size_t)iovcnt, sizeof (struct iovec));
-  if (!iov_copy)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate iovec copy");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
-  memcpy (iov_copy, iov, (size_t)iovcnt * sizeof (struct iovec));
+  iov_copy = SocketCommon_alloc_iov_copy (iov, iovcnt, Socket_Failed);
 
   TRY while (total_sent < total_len)
   {
-    struct iovec *active_iov = NULL;
     int active_iovcnt = 0;
-
-    /* Find first non-empty iov buffer */
-    for (i = 0; i < iovcnt; i++)
-      {
-        if (iov_copy[i].iov_len > 0)
-          {
-            active_iov = &iov_copy[i];
-            active_iovcnt = iovcnt - i;
-            break;
-          }
-      }
+    struct iovec *active_iov = SocketCommon_find_active_iov (iov_copy, iovcnt,
+                                                             &active_iovcnt);
     if (active_iov == NULL)
       break;
 
@@ -463,7 +443,6 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
   volatile size_t total_received = 0;
   size_t total_len;
   ssize_t received;
-  int i;
 
   assert (socket);
   assert (iov);
@@ -483,19 +462,9 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
 
   TRY while (total_received < total_len)
   {
-    struct iovec *active_iov = NULL;
     int active_iovcnt = 0;
-
-    /* Find first non-empty iov buffer */
-    for (i = 0; i < iovcnt; i++)
-      {
-        if (iov_copy[i].iov_len > 0)
-          {
-            active_iov = &iov_copy[i];
-            active_iovcnt = iovcnt - i;
-            break;
-          }
-      }
+    struct iovec *active_iov = SocketCommon_find_active_iov (iov_copy, iovcnt,
+                                                             &active_iovcnt);
     if (active_iov == NULL)
       break;
 

@@ -33,16 +33,14 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "core/SocketConfig-limits.h"
 #include "core/SocketConfig.h"
 #define SOCKET_LOG_COMPONENT "SocketDgram"
-#include "core/SocketError.h"
+#include "core/SocketUtil.h"
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 #include "socket/SocketDgram-private.h"
 #include "socket/SocketDgram.h"
 #include "socket/SocketIO.h"
-#include "socket/SocketLiveCount.h"
 
 #define T SocketDgram_T
 
@@ -746,7 +744,6 @@ SocketDgram_sendvall (T socket, const struct iovec *iov, int iovcnt)
   volatile size_t total_sent = 0;
   size_t total_len;
   ssize_t sent;
-  int i;
 
   assert (socket);
   assert (iov);
@@ -766,17 +763,8 @@ SocketDgram_sendvall (T socket, const struct iovec *iov, int iovcnt)
   TRY while (total_sent < total_len)
   {
     int active_iovcnt = 0;
-    struct iovec *active_iov = NULL;
-
-    for (i = 0; i < iovcnt; i++)
-      {
-        if (iov_copy[i].iov_len > 0)
-          {
-            active_iov = &iov_copy[i];
-            active_iovcnt = iovcnt - i;
-            break;
-          }
-      }
+    struct iovec *active_iov = SocketCommon_find_active_iov (iov_copy, iovcnt,
+                                                             &active_iovcnt);
     if (active_iov == NULL)
       break;
 
@@ -805,7 +793,6 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
   volatile size_t total_received = 0;
   size_t total_len;
   ssize_t received;
-  int i;
 
   assert (socket);
   assert (iov);
@@ -825,33 +812,15 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
   TRY while (total_received < total_len)
   {
     int active_iovcnt = 0;
-    struct iovec *active_iov = NULL;
-
-    for (i = 0; i < iovcnt; i++)
-      {
-        if (iov_copy[i].iov_len > 0)
-          {
-            active_iov = &iov_copy[i];
-            active_iovcnt = iovcnt - i;
-            break;
-          }
-      }
+    struct iovec *active_iov = SocketCommon_find_active_iov (iov_copy, iovcnt,
+                                                             &active_iovcnt);
     if (active_iov == NULL)
       break;
 
     received = SocketDgram_recvv (socket, active_iov, active_iovcnt);
     if (received == 0)
       {
-        for (i = 0; i < iovcnt; i++)
-          {
-            if (iov_copy[i].iov_base != iov[i].iov_base)
-              {
-                size_t copied
-                    = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
-                iov[i].iov_len -= copied;
-                iov[i].iov_base = (char *)iov[i].iov_base + copied;
-              }
-          }
+        SocketCommon_sync_iov_progress (iov, iov_copy, iovcnt);
         free (iov_copy);
         return (ssize_t)total_received;
       }
@@ -859,16 +828,7 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
     SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)received);
   }
 
-  for (i = 0; i < iovcnt; i++)
-    {
-      if (iov_copy[i].iov_base != iov[i].iov_base)
-        {
-          size_t copied
-              = (char *)iov_copy[i].iov_base - (char *)iov[i].iov_base;
-          iov[i].iov_len -= copied;
-          iov[i].iov_base = (char *)iov[i].iov_base + copied;
-        }
-    }
+  SocketCommon_sync_iov_progress (iov, iov_copy, iovcnt);
   EXCEPT (SocketDgram_Failed)
   free (iov_copy);
   RERAISE;

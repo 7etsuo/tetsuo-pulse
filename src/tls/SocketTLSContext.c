@@ -546,8 +546,9 @@ sni_callback (SSL *ssl, int *ad, void *arg)
 static void
 expand_sni_capacity (T ctx)
 {
-  size_t new_cap
-      = ctx->sni_certs.capacity == 0 ? 4 : ctx->sni_certs.capacity * 2;
+  size_t new_cap = ctx->sni_certs.capacity == 0
+                       ? SOCKET_TLS_SNI_INITIAL_CAPACITY
+                       : ctx->sni_certs.capacity * 2;
 
   ctx->sni_certs.hostnames
       = realloc (ctx->sni_certs.hostnames, new_cap * sizeof (char *));
@@ -831,17 +832,18 @@ SocketTLSContext_add_certificate (T ctx, const char *hostname,
  * ============================================================================
  */
 
+/* Forward declaration for free_client_protos (used by parse_client_protos) */
+static void free_client_protos (const char **protos, size_t count);
+
 /**
- * parse_client_protos - Parse client protocols from wire format
+ * count_wire_format_protos - Count protocols in ALPN wire format
  * @in: Wire format input (length-prefixed strings)
  * @inlen: Input length
- * @count_out: Output: number of protocols parsed
  *
- * Returns: Array of null-terminated protocol strings (caller frees)
+ * Returns: Number of protocols found in wire format
  */
-static const char **
-parse_client_protos (const unsigned char *in, unsigned int inlen,
-                     size_t *count_out)
+static size_t
+count_wire_format_protos (const unsigned char *in, unsigned int inlen)
 {
   size_t count = 0;
   size_t offset = 0;
@@ -856,7 +858,51 @@ parse_client_protos (const unsigned char *in, unsigned int inlen,
       count++;
       offset += len;
     }
+  return count;
+}
 
+/**
+ * extract_single_proto - Extract and copy a single protocol from wire format
+ * @in: Wire format input at current position
+ * @inlen: Remaining input length
+ * @offset: Current offset (updated on success)
+ *
+ * Returns: Allocated protocol string, or NULL on failure
+ */
+static char *
+extract_single_proto (const unsigned char *in, unsigned int inlen,
+                      size_t *offset)
+{
+  if (*offset >= inlen)
+    return NULL;
+
+  unsigned char len = in[(*offset)++];
+  if (*offset + len > inlen)
+    return NULL;
+
+  char *proto = malloc (len + 1);
+  if (!proto)
+    return NULL;
+
+  memcpy (proto, &in[*offset], len);
+  proto[len] = '\0';
+  *offset += len;
+  return proto;
+}
+
+/**
+ * parse_client_protos - Parse client protocols from wire format
+ * @in: Wire format input (length-prefixed strings)
+ * @inlen: Input length
+ * @count_out: Output: number of protocols parsed
+ *
+ * Returns: Array of null-terminated protocol strings (caller frees)
+ */
+static const char **
+parse_client_protos (const unsigned char *in, unsigned int inlen,
+                     size_t *count_out)
+{
+  size_t count = count_wire_format_protos (in, inlen);
   if (count == 0)
     {
       *count_out = 0;
@@ -870,28 +916,16 @@ parse_client_protos (const unsigned char *in, unsigned int inlen,
       return NULL;
     }
 
-  offset = 0;
-  size_t idx = 0;
-  while (offset < inlen && idx < count)
+  size_t offset = 0;
+  for (size_t idx = 0; idx < count; idx++)
     {
-      unsigned char len = in[offset++];
-      if (offset + len > inlen)
-        break;
-
-      char *proto = malloc (len + 1);
-      if (!proto)
+      protos[idx] = extract_single_proto (in, inlen, &offset);
+      if (!protos[idx])
         {
-          for (size_t j = 0; j < idx; j++)
-            free ((void *)protos[j]);
-          free (protos);
+          free_client_protos (protos, idx);
           *count_out = 0;
           return NULL;
         }
-
-      memcpy (proto, &in[offset], len);
-      proto[len] = '\0';
-      protos[idx++] = proto;
-      offset += len;
     }
 
   *count_out = count;
@@ -1060,6 +1094,75 @@ build_wire_format (T ctx, const char **protos, size_t count, size_t *len_out)
   return buf;
 }
 
+/**
+ * validate_alpn_count - Validate ALPN protocol count
+ * @count: Number of protocols
+ *
+ * Raises: SocketTLS_Failed if count exceeds maximum
+ */
+static void
+validate_alpn_count (size_t count)
+{
+  if (count > SOCKET_TLS_MAX_ALPN_PROTOCOLS)
+    ctx_raise_openssl_error ("Too many ALPN protocols");
+}
+
+/**
+ * alloc_alpn_array - Allocate ALPN protocols array in context arena
+ * @ctx: TLS context
+ * @count: Number of protocols
+ *
+ * Returns: Allocated array
+ * Raises: SocketTLS_Failed on allocation failure
+ */
+static const char **
+alloc_alpn_array (T ctx, size_t count)
+{
+  const char **arr = Arena_alloc (ctx->arena, count * sizeof (const char *),
+                                  __FILE__, __LINE__);
+  if (!arr)
+    ctx_raise_openssl_error ("Failed to allocate ALPN protocols array");
+  return arr;
+}
+
+/**
+ * copy_alpn_protocols - Validate and copy protocols to context
+ * @ctx: TLS context
+ * @protos: Source protocol strings
+ * @count: Number of protocols
+ */
+static void
+copy_alpn_protocols (T ctx, const char **protos, size_t count)
+{
+  for (size_t i = 0; i < count; i++)
+    {
+      assert (protos[i]);
+      size_t len = strlen (protos[i]);
+      if (len == 0 || len > SOCKET_TLS_MAX_ALPN_LEN)
+        ctx_raise_openssl_error ("Invalid ALPN protocol length");
+      ctx->alpn.protocols[i] = copy_protocol_to_arena (ctx, protos[i]);
+    }
+}
+
+/**
+ * apply_alpn_to_ssl_ctx - Apply ALPN configuration to OpenSSL context
+ * @ctx: TLS context
+ * @protos: Protocol strings
+ * @count: Number of protocols
+ */
+static void
+apply_alpn_to_ssl_ctx (T ctx, const char **protos, size_t count)
+{
+  size_t wire_len;
+  unsigned char *wire = build_wire_format (ctx, protos, count, &wire_len);
+
+  if (SSL_CTX_set_alpn_protos (ctx->ssl_ctx, wire, (unsigned int)wire_len)
+      != 0)
+    ctx_raise_openssl_error ("Failed to set ALPN protocols");
+
+  SSL_CTX_set_alpn_select_cb (ctx->ssl_ctx, alpn_select_cb, ctx);
+}
+
 void
 SocketTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
 {
@@ -1070,40 +1173,11 @@ SocketTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
   if (count == 0)
     return;
 
-  if (count > SOCKET_TLS_MAX_ALPN_PROTOCOLS)
-    {
-      ctx_raise_openssl_error ("Too many ALPN protocols");
-    }
-
-  ctx->alpn.protocols
-      = Arena_alloc (ctx->arena, count * sizeof (const char *), __FILE__, __LINE__);
-  if (!ctx->alpn.protocols)
-    {
-      ctx_raise_openssl_error ("Failed to allocate ALPN protocols array");
-    }
-
-  for (size_t i = 0; i < count; i++)
-    {
-      assert (protos[i]);
-      size_t len = strlen (protos[i]);
-      if (len == 0 || len > SOCKET_TLS_MAX_ALPN_LEN)
-        {
-          ctx_raise_openssl_error ("Invalid ALPN protocol length");
-        }
-      ctx->alpn.protocols[i] = copy_protocol_to_arena (ctx, protos[i]);
-    }
+  validate_alpn_count (count);
+  ctx->alpn.protocols = alloc_alpn_array (ctx, count);
+  copy_alpn_protocols (ctx, protos, count);
   ctx->alpn.count = count;
-
-  size_t wire_len;
-  unsigned char *wire = build_wire_format (ctx, protos, count, &wire_len);
-
-  if (SSL_CTX_set_alpn_protos (ctx->ssl_ctx, wire, (unsigned int)wire_len)
-      != 0)
-    {
-      ctx_raise_openssl_error ("Failed to set ALPN protocols");
-    }
-
-  SSL_CTX_set_alpn_select_cb (ctx->ssl_ctx, alpn_select_cb, ctx);
+  apply_alpn_to_ssl_ctx (ctx, protos, count);
 }
 
 void
@@ -1582,18 +1656,59 @@ SocketTLSContext_set_ocsp_gen_callback (T ctx, SocketTLSOcspGenCallback cb,
     }
 }
 
+/**
+ * validate_socket_for_ocsp - Check socket is ready for OCSP status query
+ * @socket: Socket to validate
+ *
+ * Returns: 1 if valid, 0 if not ready for OCSP
+ */
+static int
+validate_socket_for_ocsp (Socket_T socket)
+{
+  return socket && socket->tls_enabled && socket->tls_ssl
+         && socket->tls_handshake_done;
+}
+
+/**
+ * get_ocsp_response_bytes - Get raw OCSP response from SSL
+ * @ssl: SSL connection
+ * @resp_bytes: Output pointer to response bytes
+ *
+ * Returns: Length of response, or 0 if no response
+ */
+static int
+get_ocsp_response_bytes (SSL *ssl, const unsigned char **resp_bytes)
+{
+  int len = SSL_get_tlsext_status_ocsp_resp (ssl, resp_bytes);
+  return (len > 0 && *resp_bytes) ? len : 0;
+}
+
+/**
+ * validate_ocsp_basic_response - Validate OCSP basic response structure
+ * @resp: OCSP response to validate
+ *
+ * Returns: 1 if valid, error status code otherwise
+ */
+static int
+validate_ocsp_basic_response (OCSP_RESPONSE *resp)
+{
+  OCSP_BASICRESP *basic = OCSP_response_get1_basic (resp);
+  if (!basic)
+    return OCSP_RESPONSE_STATUS_INTERNALERROR;
+  OCSP_BASICRESP_free (basic);
+  return 1;
+}
+
 int
 SocketTLS_get_ocsp_status (Socket_T socket)
 {
-  if (!socket || !socket->tls_enabled || !socket->tls_ssl
-      || !socket->tls_handshake_done)
+  if (!validate_socket_for_ocsp (socket))
     return 0;
 
   SSL *ssl = (SSL *)socket->tls_ssl;
-
   const unsigned char *resp_bytes;
-  int resp_len = SSL_get_tlsext_status_ocsp_resp (ssl, &resp_bytes);
-  if (resp_len <= 0 || !resp_bytes)
+  int resp_len = get_ocsp_response_bytes (ssl, &resp_bytes);
+  if (resp_len == 0)
     return 0;
 
   const unsigned char *p = resp_bytes;
@@ -1608,16 +1723,13 @@ SocketTLS_get_ocsp_status (Socket_T socket)
       return status;
     }
 
-  OCSP_BASICRESP *basic = OCSP_response_get1_basic (resp);
+  int result = validate_ocsp_basic_response (resp);
   OCSP_RESPONSE_free (resp);
-  if (!basic)
-    return OCSP_RESPONSE_STATUS_INTERNALERROR;
-
-  OCSP_BASICRESP_free (basic);
-  return 1;
+  return result;
 }
 
 #undef T
 
 #endif /* SOCKET_HAS_TLS */
+
 

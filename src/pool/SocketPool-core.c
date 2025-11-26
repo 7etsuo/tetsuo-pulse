@@ -17,7 +17,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "core/SocketLog.h"
+#include "core/SocketUtil.h"
 #include "pool/SocketPool-private.h"
 
 #define T SocketPool_T
@@ -359,6 +359,8 @@ initialize_pool_fields (T pool, Arena_T arena, size_t maxconns, size_t bufsize)
   pool->bufsize = bufsize;
   pool->count = 0;
   pool->arena = arena;
+  pool->dns = NULL;      /* Lazy init on first async connect */
+  pool->async_ctx = NULL; /* No pending async connects */
 }
 
 /**
@@ -463,6 +465,24 @@ free_tls_sessions (T pool)
 }
 
 /**
+ * free_dns_resolver - Free pool's internal DNS resolver
+ * @pool: Pool instance
+ *
+ * Also cancels any pending async connect operations.
+ */
+static void
+free_dns_resolver (T pool)
+{
+  if (pool->dns)
+    {
+      /* Cancel pending async connects - their sockets will be freed
+       * when DNS resolver drains, but callbacks won't be invoked */
+      SocketDNS_free (&pool->dns);
+    }
+  pool->async_ctx = NULL; /* Contexts are arena-allocated */
+}
+
+/**
  * SocketPool_free - Free a connection pool
  * @pool: Pointer to pool (will be set to NULL)
  *
@@ -475,6 +495,7 @@ SocketPool_free (T *pool)
   if (!pool || !*pool)
     return;
 
+  free_dns_resolver (*pool);
   free_tls_sessions (*pool);
 
   if ((*pool)->connections)
