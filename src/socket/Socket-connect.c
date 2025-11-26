@@ -136,13 +136,13 @@ static void
 socket_restore_blocking_mode (T socket, int original_flags,
                               const char *operation)
 {
-  if (fcntl (SocketBase_fd (socket->base), F_SETFL, original_flags) < 0)
+  int fd = SocketBase_fd (socket->base);
+  if (fcntl (fd, F_SETFL, original_flags) < 0)
     {
       SocketLog_emitf (SOCKET_LOG_WARN, "SocketConnect",
                        "Failed to restore blocking mode after %s "
                        "(fd=%d, errno=%d): %s",
-                       operation, SocketBase_fd (socket->base), errno,
-                       strerror (errno));
+                       operation, fd, errno, strerror (errno));
     }
 }
 
@@ -330,15 +330,14 @@ connect_attempt_immediate (T socket, const struct sockaddr *addr,
 static int
 connect_setup_nonblock (T socket, int *original_flags)
 {
-  *original_flags = fcntl (SocketBase_fd (socket->base), F_GETFL);
+  int fd = SocketBase_fd (socket->base);
+  *original_flags = fcntl (fd, F_GETFL);
   if (*original_flags < 0)
     return -1;
 
   if ((*original_flags & O_NONBLOCK) == 0)
     {
-      if (fcntl (SocketBase_fd (socket->base), F_SETFL,
-                 *original_flags | O_NONBLOCK)
-          < 0)
+      if (fcntl (fd, F_SETFL, *original_flags | O_NONBLOCK) < 0)
         return -1;
     }
   return 0;

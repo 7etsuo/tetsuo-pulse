@@ -66,43 +66,16 @@ SocketUnix_validate_unix_path (const char *path, size_t path_len)
 /* More functions to move: setup_abstract_unix_socket,
  * setup_regular_unix_socket, bind_unix, connect_unix etc. */
 
-/* Example public impl */
-void
-SocketUnix_bind (SocketBase_T base, const char *path, Except_T exc_type)
-{
-  struct sockaddr_un addr;
-  size_t path_len = strlen (path);
-
-  if (SocketUnix_validate_unix_path (path, path_len) < 0)
-    RAISE_MODULE_ERROR (exc_type);
-
-  memset (&addr, 0, sizeof (addr));
-  addr.sun_family = AF_UNIX;
-
-  if (SocketUnix_is_abstract_path (path))
-    {
-      setup_abstract_unix_socket (&addr, path, path_len);
-    }
-  else
-    {
-      SocketUnix_unlink_stale (path, exc_type); /* Per rules */
-      setup_regular_unix_socket (&addr, path, path_len);
-    }
-
-  if (bind (SocketBase_fd (base), (struct sockaddr *)&addr, sizeof (addr)) < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to bind Unix socket to %s", path);
-      RAISE_MODULE_ERROR (exc_type);
-    }
-
-  /* Update local endpoint */
-  SocketCommon_update_local_endpoint (base);
-}
-
-/* Similar for SocketUnix_connect */
-
 /* ==================== Unix Socket Setup ==================== */
 
+/**
+ * setup_unix_sockaddr - Initialize sockaddr_un from path
+ * @addr: Output sockaddr_un structure
+ * @path: Unix socket path (@ prefix for abstract)
+ *
+ * Returns: 0 on success
+ * Thread-safe: Yes (stateless)
+ */
 static int
 setup_unix_sockaddr (struct sockaddr_un *addr, const char *path)
 {
@@ -115,13 +88,38 @@ setup_unix_sockaddr (struct sockaddr_un *addr, const char *path)
   addr->sun_family = AF_UNIX;
   path_len = strlen (path);
 
-  if (path[0] == '@') {
+  if (path[0] == '@')
     setup_abstract_unix_socket (addr, path, path_len);
-    return 0;
-  } else {
+  else
     setup_regular_unix_socket (addr, path, path_len);
-    return 0;
-  }
+
+  return 0;
+}
+
+/* ==================== Bind Operation ==================== */
+
+void
+SocketUnix_bind (SocketBase_T base, const char *path, Except_T exc_type)
+{
+  struct sockaddr_un addr;
+  size_t path_len = strlen (path);
+
+  if (SocketUnix_validate_unix_path (path, path_len) < 0)
+    RAISE_MODULE_ERROR (exc_type);
+
+  /* Unlink stale socket file for regular (non-abstract) paths */
+  if (!SocketUnix_is_abstract_path (path))
+    SocketUnix_unlink_stale (path, exc_type);
+
+  setup_unix_sockaddr (&addr, path);
+
+  if (bind (SocketBase_fd (base), (struct sockaddr *)&addr, sizeof (addr)) < 0)
+    {
+      SOCKET_ERROR_FMT ("Failed to bind Unix socket to %s", path);
+      RAISE_MODULE_ERROR (exc_type);
+    }
+
+  SocketCommon_update_local_endpoint (base);
 }
 
 /* ==================== Unix Socket Operations ==================== */

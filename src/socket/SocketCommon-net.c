@@ -742,6 +742,13 @@ SocketCommon_reverse_lookup (const struct sockaddr *addr, socklen_t addrlen,
 
 /* ==================== Multicast Operations ==================== */
 
+/* Multicast operation type */
+typedef enum
+{
+  MCAST_OP_JOIN,
+  MCAST_OP_LEAVE
+} MulticastOpType;
+
 static void
 common_resolve_multicast_group (const char *group, struct addrinfo **res,
                                 Except_T exc_type)
@@ -764,10 +771,11 @@ common_resolve_multicast_group (const char *group, struct addrinfo **res,
 }
 
 static void
-common_setup_ipv4_multicast_interface (struct ip_mreq *mreq,
-                                       const char *interface,
-                                       Except_T exc_type)
+common_setup_ipv4_mreq (struct ip_mreq *mreq, struct in_addr group_addr,
+                        const char *interface, Except_T exc_type)
 {
+  memset (mreq, 0, sizeof (*mreq));
+  mreq->imr_multiaddr = group_addr;
   if (interface)
     {
       if (inet_pton (SOCKET_AF_INET, interface, &mreq->imr_interface) <= 0)
@@ -782,142 +790,121 @@ common_setup_ipv4_multicast_interface (struct ip_mreq *mreq,
     }
 }
 
+/**
+ * common_ipv4_multicast - Join or leave IPv4 multicast group
+ * @base: Socket base
+ * @group_addr: Multicast group address
+ * @interface: Interface address (NULL for any)
+ * @op: MCAST_OP_JOIN or MCAST_OP_LEAVE
+ * @exc_type: Exception to raise on error
+ */
 static void
-common_join_ipv4_multicast (SocketBase_T base, struct in_addr group_addr,
-                            const char *interface, Except_T exc_type)
+common_ipv4_multicast (SocketBase_T base, struct in_addr group_addr,
+                       const char *interface, MulticastOpType op,
+                       Except_T exc_type)
 {
   struct ip_mreq mreq;
-  memset (&mreq, 0, sizeof (mreq));
-  mreq.imr_multiaddr = group_addr;
-  common_setup_ipv4_multicast_interface (&mreq, interface, exc_type);
+  int opt = (op == MCAST_OP_JOIN) ? SOCKET_IP_ADD_MEMBERSHIP
+                                  : SOCKET_IP_DROP_MEMBERSHIP;
+  const char *op_name = (op == MCAST_OP_JOIN) ? "join" : "leave";
 
-  if (setsockopt (SocketBase_fd (base), SOCKET_IPPROTO_IP,
-                  SOCKET_IP_ADD_MEMBERSHIP, &mreq, sizeof (mreq))
+  common_setup_ipv4_mreq (&mreq, group_addr, interface, exc_type);
+
+  if (setsockopt (SocketBase_fd (base), SOCKET_IPPROTO_IP, opt, &mreq,
+                  sizeof (mreq))
       < 0)
     {
-      SOCKET_ERROR_FMT ("Failed to join IPv4 multicast group");
+      SOCKET_ERROR_FMT ("Failed to %s IPv4 multicast group", op_name);
       RAISE_MODULE_ERROR (exc_type);
     }
 }
 
+/**
+ * common_ipv6_multicast - Join or leave IPv6 multicast group
+ * @base: Socket base
+ * @group_addr: Multicast group address
+ * @op: MCAST_OP_JOIN or MCAST_OP_LEAVE
+ * @exc_type: Exception to raise on error
+ */
 static void
-common_join_ipv6_multicast (SocketBase_T base, struct in6_addr group_addr,
+common_ipv6_multicast (SocketBase_T base, struct in6_addr group_addr,
+                       MulticastOpType op, Except_T exc_type)
+{
+  struct ipv6_mreq mreq6;
+  int opt = (op == MCAST_OP_JOIN) ? SOCKET_IPV6_ADD_MEMBERSHIP
+                                  : SOCKET_IPV6_DROP_MEMBERSHIP;
+  const char *op_name = (op == MCAST_OP_JOIN) ? "join" : "leave";
+
+  memset (&mreq6, 0, sizeof (mreq6));
+  mreq6.ipv6mr_multiaddr = group_addr;
+  mreq6.ipv6mr_interface = SOCKET_MULTICAST_DEFAULT_INTERFACE;
+
+  if (setsockopt (SocketBase_fd (base), SOCKET_IPPROTO_IPV6, opt, &mreq6,
+                  sizeof (mreq6))
+      < 0)
+    {
+      SOCKET_ERROR_FMT ("Failed to %s IPv6 multicast group", op_name);
+      RAISE_MODULE_ERROR (exc_type);
+    }
+}
+
+/**
+ * common_multicast_operation - Unified multicast join/leave
+ * @base: Socket base
+ * @group: Multicast group address string
+ * @interface: Interface for IPv4 (NULL for any)
+ * @op: MCAST_OP_JOIN or MCAST_OP_LEAVE
+ * @exc_type: Exception to raise on error
+ *
+ * Consolidates common code for SocketCommon_join_multicast and
+ * SocketCommon_leave_multicast.
+ */
+static void
+common_multicast_operation (SocketBase_T base, const char *group,
+                            const char *interface, MulticastOpType op,
                             Except_T exc_type)
 {
-  struct ipv6_mreq mreq6;
-  memset (&mreq6, 0, sizeof (mreq6));
-  mreq6.ipv6mr_multiaddr = group_addr;
-  mreq6.ipv6mr_interface = SOCKET_MULTICAST_DEFAULT_INTERFACE;
+  struct addrinfo *res = NULL;
+  int family;
 
-  if (setsockopt (SocketBase_fd (base), SOCKET_IPPROTO_IPV6,
-                  SOCKET_IPV6_ADD_MEMBERSHIP, &mreq6, sizeof (mreq6))
-      < 0)
+  assert (base);
+  assert (group);
+
+  common_resolve_multicast_group (group, &res, exc_type);
+  family = SocketCommon_get_family (base, true, exc_type);
+
+  if (family == SOCKET_AF_INET)
     {
-      SOCKET_ERROR_FMT ("Failed to join IPv6 multicast group");
+      struct sockaddr_in *sin = (struct sockaddr_in *)res->ai_addr;
+      common_ipv4_multicast (base, sin->sin_addr, interface, op, exc_type);
+    }
+  else if (family == SOCKET_AF_INET6)
+    {
+      struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)res->ai_addr;
+      common_ipv6_multicast (base, sin6->sin6_addr, op, exc_type);
+    }
+  else
+    {
+      freeaddrinfo (res);
+      SOCKET_ERROR_MSG ("Unsupported address family %d for multicast", family);
       RAISE_MODULE_ERROR (exc_type);
     }
-}
 
-static void
-common_leave_ipv4_multicast (SocketBase_T base, struct in_addr group_addr,
-                             const char *interface, Except_T exc_type)
-{
-  struct ip_mreq mreq;
-  memset (&mreq, 0, sizeof (mreq));
-  mreq.imr_multiaddr = group_addr;
-  common_setup_ipv4_multicast_interface (&mreq, interface, exc_type);
-
-  if (setsockopt (SocketBase_fd (base), SOCKET_IPPROTO_IP,
-                  SOCKET_IP_DROP_MEMBERSHIP, &mreq, sizeof (mreq))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to leave IPv4 multicast group");
-      RAISE_MODULE_ERROR (exc_type);
-    }
-}
-
-static void
-common_leave_ipv6_multicast (SocketBase_T base, struct in6_addr group_addr,
-                             Except_T exc_type)
-{
-  struct ipv6_mreq mreq6;
-  memset (&mreq6, 0, sizeof (mreq6));
-  mreq6.ipv6mr_multiaddr = group_addr;
-  mreq6.ipv6mr_interface = SOCKET_MULTICAST_DEFAULT_INTERFACE;
-
-  if (setsockopt (SocketBase_fd (base), SOCKET_IPPROTO_IPV6,
-                  SOCKET_IPV6_DROP_MEMBERSHIP, &mreq6, sizeof (mreq6))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to leave IPv6 multicast group");
-      RAISE_MODULE_ERROR (exc_type);
-    }
+  freeaddrinfo (res);
 }
 
 void
 SocketCommon_join_multicast (SocketBase_T base, const char *group,
                              const char *interface, Except_T exc_type)
 {
-  struct addrinfo *res = NULL;
-  int family;
-
-  assert (base);
-  assert (group);
-
-  common_resolve_multicast_group (group, &res, exc_type);
-
-  family = SocketCommon_get_family (base, true, exc_type);
-
-  if (family == SOCKET_AF_INET)
-    {
-      struct sockaddr_in *sin = (struct sockaddr_in *)res->ai_addr;
-      common_join_ipv4_multicast (base, sin->sin_addr, interface, exc_type);
-    }
-  else if (family == SOCKET_AF_INET6)
-    {
-      struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)res->ai_addr;
-      common_join_ipv6_multicast (base, sin6->sin6_addr, exc_type);
-    }
-  else
-    {
-      SOCKET_ERROR_MSG ("Unsupported address family %d for multicast", family);
-      RAISE_MODULE_ERROR (exc_type);
-    }
-
-  freeaddrinfo (res);
+  common_multicast_operation (base, group, interface, MCAST_OP_JOIN, exc_type);
 }
 
 void
 SocketCommon_leave_multicast (SocketBase_T base, const char *group,
                               const char *interface, Except_T exc_type)
 {
-  struct addrinfo *res = NULL;
-  int family;
-
-  assert (base);
-  assert (group);
-
-  common_resolve_multicast_group (group, &res, exc_type);
-
-  family = SocketCommon_get_family (base, true, exc_type);
-
-  if (family == SOCKET_AF_INET)
-    {
-      struct sockaddr_in *sin = (struct sockaddr_in *)res->ai_addr;
-      common_leave_ipv4_multicast (base, sin->sin_addr, interface, exc_type);
-    }
-  else if (family == SOCKET_AF_INET6)
-    {
-      struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)res->ai_addr;
-      common_leave_ipv6_multicast (base, sin6->sin6_addr, exc_type);
-    }
-  else
-    {
-      SOCKET_ERROR_MSG ("Unsupported address family %d for multicast", family);
-      RAISE_MODULE_ERROR (exc_type);
-    }
-
-  freeaddrinfo (res);
+  common_multicast_operation (base, group, interface, MCAST_OP_LEAVE, exc_type);
 }
 
 void

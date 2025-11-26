@@ -27,9 +27,7 @@
 #include <sys/sendfile.h>
 #endif
 
-#ifdef __FreeBSD__
-#include <sys/uio.h>
-#endif
+/* Note: <sys/uio.h> already included unconditionally above */
 
 #include <assert.h>
 
