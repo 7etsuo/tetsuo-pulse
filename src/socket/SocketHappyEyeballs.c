@@ -48,17 +48,19 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHE);
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHE, e)
 
 /* ============================================================================
- * Forward Declarations
+ * Forward Declarations - DNS and Address Management
  * ============================================================================ */
 
-/* DNS and address management */
 static void he_cancel_dns (T he);
 static int he_start_dns_resolution (T he);
 static void he_process_dns_completion (T he);
 static void he_sort_addresses (T he);
 static SocketHE_AddressEntry_T *he_get_next_address (T he);
 
-/* Connection attempt management */
+/* ============================================================================
+ * Forward Declarations - Connection Attempt Management
+ * ============================================================================ */
+
 static int he_start_attempt (T he, SocketHE_AddressEntry_T *entry);
 static int he_initiate_connect (T he, SocketHE_Attempt_T *attempt,
                                 SocketHE_AddressEntry_T *entry);
@@ -68,24 +70,13 @@ static void he_declare_winner (T he, SocketHE_Attempt_T *attempt);
 static void he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error);
 static int he_all_attempts_done (const T he);
 
-/* Attempt completion checking */
-static int he_process_poll_result (T he, SocketHE_Attempt_T *attempt, int fd,
-                                   int poll_result, short revents);
+/* ============================================================================
+ * Forward Declarations - State and Timeout Management
+ * ============================================================================ */
 
-/* State and timeout management */
 static void he_transition_to_failed (T he, const char *reason);
 static int he_should_start_fallback (const T he);
 static int he_check_total_timeout (const T he);
-
-/* Sync API helpers */
-static int sync_handle_timeout_check (T he);
-static int sync_do_poll (struct pollfd *pfds, int nfds, int timeout);
-static int sync_execute_poll_cycle (T he, struct pollfd *pfds,
-                                    SocketHE_Attempt_T **attempt_map);
-static T sync_create_and_resolve (const char *host, int port,
-                                  const SocketHE_Config_T *config,
-                                  char *errmsg, size_t errmsg_size);
-static void sync_prepare_connections (T he);
 
 /* ============================================================================
  * Configuration Defaults
@@ -806,7 +797,8 @@ static void
 he_log_attempt_start (const SocketHE_AddressEntry_T *entry)
 {
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "Started %s connection attempt", he_family_name (entry->family));
+                   "Started %s connection attempt",
+                   he_family_name (entry->family));
 }
 
 /**
@@ -818,8 +810,8 @@ static void
 he_log_attempt_fail (const SocketHE_AddressEntry_T *entry, int error)
 {
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "%s connection failed: %s",
-                   he_family_name (entry->family), strerror (error));
+                   "%s connection failed: %s", he_family_name (entry->family),
+                   strerror (error));
 }
 
 /**
@@ -1330,6 +1322,85 @@ he_check_total_timeout (const T he)
 }
 
 /* ============================================================================
+ * Timeout Calculation Helpers
+ * ============================================================================ */
+
+/**
+ * he_apply_timeout_limit - Apply a remaining time limit to timeout
+ * @current_timeout: Current timeout value (-1 for infinite)
+ * @remaining_ms: Remaining time in milliseconds
+ *
+ * Returns: Updated timeout value (minimum of current and remaining)
+ */
+static int
+he_apply_timeout_limit (int current_timeout, int64_t remaining_ms)
+{
+  if (remaining_ms <= 0)
+    return 0;
+
+  if (current_timeout < 0 || remaining_ms < current_timeout)
+    return (int)remaining_ms;
+
+  return current_timeout;
+}
+
+/**
+ * he_calculate_total_timeout_remaining - Calculate remaining total timeout
+ * @he: Happy Eyeballs context
+ * @current_timeout: Current timeout value
+ *
+ * Returns: Updated timeout accounting for total timeout
+ */
+static int
+he_calculate_total_timeout_remaining (const T he, int current_timeout)
+{
+  int64_t remaining;
+
+  if (he->config.total_timeout_ms <= 0)
+    return current_timeout;
+
+  remaining
+      = he->config.total_timeout_ms - sockethe_elapsed_ms (he->start_time_ms);
+  return he_apply_timeout_limit (current_timeout, remaining);
+}
+
+/**
+ * he_calculate_fallback_timeout_remaining - Calculate remaining fallback timer
+ * @he: Happy Eyeballs context
+ * @current_timeout: Current timeout value
+ *
+ * Returns: Updated timeout accounting for fallback timer
+ */
+static int
+he_calculate_fallback_timeout_remaining (const T he, int current_timeout)
+{
+  int64_t remaining;
+
+  if (he->state != HE_STATE_CONNECTING || !he->fallback_timer_armed
+      || he->first_attempt_time_ms <= 0)
+    return current_timeout;
+
+  remaining = he->config.first_attempt_delay_ms
+              - sockethe_elapsed_ms (he->first_attempt_time_ms);
+  return he_apply_timeout_limit (current_timeout, remaining);
+}
+
+/**
+ * he_calculate_next_timeout - Calculate next timeout for poll
+ * @he: Happy Eyeballs context
+ * @timeout: Current timeout (or -1)
+ *
+ * Returns: Updated timeout value
+ */
+static int
+he_calculate_next_timeout (const T he, int timeout)
+{
+  timeout = he_calculate_total_timeout_remaining (he, timeout);
+  timeout = he_calculate_fallback_timeout_remaining (he, timeout);
+  return timeout;
+}
+
+/* ============================================================================
  * Async State Machine Processing
  * ============================================================================ */
 
@@ -1583,42 +1654,6 @@ SocketHappyEyeballs_error (T he)
 }
 
 /**
- * he_calculate_next_timeout - Calculate next timeout for poll
- * @he: Happy Eyeballs context
- * @timeout: Current timeout (or -1)
- *
- * Returns: Updated timeout value
- */
-static int
-he_calculate_next_timeout (const T he, int timeout)
-{
-  int64_t remaining;
-
-  if (he->config.total_timeout_ms > 0)
-    {
-      remaining = he->config.total_timeout_ms
-                  - sockethe_elapsed_ms (he->start_time_ms);
-      if (remaining <= 0)
-        return 0;
-      if (timeout < 0 || remaining < timeout)
-        timeout = (int)remaining;
-    }
-
-  if (he->state == HE_STATE_CONNECTING && he->fallback_timer_armed
-      && he->first_attempt_time_ms > 0)
-    {
-      remaining = he->config.first_attempt_delay_ms
-                  - sockethe_elapsed_ms (he->first_attempt_time_ms);
-      if (remaining <= 0)
-        return 0;
-      if (timeout < 0 || remaining < timeout)
-        timeout = (int)remaining;
-    }
-
-  return timeout;
-}
-
-/**
  * SocketHappyEyeballs_next_timeout_ms - Get time until next timer expiry
  * @he: Happy Eyeballs context
  *
@@ -1680,20 +1715,11 @@ static int
 sync_calculate_poll_timeout (const T he)
 {
   int timeout = SOCKET_HE_SYNC_POLL_INTERVAL_MS;
-  int64_t remaining;
 
   if (he_should_start_fallback (he))
     return 0;
 
-  if (he->fallback_timer_armed && he->first_attempt_time_ms > 0)
-    {
-      remaining = he->config.first_attempt_delay_ms
-                  - sockethe_elapsed_ms (he->first_attempt_time_ms);
-      if (remaining > 0 && remaining < timeout)
-        timeout = (int)remaining;
-    }
-
-  return timeout;
+  return he_calculate_fallback_timeout_remaining (he, timeout);
 }
 
 /**
