@@ -8,6 +8,7 @@
  */
 
 /* All includes before T macro definition to avoid redefinition warnings */
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
 

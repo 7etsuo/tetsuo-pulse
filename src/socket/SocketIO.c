@@ -13,6 +13,7 @@
  * - Thread-safe operation
  */
 
+#include "core/Arena.h"
 #include "core/SocketConfig.h"
 #include "core/SocketError.h"
 #include "socket/Socket-private.h"
@@ -52,36 +53,19 @@ SOCKET_DECLARE_MODULE_EXCEPTION(SocketIO);
 extern int Socket_fd (const T socket);
 
 #ifdef SOCKET_HAS_TLS
-/* TLS functions in SocketIO-tls.c */
-extern int socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result);
-extern ssize_t socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt);
-extern ssize_t socket_recvv_tls (T socket, struct iovec *iov, int iovcnt);
-extern SSL *socket_get_ssl (T socket);
-extern ssize_t socket_send_tls (T socket, const void *buf, size_t len);
-extern ssize_t socket_recv_tls (T socket, void *buf, size_t len);
+/* TLS helper functions - defined later in this file */
+/* Note: Some functions are extern (declared in header), some are static */
+static ssize_t socket_send_tls (T socket, const void *buf, size_t len);
+static ssize_t socket_recv_tls (T socket, void *buf, size_t len);
+static ssize_t socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt);
+static ssize_t socket_recvv_tls (T socket, struct iovec *iov, int iovcnt);
 #endif
 
-/* ==================== Common I/O Error Helpers ==================== */
-
-/**
- * is_wouldblock_error - Check if error indicates operation would block
- * Returns: 1 if EAGAIN/EWOULDBLOCK, 0 otherwise
+/* Common I/O error helpers are now inline in SocketIO.h:
+ * - socketio_is_wouldblock()
+ * - socketio_is_connection_closed_send()
+ * - socketio_is_connection_closed_recv()
  */
-static inline int
-is_wouldblock_error (void)
-{
-  return errno == EAGAIN || errno == EWOULDBLOCK;
-}
-
-/**
- * is_connection_closed_send - Check if send error indicates closed connection
- * Returns: 1 if EPIPE/ECONNRESET, 0 otherwise
- */
-static inline int
-is_connection_closed_send (void)
-{
-  return errno == EPIPE || errno == ECONNRESET;
-}
 
 /**
  * socket_send_raw - Raw socket send operation
@@ -100,9 +84,9 @@ socket_send_raw (T socket, const void *buf, size_t len, int flags)
 
   if (result < 0)
     {
-      if (is_wouldblock_error ())
+      if (socketio_is_wouldblock ())
         return 0;
-      if (is_connection_closed_send ())
+      if (socketio_is_connection_closed_send ())
         RAISE (Socket_Closed);
       SOCKET_ERROR_FMT ("Send failed (len=%zu)", len);
       RAISE_MODULE_ERROR (Socket_Failed);
@@ -128,9 +112,9 @@ socket_recv_raw (T socket, void *buf, size_t len, int flags)
 
   if (result < 0)
     {
-      if (is_wouldblock_error ())
+      if (socketio_is_wouldblock ())
         return 0;
-      if (errno == ECONNRESET)
+      if (socketio_is_connection_closed_recv ())
         RAISE (Socket_Closed);
       SOCKET_ERROR_FMT ("Receive failed (len=%zu)", len);
       RAISE_MODULE_ERROR (Socket_Failed);
@@ -209,9 +193,9 @@ socket_sendv_raw (T socket, const struct iovec *iov, int iovcnt, int flags)
   ssize_t result = writev (Socket_fd (socket), iov, iovcnt);
   if (result < 0)
     {
-      if (is_wouldblock_error ())
+      if (socketio_is_wouldblock ())
         return 0;
-      if (is_connection_closed_send ())
+      if (socketio_is_connection_closed_send ())
         RAISE (Socket_Closed);
       SOCKET_ERROR_FMT ("Scatter/gather send failed (iovcnt=%d)", iovcnt);
       RAISE_MODULE_ERROR (Socket_Failed);
@@ -237,9 +221,9 @@ socket_recvv_raw (T socket, struct iovec *iov, int iovcnt, int flags)
   ssize_t result = readv (Socket_fd (socket), iov, iovcnt);
   if (result < 0)
     {
-      if (is_wouldblock_error ())
+      if (socketio_is_wouldblock ())
         return 0;
-      if (errno == ECONNRESET)
+      if (socketio_is_connection_closed_recv ())
         RAISE (Socket_Closed);
       SOCKET_ERROR_FMT ("Scatter/gather receive failed (iovcnt=%d)", iovcnt);
       RAISE_MODULE_ERROR (Socket_Failed);
@@ -362,5 +346,365 @@ socket_tls_want_write (T socket)
   return 0;
 #endif
 }
+
+/* ==================== TLS I/O Operations ==================== */
+/* Merged from SocketIO-tls.c and SocketIO-tls-iov.c */
+
+#ifdef SOCKET_HAS_TLS
+
+/**
+ * socket_get_ssl - Helper to get SSL object from socket
+ * @socket: Socket instance
+ *
+ * Returns: SSL object or NULL if not available
+ */
+SSL *
+socket_get_ssl (T socket)
+{
+  if (!socket || !socket->tls_enabled || !socket->tls_ssl)
+    return NULL;
+  return (SSL *)socket->tls_ssl;
+}
+
+/* socket_is_recoverable_io_error removed - use socketio_is_wouldblock() */
+
+/* ==================== SSL Error Mapping ==================== */
+
+/**
+ * SSLErrorMapping - Mapping from SSL error code to errno and state
+ *
+ * Provides data-driven error handling for SSL operations. Each entry
+ * maps an SSL_ERROR_* code to the corresponding errno value and
+ * indicates whether the error clears the handshake completion flag.
+ */
+typedef struct
+{
+  int ssl_error;        /**< SSL_ERROR_* constant */
+  int mapped_errno;     /**< Corresponding errno value */
+  int clears_handshake; /**< 1 if this error resets handshake_done */
+} SSLErrorMapping;
+
+/**
+ * SSL error mapping table - data-driven error classification
+ *
+ * This table maps SSL error codes to errno values. Using a table instead
+ * of a switch statement makes it easier to add new error codes and
+ * ensures consistent handling across all TLS operations.
+ */
+static const SSLErrorMapping ssl_error_map[] = {
+  { SSL_ERROR_NONE, 0, 0 },
+  { SSL_ERROR_SSL, EPROTO, 0 },
+  { SSL_ERROR_WANT_READ, EAGAIN, 1 },
+  { SSL_ERROR_WANT_WRITE, EAGAIN, 1 },
+  { SSL_ERROR_WANT_X509_LOOKUP, EAGAIN, 0 },
+  { SSL_ERROR_ZERO_RETURN, ECONNRESET, 0 },
+  { SSL_ERROR_WANT_CONNECT, EINPROGRESS, 1 },
+  { SSL_ERROR_WANT_ACCEPT, EAGAIN, 1 },
+  { SSL_ERROR_WANT_ASYNC, EAGAIN, 0 },
+  { SSL_ERROR_WANT_ASYNC_JOB, EAGAIN, 0 },
+  { SSL_ERROR_WANT_CLIENT_HELLO_CB, EAGAIN, 0 },
+  { SSL_ERROR_WANT_RETRY_VERIFY, EAGAIN, 0 },
+};
+
+#define SSL_ERROR_MAP_SIZE (sizeof (ssl_error_map) / sizeof (ssl_error_map[0]))
+
+/**
+ * ssl_lookup_error - Find mapping for SSL error code
+ * @ssl_error: SSL_ERROR_* constant to look up
+ *
+ * Returns: Pointer to mapping entry, or NULL if not found
+ */
+static const SSLErrorMapping *
+ssl_lookup_error (int ssl_error)
+{
+  for (size_t i = 0; i < SSL_ERROR_MAP_SIZE; i++)
+    {
+      if (ssl_error_map[i].ssl_error == ssl_error)
+        return &ssl_error_map[i];
+    }
+  return NULL;
+}
+
+/**
+ * ssl_handle_syscall_error - Handle SSL_ERROR_SYSCALL specially
+ *
+ * Returns: -1 (always an error)
+ *
+ * SSL_ERROR_SYSCALL requires special handling: if errno is 0,
+ * the connection was closed (EOF). Otherwise, keep the existing errno.
+ */
+static int
+ssl_handle_syscall_error (void)
+{
+  if (errno == 0)
+    errno = ECONNRESET;
+  return -1;
+}
+
+/**
+ * socket_handle_ssl_error - Map SSL error codes to errno values
+ * @socket: Socket instance
+ * @ssl: SSL object
+ * @ssl_result: Result from SSL operation
+ *
+ * Returns: 0 on SSL_ERROR_NONE, -1 on error (sets errno)
+ * Thread-safe: Yes (operates on single socket)
+ *
+ * Uses data-driven mapping table to convert SSL error codes to
+ * appropriate errno values. Updates socket handshake state when
+ * SSL indicates the handshake needs to continue.
+ */
+int
+socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result)
+{
+  int ssl_error = SSL_get_error (ssl, ssl_result);
+  const SSLErrorMapping *mapping;
+
+  /* Handle syscall error specially - errno may already be set */
+  if (ssl_error == SSL_ERROR_SYSCALL)
+    return ssl_handle_syscall_error ();
+
+  mapping = ssl_lookup_error (ssl_error);
+  if (!mapping)
+    {
+      errno = EPROTO;
+      return -1;
+    }
+
+  if (mapping->ssl_error == SSL_ERROR_NONE)
+    return 0;
+
+  if (mapping->clears_handshake)
+    socket->tls_handshake_done = 0;
+
+  errno = mapping->mapped_errno;
+  return -1;
+}
+
+/**
+ * socket_validate_tls_ready - Validate TLS is ready for I/O
+ * @socket: Socket instance
+ *
+ * Returns: SSL pointer if ready, raises exception otherwise
+ * Thread-safe: Yes (operates on single socket)
+ */
+SSL *
+socket_validate_tls_ready (T socket)
+{
+  SSL *ssl = socket_get_ssl (socket);
+  if (!ssl)
+    {
+      SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  if (!socket->tls_handshake_done)
+    {
+      SOCKET_ERROR_MSG ("TLS handshake not complete");
+      RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
+    }
+  return ssl;
+}
+
+/**
+ * socket_send_tls - TLS send operation
+ * @socket: Socket instance with TLS enabled
+ * @buf: Data to send
+ * @len: Length of data
+ *
+ * Returns: Bytes sent or 0 if would block
+ * Raises: SocketTLS_Failed on error
+ * Thread-safe: Yes (operates on single socket)
+ */
+static ssize_t
+socket_send_tls (T socket, const void *buf, size_t len)
+{
+  SSL *ssl = socket_validate_tls_ready (socket);
+  int ssl_result = SSL_write (ssl, buf, (int)len);
+
+  if (ssl_result <= 0)
+    {
+      socket_handle_ssl_error (socket, ssl, ssl_result);
+      if (socketio_is_wouldblock ())
+        return 0;
+      SOCKET_ERROR_FMT ("TLS send failed (len=%zu)", len);
+      RAISE_MODULE_ERROR (SocketTLS_Failed);
+    }
+  return (ssize_t)ssl_result;
+}
+
+/**
+ * socket_recv_tls - TLS receive operation
+ * @socket: Socket instance with TLS enabled
+ * @buf: Buffer for received data
+ * @len: Buffer size
+ *
+ * Returns: Bytes received or 0 if would block
+ * Raises: SocketTLS_Failed on error, Socket_Closed on disconnect
+ * Thread-safe: Yes (operates on single socket)
+ */
+static ssize_t
+socket_recv_tls (T socket, void *buf, size_t len)
+{
+  SSL *ssl = socket_validate_tls_ready (socket);
+  int ssl_result = SSL_read (ssl, buf, (int)len);
+
+  if (ssl_result <= 0)
+    {
+      socket_handle_ssl_error (socket, ssl, ssl_result);
+      if (socketio_is_wouldblock ())
+        return 0;
+      if (ssl_result == 0 || errno == ECONNRESET)
+        RAISE (Socket_Closed);
+      SOCKET_ERROR_FMT ("TLS receive failed (len=%zu)", len);
+      RAISE_MODULE_ERROR (SocketTLS_Failed);
+    }
+  return (ssize_t)ssl_result;
+}
+
+/* ==================== TLS Scatter/Gather I/O ==================== */
+/* Merged from SocketIO-tls-iov.c */
+
+/**
+ * copy_iov_to_buffer - Copy iovec array to contiguous buffer
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ * @buffer: Destination buffer
+ * @buffer_size: Size of destination buffer
+ *
+ * Returns: Total bytes copied
+ * Raises: Socket_Failed if buffer too small
+ * Thread-safe: Yes (operates on local data)
+ */
+static size_t
+copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer,
+                    size_t buffer_size)
+{
+  size_t offset = 0;
+
+  for (int i = 0; i < iovcnt; i++)
+    {
+      if (offset + iov[i].iov_len > buffer_size)
+        {
+          SOCKET_ERROR_MSG ("Buffer too small for iovec copy");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+      memcpy ((char *)buffer + offset, iov[i].iov_base, iov[i].iov_len);
+      offset += iov[i].iov_len;
+    }
+
+  return offset;
+}
+
+/**
+ * distribute_buffer_to_iov - Distribute buffer data across iovec array
+ * @buffer: Source buffer
+ * @buffer_len: Length of data in buffer
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ *
+ * Returns: Total bytes distributed
+ * Thread-safe: Yes (operates on local data)
+ */
+static size_t
+distribute_buffer_to_iov (const void *buffer, size_t buffer_len,
+                          struct iovec *iov, int iovcnt)
+{
+  size_t remaining = buffer_len;
+  size_t src_offset = 0;
+
+  for (int i = 0; i < iovcnt && remaining > 0; i++)
+    {
+      size_t chunk
+          = (remaining > iov[i].iov_len) ? iov[i].iov_len : remaining;
+      memcpy (iov[i].iov_base, (char *)buffer + src_offset, chunk);
+      src_offset += chunk;
+      remaining -= chunk;
+    }
+
+  return buffer_len - remaining;
+}
+
+/**
+ * socket_sendv_tls - TLS scatter/gather send implementation
+ * @socket: Socket instance
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ *
+ * Returns: Total bytes sent or 0 if would block
+ * Raises: Socket_Failed or SocketTLS_Failed
+ * Thread-safe: Yes (operates on single socket)
+ */
+static ssize_t
+socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
+{
+  SSL *ssl = socket_validate_tls_ready (socket);
+  size_t total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
+
+  Arena_T arena = SocketBase_arena (socket->base);
+  void *temp_buf = Arena_calloc (arena, total_len, 1, __FILE__, __LINE__);
+  if (!temp_buf)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate TLS sendv buffer");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  copy_iov_to_buffer (iov, iovcnt, temp_buf, total_len);
+
+  int ssl_result = SSL_write (ssl, temp_buf, (int)total_len);
+
+  if (ssl_result <= 0)
+    {
+      socket_handle_ssl_error (socket, ssl, ssl_result);
+      if (socketio_is_wouldblock ())
+        return 0;
+      SOCKET_ERROR_FMT ("TLS sendv failed (iovcnt=%d)", iovcnt);
+      RAISE_MODULE_ERROR (SocketTLS_Failed);
+    }
+
+  return (ssize_t)ssl_result;
+}
+
+/**
+ * socket_recvv_tls - TLS scatter/gather receive implementation
+ * @socket: Socket instance
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ *
+ * Returns: Total bytes received or 0 if would block
+ * Raises: Socket_Failed, SocketTLS_Failed, or Socket_Closed
+ * Thread-safe: Yes (operates on single socket)
+ */
+static ssize_t
+socket_recvv_tls (T socket, struct iovec *iov, int iovcnt)
+{
+  SSL *ssl = socket_validate_tls_ready (socket);
+  size_t total_capacity = SocketCommon_calculate_total_iov_len (iov, iovcnt);
+
+  Arena_T arena = SocketBase_arena (socket->base);
+  void *temp_buf = Arena_calloc (arena, total_capacity, 1, __FILE__, __LINE__);
+  if (!temp_buf)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate TLS recvv buffer");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  int ssl_result = SSL_read (ssl, temp_buf, (int)total_capacity);
+
+  if (ssl_result <= 0)
+    {
+      socket_handle_ssl_error (socket, ssl, ssl_result);
+      if (socketio_is_wouldblock ())
+        return 0;
+      if (ssl_result == 0 || errno == ECONNRESET)
+        RAISE (Socket_Closed);
+      SOCKET_ERROR_FMT ("TLS recvv failed (iovcnt=%d)", iovcnt);
+      RAISE_MODULE_ERROR (SocketTLS_Failed);
+    }
+
+  return (ssize_t)distribute_buffer_to_iov (temp_buf, (size_t)ssl_result, iov,
+                                            iovcnt);
+}
+
+#endif /* SOCKET_HAS_TLS */
 
 #undef T

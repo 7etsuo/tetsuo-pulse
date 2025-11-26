@@ -10,9 +10,11 @@
 
 #include <fcntl.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/un.h>
 
 #include "core/Arena.h"
 
@@ -321,6 +323,17 @@ extern int SocketCommon_try_bind_resolved_addresses (SocketBase_T base, struct a
  */
 extern int SocketCommon_handle_bind_error (int err, const char *addr_str, Except_T exc_type);
 
+/**
+ * SocketCommon_format_bind_error - Format descriptive bind error message
+ * @host: Host string (NULL defaults to "any")
+ * @port: Port number
+ *
+ * Formats error in socket_error_buf based on errno (EADDRINUSE, EACCES, etc.)
+ * Consolidated helper for Socket and SocketDgram bind error handling.
+ * Does not raise - caller should raise after calling this.
+ */
+extern void SocketCommon_format_bind_error (const char *host, int port);
+
 extern void SocketCommon_update_local_endpoint (SocketBase_T base); /* Common endpoint update, non-raising */
 
 /**
@@ -358,5 +371,74 @@ extern struct addrinfo *SocketCommon_copy_addrinfo (const struct addrinfo *src);
 /* Extern globals for shared defaults - defined in SocketCommon.c */
 extern SocketTimeouts_T socket_default_timeouts;
 extern pthread_mutex_t socket_default_timeouts_mutex;
+
+/**
+ * SocketCommon_timeouts_getdefaults - Get global default timeouts
+ * @timeouts: Output pointer for timeout structure
+ * Thread-safe: Yes (uses mutex protection)
+ */
+extern void SocketCommon_timeouts_getdefaults (SocketTimeouts_T *timeouts);
+
+/**
+ * SocketCommon_timeouts_setdefaults - Set global default timeouts
+ * @timeouts: Timeout values to set as defaults
+ * Thread-safe: Yes (uses mutex protection)
+ */
+extern void SocketCommon_timeouts_setdefaults (const SocketTimeouts_T *timeouts);
+
+/* ==================== Socket State Helpers ==================== */
+
+/**
+ * SocketCommon_check_bound_ipv4 - Check if IPv4 socket is bound
+ * @addr: sockaddr_storage containing address
+ * Returns: 1 if bound (port != 0), 0 otherwise
+ */
+static inline int
+SocketCommon_check_bound_ipv4 (const struct sockaddr_storage *addr)
+{
+  struct sockaddr_in *sin = (struct sockaddr_in *)addr;
+  return sin->sin_port != 0;
+}
+
+/**
+ * SocketCommon_check_bound_ipv6 - Check if IPv6 socket is bound
+ * @addr: sockaddr_storage containing address
+ * Returns: 1 if bound (port != 0), 0 otherwise
+ */
+static inline int
+SocketCommon_check_bound_ipv6 (const struct sockaddr_storage *addr)
+{
+  struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)addr;
+  return sin6->sin6_port != 0;
+}
+
+/**
+ * SocketCommon_check_bound_unix - Check if Unix socket is bound
+ * @addr: sockaddr_storage containing address (unused)
+ * Returns: 1 (Unix domain sockets are bound if getsockname succeeds)
+ */
+static inline int
+SocketCommon_check_bound_unix (const struct sockaddr_storage *addr)
+{
+  (void)addr; /* Suppress unused parameter warning */
+  return 1;   /* Unix domain sockets are bound if getsockname succeeds */
+}
+
+/**
+ * SocketCommon_check_bound_by_family - Check if socket is bound based on family
+ * @addr: sockaddr_storage containing address
+ * Returns: 1 if bound, 0 otherwise
+ */
+static inline int
+SocketCommon_check_bound_by_family (const struct sockaddr_storage *addr)
+{
+  if (addr->ss_family == AF_INET)
+    return SocketCommon_check_bound_ipv4 (addr);
+  else if (addr->ss_family == AF_INET6)
+    return SocketCommon_check_bound_ipv6 (addr);
+  else if (addr->ss_family == AF_UNIX)
+    return SocketCommon_check_bound_unix (addr);
+  return 0;
+}
 
 #endif /* SOCKETCOMMON_INCLUDED */

@@ -8,6 +8,7 @@
  * - Scatter/gather I/O (writev/readv)
  * - Zero-copy file transfer (sendfile/splice)
  * - Advanced messaging (sendmsg/recvmsg)
+ * - Guaranteed completion functions (sendall/recvall)
  * - Platform-specific optimizations
  * - TLS-aware operations
  * - Memory-efficient buffering
@@ -209,16 +210,10 @@ Socket_sendfile (T socket, int file_fd, off_t *offset, size_t count)
 
   if (result < 0)
     {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
+      if (socketio_is_wouldblock ())
         return 0;
-      if (errno == EPIPE)
-        {
-          RAISE (Socket_Closed);
-        }
-      if (errno == ECONNRESET)
-        {
-          RAISE (Socket_Closed);
-        }
+      if (socketio_is_connection_closed_send ())
+        RAISE (Socket_Closed);
       SOCKET_ERROR_FMT (
           "Zero-copy file transfer failed (file_fd=%d, count=%zu)", file_fd,
           count);
@@ -285,16 +280,10 @@ Socket_sendmsg (T socket, const struct msghdr *msg, int flags)
   result = sendmsg (SocketBase_fd (socket->base), msg, flags);
   if (result < 0)
     {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
+      if (socketio_is_wouldblock ())
         return 0;
-      if (errno == EPIPE)
-        {
-          RAISE (Socket_Closed);
-        }
-      if (errno == ECONNRESET)
-        {
-          RAISE (Socket_Closed);
-        }
+      if (socketio_is_connection_closed_send ())
+        RAISE (Socket_Closed);
       SOCKET_ERROR_FMT ("sendmsg failed (flags=0x%x)", flags);
       RAISE_MODULE_ERROR (Socket_Failed);
     }
@@ -313,12 +302,10 @@ Socket_recvmsg (T socket, struct msghdr *msg, int flags)
   result = recvmsg (SocketBase_fd (socket->base), msg, flags);
   if (result < 0)
     {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
+      if (socketio_is_wouldblock ())
         return 0;
-      if (errno == ECONNRESET)
-        {
-          RAISE (Socket_Closed);
-        }
+      if (socketio_is_connection_closed_recv ())
+        RAISE (Socket_Closed);
       SOCKET_ERROR_FMT ("recvmsg failed (flags=0x%x)", flags);
       RAISE_MODULE_ERROR (Socket_Failed);
     }
@@ -328,6 +315,211 @@ Socket_recvmsg (T socket, struct msghdr *msg, int flags)
     }
 
   return result;
+}
+
+/* ==================== Guaranteed Completion Functions ==================== */
+
+/**
+ * Socket_sendall - Send all data (handles partial sends)
+ * @socket: Connected socket
+ * @buf: Data to send
+ * @len: Length of data (> 0)
+ * Returns: Total bytes sent (always equals len on success)
+ * Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on error
+ */
+ssize_t
+Socket_sendall (T socket, const void *buf, size_t len)
+{
+  volatile size_t total_sent = 0;
+  const char *data = buf;
+
+  assert (socket);
+  assert (buf);
+  assert (len > 0);
+
+  TRY while (total_sent < len)
+  {
+    ssize_t sent = Socket_send (socket, data + total_sent, len - total_sent);
+    if (sent == 0)
+      {
+        /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+        return (ssize_t)total_sent;
+      }
+    total_sent += (size_t)sent;
+  }
+  EXCEPT (Socket_Closed)
+  RERAISE;
+  EXCEPT (Socket_Failed)
+  RERAISE;
+  END_TRY;
+
+  return (ssize_t)total_sent;
+}
+
+/**
+ * Socket_recvall - Receive all requested data (handles partial receives)
+ * @socket: Connected socket
+ * @buf: Buffer for received data
+ * @len: Buffer size (> 0)
+ * Returns: Total bytes received (always equals len on success)
+ * Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on error
+ */
+ssize_t
+Socket_recvall (T socket, void *buf, size_t len)
+{
+  volatile size_t total_received = 0;
+  char *data = buf;
+
+  assert (socket);
+  assert (buf);
+  assert (len > 0);
+
+  TRY while (total_received < len)
+  {
+    ssize_t received
+        = Socket_recv (socket, data + total_received, len - total_received);
+    if (received == 0)
+      {
+        /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+        return (ssize_t)total_received;
+      }
+    total_received += (size_t)received;
+  }
+  EXCEPT (Socket_Closed)
+  RERAISE;
+  EXCEPT (Socket_Failed)
+  RERAISE;
+  END_TRY;
+
+  return (ssize_t)total_received;
+}
+
+ssize_t
+Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
+{
+  struct iovec *iov_copy = NULL;
+  volatile size_t total_sent = 0;
+  size_t total_len;
+  ssize_t sent;
+  int i;
+
+  assert (socket);
+  assert (iov);
+  assert (iovcnt > 0);
+  assert (iovcnt <= IOV_MAX);
+
+  total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
+
+  /* Allocate working copy for SocketCommon_advance_iov */
+  iov_copy = calloc ((size_t)iovcnt, sizeof (struct iovec));
+  if (!iov_copy)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate iovec copy");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  memcpy (iov_copy, iov, (size_t)iovcnt * sizeof (struct iovec));
+
+  TRY while (total_sent < total_len)
+  {
+    struct iovec *active_iov = NULL;
+    int active_iovcnt = 0;
+
+    /* Find first non-empty iov buffer */
+    for (i = 0; i < iovcnt; i++)
+      {
+        if (iov_copy[i].iov_len > 0)
+          {
+            active_iov = &iov_copy[i];
+            active_iovcnt = iovcnt - i;
+            break;
+          }
+      }
+    if (active_iov == NULL)
+      break;
+
+    sent = Socket_sendv (socket, active_iov, active_iovcnt);
+    if (sent == 0)
+      {
+        free (iov_copy);
+        return (ssize_t)total_sent;
+      }
+    total_sent += (size_t)sent;
+    SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)sent);
+  }
+  EXCEPT (Socket_Closed)
+  free (iov_copy);
+  RERAISE;
+  EXCEPT (Socket_Failed)
+  free (iov_copy);
+  RERAISE;
+  END_TRY;
+
+  free (iov_copy);
+  return (ssize_t)total_sent;
+}
+
+ssize_t
+Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
+{
+  struct iovec *iov_copy = NULL;
+  volatile size_t total_received = 0;
+  size_t total_len;
+  ssize_t received;
+  int i;
+
+  assert (socket);
+  assert (iov);
+  assert (iovcnt > 0);
+  assert (iovcnt <= IOV_MAX);
+
+  total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
+
+  /* Allocate working copy for SocketCommon_advance_iov */
+  iov_copy = calloc ((size_t)iovcnt, sizeof (struct iovec));
+  if (!iov_copy)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate iovec copy");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  memcpy (iov_copy, iov, (size_t)iovcnt * sizeof (struct iovec));
+
+  TRY while (total_received < total_len)
+  {
+    struct iovec *active_iov = NULL;
+    int active_iovcnt = 0;
+
+    /* Find first non-empty iov buffer */
+    for (i = 0; i < iovcnt; i++)
+      {
+        if (iov_copy[i].iov_len > 0)
+          {
+            active_iov = &iov_copy[i];
+            active_iovcnt = iovcnt - i;
+            break;
+          }
+      }
+    if (active_iov == NULL)
+      break;
+
+    received = Socket_recvv (socket, active_iov, active_iovcnt);
+    if (received == 0)
+      {
+        free (iov_copy);
+        return (ssize_t)total_received;
+      }
+    total_received += (size_t)received;
+    SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)received);
+  }
+  EXCEPT (Socket_Closed)
+  free (iov_copy);
+  RERAISE;
+  EXCEPT (Socket_Failed)
+  free (iov_copy);
+  RERAISE;
+  END_TRY;
+
+  free (iov_copy);
+  return (ssize_t)total_received;
 }
 
 #undef T
