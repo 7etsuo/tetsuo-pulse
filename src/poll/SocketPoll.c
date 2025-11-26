@@ -482,7 +482,66 @@ initialize_poll_async (T poll)
   END_TRY;
 }
 
-/* ==================== FD to Socket Lookup ==================== */
+/* ==================== Combined FD Lookup (Optimized) ==================== */
+
+/**
+ * lookup_socket_and_data_by_fd - Find socket and user data by FD in one pass
+ * @poll: Poll instance
+ * @fd: File descriptor to look up
+ * @fd_hash: Pre-computed hash bucket index
+ * @socket_out: Output socket (NULL if not found)
+ * @data_out: Output user data (NULL if not found)
+ * Thread-safe: No (caller must hold mutex)
+ *
+ * Optimized lookup that finds both socket and user data using the same
+ * hash bucket, avoiding redundant Socket_fd() calls and double chain walks.
+ * Both fd_to_socket_map and socket_data_map use fd-based hashing.
+ */
+static void
+lookup_socket_and_data_by_fd (const T poll, const int fd,
+                              const unsigned fd_hash, Socket_T *socket_out,
+                              void **data_out)
+{
+  FdSocketEntry *fd_entry;
+  SocketData *data_entry;
+  Socket_T socket = NULL;
+
+  /* Find socket via fd_to_socket_map */
+  fd_entry = poll->fd_to_socket_map[fd_hash];
+  while (fd_entry)
+    {
+      if (fd_entry->fd == fd)
+        {
+          socket = fd_entry->socket;
+          break;
+        }
+      fd_entry = fd_entry->next;
+    }
+
+  if (!socket)
+    {
+      *socket_out = NULL;
+      *data_out = NULL;
+      return;
+    }
+
+  /* Find user data via socket_data_map (same hash bucket) */
+  data_entry = poll->socket_data_map[fd_hash];
+  while (data_entry)
+    {
+      if (data_entry->socket == socket)
+        {
+          *socket_out = socket;
+          *data_out = data_entry->data;
+          return;
+        }
+      data_entry = data_entry->next;
+    }
+
+  /* Socket found but no data entry (shouldn't happen in normal use) */
+  *socket_out = socket;
+  *data_out = NULL;
+}
 
 /**
  * find_socket_by_fd - Find socket by file descriptor
@@ -492,6 +551,7 @@ initialize_poll_async (T poll)
  * Thread-safe: No (must be called with poll mutex held)
  *
  * Performs O(1) lookup using the fd_to_socket_map hash table.
+ * For event translation, prefer lookup_socket_and_data_by_fd().
  */
 static Socket_T
 find_socket_by_fd (const T poll, const int fd)
@@ -512,60 +572,6 @@ find_socket_by_fd (const T poll, const int fd)
 /* ==================== Event Translation ==================== */
 
 /**
- * get_backend_event_safe - Get event from backend (no exception)
- * @poll: Poll instance
- * @index: Event index
- * @fd_out: Output file descriptor
- * @events_out: Output event flags
- * Returns: 0 on success, -1 on failure
- */
-static int
-get_backend_event_safe (T poll, int index, int *fd_out, unsigned *events_out)
-{
-  return backend_get_event (poll->backend, index, fd_out, events_out);
-}
-
-/**
- * lookup_socket_and_data - Look up socket and user data by FD
- * @poll: Poll instance
- * @fd: File descriptor
- * @socket_out: Output socket (NULL if not found)
- * @data_out: Output user data (NULL if not found)
- * Thread-safe: No (caller must hold mutex)
- */
-static void
-lookup_socket_and_data (T poll, int fd, Socket_T *socket_out, void **data_out)
-{
-  Socket_T socket = find_socket_by_fd (poll, fd);
-
-  if (!socket)
-    {
-      *socket_out = NULL;
-      *data_out = NULL;
-      return;
-    }
-
-  *socket_out = socket;
-  *data_out = socket_data_lookup_unlocked (poll, socket);
-}
-
-/**
- * populate_socket_event - Populate a SocketEvent_T structure
- * @event: Event structure to populate
- * @socket: Socket
- * @data: User data
- * @event_flags: Event flags from backend
- */
-static void
-populate_socket_event (SocketEvent_T *event, const Socket_T socket,
-                       void *const data, const unsigned event_flags)
-{
-  event->socket = socket;
-  event->data = data;
-  event->events = event_flags;
-}
-
-/**
  * translate_backend_events_to_socket_events - Convert backend events
  * @poll: Poll instance
  * @nfds: Number of events to process
@@ -574,43 +580,49 @@ populate_socket_event (SocketEvent_T *event, const Socket_T socket,
  *
  * Translates events from the backend-specific format to the
  * standardized SocketEvent_T format. Uses batched mutex handling
- * to minimize lock contention.
+ * to minimize lock contention. Optimized to avoid redundant fd
+ * lookups by computing hash once and reusing for both maps.
  */
 static int
 translate_backend_events_to_socket_events (T poll, int nfds)
 {
   int translated_count = 0;
-  int max_events;
   int nfds_local;
   int i;
 
   assert (poll);
 
-  if (nfds <= 0 || !poll->socketevents || poll->maxevents <= 0)
+  if (nfds <= 0 || !poll->socketevents)
     return 0;
 
-  max_events = poll->maxevents;
-  nfds_local = (nfds > max_events) ? max_events : nfds;
+  /* Clamp to maxevents (validated at construction) */
+  nfds_local = (nfds > poll->maxevents) ? poll->maxevents : nfds;
 
   pthread_mutex_lock (&poll->mutex);
 
-  for (i = 0; i < nfds_local && translated_count < max_events; i++)
+  for (i = 0; i < nfds_local && translated_count < poll->maxevents; i++)
     {
       int fd;
       unsigned event_flags;
+      unsigned fd_hash;
       Socket_T socket;
       void *data;
 
-      if (get_backend_event_safe (poll, i, &fd, &event_flags) < 0)
+      /* Get event directly from backend (inlined) */
+      if (backend_get_event (poll->backend, i, &fd, &event_flags) < 0)
         continue;
 
-      lookup_socket_and_data (poll, fd, &socket, &data);
+      /* Compute hash once, use for both lookups */
+      fd_hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
+      lookup_socket_and_data_by_fd (poll, fd, fd_hash, &socket, &data);
 
       if (!socket)
         continue;
 
-      populate_socket_event (&poll->socketevents[translated_count], socket,
-                             data, event_flags);
+      /* Populate event directly (inlined) */
+      poll->socketevents[translated_count].socket = socket;
+      poll->socketevents[translated_count].data = data;
+      poll->socketevents[translated_count].events = event_flags;
       translated_count++;
     }
 
@@ -1048,8 +1060,8 @@ wait_for_backend_events (T poll, int timeout)
 /**
  * handle_backend_wait_error - Handle error from backend_wait
  * @timeout: Timeout that was used
- * Returns: 0 if EINTR (caller should return), otherwise raises
- * Raises: SocketPoll_Failed on non-EINTR errors
+ * Returns: 0 if EINTR (caller should return)
+ * Raises: SocketPoll_Failed on non-EINTR errors (does not return)
  */
 static int
 handle_backend_wait_error (int timeout)
@@ -1060,7 +1072,7 @@ handle_backend_wait_error (int timeout)
   SOCKET_ERROR_FMT ("%s backend wait failed (timeout=%d)", backend_name (),
                     timeout);
   RAISE_POLL_ERROR (SocketPoll_Failed);
-  return -1; /* Not reached */
+  return -1; /* NOTREACHED - satisfies compiler warning */
 }
 
 /**

@@ -208,21 +208,21 @@ SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
 }
 
 /**
- * validate_hostname_length - Validate hostname length is within bounds
+ * validate_hostname_nonempty - Validate hostname is non-empty
  * @hostname: Hostname to validate
  * @len: Length of hostname
  *
- * Raises: SocketTLS_Failed if invalid length
+ * Raises: SocketTLS_Failed if empty
+ *
+ * Note: tls_validate_hostname() performs full RFC 6066 validation including
+ * length limits. This check provides early exit for empty strings.
  */
 static void
-validate_hostname_length (const char *hostname, size_t len)
+validate_hostname_nonempty (const char *hostname, size_t len)
 {
   TLS_UNUSED (hostname);
-  if (len == 0 || len > SOCKET_TLS_MAX_SNI_LEN)
-    {
-      TLS_ERROR_FMT ("Invalid hostname length: %zu", len);
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
+  if (len == 0)
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Hostname cannot be empty");
 }
 
 /**
@@ -268,10 +268,10 @@ SocketTLS_set_hostname (Socket_T socket, const char *hostname)
   REQUIRE_TLS_ENABLED (socket, SocketTLS_Failed);
 
   size_t hostname_len = strlen (hostname);
-  validate_hostname_length (hostname, hostname_len);
+  validate_hostname_nonempty (hostname, hostname_len);
 
   if (!tls_validate_hostname (hostname))
-    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Invalid hostname format");
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Invalid hostname format or length");
 
   copy_hostname_to_socket (socket, hostname, hostname_len);
 

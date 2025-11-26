@@ -389,23 +389,24 @@ extern __thread Except_T SocketTLSContext_DetailedException;
 #endif
 
 /**
- * RAISE_CTX_ERROR - Raise context exception with message
+ * RAISE_CTX_ERROR - Raise context exception with current error buffer
  */
 #define RAISE_CTX_ERROR(exception)                                            \
   do                                                                          \
     {                                                                         \
-      tls_context_error_buf[0] = '\0';                                        \
       SocketTLSContext_DetailedException = (exception);                       \
       SocketTLSContext_DetailedException.reason = tls_context_error_buf;      \
       RAISE (SocketTLSContext_DetailedException);                             \
     }                                                                         \
   while (0)
 
+/**
+ * RAISE_CTX_ERROR_MSG - Raise context exception with specific message
+ */
 #define RAISE_CTX_ERROR_MSG(exception, msg)                                   \
   do                                                                          \
     {                                                                         \
-      strncpy (tls_context_error_buf, msg, SOCKET_TLS_ERROR_BUFSIZE - 1);     \
-      tls_context_error_buf[SOCKET_TLS_ERROR_BUFSIZE - 1] = '\0';             \
+      snprintf (tls_context_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "%s", msg);  \
       SocketTLSContext_DetailedException = (exception);                       \
       SocketTLSContext_DetailedException.reason = tls_context_error_buf;      \
       RAISE (SocketTLSContext_DetailedException);                             \
@@ -470,6 +471,28 @@ ctx_arena_strdup (SocketTLSContext_T ctx, const char *str,
     }
   memcpy (copy, str, len);
   return copy;
+}
+
+/**
+ * ctx_arena_alloc - Allocate from context arena with error handling
+ * @ctx: TLS context with arena
+ * @size: Number of bytes to allocate
+ * @error_msg: Error message on allocation failure
+ *
+ * Returns: Arena-allocated memory
+ * Raises: SocketTLS_Failed on allocation failure
+ *
+ * Consolidates repeated allocation + error patterns across TLS modules.
+ */
+static inline void *
+ctx_arena_alloc (SocketTLSContext_T ctx, size_t size, const char *error_msg)
+{
+  void *ptr = Arena_alloc (ctx->arena, size, __FILE__, __LINE__);
+  if (!ptr)
+    {
+      ctx_raise_openssl_error (error_msg);
+    }
+  return ptr;
 }
 
 /**

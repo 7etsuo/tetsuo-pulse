@@ -471,38 +471,6 @@ SocketRateLimit_reset (T limiter)
 }
 
 /**
- * ratelimit_apply_rate_config - Apply new rate configuration
- * @limiter: Rate limiter instance (caller must hold mutex)
- * @tokens_per_sec: New rate (0 to keep current)
- */
-static void
-ratelimit_apply_rate_config (T limiter, size_t tokens_per_sec)
-{
-  assert (limiter);
-
-  if (tokens_per_sec > 0)
-    limiter->tokens_per_sec = tokens_per_sec;
-}
-
-/**
- * ratelimit_apply_bucket_config - Apply new bucket size configuration
- * @limiter: Rate limiter instance (caller must hold mutex)
- * @bucket_size: New bucket size (0 to keep current)
- */
-static void
-ratelimit_apply_bucket_config (T limiter, size_t bucket_size)
-{
-  assert (limiter);
-
-  if (bucket_size > 0)
-    {
-      limiter->bucket_size = bucket_size;
-      if (limiter->tokens > bucket_size)
-        limiter->tokens = bucket_size;
-    }
-}
-
-/**
  * SocketRateLimit_configure - Reconfigure rate limiter
  * @limiter: Rate limiter instance
  * @tokens_per_sec: New token refill rate (0 to keep current)
@@ -516,8 +484,19 @@ SocketRateLimit_configure (T limiter, size_t tokens_per_sec, size_t bucket_size)
   assert (limiter);
 
   pthread_mutex_lock (&limiter->mutex);
-  ratelimit_apply_rate_config (limiter, tokens_per_sec);
-  ratelimit_apply_bucket_config (limiter, bucket_size);
+
+  /* Apply rate configuration (0 = keep current) */
+  if (tokens_per_sec > 0)
+    limiter->tokens_per_sec = tokens_per_sec;
+
+  /* Apply bucket size configuration (0 = keep current) */
+  if (bucket_size > 0)
+    {
+      limiter->bucket_size = bucket_size;
+      if (limiter->tokens > bucket_size)
+        limiter->tokens = bucket_size;
+    }
+
   pthread_mutex_unlock (&limiter->mutex);
 }
 

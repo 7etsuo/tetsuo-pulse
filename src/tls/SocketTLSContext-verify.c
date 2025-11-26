@@ -300,11 +300,8 @@ SocketTLSContext_set_ocsp_response (T ctx, const unsigned char *response,
     }
   OCSP_RESPONSE_free (resp);
 
-  unsigned char *copy = Arena_alloc (ctx->arena, len, __FILE__, __LINE__);
-  if (!copy)
-    {
-      RAISE_CTX_ERROR (SocketTLS_Failed);
-    }
+  unsigned char *copy = ctx_arena_alloc (ctx, len,
+                                         "Failed to allocate OCSP response buffer");
   memcpy (copy, response, len);
   ctx->ocsp_response = copy;
   ctx->ocsp_len = len;

@@ -172,15 +172,12 @@ close_single_excess_socket (T pool, Socket_T *socket)
     SocketPool_remove (pool, *socket);
     Socket_free (socket);
   }
-  EXCEPT (SocketPool_Failed)
+  ELSE
   {
+    /* Ignore SocketPool_Failed or Socket_Failed during resize cleanup -
+     * socket may already be removed or closed */
     SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                     "Resize: socket already removed from pool");
-  }
-  EXCEPT (Socket_Failed)
-  {
-    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                     "Resize: socket free failed (may be closed)");
+                     "Resize: socket close/remove failed (may be stale)");
   }
   END_TRY;
 }
@@ -997,15 +994,9 @@ SocketPool_connect_async (T pool, const char *host, int port,
 
     add_async_context (pool, ctx);
   }
-  EXCEPT (Socket_Failed)
+  ELSE
   {
-    if (socket)
-      Socket_free ((Socket_T *)&socket);
-    pthread_mutex_unlock (&pool->mutex);
-    RERAISE;
-  }
-  EXCEPT (SocketPool_Failed)
-  {
+    /* Cleanup on any exception (Socket_Failed or SocketPool_Failed) */
     if (socket)
       Socket_free ((Socket_T *)&socket);
     pthread_mutex_unlock (&pool->mutex);

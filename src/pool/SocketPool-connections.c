@@ -762,15 +762,12 @@ close_single_socket (T pool, Socket_T socket)
     SocketPool_remove (pool, socket);
     Socket_free (&socket);
   }
-  EXCEPT (SocketPool_Failed)
+  ELSE
   {
+    /* Ignore SocketPool_Failed or Socket_Failed during cleanup -
+     * socket may already be removed or closed */
     SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                     "Cleanup: socket already removed from pool");
-  }
-  EXCEPT (Socket_Failed)
-  {
-    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                     "Cleanup: socket free failed (may be closed)");
+                     "Cleanup: socket close/remove failed (may be stale)");
   }
   END_TRY;
 }
