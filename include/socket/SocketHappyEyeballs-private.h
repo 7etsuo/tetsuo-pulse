@@ -38,6 +38,9 @@
 /** Milliseconds per second for time conversion */
 #define SOCKET_HE_MS_PER_SEC 1000
 
+/** Nanoseconds per millisecond for time conversion */
+#define SOCKET_HE_NS_PER_MS 1000000LL
+
 /* ============================================================================
  * Connection Attempt Structure
  * ============================================================================ */
@@ -135,16 +138,13 @@ struct SocketHE_T
   int fallback_timer_armed;      /**< 1 if waiting for fallback delay */
 
   /* State */
-  SocketHE_State state;                        /**< Current operation state */
-  char error_buf[SOCKET_HE_ERROR_BUFSIZE];     /**< Error message */
+  SocketHE_State state;                    /**< Current operation state */
+  char error_buf[SOCKET_HE_ERROR_BUFSIZE]; /**< Error message */
 };
 
 /* ============================================================================
  * Internal Helper Functions
  * ============================================================================ */
-
-/** Nanoseconds per millisecond for time conversion */
-#define SOCKET_HE_NS_PER_MS 1000000LL
 
 /**
  * sockethe_get_time_ms - Get monotonic time in milliseconds
@@ -153,6 +153,7 @@ struct SocketHE_T
  * not affected by system clock adjustments (NTP, manual changes).
  *
  * Returns: Current monotonic time in milliseconds
+ * Thread-safe: Yes
  */
 static inline int64_t
 sockethe_get_time_ms (void)
@@ -171,9 +172,10 @@ sockethe_get_time_ms (void)
  * @start_ms: Start time from sockethe_get_time_ms()
  *
  * Returns: Elapsed milliseconds (non-negative)
+ * Thread-safe: Yes
  */
 static inline int64_t
-sockethe_elapsed_ms (int64_t start_ms)
+sockethe_elapsed_ms (const int64_t start_ms)
 {
   int64_t elapsed = sockethe_get_time_ms () - start_ms;
 

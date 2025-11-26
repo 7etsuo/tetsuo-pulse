@@ -64,12 +64,12 @@ static void he_check_attempts (T he);
 static void he_cleanup_attempts (T he);
 static void he_declare_winner (T he, SocketHE_Attempt_T *attempt);
 static void he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error);
-static int he_all_attempts_done (T he);
+static int he_all_attempts_done (const T he);
 
 /* State and timeout management */
 static void he_transition_to_failed (T he, const char *reason);
-static int he_should_start_fallback (T he);
-static int he_check_total_timeout (T he);
+static int he_should_start_fallback (const T he);
+static int he_check_total_timeout (const T he);
 
 /* Sync API helpers */
 static int sync_handle_timeout_check (T he);
@@ -152,6 +152,28 @@ he_init_context_fields (T he, SocketDNS_T dns, SocketPoll_T poll, int port)
 }
 
 /**
+ * he_alloc_base_context - Allocate and initialize base context
+ *
+ * Returns: New context or NULL on failure
+ */
+static T
+he_alloc_base_context (void)
+{
+  T he = calloc (1, sizeof (*he));
+  if (!he)
+    return NULL;
+
+  he->arena = Arena_new ();
+  if (!he->arena)
+    {
+      free (he);
+      return NULL;
+    }
+
+  return he;
+}
+
+/**
  * he_create_context - Create Happy Eyeballs context
  * @dns: DNS resolver (may be NULL for sync API)
  * @poll: Poll instance (may be NULL for sync API)
@@ -165,16 +187,9 @@ static T
 he_create_context (SocketDNS_T dns, SocketPoll_T poll, const char *host,
                    int port, const SocketHE_Config_T *config)
 {
-  T he = calloc (1, sizeof (*he));
+  T he = he_alloc_base_context ();
   if (!he)
     return NULL;
-
-  he->arena = Arena_new ();
-  if (!he->arena)
-    {
-      free (he);
-      return NULL;
-    }
 
   he_init_config (he, config);
 
@@ -708,7 +723,7 @@ he_create_socket_for_address (const struct addrinfo *addr)
  * Returns: New attempt or NULL on failure
  */
 static SocketHE_Attempt_T *
-he_allocate_attempt (T he, Socket_T sock, SocketHE_AddressEntry_T *entry)
+he_allocate_attempt (T he, Socket_T sock, const SocketHE_AddressEntry_T *entry)
 {
   SocketHE_Attempt_T *attempt;
 
@@ -760,6 +775,18 @@ he_add_attempt_to_poll (T he, SocketHE_Attempt_T *attempt)
 }
 
 /**
+ * he_family_name - Get address family name string
+ * @family: Address family (AF_INET or AF_INET6)
+ *
+ * Returns: "IPv6" or "IPv4"
+ */
+static const char *
+he_family_name (int family)
+{
+  return (family == AF_INET6) ? "IPv6" : "IPv4";
+}
+
+/**
  * he_log_attempt_start - Log connection attempt start
  * @entry: Address entry being tried
  */
@@ -767,8 +794,7 @@ static void
 he_log_attempt_start (const SocketHE_AddressEntry_T *entry)
 {
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "Started %s connection attempt",
-                   entry->family == AF_INET6 ? "IPv6" : "IPv4");
+                   "Started %s connection attempt", he_family_name (entry->family));
 }
 
 /**
@@ -781,8 +807,7 @@ he_log_attempt_fail (const SocketHE_AddressEntry_T *entry, int error)
 {
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                    "%s connection failed: %s",
-                   entry->family == AF_INET6 ? "IPv6" : "IPv4",
-                   strerror (error));
+                   he_family_name (entry->family), strerror (error));
 }
 
 /**
@@ -796,7 +821,7 @@ he_log_attempt_fail (const SocketHE_AddressEntry_T *entry, int error)
  */
 static int
 he_handle_connect_result (T he, SocketHE_Attempt_T *attempt,
-                          SocketHE_AddressEntry_T *entry, int result)
+                          const SocketHE_AddressEntry_T *entry, int result)
 {
   if (result == 0)
     {
@@ -972,8 +997,7 @@ he_declare_winner (T he, SocketHE_Attempt_T *attempt)
 
   SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
                    "Happy Eyeballs connected to %s:%d via %s", he->host,
-                   he->port, attempt->addr->ai_family == AF_INET6 ? "IPv6"
-                                                                  : "IPv4");
+                   he->port, he_family_name (attempt->addr->ai_family));
 }
 
 /**
@@ -999,8 +1023,7 @@ he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error)
 
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                    "%s connection failed: %s",
-                   attempt->addr->ai_family == AF_INET6 ? "IPv6" : "IPv4",
-                   strerror (error));
+                   he_family_name (attempt->addr->ai_family), strerror (error));
 }
 
 /* ============================================================================
@@ -1176,7 +1199,7 @@ he_check_attempts (T he)
  * Returns: 1 if all done, 0 if some still pending
  */
 static int
-he_all_attempts_done (T he)
+he_all_attempts_done (const T he)
 {
   if (he->next_ipv6 || he->next_ipv4)
     return 0;
@@ -1234,7 +1257,7 @@ he_transition_to_failed (T he, const char *reason)
  * Returns: 1 if should start fallback, 0 otherwise
  */
 static int
-he_should_start_fallback (T he)
+he_should_start_fallback (const T he)
 {
   int64_t elapsed;
 
@@ -1252,7 +1275,7 @@ he_should_start_fallback (T he)
  * Returns: 1 if timed out, 0 otherwise
  */
 static int
-he_check_total_timeout (T he)
+he_check_total_timeout (const T he)
 {
   int64_t elapsed;
 
@@ -1524,14 +1547,14 @@ SocketHappyEyeballs_error (T he)
  * Returns: Updated timeout value
  */
 static int
-he_calculate_next_timeout (T he, int timeout)
+he_calculate_next_timeout (const T he, int timeout)
 {
   int64_t remaining;
 
   if (he->config.total_timeout_ms > 0)
     {
-      remaining
-          = he->config.total_timeout_ms - sockethe_elapsed_ms (he->start_time_ms);
+      remaining = he->config.total_timeout_ms
+                  - sockethe_elapsed_ms (he->start_time_ms);
       if (remaining <= 0)
         return 0;
       if (timeout < 0 || remaining < timeout)
@@ -1583,7 +1606,7 @@ SocketHappyEyeballs_next_timeout_ms (T he)
  * Returns: Number of descriptors added
  */
 static int
-sync_build_poll_set (T he, struct pollfd *pfds,
+sync_build_poll_set (const T he, struct pollfd *pfds,
                      SocketHE_Attempt_T **attempt_map)
 {
   int nfds = 0;
@@ -1611,7 +1634,7 @@ sync_build_poll_set (T he, struct pollfd *pfds,
  * Returns: Timeout in milliseconds
  */
 static int
-sync_calculate_poll_timeout (T he)
+sync_calculate_poll_timeout (const T he)
 {
   int timeout = SOCKET_HE_SYNC_POLL_INTERVAL_MS;
   int64_t remaining;
@@ -1703,9 +1726,10 @@ sync_try_start_fallback (T he)
  * Returns: 1 if should exit, 0 otherwise
  */
 static int
-sync_should_exit_loop (T he, int nfds)
+sync_should_exit_loop (const T he, int nfds)
 {
-  return nfds == 0 && !he_should_start_fallback (he) && he_all_attempts_done (he);
+  return nfds == 0 && !he_should_start_fallback (he)
+         && he_all_attempts_done (he);
 }
 
 /**
@@ -1758,6 +1782,46 @@ sync_do_poll (struct pollfd *pfds, int nfds, int timeout)
 }
 
 /**
+ * sync_loop_iteration - Execute one iteration of the sync loop
+ * @he: Happy Eyeballs context
+ * @pfds: Poll fd array
+ * @attempt_map: Attempt map array
+ *
+ * Returns: 1 if should exit loop, 0 to continue
+ */
+static int
+sync_loop_iteration (T he, struct pollfd *pfds,
+                     SocketHE_Attempt_T **attempt_map)
+{
+  int timeout, nfds;
+
+  if (sync_handle_timeout_check (he))
+    return 1;
+
+  he_start_first_attempt (he);
+  if (he->state == HE_STATE_CONNECTED)
+    return 1;
+
+  timeout = sync_calculate_poll_timeout (he);
+  nfds = sync_build_poll_set (he, pfds, attempt_map);
+
+  if (sync_should_exit_loop (he, nfds))
+    return 1;
+
+  if (sync_do_poll (pfds, nfds, timeout) < 0)
+    return 1;
+
+  sync_process_poll_results (he, pfds, attempt_map, nfds);
+  if (sync_try_start_fallback (he))
+    return 1;
+
+  sync_check_attempt_timeouts (he);
+  sync_check_all_failed (he);
+
+  return he->error_buf[0] != '\0';
+}
+
+/**
  * sync_run_connection_loop - Run synchronous connection loop
  * @he: Happy Eyeballs context
  */
@@ -1769,30 +1833,7 @@ sync_run_connection_loop (T he)
 
   while (he->state == HE_STATE_CONNECTING)
     {
-      if (sync_handle_timeout_check (he))
-        break;
-
-      he_start_first_attempt (he);
-      if (he->state == HE_STATE_CONNECTED)
-        break;
-
-      int timeout = sync_calculate_poll_timeout (he);
-      int nfds = sync_build_poll_set (he, pfds, attempt_map);
-
-      if (sync_should_exit_loop (he, nfds))
-        break;
-
-      if (sync_do_poll (pfds, nfds, timeout) < 0)
-        break;
-
-      sync_process_poll_results (he, pfds, attempt_map, nfds);
-      if (sync_try_start_fallback (he))
-        break;
-
-      sync_check_attempt_timeouts (he);
-      sync_check_all_failed (he);
-
-      if (he->error_buf[0] != '\0')
+      if (sync_loop_iteration (he, pfds, attempt_map))
         break;
     }
 }
