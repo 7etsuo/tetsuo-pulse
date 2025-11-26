@@ -412,17 +412,19 @@ he_sort_addresses (T he)
         }
     }
 
-  /* Store pointers for interleaved access */
+  /* Store pointers for interleaved access per RFC 8305 */
   if (he->config.prefer_ipv6)
     {
       he->next_ipv6 = ipv6_list;
       he->next_ipv4 = ipv4_list;
+      he->interleave_prefer_ipv6 = 1; /* Start with IPv6 */
     }
   else
     {
       /* Swap: prefer IPv4 */
       he->next_ipv6 = ipv4_list;
       he->next_ipv4 = ipv6_list;
+      he->interleave_prefer_ipv6 = 0; /* Start with IPv4 */
     }
 
   /* Build interleaved list for iteration */
@@ -435,15 +437,33 @@ he_sort_addresses (T he)
  *
  * Returns: Next address entry, or NULL if none available
  *
- * Implements RFC 8305 interleaving: alternates between preferred
- * and fallback families.
+ * Implements RFC 8305 Section 4 interleaving: alternates between address
+ * families to ensure both IPv6 and IPv4 get fair attempts. Order is:
+ * IPv6-1, IPv4-1, IPv6-2, IPv4-2, etc. (or reversed if prefer_ipv6=0).
  */
 static SocketHE_AddressEntry_T *
 he_get_next_address (T he)
 {
   SocketHE_AddressEntry_T *entry;
 
-  /* Try preferred family first */
+  /* RFC 8305: Interleave address families for resilience */
+  if (he->interleave_prefer_ipv6 && he->next_ipv6)
+    {
+      entry = he->next_ipv6;
+      he->next_ipv6 = entry->next;
+      he->interleave_prefer_ipv6 = 0; /* Next time try IPv4 */
+      return entry;
+    }
+
+  if (!he->interleave_prefer_ipv6 && he->next_ipv4)
+    {
+      entry = he->next_ipv4;
+      he->next_ipv4 = entry->next;
+      he->interleave_prefer_ipv6 = 1; /* Next time try IPv6 */
+      return entry;
+    }
+
+  /* One family exhausted - drain the other */
   if (he->next_ipv6)
     {
       entry = he->next_ipv6;
@@ -451,7 +471,6 @@ he_get_next_address (T he)
       return entry;
     }
 
-  /* Fall back to other family */
   if (he->next_ipv4)
     {
       entry = he->next_ipv4;

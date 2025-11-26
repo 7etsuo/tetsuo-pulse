@@ -115,6 +115,7 @@ struct SocketHE_T
   SocketHE_AddressEntry_T *addresses;     /**< Sorted address list */
   SocketHE_AddressEntry_T *next_ipv6;     /**< Next IPv6 to try */
   SocketHE_AddressEntry_T *next_ipv4;     /**< Next IPv4 to try */
+  int interleave_prefer_ipv6;             /**< For RFC 8305 interleaving: next family to try */
 
   /* Connection attempts */
   SocketHE_Attempt_T *attempts;   /**< List of active attempts */
