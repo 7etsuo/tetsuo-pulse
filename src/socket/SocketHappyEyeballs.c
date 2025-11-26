@@ -333,6 +333,47 @@ he_start_dns_resolution (T he)
 }
 
 /**
+ * he_setup_dns_hints - Setup addrinfo hints for DNS resolution
+ * @hints: Pointer to hints structure to initialize
+ */
+static void
+he_setup_dns_hints (struct addrinfo *hints)
+{
+  memset (hints, 0, sizeof (*hints));
+  hints->ai_family = AF_UNSPEC;
+  hints->ai_socktype = SOCK_STREAM;
+  hints->ai_flags = AI_ADDRCONFIG;
+}
+
+/**
+ * he_format_port_string - Format port number as string
+ * @port: Port number
+ * @port_str: Output buffer
+ * @port_str_size: Size of output buffer
+ */
+static void
+he_format_port_string (int port, char *port_str, size_t port_str_size)
+{
+  snprintf (port_str, port_str_size, "%d", port);
+}
+
+/**
+ * he_handle_dns_resolve_error - Handle DNS resolution error result
+ * @he: Happy Eyeballs context
+ * @result: Error code from getaddrinfo
+ *
+ * Returns: -1 always (indicates failure)
+ */
+static int
+he_handle_dns_resolve_error (T he, int result)
+{
+  snprintf (he->error_buf, sizeof (he->error_buf), "DNS resolution failed: %s",
+            gai_strerror (result));
+  he->dns_error = result;
+  return -1;
+}
+
+/**
  * he_dns_blocking_resolve - Perform blocking DNS resolution
  * @he: Happy Eyeballs context
  *
@@ -345,21 +386,12 @@ he_dns_blocking_resolve (T he)
   char port_str[SOCKET_HE_PORT_STR_SIZE];
   int result;
 
-  memset (&hints, 0, sizeof (hints));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_ADDRCONFIG;
+  he_setup_dns_hints (&hints);
+  he_format_port_string (he->port, port_str, sizeof (port_str));
 
-  snprintf (port_str, sizeof (port_str), "%d", he->port);
   result = getaddrinfo (he->host, port_str, &hints, &he->resolved);
-
   if (result != 0)
-    {
-      snprintf (he->error_buf, sizeof (he->error_buf),
-                "DNS resolution failed: %s", gai_strerror (result));
-      he->dns_error = result;
-      return -1;
-    }
+    return he_handle_dns_resolve_error (he, result);
 
   if (!he->resolved)
     {
@@ -684,15 +716,15 @@ he_clear_nonblocking (int fd)
 }
 
 /**
- * he_create_socket_for_address - Create socket for address family
+ * he_create_raw_socket - Create raw socket for address
  * @addr: Address to create socket for
  *
  * Returns: New socket or NULL on failure
  */
 static Socket_T
-he_create_socket_for_address (const struct addrinfo *addr)
+he_create_raw_socket (const struct addrinfo *addr)
 {
-  Socket_T sock = NULL;
+  volatile Socket_T sock = NULL;
 
   TRY
   {
@@ -701,6 +733,19 @@ he_create_socket_for_address (const struct addrinfo *addr)
   EXCEPT (Socket_Failed) { return NULL; }
   END_TRY;
 
+  return sock;
+}
+
+/**
+ * he_create_socket_for_address - Create socket for address family
+ * @addr: Address to create socket for
+ *
+ * Returns: New socket or NULL on failure
+ */
+static Socket_T
+he_create_socket_for_address (const struct addrinfo *addr)
+{
+  Socket_T sock = he_create_raw_socket (addr);
   if (!sock)
     return NULL;
 
@@ -897,6 +942,21 @@ he_initiate_connect (T he, SocketHE_Attempt_T *attempt,
 }
 
 /**
+ * he_create_attempt_socket - Create socket for connection attempt
+ * @entry: Address entry to connect to
+ *
+ * Returns: Socket on success, NULL on failure
+ */
+static Socket_T
+he_create_attempt_socket (const SocketHE_AddressEntry_T *entry)
+{
+  Socket_T sock = he_create_socket_for_address (entry->addr);
+  if (!sock)
+    he_log_attempt_fail (entry, errno);
+  return sock;
+}
+
+/**
  * he_start_attempt - Start connection attempt for address
  * @he: Happy Eyeballs context
  * @entry: Address entry to connect to
@@ -913,12 +973,9 @@ he_start_attempt (T he, SocketHE_AddressEntry_T *entry)
     return -1;
 
   entry->tried = 1;
-  sock = he_create_socket_for_address (entry->addr);
+  sock = he_create_attempt_socket (entry);
   if (!sock)
-    {
-      he_log_attempt_fail (entry, errno);
-      return -1;
-    }
+    return -1;
 
   attempt = he_allocate_attempt (he, sock, entry);
   if (!attempt)
@@ -1149,6 +1206,24 @@ he_handle_poll_success (T he, SocketHE_Attempt_T *attempt, int fd)
 }
 
 /**
+ * he_handle_pending_poll - Handle pending poll state
+ * @he: Happy Eyeballs context
+ * @attempt: Attempt being checked
+ *
+ * Returns: 0 if still pending, -1 if timed out
+ */
+static int
+he_handle_pending_poll (T he, SocketHE_Attempt_T *attempt)
+{
+  if (he_check_attempt_timeout (he, attempt))
+    {
+      he_fail_attempt (he, attempt, ETIMEDOUT);
+      return -1;
+    }
+  return 0;
+}
+
+/**
  * he_process_poll_result - Process poll result for attempt
  * @he: Happy Eyeballs context
  * @attempt: Attempt being checked
@@ -1169,14 +1244,7 @@ he_process_poll_result (T he, SocketHE_Attempt_T *attempt, int fd,
     }
 
   if (poll_result == 0)
-    {
-      if (he_check_attempt_timeout (he, attempt))
-        {
-          he_fail_attempt (he, attempt, ETIMEDOUT);
-          return -1;
-        }
-      return 0;
-    }
+    return he_handle_pending_poll (he, attempt);
 
   if (revents & (POLLERR | POLLHUP | POLLNVAL))
     return he_handle_poll_error (he, attempt, fd);
@@ -1498,6 +1566,31 @@ he_process_connecting_state (T he)
 }
 
 /**
+ * he_process_idle_state - Process IDLE state
+ * @he: Happy Eyeballs context
+ */
+static void
+he_process_idle_state (T he)
+{
+  if (he->dns)
+    he_start_dns_resolution (he);
+}
+
+/**
+ * he_process_resolving_state - Process RESOLVING state
+ * @he: Happy Eyeballs context
+ */
+static void
+he_process_resolving_state (T he)
+{
+  if (he->dns)
+    {
+      SocketDNS_check (he->dns);
+      he_process_dns_completion (he);
+    }
+}
+
+/**
  * SocketHappyEyeballs_process - Process events and advance state machine
  * @he: Happy Eyeballs context
  *
@@ -1511,16 +1604,11 @@ SocketHappyEyeballs_process (T he)
   switch (he->state)
     {
     case HE_STATE_IDLE:
-      if (he->dns)
-        he_start_dns_resolution (he);
+      he_process_idle_state (he);
       break;
 
     case HE_STATE_RESOLVING:
-      if (he->dns)
-        {
-          SocketDNS_check (he->dns);
-          he_process_dns_completion (he);
-        }
+      he_process_resolving_state (he);
       break;
 
     case HE_STATE_CONNECTING:
@@ -1537,6 +1625,27 @@ SocketHappyEyeballs_process (T he)
 /* ============================================================================
  * Asynchronous API
  * ============================================================================ */
+
+/**
+ * he_validate_start_params - Validate parameters for start
+ * @dns: DNS resolver
+ * @poll: Poll instance
+ * @host: Hostname
+ * @port: Port number
+ */
+static void
+he_validate_start_params (SocketDNS_T dns, SocketPoll_T poll, const char *host,
+                          int port)
+{
+  assert (dns);
+  assert (poll);
+  assert (host);
+  assert (port > 0 && port <= SOCKET_MAX_PORT);
+  (void)dns;
+  (void)poll;
+  (void)host;
+  (void)port;
+}
 
 /**
  * SocketHappyEyeballs_start - Start async Happy Eyeballs connection
@@ -1557,10 +1666,7 @@ SocketHappyEyeballs_start (SocketDNS_T dns, SocketPoll_T poll, const char *host,
   T he;
   char errmsg_copy[SOCKET_HE_ERROR_BUFSIZE];
 
-  assert (dns);
-  assert (poll);
-  assert (host);
-  assert (port > 0 && port <= SOCKET_MAX_PORT);
+  he_validate_start_params (dns, poll, host, port);
 
   he = he_create_context (dns, poll, host, port, config);
   if (!he)
@@ -1991,6 +2097,32 @@ sync_prepare_connections (T he)
 }
 
 /**
+ * sync_copy_error_message - Copy error message from context
+ * @he: Happy Eyeballs context
+ * @errmsg_copy: Destination buffer
+ * @errmsg_size: Size of destination buffer
+ */
+static void
+sync_copy_error_message (const T he, char *errmsg_copy, size_t errmsg_size)
+{
+  if (he->error_buf[0])
+    snprintf (errmsg_copy, errmsg_size, "%s", he->error_buf);
+}
+
+/**
+ * sync_raise_error_and_return - Raise exception with error message
+ * @errmsg_copy: Error message buffer
+ */
+static Socket_T
+sync_raise_error_and_return (const char *errmsg_copy)
+{
+  SOCKET_ERROR_MSG ("%s",
+                    errmsg_copy[0] ? errmsg_copy : "Happy Eyeballs failed");
+  RAISE_MODULE_ERROR (SocketHE_Failed);
+  return NULL; /* Not reached */
+}
+
+/**
  * SocketHappyEyeballs_connect - Connect using Happy Eyeballs (blocking)
  * @host: Hostname or IP address to connect to
  * @port: Port number (1-65535)
@@ -2014,26 +2146,19 @@ SocketHappyEyeballs_connect (const char *host, int port,
   he = sync_create_and_resolve (host, port, config, errmsg_copy,
                                 sizeof (errmsg_copy));
   if (!he)
-    {
-      SOCKET_ERROR_MSG ("%s", errmsg_copy);
-      RAISE_MODULE_ERROR (SocketHE_Failed);
-    }
+    return sync_raise_error_and_return (errmsg_copy);
 
   sync_prepare_connections (he);
   sync_run_connection_loop (he);
   result = sync_finalize_result (he);
 
-  if (!result && he->error_buf[0])
-    snprintf (errmsg_copy, sizeof (errmsg_copy), "%s", he->error_buf);
+  if (!result)
+    sync_copy_error_message (he, errmsg_copy, sizeof (errmsg_copy));
 
   SocketHappyEyeballs_free (&he);
 
   if (!result)
-    {
-      SOCKET_ERROR_MSG ("%s",
-                        errmsg_copy[0] ? errmsg_copy : "Happy Eyeballs failed");
-      RAISE_MODULE_ERROR (SocketHE_Failed);
-    }
+    return sync_raise_error_and_return (errmsg_copy);
 
   return result;
 }
