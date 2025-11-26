@@ -86,7 +86,7 @@ Perform comprehensive static analysis on the entire C codebase of the socket lib
 
 ### File-Level Metrics
 - Total lines of code per file
-- **CRITICAL**: Flag files exceeding 400 lines (must be split)
+- **CRITICAL**: Flag files exceeding 20000 lines (must be split)
 - Number of functions per file
 - Average complexity per file
 - Identify files that may need splitting
@@ -128,7 +128,7 @@ Perform comprehensive static analysis on the entire C codebase of the socket lib
 - Function count per file
 - Average function length
 - Maximum function length
-- **Critical Threshold**: 20 lines per function, 400 lines per file
+- **Critical Threshold**: 20 lines per function, 20000 lines per file
 
 ### Quality Metrics
 - Comment-to-code ratio
@@ -151,7 +151,7 @@ Generate a comprehensive report with:
 - Total files analyzed
 - Total functions/variables checked
 - Overall complexity score
-- Critical issues count (functions >20 lines, files >400 lines)
+- Critical issues count (functions >20 lines, files >20000 lines)
 - Recommendations summary
 
 ### Detailed Sections
@@ -188,7 +188,7 @@ Generate a comprehensive report with:
 - Understand module exception patterns (`RAISE_MODULE_ERROR`)
 
 ### Priority Ranking
-1. **Critical**: Dead code, unused critical functions, high complexity (>30), functions >20 lines, files >400 lines
+1. **Critical**: Dead code, unused critical functions, high complexity (>30), functions >20 lines, files >20000 lines
 2. **Warning**: Unused variables, moderate complexity (11-20), missing error checks, missing documentation
 3. **Info**: Style suggestions, minor optimizations, documentation gaps
 

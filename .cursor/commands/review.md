@@ -61,7 +61,7 @@ Perform a comprehensive code review of the specified file(s) or entire codebase 
 
 ### 6. **Code Quality & Best Practices**
    - **CRITICAL**: Functions are under 20 lines (must be enforced)
-   - **CRITICAL**: Files are under 400 lines (must be enforced)
+   - **CRITICAL**: Files are under 20000 lines (must be enforced)
    - Thread-safe functions used (mutex protection, thread-local storage)
    - Const correctness (use const for parameters that shouldn't be modified)
    - Unused parameters cast to void: `(void)param;`
@@ -179,7 +179,7 @@ Reference: See Socket.c for exception handling patterns
 
 ## Socket Library Priority Focus
 
-1. **Critical**: Functions >20 lines, files >400 lines, missing `FINALLY` blocks, memory leaks
+1. **Critical**: Functions >20 lines, files >20000 lines, missing `FINALLY` blocks, memory leaks
 2. **High**: Missing exception handling, Arena misuse, missing documentation, thread safety issues
 3. **Medium**: Style violations, code duplication, minor optimizations
 4. **Low**: Documentation improvements, minor style tweaks

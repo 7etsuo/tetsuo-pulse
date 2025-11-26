@@ -118,9 +118,16 @@ extern __thread Except_T SocketDNS_DetailedException;
     }                                                                         \
   while (0)
 
-/* Forward declarations for module-internal functions */
+/*
+ * =============================================================================
+ * Forward Declarations - SocketDNS-internal.c
+ *
+ * Internal implementation functions for initialization, synchronization,
+ * cleanup, request management, timeout handling, and worker threads.
+ * =============================================================================
+ */
 
-/* From SocketDNS-init.c - Resolver allocation and initialization */
+/* Initialization and allocation */
 extern struct SocketDNS_T * allocate_dns_resolver (void);
 extern void initialize_dns_fields (struct SocketDNS_T *dns);
 extern void initialize_dns_components (struct SocketDNS_T *dns);
@@ -129,7 +136,7 @@ extern int create_single_worker_thread (struct SocketDNS_T *dns, int idx);
 extern void create_worker_threads (struct SocketDNS_T *dns);
 extern void start_dns_workers (struct SocketDNS_T *dns);
 
-/* From SocketDNS-sync.c - Synchronization primitives */
+/* Synchronization primitives */
 extern void initialize_mutex (struct SocketDNS_T *dns);
 extern void initialize_queue_condition (struct SocketDNS_T *dns);
 extern void initialize_result_condition (struct SocketDNS_T *dns);
@@ -138,14 +145,13 @@ extern void create_completion_pipe (struct SocketDNS_T *dns);
 extern void set_pipe_nonblocking (struct SocketDNS_T *dns);
 extern void initialize_pipe (struct SocketDNS_T *dns);
 
-/* From SocketDNS-cleanup.c - Cleanup and shutdown */
+/* Cleanup and shutdown */
 extern void cleanup_mutex_cond (struct SocketDNS_T *dns);
 extern void cleanup_pipe (struct SocketDNS_T *dns);
 extern void cleanup_on_init_failure (struct SocketDNS_T *dns,
                                      enum DnsCleanupLevel cleanup_level);
 extern void shutdown_workers (struct SocketDNS_T *d);
 extern void drain_completion_pipe (struct SocketDNS_T *dns);
-/* drain_completed_requests removed - redundant with free_all_requests */
 extern void reset_dns_state (struct SocketDNS_T *d);
 extern void destroy_dns_resources (struct SocketDNS_T *d);
 extern void free_request_list (struct SocketDNS_Request_T *head,
@@ -154,13 +160,7 @@ extern void free_queued_requests (struct SocketDNS_T *d);
 extern void free_hash_table_requests (struct SocketDNS_T *d);
 extern void free_all_requests (struct SocketDNS_T *d);
 
-/* From SocketDNS-validate.c - Hostname validation */
-extern bool is_ip_address (const char *host);
-extern int validate_hostname_label (const char *label, size_t *len);
-extern int validate_hostname (const char *hostname);
-extern void validate_resolve_params (const char *host, int port);
-
-/* From SocketDNS-request.c - Request allocation and queue management */
+/* Request allocation and queue management */
 extern unsigned request_hash_function (struct SocketDNS_Request_T *req);
 extern struct SocketDNS_Request_T *allocate_request_structure (
     struct SocketDNS_T *dns);
@@ -193,7 +193,7 @@ extern void submit_dns_request (struct SocketDNS_T *dns,
 extern void cancel_pending_request (struct SocketDNS_T *dns,
                                     struct SocketDNS_Request_T *req);
 
-/* From SocketDNS-timeout.c - Timeout handling */
+/* Timeout handling */
 extern int request_effective_timeout_ms (struct SocketDNS_T *dns,
                                          const struct SocketDNS_Request_T *req);
 extern int request_timed_out (struct SocketDNS_T *dns,
@@ -203,7 +203,7 @@ extern void mark_request_timeout (struct SocketDNS_T *dns,
 extern void handle_request_timeout (struct SocketDNS_T *dns,
                                     struct SocketDNS_Request_T *req);
 
-/* From SocketDNS-worker.c - Worker thread and resolution */
+/* Worker thread and resolution */
 extern void initialize_addrinfo_hints (struct addrinfo *hints);
 extern void * worker_thread (void *arg);
 extern void prepare_local_hints (struct addrinfo *local_hints,
@@ -227,5 +227,19 @@ extern int perform_dns_resolution (struct SocketDNS_Request_T *req,
                                    struct addrinfo **result);
 extern void invoke_callback (struct SocketDNS_T *dns,
                              struct SocketDNS_Request_T *req);
+
+/*
+ * =============================================================================
+ * Forward Declarations - SocketDNS.c
+ *
+ * Validation functions used by both public API and internal implementation.
+ * =============================================================================
+ */
+
+/* Validation */
+extern bool is_ip_address (const char *host);
+extern int validate_hostname_label (const char *label, size_t *len);
+extern int validate_hostname (const char *hostname);
+extern void validate_resolve_params (const char *host, int port);
 
 #endif /* SOCKETDNS_PRIVATE_INCLUDED */

@@ -193,9 +193,9 @@ This codebase follows **C Interfaces and Implementations** patterns with:
    - Functions that could be moved to more appropriate files
    - Header dependencies that could be reduced
    - Circular dependencies between headers
-   - File size limits: All .c and .h files MUST be under 400 lines of code
+   - File size limits: All .c and .h files MUST be under 20000 lines of code
    - File purpose: Each .c and .h file must serve a single purpose and not handle multiple unrelated concerns
-   - Large file refactoring: Files exceeding 400 lines must implement a plan to break into smaller, focused files
+   - Large file refactoring: Files exceeding 20000 lines must implement a plan to break into smaller, focused files
 
 ### 8. **Memory Management Refactoring**
    - Allocation patterns that should use `Arena_alloc` instead of `malloc`
@@ -517,7 +517,7 @@ Before completing refactoring, verify:
 - [ ] Existing codebase functions are leveraged (Arena, Exception system, SocketError, SocketConfig)
 - [ ] No functionality changed (only refactored)
 - [ ] All functions have single responsibility
-- [ ] All .c and .h files are under 400 lines of code
+- [ ] All .c and .h files are under 20000 lines of code
 - [ ] Each .c and .h file serves a single purpose
 - [ ] Memory allocations use Arena where appropriate (for related objects)
 - [ ] Thread safety patterns followed (thread-local storage for per-thread data)

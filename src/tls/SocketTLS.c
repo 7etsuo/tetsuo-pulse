@@ -1,12 +1,15 @@
 /**
- * SocketTLS-base.c - TLS Socket Wrapper
+ * SocketTLS.c - TLS Socket Integration
  *
  * Part of the Socket Library
  * Following C Interfaces and Implementations patterns
  *
- * Implements TLS/SSL integration for sockets using OpenSSL. Provides
- * transparent encryption/decryption via wrapper functions, non-blocking
- * handshake management, SNI support, and connection info queries.
+ * Implements TLS/SSL integration for sockets using OpenSSL. Provides:
+ * - Transparent encryption/decryption via wrapper functions
+ * - Non-blocking handshake management
+ * - SNI support and hostname verification
+ * - Connection info queries (cipher, version, ALPN, etc.)
+ * - TLS I/O operations (send/recv)
  *
  * Thread safety: Functions are not thread-safe; each socket is
  * single-threaded. Uses thread-local error buffers for exception details.
@@ -17,11 +20,17 @@
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketTLSContext.h"
 #include <assert.h>
+#include <errno.h>
+#include <openssl/x509_vfy.h>
 #include <string.h>
 
 #define T SocketTLS_T
 
-/* Exception definitions */
+/* ============================================================================
+ * Exception Definitions
+ * ============================================================================
+ */
+
 const Except_T SocketTLS_Failed = { &SocketTLS_Failed, "TLS operation failed" };
 const Except_T SocketTLS_HandshakeFailed
     = { &SocketTLS_HandshakeFailed, "TLS handshake failed" };
@@ -32,7 +41,11 @@ const Except_T SocketTLS_ProtocolError
 const Except_T SocketTLS_ShutdownFailed
     = { &SocketTLS_ShutdownFailed, "TLS shutdown failed" };
 
-/* Thread-local error buffers */
+/* ============================================================================
+ * Thread-Local Error Buffers
+ * ============================================================================
+ */
+
 #ifdef _WIN32
 __declspec (thread) Except_T SocketTLS_DetailedException;
 __declspec (thread) char tls_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
@@ -40,6 +53,11 @@ __declspec (thread) char tls_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
 __thread Except_T SocketTLS_DetailedException;
 __thread char tls_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
 #endif
+
+/* ============================================================================
+ * Internal Helper Functions
+ * ============================================================================
+ */
 
 /**
  * allocate_tls_buffers - Allocate TLS read/write buffers
@@ -94,6 +112,11 @@ free_tls_resources (Socket_T socket)
   socket->tls_read_buf_len = 0;
   socket->tls_write_buf_len = 0;
 }
+
+/* ============================================================================
+ * TLS Enable and Configuration
+ * ============================================================================
+ */
 
 void
 SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
@@ -170,6 +193,11 @@ SocketTLS_set_hostname (Socket_T socket, const char *hostname)
     RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to enable hostname verification");
 }
 
+/* ============================================================================
+ * TLS Handshake and Shutdown
+ * ============================================================================
+ */
+
 TLSHandshakeState
 SocketTLS_handshake (Socket_T socket)
 {
@@ -231,6 +259,178 @@ SocketTLS_shutdown (Socket_T socket)
     }
 }
 
+/* ============================================================================
+ * TLS I/O Operations
+ * ============================================================================
+ */
+
+ssize_t
+SocketTLS_send (Socket_T socket, const void *buf, size_t len)
+{
+  assert (socket);
+  assert (buf);
+  assert (len > 0);
+
+  SSL *ssl = VALIDATE_TLS_IO_READY (socket, SocketTLS_Failed);
+  int result = SSL_write (ssl, buf, (int)len);
+
+  if (result > 0)
+    {
+      return (ssize_t)result;
+    }
+  else
+    {
+      TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
+      if (state == TLS_HANDSHAKE_ERROR)
+        {
+          tls_format_openssl_error ("TLS send failed");
+          RAISE_TLS_ERROR (SocketTLS_Failed);
+        }
+      errno = EAGAIN;
+      return 0;
+    }
+}
+
+ssize_t
+SocketTLS_recv (Socket_T socket, void *buf, size_t len)
+{
+  assert (socket);
+  assert (buf);
+  assert (len > 0);
+
+  SSL *ssl = VALIDATE_TLS_IO_READY (socket, SocketTLS_Failed);
+  int result = SSL_read (ssl, buf, (int)len);
+
+  if (result > 0)
+    {
+      return (ssize_t)result;
+    }
+  else if (result == 0)
+    {
+      RAISE (Socket_Closed);
+      return -1; /* Unreachable - RAISE performs longjmp */
+    }
+  else
+    {
+      TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
+      if (state == TLS_HANDSHAKE_ERROR)
+        {
+          tls_format_openssl_error ("TLS recv failed");
+          RAISE_TLS_ERROR (SocketTLS_Failed);
+        }
+      errno = EAGAIN;
+      return 0;
+    }
+}
+
+/* ============================================================================
+ * TLS Connection Information
+ * ============================================================================
+ */
+
+const char *
+SocketTLS_get_cipher (Socket_T socket)
+{
+  assert (socket);
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return NULL;
+
+  const SSL_CIPHER *cipher = SSL_get_current_cipher (ssl);
+  return cipher ? SSL_CIPHER_get_name (cipher) : NULL;
+}
+
+const char *
+SocketTLS_get_version (Socket_T socket)
+{
+  assert (socket);
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  return ssl ? SSL_get_version (ssl) : NULL;
+}
+
+long
+SocketTLS_get_verify_result (Socket_T socket)
+{
+  SSL *ssl;
+
+  if (!socket || !socket->tls_enabled || !socket->tls_ssl
+      || !socket->tls_handshake_done)
+    {
+      return X509_V_ERR_INVALID_CALL;
+    }
+
+  ssl = (SSL *)socket->tls_ssl;
+  return SSL_get_verify_result (ssl);
+}
+
+const char *
+SocketTLS_get_verify_error_string (Socket_T socket, char *buf, size_t size)
+{
+  if (!socket || !buf || size == 0)
+    return NULL;
+
+  long code = SocketTLS_get_verify_result (socket);
+  if (code == X509_V_OK)
+    return NULL;
+
+  const char *code_str = X509_verify_cert_error_string (code);
+  if (code_str)
+    {
+      strncpy (buf, code_str, size - 1);
+      buf[size - 1] = '\0';
+      return buf;
+    }
+
+  unsigned long err = ERR_get_error ();
+  if (err)
+    {
+      ERR_error_string_n (err, buf, size);
+      return buf;
+    }
+
+  strncpy (buf, "TLS verification failed (unknown error)", size - 1);
+  buf[size - 1] = '\0';
+  return buf;
+}
+
+int
+SocketTLS_is_session_reused (Socket_T socket)
+{
+  assert (socket);
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  return ssl ? (SSL_session_reused (ssl) ? 1 : 0) : -1;
+}
+
+const char *
+SocketTLS_get_alpn_selected (Socket_T socket)
+{
+  assert (socket);
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return NULL;
+
+  const unsigned char *alpn_data;
+  unsigned int alpn_len;
+  SSL_get0_alpn_selected (ssl, &alpn_data, &alpn_len);
+
+  if (!alpn_data || alpn_len == 0 || alpn_len > SOCKET_TLS_MAX_ALPN_LEN)
+    return NULL;
+
+  char *proto_copy = Arena_alloc (SocketBase_arena (socket->base),
+                                  alpn_len + 1, __FILE__, __LINE__);
+  if (!proto_copy)
+    return NULL;
+
+  memcpy (proto_copy, alpn_data, alpn_len);
+  proto_copy[alpn_len] = '\0';
+  return proto_copy;
+}
+
 #undef T
 
 #endif /* SOCKET_HAS_TLS */
+

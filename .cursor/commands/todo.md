@@ -216,7 +216,7 @@ When a TODO is implemented:
 3. Ensure memory is properly managed (Arena allocation/disposal)
 4. Verify documentation is added (Doxygen-style comments)
 5. Verify functions are under 20 lines
-6. Verify files are under 400 lines
+6. Verify files are under 20000 lines
 7. Suggest removing TODO comment or updating to note completion
 
 Provide actionable, prioritized TODO management with code generation that seamlessly integrates with the existing socket library codebase following C Interfaces and Implementations patterns.

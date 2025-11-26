@@ -46,7 +46,7 @@ Analyze the entire socket library codebase and generate a comprehensive `.cursor
    - Static helper functions before public functions
    - Related functions grouped together
    - Functions must be under 20 lines (extract helpers aggressively)
-   - Files must be under 400 lines (split if needed)
+   - Files must be under 20000 lines (split if needed)
    - Use const pointers for parameters that shouldn't be modified
    - Cast unused parameters to void: `(void)param;`
 

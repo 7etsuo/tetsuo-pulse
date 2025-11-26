@@ -69,18 +69,11 @@ endif()
 
 # Collect all source files
 set(LIB_SOURCES
-    # Core foundation
+    # Core foundation (consolidated)
     src/core/Arena.c
-    src/core/Arena-chunk.c
-    src/core/Arena-alloc.c
     src/core/Except.c
-    src/core/SocketError.c
-    src/core/SocketLog.c
-    src/core/SocketMetrics.c
-    src/core/SocketEvents.c
+    src/core/SocketUtil.c
     src/core/SocketTimer.c
-    src/core/SocketTimer-internal.c
-    src/core/SocketTimer-heap.c
     
     # Socket core (consolidated)
     src/socket/Socket.c
@@ -90,55 +83,28 @@ set(LIB_SOURCES
     src/socket/SocketDgram.c
     src/socket/SocketBuf.c
     src/socket/SocketCommon.c
-    src/socket/SocketCommon-net.c
     src/socket/SocketAsync.c
     src/socket/SocketIO.c
-    src/socket/SocketUnix.c
     
-    # DNS module - split files
+    # DNS module (consolidated)
     src/dns/SocketDNS.c
-    src/dns/SocketDNS-accessors.c
-    src/dns/SocketDNS-init.c
-    src/dns/SocketDNS-cleanup.c
-    src/dns/SocketDNS-sync.c
-    src/dns/SocketDNS-request.c
-    src/dns/SocketDNS-validate.c
-    src/dns/SocketDNS-worker.c
-    src/dns/SocketDNS-timeout.c
+    src/dns/SocketDNS-internal.c
 
-    # Poll module
+    # Poll module (consolidated)
     src/poll/SocketPoll.c
-    src/poll/SocketPoll-data.c
-    src/poll/SocketPoll-init.c
-    src/poll/SocketPoll-events.c
-    src/poll/SocketPoll-tls.c
-
     ${POLL_BACKEND_SRC}
     
-    # Pool module - split files
+    # Pool module (consolidated)
     src/pool/SocketPool-core.c
-    src/pool/SocketPool-resize.c
-    src/pool/SocketPool-tuning.c
-    src/pool/SocketPool-hash.c
     src/pool/SocketPool-connections.c
-    src/pool/SocketPool-accessors.c
-    src/pool/SocketPool-async.c
-    src/pool/SocketPool-accept.c
-    src/pool/SocketPool-cleanup.c
+    src/pool/SocketPool-ops.c
 )
 
-# Add TLS sources if enabled
+# Add TLS sources if enabled (consolidated)
 if(SOCKET_HAS_TLS)
     list(APPEND LIB_SOURCES
-        src/tls/SocketTLS-base.c
-        src/tls/SocketTLS-io.c
-        src/tls/SocketTLS-info.c
-        src/tls/SocketTLSContext-alpn.c
-        src/tls/SocketTLSContext-certs.c
-        src/tls/SocketTLSContext-core.c
-        src/tls/SocketTLSContext-ocsp.c
-        src/tls/SocketTLSContext-session.c
-        src/tls/SocketTLSContext-verify.c
+        src/tls/SocketTLS.c
+        src/tls/SocketTLSContext.c
     )
 endif()
 
@@ -182,7 +148,6 @@ set(CORE_HEADERS
     include/core/SocketMetrics.h
     include/core/SocketTimer.h
     include/core/SocketTimer-private.h
-    include/core/SocketTimer-internal.h
 )
 
 set(SOCKET_HEADERS

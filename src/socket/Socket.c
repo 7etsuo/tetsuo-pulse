@@ -43,6 +43,9 @@
 #include "socket/Socket-private.h"
 #include "socket/SocketLiveCount.h"
 
+#include <sys/stat.h>
+#include <sys/un.h>
+
 #ifdef SOCKET_HAS_TLS
 #include <openssl/ssl.h>
 #endif
@@ -313,18 +316,215 @@ Socket_debug_live_count (void)
   return SocketLiveCount_get (&socket_live_tracker);
 }
 
-/* ==================== Unix Domain Socket Wrappers ==================== */
+/* ==================== Unix Domain Socket Operations ==================== */
+/* Merged from SocketUnix.c */
+
+/**
+ * unix_is_abstract_path - Check if path is abstract namespace
+ * @path: Unix socket path
+ *
+ * Returns: true if path starts with '@' (abstract namespace marker)
+ */
+static inline bool
+unix_is_abstract_path (const char *path)
+{
+  return path && path[0] == '@';
+}
+
+/**
+ * unix_validate_path - Validate Unix socket path length and security
+ * @path: Path string
+ * @path_len: Length of path
+ *
+ * Returns: 0 on valid, -1 on invalid (sets error message)
+ */
+static int
+unix_validate_path (const char *path, size_t path_len)
+{
+  if (path_len > sizeof (struct sockaddr_un)
+                     - offsetof (struct sockaddr_un, sun_path) - 1)
+    {
+      SOCKET_ERROR_MSG ("Unix socket path too long (max %zu characters)",
+                        sizeof (struct sockaddr_un)
+                            - offsetof (struct sockaddr_un, sun_path) - 1);
+      return -1;
+    }
+
+  /* Check for directory traversal */
+  if (strstr (path, "/../") || strcmp (path, "..") == 0
+      || strncmp (path, "../", 3) == 0
+      || (path_len >= 3 && strcmp (path + path_len - 3, "/..") == 0))
+    {
+      SOCKET_ERROR_MSG (
+          "Invalid Unix socket path: directory traversal detected");
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * unix_unlink_stale - Remove stale socket file if it exists
+ * @path: Unix socket path
+ *
+ * Raises: Socket_Failed if unable to unlink existing socket file
+ */
+static void
+unix_unlink_stale (const char *path)
+{
+  struct stat st;
+  if (stat (path, &st) == 0)
+    {
+      if (S_ISSOCK (st.st_mode))
+        {
+          if (unlink (path) < 0)
+            {
+              SOCKET_ERROR_MSG ("Failed to unlink stale socket %s", path);
+              RAISE_MODULE_ERROR (Socket_Failed);
+            }
+        }
+    }
+}
+
+/**
+ * unix_setup_abstract_socket - Setup abstract namespace socket address
+ * @addr: Output sockaddr_un structure
+ * @path: Unix socket path (starting with '@')
+ * @path_len: Length of path
+ */
+static void
+unix_setup_abstract_socket (struct sockaddr_un *addr, const char *path,
+                            size_t path_len)
+{
+  /* Calculate the actual name length (excluding the '@' prefix) */
+  size_t name_len = path_len > 0 ? path_len - 1 : 0;
+  /* Ensure name fits in sun_path after the leading null byte */
+  size_t max_name_len = sizeof (addr->sun_path) - 1;
+  if (name_len > max_name_len)
+    name_len = max_name_len;
+
+  memset (addr, 0, sizeof (*addr));
+  addr->sun_family = AF_UNIX;
+  addr->sun_path[0] = '\0'; /* Abstract namespace marker */
+  /* Skip the '@' prefix when copying to sun_path */
+  if (name_len > 0)
+    memcpy (addr->sun_path + 1, path + 1, name_len);
+}
+
+/**
+ * unix_setup_regular_socket - Setup regular filesystem socket address
+ * @addr: Output sockaddr_un structure
+ * @path: Unix socket path
+ * @path_len: Length of path
+ */
+static void
+unix_setup_regular_socket (struct sockaddr_un *addr, const char *path,
+                           size_t path_len)
+{
+  /* Ensure path fits in sun_path with null terminator */
+  size_t max_path_len = sizeof (addr->sun_path) - 1;
+  if (path_len > max_path_len)
+    path_len = max_path_len;
+
+  memset (addr, 0, sizeof (*addr));
+  addr->sun_family = AF_UNIX;
+  memcpy (addr->sun_path, path, path_len);
+  addr->sun_path[path_len] = '\0';
+}
+
+/**
+ * unix_setup_sockaddr - Initialize sockaddr_un from path
+ * @addr: Output sockaddr_un structure
+ * @path: Unix socket path (@ prefix for abstract)
+ *
+ * Returns: 0 on success
+ */
+static int
+unix_setup_sockaddr (struct sockaddr_un *addr, const char *path)
+{
+  size_t path_len;
+
+  assert (addr);
+  assert (path);
+
+  memset (addr, 0, sizeof (*addr));
+  addr->sun_family = AF_UNIX;
+  path_len = strlen (path);
+
+  if (path[0] == '@')
+    unix_setup_abstract_socket (addr, path, path_len);
+  else
+    unix_setup_regular_socket (addr, path, path_len);
+
+  return 0;
+}
 
 void
 Socket_bind_unix (Socket_T socket, const char *path)
 {
-  SocketUnix_bind (socket->base, path, Socket_Failed);
+  struct sockaddr_un addr;
+  size_t path_len;
+
+  assert (socket);
+  assert (path);
+
+  path_len = strlen (path);
+
+  if (unix_validate_path (path, path_len) < 0)
+    RAISE_MODULE_ERROR (Socket_Failed);
+
+  /* Unlink stale socket file for regular (non-abstract) paths */
+  if (!unix_is_abstract_path (path))
+    unix_unlink_stale (path);
+
+  unix_setup_sockaddr (&addr, path);
+
+  if (bind (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
+            sizeof (addr))
+      < 0)
+    {
+      SOCKET_ERROR_FMT ("Failed to bind Unix socket to %s", path);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  SocketCommon_update_local_endpoint (socket->base);
 }
 
 void
 Socket_connect_unix (Socket_T socket, const char *path)
 {
-  SocketUnix_connect (socket->base, path, Socket_Failed);
+  struct sockaddr_un addr;
+  size_t path_len;
+
+  assert (socket);
+  assert (path);
+
+  path_len = strlen (path);
+
+  /* Validate path before use */
+  if (unix_validate_path (path, path_len) < 0)
+    RAISE_MODULE_ERROR (Socket_Failed);
+
+  if (unix_setup_sockaddr (&addr, path) != 0)
+    RAISE_MODULE_ERROR (Socket_Failed);
+
+  if (connect (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
+               sizeof (addr))
+      < 0)
+    {
+      if (errno == ENOENT)
+        SOCKET_ERROR_FMT ("Unix socket does not exist: %s", path);
+      else if (errno == ECONNREFUSED)
+        SOCKET_ERROR_FMT (SOCKET_ECONNREFUSED ": %s", path);
+      else
+        SOCKET_ERROR_FMT ("Failed to connect to Unix socket %s", path);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  /* Update remote endpoint */
+  memcpy (&socket->base->remote_addr, &addr, sizeof (addr));
+  socket->base->remote_addrlen = sizeof (addr);
+  SocketCommon_update_local_endpoint (socket->base);
 }
 
 
