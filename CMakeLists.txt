@@ -356,24 +356,21 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(benchmark_raw pthread)
 endif()
 
-find_package(LibEvent QUIET)
+# LibEvent benchmark is optional - only build if library is actually available
+set(LIBEVENT_FOUND FALSE)
 
-if(NOT LibEvent_FOUND)
-    # Try pkg-config fallback
-    find_package(PkgConfig QUIET)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(LibEvent QUIET libevent)
-        if(LibEvent_FOUND)
-            set(LibEvent_LIBRARIES ${LibEvent_LIBRARIES})
-            set(LibEvent_INCLUDE_DIRS ${LibEvent_INCLUDE_DIRS})
-        endif()
-    endif()
+# Try to find libevent library directly
+find_library(LIBEVENT_LIB event)
+find_path(LIBEVENT_INCLUDE event.h PATH_SUFFIXES event2)
+
+if(LIBEVENT_LIB AND LIBEVENT_INCLUDE)
+    set(LIBEVENT_FOUND TRUE)
 endif()
 
-if(LibEvent_FOUND)
+if(LIBEVENT_FOUND)
     add_executable(benchmark_libevent src/test/benchmark_libevent.c)
-    target_include_directories(benchmark_libevent PRIVATE ${LibEvent_INCLUDE_DIRS})
-    target_link_libraries(benchmark_libevent ${LibEvent_LIBRARIES} pthread)
+    target_include_directories(benchmark_libevent PRIVATE ${LIBEVENT_INCLUDE})
+    target_link_libraries(benchmark_libevent ${LIBEVENT_LIB} pthread)
     message(STATUS "LibEvent found - building benchmark_libevent")
 else()
     message(STATUS "LibEvent not found - skipping benchmark_libevent (install libevent-dev)")
