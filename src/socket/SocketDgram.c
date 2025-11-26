@@ -503,7 +503,7 @@ dgram_get_ttl_params (int socket_family, int *level, int *optname)
 int
 SocketDgram_getttl (T socket)
 {
-  int socket_family, level, optname, ttl = 0;
+  int socket_family, level = 0, optname = 0, ttl = 0;
   assert (socket);
 
   socket_family

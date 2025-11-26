@@ -1379,6 +1379,7 @@ socketcommon_convert_port_to_string (int port, char *port_str, size_t bufsize)
 
   result = snprintf (port_str, bufsize, "%d", port);
   assert (result > 0 && result < (int)bufsize);
+  (void)result; /* Suppress warning when NDEBUG disables assert */
 }
 
 int
