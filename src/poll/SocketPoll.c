@@ -57,36 +57,25 @@ __thread Except_T SocketPoll_DetailedException = { NULL, NULL };
 
 static void cleanup_poll_partial (T poll);
 
-/* ==================== Hash Functions ==================== */
+/* ==================== Allocation Helpers ==================== */
 
 /**
- * socket_hash - Hash function for socket file descriptors
- * @socket: Socket to hash
- * Returns: Hash value in range [0, SOCKET_DATA_HASH_SIZE)
- *
- * Uses socket_util_hash_fd() for golden ratio multiplicative hashing.
- * Provides O(1) average case performance for socket data lookups.
+ * ALLOC_ENTRY - Generic arena allocation with exception handling
+ * Eliminates duplicate allocation helpers for SocketData and FdSocketEntry.
  */
-static unsigned
-socket_hash (const Socket_T socket)
-{
-  int fd;
-
-  assert (socket);
-  fd = Socket_fd (socket);
-
-  if (fd < 0)
-    {
-      SocketLog_emitf (
-          SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-          "Attempt to hash closed/invalid socket (fd=%d); returning 0", fd);
-      return 0;
-    }
-
-  return socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
-}
-
-/* ==================== Allocation Helpers ==================== */
+#define ALLOC_ENTRY(poll, type, errmsg)                                        \
+  ({                                                                           \
+    type *volatile _entry = NULL;                                              \
+    TRY                                                                        \
+    _entry = CALLOC ((poll)->arena, 1, sizeof (type));                         \
+    EXCEPT (Arena_Failed)                                                      \
+    {                                                                          \
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": " errmsg);                            \
+      RAISE_POLL_ERROR (SocketPoll_Failed);                                    \
+    }                                                                          \
+    END_TRY;                                                                   \
+    _entry;                                                                    \
+  })
 
 /**
  * allocate_socket_data_entry - Allocate socket data entry from arena
@@ -94,21 +83,10 @@ socket_hash (const Socket_T socket)
  * Returns: Allocated entry
  * Raises: SocketPoll_Failed on allocation failure
  */
-static SocketData *
+static inline SocketData *
 allocate_socket_data_entry (T poll)
 {
-  SocketData *volatile entry = NULL;
-
-  TRY
-  entry = CALLOC (poll->arena, 1, sizeof (SocketData));
-  EXCEPT (Arena_Failed)
-  {
-    SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket data mapping");
-    RAISE_POLL_ERROR (SocketPoll_Failed);
-  }
-  END_TRY;
-
-  return entry;
+  return ALLOC_ENTRY (poll, SocketData, "Cannot allocate socket data mapping");
 }
 
 /**
@@ -117,21 +95,11 @@ allocate_socket_data_entry (T poll)
  * Returns: Allocated entry
  * Raises: SocketPoll_Failed on allocation failure
  */
-static FdSocketEntry *
+static inline FdSocketEntry *
 allocate_fd_socket_entry (T poll)
 {
-  FdSocketEntry *volatile entry = NULL;
-
-  TRY
-  entry = CALLOC (poll->arena, 1, sizeof (FdSocketEntry));
-  EXCEPT (Arena_Failed)
-  {
-    SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate fd to socket mapping");
-    RAISE_POLL_ERROR (SocketPoll_Failed);
-  }
-  END_TRY;
-
-  return entry;
+  return ALLOC_ENTRY (poll, FdSocketEntry,
+                      "Cannot allocate fd to socket mapping");
 }
 
 /* ==================== Hash Table Insertion ==================== */
@@ -167,43 +135,14 @@ insert_fd_socket_entry (T poll, unsigned fd_hash, FdSocketEntry *entry)
 /* ==================== Hash Table Lookup ==================== */
 
 /**
- * socket_data_lookup_unlocked - Retrieve user data for socket
- * @poll: Poll instance
- * @socket: Socket to look up
- * Returns: User data associated with socket, or NULL if not found
- * Thread-safe: No (caller must hold mutex)
- *
- * Performs O(1) average case lookup in the socket data hash table.
- */
-static void *
-socket_data_lookup_unlocked (const T poll, const Socket_T socket)
-{
-  unsigned hash;
-  SocketData *entry;
-
-  if (!poll || !socket)
-    return NULL;
-
-  hash = socket_hash (socket);
-  entry = poll->socket_data_map[hash];
-
-  while (entry)
-    {
-      if (entry->socket == socket)
-        return entry->data;
-      entry = entry->next;
-    }
-
-  return NULL;
-}
-
-/**
  * find_socket_data_entry - Find socket data entry in hash table
  * @poll: Poll instance
  * @hash: Hash bucket index
  * @socket: Socket to find
  * Returns: Entry or NULL if not found
  * Thread-safe: No (caller must hold mutex)
+ *
+ * Core lookup function - O(1) average case with hash chain traversal.
  */
 static SocketData *
 find_socket_data_entry (const T poll, const unsigned hash,
@@ -219,6 +158,36 @@ find_socket_data_entry (const T poll, const unsigned hash,
     }
 
   return NULL;
+}
+
+/**
+ * socket_data_lookup_unlocked - Retrieve user data for socket
+ * @poll: Poll instance
+ * @socket: Socket to look up
+ * Returns: User data associated with socket, or NULL if not found
+ * Thread-safe: No (caller must hold mutex)
+ *
+ * Wrapper around find_socket_data_entry that extracts user data.
+ * Uses fd directly for hashing to avoid redundant Socket_fd calls.
+ */
+static void *
+socket_data_lookup_unlocked (const T poll, const Socket_T socket)
+{
+  int fd;
+  unsigned hash;
+  SocketData *entry;
+
+  if (!poll || !socket)
+    return NULL;
+
+  fd = Socket_fd (socket);
+  if (fd < 0)
+    return NULL;
+
+  hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
+  entry = find_socket_data_entry (poll, hash, socket);
+
+  return entry ? entry->data : NULL;
 }
 
 /* ==================== Hash Table Removal ==================== */
@@ -277,13 +246,14 @@ remove_fd_socket_entry (T poll, unsigned fd_hash, int fd)
  * @socket: Socket
  * @data: User data
  * Raises: SocketPoll_Failed on allocation failure
+ *
+ * Uses fd directly for hashing to avoid redundant Socket_fd calls.
  */
 static void
 socket_data_add_unlocked (T poll, Socket_T socket, void *data)
 {
   int fd = Socket_fd (socket);
-  unsigned hash = socket_hash (socket);
-  unsigned fd_hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
+  unsigned hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
   SocketData *data_entry = allocate_socket_data_entry (poll);
   FdSocketEntry *fd_entry = allocate_fd_socket_entry (poll);
 
@@ -293,7 +263,7 @@ socket_data_add_unlocked (T poll, Socket_T socket, void *data)
   fd_entry->socket = socket;
 
   insert_socket_data_entry (poll, hash, data_entry);
-  insert_fd_socket_entry (poll, fd_hash, fd_entry);
+  insert_fd_socket_entry (poll, hash, fd_entry);
 }
 
 /**
@@ -302,11 +272,15 @@ socket_data_add_unlocked (T poll, Socket_T socket, void *data)
  * @socket: Socket
  * @data: New data
  * Raises: SocketPoll_Failed on allocation failure (fallback)
+ *
+ * Note: Fallback only updates socket_data_map, not fd_to_socket_map,
+ * since the socket should already have been added via socket_data_add_unlocked.
  */
 static void
 socket_data_update_unlocked (T poll, Socket_T socket, void *data)
 {
-  unsigned hash = socket_hash (socket);
+  int fd = Socket_fd (socket);
+  unsigned hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
   SocketData *entry = find_socket_data_entry (poll, hash, socket);
 
   if (entry)
@@ -315,11 +289,10 @@ socket_data_update_unlocked (T poll, Socket_T socket, void *data)
       return;
     }
 
-  /* Fallback: socket not found, add new entry */
+  /* Fallback: socket not found, add new entry (socket_data_map only) */
 #ifndef NDEBUG
   SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                   "socket_data_update_unlocked fallback (fd %d)",
-                   Socket_fd (socket));
+                   "socket_data_update_unlocked fallback (fd %d)", fd);
 #endif
 
   entry = allocate_socket_data_entry (poll);
@@ -332,16 +305,17 @@ socket_data_update_unlocked (T poll, Socket_T socket, void *data)
  * socket_data_remove_unlocked - Remove mappings (caller holds lock)
  * @poll: Poll instance
  * @socket: Socket
+ *
+ * Uses fd directly for hashing to avoid redundant Socket_fd calls.
  */
 static void
 socket_data_remove_unlocked (T poll, Socket_T socket)
 {
   int fd = Socket_fd (socket);
-  unsigned hash = socket_hash (socket);
-  unsigned fd_hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
+  unsigned hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
 
   remove_socket_data_entry (poll, hash, socket);
-  remove_fd_socket_entry (poll, fd_hash, fd);
+  remove_fd_socket_entry (poll, hash, fd);
 }
 
 /* ==================== Initialization Helpers ==================== */
@@ -891,7 +865,7 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
     return;
 
   Socket_setnonblocking (socket);
-  hash = socket_hash (socket);
+  hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
 
   pthread_mutex_lock (&poll->mutex);
   TRY

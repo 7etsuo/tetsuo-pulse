@@ -137,9 +137,9 @@ extern int SocketPool_connections_alloc_buffers (Arena_T arena, size_t bufsize,
 
 extern Connection_T find_slot (SocketPool_T pool, const Socket_T socket);
 
-extern Connection_T find_free_slot (SocketPool_T pool);
+extern Connection_T find_free_slot (const SocketPool_T pool);
 
-extern int check_pool_full (SocketPool_T pool);
+extern int check_pool_full (const SocketPool_T pool);
 
 extern void remove_from_free_list (SocketPool_T pool, Connection_T conn);
 

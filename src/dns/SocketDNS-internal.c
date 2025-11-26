@@ -14,10 +14,8 @@
  */
 
 /* All includes before T macro definition to avoid redefinition warnings */
-#include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -212,7 +210,7 @@ initialize_dns_fields (struct SocketDNS_T *dns)
   dns->num_workers = SOCKET_DNS_THREAD_COUNT;
   dns->max_pending = SOCKET_DNS_MAX_PENDING;
   dns->request_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
-  /* shutdown, request_counter, queue_head/tail/size already 0/NULL from calloc */
+  /* shutdown, queue_head/tail/size already 0/NULL from calloc */
 }
 
 /**
@@ -960,6 +958,9 @@ initialize_addrinfo_hints (struct addrinfo *hints)
  * @dns: DNS resolver instance
  * Returns: Next request or NULL if queue empty
  * Thread-safe: Must be called with mutex locked
+ *
+ * Reuses remove_from_queue_head() for queue manipulation to avoid
+ * code duplication. Sets request state to REQ_PROCESSING.
  */
 Request_T
 dequeue_request (struct SocketDNS_T *dns)
@@ -970,9 +971,7 @@ dequeue_request (struct SocketDNS_T *dns)
     return NULL;
 
   req = dns->queue_head;
-  dns->queue_head = req->queue_next;
-  if (!dns->queue_head)
-    dns->queue_tail = NULL;
+  remove_from_queue_head (dns, req);
   dns->queue_size--;
   req->queue_next = NULL;
   req->state = REQ_PROCESSING;

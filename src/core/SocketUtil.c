@@ -33,7 +33,75 @@
 #include <sys/types.h>
 #include <time.h>
 
+#include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
+
+/* ===========================================================================
+ * TIME UTILITIES SUBSYSTEM
+ * ===========================================================================*/
+
+/**
+ * socket_time_try_monotonic - Try to get monotonic clock time
+ * @ts: Output timespec structure
+ *
+ * Returns: 0 on success, -1 on failure
+ * Thread-safe: Yes (no shared state)
+ */
+static int
+socket_time_try_monotonic (struct timespec *ts)
+{
+  return clock_gettime (CLOCK_MONOTONIC, ts);
+}
+
+/**
+ * socket_time_try_realtime - Fallback to realtime clock
+ * @ts: Output timespec structure
+ *
+ * Returns: 0 on success, -1 on failure
+ * Thread-safe: Yes (no shared state)
+ */
+static int
+socket_time_try_realtime (struct timespec *ts)
+{
+  return clock_gettime (CLOCK_REALTIME, ts);
+}
+
+/**
+ * socket_time_to_ms - Convert timespec to milliseconds
+ * @ts: Timespec to convert
+ *
+ * Returns: Time in milliseconds
+ * Thread-safe: Yes (pure function)
+ */
+static int64_t
+socket_time_to_ms (const struct timespec *ts)
+{
+  return (int64_t)ts->tv_sec * SOCKET_MS_PER_SECOND
+         + (int64_t)ts->tv_nsec / SOCKET_NS_PER_MS;
+}
+
+/**
+ * Socket_get_monotonic_ms - Get current monotonic time in milliseconds
+ *
+ * Returns: Current monotonic time in milliseconds, or 0 on failure
+ * Thread-safe: Yes (no shared state)
+ *
+ * Uses CLOCK_MONOTONIC with CLOCK_REALTIME fallback. Returns 0 if both
+ * clocks fail (should never happen on POSIX systems).
+ */
+int64_t
+Socket_get_monotonic_ms (void)
+{
+  struct timespec ts;
+
+  if (socket_time_try_monotonic (&ts) == 0)
+    return socket_time_to_ms (&ts);
+
+  if (socket_time_try_realtime (&ts) == 0)
+    return socket_time_to_ms (&ts);
+
+  return 0;
+}
 
 /* ===========================================================================
  * ERROR HANDLING SUBSYSTEM

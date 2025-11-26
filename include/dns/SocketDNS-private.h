@@ -103,7 +103,6 @@ struct SocketDNS_T {
   pthread_cond_t result_cond;   /**< Signals waiters when result ready */
   int shutdown;                 /**< Shutdown flag (1 = shutting down) */
   int pipefd[2];                /**< Completion pipe [0]=read, [1]=write */
-  unsigned request_counter;     /**< Monotonic request ID counter */
   int request_timeout_ms;       /**< Default timeout (0 = no timeout) */
 };
 

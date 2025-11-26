@@ -27,7 +27,6 @@
  */
 
 #include <assert.h>
-#include <errno.h>
 #include <inttypes.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -35,7 +34,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <time.h>
 
 #include "core/Arena.h"
 #include "core/Except.h"
@@ -48,66 +46,21 @@
  * Thread-Local Error Handling
  * ===========================================================================*/
 
-/* Thread-local error buffer */
-#ifdef _WIN32
-__declspec (thread) char sockettimer_error_buf[SOCKET_TIMER_ERROR_BUFSIZE];
-__declspec (thread) Except_T SocketTimer_DetailedException;
-#else
-__thread char sockettimer_error_buf[SOCKET_TIMER_ERROR_BUFSIZE];
-__thread Except_T SocketTimer_DetailedException;
-#endif
-
 /* Timer exception definition */
 const Except_T SocketTimer_Failed
     = { &SocketTimer_Failed, "Timer operation failed" };
 
-/* Error formatting macros */
-#define SOCKETTIMER_ERROR_FMT(fmt, ...)                                       \
-  snprintf (sockettimer_error_buf, SOCKET_TIMER_ERROR_BUFSIZE,                \
-            fmt " (errno: %d - %s)", ##__VA_ARGS__, errno,                     \
-            Socket_safe_strerror (errno))
+/* Thread-local exception using centralized macro */
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketTimer);
 
-#define SOCKETTIMER_ERROR_MSG(fmt, ...)                                       \
-  snprintf (sockettimer_error_buf, SOCKET_TIMER_ERROR_BUFSIZE, fmt,           \
-            ##__VA_ARGS__)
-
-#define RAISE_SOCKETTIMER_ERROR(base_exception)                               \
-  do                                                                          \
-    {                                                                         \
-      SocketTimer_DetailedException = (base_exception);                       \
-      SocketTimer_DetailedException.reason = sockettimer_error_buf;           \
-      RAISE (SocketTimer_DetailedException);                                  \
-    }                                                                         \
-  while (0)
+/* Use centralized error handling macros from SocketUtil.h */
+#define SOCKETTIMER_ERROR_FMT SOCKET_ERROR_FMT
+#define SOCKETTIMER_ERROR_MSG SOCKET_ERROR_MSG
+#define RAISE_SOCKETTIMER_ERROR(exception)                                    \
+  SOCKET_RAISE_MODULE_ERROR (SocketTimer, exception)
 
 /* Forward declaration for timer heap getter */
 struct SocketTimer_heap_T *socketpoll_get_timer_heap (SocketPoll_T poll);
-
-/* ===========================================================================
- * Time Utilities (Static)
- * ===========================================================================*/
-
-/**
- * sockettimer_now_ms - Get current monotonic time in milliseconds
- *
- * Returns: Current time in milliseconds since arbitrary monotonic epoch
- * Raises: SocketTimer_Failed if clock_gettime fails
- * Thread-safe: Yes
- */
-static int64_t
-sockettimer_now_ms (void)
-{
-  struct timespec ts;
-
-  if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0)
-    {
-      SOCKETTIMER_ERROR_FMT ("Failed to get monotonic time");
-      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
-    }
-
-  return (int64_t)ts.tv_sec * SOCKET_MS_PER_SECOND
-         + (int64_t)ts.tv_nsec / SOCKET_NS_PER_MS;
-}
 
 /* ===========================================================================
  * Validation Helpers (Static)
@@ -210,7 +163,7 @@ sockettimer_init_timer (struct SocketTimer_T *timer, int64_t delay_ms,
                         int64_t interval_ms, SocketTimerCallback callback,
                         void *userdata)
 {
-  int64_t now_ms = sockettimer_now_ms ();
+  int64_t now_ms = Socket_get_monotonic_ms ();
 
   timer->expiry_ms = now_ms + delay_ms;
   timer->interval_ms = interval_ms;
@@ -726,7 +679,7 @@ SocketTimer_heap_peek_delay (const SocketTimer_heap_T *heap)
   if (!timer)
     return -1;
 
-  now_ms = sockettimer_now_ms ();
+  now_ms = Socket_get_monotonic_ms ();
   delay_ms = timer->expiry_ms - now_ms;
 
   return delay_ms > 0 ? delay_ms : 0;
@@ -787,7 +740,7 @@ SocketTimer_heap_remaining (SocketTimer_heap_T *heap,
       return -1;
     }
 
-  now_ms = sockettimer_now_ms ();
+  now_ms = Socket_get_monotonic_ms ();
   remaining = timer->expiry_ms - now_ms;
 
   pthread_mutex_unlock (&heap->mutex);
@@ -814,7 +767,7 @@ SocketTimer_process_expired (SocketTimer_heap_T *heap)
 
   assert (heap);
 
-  now_ms = sockettimer_now_ms ();
+  now_ms = Socket_get_monotonic_ms ();
 
   while (1)
     {

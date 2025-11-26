@@ -65,27 +65,23 @@ is_ip_address (const char *host)
 /**
  * is_valid_label_char - Check if character is valid in hostname label
  * @c: Character to check
- * Returns: true if valid (alphanumeric or hyphen)
+ * @at_start: Whether this is the first character of a label
+ *
+ * Returns: true if valid character for position
+ * Thread-safe: Yes - no shared state
+ *
+ * Per RFC 1123: label start must be alphanumeric; other positions allow hyphen.
  */
 static bool
-is_valid_label_char (char c)
+is_valid_label_char (char c, bool at_start)
 {
+  if (at_start)
+    return isalnum ((unsigned char)c);
   return isalnum ((unsigned char)c) || c == '-';
 }
 
 /**
- * is_valid_label_start - Check if character can start a label
- * @c: Character to check
- * Returns: true if valid label start (alphanumeric only)
- */
-static bool
-is_valid_label_start (char c)
-{
-  return isalnum ((unsigned char)c);
-}
-
-/**
- * check_label_bounds - Check label length is within bounds
+ * is_valid_label_length - Check label length is within bounds
  * @label_len: Current label length
  *
  * Returns: true if within bounds (1 to SOCKET_DNS_MAX_LABEL_LENGTH)
@@ -95,65 +91,9 @@ is_valid_label_start (char c)
  * Labels must be between 1 and 63 characters inclusive.
  */
 static bool
-check_label_bounds (int label_len)
+is_valid_label_length (int label_len)
 {
   return label_len > 0 && label_len <= SOCKET_DNS_MAX_LABEL_LENGTH;
-}
-
-/**
- * process_label_character - Validate a non-dot character in hostname label
- * @c: Character to validate
- * @at_label_start: Whether this is the first character of a label
- *
- * Returns: true if character is valid in current position, false otherwise
- * Thread-safe: Yes - no shared state
- *
- * Per RFC 1123, label start must be alphanumeric; other positions allow hyphen.
- */
-static bool
-process_label_character (char c, bool at_label_start)
-{
-  if (at_label_start)
-    return is_valid_label_start (c);
-  return is_valid_label_char (c);
-}
-
-/**
- * handle_dot_separator - Process dot separator in hostname validation
- * @label_len: Current label length before the dot
- * @at_label_start: Output - reset to true for next label
- * @label_len_out: Output - reset to 0 for next label
- *
- * Returns: true if label before dot was valid, false otherwise
- * Thread-safe: Yes - no shared state
- */
-static bool
-handle_dot_separator (int label_len, bool *at_label_start, int *label_len_out)
-{
-  if (!check_label_bounds (label_len))
-    return false;
-  *at_label_start = true;
-  *label_len_out = 0;
-  return true;
-}
-
-/**
- * handle_label_char - Process non-dot character in hostname validation
- * @c: Character to validate
- * @at_label_start: Input/output - true if at label start
- * @label_len: Input/output - current label length
- *
- * Returns: true if character is valid, false otherwise
- * Thread-safe: Yes - no shared state
- */
-static bool
-handle_label_char (char c, bool *at_label_start, int *label_len)
-{
-  if (!process_label_character (c, *at_label_start))
-    return false;
-  *at_label_start = false;
-  (*label_len)++;
-  return true;
 }
 
 /**
@@ -178,16 +118,27 @@ validate_hostname_label (const char *label, size_t *len)
 
   while (*p)
     {
-      bool valid = (*p == '.')
-                       ? handle_dot_separator (label_len, &at_label_start,
-                                               &label_len)
-                       : handle_label_char (*p, &at_label_start, &label_len);
-      if (!valid)
-        return 0;
+      if (*p == '.')
+        {
+          /* Dot separator - validate completed label and reset */
+          if (!is_valid_label_length (label_len))
+            return 0;
+          at_label_start = true;
+          label_len = 0;
+        }
+      else
+        {
+          /* Label character - validate and update state */
+          if (!is_valid_label_char (*p, at_label_start))
+            return 0;
+          at_label_start = false;
+          label_len++;
+        }
       p++;
     }
 
-  if (!check_label_bounds (label_len))
+  /* Validate final label */
+  if (!is_valid_label_length (label_len))
     return 0;
 
   if (len)

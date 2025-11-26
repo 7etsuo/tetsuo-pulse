@@ -157,23 +157,52 @@ initialize_new_slots (T pool, size_t old_maxconns, size_t new_maxconns)
 }
 
 /**
+ * close_single_excess_socket - Close and remove single excess socket
+ * @pool: Pool instance
+ * @socket: Socket to close
+ *
+ * Thread-safe: Called outside lock
+ * Handles errors gracefully - logs and continues on failure.
+ */
+static void
+close_single_excess_socket (T pool, Socket_T *socket)
+{
+  TRY
+  {
+    SocketPool_remove (pool, *socket);
+    Socket_free (socket);
+  }
+  EXCEPT (SocketPool_Failed)
+  {
+    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                     "Resize: socket already removed from pool");
+  }
+  EXCEPT (Socket_Failed)
+  {
+    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                     "Resize: socket free failed (may be closed)");
+  }
+  END_TRY;
+}
+
+/**
  * close_excess_sockets - Close and remove excess sockets
  * @pool: Pool instance
  * @excess_sockets: Array of sockets to close
  * @excess_count: Number of sockets
  *
  * Thread-safe: Called outside lock
+ * Handles errors gracefully - logs and continues on failure.
  */
 static void
 close_excess_sockets (T pool, Socket_T *excess_sockets, size_t excess_count)
 {
-  for (size_t i = 0; i < excess_count; i++)
+  /* volatile prevents clobbering when close_single_excess_socket is inlined */
+  volatile size_t i;
+  for (i = 0; i < excess_count; i++)
     {
       if (excess_sockets[i])
-        {
-          SocketPool_remove (pool, excess_sockets[i]);
-          Socket_free (&excess_sockets[i]);
-        }
+        close_single_excess_socket (pool, &excess_sockets[i]);
     }
 }
 

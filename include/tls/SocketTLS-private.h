@@ -424,6 +424,17 @@ extern __thread Except_T SocketTLSContext_DetailedException;
   while (0)
 
 /* ============================================================================
+ * Utility Macros
+ * ============================================================================
+ */
+
+/**
+ * UNUSED - Suppress unused parameter warnings
+ * @x: Unused parameter
+ */
+#define TLS_UNUSED(x) (void)(x)
+
+/* ============================================================================
  * Internal Helper Functions
  * ============================================================================
  */
@@ -435,6 +446,31 @@ extern __thread Except_T SocketTLSContext_DetailedException;
  * Formats OpenSSL error and raises SocketTLS_Failed.
  */
 extern void ctx_raise_openssl_error (const char *context);
+
+/**
+ * ctx_arena_strdup - Copy string to context arena with error handling
+ * @ctx: TLS context with arena
+ * @str: String to copy
+ * @error_msg: Error message on allocation failure
+ *
+ * Returns: Arena-allocated copy of string
+ * Raises: SocketTLS_Failed on allocation failure
+ *
+ * Consolidates repeated string copy patterns across TLS modules.
+ */
+static inline char *
+ctx_arena_strdup (SocketTLSContext_T ctx, const char *str,
+                  const char *error_msg)
+{
+  size_t len = strlen (str) + 1;
+  char *copy = Arena_alloc (ctx->arena, len, __FILE__, __LINE__);
+  if (!copy)
+    {
+      ctx_raise_openssl_error (error_msg);
+    }
+  memcpy (copy, str, len);
+  return copy;
+}
 
 /**
  * tls_context_exdata_idx - Global SSL_CTX ex_data index for context lookup

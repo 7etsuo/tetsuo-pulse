@@ -259,7 +259,7 @@ SocketTLSContext_set_cipher_list (T ctx, const char *ciphers)
 static int
 status_cb_wrapper (SSL *ssl, void *arg)
 {
-  (void)arg;
+  TLS_UNUSED (arg);
   T ctx = tls_context_get_from_ssl (ssl);
   if (!ctx || !ctx->ocsp_gen_cb)
     return SSL_TLSEXT_ERR_NOACK;

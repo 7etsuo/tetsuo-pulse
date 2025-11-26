@@ -508,6 +508,26 @@ const char *Socket_safe_strerror (int errnum);
  */
 
 /* ============================================================================
+ * TIME UTILITIES (Consolidated monotonic clock functions)
+ * ============================================================================ */
+
+/**
+ * Socket_get_monotonic_ms - Get current monotonic time in milliseconds
+ *
+ * Returns: Current monotonic time in milliseconds since arbitrary epoch
+ * Thread-safe: Yes (no shared state)
+ *
+ * Uses CLOCK_MONOTONIC with CLOCK_REALTIME fallback. Immune to wall-clock
+ * changes (NTP adjustments, manual time changes). Returns 0 on failure.
+ *
+ * Use for:
+ * - Rate limiting timestamps
+ * - Timer expiry calculations
+ * - Elapsed time measurements
+ */
+int64_t Socket_get_monotonic_ms (void);
+
+/* ============================================================================
  * HASH UTILITIES (Consolidated from multiple modules)
  * ============================================================================ */
 

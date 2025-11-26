@@ -9,6 +9,7 @@
  * - Hash table operations
  * - Memory allocation helpers
  * - Connection slot initialization
+ * - Reconnection support
  */
 
 #include <assert.h>
@@ -454,8 +455,8 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
  * @maxconns: Maximum number of connections
  * @bufsize: Size of I/O buffers per connection
  *
- * Returns: New pool instance (never returns NULL)
- * Raises: SocketPool_Failed on any allocation or initialization failure
+ * Returns: New pool instance (never returns NULL on success)
+ * Raises: SocketPool_Failed or Arena_Failed on allocation/initialization failure
  * Thread-safe: Yes - returns new instance
  * Automatically pre-warms SOCKET_POOL_DEFAULT_PREWARM_PCT slots.
  */
@@ -463,27 +464,19 @@ T
 SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
 {
   T pool;
-  volatile size_t safe_maxconns;
-  volatile size_t safe_bufsize;
+  size_t safe_maxconns;
+  size_t safe_bufsize;
 
   validate_pool_params (arena, maxconns, bufsize);
 
   safe_maxconns = socketpool_enforce_max_connections (maxconns);
   safe_bufsize = socketpool_enforce_buffer_size (bufsize);
 
-  TRY
-  {
-    pool = construct_pool (arena, safe_maxconns, safe_bufsize);
-    SocketPool_prewarm (pool, SOCKET_POOL_DEFAULT_PREWARM_PCT);
-    return pool;
-  }
-  EXCEPT (Arena_Failed)
-  {
-    RERAISE;
-  }
-  END_TRY;
+  /* Exceptions (Arena_Failed, SocketPool_Failed) propagate automatically */
+  pool = construct_pool (arena, safe_maxconns, safe_bufsize);
+  SocketPool_prewarm (pool, SOCKET_POOL_DEFAULT_PREWARM_PCT);
 
-  return NULL;
+  return pool;
 }
 
 /* ============================================================================
@@ -606,9 +599,11 @@ update_connection_socket (Connection_T conn, SocketReconnect_T conn_r)
 /**
  * reconnect_state_callback - Internal callback for reconnection state changes
  * @conn_r: Reconnection context
- * @old_state: Previous state
+ * @old_state: Previous state (unused - required by callback signature)
  * @new_state: New state
  * @userdata: Connection pointer
+ *
+ * Handles state transitions for automatic reconnection.
  */
 static void
 reconnect_state_callback (SocketReconnect_T conn_r,
@@ -617,7 +612,7 @@ reconnect_state_callback (SocketReconnect_T conn_r,
 {
   Connection_T conn = (Connection_T)userdata;
 
-  (void)old_state;
+  (void)old_state; /* Required by callback signature, not used here */
 
   if (!conn)
     return;
@@ -664,6 +659,19 @@ create_reconnect_context (Connection_T conn, const char *host, int port,
 {
   conn->reconnect
       = SocketReconnect_new (host, port, policy, reconnect_state_callback, conn);
+}
+
+/**
+ * log_reconnect_enabled - Log reconnection enable event
+ * @host: Hostname for reconnection
+ * @port: Port for reconnection
+ */
+static void
+log_reconnect_enabled (const char *host, int port)
+{
+  SocketLog_emitf (SOCKET_LOG_DEBUG, "SocketPool",
+                   "Enabled auto-reconnect for connection to %s:%d", host,
+                   port);
 }
 
 /* ============================================================================
@@ -735,9 +743,7 @@ SocketPool_enable_reconnect (T pool, Connection_T conn, const char *host,
 
   pthread_mutex_unlock (&pool->mutex);
 
-  SocketLog_emitf (SOCKET_LOG_DEBUG, "SocketPool",
-                   "Enabled auto-reconnect for connection to %s:%d", host,
-                   port);
+  log_reconnect_enabled (host, port);
 }
 
 /**

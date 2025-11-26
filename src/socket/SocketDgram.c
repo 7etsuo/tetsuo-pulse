@@ -470,37 +470,51 @@ SocketDgram_setcloexec (T socket, int enable)
   SocketCommon_setcloexec_with_error (socket->base, enable, SocketDgram_Failed);
 }
 
-int
-SocketDgram_getttl (T socket)
+/**
+ * dgram_get_ttl_params - Get TTL socket option parameters by address family
+ * @socket_family: Address family (SOCKET_AF_INET or SOCKET_AF_INET6)
+ * @level: Output for protocol level
+ * @optname: Output for option name
+ *
+ * Returns: 0 on success
+ * Raises: SocketDgram_Failed for unsupported family
+ */
+static int
+dgram_get_ttl_params (int socket_family, int *level, int *optname)
 {
-  int socket_family;
-  int ttl = 0;
-  assert (socket);
-
-  socket_family
-      = SocketCommon_get_family (socket->base, true, SocketDgram_Failed);
-
   if (socket_family == SOCKET_AF_INET)
     {
-      if (SocketCommon_getoption_int (SocketBase_fd (socket->base),
-                                      SOCKET_IPPROTO_IP, SOCKET_IP_TTL, &ttl,
-                                      SocketDgram_Failed)
-          < 0)
-        RAISE_MODULE_ERROR (SocketDgram_Failed);
+      *level = SOCKET_IPPROTO_IP;
+      *optname = SOCKET_IP_TTL;
     }
   else if (socket_family == SOCKET_AF_INET6)
     {
-      if (SocketCommon_getoption_int (
-              SocketBase_fd (socket->base), SOCKET_IPPROTO_IPV6,
-              SOCKET_IPV6_UNICAST_HOPS, &ttl, SocketDgram_Failed)
-          < 0)
-        RAISE_MODULE_ERROR (SocketDgram_Failed);
+      *level = SOCKET_IPPROTO_IPV6;
+      *optname = SOCKET_IPV6_UNICAST_HOPS;
     }
   else
     {
       SOCKET_ERROR_MSG ("Unsupported address family for TTL");
       RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
+  return 0;
+}
+
+int
+SocketDgram_getttl (T socket)
+{
+  int socket_family, level, optname, ttl = 0;
+  assert (socket);
+
+  socket_family
+      = SocketCommon_get_family (socket->base, true, SocketDgram_Failed);
+  dgram_get_ttl_params (socket_family, &level, &optname);
+
+  if (SocketCommon_getoption_int (SocketBase_fd (socket->base), level, optname,
+                                  &ttl, SocketDgram_Failed)
+      < 0)
+    RAISE_MODULE_ERROR (SocketDgram_Failed);
+
   return ttl;
 }
 
