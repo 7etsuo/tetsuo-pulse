@@ -164,6 +164,7 @@ sni_callback (SSL *ssl, int *ad, void *arg)
  * @ctx: Context with SNI arrays to expand
  *
  * Doubles capacity or initializes to 4 if empty.
+ * Uses temporary pointers to prevent memory leak on partial allocation failure.
  * Raises: SocketTLS_Failed on allocation failure
  */
 static void
@@ -173,24 +174,42 @@ expand_sni_capacity (T ctx)
                        ? SOCKET_TLS_SNI_INITIAL_CAPACITY
                        : ctx->sni_certs.capacity * 2;
 
-  ctx->sni_certs.hostnames
+  /* Use temporary pointers to avoid leak on partial failure */
+  char **new_hostnames
       = realloc (ctx->sni_certs.hostnames, new_cap * sizeof (char *));
-  ctx->sni_certs.cert_files
+  char **new_cert_files
       = realloc (ctx->sni_certs.cert_files, new_cap * sizeof (char *));
-  ctx->sni_certs.key_files
+  char **new_key_files
       = realloc (ctx->sni_certs.key_files, new_cap * sizeof (char *));
-  ctx->sni_certs.certs
+  X509 **new_certs
       = realloc (ctx->sni_certs.certs, new_cap * sizeof (X509 *));
-  ctx->sni_certs.pkeys
+  EVP_PKEY **new_pkeys
       = realloc (ctx->sni_certs.pkeys, new_cap * sizeof (EVP_PKEY *));
 
-  if (!ctx->sni_certs.hostnames || !ctx->sni_certs.cert_files
-      || !ctx->sni_certs.key_files || !ctx->sni_certs.certs
-      || !ctx->sni_certs.pkeys)
+  /* Check all allocations before committing any */
+  if (!new_hostnames || !new_cert_files || !new_key_files || !new_certs
+      || !new_pkeys)
     {
+      /* Free only the NEW allocations that succeeded - originals are intact */
+      if (new_hostnames && new_hostnames != ctx->sni_certs.hostnames)
+        free (new_hostnames);
+      if (new_cert_files && new_cert_files != ctx->sni_certs.cert_files)
+        free (new_cert_files);
+      if (new_key_files && new_key_files != ctx->sni_certs.key_files)
+        free (new_key_files);
+      if (new_certs && new_certs != ctx->sni_certs.certs)
+        free (new_certs);
+      if (new_pkeys && new_pkeys != ctx->sni_certs.pkeys)
+        free (new_pkeys);
       ctx_raise_openssl_error ("Failed to allocate SNI certificate arrays");
     }
 
+  /* Commit all allocations atomically on success */
+  ctx->sni_certs.hostnames = new_hostnames;
+  ctx->sni_certs.cert_files = new_cert_files;
+  ctx->sni_certs.key_files = new_key_files;
+  ctx->sni_certs.certs = new_certs;
+  ctx->sni_certs.pkeys = new_pkeys;
   ctx->sni_certs.capacity = new_cap;
 }
 

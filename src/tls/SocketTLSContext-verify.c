@@ -293,6 +293,12 @@ SocketTLSContext_set_ocsp_response (T ctx, const unsigned char *response,
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                          "Invalid OCSP response (null or zero length)");
 
+  /* Validate response size to prevent memory exhaustion attacks */
+  if (len > SOCKET_TLS_MAX_OCSP_RESPONSE_LEN)
+    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                         "OCSP response too large (%zu bytes, max %d)",
+                         len, SOCKET_TLS_MAX_OCSP_RESPONSE_LEN);
+
   OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &response, len);
   if (!resp)
     {

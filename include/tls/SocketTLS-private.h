@@ -236,7 +236,11 @@ tls_format_openssl_error (const char *context)
  * tls_validate_file_path - Validate certificate/key/CA file path
  * @path: File path string to validate
  *
- * Performs security checks: non-empty, reasonable length, no path traversal.
+ * Performs security checks:
+ * - Non-empty and within length limits
+ * - No path traversal sequences (..)
+ * - No control characters (except forward slash)
+ * - Path must be absolute or relative from current dir
  *
  * Returns: 1 if valid, 0 if invalid
  */
@@ -247,11 +251,22 @@ tls_validate_file_path (const char *path)
     return 0;
 
   size_t len = strlen (path);
-  if (len == 0 || len > 4096)
+  if (len == 0 || len > SOCKET_TLS_MAX_PATH_LEN)
     return 0;
 
+  /* Check for path traversal */
   if (strstr (path, "..") != NULL)
     return 0;
+
+  /* Check for control characters (ASCII 0-31 and 127, except don't allow any)
+   * This prevents injection of special chars that might confuse filesystem */
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)path[i];
+      /* Reject control characters (0-31 and 127) */
+      if (c < 32 || c == 127)
+        return 0;
+    }
 
   return 1;
 }

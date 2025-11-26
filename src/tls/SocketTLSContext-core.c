@@ -34,8 +34,21 @@ __thread char tls_context_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
 __thread Except_T SocketTLSContext_DetailedException;
 #endif
 
-/* Global ex_data index for context lookup */
+/* Global ex_data index for context lookup (thread-safe initialization) */
 int tls_context_exdata_idx = -1;
+static pthread_once_t exdata_init_once = PTHREAD_ONCE_INIT;
+
+/**
+ * init_exdata_idx - One-time initialization of ex_data index
+ *
+ * Called via pthread_once to ensure thread-safe single initialization.
+ */
+static void
+init_exdata_idx (void)
+{
+  tls_context_exdata_idx
+      = SSL_CTX_get_ex_new_index (0, "SocketTLSContext", NULL, NULL, NULL);
+}
 
 /* ============================================================================
  * OpenSSL Error Handling
@@ -178,15 +191,14 @@ alloc_context_struct (SSL_CTX *ssl_ctx)
 /**
  * register_exdata - Register context in SSL_CTX ex_data
  * @ctx: Context to register
+ *
+ * Uses pthread_once for thread-safe one-time initialization of the
+ * global ex_data index, preventing race conditions during first use.
  */
 static void
 register_exdata (T ctx)
 {
-  if (tls_context_exdata_idx == -1)
-    {
-      tls_context_exdata_idx
-          = SSL_CTX_get_ex_new_index (0, "SocketTLSContext", NULL, NULL, NULL);
-    }
+  pthread_once (&exdata_init_once, init_exdata_idx);
   SSL_CTX_set_ex_data (ctx->ssl_ctx, tls_context_exdata_idx, ctx);
 }
 
@@ -351,6 +363,13 @@ SocketTLSContext_free (T *ctx)
         {
           SSL_CTX_free (c->ssl_ctx);
           c->ssl_ctx = NULL;
+        }
+
+      /* Securely clear session ticket key material before freeing */
+      if (c->tickets_enabled)
+        {
+          OPENSSL_cleanse (c->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
+          c->tickets_enabled = 0;
         }
 
       if (c->arena)

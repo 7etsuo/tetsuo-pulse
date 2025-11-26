@@ -182,15 +182,17 @@ SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
                            SOCKET_TLS_TICKET_KEY_LEN);
     }
 
-  unsigned char *keys = ctx_arena_alloc (ctx, key_len,
-                                         "Failed to allocate ticket keys buffer");
-  memcpy (keys, key, key_len);
+  /* Copy key into structure's ticket_key field for secure clearing on free */
+  memcpy (ctx->ticket_key, key, key_len);
   ctx->tickets_enabled = 1;
 
   if (SSL_CTX_ctrl (ctx->ssl_ctx, SSL_CTRL_SET_TLSEXT_TICKET_KEYS,
-                    (int)key_len, keys)
+                    (int)key_len, ctx->ticket_key)
       != 1)
     {
+      /* Clear key material on failure before raising exception */
+      OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
+      ctx->tickets_enabled = 0;
       ctx_raise_openssl_error ("Failed to set session ticket keys");
     }
 }

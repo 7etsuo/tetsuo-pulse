@@ -98,6 +98,11 @@
 #define SOCKET_TLS_SESSION_TIMEOUT_DEFAULT 300L
 #endif
 
+/* Maximum OCSP response size (64KB - typical responses are < 4KB) */
+#ifndef SOCKET_TLS_MAX_OCSP_RESPONSE_LEN
+#define SOCKET_TLS_MAX_OCSP_RESPONSE_LEN (64 * 1024)
+#endif
+
 /* Maximum file path length for certificates/keys */
 #ifndef SOCKET_TLS_MAX_PATH_LEN
 #define SOCKET_TLS_MAX_PATH_LEN 4096
