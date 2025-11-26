@@ -457,6 +457,17 @@ extern SocketTLSContext_T tls_context_get_from_ssl (const SSL *ssl);
  */
 extern SocketTLSContext_T tls_context_get_from_ssl_ctx (SSL_CTX *ssl_ctx);
 
+/**
+ * ctx_alloc_and_init - Create and initialize TLS context
+ * @method: OpenSSL method (server or client)
+ * @is_server: 1 for server, 0 for client
+ *
+ * Returns: New initialized context
+ * Raises: SocketTLS_Failed on any failure
+ */
+extern SocketTLSContext_T ctx_alloc_and_init (const SSL_METHOD *method,
+                                              int is_server);
+
 #undef T
 
 #endif /* SOCKET_HAS_TLS */

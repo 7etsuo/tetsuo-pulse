@@ -100,11 +100,15 @@ set(LIB_SOURCES
     src/pool/SocketPool-ops.c
 )
 
-# Add TLS sources if enabled (consolidated)
+# Add TLS sources if enabled (split for maintainability)
 if(SOCKET_HAS_TLS)
     list(APPEND LIB_SOURCES
         src/tls/SocketTLS.c
-        src/tls/SocketTLSContext.c
+        src/tls/SocketTLSContext-core.c
+        src/tls/SocketTLSContext-certs.c
+        src/tls/SocketTLSContext-alpn.c
+        src/tls/SocketTLSContext-session.c
+        src/tls/SocketTLSContext-verify.c
     )
 endif()
 
