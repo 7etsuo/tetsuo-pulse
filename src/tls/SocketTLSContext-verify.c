@@ -341,17 +341,16 @@ SocketTLSContext_set_ocsp_gen_callback (T ctx, SocketTLSOcspGenCallback cb,
   ctx->ocsp_gen_cb = cb;
   ctx->ocsp_gen_arg = arg;
 
+  /* Clear any stale errors before setting callback.
+   * SSL_CTX_set_tlsext_status_cb returns void and doesn't set errors,
+   * but previous operations might have left errors in the queue. */
+  ERR_clear_error ();
+
   SSL_CTX_set_tlsext_status_cb (ctx->ssl_ctx, status_cb_wrapper);
 
-  /* Check for OpenSSL errors - ERR_get_error consumes the error */
-  unsigned long err = ERR_get_error ();
-  if (err != 0)
-    {
-      char err_buf[SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE];
-      ERR_error_string_n (err, err_buf, sizeof (err_buf));
-      RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Failed to set OCSP status cb: %s",
-                           err_buf);
-    }
+  /* SSL_CTX_set_tlsext_status_cb doesn't return errors directly,
+   * so we don't check ERR_get_error here - any errors from callback
+   * execution will be reported when the callback is invoked. */
 }
 
 /* ============================================================================

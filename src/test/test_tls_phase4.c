@@ -413,24 +413,12 @@ TEST (ocsp_gen_callback_api)
   SocketTLSContext_T ctx
       = SocketTLSContext_new_server (cert_file, key_file, NULL);
 
-  TRY
-  {
-    /* Set NULL no raise */
-    SocketTLSContext_set_ocsp_gen_callback (ctx, NULL, NULL);
+  /* Set NULL no raise */
+  SocketTLSContext_set_ocsp_gen_callback (ctx, NULL, NULL);
 
-    /* Set mock cb no raise (mock_ocsp_gen_cb defined at file scope) */
-    SocketTLSContext_set_ocsp_gen_callback (ctx, mock_ocsp_gen_cb, NULL);
-    SocketTLSContext_set_ocsp_gen_callback (ctx, mock_ocsp_gen_cb, NULL);
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    /* OCSP callbacks may fail on minimal test certificates - this is
-     * acceptable as long as the API doesn't crash. Some OpenSSL versions
-     * reject OCSP status callbacks on certificates without proper extensions.
-     */
-    (void)0;
-  }
-  END_TRY;
+  /* Set mock cb no raise (mock_ocsp_gen_cb defined at file scope) */
+  SocketTLSContext_set_ocsp_gen_callback (ctx, mock_ocsp_gen_cb, NULL);
+  SocketTLSContext_set_ocsp_gen_callback (ctx, mock_ocsp_gen_cb, NULL);
 
   SocketTLSContext_free (&ctx);
   remove_test_certs (cert_file, key_file);
