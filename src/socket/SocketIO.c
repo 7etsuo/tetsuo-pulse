@@ -291,12 +291,12 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
 
 /**
  * socket_is_tls_enabled - Check if TLS is enabled
- * @socket: Socket instance
+ * @socket: Socket instance (read-only)
  *
  * Returns: 1 if enabled, 0 otherwise
  */
 int
-socket_is_tls_enabled (T socket)
+socket_is_tls_enabled (const T socket)
 {
   assert (socket);
 #ifdef SOCKET_HAS_TLS
@@ -308,11 +308,11 @@ socket_is_tls_enabled (T socket)
 
 /**
  * socket_tls_want_read - Check if TLS wants read
- * @socket: Socket instance
+ * @socket: Socket instance (read-only)
  * Returns: 1 if want read, 0 otherwise
  */
 int
-socket_tls_want_read (T socket)
+socket_tls_want_read (const T socket)
 {
   assert (socket);
 #ifdef SOCKET_HAS_TLS
@@ -329,11 +329,11 @@ socket_tls_want_read (T socket)
 
 /**
  * socket_tls_want_write - Check if TLS wants write
- * @socket: Socket instance
+ * @socket: Socket instance (read-only)
  * Returns: 1 if want write, 0 otherwise
  */
 int
-socket_tls_want_write (T socket)
+socket_tls_want_write (const T socket)
 {
   assert (socket);
 #ifdef SOCKET_HAS_TLS

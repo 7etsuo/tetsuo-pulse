@@ -925,7 +925,7 @@ SocketAsync_free (T *async)
 }
 
 int
-SocketAsync_is_available (T async)
+SocketAsync_is_available (const T async)
 {
   if (!async)
     return 0;
@@ -933,7 +933,7 @@ SocketAsync_is_available (T async)
 }
 
 const char *
-SocketAsync_backend_name (T async)
+SocketAsync_backend_name (const T async)
 {
   if (!async)
     return "unavailable";

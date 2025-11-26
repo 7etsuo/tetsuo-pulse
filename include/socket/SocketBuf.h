@@ -145,11 +145,11 @@ extern void SocketBuf_reserve (T buf, size_t min_space);
 
 /**
  * SocketBuf_check_invariants - Runtime validation (no asserts)
- * @buf: Buffer to check
+ * @buf: Buffer to check (read-only)
  * Returns: true if valid invariants hold
  * Used for runtime security checks in production (rules preference)
  */
-extern bool SocketBuf_check_invariants (T buf);
+extern bool SocketBuf_check_invariants (const T buf);
 
 /**
  * SocketBuf_readptr - Get direct read pointer

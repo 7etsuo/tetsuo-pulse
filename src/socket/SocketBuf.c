@@ -60,13 +60,13 @@ struct T
 
 /**
  * SocketBuf_check_invariants - Validate buffer invariants
- * @buf: Buffer to check
+ * @buf: Buffer to check (read-only)
  *
  * Returns: true if all invariants hold, false otherwise
  * Thread-safe: No (caller must ensure exclusive access)
  */
 bool
-SocketBuf_check_invariants (T buf)
+SocketBuf_check_invariants (const T buf)
 {
   if (!buf || !buf->data || buf->capacity == 0)
     return false;
@@ -229,13 +229,13 @@ SocketBuf_write (T buf, const void *data, size_t len)
 
 /**
  * circular_copy_from_buffer - Copy data from circular buffer at position
- * @buf: Source buffer
+ * @buf: Source buffer (read-only)
  * @dst: Destination data
  * @pos: Position in buffer
  * @len: Length to copy
  */
 static void
-circular_copy_from_buffer (T buf, char *dst, size_t pos, size_t len)
+circular_copy_from_buffer (const T buf, char *dst, size_t pos, size_t len)
 {
   assert (pos + len <= buf->capacity);
   memcpy (dst, buf->data + pos, len);
