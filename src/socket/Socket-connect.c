@@ -506,6 +506,7 @@ connect_validate_params (T socket, const char *host, int port)
 {
   assert (socket);
   assert (host);
+  (void)socket; /* Used only in assert when NDEBUG not defined */
   SocketCommon_validate_host_not_null (host, Socket_Failed);
   SocketCommon_validate_port (port, Socket_Failed);
 }
