@@ -1336,12 +1336,18 @@ he_all_attempts_done (const T he)
  * he_set_error - Set error message in context
  * @he: Happy Eyeballs context
  * @reason: Error message
+ *
+ * Uses strncpy instead of snprintf to avoid -Wrestrict warnings when
+ * GCC aggressively inlines and detects potential overlap with he->error_buf.
  */
 static void
 he_set_error (T he, const char *reason)
 {
   if (reason && he->error_buf[0] == '\0')
-    snprintf (he->error_buf, sizeof (he->error_buf), "%s", reason);
+    {
+      strncpy (he->error_buf, reason, sizeof (he->error_buf) - 1);
+      he->error_buf[sizeof (he->error_buf) - 1] = '\0';
+    }
 }
 
 /**
