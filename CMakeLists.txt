@@ -151,6 +151,11 @@ endif()
 add_library(socket_objects OBJECT ${LIB_SOURCES})
 target_include_directories(socket_objects PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
+# Add OpenSSL include directories to object library when TLS is enabled
+if(SOCKET_HAS_TLS AND OpenSSL_FOUND)
+    target_include_directories(socket_objects PRIVATE ${OPENSSL_INCLUDE_DIR})
+endif()
+
 # Static library
 add_library(socket_static STATIC $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_static PROPERTIES OUTPUT_NAME socket)
