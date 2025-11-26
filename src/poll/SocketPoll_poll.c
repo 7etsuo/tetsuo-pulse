@@ -104,6 +104,13 @@ ensure_fd_mapping (PollBackend_T backend, int fd)
   if (fd < backend->max_fd)
     return 0;
 
+  /* Check for integer overflow before expansion */
+  if (fd > INT_MAX - POLL_FD_MAP_EXPAND_INCREMENT)
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
+
   /* Expand mapping table */
   new_max = fd + POLL_FD_MAP_EXPAND_INCREMENT;
   new_mapping = calloc (new_max, sizeof (int));

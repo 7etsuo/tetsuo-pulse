@@ -2101,21 +2101,30 @@ sync_prepare_connections (T he)
  * @he: Happy Eyeballs context
  * @errmsg_copy: Destination buffer
  * @errmsg_size: Size of destination buffer
+ *
+ * Security: Uses "%s" format to safely copy error_buf contents.
+ * This prevents format string injection even if error_buf contains
+ * user-influenced data (e.g., from DNS error messages).
  */
 static void
 sync_copy_error_message (const T he, char *errmsg_copy, size_t errmsg_size)
 {
   if (he->error_buf[0])
+    /* SECURITY: Use %s to prevent format string injection from error_buf */
     snprintf (errmsg_copy, errmsg_size, "%s", he->error_buf);
 }
 
 /**
  * sync_raise_error_and_return - Raise exception with error message
  * @errmsg_copy: Error message buffer
+ *
+ * Security: Uses SOCKET_ERROR_MSG with "%s" format to safely pass
+ * user-influenced error messages without format string injection risk.
  */
 static Socket_T
 sync_raise_error_and_return (const char *errmsg_copy)
 {
+  /* SECURITY: %s format prevents format string injection from errmsg_copy */
   SOCKET_ERROR_MSG ("%s",
                     errmsg_copy[0] ? errmsg_copy : "Happy Eyeballs failed");
   RAISE_MODULE_ERROR (SocketHE_Failed);

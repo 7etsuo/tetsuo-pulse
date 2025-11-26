@@ -87,12 +87,15 @@ is_valid_label_char (char c, bool at_start)
  * Returns: true if within bounds (1 to SOCKET_DNS_MAX_LABEL_LENGTH)
  * Thread-safe: Yes - no shared state
  *
- * Validates that a DNS label has valid length per RFC 1035.
- * Labels must be between 1 and 63 characters inclusive.
+ * Validates that a DNS label has valid length per RFC 1035 Section 2.3.4.
+ * Labels must be between 1 and 63 characters inclusive (63 = max label length).
+ * A label_len of 0 indicates an empty label (e.g., consecutive dots ".."),
+ * which is invalid per RFC 1035.
  */
 static bool
 is_valid_label_length (int label_len)
 {
+  /* RFC 1035: max label length is 63; min is 1 (empty labels invalid) */
   return label_len > 0 && label_len <= SOCKET_DNS_MAX_LABEL_LENGTH;
 }
 
@@ -120,7 +123,8 @@ validate_hostname_label (const char *label, size_t *len)
     {
       if (*p == '.')
         {
-          /* Dot separator - validate completed label and reset */
+          /* Dot separator - validate completed label and reset
+           * Rejects consecutive dots (label_len=0) as empty labels per RFC 1035 */
           if (!is_valid_label_length (label_len))
             return 0;
           at_label_start = true;
