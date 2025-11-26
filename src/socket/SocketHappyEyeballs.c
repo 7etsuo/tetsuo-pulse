@@ -20,7 +20,6 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
 #include "dns/SocketDNS.h"
 #include "poll/SocketPoll.h"

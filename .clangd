@@ -1,0 +1,7 @@
+CompileFlags:
+  Add:
+    - -I
+    - include
+    - -D_GNU_SOURCE
+    - -DSOCKET_HAS_TLS
+
