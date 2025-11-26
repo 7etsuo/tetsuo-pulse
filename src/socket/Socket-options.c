@@ -187,14 +187,8 @@ validate_keepalive_parameters (int idle, int interval, int count)
 static void
 enable_socket_keepalive (T socket)
 {
-  int opt = 1;
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                  SOCKET_SO_KEEPALIVE, &opt, sizeof (opt))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to enable keepalive");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+  SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET,
+                               SOCKET_SO_KEEPALIVE, 1, Socket_Failed);
 }
 
 static void
@@ -254,15 +248,17 @@ void
 Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
 {
   int keepalive_enabled = 0;
+  int fd;
 
   assert (socket);
   assert (idle);
   assert (interval);
   assert (count);
 
+  fd = SocketBase_fd (socket->base);
+
   /* Get SO_KEEPALIVE flag */
-  if (SocketCommon_getoption_int (SocketBase_fd (socket->base),
-                                  SOCKET_SOL_SOCKET, SOCKET_SO_KEEPALIVE,
+  if (SocketCommon_getoption_int (fd, SOCKET_SOL_SOCKET, SOCKET_SO_KEEPALIVE,
                                   &keepalive_enabled, Socket_Failed)
       < 0)
     RAISE_MODULE_ERROR (Socket_Failed);
@@ -277,8 +273,7 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
 
     /* Get TCP_KEEPIDLE */
 #ifdef TCP_KEEPIDLE
-  if (SocketCommon_getoption_int (SocketBase_fd (socket->base),
-                                  SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPIDLE,
+  if (SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPIDLE,
                                   idle, Socket_Failed)
       < 0)
     RAISE_MODULE_ERROR (Socket_Failed);
@@ -288,8 +283,7 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
 
     /* Get TCP_KEEPINTVL */
 #ifdef TCP_KEEPINTVL
-  if (SocketCommon_getoption_int (SocketBase_fd (socket->base),
-                                  SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPINTVL,
+  if (SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPINTVL,
                                   interval, Socket_Failed)
       < 0)
     RAISE_MODULE_ERROR (Socket_Failed);
@@ -299,8 +293,7 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
 
     /* Get TCP_KEEPCNT */
 #ifdef TCP_KEEPCNT
-  if (SocketCommon_getoption_int (SocketBase_fd (socket->base),
-                                  SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPCNT,
+  if (SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPCNT,
                                   count, Socket_Failed)
       < 0)
     RAISE_MODULE_ERROR (Socket_Failed);
@@ -317,14 +310,8 @@ void
 Socket_setnodelay (T socket, int nodelay)
 {
   assert (socket);
-
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
-                  SOCKET_TCP_NODELAY, &nodelay, sizeof (nodelay))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set TCP_NODELAY");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
+                               SOCKET_TCP_NODELAY, nodelay, Socket_Failed);
 }
 
 int
@@ -395,14 +382,8 @@ Socket_setrcvbuf (T socket, int size)
 {
   assert (socket);
   assert (size > 0);
-
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                  SOCKET_SO_RCVBUF, &size, sizeof (size))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set SO_RCVBUF (size=%d)", size);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+  SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET,
+                               SOCKET_SO_RCVBUF, size, Socket_Failed);
 }
 
 void
@@ -410,14 +391,8 @@ Socket_setsndbuf (T socket, int size)
 {
   assert (socket);
   assert (size > 0);
-
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                  SOCKET_SO_SNDBUF, &size, sizeof (size))
-      < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to set SO_SNDBUF (size=%d)", size);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+  SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET,
+                               SOCKET_SO_SNDBUF, size, Socket_Failed);
 }
 
 int
