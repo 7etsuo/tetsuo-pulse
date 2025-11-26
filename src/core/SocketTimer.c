@@ -42,6 +42,7 @@
 #include "core/SocketConfig.h"
 #include "core/SocketTimer-private.h"
 #include "core/SocketTimer.h"
+#include "core/SocketUtil.h"
 
 /* ===========================================================================
  * Thread-Local Error Handling
@@ -63,7 +64,8 @@ const Except_T SocketTimer_Failed
 /* Error formatting macros */
 #define SOCKETTIMER_ERROR_FMT(fmt, ...)                                       \
   snprintf (sockettimer_error_buf, SOCKET_TIMER_ERROR_BUFSIZE,                \
-            fmt " (errno: %d - %s)", ##__VA_ARGS__, errno, strerror (errno))
+            fmt " (errno: %d - %s)", ##__VA_ARGS__, errno,                     \
+            Socket_safe_strerror (errno))
 
 #define SOCKETTIMER_ERROR_MSG(fmt, ...)                                       \
   snprintf (sockettimer_error_buf, SOCKET_TIMER_ERROR_BUFSIZE, fmt,           \
