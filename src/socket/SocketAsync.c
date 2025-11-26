@@ -812,7 +812,9 @@ submit_async_operation (T async, struct AsyncRequest *req)
     }
 #endif
 
-  /* No backend available */
+  /* No backend available - suppress unused warnings */
+  (void)async;
+  (void)req;
   errno = ENOTSUP;
   return -1;
 }
