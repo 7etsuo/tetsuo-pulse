@@ -449,6 +449,17 @@ reserve_migrate_data (T buf, char *new_data, size_t new_cap)
  *
  * Raises: SocketBuf_Failed on overflow or allocation failure
  * Thread-safe: No (modifies buffer)
+ *
+ * Memory note: This function allocates a new buffer from the arena and
+ * abandons the old buffer. Since arenas don't support individual frees,
+ * the old allocation remains until Arena_dispose(). This is acceptable
+ * because:
+ * - Buffer resizing is expected to be rare (exponential growth strategy)
+ * - Arena disposal reclaims all allocations together
+ * - Alternative (malloc/free) would complicate memory ownership
+ *
+ * For applications with frequent buffer resizing, consider using a larger
+ * initial capacity or a dedicated arena per buffer.
  */
 void
 SocketBuf_reserve (T buf, size_t min_space)
@@ -463,6 +474,8 @@ SocketBuf_reserve (T buf, size_t min_space)
       RAISE_MODULE_ERROR (SocketBuf_Failed);
     }
 
+  /* Arena allocation - old buffer remains allocated until arena disposal.
+   * See function doc for rationale on this acceptable memory behavior. */
   char *new_data = Arena_calloc (buf->arena, 1, new_cap, __FILE__, __LINE__);
   if (!new_data)
     {

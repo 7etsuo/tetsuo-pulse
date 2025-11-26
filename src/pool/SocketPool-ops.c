@@ -65,14 +65,25 @@ collect_excess_connections (T pool, size_t new_maxconns,
  *
  * Returns: 0 on success, -1 on failure
  * Thread-safe: Call with mutex held
+ *
+ * Security: Checks for integer overflow before size calculation to prevent
+ * heap buffer overflow from undersized allocation.
  */
 static int
 realloc_connections_array (T pool, size_t new_maxconns)
 {
   struct Connection *new_connections;
+  size_t alloc_size;
 
-  new_connections
-      = realloc (pool->connections, new_maxconns * sizeof (struct Connection));
+  /* Security: Check for integer overflow before multiplication */
+  if (new_maxconns > SIZE_MAX / sizeof (struct Connection))
+    {
+      SOCKET_ERROR_MSG ("Overflow in connections array size calculation");
+      return -1;
+    }
+
+  alloc_size = new_maxconns * sizeof (struct Connection);
+  new_connections = realloc (pool->connections, alloc_size);
   if (!new_connections)
     {
       SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot reallocate connections array");
@@ -778,17 +789,42 @@ alloc_async_context (T pool)
 }
 
 /**
+ * check_async_limit - Check if async pending limit reached
+ * @pool: Pool instance
+ *
+ * Returns: 1 if under limit, 0 if limit reached
+ * Thread-safe: Call with mutex held
+ *
+ * Security: Prevents resource exhaustion from excessive concurrent
+ * async connect operations.
+ */
+static int
+check_async_limit (const T pool)
+{
+  return pool->async_pending_count < SOCKET_POOL_MAX_ASYNC_PENDING;
+}
+
+/**
  * add_async_context - Add context to pool's list
  * @pool: Pool instance
  * @ctx: Context to add
  *
+ * Returns: 1 on success, 0 if limit reached
  * Thread-safe: Call with mutex held
+ *
+ * Security: Enforces SOCKET_POOL_MAX_ASYNC_PENDING limit to prevent
+ * resource exhaustion attacks via excessive concurrent connections.
  */
-static void
+static int
 add_async_context (T pool, AsyncConnectContext_T ctx)
 {
+  if (!check_async_limit (pool))
+    return 0;
+
   ctx->next = pool->async_ctx;
   pool->async_ctx = ctx;
+  pool->async_pending_count++;
+  return 1;
 }
 
 /**
@@ -807,6 +843,7 @@ remove_async_context (T pool, AsyncConnectContext_T ctx)
       if (*pp == ctx)
         {
           *pp = ctx->next;
+          pool->async_pending_count--;
           return;
         }
       pp = &(*pp)->next;
@@ -992,7 +1029,13 @@ SocketPool_connect_async (T pool, const char *host, int port,
     ctx->user_data = data;
     ctx->next = NULL;
 
-    add_async_context (pool, ctx);
+    /* Security: Check async pending limit before adding */
+    if (!add_async_context (pool, ctx))
+      {
+        SOCKET_ERROR_MSG ("Async connect limit reached (%d pending)",
+                          SOCKET_POOL_MAX_ASYNC_PENDING);
+        RAISE_POOL_ERROR (SocketPool_Failed);
+      }
   }
   ELSE
   {

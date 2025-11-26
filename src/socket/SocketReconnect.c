@@ -441,6 +441,10 @@ handle_connect_success (T conn)
   conn->last_success_time_ms = socketreconnect_get_time_ms ();
   conn->last_health_check_ms = conn->last_success_time_ms;
 
+  /* Clear error buffer on success to prevent stale error messages */
+  conn->error_buf[0] = '\0';
+  conn->last_error = 0;
+
   update_circuit_breaker (conn, 1);
   transition_state (conn, RECONNECT_CONNECTED);
 
@@ -611,8 +615,17 @@ SocketReconnect_new (const char *host, int port,
   else
     SocketReconnect_policy_defaults (&conn->policy);
 
-  /* Copy hostname */
+  /* Copy hostname with length validation */
   host_len = strlen (host) + 1;
+  if (host_len > SOCKET_ERROR_MAX_HOSTNAME + 1)
+    {
+      Arena_dispose (&conn->arena);
+      free (conn);
+      SOCKET_ERROR_FMT ("Hostname too long (%zu > %d max)",
+                        host_len - 1, SOCKET_ERROR_MAX_HOSTNAME);
+      RAISE_MODULE_ERROR (SocketReconnect_Failed);
+    }
+
   conn->host = Arena_alloc (conn->arena, host_len, __FILE__, __LINE__);
   if (!conn->host)
     {

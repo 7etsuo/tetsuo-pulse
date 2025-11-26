@@ -365,6 +365,7 @@ initialize_pool_fields (T pool, Arena_T arena, size_t maxconns, size_t bufsize)
   pool->arena = arena;
   pool->dns = NULL;
   pool->async_ctx = NULL;
+  pool->async_pending_count = 0;
 }
 
 /**

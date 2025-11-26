@@ -113,6 +113,7 @@ struct T
   pthread_mutex_t mutex;            /**< Thread safety mutex */
   SocketDNS_T dns;                  /**< Internal DNS resolver (lazy init) */
   AsyncConnectContext_T async_ctx;  /**< Linked list of pending async connects */
+  size_t async_pending_count;       /**< Count of pending async connects (security limit) */
   
   /* Reconnection support */
   SocketReconnect_Policy_T reconnect_policy; /**< Default reconnection policy */

@@ -44,8 +44,24 @@ typedef struct Connection *Connection_T;
  * @conn: Completed connection or NULL on error
  * @error: 0 on success, error code on failure
  * @data: User data from SocketPool_connect_async
+ *
  * Called when async connection (DNS resolve + connect + pool add) completes.
- * Thread-safe: Called from DNS worker thread.
+ *
+ * THREAD SAFETY WARNING:
+ * This callback is invoked from a DNS worker thread, NOT the main thread.
+ * Callback implementations MUST be thread-safe and MUST NOT:
+ * - Access thread-local storage from the main thread
+ * - Call non-thread-safe functions
+ * - Modify shared state without proper synchronization
+ *
+ * Common safe patterns:
+ * - Use mutex protection when accessing shared data
+ * - Use atomic operations for simple counters/flags
+ * - Queue work items for main thread processing
+ * - Signal condition variables or write to self-pipes
+ *
+ * The pool mutex is NOT held during callback invocation, so the callback
+ * MAY safely call other SocketPool functions.
  */
 typedef void (*SocketPool_ConnectCallback) (Connection_T conn, int error, void *data);
 
@@ -98,14 +114,23 @@ extern void SocketPool_free (T *pool);
  * @pool: Pool instance
  * @host: Remote hostname or IP address
  * @port: Remote port number
- * @callback: Completion callback
+ * @callback: Completion callback (see SocketPool_ConnectCallback for thread safety)
  * @data: User data passed to callback
+ *
  * Returns: SocketDNS_Request_T for monitoring completion
- * Raises: SocketPool_Failed on invalid params or allocation error
+ * Raises: SocketPool_Failed on invalid params, allocation error, or limit reached
  * Thread-safe: Yes
+ *
  * Starts async DNS resolution + connect + pool add. On completion:
  * - Success: callback(conn, 0, data) with Connection_T added to pool
  * - Failure: callback(NULL, error_code, data)
+ *
+ * IMPORTANT: The callback is invoked from a DNS worker thread, not the calling
+ * thread. See SocketPool_ConnectCallback documentation for thread safety requirements.
+ *
+ * Security: Limited to SOCKET_POOL_MAX_ASYNC_PENDING concurrent operations
+ * to prevent resource exhaustion attacks.
+ *
  * Integrates with SocketDNS for non-blocking resolution.
  * SocketPool_add is called internally on successful connect.
  * Caller owns no resources; pool manages connection lifecycle.
@@ -244,8 +269,13 @@ extern void *Connection_data (const Connection_T conn);
 
 /**
  * Connection_setdata - Set user data
- * @conn: Connection
- * @data: Data
+ * @conn: Connection (must not be NULL)
+ * @data: Data pointer to store
+ *
+ * Thread-safe: NO - caller must synchronize access when multiple threads
+ * may access the same connection simultaneously. Other Connection_*
+ * accessor functions are read-only and thread-safe, but setdata modifies
+ * state and requires external synchronization if called concurrently.
  */
 extern void Connection_setdata (Connection_T conn, void *data);
 

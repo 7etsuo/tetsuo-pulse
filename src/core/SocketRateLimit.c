@@ -40,14 +40,18 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketRateLimit);
 
 /**
  * ratelimit_calculate_tokens_to_add - Calculate tokens from elapsed time
- * @elapsed_ms: Elapsed time in milliseconds
+ * @elapsed_ms: Elapsed time in milliseconds (must be non-negative)
  * @tokens_per_sec: Token refill rate
  *
- * Returns: Number of tokens to add
+ * Returns: Number of tokens to add (0 if elapsed_ms <= 0)
  */
 static size_t
 ratelimit_calculate_tokens_to_add (int64_t elapsed_ms, size_t tokens_per_sec)
 {
+  /* Defense-in-depth: guard against negative elapsed time before cast */
+  if (elapsed_ms <= 0)
+    return 0;
+
   return (size_t)(((uint64_t)elapsed_ms * tokens_per_sec)
                   / SOCKET_MS_PER_SECOND);
 }
@@ -83,6 +87,11 @@ ratelimit_calculate_wait_ms (size_t needed, size_t tokens_per_sec)
  * @now_ms: Current time in milliseconds
  *
  * Returns: Elapsed milliseconds (0 if negative or clock backward)
+ *
+ * Security: Clamps elapsed time to SOCKET_MS_PER_SECOND (1 second) maximum
+ * to prevent token burst attacks via clock manipulation (e.g., NTP adjustments,
+ * VM time changes). This limits the maximum tokens added per refill to
+ * tokens_per_sec, preventing bucket overflow exploits.
  */
 static int64_t
 ratelimit_calculate_elapsed (T limiter, int64_t now_ms)
@@ -91,6 +100,10 @@ ratelimit_calculate_elapsed (T limiter, int64_t now_ms)
 
   assert (limiter);
   elapsed_ms = now_ms - limiter->last_refill_ms;
+
+  /* Clamp to prevent token burst from clock jumps */
+  if (elapsed_ms > SOCKET_MS_PER_SECOND)
+    elapsed_ms = SOCKET_MS_PER_SECOND;
 
   return (elapsed_ms > 0) ? elapsed_ms : 0;
 }

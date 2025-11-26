@@ -606,7 +606,7 @@ allocate_request_structure (struct SocketDNS_T *dns)
  * @req: Request structure to initialize
  * @host: Hostname to copy (NULL allowed for wildcard bind)
  * @host_len: Length of hostname (0 if host is NULL)
- * Raises: SocketDNS_Failed on allocation failure
+ * Raises: SocketDNS_Failed on allocation failure or overflow
  * Allocates memory for hostname and copies it. Sets req->host to NULL if host
  * is NULL.
  */
@@ -619,6 +619,13 @@ allocate_request_hostname (struct SocketDNS_T *dns,
     {
       req->host = NULL;
       return;
+    }
+
+  /* Overflow check - defensive (already limited by validate_hostname) */
+  if (host_len > SIZE_MAX - 1)
+    {
+      SOCKET_ERROR_MSG ("Hostname length overflow");
+      RAISE_DNS_ERROR (SocketDNS_Failed);
     }
 
   req->host = ALLOC (dns->arena, host_len + 1);

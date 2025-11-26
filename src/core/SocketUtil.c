@@ -40,14 +40,20 @@
  * TIME UTILITIES SUBSYSTEM
  * ===========================================================================*/
 
+/* Flag for one-time CLOCK_MONOTONIC fallback warning */
+static volatile int monotonic_fallback_warned = 0;
+
 /**
  * Socket_get_monotonic_ms - Get current monotonic time in milliseconds
  *
  * Returns: Current monotonic time in milliseconds, or 0 on failure
- * Thread-safe: Yes (no shared state)
+ * Thread-safe: Yes (no shared state modified except one-time warning flag)
  *
  * Uses CLOCK_MONOTONIC with CLOCK_REALTIME fallback. Returns 0 if both
  * clocks fail (should never happen on POSIX systems).
+ *
+ * Security: CLOCK_REALTIME fallback is vulnerable to time manipulation
+ * attacks. A one-time warning is emitted if fallback occurs.
  */
 int64_t
 Socket_get_monotonic_ms (void)
@@ -59,10 +65,20 @@ Socket_get_monotonic_ms (void)
     return (int64_t)ts.tv_sec * SOCKET_MS_PER_SECOND
            + (int64_t)ts.tv_nsec / SOCKET_NS_PER_MS;
 
-  /* Fall back to realtime clock */
+  /* Fall back to realtime clock with one-time security warning */
   if (clock_gettime (CLOCK_REALTIME, &ts) == 0)
-    return (int64_t)ts.tv_sec * SOCKET_MS_PER_SECOND
-           + (int64_t)ts.tv_nsec / SOCKET_NS_PER_MS;
+    {
+      /* Emit warning once - race on flag is benign (may warn twice) */
+      if (!monotonic_fallback_warned)
+        {
+          monotonic_fallback_warned = 1;
+          fprintf (stderr,
+                   "WARNING: CLOCK_MONOTONIC unavailable, using "
+                   "CLOCK_REALTIME (vulnerable to time manipulation)\n");
+        }
+      return (int64_t)ts.tv_sec * SOCKET_MS_PER_SECOND
+             + (int64_t)ts.tv_nsec / SOCKET_NS_PER_MS;
+    }
 
   return 0;
 }
@@ -218,7 +234,7 @@ Socket_safe_strerror (int errnum)
 
   if (errnum == 0)
     {
-      strcpy (errbuf, "No error");
+      snprintf (errbuf, sizeof (errbuf), "No error");
       return errbuf;
     }
 
@@ -228,7 +244,7 @@ Socket_safe_strerror (int errnum)
 #else
   /* POSIX: returns int, 0 on success */
   if (strerror_r (errnum, errbuf, sizeof (errbuf)) != 0)
-    strcpy (errbuf, "Unknown error");
+    snprintf (errbuf, sizeof (errbuf), "Unknown error");
   return errbuf;
 #endif
 }
@@ -279,7 +295,10 @@ socketlog_format_timestamp (char *buf, size_t bufsize)
 
   if (!time_ok
       || strftime (buf, bufsize, SOCKETLOG_TIMESTAMP_FORMAT, &tm_buf) == 0)
-    strncpy (buf, SOCKETLOG_DEFAULT_TIMESTAMP, bufsize);
+    {
+      strncpy (buf, SOCKETLOG_DEFAULT_TIMESTAMP, bufsize);
+      buf[bufsize - 1] = '\0'; /* Ensure null termination */
+    }
 
   return buf;
 }
@@ -432,12 +451,15 @@ SocketLog_emitf (SocketLogLevel level, const char *component, const char *fmt,
  *
  * WARNING: fmt must be a compile-time literal to prevent format string
  * attacks. Do not use user-controlled format strings.
+ *
+ * If the formatted message is truncated, appends "..." indicator.
  */
 void
 SocketLog_emitfv (SocketLogLevel level, const char *component, const char *fmt,
                   va_list args)
 {
   char buffer[SOCKET_LOG_BUFFER_SIZE];
+  int written;
 
   if (!fmt)
     {
@@ -445,7 +467,17 @@ SocketLog_emitfv (SocketLogLevel level, const char *component, const char *fmt,
       return;
     }
 
-  vsnprintf (buffer, sizeof (buffer), fmt, args);
+  written = vsnprintf (buffer, sizeof (buffer), fmt, args);
+
+  /* Indicate truncation if message was too long */
+  if (written >= (int)sizeof (buffer) && sizeof (buffer) >= 4)
+    {
+      buffer[sizeof (buffer) - 4] = '.';
+      buffer[sizeof (buffer) - 3] = '.';
+      buffer[sizeof (buffer) - 2] = '.';
+      buffer[sizeof (buffer) - 1] = '\0';
+    }
+
   SocketLog_emit (level, component, buffer);
 }
 

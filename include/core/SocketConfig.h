@@ -410,6 +410,15 @@ typedef struct SocketTimeouts
 #define SOCKET_POOL_MAX_BATCH_ACCEPTS 1000
 #endif
 
+/**
+ * Maximum number of pending async connect operations per pool.
+ * Prevents resource exhaustion from excessive concurrent connect attempts.
+ * Security: Limits memory consumption from async context allocations.
+ */
+#ifndef SOCKET_POOL_MAX_ASYNC_PENDING
+#define SOCKET_POOL_MAX_ASYNC_PENDING 1000
+#endif
+
 #ifndef SOCKET_PERCENTAGE_DIVISOR
 #define SOCKET_PERCENTAGE_DIVISOR 100
 #endif

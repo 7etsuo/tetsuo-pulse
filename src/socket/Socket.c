@@ -1122,10 +1122,17 @@ Socket_accept (T socket)
  * @type: Socket type to validate
  *
  * Raises: Socket_Failed if type is invalid
+ *
+ * Note: SOCK_SEQPACKET is intentionally excluded despite being valid for
+ * Unix domain sockets. It provides connection-oriented, reliable, atomic
+ * record delivery but has limited portability (not available on all Unix
+ * variants) and is rarely needed in practice. Applications requiring
+ * message boundaries should use SOCK_DGRAM which is universally supported.
  */
 static void
 socketpair_validate_type (int type)
 {
+  /* Only SOCK_STREAM and SOCK_DGRAM supported - see doc for SOCK_SEQPACKET */
   if (type != SOCK_STREAM && type != SOCK_DGRAM)
     {
       SOCKET_ERROR_MSG ("Invalid socket type for socketpair: %d (must be "

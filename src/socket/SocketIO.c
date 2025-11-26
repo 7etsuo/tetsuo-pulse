@@ -517,6 +517,14 @@ static ssize_t
 socket_send_tls (T socket, const void *buf, size_t len)
 {
   SSL *ssl = socket_validate_tls_ready (socket);
+
+  /* Validate size fits in int to prevent truncation (SSL_write takes int) */
+  if (len > INT_MAX)
+    {
+      SOCKET_ERROR_FMT ("TLS send size exceeds INT_MAX (len=%zu)", len);
+      RAISE_MODULE_ERROR (SocketTLS_Failed);
+    }
+
   int ssl_result = SSL_write (ssl, buf, (int)len);
 
   if (ssl_result <= 0)
@@ -544,6 +552,14 @@ static ssize_t
 socket_recv_tls (T socket, void *buf, size_t len)
 {
   SSL *ssl = socket_validate_tls_ready (socket);
+
+  /* Validate size fits in int to prevent truncation (SSL_read takes int) */
+  if (len > INT_MAX)
+    {
+      SOCKET_ERROR_FMT ("TLS recv size exceeds INT_MAX (len=%zu)", len);
+      RAISE_MODULE_ERROR (SocketTLS_Failed);
+    }
+
   int ssl_result = SSL_read (ssl, buf, (int)len);
 
   if (ssl_result <= 0)
@@ -570,8 +586,12 @@ socket_recv_tls (T socket, void *buf, size_t len)
  * @buffer_size: Size of destination buffer
  *
  * Returns: Total bytes copied
- * Raises: Socket_Failed if buffer too small
+ * Raises: Socket_Failed if buffer too small or overflow detected
  * Thread-safe: Yes (operates on local data)
+ *
+ * Security: Pre-validates total iovec size using SocketCommon_calculate_total_iov_len
+ * which performs overflow-safe summation. This prevents integer overflow
+ * attacks that could bypass the per-iteration buffer bounds check.
  */
 static size_t
 copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer,
@@ -579,13 +599,22 @@ copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer,
 {
   size_t offset = 0;
 
+  /* Pre-validate total size with overflow protection */
+  size_t total = SocketCommon_calculate_total_iov_len (iov, iovcnt);
+  if (total == 0 && iovcnt > 0)
+    {
+      SOCKET_ERROR_MSG ("iovec total size overflow or invalid");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  if (total > buffer_size)
+    {
+      SOCKET_ERROR_FMT ("Buffer too small for iovec (need %zu, have %zu)",
+                        total, buffer_size);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
   for (int i = 0; i < iovcnt; i++)
     {
-      if (offset + iov[i].iov_len > buffer_size)
-        {
-          SOCKET_ERROR_MSG ("Buffer too small for iovec copy");
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
       memcpy ((char *)buffer + offset, iov[i].iov_base, iov[i].iov_len);
       offset += iov[i].iov_len;
     }
@@ -638,6 +667,14 @@ socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
   SSL *ssl = socket_validate_tls_ready (socket);
   size_t total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
+  /* Validate total size fits in int to prevent truncation (SSL_write takes int) */
+  if (total_len > INT_MAX)
+    {
+      SOCKET_ERROR_FMT ("TLS sendv size exceeds INT_MAX (total_len=%zu)",
+                        total_len);
+      RAISE_MODULE_ERROR (SocketTLS_Failed);
+    }
+
   Arena_T arena = SocketBase_arena (socket->base);
   void *temp_buf = Arena_calloc (arena, total_len, 1, __FILE__, __LINE__);
   if (!temp_buf)
@@ -677,6 +714,14 @@ socket_recvv_tls (T socket, struct iovec *iov, int iovcnt)
 {
   SSL *ssl = socket_validate_tls_ready (socket);
   size_t total_capacity = SocketCommon_calculate_total_iov_len (iov, iovcnt);
+
+  /* Validate total size fits in int to prevent truncation (SSL_read takes int) */
+  if (total_capacity > INT_MAX)
+    {
+      SOCKET_ERROR_FMT ("TLS recvv size exceeds INT_MAX (total_capacity=%zu)",
+                        total_capacity);
+      RAISE_MODULE_ERROR (SocketTLS_Failed);
+    }
 
   Arena_T arena = SocketBase_arena (socket->base);
   void *temp_buf = Arena_calloc (arena, total_capacity, 1, __FILE__, __LINE__);

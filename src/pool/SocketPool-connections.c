@@ -272,6 +272,10 @@ SocketPool_connections_reset_slot (Connection_T conn)
  *
  * Returns: Non-zero if session is expired
  * Thread-safe: Yes - uses OpenSSL thread-safe accessors
+ *
+ * Security: Uses subtraction instead of addition to avoid integer overflow
+ * when session timestamp or timeout has extreme values. If current time is
+ * before session time (clock went backwards), session is considered valid.
  */
 static int
 session_is_expired (SSL_SESSION *sess, time_t now)
@@ -279,7 +283,13 @@ session_is_expired (SSL_SESSION *sess, time_t now)
   time_t sess_time = SSL_SESSION_get_time (sess);
   long sess_timeout = SSL_SESSION_get_timeout (sess);
 
-  return now >= sess_time + sess_timeout;
+  /* Security: Avoid overflow by using subtraction instead of addition.
+   * If now < sess_time (clock went backwards), session is not expired. */
+  if (now < sess_time)
+    return 0;
+
+  /* Safe: now >= sess_time, so subtraction won't underflow */
+  return (now - sess_time) >= sess_timeout;
 }
 
 /**

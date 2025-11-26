@@ -96,6 +96,12 @@ struct T
  *
  * Uses DJB2 hash: hash = hash * 33 + c
  * The multiplication by 33 is optimized as (hash << 5) + hash.
+ *
+ * Security note: DJB2 is a fast, simple hash for load distribution across
+ * hash buckets. It is NOT a cryptographic hash and should NOT be used for
+ * security-sensitive purposes (signatures, MACs, etc.). For this use case
+ * (IP connection tracking), it provides adequate distribution. If hash
+ * collision attacks are a concern, consider SipHash or a keyed hash.
  */
 static unsigned
 ip_hash (const char *ip, size_t bucket_count)
