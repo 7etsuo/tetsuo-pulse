@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "core/SocketConfig.h"
 #include "poll/SocketPoll_backend.h"
 
 /* Backend instance structure */
@@ -48,7 +49,7 @@ backend_new (int maxevents)
   backend->events = calloc (maxevents, sizeof (struct kevent));
   if (!backend->events)
     {
-      close (backend->kq);
+      SAFE_CLOSE (backend->kq);
       free (backend);
       return NULL;
     }
@@ -62,8 +63,7 @@ backend_free (PollBackend_T backend)
 {
   assert (backend);
 
-  if (backend->kq >= 0)
-    close (backend->kq);
+  SAFE_CLOSE (backend->kq);
 
   if (backend->events)
     free (backend->events);

@@ -16,7 +16,7 @@
 
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
-#include "core/SocketMetrics.h"
+#include "core/SocketUtil.h"
 #include "socket/SocketCommon.h"
 #include <stdbool.h>
 #include "socket/Socket.h"  /* For SocketTimeouts_T if not in config */

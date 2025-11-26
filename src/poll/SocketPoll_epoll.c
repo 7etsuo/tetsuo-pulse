@@ -13,6 +13,7 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
+#include "core/SocketConfig.h"
 #include "poll/SocketPoll_backend.h"
 
 /* Backend instance structure */
@@ -44,7 +45,7 @@ backend_new (int maxevents)
   backend->events = calloc (maxevents, sizeof (struct epoll_event));
   if (!backend->events)
     {
-      close (backend->epfd);
+      SAFE_CLOSE (backend->epfd);
       free (backend);
       return NULL;
     }
@@ -58,8 +59,7 @@ backend_free (PollBackend_T backend)
 {
   assert (backend);
 
-  if (backend->epfd >= 0)
-    close (backend->epfd);
+  SAFE_CLOSE (backend->epfd);
 
   if (backend->events)
     free (backend->events);

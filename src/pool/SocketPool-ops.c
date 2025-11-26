@@ -25,9 +25,6 @@
 
 #define T SocketPool_T
 
-/** Percentage divisor for pre-warm calculations */
-#define PERCENTAGE_DIVISOR 100
-
 /* ============================================================================
  * Pool Resize Operations
  * ============================================================================ */
@@ -305,7 +302,7 @@ SocketPool_prewarm (T pool, int percentage)
 
   pthread_mutex_lock (&pool->mutex);
 
-  prewarm_count = (pool->maxconns * (size_t)percentage) / PERCENTAGE_DIVISOR;
+  prewarm_count = (pool->maxconns * (size_t)percentage) / SOCKET_PERCENTAGE_DIVISOR;
 
   conn = pool->free_list;
   while (conn && allocated < prewarm_count)
@@ -438,6 +435,118 @@ accept_connection_direct (int server_fd)
 }
 
 /**
+ * validate_batch_params - Validate batch accept parameters
+ * @pool: Pool instance
+ * @server: Server socket
+ * @max_accepts: Maximum to accept
+ * @accepted: Output array
+ *
+ * Returns: 1 if valid, 0 if invalid
+ */
+static int
+validate_batch_params (T pool, Socket_T server, int max_accepts,
+                       Socket_T *accepted)
+{
+  if (!pool || !server || !accepted)
+    return 0;
+
+  if (max_accepts <= 0 || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS)
+    {
+      SOCKET_ERROR_MSG ("Invalid max_accepts %d (must be 1-%d)", max_accepts,
+                        SOCKET_POOL_MAX_BATCH_ACCEPTS);
+      return 0;
+    }
+  return 1;
+}
+
+/**
+ * get_available_slots - Get available pool slots
+ * @pool: Pool instance
+ *
+ * Returns: Number of available slots (>= 0)
+ * Thread-safe: Yes - uses internal mutex
+ */
+static int
+get_available_slots (T pool)
+{
+  int available;
+  pthread_mutex_lock (&pool->mutex);
+  available = (int)(pool->maxconns - pool->count);
+  pthread_mutex_unlock (&pool->mutex);
+  return available > 0 ? available : 0;
+}
+
+/**
+ * wrap_fd_as_socket - Create Socket_T from file descriptor
+ * @newfd: File descriptor to wrap
+ *
+ * Returns: Socket_T on success, NULL on failure (fd closed on error)
+ */
+static Socket_T
+wrap_fd_as_socket (int newfd)
+{
+  volatile Socket_T sock = NULL;
+  TRY { sock = Socket_new_from_fd (newfd); }
+  EXCEPT (Socket_Failed)
+  {
+    SAFE_CLOSE (newfd);
+    return NULL;
+  }
+  END_TRY;
+  return sock;
+}
+
+/**
+ * try_add_socket_to_pool - Add socket to pool
+ * @pool: Pool instance
+ * @sock: Socket to add
+ *
+ * Returns: 1 on success, 0 on failure (socket freed on error)
+ */
+static int
+try_add_socket_to_pool (T pool, Socket_T *sock)
+{
+  Connection_T conn = SocketPool_add (pool, *sock);
+  if (!conn)
+    {
+      Socket_free (sock);
+      return 0;
+    }
+  return 1;
+}
+
+/**
+ * accept_one_connection - Accept and add one connection
+ * @pool: Pool instance
+ * @server_fd: Server file descriptor
+ * @accepted: Output socket pointer
+ * @count: Current accepted count (for error messages)
+ *
+ * Returns: 1 on success, 0 on would-block, -1 on error
+ */
+static int
+accept_one_connection (T pool, int server_fd, Socket_T *accepted, int count)
+{
+  int newfd = accept_connection_direct (server_fd);
+  if (newfd < 0)
+    {
+      if (errno != EAGAIN && errno != EWOULDBLOCK)
+        SOCKET_ERROR_MSG ("accept() failed (accepted %d so far)", count);
+      return 0;
+    }
+
+  Socket_T sock = wrap_fd_as_socket (newfd);
+  if (!sock)
+    return -1;
+
+  if (!try_add_socket_to_pool (pool, &sock))
+    return -1;
+
+  *accepted = sock;
+  return 1;
+}
+
+/**
  * SocketPool_accept_batch - Accept multiple connections from server socket
  * @pool: Pool instance
  * @server: Server socket to accept from (must be listening and non-blocking)
@@ -454,76 +563,32 @@ accept_connection_direct (int server_fd)
  * Uses accept4() on Linux (SOCK_CLOEXEC | SOCK_NONBLOCK) for efficiency.
  * Falls back to accept() + fcntl() on other platforms.
  * All accepted sockets are automatically added to the pool.
- *
- * Performance: O(n) where n is number accepted, but much faster than
- * individual SocketPool_add() calls due to reduced mutex contention.
  */
 int
 SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
                          Socket_T *accepted)
 {
   int count = 0;
-  int server_fd;
-  int available;
-  volatile int local_max_accepts = max_accepts;
+  int limit;
 
-  if (!pool || !server || !accepted)
+  if (!validate_batch_params (pool, server, max_accepts, accepted))
     return 0;
 
-  if (max_accepts <= 0 || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS)
-    {
-      SOCKET_ERROR_MSG ("Invalid max_accepts %d (must be 1-%d)", max_accepts,
-                        SOCKET_POOL_MAX_BATCH_ACCEPTS);
-      return 0;
-    }
-
-  server_fd = Socket_fd (server);
-
-  /* Check available pool slots */
-  pthread_mutex_lock (&pool->mutex);
-  available = (int)(pool->maxconns - pool->count);
-  pthread_mutex_unlock (&pool->mutex);
-
-  if (available <= 0)
+  limit = get_available_slots (pool);
+  if (limit <= 0)
     return 0;
 
-  if (local_max_accepts > available)
-    local_max_accepts = available;
+  if (max_accepts < limit)
+    limit = max_accepts;
 
-  /* Accept loop - minimize lock time */
-  for (int i = 0; i < local_max_accepts; i++)
+  int server_fd = Socket_fd (server);
+  for (int i = 0; i < limit; i++)
     {
-      int newfd = accept_connection_direct (server_fd);
-      if (newfd < 0)
-        {
-          if (errno != EAGAIN && errno != EWOULDBLOCK)
-            {
-              SOCKET_ERROR_MSG (
-                  "accept() failed during batch (accepted %d so far)", count);
-            }
-          break;
-        }
-
-      Socket_T sock = NULL;
-      TRY { sock = Socket_new_from_fd (newfd); }
-      EXCEPT (Socket_Failed)
-      {
-        SAFE_CLOSE (newfd);
+      int result = accept_one_connection (pool, server_fd, &accepted[count],
+                                          count);
+      if (result <= 0)
         break;
-      }
-      END_TRY;
-
-      /* sock is valid here - Socket_new_from_fd raises on failure */
-      Connection_T conn = SocketPool_add (pool, sock);
-      if (conn)
-        {
-          accepted[count++] = sock;
-        }
-      else
-        {
-          Socket_free (&sock);
-          break;
-        }
+      count++;
     }
 
   return count;
@@ -655,6 +720,272 @@ SocketPool_prepare_connection (T pool, SocketDNS_T dns, const char *host,
   END_TRY;
 
   return 0;
+}
+
+/* ============================================================================
+ * Async Connect with Callback
+ * ============================================================================ */
+
+/**
+ * AsyncConnectContext - Context for tracking async connect operations
+ */
+struct AsyncConnectContext
+{
+  T pool;                           /**< Pool instance */
+  Socket_T socket;                  /**< Socket being connected */
+  SocketDNS_Request_T req;          /**< DNS request handle */
+  SocketPool_ConnectCallback cb;    /**< User callback */
+  void *user_data;                  /**< User data for callback */
+  struct AsyncConnectContext *next; /**< Next context in list */
+};
+
+/**
+ * alloc_async_context - Allocate async connect context
+ * @pool: Pool instance
+ *
+ * Returns: New context or NULL on failure
+ */
+static AsyncConnectContext_T
+alloc_async_context (T pool)
+{
+  return ALLOC (pool->arena, sizeof (struct AsyncConnectContext));
+}
+
+/**
+ * add_async_context - Add context to pool's list
+ * @pool: Pool instance
+ * @ctx: Context to add
+ *
+ * Thread-safe: Call with mutex held
+ */
+static void
+add_async_context (T pool, AsyncConnectContext_T ctx)
+{
+  ctx->next = pool->async_ctx;
+  pool->async_ctx = ctx;
+}
+
+/**
+ * remove_async_context - Remove context from pool's list
+ * @pool: Pool instance
+ * @ctx: Context to remove
+ *
+ * Thread-safe: Call with mutex held
+ */
+static void
+remove_async_context (T pool, AsyncConnectContext_T ctx)
+{
+  AsyncConnectContext_T *pp = &pool->async_ctx;
+  while (*pp)
+    {
+      if (*pp == ctx)
+        {
+          *pp = ctx->next;
+          return;
+        }
+      pp = &(*pp)->next;
+    }
+}
+
+/**
+ * find_async_context_by_req - Find context by DNS request
+ * @pool: Pool instance
+ * @req: DNS request handle
+ *
+ * Returns: Context or NULL if not found
+ * Thread-safe: Call with mutex held
+ */
+static AsyncConnectContext_T
+find_async_context_by_req (T pool, SocketDNS_Request_T req)
+{
+  AsyncConnectContext_T ctx = pool->async_ctx;
+  while (ctx)
+    {
+      if (ctx->req == req)
+        return ctx;
+      ctx = ctx->next;
+    }
+  return NULL;
+}
+
+/**
+ * get_or_create_dns - Get or lazily create pool's DNS resolver
+ * @pool: Pool instance
+ *
+ * Returns: DNS resolver
+ * Raises: SocketPool_Failed on error
+ * Thread-safe: Call with mutex held
+ */
+static SocketDNS_T
+get_or_create_dns (T pool)
+{
+  if (!pool->dns)
+    {
+      TRY { pool->dns = SocketDNS_new (); }
+      EXCEPT (SocketDNS_Failed)
+      {
+        SOCKET_ERROR_MSG ("Failed to create DNS resolver for pool");
+        RAISE_POOL_ERROR (SocketPool_Failed);
+      }
+      END_TRY;
+    }
+  return pool->dns;
+}
+
+/**
+ * async_connect_dns_callback - Callback for DNS completion
+ * @req: DNS request handle (unused)
+ * @result: Resolved address or NULL on error
+ * @error: Error code (0 on success)
+ * @data: AsyncConnectContext
+ */
+static void
+async_connect_dns_callback (SocketDNS_Request_T req, struct addrinfo *result,
+                            int error, void *data)
+{
+  AsyncConnectContext_T ctx = data;
+  T pool = ctx->pool;
+  volatile Connection_T conn = NULL;
+  volatile int callback_error = error;
+
+  (void)req; /* Unused parameter */
+
+  if (error != 0 || result == NULL)
+    {
+      /* DNS resolution failed */
+      callback_error = error ? error : EAI_FAIL;
+      goto invoke_callback;
+    }
+
+  /* Try to connect and add to pool */
+  TRY
+  {
+    Socket_connect_with_addrinfo (ctx->socket, result);
+    conn = SocketPool_add (pool, ctx->socket);
+    if (!conn)
+      {
+        callback_error = ENOSPC; /* Pool full */
+        Socket_free (&ctx->socket);
+      }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    callback_error = errno ? errno : ECONNREFUSED;
+    Socket_free (&ctx->socket);
+  }
+  END_TRY;
+
+  freeaddrinfo (result);
+
+invoke_callback:
+  /* Remove context from list */
+  pthread_mutex_lock (&pool->mutex);
+  remove_async_context (pool, ctx);
+  pthread_mutex_unlock (&pool->mutex);
+
+  /* Invoke user callback */
+  if (ctx->cb)
+    ctx->cb (conn, callback_error, ctx->user_data);
+}
+
+/**
+ * validate_connect_async_params - Validate connect_async parameters
+ * @pool: Pool instance
+ * @host: Target hostname
+ * @port: Target port
+ * @callback: User callback
+ *
+ * Raises: SocketPool_Failed on invalid parameters
+ */
+static void
+validate_connect_async_params (T pool, const char *host, int port,
+                               SocketPool_ConnectCallback callback)
+{
+  if (!pool || !host || !SOCKET_VALID_PORT (port))
+    {
+      SOCKET_ERROR_MSG ("Invalid parameters for connect_async");
+      RAISE_POOL_ERROR (SocketPool_Failed);
+    }
+  (void)callback; /* Callback may be NULL for poll-mode */
+}
+
+/**
+ * SocketPool_connect_async - Create async connection to remote host
+ * @pool: Pool instance
+ * @host: Remote hostname or IP address
+ * @port: Remote port number
+ * @callback: Completion callback
+ * @data: User data passed to callback
+ *
+ * Returns: SocketDNS_Request_T for monitoring completion
+ * Raises: SocketPool_Failed on invalid params or allocation error
+ * Thread-safe: Yes
+ *
+ * Starts async DNS resolution + connect + pool add. On completion:
+ * - Success: callback(conn, 0, data) with Connection_T added to pool
+ * - Failure: callback(NULL, error_code, data)
+ */
+SocketDNS_Request_T
+SocketPool_connect_async (T pool, const char *host, int port,
+                          SocketPool_ConnectCallback callback, void *data)
+{
+  SocketDNS_T dns;
+  volatile Socket_T socket = NULL;
+  AsyncConnectContext_T ctx = NULL;
+  volatile SocketDNS_Request_T req = NULL;
+
+  validate_connect_async_params (pool, host, port, callback);
+
+  pthread_mutex_lock (&pool->mutex);
+
+  TRY
+  {
+    dns = get_or_create_dns (pool);
+    ctx = alloc_async_context (pool);
+    if (!ctx)
+      {
+        SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async context");
+        RAISE_POOL_ERROR (SocketPool_Failed);
+      }
+
+    socket = create_pool_socket ();
+    apply_pool_timeouts (socket);
+
+    req = SocketDNS_resolve (dns, host, port, async_connect_dns_callback, ctx);
+    if (!req)
+      {
+        SOCKET_ERROR_MSG ("Failed to start DNS resolution");
+        RAISE_POOL_ERROR (SocketPool_Failed);
+      }
+
+    /* Initialize context */
+    ctx->pool = pool;
+    ctx->socket = socket;
+    ctx->req = req;
+    ctx->cb = callback;
+    ctx->user_data = data;
+    ctx->next = NULL;
+
+    add_async_context (pool, ctx);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (socket)
+      Socket_free ((Socket_T *)&socket);
+    pthread_mutex_unlock (&pool->mutex);
+    RERAISE;
+  }
+  EXCEPT (SocketPool_Failed)
+  {
+    if (socket)
+      Socket_free ((Socket_T *)&socket);
+    pthread_mutex_unlock (&pool->mutex);
+    RERAISE;
+  }
+  END_TRY;
+
+  pthread_mutex_unlock (&pool->mutex);
+  return req;
 }
 
 #undef T

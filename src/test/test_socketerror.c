@@ -8,8 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "core/SocketError.h"
-#include "core/SocketLog.h"
+#include "core/SocketUtil.h"
 #include "test/Test.h"
 
 typedef struct

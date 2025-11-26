@@ -25,10 +25,9 @@
 #include <unistd.h>
 
 #include "core/SocketConfig.h"
-#include "core/SocketError.h"
+#include "core/SocketUtil.h"
 #include "socket/Socket.h"
 #include "socket/SocketCommon.h"
-#include "core/SocketMetrics.h"
 #include "socket/Socket-private.h"
 
 #define T Socket_T

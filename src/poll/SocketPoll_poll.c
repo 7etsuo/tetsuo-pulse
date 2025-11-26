@@ -9,11 +9,13 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <poll.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
+#include "core/SocketConfig.h"
 #include "poll/SocketPoll_backend.h"
 
 /* Backend instance structure */
@@ -131,6 +133,10 @@ ensure_capacity (PollBackend_T backend)
 
   if (backend->nfds < backend->capacity)
     return 0;
+
+  /* Check for overflow before doubling */
+  if (backend->capacity > INT_MAX / 2)
+    return -1;
 
   /* Double the capacity */
   new_capacity = backend->capacity * 2;

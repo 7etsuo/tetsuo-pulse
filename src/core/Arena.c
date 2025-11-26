@@ -33,7 +33,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
-#include "core/SocketError.h"
+#include "core/SocketUtil.h"
 
 #define T Arena_T
 

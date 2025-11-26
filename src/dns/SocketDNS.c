@@ -87,7 +87,12 @@ is_valid_label_start (char c)
 /**
  * check_label_bounds - Check label length is within bounds
  * @label_len: Current label length
- * Returns: true if within bounds
+ *
+ * Returns: true if within bounds (1 to SOCKET_DNS_MAX_LABEL_LENGTH)
+ * Thread-safe: Yes - no shared state
+ *
+ * Validates that a DNS label has valid length per RFC 1035.
+ * Labels must be between 1 and 63 characters inclusive.
  */
 static bool
 check_label_bounds (int label_len)
@@ -96,13 +101,35 @@ check_label_bounds (int label_len)
 }
 
 /**
+ * process_label_character - Validate a non-dot character in hostname label
+ * @c: Character to validate
+ * @at_label_start: Whether this is the first character of a label
+ *
+ * Returns: true if character is valid in current position, false otherwise
+ * Thread-safe: Yes - no shared state
+ *
+ * Per RFC 1123, label start must be alphanumeric; other positions allow hyphen.
+ */
+static bool
+process_label_character (char c, bool at_label_start)
+{
+  if (at_label_start)
+    return is_valid_label_start (c);
+  return is_valid_label_char (c);
+}
+
+/**
  * validate_hostname_label - Validate hostname labels per RFC 1123
  * @label: Hostname string containing one or more dot-separated labels
  * @len: Output parameter for total validated length (can be NULL)
  *
  * Returns: 1 if all labels valid, 0 otherwise
- *
  * Thread-safe: Yes - no shared state modified
+ *
+ * Validates that each dot-separated label:
+ * - Starts with alphanumeric character
+ * - Contains only alphanumeric or hyphen characters
+ * - Has length between 1 and SOCKET_DNS_MAX_LABEL_LENGTH (63)
  */
 int
 validate_hostname_label (const char *label, size_t *len)
@@ -115,6 +142,7 @@ validate_hostname_label (const char *label, size_t *len)
     {
       if (*p == '.')
         {
+          /* Dot separator - validate the label that just ended */
           if (!check_label_bounds (label_len))
             return 0;
           at_label_start = true;
@@ -122,22 +150,20 @@ validate_hostname_label (const char *label, size_t *len)
         }
       else
         {
-          if (at_label_start && !is_valid_label_start (*p))
+          if (!process_label_character (*p, at_label_start))
             return 0;
-          if (!is_valid_label_char (*p))
-            return 0;
-
           at_label_start = false;
           label_len++;
         }
       p++;
     }
 
+  /* Validate final label */
   if (!check_label_bounds (label_len))
     return 0;
 
   if (len)
-    *len = p - label;
+    *len = (size_t)(p - label);
   return 1;
 }
 
@@ -231,7 +257,7 @@ cancel_processing_state (struct SocketDNS_T *dns,
 
 /**
  * cancel_complete_state - Handle cancellation of completed request
- * @req: Request to cancel
+ * @req: Request to cancel (modified in place)
  *
  * Thread-safe: Must be called with mutex locked
  *
@@ -289,25 +315,38 @@ handle_cancel_by_state (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req
 
 /**
  * transfer_result_ownership - Handle result ownership transfer to caller
- * @r: Request to process
- * Returns: Result pointer (transfers ownership) or NULL if callback consumed it
+ * @req: Request to process (modified: result cleared if transferred)
+ *
+ * Returns: Result pointer (transfers ownership) or NULL if:
+ *   - Request is not complete (still pending/processing/cancelled)
+ *   - Callback was provided (callback has already consumed the result)
+ *
  * Thread-safe: Must be called with mutex locked
+ *
+ * Ownership semantics:
+ * - If callback was provided during SocketDNS_resolve(), the callback receives
+ *   ownership of the result and must call freeaddrinfo().
+ * - If no callback was provided (polling mode), this function transfers
+ *   ownership to the caller who must call freeaddrinfo().
+ * - After successful transfer, the request is removed from the hash table
+ *   and the request handle becomes invalid.
  */
 static struct addrinfo *
-transfer_result_ownership (struct SocketDNS_Request_T *r)
+transfer_result_ownership (struct SocketDNS_Request_T *req)
 {
   struct addrinfo *result = NULL;
 
-  if (r->state == REQ_COMPLETE)
+  if (req->state == REQ_COMPLETE)
     {
-      /* If no callback, transfer ownership to caller; else callback consumed it */
-      if (!r->callback)
+      /* If no callback, transfer ownership to caller; else callback consumed it
+       */
+      if (!req->callback)
         {
-          result = r->result;
-          r->result = NULL;
+          result = req->result;
+          req->result = NULL;
         }
 
-      hash_table_remove (r->dns_resolver, r);
+      hash_table_remove (req->dns_resolver, req);
     }
 
   return result;
@@ -315,11 +354,16 @@ transfer_result_ownership (struct SocketDNS_Request_T *r)
 
 /**
  * init_completed_request_fields - Initialize fields for completed request
- * @req: Request structure to initialize
- * @dns: DNS resolver instance
- * @result: Address info result
+ * @req: Request structure to initialize (output)
+ * @dns: DNS resolver instance (back-pointer stored in req)
+ * @result: Address info result (copied and freed by this function)
  * @port: Port number
+ *
  * Raises: SocketDNS_Failed on allocation failure
+ * Thread-safe: Must be called with mutex locked
+ *
+ * Copies the addrinfo result and frees the original. The request is marked
+ * as complete and ready for retrieval.
  */
 static void
 init_completed_request_fields (struct SocketDNS_Request_T *req,
@@ -387,36 +431,75 @@ SocketDNS_free (T *dns)
  * =============================================================================
  */
 
-Request_T
-SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
-                   SocketDNS_Callback callback, void *data)
+/**
+ * validate_dns_instance - Validate DNS resolver instance is not NULL
+ * @dns: DNS resolver instance to validate (read-only check)
+ *
+ * Raises: SocketDNS_Failed if dns is NULL
+ * Thread-safe: Yes - no shared state modified
+ */
+static void
+validate_dns_instance (const struct SocketDNS_T *dns)
 {
-  size_t host_len;
-  int queue_full;
-
   if (!dns)
     {
       SOCKET_ERROR_MSG ("Invalid NULL dns resolver");
       RAISE_DNS_ERROR (SocketDNS_Failed);
     }
+}
 
-  host_len = host ? strlen (host) : 0;
+/**
+ * prepare_resolve_request - Prepare and allocate DNS resolution request
+ * @dns: DNS resolver instance
+ * @host: Hostname to resolve (may be NULL for wildcard)
+ * @port: Port number
+ * @callback: Completion callback
+ * @data: User data for callback
+ * Returns: Allocated and initialized request
+ * Raises: SocketDNS_Failed on validation or allocation failure
+ */
+static Request_T
+prepare_resolve_request (struct SocketDNS_T *dns, const char *host, int port,
+                         SocketDNS_Callback callback, void *data)
+{
+  size_t host_len = host ? strlen (host) : 0;
   validate_resolve_params (host, port);
-  Request_T req = allocate_request (dns, host, host_len, port, callback, data);
+  return allocate_request (dns, host, host_len, port, callback, data);
+}
 
+/**
+ * submit_resolve_request - Submit request to queue under mutex protection
+ * @dns: DNS resolver instance
+ * @req: Request to submit
+ * Raises: SocketDNS_Failed if queue is full
+ *
+ * Thread-safe: Yes - acquires and releases mutex internally
+ */
+static void
+submit_resolve_request (struct SocketDNS_T *dns, Request_T req)
+{
   pthread_mutex_lock (&dns->mutex);
-  queue_full = check_queue_limit (dns);
-  if (queue_full)
+
+  if (check_queue_limit (dns))
     {
       size_t max_pending = dns->max_pending;
       pthread_mutex_unlock (&dns->mutex);
       SOCKET_ERROR_MSG ("DNS request queue full (max %zu pending)", max_pending);
       RAISE_DNS_ERROR (SocketDNS_Failed);
     }
+
   submit_dns_request (dns, req);
   SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_SUBMITTED, 1);
   pthread_mutex_unlock (&dns->mutex);
+}
 
+Request_T
+SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
+                   SocketDNS_Callback callback, void *data)
+{
+  validate_dns_instance (dns);
+  Request_T req = prepare_resolve_request (dns, host, port, callback, data);
+  submit_resolve_request (dns, req);
   return req;
 }
 
@@ -525,6 +608,31 @@ SocketDNS_pollfd (struct SocketDNS_T *dns)
   return dns->pipefd[0];
 }
 
+/**
+ * SocketDNS_check - Drain completion signals from pipe (non-blocking)
+ * @dns: DNS resolver instance
+ *
+ * Returns: Number of completion signal bytes drained from pipe
+ *
+ * Thread-safe: Yes - safe to call from any thread
+ *
+ * This function drains the completion signal pipe without blocking. Each byte
+ * in the pipe represents one completed, cancelled, or timed-out request.
+ * The return value indicates how many such events occurred since the last
+ * call to SocketDNS_check().
+ *
+ * Usage pattern for poll-mode (no callback):
+ *   1. Add SocketDNS_pollfd(dns) to your SocketPoll with POLL_READ
+ *   2. When poll returns readable, call SocketDNS_check(dns) to drain signals
+ *   3. Call SocketDNS_getresult(dns, req) for each tracked request handle
+ *      to retrieve completed results
+ *
+ * Note: This function does NOT automatically retrieve results. You must
+ * track your Request_T handles and call SocketDNS_getresult() separately.
+ *
+ * Error handling: On pipe read errors (other than EAGAIN/EWOULDBLOCK),
+ * returns the count drained so far without raising an exception.
+ */
 int
 SocketDNS_check (struct SocketDNS_T *dns)
 {

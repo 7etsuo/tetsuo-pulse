@@ -31,13 +31,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <time.h>
 
-#include "core/SocketConfig.h"
-#include "core/SocketError.h"
-#include "core/SocketEvents.h"
-#include "core/SocketLog.h"
-#include "core/SocketMetrics.h"
+#include "core/SocketUtil.h"
 
 /* ===========================================================================
  * ERROR HANDLING SUBSYSTEM
@@ -554,6 +551,42 @@ static SocketEventHandler socketevent_handlers[SOCKET_EVENT_MAX_HANDLERS];
 static size_t socketevent_handler_count = 0;
 
 /**
+ * socketevent_copy_handlers_unlocked - Copy handlers (caller holds mutex)
+ * @local_handlers: Destination array for handler copies
+ *
+ * Returns: Number of handlers copied
+ * Thread-safe: No (caller must hold socketevent_mutex)
+ */
+static size_t
+socketevent_copy_handlers_unlocked (SocketEventHandler *local_handlers)
+{
+  memcpy (local_handlers, socketevent_handlers,
+          sizeof (SocketEventHandler) * socketevent_handler_count);
+  return socketevent_handler_count;
+}
+
+/**
+ * socketevent_invoke_handlers - Invoke all handler callbacks
+ * @local_handlers: Array of handlers to invoke
+ * @count: Number of handlers
+ * @event: Event to pass to callbacks
+ *
+ * Thread-safe: Yes (no mutex needed - operates on local copy)
+ */
+static void
+socketevent_invoke_handlers (const SocketEventHandler *local_handlers,
+                             size_t count, const SocketEventRecord *event)
+{
+  size_t i;
+
+  for (i = 0; i < count; i++)
+    {
+      if (local_handlers[i].callback)
+        local_handlers[i].callback (local_handlers[i].userdata, event);
+    }
+}
+
+/**
  * socketevent_dispatch - Dispatch event to all registered handlers
  * @event: Event record to dispatch
  *
@@ -567,21 +600,51 @@ socketevent_dispatch (const SocketEventRecord *event)
 {
   SocketEventHandler local_handlers[SOCKET_EVENT_MAX_HANDLERS];
   size_t count;
-  size_t i;
 
   assert (event);
 
   pthread_mutex_lock (&socketevent_mutex);
-  count = socketevent_handler_count;
-  memcpy (local_handlers, socketevent_handlers,
-          sizeof (SocketEventHandler) * count);
+  count = socketevent_copy_handlers_unlocked (local_handlers);
   pthread_mutex_unlock (&socketevent_mutex);
 
-  for (i = 0; i < count; i++)
+  socketevent_invoke_handlers (local_handlers, count, event);
+}
+
+/**
+ * socketevent_find_handler_unlocked - Find handler in array (mutex held)
+ * @callback: Callback to find
+ * @userdata: User data to match
+ *
+ * Returns: Index of handler if found, -1 otherwise
+ * Thread-safe: No (caller must hold socketevent_mutex)
+ */
+static ssize_t
+socketevent_find_handler_unlocked (SocketEventCallback callback, void *userdata)
+{
+  size_t i;
+
+  for (i = 0; i < socketevent_handler_count; i++)
     {
-      if (local_handlers[i].callback)
-        local_handlers[i].callback (local_handlers[i].userdata, event);
+      if (socketevent_handlers[i].callback == callback
+          && socketevent_handlers[i].userdata == userdata)
+        return (ssize_t)i;
     }
+  return -1;
+}
+
+/**
+ * socketevent_add_handler_unlocked - Add handler to array (mutex held)
+ * @callback: Callback to add
+ * @userdata: User data for callback
+ *
+ * Thread-safe: No (caller must hold socketevent_mutex)
+ */
+static void
+socketevent_add_handler_unlocked (SocketEventCallback callback, void *userdata)
+{
+  socketevent_handlers[socketevent_handler_count].callback = callback;
+  socketevent_handlers[socketevent_handler_count].userdata = userdata;
+  socketevent_handler_count++;
 }
 
 /**
@@ -598,8 +661,6 @@ socketevent_dispatch (const SocketEventRecord *event)
 void
 SocketEvent_register (SocketEventCallback callback, void *userdata)
 {
-  size_t i;
-
   if (callback == NULL)
     {
       SocketLog_emit (SOCKET_LOG_WARN, "SocketEvents",
@@ -609,18 +670,12 @@ SocketEvent_register (SocketEventCallback callback, void *userdata)
 
   pthread_mutex_lock (&socketevent_mutex);
 
-  /* Check for duplicate */
-  for (i = 0; i < socketevent_handler_count; i++)
+  if (socketevent_find_handler_unlocked (callback, userdata) >= 0)
     {
-      if (socketevent_handlers[i].callback == callback
-          && socketevent_handlers[i].userdata == userdata)
-        {
-          pthread_mutex_unlock (&socketevent_mutex);
-          return;
-        }
+      pthread_mutex_unlock (&socketevent_mutex);
+      return;
     }
 
-  /* Check capacity */
   if (socketevent_handler_count >= SOCKET_EVENT_MAX_HANDLERS)
     {
       pthread_mutex_unlock (&socketevent_mutex);
@@ -629,12 +684,27 @@ SocketEvent_register (SocketEventCallback callback, void *userdata)
       return;
     }
 
-  /* Add handler */
-  socketevent_handlers[socketevent_handler_count].callback = callback;
-  socketevent_handlers[socketevent_handler_count].userdata = userdata;
-  socketevent_handler_count++;
-
+  socketevent_add_handler_unlocked (callback, userdata);
   pthread_mutex_unlock (&socketevent_mutex);
+}
+
+/**
+ * socketevent_remove_at_index_unlocked - Remove handler at index (mutex held)
+ * @index: Index of handler to remove
+ *
+ * Thread-safe: No (caller must hold socketevent_mutex)
+ */
+static void
+socketevent_remove_at_index_unlocked (size_t index)
+{
+  size_t remaining = socketevent_handler_count - index - 1;
+
+  if (remaining > 0)
+    {
+      memmove (&socketevent_handlers[index], &socketevent_handlers[index + 1],
+               remaining * sizeof (SocketEventHandler));
+    }
+  socketevent_handler_count--;
 }
 
 /**
@@ -650,7 +720,7 @@ SocketEvent_register (SocketEventCallback callback, void *userdata)
 void
 SocketEvent_unregister (SocketEventCallback callback, void *userdata)
 {
-  size_t i;
+  ssize_t idx;
 
   if (callback == NULL)
     {
@@ -661,21 +731,9 @@ SocketEvent_unregister (SocketEventCallback callback, void *userdata)
 
   pthread_mutex_lock (&socketevent_mutex);
 
-  for (i = 0; i < socketevent_handler_count; i++)
-    {
-      if (socketevent_handlers[i].callback == callback
-          && socketevent_handlers[i].userdata == userdata)
-        {
-          size_t remaining = socketevent_handler_count - i - 1;
-          if (remaining > 0)
-            {
-              memmove (&socketevent_handlers[i], &socketevent_handlers[i + 1],
-                       remaining * sizeof (SocketEventHandler));
-            }
-          socketevent_handler_count--;
-          break;
-        }
-    }
+  idx = socketevent_find_handler_unlocked (callback, userdata);
+  if (idx >= 0)
+    socketevent_remove_at_index_unlocked ((size_t)idx);
 
   pthread_mutex_unlock (&socketevent_mutex);
 }

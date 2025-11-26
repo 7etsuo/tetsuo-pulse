@@ -43,8 +43,7 @@
 #include "core/Except.h"
 #include "core/SocketConfig.h"
 #define SOCKET_LOG_COMPONENT "SocketCommon"
-#include "core/SocketError.h"
-#include "core/SocketLog.h"
+#include "core/SocketUtil.h"
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 
@@ -132,16 +131,102 @@ SocketCommon_parse_ip (const char *ip_str, int *family)
   return 0;
 }
 
+/**
+ * cidr_parse_prefix - Parse prefix length from CIDR suffix string
+ * @prefix_str: String containing prefix length (e.g., "24")
+ * @prefix_out: Output for parsed prefix length
+ *
+ * Returns: 0 on success, -1 on parse error
+ */
+static int
+cidr_parse_prefix (const char *prefix_str, long *prefix_out)
+{
+  char *endptr = NULL;
+  long prefix_long;
+
+  errno = 0;
+  prefix_long = strtol (prefix_str, &endptr, 10);
+
+  if (errno != 0 || endptr == prefix_str || *endptr != '\0' || prefix_long < 0)
+    return -1;
+
+  *prefix_out = prefix_long;
+  return 0;
+}
+
+/**
+ * cidr_parse_ipv4 - Try to parse address as IPv4 and validate prefix
+ * @addr_str: IP address string
+ * @prefix: Prefix length to validate
+ * @network: Output buffer for network address (at least 4 bytes)
+ * @prefix_len: Output for validated prefix length
+ * @family: Output for address family
+ *
+ * Returns: 0 on success, -1 if not IPv4 or prefix invalid
+ */
+static int
+cidr_parse_ipv4 (const char *addr_str, long prefix, unsigned char *network,
+                 int *prefix_len, int *family)
+{
+  struct in_addr addr4;
+
+  if (inet_pton (SOCKET_AF_INET, addr_str, &addr4) != 1)
+    return -1;
+
+  if (prefix > 32)
+    return -1;
+
+  memcpy (network, &addr4, 4);
+  *prefix_len = (int)prefix;
+  *family = SOCKET_AF_INET;
+  return 0;
+}
+
+/**
+ * cidr_parse_ipv6 - Try to parse address as IPv6 and validate prefix
+ * @addr_str: IP address string
+ * @prefix: Prefix length to validate
+ * @network: Output buffer for network address (at least 16 bytes)
+ * @prefix_len: Output for validated prefix length
+ * @family: Output for address family
+ *
+ * Returns: 0 on success, -1 if not IPv6 or prefix invalid
+ */
+static int
+cidr_parse_ipv6 (const char *addr_str, long prefix, unsigned char *network,
+                 int *prefix_len, int *family)
+{
+  struct in6_addr addr6;
+
+  if (inet_pton (SOCKET_AF_INET6, addr_str, &addr6) != 1)
+    return -1;
+
+  if (prefix > 128)
+    return -1;
+
+  memcpy (network, &addr6, 16);
+  *prefix_len = (int)prefix;
+  *family = SOCKET_AF_INET6;
+  return 0;
+}
+
+/**
+ * socketcommon_parse_cidr - Parse CIDR notation into network and prefix
+ * @cidr_str: CIDR string (e.g., "192.168.1.0/24" or "2001:db8::/32")
+ * @network: Output buffer for network address
+ * @prefix_len: Output for prefix length
+ * @family: Output for address family (AF_INET or AF_INET6)
+ *
+ * Returns: 0 on success, -1 on parse error
+ */
 static int
 socketcommon_parse_cidr (const char *cidr_str, unsigned char *network,
                          int *prefix_len, int *family)
 {
   char *cidr_copy = NULL;
   char *slash = NULL;
-  char *endptr = NULL;
-  struct in_addr addr4;
-  struct in6_addr addr6;
   long prefix_long;
+  int result = -1;
 
   assert (cidr_str);
   assert (network);
@@ -162,44 +247,20 @@ socketcommon_parse_cidr (const char *cidr_str, unsigned char *network,
   *slash = '\0';
   slash++;
 
-  errno = 0;
-  prefix_long = strtol (slash, &endptr, 10);
-  if (errno != 0 || endptr == slash || *endptr != '\0' || prefix_long < 0)
+  if (cidr_parse_prefix (slash, &prefix_long) < 0)
     {
       free (cidr_copy);
       return -1;
     }
 
-  if (inet_pton (SOCKET_AF_INET, cidr_copy, &addr4) == 1)
-    {
-      if (prefix_long > 32)
-        {
-          free (cidr_copy);
-          return -1;
-        }
-      memcpy (network, &addr4, 4);
-      *prefix_len = (int)prefix_long;
-      *family = SOCKET_AF_INET;
-      free (cidr_copy);
-      return 0;
-    }
-
-  if (inet_pton (SOCKET_AF_INET6, cidr_copy, &addr6) == 1)
-    {
-      if (prefix_long > 128)
-        {
-          free (cidr_copy);
-          return -1;
-        }
-      memcpy (network, &addr6, 16);
-      *prefix_len = (int)prefix_long;
-      *family = SOCKET_AF_INET6;
-      free (cidr_copy);
-      return 0;
-    }
+  /* Try IPv4 first, then IPv6 */
+  if (cidr_parse_ipv4 (cidr_copy, prefix_long, network, prefix_len, family) == 0)
+    result = 0;
+  else if (cidr_parse_ipv6 (cidr_copy, prefix_long, network, prefix_len, family) == 0)
+    result = 0;
 
   free (cidr_copy);
-  return -1;
+  return result;
 }
 
 static void
@@ -1120,6 +1181,70 @@ SocketCommon_advance_iov (struct iovec *iov, int iovcnt, size_t bytes)
           remaining = 0;
         }
     }
+}
+
+struct iovec *
+SocketCommon_find_active_iov (struct iovec *iov, int iovcnt, int *active_iovcnt)
+{
+  int i;
+
+  assert (iov);
+  assert (iovcnt > 0);
+  assert (active_iovcnt);
+
+  for (i = 0; i < iovcnt; i++)
+    {
+      if (iov[i].iov_len > 0)
+        {
+          *active_iovcnt = iovcnt - i;
+          return &iov[i];
+        }
+    }
+
+  *active_iovcnt = 0;
+  return NULL;
+}
+
+void
+SocketCommon_sync_iov_progress (struct iovec *original, const struct iovec *copy,
+                                int iovcnt)
+{
+  int i;
+
+  assert (original);
+  assert (copy);
+  assert (iovcnt > 0);
+
+  for (i = 0; i < iovcnt; i++)
+    {
+      if (copy[i].iov_base != original[i].iov_base)
+        {
+          size_t copied = (const char *)copy[i].iov_base
+                          - (const char *)original[i].iov_base;
+          original[i].iov_len -= copied;
+          original[i].iov_base = (char *)original[i].iov_base + copied;
+        }
+    }
+}
+
+struct iovec *
+SocketCommon_alloc_iov_copy (const struct iovec *iov, int iovcnt,
+                             Except_T exc_type)
+{
+  struct iovec *copy;
+
+  assert (iov);
+  assert (iovcnt > 0);
+  assert (iovcnt <= IOV_MAX);
+
+  copy = calloc ((size_t)iovcnt, sizeof (struct iovec));
+  if (!copy)
+    {
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate iovec copy");
+      RAISE_MODULE_ERROR (exc_type);
+    }
+  memcpy (copy, iov, (size_t)iovcnt * sizeof (struct iovec));
+  return copy;
 }
 
 /* ==================== Address Utilities ==================== */

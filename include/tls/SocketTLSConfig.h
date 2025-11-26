@@ -77,6 +77,11 @@
 #define SOCKET_TLS_MAX_SNI_CERTS 100
 #endif
 
+/* Initial SNI certificate array capacity (doubles on expansion) */
+#ifndef SOCKET_TLS_SNI_INITIAL_CAPACITY
+#define SOCKET_TLS_SNI_INITIAL_CAPACITY 4
+#endif
+
 /* Maximum number of ALPN protocols */
 #ifndef SOCKET_TLS_MAX_ALPN_PROTOCOLS
 #define SOCKET_TLS_MAX_ALPN_PROTOCOLS 16

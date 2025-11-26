@@ -2,6 +2,7 @@
 #define SOCKETCOMMON_INCLUDED
 
 #include <stdbool.h>
+#include <pthread.h>
 
 /**
  * SocketCommon.h - Common utilities shared between Socket and SocketDgram
@@ -17,9 +18,7 @@
 #include <sys/un.h>
 
 #include "core/Arena.h"
-
 #include "core/Except.h"
-#include <stdbool.h>
 #include "core/SocketConfig.h"  /* Defines SocketTimeouts_T */
 
 /* Common exception types (Except_T is defined in Except.h) */
@@ -283,6 +282,51 @@ extern size_t SocketCommon_calculate_total_iov_len (const struct iovec *iov, int
 extern void SocketCommon_advance_iov (struct iovec *iov, int iovcnt, size_t bytes);
 
 /**
+ * SocketCommon_find_active_iov - Find first non-empty iovec in array
+ * @iov: Array of iovec structures to search
+ * @iovcnt: Number of iovec structures
+ * @active_iovcnt: Output for count of remaining iovecs from active position
+ *
+ * Returns: Pointer to first iovec with iov_len > 0, or NULL if all empty
+ * Thread-safe: Yes (read-only operation)
+ *
+ * Used by sendvall/recvvall to find the next active buffer segment
+ * after partial I/O operations have consumed some of the iovec array.
+ */
+extern struct iovec *SocketCommon_find_active_iov (struct iovec *iov, int iovcnt,
+                                                   int *active_iovcnt);
+
+/**
+ * SocketCommon_sync_iov_progress - Sync original iovec with working copy progress
+ * @original: Original iovec array to update
+ * @copy: Working copy that has been advanced
+ * @iovcnt: Number of iovec structures
+ *
+ * Updates the original iovec array to reflect progress made in the copy.
+ * Used when recvvall needs to update caller's iovec on partial completion.
+ * Thread-safe: Yes (local ops)
+ */
+extern void SocketCommon_sync_iov_progress (struct iovec *original,
+                                            const struct iovec *copy, int iovcnt);
+
+/**
+ * SocketCommon_alloc_iov_copy - Allocate and copy iovec array
+ * @iov: Source iovec array to copy
+ * @iovcnt: Number of iovec structures (>0, <=IOV_MAX)
+ * @exc_type: Exception type to raise on allocation failure
+ *
+ * Returns: Newly allocated copy of iovec array (caller must free)
+ * Raises: exc_type on allocation failure
+ * Thread-safe: Yes
+ *
+ * Common helper for sendvall/recvvall implementations. Consolidates
+ * duplicate calloc+memcpy patterns across Socket and SocketDgram modules.
+ */
+extern struct iovec *SocketCommon_alloc_iov_copy (const struct iovec *iov,
+                                                  int iovcnt,
+                                                  Except_T exc_type);
+
+/**
  * SocketCommon_set_cloexec_fd - Set close-on-exec flag on fd (unifies dups)
  * @fd: File descriptor
  * @enable: True to enable FD_CLOEXEC
@@ -439,6 +483,68 @@ SocketCommon_check_bound_by_family (const struct sockaddr_storage *addr)
   else if (addr->ss_family == AF_UNIX)
     return SocketCommon_check_bound_unix (addr);
   return 0;
+}
+
+/* ============================================================================
+ * Live Socket Count Tracking
+ * ============================================================================ */
+
+/**
+ * SocketLiveCount - Thread-safe live count tracker for socket instances
+ *
+ * Provides thread-safe increment/decrement operations for tracking
+ * live socket instances. Used by both Socket_T and SocketDgram_T
+ * for debugging and leak detection.
+ */
+struct SocketLiveCount
+{
+  int count;
+  pthread_mutex_t mutex;
+};
+
+#define SOCKETLIVECOUNT_STATIC_INIT                                           \
+  {                                                                            \
+    0, PTHREAD_MUTEX_INITIALIZER                                               \
+  }
+
+/**
+ * SocketLiveCount_increment - Increment live count (thread-safe)
+ * @tracker: Live count tracker
+ */
+static inline void
+SocketLiveCount_increment (struct SocketLiveCount *tracker)
+{
+  pthread_mutex_lock (&tracker->mutex);
+  tracker->count++;
+  pthread_mutex_unlock (&tracker->mutex);
+}
+
+/**
+ * SocketLiveCount_decrement - Decrement live count (thread-safe)
+ * @tracker: Live count tracker
+ */
+static inline void
+SocketLiveCount_decrement (struct SocketLiveCount *tracker)
+{
+  pthread_mutex_lock (&tracker->mutex);
+  if (tracker->count > 0)
+    tracker->count--;
+  pthread_mutex_unlock (&tracker->mutex);
+}
+
+/**
+ * SocketLiveCount_get - Get current live count (thread-safe)
+ * @tracker: Live count tracker
+ * Returns: Current count value
+ */
+static inline int
+SocketLiveCount_get (struct SocketLiveCount *tracker)
+{
+  int count;
+  pthread_mutex_lock (&tracker->mutex);
+  count = tracker->count;
+  pthread_mutex_unlock (&tracker->mutex);
+  return count;
 }
 
 #endif /* SOCKETCOMMON_INCLUDED */

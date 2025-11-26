@@ -4,7 +4,7 @@
 #include "core/Except.h"
 #include <stddef.h>
 #include <sys/socket.h>
-#include "socket/SocketUnix.h"  /* For Unix domain support */
+#include "socket/SocketCommon.h"  /* For SocketBase_T and Unix support */
 
 /**
  * UDP/Datagram Socket Abstraction Layer
