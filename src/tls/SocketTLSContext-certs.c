@@ -233,8 +233,6 @@ store_sni_hostname (T ctx, const char *hostname)
     }
 }
 
-/* copy_path_to_arena removed - use ctx_arena_strdup from private header */
-
 /**
  * store_sni_paths - Store cert/key paths in SNI arrays
  * @ctx: Context
@@ -322,9 +320,10 @@ load_pkey_from_file (const char *key_file, X509 *cert)
  * Raises: SocketTLS_Failed on any load or validation error
  */
 static void
-load_sni_objects (T ctx __attribute__ ((unused)), const char *cert_file,
-                  const char *key_file, X509 **cert_out, EVP_PKEY **pkey_out)
+load_sni_objects (T ctx, const char *cert_file, const char *key_file,
+                  X509 **cert_out, EVP_PKEY **pkey_out)
 {
+  TLS_UNUSED (ctx);
   *cert_out = load_cert_from_file (cert_file);
   *pkey_out = load_pkey_from_file (key_file, *cert_out);
 

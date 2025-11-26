@@ -33,6 +33,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
+#include "core/SocketUtil.h"
 
 #define T Arena_T
 
@@ -76,49 +77,18 @@ struct T
   pthread_mutex_t mutex;
 };
 
-/* ==================== Thread-Local Storage ==================== */
-
-/* Thread-local error buffer for detailed error messages */
-#ifdef _WIN32
-static __declspec (thread) char arena_error_buf[ARENA_ERROR_BUFSIZE];
-#else
-static __thread char arena_error_buf[ARENA_ERROR_BUFSIZE];
-#endif
-
-/* Thread-local exception for detailed error messages
- * Each thread gets its own exception instance, preventing race conditions
- * when multiple threads raise the same exception type simultaneously. */
-#ifdef _WIN32
-static __declspec (thread) Except_T Arena_DetailedException;
-#else
-static __thread Except_T Arena_DetailedException;
-#endif
-
 /* ==================== Global State ==================== */
 
 /* Arena exception definition */
 const Except_T Arena_Failed = { &Arena_Failed, "Arena operation failed" };
 
+/* Thread-local exception using centralized infrastructure */
+SOCKET_DECLARE_MODULE_EXCEPTION (Arena);
+
 /* Global free chunk cache for efficient memory reuse */
 static struct ChunkHeader *freechunks = NULL;
 static int nfree = 0;
 static pthread_mutex_t arena_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-/* ==================== Error Macros ==================== */
-
-#define ARENA_ERROR_MSG(fmt, ...)                                             \
-  snprintf (arena_error_buf, ARENA_ERROR_BUFSIZE, fmt, ##__VA_ARGS__)
-#define ARENA_ERROR_FMT(fmt, ...)                                             \
-  snprintf (arena_error_buf, ARENA_ERROR_BUFSIZE, fmt " (errno: %d - %s)",    \
-            ##__VA_ARGS__, errno, Socket_safe_strerror (errno))
-#define RAISE_ARENA_ERROR(base_exception)                                     \
-  do                                                                          \
-    {                                                                         \
-      Arena_DetailedException = (base_exception);                             \
-      Arena_DetailedException.reason = arena_error_buf;                       \
-      RAISE (Arena_DetailedException);                                        \
-    }                                                                         \
-  while (0)
 
 /* ==================== Validation Macros ==================== */
 
@@ -346,14 +316,14 @@ arena_allocate_new_chunk (size_t total_size, struct ChunkHeader **ptr_out,
   ptr = malloc (total_size);
   if (ptr == NULL)
     {
-      ARENA_ERROR_MSG ("Cannot allocate new chunk: %zu bytes", total_size);
+      SOCKET_ERROR_MSG ("Cannot allocate new chunk: %zu bytes", total_size);
       return ARENA_FAILURE;
     }
 
   if (!chunk_validate_pointer (ptr, total_size))
     {
       free (ptr);
-      ARENA_ERROR_MSG ("Invalid pointer arithmetic for chunk allocation");
+      SOCKET_ERROR_MSG ("Invalid pointer arithmetic for chunk allocation");
       return ARENA_FAILURE;
     }
 
@@ -411,7 +381,7 @@ arena_try_allocate_fresh_chunk (size_t min_size, struct ChunkHeader **ptr_out,
 
   if (total_size == 0)
     {
-      ARENA_ERROR_MSG ("Invalid chunk size calculation: %zu", chunk_size);
+      SOCKET_ERROR_MSG ("Invalid chunk size calculation: %zu", chunk_size);
       return ARENA_FAILURE;
     }
 
@@ -668,7 +638,7 @@ arena_prepare_allocation (size_t nbytes)
   aligned_size = arena_calculate_aligned_size (nbytes);
   if (aligned_size == 0)
     {
-      ARENA_ERROR_MSG (
+      SOCKET_ERROR_MSG (
           "Invalid allocation size: %zu bytes (alignment/overflow error)",
           nbytes);
       return 0;
@@ -688,9 +658,9 @@ arena_validate_calloc_overflow (size_t count, size_t nbytes)
 {
   if (ARENA_CHECK_OVERFLOW_MUL (count, nbytes) == ARENA_VALIDATION_FAILURE)
     {
-      ARENA_ERROR_MSG ("calloc overflow: count=%zu, nbytes=%zu", count,
+      SOCKET_ERROR_MSG ("calloc overflow: count=%zu, nbytes=%zu", count,
                        nbytes);
-      RAISE_ARENA_ERROR (Arena_Failed);
+      SOCKET_RAISE_MODULE_ERROR (Arena, Arena_Failed);
     }
 }
 
@@ -704,8 +674,8 @@ arena_validate_calloc_size (size_t total)
 {
   if (total > ARENA_MAX_ALLOC_SIZE)
     {
-      ARENA_ERROR_MSG ("calloc size exceeds maximum: %zu", total);
-      RAISE_ARENA_ERROR (Arena_Failed);
+      SOCKET_ERROR_MSG ("calloc size exceeds maximum: %zu", total);
+      SOCKET_RAISE_MODULE_ERROR (Arena, Arena_Failed);
     }
 }
 
@@ -785,7 +755,7 @@ arena_allocate_structure (void)
   arena = malloc (sizeof (*arena));
   if (arena == NULL)
     {
-      ARENA_ERROR_MSG (ARENA_ENOMEM ": Cannot allocate arena structure");
+      SOCKET_ERROR_MSG (ARENA_ENOMEM ": Cannot allocate arena structure");
       return NULL;
     }
 
@@ -803,7 +773,7 @@ arena_initialize_mutex (T arena)
 {
   if (pthread_mutex_init (&arena->mutex, NULL) != 0)
     {
-      ARENA_ERROR_MSG ("Failed to initialize arena mutex");
+      SOCKET_ERROR_MSG ("Failed to initialize arena mutex");
       return ARENA_FAILURE;
     }
 
@@ -836,9 +806,9 @@ arena_ensure_allocation_space (T arena, size_t aligned_size, size_t nbytes)
 {
   if (arena_ensure_space (arena, aligned_size) != ARENA_SUCCESS)
     {
-      ARENA_ERROR_MSG ("Failed to ensure space for %zu-byte allocation",
+      SOCKET_ERROR_MSG ("Failed to ensure space for %zu-byte allocation",
                        nbytes);
-      RAISE_ARENA_ERROR (Arena_Failed);
+      SOCKET_RAISE_MODULE_ERROR (Arena, Arena_Failed);
     }
 }
 
@@ -895,12 +865,12 @@ Arena_new (void)
 {
   T arena = arena_allocate_structure ();
   if (arena == NULL)
-    RAISE_ARENA_ERROR (Arena_Failed);
+    SOCKET_RAISE_MODULE_ERROR (Arena, Arena_Failed);
 
   if (arena_initialize_mutex (arena) != ARENA_SUCCESS)
     {
       free (arena);
-      RAISE_ARENA_ERROR (Arena_Failed);
+      SOCKET_RAISE_MODULE_ERROR (Arena, Arena_Failed);
     }
 
   arena_initialize_state (arena);
@@ -957,19 +927,19 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
   /* Validate input parameters */
   if (arena == NULL)
     {
-      ARENA_ERROR_MSG ("NULL arena pointer in Arena_alloc");
-      RAISE_ARENA_ERROR (Arena_Failed);
+      SOCKET_ERROR_MSG ("NULL arena pointer in Arena_alloc");
+      SOCKET_RAISE_MODULE_ERROR (Arena, Arena_Failed);
     }
   if (nbytes == 0)
     {
-      ARENA_ERROR_MSG ("Zero size allocation in Arena_alloc");
-      RAISE_ARENA_ERROR (Arena_Failed);
+      SOCKET_ERROR_MSG ("Zero size allocation in Arena_alloc");
+      SOCKET_RAISE_MODULE_ERROR (Arena, Arena_Failed);
     }
 
   /* Prepare aligned allocation size */
   aligned_size = arena_prepare_allocation (nbytes);
   if (aligned_size == 0)
-    RAISE_ARENA_ERROR (Arena_Failed);
+    SOCKET_RAISE_MODULE_ERROR (Arena, Arena_Failed);
 
   /* Execute allocation under mutex protection */
   return arena_execute_allocation (arena, aligned_size, nbytes);
@@ -1000,14 +970,14 @@ Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line)
   /* Validate input parameters */
   if (arena == NULL)
     {
-      ARENA_ERROR_MSG ("NULL arena pointer in Arena_calloc");
-      RAISE_ARENA_ERROR (Arena_Failed);
+      SOCKET_ERROR_MSG ("NULL arena pointer in Arena_calloc");
+      SOCKET_RAISE_MODULE_ERROR (Arena, Arena_Failed);
     }
   if (count == 0 || nbytes == 0)
     {
-      ARENA_ERROR_MSG ("Invalid count (%zu) or nbytes (%zu) in Arena_calloc",
+      SOCKET_ERROR_MSG ("Invalid count (%zu) or nbytes (%zu) in Arena_calloc",
                        count, nbytes);
-      RAISE_ARENA_ERROR (Arena_Failed);
+      SOCKET_RAISE_MODULE_ERROR (Arena, Arena_Failed);
     }
 
   /* Validate overflow and size limits */

@@ -182,12 +182,8 @@ SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
                            SOCKET_TLS_TICKET_KEY_LEN);
     }
 
-  unsigned char *keys = Arena_alloc (ctx->arena, key_len, __FILE__, __LINE__);
-  if (!keys)
-    {
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                           "Failed to allocate ticket keys buffer");
-    }
+  unsigned char *keys = ctx_arena_alloc (ctx, key_len,
+                                         "Failed to allocate ticket keys buffer");
   memcpy (keys, key, key_len);
   ctx->tickets_enabled = 1;
 

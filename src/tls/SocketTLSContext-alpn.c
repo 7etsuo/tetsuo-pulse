@@ -31,65 +31,13 @@
 static void free_client_protos (const char **protos, size_t count);
 
 /**
- * count_wire_format_protos - Count protocols in ALPN wire format
- * @in: Wire format input (length-prefixed strings)
- * @inlen: Input length
- *
- * Returns: Number of protocols found in wire format
- */
-static size_t
-count_wire_format_protos (const unsigned char *in, unsigned int inlen)
-{
-  size_t count = 0;
-  size_t offset = 0;
-
-  while (offset < inlen)
-    {
-      if (offset + 1 > inlen)
-        break;
-      unsigned char len = in[offset++];
-      if (offset + len > inlen)
-        break;
-      count++;
-      offset += len;
-    }
-  return count;
-}
-
-/**
- * extract_single_proto - Extract and copy a single protocol from wire format
- * @in: Wire format input at current position
- * @inlen: Remaining input length
- * @offset: Current offset (updated on success)
- *
- * Returns: Allocated protocol string, or NULL on failure
- */
-static char *
-extract_single_proto (const unsigned char *in, unsigned int inlen,
-                      size_t *offset)
-{
-  if (*offset >= inlen)
-    return NULL;
-
-  unsigned char len = in[(*offset)++];
-  if (*offset + len > inlen)
-    return NULL;
-
-  char *proto = malloc (len + 1);
-  if (!proto)
-    return NULL;
-
-  memcpy (proto, &in[*offset], len);
-  proto[len] = '\0';
-  *offset += len;
-  return proto;
-}
-
-/**
- * parse_client_protos - Parse client protocols from wire format
+ * parse_client_protos - Parse client protocols from ALPN wire format (single pass)
  * @in: Wire format input (length-prefixed strings)
  * @inlen: Input length
  * @count_out: Output: number of protocols parsed
+ *
+ * Parses wire format in a single pass, growing array as needed.
+ * Wire format: [len1][proto1][len2][proto2]...
  *
  * Returns: Array of null-terminated protocol strings (caller frees)
  */
@@ -97,30 +45,58 @@ static const char **
 parse_client_protos (const unsigned char *in, unsigned int inlen,
                      size_t *count_out)
 {
-  size_t count = count_wire_format_protos (in, inlen);
-  if (count == 0)
-    {
-      *count_out = 0;
-      return NULL;
-    }
+  *count_out = 0;
 
-  const char **protos = calloc (count, sizeof (const char *));
+  if (!in || inlen == 0)
+    return NULL;
+
+  /* Start with small capacity, grow as needed */
+  size_t capacity = 4;
+  const char **protos = calloc (capacity, sizeof (const char *));
   if (!protos)
-    {
-      *count_out = 0;
-      return NULL;
-    }
+    return NULL;
 
+  size_t count = 0;
   size_t offset = 0;
-  for (size_t idx = 0; idx < count; idx++)
+
+  while (offset < inlen)
     {
-      protos[idx] = extract_single_proto (in, inlen, &offset);
-      if (!protos[idx])
+      /* Read protocol length byte */
+      unsigned char len = in[offset++];
+      if (offset + len > inlen)
+        break; /* Malformed: length exceeds remaining data */
+
+      /* Grow array if needed */
+      if (count >= capacity)
         {
-          free_client_protos (protos, idx);
-          *count_out = 0;
+          capacity *= 2;
+          const char **new_protos = realloc (protos, capacity * sizeof (char *));
+          if (!new_protos)
+            {
+              free_client_protos (protos, count);
+              return NULL;
+            }
+          protos = new_protos;
+        }
+
+      /* Allocate and copy protocol string */
+      char *proto = malloc (len + 1);
+      if (!proto)
+        {
+          free_client_protos (protos, count);
           return NULL;
         }
+      memcpy (proto, &in[offset], len);
+      proto[len] = '\0';
+
+      protos[count++] = proto;
+      offset += len;
+    }
+
+  if (count == 0)
+    {
+      free (protos);
+      return NULL;
     }
 
   *count_out = count;
@@ -232,8 +208,6 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
  * ============================================================================
  */
 
-/* copy_protocol_to_arena removed - use ctx_arena_strdup from private header */
-
 /**
  * build_wire_format - Build ALPN wire format from protocol list
  * @ctx: Context with arena
@@ -248,12 +222,8 @@ static unsigned char *
 build_wire_format (T ctx, const char **protos, size_t count, size_t *len_out)
 {
   /* Cache protocol lengths to avoid redundant strlen calls */
-  size_t *lengths = Arena_alloc (ctx->arena, count * sizeof (size_t),
-                                 __FILE__, __LINE__);
-  if (!lengths)
-    {
-      ctx_raise_openssl_error ("Failed to allocate ALPN length cache");
-    }
+  size_t *lengths = ctx_arena_alloc (ctx, count * sizeof (size_t),
+                                     "Failed to allocate ALPN length cache");
 
   size_t total = 0;
   for (size_t i = 0; i < count; i++)
@@ -262,11 +232,8 @@ build_wire_format (T ctx, const char **protos, size_t count, size_t *len_out)
       total += 1 + lengths[i];
     }
 
-  unsigned char *buf = Arena_alloc (ctx->arena, total, __FILE__, __LINE__);
-  if (!buf)
-    {
-      ctx_raise_openssl_error ("Failed to allocate ALPN buffer");
-    }
+  unsigned char *buf = ctx_arena_alloc (ctx, total,
+                                        "Failed to allocate ALPN buffer");
 
   size_t offset = 0;
   for (size_t i = 0; i < count; i++)
@@ -309,11 +276,8 @@ validate_alpn_count (size_t count)
 static const char **
 alloc_alpn_array (T ctx, size_t count)
 {
-  const char **arr = Arena_alloc (ctx->arena, count * sizeof (const char *),
-                                  __FILE__, __LINE__);
-  if (!arr)
-    ctx_raise_openssl_error ("Failed to allocate ALPN protocols array");
-  return arr;
+  return ctx_arena_alloc (ctx, count * sizeof (const char *),
+                          "Failed to allocate ALPN protocols array");
 }
 
 /**

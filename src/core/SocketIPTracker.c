@@ -465,20 +465,6 @@ init_tracker_buckets (T tracker)
  * ============================================================================ */
 
 /**
- * increment_entry_count - Increment entry count and total
- * @tracker: IP tracker instance (caller must hold mutex)
- * @entry: Entry to increment
- *
- * Thread-safe: No (caller must hold mutex)
- */
-static void
-increment_entry_count (T tracker, IPEntry *entry)
-{
-  entry->count++;
-  tracker->total_conns++;
-}
-
-/**
  * track_unlimited_mode - Track connection in unlimited mode
  * @tracker: IP tracker instance (caller must hold mutex)
  * @ip: IP address string
@@ -496,7 +482,10 @@ track_unlimited_mode (T tracker, const char *ip)
     entry = create_entry (tracker, ip, bucket);
 
   if (entry != NULL)
-    increment_entry_count (tracker, entry);
+    {
+      entry->count++;
+      tracker->total_conns++;
+    }
 
   return 1;
 }
@@ -535,7 +524,8 @@ track_existing_ip (T tracker, IPEntry *entry)
 {
   if (entry->count < tracker->max_per_ip)
     {
-      increment_entry_count (tracker, entry);
+      entry->count++;
+      tracker->total_conns++;
       return 1;
     }
 
@@ -567,20 +557,6 @@ track_limited_mode (T tracker, const char *ip)
  * ============================================================================ */
 
 /**
- * decrement_entry_count - Decrement entry count and total
- * @tracker: IP tracker instance (caller must hold mutex)
- * @entry: Entry to decrement
- *
- * Thread-safe: No (caller must hold mutex)
- */
-static void
-decrement_entry_count (T tracker, IPEntry *entry)
-{
-  entry->count--;
-  tracker->total_conns--;
-}
-
-/**
  * release_connection - Release a tracked connection
  * @tracker: IP tracker instance (caller must hold mutex)
  * @ip: IP address string
@@ -592,7 +568,8 @@ decrement_entry_count (T tracker, IPEntry *entry)
 static void
 release_connection (T tracker, const char *ip, IPEntry *entry, unsigned bucket)
 {
-  decrement_entry_count (tracker, entry);
+  entry->count--;
+  tracker->total_conns--;
 
   if (entry->count == 0)
     find_and_unlink_zero_entry (tracker, ip, bucket);

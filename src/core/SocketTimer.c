@@ -53,12 +53,6 @@ const Except_T SocketTimer_Failed
 /* Thread-local exception using centralized macro */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTimer);
 
-/* Use centralized error handling macros from SocketUtil.h */
-#define SOCKETTIMER_ERROR_FMT SOCKET_ERROR_FMT
-#define SOCKETTIMER_ERROR_MSG SOCKET_ERROR_MSG
-#define RAISE_SOCKETTIMER_ERROR(exception)                                    \
-  SOCKET_RAISE_MODULE_ERROR (SocketTimer, exception)
-
 /* Forward declaration for timer heap getter */
 struct SocketTimer_heap_T *socketpoll_get_timer_heap (SocketPoll_T poll);
 
@@ -81,8 +75,8 @@ sockettimer_validate_heap (SocketPoll_T poll)
   heap = socketpoll_get_timer_heap (poll);
   if (!heap)
     {
-      SOCKETTIMER_ERROR_MSG ("Timer heap not available");
-      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+      SOCKET_ERROR_MSG ("Timer heap not available");
+      SOCKET_RAISE_MODULE_ERROR (SocketTimer, SocketTimer_Failed);
     }
 
   return heap;
@@ -99,9 +93,9 @@ sockettimer_validate_delay (int64_t delay_ms)
 {
   if (delay_ms < 0)
     {
-      SOCKETTIMER_ERROR_MSG ("Invalid delay: %" PRId64 " (must be >= 0)",
+      SOCKET_ERROR_MSG ("Invalid delay: %" PRId64 " (must be >= 0)",
                             delay_ms);
-      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+      SOCKET_RAISE_MODULE_ERROR (SocketTimer, SocketTimer_Failed);
     }
 }
 
@@ -116,9 +110,9 @@ sockettimer_validate_interval (int64_t interval_ms)
 {
   if (interval_ms < 1)
     {
-      SOCKETTIMER_ERROR_MSG ("Invalid interval: %" PRId64 " (must be >= 1)",
+      SOCKET_ERROR_MSG ("Invalid interval: %" PRId64 " (must be >= 1)",
                             interval_ms);
-      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+      SOCKET_RAISE_MODULE_ERROR (SocketTimer, SocketTimer_Failed);
     }
 }
 
@@ -141,8 +135,8 @@ sockettimer_allocate_timer (Arena_T arena)
   timer = CALLOC (arena, 1, sizeof (*timer));
   if (!timer)
     {
-      SOCKETTIMER_ERROR_MSG ("Failed to allocate timer structure");
-      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+      SOCKET_ERROR_MSG ("Failed to allocate timer structure");
+      SOCKET_RAISE_MODULE_ERROR (SocketTimer, SocketTimer_Failed);
     }
 
   return timer;
@@ -172,33 +166,6 @@ sockettimer_init_timer (struct SocketTimer_T *timer, int64_t delay_ms,
   timer->cancelled = 0;
 }
 
-/**
- * sockettimer_init_oneshot - Initialize a one-shot timer
- * @timer: Timer to initialize
- * @delay_ms: Delay in milliseconds
- * @callback: Callback function
- * @userdata: User data for callback
- */
-static void
-sockettimer_init_oneshot (struct SocketTimer_T *timer, int64_t delay_ms,
-                          SocketTimerCallback callback, void *userdata)
-{
-  sockettimer_init_timer (timer, delay_ms, 0, callback, userdata);
-}
-
-/**
- * sockettimer_init_repeating - Initialize a repeating timer
- * @timer: Timer to initialize
- * @interval_ms: Interval in milliseconds
- * @callback: Callback function
- * @userdata: User data for callback
- */
-static void
-sockettimer_init_repeating (struct SocketTimer_T *timer, int64_t interval_ms,
-                            SocketTimerCallback callback, void *userdata)
-{
-  sockettimer_init_timer (timer, interval_ms, interval_ms, callback, userdata);
-}
 
 /* ===========================================================================
  * Heap Index Calculations (Static)
@@ -325,8 +292,8 @@ sockettimer_heap_resize (SocketTimer_heap_T *heap, size_t new_capacity)
   new_timers = CALLOC (heap->arena, new_capacity, sizeof (*new_timers));
   if (!new_timers)
     {
-      SOCKETTIMER_ERROR_MSG ("Failed to resize timer heap array");
-      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+      SOCKET_ERROR_MSG ("Failed to resize timer heap array");
+      SOCKET_RAISE_MODULE_ERROR (SocketTimer, SocketTimer_Failed);
     }
 
   memcpy (new_timers, heap->timers, heap->count * sizeof (*new_timers));
@@ -394,8 +361,8 @@ sockettimer_ensure_capacity (SocketTimer_heap_T *heap)
   new_capacity = heap->capacity * SOCKET_TIMER_HEAP_GROWTH_FACTOR;
   if (new_capacity <= heap->capacity)
     {
-      SOCKETTIMER_ERROR_MSG ("Timer heap capacity overflow");
-      RAISE_SOCKETTIMER_ERROR (SocketTimer_Failed);
+      SOCKET_ERROR_MSG ("Timer heap capacity overflow");
+      SOCKET_RAISE_MODULE_ERROR (SocketTimer, SocketTimer_Failed);
     }
 
   sockettimer_heap_resize (heap, new_capacity);
@@ -816,10 +783,12 @@ sockettimer_add_internal (SocketPoll_T poll, int64_t delay_ms,
 
   timer = sockettimer_allocate_timer (heap->arena);
 
+  /* Initialize timer: repeating uses interval for both delay and interval,
+   * one-shot uses delay_ms with zero interval */
   if (interval_ms > 0)
-    sockettimer_init_repeating (timer, interval_ms, callback, userdata);
+    sockettimer_init_timer (timer, interval_ms, interval_ms, callback, userdata);
   else
-    sockettimer_init_oneshot (timer, delay_ms, callback, userdata);
+    sockettimer_init_timer (timer, delay_ms, 0, callback, userdata);
 
   SocketTimer_heap_push (heap, timer);
 

@@ -1074,9 +1074,13 @@ perform_dns_resolution (const struct SocketDNS_Request_T *req,
  * copy_and_store_result - Copy result and store in request
  * @req: Request to store result in
  * @result: Original result to copy and free
- * @error: Error code from resolution
+ * @error: Error code from resolution (preserved if non-zero)
  *
  * Thread-safe: Must be called with mutex locked
+ *
+ * Error handling: If result is NULL and error is non-zero, the provided error
+ * is preserved (e.g., EAI_AGAIN for timeouts). Only sets EAI_MEMORY if result
+ * is NULL and error is 0 (indicating an actual allocation failure during copy).
  */
 static void
 copy_and_store_result (struct SocketDNS_Request_T *req,
@@ -1084,8 +1088,18 @@ copy_and_store_result (struct SocketDNS_Request_T *req,
 {
   req->state = REQ_COMPLETE;
   req->result = SocketCommon_copy_addrinfo (result);
-  req->error = req->result ? error : EAI_MEMORY;
-  freeaddrinfo (result); /* Always free original after copy attempt */
+
+  /* Preserve non-zero error codes (e.g., EAI_AGAIN for timeout).
+   * Only set EAI_MEMORY if copy failed with no prior error. */
+  if (req->result)
+    req->error = error;
+  else if (error != 0)
+    req->error = error; /* Preserve original error (timeout, etc.) */
+  else
+    req->error = EAI_MEMORY; /* Copy failed with no prior error */
+
+  if (result)
+    freeaddrinfo (result);
 }
 
 /**
@@ -1141,8 +1155,7 @@ store_resolution_result (struct SocketDNS_T *dns,
     {
       copy_and_store_result (req, result, error);
       update_completion_metrics (error);
-      signal_completion (dns);
-      pthread_cond_broadcast (&dns->result_cond);
+      SIGNAL_DNS_COMPLETION (dns);
     }
   else
     {
