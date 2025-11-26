@@ -1009,11 +1009,32 @@ copy_single_addrinfo_node (const struct addrinfo *src)
   return new_node;
 }
 
+/**
+ * SocketCommon_free_addrinfo - Free addrinfo chain created by copy_addrinfo
+ * @ai: Chain to free (may be NULL, safe no-op)
+ *
+ * Frees all nodes in the chain including ai_addr and ai_canonname fields.
+ * Use this instead of freeaddrinfo() for chains from SocketCommon_copy_addrinfo.
+ */
+void
+SocketCommon_free_addrinfo (struct addrinfo *ai)
+{
+  while (ai)
+    {
+      struct addrinfo *next = ai->ai_next;
+      if (ai->ai_addr)
+        free (ai->ai_addr);
+      if (ai->ai_canonname)
+        free (ai->ai_canonname);
+      free (ai);
+      ai = next;
+    }
+}
+
 static void
 free_partial_addrinfo_chain (struct addrinfo *head)
 {
-  if (head)
-    freeaddrinfo (head);
+  SocketCommon_free_addrinfo (head);
 }
 
 struct addrinfo *

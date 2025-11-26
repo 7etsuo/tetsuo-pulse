@@ -938,7 +938,7 @@ async_connect_dns_callback (SocketDNS_Request_T req, struct addrinfo *result,
   }
   END_TRY;
 
-  freeaddrinfo (result);
+  SocketCommon_free_addrinfo (result);
 
 invoke_callback:
   /* Remove context from list */

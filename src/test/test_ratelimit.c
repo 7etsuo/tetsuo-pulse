@@ -461,7 +461,7 @@ TEST (iptracker_setmax)
 TEST (pool_connection_rate_limit)
 {
   Arena_T arena = Arena_new ();
-  SocketPool_T pool;
+  SocketPool_T pool = NULL;
 
   TRY
     pool = SocketPool_new (arena, 100, 4096);
@@ -477,10 +477,13 @@ TEST (pool_connection_rate_limit)
     SocketPool_setconnrate (pool, 0, 0);
     ASSERT_EQ (0, SocketPool_getconnrate (pool));
   EXCEPT (SocketPool_Failed)
+    if (pool)
+      SocketPool_free (&pool);
     Arena_dispose (&arena);
     ASSERT (0);
   END_TRY;
 
+  SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
 
@@ -488,7 +491,7 @@ TEST (pool_connection_rate_limit)
 TEST (pool_per_ip_limit)
 {
   Arena_T arena = Arena_new ();
-  SocketPool_T pool;
+  SocketPool_T pool = NULL;
 
   TRY
     pool = SocketPool_new (arena, 100, 4096);
@@ -504,10 +507,13 @@ TEST (pool_per_ip_limit)
     SocketPool_setmaxperip (pool, 0);
     ASSERT_EQ (0, SocketPool_getmaxperip (pool));
   EXCEPT (SocketPool_Failed)
+    if (pool)
+      SocketPool_free (&pool);
     Arena_dispose (&arena);
     ASSERT (0);
   END_TRY;
 
+  SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
 
@@ -515,7 +521,7 @@ TEST (pool_per_ip_limit)
 TEST (pool_manual_ip_tracking)
 {
   Arena_T arena = Arena_new ();
-  SocketPool_T pool;
+  SocketPool_T pool = NULL;
   int result;
 
   TRY
@@ -541,10 +547,13 @@ TEST (pool_manual_ip_tracking)
     result = SocketPool_track_ip (pool, "192.168.1.100");
     ASSERT_EQ (1, result);
   EXCEPT (SocketPool_Failed)
+    if (pool)
+      SocketPool_free (&pool);
     Arena_dispose (&arena);
     ASSERT (0);
   END_TRY;
 
+  SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
 
@@ -552,7 +561,7 @@ TEST (pool_manual_ip_tracking)
 TEST (pool_accept_allowed_check)
 {
   Arena_T arena = Arena_new ();
-  SocketPool_T pool;
+  SocketPool_T pool = NULL;
   int allowed;
 
   TRY
@@ -574,10 +583,13 @@ TEST (pool_accept_allowed_check)
     allowed = SocketPool_accept_allowed (pool, "10.0.0.2");
     ASSERT_EQ (1, allowed);
   EXCEPT (SocketPool_Failed)
+    if (pool)
+      SocketPool_free (&pool);
     Arena_dispose (&arena);
     ASSERT (0);
   END_TRY;
 
+  SocketPool_free (&pool);
   Arena_dispose (&arena);
 }
 

@@ -79,6 +79,11 @@ apply_verify_settings (T ctx)
  * @x509_ctx: Certificate store context
  *
  * Returns: 1 to continue verification, 0 to fail
+ *
+ * Security note: Catches ALL exceptions from user callbacks to prevent
+ * uncaught exceptions from propagating through OpenSSL's callback mechanism,
+ * which could cause undefined behavior. Any exception results in verification
+ * failure with X509_V_ERR_APPLICATION_VERIFICATION error code.
  */
 static int
 internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx)
@@ -104,6 +109,14 @@ internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx)
   }
   EXCEPT (SocketTLS_Failed)
   {
+    /* TLS-specific exception - verification failed */
+    result = 0;
+    X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
+  }
+  ELSE
+  {
+    /* Catch all other exceptions to prevent undefined behavior from
+     * uncaught exceptions propagating through OpenSSL callback mechanism */
     result = 0;
     X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
   }
@@ -343,12 +356,12 @@ SocketTLSContext_set_ocsp_gen_callback (T ctx, SocketTLSOcspGenCallback cb,
 
 /**
  * validate_socket_for_ocsp - Check socket is ready for OCSP status query
- * @socket: Socket to validate
+ * @socket: Socket to validate (read-only check)
  *
- * Returns: 1 if valid, 0 if not ready for OCSP
+ * Returns: 1 if valid (TLS enabled, handshake done, SSL available), 0 otherwise
  */
 static int
-validate_socket_for_ocsp (Socket_T socket)
+validate_socket_for_ocsp (const Socket_T socket)
 {
   return socket && socket->tls_enabled && socket->tls_ssl
          && socket->tls_handshake_done;
@@ -357,9 +370,9 @@ validate_socket_for_ocsp (Socket_T socket)
 /**
  * get_ocsp_response_bytes - Get raw OCSP response from SSL
  * @ssl: SSL connection
- * @resp_bytes: Output pointer to response bytes
+ * @resp_bytes: Output pointer to response bytes (OpenSSL-owned, do not free)
  *
- * Returns: Length of response, or 0 if no response
+ * Returns: Length of response, or 0 if no response or invalid
  */
 static int
 get_ocsp_response_bytes (SSL *ssl, const unsigned char **resp_bytes)
@@ -372,7 +385,9 @@ get_ocsp_response_bytes (SSL *ssl, const unsigned char **resp_bytes)
  * validate_ocsp_basic_response - Validate OCSP basic response structure
  * @resp: OCSP response to validate
  *
- * Returns: 1 if valid, error status code otherwise
+ * Returns: 1 if valid basic response present, OCSP error status otherwise
+ *
+ * Note: Extracts and immediately frees basic response; only checks structure.
  */
 static int
 validate_ocsp_basic_response (OCSP_RESPONSE *resp)

@@ -13,6 +13,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "dns/SocketDNS.h"
+#include "socket/SocketCommon.h"
 
 #define DNS_STRESS_NUM_REQUESTS 10000
 #define DNS_STRESS_NUM_THREADS 20
@@ -86,7 +87,7 @@ dns_stress_thread (void *arg)
             result = SocketDNS_getresult (dns, req);
             if (result)
               {
-                freeaddrinfo (result);
+                SocketCommon_free_addrinfo (result);
                 pthread_mutex_lock (&dns_stats_mutex);
                 completed_requests++;
                 pthread_mutex_unlock (&dns_stats_mutex);

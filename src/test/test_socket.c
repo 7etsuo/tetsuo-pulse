@@ -2243,7 +2243,7 @@ TEST(socket_bind_async_basic)
         if (res)
         {
             Socket_bind_with_addrinfo(socket, res);
-            freeaddrinfo(res);
+            SocketCommon_free_addrinfo(res);
         }
     EXCEPT(Socket_Failed) (void)0;
     EXCEPT(SocketDNS_Failed) (void)0;
@@ -2270,7 +2270,7 @@ TEST(socket_bind_async_wildcard)
         if (res)
         {
             Socket_bind_with_addrinfo(socket, res);
-            freeaddrinfo(res);
+            SocketCommon_free_addrinfo(res);
         }
     EXCEPT(Socket_Failed) (void)0;
     EXCEPT(SocketDNS_Failed) (void)0;
@@ -2305,7 +2305,7 @@ TEST(socket_connect_async_basic)
         if (res)
         {
             Socket_connect_with_addrinfo(client, res);
-            freeaddrinfo(res);
+            SocketCommon_free_addrinfo(res);
         }
     EXCEPT(Socket_Failed) (void)0;
     EXCEPT(SocketDNS_Failed) (void)0;
@@ -2340,7 +2340,7 @@ TEST(socket_connect_async_localhost)
         if (res)
         {
             Socket_connect_with_addrinfo(client, res);
-            freeaddrinfo(res);
+            SocketCommon_free_addrinfo(res);
     }
     EXCEPT(Socket_Failed) (void)0;
     EXCEPT(SocketDNS_Failed) (void)0;
@@ -2632,14 +2632,14 @@ TEST (socket_bind_async_wildcard_uses_ai_passive)
   ASSERT (Socket_getlocalport (socket) >= 1);
   ASSERT (Socket_getlocalport (socket) <= 65535);
 
-  freeaddrinfo (res);
+  SocketCommon_free_addrinfo (res);
   res = NULL;
   EXCEPT (Socket_Failed)
   if (res)
-    freeaddrinfo (res);
+    SocketCommon_free_addrinfo (res);
   EXCEPT (SocketDNS_Failed)
   if (res)
-    freeaddrinfo (res);
+    SocketCommon_free_addrinfo (res);
   FINALLY
   if (socket)
     Socket_free (&socket);
