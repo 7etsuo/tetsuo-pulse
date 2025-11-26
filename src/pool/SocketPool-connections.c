@@ -184,6 +184,7 @@ SocketPool_connections_reset_slot (Connection_T conn)
   conn->data = NULL;
   conn->last_activity = 0;
   conn->active = 0;
+  conn->tracked_ip = NULL;  /* Clear tracked IP reference */
 #ifdef SOCKET_HAS_TLS
   conn->tls_ctx = NULL;
   conn->tls_handshake_complete = 0;
@@ -402,6 +403,13 @@ SocketPool_remove (T pool, Socket_T socket)
 #ifdef SOCKET_HAS_TLS
   cleanup_tls_and_save_session (conn, socket);
 #endif
+
+  /* Release tracked IP for per-IP limiting */
+  if (conn->tracked_ip && pool->ip_tracker)
+    {
+      SocketIPTracker_release (pool->ip_tracker, conn->tracked_ip);
+      conn->tracked_ip = NULL;
+    }
 
   SocketPool_connections_release_buffers (conn);
   SocketPool_connections_reset_slot (conn);

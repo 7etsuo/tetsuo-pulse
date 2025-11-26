@@ -547,6 +547,77 @@ extern void Socket_timeouts_getdefaults (SocketTimeouts_T *timeouts);
 extern void Socket_timeouts_setdefaults (const SocketTimeouts_T *timeouts);
 
 /* ============================================================================
+ * Bandwidth Limiting
+ * ============================================================================ */
+
+/**
+ * Socket_setbandwidth - Set bandwidth limit for socket
+ * @socket: Socket to modify
+ * @bytes_per_sec: Maximum bytes per second (0 to disable limiting)
+ *
+ * Raises: Socket_Failed on allocation failure
+ * Thread-safe: Yes - uses internal mutex
+ *
+ * Enables bandwidth throttling using a token bucket algorithm.
+ * The burst capacity is set to bytes_per_sec (1 second of data).
+ * Use Socket_send_limited() for rate-limited sending.
+ */
+extern void Socket_setbandwidth (T socket, size_t bytes_per_sec);
+
+/**
+ * Socket_getbandwidth - Get bandwidth limit for socket
+ * @socket: Socket to query
+ *
+ * Returns: Bandwidth limit in bytes per second (0 if unlimited)
+ * Thread-safe: Yes
+ */
+extern size_t Socket_getbandwidth (T socket);
+
+/**
+ * Socket_send_limited - Send data with bandwidth limiting
+ * @socket: Connected socket
+ * @buf: Data to send
+ * @len: Length of data (> 0)
+ *
+ * Returns: Bytes sent (> 0), 0 if rate limited (try again later), or raises
+ * Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors
+ * Thread-safe: Yes - uses socket's bandwidth limiter
+ *
+ * Like Socket_send() but respects bandwidth limit set by Socket_setbandwidth().
+ * If bandwidth limiting is disabled (0), behaves like Socket_send().
+ * If rate limited, returns 0 and caller should wait before retrying.
+ * Use Socket_bandwidth_wait_ms() to get recommended wait time.
+ */
+extern ssize_t Socket_send_limited (T socket, const void *buf, size_t len);
+
+/**
+ * Socket_recv_limited - Receive data with bandwidth limiting
+ * @socket: Connected socket
+ * @buf: Buffer for received data
+ * @len: Buffer size (> 0)
+ *
+ * Returns: Bytes received (> 0), 0 if rate limited or would block, or raises
+ * Raises: Socket_Closed on peer close, Socket_Failed on other errors
+ * Thread-safe: Yes - uses socket's bandwidth limiter
+ *
+ * Like Socket_recv() but respects bandwidth limit set by Socket_setbandwidth().
+ * If bandwidth limiting is disabled (0), behaves like Socket_recv().
+ */
+extern ssize_t Socket_recv_limited (T socket, void *buf, size_t len);
+
+/**
+ * Socket_bandwidth_wait_ms - Get wait time until bandwidth available
+ * @socket: Socket to query
+ * @bytes: Number of bytes needed
+ *
+ * Returns: Milliseconds to wait, 0 if immediate, -1 if impossible
+ * Thread-safe: Yes
+ *
+ * Useful for event loop integration - use as poll timeout.
+ */
+extern int64_t Socket_bandwidth_wait_ms (T socket, size_t bytes);
+
+/* ============================================================================
  * Unix Domain Socket Operations
  * ============================================================================ */
 

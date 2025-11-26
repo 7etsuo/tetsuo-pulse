@@ -17,6 +17,8 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
+#include "core/SocketIPTracker.h"
+#include "core/SocketRateLimit.h"
 #include "core/SocketUtil.h"
 #include "pool/SocketPool.h"
 #include "socket/Socket.h"
@@ -79,6 +81,7 @@ struct Connection
   struct Connection *hash_next;
   struct Connection *free_next;
   SocketReconnect_T reconnect;      /**< Auto-reconnection context (NULL if disabled) */
+  char *tracked_ip;                 /**< Tracked IP for per-IP limiting (NULL if not tracked) */
 #ifdef SOCKET_HAS_TLS
   SocketTLSContext_T tls_ctx;       /**< TLS context for this connection */
   int tls_handshake_complete;       /**< TLS handshake state */
@@ -114,6 +117,10 @@ struct T
   /* Reconnection support */
   SocketReconnect_Policy_T reconnect_policy; /**< Default reconnection policy */
   int reconnect_enabled;            /**< 1 if default reconnection enabled */
+  
+  /* Rate limiting support */
+  SocketRateLimit_T conn_limiter;   /**< Connection rate limiter (NULL if disabled) */
+  SocketIPTracker_T ip_tracker;     /**< Per-IP connection tracker (NULL if disabled) */
 };
 #undef T
 
