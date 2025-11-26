@@ -12,6 +12,10 @@ This codebase follows **C Interfaces and Implementations** patterns with:
 - **GNU C coding style** (8-space indentation, return types on separate lines)
 - **Opaque types** with `T` macro pattern (`#define T ModuleName_T`)
 - **Cross-platform backends** (epoll/kqueue/poll abstraction in SocketPoll)
+- **SocketBase delegation** (`SocketBase_T` shared by Socket_T/SocketDgram_T)
+- **Centralized error infrastructure** (`SOCKET_DECLARE_MODULE_EXCEPTION`, `SOCKET_RAISE_FMT`)
+- **TLS-aware I/O abstraction** (`socket_send_internal`, `socket_recv_internal`)
+- **Live count debugging** (`SocketLiveCount` for instance tracking)
 
 ## Step-by-Step Redundancy Removal Process
 
@@ -20,11 +24,16 @@ This codebase follows **C Interfaces and Implementations** patterns with:
 2. **Map All Code Blocks**: Identify every function, macro, include, and code block. Create a mental model of what each piece does.
 
 3. **Cross-Reference with Codebase**: Check if functionality already exists in base layer components:
-   - `Arena.h` / `Except.h` - Foundation layer
-   - `SocketConfig.h` - Constants, macros, limits
-   - `SocketUtil.h` - Error formatting, logging, thread-local exceptions
-   - `SocketCommon.h` - Shared socket base functionality
-   - `SocketBuf.h` - Buffer operations
+   - `Arena.h` / `Except.h` - Foundation layer (memory, exceptions)
+   - `SocketConfig.h` - Constants, macros, limits, `SAFE_CLOSE`, `HASH_GOLDEN_RATIO`
+   - `SocketUtil.h` - Error formatting, logging, hash functions, monotonic time, module exceptions
+   - `SocketCommon.h` - Shared socket base (`SocketBase_T`), address resolution, validation, iovec helpers
+   - `SocketCommon-private.h` - Base field accessors (`SocketBase_fd`, `SocketBase_arena`, etc.)
+   - `SocketIO.h` - TLS-aware I/O abstraction (`socket_send_internal`, etc.)
+   - `SocketBuf.h` - Circular buffer operations
+   - `SocketTimer-private.h` - Timer heap management
+   - `SocketRateLimit.h` - Token bucket rate limiting
+   - `SocketIPTracker.h` - Per-IP connection tracking
    
    Remove local implementations that duplicate existing functionality.
 
@@ -443,6 +452,286 @@ This codebase follows **C Interfaces and Implementations** patterns with:
    /* KEEP - if truly cross-platform */
    ```
 
+### 21. **Redundant Error+Raise Patterns** [HIGH]
+   - Separate SOCKET_ERROR_FMT followed by RAISE_MODULE_ERROR
+   - Multiple steps that could be combined into single SOCKET_RAISE_FMT
+   - Duplicated error formatting + exception raising logic
+   
+   **Detection Pattern**:
+   ```c
+   /* REDUNDANT - two-step pattern */
+   SOCKET_ERROR_FMT("connect failed to %s:%d", host, port);
+   RAISE_MODULE_ERROR(Socket_Failed);
+   
+   /* FIXED - use unified macro from SocketUtil.h */
+   SOCKET_RAISE_FMT(Socket, Socket_Failed, "connect failed to %s:%d", host, port);
+   
+   /* For messages without errno */
+   SOCKET_RAISE_MSG(Socket, Socket_Failed, "invalid port: %d", port);
+   ```
+   
+   **Note**: Use `SOCKET_RAISE_FMT` (with errno) or `SOCKET_RAISE_MSG` (without errno).
+
+### 22. **Redundant Module Exception Setup** [HIGH]
+   - Manual thread-local exception declarations
+   - Custom RAISE_MODULE_ERROR implementations
+   - Duplicated exception infrastructure across modules
+   
+   **Detection Pattern**:
+   ```c
+   /* REDUNDANT - manual declaration */
+   #ifdef _WIN32
+   static __declspec(thread) Except_T Module_DetailedException;
+   #else
+   static __thread Except_T Module_DetailedException;
+   #endif
+   
+   #define RAISE_MODULE_ERROR(exception) \
+     do { \
+       Module_DetailedException = (exception); \
+       Module_DetailedException.reason = socket_error_buf; \
+       RAISE(Module_DetailedException); \
+     } while (0)
+   
+   /* FIXED - use centralized macro from SocketUtil.h */
+   SOCKET_DECLARE_MODULE_EXCEPTION(Module);
+   #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(Module, e)
+   ```
+
+### 23. **Redundant SocketBase Functionality** [HIGH]
+   - Duplicated socket fd/arena/endpoint fields across Socket_T and SocketDgram_T
+   - Local implementations of address resolution that exist in SocketCommon
+   - Custom socket option setters duplicating SocketCommon_set_option_int
+   
+   **Detection Pattern**:
+   ```c
+   /* REDUNDANT - duplicated setsockopt wrapper */
+   int value = 1;
+   if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value)) < 0) {
+       SOCKET_ERROR_FMT("Failed to set SO_REUSEADDR");
+       RAISE_MODULE_ERROR(Socket_Failed);
+   }
+   
+   /* FIXED - use SocketCommon helper */
+   SocketCommon_set_option_int(base, SOL_SOCKET, SO_REUSEADDR, 1, Socket_Failed);
+   
+   /* REDUNDANT - manual address resolution */
+   struct addrinfo hints, *res;
+   memset(&hints, 0, sizeof(hints));
+   hints.ai_family = AF_UNSPEC;
+   hints.ai_socktype = SOCK_STREAM;
+   /* ... getaddrinfo call ... */
+   
+   /* FIXED - use SocketCommon helper */
+   SocketCommon_resolve_address(host, port, &hints, &res, Socket_Failed, AF_UNSPEC, 1);
+   ```
+   
+   **Available SocketCommon helpers**:
+   - `SocketCommon_new_base()` / `SocketCommon_free_base()` - Lifecycle
+   - `SocketCommon_set_option_int()` - Socket options
+   - `SocketCommon_set_nonblock()` - Non-blocking mode
+   - `SocketCommon_set_ttl()` - TTL/hop limit
+   - `SocketCommon_join_multicast()` / `SocketCommon_leave_multicast()`
+   - `SocketCommon_resolve_address()` - DNS resolution
+   - `SocketCommon_cache_endpoint()` - Address formatting
+   - `SocketCommon_validate_port()` / `SocketCommon_validate_hostname()`
+
+### 24. **Redundant iovec Calculations** [MEDIUM]
+   - Manual total iov_len calculation loops
+   - Custom iovec advancement after partial I/O
+   - Duplicated overflow checks in scatter/gather operations
+   
+   **Detection Pattern**:
+   ```c
+   /* REDUNDANT - manual iov length calculation */
+   size_t total = 0;
+   for (int i = 0; i < iovcnt; i++) {
+       if (total > SIZE_MAX - iov[i].iov_len) {
+           /* overflow check */
+       }
+       total += iov[i].iov_len;
+   }
+   
+   /* FIXED - use SocketCommon helper */
+   size_t total = SocketCommon_calculate_total_iov_len(iov, iovcnt);
+   
+   /* REDUNDANT - manual iov advancement */
+   size_t remaining = bytes;
+   for (int i = 0; i < iovcnt && remaining > 0; i++) {
+       if (iov[i].iov_len <= remaining) {
+           remaining -= iov[i].iov_len;
+           iov[i].iov_len = 0;
+           iov[i].iov_base = NULL;
+       } else {
+           iov[i].iov_base += remaining;
+           iov[i].iov_len -= remaining;
+           remaining = 0;
+       }
+   }
+   
+   /* FIXED - use SocketCommon helper */
+   SocketCommon_advance_iov(iov, iovcnt, bytes);
+   ```
+   
+   **Available helpers**:
+   - `SocketCommon_calculate_total_iov_len()` - Total with overflow protection
+   - `SocketCommon_advance_iov()` - Advance past consumed bytes
+   - `SocketCommon_find_active_iov()` - Find first non-empty iovec
+   - `SocketCommon_alloc_iov_copy()` - Allocate working copy
+   - `SocketCommon_sync_iov_progress()` - Sync progress back to original
+
+### 25. **Redundant Hash Functions** [MEDIUM]
+   - Custom golden ratio hash implementations
+   - Duplicated fd-to-bucket calculations
+   - Multiple hash functions for same key types
+   
+   **Detection Pattern**:
+   ```c
+   /* REDUNDANT - local hash function */
+   static unsigned socket_hash(Socket_T socket) {
+       int fd = Socket_fd(socket);
+       return ((unsigned)fd * 2654435761u) % HASH_SIZE;
+   }
+   
+   /* FIXED - use SocketUtil helper */
+   unsigned hash = socket_util_hash_fd(Socket_fd(socket), HASH_SIZE);
+   
+   /* For pointers */
+   unsigned hash = socket_util_hash_ptr(ptr, HASH_SIZE);
+   
+   /* For unsigned integers (request IDs, etc.) */
+   unsigned hash = socket_util_hash_uint(id, HASH_SIZE);
+   ```
+   
+   **Note**: All hash functions use HASH_GOLDEN_RATIO (2654435761u) from SocketConfig.h.
+
+### 26. **Redundant Monotonic Time Calls** [MEDIUM]
+   - Manual clock_gettime(CLOCK_MONOTONIC) with fallback logic
+   - Duplicated time conversion (seconds to milliseconds)
+   - Local implementations of timestamp acquisition
+   
+   **Detection Pattern**:
+   ```c
+   /* REDUNDANT - manual clock access */
+   struct timespec ts;
+   int64_t now_ms;
+   if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+       now_ms = (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+   } else {
+       /* fallback to CLOCK_REALTIME */
+   }
+   
+   /* FIXED - use SocketUtil helper */
+   int64_t now_ms = Socket_get_monotonic_ms();
+   ```
+
+### 27. **Redundant Live Count Tracking** [LOW]
+   - Custom atomic/mutex-protected counters for instance tracking
+   - Duplicated increment/decrement patterns across modules
+   - Local debug count implementations
+   
+   **Detection Pattern**:
+   ```c
+   /* REDUNDANT - custom counter with mutex */
+   static int live_count = 0;
+   static pthread_mutex_t count_mutex = PTHREAD_MUTEX_INITIALIZER;
+   
+   void increment_count(void) {
+       pthread_mutex_lock(&count_mutex);
+       live_count++;
+       pthread_mutex_unlock(&count_mutex);
+   }
+   
+   /* FIXED - use SocketLiveCount from SocketCommon.h */
+   static struct SocketLiveCount tracker = SOCKETLIVECOUNT_STATIC_INIT;
+   
+   #define module_live_increment() SocketLiveCount_increment(&tracker)
+   #define module_live_decrement() SocketLiveCount_decrement(&tracker)
+   
+   int Module_debug_live_count(void) {
+       return SocketLiveCount_get(&tracker);
+   }
+   ```
+
+### 28. **Redundant TLS I/O Routing** [HIGH]
+   - Manual if/else chains checking TLS status before I/O
+   - Duplicated SSL_read/SSL_write vs recv/send logic
+   - Local TLS error mapping to errno
+   
+   **Detection Pattern**:
+   ```c
+   /* REDUNDANT - manual TLS routing */
+   ssize_t n;
+   if (socket->tls_enabled) {
+       n = SSL_read(socket->tls_ssl, buf, len);
+       if (n <= 0) {
+           int err = SSL_get_error(socket->tls_ssl, n);
+           if (err == SSL_ERROR_WANT_READ) {
+               errno = EAGAIN;
+               return 0;
+           }
+           /* ... more error handling ... */
+       }
+   } else {
+       n = recv(socket->fd, buf, len, 0);
+   }
+   
+   /* FIXED - use SocketIO internal abstractions */
+   #include "socket/SocketIO.h"
+   
+   ssize_t n = socket_recv_internal(socket, buf, len, 0);
+   /* TLS routing handled automatically */
+   ```
+   
+   **Available SocketIO functions**:
+   - `socket_send_internal()` - TLS-aware send
+   - `socket_recv_internal()` - TLS-aware recv
+   - `socket_sendv_internal()` - TLS-aware scatter send
+   - `socket_recvv_internal()` - TLS-aware gather recv
+   - `socket_is_tls_enabled()` - Check TLS status
+   - `socket_tls_want_read()` / `socket_tls_want_write()` - Handshake state
+
+### 29. **Redundant Token Bucket Calculations** [LOW]
+   - Manual token refill rate calculations
+   - Duplicated elapsed time to tokens conversion
+   - Custom wait time estimation for rate limiting
+   
+   **Detection Pattern**:
+   ```c
+   /* REDUNDANT - manual token calculation */
+   int64_t elapsed_ms = now - last_refill;
+   size_t tokens_to_add = (elapsed_ms * tokens_per_sec) / 1000;
+   
+   /* KEEP if custom rate limiter needed, otherwise use SocketRateLimit */
+   SocketRateLimit_T limiter = SocketRateLimit_new(arena, tokens_per_sec, bucket_size);
+   if (SocketRateLimit_acquire(limiter, 1)) {
+       /* allowed */
+   }
+   ```
+
+### 30. **Redundant Timer Management** [MEDIUM]
+   - Manual min-heap implementations for timeouts
+   - Duplicated timer expiry checking logic
+   - Custom callback scheduling
+   
+   **Detection Pattern**:
+   ```c
+   /* REDUNDANT - custom timer heap */
+   typedef struct Timer {
+       int64_t expiry;
+       void (*callback)(void*);
+       void *data;
+   } Timer;
+   Timer *timers[MAX_TIMERS];
+   /* manual heap operations */
+   
+   /* FIXED - use SocketTimer from SocketTimer-private.h */
+   SocketTimer_heap_T *heap = SocketTimer_heap_new(arena);
+   struct SocketTimer_T *timer = /* ... */;
+   SocketTimer_heap_push(heap, timer);
+   int fired = SocketTimer_process_expired(heap);
+   ```
+
 ---
 
 ## Priority Levels
@@ -564,6 +853,9 @@ Before finalizing, verify:
 - [ ] Arena cleanup still complete in FINALLY blocks
 - [ ] Module naming conventions preserved
 - [ ] CRITICAL issues all addressed
+- [ ] New dependencies properly included (SocketUtil.h, SocketCommon.h, etc.)
+- [ ] Module exception properly declared with SOCKET_DECLARE_MODULE_EXCEPTION
+- [ ] SocketBase_T used instead of duplicated fd/arena fields (for socket subtypes)
 
 ---
 
@@ -575,11 +867,27 @@ When removing redundancy, leverage existing components:
 |------|----------|----------|
 | Memory allocation | `ALLOC`/`CALLOC` from SocketConfig.h | Custom malloc wrappers |
 | Error formatting | `SOCKET_ERROR_FMT`/`SOCKET_ERROR_MSG` from SocketUtil.h | Local snprintf patterns |
-| Exception raising | `RAISE_MODULE_ERROR` macro | Direct `.reason` modification |
+| Error + exception | `SOCKET_RAISE_FMT`/`SOCKET_RAISE_MSG` from SocketUtil.h | Separate error format + raise |
+| Module exception | `SOCKET_DECLARE_MODULE_EXCEPTION` from SocketUtil.h | Manual __thread declaration |
+| Exception raising | `SOCKET_RAISE_MODULE_ERROR(Module, e)` | Direct `.reason` modification |
 | Socket validation | Existing `SOCKET_VALID_*` macros | Custom validation logic |
 | Safe close | `SAFE_CLOSE(fd)` | Manual close with EINTR handling |
 | Thread-local errors | `socket_error_buf` from SocketUtil.h | Local __thread buffers |
 | Constants/limits | SocketConfig.h | Magic numbers |
+| Hash golden ratio | `HASH_GOLDEN_RATIO` from SocketConfig.h | Magic `2654435761u` |
+| Hash functions | `socket_util_hash_fd/ptr/uint()` from SocketUtil.h | Custom hash functions |
+| Monotonic time | `Socket_get_monotonic_ms()` from SocketUtil.h | Manual clock_gettime |
+| Socket base | `SocketCommon_new_base()` / `SocketBase_T` | Duplicated fd/arena fields |
+| Socket options | `SocketCommon_set_option_int()` | Manual setsockopt wrappers |
+| Address resolution | `SocketCommon_resolve_address()` | Manual getaddrinfo |
+| Non-blocking mode | `SocketCommon_set_nonblock()` | Manual fcntl O_NONBLOCK |
+| iovec total length | `SocketCommon_calculate_total_iov_len()` | Manual loop with overflow checks |
+| iovec advancement | `SocketCommon_advance_iov()` | Manual iov pointer/len updates |
+| Live count debug | `SocketLiveCount` struct + macros | Custom mutex-protected counters |
+| TLS-aware I/O | `socket_send_internal()` / `socket_recv_internal()` | Manual if TLS_enabled routing |
+| Port validation | `SocketCommon_validate_port()` | Custom range checks |
+| Hostname validation | `SocketCommon_validate_hostname()` | Manual strlen checks |
+| Endpoint caching | `SocketCommon_cache_endpoint()` | Manual getnameinfo calls |
 
 ---
 
@@ -602,6 +910,30 @@ rg 'assert\s*\(\s*\w+\s*\)' -A2 | grep 'NULL'
 
 # Duplicate setsockopt
 rg 'setsockopt.*SO_' | cut -d: -f2 | sort | uniq -c | grep -v '^\s*1'
+
+# Two-step error+raise (should use SOCKET_RAISE_FMT)
+rg 'SOCKET_ERROR_FMT|SOCKET_ERROR_MSG' -A1 | grep 'RAISE_MODULE_ERROR'
+
+# Manual module exception declaration (should use SOCKET_DECLARE_MODULE_EXCEPTION)
+rg '__thread.*Except_T.*DetailedException'
+
+# Manual hash function (should use socket_util_hash_*)
+rg '2654435761u|HASH_GOLDEN_RATIO' --type c
+
+# Manual clock_gettime (should use Socket_get_monotonic_ms)
+rg 'clock_gettime.*CLOCK_MONOTONIC' --type c
+
+# Manual iov length calculation loops
+rg 'for.*iovcnt.*iov_len' --type c
+
+# Manual TLS routing (should use socket_*_internal)
+rg 'if.*tls_enabled.*SSL_' --type c
+
+# Duplicated socket option setters
+rg 'setsockopt.*SOL_SOCKET' --type c | cut -d: -f1 | sort | uniq -c | sort -rn
+
+# Manual live count tracking (should use SocketLiveCount)
+rg 'pthread_mutex.*count|live_count' --type c
 
 # Unused includes (requires compilation)
 # gcc -H file.c 2>&1 | grep '^\.'

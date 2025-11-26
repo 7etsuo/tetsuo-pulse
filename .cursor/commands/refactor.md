@@ -20,14 +20,26 @@ This codebase follows **C Interfaces and Implementations** patterns with:
 - `async-dns.mdc` - Async DNS patterns and thread pool design
 - `cross-platform-backends.mdc` - Event backend abstraction (epoll/kqueue/poll)
 - `error-handling.mdc` - Thread-safe exception patterns
+- `happy-eyeballs.mdc` - RFC 8305 dual-stack connection racing
 - `memory-management.mdc` - Arena allocation and overflow protection
 - `module-patterns.mdc` - Module design patterns for each component
+- `reconnection.mdc` - Auto-reconnection with backoff and circuit breaker
 - `udp-sockets.mdc` - UDP/datagram-specific patterns
 - `unix-domain-sockets.mdc` - AF_UNIX socket patterns
 
 ## Step-by-Step Refactoring Process
 
-1. **Understand the Codebase Context**: Analyze the provided code in the context of the broader socket library. Identify opportunities to leverage existing base layer components (Arena, Exception system, SocketError, SocketConfig) instead of reinventing functionality. Ensure the code builds upon foundational elements where appropriate, avoiding duplication.
+1. **Understand the Codebase Context**: Analyze the provided code in the context of the broader socket library. Identify opportunities to leverage existing components instead of reinventing functionality:
+   - **Foundation Layer**: Arena (memory), Except (errors), SocketConfig (constants)
+   - **Utilities Layer**: SocketUtil (logging/metrics/events), SocketCommon (shared helpers)
+   - **Protection Layer**: SocketRateLimit (throttling), SocketIPTracker (per-IP limits)
+   - **Core I/O Layer**: Socket, SocketDgram, SocketBuf, SocketDNS, SocketIO
+   - **Event Layer**: SocketPoll (epoll/kqueue/poll), SocketTimer (timers)
+   - **Resilience Layer**: SocketReconnect (auto-reconnect), SocketHappyEyeballs (dual-stack)
+   - **Application Layer**: SocketPool (connection management)
+   - **TLS Layer**: SocketTLS, SocketTLSContext (secure connections)
+   
+   Ensure code builds upon foundational elements and reuses existing patterns, avoiding duplication.
 
 2. **Security Audit**: Conduct a thorough security review. Check for vulnerabilities such as buffer overflows, integer overflows, null pointer dereferences, memory leaks, race conditions, and injection risks. Use secure coding patterns (bounds checking, safe string handling with `snprintf`, overflow protection before arithmetic). Eliminate any insecure practices and suggest hardened alternatives. Pay special attention to socket lifetimes—verify that every accepted socket is either pooled and subsequently removed or explicitly freed so that `Socket_debug_live_count()` reaches zero at teardown.
 
@@ -273,7 +285,7 @@ This codebase follows **C Interfaces and Implementations** patterns with:
    - Backend-specific optimizations exposed outside backend files
    - Edge-triggered mode not properly used (must use EPOLLET/EV_CLEAR)
    - Event retrieval not following backend interface pattern
-   - Platform detection that should be at compile-time via Makefile
+   - Platform detection that should be at compile-time via CMake/Makefile
    - Code assuming specific backend (epoll) that should be portable
 
 ### 14. **UDP/Datagram Socket Patterns (SocketDgram)**
@@ -314,6 +326,67 @@ This codebase follows **C Interfaces and Implementations** patterns with:
    - Zero-copy operations returning pointers without proper length checks
    - Buffer reuse not following `SocketBuf_clear` + `SocketBuf_secureclear` pattern
    - Missing contiguous region calculations for efficient I/O
+
+### 18. **Rate Limiting Patterns (SocketRateLimit)**
+   - Custom rate limiting instead of using `SocketRateLimit` module
+   - Missing token bucket configuration (tokens_per_sec, bucket_size)
+   - Not using `SocketRateLimit_try_acquire` for non-blocking checks
+   - Missing wait time calculation via `SocketRateLimit_wait_time_ms`
+   - Rate limiter not configured per-use-case (connections vs bandwidth)
+   - Missing runtime reconfiguration support
+
+### 19. **IP Tracking Patterns (SocketIPTracker)**
+   - Custom per-IP tracking instead of using `SocketIPTracker` module
+   - Missing max_per_ip configuration for DoS protection
+   - Not calling `SocketIPTracker_release` on connection close (leak)
+   - Missing `SocketIPTracker_track` check before accepting connections
+   - Hash collision handling not using O(1) lookup pattern
+
+### 20. **Auto-Reconnection Patterns (SocketReconnect)**
+   - Custom reconnection logic instead of using `SocketReconnect` module
+   - Missing exponential backoff (use `SocketReconnect_Policy_T`)
+   - No circuit breaker pattern (use `circuit_failure_threshold`)
+   - Missing health check configuration (`health_check_interval_ms`)
+   - Not using event loop integration (`SocketReconnect_pollfd`, `_tick`)
+   - Custom jitter instead of policy-based jitter
+
+### 21. **Happy Eyeballs Patterns (SocketHappyEyeballs)**
+   - Sequential IPv4/IPv6 connection instead of RFC 8305 racing
+   - Missing first attempt delay (should be 250ms per RFC 8305)
+   - Not using `SocketHappyEyeballs_connect` for simple dual-stack connections
+   - Async Happy Eyeballs not using `SocketHappyEyeballs_start/process/result`
+   - Missing total timeout configuration
+   - Not cleaning up losing connections properly
+
+### 22. **Timer Module Patterns (SocketTimer)**
+   - Using `sleep()` or manual timing instead of `SocketTimer`
+   - Missing integration with `SocketPoll` event loop
+   - Not using `SocketTimer_add_repeating` for periodic tasks
+   - Manual timer tracking instead of timer handles
+   - Missing timer cancellation via `SocketTimer_cancel`
+   - Not using `SocketTimer_remaining` for timeout calculations
+
+### 23. **Utility Module Patterns (SocketUtil)**
+   - Custom logging instead of `SocketLog_emit`/`SocketLog_emitf`
+   - Missing logging callback configuration
+   - Not using `SocketMetrics_increment` for instrumentation
+   - Custom event dispatching instead of `SocketEvents_emit`
+   - Missing metrics snapshot for monitoring
+
+### 24. **Shared Base Patterns (SocketCommon)**
+   - Duplicated socket option setting instead of `SocketCommon_set_option_int`
+   - Duplicated address resolution instead of `SocketCommon_resolve_address`
+   - Duplicated iovec handling instead of `SocketCommon_calculate_total_iov_len`
+   - Not using `SocketBase_T` for shared socket state
+   - Missing `SocketLiveCount` for leak detection
+   - Duplicated endpoint caching instead of `SocketCommon_cache_endpoint`
+
+### 25. **File Splitting Patterns (Large Modules)**
+   - Single large .c file exceeding 1000 lines without splitting
+   - Not following `-core.c`, `-ops.c`, `-connections.c` pattern (see SocketPool)
+   - Not following `-core.c`, `-alpn.c`, `-certs.c`, `-session.c` pattern (see SocketTLSContext)
+   - Missing private header (`*-private.h`) for split file communication
+   - Public API scattered across multiple files instead of centralized header
 
 ## Socket Library-Specific Patterns
 
@@ -376,16 +449,25 @@ static __thread Except_T Socket_DetailedException;
 - `Socket_*` for TCP/Unix domain sockets
 - `SocketAsync_*` for async socket operations
 - `SocketBuf_*` for buffer operations
+- `SocketCommon_*` for shared utilities (address resolution, socket options, iovec helpers)
 - `SocketDgram_*` for UDP sockets
 - `SocketDNS_*` for async DNS resolution
+- `SocketEvents_*` for event dispatching (connection, DNS, poll events)
+- `SocketHappyEyeballs_*` / `SocketHE_*` for RFC 8305 dual-stack connection racing
 - `SocketIO_*` for I/O operations (vectored I/O)
+- `SocketIPTracker_*` for per-IP connection tracking and DoS protection
+- `SocketLog_*` for logging subsystem (configurable callbacks, log levels)
+- `SocketMetrics_*` for metrics collection (thread-safe counters, snapshots)
 - `SocketPoll_*` for event polling
 - `SocketPool_*` for connection pooling
+- `SocketRateLimit_*` for token bucket rate limiting
+- `SocketReconnect_*` for auto-reconnection with backoff and circuit breaker
 - `SocketTimer_*` for timer and deadline management
 - `SocketTLS_*` for TLS/SSL operations
 - `SocketTLSContext_*` for TLS context management
 - `SocketUnix_*` for Unix domain socket specifics
 - `Connection_*` for connection pool entries (accessor functions)
+- `SocketLiveCount_*` for thread-safe live instance counting (debug/leak detection)
 
 ### Type Definition Pattern
 **ALWAYS** use the T macro pattern:
@@ -538,6 +620,161 @@ if (tail >= capacity) {
 
 /* Secure clear before reuse */
 SocketBuf_secureclear(buf);
+```
+
+### Rate Limiting Pattern (SocketRateLimit)
+**ALWAYS** use token bucket rate limiter for connection/bandwidth throttling:
+```c
+/* Create rate limiter: 100 tokens/sec, burst capacity 50 */
+SocketRateLimit_T limiter = SocketRateLimit_new(arena, 100, 50);
+
+/* Non-blocking acquire */
+if (SocketRateLimit_try_acquire(limiter, 1)) {
+    /* Allowed - proceed with operation */
+    handle_request();
+} else {
+    /* Rate limited - wait or reject */
+    int64_t wait_ms = SocketRateLimit_wait_time_ms(limiter, 1);
+    /* Either sleep(wait_ms) or reject with 429 Too Many Requests */
+}
+
+/* Runtime reconfiguration */
+SocketRateLimit_configure(limiter, new_rate, new_burst);
+```
+
+### Per-IP Connection Tracking Pattern (SocketIPTracker)
+**ALWAYS** use IP tracker for DoS prevention:
+```c
+/* Create tracker: max 10 connections per IP */
+SocketIPTracker_T tracker = SocketIPTracker_new(arena, 10);
+
+/* On new connection */
+const char *client_ip = Socket_getpeeraddr(client);
+if (SocketIPTracker_track(tracker, client_ip)) {
+    /* Allowed - connection tracked */
+    SocketPool_add(pool, client);
+} else {
+    /* Limit reached - reject connection */
+    Socket_free(&client);
+}
+
+/* On connection close */
+SocketIPTracker_release(tracker, client_ip);
+```
+
+### Auto-Reconnection Pattern (SocketReconnect)
+**ALWAYS** use reconnection context for resilient connections:
+```c
+/* Create reconnecting connection with policy */
+SocketReconnect_Policy_T policy;
+SocketReconnect_policy_defaults(&policy);
+policy.max_attempts = 5;
+policy.initial_delay_ms = 100;
+policy.max_delay_ms = 30000;
+
+SocketReconnect_T conn = SocketReconnect_new("example.com", 443, &policy,
+                                              state_change_callback, userdata);
+SocketReconnect_connect(conn);
+
+/* Event loop integration */
+while (running) {
+    int timeout = SocketReconnect_next_timeout_ms(conn);
+    SocketPoll_wait(poll, &events, timeout);
+    SocketReconnect_process(conn);  /* Handle poll events */
+    SocketReconnect_tick(conn);     /* Process timers/backoff */
+}
+
+/* I/O with auto-reconnect on error */
+ssize_t n = SocketReconnect_send(conn, data, len);  /* Auto-reconnects on failure */
+```
+
+### Happy Eyeballs Pattern (RFC 8305)
+**ALWAYS** use Happy Eyeballs for dual-stack connection racing:
+```c
+/* Synchronous (simple) - races IPv6/IPv4, returns fastest */
+Socket_T sock = SocketHappyEyeballs_connect("example.com", 443, NULL);
+
+/* Asynchronous (event-driven) */
+SocketHE_Config_T config;
+SocketHappyEyeballs_config_defaults(&config);
+config.first_attempt_delay_ms = 250;  /* RFC 8305 recommendation */
+
+SocketHE_T he = SocketHappyEyeballs_start(dns, poll, "example.com", 443, &config);
+while (!SocketHappyEyeballs_poll(he)) {
+    int timeout = SocketHappyEyeballs_next_timeout_ms(he);
+    SocketPoll_wait(poll, &events, timeout);
+    SocketHappyEyeballs_process(he);
+}
+Socket_T sock = SocketHappyEyeballs_result(he);  /* Winning socket */
+SocketHappyEyeballs_free(&he);
+```
+
+### Timer Integration Pattern (SocketTimer)
+**ALWAYS** use SocketTimer for event loop timer management:
+```c
+/* Add one-shot timer */
+SocketTimer_T timer = SocketTimer_add(poll, 5000, timeout_callback, userdata);
+
+/* Add repeating timer */
+SocketTimer_T heartbeat = SocketTimer_add_repeating(poll, 30000,
+                                                     heartbeat_callback, userdata);
+
+/* Cancel timer */
+SocketTimer_cancel(poll, timer);
+
+/* Check remaining time */
+int64_t remaining = SocketTimer_remaining(poll, heartbeat);
+```
+
+### Logging and Metrics Pattern (SocketUtil)
+**ALWAYS** use consolidated utility functions:
+```c
+/* Logging with configurable callback */
+SocketLog_setcallback(custom_logger, userdata);
+SocketLog_emitf(SOCKET_LOG_INFO, "Socket", "Connected to %s:%d", host, port);
+
+/* Metrics collection */
+SocketMetrics_increment(SOCKET_METRIC_SOCKET_CONNECT_SUCCESS);
+SocketMetricsSnapshot snap;
+SocketMetrics_snapshot(&snap);
+
+/* Event dispatching */
+SocketEvents_emit(SOCKET_EVENT_CONNECTED, socket, userdata);
+```
+
+### SocketBase_T Shared State Pattern
+**ALWAYS** use SocketCommon for shared socket functionality:
+```c
+/* Create base socket with shared state */
+SocketBase_T base = SocketCommon_new_base(AF_INET, SOCK_STREAM, 0);
+
+/* Use common helpers */
+SocketCommon_set_option_int(base, SOL_SOCKET, SO_REUSEADDR, 1, Socket_Failed);
+SocketCommon_set_nonblock(base, true, Socket_Failed);
+
+/* iovec helpers for vectored I/O */
+size_t total = SocketCommon_calculate_total_iov_len(iov, iovcnt);
+SocketCommon_advance_iov(iov, iovcnt, bytes_sent);
+
+/* Cleanup */
+SocketCommon_free_base(&base);
+```
+
+### Live Socket Count Tracking Pattern
+**ALWAYS** use SocketLiveCount for debugging/leak detection:
+```c
+/* Static tracker (module-level) */
+static struct SocketLiveCount live_count = SOCKETLIVECOUNT_STATIC_INIT;
+
+/* In constructor */
+SocketLiveCount_increment(&live_count);
+
+/* In destructor */
+SocketLiveCount_decrement(&live_count);
+
+/* In tests - verify all sockets freed */
+assert(SocketLiveCount_get(&live_count) == 0);
+/* Or use module-specific: Socket_debug_live_count() */
 ```
 
 ### UDP Datagram Pattern
@@ -782,6 +1019,88 @@ Risks: None - pure improvement
 Reference: See SocketPool.c socket_hash() pattern
 ```
 
+### Large File Splitting Example
+```
+[Organization/Medium] LargeModule.c (1500+ lines)
+Current Code: Single file with all functionality mixed together
+Issue: File exceeds recommended size, making navigation and maintenance difficult
+Suggestion: Split into focused files following codebase patterns
+Proposed Change:
+  /* Split pattern (see SocketPool as reference): */
+  LargeModule-core.c     - Creation, destruction, configuration
+  LargeModule-ops.c      - Main operations, data manipulation
+  LargeModule-internal.c - Internal helpers, private functions
+
+  /* Split pattern (see SocketTLSContext as reference): */
+  LargeModule-core.c     - Primary module logic
+  LargeModule-feature1.c - Feature-specific code (e.g., certs, alpn)
+  LargeModule-feature2.c - Another feature (e.g., session, verify)
+
+  /* Create private header for cross-file communication: */
+  LargeModule-private.h  - Internal structures, shared between split files
+
+Benefits: Easier navigation, focused files, parallel development possible
+Risks: Must maintain include order and private header consistency
+Reference: See SocketPool-*.c and SocketTLSContext-*.c patterns
+```
+
+### Rate Limiting Integration Example
+```
+[Rate Limiting/Medium] Server.c:accept_connection()
+Current Code: No rate limiting on incoming connections
+Issue: Server vulnerable to connection floods/DoS
+Suggestion: Add rate limiter using SocketRateLimit module
+Proposed Change:
+  static SocketRateLimit_T conn_limiter = NULL;
+
+  void server_init(void)
+  {
+      /* Allow 100 connections/sec with burst of 50 */
+      conn_limiter = SocketRateLimit_new(arena, 100, 50);
+  }
+
+  void accept_connection(Socket_T server)
+  {
+      if (!SocketRateLimit_try_acquire(conn_limiter, 1)) {
+          /* Rate limited - optionally log and return */
+          SocketLog_emitf(SOCKET_LOG_WARN, "Server",
+                          "Connection rate limited");
+          return;
+      }
+      /* Proceed with accept */
+      Socket_T client = Socket_accept(server);
+      /* ... */
+  }
+Benefits: DoS protection, configurable limits, thread-safe
+Risks: May reject legitimate traffic if misconfigured
+Reference: See SocketRateLimit.h for full API
+```
+
+### Happy Eyeballs Migration Example
+```
+[Happy Eyeballs/High] Client.c:connect_to_server()
+Current Code: Sequential IPv4-only connection
+Issue: Not using dual-stack, may be slow if IPv6 available
+Suggestion: Use Happy Eyeballs for RFC 8305 compliant connection racing
+Proposed Change:
+  /* Before (IPv4-only, blocking) */
+  Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+  Socket_connect(sock, "example.com", 443);
+
+  /* After (dual-stack, races IPv6/IPv4) */
+  Socket_T sock = SocketHappyEyeballs_connect("example.com", 443, NULL);
+  /* sock is connected via fastest address family */
+
+  /* For custom timeouts: */
+  SocketHE_Config_T config;
+  SocketHappyEyeballs_config_defaults(&config);
+  config.total_timeout_ms = 10000;  /* 10 second total timeout */
+  Socket_T sock = SocketHappyEyeballs_connect("example.com", 443, &config);
+Benefits: Faster connections on dual-stack networks, RFC 8305 compliant
+Risks: Slightly more complex error handling (multiple failures possible)
+Reference: See SocketHappyEyeballs.h and .cursor/rules/happy-eyeballs.mdc
+```
+
 ### Async DNS Migration Example
 ```
 [Async I/O/High] Module.c:120-150
@@ -929,14 +1248,20 @@ Reference: See SocketBuf.c for complete circular buffer implementation
 ### Core Modules
 - **Arena.c**: Already well-refactored; use as reference for patterns. Chunk management, overflow protection.
 - **Except.c**: Exception handling foundation. Thread-local stack, RAISE/TRY/EXCEPT implementation.
+- **SocketUtil.c**: Consolidated utilities (logging, metrics, events, error handling). Thread-safe callbacks.
+- **SocketRateLimit.c**: Token bucket rate limiter. Thread-safe acquire/wait patterns.
+- **SocketIPTracker.c**: Per-IP connection tracking. O(1) hash table lookups, automatic cleanup.
+- **SocketTimer.c**: Timer subsystem. Min-heap storage, one-shot/repeating timers, event loop integration.
 
 ### Socket Modules
 - **Socket.c / Socket-*.c**: Function extraction, socket operation abstraction, timeout configuration, option setters.
 - **SocketDgram.c**: UDP-specific patterns, sendto/recvfrom semantics, message boundary handling.
-- **SocketUnix.c**: AF_UNIX patterns, socket file cleanup, abstract namespace (Linux).
+- **SocketCommon.c**: Shared utilities (address resolution, socket options, iovec helpers, SocketBase_T).
 - **SocketAsync.c**: Async operation patterns, non-blocking mode, completion callbacks.
 - **SocketBuf.c**: Circular buffer safety, bounds checking, secure clearing, zero-copy operations.
 - **SocketIO.c**: Vectored I/O (iovec), scatter-gather patterns.
+- **SocketReconnect.c**: Auto-reconnection with exponential backoff, circuit breaker, health monitoring.
+- **SocketHappyEyeballs.c**: RFC 8305 dual-stack connection racing, async/sync APIs, timeout management.
 
 ### DNS Module
 - **SocketDNS.c / SocketDNS-internal.c**: Thread pool patterns, request queue management, completion signaling via pipe, timeout enforcement.
@@ -948,19 +1273,23 @@ Reference: See SocketBuf.c for complete circular buffer implementation
 - **SocketPoll_poll.c**: POSIX poll(2) fallback, FD→index mapping for O(1) lookup.
 
 ### Connection Management
-- **SocketPool-*.c**: Connection pool patterns, hash table optimizations, buffer reuse, thread safety with mutexes.
+- **SocketPool-core.c**: Pool creation/destruction, configuration, statistics.
+- **SocketPool-connections.c**: Connection add/remove, hash table management.
+- **SocketPool-ops.c**: Connection operations, iteration, cleanup.
+- **SocketPool-ratelimit.c**: Per-pool rate limiting integration.
 
 ### TLS/SSL Modules
 - **SocketTLS.c**: TLS1.3 operations, handshake handling, secure I/O wrappers.
-- **SocketTLSContext.c**: SSL_CTX management, certificate loading, SNI callbacks.
+- **SocketTLSContext-core.c**: SSL_CTX creation/destruction, basic configuration.
+- **SocketTLSContext-certs.c**: Certificate/key loading, chain configuration.
+- **SocketTLSContext-alpn.c**: ALPN protocol negotiation.
+- **SocketTLSContext-session.c**: Session resumption, ticket handling.
+- **SocketTLSContext-verify.c**: Certificate verification, hostname validation.
 - **SocketTLSConfig.h**: Configuration constants, cipher suites, buffer sizes - DO NOT weaken security settings.
-
-### Timer Module
-- **SocketTimer.c**: Deadline tracking, monotonic clock usage, timeout calculations.
 
 ### Headers
 - **Organization**: Include guards with `_INCLUDED` suffix, system headers first, module documentation.
-- **Private headers** (`*-private.h`): Internal structures, not part of public API.
+- **Private headers** (`*-private.h`): Internal structures, not part of public API. Used for split-file modules.
 - **Public headers**: Opaque types only, `extern` function declarations, comprehensive Doxygen comments.
 
 ## Output Format for Refactored Code
@@ -1036,15 +1365,35 @@ Before completing refactoring, verify:
 - [ ] Edge-triggered events drain until EAGAIN
 - [ ] Timeout configuration respected and propagated
 - [ ] Async resources properly cleaned up (`freeaddrinfo`)
+- [ ] Timer-based operations use `SocketTimer` module
 
 ### Platform Compatibility
 - [ ] Uses `SocketPoll` API, not direct epoll/kqueue/poll
 - [ ] Platform-specific code isolated to backend files
 - [ ] No assumptions about specific backend
 
+### Rate Limiting & DoS Protection
+- [ ] Connection rate limiting uses `SocketRateLimit` module
+- [ ] Per-IP tracking uses `SocketIPTracker` module
+- [ ] Max connections per IP configured appropriately
+- [ ] Rate limiter tokens/burst configured for use case
+
+### Resilience Patterns
+- [ ] Client connections use `SocketReconnect` for auto-reconnection
+- [ ] Exponential backoff configured with appropriate limits
+- [ ] Circuit breaker thresholds set appropriately
+- [ ] Dual-stack connections use `SocketHappyEyeballs`
+
+### Observability
+- [ ] Logging uses `SocketLog_emit`/`SocketLog_emitf`
+- [ ] Key operations increment appropriate metrics
+- [ ] Live socket count tracked via `SocketLiveCount` or `Socket_debug_live_count()`
+
 ### Existing Codebase Integration
-- [ ] Existing codebase functions leveraged (Arena, Exception system, SocketError, SocketConfig)
+- [ ] Existing codebase functions leveraged (Arena, Exception system, SocketUtil, SocketConfig)
+- [ ] Shared utilities use `SocketCommon_*` helpers (address resolution, iovec, options)
 - [ ] Patterns match existing modules (consult `.cursor/rules/` for details)
+- [ ] Large files split following SocketPool/SocketTLSContext patterns
 
 ## C Interfaces and Implementations Style Examples
 

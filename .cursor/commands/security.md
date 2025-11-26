@@ -154,6 +154,29 @@ Comprehensive network I/O security review:
   - Check for maximum size limits
   - Validate growth doesn't exhaust memory
 
+### UDP Socket Security (`SocketDgram`):
+- **Datagram Size Validation**:
+  - Verify `UDP_MAX_PAYLOAD` (65507) limit enforcement
+  - Check `SAFE_UDP_SIZE` (1472) recommendation for fragmentation avoidance
+  - Validate received datagram length is within expected bounds
+- **Connectionless Security**:
+  - Verify source address validation for `recvfrom()`
+  - Check for amplification attack vectors
+  - Validate multicast group membership security
+
+### Unix Domain Socket Security:
+- **Path Security**:
+  - Verify absolute path preference for socket paths
+  - Check for stale socket file handling (`unlink()` before bind)
+  - Validate path length limits (`sizeof(sun_path)`)
+- **Credential Passing**:
+  - Verify `SO_PEERCRED` usage for peer authentication
+  - Check `Socket_getpeercred()` validation
+  - Validate UID/GID checking for access control
+- **File Permission Security**:
+  - Check socket file permissions after creation
+  - Verify `umask` considerations for socket creation
+
 ## 5. Check for Potential Injection Points
 
 Identify all potential injection vulnerabilities:
@@ -212,9 +235,17 @@ Check for thread safety vulnerabilities:
 
 ### Exception Safety:
 - **Exception Thread Safety**:
-  - Verify thread-local exception stack usage
+  - Verify thread-local exception stack usage (`Except_stack` is `__thread`)
   - Check for race conditions in exception handling
-  - Validate `RAISE_MODULE_ERROR` thread-safe pattern
+  - Validate `SOCKET_RAISE_MODULE_ERROR` thread-safe pattern (uses thread-local copy)
+  - Verify `SOCKET_DECLARE_MODULE_EXCEPTION()` declares thread-local exception
+- **NEVER directly modify global exception `.reason` field** (race condition)
+
+### Live Count Tracking:
+- **Socket Leak Detection**:
+  - Verify `SocketLiveCount_increment/decrement` are balanced
+  - Check `Socket_debug_live_count()` returns 0 after cleanup
+  - Validate mutex protection for live count operations
 
 ## Security Review Output Format
 
@@ -255,6 +286,250 @@ For each security issue found, provide:
    - Identify potential injection points
    - Document attack vectors
 
+## 7. TLS Security Analysis
+
+Comprehensive TLS/SSL security review:
+
+### TLS Protocol Hardening:
+- **Version Enforcement**:
+  - Verify TLS1.3-only configuration (`SOCKET_TLS_MIN_VERSION`, `SOCKET_TLS_MAX_VERSION`)
+  - Check that legacy protocols (TLS 1.0, 1.1, 1.2) are disabled by default
+  - Validate no fallback to insecure protocol versions
+- **Cipher Suite Security**:
+  - Verify only modern ciphers used (`SOCKET_TLS13_CIPHERSUITES`)
+  - Check for ECDHE-based key exchange (PFS - Perfect Forward Secrecy)
+  - Validate no weak ciphers (RC4, DES, export ciphers)
+  - Confirm AES-GCM or ChaCha20-Poly1305 AEAD modes only
+
+### Certificate Validation:
+- **Certificate Verification**:
+  - Verify peer certificate validation is enforced (`TLS_VERIFY_PEER`)
+  - Check hostname verification is performed
+  - Validate certificate chain depth limits (`SOCKET_TLS_MAX_CERT_CHAIN_DEPTH`)
+  - Check for proper CA certificate loading
+- **Revocation Checking**:
+  - Verify CRL support via `SocketTLSContext_load_crl()`
+  - Check OCSP stapling support via `SocketTLSContext_set_ocsp_response()`
+  - Validate `SocketTLS_get_ocsp_status()` usage for client-side OCSP verification
+- **Custom Verification**:
+  - Review `SocketTLSVerifyCallback` implementations for security
+  - Verify custom callbacks don't bypass critical checks
+  - Check return values are handled correctly (1=accept, 0=reject)
+
+### SNI and ALPN Security:
+- **SNI (Server Name Indication)**:
+  - Verify SNI hostname length limits (`SOCKET_TLS_MAX_SNI_LEN`)
+  - Check for hostname injection in SNI
+  - Validate `SocketTLSContext_add_certificate()` usage
+- **ALPN (Application-Layer Protocol Negotiation)**:
+  - Verify ALPN protocol string length limits (`SOCKET_TLS_MAX_ALPN_LEN`)
+  - Check for protocol injection in ALPN
+  - Validate `SocketTLSContext_set_alpn_protos()` input validation
+
+### Session Management Security:
+- **Session Caching**:
+  - Verify session cache size limits (`SOCKET_TLS_SESSION_CACHE_SIZE`)
+  - Check session timeout configuration
+  - Validate `SocketTLSContext_enable_session_cache()` settings
+- **Session Tickets**:
+  - Verify ticket key length is correct (80 bytes for OpenSSL)
+  - Check ticket encryption key management
+  - Validate `SocketTLSContext_enable_session_tickets()` key handling
+  - Ensure ticket keys are rotated appropriately
+
+### TLS Handshake Security:
+- **Handshake State Machine**:
+  - Verify `TLSHandshakeState` transitions are correct
+  - Check timeout enforcement during handshake
+  - Validate `SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS` is reasonable
+- **Non-Blocking Handshake**:
+  - Verify `SocketTLS_handshake()` handles `WANT_READ`/`WANT_WRITE` correctly
+  - Check for infinite handshake loops
+  - Validate handshake timeout enforcement
+
+### TLS Error Handling:
+- **Error Information Leakage**:
+  - Verify TLS error messages don't leak sensitive information
+  - Check `tls_error_buf[]` contents for information disclosure
+  - Validate OpenSSL error queue is cleared properly
+
+## 8. Rate Limiting and DoS Protection
+
+Review denial-of-service protection mechanisms:
+
+### Token Bucket Rate Limiting (`SocketRateLimit`):
+- **Configuration Validation**:
+  - Verify `tokens_per_sec` and `bucket_size` are reasonable
+  - Check for integer overflow in token calculations
+  - Validate rate limiter state under concurrent access
+- **Bypass Prevention**:
+  - Check `SocketRateLimit_try_acquire()` cannot be bypassed
+  - Verify `SocketRateLimit_wait_time_ms()` returns correct values
+  - Validate rate limiting is applied at correct points
+- **Clock Manipulation**:
+  - Verify `CLOCK_MONOTONIC` usage prevents time manipulation attacks
+  - Check for time rollover handling in rate calculations
+
+### Per-IP Connection Tracking (`SocketIPTracker`):
+- **IP Address Validation**:
+  - Verify IP address parsing is safe (IPv4 and IPv6)
+  - Check for IP address spoofing considerations
+  - Validate `SocketIPTracker_track()` handles edge cases (NULL, empty)
+- **Limit Enforcement**:
+  - Verify `max_per_ip` limits are enforced correctly
+  - Check `SocketIPTracker_release()` decrements properly
+  - Validate tracking survives connection cleanup
+- **Resource Exhaustion**:
+  - Check for hash table size limits
+  - Verify memory growth is bounded
+  - Validate cleanup of zero-count entries
+
+### Circuit Breaker Pattern (`SocketReconnect`):
+- **State Machine Security**:
+  - Verify state transitions are atomic
+  - Check circuit breaker thresholds (`circuit_failure_threshold`)
+  - Validate half-open probe behavior
+- **Backoff Security**:
+  - Verify exponential backoff prevents connection storms
+  - Check jitter prevents synchronized retries
+  - Validate `max_delay_ms` caps are enforced
+- **Health Monitoring**:
+  - Verify `SocketReconnect_HealthCheck` callbacks are safe
+  - Check health check timeout enforcement
+  - Validate unhealthy connections are disconnected
+
+## 9. Secure Memory Handling
+
+Review sensitive data handling:
+
+### Secure Memory Clearing:
+- **Buffer Cleanup**:
+  - Verify `SocketBuf_secureclear()` is used for sensitive data
+  - Check that `SocketBuf_clear()` vs `secureclear()` usage is appropriate
+  - Validate memory is zeroed before deallocation
+- **Connection Pool Security**:
+  - Verify pool buffers are cleared with `SocketBuf_secureclear()` on removal
+  - Check for residual sensitive data in reused buffers
+  - Validate buffer reuse doesn't leak data between connections
+- **Compiler Optimization**:
+  - Verify secure clear functions aren't optimized away
+  - Check for `volatile` or memory barrier usage if needed
+  - Consider `memset_s` or `explicit_bzero` alternatives
+
+### Sensitive Data Identification:
+- **TLS Keys and Certificates**:
+  - Verify private keys are cleared after use
+  - Check session keys are properly destroyed
+  - Validate ticket encryption keys are protected
+- **Authentication Data**:
+  - Check for passwords in buffers
+  - Verify credentials are cleared after authentication
+  - Validate no sensitive data in error messages
+
+## 10. Time-Based Security
+
+Review time-related security considerations:
+
+### Monotonic Clock Usage:
+- **Time Source Security**:
+  - Verify `CLOCK_MONOTONIC` usage for security-critical timing
+  - Check `Socket_get_monotonic_ms()` is used for:
+    - Rate limiting timestamps
+    - Timeout calculations
+    - Elapsed time measurements
+  - Validate fallback to `CLOCK_REALTIME` is safe
+- **Time Manipulation Prevention**:
+  - Verify timeouts can't be bypassed by clock changes
+  - Check rate limiters use monotonic time
+  - Validate DNS timeouts use monotonic time
+
+### Timer Security (`SocketTimer`):
+- **Timer Management**:
+  - Verify min-heap implementation handles edge cases
+  - Check `SocketTimer_cancel()` is safe for fired/cancelled timers
+  - Validate timer callbacks don't modify timer state (cancel from callback not safe)
+- **Timer Overflow**:
+  - Check for integer overflow in timer calculations
+  - Verify timer IDs don't wrap unsafely
+  - Validate `CLOCK_MONOTONIC` usage for timer expiry
+
+### Timeout Security:
+- **DNS Resolution Timeouts**:
+  - Verify `SocketDNS_settimeout()` and per-request timeouts
+  - Check DNS requests can't hang indefinitely
+  - Validate timeout cleanup doesn't leak resources
+- **Connection Timeouts**:
+  - Verify `SOCKET_DEFAULT_CONNECT_TIMEOUT_MS` is enforced
+  - Check blocking operations have timeouts
+  - Validate non-blocking fallback for timeouts
+- **TLS Handshake Timeouts**:
+  - Verify `SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS` enforcement
+  - Check for slow-loris style handshake attacks
+  - Validate incomplete handshakes are cleaned up
+
+## 11. Async DNS Security
+
+Review asynchronous DNS resolution security:
+
+### Thread Pool Security:
+- **Worker Thread Safety**:
+  - Verify DNS worker threads handle errors safely
+  - Check for resource leaks in worker threads
+  - Validate thread termination during resolver shutdown
+- **Queue Security**:
+  - Verify request queue bounds (`SocketDNS_setmaxpending()`)
+  - Check for queue overflow handling
+  - Validate request cancellation is safe
+
+### DNS Result Handling:
+- **Result Ownership**:
+  - Verify caller ownership of `addrinfo` results
+  - Check `freeaddrinfo()` is called appropriately
+  - Validate no double-free of DNS results
+- **Result Validation**:
+  - Check returned addresses are valid
+  - Verify port information is preserved
+  - Validate result isn't used after cancellation
+
+### Signal Pipe Security:
+- **Pipe Handling**:
+  - Verify `SocketDNS_pollfd()` pipe is created safely
+  - Check signal bytes are consumed properly
+  - Validate pipe doesn't block or leak
+
+## 12. Happy Eyeballs (RFC 8305) Security
+
+Review dual-stack connection racing security:
+
+### State Machine Security:
+- **State Transitions**:
+  - Verify `SocketHE_State` transitions are correct (IDLE -> RESOLVING -> CONNECTING -> CONNECTED/FAILED)
+  - Check cancellation (`CANCELLED` state) is handled safely
+  - Validate resource cleanup in all terminal states
+- **Concurrent Connection Racing**:
+  - Verify multiple connection attempts don't leak sockets
+  - Check losing connections are closed properly
+  - Validate winning connection is returned correctly
+
+### Timeout Security:
+- **Connection Attempt Delays**:
+  - Verify `first_attempt_delay` (default 250ms) prevents connection storms
+  - Check `per_attempt_timeout` (default 5s) is enforced
+  - Validate `total_timeout` (default 30s) caps total operation time
+- **DNS Resolution Timeouts**:
+  - Verify DNS timeout is propagated to resolver
+  - Check for DNS timeout handling in async mode
+
+### Resource Management:
+- **Address Cleanup**:
+  - Verify `freeaddrinfo()` is called for DNS results
+  - Check address lists are freed on cancellation/error
+  - Validate no address info leaks
+- **Socket Cleanup**:
+  - Verify all attempted sockets are closed except winner
+  - Check for socket leaks on timeout/error/cancellation
+  - Validate `SocketHappyEyeballs_result()` transfers ownership correctly
+
 ## Socket Library-Specific Security Considerations
 
 Given this is a socket library:
@@ -267,11 +542,34 @@ Given this is a socket library:
 - **Thread Safety**: Critical for concurrent socket operations
 - **Buffer Management**: Verify all buffer operations are bounds-checked
 
+## Established Security Patterns to Verify
+
+The codebase implements these security patterns - verify they are used consistently:
+
+### Error Handling:
+- **SOCKET_ERROR_FMT/MSG macros** - Use `snprintf()` with truncation handling
+- **Thread-local error buffers** - `socket_error_buf[]` for thread-safe errors
+- **Thread-local exception copies** - `SOCKET_DECLARE_MODULE_EXCEPTION()` pattern
+- **SOCKET_RAISE_FMT/MSG macros** - Combined format-and-raise for consistency
+
+### Safe System Calls:
+- **SAFE_CLOSE macro** - Proper EINTR handling per POSIX.1-2008
+- **Socket_safe_strerror()** - Thread-safe strerror alternative
+
+### Input Validation Macros:
+- **SOCKET_VALID_PORT(p)** - Port range validation (1-65535)
+- **SOCKET_VALID_BUFFER_SIZE(s)** - Buffer size validation
+
+### Hash Functions:
+- **socket_util_hash_fd()** - Golden ratio multiplicative hash for FDs
+- **socket_util_hash_ptr()** - Pointer hashing for opaque handles
+- **socket_util_hash_uint()** - Unsigned integer hashing
+
 ## Priority Focus Areas
 
-1. **Critical**: Buffer overflows, injection vulnerabilities, integer overflows in network operations
-2. **High**: Input validation gaps, DNS security issues, thread safety vulnerabilities
-3. **Medium**: Resource leaks, unsafe string function usage, missing bounds checks
+1. **Critical**: Buffer overflows, TLS configuration errors, injection vulnerabilities, integer overflows in network operations
+2. **High**: Input validation gaps, DNS security issues, thread safety vulnerabilities, rate limiting bypass
+3. **Medium**: Resource leaks, unsafe string function usage, missing bounds checks, secure memory clearing
 4. **Low**: Style issues, minor validation improvements, defensive programming
 
 Provide a prioritized security assessment with exploitability analysis for each vulnerability found, focusing on network-specific attack vectors and socket library usage patterns.

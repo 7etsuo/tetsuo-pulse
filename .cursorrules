@@ -3,6 +3,36 @@
 This .cursorrules enforces CII/GNU standards + TLS1.3 hardening for production socket lib.
 It consolidates all architectural, design, and implementation rules for the codebase.
 
+## 0. Build System (CMake)
+
+The project uses CMake with C11 standard:
+
+```cmake
+cmake_minimum_required(VERSION 3.10)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS ON)  # Enable GNU extensions (_GNU_SOURCE)
+```
+
+### Build Commands
+```bash
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+make          # Build libraries and tests
+make test     # Run test suite
+make doc      # Generate Doxygen documentation
+```
+
+### Compiler Flags
+**ALWAYS** compile with strict warnings:
+```cmake
+set(CMAKE_C_FLAGS "-Wall -Wextra -Werror -D_GNU_SOURCE -pthread -fPIC")
+```
+
+### Optional Features
+- TLS support: `-DENABLE_TLS=ON` (auto-detects OpenSSL/LibreSSL)
+- Poll backend: Auto-selected per platform (epoll/kqueue/poll)
+
 ## 1. TLS1.3 Hardening (CRITICAL)
 **ALWAYS** use the TLS1.3-only configuration defined in SocketTLSConfig.h:
 
@@ -14,7 +44,7 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 
 **Rationale**: Eliminates legacy protocol/cipher vulnerabilities while enabling faster handshakes and forward secrecy.
 
-## 2. Coding Style (GNU C)
+## 2. Coding Style (GNU C11)
 
 ### Header Files
 - **ALWAYS** use include guards with `_INCLUDED` suffix:
@@ -47,34 +77,37 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 
 ### Layered Architecture
 1. **Foundation**: `Arena` (Memory), `Except` (Errors).
-2. **Utilities**: `SocketUtil` (Logging, Metrics, Events, Error Handling - consolidated).
-3. **Base Abstraction**: `SocketCommon` (Shared base for Socket/SocketDgram).
-4. **Core I/O**: `Socket` (TCP/Unix), `SocketDgram` (UDP), `SocketBuf` (Buffers), `SocketDNS` (Async DNS).
-5. **Event System**: `SocketPoll` (epoll/kqueue/poll abstraction).
-6. **Application**: `SocketPool` (Connection management).
+2. **Utilities**: `SocketUtil` (Logging, Metrics, Events, Error Handling), `SocketTimer` (Timers), `SocketRateLimit` (Token Bucket).
+3. **Base Abstraction**: `SocketCommon` (Shared base `SocketBase_T` for Socket/SocketDgram).
+4. **Core I/O**: `Socket` (TCP/Unix), `SocketDgram` (UDP), `SocketBuf` (Buffers), `SocketIO` (I/O helpers).
+5. **DNS**: `SocketDNS` (Async DNS with worker threads).
+6. **Event System**: `SocketPoll` (epoll/kqueue/poll abstraction), `SocketAsync` (Async I/O integration).
+7. **Connection Helpers**: `SocketHappyEyeballs` (RFC 8305), `SocketReconnect` (Auto-reconnection with backoff).
+8. **Application**: `SocketPool` (Connection management with rate limiting), `SocketIPTracker` (IP tracking).
+9. **TLS**: `SocketTLS` (TLS I/O), `SocketTLSContext` (Context management, SNI, ALPN, sessions).
 
 ### Resource Management
-- **Acquisition Order**: Arena -> Server Socket -> Poll -> Connection Pool -> Buffers.
+- **Acquisition Order**: Arena -> Server Socket -> Poll -> Timer -> Connection Pool -> Buffers.
 - **Cleanup Order**: Reverse of acquisition.
 - **ALWAYS** use `Arena` for memory management of related objects.
 
 ### Socket Base Delegation Pattern
-- **ALWAYS** use `SocketBase_T` for shared socket state (fd, arena, endpoints, timeouts):
+- **ALWAYS** use `SocketBase_T` (opaque type in `SocketCommon.h`) for shared socket state:
   ```c
-  struct SocketBase_T
-  {
-      int fd;                              /* Socket file descriptor */
-      Arena_T arena;                       /* Per-socket memory arena */
-      int domain;                          /* AF_INET, AF_INET6, AF_UNIX */
-      int type;                            /* SOCK_STREAM, SOCK_DGRAM */
-      struct sockaddr_storage local_addr;  /* Local endpoint */
-      struct sockaddr_storage remote_addr; /* Remote endpoint */
-      SocketTimeouts_T timeouts;           /* Timeout configuration */
-      /* ... */
-  };
+  /* SocketBase_T is opaque - use SocketCommon_new_base() to create */
+  SocketBase_T base = SocketCommon_new_base(domain, type, protocol);
+  /* Common fields: fd, arena, local/remote endpoints, timeouts, domain, type, protocol */
   ```
-- Stream sockets (`Socket_T`) add TLS fields via composition.
-- Datagram sockets (`SocketDgram_T`) use base directly.
+- **Shared Operations** via `SocketCommon_*` helpers:
+  - `SocketCommon_set_option_int()` - Generic setsockopt wrapper
+  - `SocketCommon_set_nonblock()` - Non-blocking mode
+  - `SocketCommon_set_ttl()` - TTL/hop limit by family
+  - `SocketCommon_join_multicast()` / `SocketCommon_leave_multicast()` - Multicast
+  - `SocketCommon_calculate_total_iov_len()` - Safe iovec total with overflow check
+  - `SocketCommon_advance_iov()` - Advance iovec for partial I/O
+  - `SocketCommon_alloc_iov_copy()` - Allocate iovec copy for sendvall/recvvall
+- Stream sockets (`Socket_T`) add TLS fields via composition when `SOCKET_HAS_TLS` defined.
+- Datagram sockets (`SocketDgram_T`) use base directly (simpler, no TLS).
 
 ### Opaque Types
 - **ALWAYS** use the `T` macro pattern for public opaque types:
@@ -106,6 +139,15 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 - **Use** `SOCKET_ERROR_FMT(fmt, ...)` for errors with errno information.
 - **Use** `SOCKET_ERROR_MSG(fmt, ...)` for errors without errno.
 - Both macros auto-emit to logging and handle truncation.
+
+### Unified Format-and-Raise Macros (Preferred)
+- **Use** `SOCKET_RAISE_FMT(module, exc, fmt, ...)` - Format with errno AND raise in one step.
+- **Use** `SOCKET_RAISE_MSG(module, exc, fmt, ...)` - Format message AND raise in one step.
+  ```c
+  /* Example: Combines SOCKET_ERROR_FMT + RAISE_MODULE_ERROR */
+  if (bind(fd, addr, addrlen) < 0)
+      SOCKET_RAISE_FMT(Socket, Socket_Failed, "bind to %s:%d failed", host, port);
+  ```
 
 ### Safe System Calls
 - **ALWAYS** use `SAFE_CLOSE(fd)` which handles `EINTR` correctly (per POSIX.1-2008, do NOT retry close on EINTR).
@@ -142,9 +184,15 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 
 ### SocketPoll (Events)
 - **Edge Triggered**: Always use Edge Triggered mode (`EPOLLET`) where available.
-- **Backends**: Abstract `epoll` (Linux), `kqueue` (BSD/macOS), `poll` (POSIX fallback).
-- **Data Map**: Hash table mapping `Socket` -> `User Data` with `SOCKET_DATA_HASH_SIZE` buckets.
+- **Cross-Platform Backends** (auto-selected by CMake):
+  - `SocketPoll_epoll.c` - Linux (epoll)
+  - `SocketPoll_kqueue.c` - BSD/macOS (kqueue)
+  - `SocketPoll_poll.c` - POSIX fallback (poll)
+- **Data Map**: Hash table mapping `Socket` -> `User Data` with `SOCKET_HASH_TABLE_SIZE` (1021) buckets.
 - **Hash Function**: Golden ratio multiplicative hash (`HASH_GOLDEN_RATIO = 2654435761u`).
+- **Default Timeout**: Use `SOCKET_POLL_TIMEOUT_USE_DEFAULT` (-2) to use poll's configured default.
+- **Timer Integration**: SocketTimer callbacks fire automatically during `SocketPoll_wait()`.
+- **Async I/O**: Access via `SocketPoll_get_async()` when available.
 
 ### SocketPool (Connection Pooling)
 - **Lookup**: O(1) hash table lookup for connections (`SOCKET_HASH_TABLE_SIZE = 1021`).
@@ -156,14 +204,258 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 - **Signaling**: Use pipe to signal completion to `SocketPoll`.
 - **Ownership**: Caller owns `addrinfo` result and MUST call `freeaddrinfo`.
 - **Timeout**: Propagate via `SocketDNS_request_settimeout()`.
+- **Request Hash**: `SOCKET_DNS_REQUEST_HASH_SIZE` (1021) for O(1) lookup.
+
+### SocketTimer (Timers)
+- **Min-Heap**: O(log n) insert/cancel, O(1) next-timer lookup.
+- **One-shot and Repeating**: `SocketTimer_add()` vs `SocketTimer_add_repeating()`.
+- **Integration**: Callbacks fire during `SocketPoll_wait()`.
+- **Monotonic Clock**: Uses `CLOCK_MONOTONIC` for immune-to-clock-change timing.
+- **Cancel Safety**: Safe to cancel already-fired or cancelled timers; do NOT cancel from callback.
+
+### SocketRateLimit (Token Bucket)
+- **Algorithm**: Token bucket for connection rate and bandwidth limiting.
+- **Thread-Safe**: All operations protected by internal mutex.
+- **Arena or Malloc**: `SocketRateLimit_new(arena, rate, bucket)` - NULL arena uses malloc.
+- **Non-Blocking**: `SocketRateLimit_try_acquire()` returns immediately.
+- **Wait Calculation**: `SocketRateLimit_wait_time_ms()` for event loop integration.
+
+### SocketHappyEyeballs (RFC 8305)
+- **Dual-Stack Racing**: Races IPv6 and IPv4 connections for fastest result.
+- **State Machine**: `IDLE -> RESOLVING -> CONNECTING -> CONNECTED | FAILED | CANCELLED`.
+- **Configuration**: `SocketHE_Config_T` with customizable delays/timeouts.
+- **Sync API**: `SocketHappyEyeballs_connect(host, port, config)` - blocking convenience.
+- **Async API**: `SocketHappyEyeballs_start()` / `_process()` / `_poll()` / `_result()` for event loops.
+- **Default Delays**: 250ms first attempt delay, 5s per-attempt timeout, 30s total timeout.
+
+### SocketReconnect (Auto-Reconnection)
+- **State Machine**: `DISCONNECTED -> CONNECTING -> CONNECTED -> BACKOFF -> CIRCUIT_OPEN`.
+- **Exponential Backoff**: Configurable initial delay, max delay, multiplier, jitter.
+- **Circuit Breaker**: Opens after consecutive failures, half-open probe after timeout.
+- **Health Monitoring**: Configurable health checks with custom callback support.
+- **Policy Configuration**: `SocketReconnect_Policy_T` structure for all parameters.
+- **I/O Passthrough**: `SocketReconnect_send/recv` auto-reconnects on error.
+- **Event Loop**: `SocketReconnect_pollfd()`, `_process()`, `_tick()`, `_next_timeout_ms()`.
+
+### SocketTLS (TLS Operations)
+- **TLS1.3 Only**: Strict modern security (see TLSConfig.h).
+- **Handshake States**: `TLS_HANDSHAKE_NOT_STARTED | IN_PROGRESS | WANT_READ | WANT_WRITE | COMPLETE | ERROR`.
+- **Non-Blocking**: `SocketTLS_handshake()` returns state for poll integration.
+- **Blocking Helper**: `SocketTLS_handshake_loop(socket, timeout_ms)` for simple use.
+- **Verification Modes**: `TLS_VERIFY_NONE | PEER | FAIL_IF_NO_PEER_CERT | CLIENT_ONCE`.
+- **TLS Exceptions**: `SocketTLS_Failed`, `SocketTLS_HandshakeFailed`, `SocketTLS_VerifyFailed`, `SocketTLS_ProtocolError`, `SocketTLS_ShutdownFailed`.
+- **Info Functions**: `SocketTLS_get_cipher()`, `_get_version()`, `_get_alpn_selected()`, `_is_session_reused()`.
+
+### SocketTLSContext (Context Management)
+- **Conditional Compilation**: Only available when `SOCKET_HAS_TLS` defined.
+- **SNI Support**: Multiple certificates per context with `SocketTLSContext_add_sni_cert()`.
+- **ALPN**: Protocol negotiation via `SocketTLSContext_set_alpn()`.
+- **Session Management**: Session cache and tickets for resumption.
+- **Verification**: Custom verify callbacks, CRL/OCSP support.
 
 ## 7. Naming Conventions
-- **Types**: `ModuleName_T` (e.g., `Socket_T`, `Arena_T`).
-- **Functions**: `Module_Verb` (e.g., `Socket_bind`, `Arena_alloc`).
+- **Types**: `ModuleName_T` (e.g., `Socket_T`, `Arena_T`, `SocketHE_T`, `SocketReconnect_T`).
+- **Functions**: `Module_Verb` (e.g., `Socket_bind`, `Arena_alloc`, `SocketHappyEyeballs_connect`).
 - **Private**: `static` functions, lower_snake_case (e.g., `socket_hash`, `translate_events`).
-- **Constants**: `MODULE_NAME` prefix, ALL_CAPS.
+- **Constants**: `MODULE_NAME` prefix, ALL_CAPS (e.g., `SOCKET_MAX_CONNECTIONS`, `ARENA_CHUNK_SIZE`).
+- **State Enums**: `STATE_NAME` pattern with module prefix (e.g., `HE_STATE_CONNECTING`, `RECONNECT_BACKOFF`).
+- **Exception Types**: `Module_ErrorType` (e.g., `Socket_Failed`, `SocketTLS_HandshakeFailed`).
+- **Callbacks**: `Module_Callback` or `ModuleCallback` (e.g., `SocketReconnect_Callback`, `SocketTimerCallback`).
+
+### Module Exception Naming
+**ALWAYS** declare module exceptions as `const Except_T`:
+```c
+extern const Except_T Socket_Failed;     /* General failure */
+extern const Except_T Socket_Closed;     /* Connection closed */
+extern const Except_T SocketTLS_Failed;  /* TLS operation failure */
+extern const Except_T SocketHE_Failed;   /* Happy Eyeballs failure */
+```
 
 ## 8. Platform Requirements
-- **Target**: Linux/POSIX.
+- **Target**: Linux/POSIX (primary), BSD/macOS (supported).
+- **C Standard**: C11 with GNU extensions (`_GNU_SOURCE`).
 - **Threads**: `pthread` support required.
 - **IPv6**: Kernel must support IPv6 (dual-stack used).
+- **Poll Backends**: epoll (Linux), kqueue (BSD/macOS), poll (POSIX fallback).
+- **TLS**: OpenSSL 1.1.1+ or LibreSSL (optional, `-DENABLE_TLS=ON`).
+
+## 9. State Machine Pattern
+
+Several modules use explicit state machines for async operations:
+
+```c
+/* Example state enum pattern */
+typedef enum
+{
+  STATE_IDLE = 0,      /* Not started */
+  STATE_IN_PROGRESS,   /* Operation running */
+  STATE_COMPLETE,      /* Success - call result() */
+  STATE_FAILED,        /* Error - call error() */
+  STATE_CANCELLED      /* User cancelled */
+} ModuleState;
+```
+
+**Modules Using State Machines:**
+- `SocketHappyEyeballs` - `SocketHE_State` (IDLE, RESOLVING, CONNECTING, CONNECTED, FAILED, CANCELLED)
+- `SocketReconnect` - `SocketReconnect_State` (DISCONNECTED, CONNECTING, CONNECTED, BACKOFF, CIRCUIT_OPEN)
+- `SocketTLS` - `TLSHandshakeState` (NOT_STARTED, IN_PROGRESS, WANT_READ, WANT_WRITE, COMPLETE, ERROR)
+
+**State Machine Integration Pattern:**
+```c
+while (Module_state(ctx) != STATE_COMPLETE && Module_state(ctx) != STATE_FAILED)
+{
+    int timeout = Module_next_timeout_ms(ctx);
+    SocketPoll_wait(poll, &events, timeout);
+    Module_process(ctx);  /* Advance state machine */
+}
+```
+
+## 10. Callback Pattern
+
+Several modules use callbacks for extensibility:
+
+```c
+/* Callback function type pattern */
+typedef void (*ModuleCallback)(T context, EventType event, void *userdata);
+
+/* Registration */
+Module_set_callback(T ctx, ModuleCallback cb, void *userdata);
+```
+
+**Modules Using Callbacks:**
+- `SocketTimer` - `SocketTimerCallback` for timer expiry
+- `SocketReconnect` - `SocketReconnect_Callback` for state changes, `SocketReconnect_HealthCheck` for health
+- `SocketLog` - `SocketLogCallback` for custom logging
+- `SocketEvent` - `SocketEventCallback` for connection/DNS events
+
+**Callback Safety Rules:**
+- **NEVER** call `Module_free()` from within its own callback.
+- Callbacks execute in the thread that calls `process()` or `SocketPoll_wait()`.
+- Keep callbacks short; defer heavy work to avoid blocking the event loop.
+
+## 11. Bandwidth Limiting
+
+Sockets support bandwidth throttling via token bucket:
+
+```c
+/* Enable bandwidth limiting on a socket */
+Socket_setbandwidth(socket, bytes_per_sec);  /* 0 = unlimited */
+
+/* Use rate-limited I/O */
+ssize_t n = Socket_send_limited(socket, buf, len);
+if (n == 0) {
+    /* Rate limited - wait before retry */
+    int64_t wait = Socket_bandwidth_wait_ms(socket, len);
+}
+
+/* Query limit */
+size_t limit = Socket_getbandwidth(socket);
+```
+
+**Integration with Event Loop:**
+```c
+int timeout = (int)Socket_bandwidth_wait_ms(socket, pending_bytes);
+SocketPoll_wait(poll, &events, timeout);
+```
+
+## 12. Configuration Override Pattern
+
+All configuration constants use compile-time override protection:
+
+```c
+/* In SocketConfig.h or module headers */
+#ifndef SOCKET_MAX_CONNECTIONS
+#define SOCKET_MAX_CONNECTIONS 10000UL
+#endif
+
+#ifndef SOCKET_DEFAULT_CONNECT_TIMEOUT_MS
+#define SOCKET_DEFAULT_CONNECT_TIMEOUT_MS 30000
+#endif
+```
+
+**Override at compile time:**
+```bash
+cmake .. -DCMAKE_C_FLAGS="-DSOCKET_MAX_CONNECTIONS=50000"
+```
+
+**Common Configuration Groups:**
+- `SOCKET_*` - General socket limits and defaults
+- `ARENA_*` - Memory arena configuration
+- `SOCKETBUF_*` - Buffer sizes and limits
+- `SOCKET_DNS_*` - DNS resolver configuration
+- `SOCKET_RECONNECT_*` - Reconnection policy defaults
+- `SOCKET_HE_*` - Happy Eyeballs timing defaults
+- `SOCKET_TLS_*` - TLS buffer sizes and limits
+- `POLL_*` - Poll backend configuration
+
+## 13. Debugging Patterns
+
+### Live Socket Count Tracking
+Use `SocketLiveCount` for leak detection in tests:
+
+```c
+/* In SocketCommon.h - shared tracker pattern */
+struct SocketLiveCount
+{
+  int count;
+  pthread_mutex_t mutex;
+};
+
+#define SOCKETLIVECOUNT_STATIC_INIT { 0, PTHREAD_MUTEX_INITIALIZER }
+
+/* Usage in modules */
+static struct SocketLiveCount socket_live_count = SOCKETLIVECOUNT_STATIC_INIT;
+
+/* In Socket_new(): */
+SocketLiveCount_increment(&socket_live_count);
+
+/* In Socket_free(): */
+SocketLiveCount_decrement(&socket_live_count);
+
+/* Query for tests: */
+int Socket_debug_live_count(void);
+```
+
+### Thread-Local Error Buffer
+All modules share a single thread-local error buffer:
+
+```c
+/* Declared in SocketUtil.h, defined in SocketUtil.c */
+extern __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE];
+extern __thread int socket_last_errno;
+
+/* Access last error */
+const char *Socket_GetLastError(void);
+int Socket_geterrno(void);
+SocketErrorCode Socket_geterrorcode(void);
+```
+
+### Monotonic Time Utilities
+**ALWAYS** use monotonic time for elapsed measurements:
+
+```c
+/* From SocketUtil.h */
+int64_t Socket_get_monotonic_ms(void);
+
+/* Usage for timeouts */
+int64_t start = Socket_get_monotonic_ms();
+/* ... operation ... */
+int64_t elapsed = Socket_get_monotonic_ms() - start;
+```
+
+## 14. Hash Utilities
+
+Centralized hash functions in `SocketUtil.h`:
+
+```c
+/* Hash file descriptor (for socket lookups) */
+unsigned socket_util_hash_fd(int fd, unsigned table_size);
+
+/* Hash pointer (for opaque handle lookups) */
+unsigned socket_util_hash_ptr(const void *ptr, unsigned table_size);
+
+/* Hash unsigned integer (for request IDs) */
+unsigned socket_util_hash_uint(unsigned value, unsigned table_size);
+```
+
+**Golden Ratio Constant**: `HASH_GOLDEN_RATIO = 2654435761u` (2^32 * (sqrt(5)-1)/2)
