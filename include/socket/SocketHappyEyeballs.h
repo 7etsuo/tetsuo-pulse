@@ -103,32 +103,32 @@ typedef struct SocketHE_Config
  * Configuration Constants
  * ============================================================================ */
 
-/* RFC 8305 recommends 250ms delay before starting fallback family */
+/** RFC 8305 recommends 250ms delay before starting fallback family */
 #ifndef SOCKET_HE_DEFAULT_FIRST_ATTEMPT_DELAY_MS
 #define SOCKET_HE_DEFAULT_FIRST_ATTEMPT_DELAY_MS 250
 #endif
 
-/* Per-attempt timeout for individual connection attempts */
+/** Per-attempt timeout for individual connection attempts */
 #ifndef SOCKET_HE_DEFAULT_ATTEMPT_TIMEOUT_MS
 #define SOCKET_HE_DEFAULT_ATTEMPT_TIMEOUT_MS 5000
 #endif
 
-/* Total operation timeout including DNS and all attempts */
+/** Total operation timeout including DNS and all attempts */
 #ifndef SOCKET_HE_DEFAULT_TOTAL_TIMEOUT_MS
 #define SOCKET_HE_DEFAULT_TOTAL_TIMEOUT_MS 30000
 #endif
 
-/* Maximum simultaneous connection attempts */
+/** Maximum simultaneous connection attempts */
 #ifndef SOCKET_HE_DEFAULT_MAX_ATTEMPTS
 #define SOCKET_HE_DEFAULT_MAX_ATTEMPTS 2
 #endif
 
-/* Poll interval for synchronous connection loop */
+/** Poll interval for synchronous connection loop */
 #ifndef SOCKET_HE_SYNC_POLL_INTERVAL_MS
 #define SOCKET_HE_SYNC_POLL_INTERVAL_MS 50
 #endif
 
-/* Port string buffer size (max 5 digits + null) */
+/** Port string buffer size (max 5 digits + null) */
 #ifndef SOCKET_HE_PORT_STR_SIZE
 #define SOCKET_HE_PORT_STR_SIZE 8
 #endif
