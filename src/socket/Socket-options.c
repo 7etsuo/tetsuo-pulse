@@ -230,6 +230,9 @@ set_keepalive_idle_time (T socket, int idle)
       SOCKET_ERROR_FMT ("Failed to set keepalive idle time");
       RAISE_MODULE_ERROR (Socket_Failed);
     }
+#else
+  (void)socket;
+  (void)idle;
 #endif
 }
 
@@ -252,6 +255,9 @@ set_keepalive_interval (T socket, int interval)
       SOCKET_ERROR_FMT ("Failed to set keepalive interval");
       RAISE_MODULE_ERROR (Socket_Failed);
     }
+#else
+  (void)socket;
+  (void)interval;
 #endif
 }
 
@@ -274,6 +280,9 @@ set_keepalive_count (T socket, int count)
       SOCKET_ERROR_FMT ("Failed to set keepalive count");
       RAISE_MODULE_ERROR (Socket_Failed);
     }
+#else
+  (void)socket;
+  (void)count;
 #endif
 }
 
