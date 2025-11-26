@@ -238,13 +238,13 @@ Socket_safe_strerror (int errnum)
       return errbuf;
     }
 
-#ifdef _GNU_SOURCE
-  /* GNU extension: returns char* */
+#if defined(__GLIBC__) && defined(_GNU_SOURCE)
+  /* GNU extension (glibc only): returns char* */
   return strerror_r (errnum, errbuf, sizeof (errbuf));
 #else
-  /* POSIX: returns int, 0 on success */
+  /* XSI-compliant (POSIX, macOS, BSD): returns int, 0 on success */
   if (strerror_r (errnum, errbuf, sizeof (errbuf)) != 0)
-    snprintf (errbuf, sizeof (errbuf), "Unknown error");
+    snprintf (errbuf, sizeof (errbuf), "Unknown error %d", errnum);
   return errbuf;
 #endif
 }
