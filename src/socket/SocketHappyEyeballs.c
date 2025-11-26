@@ -7,12 +7,6 @@
  * Implements the Happy Eyeballs algorithm for fast dual-stack connection
  * establishment. Races IPv6 and IPv4 connection attempts with a 250ms
  * delay between attempts to minimize latency when one family is slow.
- *
- * RFC 8305 Key Requirements:
- * - Prefer IPv6 but start IPv4 after 250ms if IPv6 hasn't connected
- * - Interleave addresses by family for better resilience
- * - Cancel losing connections immediately on winner
- * - Implement proper timeout handling
  */
 
 #include "socket/SocketHappyEyeballs.h"
@@ -31,6 +25,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <poll.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -52,7 +47,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHE);
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHE, e)
 
 /* ============================================================================
- * Internal Helper Function Declarations
+ * Forward Declarations - Internal Helpers
  * ============================================================================ */
 
 static void he_cleanup_attempts (T he);
@@ -67,6 +62,8 @@ static void he_declare_winner (T he, SocketHE_Attempt_T *attempt);
 static void he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error);
 static int he_all_attempts_done (T he);
 static void he_transition_to_failed (T he, const char *reason);
+static int he_should_start_fallback (T he);
+static int he_check_total_timeout (T he);
 
 /* ============================================================================
  * Configuration Defaults
@@ -84,8 +81,42 @@ SocketHappyEyeballs_config_defaults (SocketHE_Config_T *config)
 }
 
 /* ============================================================================
- * Context Creation and Destruction
+ * Context Creation Helpers
  * ============================================================================ */
+
+/**
+ * he_init_config - Initialize context configuration
+ * @he: Context to initialize
+ * @config: User config or NULL for defaults
+ */
+static void
+he_init_config (T he, const SocketHE_Config_T *config)
+{
+  if (config)
+    he->config = *config;
+  else
+    SocketHappyEyeballs_config_defaults (&he->config);
+}
+
+/**
+ * he_copy_hostname - Copy hostname into context arena
+ * @he: Context
+ * @host: Hostname to copy
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int
+he_copy_hostname (T he, const char *host)
+{
+  size_t host_len = strlen (host) + 1;
+
+  he->host = Arena_alloc (he->arena, host_len, __FILE__, __LINE__);
+  if (!he->host)
+    return -1;
+
+  memcpy (he->host, host, host_len);
+  return 0;
+}
 
 /**
  * he_create_context - Allocate and initialize Happy Eyeballs context
@@ -101,10 +132,7 @@ static T
 he_create_context (SocketDNS_T dns, SocketPoll_T poll, const char *host,
                    int port, const SocketHE_Config_T *config)
 {
-  T he;
-  size_t host_len;
-
-  he = calloc (1, sizeof (*he));
+  T he = calloc (1, sizeof (*he));
   if (!he)
     return NULL;
 
@@ -115,37 +143,57 @@ he_create_context (SocketDNS_T dns, SocketPoll_T poll, const char *host,
       return NULL;
     }
 
-  /* Copy configuration */
-  if (config)
-    {
-      he->config = *config;
-    }
-  else
-    {
-      SocketHappyEyeballs_config_defaults (&he->config);
-    }
+  he_init_config (he, config);
 
-  /* Copy hostname */
-  host_len = strlen (host) + 1;
-  he->host = Arena_alloc (he->arena, host_len, __FILE__, __LINE__);
-  if (!he->host)
+  if (he_copy_hostname (he, host) < 0)
     {
       Arena_dispose (&he->arena);
       free (he);
       return NULL;
     }
-  memcpy (he->host, host, host_len);
-  he->port = port;
 
-  /* Store external resources */
+  he->port = port;
   he->dns = dns;
   he->poll = poll;
-
-  /* Initialize state */
   he->state = HE_STATE_IDLE;
   he->start_time_ms = sockethe_get_time_ms ();
 
   return he;
+}
+
+/* ============================================================================
+ * Context Destruction
+ * ============================================================================ */
+
+/**
+ * he_free_resolved - Free resolved address list
+ * @he: Context
+ */
+static void
+he_free_resolved (T he)
+{
+  if (he->resolved)
+    {
+      freeaddrinfo (he->resolved);
+      he->resolved = NULL;
+    }
+}
+
+/**
+ * he_free_owned_resources - Free resources we created
+ * @he: Context
+ */
+static void
+he_free_owned_resources (T he)
+{
+  if (he->owns_dns && he->dns)
+    SocketDNS_free (&he->dns);
+
+  if (he->owns_poll && he->poll)
+    SocketPoll_free (&he->poll);
+
+  if (he->arena)
+    Arena_dispose (&he->arena);
 }
 
 void
@@ -156,35 +204,11 @@ SocketHappyEyeballs_free (T *he)
 
   T ctx = *he;
 
-  /* Cancel any in-progress operation */
   if (ctx->state == HE_STATE_RESOLVING || ctx->state == HE_STATE_CONNECTING)
-    {
-      SocketHappyEyeballs_cancel (ctx);
-    }
+    SocketHappyEyeballs_cancel (ctx);
 
-  /* Free resolved addresses */
-  if (ctx->resolved)
-    {
-      freeaddrinfo (ctx->resolved);
-      ctx->resolved = NULL;
-    }
-
-  /* Free owned resources */
-  if (ctx->owns_dns && ctx->dns)
-    {
-      SocketDNS_free (&ctx->dns);
-    }
-
-  if (ctx->owns_poll && ctx->poll)
-    {
-      SocketPoll_free (&ctx->poll);
-    }
-
-  /* Free arena (frees host, addresses, attempts) */
-  if (ctx->arena)
-    {
-      Arena_dispose (&ctx->arena);
-    }
+  he_free_resolved (ctx);
+  he_free_owned_resources (ctx);
 
   free (ctx);
   *he = NULL;
@@ -197,17 +221,12 @@ SocketHappyEyeballs_cancel (T he)
 
   if (he->state == HE_STATE_CONNECTED || he->state == HE_STATE_FAILED
       || he->state == HE_STATE_CANCELLED)
-    {
-      return;
-    }
+    return;
 
-  /* Cancel DNS request if active */
   he_cancel_dns (he);
-
-  /* Close all pending connection attempts */
   he_cleanup_attempts (he);
-
   he->state = HE_STATE_CANCELLED;
+
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                    "Happy Eyeballs cancelled for %s:%d", he->host, he->port);
 }
@@ -265,17 +284,17 @@ static int
 he_dns_blocking_resolve (T he)
 {
   struct addrinfo hints;
-  char port_str[8];
+  char port_str[SOCKET_HE_PORT_STR_SIZE];
   int result;
 
   memset (&hints, 0, sizeof (hints));
-  hints.ai_family = AF_UNSPEC; /* IPv4 and IPv6 */
+  hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_ADDRCONFIG; /* Only return usable addresses */
+  hints.ai_flags = AI_ADDRCONFIG;
 
   snprintf (port_str, sizeof (port_str), "%d", he->port);
-
   result = getaddrinfo (he->host, port_str, &hints, &he->resolved);
+
   if (result != 0)
     {
       snprintf (he->error_buf, sizeof (he->error_buf),
@@ -295,35 +314,29 @@ he_dns_blocking_resolve (T he)
 }
 
 /**
- * he_process_dns_completion - Check and process DNS completion
+ * he_handle_dns_error - Handle DNS resolution error
  * @he: Happy Eyeballs context
+ * @error: Error code from DNS
  */
 static void
-he_process_dns_completion (T he)
+he_handle_dns_error (T he, int error)
 {
-  if (!he->dns || !he->dns_request)
-    return;
+  snprintf (he->error_buf, sizeof (he->error_buf), "DNS resolution failed: %s",
+            gai_strerror (error));
+  he->dns_error = error;
+  he->dns_complete = 1;
+  he->dns_request = NULL;
+  he_transition_to_failed (he, he->error_buf);
+}
 
-  struct addrinfo *result = SocketDNS_getresult (he->dns, he->dns_request);
-  if (!result)
-    {
-      /* Check for error */
-      int error = SocketDNS_geterror (he->dns, he->dns_request);
-      if (error != 0)
-        {
-          snprintf (he->error_buf, sizeof (he->error_buf),
-                    "DNS resolution failed: %s", gai_strerror (error));
-          he->dns_error = error;
-          he->dns_complete = 1;
-          he->dns_request = NULL;
-          he_transition_to_failed (he, he->error_buf);
-          return;
-        }
-      /* Still pending */
-      return;
-    }
-
-  /* Success */
+/**
+ * he_handle_dns_success - Handle DNS resolution success
+ * @he: Happy Eyeballs context
+ * @result: Resolved addresses
+ */
+static void
+he_handle_dns_success (T he, struct addrinfo *result)
+{
   he->resolved = result;
   he->dns_complete = 1;
   he->dns_request = NULL;
@@ -331,9 +344,33 @@ he_process_dns_completion (T he)
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                    "DNS resolution complete for %s:%d", he->host, he->port);
 
-  /* Sort addresses and start connecting */
   he_sort_addresses (he);
   he->state = HE_STATE_CONNECTING;
+}
+
+/**
+ * he_process_dns_completion - Check and process DNS completion
+ * @he: Happy Eyeballs context
+ */
+static void
+he_process_dns_completion (T he)
+{
+  struct addrinfo *result;
+  int error;
+
+  if (!he->dns || !he->dns_request)
+    return;
+
+  result = SocketDNS_getresult (he->dns, he->dns_request);
+  if (!result)
+    {
+      error = SocketDNS_geterror (he->dns, he->dns_request);
+      if (error != 0)
+        he_handle_dns_error (he, error);
+      return;
+    }
+
+  he_handle_dns_success (he, result);
 }
 
 /* ============================================================================
@@ -347,13 +384,13 @@ he_process_dns_completion (T he)
  * @ipv4_count: Output for IPv4 count
  */
 static void
-he_count_addresses_by_family (struct addrinfo *res, int *ipv6_count,
+he_count_addresses_by_family (const struct addrinfo *res, int *ipv6_count,
                               int *ipv4_count)
 {
   *ipv6_count = 0;
   *ipv4_count = 0;
 
-  for (struct addrinfo *rp = res; rp; rp = rp->ai_next)
+  for (const struct addrinfo *rp = res; rp; rp = rp->ai_next)
     {
       if (rp->ai_family == AF_INET6)
         (*ipv6_count)++;
@@ -363,94 +400,138 @@ he_count_addresses_by_family (struct addrinfo *res, int *ipv6_count,
 }
 
 /**
- * he_sort_addresses - Sort addresses per RFC 8305
+ * he_create_address_entry - Create address entry from addrinfo
  * @he: Happy Eyeballs context
+ * @rp: Address info to wrap
  *
- * Creates sorted address list with IPv6 first (if preferred), then
- * interleaves for resilience. Sets up next_ipv6 and next_ipv4 pointers.
+ * Returns: New entry or NULL on allocation failure
+ */
+static SocketHE_AddressEntry_T *
+he_create_address_entry (T he, struct addrinfo *rp)
+{
+  SocketHE_AddressEntry_T *entry;
+
+  entry = Arena_alloc (he->arena, sizeof (*entry), __FILE__, __LINE__);
+  if (!entry)
+    return NULL;
+
+  entry->addr = rp;
+  entry->family = rp->ai_family;
+  entry->tried = 0;
+  entry->next = NULL;
+
+  return entry;
+}
+
+/**
+ * he_append_to_family_list - Append entry to family-specific list
+ * @entry: Entry to append
+ * @tail: Pointer to tail pointer (updated to point to entry->next)
  */
 static void
-he_sort_addresses (T he)
+he_append_to_family_list (SocketHE_AddressEntry_T *entry,
+                          SocketHE_AddressEntry_T ***tail)
 {
-  SocketHE_AddressEntry_T *ipv6_list = NULL;
-  SocketHE_AddressEntry_T *ipv4_list = NULL;
-  SocketHE_AddressEntry_T **ipv6_tail = &ipv6_list;
-  SocketHE_AddressEntry_T **ipv4_tail = &ipv4_list;
+  **tail = entry;
+  *tail = &entry->next;
+}
+
+/**
+ * he_build_family_lists - Build separate IPv6 and IPv4 lists
+ * @he: Happy Eyeballs context
+ * @ipv6_list: Output for IPv6 list head
+ * @ipv4_list: Output for IPv4 list head
+ */
+static void
+he_build_family_lists (T he, SocketHE_AddressEntry_T **ipv6_list,
+                       SocketHE_AddressEntry_T **ipv4_list)
+{
+  SocketHE_AddressEntry_T **ipv6_tail = ipv6_list;
+  SocketHE_AddressEntry_T **ipv4_tail = ipv4_list;
   SocketHE_AddressEntry_T *entry;
-  int ipv6_count, ipv4_count;
 
-  /* Count addresses */
-  he_count_addresses_by_family (he->resolved, &ipv6_count, &ipv4_count);
+  *ipv6_list = NULL;
+  *ipv4_list = NULL;
 
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "Resolved %d IPv6 and %d IPv4 addresses", ipv6_count,
-                   ipv4_count);
-
-  /* Build separate lists for each family */
   for (struct addrinfo *rp = he->resolved; rp; rp = rp->ai_next)
     {
-      entry
-          = Arena_alloc (he->arena, sizeof (*entry), __FILE__, __LINE__);
+      entry = he_create_address_entry (he, rp);
       if (!entry)
         continue;
 
-      entry->addr = rp;
-      entry->family = rp->ai_family;
-      entry->tried = 0;
-      entry->next = NULL;
-
       if (rp->ai_family == AF_INET6)
-        {
-          *ipv6_tail = entry;
-          ipv6_tail = &entry->next;
-        }
+        he_append_to_family_list (entry, &ipv6_tail);
       else if (rp->ai_family == AF_INET)
-        {
-          *ipv4_tail = entry;
-          ipv4_tail = &entry->next;
-        }
+        he_append_to_family_list (entry, &ipv4_tail);
     }
+}
 
-  /* Store pointers for interleaved access per RFC 8305 */
+/**
+ * he_setup_interleave_order - Setup interleave pointers per RFC 8305
+ * @he: Happy Eyeballs context
+ * @ipv6_list: IPv6 address list
+ * @ipv4_list: IPv4 address list
+ */
+static void
+he_setup_interleave_order (T he, SocketHE_AddressEntry_T *ipv6_list,
+                           SocketHE_AddressEntry_T *ipv4_list)
+{
   if (he->config.prefer_ipv6)
     {
       he->next_ipv6 = ipv6_list;
       he->next_ipv4 = ipv4_list;
-      he->interleave_prefer_ipv6 = 1; /* Start with IPv6 */
+      he->interleave_prefer_ipv6 = 1;
     }
   else
     {
-      /* Swap: prefer IPv4 */
       he->next_ipv6 = ipv4_list;
       he->next_ipv4 = ipv6_list;
-      he->interleave_prefer_ipv6 = 0; /* Start with IPv4 */
+      he->interleave_prefer_ipv6 = 0;
     }
 
-  /* Build interleaved list for iteration */
   he->addresses = he->next_ipv6 ? he->next_ipv6 : he->next_ipv4;
 }
 
 /**
- * he_get_next_address - Get next address to try
+ * he_sort_addresses - Sort addresses per RFC 8305
+ * @he: Happy Eyeballs context
+ */
+static void
+he_sort_addresses (T he)
+{
+  SocketHE_AddressEntry_T *ipv6_list;
+  SocketHE_AddressEntry_T *ipv4_list;
+  int ipv6_count, ipv4_count;
+
+  he_count_addresses_by_family (he->resolved, &ipv6_count, &ipv4_count);
+  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                   "Resolved %d IPv6 and %d IPv4 addresses", ipv6_count,
+                   ipv4_count);
+
+  he_build_family_lists (he, &ipv6_list, &ipv4_list);
+  he_setup_interleave_order (he, ipv6_list, ipv4_list);
+}
+
+/* ============================================================================
+ * Address Selection (RFC 8305 Interleaving)
+ * ============================================================================ */
+
+/**
+ * he_get_from_preferred - Get next address from preferred family
  * @he: Happy Eyeballs context
  *
- * Returns: Next address entry, or NULL if none available
- *
- * Implements RFC 8305 Section 4 interleaving: alternates between address
- * families to ensure both IPv6 and IPv4 get fair attempts. Order is:
- * IPv6-1, IPv4-1, IPv6-2, IPv4-2, etc. (or reversed if prefer_ipv6=0).
+ * Returns: Address entry or NULL
  */
 static SocketHE_AddressEntry_T *
-he_get_next_address (T he)
+he_get_from_preferred (T he)
 {
   SocketHE_AddressEntry_T *entry;
 
-  /* RFC 8305: Interleave address families for resilience */
   if (he->interleave_prefer_ipv6 && he->next_ipv6)
     {
       entry = he->next_ipv6;
       he->next_ipv6 = entry->next;
-      he->interleave_prefer_ipv6 = 0; /* Next time try IPv4 */
+      he->interleave_prefer_ipv6 = 0;
       return entry;
     }
 
@@ -458,11 +539,24 @@ he_get_next_address (T he)
     {
       entry = he->next_ipv4;
       he->next_ipv4 = entry->next;
-      he->interleave_prefer_ipv6 = 1; /* Next time try IPv6 */
+      he->interleave_prefer_ipv6 = 1;
       return entry;
     }
 
-  /* One family exhausted - drain the other */
+  return NULL;
+}
+
+/**
+ * he_get_from_remaining - Get next address from remaining family
+ * @he: Happy Eyeballs context
+ *
+ * Returns: Address entry or NULL
+ */
+static SocketHE_AddressEntry_T *
+he_get_from_remaining (T he)
+{
+  SocketHE_AddressEntry_T *entry;
+
   if (he->next_ipv6)
     {
       entry = he->next_ipv6;
@@ -480,35 +574,79 @@ he_get_next_address (T he)
   return NULL;
 }
 
+/**
+ * he_get_next_address - Get next address to try
+ * @he: Happy Eyeballs context
+ *
+ * Returns: Next address entry, or NULL if none available
+ */
+static SocketHE_AddressEntry_T *
+he_get_next_address (T he)
+{
+  SocketHE_AddressEntry_T *entry = he_get_from_preferred (he);
+
+  if (!entry)
+    entry = he_get_from_remaining (he);
+
+  return entry;
+}
+
 /* ============================================================================
- * Connection Attempts
+ * Socket Creation
  * ============================================================================ */
 
 /**
+ * he_set_nonblocking - Set socket to non-blocking mode
+ * @fd: File descriptor
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int
+he_set_nonblocking (int fd)
+{
+  int flags = fcntl (fd, F_GETFL);
+
+  if (flags < 0)
+    return -1;
+
+  return fcntl (fd, F_SETFL, flags | O_NONBLOCK);
+}
+
+/**
+ * he_clear_nonblocking - Clear non-blocking mode from socket
+ * @fd: File descriptor
+ */
+static void
+he_clear_nonblocking (int fd)
+{
+  int flags = fcntl (fd, F_GETFL);
+
+  if (flags >= 0)
+    fcntl (fd, F_SETFL, flags & ~O_NONBLOCK);
+}
+
+/**
  * he_create_socket_for_address - Create socket for address family
- * @he: Happy Eyeballs context
  * @addr: Address to create socket for
  *
  * Returns: New socket or NULL on failure
  */
 static Socket_T
-he_create_socket_for_address (T he, struct addrinfo *addr)
+he_create_socket_for_address (const struct addrinfo *addr)
 {
   Socket_T sock = NULL;
 
-  (void)he; /* Currently unused but may be needed for future options */
-
-  TRY { sock = Socket_new (addr->ai_family, addr->ai_socktype, addr->ai_protocol); }
+  TRY
+  {
+    sock = Socket_new (addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+  }
   EXCEPT (Socket_Failed) { return NULL; }
   END_TRY;
 
   if (!sock)
     return NULL;
 
-  /* Set non-blocking for racing */
-  int fd = Socket_fd (sock);
-  int flags = fcntl (fd, F_GETFL);
-  if (flags < 0 || fcntl (fd, F_SETFL, flags | O_NONBLOCK) < 0)
+  if (he_set_nonblocking (Socket_fd (sock)) < 0)
     {
       Socket_free (&sock);
       return NULL;
@@ -517,100 +655,181 @@ he_create_socket_for_address (T he, struct addrinfo *addr)
   return sock;
 }
 
+/* ============================================================================
+ * Connection Attempt Management
+ * ============================================================================ */
+
 /**
- * he_start_attempt - Start connection attempt for address
+ * he_allocate_attempt - Allocate attempt structure
  * @he: Happy Eyeballs context
- * @entry: Address entry to connect to
+ * @sock: Socket for this attempt
+ * @entry: Address entry being tried
  *
- * Returns: 0 on success (attempt started or connected), -1 on failure
+ * Returns: New attempt or NULL on failure
  */
-static int
-he_start_attempt (T he, SocketHE_AddressEntry_T *entry)
+static SocketHE_Attempt_T *
+he_allocate_attempt (T he, Socket_T sock, SocketHE_AddressEntry_T *entry)
 {
   SocketHE_Attempt_T *attempt;
-  Socket_T sock;
-  int result;
-  int fd;
 
-  if (entry->tried)
-    return -1;
-
-  entry->tried = 1;
-
-  /* Create socket */
-  sock = he_create_socket_for_address (he, entry->addr);
-  if (!sock)
-    {
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "Failed to create socket for %s family",
-                       entry->family == AF_INET6 ? "IPv6" : "IPv4");
-      return -1;
-    }
-
-  /* Allocate attempt structure */
   attempt = Arena_alloc (he->arena, sizeof (*attempt), __FILE__, __LINE__);
   if (!attempt)
-    {
-      Socket_free (&sock);
-      return -1;
-    }
+    return NULL;
 
   attempt->socket = sock;
   attempt->addr = entry->addr;
   attempt->state = HE_ATTEMPT_CONNECTING;
   attempt->error = 0;
   attempt->start_time_ms = sockethe_get_time_ms ();
+  attempt->next = NULL;
 
-  /* Start non-blocking connect */
-  fd = Socket_fd (sock);
-  result = connect (fd, entry->addr->ai_addr, entry->addr->ai_addrlen);
+  return attempt;
+}
+
+/**
+ * he_add_attempt_to_list - Add attempt to context's attempt list
+ * @he: Happy Eyeballs context
+ * @attempt: Attempt to add
+ */
+static void
+he_add_attempt_to_list (T he, SocketHE_Attempt_T *attempt)
+{
+  attempt->next = he->attempts;
+  he->attempts = attempt;
+  he->attempt_count++;
+}
+
+/**
+ * he_add_attempt_to_poll - Register attempt with poll for monitoring
+ * @he: Happy Eyeballs context
+ * @attempt: Attempt to monitor
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int
+he_add_attempt_to_poll (T he, SocketHE_Attempt_T *attempt)
+{
+  if (!he->poll)
+    return 0;
+
+  TRY { SocketPoll_add (he->poll, attempt->socket, POLL_WRITE, attempt); }
+  EXCEPT (SocketPoll_Failed) { return -1; }
+  END_TRY;
+
+  return 0;
+}
+
+/**
+ * he_log_attempt_start - Log connection attempt start
+ * @entry: Address entry being tried
+ */
+static void
+he_log_attempt_start (const SocketHE_AddressEntry_T *entry)
+{
+  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                   "Started %s connection attempt",
+                   entry->family == AF_INET6 ? "IPv6" : "IPv4");
+}
+
+/**
+ * he_log_attempt_fail - Log connection attempt failure
+ * @entry: Address entry that failed
+ * @error: Error code
+ */
+static void
+he_log_attempt_fail (const SocketHE_AddressEntry_T *entry, int error)
+{
+  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                   "%s connection failed: %s",
+                   entry->family == AF_INET6 ? "IPv6" : "IPv4",
+                   strerror (error));
+}
+
+/**
+ * he_start_attempt - Start connection attempt for address
+ * @he: Happy Eyeballs context
+ * @entry: Address entry to connect to
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int
+he_start_attempt (T he, SocketHE_AddressEntry_T *entry)
+{
+  Socket_T sock;
+  SocketHE_Attempt_T *attempt;
+  int result;
+
+  if (entry->tried)
+    return -1;
+
+  entry->tried = 1;
+  sock = he_create_socket_for_address (entry->addr);
+  if (!sock)
+    {
+      he_log_attempt_fail (entry, errno);
+      return -1;
+    }
+
+  attempt = he_allocate_attempt (he, sock, entry);
+  if (!attempt)
+    {
+      Socket_free (&sock);
+      return -1;
+    }
+
+  result = connect (Socket_fd (sock), entry->addr->ai_addr,
+                    entry->addr->ai_addrlen);
 
   if (result == 0)
     {
-      /* Immediate success (rare, usually localhost) */
       he_declare_winner (he, attempt);
       return 0;
     }
 
-  if (errno == EINPROGRESS)
+  if (errno != EINPROGRESS)
     {
-      /* Normal case: connect in progress */
-      attempt->next = he->attempts;
-      he->attempts = attempt;
-      he->attempt_count++;
-
-      /* Add to poll for completion monitoring */
-      if (he->poll)
-        {
-          TRY { SocketPoll_add (he->poll, sock, POLL_WRITE, attempt); }
-          EXCEPT (SocketPoll_Failed)
-          {
-            /* Remove from attempt list on poll failure */
-            he->attempts = attempt->next;
-            he->attempt_count--;
-            Socket_free (&sock);
-            return -1;
-          }
-          END_TRY;
-        }
-
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "Started %s connection attempt",
-                       entry->family == AF_INET6 ? "IPv6" : "IPv4");
-      return 0;
+      attempt->state = HE_ATTEMPT_FAILED;
+      attempt->error = errno;
+      Socket_free (&sock);
+      attempt->socket = NULL;
+      he_log_attempt_fail (entry, attempt->error);
+      return -1;
     }
 
-  /* Connect failed immediately */
-  attempt->state = HE_ATTEMPT_FAILED;
-  attempt->error = errno;
-  Socket_free (&sock);
-  attempt->socket = NULL;
+  he_add_attempt_to_list (he, attempt);
 
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "%s connection failed: %s",
-                   entry->family == AF_INET6 ? "IPv6" : "IPv4",
-                   strerror (attempt->error));
-  return -1;
+  if (he_add_attempt_to_poll (he, attempt) < 0)
+    {
+      he->attempts = attempt->next;
+      he->attempt_count--;
+      Socket_free (&sock);
+      return -1;
+    }
+
+  he_log_attempt_start (entry);
+  return 0;
+}
+
+/* ============================================================================
+ * Attempt Cleanup
+ * ============================================================================ */
+
+/**
+ * he_close_attempt - Close single attempt socket
+ * @he: Happy Eyeballs context
+ * @attempt: Attempt to close
+ */
+static void
+he_close_attempt (T he, SocketHE_Attempt_T *attempt)
+{
+  if (!attempt->socket)
+    return;
+
+  if (he->poll && attempt->state == HE_ATTEMPT_CONNECTING)
+    SocketPoll_del (he->poll, attempt->socket);
+
+  if (attempt->socket != he->winner)
+    Socket_free (&attempt->socket);
 }
 
 /**
@@ -624,23 +843,36 @@ he_cleanup_attempts (T he)
 
   while (attempt)
     {
-      if (attempt->socket)
-        {
-          if (he->poll && attempt->state == HE_ATTEMPT_CONNECTING)
-            {
-              SocketPoll_del (he->poll, attempt->socket);
-            }
-          /* Don't free the winner */
-          if (attempt->socket != he->winner)
-            {
-              Socket_free (&attempt->socket);
-            }
-        }
+      he_close_attempt (he, attempt);
       attempt = attempt->next;
     }
 
   he->attempts = NULL;
   he->attempt_count = 0;
+}
+
+/* ============================================================================
+ * Winner Declaration
+ * ============================================================================ */
+
+/**
+ * he_cancel_losing_attempts - Cancel all non-winning attempts
+ * @he: Happy Eyeballs context
+ * @winner: The winning attempt
+ */
+static void
+he_cancel_losing_attempts (T he, const SocketHE_Attempt_T *winner)
+{
+  for (SocketHE_Attempt_T *other = he->attempts; other; other = other->next)
+    {
+      if (other == winner || !other->socket)
+        continue;
+
+      if (he->poll && other->state == HE_ATTEMPT_CONNECTING)
+        SocketPoll_del (he->poll, other->socket);
+
+      Socket_free (&other->socket);
+    }
 }
 
 /**
@@ -655,32 +887,16 @@ he_declare_winner (T he, SocketHE_Attempt_T *attempt)
   he->winner = attempt->socket;
   he->state = HE_STATE_CONNECTED;
 
-  /* Remove winner from poll */
   if (he->poll)
-    {
-      SocketPoll_del (he->poll, attempt->socket);
-    }
+    SocketPoll_del (he->poll, attempt->socket);
 
-  /* Cancel DNS if still in progress */
   he_cancel_dns (he);
+  he_cancel_losing_attempts (he, attempt);
 
-  /* Close all other attempts */
-  for (SocketHE_Attempt_T *other = he->attempts; other; other = other->next)
-    {
-      if (other != attempt && other->socket)
-        {
-          if (he->poll && other->state == HE_ATTEMPT_CONNECTING)
-            {
-              SocketPoll_del (he->poll, other->socket);
-            }
-          Socket_free (&other->socket);
-        }
-    }
-
-  SocketLog_emitf (
-      SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
-      "Happy Eyeballs connected to %s:%d via %s", he->host, he->port,
-      attempt->addr->ai_family == AF_INET6 ? "IPv6" : "IPv4");
+  SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
+                   "Happy Eyeballs connected to %s:%d via %s", he->host,
+                   he->port, attempt->addr->ai_family == AF_INET6 ? "IPv6"
+                                                                  : "IPv4");
 }
 
 /**
@@ -696,9 +912,7 @@ he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error)
   attempt->error = error;
 
   if (he->poll && attempt->socket)
-    {
-      SocketPoll_del (he->poll, attempt->socket);
-    }
+    SocketPoll_del (he->poll, attempt->socket);
 
   if (attempt->socket)
     {
@@ -712,6 +926,72 @@ he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error)
                    strerror (error));
 }
 
+/* ============================================================================
+ * Attempt Completion Checking
+ * ============================================================================ */
+
+/**
+ * he_poll_attempt_status - Poll single attempt for completion
+ * @fd: File descriptor to check
+ * @revents: Output for poll results
+ *
+ * Returns: 1 if ready, 0 if pending, -1 on error
+ */
+static int
+he_poll_attempt_status (int fd, short *revents)
+{
+  struct pollfd pfd;
+  int result;
+
+  pfd.fd = fd;
+  pfd.events = POLLOUT;
+  pfd.revents = 0;
+
+  result = poll (&pfd, 1, 0);
+  if (result < 0)
+    return (errno == EINTR) ? 0 : -1;
+
+  *revents = pfd.revents;
+  return result;
+}
+
+/**
+ * he_check_socket_error - Check socket for connection error
+ * @fd: File descriptor to check
+ *
+ * Returns: 0 if connected, error code otherwise
+ */
+static int
+he_check_socket_error (int fd)
+{
+  int error = 0;
+  socklen_t len = sizeof (error);
+
+  if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
+    return errno;
+
+  return error;
+}
+
+/**
+ * he_check_attempt_timeout - Check if attempt has timed out
+ * @he: Happy Eyeballs context
+ * @attempt: Attempt to check
+ *
+ * Returns: 1 if timed out, 0 otherwise
+ */
+static int
+he_check_attempt_timeout (const T he, const SocketHE_Attempt_T *attempt)
+{
+  int64_t elapsed;
+
+  if (he->config.attempt_timeout_ms <= 0)
+    return 0;
+
+  elapsed = sockethe_elapsed_ms (attempt->start_time_ms);
+  return elapsed >= he->config.attempt_timeout_ms;
+}
+
 /**
  * he_check_attempt_completion - Check if single attempt has completed
  * @he: Happy Eyeballs context
@@ -722,9 +1002,8 @@ he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error)
 static int
 he_check_attempt_completion (T he, SocketHE_Attempt_T *attempt)
 {
-  int fd, error;
-  socklen_t len;
-  struct pollfd pfd;
+  int fd, result, error;
+  short revents;
 
   if (attempt->state != HE_ATTEMPT_CONNECTING)
     return attempt->state == HE_ATTEMPT_CONNECTED ? 1 : -1;
@@ -733,60 +1012,38 @@ he_check_attempt_completion (T he, SocketHE_Attempt_T *attempt)
     return -1;
 
   fd = Socket_fd (attempt->socket);
+  result = he_poll_attempt_status (fd, &revents);
 
-  /* Poll for write readiness */
-  pfd.fd = fd;
-  pfd.events = POLLOUT;
-  pfd.revents = 0;
-
-  int result = poll (&pfd, 1, 0); /* Non-blocking check */
   if (result < 0)
     {
-      if (errno == EINTR)
-        return 0;
       he_fail_attempt (he, attempt, errno);
       return -1;
     }
 
   if (result == 0)
     {
-      /* Check for timeout */
-      int64_t elapsed = sockethe_elapsed_ms (attempt->start_time_ms);
-      if (he->config.attempt_timeout_ms > 0
-          && elapsed >= he->config.attempt_timeout_ms)
+      if (he_check_attempt_timeout (he, attempt))
         {
           he_fail_attempt (he, attempt, ETIMEDOUT);
           return -1;
         }
-      return 0; /* Still connecting */
+      return 0;
     }
 
-  /* Check for error */
-  if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+  if (revents & (POLLERR | POLLHUP | POLLNVAL))
     {
-      error = 0;
-      len = sizeof (error);
-      getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len);
+      error = he_check_socket_error (fd);
       he_fail_attempt (he, attempt, error ? error : ECONNREFUSED);
       return -1;
     }
 
-  /* Check SO_ERROR */
-  error = 0;
-  len = sizeof (error);
-  if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
-    {
-      he_fail_attempt (he, attempt, errno);
-      return -1;
-    }
-
+  error = he_check_socket_error (fd);
   if (error != 0)
     {
       he_fail_attempt (he, attempt, error);
       return -1;
     }
 
-  /* Success! */
   he_declare_winner (he, attempt);
   return 1;
 }
@@ -798,17 +1055,14 @@ he_check_attempt_completion (T he, SocketHE_Attempt_T *attempt)
 static void
 he_check_attempts (T he)
 {
-  SocketHE_Attempt_T *attempt;
-
-  for (attempt = he->attempts; attempt; attempt = attempt->next)
+  for (SocketHE_Attempt_T *attempt = he->attempts; attempt;
+       attempt = attempt->next)
     {
       if (he->state == HE_STATE_CONNECTED)
-        break; /* We have a winner */
+        break;
 
       if (attempt->state == HE_ATTEMPT_CONNECTING)
-        {
-          he_check_attempt_completion (he, attempt);
-        }
+        he_check_attempt_completion (he, attempt);
     }
 }
 
@@ -821,11 +1075,9 @@ he_check_attempts (T he)
 static int
 he_all_attempts_done (T he)
 {
-  /* Check if we can start more attempts */
   if (he->next_ipv6 || he->next_ipv4)
     return 0;
 
-  /* Check active attempts */
   for (SocketHE_Attempt_T *attempt = he->attempts; attempt;
        attempt = attempt->next)
     {
@@ -834,6 +1086,22 @@ he_all_attempts_done (T he)
     }
 
   return 1;
+}
+
+/* ============================================================================
+ * State Transitions
+ * ============================================================================ */
+
+/**
+ * he_set_error - Set error message in context
+ * @he: Happy Eyeballs context
+ * @reason: Error message
+ */
+static void
+he_set_error (T he, const char *reason)
+{
+  if (reason && he->error_buf[0] == '\0')
+    snprintf (he->error_buf, sizeof (he->error_buf), "%s", reason);
 }
 
 /**
@@ -845,11 +1113,7 @@ static void
 he_transition_to_failed (T he, const char *reason)
 {
   he->state = HE_STATE_FAILED;
-
-  if (reason && he->error_buf[0] == '\0')
-    {
-      snprintf (he->error_buf, sizeof (he->error_buf), "%s", reason);
-    }
+  he_set_error (he, reason);
 
   SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
                    "Happy Eyeballs failed for %s:%d: %s", he->host, he->port,
@@ -857,7 +1121,7 @@ he_transition_to_failed (T he, const char *reason)
 }
 
 /* ============================================================================
- * State Machine Processing
+ * Timer and Timeout Checks
  * ============================================================================ */
 
 /**
@@ -871,10 +1135,7 @@ he_should_start_fallback (T he)
 {
   int64_t elapsed;
 
-  if (!he->fallback_timer_armed)
-    return 0;
-
-  if (he->first_attempt_time_ms == 0)
+  if (!he->fallback_timer_armed || he->first_attempt_time_ms == 0)
     return 0;
 
   elapsed = sockethe_elapsed_ms (he->first_attempt_time_ms);
@@ -890,11 +1151,75 @@ he_should_start_fallback (T he)
 static int
 he_check_total_timeout (T he)
 {
+  int64_t elapsed;
+
   if (he->config.total_timeout_ms <= 0)
     return 0;
 
-  int64_t elapsed = sockethe_elapsed_ms (he->start_time_ms);
+  elapsed = sockethe_elapsed_ms (he->start_time_ms);
   return elapsed >= he->config.total_timeout_ms;
+}
+
+/* ============================================================================
+ * Async State Machine Processing
+ * ============================================================================ */
+
+/**
+ * he_start_first_attempt - Start first connection attempt
+ * @he: Happy Eyeballs context
+ */
+static void
+he_start_first_attempt (T he)
+{
+  SocketHE_AddressEntry_T *entry;
+
+  if (he->attempt_count != 0)
+    return;
+
+  entry = he_get_next_address (he);
+  if (!entry)
+    return;
+
+  he_start_attempt (he, entry);
+  he->first_attempt_time_ms = sockethe_get_time_ms ();
+  he->fallback_timer_armed = 1;
+}
+
+/**
+ * he_start_fallback_attempt - Start fallback family attempt
+ * @he: Happy Eyeballs context
+ */
+static void
+he_start_fallback_attempt (T he)
+{
+  SocketHE_AddressEntry_T *entry;
+
+  if (!he_should_start_fallback (he))
+    return;
+
+  if (he->attempt_count >= he->config.max_attempts)
+    return;
+
+  entry = he_get_next_address (he);
+  if (entry)
+    he_start_attempt (he, entry);
+
+  he->fallback_timer_armed = 0;
+}
+
+/**
+ * he_check_complete_failure - Check if all attempts have failed
+ * @he: Happy Eyeballs context
+ */
+static void
+he_check_complete_failure (T he)
+{
+  if (!he_all_attempts_done (he) || he->state == HE_STATE_CONNECTED)
+    return;
+
+  snprintf (he->error_buf, sizeof (he->error_buf),
+            "All connection attempts failed");
+  he_transition_to_failed (he, he->error_buf);
 }
 
 /**
@@ -904,7 +1229,6 @@ he_check_total_timeout (T he)
 static void
 he_process_connecting_state (T he)
 {
-  /* Check total timeout */
   if (he_check_total_timeout (he))
     {
       snprintf (he->error_buf, sizeof (he->error_buf), "Connection timed out");
@@ -913,43 +1237,14 @@ he_process_connecting_state (T he)
       return;
     }
 
-  /* Check existing attempts */
   he_check_attempts (he);
 
   if (he->state == HE_STATE_CONNECTED)
     return;
 
-  /* Start first attempt if none active */
-  if (he->attempt_count == 0)
-    {
-      SocketHE_AddressEntry_T *entry = he_get_next_address (he);
-      if (entry)
-        {
-          he_start_attempt (he, entry);
-          he->first_attempt_time_ms = sockethe_get_time_ms ();
-          he->fallback_timer_armed = 1;
-        }
-    }
-
-  /* Check if should start fallback attempt */
-  if (he_should_start_fallback (he)
-      && he->attempt_count < he->config.max_attempts)
-    {
-      SocketHE_AddressEntry_T *entry = he_get_next_address (he);
-      if (entry)
-        {
-          he_start_attempt (he, entry);
-          he->fallback_timer_armed = 0; /* Only one fallback */
-        }
-    }
-
-  /* Check for complete failure */
-  if (he_all_attempts_done (he) && he->state != HE_STATE_CONNECTED)
-    {
-      snprintf (he->error_buf, sizeof (he->error_buf),
-                "All connection attempts failed");
-      he_transition_to_failed (he, he->error_buf);
-    }
+  he_start_first_attempt (he);
+  he_start_fallback_attempt (he);
+  he_check_complete_failure (he);
 }
 
 void
@@ -960,15 +1255,11 @@ SocketHappyEyeballs_process (T he)
   switch (he->state)
     {
     case HE_STATE_IDLE:
-      /* Start DNS resolution */
       if (he->dns)
-        {
-          he_start_dns_resolution (he);
-        }
+        he_start_dns_resolution (he);
       break;
 
     case HE_STATE_RESOLVING:
-      /* Check DNS completion */
       if (he->dns)
         {
           SocketDNS_check (he->dns);
@@ -983,7 +1274,6 @@ SocketHappyEyeballs_process (T he)
     case HE_STATE_CONNECTED:
     case HE_STATE_FAILED:
     case HE_STATE_CANCELLED:
-      /* Terminal states - nothing to do */
       break;
     }
 }
@@ -997,11 +1287,12 @@ SocketHappyEyeballs_start (SocketDNS_T dns, SocketPoll_T poll, const char *host,
                            int port, const SocketHE_Config_T *config)
 {
   T he;
+  char errmsg_copy[SOCKET_HE_ERROR_BUFSIZE];
 
   assert (dns);
   assert (poll);
   assert (host);
-  assert (port > 0 && port <= 65535);
+  assert (port > 0 && port <= SOCKET_MAX_PORT);
 
   he = he_create_context (dns, poll, host, port, config);
   if (!he)
@@ -1010,10 +1301,8 @@ SocketHappyEyeballs_start (SocketDNS_T dns, SocketPoll_T poll, const char *host,
       RAISE_MODULE_ERROR (SocketHE_Failed);
     }
 
-  /* Start DNS resolution */
   if (he_start_dns_resolution (he) < 0)
     {
-      char errmsg_copy[SOCKET_HE_ERROR_BUFSIZE];
       snprintf (errmsg_copy, sizeof (errmsg_copy), "%s", he->error_buf);
       SocketHappyEyeballs_free (&he);
       SOCKET_ERROR_MSG ("%s", errmsg_copy);
@@ -1027,7 +1316,6 @@ int
 SocketHappyEyeballs_poll (T he)
 {
   assert (he);
-
   return he->state == HE_STATE_CONNECTED || he->state == HE_STATE_FAILED
          || he->state == HE_STATE_CANCELLED;
 }
@@ -1042,20 +1330,11 @@ SocketHappyEyeballs_result (T he)
   if (he->state != HE_STATE_CONNECTED)
     return NULL;
 
-  /* Transfer ownership */
   result = he->winner;
   he->winner = NULL;
 
-  /* Restore blocking mode */
   if (result)
-    {
-      int fd = Socket_fd (result);
-      int flags = fcntl (fd, F_GETFL);
-      if (flags >= 0)
-        {
-          fcntl (fd, F_SETFL, flags & ~O_NONBLOCK);
-        }
-    }
+    he_clear_nonblocking (Socket_fd (result));
 
   return result;
 }
@@ -1078,28 +1357,28 @@ SocketHappyEyeballs_error (T he)
   return he->error_buf[0] ? he->error_buf : "Unknown error";
 }
 
-int
-SocketHappyEyeballs_next_timeout_ms (T he)
+/**
+ * he_calculate_next_timeout - Calculate next timeout for poll
+ * @he: Happy Eyeballs context
+ * @timeout: Current timeout (or -1)
+ *
+ * Returns: Updated timeout value
+ */
+static int
+he_calculate_next_timeout (T he, int timeout)
 {
   int64_t remaining;
-  int timeout = -1;
 
-  assert (he);
-
-  if (he->state != HE_STATE_RESOLVING && he->state != HE_STATE_CONNECTING)
-    return -1;
-
-  /* Total timeout */
   if (he->config.total_timeout_ms > 0)
     {
-      remaining = he->config.total_timeout_ms
-                  - sockethe_elapsed_ms (he->start_time_ms);
+      remaining
+          = he->config.total_timeout_ms - sockethe_elapsed_ms (he->start_time_ms);
       if (remaining <= 0)
         return 0;
-      timeout = (int)remaining;
+      if (timeout < 0 || remaining < timeout)
+        timeout = (int)remaining;
     }
 
-  /* Fallback timer */
   if (he->state == HE_STATE_CONNECTING && he->fallback_timer_armed
       && he->first_attempt_time_ms > 0)
     {
@@ -1114,6 +1393,208 @@ SocketHappyEyeballs_next_timeout_ms (T he)
   return timeout;
 }
 
+int
+SocketHappyEyeballs_next_timeout_ms (T he)
+{
+  assert (he);
+
+  if (he->state != HE_STATE_RESOLVING && he->state != HE_STATE_CONNECTING)
+    return -1;
+
+  return he_calculate_next_timeout (he, -1);
+}
+
+/* ============================================================================
+ * Synchronous API Helpers
+ * ============================================================================ */
+
+/**
+ * sync_build_poll_set - Build poll array for active attempts
+ * @he: Happy Eyeballs context
+ * @pfds: Poll file descriptor array (output)
+ * @attempt_map: Attempt pointer array (output)
+ *
+ * Returns: Number of descriptors added
+ */
+static int
+sync_build_poll_set (T he, struct pollfd *pfds,
+                     SocketHE_Attempt_T **attempt_map)
+{
+  int nfds = 0;
+
+  for (SocketHE_Attempt_T *attempt = he->attempts;
+       attempt && nfds < SOCKET_HE_MAX_ATTEMPTS; attempt = attempt->next)
+    {
+      if (attempt->state != HE_ATTEMPT_CONNECTING || !attempt->socket)
+        continue;
+
+      pfds[nfds].fd = Socket_fd (attempt->socket);
+      pfds[nfds].events = POLLOUT;
+      pfds[nfds].revents = 0;
+      attempt_map[nfds] = attempt;
+      nfds++;
+    }
+
+  return nfds;
+}
+
+/**
+ * sync_calculate_poll_timeout - Calculate timeout for sync poll
+ * @he: Happy Eyeballs context
+ *
+ * Returns: Timeout in milliseconds
+ */
+static int
+sync_calculate_poll_timeout (T he)
+{
+  int timeout = SOCKET_HE_SYNC_POLL_INTERVAL_MS;
+  int64_t remaining;
+
+  if (he_should_start_fallback (he))
+    return 0;
+
+  if (he->fallback_timer_armed && he->first_attempt_time_ms > 0)
+    {
+      remaining = he->config.first_attempt_delay_ms
+                  - sockethe_elapsed_ms (he->first_attempt_time_ms);
+      if (remaining > 0 && remaining < timeout)
+        timeout = (int)remaining;
+    }
+
+  return timeout;
+}
+
+/**
+ * sync_process_poll_results - Process poll results for sync API
+ * @he: Happy Eyeballs context
+ * @pfds: Poll file descriptor array
+ * @attempt_map: Attempt pointer array
+ * @nfds: Number of descriptors
+ */
+static void
+sync_process_poll_results (T he, const struct pollfd *pfds,
+                           SocketHE_Attempt_T **attempt_map, int nfds)
+{
+  for (int i = 0; i < nfds && he->state != HE_STATE_CONNECTED; i++)
+    {
+      if (pfds[i].revents)
+        he_check_attempt_completion (he, attempt_map[i]);
+    }
+}
+
+/**
+ * sync_check_attempt_timeouts - Check timeouts for all attempts
+ * @he: Happy Eyeballs context
+ */
+static void
+sync_check_attempt_timeouts (T he)
+{
+  for (SocketHE_Attempt_T *attempt = he->attempts;
+       attempt && he->state != HE_STATE_CONNECTED; attempt = attempt->next)
+    {
+      if (attempt->state != HE_ATTEMPT_CONNECTING)
+        continue;
+
+      if (he_check_attempt_timeout (he, attempt))
+        he_fail_attempt (he, attempt, ETIMEDOUT);
+    }
+}
+
+/**
+ * sync_try_start_fallback - Try to start fallback attempt
+ * @he: Happy Eyeballs context
+ *
+ * Returns: 1 if connected immediately, 0 otherwise
+ */
+static int
+sync_try_start_fallback (T he)
+{
+  SocketHE_AddressEntry_T *entry;
+
+  if (!he_should_start_fallback (he))
+    return 0;
+
+  if (he->attempt_count >= he->config.max_attempts)
+    return 0;
+
+  entry = he_get_next_address (he);
+  if (entry)
+    {
+      if (he_start_attempt (he, entry) == 0
+          && he->state == HE_STATE_CONNECTED)
+        return 1;
+    }
+
+  he->fallback_timer_armed = 0;
+  return 0;
+}
+
+/**
+ * sync_run_connection_loop - Run synchronous connection loop
+ * @he: Happy Eyeballs context
+ */
+static void
+sync_run_connection_loop (T he)
+{
+  struct pollfd pfds[SOCKET_HE_MAX_ATTEMPTS];
+  SocketHE_Attempt_T *attempt_map[SOCKET_HE_MAX_ATTEMPTS];
+
+  while (he->state == HE_STATE_CONNECTING)
+    {
+      if (he_check_total_timeout (he))
+        {
+          snprintf (he->error_buf, sizeof (he->error_buf),
+                    "Connection timed out");
+          break;
+        }
+
+      he_start_first_attempt (he);
+      if (he->state == HE_STATE_CONNECTED)
+        break;
+
+      int timeout = sync_calculate_poll_timeout (he);
+      int nfds = sync_build_poll_set (he, pfds, attempt_map);
+
+      if (nfds == 0 && !he_should_start_fallback (he) && he_all_attempts_done (he))
+        break;
+
+      int result = poll (pfds, nfds, timeout);
+      if (result < 0 && errno != EINTR)
+        break;
+
+      sync_process_poll_results (he, pfds, attempt_map, nfds);
+
+      if (sync_try_start_fallback (he))
+        break;
+
+      sync_check_attempt_timeouts (he);
+
+      if (he_all_attempts_done (he) && he->state != HE_STATE_CONNECTED)
+        {
+          snprintf (he->error_buf, sizeof (he->error_buf),
+                    "All connection attempts failed");
+          break;
+        }
+    }
+}
+
+/**
+ * sync_finalize_result - Finalize result for sync API
+ * @he: Happy Eyeballs context
+ *
+ * Returns: Connected socket or NULL
+ */
+static Socket_T
+sync_finalize_result (T he)
+{
+  if (he->state == HE_STATE_CONNECTED)
+    return SocketHappyEyeballs_result (he);
+
+  he_cleanup_attempts (he);
+  he_transition_to_failed (he, he->error_buf);
+  return NULL;
+}
+
 /* ============================================================================
  * Synchronous API
  * ============================================================================ */
@@ -1123,13 +1604,12 @@ SocketHappyEyeballs_connect (const char *host, int port,
                              const SocketHE_Config_T *config)
 {
   T he;
-  Socket_T result = NULL;
-  int timeout;
+  Socket_T result;
+  char errmsg_copy[SOCKET_HE_ERROR_BUFSIZE] = { 0 };
 
   assert (host);
-  assert (port > 0 && port <= 65535);
+  assert (port > 0 && port <= SOCKET_MAX_PORT);
 
-  /* Create context with internal resources */
   he = he_create_context (NULL, NULL, host, port, config);
   if (!he)
     {
@@ -1137,148 +1617,22 @@ SocketHappyEyeballs_connect (const char *host, int port,
       RAISE_MODULE_ERROR (SocketHE_Failed);
     }
 
-  /* Perform blocking DNS resolution */
   if (he_dns_blocking_resolve (he) < 0)
     {
-      const char *errmsg = he->error_buf;
+      snprintf (errmsg_copy, sizeof (errmsg_copy), "%s", he->error_buf);
       SocketHappyEyeballs_free (&he);
-      SOCKET_ERROR_MSG ("%s", errmsg);
+      SOCKET_ERROR_MSG ("%s", errmsg_copy);
       RAISE_MODULE_ERROR (SocketHE_Failed);
     }
 
-  /* Sort addresses */
   he_sort_addresses (he);
   he->state = HE_STATE_CONNECTING;
 
-  /* Run connection loop */
-  while (he->state == HE_STATE_CONNECTING)
-    {
-      /* Check total timeout */
-      if (he_check_total_timeout (he))
-        {
-          snprintf (he->error_buf, sizeof (he->error_buf),
-                    "Connection timed out");
-          break;
-        }
+  sync_run_connection_loop (he);
+  result = sync_finalize_result (he);
 
-      /* Start first attempt if none active */
-      if (he->attempt_count == 0)
-        {
-          SocketHE_AddressEntry_T *entry = he_get_next_address (he);
-          if (entry)
-            {
-              if (he_start_attempt (he, entry) == 0
-                  && he->state == HE_STATE_CONNECTED)
-                break; /* Immediate connect (rare) */
-              he->first_attempt_time_ms = sockethe_get_time_ms ();
-              he->fallback_timer_armed = 1;
-            }
-        }
-
-      /* Calculate poll timeout */
-      timeout = he_should_start_fallback (he) ? 0 : 50; /* Poll every 50ms */
-      if (he->fallback_timer_armed && he->first_attempt_time_ms > 0)
-        {
-          int64_t remaining = he->config.first_attempt_delay_ms
-                              - sockethe_elapsed_ms (he->first_attempt_time_ms);
-          if (remaining > 0 && remaining < timeout)
-            timeout = (int)remaining;
-        }
-
-      /* Build poll set for active attempts */
-      int nfds = 0;
-      struct pollfd pfds[SOCKET_HE_MAX_ATTEMPTS];
-      SocketHE_Attempt_T *attempt_map[SOCKET_HE_MAX_ATTEMPTS];
-
-      for (SocketHE_Attempt_T *attempt = he->attempts;
-           attempt && nfds < SOCKET_HE_MAX_ATTEMPTS; attempt = attempt->next)
-        {
-          if (attempt->state == HE_ATTEMPT_CONNECTING && attempt->socket)
-            {
-              pfds[nfds].fd = Socket_fd (attempt->socket);
-              pfds[nfds].events = POLLOUT;
-              pfds[nfds].revents = 0;
-              attempt_map[nfds] = attempt;
-              nfds++;
-            }
-        }
-
-      if (nfds == 0 && !he_should_start_fallback (he))
-        {
-          /* No active attempts and no fallback pending */
-          if (he_all_attempts_done (he))
-            break;
-        }
-
-      /* Poll for events */
-      int result_poll = poll (pfds, nfds, timeout);
-      if (result_poll < 0 && errno != EINTR)
-        break;
-
-      /* Check results */
-      for (int i = 0; i < nfds && he->state != HE_STATE_CONNECTED; i++)
-        {
-          if (pfds[i].revents)
-            {
-              he_check_attempt_completion (he, attempt_map[i]);
-            }
-        }
-
-      /* Start fallback if timer expired */
-      if (he_should_start_fallback (he)
-          && he->attempt_count < he->config.max_attempts)
-        {
-          SocketHE_AddressEntry_T *entry = he_get_next_address (he);
-          if (entry)
-            {
-              if (he_start_attempt (he, entry) == 0
-                  && he->state == HE_STATE_CONNECTED)
-                break;
-            }
-          he->fallback_timer_armed = 0;
-        }
-
-      /* Check for timeout on individual attempts */
-      for (SocketHE_Attempt_T *attempt = he->attempts;
-           attempt && he->state != HE_STATE_CONNECTED; attempt = attempt->next)
-        {
-          if (attempt->state == HE_ATTEMPT_CONNECTING)
-            {
-              int64_t elapsed = sockethe_elapsed_ms (attempt->start_time_ms);
-              if (he->config.attempt_timeout_ms > 0
-                  && elapsed >= he->config.attempt_timeout_ms)
-                {
-                  he_fail_attempt (he, attempt, ETIMEDOUT);
-                }
-            }
-        }
-
-      /* Check if all done */
-      if (he_all_attempts_done (he) && he->state != HE_STATE_CONNECTED)
-        {
-          snprintf (he->error_buf, sizeof (he->error_buf),
-                    "All connection attempts failed");
-          break;
-        }
-    }
-
-  /* Get result */
-  if (he->state == HE_STATE_CONNECTED)
-    {
-      result = SocketHappyEyeballs_result (he);
-    }
-  else
-    {
-      he_cleanup_attempts (he);
-      he_transition_to_failed (he, he->error_buf);
-    }
-
-  /* Cleanup - copy error message BEFORE freeing context */
-  char errmsg_copy[SOCKET_HE_ERROR_BUFSIZE] = { 0 };
   if (!result && he->error_buf[0])
-    {
-      snprintf (errmsg_copy, sizeof (errmsg_copy), "%s", he->error_buf);
-    }
+    snprintf (errmsg_copy, sizeof (errmsg_copy), "%s", he->error_buf);
 
   SocketHappyEyeballs_free (&he);
 
@@ -1293,4 +1647,3 @@ SocketHappyEyeballs_connect (const char *host, int port,
 }
 
 #undef T
-

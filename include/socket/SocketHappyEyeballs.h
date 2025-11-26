@@ -1,13 +1,11 @@
 #ifndef SOCKETHAPPYEYEBALLS_INCLUDED
 #define SOCKETHAPPYEYEBALLS_INCLUDED
 
-#include "core/Except.h"
-#include "dns/SocketDNS.h"
-#include "poll/SocketPoll.h"
-#include "socket/Socket.h"
-
 /**
- * Happy Eyeballs (RFC 8305) Implementation
+ * SocketHappyEyeballs.h - Happy Eyeballs (RFC 8305) Implementation
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements the Happy Eyeballs algorithm for fast dual-stack connection
  * establishment. This algorithm races IPv6 and IPv4 connection attempts
@@ -45,7 +43,8 @@
  *   // sock is connected via fastest address family
  *
  * Usage (Asynchronous):
- *   SocketHE_T he = SocketHappyEyeballs_start(dns, poll, "example.com", 443, NULL);
+ *   SocketHE_T he = SocketHappyEyeballs_start(dns, poll, "example.com", 443,
+ *                                              NULL);
  *   while (!SocketHappyEyeballs_poll(he)) {
  *       SocketPoll_wait(poll, &events, timeout);
  *       SocketHappyEyeballs_process(he);
@@ -53,6 +52,11 @@
  *   Socket_T sock = SocketHappyEyeballs_result(he);
  *   SocketHappyEyeballs_free(&he);
  */
+
+#include "core/Except.h"
+#include "dns/SocketDNS.h"
+#include "poll/SocketPoll.h"
+#include "socket/Socket.h"
 
 #define T SocketHE_T
 typedef struct T *T;
@@ -69,12 +73,12 @@ extern const Except_T SocketHE_Failed;
  */
 typedef enum
 {
-  HE_STATE_IDLE = 0,     /**< Not started */
-  HE_STATE_RESOLVING,    /**< DNS resolution in progress */
-  HE_STATE_CONNECTING,   /**< Connection attempts in progress */
-  HE_STATE_CONNECTED,    /**< Successfully connected */
-  HE_STATE_FAILED,       /**< All attempts failed */
-  HE_STATE_CANCELLED     /**< Operation cancelled */
+  HE_STATE_IDLE = 0,   /**< Not started */
+  HE_STATE_RESOLVING,  /**< DNS resolution in progress */
+  HE_STATE_CONNECTING, /**< Connection attempts in progress */
+  HE_STATE_CONNECTED,  /**< Successfully connected */
+  HE_STATE_FAILED,     /**< All attempts failed */
+  HE_STATE_CANCELLED   /**< Operation cancelled */
 } SocketHE_State;
 
 /* ============================================================================
@@ -88,30 +92,45 @@ typedef enum
  */
 typedef struct SocketHE_Config
 {
-  int first_attempt_delay_ms; /**< Delay before starting second family (default:
-                                 250ms per RFC) */
-  int attempt_timeout_ms;     /**< Per-attempt connection timeout (default:
-                                 5000ms) */
-  int total_timeout_ms; /**< Overall operation timeout (default: 30000ms) */
-  int prefer_ipv6;      /**< 1 = IPv6 first (default), 0 = IPv4 first */
-  int max_attempts;     /**< Maximum simultaneous attempts (default: 2) */
+  int first_attempt_delay_ms; /**< Delay before starting second family */
+  int attempt_timeout_ms;     /**< Per-attempt connection timeout */
+  int total_timeout_ms;       /**< Overall operation timeout */
+  int prefer_ipv6;            /**< 1 = IPv6 first (default), 0 = IPv4 first */
+  int max_attempts;           /**< Maximum simultaneous attempts */
 } SocketHE_Config_T;
 
-/* Default configuration values */
+/* ============================================================================
+ * Configuration Constants
+ * ============================================================================ */
+
+/* RFC 8305 recommends 250ms delay before starting fallback family */
 #ifndef SOCKET_HE_DEFAULT_FIRST_ATTEMPT_DELAY_MS
 #define SOCKET_HE_DEFAULT_FIRST_ATTEMPT_DELAY_MS 250
 #endif
 
+/* Per-attempt timeout for individual connection attempts */
 #ifndef SOCKET_HE_DEFAULT_ATTEMPT_TIMEOUT_MS
 #define SOCKET_HE_DEFAULT_ATTEMPT_TIMEOUT_MS 5000
 #endif
 
+/* Total operation timeout including DNS and all attempts */
 #ifndef SOCKET_HE_DEFAULT_TOTAL_TIMEOUT_MS
 #define SOCKET_HE_DEFAULT_TOTAL_TIMEOUT_MS 30000
 #endif
 
+/* Maximum simultaneous connection attempts */
 #ifndef SOCKET_HE_DEFAULT_MAX_ATTEMPTS
 #define SOCKET_HE_DEFAULT_MAX_ATTEMPTS 2
+#endif
+
+/* Poll interval for synchronous connection loop */
+#ifndef SOCKET_HE_SYNC_POLL_INTERVAL_MS
+#define SOCKET_HE_SYNC_POLL_INTERVAL_MS 50
+#endif
+
+/* Port string buffer size (max 5 digits + null) */
+#ifndef SOCKET_HE_PORT_STR_SIZE
+#define SOCKET_HE_PORT_STR_SIZE 8
 #endif
 
 /* ============================================================================
@@ -119,7 +138,7 @@ typedef struct SocketHE_Config
  * ============================================================================ */
 
 /**
- * SocketHappyEyeballs_connect - Connect using Happy Eyeballs algorithm (blocking)
+ * SocketHappyEyeballs_connect - Connect using Happy Eyeballs (blocking)
  * @host: Hostname or IP address to connect to
  * @port: Port number (1-65535)
  * @config: Configuration options (NULL for defaults)
@@ -129,13 +148,7 @@ typedef struct SocketHE_Config
  * Thread-safe: Yes (uses internal DNS resolver and poll)
  *
  * Performs RFC 8305 Happy Eyeballs connection. Blocks until connected
- * or all attempts fail. Creates internal SocketDNS and SocketPoll
- * instances for the operation.
- *
- * Example:
- *   Socket_T sock = SocketHappyEyeballs_connect("example.com", 443, NULL);
- *   Socket_send(sock, data, len);
- *   Socket_free(&sock);
+ * or all attempts fail.
  */
 extern Socket_T SocketHappyEyeballs_connect (const char *host, int port,
                                              const SocketHE_Config_T *config);
@@ -155,13 +168,6 @@ extern Socket_T SocketHappyEyeballs_connect (const char *host, int port,
  * Returns: Happy Eyeballs context handle
  * Raises: SocketHE_Failed on initialization failure
  * Thread-safe: No (operate from single thread)
- *
- * Starts asynchronous Happy Eyeballs connection. Caller must:
- * 1. Monitor dns and poll for events
- * 2. Call SocketHappyEyeballs_process() when events occur
- * 3. Call SocketHappyEyeballs_poll() to check completion
- * 4. Call SocketHappyEyeballs_result() to get connected socket
- * 5. Call SocketHappyEyeballs_free() to cleanup
  */
 extern T SocketHappyEyeballs_start (SocketDNS_T dns, SocketPoll_T poll,
                                     const char *host, int port,
@@ -173,8 +179,6 @@ extern T SocketHappyEyeballs_start (SocketDNS_T dns, SocketPoll_T poll,
  *
  * Returns: 1 if complete (success or failure), 0 if still in progress
  * Thread-safe: No
- *
- * Non-blocking check for completion. Use after processing events.
  */
 extern int SocketHappyEyeballs_poll (T he);
 
@@ -184,9 +188,7 @@ extern int SocketHappyEyeballs_poll (T he);
  *
  * Thread-safe: No
  *
- * Call after SocketPoll_wait() returns events. Processes DNS completions,
- * connection completions, and timer expiries. Advances the Happy Eyeballs
- * state machine.
+ * Call after SocketPoll_wait() returns events.
  */
 extern void SocketHappyEyeballs_process (T he);
 
@@ -197,9 +199,7 @@ extern void SocketHappyEyeballs_process (T he);
  * Returns: Connected socket, or NULL if failed/cancelled/pending
  * Thread-safe: No
  *
- * Returns the winning socket from a successful Happy Eyeballs connection.
  * Transfers ownership to caller - caller must Socket_free() when done.
- * Only valid after SocketHappyEyeballs_poll() returns 1.
  */
 extern Socket_T SocketHappyEyeballs_result (T he);
 
@@ -208,9 +208,6 @@ extern Socket_T SocketHappyEyeballs_result (T he);
  * @he: Happy Eyeballs context
  *
  * Thread-safe: No
- *
- * Cancels DNS resolution and closes all pending connection attempts.
- * After cancellation, SocketHappyEyeballs_result() returns NULL.
  */
 extern void SocketHappyEyeballs_cancel (T he);
 
@@ -219,9 +216,6 @@ extern void SocketHappyEyeballs_cancel (T he);
  * @he: Pointer to context (will be set to NULL)
  *
  * Thread-safe: No
- *
- * Frees all resources. If operation is still in progress, implicitly
- * cancels it first. Does not free the caller-owned dns and poll instances.
  */
 extern void SocketHappyEyeballs_free (T *he);
 
@@ -244,9 +238,6 @@ extern SocketHE_State SocketHappyEyeballs_state (T he);
  *
  * Returns: Error message string, or NULL if no error
  * Thread-safe: No
- *
- * Returns descriptive error message when state is HE_STATE_FAILED.
- * String is owned by the context and valid until context is freed.
  */
 extern const char *SocketHappyEyeballs_error (T he);
 
@@ -259,13 +250,6 @@ extern const char *SocketHappyEyeballs_error (T he);
  * @config: Configuration structure to initialize
  *
  * Thread-safe: Yes
- *
- * Fills configuration with RFC 8305 recommended defaults:
- * - first_attempt_delay_ms: 250ms
- * - attempt_timeout_ms: 5000ms
- * - total_timeout_ms: 30000ms
- * - prefer_ipv6: 1 (true)
- * - max_attempts: 2
  */
 extern void SocketHappyEyeballs_config_defaults (SocketHE_Config_T *config);
 
@@ -279,12 +263,8 @@ extern void SocketHappyEyeballs_config_defaults (SocketHE_Config_T *config);
  *
  * Returns: Milliseconds until next timeout, or -1 if no pending timers
  * Thread-safe: No
- *
- * Use this value as timeout for SocketPoll_wait() to ensure timers
- * are processed promptly.
  */
 extern int SocketHappyEyeballs_next_timeout_ms (T he);
 
 #undef T
 #endif /* SOCKETHAPPYEYEBALLS_INCLUDED */
-
