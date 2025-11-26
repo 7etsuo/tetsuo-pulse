@@ -23,7 +23,6 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
 #include "socket/Socket.h"
 
@@ -34,6 +33,7 @@
 #include <poll.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <sys/socket.h>
 #include <unistd.h>
 

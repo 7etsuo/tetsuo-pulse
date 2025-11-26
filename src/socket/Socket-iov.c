@@ -31,7 +31,6 @@
 
 #include <assert.h>
 
-#include "core/Arena.h"
 #include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
 #include "socket/Socket.h"
