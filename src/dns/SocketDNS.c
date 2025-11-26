@@ -119,6 +119,44 @@ process_label_character (char c, bool at_label_start)
 }
 
 /**
+ * handle_dot_separator - Process dot separator in hostname validation
+ * @label_len: Current label length before the dot
+ * @at_label_start: Output - reset to true for next label
+ * @label_len_out: Output - reset to 0 for next label
+ *
+ * Returns: true if label before dot was valid, false otherwise
+ * Thread-safe: Yes - no shared state
+ */
+static bool
+handle_dot_separator (int label_len, bool *at_label_start, int *label_len_out)
+{
+  if (!check_label_bounds (label_len))
+    return false;
+  *at_label_start = true;
+  *label_len_out = 0;
+  return true;
+}
+
+/**
+ * handle_label_char - Process non-dot character in hostname validation
+ * @c: Character to validate
+ * @at_label_start: Input/output - true if at label start
+ * @label_len: Input/output - current label length
+ *
+ * Returns: true if character is valid, false otherwise
+ * Thread-safe: Yes - no shared state
+ */
+static bool
+handle_label_char (char c, bool *at_label_start, int *label_len)
+{
+  if (!process_label_character (c, *at_label_start))
+    return false;
+  *at_label_start = false;
+  (*label_len)++;
+  return true;
+}
+
+/**
  * validate_hostname_label - Validate hostname labels per RFC 1123
  * @label: Hostname string containing one or more dot-separated labels
  * @len: Output parameter for total validated length (can be NULL)
@@ -140,25 +178,15 @@ validate_hostname_label (const char *label, size_t *len)
 
   while (*p)
     {
-      if (*p == '.')
-        {
-          /* Dot separator - validate the label that just ended */
-          if (!check_label_bounds (label_len))
-            return 0;
-          at_label_start = true;
-          label_len = 0;
-        }
-      else
-        {
-          if (!process_label_character (*p, at_label_start))
-            return 0;
-          at_label_start = false;
-          label_len++;
-        }
+      bool valid = (*p == '.')
+                       ? handle_dot_separator (label_len, &at_label_start,
+                                               &label_len)
+                       : handle_label_char (*p, &at_label_start, &label_len);
+      if (!valid)
+        return 0;
       p++;
     }
 
-  /* Validate final label */
   if (!check_label_bounds (label_len))
     return 0;
 
@@ -356,7 +384,7 @@ transfer_result_ownership (struct SocketDNS_Request_T *req)
  * init_completed_request_fields - Initialize fields for completed request
  * @req: Request structure to initialize (output)
  * @dns: DNS resolver instance (back-pointer stored in req)
- * @result: Address info result (copied and freed by this function)
+ * @result: Address info result (ownership transferred, copied then freed)
  * @port: Port number
  *
  * Raises: SocketDNS_Failed on allocation failure
