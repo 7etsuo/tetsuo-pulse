@@ -14,7 +14,6 @@
  */
 
 #include "core/Arena.h"
-#include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
 #include "socket/Socket-private.h"
 #include "socket/Socket.h"
@@ -42,7 +41,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION(SocketIO);
 
 #ifdef SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
-#include "tls/SocketTLSConfig.h"
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #endif
