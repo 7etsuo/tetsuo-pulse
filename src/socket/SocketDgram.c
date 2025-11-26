@@ -114,6 +114,15 @@ SocketDgram_free (T *socket)
 
 /* ==================== Address Resolution Helpers ==================== */
 
+/**
+ * resolve_sendto_address - Resolve hostname for sendto operation
+ * @host: Hostname or IP address
+ * @port: Port number
+ * @res: Output for resolved addresses
+ *
+ * Returns: 0 on success
+ * Raises: SocketDgram_Failed on resolution failure
+ */
 static int
 resolve_sendto_address (const char *host, int port, struct addrinfo **res)
 {
@@ -137,6 +146,16 @@ resolve_sendto_address (const char *host, int port, struct addrinfo **res)
   return 0;
 }
 
+/**
+ * perform_sendto - Execute sendto system call with error handling
+ * @socket: Datagram socket
+ * @buf: Data to send
+ * @len: Length of data
+ * @res: Resolved destination address
+ *
+ * Returns: Bytes sent, or 0 if would block
+ * Raises: SocketDgram_Failed on error or if len > SAFE_UDP_SIZE
+ */
 static ssize_t
 perform_sendto (T socket, const void *buf, size_t len, struct addrinfo *res)
 {
@@ -160,6 +179,17 @@ perform_sendto (T socket, const void *buf, size_t len, struct addrinfo *res)
   return sent;
 }
 
+/**
+ * perform_recvfrom - Execute recvfrom system call with error handling
+ * @socket: Datagram socket
+ * @buf: Buffer for received data
+ * @len: Buffer size
+ * @addr: Output for sender address
+ * @addrlen: Input/output for address length
+ *
+ * Returns: Bytes received, or 0 if would block
+ * Raises: SocketDgram_Failed on error
+ */
 static ssize_t
 perform_recvfrom (T socket, void *buf, size_t len,
                   struct sockaddr_storage *addr, socklen_t *addrlen)
@@ -176,6 +206,16 @@ perform_recvfrom (T socket, void *buf, size_t len,
   return received;
 }
 
+/**
+ * extract_sender_info - Extract host and port from sender address
+ * @addr: Sender address storage
+ * @addrlen: Address length
+ * @host: Output buffer for hostname/IP
+ * @host_len: Size of host buffer
+ * @port: Output for port number
+ *
+ * Thread-safe: Yes (operates on local data)
+ */
 static void
 extract_sender_info (const struct sockaddr_storage *addr, socklen_t addrlen,
                      char *host, size_t host_len, int *port)

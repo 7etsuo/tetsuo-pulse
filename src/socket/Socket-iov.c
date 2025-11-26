@@ -66,6 +66,15 @@ Socket_recvv (T socket, struct iovec *iov, int iovcnt)
 /* ==================== Sendfile Operations ==================== */
 
 #if SOCKET_HAS_SENDFILE && defined(__linux__)
+/**
+ * socket_sendfile_linux - Linux-specific sendfile implementation
+ * @socket: Socket to send on
+ * @file_fd: File descriptor to read from
+ * @offset: File offset (updated on success)
+ * @count: Number of bytes to transfer
+ *
+ * Returns: Bytes transferred or -1 on error
+ */
 static ssize_t
 socket_sendfile_linux (T socket, int file_fd, off_t *offset, size_t count)
 {
@@ -82,6 +91,15 @@ socket_sendfile_linux (T socket, int file_fd, off_t *offset, size_t count)
     && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)   \
         || defined(__DragonFly__)                                             \
         || (defined(__APPLE__) && defined(__MACH__)))
+/**
+ * socket_sendfile_bsd - BSD/macOS sendfile implementation
+ * @socket: Socket to send on
+ * @file_fd: File descriptor to read from
+ * @offset: File offset (updated on success)
+ * @count: Number of bytes to transfer
+ *
+ * Returns: Bytes transferred or -1 on error
+ */
 static ssize_t
 socket_sendfile_bsd (T socket, int file_fd, off_t *offset, size_t count)
 {
@@ -99,6 +117,13 @@ socket_sendfile_bsd (T socket, int file_fd, off_t *offset, size_t count)
 }
 #endif
 
+/**
+ * sendfile_seek_to_offset - Seek to offset in file for sendfile fallback
+ * @file_fd: File descriptor
+ * @offset: Offset to seek to (NULL or 0 means no seek)
+ *
+ * Returns: 0 on success, -1 on error
+ */
 static ssize_t
 sendfile_seek_to_offset (int file_fd, off_t *offset)
 {
@@ -110,6 +135,16 @@ sendfile_seek_to_offset (int file_fd, off_t *offset)
   return 0;
 }
 
+/**
+ * sendfile_transfer_loop - Read/write loop for sendfile fallback
+ * @socket: Socket to send on
+ * @file_fd: File descriptor to read from
+ * @offset: File offset (updated on partial completion)
+ * @count: Number of bytes to transfer
+ *
+ * Returns: Bytes transferred (may be partial on would-block)
+ * Raises: Socket_Closed, Socket_Failed on error
+ */
 static size_t
 sendfile_transfer_loop (T socket, int file_fd, off_t *offset, size_t count)
 {
@@ -161,6 +196,18 @@ sendfile_transfer_loop (T socket, int file_fd, off_t *offset, size_t count)
   return total_sent;
 }
 
+/**
+ * socket_sendfile_fallback - Portable sendfile fallback implementation
+ * @socket: Socket to send on
+ * @file_fd: File descriptor to read from
+ * @offset: File offset (updated on completion)
+ * @count: Number of bytes to transfer
+ *
+ * Returns: Bytes transferred or -1 on error
+ * Thread-safe: Yes (operates on single socket)
+ *
+ * Uses read/write loop when kernel sendfile() is unavailable.
+ */
 static ssize_t
 socket_sendfile_fallback (T socket, int file_fd, off_t *offset, size_t count)
 {
@@ -391,6 +438,34 @@ Socket_recvall (T socket, void *buf, size_t len)
   return (ssize_t)total_received;
 }
 
+/**
+ * sendvall_iteration - Perform one sendv iteration
+ * @socket: Socket to send on
+ * @iov_copy: Copy of iovec array (modified)
+ * @iovcnt: Number of iovec structures
+ * @bytes_sent: Output for bytes sent this iteration
+ *
+ * Returns: 1 to continue, 0 to stop (would block or no active iov)
+ */
+static int
+sendvall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
+                    ssize_t *bytes_sent)
+{
+  int active_iovcnt = 0;
+  struct iovec *active_iov
+      = SocketCommon_find_active_iov (iov_copy, iovcnt, &active_iovcnt);
+
+  if (active_iov == NULL)
+    return 0;
+
+  *bytes_sent = Socket_sendv (socket, active_iov, active_iovcnt);
+  if (*bytes_sent == 0)
+    return 0;
+
+  SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)*bytes_sent);
+  return 1;
+}
+
 ssize_t
 Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
 {
@@ -407,23 +482,9 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
   iov_copy = SocketCommon_alloc_iov_copy (iov, iovcnt, Socket_Failed);
 
-  TRY while (total_sent < total_len)
-  {
-    int active_iovcnt = 0;
-    struct iovec *active_iov = SocketCommon_find_active_iov (iov_copy, iovcnt,
-                                                             &active_iovcnt);
-    if (active_iov == NULL)
-      break;
-
-    sent = Socket_sendv (socket, active_iov, active_iovcnt);
-    if (sent == 0)
-      {
-        free (iov_copy);
-        return (ssize_t)total_sent;
-      }
+  TRY while (total_sent < total_len
+             && sendvall_iteration (socket, iov_copy, iovcnt, &sent))
     total_sent += (size_t)sent;
-    SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)sent);
-  }
   EXCEPT (Socket_Closed)
   free (iov_copy);
   RERAISE;
@@ -434,6 +495,34 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
 
   free (iov_copy);
   return (ssize_t)total_sent;
+}
+
+/**
+ * recvvall_iteration - Perform one recvv iteration
+ * @socket: Socket to receive on
+ * @iov_copy: Copy of iovec array (modified)
+ * @iovcnt: Number of iovec structures
+ * @bytes_received: Output for bytes received this iteration
+ *
+ * Returns: 1 to continue, 0 to stop (would block or no active iov)
+ */
+static int
+recvvall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
+                    ssize_t *bytes_received)
+{
+  int active_iovcnt = 0;
+  struct iovec *active_iov
+      = SocketCommon_find_active_iov (iov_copy, iovcnt, &active_iovcnt);
+
+  if (active_iov == NULL)
+    return 0;
+
+  *bytes_received = Socket_recvv (socket, active_iov, active_iovcnt);
+  if (*bytes_received == 0)
+    return 0;
+
+  SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)*bytes_received);
+  return 1;
 }
 
 ssize_t
@@ -452,23 +541,9 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
   iov_copy = SocketCommon_alloc_iov_copy (iov, iovcnt, Socket_Failed);
 
-  TRY while (total_received < total_len)
-  {
-    int active_iovcnt = 0;
-    struct iovec *active_iov = SocketCommon_find_active_iov (iov_copy, iovcnt,
-                                                             &active_iovcnt);
-    if (active_iov == NULL)
-      break;
-
-    received = Socket_recvv (socket, active_iov, active_iovcnt);
-    if (received == 0)
-      {
-        free (iov_copy);
-        return (ssize_t)total_received;
-      }
+  TRY while (total_received < total_len
+             && recvvall_iteration (socket, iov_copy, iovcnt, &received))
     total_received += (size_t)received;
-    SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)received);
-  }
   EXCEPT (Socket_Closed)
   free (iov_copy);
   RERAISE;
