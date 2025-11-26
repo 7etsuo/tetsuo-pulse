@@ -15,6 +15,8 @@ High-performance, exception-driven socket toolkit for POSIX systems. Provides a 
 - **Connection Pooling** - Efficient connection management with buffers
 - **Zero-Copy I/O** - Platform-optimized `sendfile()` and scatter/gather I/O
 - **Advanced TCP Options** - Congestion control, Fast Open, user timeout
+- **Happy Eyeballs (RFC 8305)** - Fast dual-stack connection racing
+- **Automatic Reconnection** - Exponential backoff with circuit breaker
 
 ### Production-Ready Features
 - Thread-safe error reporting
@@ -239,6 +241,49 @@ SocketBuf_T output = Connection_output(conn);
 SocketPool_cleanup(pool, 300);  /* Remove idle > 300 seconds */
 ```
 
+### Happy Eyeballs Connection (RFC 8305)
+
+```c
+#include "socket/SocketHappyEyeballs.h"
+
+/* Fast dual-stack connection - races IPv6 and IPv4 */
+Socket_T sock = SocketHappyEyeballs_connect("example.com", 443, NULL);
+/* sock is connected via fastest available address family */
+Socket_sendall(sock, "GET / HTTP/1.0\r\n\r\n", 18);
+Socket_free(&sock);
+```
+
+### Automatic Reconnection
+
+```c
+#include "socket/SocketReconnect.h"
+
+/* Create reconnecting connection with custom policy */
+SocketReconnect_Policy_T policy;
+SocketReconnect_policy_defaults(&policy);
+policy.max_attempts = 5;
+policy.initial_delay_ms = 100;
+
+SocketReconnect_T conn = SocketReconnect_new("example.com", 443, 
+                                             &policy, NULL, NULL);
+SocketReconnect_connect(conn);
+
+/* Event loop */
+while (running) {
+    int timeout = SocketReconnect_next_timeout_ms(conn);
+    poll(&pfd, 1, timeout);
+    SocketReconnect_process(conn);  /* On socket events */
+    SocketReconnect_tick(conn);     /* Process timers */
+    
+    if (SocketReconnect_isconnected(conn)) {
+        /* Use connection */
+        SocketReconnect_send(conn, data, len);
+    }
+}
+
+SocketReconnect_free(&conn);
+```
+
 ### Zero-Copy File Transfer
 
 ```c
@@ -452,6 +497,32 @@ SocketTLSContext_free(&ctx);
 - `SocketDNS_pollfd()` - Get poll file descriptor
 - `SocketDNS_check()` - Process completed requests
 
+#### SocketHappyEyeballs (RFC 8305)
+
+- `SocketHappyEyeballs_connect()` - Blocking Happy Eyeballs connect
+- `SocketHappyEyeballs_start()` - Start async Happy Eyeballs
+- `SocketHappyEyeballs_poll()` - Check if operation complete
+- `SocketHappyEyeballs_process()` - Process events
+- `SocketHappyEyeballs_result()` - Get winning socket
+- `SocketHappyEyeballs_cancel()` - Cancel operation
+- `SocketHappyEyeballs_free()` - Free context
+- `SocketHappyEyeballs_config_defaults()` - Initialize config with defaults
+
+#### SocketReconnect (Automatic Reconnection)
+
+- `SocketReconnect_new()` - Create reconnecting connection
+- `SocketReconnect_free()` - Free context
+- `SocketReconnect_connect()` - Start connecting
+- `SocketReconnect_disconnect()` - Graceful disconnect
+- `SocketReconnect_reset()` - Reset backoff/circuit breaker
+- `SocketReconnect_socket()` - Get underlying socket
+- `SocketReconnect_state()` - Get current state
+- `SocketReconnect_isconnected()` - Check connection status
+- `SocketReconnect_process()` - Process poll events
+- `SocketReconnect_tick()` - Process timers
+- `SocketReconnect_send/recv()` - I/O with auto-reconnect
+- `SocketReconnect_policy_defaults()` - Initialize policy with defaults
+
 #### SocketTLS (TLS/SSL)
 
 - `SocketTLSContext_new_client()` - Create client TLS context
@@ -471,6 +542,8 @@ SocketTLSContext_free(&ctx);
 - `SocketPoll_Failed` - Event polling failure
 - `SocketPool_Failed` - Connection pool operation failure
 - `SocketDNS_Failed` - DNS resolution failure
+- `SocketHE_Failed` - Happy Eyeballs connection failure
+- `SocketReconnect_Failed` - Reconnection operation failure
 - `SocketTLS_Failed` - General TLS operation failure
 - `SocketTLS_HandshakeFailed` - TLS handshake failure
 - `SocketTLS_VerifyFailed` - Certificate verification failure

@@ -19,6 +19,7 @@
  * - Blocking mode restoration
  */
 
+#include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -36,6 +37,10 @@
 #include "socket/Socket.h"
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
+
+#if SOCKET_CONNECT_HAPPY_EYEBALLS
+#include "socket/SocketHappyEyeballs.h"
+#endif
 
 #define T Socket_T
 
@@ -518,6 +523,102 @@ connect_execute (T sock, struct addrinfo *res, int socket_family)
   connect_try_addresses (sock, res, socket_family, timeout_ms);
 }
 
+/* ==================== Happy Eyeballs Integration ==================== */
+
+#if SOCKET_CONNECT_HAPPY_EYEBALLS
+/**
+ * socket_is_hostname - Check if string is hostname (not IP address)
+ * @host: Host string to check
+ *
+ * Returns: 1 if hostname, 0 if IP address
+ */
+static int
+socket_is_hostname (const char *host)
+{
+  struct in_addr addr4;
+  struct in6_addr addr6;
+
+  /* Check IPv4 */
+  if (inet_pton (AF_INET, host, &addr4) == 1)
+    return 0;
+
+  /* Check IPv6 */
+  if (inet_pton (AF_INET6, host, &addr6) == 1)
+    return 0;
+
+  return 1;
+}
+
+/**
+ * socket_connect_happy_eyeballs - Connect using Happy Eyeballs algorithm
+ * @socket: Socket instance (REPLACED on success - old socket closed)
+ * @host: Hostname to connect to
+ * @port: Port number
+ *
+ * Returns: 1 if connected, 0 if should fall back to normal connect
+ * Raises: Socket_Failed on connection failure
+ *
+ * NOTE: This function performs Happy Eyeballs connection racing which
+ * requires creating new sockets. The original socket's fd is closed and
+ * replaced with the winning connection's fd. Socket options set on the
+ * original socket are NOT preserved.
+ *
+ * For applications that need to preserve socket options, use
+ * SocketHappyEyeballs_connect() directly instead.
+ */
+static int
+socket_connect_happy_eyeballs (T socket, const char *host, int port)
+{
+  Socket_T he_socket;
+  SocketHE_Config_T config;
+  int fd_new, fd_old;
+
+  /* Only use Happy Eyeballs for hostnames, not IP addresses */
+  if (!socket_is_hostname (host))
+    return 0;
+
+  /* Configure Happy Eyeballs with socket's timeout */
+  SocketHappyEyeballs_config_defaults (&config);
+  if (socket->base->timeouts.connect_timeout_ms > 0)
+    config.total_timeout_ms = socket->base->timeouts.connect_timeout_ms;
+
+  TRY { he_socket = SocketHappyEyeballs_connect (host, port, &config); }
+  EXCEPT (SocketHE_Failed)
+  {
+    /* Happy Eyeballs failed - propagate as Socket_Failed */
+    SOCKET_ERROR_MSG ("Happy Eyeballs connection failed to %s:%d", host, port);
+    RAISE_MODULE_ERROR (Socket_Failed);
+  }
+  END_TRY;
+
+  if (!he_socket)
+    return 0;
+
+  /* Close the original socket's fd */
+  fd_old = socket->base->fd;
+  if (fd_old >= 0)
+    {
+      close (fd_old);
+    }
+
+  /* Transfer the winning fd to our socket */
+  fd_new = he_socket->base->fd;
+  socket->base->fd = fd_new;
+
+  /* Copy remote address info */
+  memcpy (&socket->base->remote_addr, &he_socket->base->remote_addr,
+          sizeof (socket->base->remote_addr));
+  socket->base->remote_addrlen = he_socket->base->remote_addrlen;
+
+  /* Prevent he_socket from closing the fd we just took */
+  he_socket->base->fd = -1;
+  Socket_free (&he_socket);
+
+  socket_handle_successful_connect (socket);
+  return 1;
+}
+#endif /* SOCKET_CONNECT_HAPPY_EYEBALLS */
+
 /* ==================== Public Connect API ==================== */
 
 void
@@ -528,6 +629,13 @@ Socket_connect (T socket, const char *host, int port)
   int socket_family;
 
   connect_validate_params (socket, host, port);
+
+#if SOCKET_CONNECT_HAPPY_EYEBALLS
+  /* Try Happy Eyeballs for hostname connections */
+  if (socket_connect_happy_eyeballs (socket, host, port))
+    return;
+#endif
+
   socket_family = SocketCommon_get_socket_family (socket->base);
 
   TRY

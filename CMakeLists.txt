@@ -85,6 +85,8 @@ set(LIB_SOURCES
     src/socket/SocketCommon.c
     src/socket/SocketAsync.c
     src/socket/SocketIO.c
+    src/socket/SocketHappyEyeballs.c
+    src/socket/SocketReconnect.c
     
     # DNS module (consolidated)
     src/dns/SocketDNS.c
@@ -120,18 +122,18 @@ target_include_directories(socket_objects PRIVATE ${CMAKE_SOURCE_DIR}/include)
 add_library(socket_static STATIC $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_static PROPERTIES OUTPUT_NAME socket)
 if(SOCKET_HAS_TLS)
-    target_link_libraries(socket_static pthread ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES})
+    target_link_libraries(socket_static pthread m ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES})
 else()
-    target_link_libraries(socket_static pthread ${LIBURING_LIBRARIES})
+    target_link_libraries(socket_static pthread m ${LIBURING_LIBRARIES})
 endif()
 
 # Shared library
 add_library(socket_shared SHARED $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_shared PROPERTIES OUTPUT_NAME socket)
 if(SOCKET_HAS_TLS)
-    target_link_libraries(socket_shared pthread ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES})
+    target_link_libraries(socket_shared pthread m ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES})
 else()
-    target_link_libraries(socket_shared pthread ${LIBURING_LIBRARIES})
+    target_link_libraries(socket_shared pthread m ${LIBURING_LIBRARIES})
 endif()
 
 # Custom target to build both libraries (default)
@@ -157,6 +159,10 @@ set(SOCKET_HEADERS
     include/socket/SocketCommon.h
     include/socket/SocketDgram.h
     include/socket/SocketIO.h
+    include/socket/SocketHappyEyeballs.h
+    include/socket/SocketHappyEyeballs-private.h
+    include/socket/SocketReconnect.h
+    include/socket/SocketReconnect-private.h
 )
 
 set(DNS_HEADERS
@@ -238,15 +244,17 @@ set(TEST_SOURCES
     test_tls_phase4
     test_threadsafety
     test_socketpool_tls
+    test_happy_eyeballs
+    test_reconnect
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
 foreach(test_name ${TEST_SOURCES})
     add_executable(${test_name} src/test/${test_name}.c $<TARGET_OBJECTS:socket_objects> $<TARGET_OBJECTS:test_framework>)
     if(SOCKET_HAS_TLS)
-        target_link_libraries(${test_name} pthread ${OPENSSL_LIBRARIES})
+        target_link_libraries(${test_name} pthread m ${OPENSSL_LIBRARIES})
     else()
-        target_link_libraries(${test_name} pthread)
+        target_link_libraries(${test_name} pthread m)
     endif()
     target_include_directories(${test_name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
     add_test(NAME ${test_name} COMMAND ${test_name})
@@ -257,8 +265,8 @@ add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES})
 
 # Print test configuration
 message(STATUS "Test Suite Configuration:")
-message(STATUS "  Test files: 14")
-message(STATUS "  Total tests: 216+")
+message(STATUS "  Test files: 16")
+message(STATUS "  Total tests: 230+")
 message(STATUS "  Run with: make test (or ctest)")
 
 # Documentation generation (Doxygen)
