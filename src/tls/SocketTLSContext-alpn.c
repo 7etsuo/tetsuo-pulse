@@ -195,8 +195,12 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
 
   if (selected)
     {
+      size_t selected_len = strlen (selected);
+      /* Validate protocol length fits in unsigned char (ALPN max is 255) */
+      if (selected_len == 0 || selected_len > SOCKET_TLS_MAX_ALPN_LEN)
+        return SSL_TLSEXT_ERR_NOACK;
       *out = (const unsigned char *)selected;
-      *outlen = (unsigned char)strlen (selected);
+      *outlen = (unsigned char)selected_len;
       return SSL_TLSEXT_ERR_OK;
     }
 
@@ -229,6 +233,9 @@ build_wire_format (T ctx, const char **protos, size_t count, size_t *len_out)
   for (size_t i = 0; i < count; i++)
     {
       lengths[i] = strlen (protos[i]);
+      /* Check for integer overflow before accumulation */
+      if (total > SIZE_MAX - 1 - lengths[i])
+        ctx_raise_openssl_error ("ALPN wire format size overflow");
       total += 1 + lengths[i];
     }
 

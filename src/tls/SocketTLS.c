@@ -21,6 +21,7 @@
 #include "tls/SocketTLSContext.h"
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <openssl/x509_vfy.h>
 #include <string.h>
 
@@ -62,6 +63,8 @@ __thread char tls_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
 /**
  * allocate_tls_buffers - Allocate TLS read/write buffers
  * @socket: Socket instance
+ *
+ * Raises: SocketTLS_Failed if arena allocation fails
  */
 static void
 allocate_tls_buffers (Socket_T socket)
@@ -74,6 +77,9 @@ allocate_tls_buffers (Socket_T socket)
       socket->tls_read_buf
           = Arena_alloc (SocketBase_arena (socket->base),
                          SOCKET_TLS_BUFFER_SIZE, __FILE__, __LINE__);
+      if (!socket->tls_read_buf)
+        RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
+                             "Failed to allocate TLS read buffer");
       socket->tls_read_buf_len = 0;
     }
 
@@ -82,6 +88,9 @@ allocate_tls_buffers (Socket_T socket)
       socket->tls_write_buf
           = Arena_alloc (SocketBase_arena (socket->base),
                          SOCKET_TLS_BUFFER_SIZE, __FILE__, __LINE__);
+      if (!socket->tls_write_buf)
+        RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
+                             "Failed to allocate TLS write buffer");
       socket->tls_write_buf_len = 0;
     }
 }
@@ -247,11 +256,18 @@ copy_hostname_to_socket (Socket_T socket, const char *hostname, size_t len)
  * @ssl: SSL object
  * @hostname: Hostname for SNI
  *
+ * Enables peer certificate verification and hostname checking.
+ * SSL_set_verify() with SSL_VERIFY_PEER ensures the handshake fails
+ * if the server certificate is invalid or hostname doesn't match.
+ *
  * Raises: SocketTLS_Failed on OpenSSL error
  */
 static void
 apply_sni_to_ssl (SSL *ssl, const char *hostname)
 {
+  /* Enable peer certificate verification - required for hostname check to work */
+  SSL_set_verify (ssl, SSL_VERIFY_PEER, NULL);
+
   if (SSL_set_tlsext_host_name (ssl, hostname) != 1)
     RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to set SNI hostname");
 
@@ -270,8 +286,16 @@ SocketTLS_set_hostname (Socket_T socket, const char *hostname)
   size_t hostname_len = strlen (hostname);
   validate_hostname_nonempty (hostname, hostname_len);
 
+  /* Explicit SNI length check (RFC 6066 limit) before format validation */
+  if (hostname_len > SOCKET_TLS_MAX_SNI_LEN)
+    {
+      TLS_ERROR_FMT ("Hostname too long for SNI (%zu > %d max)", hostname_len,
+                     SOCKET_TLS_MAX_SNI_LEN);
+      RAISE_TLS_ERROR (SocketTLS_Failed);
+    }
+
   if (!tls_validate_hostname (hostname))
-    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Invalid hostname format or length");
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Invalid hostname format");
 
   copy_hostname_to_socket (socket, hostname, hostname_len);
 
@@ -361,7 +385,9 @@ SocketTLS_send (Socket_T socket, const void *buf, size_t len)
   assert (len > 0);
 
   SSL *ssl = VALIDATE_TLS_IO_READY (socket, SocketTLS_Failed);
-  int result = SSL_write (ssl, buf, (int)len);
+  /* Cap length to INT_MAX to prevent truncation on 64-bit systems */
+  int write_len = (len > (size_t)INT_MAX) ? INT_MAX : (int)len;
+  int result = SSL_write (ssl, buf, write_len);
 
   if (result > 0)
     {
@@ -388,7 +414,9 @@ SocketTLS_recv (Socket_T socket, void *buf, size_t len)
   assert (len > 0);
 
   SSL *ssl = VALIDATE_TLS_IO_READY (socket, SocketTLS_Failed);
-  int result = SSL_read (ssl, buf, (int)len);
+  /* Cap length to INT_MAX to prevent truncation on 64-bit systems */
+  int read_len = (len > (size_t)INT_MAX) ? INT_MAX : (int)len;
+  int result = SSL_read (ssl, buf, read_len);
 
   if (result > 0)
     {
