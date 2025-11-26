@@ -239,7 +239,6 @@ handle_shrink_excess (T pool, size_t new_maxconns)
 {
   size_t excess_count;
   Socket_T *excess_sockets;
-  size_t collected;
 
   excess_count
       = pool->count > new_maxconns ? (pool->count - new_maxconns) : 0;
@@ -255,7 +254,7 @@ handle_shrink_excess (T pool, size_t new_maxconns)
       RAISE_POOL_ERROR (SocketPool_Failed);
     }
 
-  collected = collect_excess_connections (pool, new_maxconns, excess_sockets);
+  (void)collect_excess_connections (pool, new_maxconns, excess_sockets);
   assert (collected == excess_count);
 
   pthread_mutex_unlock (&pool->mutex);
