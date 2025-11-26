@@ -523,26 +523,49 @@ SocketDgram_isbound (T socket)
 
 /* ==================== Bind/Connect Operations ==================== */
 
+/* Operation type for dgram_try_addresses */
+typedef enum
+{
+  DGRAM_OP_BIND,
+  DGRAM_OP_CONNECT
+} DgramOpType;
+
+/**
+ * dgram_try_addresses - Try operation on resolved addresses
+ * @socket: Datagram socket
+ * @res: Resolved address list
+ * @socket_family: Socket address family filter
+ * @op: Operation type (DGRAM_OP_BIND or DGRAM_OP_CONNECT)
+ *
+ * Returns: 0 on success, -1 if all addresses failed
+ * Thread-safe: Yes (operates on single socket)
+ */
 static int
-try_dgram_bind_addresses (T socket, struct addrinfo *res, int socket_family)
+dgram_try_addresses (T socket, struct addrinfo *res, int socket_family,
+                     DgramOpType op)
 {
   struct addrinfo *rp;
+  int fd = SocketBase_fd (socket->base);
 
   for (rp = res; rp != NULL; rp = rp->ai_next)
     {
       if (socket_family != SOCKET_AF_UNSPEC && rp->ai_family != socket_family)
         continue;
 
-      if (rp->ai_family == SOCKET_AF_INET6
+      /* IPv6 dual-stack setup for bind only */
+      if (op == DGRAM_OP_BIND && rp->ai_family == SOCKET_AF_INET6
           && socket_family == SOCKET_AF_INET6)
         {
           int no = 0;
-          setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_IPV6,
-                      SOCKET_IPV6_V6ONLY, &no, sizeof (no));
+          setsockopt (fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_V6ONLY, &no,
+                      sizeof (no));
         }
 
-      if (bind (SocketBase_fd (socket->base), rp->ai_addr, rp->ai_addrlen)
-          == 0)
+      int result = (op == DGRAM_OP_BIND)
+                       ? bind (fd, rp->ai_addr, rp->ai_addrlen)
+                       : connect (fd, rp->ai_addr, rp->ai_addrlen);
+
+      if (result == 0)
         {
           memcpy (&socket->base->remote_addr, rp->ai_addr, rp->ai_addrlen);
           socket->base->remote_addrlen = rp->ai_addrlen;
@@ -568,8 +591,9 @@ SocketDgram_bind (T socket, const char *host, int port)
   SocketCommon_resolve_address (host, port, &hints, &res, SocketDgram_Failed,
                                 SOCKET_AF_UNSPEC, 1);
 
-  socket_family = SocketCommon_get_family (socket->base, false, SocketDgram_Failed);
-  if (try_dgram_bind_addresses (socket, res, socket_family) == 0)
+  socket_family
+      = SocketCommon_get_family (socket->base, false, SocketDgram_Failed);
+  if (dgram_try_addresses (socket, res, socket_family, DGRAM_OP_BIND) == 0)
     {
       SocketCommon_update_local_endpoint (socket->base);
       freeaddrinfo (res);
@@ -579,27 +603,6 @@ SocketDgram_bind (T socket, const char *host, int port)
   SocketCommon_format_bind_error (host, port);
   freeaddrinfo (res);
   RAISE_MODULE_ERROR (SocketDgram_Failed);
-}
-
-static int
-try_dgram_connect_addresses (T socket, struct addrinfo *res, int socket_family)
-{
-  struct addrinfo *rp;
-
-  for (rp = res; rp != NULL; rp = rp->ai_next)
-    {
-      if (socket_family != SOCKET_AF_UNSPEC && rp->ai_family != socket_family)
-        continue;
-
-      if (connect (SocketBase_fd (socket->base), rp->ai_addr, rp->ai_addrlen)
-          == 0)
-        {
-          memcpy (&socket->base->remote_addr, rp->ai_addr, rp->ai_addrlen);
-          socket->base->remote_addrlen = rp->ai_addrlen;
-          return 0;
-        }
-    }
-  return -1;
 }
 
 void
@@ -617,8 +620,9 @@ SocketDgram_connect (T socket, const char *host, int port)
   SocketCommon_resolve_address (host, port, &hints, &res, SocketDgram_Failed,
                                 SOCKET_AF_UNSPEC, 1);
 
-  socket_family = SocketCommon_get_family (socket->base, false, SocketDgram_Failed);
-  if (try_dgram_connect_addresses (socket, res, socket_family) == 0)
+  socket_family
+      = SocketCommon_get_family (socket->base, false, SocketDgram_Failed);
+  if (dgram_try_addresses (socket, res, socket_family, DGRAM_OP_CONNECT) == 0)
     {
       SocketCommon_update_local_endpoint (socket->base);
       freeaddrinfo (res);

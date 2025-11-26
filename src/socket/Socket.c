@@ -1104,23 +1104,35 @@ SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
   END_TRY;
 }
 
+/* ==================== Peer Credentials ==================== */
+
+#ifdef SO_PEERCRED
+/**
+ * socket_get_ucred - Get peer credentials from Unix domain socket
+ * @socket: Socket instance
+ * @cred: Output for ucred structure
+ *
+ * Returns: 0 on success, -1 on failure
+ * Thread-safe: Yes (operates on single socket)
+ */
+static int
+socket_get_ucred (const Socket_T socket, struct ucred *cred)
+{
+  socklen_t len = sizeof (*cred);
+  return getsockopt (SocketBase_fd (socket->base), SOL_SOCKET, SO_PEERCRED,
+                     cred, &len);
+}
+#endif
+
 int
 Socket_getpeerpid (const Socket_T socket)
 {
   assert (socket);
-
 #ifdef SO_PEERCRED
   struct ucred cred;
-  socklen_t len = sizeof (cred);
-
-  if (getsockopt (SocketBase_fd (socket->base), SOL_SOCKET,
-                  SO_PEERCRED, &cred, &len)
-      == 0)
-    {
-      return cred.pid;
-    }
+  if (socket_get_ucred (socket, &cred) == 0)
+    return cred.pid;
 #endif
-
   return -1;
 }
 
@@ -1128,19 +1140,11 @@ int
 Socket_getpeeruid (const Socket_T socket)
 {
   assert (socket);
-
 #ifdef SO_PEERCRED
   struct ucred cred;
-  socklen_t len = sizeof (cred);
-
-  if (getsockopt (SocketBase_fd (socket->base), SOL_SOCKET,
-                  SO_PEERCRED, &cred, &len)
-      == 0)
-    {
-      return cred.uid;
-    }
+  if (socket_get_ucred (socket, &cred) == 0)
+    return cred.uid;
 #endif
-
   return -1;
 }
 
@@ -1148,19 +1152,11 @@ int
 Socket_getpeergid (const Socket_T socket)
 {
   assert (socket);
-
 #ifdef SO_PEERCRED
   struct ucred cred;
-  socklen_t len = sizeof (cred);
-
-  if (getsockopt (SocketBase_fd (socket->base), SOL_SOCKET,
-                  SO_PEERCRED, &cred, &len)
-      == 0)
-    {
-      return cred.gid;
-    }
+  if (socket_get_ucred (socket, &cred) == 0)
+    return cred.gid;
 #endif
-
   return -1;
 }
 
