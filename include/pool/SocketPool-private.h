@@ -78,6 +78,7 @@ struct Connection
   int active;
   struct Connection *hash_next;
   struct Connection *free_next;
+  SocketReconnect_T reconnect;      /**< Auto-reconnection context (NULL if disabled) */
 #ifdef SOCKET_HAS_TLS
   SocketTLSContext_T tls_ctx;       /**< TLS context for this connection */
   int tls_handshake_complete;       /**< TLS handshake state */
@@ -109,6 +110,10 @@ struct T
   pthread_mutex_t mutex;            /**< Thread safety mutex */
   SocketDNS_T dns;                  /**< Internal DNS resolver (lazy init) */
   AsyncConnectContext_T async_ctx;  /**< Linked list of pending async connects */
+  
+  /* Reconnection support */
+  SocketReconnect_Policy_T reconnect_policy; /**< Default reconnection policy */
+  int reconnect_enabled;            /**< 1 if default reconnection enabled */
 };
 #undef T
 

@@ -1,0 +1,104 @@
+---
+title: Happy Eyeballs (RFC 8305) Implementation
+description: RFC 8305 implementation patterns and usage guidelines for the SocketHappyEyeballs module
+---
+
+# Happy Eyeballs (RFC 8305) Implementation
+
+This rule documents the Happy Eyeballs implementation for fast dual-stack connection establishment.
+
+## Overview
+
+Happy Eyeballs races IPv6 and IPv4 connection attempts to minimize latency when one address family is slow or unavailable.
+
+## RFC 8305 Algorithm
+
+1. Start DNS queries for A and AAAA records in parallel (via `SocketDNS`)
+2. Sort results: IPv6 addresses first (configurable)
+3. Start first connection attempt (preferred family)
+4. After 250ms delay, start second attempt (other family)
+5. First successful connection wins; cancel and close others
+6. Return winning socket to caller
+
+## Public API
+
+### Synchronous (Blocking)
+
+```c
+/* Simple usage - blocks until connected */
+Socket_T sock = SocketHappyEyeballs_connect("example.com", 443, NULL);
+```
+
+### Asynchronous (Event-driven)
+
+```c
+SocketHE_T he = SocketHappyEyeballs_start(dns, poll, "example.com", 443, NULL);
+while (!SocketHappyEyeballs_poll(he)) {
+    int timeout = SocketHappyEyeballs_next_timeout_ms(he);
+    SocketPoll_wait(poll, &events, timeout);
+    SocketDNS_check(dns);
+    SocketHappyEyeballs_process(he);
+}
+Socket_T sock = SocketHappyEyeballs_result(he);
+SocketHappyEyeballs_free(&he);
+```
+
+## Configuration
+
+```c
+SocketHE_Config_T config;
+SocketHappyEyeballs_config_defaults(&config);
+
+config.first_attempt_delay_ms = 250;  /* RFC 8305 default */
+config.attempt_timeout_ms = 5000;     /* Per-attempt timeout */
+config.total_timeout_ms = 30000;      /* Overall operation timeout */
+config.prefer_ipv6 = 1;               /* IPv6 first (default) */
+config.max_attempts = 2;              /* Simultaneous attempts */
+```
+
+## State Machine
+
+```
+IDLE -> RESOLVING -> CONNECTING -> CONNECTED
+                 |               -> FAILED
+                 -> CANCELLED
+```
+
+## Integration with Socket_connect()
+
+Enable at compile time with `-DSOCKET_CONNECT_HAPPY_EYEBALLS=1`:
+
+```c
+/* Socket_connect() will use Happy Eyeballs for hostnames */
+Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+Socket_connect(sock, "example.com", 443);  /* Uses Happy Eyeballs */
+```
+
+**Note:** When enabled, the socket's fd may be replaced during connection.
+
+## Error Handling
+
+```c
+TRY {
+    Socket_T sock = SocketHappyEyeballs_connect("example.com", 443, NULL);
+}
+EXCEPT(SocketHE_Failed) {
+    /* All connection attempts failed */
+    const char *error = Socket_GetLastError();
+}
+END_TRY;
+```
+
+## Best Practices
+
+1. **Use for hostnames only**: IP addresses don't benefit from Happy Eyeballs
+2. **Configure reasonable timeouts**: Default 30s total may be too long for some applications
+3. **Handle SIGPIPE**: Call `signal(SIGPIPE, SIG_IGN)` during initialization
+4. **Prefer async API for event-driven code**: Better integration with event loops
+5. **Clean up on error**: Always call `SocketHappyEyeballs_free()` for async contexts
+
+## Performance Considerations
+
+- DNS resolution may take time even for local resolution
+- First attempt delay of 250ms balances latency vs connection racing overhead
+- Use IP addresses directly if DNS latency is critical

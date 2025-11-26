@@ -1,0 +1,190 @@
+---
+title: Reconnection Framework
+description: Automatic reconnection patterns with backoff, circuit breaker, and health monitoring
+---
+
+# Reconnection Framework
+
+This rule documents the automatic reconnection framework for resilient network connections.
+
+## Overview
+
+The reconnection framework provides:
+- Exponential backoff with configurable jitter
+- Circuit breaker pattern to prevent connection storms
+- Health monitoring with customizable checks
+- State machine with event callbacks
+- I/O passthrough with auto-reconnect on error
+
+## State Machine
+
+```
+DISCONNECTED -> CONNECTING -> CONNECTED -> DISCONNECTED
+                    |              |
+                    v              v
+              BACKOFF <-----> CIRCUIT_OPEN
+```
+
+## Basic Usage
+
+### Simple Reconnecting Connection
+
+```c
+SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL, NULL, NULL);
+SocketReconnect_connect(conn);
+
+/* Event loop */
+while (running) {
+    int timeout = SocketReconnect_next_timeout_ms(conn);
+    poll(&pfd, 1, timeout);
+    SocketReconnect_process(conn);  /* On socket events */
+    SocketReconnect_tick(conn);     /* Process timers */
+}
+
+SocketReconnect_free(&conn);
+```
+
+### With Callbacks
+
+```c
+void on_state_change(SocketReconnect_T conn, SocketReconnect_State old,
+                     SocketReconnect_State new, void *userdata) {
+    printf("State: %s -> %s\n", 
+           SocketReconnect_state_name(old),
+           SocketReconnect_state_name(new));
+}
+
+SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL,
+                                             on_state_change, NULL);
+```
+
+## Policy Configuration
+
+```c
+SocketReconnect_Policy_T policy;
+SocketReconnect_policy_defaults(&policy);
+
+/* Exponential backoff */
+policy.initial_delay_ms = 100;    /* First retry: 100ms */
+policy.max_delay_ms = 30000;      /* Cap at 30s */
+policy.multiplier = 2.0;          /* Double each attempt */
+policy.jitter = 0.25;             /* ±25% randomization */
+policy.max_attempts = 10;         /* Give up after 10 attempts */
+
+/* Circuit breaker */
+policy.circuit_failure_threshold = 5;   /* Open after 5 failures */
+policy.circuit_reset_timeout_ms = 60000; /* Probe after 60s */
+
+/* Health monitoring */
+policy.health_check_interval_ms = 30000; /* Check every 30s */
+policy.health_check_timeout_ms = 5000;   /* Timeout for check */
+```
+
+## Backoff Algorithm
+
+```
+delay = initial_delay * multiplier^attempt
+capped_delay = min(delay, max_delay)
+final_delay = capped_delay * (1 + jitter * (2*random - 1))
+```
+
+Example sequence with default settings (100ms, 2x, 30s cap):
+- Attempt 1: ~100ms
+- Attempt 2: ~200ms  
+- Attempt 3: ~400ms
+- Attempt 4: ~800ms
+- ...
+- Attempt 9+: ~30s (capped)
+
+## Circuit Breaker
+
+### States
+
+- **CLOSED**: Normal operation, connections allowed
+- **OPEN**: Too many failures, blocking all attempts
+- **HALF_OPEN**: Allowing single probe connection
+
+### Transitions
+
+```
+CLOSED --[5 failures]--> OPEN
+OPEN --[60s timeout]--> HALF_OPEN
+HALF_OPEN --[success]--> CLOSED
+HALF_OPEN --[failure]--> OPEN
+```
+
+## Health Monitoring
+
+### Default Health Check
+
+Polls socket for readability; EOF indicates disconnection.
+
+### Custom Health Check
+
+```c
+int my_health_check(SocketReconnect_T conn, Socket_T socket, void *userdata) {
+    /* Send ping, check response */
+    return is_healthy ? 1 : 0;
+}
+
+SocketReconnect_set_health_check(conn, my_health_check);
+```
+
+## I/O Passthrough
+
+```c
+/* Auto-reconnects on error */
+ssize_t n = SocketReconnect_send(conn, data, len);
+if (n < 0 && errno == ENOTCONN) {
+    /* Connection lost, reconnecting in background */
+}
+
+ssize_t n = SocketReconnect_recv(conn, buf, sizeof(buf));
+if (n == 0) {
+    /* EOF/disconnected, reconnecting in background */
+}
+```
+
+## SocketPool Integration
+
+```c
+/* Set default policy for all pool connections */
+SocketPool_set_reconnect_policy(pool, &policy);
+
+/* Enable for specific connection */
+SocketPool_enable_reconnect(pool, conn, "example.com", 443);
+
+/* Process reconnections in event loop */
+while (running) {
+    int timeout = SocketPool_reconnect_timeout_ms(pool);
+    SocketPoll_wait(poll, &events, timeout);
+    SocketPool_process_reconnects(pool);
+}
+```
+
+## Best Practices
+
+1. **Use jitter**: Prevents thundering herd when many connections reconnect
+2. **Set reasonable max_attempts**: Avoid infinite retry loops
+3. **Configure circuit breaker**: Protect against dead endpoints
+4. **Enable health checks**: Detect silent disconnections
+5. **Handle SIGPIPE**: Call `signal(SIGPIPE, SIG_IGN)`
+6. **Log state transitions**: Use callbacks for observability
+
+## Error Handling
+
+```c
+TRY {
+    conn = SocketReconnect_new("example.com", 443, NULL, NULL, NULL);
+}
+EXCEPT(SocketReconnect_Failed) {
+    /* Initialization failed */
+}
+END_TRY;
+```
+
+## Thread Safety
+
+- SocketReconnect_T instances are NOT thread-safe
+- Multiple instances can be used from different threads
+- Callbacks are invoked from the same thread that calls process/tick

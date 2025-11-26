@@ -310,6 +310,26 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_DEFAULT_CONNECT_TIMEOUT_MS 30000 /* 30 seconds */
 #endif
 
+/* ============================================================================
+ * Happy Eyeballs (RFC 8305) Configuration
+ * ============================================================================ */
+
+/**
+ * SOCKET_CONNECT_HAPPY_EYEBALLS - Enable Happy Eyeballs for Socket_connect()
+ *
+ * When enabled (1), Socket_connect() will use the RFC 8305 Happy Eyeballs
+ * algorithm for hostname connections, racing IPv6 and IPv4 connection
+ * attempts for faster connection establishment.
+ *
+ * When disabled (0, default), Socket_connect() uses sequential connection
+ * attempts for backwards compatibility.
+ *
+ * Can be overridden at compile time with -DSOCKET_CONNECT_HAPPY_EYEBALLS=1
+ */
+#ifndef SOCKET_CONNECT_HAPPY_EYEBALLS
+#define SOCKET_CONNECT_HAPPY_EYEBALLS 0
+#endif
+
 #ifndef SOCKET_DEFAULT_DNS_TIMEOUT_MS
 #define SOCKET_DEFAULT_DNS_TIMEOUT_MS 5000 /* 5 seconds */
 #endif

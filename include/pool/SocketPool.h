@@ -6,6 +6,7 @@
 #include "core/SocketUtil.h" /* For socket_error_buf in macros */
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
+#include "socket/SocketReconnect.h"
 #include <stddef.h>
 #include <time.h>
 #include "dns/SocketDNS.h"
@@ -261,6 +262,95 @@ extern time_t Connection_lastactivity (const Connection_T conn);
  * Returns: Non-zero if active
  */
 extern int Connection_isactive (const Connection_T conn);
+
+/* ============================================================================
+ * Reconnection Support
+ * ============================================================================ */
+
+/**
+ * SocketPool_set_reconnect_policy - Set default reconnection policy for pool
+ * @pool: Pool instance
+ * @policy: Reconnection policy (NULL to disable auto-reconnect)
+ *
+ * Thread-safe: Yes
+ *
+ * Sets the default reconnection policy for connections in this pool.
+ * Does not affect existing connections - use SocketPool_enable_reconnect()
+ * for those.
+ */
+extern void SocketPool_set_reconnect_policy (T pool,
+                                             const SocketReconnect_Policy_T *policy);
+
+/**
+ * SocketPool_enable_reconnect - Enable auto-reconnect for a connection
+ * @pool: Pool instance
+ * @conn: Connection to enable reconnection for
+ * @host: Original hostname for reconnection
+ * @port: Original port for reconnection
+ *
+ * Thread-safe: Yes
+ *
+ * Enables automatic reconnection for the specified connection using
+ * the pool's reconnection policy. When the connection fails, it will
+ * be automatically reconnected.
+ *
+ * NOTE: The original host/port must be provided since the socket may
+ * have been created with just an IP address from DNS resolution.
+ */
+extern void SocketPool_enable_reconnect (T pool, Connection_T conn,
+                                         const char *host, int port);
+
+/**
+ * SocketPool_disable_reconnect - Disable auto-reconnect for a connection
+ * @pool: Pool instance
+ * @conn: Connection to disable reconnection for
+ *
+ * Thread-safe: Yes
+ *
+ * Disables automatic reconnection for the specified connection.
+ */
+extern void SocketPool_disable_reconnect (T pool, Connection_T conn);
+
+/**
+ * SocketPool_process_reconnects - Process reconnection state machines
+ * @pool: Pool instance
+ *
+ * Thread-safe: Yes
+ *
+ * Must be called periodically (e.g., in event loop) to process
+ * reconnection timers and state transitions for all connections
+ * with auto-reconnect enabled.
+ */
+extern void SocketPool_process_reconnects (T pool);
+
+/**
+ * SocketPool_reconnect_timeout_ms - Get time until next reconnection action
+ * @pool: Pool instance
+ *
+ * Returns: Milliseconds until next timeout, or -1 if none pending
+ * Thread-safe: Yes
+ *
+ * Use as timeout hint for poll/select when reconnections are active.
+ */
+extern int SocketPool_reconnect_timeout_ms (T pool);
+
+/**
+ * Connection_reconnect - Get reconnection context for connection
+ * @conn: Connection
+ *
+ * Returns: SocketReconnect_T context, or NULL if reconnection not enabled
+ * Thread-safe: Yes (but returned context is not thread-safe)
+ */
+extern SocketReconnect_T Connection_reconnect (const Connection_T conn);
+
+/**
+ * Connection_has_reconnect - Check if connection has auto-reconnect enabled
+ * @conn: Connection
+ *
+ * Returns: Non-zero if auto-reconnect is enabled
+ * Thread-safe: Yes
+ */
+extern int Connection_has_reconnect (const Connection_T conn);
 
 #undef T
 #endif
