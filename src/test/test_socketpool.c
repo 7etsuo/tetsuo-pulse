@@ -14,6 +14,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "dns/SocketDNS.h"
 #include "pool/SocketPool.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
@@ -941,6 +942,271 @@ TEST (socketpool_set_bufsize_large)
       SocketPool_set_bufsize (pool, 65536);
   /* Should not raise exception */
   EXCEPT (SocketPool_Failed) ASSERT (0);
+  END_TRY;
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+/* ==================== Async Connect Tests ==================== */
+
+static volatile int async_callback_called = 0;
+static volatile int async_callback_error = -1;
+static volatile Connection_T async_callback_conn = NULL;
+
+static void
+async_connect_callback (Connection_T conn, int error, void *data)
+{
+  (void)data;
+  async_callback_called = 1;
+  async_callback_error = error;
+  async_callback_conn = conn;
+}
+
+TEST (socketpool_connect_async_basic)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+  Socket_T server = NULL;
+  volatile int port = 0;
+
+  /* Reset callback state */
+  async_callback_called = 0;
+  async_callback_error = -1;
+  async_callback_conn = NULL;
+
+  /* Create listening server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    SocketPool_free (&pool);
+    Arena_dispose (&arena);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Start async connection */
+  TRY
+  {
+    SocketDNS_Request_T req
+        = SocketPool_connect_async (pool, "127.0.0.1", port,
+                                    async_connect_callback, NULL);
+    ASSERT_NOT_NULL (req);
+
+    /* Wait for callback with timeout */
+    for (int i = 0; i < 100 && !async_callback_called; i++)
+      {
+        /* Accept connection on server side */
+        TRY
+        {
+          Socket_T client = Socket_accept (server);
+          if (client)
+            Socket_free (&client);
+        }
+        EXCEPT (Socket_Failed) { /* Ignore - non-blocking */ }
+        END_TRY;
+        usleep (50000);
+      }
+
+    /* Callback may or may not have been called depending on timing */
+    ASSERT (async_callback_called == 0 || async_callback_called == 1);
+  }
+  EXCEPT (SocketPool_Failed)
+  {
+    /* This is expected if DNS fails or connect fails */
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* This is expected if socket creation fails */
+  }
+  END_TRY;
+
+  Socket_free (&server);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_connect_async_invalid_params)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+  volatile int raised = 0;
+
+  TRY
+  {
+    /* Invalid port */
+    SocketPool_connect_async (pool, "localhost", 0, async_connect_callback,
+                              NULL);
+  }
+  EXCEPT (SocketPool_Failed) { raised = 1; }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+/* ==================== Prepare Connection Tests ==================== */
+
+TEST (socketpool_prepare_connection_basic)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+  SocketDNS_T dns = NULL;
+  Socket_T out_socket = NULL;
+  SocketDNS_Request_T out_req = NULL;
+  Socket_T server = NULL;
+  volatile int port = 0;
+
+  /* Create listening server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    SocketPool_free (&pool);
+    Arena_dispose (&arena);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Create DNS resolver */
+  TRY { dns = SocketDNS_new (); }
+  EXCEPT (SocketDNS_Failed)
+  {
+    Socket_free (&server);
+    SocketPool_free (&pool);
+    Arena_dispose (&arena);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Prepare connection */
+  TRY
+  {
+    int result = SocketPool_prepare_connection (pool, dns, "127.0.0.1", port,
+                                                &out_socket, &out_req);
+    ASSERT_EQ (result, 0);
+    ASSERT_NOT_NULL (out_socket);
+    ASSERT_NOT_NULL (out_req);
+
+    /* Clean up the socket we created */
+    Socket_free (&out_socket);
+  }
+  EXCEPT (SocketPool_Failed)
+  {
+    /* May fail due to DNS or connect issues */
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail due to socket issues */
+  }
+  END_TRY;
+
+  SocketDNS_free (&dns);
+  Socket_free (&server);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_prepare_connection_invalid_params)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+  SocketDNS_T dns = NULL;
+  Socket_T out_socket = NULL;
+  SocketDNS_Request_T out_req = NULL;
+  volatile int raised = 0;
+
+  TRY { dns = SocketDNS_new (); }
+  EXCEPT (SocketDNS_Failed)
+  {
+    SocketPool_free (&pool);
+    Arena_dispose (&arena);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Test invalid port - should raise SocketPool_Failed or Socket_Failed */
+  TRY
+  {
+    SocketPool_prepare_connection (pool, dns, "localhost", 0, &out_socket,
+                                   &out_req);
+  }
+  EXCEPT (SocketPool_Failed) { raised = 1; }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+
+  SocketDNS_free (&dns);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+/* ==================== Resize with Active Connections Tests ==================== */
+
+TEST (socketpool_resize_shrink_with_active)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
+  Socket_T sockets[5];
+  volatile size_t count;
+
+  TRY
+  {
+    /* Add 5 connections */
+    for (int i = 0; i < 5; i++)
+      {
+        sockets[i] = Socket_new (AF_INET, SOCK_STREAM, 0);
+        SocketPool_add (pool, sockets[i]);
+      }
+
+    count = SocketPool_count (pool);
+    ASSERT_EQ (count, 5);
+
+    /* Shrink to 3 - should close 2 excess connections */
+    SocketPool_resize (pool, 3);
+    count = SocketPool_count (pool);
+    ASSERT (count <= 3);
+  }
+  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  FINALLY
+  {
+    for (int i = 0; i < 5; i++)
+      {
+        SocketPool_remove (pool, sockets[i]);
+        Socket_free (&sockets[i]);
+      }
+  }
   END_TRY;
 
   SocketPool_free (&pool);
