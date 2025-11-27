@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['interface_0',['Interface',['../interfaceInterface.html',1,'']]]
+  ['interface_0',['Interface',['../namespace_3globalScope_4.html#interfaceInterface',1,'']]]
 ];

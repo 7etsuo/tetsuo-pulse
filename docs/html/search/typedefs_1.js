@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['except_5fframe_0',['Except_Frame',['../Except_8h.html#ae9476933f67b88456bce2b1445851f6f',1,'Except.h']]]
+  ['connection_5ft_0',['Connection_T',['../SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c',1,'SocketPool.h']]]
 ];

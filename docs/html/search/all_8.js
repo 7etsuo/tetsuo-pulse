@@ -1,10 +1,10 @@
 var searchData=
 [
-  ['i_20o_0',['i o',['../index.html#autotoc_md11',1,'Non-Blocking I/O'],['../index.html#autotoc_md16',1,'Scatter/Gather I/O']]],
-  ['inbuf_1',['inbuf',['../structConnection.html#a5d83db74dbbfc74a5d79e8237dcb675d',1,'Connection']]],
-  ['increment_5fpool_5fcount_2',['increment_pool_count',['../SocketPool-private_8h.html#a5426648c6c6a14ebaff48ee2160856c3',1,'SocketPool-private.h']]],
-  ['initialize_5fconnection_3',['initialize_connection',['../SocketPool-private_8h.html#a6c55ecf49e5103925192159127088241',1,'SocketPool-private.h']]],
-  ['insert_5finto_5fhash_5ftable_4',['insert_into_hash_table',['../SocketPool-private_8h.html#ac073c8a892a77bae682cec8398d10518',1,'SocketPool-private.h']]],
-  ['interface_5',['Interface',['../interfaceInterface.html',1,'']]],
+  ['i_0',['i',['../unionalign.html#a8f750b35b1359be92173466ddd63b7e7',1,'align']]],
+  ['i_20o_1',['Scatter/Gather I/O',['../index.html#autotoc_md33',1,'']]],
+  ['i_20o_20guide_2',['Asynchronous I/O Guide',['../md_docs_2ASYNC__IO.html',1,'']]],
+  ['initial_5fdelay_5fms_3',['initial_delay_ms',['../SocketReconnect_8h.html#abf740738ffd922747329556ebd6052ca',1,'SocketReconnect_Policy_T']]],
+  ['interface_4',['Interface',['../namespace_3globalScope_4.html#interfaceInterface',1,'']]],
+  ['io_5furing_20linux_5',['io_uring (Linux)',['../md_docs_2ASYNC__IO.html#autotoc_md57',1,'']]],
   ['iov_5fmax_6',['IOV_MAX',['../SocketConfig_8h.html#a25080e819a36fcf9aede01a6e7298ea4',1,'SocketConfig.h']]]
 ];

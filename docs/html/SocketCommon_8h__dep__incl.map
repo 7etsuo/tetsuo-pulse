@@ -1,0 +1,28 @@
+<map id="SocketCommon.h" name="SocketCommon.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="389,5,516,31"/>
+<area shape="rect" id="Node000002" href="$Socket_8h.html" title=" " alt="" coords="357,79,431,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="436,43,406,80,401,77,432,40"/>
+<area shape="rect" id="Node000012" href="$SocketDgram_8h.html" title=" " alt="" coords="456,79,569,104"/>
+<area shape="poly" id="edge14_Node000001_Node000012" title=" " alt="" coords="473,40,505,77,501,80,469,43"/>
+<area shape="rect" id="Node000003" href="$SocketAsync_8h.html" title=" " alt="" coords="5,152,116,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="344,106,115,155,114,149,343,101"/>
+<area shape="rect" id="Node000004" href="$SocketHappyEyeballs_8h.html" title=" " alt="" coords="102,225,265,251"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="343,102,248,122,206,137,181,154,174,170,173,190,181,224,176,225,168,190,169,169,177,150,204,132,246,117,342,97"/>
+<area shape="rect" id="Node000005" href="$SocketIO_8h.html" title=" " alt="" coords="191,152,279,177"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="357,112,262,154,260,149,355,107"/>
+<area shape="rect" id="Node000006" href="$SocketPoll_8h.html" title=" " alt="" coords="303,152,399,177"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="382,117,361,153,356,151,378,114"/>
+<area shape="rect" id="Node000007" href="$SocketPoll__backend_8h.html" title=" " alt="" coords="297,225,449,251"/>
+<area shape="poly" id="edge8_Node000002_Node000007" title=" " alt="" coords="408,116,416,146,414,178,401,205,385,227,381,223,397,202,409,177,410,146,403,118"/>
+<area shape="rect" id="Node000008" href="$SocketPool_8h.html" title=" " alt="" coords="496,225,596,251"/>
+<area shape="poly" id="edge9_Node000002_Node000008" title=" " alt="" coords="418,112,536,223,532,227,415,116"/>
+<area shape="rect" id="Node000009" href="$SocketReconnect_8h.html" title=" " alt="" coords="525,152,663,177"/>
+<area shape="poly" id="edge10_Node000002_Node000009" title=" " alt="" coords="440,106,562,149,560,154,438,111"/>
+<area shape="rect" id="Node000010" href="$SocketTLS_8h.html" title=" " alt="" coords="687,152,786,177"/>
+<area shape="poly" id="edge12_Node000002_Node000010" title=" " alt="" coords="445,102,688,151,687,156,444,107"/>
+<area shape="poly" id="edge6_Node000006_Node000004" title=" " alt="" coords="313,185,212,228,210,223,311,180"/>
+<area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="361,190,372,224,367,226,356,192"/>
+<area shape="poly" id="edge11_Node000009_Node000008" title=" " alt="" coords="581,190,556,227,552,224,576,187"/>
+<area shape="rect" id="Node000011" href="$SocketTLSContext_8h.html" title=" " alt="" coords="665,225,809,251"/>
+<area shape="poly" id="edge13_Node000010_Node000011" title=" " alt="" coords="739,191,739,225,734,225,734,191"/>
+</map>

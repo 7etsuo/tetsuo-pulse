@@ -1,4 +1,30 @@
 var searchData=
 [
-  ['request_5ft_0',['Request_T',['../SocketDNS_8h.html#abed9b1a79ca074827284111e500f8b22',1,'SocketDNS.h']]]
+  ['socket_5ft_0',['Socket_T',['../Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14',1,'Socket.h']]],
+  ['socketasync_5fcallback_1',['SocketAsync_Callback',['../SocketAsync_8h.html#ad6644a0c3153b65fa217ecbc45b5b8f9',1,'SocketAsync.h']]],
+  ['socketasync_5ft_2',['socketasync_t',['../SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8',1,'SocketAsync_T:&#160;SocketPoll.h'],['../SocketAsync_8h.html#a733615fa159421d6c73d01f6bb34bac8',1,'SocketAsync_T:&#160;SocketAsync.h']]],
+  ['socketbase_5ft_3',['SocketBase_T',['../SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2',1,'SocketCommon.h']]],
+  ['socketbuf_5ft_4',['SocketBuf_T',['../SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c',1,'SocketBuf.h']]],
+  ['socketdgram_5ft_5',['SocketDgram_T',['../SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f',1,'SocketDgram.h']]],
+  ['socketdns_5fcallback_6',['SocketDNS_Callback',['../SocketDNS_8h.html#a09004bbc0b6c4d606530226f9fff912a',1,'SocketDNS.h']]],
+  ['socketdns_5frequest_5ft_7',['SocketDNS_Request_T',['../SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13',1,'SocketDNS.h']]],
+  ['socketdns_5ft_8',['SocketDNS_T',['../SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd',1,'SocketDNS.h']]],
+  ['socketeventcallback_9',['SocketEventCallback',['../SocketUtil_8h.html#a3d3a15715d38d991d2e0227b21d70bf1',1,'SocketUtil.h']]],
+  ['sockethe_5ft_10',['SocketHE_T',['../SocketHappyEyeballs_8h.html#aa6c35b0180840e5c2f9fe45cefbae03d',1,'SocketHappyEyeballs.h']]],
+  ['socketiptracker_5ft_11',['SocketIPTracker_T',['../SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc',1,'SocketIPTracker.h']]],
+  ['socketlogcallback_12',['SocketLogCallback',['../SocketUtil_8h.html#add820ca01810b616cfe1d6fef0cbf899',1,'SocketUtil.h']]],
+  ['socketpoll_5ft_13',['socketpoll_t',['../SocketPoll_8h.html#af9e4be8bc025aedb61cc0b77e8926312',1,'SocketPoll_T:&#160;SocketPoll.h'],['../SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312',1,'SocketPoll_T:&#160;SocketTimer.h']]],
+  ['socketpool_5fconnectcallback_14',['SocketPool_ConnectCallback',['../SocketPool_8h.html#a5441c8cf779cd74fbb9f39bd322c33bd',1,'SocketPool.h']]],
+  ['socketpool_5ft_15',['SocketPool_T',['../SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9',1,'SocketPool.h']]],
+  ['socketratelimit_5ft_16',['SocketRateLimit_T',['../SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5',1,'SocketRateLimit.h']]],
+  ['socketreconnect_5fcallback_17',['SocketReconnect_Callback',['../SocketReconnect_8h.html#a0d4cc030dc9989344d20a170b6410220',1,'SocketReconnect.h']]],
+  ['socketreconnect_5fhealthcheck_18',['SocketReconnect_HealthCheck',['../SocketReconnect_8h.html#ac72a1247fceed09210753d03ae2ebb5e',1,'SocketReconnect.h']]],
+  ['socketreconnect_5ft_19',['SocketReconnect_T',['../SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed',1,'SocketReconnect.h']]],
+  ['sockettimer_5ft_20',['SocketTimer_T',['../SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e',1,'SocketTimer.h']]],
+  ['sockettimercallback_21',['SocketTimerCallback',['../SocketTimer_8h.html#afb51f69cdbf1b882a7a4226959c4fca7',1,'SocketTimer.h']]],
+  ['sockettls_5ft_22',['SocketTLS_T',['../SocketTLS_8h.html#a63e73c93350813167a68162c5cb3d819',1,'SocketTLS.h']]],
+  ['sockettlsalpncallback_23',['SocketTLSAlpnCallback',['../SocketTLSContext_8h.html#aa53566f8d54960bb2d44516a50f67c70',1,'SocketTLSContext.h']]],
+  ['sockettlscontext_5ft_24',['sockettlscontext_t',['../SocketTLSContext_8h.html#ac46f2ab9dacbb1af2d590f2974e21577',1,'SocketTLSContext_T:&#160;SocketTLSContext.h'],['../SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577',1,'SocketTLSContext_T:&#160;SocketTLS.h']]],
+  ['sockettlsocspgencallback_25',['SocketTLSOcspGenCallback',['../SocketTLSContext_8h.html#a1acd7a590114ffbf4307a6f5a3bab35c',1,'SocketTLSContext.h']]],
+  ['sockettlsverifycallback_26',['SocketTLSVerifyCallback',['../SocketTLSContext_8h.html#ac9a12208531822c8304c23dcbcb8ba97',1,'SocketTLSContext.h']]]
 ];

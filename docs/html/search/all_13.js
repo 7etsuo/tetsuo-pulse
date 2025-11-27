@@ -1,4 +1,31 @@
 var searchData=
 [
-  ['values_0',['values',['../structSocketMetricsSnapshot.html#ad4bec382c27642da1ce45dcf676684e6',1,'SocketMetricsSnapshot']]]
+  ['t_0',['t',['../SocketDNS_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketDNS.h'],['../SocketIO_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketIO.h'],['../SocketHappyEyeballs_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketHappyEyeballs.h'],['../SocketDgram_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketDgram.h'],['../SocketBuf_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketBuf.h'],['../SocketAsync_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketAsync.h'],['../Socket_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;Socket.h'],['../SocketPool_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketPool.h'],['../SocketPoll_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketPoll.h'],['../SocketTimer_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketTimer.h'],['../SocketRateLimit_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketRateLimit.h'],['../SocketIPTracker_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketIPTracker.h'],['../Arena_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;Arena.h'],['../SocketReconnect_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketReconnect.h'],['../SocketTLS_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketTLS.h'],['../SocketTLSContext_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketTLSContext.h']]],
+  ['tcp_20client_1',['TCP Client',['../index.html#autotoc_md11',1,'']]],
+  ['tcp_20echo_20server_2',['TCP Echo Server',['../index.html#autotoc_md9',1,'']]],
+  ['tcp_20options_3',['Advanced TCP Options',['../index.html#autotoc_md35',1,'']]],
+  ['thread_20safety_4',['Thread Safety',['../md_docs_2ASYNC__IO.html#autotoc_md60',1,'']]],
+  ['timeout_5fms_5',['timeout_ms',['../SocketUtil_8h.html#a3a551bf8b969bfa6309e26c2fa4c1901',1,'SocketEventRecord.data.poll']]],
+  ['tls_20client_20secure_20connection_6',['TLS Client (Secure Connection)',['../index.html#autotoc_md19',1,'']]],
+  ['tls_5ferror_5fbuf_7',['tls_error_buf',['../SocketTLS_8h.html#ae74b3921236213de2e979bbd2039e452',1,'SocketTLS.h']]],
+  ['tls_5fhandshake_5fcomplete_8',['TLS_HANDSHAKE_COMPLETE',['../SocketTLS_8h.html#ad092160c037d01929df1bb8d5b75b43cac9d764c27bc5b541bd5e7a4c42eddfce',1,'SocketTLS.h']]],
+  ['tls_5fhandshake_5ferror_9',['TLS_HANDSHAKE_ERROR',['../SocketTLS_8h.html#ad092160c037d01929df1bb8d5b75b43caca78870a105a05fffb3d5d6ca022aff2',1,'SocketTLS.h']]],
+  ['tls_5fhandshake_5fin_5fprogress_10',['TLS_HANDSHAKE_IN_PROGRESS',['../SocketTLS_8h.html#ad092160c037d01929df1bb8d5b75b43ca445915a69a47e09546e8d5b275eedf2a',1,'SocketTLS.h']]],
+  ['tls_5fhandshake_5fnot_5fstarted_11',['TLS_HANDSHAKE_NOT_STARTED',['../SocketTLS_8h.html#ad092160c037d01929df1bb8d5b75b43cae3a7df914ebdf339b8e7d711779670e2',1,'SocketTLS.h']]],
+  ['tls_5fhandshake_5fwant_5fread_12',['TLS_HANDSHAKE_WANT_READ',['../SocketTLS_8h.html#ad092160c037d01929df1bb8d5b75b43cab268d75e71356121ccf44e8e5f4ab592',1,'SocketTLS.h']]],
+  ['tls_5fhandshake_5fwant_5fwrite_13',['TLS_HANDSHAKE_WANT_WRITE',['../SocketTLS_8h.html#ad092160c037d01929df1bb8d5b75b43cad39cdf43af44417566b39aa9929f7aac',1,'SocketTLS.h']]],
+  ['tls_5fverify_5fclient_5fonce_14',['TLS_VERIFY_CLIENT_ONCE',['../SocketTLS_8h.html#ac32c3958835b92ff683ae15f78448694abbcde32e72faadf92044da1ccc76f183',1,'SocketTLS.h']]],
+  ['tls_5fverify_5ffail_5fif_5fno_5fpeer_5fcert_15',['TLS_VERIFY_FAIL_IF_NO_PEER_CERT',['../SocketTLS_8h.html#ac32c3958835b92ff683ae15f78448694a29928ea4593855bb860f7a0bb8eb027d',1,'SocketTLS.h']]],
+  ['tls_5fverify_5fnone_16',['TLS_VERIFY_NONE',['../SocketTLS_8h.html#ac32c3958835b92ff683ae15f78448694a0ada1cef646c3b57e9a793035dcc0a6f',1,'SocketTLS.h']]],
+  ['tls_5fverify_5fpeer_17',['TLS_VERIFY_PEER',['../SocketTLS_8h.html#ac32c3958835b92ff683ae15f78448694ae56010acbcb7edcdcd7707be028cc6fe',1,'SocketTLS.h']]],
+  ['tlshandshakestate_18',['TLSHandshakeState',['../SocketTLS_8h.html#ad092160c037d01929df1bb8d5b75b43c',1,'SocketTLS.h']]],
+  ['tlsverifymode_19',['TLSVerifyMode',['../SocketTLS_8h.html#ac32c3958835b92ff683ae15f78448694',1,'SocketTLS.h']]],
+  ['to_20async_20',['From Synchronous to Async',['../md_docs_2ASYNC__IO.html#autotoc_md63',1,'']]],
+  ['total_5ftimeout_5fms_21',['total_timeout_ms',['../SocketHappyEyeballs_8h.html#a30f77ee5bd25329726485101935e8a2a',1,'SocketHE_Config_T']]],
+  ['transfer_22',['Zero-Copy File Transfer',['../index.html#autotoc_md31',1,'']]],
+  ['troubleshooting_23',['Troubleshooting',['../md_docs_2ASYNC__IO.html#autotoc_md66',1,'']]],
+  ['try_24',['TRY',['../Except_8h.html#ad2746371528bdf15c3910b7bf217dac0',1,'Except.h']]],
+  ['tuning_25',['Performance Tuning',['../md_docs_2ASYNC__IO.html#autotoc_md56',1,'']]],
+  ['type_26',['type',['../SocketUtil_8h.html#a2ef831e31103812b3c31c099cea65c2c',1,'SocketEventRecord::type'],['../Except_8h.html#a343b5beb0d02c17f95cceb95f4598405',1,'Except_T::type']]],
+  ['types_27',['Exception Types',['../index.html#autotoc_md40',1,'']]]
 ];

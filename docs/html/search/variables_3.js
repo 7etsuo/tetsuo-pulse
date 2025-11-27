@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['data_0',['data',['../structSocketEventRecord.html#a46454b1b915024075996facfd55e75a2',1,'SocketEventRecord::data'],['../structSocketEvent.html#af4aeacc9896cef31c5a5c9afc9e1061c',1,'SocketEvent::data'],['../structConnection.html#aedd67a1038db9b1a6025b4436a29c291',1,'Connection::data']]],
-  ['dns_1',['dns',['../structSocketEventRecord.html#af33711caebc2c989291dd9441c893b27',1,'SocketEventRecord']]],
-  ['dns_5ftimeout_5fms_2',['dns_timeout_ms',['../structSocketTimeouts.html#a736142191c923c26705b75234d09bc65',1,'SocketTimeouts']]]
+  ['env_0',['env',['../Except_8h.html#abce4b8de2bbf7d6fb6ef52d618309264',1,'Except_Frame']]],
+  ['events_1',['events',['../SocketPoll_8h.html#ac526bc7e51851919ae7b0f3cec5934bc',1,'SocketEvent_T']]],
+  ['except_5fstack_2',['Except_stack',['../Except_8h.html#a3d38c6361ecf1c4873bbcb2de8a50874',1,'Except.h']]],
+  ['exception_3',['exception',['../Except_8h.html#a41f49d856fa1e252bc5f7439f6feeaf8',1,'Except_Frame']]]
 ];

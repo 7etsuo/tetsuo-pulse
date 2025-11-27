@@ -1,7 +1,6 @@
 var searchData=
 [
-  ['fd_0',['fd',['../structSocketEventRecord.html#a97e68a348cf1c03285373831ec514140',1,'SocketEventRecord::fd'],['../structSocket__T.html#aad3b62a640e257bb2327afb361c9ea8e',1,'Socket_T::fd']]],
-  ['file_1',['file',['../structExcept__Frame.html#a4c8d0ea0c9437ede53e8703feefe0dc6',1,'Except_Frame']]],
-  ['free_5flist_2',['free_list',['../structT.html#ade73b8c1895a643ab5ab9f0417f52a77',1,'T']]],
-  ['free_5fnext_3',['free_next',['../structConnection.html#ad69db73c6cfea7b6481e4d467885342a',1,'Connection']]]
+  ['health_5fcheck_5finterval_5fms_0',['health_check_interval_ms',['../SocketReconnect_8h.html#aaa80956d1e58e84adfab7063e1936f95',1,'SocketReconnect_Policy_T']]],
+  ['health_5fcheck_5ftimeout_5fms_1',['health_check_timeout_ms',['../SocketReconnect_8h.html#ade4054b2276dfc3c6b06a4b759241208',1,'SocketReconnect_Policy_T']]],
+  ['host_2',['host',['../SocketUtil_8h.html#a67b3dba8bc6778101892eb77249db32e',1,'SocketEventRecord.data.dns']]]
 ];

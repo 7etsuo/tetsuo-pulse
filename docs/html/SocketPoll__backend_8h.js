@@ -1,5 +1,6 @@
 var SocketPoll__backend_8h =
 [
+    [ "VALIDATE_FD", "SocketPoll__backend_8h.html#a72ef813749c8c54d8f8ccf64ba724a0a", null ],
     [ "PollBackend_T", "SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b", null ],
     [ "backend_add", "SocketPoll__backend_8h.html#aa51ec4e5f966a860cdd9359c36e977c6", null ],
     [ "backend_del", "SocketPoll__backend_8h.html#ae9ec719e250346605c00e5b3efb2e7d8", null ],

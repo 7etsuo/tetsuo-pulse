@@ -1,7 +1,8 @@
 var searchData=
 [
-  ['env_0',['env',['../structExcept__Frame.html#abce4b8de2bbf7d6fb6ef52d618309264',1,'Except_Frame']]],
-  ['events_1',['events',['../structSocketEvent.html#a0e8eac7870fd0ca415bca9e451b1c968',1,'SocketEvent']]],
-  ['except_5fstack_2',['Except_stack',['../Except_8h.html#a83beb50c01f16c3fb874b4925b8e76ec',1,'Except.h']]],
-  ['exception_3',['exception',['../structExcept__Frame.html#af94963d421b72862ad98d190f02919fe',1,'Except_Frame']]]
+  ['f_0',['f',['../unionalign.html#a363eff2b501a06a5f2b8cac89d2674c3',1,'align']]],
+  ['fd_1',['fd',['../SocketUtil_8h.html#a36eba1e1e343279857ea7f69a597324e',1,'SocketEventRecord.data.connection']]],
+  ['file_2',['file',['../Except_8h.html#a4c8d0ea0c9437ede53e8703feefe0dc6',1,'Except_Frame']]],
+  ['first_5fattempt_5fdelay_5fms_3',['first_attempt_delay_ms',['../SocketHappyEyeballs_8h.html#a718ced26ae9d5f1a9c51980686007af9',1,'SocketHE_Config_T']]],
+  ['fp_4',['fp',['../unionalign.html#a24af03c2c2b13ef5e8dac1130ded4f4d',1,'align']]]
 ];

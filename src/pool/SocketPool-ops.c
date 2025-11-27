@@ -664,11 +664,15 @@ validate_prepare_params (T pool, SocketDNS_T dns, const char *host, int port,
  *
  * Returns: Configured socket
  * Raises: SocketPool_Failed on error
+ *
+ * Note: Uses AF_INET by default. For IPv6-only connections, the socket
+ * family will be updated during Socket_connect_with_addrinfo if the
+ * resolved address is IPv6 and the connection attempt requires it.
  */
 static Socket_T
 create_pool_socket (void)
 {
-  Socket_T socket = Socket_new (AF_UNSPEC, SOCK_STREAM, 0);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
   if (!socket)
     {
       SOCKET_ERROR_MSG ("Failed to create socket for pool");

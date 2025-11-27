@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['inbuf_0',['inbuf',['../structConnection.html#a5d83db74dbbfc74a5d79e8237dcb675d',1,'Connection']]]
+  ['jitter_0',['jitter',['../SocketReconnect_8h.html#a803e0eaa631385205819346d33db4974',1,'SocketReconnect_Policy_T']]]
 ];
