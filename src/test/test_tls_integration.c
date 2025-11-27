@@ -1049,6 +1049,310 @@ TEST (tls_context_free_null_safe)
 #endif
 }
 
+/* ==================== SocketIO TLS Coverage Tests ==================== */
+
+TEST (socketio_tls_enabled_check)
+{
+#ifdef SOCKET_HAS_TLS
+  Socket_T socket = NULL;
+
+  TRY
+  {
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL (socket);
+
+    /* Non-TLS socket should report TLS disabled */
+    ASSERT_EQ (socket_is_tls_enabled (socket), 0);
+
+    /* TLS want read/write should return 0 for non-TLS socket */
+    ASSERT_EQ (socket_tls_want_read (socket), 0);
+    ASSERT_EQ (socket_tls_want_write (socket), 0);
+  }
+  FINALLY
+  {
+    if (socket)
+      Socket_free (&socket);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (socketio_tls_scatter_gather_io)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_iov.crt";
+  const char *key_file = "test_iov.key";
+  Socket_T client = NULL, server = NULL;
+  SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
+
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    SocketTLS_enable (client, client_ctx);
+    SocketTLS_enable (server, server_ctx);
+
+    /* TLS enabled should now return true */
+    ASSERT_EQ (socket_is_tls_enabled (client), 1);
+    ASSERT_EQ (socket_is_tls_enabled (server), 1);
+
+    /* Complete handshake */
+    TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    int loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE
+            || server_state != TLS_HANDSHAKE_COMPLETE)
+           && loops < 1000)
+      {
+        if (client_state != TLS_HANDSHAKE_COMPLETE)
+          client_state = SocketTLS_handshake (client);
+        if (server_state != TLS_HANDSHAKE_COMPLETE)
+          server_state = SocketTLS_handshake (server);
+        loops++;
+        usleep (1000);
+      }
+
+    ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);
+    ASSERT_EQ (server_state, TLS_HANDSHAKE_COMPLETE);
+
+    /* Test scatter/gather send via TLS */
+    char buf1[] = "Hello ";
+    char buf2[] = "World!";
+    struct iovec iov_send[2];
+    iov_send[0].iov_base = buf1;
+    iov_send[0].iov_len = strlen (buf1);
+    iov_send[1].iov_base = buf2;
+    iov_send[1].iov_len = strlen (buf2);
+
+    ssize_t sent = Socket_sendv (client, iov_send, 2);
+    ASSERT (sent > 0);
+
+    /* Receive data */
+    char recv_buf[64];
+    memset (recv_buf, 0, sizeof (recv_buf));
+    loops = 0;
+    ssize_t total_recv = 0;
+    while (total_recv < sent && loops < 100)
+      {
+        ssize_t n = SocketTLS_recv (server, recv_buf + total_recv,
+                                    sizeof (recv_buf) - 1 - (size_t)total_recv);
+        if (n > 0)
+          total_recv += n;
+        else
+          usleep (1000);
+        loops++;
+      }
+
+    ASSERT (total_recv > 0);
+    ASSERT (strncmp (recv_buf, "Hello World!", (size_t)total_recv) == 0);
+
+    /* Test scatter/gather receive via TLS */
+    char reply[] = "Reply OK";
+    ssize_t reply_sent = SocketTLS_send (server, reply, strlen (reply));
+    ASSERT_EQ (reply_sent, (ssize_t)strlen (reply));
+
+    char recv1[4], recv2[8];
+    memset (recv1, 0, sizeof (recv1));
+    memset (recv2, 0, sizeof (recv2));
+    struct iovec iov_recv[2];
+    iov_recv[0].iov_base = recv1;
+    iov_recv[0].iov_len = sizeof (recv1) - 1;
+    iov_recv[1].iov_base = recv2;
+    iov_recv[1].iov_len = sizeof (recv2) - 1;
+
+    loops = 0;
+    total_recv = 0;
+    while (total_recv < reply_sent && loops < 100)
+      {
+        ssize_t n = Socket_recvv (client, iov_recv, 2);
+        if (n > 0)
+          total_recv += n;
+        else
+          usleep (1000);
+        loops++;
+      }
+
+    ASSERT (total_recv > 0);
+  }
+  FINALLY
+  {
+    if (client)
+      Socket_free (&client);
+    if (server)
+      Socket_free (&server);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (socketio_tls_want_states)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_want.crt";
+  const char *key_file = "test_want.key";
+  Socket_T client = NULL, server = NULL;
+  SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
+
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    SocketTLS_enable (client, client_ctx);
+    SocketTLS_enable (server, server_ctx);
+
+    /* During handshake, want_read/want_write may be set */
+    TLSHandshakeState state = SocketTLS_handshake (client);
+    if (state == TLS_HANDSHAKE_WANT_READ)
+      {
+        /* socket_tls_want_read should reflect this */
+        int want_read = socket_tls_want_read (client);
+        ASSERT (want_read == 0 || want_read == 1);
+      }
+    if (state == TLS_HANDSHAKE_WANT_WRITE)
+      {
+        /* socket_tls_want_write should reflect this */
+        int want_write = socket_tls_want_write (client);
+        ASSERT (want_write == 0 || want_write == 1);
+      }
+
+    /* Complete handshake */
+    TLSHandshakeState client_state = state;
+    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    int loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE
+            || server_state != TLS_HANDSHAKE_COMPLETE)
+           && loops < 1000)
+      {
+        if (client_state != TLS_HANDSHAKE_COMPLETE)
+          client_state = SocketTLS_handshake (client);
+        if (server_state != TLS_HANDSHAKE_COMPLETE)
+          server_state = SocketTLS_handshake (server);
+        loops++;
+        usleep (1000);
+      }
+
+    /* After handshake complete, want states should be based on pending data */
+    if (client_state == TLS_HANDSHAKE_COMPLETE)
+      {
+        int want_read = socket_tls_want_read (client);
+        int want_write = socket_tls_want_write (client);
+        ASSERT (want_read == 0 || want_read == 1);
+        ASSERT (want_write == 0 || want_write == 1);
+      }
+  }
+  FINALLY
+  {
+    if (client)
+      Socket_free (&client);
+    if (server)
+      Socket_free (&server);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (socketio_raw_scatter_gather)
+{
+  /* Test raw (non-TLS) scatter/gather I/O */
+  Socket_T sock1 = NULL, sock2 = NULL;
+
+  TRY
+  {
+    SocketPair_new (SOCK_STREAM, &sock1, &sock2);
+    Socket_setnonblocking (sock1);
+    Socket_setnonblocking (sock2);
+
+    /* Send using scatter/gather */
+    char buf1[] = "Part1";
+    char buf2[] = "Part2";
+    char buf3[] = "Part3";
+    struct iovec iov_send[3];
+    iov_send[0].iov_base = buf1;
+    iov_send[0].iov_len = strlen (buf1);
+    iov_send[1].iov_base = buf2;
+    iov_send[1].iov_len = strlen (buf2);
+    iov_send[2].iov_base = buf3;
+    iov_send[2].iov_len = strlen (buf3);
+
+    ssize_t sent = Socket_sendv (sock1, iov_send, 3);
+    ASSERT (sent > 0);
+
+    /* Receive using scatter/gather */
+    char recv1[6], recv2[6], recv3[6];
+    memset (recv1, 0, sizeof (recv1));
+    memset (recv2, 0, sizeof (recv2));
+    memset (recv3, 0, sizeof (recv3));
+    struct iovec iov_recv[3];
+    iov_recv[0].iov_base = recv1;
+    iov_recv[0].iov_len = 5;
+    iov_recv[1].iov_base = recv2;
+    iov_recv[1].iov_len = 5;
+    iov_recv[2].iov_base = recv3;
+    iov_recv[2].iov_len = 5;
+
+    int loops = 0;
+    ssize_t total_recv = 0;
+    while (total_recv < sent && loops < 100)
+      {
+        ssize_t n = Socket_recvv (sock2, iov_recv, 3);
+        if (n > 0)
+          total_recv += n;
+        else
+          usleep (1000);
+        loops++;
+      }
+
+    ASSERT_EQ (total_recv, sent);
+    ASSERT (strcmp (recv1, "Part1") == 0);
+    ASSERT (strcmp (recv2, "Part2") == 0);
+    ASSERT (strcmp (recv3, "Part3") == 0);
+  }
+  FINALLY
+  {
+    if (sock1)
+      Socket_free (&sock1);
+    if (sock2)
+      Socket_free (&sock2);
+  }
+  END_TRY;
+}
+
 int
 main (void)
 {

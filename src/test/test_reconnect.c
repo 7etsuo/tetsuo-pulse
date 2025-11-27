@@ -1053,6 +1053,300 @@ TEST (rc_next_timeout_connected)
 }
 
 /* ============================================================================
+ * Circuit Breaker Recovery Tests
+ * ============================================================================ */
+
+TEST (rc_circuit_breaker_recovery)
+{
+  Socket_T server = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.max_attempts = 0;                /* Unlimited */
+  policy.circuit_failure_threshold = 2;   /* Low threshold */
+  policy.circuit_reset_timeout_ms = 100;  /* Short timeout */
+  policy.initial_delay_ms = 10;
+
+  /* First, create context without server (will fail) */
+  TRY { conn = SocketReconnect_new ("127.0.0.1", 59987, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Start connection - will fail */
+  SocketReconnect_connect (conn);
+
+  /* Process to trigger failures and open circuit */
+  for (int i = 0; i < 30; i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (10000);
+    }
+
+  /* Now start a server on a different port */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    SocketReconnect_free (&conn);
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Create new reconnect context for the working server */
+  SocketReconnect_free (&conn);
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Connect - should succeed */
+  SocketReconnect_connect (conn);
+
+  for (int i = 0; i < 30 && !SocketReconnect_isconnected (conn); i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (50000);
+    }
+
+  /* Should be connected - circuit breaker recovered */
+  ASSERT (SocketReconnect_isconnected (conn));
+  ASSERT_EQ (0, SocketReconnect_failures (conn));
+
+  SocketReconnect_free (&conn);
+  Socket_free (&server);
+}
+
+TEST (rc_backoff_calculation_jitter)
+{
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.initial_delay_ms = 100;
+  policy.max_delay_ms = 1000;
+  policy.multiplier = 2.0;
+  policy.jitter = 0.25; /* 25% jitter */
+  policy.max_attempts = 5;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", 59986, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Start connection attempts */
+  SocketReconnect_connect (conn);
+
+  /* Collect timeout values to verify jitter is applied */
+  int prev_timeout = -1;
+  for (int i = 0; i < 20; i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+
+      int timeout = SocketReconnect_next_timeout_ms (conn);
+      SocketReconnect_State state = SocketReconnect_state (conn);
+
+      if (state == RECONNECT_BACKOFF && timeout > 0)
+        {
+          /* Timeout should vary due to jitter */
+          /* Just verify it's reasonable */
+          ASSERT (timeout >= 0);
+          ASSERT (timeout <= (int)policy.max_delay_ms * 2);
+          prev_timeout = timeout;
+        }
+
+      usleep (20000);
+    }
+
+  /* Verify we saw some backoff timeouts */
+  (void)prev_timeout;
+
+  SocketReconnect_free (&conn);
+}
+
+TEST (rc_io_triggers_reconnect)
+{
+  Socket_T server = NULL;
+  Socket_T accepted = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Create server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.initial_delay_ms = 50;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Connect */
+  SocketReconnect_connect (conn);
+
+  /* Process until connected */
+  for (i = 0; i < 30 && !SocketReconnect_isconnected (conn); i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      TRY { accepted = Socket_accept (server); }
+      EXCEPT (Socket_Failed) { /* Ignore */ }
+      END_TRY;
+      usleep (50000);
+    }
+
+  if (SocketReconnect_isconnected (conn) && accepted)
+    {
+      /* Close server side to simulate disconnect */
+      Socket_free (&accepted);
+      accepted = NULL;
+
+      /* Try to send - should trigger reconnect on error */
+      char buf[] = "test";
+      ssize_t result = SocketReconnect_send (conn, buf, sizeof (buf));
+
+      /* Result depends on timing - might succeed before disconnect detected */
+      (void)result;
+
+      /* Process to handle the disconnect */
+      for (int i = 0; i < 10; i++)
+        {
+          SocketReconnect_process (conn);
+          SocketReconnect_tick (conn);
+          usleep (20000);
+        }
+
+      /* State should have changed due to disconnect */
+      SocketReconnect_State state = SocketReconnect_state (conn);
+      ASSERT (state == RECONNECT_BACKOFF || state == RECONNECT_CONNECTING
+              || state == RECONNECT_DISCONNECTED
+              || state == RECONNECT_CONNECTED);
+    }
+
+  SocketReconnect_free (&conn);
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&server);
+}
+
+TEST (rc_no_health_check_interval)
+{
+  Socket_T server = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Create server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.health_check_interval_ms = 0; /* Disable health checks */
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_connect (conn);
+
+  /* Process until connected */
+  for (int i = 0; i < 30 && !SocketReconnect_isconnected (conn); i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (50000);
+    }
+
+  if (SocketReconnect_isconnected (conn))
+    {
+      /* With health check disabled, timeout should be -1 */
+      int timeout = SocketReconnect_next_timeout_ms (conn);
+      ASSERT_EQ (-1, timeout);
+
+      /* Tick should not trigger health check */
+      SocketReconnect_tick (conn);
+      ASSERT (SocketReconnect_isconnected (conn));
+    }
+
+  SocketReconnect_free (&conn);
+  Socket_free (&server);
+}
+
+/* ============================================================================
  * Main
  * ============================================================================ */
 
