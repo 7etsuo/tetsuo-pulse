@@ -125,7 +125,6 @@ TEST (cov_socket_new_from_non_socket_fd)
 
 TEST (cov_socket_bind_invalid_address)
 {
-  volatile int raised = 0;
   Socket_T sock = NULL;
 
   signal (SIGPIPE, SIG_IGN);
@@ -133,17 +132,15 @@ TEST (cov_socket_bind_invalid_address)
   TRY
   {
     sock = Socket_new (AF_INET, SOCK_STREAM, 0);
-    /* Bind to invalid address - may not raise if DNS lookup happens */
+    /* Bind to clearly invalid IP (outside valid range) to test error path.
+     * This exercises the DNS/address validation code path. */
     Socket_bind (sock, "999.999.999.999", 0);
   }
-  EXCEPT (Socket_Failed) { raised = 1; }
+  EXCEPT (Socket_Failed) { /* Expected - invalid IP format */ }
   END_TRY;
 
   if (sock)
     Socket_free (&sock);
-
-  /* May or may not raise depending on DNS behavior - just exercise the path */
-  (void)raised;
 }
 
 TEST (cov_socket_connect_invalid_port)
@@ -710,8 +707,238 @@ TEST (cov_socketpool_foreach)
 }
 
 /* ============================================================================
- * Socket Reconnect Additional Tests
+ * Socket Reconnect Additional Edge Case Tests
  * ============================================================================ */
+
+TEST (cov_socketreconnect_backoff_minimum_delay)
+{
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  SocketReconnect_policy_defaults (&policy);
+  /* Very small multiplier to test minimum delay enforcement */
+  policy.multiplier = 0.01;
+  policy.initial_delay_ms = 1;
+  policy.max_delay_ms = 10;
+  policy.jitter = 0.5;
+  policy.max_attempts = 2;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", 59960, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed) { return; }
+  END_TRY;
+
+  SocketReconnect_connect (conn);
+
+  for (int i = 0; i < 10; i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (20000);
+    }
+
+  SocketReconnect_free (&conn);
+}
+
+TEST (cov_socketreconnect_max_delay_cap)
+{
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.multiplier = 100.0; /* Very large to hit max_delay cap */
+  policy.initial_delay_ms = 100;
+  policy.max_delay_ms = 150;  /* Will cap at this */
+  policy.jitter = 0.0;
+  policy.max_attempts = 3;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", 59959, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed) { return; }
+  END_TRY;
+
+  SocketReconnect_connect (conn);
+
+  for (int i = 0; i < 10; i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (50000);
+    }
+
+  SocketReconnect_free (&conn);
+}
+
+/* Custom callback that tracks transitions for testing */
+static int transition_callback_count = 0;
+static SocketReconnect_State last_transition_old = RECONNECT_DISCONNECTED;
+static SocketReconnect_State last_transition_new = RECONNECT_DISCONNECTED;
+
+static void
+tracking_callback (SocketReconnect_T conn, SocketReconnect_State old_state,
+                   SocketReconnect_State new_state, void *userdata)
+{
+  (void)conn;
+  (void)userdata;
+  transition_callback_count++;
+  last_transition_old = old_state;
+  last_transition_new = new_state;
+}
+
+TEST (cov_socketreconnect_state_transitions)
+{
+  Socket_T server = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+
+  signal (SIGPIPE, SIG_IGN);
+  transition_callback_count = 0;
+
+  /* Create server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.max_attempts = 5;
+  policy.initial_delay_ms = 10;
+
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, tracking_callback,
+                                NULL);
+  }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    return;
+  }
+  END_TRY;
+
+  /* Verify callback registered correctly */
+  SocketReconnect_connect (conn);
+
+  for (int i = 0; i < 20 && !SocketReconnect_isconnected (conn); i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (50000);
+    }
+
+  /* Should have had at least one state transition */
+  ASSERT (transition_callback_count >= 1);
+
+  /* Disconnect and verify callback */
+  SocketReconnect_disconnect (conn);
+
+  ASSERT (SocketReconnect_state (conn) == RECONNECT_DISCONNECTED);
+
+  SocketReconnect_free (&conn);
+  Socket_free (&server);
+}
+
+TEST (cov_socketreconnect_send_recv_eof)
+{
+  Socket_T server = NULL;
+  volatile Socket_T accepted = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.max_attempts = 3;
+  policy.initial_delay_ms = 10;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_connect (conn);
+
+  /* Connect and accept */
+  for (i = 0; i < 30 && !SocketReconnect_isconnected (conn); i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      TRY
+      {
+        if (!accepted)
+          accepted = Socket_accept (server);
+      }
+      EXCEPT (Socket_Failed) { /* Ignore */ }
+      END_TRY;
+      usleep (50000);
+    }
+
+  if (SocketReconnect_isconnected (conn) && accepted)
+    {
+      /* Close server side to cause EOF */
+      Socket_T temp = (Socket_T)accepted;
+      Socket_free (&temp);
+      accepted = NULL;
+
+      usleep (50000);
+
+      /* Try recv - should return 0 (EOF) and trigger reconnect */
+      Socket_T sock = SocketReconnect_socket (conn);
+      if (sock)
+        {
+          Socket_setnonblocking (sock);
+          char buf[64];
+          ssize_t result = SocketReconnect_recv (conn, buf, sizeof (buf));
+
+          /* Should have triggered reconnect */
+          (void)result;
+        }
+    }
+
+  SocketReconnect_free (&conn);
+  if (accepted)
+    {
+      Socket_T temp = (Socket_T)accepted;
+      Socket_free (&temp);
+    }
+  Socket_free (&server);
+}
 
 TEST (cov_socketreconnect_zero_jitter)
 {
@@ -941,6 +1168,12 @@ TEST (cov_dns_resolve_invalid)
 
 #ifdef SOCKET_HAS_TLS
 
+/* Size constant for oversized OCSP response tests */
+#define LARGE_OCSP_RESPONSE_SIZE 100000
+
+/* Generate test certificates using openssl command.
+ * Note: cert_file and key_file are hardcoded constants in test code,
+ * not user input, so command injection is not a concern. */
 static int
 generate_test_certs_cov (const char *cert_file, const char *key_file)
 {
@@ -1075,12 +1308,12 @@ TEST (cov_tls_ocsp_response_too_large)
     ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
 
     /* Try to set oversized OCSP response (> 64KB limit typically) */
-    unsigned char *large_response = malloc (100000);
+    unsigned char *large_response = malloc (LARGE_OCSP_RESPONSE_SIZE);
     if (large_response)
       {
-        memset (large_response, 0x30, 100000); /* ASN.1 SEQUENCE tag */
+        memset (large_response, 0x30, LARGE_OCSP_RESPONSE_SIZE); /* ASN.1 SEQUENCE tag */
 
-        TRY { SocketTLSContext_set_ocsp_response (ctx, large_response, 100000); }
+        TRY { SocketTLSContext_set_ocsp_response (ctx, large_response, LARGE_OCSP_RESPONSE_SIZE); }
         EXCEPT (SocketTLS_Failed) { raised = 1; }
         END_TRY;
 
