@@ -459,3 +459,211 @@ unsigned socket_util_hash_uint(unsigned value, unsigned table_size);
 ```
 
 **Golden Ratio Constant**: `HASH_GOLDEN_RATIO = 2654435761u` (2^32 * (sqrt(5)-1)/2)
+
+## 15. Testing Rules and Edge Cases (CRITICAL)
+
+All tests MUST pass with AddressSanitizer and LeakSanitizer enabled:
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
+ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:halt_on_error=1 ctest --output-on-failure
+```
+
+### Socket API Edge Cases
+
+#### AF_UNSPEC is Invalid for socket()
+- **NEVER** use `AF_UNSPEC` (0) as the domain argument to `socket()` - it will fail with `EAFNOSUPPORT`
+- `AF_UNSPEC` is ONLY valid for `getaddrinfo()` hints to indicate "any address family"
+- For socket creation, use `AF_INET`, `AF_INET6`, or `AF_UNIX` explicitly
+```c
+/* BAD - will fail with errno 97 (EAFNOSUPPORT) */
+int fd = socket(AF_UNSPEC, SOCK_STREAM, 0);  /* WRONG! */
+
+/* GOOD - use specific address family */
+int fd = socket(AF_INET, SOCK_STREAM, 0);    /* IPv4 */
+int fd = socket(AF_INET6, SOCK_STREAM, 0);   /* IPv6 */
+```
+
+#### Port 0 is Valid in POSIX
+- Port 0 tells the kernel to assign an available ephemeral port
+- To test "invalid port", use `-1` (negative), not `0`
+```c
+/* BAD - port 0 is valid, kernel assigns port */
+ASSERT_RAISES(Socket_bind(sock, "127.0.0.1", 0));  /* WRONG - won't raise! */
+
+/* GOOD - negative port is invalid */
+ASSERT_RAISES(Socket_bind(sock, "127.0.0.1", -1)); /* Will raise Socket_Failed */
+```
+
+#### Socket Creation Before DNS Resolution
+- When creating sockets for async connect, you cannot know the address family until DNS resolves
+- Use `AF_INET` as default for pool sockets (most common case)
+- Be aware IPv6-only hosts may require `AF_INET6` sockets after DNS resolution
+
+### TRY/EXCEPT Exception Handling Edge Cases
+
+#### Variables Must Be volatile Across setjmp/longjmp
+- Any variable modified inside a TRY block and used after EXCEPT/FINALLY **MUST** be `volatile`
+- GCC warns about this with `-Wclobbered` (enabled by `-Wall`)
+```c
+/* BAD - 'i' may be clobbered by longjmp */
+TRY
+{
+  for (int i = 0; i < 10; i++)  /* WRONG - not volatile */
+    do_something(i);
+}
+EXCEPT(Some_Error) { /* i is undefined here */ }
+END_TRY;
+
+/* GOOD - volatile preserves value across longjmp */
+volatile int i;
+TRY
+{
+  for (i = 0; i < 10; i++)
+    do_something(i);
+}
+EXCEPT(Some_Error) { /* i is safe to use */ }
+END_TRY;
+```
+
+#### Cleanup in All Code Paths
+- Resources allocated before TRY must be freed in ALL paths (success, exception, finally)
+- Initialize pointers to NULL before TRY for safe cleanup
+```c
+Socket_T socket = NULL;  /* Initialize before TRY */
+Arena_T arena = Arena_new();
+
+TRY
+{
+  socket = Socket_new(AF_INET, SOCK_STREAM, 0);
+  /* ... operations ... */
+}
+EXCEPT(Socket_Failed)
+{
+  /* Exception path - cleanup partial state */
+  if (socket)
+    Socket_free(&socket);
+}
+END_TRY;
+
+/* Normal cleanup - may be reached after EXCEPT or success */
+if (socket)
+  Socket_free(&socket);
+Arena_dispose(&arena);
+```
+
+### Async Operation Testing
+
+#### DNS Requests Must Be Cancelled
+- When testing async DNS/connect, cancel pending requests before freeing resources
+- Failure to cancel causes memory leaks (request context, socket, arena chunks)
+```c
+SocketDNS_Request_T req = NULL;
+Socket_T socket = NULL;
+
+TRY
+{
+  int result = SocketPool_prepare_connection(pool, dns, host, port, &socket, &req);
+  /* ... test assertions ... */
+  
+  /* CRITICAL: Cancel DNS request before cleanup */
+  if (req)
+    SocketDNS_cancel(dns, req);
+}
+EXCEPT(SocketPool_Failed)
+{
+  if (socket)
+    Socket_free(&socket);
+}
+END_TRY;
+
+if (socket)
+  Socket_free(&socket);
+```
+
+#### Async Tests Should Not Wait for Completion
+- Async operations require event loop integration to complete properly
+- Unit tests should verify the API can be called, not wait for async completion
+- Use unreachable addresses (RFC 5737 TEST-NET: `192.0.2.x`) for immediate failure
+```c
+/* GOOD - verify API exists without waiting for async completion */
+TRY
+{
+  SocketDNS_Request_T req = SocketPool_connect_async(pool, "192.0.2.1", 80, callback, NULL);
+  (void)req;  /* Don't wait - just verify no crash */
+}
+EXCEPT(SocketPool_Failed) { /* Expected - DNS/connect may fail */ }
+END_TRY;
+```
+
+### Memory Leak Prevention
+
+#### Initialize Arrays Before TRY
+```c
+Socket_T sockets[5];
+volatile int i;
+
+/* Initialize to NULL for safe cleanup */
+for (i = 0; i < 5; i++)
+  sockets[i] = NULL;
+
+TRY
+{
+  for (i = 0; i < 5; i++)
+    sockets[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
+}
+EXCEPT(Socket_Failed) { /* Cleanup handled below */ }
+END_TRY;
+
+/* Cleanup all - NULL-safe */
+for (i = 0; i < 5; i++)
+  if (sockets[i])
+    Socket_free(&sockets[i]);
+```
+
+#### Pool Connections May Be Closed by Resize
+- `SocketPool_resize()` may close connections to shrink the pool
+- Don't assume connections are still valid after resize
+- Use `SocketPool_get()` to verify connection still exists before operations
+
+### Test File Requirements
+
+#### Required Sanitizer Compatibility
+All tests MUST pass with these sanitizer options:
+```bash
+ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:halt_on_error=1
+UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
+```
+
+#### Signal Handling
+Tests that create sockets MUST ignore SIGPIPE:
+```c
+static void setup_signals(void)
+{
+  signal(SIGPIPE, SIG_IGN);
+}
+
+TEST(my_socket_test)
+{
+  setup_signals();
+  /* ... test code ... */
+}
+```
+
+#### GCC Diagnostic Suppression
+Suppress `-Wclobbered` warnings in test files when using volatile correctly:
+```c
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wclobbered"
+#endif
+```
+
+### Code Coverage Requirements
+
+Tests run with `gcov`/`lcov` for coverage analysis. When adding `lcov` patterns:
+- Use `--ignore-errors mismatch` for macro-generated code mismatches
+- Use `--ignore-errors unused` for patterns that may not match files
+```yaml
+# CI coverage generation
+lcov --remove coverage.info '/usr/*' '*/test/*' '*/benchmark*' \
+     --output-file coverage.info --ignore-errors mismatch,unused
+```
