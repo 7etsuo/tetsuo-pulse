@@ -307,6 +307,7 @@ set(TEST_SOURCES
     test_happy_eyeballs
     test_reconnect
     test_ratelimit
+    test_async
 )
 
 # Create test executables (link against object files to preserve constructor attributes)

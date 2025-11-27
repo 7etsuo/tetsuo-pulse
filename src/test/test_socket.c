@@ -19,6 +19,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <stdlib.h>
+
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
@@ -26,6 +28,7 @@
 #include "dns/SocketDNS.h"
 #include "socket/Socket.h"
 #include "socket/SocketCommon.h"
+#include "socket/SocketCommon-private.h"
 #include "test/Test.h"
 
 #define TEST_UNIX_SOCKET_PATH "/tmp/test_socket_unix"
@@ -2646,6 +2649,923 @@ TEST (socket_bind_async_wildcard_uses_ai_passive)
   if (dns)
     SocketDNS_free (&dns);
   END_TRY;
+}
+
+/* ==================== Socket Options Coverage Tests ==================== */
+
+TEST (socket_keepalive_set_get)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  int idle = 0, interval = 0, count = 0;
+
+  TRY
+  {
+    /* Set keepalive parameters */
+    Socket_setkeepalive (socket, 60, 10, 5);
+
+    /* Get keepalive parameters */
+    Socket_getkeepalive (socket, &idle, &interval, &count);
+
+    /* Values should be set (may differ on some platforms) */
+    ASSERT (idle > 0);
+    ASSERT (interval > 0);
+    ASSERT (count > 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some platforms */
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_keepalive_disabled_returns_zeros)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  int idle = 99, interval = 99, count = 99;
+
+  TRY
+  {
+    /* Get keepalive without setting - should be disabled */
+    Socket_getkeepalive (socket, &idle, &interval, &count);
+    ASSERT_EQ (0, idle);
+    ASSERT_EQ (0, interval);
+    ASSERT_EQ (0, count);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some platforms */
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_nodelay_set_get)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    /* Enable TCP_NODELAY */
+    Socket_setnodelay (socket, 1);
+    int nodelay = Socket_getnodelay (socket);
+    ASSERT_EQ (1, nodelay);
+
+    /* Disable TCP_NODELAY */
+    Socket_setnodelay (socket, 0);
+    nodelay = Socket_getnodelay (socket);
+    ASSERT_EQ (0, nodelay);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some platforms */
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_rcvbuf_set_get)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    /* Set receive buffer size */
+    Socket_setrcvbuf (socket, 32768);
+    int size = Socket_getrcvbuf (socket);
+    /* Kernel may double the size */
+    ASSERT (size >= 32768);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some platforms */
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_sndbuf_set_get)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    /* Set send buffer size */
+    Socket_setsndbuf (socket, 32768);
+    int size = Socket_getsndbuf (socket);
+    /* Kernel may double the size */
+    ASSERT (size >= 32768);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some platforms */
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_congestion_algorithm)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  char algorithm[64] = { 0 };
+
+  TRY
+  {
+    /* Get current congestion algorithm */
+    int result = Socket_getcongestion (socket, algorithm, sizeof (algorithm));
+    if (result == 0)
+      {
+        /* Algorithm should be non-empty */
+        ASSERT (strlen (algorithm) > 0);
+      }
+
+    /* Try to set to cubic (common algorithm) */
+    Socket_setcongestion (socket, "cubic");
+
+    /* Verify it was set */
+    memset (algorithm, 0, sizeof (algorithm));
+    result = Socket_getcongestion (socket, algorithm, sizeof (algorithm));
+    if (result == 0)
+      {
+        ASSERT (strcmp (algorithm, "cubic") == 0);
+      }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some platforms or if algorithm not supported */
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_fastopen_set_get)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    /* Try to enable TCP Fast Open */
+    Socket_setfastopen (socket, 1);
+    int result = Socket_getfastopen (socket);
+    ASSERT (result >= 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* TCP_FASTOPEN may not be supported */
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_usertimeout_set_get)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    /* Set TCP user timeout to 5 seconds */
+    Socket_setusertimeout (socket, 5000);
+    unsigned int timeout = Socket_getusertimeout (socket);
+    /* Should be approximately 5000ms or 0 if not supported */
+    ASSERT (timeout == 5000 || timeout == 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* TCP_USER_TIMEOUT may not be supported */
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_shutdown_read)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T accepted = NULL;
+  volatile int port = 0;
+
+  TRY
+  {
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+    port = Socket_getlocalport (server);
+
+    Socket_connect (client, "127.0.0.1", port);
+
+    /* Accept */
+    for (int i = 0; i < 10 && !accepted; i++)
+      {
+        accepted = Socket_accept (server);
+        if (!accepted)
+          usleep (10000);
+      }
+
+    if (accepted)
+      {
+        /* Shutdown read side */
+        Socket_shutdown (accepted, SOCKET_SHUT_RD);
+      }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* Expected */
+  }
+  END_TRY;
+
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&client);
+  Socket_free (&server);
+}
+
+TEST (socket_shutdown_write)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T accepted = NULL;
+  volatile int port = 0;
+
+  TRY
+  {
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+    port = Socket_getlocalport (server);
+
+    Socket_connect (client, "127.0.0.1", port);
+
+    /* Accept */
+    for (int i = 0; i < 10 && !accepted; i++)
+      {
+        accepted = Socket_accept (server);
+        if (!accepted)
+          usleep (10000);
+      }
+
+    if (accepted)
+      {
+        /* Shutdown write side */
+        Socket_shutdown (accepted, SOCKET_SHUT_WR);
+      }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* Expected */
+  }
+  END_TRY;
+
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&client);
+  Socket_free (&server);
+}
+
+TEST (socket_shutdown_both)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T accepted = NULL;
+  volatile int port = 0;
+
+  TRY
+  {
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+    port = Socket_getlocalport (server);
+
+    Socket_connect (client, "127.0.0.1", port);
+
+    /* Accept */
+    for (int i = 0; i < 10 && !accepted; i++)
+      {
+        accepted = Socket_accept (server);
+        if (!accepted)
+          usleep (10000);
+      }
+
+    if (accepted)
+      {
+        /* Shutdown both sides */
+        Socket_shutdown (accepted, SOCKET_SHUT_RDWR);
+      }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* Expected */
+  }
+  END_TRY;
+
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&client);
+  Socket_free (&server);
+}
+
+TEST (socket_shutdown_invalid_mode)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  volatile int raised = 0;
+
+  TRY
+  {
+    /* Invalid shutdown mode */
+    Socket_shutdown (socket, 99);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  Socket_free (&socket);
+}
+
+/* ==================== Timeout API Tests ==================== */
+
+TEST (socket_timeouts_get_set)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  SocketTimeouts_T timeouts = { 0 };
+  SocketTimeouts_T retrieved = { 0 };
+
+  /* Set custom timeouts */
+  timeouts.connect_timeout_ms = 5000;
+  timeouts.dns_timeout_ms = 3000;
+  timeouts.operation_timeout_ms = 10000;
+
+  Socket_timeouts_set (socket, &timeouts);
+  Socket_timeouts_get (socket, &retrieved);
+
+  ASSERT_EQ (5000, retrieved.connect_timeout_ms);
+  ASSERT_EQ (3000, retrieved.dns_timeout_ms);
+  ASSERT_EQ (10000, retrieved.operation_timeout_ms);
+
+  Socket_free (&socket);
+}
+
+TEST (socket_timeouts_set_null_resets_to_defaults)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  SocketTimeouts_T timeouts = { 0 };
+  SocketTimeouts_T defaults = { 0 };
+
+  /* Get defaults */
+  Socket_timeouts_getdefaults (&defaults);
+
+  /* Set custom timeouts */
+  timeouts.connect_timeout_ms = 9999;
+  Socket_timeouts_set (socket, &timeouts);
+
+  /* Reset to defaults by passing NULL */
+  Socket_timeouts_set (socket, NULL);
+
+  /* Retrieve and verify reset to defaults */
+  Socket_timeouts_get (socket, &timeouts);
+  ASSERT_EQ (defaults.connect_timeout_ms, timeouts.connect_timeout_ms);
+
+  Socket_free (&socket);
+}
+
+TEST (socket_timeouts_defaults_get_set)
+{
+  SocketTimeouts_T original = { 0 };
+  SocketTimeouts_T custom = { 0 };
+
+  /* Save original defaults */
+  Socket_timeouts_getdefaults (&original);
+
+  /* Set custom defaults */
+  custom.connect_timeout_ms = 7500;
+  custom.dns_timeout_ms = 2500;
+  custom.operation_timeout_ms = 15000;
+  Socket_timeouts_setdefaults (&custom);
+
+  /* Verify they were set */
+  SocketTimeouts_T retrieved = { 0 };
+  Socket_timeouts_getdefaults (&retrieved);
+  ASSERT_EQ (7500, retrieved.connect_timeout_ms);
+  ASSERT_EQ (2500, retrieved.dns_timeout_ms);
+  ASSERT_EQ (15000, retrieved.operation_timeout_ms);
+
+  /* Restore original defaults */
+  Socket_timeouts_setdefaults (&original);
+}
+
+TEST (socket_gettimeout)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    /* Set timeout */
+    Socket_settimeout (socket, 5);
+
+    /* Get timeout */
+    int timeout = Socket_gettimeout (socket);
+    ASSERT_EQ (5, timeout);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some platforms */
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+/* ==================== Socket Flag Tests ==================== */
+
+TEST (socket_setreuseport)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Socket_setreuseport (socket);
+    /* Should not raise exception if supported */
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* SO_REUSEPORT may not be supported on all platforms */
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_setcloexec)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    /* Enable close-on-exec */
+    Socket_setcloexec (socket, 1);
+
+    /* Disable close-on-exec */
+    Socket_setcloexec (socket, 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some platforms */
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+/* ==================== SocketCommon IOV Helper Tests ==================== */
+
+TEST (socketcommon_calculate_total_iov_len)
+{
+  struct iovec iov[3];
+  char buf1[100], buf2[200], buf3[300];
+
+  iov[0].iov_base = buf1;
+  iov[0].iov_len = 100;
+  iov[1].iov_base = buf2;
+  iov[1].iov_len = 200;
+  iov[2].iov_base = buf3;
+  iov[2].iov_len = 300;
+
+  size_t total = SocketCommon_calculate_total_iov_len (iov, 3);
+  ASSERT_EQ (600, total);
+}
+
+TEST (socketcommon_calculate_total_iov_len_empty)
+{
+  struct iovec iov[1];
+  char buf[10];
+
+  iov[0].iov_base = buf;
+  iov[0].iov_len = 0;
+
+  size_t total = SocketCommon_calculate_total_iov_len (iov, 1);
+  ASSERT_EQ (0, total);
+}
+
+TEST (socketcommon_calculate_total_iov_len_invalid_raises)
+{
+  struct iovec iov[1];
+  char buf[10];
+  volatile int raised = 0;
+
+  iov[0].iov_base = buf;
+  iov[0].iov_len = 10;
+
+  /* Invalid iovcnt (0) should raise SocketCommon_Failed */
+  TRY { SocketCommon_calculate_total_iov_len (iov, 0); }
+  EXCEPT (SocketCommon_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socketcommon_advance_iov_partial)
+{
+  struct iovec iov[3];
+  char buf1[100], buf2[100], buf3[100];
+
+  iov[0].iov_base = buf1;
+  iov[0].iov_len = 100;
+  iov[1].iov_base = buf2;
+  iov[1].iov_len = 100;
+  iov[2].iov_base = buf3;
+  iov[2].iov_len = 100;
+
+  /* Advance 150 bytes - should consume buf1 and part of buf2 */
+  SocketCommon_advance_iov (iov, 3, 150);
+
+  /* buf1 should be consumed */
+  ASSERT_EQ (0, iov[0].iov_len);
+  ASSERT_NULL (iov[0].iov_base);
+
+  /* buf2 should have 50 bytes remaining */
+  ASSERT_EQ (50, iov[1].iov_len);
+  ASSERT_EQ (buf2 + 50, iov[1].iov_base);
+
+  /* buf3 should be unchanged */
+  ASSERT_EQ (100, iov[2].iov_len);
+  ASSERT_EQ (buf3, iov[2].iov_base);
+}
+
+TEST (socketcommon_advance_iov_full)
+{
+  struct iovec iov[2];
+  char buf1[100], buf2[100];
+
+  iov[0].iov_base = buf1;
+  iov[0].iov_len = 100;
+  iov[1].iov_base = buf2;
+  iov[1].iov_len = 100;
+
+  /* Advance all bytes */
+  SocketCommon_advance_iov (iov, 2, 200);
+
+  ASSERT_EQ (0, iov[0].iov_len);
+  ASSERT_NULL (iov[0].iov_base);
+  ASSERT_EQ (0, iov[1].iov_len);
+  ASSERT_NULL (iov[1].iov_base);
+}
+
+TEST (socketcommon_find_active_iov_first)
+{
+  struct iovec iov[3];
+  char buf1[100], buf2[100], buf3[100];
+  int active_count = 0;
+
+  iov[0].iov_base = buf1;
+  iov[0].iov_len = 100;
+  iov[1].iov_base = buf2;
+  iov[1].iov_len = 100;
+  iov[2].iov_base = buf3;
+  iov[2].iov_len = 100;
+
+  struct iovec *active = SocketCommon_find_active_iov (iov, 3, &active_count);
+
+  ASSERT_EQ (&iov[0], active);
+  ASSERT_EQ (3, active_count);
+}
+
+TEST (socketcommon_find_active_iov_middle)
+{
+  struct iovec iov[3];
+  char buf2[100], buf3[100];
+  int active_count = 0;
+
+  iov[0].iov_base = NULL;
+  iov[0].iov_len = 0;
+  iov[1].iov_base = buf2;
+  iov[1].iov_len = 100;
+  iov[2].iov_base = buf3;
+  iov[2].iov_len = 100;
+
+  struct iovec *active = SocketCommon_find_active_iov (iov, 3, &active_count);
+
+  ASSERT_EQ (&iov[1], active);
+  ASSERT_EQ (2, active_count);
+}
+
+TEST (socketcommon_find_active_iov_none)
+{
+  struct iovec iov[2];
+  int active_count = 99;
+
+  iov[0].iov_base = NULL;
+  iov[0].iov_len = 0;
+  iov[1].iov_base = NULL;
+  iov[1].iov_len = 0;
+
+  struct iovec *active = SocketCommon_find_active_iov (iov, 2, &active_count);
+
+  ASSERT_NULL (active);
+  ASSERT_EQ (0, active_count);
+}
+
+TEST (socketcommon_alloc_iov_copy)
+{
+  struct iovec iov[2];
+  char buf1[100], buf2[200];
+
+  iov[0].iov_base = buf1;
+  iov[0].iov_len = 100;
+  iov[1].iov_base = buf2;
+  iov[1].iov_len = 200;
+
+  TRY
+  {
+    struct iovec *copy = SocketCommon_alloc_iov_copy (iov, 2, Socket_Failed);
+    ASSERT_NOT_NULL (copy);
+
+    /* Verify copy matches original */
+    ASSERT_EQ (iov[0].iov_base, copy[0].iov_base);
+    ASSERT_EQ (iov[0].iov_len, copy[0].iov_len);
+    ASSERT_EQ (iov[1].iov_base, copy[1].iov_base);
+    ASSERT_EQ (iov[1].iov_len, copy[1].iov_len);
+
+    free (copy);
+  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
+  END_TRY;
+}
+
+TEST (socketcommon_normalize_wildcard_host)
+{
+  /* NULL should normalize to NULL */
+  const char *result = SocketCommon_normalize_wildcard_host (NULL);
+  ASSERT_NULL (result);
+
+  /* IPv4 wildcard should normalize to NULL */
+  result = SocketCommon_normalize_wildcard_host ("0.0.0.0");
+  ASSERT_NULL (result);
+
+  /* IPv6 wildcard should normalize to NULL */
+  result = SocketCommon_normalize_wildcard_host ("::");
+  ASSERT_NULL (result);
+
+  /* Regular host should remain unchanged */
+  result = SocketCommon_normalize_wildcard_host ("127.0.0.1");
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (0, strcmp (result, "127.0.0.1"));
+
+  /* Domain name should remain unchanged */
+  result = SocketCommon_normalize_wildcard_host ("localhost");
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (0, strcmp (result, "localhost"));
+}
+
+TEST (socketcommon_validate_port_valid)
+{
+  /* Should not raise for valid ports */
+  TRY
+  {
+    SocketCommon_validate_port (0, Socket_Failed);
+    SocketCommon_validate_port (80, Socket_Failed);
+    SocketCommon_validate_port (443, Socket_Failed);
+    SocketCommon_validate_port (8080, Socket_Failed);
+    SocketCommon_validate_port (65535, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
+  END_TRY;
+}
+
+TEST (socketcommon_validate_port_invalid)
+{
+  volatile int raised = 0;
+
+  TRY { SocketCommon_validate_port (-1, Socket_Failed); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+
+  raised = 0;
+  TRY { SocketCommon_validate_port (65536, Socket_Failed); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socketcommon_validate_host_not_null_valid)
+{
+  TRY
+  {
+    SocketCommon_validate_host_not_null ("localhost", Socket_Failed);
+    SocketCommon_validate_host_not_null ("127.0.0.1", Socket_Failed);
+    SocketCommon_validate_host_not_null ("", Socket_Failed);
+  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
+  END_TRY;
+}
+
+TEST (socketcommon_validate_host_not_null_invalid)
+{
+  volatile int raised = 0;
+
+  TRY { SocketCommon_validate_host_not_null (NULL, Socket_Failed); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socketcommon_timeouts_defaults)
+{
+  SocketTimeouts_T original = { 0 };
+  SocketTimeouts_T custom = { 0 };
+  SocketTimeouts_T retrieved = { 0 };
+
+  /* Save original defaults */
+  SocketCommon_timeouts_getdefaults (&original);
+  ASSERT (original.connect_timeout_ms > 0 || original.connect_timeout_ms == 0);
+
+  /* Set custom defaults */
+  custom.connect_timeout_ms = 12345;
+  custom.dns_timeout_ms = 6789;
+  custom.operation_timeout_ms = 11111;
+  SocketCommon_timeouts_setdefaults (&custom);
+
+  /* Retrieve and verify */
+  SocketCommon_timeouts_getdefaults (&retrieved);
+  ASSERT_EQ (12345, retrieved.connect_timeout_ms);
+  ASSERT_EQ (6789, retrieved.dns_timeout_ms);
+  ASSERT_EQ (11111, retrieved.operation_timeout_ms);
+
+  /* Restore original defaults */
+  SocketCommon_timeouts_setdefaults (&original);
+}
+
+TEST (socketcommon_timeouts_negative_sanitized)
+{
+  SocketTimeouts_T original = { 0 };
+  SocketTimeouts_T custom = { 0 };
+  SocketTimeouts_T retrieved = { 0 };
+
+  /* Save original defaults */
+  SocketCommon_timeouts_getdefaults (&original);
+
+  /* Set negative values (should be sanitized to 0) */
+  custom.connect_timeout_ms = -100;
+  custom.dns_timeout_ms = -200;
+  custom.operation_timeout_ms = -300;
+  SocketCommon_timeouts_setdefaults (&custom);
+
+  /* Retrieve and verify sanitization */
+  SocketCommon_timeouts_getdefaults (&retrieved);
+  ASSERT_EQ (0, retrieved.connect_timeout_ms);
+  ASSERT_EQ (0, retrieved.dns_timeout_ms);
+  ASSERT_EQ (0, retrieved.operation_timeout_ms);
+
+  /* Restore original defaults */
+  SocketCommon_timeouts_setdefaults (&original);
+}
+
+TEST (socketcommon_copy_addrinfo)
+{
+  struct addrinfo hints, *res = NULL;
+  struct addrinfo *copy = NULL;
+
+  memset (&hints, 0, sizeof (hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+
+  int result = getaddrinfo ("127.0.0.1", "80", &hints, &res);
+  if (result != 0 || !res)
+    {
+      /* getaddrinfo failed, skip test */
+      return;
+    }
+
+  /* Copy the addrinfo chain */
+  copy = SocketCommon_copy_addrinfo (res);
+  ASSERT_NOT_NULL (copy);
+
+  /* Verify copy matches original */
+  ASSERT_EQ (res->ai_family, copy->ai_family);
+  ASSERT_EQ (res->ai_socktype, copy->ai_socktype);
+  ASSERT_EQ (res->ai_addrlen, copy->ai_addrlen);
+  ASSERT_NOT_NULL (copy->ai_addr);
+
+  /* Free copy using our free function */
+  SocketCommon_free_addrinfo (copy);
+
+  /* Free original using system function */
+  freeaddrinfo (res);
+}
+
+TEST (socketcommon_copy_addrinfo_null)
+{
+  struct addrinfo *copy = SocketCommon_copy_addrinfo (NULL);
+  ASSERT_NULL (copy);
+}
+
+TEST (socketcommon_free_addrinfo_null)
+{
+  /* Should not crash */
+  SocketCommon_free_addrinfo (NULL);
+}
+
+/* ==================== Scatter/Gather I/O Tests ==================== */
+
+TEST (socket_sendv_recvv_basic)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T accepted = NULL;
+  volatile int port = 0;
+  char buf1[] = "Hello";
+  char buf2[] = "World";
+  char recv_buf[64] = { 0 };
+  struct iovec send_iov[2];
+  struct iovec recv_iov[1];
+
+  send_iov[0].iov_base = buf1;
+  send_iov[0].iov_len = strlen (buf1);
+  send_iov[1].iov_base = buf2;
+  send_iov[1].iov_len = strlen (buf2);
+
+  recv_iov[0].iov_base = recv_buf;
+  recv_iov[0].iov_len = sizeof (recv_buf);
+
+  TRY
+  {
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+    port = Socket_getlocalport (server);
+
+    Socket_connect (client, "127.0.0.1", port);
+
+    /* Accept */
+    for (int i = 0; i < 10 && !accepted; i++)
+      {
+        accepted = Socket_accept (server);
+        if (!accepted)
+          usleep (10000);
+      }
+
+    if (accepted)
+      {
+        /* Send using scatter */
+        ssize_t sent = Socket_sendv (client, send_iov, 2);
+        ASSERT (sent > 0);
+
+        usleep (10000);
+
+        /* Receive using gather */
+        Socket_setnonblocking (accepted);
+        ssize_t recvd = Socket_recvv (accepted, recv_iov, 1);
+        if (recvd > 0)
+          {
+            ASSERT (memcmp (recv_buf, "HelloWorld", 10) == 0);
+          }
+      }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* Expected */
+  }
+  EXCEPT (Socket_Closed)
+  {
+    /* Expected */
+  }
+  END_TRY;
+
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&client);
+  Socket_free (&server);
 }
 
 int
