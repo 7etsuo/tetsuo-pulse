@@ -16,6 +16,7 @@
 #include "core/Except.h"
 #include "dns/SocketDNS.h"
 #include "pool/SocketPool.h"
+#include "pool/SocketPool-private.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 #include "socket/SocketReconnect.h"
@@ -1343,6 +1344,461 @@ TEST (socketpool_activity_time_updated)
   END_TRY;
 
   Socket_free (&socket);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+/* ==================== Input Validation Tests ==================== */
+
+TEST (socketpool_new_null_arena_raises)
+{
+  volatile int raised = 0;
+
+  TRY { SocketPool_new (NULL, 100, 1024); }
+  EXCEPT (SocketPool_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+}
+
+TEST (socketpool_new_invalid_maxconns_raises)
+{
+  Arena_T arena = Arena_new ();
+  volatile int raised = 0;
+
+  TRY { SocketPool_new (arena, 0, 1024); }
+  EXCEPT (SocketPool_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_new_invalid_bufsize_raises)
+{
+  Arena_T arena = Arena_new ();
+  volatile int raised = 0;
+
+  TRY { SocketPool_new (arena, 100, 0); }
+  EXCEPT (SocketPool_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+  Arena_dispose (&arena);
+}
+
+/* ==================== Reconnection Feature Tests ==================== */
+
+TEST (socketpool_enable_reconnect_success)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Connection_T conn = SocketPool_add (pool, socket);
+    ASSERT_NOT_NULL (conn);
+
+    /* Enable reconnect for this connection */
+    SocketPool_enable_reconnect (pool, conn, "127.0.0.1", 8080);
+
+    /* Verify reconnect is enabled */
+    int has = Connection_has_reconnect (conn);
+    ASSERT_NE (has, 0);
+
+    SocketReconnect_T r = Connection_reconnect (conn);
+    ASSERT_NOT_NULL (r);
+  }
+  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  END_TRY;
+
+  Socket_free (&socket);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_disable_reconnect_with_active)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Connection_T conn = SocketPool_add (pool, socket);
+    ASSERT_NOT_NULL (conn);
+
+    /* Enable then disable reconnect */
+    SocketPool_enable_reconnect (pool, conn, "127.0.0.1", 8080);
+    ASSERT_NE (Connection_has_reconnect (conn), 0);
+
+    SocketPool_disable_reconnect (pool, conn);
+    ASSERT_EQ (Connection_has_reconnect (conn), 0);
+  }
+  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  END_TRY;
+
+  Socket_free (&socket);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_process_reconnects_with_active)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Connection_T conn = SocketPool_add (pool, socket);
+    ASSERT_NOT_NULL (conn);
+
+    /* Enable reconnect */
+    SocketPool_enable_reconnect (pool, conn, "127.0.0.1", 8080);
+
+    /* Process reconnects - should not crash with active reconnect context */
+    SocketPool_process_reconnects (pool);
+  }
+  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  END_TRY;
+
+  Socket_free (&socket);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_reconnect_timeout_with_active)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Connection_T conn = SocketPool_add (pool, socket);
+    ASSERT_NOT_NULL (conn);
+
+    /* Enable reconnect */
+    SocketPool_enable_reconnect (pool, conn, "127.0.0.1", 8080);
+
+    /* Get timeout - should return valid value with active reconnect */
+    int timeout = SocketPool_reconnect_timeout_ms (pool);
+    /* Timeout may be -1 if no pending action, or >= 0 if pending */
+    (void)timeout;
+  }
+  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  END_TRY;
+
+  Socket_free (&socket);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_enable_reconnect_with_policy)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  SocketReconnect_Policy_T policy;
+
+  /* Set pool-level reconnect policy */
+  SocketReconnect_policy_defaults (&policy);
+  policy.max_attempts = 5;
+  policy.initial_delay_ms = 200;
+  SocketPool_set_reconnect_policy (pool, &policy);
+
+  TRY
+  {
+    Connection_T conn = SocketPool_add (pool, socket);
+    ASSERT_NOT_NULL (conn);
+
+    /* Enable reconnect - should use pool policy */
+    SocketPool_enable_reconnect (pool, conn, "127.0.0.1", 8080);
+
+    ASSERT_NE (Connection_has_reconnect (conn), 0);
+  }
+  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  END_TRY;
+
+  Socket_free (&socket);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_free_with_reconnect_contexts)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Connection_T conn = SocketPool_add (pool, socket);
+    ASSERT_NOT_NULL (conn);
+
+    /* Enable reconnect */
+    SocketPool_enable_reconnect (pool, conn, "127.0.0.1", 8080);
+  }
+  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  END_TRY;
+
+  /* Free pool with active reconnect context - covers free_reconnect_contexts */
+  Socket_free (&socket);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_free_with_dns)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
+  SocketDNS_T dns = NULL;
+
+  TRY
+  {
+    /* Create DNS resolver and set it on pool directly */
+    dns = SocketDNS_new ();
+    ASSERT_NOT_NULL (dns);
+
+    /* Set DNS resolver on pool (access internal field) */
+    pool->dns = dns;
+    dns = NULL; /* Transfer ownership to pool */
+  }
+  EXCEPT (SocketDNS_Failed) { ASSERT (0); }
+  END_TRY;
+
+  /* Free pool with DNS resolver - covers free_dns_resolver path (line 521) */
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_reconnect_timeout_multiple_connections)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
+  Socket_T sock1 = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T sock2 = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T sock3 = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Connection_T conn1 = SocketPool_add (pool, sock1);
+    Connection_T conn2 = SocketPool_add (pool, sock2);
+    Connection_T conn3 = SocketPool_add (pool, sock3);
+    ASSERT_NOT_NULL (conn1);
+    ASSERT_NOT_NULL (conn2);
+    ASSERT_NOT_NULL (conn3);
+
+    /* Enable reconnect on multiple connections to exercise timeout logic */
+    SocketPool_enable_reconnect (pool, conn1, "127.0.0.1", 8080);
+    SocketPool_enable_reconnect (pool, conn2, "127.0.0.1", 8081);
+    SocketPool_enable_reconnect (pool, conn3, "127.0.0.1", 8082);
+
+    /* Get timeout - exercises update_min_timeout with multiple values */
+    int timeout = SocketPool_reconnect_timeout_ms (pool);
+    /* Timeout will be the minimum of all connection timeouts */
+    (void)timeout;
+
+    /* Process reconnects to advance state machines */
+    SocketPool_process_reconnects (pool);
+
+    /* Check timeout again after processing */
+    timeout = SocketPool_reconnect_timeout_ms (pool);
+    (void)timeout;
+  }
+  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  END_TRY;
+
+  Socket_free (&sock1);
+  Socket_free (&sock2);
+  Socket_free (&sock3);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_reconnect_with_backoff_timeout)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
+  Socket_T sock1 = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T sock2 = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Connection_T conn1 = SocketPool_add (pool, sock1);
+    Connection_T conn2 = SocketPool_add (pool, sock2);
+    ASSERT_NOT_NULL (conn1);
+    ASSERT_NOT_NULL (conn2);
+
+    /* Enable reconnect with short policy to quickly enter backoff */
+    SocketReconnect_Policy_T policy;
+    SocketReconnect_policy_defaults (&policy);
+    policy.initial_delay_ms = 10;
+    policy.max_delay_ms = 50;
+    policy.max_attempts = 1;
+    SocketPool_set_reconnect_policy (pool, &policy);
+
+    /* Enable reconnect pointing to localhost (fast fail if nothing listening) */
+    SocketPool_enable_reconnect (pool, conn1, "127.0.0.1", 59999);
+    SocketPool_enable_reconnect (pool, conn2, "127.0.0.1", 59998);
+
+    /* Get reconnect contexts and set non-blocking for fast failure */
+    SocketReconnect_T r1 = Connection_reconnect (conn1);
+    SocketReconnect_T r2 = Connection_reconnect (conn2);
+
+    /* Don't actually connect - just verify the timeout logic works */
+    /* This exercises update_min_timeout with -1 values initially */
+    int timeout = SocketPool_reconnect_timeout_ms (pool);
+    (void)timeout;
+    (void)r1;
+    (void)r2;
+  }
+  EXCEPT (SocketPool_Failed) { /* May fail, that's ok */ }
+  EXCEPT (SocketReconnect_Failed) { /* May fail, that's ok */ }
+  END_TRY;
+
+  Socket_free (&sock1);
+  Socket_free (&sock2);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+/* ==================== Hash Chain Traversal Tests ==================== */
+
+TEST (socketpool_hash_chain_removal_middle)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  /* Use larger pool for more sockets to increase collision probability */
+  SocketPool_T pool = SocketPool_new (arena, 200, 1024);
+
+#define NUM_SOCKETS 150
+  Socket_T sockets[NUM_SOCKETS];
+  Connection_T conns[NUM_SOCKETS];
+  volatile int i;
+
+  /* Initialize to NULL for safe cleanup */
+  for (i = 0; i < NUM_SOCKETS; i++)
+    {
+      sockets[i] = NULL;
+      conns[i] = NULL;
+    }
+
+  TRY
+  {
+    /* Create many sockets - with 150 sockets and 1021 buckets,
+       probability of at least one collision is very high */
+    for (i = 0; i < NUM_SOCKETS; i++)
+      {
+        sockets[i] = Socket_new (AF_INET, SOCK_STREAM, 0);
+        conns[i] = SocketPool_add (pool, sockets[i]);
+        ASSERT_NOT_NULL (conns[i]);
+      }
+
+    /* Remove sockets from the middle to exercise hash chain traversal.
+       If any bucket has multiple entries, this will traverse the chain. */
+    for (i = 30; i < 120; i++)
+      {
+        SocketPool_remove (pool, sockets[i]);
+      }
+
+    /* Verify remaining sockets can still be found - exercises find_slot chain */
+    for (i = 0; i < 30; i++)
+      {
+        Connection_T found = SocketPool_get (pool, sockets[i]);
+        ASSERT_NOT_NULL (found);
+      }
+    for (i = 120; i < NUM_SOCKETS; i++)
+      {
+        Connection_T found = SocketPool_get (pool, sockets[i]);
+        ASSERT_NOT_NULL (found);
+      }
+  }
+  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  END_TRY;
+
+  /* Cleanup */
+  for (i = 0; i < NUM_SOCKETS; i++)
+    {
+      if (sockets[i])
+        {
+          SocketPool_remove (pool, sockets[i]);
+          Socket_free (&sockets[i]);
+        }
+    }
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+#undef NUM_SOCKETS
+}
+
+TEST (socketpool_find_slot_chain_traversal)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+  Socket_T sockets[30];
+  volatile int i;
+
+  for (i = 0; i < 30; i++)
+    sockets[i] = NULL;
+
+  TRY
+  {
+    /* Add many sockets */
+    for (i = 0; i < 30; i++)
+      {
+        sockets[i] = Socket_new (AF_INET, SOCK_STREAM, 0);
+        SocketPool_add (pool, sockets[i]);
+      }
+
+    /* Lookup each socket multiple times to exercise find_slot chain traversal */
+    for (i = 0; i < 30; i++)
+      {
+        Connection_T conn = SocketPool_get (pool, sockets[i]);
+        ASSERT_NOT_NULL (conn);
+        ASSERT_EQ (Connection_socket (conn), sockets[i]);
+      }
+
+    /* Remove some and verify others still found */
+    for (i = 0; i < 15; i++)
+      {
+        SocketPool_remove (pool, sockets[i]);
+      }
+
+    for (i = 15; i < 30; i++)
+      {
+        Connection_T conn = SocketPool_get (pool, sockets[i]);
+        ASSERT_NOT_NULL (conn);
+      }
+  }
+  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  END_TRY;
+
+  for (i = 0; i < 30; i++)
+    {
+      if (sockets[i])
+        Socket_free (&sockets[i]);
+    }
+
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 }

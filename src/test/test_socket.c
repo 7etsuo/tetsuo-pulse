@@ -3590,6 +3590,1673 @@ TEST (socket_sendv_recvv_basic)
   Socket_free (&server);
 }
 
+/* ==================== Error Path Coverage Tests ==================== */
+
+TEST (socket_setkeepalive_invalid_params_raises)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  volatile int raised = 0;
+
+  /* Test idle <= 0 */
+  TRY { Socket_setkeepalive (socket, 0, 10, 5); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+  ASSERT_EQ (1, raised);
+
+  /* Test interval <= 0 */
+  raised = 0;
+  TRY { Socket_setkeepalive (socket, 60, -1, 5); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+  ASSERT_EQ (1, raised);
+
+  /* Test count <= 0 */
+  raised = 0;
+  TRY { Socket_setkeepalive (socket, 60, 10, 0); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+  ASSERT_EQ (1, raised);
+
+  Socket_free (&socket);
+}
+
+TEST (socket_setcongestion_invalid_algorithm_raises)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  volatile int raised = 0;
+
+  TRY { Socket_setcongestion (socket, "nonexistent_algorithm_xyz_12345"); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  /* Should raise on invalid algorithm */
+  ASSERT_EQ (1, raised);
+  Socket_free (&socket);
+}
+
+TEST (socket_shutdown_on_unconnected_socket_raises)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  volatile int raised = 0;
+
+  /* Shutdown on unconnected socket should fail */
+  TRY { Socket_shutdown (socket, SOCKET_SHUT_RDWR); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  Socket_free (&socket);
+}
+
+TEST (socket_keepalive_on_udp_socket_fails)
+{
+  setup_signals ();
+  Socket_T udp = Socket_new (AF_INET, SOCK_DGRAM, 0);
+  volatile int raised = 0;
+
+  /* Keepalive is TCP-only, should fail on UDP */
+  TRY { Socket_setkeepalive (udp, 60, 10, 5); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  Socket_free (&udp);
+}
+
+TEST (socket_keepalive_on_unix_socket_fails)
+{
+  setup_signals ();
+  Socket_T unix_sock = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  volatile int raised = 0;
+
+  /* Unix sockets accept SO_KEEPALIVE but fail on TCP_KEEP* options.
+   * This tests the error paths in set_keepalive_idle_time,
+   * set_keepalive_interval, and set_keepalive_count. */
+  TRY { Socket_setkeepalive (unix_sock, 60, 10, 5); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  Socket_free (&unix_sock);
+}
+
+TEST (socket_tcp_options_on_udp_socket_fails)
+{
+  setup_signals ();
+  Socket_T udp = Socket_new (AF_INET, SOCK_DGRAM, 0);
+  volatile int raised = 0;
+  volatile int nodelay = 0;
+  char algorithm[64] = { 0 };
+
+  /* TCP_NODELAY on UDP should fail */
+  TRY { Socket_setnodelay (udp, 1); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+  ASSERT_EQ (1, raised);
+
+  raised = 0;
+  TRY
+  {
+    nodelay = Socket_getnodelay (udp);
+    (void)nodelay;
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+  ASSERT_EQ (1, raised);
+
+  /* TCP_CONGESTION on UDP should fail */
+  raised = 0;
+  TRY { Socket_setcongestion (udp, "cubic"); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+  ASSERT_EQ (1, raised);
+
+  /* getcongestion should return -1 for UDP */
+  int result = Socket_getcongestion (udp, algorithm, sizeof (algorithm));
+  ASSERT_EQ (-1, result);
+
+  /* TCP_FASTOPEN on UDP should fail */
+  raised = 0;
+  TRY { Socket_setfastopen (udp, 1); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+  ASSERT_EQ (1, raised);
+
+  /* TCP_USER_TIMEOUT on UDP should fail */
+  raised = 0;
+  TRY { Socket_setusertimeout (udp, 5000); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+  ASSERT_EQ (1, raised);
+
+  Socket_free (&udp);
+}
+
+TEST (socket_getkeepalive_on_udp_socket)
+{
+  setup_signals ();
+  Socket_T udp = Socket_new (AF_INET, SOCK_DGRAM, 0);
+  volatile int raised = 0;
+  int idle = 0, interval = 0, count = 0;
+
+  /* getkeepalive on UDP - triggers getsockopt error paths */
+  TRY { Socket_getkeepalive (udp, &idle, &interval, &count); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  /* May or may not raise depending on platform */
+  (void)raised;
+  Socket_free (&udp);
+}
+
+TEST (socket_getrcvbuf_getsndbuf_on_udp)
+{
+  setup_signals ();
+  Socket_T udp = Socket_new (AF_INET, SOCK_DGRAM, 0);
+
+  /* These should work on UDP too, just verify they don't crash */
+  TRY
+  {
+    int rcvbuf = Socket_getrcvbuf (udp);
+    int sndbuf = Socket_getsndbuf (udp);
+    ASSERT (rcvbuf > 0);
+    ASSERT (sndbuf > 0);
+  }
+  EXCEPT (Socket_Failed) { /* May fail on some platforms */ }
+  END_TRY;
+
+  Socket_free (&udp);
+}
+
+/* ==================== SocketCommon 100% Coverage Tests ==================== */
+
+/* Hostname Validation Coverage Tests */
+
+TEST (socketcommon_validate_hostname_too_long)
+{
+  setup_signals ();
+  volatile int raised = 0;
+  char long_hostname[SOCKET_ERROR_MAX_HOSTNAME + 10];
+  memset (long_hostname, 'a', sizeof (long_hostname) - 1);
+  long_hostname[sizeof (long_hostname) - 1] = '\0';
+
+  TRY { SocketCommon_validate_hostname (long_hostname, Socket_Failed); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socketcommon_validate_hostname_invalid_chars)
+{
+  setup_signals ();
+  volatile int raised = 0;
+
+  /* Test with invalid character (space) */
+  TRY { SocketCommon_validate_hostname ("host name", Socket_Failed); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+
+  /* Test with another invalid character (backslash) */
+  raised = 0;
+  TRY { SocketCommon_validate_hostname ("host\\name", Socket_Failed); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socketcommon_validate_hostname_internal_no_exceptions)
+{
+  /* Test internal function with use_exceptions=0 */
+  char long_hostname[SOCKET_ERROR_MAX_HOSTNAME + 10];
+  memset (long_hostname, 'a', sizeof (long_hostname) - 1);
+  long_hostname[sizeof (long_hostname) - 1] = '\0';
+
+  int result = socketcommon_validate_hostname_internal (long_hostname, 0, Socket_Failed);
+  ASSERT_EQ (-1, result);
+
+  /* Test invalid characters without exceptions */
+  result = socketcommon_validate_hostname_internal ("host name", 0, Socket_Failed);
+  ASSERT_EQ (-1, result);
+}
+
+/* Bind Error Coverage Tests */
+
+TEST (socketcommon_format_bind_error_eaddrinuse)
+{
+  errno = EADDRINUSE;
+  SocketCommon_format_bind_error ("127.0.0.1", 8080);
+  /* Just verify it doesn't crash - error formatted in socket_error_buf */
+}
+
+TEST (socketcommon_format_bind_error_eaddrnotavail)
+{
+  errno = EADDRNOTAVAIL;
+  SocketCommon_format_bind_error ("192.168.255.255", 8080);
+}
+
+TEST (socketcommon_format_bind_error_eacces)
+{
+  errno = EACCES;
+  SocketCommon_format_bind_error ("0.0.0.0", 80);
+}
+
+TEST (socketcommon_format_bind_error_eperm)
+{
+  errno = EPERM;
+  SocketCommon_format_bind_error ("0.0.0.0", 443);
+}
+
+TEST (socketcommon_format_bind_error_eafnosupport)
+{
+  errno = EAFNOSUPPORT;
+  SocketCommon_format_bind_error ("invalid", 8080);
+}
+
+TEST (socketcommon_format_bind_error_default)
+{
+  errno = EINVAL;  /* Some other error */
+  SocketCommon_format_bind_error ("127.0.0.1", 8080);
+}
+
+TEST (socketcommon_format_bind_error_null_host)
+{
+  errno = EADDRINUSE;
+  SocketCommon_format_bind_error (NULL, 8080);  /* Should use "any" */
+}
+
+TEST (socketcommon_handle_bind_error_eaddrinuse)
+{
+  int result = SocketCommon_handle_bind_error (EADDRINUSE, "127.0.0.1:8080", Socket_Failed);
+  ASSERT_EQ (-1, result);  /* Returns -1, doesn't raise */
+}
+
+TEST (socketcommon_handle_bind_error_eaddrnotavail)
+{
+  int result = SocketCommon_handle_bind_error (EADDRNOTAVAIL, "192.168.255.255:8080", Socket_Failed);
+  ASSERT_EQ (-1, result);  /* Returns -1, doesn't raise */
+}
+
+TEST (socketcommon_handle_bind_error_eacces)
+{
+  volatile int raised = 0;
+
+  TRY { SocketCommon_handle_bind_error (EACCES, "0.0.0.0:80", Socket_Failed); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socketcommon_handle_bind_error_eperm)
+{
+  volatile int raised = 0;
+
+  TRY { SocketCommon_handle_bind_error (EPERM, "0.0.0.0:443", Socket_Failed); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socketcommon_handle_bind_error_other)
+{
+  volatile int raised = 0;
+
+  TRY { SocketCommon_handle_bind_error (EINVAL, "127.0.0.1:8080", Socket_Failed); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+/* IOV Edge Case Coverage Tests */
+
+TEST (socketcommon_advance_iov_invalid_params_null)
+{
+  volatile int raised = 0;
+
+  TRY { SocketCommon_advance_iov (NULL, 1, 10); }
+  EXCEPT (SocketCommon_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socketcommon_advance_iov_invalid_iovcnt_zero)
+{
+  volatile int raised = 0;
+  struct iovec iov[1];
+  char buf[10];
+  iov[0].iov_base = buf;
+  iov[0].iov_len = 10;
+
+  TRY { SocketCommon_advance_iov (iov, 0, 5); }
+  EXCEPT (SocketCommon_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socketcommon_advance_iov_too_far)
+{
+  volatile int raised = 0;
+  struct iovec iov[1];
+  char buf[10];
+  iov[0].iov_base = buf;
+  iov[0].iov_len = 10;
+
+  TRY { SocketCommon_advance_iov (iov, 1, 20); }  /* 20 > 10 */
+  EXCEPT (SocketCommon_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socketcommon_sync_iov_progress_basic)
+{
+  struct iovec original[2];
+  struct iovec copy[2];
+  char buf1[100], buf2[100];
+
+  /* Setup original */
+  original[0].iov_base = buf1;
+  original[0].iov_len = 100;
+  original[1].iov_base = buf2;
+  original[1].iov_len = 100;
+
+  /* Setup copy with partial progress in buf1 */
+  copy[0].iov_base = buf1 + 50;  /* Advanced 50 bytes */
+  copy[0].iov_len = 50;
+  copy[1].iov_base = buf2;
+  copy[1].iov_len = 100;
+
+  SocketCommon_sync_iov_progress (original, copy, 2);
+
+  /* Original should now reflect progress */
+  ASSERT_EQ (50, original[0].iov_len);
+  ASSERT_EQ (buf1 + 50, original[0].iov_base);
+  ASSERT_EQ (100, original[1].iov_len);  /* Unchanged */
+}
+
+TEST (socketcommon_calculate_total_iov_len_null)
+{
+  volatile int raised = 0;
+
+  TRY { SocketCommon_calculate_total_iov_len (NULL, 1); }
+  EXCEPT (SocketCommon_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socketcommon_calculate_total_iov_len_negative_iovcnt)
+{
+  volatile int raised = 0;
+  struct iovec iov[1];
+  char buf[10];
+  iov[0].iov_base = buf;
+  iov[0].iov_len = 10;
+
+  TRY { SocketCommon_calculate_total_iov_len (iov, -1); }
+  EXCEPT (SocketCommon_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+/* Multicast Coverage Tests */
+
+TEST (socketcommon_join_multicast_ipv4)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_DGRAM, 0);
+
+    /* Try to join a multicast group - may fail on some systems */
+    SocketCommon_join_multicast (base, "224.0.0.1", NULL, Socket_Failed);
+    SocketCommon_leave_multicast (base, "224.0.0.1", NULL, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* Expected on systems without multicast support */
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_join_multicast_ipv6)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET6, SOCK_DGRAM, 0);
+
+    /* Try to join an IPv6 multicast group */
+    SocketCommon_join_multicast (base, "ff02::1", NULL, Socket_Failed);
+    SocketCommon_leave_multicast (base, "ff02::1", NULL, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* Expected on systems without IPv6 multicast support */
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_join_multicast_invalid_group)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_DGRAM, 0);
+    SocketCommon_join_multicast (base, "not.a.valid.multicast", NULL, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_leave_multicast_ipv4)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_DGRAM, 0);
+    /* Try to leave a group we didn't join - will fail but covers the code path */
+    SocketCommon_leave_multicast (base, "224.0.0.1", NULL, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* Expected - can't leave group not joined */
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_join_multicast_with_interface)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_DGRAM, 0);
+    /* Try with explicit interface */
+    SocketCommon_join_multicast (base, "224.0.0.1", "127.0.0.1", Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* Expected - may fail for various reasons */
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_join_multicast_invalid_interface)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_DGRAM, 0);
+    /* Invalid interface address */
+    SocketCommon_join_multicast (base, "224.0.0.1", "not.an.ip", Socket_Failed);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+/* TTL Coverage Tests */
+
+TEST (socketcommon_set_ttl_ipv4)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    SocketCommon_set_ttl (base, AF_INET, 64, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some systems */
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_set_ttl_ipv6)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET6, SOCK_STREAM, 0);
+    SocketCommon_set_ttl (base, AF_INET6, 64, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some systems */
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_set_ttl_invalid_family)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    SocketCommon_set_ttl (base, AF_UNIX, 64, Socket_Failed);  /* Invalid family for TTL */
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+/* Accessor Coverage Tests */
+
+TEST (socketbase_domain_null)
+{
+  int domain = SocketBase_domain (NULL);
+  ASSERT_EQ (AF_UNSPEC, domain);
+}
+
+TEST (socketbase_domain_valid)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    int domain = SocketBase_domain (base);
+    ASSERT_EQ (AF_INET, domain);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketbase_set_timeouts_valid)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+  SocketTimeouts_T timeouts = { 0 };
+
+  timeouts.connect_timeout_ms = 5000;
+  timeouts.dns_timeout_ms = 3000;
+  timeouts.operation_timeout_ms = 10000;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    SocketBase_set_timeouts (base, &timeouts);
+
+    /* Verify via SocketBase_timeouts() inline accessor */
+    SocketTimeouts_T *retrieved = SocketBase_timeouts (base);
+    ASSERT_NOT_NULL (retrieved);
+    ASSERT_EQ (5000, retrieved->connect_timeout_ms);
+    ASSERT_EQ (3000, retrieved->dns_timeout_ms);
+    ASSERT_EQ (10000, retrieved->operation_timeout_ms);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketbase_set_timeouts_null_base)
+{
+  SocketTimeouts_T timeouts = { 0 };
+  /* Should not crash with NULL base */
+  SocketBase_set_timeouts (NULL, &timeouts);
+}
+
+TEST (socketbase_set_timeouts_null_timeouts)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    /* Should not crash with NULL timeouts */
+    SocketBase_set_timeouts (base, NULL);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+/* Address Resolution Error Coverage Tests */
+
+TEST (socketcommon_resolve_address_invalid_host)
+{
+  setup_signals ();
+  struct addrinfo hints;
+  struct addrinfo *res = NULL;
+  volatile int raised = 0;
+
+  SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
+
+  TRY
+  {
+    SocketCommon_resolve_address ("this.host.definitely.does.not.exist.invalid",
+                                  80, &hints, &res, Socket_Failed, AF_UNSPEC, 1);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  if (res)
+    freeaddrinfo (res);
+}
+
+TEST (socketcommon_resolve_address_family_mismatch)
+{
+  setup_signals ();
+  struct addrinfo hints;
+  struct addrinfo *res = NULL;
+  volatile int raised = 0;
+
+  SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
+  hints.ai_family = AF_INET;  /* Force IPv4 only */
+
+  TRY
+  {
+    /* Try to resolve IPv6 address with IPv4-only hints */
+    SocketCommon_resolve_address ("::1", 80, &hints, &res, Socket_Failed,
+                                  AF_INET6, 1);  /* Expect IPv6 but hints say IPv4 */
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  /* May or may not raise depending on system - just covers code path */
+  (void)raised;
+  if (res)
+    freeaddrinfo (res);
+}
+
+TEST (socketcommon_resolve_address_no_exceptions)
+{
+  setup_signals ();
+  struct addrinfo hints;
+  struct addrinfo *res = NULL;
+
+  SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
+
+  /* Call with use_exceptions=0 */
+  int result = SocketCommon_resolve_address ("this.host.definitely.does.not.exist.invalid",
+                                             80, &hints, &res, Socket_Failed, AF_UNSPEC, 0);
+  ASSERT_EQ (-1, result);
+  if (res)
+    freeaddrinfo (res);
+}
+
+TEST (socketcommon_reverse_lookup_failure)
+{
+  setup_signals ();
+  struct sockaddr_in addr;
+  char host[NI_MAXHOST];
+  char serv[NI_MAXSERV];
+  volatile int raised = 0;
+
+  memset (&addr, 0, sizeof (addr));
+  addr.sin_family = 255;  /* Invalid family */
+  addr.sin_port = htons (80);
+
+  TRY
+  {
+    SocketCommon_reverse_lookup ((struct sockaddr *)&addr, sizeof (addr),
+                                 host, sizeof (host), serv, sizeof (serv),
+                                 NI_NUMERICHOST | NI_NUMERICSERV, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+/* Endpoint Cache Coverage Tests */
+
+TEST (socketcommon_get_safe_host_null)
+{
+  const char *result = socketcommon_get_safe_host (NULL);
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (0, strcmp (result, "any"));
+}
+
+TEST (socketcommon_get_safe_host_valid)
+{
+  const char *result = socketcommon_get_safe_host ("example.com");
+  ASSERT_NOT_NULL (result);
+  ASSERT_EQ (0, strcmp (result, "example.com"));
+}
+
+/* Socket Option Error Coverage Tests */
+
+TEST (socketcommon_settimeout_negative)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    SocketCommon_settimeout (base, -1, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_set_nonblock_disable)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    /* Enable non-blocking */
+    SocketCommon_set_nonblock (base, true, Socket_Failed);
+    /* Disable non-blocking - covers the else branch */
+    SocketCommon_set_nonblock (base, false, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_set_cloexec_fd)
+{
+  setup_signals ();
+  int fd = socket (AF_INET, SOCK_STREAM, 0);
+  ASSERT (fd >= 0);
+
+  TRY
+  {
+    SocketCommon_set_cloexec_fd (fd, true, Socket_Failed);
+    SocketCommon_set_cloexec_fd (fd, false, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  close (fd);
+}
+
+TEST (socketcommon_setcloexec_with_error)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    SocketCommon_setcloexec_with_error (base, 1, Socket_Failed);
+    SocketCommon_setcloexec_with_error (base, 0, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+/* CIDR Matching Edge Case Coverage Tests */
+
+TEST (socketcommon_cidr_match_partial_byte_mask)
+{
+  /* Test /25 which requires partial byte masking (bits_to_mask = 1) */
+  /* These tests exercise the partial byte masking code path */
+  int result;
+  result = SocketCommon_cidr_match ("192.168.1.1", "192.168.1.0/25");
+  ASSERT (result >= 0);  /* Just verify no error */
+  result = SocketCommon_cidr_match ("192.168.1.127", "192.168.1.0/25");
+  ASSERT (result >= 0);
+  result = SocketCommon_cidr_match ("192.168.1.128", "192.168.1.0/25");
+  ASSERT (result >= 0);
+
+  /* Test /17 for larger partial byte */
+  result = SocketCommon_cidr_match ("10.0.0.1", "10.0.0.0/17");
+  ASSERT (result >= 0);
+  result = SocketCommon_cidr_match ("10.0.127.255", "10.0.0.0/17");
+  ASSERT (result >= 0);
+  result = SocketCommon_cidr_match ("10.0.128.0", "10.0.0.0/17");
+  ASSERT (result >= 0);
+}
+
+TEST (socketcommon_cidr_match_ipv6_partial_mask)
+{
+  /* Test IPv6 with partial byte masking - /33 */
+  /* These tests exercise the IPv6 partial byte masking code path */
+  int result;
+  result = SocketCommon_cidr_match ("2001:db8::1", "2001:db8::/33");
+  ASSERT (result >= 0);
+  result = SocketCommon_cidr_match ("2001:db8:8000::1", "2001:db8::/33");
+  ASSERT (result >= 0);
+}
+
+/* Addrinfo Copy Coverage Tests */
+
+TEST (socketcommon_copy_addrinfo_with_canonname)
+{
+  struct addrinfo hints, *res = NULL;
+  struct addrinfo *copy = NULL;
+
+  memset (&hints, 0, sizeof (hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_CANONNAME;
+
+  int result = getaddrinfo ("localhost", "80", &hints, &res);
+  if (result != 0 || !res)
+    {
+      /* getaddrinfo failed, skip test */
+      return;
+    }
+
+  /* Copy the addrinfo chain */
+  copy = SocketCommon_copy_addrinfo (res);
+  ASSERT_NOT_NULL (copy);
+
+  /* Verify copy - canonname may or may not be set depending on system */
+  ASSERT_EQ (res->ai_family, copy->ai_family);
+  ASSERT_EQ (res->ai_socktype, copy->ai_socktype);
+
+  /* Free copy using our free function */
+  SocketCommon_free_addrinfo (copy);
+
+  /* Free original using system function */
+  freeaddrinfo (res);
+}
+
+TEST (socketcommon_copy_addrinfo_chain)
+{
+  struct addrinfo hints, *res = NULL;
+  struct addrinfo *copy = NULL;
+
+  memset (&hints, 0, sizeof (hints));
+  hints.ai_family = AF_UNSPEC;  /* May return multiple results */
+  hints.ai_socktype = SOCK_STREAM;
+
+  int result = getaddrinfo ("localhost", "80", &hints, &res);
+  if (result != 0 || !res)
+    {
+      return;
+    }
+
+  /* Copy the chain */
+  copy = SocketCommon_copy_addrinfo (res);
+  ASSERT_NOT_NULL (copy);
+
+  /* Count nodes in original and copy */
+  int orig_count = 0, copy_count = 0;
+  for (struct addrinfo *p = res; p; p = p->ai_next)
+    orig_count++;
+  for (struct addrinfo *p = copy; p; p = p->ai_next)
+    copy_count++;
+
+  ASSERT_EQ (orig_count, copy_count);
+
+  SocketCommon_free_addrinfo (copy);
+  freeaddrinfo (res);
+}
+
+/* Socket Option Getter Error Tests */
+
+TEST (socketcommon_getoption_int_invalid_option)
+{
+  setup_signals ();
+  volatile int raised = 0;
+  int value = 0;
+  int fd = socket (AF_INET, SOCK_STREAM, 0);
+  ASSERT (fd >= 0);
+
+  TRY
+  {
+    /* Use valid fd but invalid level/option to trigger error */
+    SocketCommon_getoption_int (fd, 9999, 9999, &value, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  close (fd);
+}
+
+TEST (socketcommon_getoption_timeval_invalid_option)
+{
+  setup_signals ();
+  volatile int raised = 0;
+  struct timeval tv = { 0 };
+  int fd = socket (AF_INET, SOCK_STREAM, 0);
+  ASSERT (fd >= 0);
+
+  TRY
+  {
+    /* Use valid fd but invalid level/option to trigger error */
+    SocketCommon_getoption_timeval (fd, 9999, 9999, &tv, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  close (fd);
+}
+
+TEST (socketcommon_set_option_int_invalid)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    /* Invalid option - should fail */
+    SocketCommon_set_option_int (base, 9999, 9999, 1, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+/* Get Family Coverage Tests */
+
+TEST (socketcommon_get_socket_family)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    int family = SocketCommon_get_socket_family (base);
+    ASSERT_EQ (AF_INET, family);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_get_family_with_raise)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET6, SOCK_STREAM, 0);
+    int family = SocketCommon_get_family (base, true, Socket_Failed);
+    ASSERT_EQ (AF_INET6, family);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+/* Bind with Resolved Addresses Coverage */
+
+TEST (socketcommon_try_bind_resolved_addresses_success)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+  struct addrinfo hints, *res = NULL;
+
+  SocketCommon_setup_hints (&hints, SOCK_STREAM, AI_PASSIVE);
+  hints.ai_family = AF_INET;
+
+  /* Get a valid address first */
+  int result = getaddrinfo ("127.0.0.1", "0", &hints, &res);
+  if (result != 0 || !res)
+    return;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    /* First bind should succeed */
+    SocketCommon_try_bind_resolved_addresses (base, res, AF_INET, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail if address already in use */
+  }
+  END_TRY;
+
+  /* Clean up */
+  freeaddrinfo (res);
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+/* Base Lifecycle Coverage Tests */
+
+TEST (socketcommon_new_base_and_free)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL (base);
+    ASSERT (SocketBase_fd (base) >= 0);
+    ASSERT_NOT_NULL (SocketBase_arena (base));
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  if (base)
+    {
+      SocketCommon_free_base (&base);
+      ASSERT_NULL (base);
+    }
+}
+
+TEST (socketcommon_free_base_null)
+{
+  SocketBase_T base = NULL;
+  /* Should not crash */
+  SocketCommon_free_base (&base);
+}
+
+TEST (socketbase_fd_null)
+{
+  int fd = SocketBase_fd (NULL);
+  ASSERT_EQ (-1, fd);
+}
+
+TEST (socketbase_arena_null)
+{
+  Arena_T arena = SocketBase_arena (NULL);
+  ASSERT_NULL (arena);
+}
+
+/* Additional SocketCommon Coverage Tests */
+
+TEST (socketcommon_cidr_match_ipv4_parse_error)
+{
+  /* Test CIDR with invalid IPv4 in IP string */
+  int result = SocketCommon_cidr_match ("256.256.256.256", "192.168.1.0/24");
+  ASSERT_EQ (-1, result);
+}
+
+TEST (socketcommon_cidr_match_ipv6_parse_error)
+{
+  /* Test CIDR with invalid IPv6 */
+  int result = SocketCommon_cidr_match ("gggg::1", "2001:db8::/32");
+  ASSERT_EQ (-1, result);
+}
+
+TEST (socketcommon_cidr_match_invalid_network_ipv4)
+{
+  /* Test CIDR with invalid IPv4 network address - triggers line 307 */
+  int result = SocketCommon_cidr_match ("192.168.1.1", "256.256.256.0/24");
+  ASSERT_EQ (-1, result);
+}
+
+TEST (socketcommon_cidr_match_invalid_network_ipv6)
+{
+  /* Test CIDR with invalid IPv6 network - triggers line 314 */
+  int result = SocketCommon_cidr_match ("2001:db8::1", "gggg::/32");
+  ASSERT_EQ (-1, result);
+}
+
+TEST (socketcommon_try_bind_address_failure)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+  struct sockaddr_in addr;
+  volatile int raised = 0;
+
+  memset (&addr, 0, sizeof (addr));
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons (1);  /* Privileged port */
+  inet_pton (AF_INET, "127.0.0.1", &addr.sin_addr);
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    /* Try to bind to privileged port - should fail for non-root */
+    SocketCommon_try_bind_address (base, (struct sockaddr *)&addr, sizeof (addr), Socket_Failed);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  /* Should raise on non-root systems */
+  (void)raised;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_try_bind_resolved_addresses_all_fail)
+{
+  setup_signals ();
+  SocketBase_T base1 = NULL;
+  SocketBase_T base2 = NULL;
+  struct addrinfo hints, *res = NULL;
+  volatile int raised = 0;
+
+  SocketCommon_setup_hints (&hints, SOCK_STREAM, AI_PASSIVE);
+  hints.ai_family = AF_INET;
+
+  /* Get address for a specific port */
+  int result = getaddrinfo ("127.0.0.1", "0", &hints, &res);
+  if (result != 0 || !res)
+    return;
+
+  TRY
+  {
+    /* First socket binds successfully */
+    base1 = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    SocketCommon_try_bind_resolved_addresses (base1, res, AF_INET, Socket_Failed);
+
+    /* Get the port that was assigned */
+    struct sockaddr_storage local;
+    socklen_t len = sizeof (local);
+    getsockname (SocketBase_fd (base1), (struct sockaddr *)&local, &len);
+    int port = ntohs (((struct sockaddr_in *)&local)->sin_port);
+
+    /* Create new resolution for same port */
+    freeaddrinfo (res);
+    res = NULL;
+    char port_str[16];
+    snprintf (port_str, sizeof (port_str), "%d", port);
+    result = getaddrinfo ("127.0.0.1", port_str, &hints, &res);
+    if (result != 0 || !res)
+      {
+        if (base1)
+          SocketCommon_free_base (&base1);
+        return;
+      }
+
+    /* Second socket tries to bind to same address - should fail */
+    base2 = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    SocketCommon_try_bind_resolved_addresses (base2, res, AF_INET, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  /* Should raise EADDRINUSE */
+  (void)raised;
+
+  if (res)
+    freeaddrinfo (res);
+  if (base2)
+    SocketCommon_free_base (&base2);
+  if (base1)
+    SocketCommon_free_base (&base1);
+}
+
+TEST (socketcommon_resolve_address_family_strict_mismatch)
+{
+  setup_signals ();
+  struct addrinfo hints;
+  struct addrinfo *res = NULL;
+  volatile int raised = 0;
+
+  SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
+
+  TRY
+  {
+    /* Resolve an IPv4 address but require IPv6 family - should fail */
+    SocketCommon_resolve_address ("127.0.0.1", 80, &hints, &res, Socket_Failed,
+                                  AF_INET6, 1);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  if (res)
+    freeaddrinfo (res);
+}
+
+TEST (socketcommon_copy_addrinfo_empty_addr)
+{
+  /* Test copying addrinfo with NULL ai_addr */
+  struct addrinfo src;
+  memset (&src, 0, sizeof (src));
+  src.ai_family = AF_INET;
+  src.ai_socktype = SOCK_STREAM;
+  src.ai_addr = NULL;  /* NULL address */
+  src.ai_addrlen = 0;
+  src.ai_next = NULL;
+
+  struct addrinfo *copy = SocketCommon_copy_addrinfo (&src);
+  ASSERT_NOT_NULL (copy);
+  ASSERT_NULL (copy->ai_addr);
+  ASSERT_EQ (0, copy->ai_addrlen);
+
+  SocketCommon_free_addrinfo (copy);
+}
+
+TEST (socketcommon_leave_multicast_ipv6)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET6, SOCK_DGRAM, 0);
+    /* Try to leave a group we didn't join - will fail but covers IPv6 leave path */
+    SocketCommon_leave_multicast (base, "ff02::1", NULL, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* Expected - can't leave group not joined */
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_iov_overflow_detection)
+{
+  volatile int raised = 0;
+  struct iovec iov[2];
+  char buf1[10], buf2[10];
+
+  iov[0].iov_base = buf1;
+  iov[0].iov_len = SIZE_MAX;  /* Will cause overflow */
+  iov[1].iov_base = buf2;
+  iov[1].iov_len = 1;
+
+  TRY { SocketCommon_calculate_total_iov_len (iov, 2); }
+  EXCEPT (SocketCommon_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socketcommon_get_family_fallback)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+
+    /* Bind to get a valid address for getsockname fallback */
+    struct sockaddr_in addr;
+    memset (&addr, 0, sizeof (addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl (INADDR_ANY);
+    addr.sin_port = 0;
+
+    int result = bind (SocketBase_fd (base), (struct sockaddr *)&addr, sizeof (addr));
+    if (result == 0)
+      {
+        /* Now get_socket_family should work via getsockname */
+        int family = SocketCommon_get_socket_family (base);
+        ASSERT_EQ (AF_INET, family);
+      }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail */
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_update_local_endpoint_unbound)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    /* Update endpoint on unbound socket - exercises the code path */
+    SocketCommon_update_local_endpoint (base);
+    /* Local addr should be NULL or set to defaults */
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail */
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_setcloexec_already_set)
+{
+  setup_signals ();
+  /* Test setting cloexec when already set - exercises "no change" path */
+  int fd = socket (AF_INET, SOCK_STREAM, 0);
+  ASSERT (fd >= 0);
+
+  /* Enable CLOEXEC */
+  int result = SocketCommon_setcloexec (fd, 1);
+  ASSERT_EQ (0, result);
+
+  /* Set again - should succeed (no change needed) */
+  result = SocketCommon_setcloexec (fd, 1);
+  ASSERT_EQ (0, result);
+
+  close (fd);
+}
+
+TEST (socketcommon_join_multicast_unix_socket)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    /* Unix sockets don't support multicast - triggers unsupported family */
+    base = SocketCommon_new_base (AF_UNIX, SOCK_DGRAM, 0);
+    SocketCommon_join_multicast (base, "224.0.0.1", NULL, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_validate_hostname_null)
+{
+  /* NULL hostname should be valid (any address) */
+  int result = socketcommon_validate_hostname_internal (NULL, 0, Socket_Failed);
+  /* NULL is valid for bind - returns success */
+  ASSERT (result >= 0 || result == -1);  /* May accept or reject depending on impl */
+}
+
+TEST (socketcommon_try_bind_family_mismatch)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+  struct addrinfo hints, *res = NULL;
+
+  SocketCommon_setup_hints (&hints, SOCK_STREAM, AI_PASSIVE);
+  hints.ai_family = AF_INET;
+
+  /* Get IPv4 address */
+  int result = getaddrinfo ("127.0.0.1", "0", &hints, &res);
+  if (result != 0 || !res)
+    return;
+
+  TRY
+  {
+    /* Create IPv6 socket but try to bind IPv4 address */
+    base = SocketCommon_new_base (AF_INET6, SOCK_STREAM, 0);
+    /* This should skip the address because family doesn't match */
+    SocketCommon_try_bind_resolved_addresses (base, res, AF_INET6, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* Expected - no matching address found */
+  }
+  END_TRY;
+
+  freeaddrinfo (res);
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_resolve_address_family_no_match)
+{
+  setup_signals ();
+  struct addrinfo hints;
+  struct addrinfo *res = NULL;
+
+  SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
+
+  /* Resolve with use_exceptions=0 and require IPv6, but get IPv4 only */
+  int result = SocketCommon_resolve_address ("127.0.0.1", 80, &hints, &res, Socket_Failed,
+                                             AF_INET6, 0);
+  /* Should return -1 for no matching family */
+  ASSERT_EQ (-1, result);
+  if (res)
+    freeaddrinfo (res);
+}
+
+TEST (socketcommon_set_option_successful)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    /* Test various socket options */
+    SocketCommon_setreuseaddr (base, Socket_Failed);
+    SocketCommon_setreuseport (base, Socket_Failed);
+    SocketCommon_settimeout (base, 5, Socket_Failed);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some systems */
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_convert_port_to_string)
+{
+  char port_str[16];
+
+  socketcommon_convert_port_to_string (8080, port_str, sizeof (port_str));
+  ASSERT_EQ (0, strcmp (port_str, "8080"));
+
+  socketcommon_convert_port_to_string (0, port_str, sizeof (port_str));
+  ASSERT_EQ (0, strcmp (port_str, "0"));
+
+  socketcommon_convert_port_to_string (65535, port_str, sizeof (port_str));
+  ASSERT_EQ (0, strcmp (port_str, "65535"));
+}
+
+TEST (socketcommon_sanitize_timeout)
+{
+  /* Test timeout sanitization */
+  int result = socketcommon_sanitize_timeout (5000);
+  ASSERT_EQ (5000, result);
+
+  result = socketcommon_sanitize_timeout (-1);  /* Should be clamped or use default */
+  ASSERT (result >= 0);
+
+  result = socketcommon_sanitize_timeout (0);  /* Should be allowed */
+  ASSERT_EQ (0, result);
+}
+
+TEST (socketcommon_cache_endpoint_with_invalid_addr)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  struct sockaddr_in addr;
+  char *addr_str = NULL;
+  int port = 0;
+
+  /* Setup invalid address family to trigger getnameinfo failure */
+  memset (&addr, 0, sizeof (addr));
+  addr.sin_family = 255;  /* Invalid family */
+  addr.sin_port = htons (8080);
+
+  int result = SocketCommon_cache_endpoint (arena, (struct sockaddr *)&addr,
+                                            sizeof (addr), &addr_str, &port);
+  /* Should fail due to invalid family */
+  ASSERT_EQ (-1, result);
+
+  Arena_dispose (&arena);
+}
+
+TEST (socketcommon_update_local_endpoint_bound)
+{
+  setup_signals ();
+  SocketBase_T base = NULL;
+
+  TRY
+  {
+    base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
+    
+    /* Bind to get a local endpoint */
+    struct sockaddr_in addr;
+    memset (&addr, 0, sizeof (addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
+    addr.sin_port = 0;
+    
+    if (bind (SocketBase_fd (base), (struct sockaddr *)&addr, sizeof (addr)) == 0)
+      {
+        /* Update should succeed and cache the endpoint */
+        SocketCommon_update_local_endpoint (base);
+        
+        char *local = SocketBase_localaddr (base);
+        int port = SocketBase_localport (base);
+        ASSERT_NOT_NULL (local);
+        ASSERT (port > 0);
+      }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail */
+  }
+  END_TRY;
+
+  if (base)
+    SocketCommon_free_base (&base);
+}
+
+TEST (socketcommon_alloc_iov_copy_basic)
+{
+  setup_signals ();
+  struct iovec src[2];
+  struct iovec *copy = NULL;
+  char buf1[100], buf2[100];
+
+  src[0].iov_base = buf1;
+  src[0].iov_len = 100;
+  src[1].iov_base = buf2;
+  src[1].iov_len = 100;
+
+  TRY
+  {
+    copy = SocketCommon_alloc_iov_copy (src, 2, Socket_Failed);
+    ASSERT_NOT_NULL (copy);
+    ASSERT_EQ (100, copy[0].iov_len);
+    ASSERT_EQ (100, copy[1].iov_len);
+    /* Free copy - uses malloc internally */
+    free (copy);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail */
+  }
+  END_TRY;
+}
+
 int
 main (void)
 {

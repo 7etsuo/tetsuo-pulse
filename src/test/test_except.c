@@ -4,7 +4,11 @@
  * Covers TRY/EXCEPT/FINALLY blocks, exception raising, and propagation.
  */
 
+#include <signal.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "core/Except.h"
 #include "test/Test.h"
@@ -632,6 +636,256 @@ TEST (except_volatile_preservation)
   ASSERT_EQ (before, 42);
   ASSERT_EQ (after, 0); /* Never set */
   ASSERT_EQ (in_handler, 42);
+}
+
+/* ==========================================================================
+ * Fork-based tests for abort() paths (100% coverage)
+ * These tests exercise code paths that call abort() by forking the process
+ * and verifying the child receives SIGABRT.
+ * ========================================================================== */
+
+/* Coverage support: __gcov_dump flushes coverage data before abort().
+ * Only available when compiling with --coverage (GCC/Clang).
+ * In coverage builds, this function is provided by libgcov.
+ * In non-coverage builds, we provide a no-op implementation.
+ */
+#ifdef ENABLE_GCOV_FLUSH
+extern void __gcov_dump (void);
+#define GCOV_FLUSH() __gcov_dump ()
+#else
+#define GCOV_FLUSH() (void)0
+#endif
+
+/* Signal handler for SIGABRT that flushes gcov data before process terminates */
+static void
+sigabrt_handler (int sig)
+{
+  (void)sig;
+  /* Flush coverage data before abort (only works in coverage builds) */
+  GCOV_FLUSH ();
+  /* Re-raise SIGABRT with default handler to actually terminate */
+  signal (SIGABRT, SIG_DFL);
+  raise (SIGABRT);
+}
+
+/* Setup handler in child process to capture coverage before abort */
+static void
+setup_child_coverage_handler (void)
+{
+  signal (SIGABRT, sigabrt_handler);
+}
+
+/* Test NULL exception pointer causes abort */
+TEST (except_null_pointer_aborts)
+{
+  pid_t pid = fork ();
+  if (pid < 0)
+    {
+      /* fork failed - skip test */
+      return;
+    }
+  if (pid == 0)
+    {
+      setup_child_coverage_handler ();
+      /* Child: pass NULL to Except_raise - should abort */
+      Except_raise (NULL, __FILE__, __LINE__);
+      _exit (0); /* Should not reach here */
+    }
+
+  /* Parent: wait and check for SIGABRT */
+  int status;
+  waitpid (pid, &status, 0);
+  ASSERT (WIFSIGNALED (status));
+  ASSERT_EQ (WTERMSIG (status), SIGABRT);
+}
+
+/* Test uncaught exception with reason causes abort (covers lines 72, 88) */
+TEST (except_uncaught_with_reason_aborts)
+{
+  pid_t pid = fork ();
+  if (pid < 0)
+    {
+      return;
+    }
+  if (pid == 0)
+    {
+      setup_child_coverage_handler ();
+      /* Child: raise exception outside TRY - should abort */
+      static const Except_T UncaughtEx = { &UncaughtEx, "Uncaught test" };
+      Except_raise (&UncaughtEx, "test_file.c", 42);
+      _exit (0);
+    }
+
+  int status;
+  waitpid (pid, &status, 0);
+  ASSERT (WIFSIGNALED (status));
+  ASSERT_EQ (WTERMSIG (status), SIGABRT);
+}
+
+/* Test uncaught exception without reason causes abort (covers line 74) */
+TEST (except_uncaught_no_reason_aborts)
+{
+  pid_t pid = fork ();
+  if (pid < 0)
+    {
+      return;
+    }
+  if (pid == 0)
+    {
+      setup_child_coverage_handler ();
+      /* Child: raise exception with NULL reason outside TRY */
+      static const Except_T NoReasonEx = { &NoReasonEx, NULL };
+      Except_raise (&NoReasonEx, "test_file.c", 42);
+      _exit (0);
+    }
+
+  int status;
+  waitpid (pid, &status, 0);
+  ASSERT (WIFSIGNALED (status));
+  ASSERT_EQ (WTERMSIG (status), SIGABRT);
+}
+
+/* Test uncaught exception with file but no line (covers line 90) */
+TEST (except_uncaught_file_no_line_aborts)
+{
+  pid_t pid = fork ();
+  if (pid < 0)
+    {
+      return;
+    }
+  if (pid == 0)
+    {
+      setup_child_coverage_handler ();
+      /* Child: raise with file but line=0 */
+      static const Except_T FileNoLineEx = { &FileNoLineEx, "test" };
+      Except_raise (&FileNoLineEx, "test_file.c", 0);
+      _exit (0);
+    }
+
+  int status;
+  waitpid (pid, &status, 0);
+  ASSERT (WIFSIGNALED (status));
+  ASSERT_EQ (WTERMSIG (status), SIGABRT);
+}
+
+/* Test uncaught exception with no file but with line (covers line 94) */
+TEST (except_uncaught_no_file_with_line_aborts)
+{
+  pid_t pid = fork ();
+  if (pid < 0)
+    {
+      return;
+    }
+  if (pid == 0)
+    {
+      setup_child_coverage_handler ();
+      /* Child: raise with NULL file but positive line */
+      static const Except_T NoFileEx = { &NoFileEx, "test" };
+      Except_raise (&NoFileEx, NULL, 42);
+      _exit (0);
+    }
+
+  int status;
+  waitpid (pid, &status, 0);
+  ASSERT (WIFSIGNALED (status));
+  ASSERT_EQ (WTERMSIG (status), SIGABRT);
+}
+
+/* Test uncaught exception with no location info (covers line 98) */
+TEST (except_uncaught_no_location_aborts)
+{
+  pid_t pid = fork ();
+  if (pid < 0)
+    {
+      return;
+    }
+  if (pid == 0)
+    {
+      setup_child_coverage_handler ();
+      /* Child: raise with NULL file and line=0 */
+      static const Except_T NoLocEx = { &NoLocEx, "test" };
+      Except_raise (&NoLocEx, NULL, 0);
+      _exit (0);
+    }
+
+  int status;
+  waitpid (pid, &status, 0);
+  ASSERT (WIFSIGNALED (status));
+  ASSERT_EQ (WTERMSIG (status), SIGABRT);
+}
+
+/* ==========================================================================
+ * Tests for caught exceptions with edge case parameters
+ * ========================================================================== */
+
+/* Test NULL file parameter in caught exception (covers "unknown" branch) */
+TEST (except_null_file_handled)
+{
+  volatile int caught = 0;
+  const char *file = NULL;
+
+  TRY
+  {
+    /* Call Except_raise directly with NULL file */
+    Except_raise (&TestException, NULL, 10);
+  }
+  EXCEPT (TestException)
+  {
+    caught = 1;
+    file = Except_frame.file;
+  }
+  END_TRY;
+
+  ASSERT_EQ (caught, 1);
+  ASSERT_NOT_NULL (file);
+  /* File should be "unknown" when NULL is passed */
+  ASSERT_EQ (strcmp (file, "unknown"), 0);
+}
+
+/* Test zero line parameter in caught exception (covers line=0 branch) */
+TEST (except_zero_line_handled)
+{
+  volatile int caught = 0;
+  volatile int line = -1;
+
+  TRY
+  {
+    /* Call Except_raise directly with line=0 */
+    Except_raise (&TestException, "test.c", 0);
+  }
+  EXCEPT (TestException)
+  {
+    caught = 1;
+    line = Except_frame.line;
+  }
+  END_TRY;
+
+  ASSERT_EQ (caught, 1);
+  /* Line should be normalized to 0 when 0 is passed */
+  ASSERT_EQ (line, 0);
+}
+
+/* Test negative line parameter in caught exception (covers line<=0 branch) */
+TEST (except_negative_line_handled)
+{
+  volatile int caught = 0;
+  volatile int line = -1;
+
+  TRY
+  {
+    /* Call Except_raise directly with negative line */
+    Except_raise (&TestException, "test.c", -5);
+  }
+  EXCEPT (TestException)
+  {
+    caught = 1;
+    line = Except_frame.line;
+  }
+  END_TRY;
+
+  ASSERT_EQ (caught, 1);
+  /* Line should be normalized to 0 when negative is passed */
+  ASSERT_EQ (line, 0);
 }
 
 int
