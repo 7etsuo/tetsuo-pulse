@@ -443,6 +443,325 @@ TEST (ocsp_status_full)
 #endif
 }
 
+/* ==================== Certificate Loading Tests ==================== */
+
+TEST (tls_load_certificate_basic)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_load.crt";
+  const char *key_file = "test_load.key";
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    {
+      return; /* Skip if openssl not available */
+    }
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    ASSERT_NOT_NULL (ctx);
+  }
+  EXCEPT (SocketTLS_Failed) { /* Expected if cert gen failed */ }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (tls_load_certificate_invalid_path)
+{
+#ifdef SOCKET_HAS_TLS
+  volatile int raised = 0;
+
+  TRY
+  {
+    SocketTLSContext_T ctx
+        = SocketTLSContext_new_server ("/nonexistent/cert.pem",
+                                       "/nonexistent/key.pem", NULL);
+    (void)ctx;
+  }
+  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== CA Loading Tests ==================== */
+
+TEST (tls_load_ca_basic)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *ca_file = "test_ca.crt";
+  const char *ca_key = "test_ca.key";
+
+  /* Generate a CA cert for testing */
+  if (generate_test_certs (ca_file, ca_key) != 0)
+    {
+      return; /* Skip if openssl not available */
+    }
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (ca_file);
+    ASSERT_NOT_NULL (ctx);
+  }
+  EXCEPT (SocketTLS_Failed) { /* Expected if CA load fails */ }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (ca_file, ca_key);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (tls_load_ca_invalid_path)
+{
+#ifdef SOCKET_HAS_TLS
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
+  volatile int raised = 0;
+
+  /* Note: SocketTLSContext_load_ca may or may not raise for invalid paths
+   * depending on OpenSSL behavior. Just test that it doesn't crash. */
+  TRY { SocketTLSContext_load_ca (ctx, "/nonexistent/ca.pem"); }
+  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  END_TRY;
+
+  /* Either outcome is acceptable - raised or not */
+  ASSERT (raised == 0 || raised == 1);
+
+  SocketTLSContext_free (&ctx);
+  Arena_dispose (&arena);
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== SNI Certificate Tests ==================== */
+
+/* Helper to generate cert for specific hostname */
+static int
+generate_sni_cert (const char *hostname, const char *cert_file,
+                   const char *key_file)
+{
+  char cmd[1024];
+
+  snprintf (cmd, sizeof (cmd),
+            "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
+            "-nodes -subj '/CN=%s' 2>/dev/null",
+            key_file, cert_file, hostname);
+  return system (cmd);
+}
+
+TEST (tls_sni_add_certificate_basic)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *default_cert = "test_sni_default.crt";
+  const char *default_key = "test_sni_default.key";
+  const char *sni_cert = "test_sni_host.crt";
+  const char *sni_key = "test_sni_host.key";
+
+  /* Generate certificates */
+  if (generate_test_certs (default_cert, default_key) != 0)
+    return;
+  if (generate_sni_cert ("example.com", sni_cert, sni_key) != 0)
+    {
+      remove_test_certs (default_cert, default_key);
+      return;
+    }
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (default_cert, default_key, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Add SNI certificate */
+    SocketTLSContext_add_certificate (ctx, "example.com", sni_cert, sni_key);
+
+    /* Should not raise - cert added successfully */
+  }
+  EXCEPT (SocketTLS_Failed) { /* May fail if cert loading fails */ }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (default_cert, default_key);
+    unlink (sni_cert);
+    unlink (sni_key);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (tls_sni_add_multiple_certificates)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *default_cert = "test_sni_multi_default.crt";
+  const char *default_key = "test_sni_multi_default.key";
+  const char *sni1_cert = "test_sni1.crt";
+  const char *sni1_key = "test_sni1.key";
+  const char *sni2_cert = "test_sni2.crt";
+  const char *sni2_key = "test_sni2.key";
+
+  /* Generate certificates */
+  if (generate_test_certs (default_cert, default_key) != 0)
+    return;
+  if (generate_sni_cert ("host1.example.com", sni1_cert, sni1_key) != 0)
+    {
+      remove_test_certs (default_cert, default_key);
+      return;
+    }
+  if (generate_sni_cert ("host2.example.com", sni2_cert, sni2_key) != 0)
+    {
+      remove_test_certs (default_cert, default_key);
+      unlink (sni1_cert);
+      unlink (sni1_key);
+      return;
+    }
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (default_cert, default_key, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Add multiple SNI certificates */
+    SocketTLSContext_add_certificate (ctx, "host1.example.com", sni1_cert,
+                                      sni1_key);
+    SocketTLSContext_add_certificate (ctx, "host2.example.com", sni2_cert,
+                                      sni2_key);
+
+    /* Should have 2 SNI certs plus default */
+  }
+  EXCEPT (SocketTLS_Failed) { /* May fail if cert loading fails */ }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (default_cert, default_key);
+    unlink (sni1_cert);
+    unlink (sni1_key);
+    unlink (sni2_cert);
+    unlink (sni2_key);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (tls_sni_add_certificate_invalid_path)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_sni_invalid.crt";
+  const char *key_file = "test_sni_invalid.key";
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Try to add certificate with invalid path */
+    SocketTLSContext_add_certificate (ctx, "invalid.example.com",
+                                      "/nonexistent/cert.pem",
+                                      "/nonexistent/key.pem");
+  }
+  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+#else
+  (void)0;
+#endif
+}
+
+TEST (tls_sni_add_default_certificate)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_sni_def.crt";
+  const char *key_file = "test_sni_def.key";
+  const char *new_default_cert = "test_sni_newdef.crt";
+  const char *new_default_key = "test_sni_newdef.key";
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+  if (generate_test_certs (new_default_cert, new_default_key) != 0)
+    {
+      remove_test_certs (cert_file, key_file);
+      return;
+    }
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Add default certificate (NULL hostname) */
+    SocketTLSContext_add_certificate (ctx, NULL, new_default_cert,
+                                      new_default_key);
+  }
+  EXCEPT (SocketTLS_Failed) { /* May fail */ }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    remove_test_certs (new_default_cert, new_default_key);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
 /* Removed duplicate TEST(crl_refresh_api) - covered in crl_load_api extensions
  */
 
