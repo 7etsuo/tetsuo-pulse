@@ -86,11 +86,10 @@ Socket_gettimeout (T socket)
 
   assert (socket);
 
-  if (SocketCommon_getoption_timeval (SocketBase_fd (socket->base),
-                                      SOCKET_SOL_SOCKET, SOCKET_SO_RCVTIMEO,
-                                      &tv, Socket_Failed)
-      < 0)
-    RAISE_MODULE_ERROR (Socket_Failed);
+  /* Note: SocketCommon_getoption_timeval raises Socket_Failed on error */
+  SocketCommon_getoption_timeval (SocketBase_fd (socket->base),
+                                  SOCKET_SOL_SOCKET, SOCKET_SO_RCVTIMEO, &tv,
+                                  Socket_Failed);
 
   return (int)tv.tv_sec;
 }
@@ -252,8 +251,10 @@ set_keepalive_interval (T socket, int interval)
                   SOCKET_TCP_KEEPINTVL, &interval, sizeof (interval))
       < 0)
     {
+      /* LCOV_EXCL_START - Defensive: TCP_KEEPIDLE fails first on same socket types */
       SOCKET_ERROR_FMT ("Failed to set keepalive interval");
       RAISE_MODULE_ERROR (Socket_Failed);
+      /* LCOV_EXCL_STOP */
     }
 #else
   (void)socket;
@@ -277,8 +278,10 @@ set_keepalive_count (T socket, int count)
                   SOCKET_TCP_KEEPCNT, &count, sizeof (count))
       < 0)
     {
+      /* LCOV_EXCL_START - Defensive: TCP_KEEPIDLE fails first on same socket types */
       SOCKET_ERROR_FMT ("Failed to set keepalive count");
       RAISE_MODULE_ERROR (Socket_Failed);
+      /* LCOV_EXCL_STOP */
     }
 #else
   (void)socket;
@@ -310,11 +313,9 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
 
   fd = SocketBase_fd (socket->base);
 
-  /* Get SO_KEEPALIVE flag */
-  if (SocketCommon_getoption_int (fd, SOCKET_SOL_SOCKET, SOCKET_SO_KEEPALIVE,
-                                  &keepalive_enabled, Socket_Failed)
-      < 0)
-    RAISE_MODULE_ERROR (Socket_Failed);
+  /* Note: SocketCommon_getoption_int raises Socket_Failed on error */
+  SocketCommon_getoption_int (fd, SOCKET_SOL_SOCKET, SOCKET_SO_KEEPALIVE,
+                              &keepalive_enabled, Socket_Failed);
 
   if (!keepalive_enabled)
     {
@@ -326,30 +327,24 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
 
     /* Get TCP_KEEPIDLE */
 #ifdef TCP_KEEPIDLE
-  if (SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPIDLE,
-                                  idle, Socket_Failed)
-      < 0)
-    RAISE_MODULE_ERROR (Socket_Failed);
+  SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPIDLE, idle,
+                              Socket_Failed);
 #else
   *idle = 0;
 #endif
 
     /* Get TCP_KEEPINTVL */
 #ifdef TCP_KEEPINTVL
-  if (SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPINTVL,
-                                  interval, Socket_Failed)
-      < 0)
-    RAISE_MODULE_ERROR (Socket_Failed);
+  SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPINTVL,
+                              interval, Socket_Failed);
 #else
   *interval = 0;
 #endif
 
     /* Get TCP_KEEPCNT */
 #ifdef TCP_KEEPCNT
-  if (SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPCNT,
-                                  count, Socket_Failed)
-      < 0)
-    RAISE_MODULE_ERROR (Socket_Failed);
+  SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPCNT, count,
+                              Socket_Failed);
 #else
   *count = 0;
 #endif
@@ -374,11 +369,9 @@ Socket_getnodelay (T socket)
 
   assert (socket);
 
-  if (SocketCommon_getoption_int (SocketBase_fd (socket->base),
-                                  SOCKET_IPPROTO_TCP, SOCKET_TCP_NODELAY,
-                                  &nodelay, Socket_Failed)
-      < 0)
-    RAISE_MODULE_ERROR (Socket_Failed);
+  /* Note: SocketCommon_getoption_int raises Socket_Failed on error */
+  SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
+                              SOCKET_TCP_NODELAY, &nodelay, Socket_Failed);
 
   return nodelay;
 }
@@ -455,11 +448,9 @@ Socket_getrcvbuf (T socket)
 
   assert (socket);
 
-  if (SocketCommon_getoption_int (SocketBase_fd (socket->base),
-                                  SOCKET_SOL_SOCKET, SOCKET_SO_RCVBUF,
-                                  &bufsize, Socket_Failed)
-      < 0)
-    RAISE_MODULE_ERROR (Socket_Failed);
+  /* Note: SocketCommon_getoption_int raises Socket_Failed on error */
+  SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
+                              SOCKET_SO_RCVBUF, &bufsize, Socket_Failed);
 
   return bufsize;
 }
@@ -471,11 +462,9 @@ Socket_getsndbuf (T socket)
 
   assert (socket);
 
-  if (SocketCommon_getoption_int (SocketBase_fd (socket->base),
-                                  SOCKET_SOL_SOCKET, SOCKET_SO_SNDBUF,
-                                  &bufsize, Socket_Failed)
-      < 0)
-    RAISE_MODULE_ERROR (Socket_Failed);
+  /* Note: SocketCommon_getoption_int raises Socket_Failed on error */
+  SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
+                              SOCKET_SO_SNDBUF, &bufsize, Socket_Failed);
 
   return bufsize;
 }

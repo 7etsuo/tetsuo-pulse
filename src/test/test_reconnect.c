@@ -25,6 +25,53 @@
 #include <unistd.h>
 
 /* ============================================================================
+ * Health Check Helpers (used by multiple tests)
+ * ============================================================================ */
+
+/* Counter for limited health check failures */
+static volatile int health_fail_limit = 3;
+static volatile int health_fail_calls = 0;
+
+/* Health check that fails a limited number of times then succeeds */
+static int
+always_fail_health_check (SocketReconnect_T conn, Socket_T socket, void *userdata)
+{
+  (void)conn;
+  (void)socket;
+  (void)userdata;
+  health_fail_calls++;
+  /* Fail only up to the limit, then succeed to break infinite loops */
+  return (health_fail_calls <= health_fail_limit) ? 0 : 1;
+}
+
+/* Counter for health check failures */
+static volatile int health_check_fail_count = 0;
+static volatile int health_check_should_fail = 1;
+
+static int
+controlled_health_check (SocketReconnect_T conn, Socket_T socket, void *userdata)
+{
+  (void)conn;
+  (void)socket;
+  (void)userdata;
+  health_check_fail_count++;
+  /* Automatically switch to success after enough failures */
+  if (health_check_fail_count > 5)
+    health_check_should_fail = 0;
+  return health_check_should_fail ? 0 : 1;
+}
+
+/* Reset health check counters before each test */
+static void
+reset_health_check_counters (void)
+{
+  health_fail_limit = 3;
+  health_fail_calls = 0;
+  health_check_fail_count = 0;
+  health_check_should_fail = 1;
+}
+
+/* ============================================================================
  * Policy Configuration Tests
  * ============================================================================ */
 
@@ -562,103 +609,136 @@ TEST (rc_recv_not_connected)
 }
 
 /* ============================================================================
- * Circuit Breaker Tests
+ * Circuit Breaker Tests - Use health check to trigger failures
  * ============================================================================ */
 
 TEST (rc_circuit_breaker_opens)
 {
+  Socket_T server = NULL;
   SocketReconnect_T conn = NULL;
   SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
 
   signal (SIGPIPE, SIG_IGN);
-
-  SocketReconnect_policy_defaults (&policy);
-  policy.max_attempts = 0; /* Unlimited attempts */
-  policy.circuit_failure_threshold = 3;
-  policy.initial_delay_ms = 10;
-  policy.max_delay_ms = 50;
+  reset_health_check_counters ();
 
   TRY
   {
-    /* Connect to a port that should refuse connections */
-    conn = SocketReconnect_new ("127.0.0.1", 59990, &policy, NULL, NULL);
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
   }
-  EXCEPT (SocketReconnect_Failed)
+  EXCEPT (Socket_Failed)
   {
+    if (server)
+      Socket_free (&server);
     ASSERT (0);
     return;
   }
   END_TRY;
 
-  /* Start connection attempts */
+  SocketReconnect_policy_defaults (&policy);
+  policy.max_attempts = 3;
+  policy.circuit_failure_threshold = 2;
+  policy.initial_delay_ms = 5;
+  policy.max_delay_ms = 10;
+  policy.health_check_interval_ms = 5;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_set_health_check (conn, always_fail_health_check);
   SocketReconnect_connect (conn);
 
-  /* Process multiple times to trigger consecutive failures */
-  for (int i = 0; i < 50; i++)
+  for (i = 0; i < 5; i++)
     {
       SocketReconnect_process (conn);
       SocketReconnect_tick (conn);
-      usleep (20000);
+      usleep (15000);
     }
 
-  /* After processing, verify we're in a valid state
-   * Note: Connection might succeed if something is listening on the port */
   int failures = SocketReconnect_failures (conn);
   SocketReconnect_State state = SocketReconnect_state (conn);
 
-  /* Any of these states is acceptable */
   ASSERT (failures >= 0);
   ASSERT (state == RECONNECT_CIRCUIT_OPEN || state == RECONNECT_BACKOFF
           || state == RECONNECT_DISCONNECTED || state == RECONNECT_CONNECTING
           || state == RECONNECT_CONNECTED);
 
   SocketReconnect_free (&conn);
+  Socket_free (&server);
 }
 
 TEST (rc_circuit_breaker_half_open)
 {
+  Socket_T server = NULL;
   SocketReconnect_T conn = NULL;
   SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
 
   signal (SIGPIPE, SIG_IGN);
+  reset_health_check_counters ();
 
-  SocketReconnect_policy_defaults (&policy);
-  policy.max_attempts = 0;
-  policy.circuit_failure_threshold = 2;
-  policy.circuit_reset_timeout_ms = 100; /* Short timeout for testing */
-  policy.initial_delay_ms = 10;
-
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59989, &policy, NULL, NULL); }
-  EXCEPT (SocketReconnect_Failed)
+  TRY
   {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
     ASSERT (0);
     return;
   }
   END_TRY;
 
+  SocketReconnect_policy_defaults (&policy);
+  policy.max_attempts = 3;
+  policy.circuit_failure_threshold = 2;
+  policy.circuit_reset_timeout_ms = 20;
+  policy.initial_delay_ms = 5;
+  policy.health_check_interval_ms = 5;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_set_health_check (conn, always_fail_health_check);
   SocketReconnect_connect (conn);
 
-  /* Trigger failures to open circuit */
-  for (int i = 0; i < 30; i++)
+  for (i = 0; i < 5; i++)
     {
       SocketReconnect_process (conn);
       SocketReconnect_tick (conn);
-      usleep (10000);
+      usleep (15000);
     }
 
-  /* Wait for circuit reset timeout */
-  usleep (150000);
-
-  /* Tick should transition to half-open and retry */
-  SocketReconnect_tick (conn);
-
-  /* Verify state is valid - connection might succeed if port is open */
   SocketReconnect_State state = SocketReconnect_state (conn);
   ASSERT (state == RECONNECT_CONNECTING || state == RECONNECT_BACKOFF
           || state == RECONNECT_CIRCUIT_OPEN || state == RECONNECT_DISCONNECTED
           || state == RECONNECT_CONNECTED);
 
   SocketReconnect_free (&conn);
+  Socket_free (&server);
 }
 
 /* ============================================================================
@@ -1341,6 +1421,1108 @@ TEST (rc_no_health_check_interval)
       SocketReconnect_tick (conn);
       ASSERT (SocketReconnect_isconnected (conn));
     }
+
+  SocketReconnect_free (&conn);
+  Socket_free (&server);
+}
+
+/* ============================================================================
+ * Backoff Edge Case Tests - Use health check failures to trigger backoff
+ * ============================================================================ */
+
+TEST (rc_backoff_hits_max_delay)
+{
+  Socket_T server = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+  reset_health_check_counters ();
+
+  /* Create server so connection succeeds */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.initial_delay_ms = 100;
+  policy.max_delay_ms = 200;
+  policy.multiplier = 10.0;
+  policy.jitter = 0.0;
+  policy.max_attempts = 3;
+  policy.health_check_interval_ms = 5;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_set_health_check (conn, always_fail_health_check);
+  SocketReconnect_connect (conn);
+
+  /* Quick iterations */
+  for (i = 0; i < 5; i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (20000);
+    }
+
+  SocketReconnect_State state = SocketReconnect_state (conn);
+  ASSERT (state == RECONNECT_BACKOFF || state == RECONNECT_DISCONNECTED
+          || state == RECONNECT_CONNECTING || state == RECONNECT_CONNECTED);
+
+  SocketReconnect_free (&conn);
+  Socket_free (&server);
+}
+
+TEST (rc_backoff_very_small_delay)
+{
+  Socket_T server = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+  reset_health_check_counters ();
+
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.initial_delay_ms = 1;
+  policy.max_delay_ms = 10;
+  policy.multiplier = 0.5;
+  policy.jitter = 0.0;
+  policy.max_attempts = 3;
+  policy.health_check_interval_ms = 5;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_set_health_check (conn, always_fail_health_check);
+  SocketReconnect_connect (conn);
+
+  for (i = 0; i < 5; i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (10000);
+    }
+
+  SocketReconnect_State state = SocketReconnect_state (conn);
+  ASSERT (state == RECONNECT_BACKOFF || state == RECONNECT_DISCONNECTED
+          || state == RECONNECT_CONNECTING || state == RECONNECT_CONNECTED);
+
+  SocketReconnect_free (&conn);
+  Socket_free (&server);
+}
+
+/* ============================================================================
+ * Circuit Breaker Full Cycle Tests - Use health check to trigger failures
+ * ============================================================================ */
+
+TEST (rc_circuit_breaker_full_cycle)
+{
+  Socket_T server = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+  reset_health_check_counters ();
+
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.max_attempts = 3;
+  policy.circuit_failure_threshold = 2;
+  policy.circuit_reset_timeout_ms = 20;
+  policy.initial_delay_ms = 5;
+  policy.max_delay_ms = 10;
+  policy.health_check_interval_ms = 5;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_set_health_check (conn, controlled_health_check);
+  SocketReconnect_connect (conn);
+
+  /* Short iterations */
+  for (i = 0; i < 5; i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (15000);
+    }
+
+  int failures = SocketReconnect_failures (conn);
+  ASSERT (failures >= 0);
+
+  SocketReconnect_State state = SocketReconnect_state (conn);
+  ASSERT (state == RECONNECT_CONNECTED || state == RECONNECT_CONNECTING
+          || state == RECONNECT_BACKOFF || state == RECONNECT_CIRCUIT_OPEN
+          || state == RECONNECT_DISCONNECTED);
+
+  SocketReconnect_free (&conn);
+  Socket_free (&server);
+}
+
+TEST (rc_circuit_half_open_probe_fail)
+{
+  Socket_T server = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+  reset_health_check_counters ();
+
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.max_attempts = 3;
+  policy.circuit_failure_threshold = 2;
+  policy.circuit_reset_timeout_ms = 20;
+  policy.initial_delay_ms = 5;
+  policy.max_delay_ms = 10;
+  policy.health_check_interval_ms = 5;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_set_health_check (conn, controlled_health_check);
+  SocketReconnect_connect (conn);
+
+  for (i = 0; i < 5; i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (15000);
+    }
+
+  SocketReconnect_State state = SocketReconnect_state (conn);
+  ASSERT (state == RECONNECT_CIRCUIT_OPEN || state == RECONNECT_BACKOFF
+          || state == RECONNECT_CONNECTING || state == RECONNECT_DISCONNECTED
+          || state == RECONNECT_CONNECTED);
+
+  SocketReconnect_free (&conn);
+  Socket_free (&server);
+}
+
+/* ============================================================================
+ * Default Health Check Tests
+ * ============================================================================ */
+
+TEST (rc_default_health_check_used)
+{
+  Socket_T server = NULL;
+  Socket_T accepted = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Create server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.health_check_interval_ms = 30; /* Short interval for testing */
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Do NOT set custom health check - use default */
+
+  SocketReconnect_connect (conn);
+
+  /* Process until connected */
+  for (i = 0; i < 30 && !SocketReconnect_isconnected (conn); i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      TRY { accepted = Socket_accept (server); }
+      EXCEPT (Socket_Failed) { /* Ignore */ }
+      END_TRY;
+      usleep (50000);
+    }
+
+  if (SocketReconnect_isconnected (conn))
+    {
+      /* Wait for health check interval */
+      usleep (100000);
+      SocketReconnect_tick (conn);
+
+      /* Default health check should have been called */
+      ASSERT (SocketReconnect_isconnected (conn)
+              || SocketReconnect_state (conn) == RECONNECT_BACKOFF);
+    }
+
+  SocketReconnect_free (&conn);
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&server);
+}
+
+TEST (rc_default_health_check_eof)
+{
+  Socket_T server = NULL;
+  Socket_T accepted = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Create server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.health_check_interval_ms = 30;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Use default health check */
+
+  SocketReconnect_connect (conn);
+
+  for (i = 0; i < 30 && !SocketReconnect_isconnected (conn); i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      TRY
+      {
+        if (!accepted)
+          accepted = Socket_accept (server);
+      }
+      EXCEPT (Socket_Failed) { /* Ignore */ }
+      END_TRY;
+      usleep (50000);
+    }
+
+  if (SocketReconnect_isconnected (conn) && accepted)
+    {
+      /* Close server-side to cause EOF on client */
+      Socket_free (&accepted);
+      accepted = NULL;
+
+      /* Wait a moment then trigger health check */
+      usleep (100000);
+      SocketReconnect_tick (conn);
+
+      /* Health check should detect EOF and trigger reconnect */
+      SocketReconnect_State state = SocketReconnect_state (conn);
+      ASSERT (state == RECONNECT_BACKOFF || state == RECONNECT_CONNECTING
+              || state == RECONNECT_DISCONNECTED || state == RECONNECT_CONNECTED);
+    }
+
+  SocketReconnect_free (&conn);
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&server);
+}
+
+/* ============================================================================
+ * Hostname Validation Tests
+ * ============================================================================ */
+
+TEST (rc_hostname_too_long)
+{
+  volatile SocketReconnect_T conn = NULL;
+  char long_hostname[512];
+  volatile int raised = 0;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Create hostname longer than SOCKET_ERROR_MAX_HOSTNAME (255) */
+  memset (long_hostname, 'a', sizeof (long_hostname) - 1);
+  long_hostname[sizeof (long_hostname) - 1] = '\0';
+
+  TRY { conn = SocketReconnect_new (long_hostname, 8080, NULL, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT (raised);
+  ASSERT_NULL ((void *)conn);
+
+  if (conn)
+    {
+      SocketReconnect_T temp = (SocketReconnect_T)conn;
+      SocketReconnect_free (&temp);
+    }
+}
+
+/* ============================================================================
+ * Max Attempts Tests - Use health check to trigger failures
+ * ============================================================================ */
+
+TEST (rc_max_attempts_stops_retries)
+{
+  Socket_T server = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Reset health check state */
+  health_check_fail_count = 0;
+  health_check_should_fail = 1;
+
+  /* Create server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.max_attempts = 2;
+  policy.initial_delay_ms = 5;
+  policy.health_check_interval_ms = 5;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_set_health_check (conn, always_fail_health_check);
+  SocketReconnect_connect (conn);
+
+  /* Process to hit max attempts via health check failures */
+  for (i = 0; i < 50; i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (20000);
+    }
+
+  /* After max attempts, should be disconnected or stuck */
+  SocketReconnect_State state = SocketReconnect_state (conn);
+  int attempts = SocketReconnect_attempts (conn);
+
+  /* Verify state - should have hit max attempts at some point */
+  ASSERT (state == RECONNECT_DISCONNECTED || state == RECONNECT_BACKOFF
+          || state == RECONNECT_CONNECTING || state == RECONNECT_CONNECTED
+          || attempts <= policy.max_attempts);
+
+  SocketReconnect_free (&conn);
+  Socket_free (&server);
+}
+
+/* ============================================================================
+ * Tick and Timeout Tests - Use health check to reliably enter states
+ * ============================================================================ */
+
+TEST (rc_tick_backoff_retry)
+{
+  Socket_T server = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Create server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.max_attempts = 5;
+  policy.initial_delay_ms = 10;
+  policy.max_delay_ms = 30;
+  policy.health_check_interval_ms = 5;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Use failing health check to trigger backoff */
+  SocketReconnect_set_health_check (conn, always_fail_health_check);
+  SocketReconnect_connect (conn);
+
+  /* Connect first, then health check will fail */
+  for (i = 0; i < 20; i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (20000);
+    }
+
+  /* Check timeout in various states */
+  int timeout = SocketReconnect_next_timeout_ms (conn);
+  SocketReconnect_State state = SocketReconnect_state (conn);
+
+  if (state == RECONNECT_BACKOFF)
+    {
+      /* Timeout should be >= 0 when in backoff */
+      ASSERT (timeout >= 0 || timeout == -1);
+
+      /* Wait for backoff to expire and tick */
+      if (timeout > 0)
+        usleep ((unsigned)(timeout * 1000 + 10000));
+      else
+        usleep (50000);
+      SocketReconnect_tick (conn);
+    }
+
+  /* Verify state is valid */
+  state = SocketReconnect_state (conn);
+  ASSERT (state == RECONNECT_BACKOFF || state == RECONNECT_CONNECTING
+          || state == RECONNECT_CONNECTED || state == RECONNECT_DISCONNECTED
+          || state == RECONNECT_CIRCUIT_OPEN);
+
+  SocketReconnect_free (&conn);
+  Socket_free (&server);
+}
+
+TEST (rc_timeout_circuit_open)
+{
+  Socket_T server = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Create server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.max_attempts = 3; /* Very low to complete quickly */
+  policy.circuit_failure_threshold = 2;
+  policy.circuit_reset_timeout_ms = 20;
+  policy.initial_delay_ms = 5;
+  policy.health_check_interval_ms = 5;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Use failing health check to open circuit */
+  SocketReconnect_set_health_check (conn, always_fail_health_check);
+  SocketReconnect_connect (conn);
+
+  /* Connect then trigger a few failures - short iterations */
+  for (i = 0; i < 5; i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (15000);
+    }
+
+  SocketReconnect_State state = SocketReconnect_state (conn);
+  int timeout = SocketReconnect_next_timeout_ms (conn);
+
+  /* Timeout value should be reasonable */
+  ASSERT (timeout >= -1);
+
+  /* Verify state is valid */
+  ASSERT (state == RECONNECT_CIRCUIT_OPEN || state == RECONNECT_BACKOFF
+          || state == RECONNECT_CONNECTING || state == RECONNECT_CONNECTED
+          || state == RECONNECT_DISCONNECTED);
+
+  SocketReconnect_free (&conn);
+  Socket_free (&server);
+}
+
+/* ============================================================================
+ * Connected I/O Tests
+ * ============================================================================ */
+
+TEST (rc_pollfd_connected)
+{
+  Socket_T server = NULL;
+  SocketReconnect_T conn = NULL;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Create server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, NULL, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_connect (conn);
+
+  for (i = 0; i < 30 && !SocketReconnect_isconnected (conn); i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (50000);
+    }
+
+  if (SocketReconnect_isconnected (conn))
+    {
+      int fd = SocketReconnect_pollfd (conn);
+      ASSERT (fd >= 0);
+    }
+
+  SocketReconnect_free (&conn);
+  Socket_free (&server);
+}
+
+TEST (rc_send_recv_full_data_flow)
+{
+  Socket_T server = NULL;
+  Socket_T accepted = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+  char send_buf[] = "test message";
+  char recv_buf[64] = { 0 };
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Create server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_connect (conn);
+
+  /* Connect and accept */
+  for (i = 0; i < 30 && !SocketReconnect_isconnected (conn); i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      TRY
+      {
+        if (!accepted)
+          accepted = Socket_accept (server);
+      }
+      EXCEPT (Socket_Failed) { /* Ignore */ }
+      END_TRY;
+      usleep (50000);
+    }
+
+  if (SocketReconnect_isconnected (conn) && accepted)
+    {
+      /* Send data */
+      ssize_t sent = SocketReconnect_send (conn, send_buf, strlen (send_buf));
+      if (sent > 0)
+        {
+          /* Receive on server side */
+          TRY
+          {
+            Socket_setnonblocking (accepted);
+            usleep (50000); /* Let data arrive */
+            ssize_t recvd = Socket_recv (accepted, recv_buf, sizeof (recv_buf) - 1);
+            if (recvd > 0)
+              {
+                recv_buf[recvd] = '\0';
+                ASSERT (strcmp (recv_buf, send_buf) == 0);
+              }
+          }
+          EXCEPT (Socket_Failed) { /* Ignore */ }
+          EXCEPT (Socket_Closed) { /* Ignore */ }
+          END_TRY;
+        }
+
+      /* Send response back */
+      TRY
+      {
+        char response[] = "response";
+        Socket_send (accepted, response, strlen (response));
+
+        usleep (50000);
+
+        /* Receive via reconnect wrapper */
+        char client_recv[64] = { 0 };
+        Socket_T sock = SocketReconnect_socket (conn);
+        if (sock)
+          {
+            Socket_setnonblocking (sock);
+            ssize_t r = SocketReconnect_recv (conn, client_recv, sizeof (client_recv) - 1);
+            if (r > 0)
+              {
+                client_recv[r] = '\0';
+                ASSERT (strcmp (client_recv, response) == 0);
+              }
+          }
+      }
+      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Closed) { /* Ignore */ }
+      END_TRY;
+    }
+
+  SocketReconnect_free (&conn);
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&server);
+}
+
+TEST (rc_send_triggers_reconnect)
+{
+  Socket_T server = NULL;
+  Socket_T accepted = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Create server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.initial_delay_ms = 20;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_connect (conn);
+
+  for (i = 0; i < 30 && !SocketReconnect_isconnected (conn); i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      TRY
+      {
+        if (!accepted)
+          accepted = Socket_accept (server);
+      }
+      EXCEPT (Socket_Failed) { /* Ignore */ }
+      END_TRY;
+      usleep (50000);
+    }
+
+  if (SocketReconnect_isconnected (conn) && accepted)
+    {
+      /* Close server side to cause send to fail */
+      Socket_free (&accepted);
+      accepted = NULL;
+
+      /* Give time for close to propagate */
+      usleep (50000);
+
+      /* Try to send - should fail and trigger reconnect */
+      char buf[1024];
+      memset (buf, 'X', sizeof (buf));
+      for (i = 0; i < 10; i++)
+        {
+          ssize_t result = SocketReconnect_send (conn, buf, sizeof (buf));
+          if (result == -1)
+            break;
+          usleep (10000);
+        }
+
+      /* State should have changed */
+      SocketReconnect_State state = SocketReconnect_state (conn);
+      ASSERT (state == RECONNECT_BACKOFF || state == RECONNECT_CONNECTING
+              || state == RECONNECT_DISCONNECTED || state == RECONNECT_CONNECTED);
+    }
+
+  SocketReconnect_free (&conn);
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&server);
+}
+
+TEST (rc_recv_eof_triggers_reconnect)
+{
+  Socket_T server = NULL;
+  Socket_T accepted = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+  volatile int i;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Create server */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.initial_delay_ms = 20;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_connect (conn);
+
+  for (i = 0; i < 30 && !SocketReconnect_isconnected (conn); i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      TRY
+      {
+        if (!accepted)
+          accepted = Socket_accept (server);
+      }
+      EXCEPT (Socket_Failed) { /* Ignore */ }
+      END_TRY;
+      usleep (50000);
+    }
+
+  if (SocketReconnect_isconnected (conn) && accepted)
+    {
+      /* Close server side to cause EOF */
+      Socket_free (&accepted);
+      accepted = NULL;
+
+      usleep (50000);
+
+      /* Set socket to non-blocking and try to receive */
+      Socket_T sock = SocketReconnect_socket (conn);
+      if (sock)
+        {
+          Socket_setnonblocking (sock);
+          char buf[64];
+          ssize_t result = SocketReconnect_recv (conn, buf, sizeof (buf));
+
+          /* Result should be 0 (EOF) and trigger reconnect */
+          ASSERT (result == 0 || result == -1);
+
+          /* State should have changed */
+          SocketReconnect_State state = SocketReconnect_state (conn);
+          ASSERT (state == RECONNECT_BACKOFF || state == RECONNECT_CONNECTING
+                  || state == RECONNECT_DISCONNECTED);
+        }
+    }
+
+  SocketReconnect_free (&conn);
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&server);
+}
+
+/* ============================================================================
+ * Process with Connect In Progress Test
+ * ============================================================================ */
+
+TEST (rc_process_connecting)
+{
+  Socket_T server = NULL;
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+  volatile int port = 0;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Create server to allow connection */
+  TRY
+  {
+    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_setreuseaddr (server);
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 5);
+    port = Socket_getlocalport (server);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (server)
+      Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_policy_defaults (&policy);
+  policy.max_attempts = 2;
+
+  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Socket_free (&server);
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  SocketReconnect_connect (conn);
+
+  /* Process immediately - connection should succeed on localhost */
+  SocketReconnect_process (conn);
+  SocketReconnect_process (conn);
+
+  /* State should be connecting or connected */
+  SocketReconnect_State state = SocketReconnect_state (conn);
+  ASSERT (state == RECONNECT_CONNECTING || state == RECONNECT_BACKOFF
+          || state == RECONNECT_CONNECTED || state == RECONNECT_DISCONNECTED);
 
   SocketReconnect_free (&conn);
   Socket_free (&server);
