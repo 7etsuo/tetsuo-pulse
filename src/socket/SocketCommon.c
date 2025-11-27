@@ -1540,32 +1540,36 @@ common_multicast_operation (SocketBase_T base, const char *group,
                             Except_T exc_type)
 {
   struct addrinfo *res = NULL;
-  int family;
+  volatile int family;
 
   assert (base);
   assert (group);
 
   common_resolve_multicast_group (group, &res, exc_type);
-  family = SocketCommon_get_family (base, true, exc_type);
 
-  if (family == SOCKET_AF_INET)
-    {
-      struct sockaddr_in *sin = (struct sockaddr_in *)res->ai_addr;
-      common_ipv4_multicast (base, sin->sin_addr, interface, op, exc_type);
-    }
-  else if (family == SOCKET_AF_INET6)
-    {
-      struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)res->ai_addr;
-      common_ipv6_multicast (base, sin6->sin6_addr, op, exc_type);
-    }
-  else
-    {
-      freeaddrinfo (res);
-      SOCKET_ERROR_MSG ("Unsupported address family %d for multicast", family);
-      RAISE_MODULE_ERROR (exc_type);
-    }
+  TRY
+  {
+    family = SocketCommon_get_family (base, true, exc_type);
 
-  freeaddrinfo (res);
+    if (family == SOCKET_AF_INET)
+      {
+        struct sockaddr_in *sin = (struct sockaddr_in *)res->ai_addr;
+        common_ipv4_multicast (base, sin->sin_addr, interface, op, exc_type);
+      }
+    else if (family == SOCKET_AF_INET6)
+      {
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)res->ai_addr;
+        common_ipv6_multicast (base, sin6->sin6_addr, op, exc_type);
+      }
+    else
+      {
+        SOCKET_ERROR_MSG ("Unsupported address family %d for multicast",
+                          family);
+        RAISE_MODULE_ERROR (exc_type);
+      }
+  }
+  FINALLY { freeaddrinfo (res); }
+  END_TRY;
 }
 
 void
