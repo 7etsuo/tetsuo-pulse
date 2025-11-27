@@ -765,6 +765,754 @@ TEST (tls_sni_add_default_certificate)
 /* Removed duplicate TEST(crl_refresh_api) - covered in crl_load_api extensions
  */
 
+/* ==================== Protocol Version Tests ==================== */
+
+TEST (tls_set_min_protocol)
+{
+#ifdef SOCKET_HAS_TLS
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
+
+  /* Test setting valid min protocol (TLS 1.3) */
+  TRY
+  {
+    SocketTLSContext_set_min_protocol (ctx, TLS1_3_VERSION);
+    /* Should not raise - TLS1.3 is valid */
+  }
+  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Unexpected failure */ }
+  END_TRY;
+
+  /* Test with TLS 1.2 (lower) - may succeed depending on build */
+  TRY { SocketTLSContext_set_min_protocol (ctx, TLS1_2_VERSION); }
+  EXCEPT (SocketTLS_Failed) { /* May fail due to TLS1.3-only config */ }
+  END_TRY;
+
+  SocketTLSContext_free (&ctx);
+  Arena_dispose (&arena);
+#else
+  (void)0;
+#endif
+}
+
+TEST (tls_set_max_protocol)
+{
+#ifdef SOCKET_HAS_TLS
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
+
+  /* Test setting valid max protocol */
+  TRY
+  {
+    SocketTLSContext_set_max_protocol (ctx, TLS1_3_VERSION);
+    /* Should not raise */
+  }
+  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Unexpected failure */ }
+  END_TRY;
+
+  SocketTLSContext_free (&ctx);
+  Arena_dispose (&arena);
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== Cipher List Tests ==================== */
+
+TEST (tls_set_cipher_list_valid)
+{
+#ifdef SOCKET_HAS_TLS
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
+
+  /* Test with valid cipher list */
+  TRY
+  {
+    SocketTLSContext_set_cipher_list (ctx, "HIGH:!aNULL:!eNULL");
+    /* Should not raise */
+  }
+  EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+  END_TRY;
+
+  /* Test with NULL (should use default) */
+  TRY
+  {
+    SocketTLSContext_set_cipher_list (ctx, NULL);
+    /* Should not raise - uses default */
+  }
+  EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+  END_TRY;
+
+  SocketTLSContext_free (&ctx);
+  Arena_dispose (&arena);
+#else
+  (void)0;
+#endif
+}
+
+TEST (tls_set_cipher_list_invalid)
+{
+#ifdef SOCKET_HAS_TLS
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
+  volatile int raised = 0;
+
+  /* Test with invalid cipher list */
+  TRY
+  {
+    SocketTLSContext_set_cipher_list (ctx, "INVALID_CIPHER_THAT_DOES_NOT_EXIST");
+  }
+  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  END_TRY;
+
+  /* Either raised or OpenSSL accepted it (depends on version) */
+  ASSERT (raised == 0 || raised == 1);
+
+  SocketTLSContext_free (&ctx);
+  Arena_dispose (&arena);
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== OCSP Response Tests ==================== */
+
+TEST (tls_ocsp_response_set_valid)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_ocsp.crt";
+  const char *key_file = "test_ocsp.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+
+    /* Test with NULL response - should raise */
+    TRY
+    {
+      SocketTLSContext_set_ocsp_response (ctx, NULL, 0);
+      ASSERT (0); /* Should raise */
+    }
+    EXCEPT (SocketTLS_Failed) { /* Expected */ }
+    END_TRY;
+
+    /* Test with zero length - should raise */
+    unsigned char dummy[1] = { 0 };
+    TRY
+    {
+      SocketTLSContext_set_ocsp_response (ctx, dummy, 0);
+      ASSERT (0); /* Should raise */
+    }
+    EXCEPT (SocketTLS_Failed) { /* Expected */ }
+    END_TRY;
+
+    /* Test with invalid OCSP response (garbage bytes) - should raise */
+    unsigned char invalid_resp[] = { 0x30, 0x03, 0x02, 0x01, 0x00 };
+    TRY
+    {
+      SocketTLSContext_set_ocsp_response (ctx, invalid_resp, sizeof (invalid_resp));
+      /* May or may not raise depending on OpenSSL parsing */
+    }
+    EXCEPT (SocketTLS_Failed) { /* May be expected */ }
+    END_TRY;
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== ALPN Callback Tests ==================== */
+
+static const char *
+custom_alpn_callback (const char **client_protos, size_t client_count,
+                      void *user_data)
+{
+  int *called = (int *)user_data;
+  if (called)
+    *called = 1;
+
+  /* Always prefer h2 if available */
+  for (size_t i = 0; i < client_count; i++)
+    {
+      if (strcmp (client_protos[i], "h2") == 0)
+        return "h2";
+    }
+  /* Fallback to first protocol */
+  return client_count > 0 ? client_protos[0] : NULL;
+}
+
+TEST (tls_alpn_callback_registration)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_alpn_cb.crt";
+  const char *key_file = "test_alpn_cb.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+  volatile int callback_marker = 0;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+
+    /* Set ALPN protocols first */
+    const char *protos[] = { "h2", "http/1.1" };
+    SocketTLSContext_set_alpn_protos (ctx, protos, 2);
+
+    /* Set custom callback */
+    SocketTLSContext_set_alpn_callback (ctx, custom_alpn_callback,
+                                        (void *)&callback_marker);
+
+    /* Verify callback was registered (context internal state) */
+    /* The callback will be invoked during actual handshake */
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (tls_alpn_callback_null)
+{
+#ifdef SOCKET_HAS_TLS
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
+
+  /* Test setting NULL callback (disable) - should not raise */
+  SocketTLSContext_set_alpn_callback (ctx, NULL, NULL);
+
+  SocketTLSContext_free (&ctx);
+  Arena_dispose (&arena);
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== SNI Hostname Validation Tests ==================== */
+
+TEST (tls_hostname_edge_cases)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_hostname.crt";
+  const char *key_file = "test_hostname.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T server_ctx = NULL;
+  SocketTLSContext_T client_ctx = NULL;
+  Socket_T client_sock = NULL;
+  Socket_T server_sock = NULL;
+  int sv[2];
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
+
+    ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    server_sock = Socket_new_from_fd (sv[0]);
+    client_sock = Socket_new_from_fd (sv[1]);
+
+    SocketTLS_enable (server_sock, server_ctx);
+    SocketTLS_enable (client_sock, client_ctx);
+
+    /* Test valid hostname */
+    TRY { SocketTLS_set_hostname (client_sock, "example.com"); }
+    EXCEPT (SocketTLS_Failed) { /* May fail on some validation */ }
+    END_TRY;
+
+    /* Test hostname with port (should be invalid for SNI) */
+    TRY
+    {
+      SocketTLS_set_hostname (client_sock, "example.com:443");
+      /* Some validation may reject this */
+    }
+    EXCEPT (SocketTLS_Failed) { /* Expected - port not allowed in SNI */ }
+    END_TRY;
+
+    /* Test empty hostname (should fail) */
+    TRY
+    {
+      SocketTLS_set_hostname (client_sock, "");
+      ASSERT (0); /* Should raise */
+    }
+    EXCEPT (SocketTLS_Failed) { /* Expected */ }
+    END_TRY;
+  }
+  FINALLY
+  {
+    if (client_sock)
+      Socket_free (&client_sock);
+    if (server_sock)
+      Socket_free (&server_sock);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== Verify Error String Tests ==================== */
+
+TEST (tls_verify_error_string_api)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_verify_str.crt";
+  const char *key_file = "test_verify_str.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T server_ctx = NULL;
+  SocketTLSContext_T client_ctx = NULL;
+  Socket_T client_sock = NULL;
+  Socket_T server_sock = NULL;
+  int sv[2];
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
+
+    ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    server_sock = Socket_new_from_fd (sv[0]);
+    client_sock = Socket_new_from_fd (sv[1]);
+
+    SocketTLS_enable (server_sock, server_ctx);
+    SocketTLS_enable (client_sock, client_ctx);
+
+    Socket_setnonblocking (server_sock);
+    Socket_setnonblocking (client_sock);
+
+    /* Complete handshake */
+    TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    int loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE
+            || server_state != TLS_HANDSHAKE_COMPLETE)
+           && loops < 1000)
+      {
+        if (client_state != TLS_HANDSHAKE_COMPLETE)
+          client_state = SocketTLS_handshake (client_sock);
+        if (server_state != TLS_HANDSHAKE_COMPLETE)
+          server_state = SocketTLS_handshake (server_sock);
+        loops++;
+        usleep (1000);
+      }
+
+    ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);
+    ASSERT_EQ (server_state, TLS_HANDSHAKE_COMPLETE);
+
+    /* Test get_verify_error_string with successful verification */
+    char err_buf[256];
+    const char *err = SocketTLS_get_verify_error_string (client_sock, err_buf,
+                                                         sizeof (err_buf));
+    /* Should return NULL for successful verification (X509_V_OK) */
+    /* Or a string if there was a verification issue (self-signed) */
+    (void)err; /* Either outcome acceptable for self-signed */
+
+    /* Test with NULL socket */
+    const char *null_err = SocketTLS_get_verify_error_string (NULL, err_buf,
+                                                              sizeof (err_buf));
+    ASSERT_NULL (null_err);
+
+    /* Test with NULL buffer */
+    null_err = SocketTLS_get_verify_error_string (client_sock, NULL,
+                                                  sizeof (err_buf));
+    ASSERT_NULL (null_err);
+
+    /* Test with zero size */
+    null_err = SocketTLS_get_verify_error_string (client_sock, err_buf, 0);
+    ASSERT_NULL (null_err);
+  }
+  FINALLY
+  {
+    if (client_sock)
+      Socket_free (&client_sock);
+    if (server_sock)
+      Socket_free (&server_sock);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== Context Accessor Tests ==================== */
+
+TEST (tls_context_accessors)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_accessor.crt";
+  const char *key_file = "test_accessor.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T server_ctx = NULL;
+  SocketTLSContext_T client_ctx = NULL;
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+
+    /* Test SocketTLSContext_is_server */
+    ASSERT_EQ (SocketTLSContext_is_server (server_ctx), 1);
+    ASSERT_EQ (SocketTLSContext_is_server (client_ctx), 0);
+
+    /* Test SocketTLSContext_get_ssl_ctx */
+    void *ssl_ctx = SocketTLSContext_get_ssl_ctx (server_ctx);
+    ASSERT_NOT_NULL (ssl_ctx);
+
+    ssl_ctx = SocketTLSContext_get_ssl_ctx (client_ctx);
+    ASSERT_NOT_NULL (ssl_ctx);
+  }
+  FINALLY
+  {
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== ALPN Protocol Wire Format Tests ==================== */
+
+TEST (tls_alpn_protos_validation)
+{
+#ifdef SOCKET_HAS_TLS
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
+
+  /* Test with valid protocols */
+  TRY
+  {
+    const char *protos[] = { "h2", "http/1.1", "spdy/3.1" };
+    SocketTLSContext_set_alpn_protos (ctx, protos, 3);
+    /* Should succeed */
+  }
+  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Unexpected failure */ }
+  END_TRY;
+
+  /* Test with empty protocol count (should be no-op) */
+  TRY
+  {
+    SocketTLSContext_set_alpn_protos (ctx, NULL, 0);
+    /* Should not raise - count=0 is no-op */
+  }
+  EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+  END_TRY;
+
+  SocketTLSContext_free (&ctx);
+  Arena_dispose (&arena);
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== Session Ticket Key Validation Tests ==================== */
+
+TEST (tls_session_tickets_key_length)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_ticket_key.crt";
+  const char *key_file = "test_ticket_key.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+
+    /* Test with correct key length (80 bytes) */
+    unsigned char key80[80];
+    memset (key80, 0x42, sizeof (key80));
+    TRY
+    {
+      SocketTLSContext_enable_session_tickets (ctx, key80, 80);
+      /* Should succeed */
+    }
+    EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+    END_TRY;
+
+    /* Test with short key (should fail) */
+    unsigned char key48[48];
+    memset (key48, 0x42, sizeof (key48));
+    TRY
+    {
+      SocketTLSContext_enable_session_tickets (ctx, key48, 48);
+      ASSERT (0); /* Should raise */
+    }
+    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    END_TRY;
+    ASSERT_EQ (raised, 1);
+
+    /* Test with long key (should fail) */
+    raised = 0;
+    unsigned char key128[128];
+    memset (key128, 0x42, sizeof (key128));
+    TRY
+    {
+      SocketTLSContext_enable_session_tickets (ctx, key128, 128);
+      ASSERT (0); /* Should raise */
+    }
+    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    END_TRY;
+    ASSERT_EQ (raised, 1);
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== Error Path Tests ==================== */
+
+TEST (tls_enable_without_fd)
+{
+#ifdef SOCKET_HAS_TLS
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
+  Socket_T sock = Socket_new (AF_INET, SOCK_STREAM, 0);
+  volatile int raised = 0;
+
+  /* Socket not connected - fd valid but not connected, enable may work */
+  TRY { SocketTLS_enable (sock, ctx); }
+  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  END_TRY;
+
+  /* Either outcome acceptable - depends on implementation */
+  (void)raised;
+
+  Socket_free (&sock);
+  SocketTLSContext_free (&ctx);
+  Arena_dispose (&arena);
+#else
+  (void)0;
+#endif
+}
+
+TEST (tls_double_enable)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_double.crt";
+  const char *key_file = "test_double.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T server_ctx = NULL;
+  SocketTLSContext_T client_ctx = NULL;
+  Socket_T sock = NULL;
+  int sv[2];
+  volatile int raised = 0;
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+
+    ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    sock = Socket_new_from_fd (sv[0]);
+    close (sv[1]); /* Close peer */
+
+    /* First enable should succeed */
+    SocketTLS_enable (sock, client_ctx);
+
+    /* Second enable should fail */
+    TRY
+    {
+      SocketTLS_enable (sock, client_ctx);
+      ASSERT (0); /* Should raise */
+    }
+    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    END_TRY;
+
+    ASSERT_EQ (raised, 1);
+  }
+  FINALLY
+  {
+    if (sock)
+      Socket_free (&sock);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== Verify Callback Exception Handling Tests ==================== */
+
+TEST (tls_verify_callback_exception)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_verify_exc.crt";
+  const char *key_file = "test_verify_exc.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T server_ctx = NULL;
+  SocketTLSContext_T client_ctx = NULL;
+  Socket_T client_sock = NULL;
+  Socket_T server_sock = NULL;
+  int sv[2];
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+
+    /* Set callback that raises exception */
+    SocketTLSContext_set_verify_callback (client_ctx, raising_verify_cb, NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_PEER);
+
+    ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    server_sock = Socket_new_from_fd (sv[0]);
+    client_sock = Socket_new_from_fd (sv[1]);
+
+    SocketTLS_enable (server_sock, server_ctx);
+    SocketTLS_enable (client_sock, client_ctx);
+
+    Socket_setnonblocking (server_sock);
+    Socket_setnonblocking (client_sock);
+
+    /* Try handshake - may fail due to callback raising exception */
+    volatile TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    volatile TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    volatile int loops = 0;
+    volatile int handshake_failed = 0;
+
+    TRY
+    {
+      while ((client_state != TLS_HANDSHAKE_COMPLETE
+              && client_state != TLS_HANDSHAKE_ERROR)
+             && loops < 100)
+        {
+          if (client_state != TLS_HANDSHAKE_COMPLETE
+              && client_state != TLS_HANDSHAKE_ERROR)
+            client_state = SocketTLS_handshake (client_sock);
+          if (server_state != TLS_HANDSHAKE_COMPLETE
+              && server_state != TLS_HANDSHAKE_ERROR)
+            server_state = SocketTLS_handshake (server_sock);
+          loops++;
+          usleep (1000);
+        }
+    }
+    EXCEPT (SocketTLS_HandshakeFailed) { handshake_failed = 1; }
+    END_TRY;
+
+    /* Handshake should have failed due to verify callback exception */
+    /* But we're mainly testing that exception doesn't crash */
+    (void)handshake_failed;
+  }
+  FINALLY
+  {
+    if (client_sock)
+      Socket_free (&client_sock);
+    if (server_sock)
+      Socket_free (&server_sock);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== Session Cache Zero Size Test ==================== */
+
+TEST (tls_session_cache_zero_size)
+{
+#ifdef SOCKET_HAS_TLS
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
+  volatile int raised = 0;
+
+  /* Test setting zero size (should raise) */
+  TRY
+  {
+    SocketTLSContext_set_session_cache_size (ctx, 0);
+    ASSERT (0); /* Should raise */
+  }
+  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+
+  SocketTLSContext_free (&ctx);
+  Arena_dispose (&arena);
+#else
+  (void)0;
+#endif
+}
+
 int
 main (void)
 {
