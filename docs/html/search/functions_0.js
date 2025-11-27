@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['arena_5falloc_0',['Arena_alloc',['../Arena_8h.html#a6199ed44c60cefaaf970a01fd3328a1c',1,'Arena.h']]],
-  ['arena_5fcalloc_1',['Arena_calloc',['../Arena_8h.html#ae2cf7d22ec2b62831335221869418f0a',1,'Arena.h']]],
-  ['arena_5fclear_2',['Arena_clear',['../Arena_8h.html#a28209b936f419970ae096bb9131391e4',1,'Arena.h']]],
-  ['arena_5fdispose_3',['Arena_dispose',['../Arena_8h.html#a6df3c4a3be9c2ad42567ac454d21605b',1,'Arena.h']]],
-  ['arena_5fnew_4',['Arena_new',['../Arena_8h.html#a89ed54bb26ea8d3b5adf6dd91bbfabcc',1,'Arena.h']]]
+  ['arena_5falloc_0',['Arena_alloc',['../Arena_8h.html#ad93b1dd7d771cbed846dcc3c5c836917',1,'Arena.h']]],
+  ['arena_5fcalloc_1',['Arena_calloc',['../Arena_8h.html#a3b920b3eed0306dc5afb36934955f6a2',1,'Arena.h']]],
+  ['arena_5fclear_2',['Arena_clear',['../Arena_8h.html#a0af0c54c1c64ff88ad43aadd48ce3ebe',1,'Arena.h']]],
+  ['arena_5fdispose_3',['Arena_dispose',['../Arena_8h.html#a6842e66018614df08139e67826cf3e0d',1,'Arena.h']]],
+  ['arena_5fnew_4',['Arena_new',['../Arena_8h.html#a6a6d6890eb6ed1248ae1a5f0c677c7a4',1,'Arena.h']]]
 ];

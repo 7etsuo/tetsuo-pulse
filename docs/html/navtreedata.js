@@ -26,52 +26,65 @@ var NAVTREE =
 [
   [ "Socket Library", "index.html", [
     [ "Features", "index.html#autotoc_md1", [
-      [ "Core Capabilities", "index.html#autotoc_md2", null ],
-      [ "Production-Ready Features", "index.html#autotoc_md3", null ]
+      [ "Core Networking", "index.html#autotoc_md2", null ],
+      [ "Async & Event-Driven", "index.html#autotoc_md3", null ],
+      [ "Performance", "index.html#autotoc_md4", null ]
     ] ],
-    [ "Platform Requirements", "index.html#autotoc_md4", null ],
-    [ "Quick Start", "index.html#autotoc_md5", [
-      [ "Building", "index.html#autotoc_md6", null ],
-      [ "Basic TCP Server", "index.html#autotoc_md7", null ],
-      [ "Basic TCP Client", "index.html#autotoc_md8", null ]
+    [ "Quick Start", "index.html#autotoc_md6", null ],
+    [ "Examples", "index.html#autotoc_md8", [
+      [ "TCP Echo Server", "index.html#autotoc_md9", null ],
+      [ "TCP Client", "index.html#autotoc_md11", null ],
+      [ "Event-Driven Server (Non-Blocking)", "index.html#autotoc_md13", null ],
+      [ "UDP Echo Server", "index.html#autotoc_md15", null ],
+      [ "UDP Client", "index.html#autotoc_md17", null ],
+      [ "TLS Client (Secure Connection)", "index.html#autotoc_md19", null ],
+      [ "Unix Domain Socket Server", "index.html#autotoc_md21", null ],
+      [ "Happy Eyeballs (Fast Dual-Stack)", "index.html#autotoc_md23", null ],
+      [ "Auto-Reconnecting Client", "index.html#autotoc_md25", null ],
+      [ "Connection Pool with Buffers", "index.html#autotoc_md27", null ],
+      [ "Async DNS Resolution", "index.html#autotoc_md29", null ],
+      [ "Zero-Copy File Transfer", "index.html#autotoc_md31", null ],
+      [ "Scatter/Gather I/O", "index.html#autotoc_md33", null ],
+      [ "Advanced TCP Options", "index.html#autotoc_md35", null ]
     ] ],
-    [ "Usage Patterns", "index.html#autotoc_md9", [
-      [ "Error Handling", "index.html#autotoc_md10", null ],
-      [ "Non-Blocking I/O", "index.html#autotoc_md11", null ],
-      [ "Event-Driven Server with SocketPoll", "index.html#autotoc_md12", null ],
-      [ "UDP Server", "index.html#autotoc_md13", null ],
-      [ "Connection Pooling", "index.html#autotoc_md14", null ],
-      [ "Zero-Copy File Transfer", "index.html#autotoc_md15", null ],
-      [ "Scatter/Gather I/O", "index.html#autotoc_md16", null ],
-      [ "Advanced TCP Options", "index.html#autotoc_md17", null ],
-      [ "Asynchronous DNS Resolution", "index.html#autotoc_md18", null ],
-      [ "TLS/SSL Secure Communication", "index.html#autotoc_md19", null ]
+    [ "Header Files", "index.html#autotoc_md37", null ],
+    [ "Error Handling", "index.html#autotoc_md39", [
+      [ "Exception Types", "index.html#autotoc_md40", null ]
     ] ],
-    [ "API Reference", "index.html#autotoc_md20", [
-      [ "Core Modules", "index.html#autotoc_md21", [
-        [ "Socket (TCP Stream Sockets)", "index.html#autotoc_md22", null ],
-        [ "SocketDgram (UDP Datagram Sockets)", "index.html#autotoc_md23", null ],
-        [ "SocketPoll (Event Polling)", "index.html#autotoc_md24", null ],
-        [ "SocketPool (Connection Pooling)", "index.html#autotoc_md25", null ],
-        [ "SocketDNS (Asynchronous DNS)", "index.html#autotoc_md26", null ],
-        [ "SocketTLS (TLS/SSL)", "index.html#autotoc_md27", null ]
+    [ "Platform Support", "index.html#autotoc_md42", null ],
+    [ "Documentation", "index.html#autotoc_md44", null ],
+    [ "Asynchronous I/O Guide", "md_docs_2ASYNC__IO.html", [
+      [ "Overview", "md_docs_2ASYNC__IO.html#autotoc_md46", null ],
+      [ "Platform Support", "md_docs_2ASYNC__IO.html#autotoc_md47", null ],
+      [ "Key Benefits", "md_docs_2ASYNC__IO.html#autotoc_md48", null ],
+      [ "Basic Usage", "md_docs_2ASYNC__IO.html#autotoc_md49", [
+        [ "Getting Async Context", "md_docs_2ASYNC__IO.html#autotoc_md50", null ],
+        [ "Async Send", "md_docs_2ASYNC__IO.html#autotoc_md51", null ],
+        [ "Async Receive", "md_docs_2ASYNC__IO.html#autotoc_md52", null ],
+        [ "Processing Completions", "md_docs_2ASYNC__IO.html#autotoc_md53", null ],
+        [ "Cancellation", "md_docs_2ASYNC__IO.html#autotoc_md54", null ]
       ] ],
-      [ "Exception Types", "index.html#autotoc_md28", null ],
-      [ "Error Reporting", "index.html#autotoc_md29", null ]
+      [ "Complete Example: Echo Server", "md_docs_2ASYNC__IO.html#autotoc_md55", null ],
+      [ "Performance Tuning", "md_docs_2ASYNC__IO.html#autotoc_md56", [
+        [ "io_uring (Linux)", "md_docs_2ASYNC__IO.html#autotoc_md57", null ],
+        [ "kqueue (macOS/BSD)", "md_docs_2ASYNC__IO.html#autotoc_md58", null ]
+      ] ],
+      [ "Fallback Mode", "md_docs_2ASYNC__IO.html#autotoc_md59", null ],
+      [ "Thread Safety", "md_docs_2ASYNC__IO.html#autotoc_md60", null ],
+      [ "Error Handling", "md_docs_2ASYNC__IO.html#autotoc_md61", null ],
+      [ "Migration Guide", "md_docs_2ASYNC__IO.html#autotoc_md62", [
+        [ "From Synchronous to Async", "md_docs_2ASYNC__IO.html#autotoc_md63", null ]
+      ] ],
+      [ "Best Practices", "md_docs_2ASYNC__IO.html#autotoc_md64", null ],
+      [ "Limitations", "md_docs_2ASYNC__IO.html#autotoc_md65", null ],
+      [ "Troubleshooting", "md_docs_2ASYNC__IO.html#autotoc_md66", [
+        [ "Async Not Available", "md_docs_2ASYNC__IO.html#autotoc_md67", null ],
+        [ "High CPU Usage", "md_docs_2ASYNC__IO.html#autotoc_md68", null ],
+        [ "Memory Leaks", "md_docs_2ASYNC__IO.html#autotoc_md69", null ]
+      ] ],
+      [ "API Reference", "md_docs_2ASYNC__IO.html#autotoc_md70", null ],
+      [ "Performance Benchmarks", "md_docs_2ASYNC__IO.html#autotoc_md71", null ]
     ] ],
-    [ "Building", "index.html#autotoc_md30", [
-      [ "Requirements", "index.html#autotoc_md31", null ],
-      [ "Build Commands", "index.html#autotoc_md32", null ],
-      [ "Build Options", "index.html#autotoc_md33", null ]
-    ] ],
-    [ "Thread Safety", "index.html#autotoc_md34", null ],
-    [ "Memory Management", "index.html#autotoc_md35", null ],
-    [ "Performance Considerations", "index.html#autotoc_md36", null ],
-    [ "Examples", "index.html#autotoc_md37", null ],
-    [ "Documentation", "index.html#autotoc_md38", [
-      [ "Generating API Reference", "index.html#autotoc_md39", null ]
-    ] ],
-    [ "License", "index.html#autotoc_md40", null ],
     [ "Data Structures", "annotated.html", [
       [ "Data Structures", "annotated.html", "annotated_dup" ],
       [ "Data Structure Index", "classes.html", null ],
@@ -89,7 +102,7 @@ var NAVTREE =
         [ "Typedefs", "globals_type.html", null ],
         [ "Enumerations", "globals_enum.html", null ],
         [ "Enumerator", "globals_eval.html", null ],
-        [ "Macros", "globals_defs.html", null ]
+        [ "Macros", "globals_defs.html", "globals_defs" ]
       ] ]
     ] ]
   ] ]
@@ -98,8 +111,9 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "Arena_8h.html",
-"SocketError_8h.html#a1feea47474a6b6e939c442cdd7c42fdb",
-"Socket_8h.html#a9262ae6cbe3a40b63967ba700a011016"
+"SocketConfig_8h.html#acddf48aa583cfb80ca7caa6efd4f7143",
+"SocketRateLimit_8h.html#a984414b5ee576c6acb3fbd9e8a96ef0f",
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908ac228d15b5fa5ec6fd8cd597f798cd3e9"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

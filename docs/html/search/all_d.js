@@ -1,26 +1,7 @@
 var searchData=
 [
-  ['patterns_0',['Usage Patterns',['../index.html#autotoc_md9',1,'']]],
-  ['peer_5faddr_1',['peer_addr',['../structSocketEventRecord.html#ae021d59d3adb38d71c2ba26efcce7338',1,'SocketEventRecord']]],
-  ['peer_5fport_2',['peer_port',['../structSocketEventRecord.html#a42fb5110ec062ac83a9b36e898b59a75',1,'SocketEventRecord']]],
-  ['peeraddr_3',['peeraddr',['../structSocket__T.html#a21c341f83bea5b1f7a4fbb330062e50c',1,'Socket_T']]],
-  ['peerport_4',['peerport',['../structSocket__T.html#a8bf6fcc2dc26873b3ad7f6f663672b6d',1,'Socket_T']]],
-  ['performance_20considerations_5',['Performance Considerations',['../index.html#autotoc_md36',1,'']]],
-  ['platform_20requirements_6',['Platform Requirements',['../index.html#autotoc_md4',1,'']]],
-  ['poll_7',['poll',['../structSocketEventRecord.html#ae744331ff3191371ebce1f51984a2567',1,'SocketEventRecord']]],
-  ['poll_5ferror_8',['POLL_ERROR',['../SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6a29422ea3bfa0fde21ed413e6f9d7b0d9',1,'SocketPoll.h']]],
-  ['poll_5ffd_5fmap_5fexpand_5fincrement_9',['POLL_FD_MAP_EXPAND_INCREMENT',['../SocketConfig_8h.html#a834e79d67b92d737d55e4ba2b0684025',1,'SocketConfig.h']]],
-  ['poll_5fhangup_10',['POLL_HANGUP',['../SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6aaa263b6ed4ed526b0d9c55f0c2702f4c',1,'SocketPoll.h']]],
-  ['poll_5finitial_5ffd_5fmap_5fsize_11',['POLL_INITIAL_FD_MAP_SIZE',['../SocketConfig_8h.html#a211a6387523fa6487af971831aabf461',1,'SocketConfig.h']]],
-  ['poll_5finitial_5ffds_12',['POLL_INITIAL_FDS',['../SocketConfig_8h.html#a673275383493d8cff8bc582fef311e42',1,'SocketConfig.h']]],
-  ['poll_5fread_13',['POLL_READ',['../SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8',1,'SocketPoll.h']]],
-  ['poll_5fwrite_14',['POLL_WRITE',['../SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195',1,'SocketPoll.h']]],
-  ['pollbackend_5ft_15',['PollBackend_T',['../SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b',1,'SocketPoll_backend.h']]],
-  ['polling_16',['SocketPoll (Event Polling)',['../index.html#autotoc_md24',1,'']]],
-  ['pooling_17',['pooling',['../index.html#autotoc_md14',1,'Connection Pooling'],['../index.html#autotoc_md25',1,'SocketPool (Connection Pooling)']]],
-  ['port_18',['port',['../structSocketEventRecord.html#a7f7340908cdff2dd85aa2d6e6ca6ed7a',1,'SocketEventRecord']]],
-  ['prepare_5ffree_5fslot_19',['prepare_free_slot',['../SocketPool-private_8h.html#a7821321479544a6e24fb4c2946e22c60',1,'SocketPool-private.h']]],
-  ['prev_20',['prev',['../structExcept__Frame.html#a4a5323a9c98b198d171a7f0409f3bbae',1,'Except_Frame']]],
-  ['production_20ready_20features_21',['Production-Ready Features',['../index.html#autotoc_md3',1,'']]],
-  ['protocol_2dp_22',['Protocol-p',['../protocolProtocol-p.html',1,'']]]
+  ['networking_0',['Core Networking',['../index.html#autotoc_md2',1,'']]],
+  ['nfds_1',['nfds',['../SocketUtil_8h.html#a1a0729dccd2773490730cb1118488677',1,'SocketEventRecord.data.poll']]],
+  ['non_20blocking_2',['Event-Driven Server (Non-Blocking)',['../index.html#autotoc_md13',1,'']]],
+  ['not_20available_3',['Async Not Available',['../md_docs_2ASYNC__IO.html#autotoc_md67',1,'']]]
 ];

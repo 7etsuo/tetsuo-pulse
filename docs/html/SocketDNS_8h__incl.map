@@ -1,0 +1,13 @@
+<map id="SocketDNS.h" name="SocketDNS.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="159,5,261,31"/>
+<area shape="rect" id="Node000002" href="$Except_8h.html" title=" " alt="" coords="5,79,108,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="186,33,95,75,93,70,184,28"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="132,79,197,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="205,32,182,69,177,66,200,30"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="222,79,291,104"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="220,30,244,66,239,69,215,32"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="316,79,413,104"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="236,28,328,70,326,75,234,33"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="21,152,93,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="59,104,59,138,54,138,54,104"/>
+</map>

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['decrement_5fpool_5fcount_0',['decrement_pool_count',['../SocketPool-private_8h.html#a5374f9969a32eb12ea7794b1f1a20d77',1,'SocketPool-private.h']]]
+  ['except_5fraise_0',['Except_raise',['../Except_8h.html#a9199ea10e7cd2cf2422ae8ffa9ac43a1',1,'Except.h']]]
 ];

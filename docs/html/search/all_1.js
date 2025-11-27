@@ -8,11 +8,11 @@ var searchData=
   ['backend_5fname_5',['backend_name',['../SocketPoll__backend_8h.html#a2edb00f128ad773d62c8f11c516153d9',1,'SocketPoll_backend.h']]],
   ['backend_5fnew_6',['backend_new',['../SocketPoll__backend_8h.html#ae1b5045d5537dde7eb2cce1e8deae997',1,'SocketPoll_backend.h']]],
   ['backend_5fwait_7',['backend_wait',['../SocketPoll__backend_8h.html#a9ca26eabe4ea3174d20ea5169a21f15c',1,'SocketPoll_backend.h']]],
-  ['basic_20tcp_20client_8',['Basic TCP Client',['../index.html#autotoc_md8',1,'']]],
-  ['basic_20tcp_20server_9',['Basic TCP Server',['../index.html#autotoc_md7',1,'']]],
-  ['blocking_20i_20o_10',['Non-Blocking I/O',['../index.html#autotoc_md11',1,'']]],
-  ['bufsize_11',['bufsize',['../structT.html#a6230cec72dbf7957c381537a2cc26e9c',1,'T']]],
-  ['build_20commands_12',['Build Commands',['../index.html#autotoc_md32',1,'']]],
-  ['build_20options_13',['Build Options',['../index.html#autotoc_md33',1,'']]],
-  ['building_14',['building',['../index.html#autotoc_md6',1,'Building'],['../index.html#autotoc_md30',1,'Building']]]
+  ['basic_20usage_8',['Basic Usage',['../md_docs_2ASYNC__IO.html#autotoc_md49',1,'']]],
+  ['benchmarks_9',['Performance Benchmarks',['../md_docs_2ASYNC__IO.html#autotoc_md71',1,'']]],
+  ['benefits_10',['Key Benefits',['../md_docs_2ASYNC__IO.html#autotoc_md48',1,'']]],
+  ['best_20practices_11',['Best Practices',['../md_docs_2ASYNC__IO.html#autotoc_md64',1,'']]],
+  ['blocking_12',['Event-Driven Server (Non-Blocking)',['../index.html#autotoc_md13',1,'']]],
+  ['bsd_13',['kqueue (macOS/BSD)',['../md_docs_2ASYNC__IO.html#autotoc_md58',1,'']]],
+  ['buffers_14',['Connection Pool with Buffers',['../index.html#autotoc_md27',1,'']]]
 ];
