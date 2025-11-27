@@ -41,6 +41,16 @@ if(ENABLE_UBSAN)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=undefined")
 endif()
 
+# Code coverage option
+option(ENABLE_COVERAGE "Enable code coverage with gcov" OFF)
+
+if(ENABLE_COVERAGE)
+    message(STATUS "Code coverage enabled (gcov)")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
+endif()
+
 # Default to Debug build
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
@@ -266,6 +276,9 @@ if(ENABLE_ASAN)
 endif()
 if(ENABLE_UBSAN)
     message(STATUS "  UBSanitizer: Enabled")
+endif()
+if(ENABLE_COVERAGE)
+    message(STATUS "  Code Coverage: Enabled")
 endif()
 
 # Enable testing
