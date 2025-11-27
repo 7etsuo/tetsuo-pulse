@@ -244,13 +244,17 @@ cancel_processing_state (struct SocketDNS_T *dns,
  *
  * Thread-safe: Must be called with mutex locked
  *
- * Frees any stored result (ownership not yet transferred to caller)
- * and sets cancellation error code.
+ * Frees any stored result only if no callback was provided. When a callback
+ * exists, the callback owns the result and is responsible for freeing it.
+ * Sets cancellation error code.
  */
 static void
 cancel_complete_state (struct SocketDNS_Request_T *req)
 {
-  if (req->result)
+  /* Only free result if no callback was provided.
+   * If callback exists, it has received ownership of the result
+   * and is responsible for freeing it (may have already done so). */
+  if (req->result && !req->callback)
     {
       SocketCommon_free_addrinfo (req->result);
       req->result = NULL;
