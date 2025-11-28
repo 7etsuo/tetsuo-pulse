@@ -11,7 +11,7 @@
 #   ./scripts/run_fuzz_parallel.sh [OPTIONS]
 #
 # Options:
-#   -j JOBS     Jobs per target (default: 16, total = JOBS * 4 targets)
+#   -j JOBS     Jobs per target (default: 16, total = JOBS * 14 targets)
 #   -t TIME     Total time in seconds (default: 3600 = 1 hour)
 #   -m MAXLEN   Maximum input length (default: 4096)
 #   -r          Use ramdisk corpus (/mnt/fuzz_corpus)
@@ -30,8 +30,23 @@ CONTINUE=0
 BUILD_DIR="build-fuzz"
 CORPUS_BASE="src/fuzz/corpus"
 
-# Fuzzer targets
-TARGETS=(fuzz_socketbuf fuzz_arena fuzz_ip_parse fuzz_dns_validate fuzz_socketbuf_stress)
+# Fuzzer targets (14 total)
+TARGETS=(
+    fuzz_socketbuf
+    fuzz_arena
+    fuzz_ip_parse
+    fuzz_dns_validate
+    fuzz_socketbuf_stress
+    fuzz_ratelimit
+    fuzz_timer
+    fuzz_iptracker
+    fuzz_happy_eyeballs
+    fuzz_reconnect
+    fuzz_socketio
+    fuzz_address_parse
+    fuzz_tls_alpn
+    fuzz_tls_session
+)
 
 # Color output
 RED='\033[0;31m'
