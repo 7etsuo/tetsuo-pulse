@@ -5816,7 +5816,7 @@ TEST (socket_bind_async_cancel_basic)
   setup_signals ();
   SocketDNS_T dns = NULL;
   Socket_T socket = NULL;
-  SocketDNS_Request_T req = NULL;
+  volatile SocketDNS_Request_T req = NULL;
 
   TRY
   {

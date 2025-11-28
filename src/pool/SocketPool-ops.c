@@ -332,7 +332,6 @@ void
 SocketPool_prewarm (T pool, int percentage)
 {
   size_t prewarm_count;
-  struct Connection *conn;
   size_t allocated = 0;
 
   assert (pool);
@@ -340,19 +339,23 @@ SocketPool_prewarm (T pool, int percentage)
 
   pthread_mutex_lock (&pool->mutex);
 
-  prewarm_count = (pool->maxconns * (size_t)percentage) / SOCKET_PERCENTAGE_DIVISOR;
+  prewarm_count
+      = (pool->maxconns * (size_t)percentage) / SOCKET_PERCENTAGE_DIVISOR;
 
-  conn = pool->free_list;
-  while (conn && allocated < prewarm_count)
+  /* Safer: iterate by index over the authoritative connections array
+   * to avoid following possibly-stale pointers in free_list.
+   * This prevents heap-use-after-free if the array is reallocated elsewhere. */
+  for (size_t i = 0; i < pool->maxconns && allocated < prewarm_count; i++)
     {
-      if (!conn->inbuf && !conn->outbuf)
+      struct Connection *c = &pool->connections[i];
+      /* Only prewarm truly free slots (inactive and no buffers allocated) */
+      if (!c->active && !c->inbuf && !c->outbuf)
         {
           if (SocketPool_connections_alloc_buffers (pool->arena, pool->bufsize,
-                                                    conn)
+                                                    c)
               == 0)
             allocated++;
         }
-      conn = conn->free_next;
     }
 
   pthread_mutex_unlock (&pool->mutex);
