@@ -2,28 +2,26 @@
  * fuzz_connect.c - Fuzzer for Socket connection operations
  *
  * Tests connection establishment code paths in Socket-connect.c:
- * - Address resolution
- * - Timeout handling
- * - Non-blocking connect
- * - Socket options
+ * - Socket creation and options
+ * - Non-blocking connect behavior
+ * - Address validation
  *
- * NOTE: This fuzzer avoids nested TRY/EXCEPT blocks to prevent
- * stack-use-after-scope issues with setjmp/longjmp and AddressSanitizer.
+ * NOTE: Only uses loopback addresses (127.0.0.1, ::1) because:
+ * - They fail immediately with ECONNREFUSED (no TCP retries)
+ * - TEST-NET addresses (192.0.2.x) cause 30+ second TCP timeouts
+ * - Non-blocking mode doesn't help - kernel still retries SYN packets
  */
 
-#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <unistd.h>
 
-#include "core/Arena.h"
 #include "core/Except.h"
 #include "socket/Socket.h"
 #include "socket/SocketCommon.h"
 
-/* Suppress GCC clobbered warnings for volatile variables */
+/* Suppress GCC clobbered warnings */
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
@@ -31,25 +29,15 @@
 /* Operation types */
 typedef enum
 {
-  OP_CONNECT_IP = 0,
-  OP_CONNECT_TIMEOUT,
-  OP_CONNECT_NONBLOCK,
-  OP_CONNECT_OPTIONS,
-  OP_TIMEOUT_CONFIG,
+  OP_CONNECT_IPV4 = 0,
+  OP_CONNECT_IPV6,
+  OP_SOCKET_OPTIONS,
   OP_MULTI_SOCKET,
-  OP_IPV6_CONNECT,
-  OP_SOCKET_CREATE
+  OP_TIMEOUT_CONFIG,
+  OP_NONBLOCK_OPTIONS,
+  OP_SOCKET_INFO,
+  OP_SOCKET_REUSE
 } ConnectOp;
-
-/* Pre-defined test addresses (RFC 5737 TEST-NET, won't route) */
-static const char *test_ips[]
-    = { "192.0.2.1",    /* TEST-NET-1 - immediate failure */
-        "198.51.100.1", /* TEST-NET-2 - immediate failure */
-        "203.0.113.1",  /* TEST-NET-3 - immediate failure */
-        "127.0.0.1"     /* Loopback */
-      };
-
-#define NUM_TEST_IPS (sizeof (test_ips) / sizeof (test_ips[0]))
 
 static uint8_t
 get_op (const uint8_t *data, size_t size)
@@ -63,10 +51,11 @@ get_port (const uint8_t *data, size_t size)
   if (size < 3)
     return 12345;
   uint16_t port = (uint16_t)data[1] | ((uint16_t)data[2] << 8);
-  if (port < 1024)
-    port += 1024;
-  if (port > 65530)
-    port = 65530;
+  /* Use high ports that are unlikely to have services */
+  if (port < 10000)
+    port += 10000;
+  if (port > 65000)
+    port = 65000;
   return port;
 }
 
@@ -78,98 +67,97 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   volatile uint8_t op = get_op (data, size);
   volatile uint16_t port = get_port (data, size);
-  volatile int ip_idx = (size > 3 ? data[3] : 0) % (int)NUM_TEST_IPS;
   Socket_T socket = NULL;
 
-  /* Single TRY block - no nesting to avoid ASan scope issues */
   TRY
   {
     switch (op)
       {
-      case OP_CONNECT_IP:
-        socket = Socket_new (AF_INET, SOCK_STREAM, 0);
-        Socket_settimeout (socket, 1); /* 1ms timeout */
-        Socket_connect (socket, test_ips[ip_idx], port);
-        break;
-
-      case OP_CONNECT_TIMEOUT:
-        socket = Socket_new (AF_INET, SOCK_STREAM, 0);
-        Socket_settimeout (socket, (size > 4 ? (data[4] % 10) : 1) + 1);
-        Socket_connect (socket, "192.0.2.1", port);
-        break;
-
-      case OP_CONNECT_NONBLOCK:
+      case OP_CONNECT_IPV4:
+        /* Connect to loopback - fails immediately with ECONNREFUSED */
         socket = Socket_new (AF_INET, SOCK_STREAM, 0);
         Socket_setnonblocking (socket);
-        Socket_connect (socket, "192.0.2.1", port);
+        Socket_connect (socket, "127.0.0.1", port);
         break;
 
-      case OP_CONNECT_OPTIONS:
+      case OP_CONNECT_IPV6:
+        /* Connect to IPv6 loopback - fails immediately with ECONNREFUSED */
+        socket = Socket_new (AF_INET6, SOCK_STREAM, 0);
+        Socket_setnonblocking (socket);
+        Socket_connect (socket, "::1", port);
+        break;
+
+      case OP_SOCKET_OPTIONS:
+        /* Test various socket options without connecting */
         socket = Socket_new (AF_INET, SOCK_STREAM, 0);
         Socket_setreuseaddr (socket);
         Socket_setnodelay (socket, 1);
         Socket_setkeepalive (socket, 60, 10, 3);
         Socket_setnonblocking (socket);
-        Socket_connect (socket, "192.0.2.1", port);
-        break;
-
-      case OP_TIMEOUT_CONFIG:
-        /* Test timeout configuration without connecting */
-        socket = Socket_new (AF_INET, SOCK_STREAM, 0);
         Socket_settimeout (socket, 1);
         (void)Socket_gettimeout (socket);
-        Socket_settimeout (socket, 5);
-        (void)Socket_gettimeout (socket);
-
-        /* Test global DNS timeout config */
-        SocketCommon_set_dns_timeout (100);
-        (void)SocketCommon_get_dns_timeout ();
-        SocketCommon_set_dns_timeout (-1); /* Reset */
+        (void)Socket_fd (socket);
         break;
 
       case OP_MULTI_SOCKET:
-        /* Create and immediately free multiple sockets */
-        for (int i = 0; i < 3; i++)
+        /* Rapid socket create/destroy */
+        for (int i = 0; i < 5; i++)
           {
             Socket_T s = Socket_new (AF_INET, SOCK_STREAM, 0);
-            Socket_settimeout (s, 1);
+            Socket_setreuseaddr (s);
             Socket_setnonblocking (s);
             Socket_free (&s);
           }
         break;
 
-      case OP_IPV6_CONNECT:
-        socket = Socket_new (AF_INET6, SOCK_STREAM, 0);
-        Socket_settimeout (socket, 1);
-        Socket_connect (socket, "::1", port);
+      case OP_TIMEOUT_CONFIG:
+        /* Test timeout configuration */
+        socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+        Socket_settimeout (socket, (size > 3 ? data[3] % 10 : 1) + 1);
+        (void)Socket_gettimeout (socket);
+
+        /* Test global DNS timeout config */
+        SocketCommon_set_dns_timeout ((size > 4 ? data[4] % 100 : 50) + 10);
+        (void)SocketCommon_get_dns_timeout ();
+        SocketCommon_set_dns_timeout (-1); /* Reset */
         break;
 
-      case OP_SOCKET_CREATE:
-        /* Test various socket creation patterns */
+      case OP_NONBLOCK_OPTIONS:
+        /* Test non-blocking with various options then connect */
+        socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+        Socket_setnonblocking (socket);
+        Socket_setreuseaddr (socket);
+        Socket_settimeout (socket, 1);
+        Socket_connect (socket, "127.0.0.1", port);
+        break;
+
+      case OP_SOCKET_INFO:
+        /* Test socket info queries */
         socket = Socket_new (AF_INET, SOCK_STREAM, 0);
         (void)Socket_fd (socket);
+        (void)Socket_gettimeout (socket);
+        (void)Socket_isconnected (socket);
+        break;
+
+      case OP_SOCKET_REUSE:
+        /* Test address reuse patterns */
+        socket = Socket_new (AF_INET, SOCK_STREAM, 0);
         Socket_setreuseaddr (socket);
+        Socket_setnonblocking (socket);
+
+        /* Quick connect attempt to loopback */
+        Socket_connect (socket, "127.0.0.1", port);
         break;
 
       default:
         break;
       }
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* Expected for most connect operations */
-  }
-  EXCEPT (SocketCommon_Failed)
-  {
-    /* DNS/address resolution errors */
-  }
-  ELSE
-  {
-    /* Other exceptions */
-  }
+  EXCEPT (Socket_Failed) { }
+  EXCEPT (SocketCommon_Failed) { }
+  ELSE { }
   END_TRY;
 
-  /* Cleanup */
   if (socket)
     Socket_free (&socket);
 
