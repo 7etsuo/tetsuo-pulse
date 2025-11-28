@@ -92,12 +92,29 @@ struct Connection
 typedef struct Connection *Connection_T;
 
 /* ============================================================================
- * Pool Structure
+ * Async Connect Context Structure
  * ============================================================================ */
 
-/* Forward declaration for async connect context */
-struct AsyncConnectContext;
+/**
+ * AsyncConnectContext - Context for tracking async connect operations
+ *
+ * Allocated from pool arena, linked in pool->async_ctx list.
+ * Sockets in pending contexts must be freed when pool is freed.
+ */
+struct AsyncConnectContext
+{
+  SocketPool_T pool;                /**< Pool instance */
+  Socket_T socket;                  /**< Socket being connected */
+  SocketDNS_Request_T req;          /**< DNS request handle */
+  SocketPool_ConnectCallback cb;    /**< User callback */
+  void *user_data;                  /**< User data for callback */
+  struct AsyncConnectContext *next; /**< Next context in list */
+};
 typedef struct AsyncConnectContext *AsyncConnectContext_T;
+
+/* ============================================================================
+ * Pool Structure
+ * ============================================================================ */
 
 #define T SocketPool_T
 struct T

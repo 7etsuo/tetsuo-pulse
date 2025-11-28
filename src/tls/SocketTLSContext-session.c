@@ -27,9 +27,13 @@
 /**
  * new_session_cb - Called when new session is created
  * @ssl: SSL connection
- * @sess: New session (unused)
+ * @sess: New session
  *
- * Returns: 1 to indicate we took ownership (we didn't, but OpenSSL expects 1)
+ * Returns: 0 to let OpenSSL handle session storage and cleanup.
+ * We only use this callback for stats tracking, not custom storage.
+ *
+ * Note: If returning 1, callback takes ownership and must free the session.
+ * Since we only track stats and use OpenSSL's internal cache, return 0.
  */
 static int
 new_session_cb (SSL *ssl, SSL_SESSION *sess)
@@ -42,7 +46,7 @@ new_session_cb (SSL *ssl, SSL_SESSION *sess)
       ctx->cache_stores++;
       pthread_mutex_unlock (&ctx->stats_mutex);
     }
-  return 1;
+  return 0;
 }
 
 /**

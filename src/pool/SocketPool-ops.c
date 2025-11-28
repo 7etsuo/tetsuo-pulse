@@ -771,18 +771,7 @@ SocketPool_prepare_connection (T pool, SocketDNS_T dns, const char *host,
  * Async Connect with Callback
  * ============================================================================ */
 
-/**
- * AsyncConnectContext - Context for tracking async connect operations
- */
-struct AsyncConnectContext
-{
-  T pool;                           /**< Pool instance */
-  Socket_T socket;                  /**< Socket being connected */
-  SocketDNS_Request_T req;          /**< DNS request handle */
-  SocketPool_ConnectCallback cb;    /**< User callback */
-  void *user_data;                  /**< User data for callback */
-  struct AsyncConnectContext *next; /**< Next context in list */
-};
+/* AsyncConnectContext structure is defined in SocketPool-private.h */
 
 /**
  * alloc_async_context - Allocate async connect context
@@ -902,7 +891,9 @@ async_connect_dns_callback (SocketDNS_Request_T req, struct addrinfo *result,
 
   if (error != 0 || result == NULL)
     {
-      /* DNS resolution failed */
+      /* DNS resolution failed - free the socket that was allocated */
+      if (ctx->socket)
+        Socket_free (&ctx->socket);
       callback_error = error ? error : EAI_FAIL;
       goto invoke_callback;
     }
@@ -1019,6 +1010,8 @@ SocketPool_connect_async (T pool, const char *host, int port,
     /* Security: Check async pending limit before adding */
     if (!add_async_context (pool, ctx))
       {
+        /* Cancel DNS request to prevent callback from using freed resources */
+        SocketDNS_cancel (dns, req);
         SOCKET_ERROR_MSG ("Async connect limit reached (%d pending)",
                           SOCKET_POOL_MAX_ASYNC_PENDING);
         RAISE_POOL_ERROR (SocketPool_Failed);
