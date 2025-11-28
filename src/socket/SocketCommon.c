@@ -652,8 +652,10 @@ SocketCommon_disable_sigpipe (int fd)
   int optval = 1;
   if (setsockopt (fd, SOL_SOCKET, SO_NOSIGPIPE, &optval, sizeof (optval)) < 0)
     {
-      /* Log but don't fail - SIGPIPE handling is best-effort.
-       * Application can still use signal(SIGPIPE, SIG_IGN) as fallback. */
+      /* Log but don't fail - this is a secondary defense.
+       * Primary SIGPIPE suppression is via MSG_NOSIGNAL on send operations,
+       * which is always used on all platforms. SO_NOSIGPIPE failure is rare
+       * and does not affect functionality. */
       SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
                        "Failed to set SO_NOSIGPIPE on fd %d: %s", fd,
                        strerror (errno));

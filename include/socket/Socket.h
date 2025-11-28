@@ -21,9 +21,10 @@
  * - POSIX threads (pthread) for thread-safe error reporting
  * - NOT portable to Windows without Winsock adaptation
  *
- * CRITICAL: Applications MUST call signal(SIGPIPE, SIG_IGN) during
- * initialization to prevent process termination on broken pipe errors
- * (required on macOS/BSD).
+ * SIGPIPE HANDLING (automatic - no application action required):
+ * The library handles SIGPIPE internally. All send operations use MSG_NOSIGNAL
+ * (Linux/FreeBSD), and SO_NOSIGPIPE is set at socket creation (BSD/macOS).
+ * Applications do NOT need to call signal(SIGPIPE, SIG_IGN).
  *
  * Error Handling:
  * - Socket_Failed: General socket errors
