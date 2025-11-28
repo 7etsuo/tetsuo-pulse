@@ -428,6 +428,9 @@ reserve_calc_new_capacity (size_t current_cap, size_t min_space)
  * Note: Uses memmove instead of memcpy because arena allocation may place
  * new_data adjacent to old_data in the same chunk, causing memory regions
  * to overlap when old_data + head extends into new_data's region.
+ *
+ * Handles circular buffer wraparound: when head + size > capacity, data
+ * wraps from end of buffer back to beginning, requiring two-part copy.
  */
 static void
 reserve_migrate_data (T buf, char *new_data, size_t new_cap)
@@ -436,7 +439,23 @@ reserve_migrate_data (T buf, char *new_data, size_t new_cap)
   size_t old_cap = buf->capacity;
 
   if (buf->size > 0)
-    memmove (new_data, old_data + buf->head, buf->size);
+    {
+      /* Calculate contiguous bytes from head to end of buffer */
+      size_t first_part = old_cap - buf->head;
+
+      if (first_part >= buf->size)
+        {
+          /* No wrap - all data is contiguous from head */
+          memmove (new_data, old_data + buf->head, buf->size);
+        }
+      else
+        {
+          /* Data wraps around - copy in two parts */
+          memmove (new_data, old_data + buf->head, first_part);
+          memmove (new_data + first_part, old_data, buf->size - first_part);
+        }
+    }
+
   if (old_data && old_cap > 0)
     memset (old_data, 0, old_cap);
 
