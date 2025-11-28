@@ -1,0 +1,31 @@
+# clang-tidy configuration for socket library
+# C11/GNU style codebase - disable C++-only and style-conflicting checks
+
+---
+Checks: >
+  clang-analyzer-*,
+  bugprone-*,
+  performance-*,
+  misc-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-reserved-identifier,
+  -bugprone-assignment-in-if-condition,
+  -misc-no-recursion,
+  -misc-unused-parameters,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -clang-analyzer-security.insecureAPI.strcpy
+
+WarningsAsErrors: '*'
+
+HeaderFilterRegex: '.*'
+
+CheckOptions:
+  - key: bugprone-assert-side-effect.AssertMacros
+    value: 'assert'
+  - key: bugprone-suspicious-string-compare.WarnOnLogicalNotComparison
+    value: true
+  - key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
+    value: true
+
+# FormatStyle: file  # Use .clang-format if present
+
