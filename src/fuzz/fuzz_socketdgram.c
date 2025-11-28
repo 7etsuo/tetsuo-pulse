@@ -186,12 +186,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 const char *bind_addr
                     = bind_addrs[(size > 6 ? data[6] : 0) % 4];
 
-                /* Use port 0 for kernel-assigned port to avoid conflicts */
-                int bind_port = 0;
-
                 TRY
                 {
-                  SocketDgram_bind (sockets[0], bind_addr, bind_port);
+                  /* Use port 0 for kernel-assigned port to avoid conflicts */
+                  SocketDgram_bind (sockets[0], bind_addr, 0);
 
                   /* Verify binding succeeded */
                   int is_bound = SocketDgram_isbound (sockets[0]);

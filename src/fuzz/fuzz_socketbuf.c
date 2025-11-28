@@ -67,6 +67,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
   Arena_T arena = NULL;
   SocketBuf_T buf = NULL;
+  /* cppcheck-suppress variableScope ; used across multiple switch cases */
   char read_buffer[MAX_FUZZ_CAPACITY];
 
   if (size < 5)

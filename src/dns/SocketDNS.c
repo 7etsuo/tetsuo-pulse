@@ -755,11 +755,10 @@ compute_deadline (int timeout_ms, struct timespec *deadline)
  * Returns: 0 on completion, ETIMEDOUT on timeout
  */
 static int
-wait_for_completion (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
-                     int timeout_ms)
+wait_for_completion (struct SocketDNS_T *dns,
+                     const struct SocketDNS_Request_T *req, int timeout_ms)
 {
   struct timespec deadline;
-  int rc = 0;
 
   if (timeout_ms > 0)
     compute_deadline (timeout_ms, &deadline);
@@ -768,8 +767,8 @@ wait_for_completion (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
     {
       if (timeout_ms > 0)
         {
-          rc = pthread_cond_timedwait (&dns->result_cond, &dns->mutex,
-                                       &deadline);
+          int rc = pthread_cond_timedwait (&dns->result_cond, &dns->mutex,
+                                           &deadline);
           if (rc == ETIMEDOUT)
             return ETIMEDOUT;
         }
