@@ -83,8 +83,9 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 5. **DNS**: `SocketDNS` (Async DNS with worker threads).
 6. **Event System**: `SocketPoll` (epoll/kqueue/poll abstraction), `SocketAsync` (Async I/O integration).
 7. **Connection Helpers**: `SocketHappyEyeballs` (RFC 8305), `SocketReconnect` (Auto-reconnection with backoff).
-8. **Application**: `SocketPool` (Connection management with rate limiting), `SocketIPTracker` (IP tracking).
-9. **TLS**: `SocketTLS` (TLS I/O), `SocketTLSContext` (Context management, SNI, ALPN, sessions).
+8. **Security**: `SocketSYNProtect` (SYN flood protection with reputation scoring), `SocketIPTracker` (Per-IP connection tracking).
+9. **Application**: `SocketPool` (Connection management with rate limiting and SYN protection integration).
+10. **TLS**: `SocketTLS` (TLS I/O), `SocketTLSContext` (Context management, SNI, ALPN, sessions).
 
 ### Resource Management
 - **Acquisition Order**: Arena -> Server Socket -> Poll -> Timer -> Connection Pool -> Buffers.
@@ -253,6 +254,73 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 - **Session Management**: Session cache and tickets for resumption.
 - **Verification**: Custom verify callbacks, CRL/OCSP support.
 
+### SocketSYNProtect (SYN Flood Protection)
+- **Purpose**: Prevent SYN flood DoS attacks by tracking connection attempts before accept().
+- **Actions**: `SYN_ACTION_ALLOW`, `SYN_ACTION_THROTTLE`, `SYN_ACTION_CHALLENGE`, `SYN_ACTION_BLOCK`.
+- **Reputation States**: `SYN_REP_TRUSTED`, `SYN_REP_NEUTRAL`, `SYN_REP_SUSPECT`, `SYN_REP_HOSTILE`.
+- **Sliding Window**: Tracks attempts per IP over configurable time window with interpolation.
+- **Reputation Scoring**: Adaptive 0.0-1.0 score with decay, penalty, and reward adjustments.
+- **Data Structures**: Hash table with LRU eviction, separate whitelist (CIDR support) and blacklist (with expiry).
+- **Kernel Integration**: `TCP_DEFER_ACCEPT` (Linux) / `SO_ACCEPTFILTER` (BSD) for CHALLENGE action via `Socket_setdeferaccept()`.
+- **Thread Safety**: All operations protected by internal mutex.
+- **Pool Integration**: Use `SocketPool_set_syn_protection()` and `SocketPool_accept_protected()`.
+- **Lifecycle**: `SocketSYNProtect_new()`, `SocketSYNProtect_free()`, `SocketSYNProtect_cleanup()` (call periodically).
+- **Configuration**: `SocketSYNProtect_Config` with tunable window, thresholds, delays, and score rates.
+- **Statistics**: `SocketSYNProtect_Stats` for monitoring attempts, actions, and tracked IPs.
+
+### SocketIPTracker (Per-IP Connection Tracking)
+- **Purpose**: Track concurrent connections per IP to prevent single-source resource exhaustion.
+- **O(1) Operations**: Hash table for fast track/release/count operations.
+- **Thread Safety**: All operations protected by internal mutex.
+- **Auto-Cleanup**: Zero-count entries automatically removed.
+- **IPv4/IPv6**: Supports both address types via string representation.
+- **Lifecycle**: `SocketIPTracker_new(arena, max_per_ip)`, `SocketIPTracker_free()`.
+- **Core Operations**: `SocketIPTracker_track()` returns 1 if allowed, 0 if limit reached.
+- **Release**: `SocketIPTracker_release()` decrements count when connection closes.
+- **Query**: `SocketIPTracker_count()`, `SocketIPTracker_total()`, `SocketIPTracker_unique_ips()`.
+
+### SocketAsync (Async I/O)
+- **Purpose**: Non-blocking I/O using platform-optimized async mechanisms.
+- **Backends**: io_uring (Linux 5.1+), kqueue AIO (BSD/macOS), edge-triggered fallback.
+- **Integration**: Access via `SocketPoll_get_async()` when available.
+- **Callback-Based**: `SocketAsync_Callback` invoked on completion from `SocketPoll_wait()` context.
+- **Operations**: `SocketAsync_send()`, `SocketAsync_recv()`, `SocketAsync_cancel()`.
+- **Flags**: `ASYNC_FLAG_ZERO_COPY` for sendfile/splice, `ASYNC_FLAG_URGENT` for priority.
+- **Fallback Mode**: Check `SocketAsync_is_available()` - if 0, use regular Socket_send/recv.
+- **Backend Query**: `SocketAsync_backend_name()` returns "io_uring", "kqueue", or "edge-triggered".
+
+### SocketIO (Internal I/O Abstraction)
+- **Purpose**: Internal helper for TLS-aware I/O routing (not public API).
+- **TLS Routing**: `socket_send_internal()`, `socket_recv_internal()` route through SSL when enabled.
+- **Scatter/Gather**: `socket_sendv_internal()`, `socket_recvv_internal()` for iovec operations.
+- **TLS State**: `socket_is_tls_enabled()`, `socket_tls_want_read()`, `socket_tls_want_write()`.
+- **Error Helpers**: `socketio_is_wouldblock()`, `socketio_is_connection_closed_send/recv()`.
+
+### SocketBuf (Circular Buffer)
+- **Purpose**: Efficient buffering for network I/O with circular buffer implementation.
+- **O(1) Operations**: `SocketBuf_available()`, `SocketBuf_space()`, `SocketBuf_consume()`, `SocketBuf_written()`.
+- **Zero-Copy**: `SocketBuf_readptr()`, `SocketBuf_writeptr()` for direct memory access.
+- **Dynamic Resize**: `SocketBuf_reserve()` doubles capacity or sets to min_space.
+- **Security**: `SocketBuf_secureclear()` zeros memory for sensitive data (passwords, keys).
+- **Invariant Checking**: `SocketBuf_check_invariants()` for runtime validation.
+- **Arena Integration**: Memory freed when arena is disposed, not individually.
+
+### Arena (Memory Management)
+- **Purpose**: Region-based memory allocator for related object lifetimes.
+- **Allocation**: `Arena_alloc()`, `Arena_calloc()` with file/line tracking.
+- **Bulk Free**: `Arena_dispose()` frees all allocations at once.
+- **Chunk Reuse**: Free chunk cache with `MAX_FREE_CHUNKS` (10) for efficiency.
+- **Thread Safety**: Mutex-protected chunk allocation.
+- **Alignment**: Uses `union align` for proper alignment of all data types.
+- **Overflow Protection**: Validates sizes before calculations.
+
+### Except (Exception Handling)
+- **Purpose**: setjmp/longjmp-based exception system following CII patterns.
+- **Macros**: `TRY`, `EXCEPT(e)`, `FINALLY`, `END_TRY`, `RAISE(e)`, `RERAISE`.
+- **Thread-Local Stack**: `Except_stack` is thread-local for multi-threaded safety.
+- **States**: `Except_entered`, `Except_raised`, `Except_handled`, `Except_finalized`.
+- **Best Practice**: Declare variables used across try/except as `volatile`.
+
 ## 7. Naming Conventions
 - **Types**: `ModuleName_T` (e.g., `Socket_T`, `Arena_T`, `SocketHE_T`, `SocketReconnect_T`).
 - **Functions**: `Module_Verb` (e.g., `Socket_bind`, `Arena_alloc`, `SocketHappyEyeballs_connect`).
@@ -265,10 +333,14 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 ### Module Exception Naming
 **ALWAYS** declare module exceptions as `const Except_T`:
 ```c
-extern const Except_T Socket_Failed;     /* General failure */
-extern const Except_T Socket_Closed;     /* Connection closed */
-extern const Except_T SocketTLS_Failed;  /* TLS operation failure */
-extern const Except_T SocketHE_Failed;   /* Happy Eyeballs failure */
+extern const Except_T Socket_Failed;          /* General failure */
+extern const Except_T Socket_Closed;          /* Connection closed */
+extern const Except_T SocketTLS_Failed;       /* TLS operation failure */
+extern const Except_T SocketHE_Failed;        /* Happy Eyeballs failure */
+extern const Except_T SocketSYNProtect_Failed;/* SYN protection failure */
+extern const Except_T SocketIPTracker_Failed; /* IP tracker failure */
+extern const Except_T SocketAsync_Failed;     /* Async I/O failure */
+extern const Except_T SocketBuf_Failed;       /* Buffer operation failure */
 ```
 
 ## 8. Platform Requirements
@@ -299,6 +371,7 @@ typedef enum
 - `SocketHappyEyeballs` - `SocketHE_State` (IDLE, RESOLVING, CONNECTING, CONNECTED, FAILED, CANCELLED)
 - `SocketReconnect` - `SocketReconnect_State` (DISCONNECTED, CONNECTING, CONNECTED, BACKOFF, CIRCUIT_OPEN)
 - `SocketTLS` - `TLSHandshakeState` (NOT_STARTED, IN_PROGRESS, WANT_READ, WANT_WRITE, COMPLETE, ERROR)
+- `SocketSYNProtect` - `SocketSYN_Reputation` (TRUSTED, NEUTRAL, SUSPECT, HOSTILE) for IP reputation tracking
 
 **State Machine Integration Pattern:**
 ```c
@@ -327,6 +400,7 @@ Module_set_callback(T ctx, ModuleCallback cb, void *userdata);
 - `SocketReconnect` - `SocketReconnect_Callback` for state changes, `SocketReconnect_HealthCheck` for health
 - `SocketLog` - `SocketLogCallback` for custom logging
 - `SocketEvent` - `SocketEventCallback` for connection/DNS events
+- `SocketAsync` - `SocketAsync_Callback` for async I/O completion
 
 **Callback Safety Rules:**
 - **NEVER** call `Module_free()` from within its own callback.
@@ -386,6 +460,7 @@ cmake .. -DCMAKE_C_FLAGS="-DSOCKET_MAX_CONNECTIONS=50000"
 - `SOCKET_RECONNECT_*` - Reconnection policy defaults
 - `SOCKET_HE_*` - Happy Eyeballs timing defaults
 - `SOCKET_TLS_*` - TLS buffer sizes and limits
+- `SOCKET_SYN_*` - SYN flood protection defaults (window, thresholds, delays)
 - `POLL_*` - Poll backend configuration
 
 ## 13. Debugging Patterns
