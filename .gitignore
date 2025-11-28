@@ -66,6 +66,11 @@ compile_commands.json
 
 # Fuzz findings (crash/hang artifacts)
 fuzz_findings_*/
+crash-*
+leak-*
+oom-*
+timeout-*
+slow-unit-*
 
 # Clang-tidy output
 clang-tidy-output.txt
