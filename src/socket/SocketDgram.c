@@ -250,7 +250,7 @@ SocketDgram_sendto (T socket, const void *buf, size_t len, const char *host,
                     int port)
 {
   struct addrinfo *res = NULL;
-  ssize_t sent;
+  volatile ssize_t sent = 0;
 
   assert (socket);
   assert (buf);
@@ -260,9 +260,16 @@ SocketDgram_sendto (T socket, const void *buf, size_t len, const char *host,
   SocketCommon_validate_port (port, SocketDgram_Failed);
   SocketCommon_validate_hostname (host, SocketDgram_Failed);
   resolve_sendto_address (host, port, &res);
-  sent = perform_sendto (socket, buf, len, res);
+
+  TRY
+    sent = perform_sendto (socket, buf, len, res);
+  EXCEPT (SocketDgram_Failed)
+    freeaddrinfo (res);
+    RERAISE;
+  END_TRY;
+
   freeaddrinfo (res);
-  return sent;
+  return (ssize_t)sent;
 }
 
 ssize_t

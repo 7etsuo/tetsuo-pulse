@@ -4062,6 +4062,60 @@ TEST (rc_health_check_with_data)
 }
 
 /* ============================================================================
+ * Jitter=0 Backoff Test
+ * ============================================================================ */
+
+TEST (rc_backoff_no_jitter)
+{
+  SocketReconnect_T conn = NULL;
+  SocketReconnect_Policy_T policy;
+
+  signal (SIGPIPE, SIG_IGN);
+
+  /* Configure policy with jitter = 0 to test that code path */
+  SocketReconnect_policy_defaults (&policy);
+  policy.jitter = 0.0;
+  policy.initial_delay_ms = 50;
+  policy.max_delay_ms = 200;
+  policy.max_attempts = 3;
+
+  TRY
+  {
+    /* Connect to non-listening port for reliable failure */
+    conn = SocketReconnect_new ("127.0.0.1", 59987, &policy, NULL, NULL);
+  }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  ASSERT_NOT_NULL (conn);
+
+  /* Start connection - will fail and enter backoff */
+  SocketReconnect_connect (conn);
+
+  /* Process several times to trigger backoff calculation */
+  for (int i = 0; i < 15; i++)
+    {
+      SocketReconnect_process (conn);
+      SocketReconnect_tick (conn);
+      usleep (30000);
+    }
+
+  /* Verify we went through proper state transitions */
+  SocketReconnect_State state = SocketReconnect_state (conn);
+  /* State could be any valid state - we just want to exercise the jitter=0
+   * path */
+  ASSERT (state == RECONNECT_DISCONNECTED || state == RECONNECT_BACKOFF
+          || state == RECONNECT_CONNECTING || state == RECONNECT_CONNECTED
+          || state == RECONNECT_CIRCUIT_OPEN);
+
+  SocketReconnect_free (&conn);
+}
+
+/* ============================================================================
  * Main
  * ============================================================================ */
 

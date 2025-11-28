@@ -2055,7 +2055,9 @@ TEST (socketpool_connect_async_success)
     /* Clean up connection if successful */
     if (async_test_conn)
       {
-        SocketPool_remove (pool, Connection_socket (async_test_conn));
+        Socket_T s = Connection_socket (async_test_conn);
+        SocketPool_remove (pool, s);
+        Socket_free (&s);
       }
   }
   EXCEPT (SocketPool_Failed) { /* May fail due to DNS/connect issues */ }
@@ -2194,7 +2196,11 @@ TEST (socketpool_connect_async_valid_params)
 
     /* Cleanup any connection */
     if (async_test_conn)
-      SocketPool_remove (pool, Connection_socket (async_test_conn));
+      {
+        Socket_T s = Connection_socket (async_test_conn);
+        SocketPool_remove (pool, s);
+        Socket_free (&s);
+      }
   }
   EXCEPT (SocketPool_Failed) { /* May fail */ }
   EXCEPT (Socket_Failed) { /* May fail */ }
@@ -2518,17 +2524,19 @@ TEST (socketpool_connect_async_pool_full_callback)
 
 /* ==================== Async Context List Traversal Test ==================== */
 
-/* Counter for multiple async callbacks */
+/* Counter and storage for multiple async callbacks */
 static volatile int multi_async_callback_count = 0;
+static volatile Connection_T multi_async_conns[3];
 static pthread_mutex_t multi_async_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void
 multi_async_test_callback (Connection_T conn, int error, void *data)
 {
-  (void)conn;
   (void)error;
   (void)data;
   pthread_mutex_lock (&multi_async_mutex);
+  if (conn && multi_async_callback_count < 3)
+    multi_async_conns[multi_async_callback_count] = conn;
   multi_async_callback_count++;
   pthread_mutex_unlock (&multi_async_mutex);
 }
@@ -2540,8 +2548,11 @@ TEST (socketpool_connect_async_multiple_pending)
   SocketPool_T pool = SocketPool_new (arena, 100, 1024);
   Socket_T server = NULL;
   volatile int port = 0;
+  volatile int i;
 
   multi_async_callback_count = 0;
+  for (i = 0; i < 3; i++)
+    multi_async_conns[i] = NULL;
 
   TRY
   {
@@ -2577,7 +2588,7 @@ TEST (socketpool_connect_async_multiple_pending)
     (void)req3;
 
     /* Wait for all callbacks */
-    for (int i = 0; i < 200; i++)
+    for (i = 0; i < 200; i++)
       {
         pthread_mutex_lock (&multi_async_mutex);
         int count = multi_async_callback_count;
@@ -2591,6 +2602,17 @@ TEST (socketpool_connect_async_multiple_pending)
     pthread_mutex_lock (&multi_async_mutex);
     ASSERT (multi_async_callback_count >= 1);
     pthread_mutex_unlock (&multi_async_mutex);
+
+    /* Clean up any successful connections */
+    for (i = 0; i < 3; i++)
+      {
+        if (multi_async_conns[i])
+          {
+            Socket_T s = Connection_socket (multi_async_conns[i]);
+            SocketPool_remove (pool, s);
+            Socket_free (&s);
+          }
+      }
   }
   EXCEPT (SocketPool_Failed) { /* May fail */ }
   EXCEPT (Socket_Failed) { /* May fail */ }

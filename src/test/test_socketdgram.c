@@ -1061,6 +1061,402 @@ TEST (socketdgram_sendvall_sends_all_from_multiple_buffers)
   SocketDgram_free (&receiver);
 }
 
+/* ==================== recvvall Test ==================== */
+
+TEST (socketdgram_recvvall_receives_all_into_multiple_buffers)
+{
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
+
+  TRY SocketDgram_bind (receiver, "127.0.0.1", 0);
+  struct sockaddr_in addr;
+  socklen_t len = sizeof (addr);
+  getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+  int port = ntohs (addr.sin_port);
+
+  SocketDgram_connect (sender, "127.0.0.1", port);
+  SocketDgram_connect (receiver, "127.0.0.1",
+                       SocketDgram_getlocalport (sender));
+
+  /* Send data that will be received into multiple buffers */
+  char send_buf[256];
+  memset (send_buf, 'Z', sizeof (send_buf));
+  ssize_t sent = SocketDgram_sendall (sender, send_buf, sizeof (send_buf));
+  ASSERT_EQ ((ssize_t)sizeof (send_buf), sent);
+
+  /* Prepare receive buffers */
+  char buf1[64] = { 0 };
+  char buf2[64] = { 0 };
+  char buf3[64] = { 0 };
+  char buf4[64] = { 0 };
+  struct iovec iov[4];
+  iov[0].iov_base = buf1;
+  iov[0].iov_len = sizeof (buf1);
+  iov[1].iov_base = buf2;
+  iov[1].iov_len = sizeof (buf2);
+  iov[2].iov_base = buf3;
+  iov[2].iov_len = sizeof (buf3);
+  iov[3].iov_base = buf4;
+  iov[3].iov_len = sizeof (buf4);
+
+  /* Use recvvall to receive all data */
+  ssize_t received = SocketDgram_recvvall (receiver, iov, 4);
+  ASSERT_EQ ((ssize_t)sizeof (send_buf), received);
+
+  /* Verify each buffer received correct data */
+  char expected[64];
+  memset (expected, 'Z', sizeof (expected));
+  ASSERT_EQ (0, memcmp (buf1, expected, sizeof (buf1)));
+  ASSERT_EQ (0, memcmp (buf2, expected, sizeof (buf2)));
+  ASSERT_EQ (0, memcmp (buf3, expected, sizeof (buf3)));
+  ASSERT_EQ (0, memcmp (buf4, expected, sizeof (buf4)));
+  EXCEPT (SocketDgram_Failed)
+  (void)0;
+  END_TRY;
+
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
+}
+
+/* ==================== Invalid Port Tests ==================== */
+
+TEST (socketdgram_bind_invalid_port_negative)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  volatile int raised = 0;
+
+  TRY SocketDgram_bind (socket, "127.0.0.1", -1);
+  EXCEPT (SocketDgram_Failed)
+  raised = 1;
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  SocketDgram_free (&socket);
+}
+
+TEST (socketdgram_bind_invalid_port_too_large)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  volatile int raised = 0;
+
+  TRY SocketDgram_bind (socket, "127.0.0.1", 65536);
+  EXCEPT (SocketDgram_Failed)
+  raised = 1;
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  SocketDgram_free (&socket);
+}
+
+TEST (socketdgram_connect_invalid_port_negative)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  volatile int raised = 0;
+
+  TRY SocketDgram_connect (socket, "127.0.0.1", -1);
+  EXCEPT (SocketDgram_Failed)
+  raised = 1;
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  SocketDgram_free (&socket);
+}
+
+TEST (socketdgram_connect_invalid_port_too_large)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  volatile int raised = 0;
+
+  TRY SocketDgram_connect (socket, "127.0.0.1", 65536);
+  EXCEPT (SocketDgram_Failed)
+  raised = 1;
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  SocketDgram_free (&socket);
+}
+
+/* ==================== Oversized Datagram Tests ==================== */
+
+TEST (socketdgram_sendto_oversized_rejected)
+{
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
+  volatile int raised = 0;
+
+  TRY
+  {
+    SocketDgram_bind (receiver, "127.0.0.1", 0);
+    struct sockaddr_in addr;
+    socklen_t len = sizeof (addr);
+    getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+    int port = ntohs (addr.sin_port);
+
+    /* Allocate buffer larger than SAFE_UDP_SIZE (1472) */
+    char oversized[2000];
+    memset (oversized, 'X', sizeof (oversized));
+
+    /* This should raise SocketDgram_Failed due to size > SAFE_UDP_SIZE */
+    SocketDgram_sendto (sender, oversized, sizeof (oversized), "127.0.0.1",
+                        port);
+  }
+  EXCEPT (SocketDgram_Failed)
+  raised = 1;
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
+}
+
+TEST (socketdgram_sendv_oversized_rejected)
+{
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
+  volatile int raised = 0;
+
+  TRY
+  {
+    SocketDgram_bind (receiver, "127.0.0.1", 0);
+    struct sockaddr_in addr;
+    socklen_t len = sizeof (addr);
+    getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+    int port = ntohs (addr.sin_port);
+
+    SocketDgram_connect (sender, "127.0.0.1", port);
+
+    /* Create iovec that totals > SAFE_UDP_SIZE (1472) */
+    char buf1[1000];
+    char buf2[1000];
+    memset (buf1, 'A', sizeof (buf1));
+    memset (buf2, 'B', sizeof (buf2));
+
+    struct iovec iov[2];
+    iov[0].iov_base = buf1;
+    iov[0].iov_len = sizeof (buf1);
+    iov[1].iov_base = buf2;
+    iov[1].iov_len = sizeof (buf2);
+
+    /* Total is 2000 > 1472, should raise */
+    SocketDgram_sendv (sender, iov, 2);
+  }
+  EXCEPT (SocketDgram_Failed)
+  raised = 1;
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
+}
+
+/* ==================== Invalid Hostname Test ==================== */
+
+TEST (socketdgram_sendto_invalid_hostname)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  volatile int raised = 0;
+
+  TRY
+  {
+    /* Use a hostname that will definitely fail DNS resolution */
+    SocketDgram_sendto (socket, "test", 4,
+                        "this.hostname.definitely.does.not.exist.invalid",
+                        12345);
+  }
+  EXCEPT (SocketDgram_Failed)
+  raised = 1;
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  SocketDgram_free (&socket);
+}
+
+/* ==================== IPv6 TTL Getter Test ==================== */
+
+TEST (socketdgram_ipv6_getttl_returns_set_value)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET6, 0);
+  ASSERT_NOT_NULL (socket);
+
+  TRY
+  {
+    SocketDgram_setttl (socket, 100);
+    int ttl = SocketDgram_getttl (socket);
+    ASSERT_EQ (100, ttl);
+
+    SocketDgram_setttl (socket, 200);
+    ttl = SocketDgram_getttl (socket);
+    ASSERT_EQ (200, ttl);
+  }
+  EXCEPT (SocketDgram_Failed) { (void)0; }
+  END_TRY;
+
+  SocketDgram_free (&socket);
+}
+
+/* ==================== setreuseport Test ==================== */
+
+TEST (socketdgram_setreuseport)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
+
+  TRY SocketDgram_setreuseport (socket);
+  EXCEPT (SocketDgram_Failed)
+  /* SO_REUSEPORT may not be available on all systems, which is acceptable */
+  (void)0;
+  END_TRY;
+
+  SocketDgram_free (&socket);
+}
+
+/* ==================== Invalid TTL Tests ==================== */
+
+TEST (socketdgram_setttl_invalid_zero)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  volatile int raised = 0;
+
+  TRY SocketDgram_setttl (socket, 0);
+  EXCEPT (SocketDgram_Failed)
+  raised = 1;
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  SocketDgram_free (&socket);
+}
+
+TEST (socketdgram_setttl_invalid_over_255)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  volatile int raised = 0;
+
+  TRY SocketDgram_setttl (socket, 256);
+  EXCEPT (SocketDgram_Failed)
+  raised = 1;
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  SocketDgram_free (&socket);
+}
+
+/* ==================== Bind Error Test ==================== */
+
+TEST (socketdgram_bind_already_bound_port)
+{
+  setup_signals ();
+  SocketDgram_T socket1 = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T socket2 = SocketDgram_new (AF_INET, 0);
+  volatile int raised = 0;
+  volatile int port = 0;
+
+  TRY
+  {
+    /* Bind first socket to a port */
+    SocketDgram_bind (socket1, "127.0.0.1", 0);
+    struct sockaddr_in addr;
+    socklen_t len = sizeof (addr);
+    getsockname (SocketDgram_fd (socket1), (struct sockaddr *)&addr, &len);
+    port = ntohs (addr.sin_port);
+
+    /* Try to bind second socket to the same port WITHOUT SO_REUSEADDR */
+    SocketDgram_bind (socket2, "127.0.0.1", port);
+  }
+  EXCEPT (SocketDgram_Failed)
+  raised = 1;
+  END_TRY;
+
+  /* On some systems this may succeed if SO_REUSEADDR is default, so we accept
+   * either */
+  (void)raised;
+
+  SocketDgram_free (&socket1);
+  SocketDgram_free (&socket2);
+}
+
+/* ==================== Connect Error Test ==================== */
+
+TEST (socketdgram_connect_invalid_address)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  volatile int raised = 0;
+
+  TRY
+  {
+    /* Try to connect to an invalid/unresolvable address */
+    SocketDgram_connect (socket,
+                         "this.hostname.definitely.does.not.exist.invalid",
+                         12345);
+  }
+  EXCEPT (SocketDgram_Failed)
+  raised = 1;
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  SocketDgram_free (&socket);
+}
+
+/* ==================== Local Address Accessor Test ==================== */
+
+TEST (socketdgram_getlocaladdr_returns_unknown_before_bind)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
+
+  const char *addr = SocketDgram_getlocaladdr (socket);
+  ASSERT_NOT_NULL (addr);
+  ASSERT_EQ (0, strcmp (addr, "(unknown)"));
+
+  /* After bind, should return actual address */
+  TRY
+  {
+    SocketDgram_bind (socket, "127.0.0.1", 0);
+    addr = SocketDgram_getlocaladdr (socket);
+    ASSERT_NOT_NULL (addr);
+    ASSERT_EQ (0, strcmp (addr, "127.0.0.1"));
+  }
+  EXCEPT (SocketDgram_Failed) { (void)0; }
+  END_TRY;
+
+  SocketDgram_free (&socket);
+}
+
+TEST (socketdgram_getlocalport_returns_zero_before_bind)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
+
+  int port = SocketDgram_getlocalport (socket);
+  ASSERT_EQ (0, port);
+
+  /* After bind, should return actual port */
+  TRY
+  {
+    SocketDgram_bind (socket, "127.0.0.1", 0);
+    port = SocketDgram_getlocalport (socket);
+    ASSERT (port > 0);
+  }
+  EXCEPT (SocketDgram_Failed) { (void)0; }
+  END_TRY;
+
+  SocketDgram_free (&socket);
+}
+
 int
 main (void)
 {
