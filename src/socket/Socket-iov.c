@@ -320,14 +320,15 @@ Socket_sendmsg (T socket, const struct msghdr *msg, int flags)
   assert (socket);
   assert (msg);
 
-  result = sendmsg (SocketBase_fd (socket->base), msg, flags);
+  /* Always add MSG_NOSIGNAL to suppress SIGPIPE on broken connections */
+  result = sendmsg (SocketBase_fd (socket->base), msg, flags | MSG_NOSIGNAL);
   if (result < 0)
     {
       if (socketio_is_wouldblock ())
         return 0;
       if (socketio_is_connection_closed_send ())
         RAISE (Socket_Closed);
-      SOCKET_ERROR_FMT ("sendmsg failed (flags=0x%x)", flags);
+      SOCKET_ERROR_FMT ("sendmsg failed (flags=0x%x)", flags | MSG_NOSIGNAL);
       RAISE_MODULE_ERROR (Socket_Failed);
     }
 

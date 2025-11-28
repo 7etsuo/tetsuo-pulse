@@ -180,15 +180,24 @@ socket_recv_internal (T socket, void *buf, size_t len, int flags)
  * @socket: Socket instance
  * @iov: Array of iovec structures
  * @iovcnt: Number of iovec structures
- * @flags: Send flags
+ * @flags: Send flags (MSG_NOSIGNAL automatically added)
  * Returns: Total bytes sent or 0 if would block
  * Raises: Socket_Failed
+ *
+ * Uses sendmsg() instead of writev() to support MSG_NOSIGNAL for
+ * SIGPIPE suppression. The flags parameter is OR'd with MSG_NOSIGNAL.
  */
 static ssize_t
 socket_sendv_raw (T socket, const struct iovec *iov, int iovcnt, int flags)
 {
-  (void)flags; /* Suppress unused parameter warning */
-  ssize_t result = writev (Socket_fd (socket), iov, iovcnt);
+  struct msghdr msg;
+  ssize_t result;
+
+  memset (&msg, 0, sizeof (msg));
+  msg.msg_iov = (struct iovec *)iov; /* Cast away const for msghdr */
+  msg.msg_iovlen = (size_t)iovcnt;
+
+  result = sendmsg (Socket_fd (socket), &msg, flags | MSG_NOSIGNAL);
   if (result < 0)
     {
       if (socketio_is_wouldblock ())

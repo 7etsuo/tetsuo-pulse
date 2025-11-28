@@ -168,8 +168,9 @@ while (running) {
 2. **Set reasonable max_attempts**: Avoid infinite retry loops
 3. **Configure circuit breaker**: Protect against dead endpoints
 4. **Enable health checks**: Detect silent disconnections
-5. **Handle SIGPIPE**: Call `signal(SIGPIPE, SIG_IGN)`
-6. **Log state transitions**: Use callbacks for observability
+5. **Log state transitions**: Use callbacks for observability
+
+**Note:** SIGPIPE is handled internally by the library via `MSG_NOSIGNAL`/`SO_NOSIGPIPE`. Applications do not need to call `signal(SIGPIPE, SIG_IGN)`.
 
 ## Error Handling
 

@@ -634,20 +634,16 @@ ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:halt_on_error=1
 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
 ```
 
-#### Signal Handling
-Tests that create sockets MUST ignore SIGPIPE:
-```c
-static void setup_signals(void)
-{
-  signal(SIGPIPE, SIG_IGN);
-}
+#### Signal Handling (SIGPIPE)
+The library handles SIGPIPE internally via `MSG_NOSIGNAL` on send operations (Linux/FreeBSD) and `SO_NOSIGPIPE` socket option (BSD/macOS). Applications do **not** need to call `signal(SIGPIPE, SIG_IGN)`.
 
-TEST(my_socket_test)
-{
-  setup_signals();
-  /* ... test code ... */
-}
-```
+**Implementation details:**
+- All `send()`, `sendto()`, `sendmsg()` calls use `MSG_NOSIGNAL` flag
+- `writev()` is replaced with `sendmsg()` + `MSG_NOSIGNAL` for scatter/gather I/O
+- On BSD/macOS, `SO_NOSIGPIPE` is set at socket creation via `SocketCommon_disable_sigpipe()`
+- Fallback: On platforms without either mechanism, `MSG_NOSIGNAL` is defined as 0
+
+**Note:** Existing test code with `signal(SIGPIPE, SIG_IGN)` is harmless but no longer required. New tests do not need signal handling setup.
 
 #### GCC Diagnostic Suppression
 Suppress `-Wclobbered` warnings in test files when using volatile correctly:

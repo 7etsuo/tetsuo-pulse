@@ -93,9 +93,10 @@ END_TRY;
 
 1. **Use for hostnames only**: IP addresses don't benefit from Happy Eyeballs
 2. **Configure reasonable timeouts**: Default 30s total may be too long for some applications
-3. **Handle SIGPIPE**: Call `signal(SIGPIPE, SIG_IGN)` during initialization
-4. **Prefer async API for event-driven code**: Better integration with event loops
-5. **Clean up on error**: Always call `SocketHappyEyeballs_free()` for async contexts
+3. **Prefer async API for event-driven code**: Better integration with event loops
+4. **Clean up on error**: Always call `SocketHappyEyeballs_free()` for async contexts
+
+**Note:** SIGPIPE is handled internally by the library via `MSG_NOSIGNAL`/`SO_NOSIGPIPE`. Applications do not need signal handling setup.
 
 ## Performance Considerations
 

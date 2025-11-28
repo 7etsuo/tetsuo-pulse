@@ -20,12 +20,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-/* MSG_NOSIGNAL fallback for platforms without it (macOS, BSD).
- * Applications must call signal(SIGPIPE, SIG_IGN). See Socket.h. */
-#ifndef MSG_NOSIGNAL
-#define MSG_NOSIGNAL 0
-#endif
-
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"

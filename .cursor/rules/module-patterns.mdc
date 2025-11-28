@@ -594,10 +594,9 @@ int main(int argc, char **argv)
     SocketPool_T pool = NULL;
     Arena_T arena = NULL;
 
-    /* Signal handling */
+    /* Signal handling - SIGPIPE handled internally by library */
     signal(SIGINT, handle_signal);
     signal(SIGTERM, handle_signal);
-    signal(SIGPIPE, SIG_IGN);
 
     /* Parse arguments */
     volatile int port = 6667;

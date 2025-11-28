@@ -25,6 +25,21 @@
 extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
+ * Library Version
+ * ============================================================================ */
+
+#define SOCKET_VERSION_MAJOR 0
+#define SOCKET_VERSION_MINOR 1
+#define SOCKET_VERSION_PATCH 0
+
+#define SOCKET_VERSION_STRING "0.1.0"
+
+/* Numeric version for compile-time comparisons: (MAJOR * 10000) + (MINOR * 100) + PATCH */
+#define SOCKET_VERSION                                                        \
+  ((SOCKET_VERSION_MAJOR * 10000) + (SOCKET_VERSION_MINOR * 100)              \
+   + SOCKET_VERSION_PATCH)
+
+/* ============================================================================
  * Size Limits and Capacity Configuration
  * ============================================================================ */
 
@@ -658,7 +673,25 @@ union align
 #define SOCKET_SHUT_RD SHUT_RD
 #define SOCKET_SHUT_WR SHUT_WR
 #define SOCKET_SHUT_RDWR SHUT_RDWR
+
+/* MSG_NOSIGNAL: Suppress SIGPIPE on send operations (Linux/FreeBSD).
+ * On platforms without MSG_NOSIGNAL (macOS), we use SO_NOSIGPIPE instead
+ * which is set at socket creation time. When MSG_NOSIGNAL is unavailable,
+ * we define it as 0 so it can be safely OR'd into flags without effect. */
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 #define SOCKET_MSG_NOSIGNAL MSG_NOSIGNAL
+
+/* SO_NOSIGPIPE: BSD/macOS socket option to suppress SIGPIPE.
+ * This is set once at socket creation time as an alternative to MSG_NOSIGNAL.
+ * On Linux, MSG_NOSIGNAL is preferred and this macro will be 0. */
+#ifdef SO_NOSIGPIPE
+#define SOCKET_HAS_SO_NOSIGPIPE 1
+#else
+#define SOCKET_HAS_SO_NOSIGPIPE 0
+#endif
 
 /* ============================================================================
  * Default Parameters
