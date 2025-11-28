@@ -1,4 +1,3 @@
-Add code coverage (gcov + codecov.io)
 Generate libsocket.pc for pkg-config
 Add SOCKET_VERSION macros
 Create examples/ directory
