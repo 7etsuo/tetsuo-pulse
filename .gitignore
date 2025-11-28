@@ -63,3 +63,9 @@ lcov.info
 # CMake compile_commands.json symlink (generated)
 compile_commands.json
 
+
+# Fuzz findings (crash/hang artifacts)
+fuzz_findings_*/
+
+# Clang-tidy output
+clang-tidy-output.txt

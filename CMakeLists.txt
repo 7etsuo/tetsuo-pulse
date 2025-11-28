@@ -443,14 +443,29 @@ endif()
 # =============================================================================
 
 if(ENABLE_FUZZING)
-    # Fuzz harness source files
+    # Fuzz harness source files (non-TLS)
     set(FUZZ_SOURCES
         fuzz_socketbuf
         fuzz_arena
         fuzz_ip_parse
         fuzz_dns_validate
         fuzz_socketbuf_stress
+        fuzz_ratelimit
+        fuzz_timer
+        fuzz_iptracker
+        fuzz_happy_eyeballs
+        fuzz_reconnect
+        fuzz_socketio
+        fuzz_address_parse
     )
+    
+    # TLS fuzz harnesses (require SOCKET_HAS_TLS)
+    if(SOCKET_HAS_TLS)
+        list(APPEND FUZZ_SOURCES
+            fuzz_tls_alpn
+            fuzz_tls_session
+        )
+    endif()
     
     # Create fuzz executable for each harness
     foreach(fuzz_name ${FUZZ_SOURCES})
