@@ -144,9 +144,9 @@ fuzz_cidr_match_mixed (const uint8_t *data, size_t size)
   (void)SocketCommon_cidr_match (cidr_str, ip_str);
 
   /* Test IP matching against itself as CIDR /32 or /128 */
-  char self_cidr[MAX_CIDR_STR_LEN + 8];
   if (strlen (ip_str) < MAX_CIDR_STR_LEN)
     {
+      char self_cidr[MAX_CIDR_STR_LEN + 8];
       /* Try as /32 (IPv4) */
       snprintf (self_cidr, sizeof (self_cidr), "%s/32", ip_str);
       (void)SocketCommon_cidr_match (ip_str, self_cidr);
