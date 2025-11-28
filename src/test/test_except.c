@@ -644,25 +644,45 @@ TEST (except_volatile_preservation)
  * and verifying the child receives SIGABRT.
  * ========================================================================== */
 
-/* Coverage support: __gcov_dump flushes coverage data before abort().
- * Only available when compiling with --coverage (GCC/Clang).
- * In coverage builds, this function is provided by libgcov.
- * In non-coverage builds, we provide a no-op implementation.
+/* Coverage support for child processes that call abort().
+ *
+ * For LLVM coverage (-fprofile-instr-generate -fcoverage-mapping):
+ *   __llvm_profile_write_file() flushes profile data before abort
+ *
+ * For GCC coverage (--coverage):
+ *   __gcov_dump() flushes gcov data before abort
+ *
+ * Usage: Set LLVM_PROFILE_FILE=path/to/coverage-%p.profraw to capture
+ * child process coverage (the %p is replaced with process ID).
+ * Then merge: llvm-profdata merge -sparse *.profraw -o coverage.profdata
  */
-#ifdef ENABLE_GCOV_FLUSH
+#if defined(__clang__)
+/* LLVM/Clang coverage - declare the profiling runtime function.
+ * This function is available when compiling with -fprofile-instr-generate.
+ * If not available (non-coverage build), it will be a weak reference. */
+extern void __llvm_profile_write_file (void) __attribute__((weak));
+#define COVERAGE_FLUSH()                                                       \
+  do                                                                           \
+    {                                                                          \
+      if (__llvm_profile_write_file)                                           \
+        __llvm_profile_write_file ();                                          \
+    }                                                                          \
+  while (0)
+#elif defined(__GNUC__) && defined(ENABLE_GCOV_FLUSH)
+/* GCC coverage */
 extern void __gcov_dump (void);
-#define GCOV_FLUSH() __gcov_dump ()
+#define COVERAGE_FLUSH() __gcov_dump ()
 #else
-#define GCOV_FLUSH() (void)0
+#define COVERAGE_FLUSH() (void)0
 #endif
 
-/* Signal handler for SIGABRT that flushes gcov data before process terminates */
+/* Signal handler for SIGABRT that flushes coverage data before termination */
 static void
 sigabrt_handler (int sig)
 {
   (void)sig;
-  /* Flush coverage data before abort (only works in coverage builds) */
-  GCOV_FLUSH ();
+  /* Flush coverage data before abort */
+  COVERAGE_FLUSH ();
   /* Re-raise SIGABRT with default handler to actually terminate */
   signal (SIGABRT, SIG_DFL);
   raise (SIGABRT);
