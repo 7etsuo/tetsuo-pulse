@@ -127,6 +127,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   int port = read_u16 (data + 10);
   if (port == 0)
     port = 80; /* Default to valid port */
+  (void)port; /* Parsed but not used - no network ops in this fuzzer */
 
   /* Parse hostname */
   make_hostname (hostname, sizeof (hostname), data + 12, size - 12);
