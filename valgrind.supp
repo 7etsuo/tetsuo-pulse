@@ -1,0 +1,141 @@
+# Valgrind suppressions file for tetsuo-socket library
+# These suppress known false positives from third-party libraries
+
+# =============================================================================
+# OpenSSL / LibreSSL suppressions
+# =============================================================================
+
+# OpenSSL has known one-time allocations during initialization that are
+# intentionally never freed (global state). These are not real leaks.
+{
+   OpenSSL_init_ssl_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:OPENSSL_init_ssl
+}
+
+{
+   OpenSSL_init_crypto_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:OPENSSL_init_crypto
+}
+
+{
+   OpenSSL_CRYPTO_malloc_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:CRYPTO_malloc
+   ...
+   fun:OPENSSL_init_*
+}
+
+{
+   OpenSSL_ENGINE_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:ENGINE_*
+}
+
+{
+   OpenSSL_ERR_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:ERR_*
+}
+
+# =============================================================================
+# pthread / glibc suppressions
+# =============================================================================
+
+# pthread_create allocates thread-local storage that may appear as "possibly
+# lost" on program exit. This is normal behavior.
+{
+   pthread_create_possibly_lost
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:pthread_create*
+}
+
+{
+   pthread_create_reachable
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:pthread_create*
+}
+
+# Thread-local storage allocations
+{
+   pthread_tls_allocate
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:allocate_dtv
+}
+
+{
+   pthread_tls_entry
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:_dl_allocate_tls
+}
+
+# =============================================================================
+# getaddrinfo / DNS resolver suppressions
+# =============================================================================
+
+# getaddrinfo uses global caches that appear as leaks on exit
+{
+   getaddrinfo_cache_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:getaddrinfo
+}
+
+{
+   gethostbyname_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:gethostbyname*
+}
+
+# NSS (Name Service Switch) allocations
+{
+   nss_lookup_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:__nss_*
+}
+
+# =============================================================================
+# dlopen / dynamic linker suppressions
+# =============================================================================
+
+# Dynamic linker allocations for loaded libraries
+{
+   dl_open_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:_dl_open
+}
+
+{
+   dlopen_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:dlopen*
+}
+

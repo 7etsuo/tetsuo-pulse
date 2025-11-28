@@ -1,3 +1,0 @@
-Create examples/ directory
-Add fuzzing harnesses for security-critical paths
-Add CONTRIBUTING.md + SECURITY.md
