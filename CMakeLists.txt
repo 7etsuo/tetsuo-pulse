@@ -308,6 +308,7 @@ set(TEST_SOURCES
     test_reconnect
     test_ratelimit
     test_async
+    test_coverage
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
@@ -327,7 +328,7 @@ add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES})
 
 # Print test configuration
 message(STATUS "Test Suite Configuration:")
-message(STATUS "  Test files: 17")
+message(STATUS "  Test files: 19")
 message(STATUS "  Total tests: 240+")
 message(STATUS "  Run with: make test (or ctest)")
 
