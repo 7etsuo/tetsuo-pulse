@@ -1,5 +1,6 @@
 # Build artifacts
 build/
+build-*/
 *.o
 *.a
 *.so
@@ -10,9 +11,11 @@ build/
 libsocket.so
 libsocket.a
 
-# Test executables
-build/test_*
-build/test/
+# Test and benchmark executables (in build dirs, not src)
+test_*
+benchmark_*
+!src/test/test_*
+!src/test/benchmark_*
 
 # CodeQL build artifacts
 _codeql_build_dir/
@@ -40,6 +43,14 @@ Thumbs.db
 *.gdb_history
 core.*
 /core$
+
+# Coverage files
+*.gcno
+*.gcda
+*.gcov
+coverage.info
+coverage_report/
+lcov.info
 
 # Temporary files
 *.tmp

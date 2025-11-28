@@ -1,1 +1,0 @@
-/usr/bin/cc  -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -D_GNU_SOURCE -pthread -fno-strict-aliasing -fPIC -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fno-omit-frame-pointer -g -Og  -fsanitize=address -fsanitize=undefined CMakeFiles/benchmark_raw.dir/src/test/benchmark_raw.c.o -o benchmark_raw  -lpthread 
