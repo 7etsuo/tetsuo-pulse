@@ -450,7 +450,7 @@ extern void SocketCommon_timeouts_setdefaults (const SocketTimeouts_T *timeouts)
 static inline int
 SocketCommon_check_bound_ipv4 (const struct sockaddr_storage *addr)
 {
-  struct sockaddr_in *sin = (struct sockaddr_in *)addr;
+  const struct sockaddr_in *sin = (const struct sockaddr_in *)addr;
   return sin->sin_port != 0;
 }
 
@@ -462,7 +462,7 @@ SocketCommon_check_bound_ipv4 (const struct sockaddr_storage *addr)
 static inline int
 SocketCommon_check_bound_ipv6 (const struct sockaddr_storage *addr)
 {
-  struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)addr;
+  const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)addr;
   return sin6->sin6_port != 0;
 }
 

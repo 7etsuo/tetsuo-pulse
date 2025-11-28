@@ -4,6 +4,10 @@
  * Tests connection management, cleanup, accessors, limits, and thread safety.
  */
 
+/* cppcheck-suppress-file constVariablePointer ; test allocation success */
+/* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */
+/* cppcheck-suppress-file knownConditionTrueFalse ; intentional null checks */
+
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>

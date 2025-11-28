@@ -32,8 +32,6 @@ signal_handler (int sig)
 static void
 handle_echo_connection (SocketPoll_T poll, Socket_T client)
 {
-  char buf[BENCH_BUF_SIZE];
-  ssize_t n;
   int fd = Socket_fd (client);
 
   if (fd < 0)
@@ -42,7 +40,8 @@ handle_echo_connection (SocketPoll_T poll, Socket_T client)
   TRY
   {
     /* Read available data (non-blocking) */
-    n = Socket_recv (client, buf, sizeof (buf));
+    char buf[BENCH_BUF_SIZE];
+    ssize_t n = Socket_recv (client, buf, sizeof (buf));
     if (n > 0)
       {
         /* Echo back what we received */

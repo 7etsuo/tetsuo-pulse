@@ -77,6 +77,7 @@ create_rate_limiter_unlocked (T pool, size_t rate, size_t burst)
     pool->conn_limiter = SocketRateLimit_new (pool->arena, rate, burst);
   EXCEPT (SocketRateLimit_Failed)
     return 0;
+  /* cppcheck-suppress unreachableCode ; END_TRY is macro-generated */
   END_TRY;
 
   return 1;
@@ -147,6 +148,7 @@ create_ip_tracker_unlocked (T pool, int max_conns)
     pool->ip_tracker = SocketIPTracker_new (pool->arena, max_conns);
   EXCEPT (SocketIPTracker_Failed)
     return 0;
+  /* cppcheck-suppress unreachableCode ; END_TRY is macro-generated */
   END_TRY;
 
   return 1;

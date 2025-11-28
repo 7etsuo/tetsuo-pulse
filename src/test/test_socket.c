@@ -5,6 +5,10 @@
  * cases.
  */
 
+/* cppcheck-suppress-file constVariablePointer ; test allocation success */
+/* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */
+/* cppcheck-suppress-file redundantAssignment ; test code patterns */
+
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>

@@ -255,7 +255,7 @@ backend_mod (PollBackend_T backend, int fd, unsigned events)
 int
 backend_del (PollBackend_T backend, int fd)
 {
-  int index, last_index, last_fd;
+  int index, last_index;
 
   assert (backend);
 
@@ -279,7 +279,7 @@ backend_del (PollBackend_T backend, int fd)
       backend->fds[index] = backend->fds[last_index];
 
       /* Update mapping for moved FD */
-      last_fd = backend->fds[index].fd;
+      int last_fd = backend->fds[index].fd;
       if (last_fd >= 0 && last_fd < backend->max_fd)
         backend->fd_to_index[last_fd] = index;
     }

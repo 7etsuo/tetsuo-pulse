@@ -682,7 +682,8 @@ socketevent_dispatch (const SocketEventRecord *event)
  * Thread-safe: No (caller must hold socketevent_mutex)
  */
 static ssize_t
-socketevent_find_handler_unlocked (SocketEventCallback callback, void *userdata)
+socketevent_find_handler_unlocked (SocketEventCallback callback,
+                                   const void *userdata)
 {
   size_t i;
 
@@ -781,7 +782,7 @@ socketevent_remove_at_index_unlocked (size_t index)
  * must match. If not found, the call is silently ignored.
  */
 void
-SocketEvent_unregister (SocketEventCallback callback, void *userdata)
+SocketEvent_unregister (SocketEventCallback callback, const void *userdata)
 {
   ssize_t idx;
 

@@ -10,6 +10,10 @@
  * - Socket error handling
  */
 
+/* cppcheck-suppress-file constVariablePointer ; test allocation success */
+/* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */
+/* cppcheck-suppress-file unreadVariable ; intentional test patterns */
+
 #include "test/Test.h"
 #include "core/Arena.h"
 #include "core/Except.h"

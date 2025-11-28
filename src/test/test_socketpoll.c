@@ -5,6 +5,8 @@
  * safety.
  */
 
+/* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */
+
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>

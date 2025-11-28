@@ -680,7 +680,7 @@ get_reconnect_policy (T pool)
  */
 static void
 create_reconnect_context (Connection_T conn, const char *host, int port,
-                          SocketReconnect_Policy_T *policy)
+                          const SocketReconnect_Policy_T *policy)
 {
   conn->reconnect
       = SocketReconnect_new (host, port, policy, reconnect_state_callback, conn);
@@ -744,8 +744,6 @@ void
 SocketPool_enable_reconnect (T pool, Connection_T conn, const char *host,
                              int port)
 {
-  SocketReconnect_Policy_T *policy;
-
   assert (pool);
   assert (conn);
   assert (host);
@@ -753,7 +751,7 @@ SocketPool_enable_reconnect (T pool, Connection_T conn, const char *host,
 
   pthread_mutex_lock (&pool->mutex);
   free_existing_reconnect (conn);
-  policy = get_reconnect_policy (pool);
+  const SocketReconnect_Policy_T *policy = get_reconnect_policy (pool);
 
   TRY
   {

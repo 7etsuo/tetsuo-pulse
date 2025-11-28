@@ -5,6 +5,9 @@
  * thread pool.
  */
 
+/* cppcheck-suppress-file constVariablePointer ; test result inspection */
+/* cppcheck-suppress-file redundantAssignment ; test code patterns */
+
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>

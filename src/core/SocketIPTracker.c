@@ -695,7 +695,7 @@ SocketIPTracker_release (T tracker, const char *ip)
 int
 SocketIPTracker_count (T tracker, const char *ip)
 {
-  IPEntry *entry;
+  const IPEntry *entry;
   int count = 0;
 
   assert (tracker != NULL);

@@ -1,3 +1,5 @@
+/* cppcheck-suppress-file knownConditionTrueFalse ; volatile flag for signals */
+
 #include <assert.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -37,7 +39,7 @@ struct bench_thread_arg
 static void *
 bench_thread (void *arg)
 {
-  struct bench_thread_arg *targ = (struct bench_thread_arg *)arg;
+  const struct bench_thread_arg *targ = (const struct bench_thread_arg *)arg;
   int thread_id = targ->thread_id;
   long reqs_per_thread = targ->reqs_per_thread;
   int port = targ->port;

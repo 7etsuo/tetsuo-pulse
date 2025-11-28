@@ -38,7 +38,7 @@ handle_raw_connection (int epfd, int client_fd)
           return;
         }
     }
-  else if (n == 0 || (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK))
+  else if (n == 0 || (errno != EAGAIN && errno != EWOULDBLOCK))
     {
       // EOF or error - close connection
       close (client_fd);

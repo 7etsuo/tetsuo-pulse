@@ -132,13 +132,9 @@ transition_state (T conn, SocketReconnect_State new_state)
 static int
 calculate_backoff_delay (T conn)
 {
-  double delay;
-  double jitter_range;
-  double jitter_offset;
-
   /* Exponential backoff: initial * multiplier^attempt */
-  delay = (double)conn->policy.initial_delay_ms
-          * pow (conn->policy.multiplier, (double)conn->attempt_count);
+  double delay = (double)conn->policy.initial_delay_ms
+                 * pow (conn->policy.multiplier, (double)conn->attempt_count);
 
   /* Cap at max delay */
   if (delay > (double)conn->policy.max_delay_ms)
@@ -147,8 +143,9 @@ calculate_backoff_delay (T conn)
   /* Add jitter: delay * (1 + jitter * (2*random - 1)) */
   if (conn->policy.jitter > 0.0)
     {
-      jitter_range = delay * conn->policy.jitter;
-      jitter_offset = jitter_range * (2.0 * socketreconnect_random_double () - 1.0);
+      double jitter_range = delay * conn->policy.jitter;
+      double jitter_offset
+          = jitter_range * (2.0 * socketreconnect_random_double () - 1.0);
       delay += jitter_offset;
     }
 
@@ -213,14 +210,12 @@ update_circuit_breaker (T conn, int success)
 static int
 circuit_allows_attempt (T conn)
 {
-  int64_t elapsed;
-
   if (conn->circuit_state == CIRCUIT_CLOSED)
     return 1;
 
   if (conn->circuit_state == CIRCUIT_OPEN)
     {
-      elapsed = socketreconnect_elapsed_ms (conn->circuit_open_time_ms);
+      int64_t elapsed = socketreconnect_elapsed_ms (conn->circuit_open_time_ms);
       if (elapsed >= conn->policy.circuit_reset_timeout_ms)
         {
           /* Allow probe attempt */
@@ -810,14 +805,12 @@ SocketReconnect_pollfd (T conn)
 void
 SocketReconnect_process (T conn)
 {
-  int result;
-
   assert (conn);
 
   /* LCOV_EXCL_START - requires non-routable address for EINPROGRESS */
   if (conn->state == RECONNECT_CONNECTING && conn->connect_in_progress)
     {
-      result = check_connect_completion (conn);
+      int result = check_connect_completion (conn);
       if (result > 0)
         {
           handle_connect_success (conn);

@@ -217,7 +217,7 @@ extern void remove_from_queue_middle (struct SocketDNS_T *dns,
                                       struct SocketDNS_Request_T *req);
 extern void queue_remove (struct SocketDNS_T *dns,
                           struct SocketDNS_Request_T *req);
-extern int check_queue_limit (struct SocketDNS_T *dns);
+extern int check_queue_limit (const struct SocketDNS_T *dns);
 extern void submit_dns_request (struct SocketDNS_T *dns,
                                 struct SocketDNS_Request_T *req);
 extern void cancel_pending_request (struct SocketDNS_T *dns,
@@ -244,7 +244,7 @@ extern void handle_resolution_result (struct SocketDNS_T *dns,
                                       struct addrinfo *result, int res);
 extern void process_single_request (struct SocketDNS_T *dns,
                                     struct SocketDNS_Request_T *req,
-                                    struct addrinfo *base_hints);
+                                    const struct addrinfo *base_hints);
 extern struct SocketDNS_Request_T *dequeue_request (struct SocketDNS_T *dns);
 extern struct SocketDNS_Request_T * wait_for_request (struct SocketDNS_T *dns);
 extern void signal_completion (struct SocketDNS_T *dns);

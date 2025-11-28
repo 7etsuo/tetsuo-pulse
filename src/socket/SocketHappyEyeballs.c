@@ -548,14 +548,13 @@ he_build_family_lists (T he, SocketHE_AddressEntry_T **ipv6_list,
 {
   SocketHE_AddressEntry_T **ipv6_tail = ipv6_list;
   SocketHE_AddressEntry_T **ipv4_tail = ipv4_list;
-  SocketHE_AddressEntry_T *entry;
 
   *ipv6_list = NULL;
   *ipv4_list = NULL;
 
   for (struct addrinfo *rp = he->resolved; rp; rp = rp->ai_next)
     {
-      entry = he_create_address_entry (he, rp);
+      SocketHE_AddressEntry_T *entry = he_create_address_entry (he, rp);
       if (!entry)
         continue;
 
@@ -1681,7 +1680,6 @@ SocketHappyEyeballs_start (SocketDNS_T dns, SocketPoll_T poll, const char *host,
                            int port, const SocketHE_Config_T *config)
 {
   T he;
-  char errmsg_copy[SOCKET_HE_ERROR_BUFSIZE];
 
   he_validate_start_params (dns, poll, host, port);
 
@@ -1694,6 +1692,7 @@ SocketHappyEyeballs_start (SocketDNS_T dns, SocketPoll_T poll, const char *host,
 
   if (he_start_dns_resolution (he) < 0)
     {
+      char errmsg_copy[SOCKET_HE_ERROR_BUFSIZE];
       snprintf (errmsg_copy, sizeof (errmsg_copy), "%s", he->error_buf);
       SocketHappyEyeballs_free (&he);
       SOCKET_ERROR_MSG ("%s", errmsg_copy);
