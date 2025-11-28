@@ -81,10 +81,7 @@ dns_stress_thread (void *arg)
         int attempts = 0;
         while (dns_running && attempts < 100)
           { // Max 10 seconds polling
-            struct addrinfo *result = NULL;
-            int error = 0;
-
-            result = SocketDNS_getresult (dns, req);
+            struct addrinfo *result = SocketDNS_getresult (dns, req);
             if (result)
               {
                 SocketCommon_free_addrinfo (result);
