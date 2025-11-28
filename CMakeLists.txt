@@ -458,6 +458,11 @@ if(ENABLE_FUZZING)
         fuzz_socketio
         fuzz_address_parse
         fuzz_cidr_parse
+        fuzz_unix_path
+        fuzz_socketpool
+        fuzz_socketpoll
+        fuzz_socketdgram
+        fuzz_exception
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
@@ -467,6 +472,7 @@ if(ENABLE_FUZZING)
             fuzz_tls_session
             fuzz_tls_certs
             fuzz_tls_verify
+            fuzz_tls_sni
         )
     endif()
     
