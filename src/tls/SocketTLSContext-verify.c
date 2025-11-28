@@ -273,6 +273,11 @@ SocketTLSContext_set_cipher_list (T ctx, const char *ciphers)
  * @arg: User argument (unused, we get context from SSL)
  *
  * Returns: SSL_TLSEXT_ERR_OK or SSL_TLSEXT_ERR_NOACK
+ *
+ * Note: SSL_set_tlsext_status_ocsp_resp takes ownership of the DER buffer
+ * (allocated by i2d_OCSP_RESPONSE via OPENSSL_malloc). We must NOT free
+ * the buffer after a successful call - OpenSSL will free it in SSL_free().
+ * Only free the buffer if we don't pass it to OpenSSL.
  */
 static int
 status_cb_wrapper (SSL *ssl, void *arg)
@@ -288,16 +293,24 @@ status_cb_wrapper (SSL *ssl, void *arg)
 
   unsigned char *der = NULL;
   int len = i2d_OCSP_RESPONSE (resp, &der);
+  int success = 0;
+
   if (len > 0 && der)
     {
+      /* SSL_set_tlsext_status_ocsp_resp takes ownership of der buffer */
       SSL_set_tlsext_status_ocsp_resp (ssl, der, len);
+      success = 1;
+      /* Do NOT free der - OpenSSL owns it now */
+    }
+  else if (der)
+    {
+      /* Only free der if we didn't give it to OpenSSL */
+      OPENSSL_free (der);
     }
 
   OCSP_RESPONSE_free (resp);
-  if (der)
-    OPENSSL_free (der);
 
-  return len > 0 ? SSL_TLSEXT_ERR_OK : SSL_TLSEXT_ERR_NOACK;
+  return success ? SSL_TLSEXT_ERR_OK : SSL_TLSEXT_ERR_NOACK;
 }
 
 void
@@ -317,7 +330,9 @@ SocketTLSContext_set_ocsp_response (T ctx, const unsigned char *response,
                          "OCSP response too large (%zu bytes, max %d)",
                          len, SOCKET_TLS_MAX_OCSP_RESPONSE_LEN);
 
-  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &response, len);
+  /* Save original pointer - d2i_OCSP_RESPONSE advances the pointer */
+  const unsigned char *p = response;
+  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &p, len);
   if (!resp)
     {
       RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid OCSP response format");

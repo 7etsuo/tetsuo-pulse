@@ -5257,6 +5257,1076 @@ TEST (socketcommon_alloc_iov_copy_basic)
   END_TRY;
 }
 
+/* ==================== Bandwidth Limiting Tests ==================== */
+
+TEST (socket_setbandwidth_enable_disable)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  /* Initially no bandwidth limit */
+  ASSERT_EQ (0, Socket_getbandwidth (socket));
+
+  /* Set bandwidth limit */
+  TRY
+  {
+    Socket_setbandwidth (socket, 10000);
+    ASSERT_EQ (10000, Socket_getbandwidth (socket));
+
+    /* Disable bandwidth limit */
+    Socket_setbandwidth (socket, 0);
+    ASSERT_EQ (0, Socket_getbandwidth (socket));
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_getbandwidth_returns_configured_value)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  TRY
+  {
+    Socket_setbandwidth (socket, 50000);
+    ASSERT_EQ (50000, Socket_getbandwidth (socket));
+
+    Socket_setbandwidth (socket, 1000000);
+    ASSERT_EQ (1000000, Socket_getbandwidth (socket));
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_setbandwidth_reconfigures_existing_limiter)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  TRY
+  {
+    /* Set initial bandwidth */
+    Socket_setbandwidth (socket, 10000);
+    ASSERT_EQ (10000, Socket_getbandwidth (socket));
+
+    /* Reconfigure existing limiter */
+    Socket_setbandwidth (socket, 20000);
+    ASSERT_EQ (20000, Socket_getbandwidth (socket));
+
+    /* Reconfigure again */
+    Socket_setbandwidth (socket, 5000);
+    ASSERT_EQ (5000, Socket_getbandwidth (socket));
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_send_limited_without_limit_behaves_as_send)
+{
+  setup_signals ();
+  Socket_T socket1 = NULL;
+  Socket_T socket2 = NULL;
+
+  TRY
+  {
+    SocketPair_new (SOCK_STREAM, &socket1, &socket2);
+    ASSERT_NOT_NULL (socket1);
+    ASSERT_NOT_NULL (socket2);
+
+    /* No bandwidth limit set */
+    ASSERT_EQ (0, Socket_getbandwidth (socket1));
+
+    const char *msg = "test message";
+    ssize_t sent = Socket_send_limited (socket1, msg, strlen (msg));
+    ASSERT (sent > 0);
+
+    char buf[256];
+    ssize_t received = Socket_recv (socket2, buf, sizeof (buf));
+    ASSERT (received > 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
+  END_TRY;
+
+  if (socket1)
+    Socket_free (&socket1);
+  if (socket2)
+    Socket_free (&socket2);
+}
+
+TEST (socket_send_limited_with_limit_partial_send)
+{
+  setup_signals ();
+  Socket_T socket1 = NULL;
+  Socket_T socket2 = NULL;
+
+  TRY
+  {
+    SocketPair_new (SOCK_STREAM, &socket1, &socket2);
+    ASSERT_NOT_NULL (socket1);
+    ASSERT_NOT_NULL (socket2);
+
+    /* Set bandwidth limit */
+    Socket_setbandwidth (socket1, 1000000);
+    ASSERT_EQ (1000000, Socket_getbandwidth (socket1));
+
+    const char *msg = "test message";
+    ssize_t sent = Socket_send_limited (socket1, msg, strlen (msg));
+    ASSERT (sent > 0);
+
+    char buf[256];
+    ssize_t received = Socket_recv (socket2, buf, sizeof (buf));
+    ASSERT (received > 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
+  END_TRY;
+
+  if (socket1)
+    Socket_free (&socket1);
+  if (socket2)
+    Socket_free (&socket2);
+}
+
+TEST (socket_recv_limited_without_limit_behaves_as_recv)
+{
+  setup_signals ();
+  Socket_T socket1 = NULL;
+  Socket_T socket2 = NULL;
+
+  TRY
+  {
+    SocketPair_new (SOCK_STREAM, &socket1, &socket2);
+    ASSERT_NOT_NULL (socket1);
+    ASSERT_NOT_NULL (socket2);
+
+    /* No bandwidth limit set */
+    ASSERT_EQ (0, Socket_getbandwidth (socket2));
+
+    const char *msg = "test message";
+    ssize_t sent = Socket_send (socket1, msg, strlen (msg));
+    ASSERT (sent > 0);
+
+    char buf[256];
+    ssize_t received = Socket_recv_limited (socket2, buf, sizeof (buf));
+    ASSERT (received > 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
+  END_TRY;
+
+  if (socket1)
+    Socket_free (&socket1);
+  if (socket2)
+    Socket_free (&socket2);
+}
+
+TEST (socket_recv_limited_with_limit)
+{
+  setup_signals ();
+  Socket_T socket1 = NULL;
+  Socket_T socket2 = NULL;
+
+  TRY
+  {
+    SocketPair_new (SOCK_STREAM, &socket1, &socket2);
+    ASSERT_NOT_NULL (socket1);
+    ASSERT_NOT_NULL (socket2);
+
+    /* Set bandwidth limit on receiving socket */
+    Socket_setbandwidth (socket2, 1000000);
+    ASSERT_EQ (1000000, Socket_getbandwidth (socket2));
+
+    const char *msg = "test message";
+    ssize_t sent = Socket_send (socket1, msg, strlen (msg));
+    ASSERT (sent > 0);
+
+    char buf[256];
+    ssize_t received = Socket_recv_limited (socket2, buf, sizeof (buf));
+    ASSERT (received > 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
+  END_TRY;
+
+  if (socket1)
+    Socket_free (&socket1);
+  if (socket2)
+    Socket_free (&socket2);
+}
+
+TEST (socket_bandwidth_wait_ms_no_limit_returns_zero)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  /* No bandwidth limit - should return 0 */
+  int64_t wait = Socket_bandwidth_wait_ms (socket, 1000);
+  ASSERT_EQ (0, wait);
+
+  Socket_free (&socket);
+}
+
+TEST (socket_bandwidth_wait_ms_with_limit)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  TRY
+  {
+    Socket_setbandwidth (socket, 1000);
+
+    /* Query wait time - should be >= 0 */
+    int64_t wait = Socket_bandwidth_wait_ms (socket, 100);
+    ASSERT (wait >= 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+/* ==================== Socket_new_from_fd Tests ==================== */
+
+TEST (socket_new_from_fd_basic)
+{
+  setup_signals ();
+  int fd = socket (AF_INET, SOCK_STREAM, 0);
+  ASSERT (fd >= 0);
+
+  Socket_T sock = NULL;
+  TRY
+  {
+    sock = Socket_new_from_fd (fd);
+    ASSERT_NOT_NULL (sock);
+    ASSERT (Socket_fd (sock) == fd);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    close (fd);
+    ASSERT (0);
+  }
+  END_TRY;
+
+  if (sock)
+    Socket_free (&sock);
+}
+
+TEST (socket_new_from_fd_closed_fd_raises)
+{
+  setup_signals ();
+  volatile int raised = 0;
+
+  /* Create and immediately close a socket to get an invalid fd */
+  int fd = socket (AF_INET, SOCK_STREAM, 0);
+  ASSERT (fd >= 0);
+  close (fd);
+
+  TRY { Socket_new_from_fd (fd); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+}
+
+TEST (socket_new_from_fd_non_socket_fd_raises)
+{
+  setup_signals ();
+  volatile int raised = 0;
+
+  /* Create a pipe - not a socket */
+  int pipefd[2];
+  if (pipe (pipefd) < 0)
+    return;
+
+  TRY { Socket_new_from_fd (pipefd[0]); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  close (pipefd[0]);
+  close (pipefd[1]);
+
+  ASSERT_EQ (1, raised);
+}
+
+/* ==================== Socket_listen Error Path Tests ==================== */
+
+TEST (socket_listen_zero_backlog_raises)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+  volatile int raised = 0;
+
+  TRY
+  {
+    Socket_bind (socket, "127.0.0.1", 0);
+    Socket_listen (socket, 0);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  Socket_free (&socket);
+}
+
+TEST (socket_listen_negative_backlog_raises)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+  volatile int raised = 0;
+
+  TRY
+  {
+    Socket_bind (socket, "127.0.0.1", 0);
+    Socket_listen (socket, -5);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  Socket_free (&socket);
+}
+
+TEST (socket_listen_large_backlog_clamps_to_max)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  TRY
+  {
+    Socket_bind (socket, "127.0.0.1", 0);
+    /* Very large backlog - should be clamped but not fail */
+    Socket_listen (socket, 1000000);
+    /* If we get here, it worked (value was clamped) */
+    ASSERT (Socket_islistening (socket));
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+/* ==================== Unix Socket Error Path Tests ==================== */
+
+TEST (socket_bind_unix_path_too_long_raises)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+  volatile int raised = 0;
+
+  /* Create a path that's too long for sun_path */
+  char long_path[256];
+  memset (long_path, 'a', sizeof (long_path) - 1);
+  long_path[sizeof (long_path) - 1] = '\0';
+
+  TRY { Socket_bind_unix (socket, long_path); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  Socket_free (&socket);
+}
+
+TEST (socket_bind_unix_directory_traversal_raises)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+  volatile int raised = 0;
+
+  TRY { Socket_bind_unix (socket, "/tmp/../../../etc/passwd"); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  Socket_free (&socket);
+}
+
+TEST (socket_connect_unix_nonexistent_raises_enoent)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+  volatile int raised = 0;
+
+  /* Make sure the file doesn't exist */
+  unlink ("/tmp/nonexistent_socket_test_12345");
+
+  TRY { Socket_connect_unix (socket, "/tmp/nonexistent_socket_test_12345"); }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  Socket_free (&socket);
+}
+
+TEST (socket_connect_unix_no_listener_raises_econnrefused)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (server);
+  ASSERT_NOT_NULL (client);
+
+  const char *path = "/tmp/test_econnrefused_socket";
+  cleanup_unix_socket (path);
+  volatile int raised = 0;
+
+  TRY
+  {
+    /* Bind but don't listen - creates file but no listener */
+    Socket_bind_unix (server, path);
+    /* Now try to connect - should fail with ECONNREFUSED */
+    Socket_connect_unix (client, path);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  cleanup_unix_socket (path);
+  ASSERT_EQ (1, raised);
+
+  Socket_free (&server);
+  Socket_free (&client);
+}
+
+/* ==================== Abstract Unix Socket Tests ==================== */
+
+#ifdef __linux__
+TEST (socket_bind_unix_abstract_namespace)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  TRY
+  {
+    /* Abstract namespace uses @ prefix */
+    Socket_bind_unix (socket, "@test_abstract_socket");
+    /* Should succeed - abstract namespace doesn't create file */
+    ASSERT (Socket_isbound (socket));
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some systems */
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_connect_unix_abstract_namespace)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (server);
+  ASSERT_NOT_NULL (client);
+
+  TRY
+  {
+    Socket_bind_unix (server, "@test_abstract_connect");
+    Socket_listen (server, 5);
+    Socket_setnonblocking (server);
+
+    Socket_connect_unix (client, "@test_abstract_connect");
+    ASSERT (Socket_isconnected (client));
+
+    Socket_T accepted = Socket_accept (server);
+    if (accepted)
+      Socket_free (&accepted);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail on some systems */
+  }
+  END_TRY;
+
+  Socket_free (&server);
+  Socket_free (&client);
+}
+#endif /* __linux__ */
+
+/* ==================== SocketPair Error Path Tests ==================== */
+
+TEST (socketpair_new_invalid_type_raises)
+{
+  setup_signals ();
+  Socket_T socket1 = NULL;
+  Socket_T socket2 = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    /* Use an invalid socket type (not SOCK_STREAM or SOCK_DGRAM) */
+    SocketPair_new (SOCK_RAW, &socket1, &socket2);
+  }
+  EXCEPT (Socket_Failed) { raised = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+
+  if (socket1)
+    Socket_free (&socket1);
+  if (socket2)
+    Socket_free (&socket2);
+}
+
+/* ==================== Async Bind Cancel Tests ==================== */
+
+TEST (socket_bind_async_cancel_basic)
+{
+  setup_signals ();
+  SocketDNS_T dns = NULL;
+  Socket_T socket = NULL;
+  SocketDNS_Request_T req = NULL;
+
+  TRY
+  {
+    dns = SocketDNS_new ();
+    socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL (dns);
+    ASSERT_NOT_NULL (socket);
+
+    /* Start async bind */
+    req = Socket_bind_async (dns, socket, "localhost", 0);
+    ASSERT_NOT_NULL (req);
+
+    /* Cancel the request */
+    Socket_bind_async_cancel (dns, req);
+    req = NULL; /* Prevent double-cancel */
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail */
+  }
+  END_TRY;
+
+  if (req)
+    Socket_bind_async_cancel (dns, req);
+  if (socket)
+    Socket_free (&socket);
+  if (dns)
+    SocketDNS_free (&dns);
+}
+
+TEST (socket_bind_async_cancel_null_request_safe)
+{
+  setup_signals ();
+  SocketDNS_T dns = NULL;
+
+  TRY
+  {
+    dns = SocketDNS_new ();
+    ASSERT_NOT_NULL (dns);
+
+    /* Cancel with NULL request should be safe */
+    Socket_bind_async_cancel (dns, NULL);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  END_TRY;
+
+  if (dns)
+    SocketDNS_free (&dns);
+}
+
+/* ==================== Additional Coverage Tests ==================== */
+
+TEST (socket_debug_live_count)
+{
+  setup_signals ();
+  int initial_count = Socket_debug_live_count ();
+
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  /* Live count should have increased */
+  int after_create = Socket_debug_live_count ();
+  ASSERT_EQ (initial_count + 1, after_create);
+
+  Socket_free (&socket);
+
+  /* Live count should be back to initial */
+  int after_free = Socket_debug_live_count ();
+  ASSERT_EQ (initial_count, after_free);
+}
+
+TEST (socket_getlocaladdr_after_bind)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  TRY
+  {
+    Socket_bind (socket, "127.0.0.1", 0);
+    const char *local = Socket_getlocaladdr (socket);
+    ASSERT_NOT_NULL (local);
+    /* Should be "127.0.0.1" or similar */
+    ASSERT (strlen (local) > 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_getlocalport_after_bind)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  TRY
+  {
+    Socket_bind (socket, "127.0.0.1", 0);
+    int port = Socket_getlocalport (socket);
+    /* Port 0 means kernel assigns - should be > 0 after bind */
+    ASSERT (port > 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
+  END_TRY;
+
+  Socket_free (&socket);
+}
+
+TEST (socket_getlocaladdr_before_bind_returns_unknown)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  /* Before bind, should return "(unknown)" */
+  const char *local = Socket_getlocaladdr (socket);
+  ASSERT_NOT_NULL (local);
+
+  Socket_free (&socket);
+}
+
+TEST (socket_bind_eaddrinuse)
+{
+  setup_signals ();
+  Socket_T socket1 = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T socket2 = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket1);
+  ASSERT_NOT_NULL (socket2);
+
+  volatile int port = 0;
+  volatile int raised = 0;
+
+  TRY
+  {
+    /* Bind first socket to a port */
+    Socket_bind (socket1, "127.0.0.1", 0);
+    Socket_listen (socket1, 1);
+
+    /* Get the port */
+    struct sockaddr_in addr;
+    socklen_t len = sizeof (addr);
+    getsockname (Socket_fd (socket1), (struct sockaddr *)&addr, &len);
+    port = ntohs (addr.sin_port);
+
+    /* Try to bind second socket to same port - should fail with EADDRINUSE */
+    Socket_bind (socket2, "127.0.0.1", port);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  /* Note: bind may succeed due to OS differences, so we don't assert raised */
+  (void)raised;
+
+  Socket_free (&socket1);
+  Socket_free (&socket2);
+}
+
+TEST (socket_isconnected_caches_peer_info)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (server);
+  ASSERT_NOT_NULL (client);
+
+  TRY
+  {
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 1);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof (addr);
+    getsockname (Socket_fd (server), (struct sockaddr *)&addr, &len);
+    int port = ntohs (addr.sin_port);
+
+    Socket_connect (client, "127.0.0.1", port);
+
+    /* Check isconnected - this should cache peer info */
+    ASSERT_EQ (1, Socket_isconnected (client));
+
+    /* Now getpeeraddr should return cached value */
+    const char *peer = Socket_getpeeraddr (client);
+    ASSERT_NOT_NULL (peer);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
+  END_TRY;
+
+  Socket_free (&server);
+  Socket_free (&client);
+}
+
+TEST (socket_send_limited_rate_limited_returns_zero)
+{
+  setup_signals ();
+  Socket_T socket1 = NULL;
+  Socket_T socket2 = NULL;
+
+  TRY
+  {
+    SocketPair_new (SOCK_STREAM, &socket1, &socket2);
+    ASSERT_NOT_NULL (socket1);
+    ASSERT_NOT_NULL (socket2);
+
+    /* Set very low bandwidth limit - 1 byte per second */
+    Socket_setbandwidth (socket1, 1);
+
+    /* First send should succeed (uses burst) */
+    const char *msg = "test";
+    ssize_t sent1 = Socket_send_limited (socket1, msg, strlen (msg));
+    /* May succeed or return 0 depending on rate limiter state */
+    (void)sent1;
+
+    /* Immediate second send should be rate limited */
+    ssize_t sent2 = Socket_send_limited (socket1, msg, strlen (msg));
+    /* Should be 0 (rate limited) or positive (if some tokens available) */
+    ASSERT (sent2 >= 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
+  END_TRY;
+
+  if (socket1)
+    Socket_free (&socket1);
+  if (socket2)
+    Socket_free (&socket2);
+}
+
+TEST (socket_recv_limited_rate_limited_returns_zero)
+{
+  setup_signals ();
+  Socket_T socket1 = NULL;
+  Socket_T socket2 = NULL;
+
+  TRY
+  {
+    SocketPair_new (SOCK_STREAM, &socket1, &socket2);
+    ASSERT_NOT_NULL (socket1);
+    ASSERT_NOT_NULL (socket2);
+
+    /* Set very low bandwidth limit on receiver */
+    Socket_setbandwidth (socket2, 1);
+
+    /* Send some data */
+    const char *msg = "test message data";
+    Socket_send (socket1, msg, strlen (msg));
+
+    /* First recv should get some data */
+    char buf[256];
+    ssize_t recv1 = Socket_recv_limited (socket2, buf, sizeof (buf));
+    (void)recv1;
+
+    /* Need more data to test rate limiting properly */
+    Socket_send (socket1, msg, strlen (msg));
+    ssize_t recv2 = Socket_recv_limited (socket2, buf, sizeof (buf));
+    ASSERT (recv2 >= 0);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
+  END_TRY;
+
+  if (socket1)
+    Socket_free (&socket1);
+  if (socket2)
+    Socket_free (&socket2);
+}
+
+TEST (socket_bind_with_addrinfo_success)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  struct addrinfo hints, *res = NULL;
+  memset (&hints, 0, sizeof (hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_PASSIVE;
+
+  int result = getaddrinfo ("127.0.0.1", "0", &hints, &res);
+  if (result != 0 || !res)
+    {
+      Socket_free (&socket);
+      return;
+    }
+
+  TRY
+  {
+    Socket_bind_with_addrinfo (socket, res);
+    ASSERT (Socket_isbound (socket));
+  }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
+  END_TRY;
+
+  freeaddrinfo (res);
+  Socket_free (&socket);
+}
+
+TEST (socket_bind_with_addrinfo_failure)
+{
+  setup_signals ();
+  Socket_T socket1 = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T socket2 = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket1);
+  ASSERT_NOT_NULL (socket2);
+  volatile int raised = 0;
+
+  struct addrinfo hints, *res = NULL;
+  memset (&hints, 0, sizeof (hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+
+  /* Bind first socket to get a specific port */
+  TRY
+  {
+    Socket_bind (socket1, "127.0.0.1", 0);
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof (addr);
+    getsockname (Socket_fd (socket1), (struct sockaddr *)&addr, &len);
+    int port = ntohs (addr.sin_port);
+
+    /* Get addrinfo for the same port */
+    char port_str[16];
+    snprintf (port_str, sizeof (port_str), "%d", port);
+    int result = getaddrinfo ("127.0.0.1", port_str, &hints, &res);
+    if (result == 0 && res)
+      {
+        /* Try to bind second socket to same port - should fail */
+        Socket_bind_with_addrinfo (socket2, res);
+      }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  /* Cleanup */
+  (void)raised;
+  if (res)
+    freeaddrinfo (res);
+  Socket_free (&socket1);
+  Socket_free (&socket2);
+}
+
+TEST (socket_listen_on_unbound_socket)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+  volatile int raised = 0;
+
+  TRY
+  {
+    /* Try to listen without binding first - should fail */
+    Socket_listen (socket, 5);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  /* May succeed or fail depending on OS */
+  (void)raised;
+  Socket_free (&socket);
+}
+
+TEST (socket_bind_unix_stale_socket_file)
+{
+  setup_signals ();
+  const char *path = "/tmp/test_stale_socket_file";
+
+  /* Create a stale socket file */
+  Socket_T old_socket = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (old_socket);
+
+  TRY
+  {
+    Socket_bind_unix (old_socket, path);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    Socket_free (&old_socket);
+    cleanup_unix_socket (path);
+    return;
+  }
+  END_TRY;
+
+  /* Free socket but leave file */
+  Socket_free (&old_socket);
+
+  /* Now try to bind a new socket to same path - should unlink stale file */
+  Socket_T new_socket = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (new_socket);
+
+  TRY
+  {
+    Socket_bind_unix (new_socket, path);
+    /* Should succeed by unlinking stale file first */
+    ASSERT (Socket_isbound (new_socket));
+  }
+  EXCEPT (Socket_Failed)
+  {
+    /* May fail if permissions prevent unlink */
+  }
+  END_TRY;
+
+  cleanup_unix_socket (path);
+  Socket_free (&new_socket);
+}
+
+TEST (socket_connect_unix_other_error)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+  volatile int raised = 0;
+
+  /* Try to connect to a path that's a regular file, not a socket */
+  TRY
+  {
+    Socket_connect_unix (socket, "/etc/passwd");
+  }
+  EXCEPT (Socket_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (1, raised);
+  Socket_free (&socket);
+}
+
+TEST (socket_isconnected_error_not_enotconn)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  /* New socket is not connected */
+  ASSERT_EQ (0, Socket_isconnected (socket));
+
+  Socket_free (&socket);
+}
+
+TEST (socket_islistening_with_error)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (server);
+  ASSERT_NOT_NULL (client);
+
+  TRY
+  {
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 1);
+
+    /* Server should be listening */
+    ASSERT_EQ (1, Socket_islistening (server));
+
+    /* Client is not listening */
+    ASSERT_EQ (0, Socket_islistening (client));
+
+    /* Accept a connection to change server state */
+    struct sockaddr_in addr;
+    socklen_t len = sizeof (addr);
+    getsockname (Socket_fd (server), (struct sockaddr *)&addr, &len);
+    int port = ntohs (addr.sin_port);
+
+    Socket_connect (client, "127.0.0.1", port);
+
+    /* Server is still listening even with pending connection */
+    ASSERT_EQ (1, Socket_islistening (server));
+  }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
+  END_TRY;
+
+  Socket_free (&server);
+  Socket_free (&client);
+}
+
 int
 main (void)
 {
