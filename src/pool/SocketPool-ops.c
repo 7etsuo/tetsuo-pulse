@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "dns/SocketDNS.h"
@@ -1038,6 +1039,213 @@ SocketPool_connect_async (T pool, const char *host, int port,
 
   pthread_mutex_unlock (&pool->mutex);
   return req;
+}
+
+/* ============================================================================
+ * SYN Flood Protection
+ * ============================================================================ */
+
+/**
+ * SocketPool_set_syn_protection - Enable SYN flood protection for pool
+ * @pool: Pool instance
+ * @protect: SYN protection instance (NULL to disable)
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketPool_set_syn_protection (T pool, SocketSYNProtect_T protect)
+{
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+  pool->syn_protect = protect;
+  pthread_mutex_unlock (&pool->mutex);
+}
+
+/**
+ * SocketPool_get_syn_protection - Get current SYN protection module
+ * @pool: Pool instance
+ *
+ * Returns: Current SYN protection instance, or NULL if disabled
+ * Thread-safe: Yes
+ */
+SocketSYNProtect_T
+SocketPool_get_syn_protection (T pool)
+{
+  SocketSYNProtect_T protect;
+
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+  protect = pool->syn_protect;
+  pthread_mutex_unlock (&pool->mutex);
+
+  return protect;
+}
+
+/**
+ * apply_syn_throttle - Apply throttle delay if needed
+ * @action: SYN protection action
+ * @protect: Protection instance (for config)
+ *
+ * Blocks briefly for throttled connections to slow down attack rate.
+ */
+static void
+apply_syn_throttle (SocketSYN_Action action, SocketSYNProtect_T protect)
+{
+  if (action != SYN_ACTION_THROTTLE || protect == NULL)
+    return;
+
+  /* Get config for throttle delay - use default if not accessible */
+  int delay_ms = SOCKET_SYN_DEFAULT_THROTTLE_DELAY_MS;
+
+  if (delay_ms > 0)
+    {
+      struct timespec ts;
+      ts.tv_sec = delay_ms / 1000;
+      ts.tv_nsec = (delay_ms % 1000) * 1000000L;
+      nanosleep (&ts, NULL);
+    }
+}
+
+/**
+ * apply_syn_challenge - Apply TCP_DEFER_ACCEPT for challenged connections
+ * @socket: Accepted socket
+ * @action: SYN protection action
+ * @protect: Protection instance (for config)
+ */
+static void
+apply_syn_challenge (Socket_T socket, SocketSYN_Action action,
+                     SocketSYNProtect_T protect)
+{
+  if (action != SYN_ACTION_CHALLENGE || protect == NULL || socket == NULL)
+    return;
+
+  /* Note: TCP_DEFER_ACCEPT is typically set on listening socket, but
+   * for per-connection challenge we apply it to accepted socket to
+   * ensure data is received before proceeding. This is less effective
+   * than listener-level defer but still adds a challenge. */
+  TRY { Socket_setdeferaccept (socket, SOCKET_SYN_DEFAULT_DEFER_SEC); }
+  ELSE
+  {
+    /* Ignore failures - best effort protection */
+    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                     "SYN challenge: TCP_DEFER_ACCEPT failed (continuing)");
+  }
+  END_TRY;
+}
+
+/**
+ * SocketPool_accept_protected - Accept with full SYN flood protection
+ * @pool: Pool instance
+ * @server: Server socket (listening, non-blocking)
+ * @action_out: Output - action taken (optional, may be NULL)
+ *
+ * Returns: New socket if allowed, NULL if blocked/would block
+ * Raises: SocketPool_Failed on actual errors
+ * Thread-safe: Yes
+ */
+Socket_T
+SocketPool_accept_protected (T pool, Socket_T server,
+                             SocketSYN_Action *action_out)
+{
+  Socket_T client = NULL;
+  SocketSYNProtect_T protect;
+  SocketSYN_Action action = SYN_ACTION_ALLOW;
+  const char *client_ip = NULL;
+
+  assert (pool);
+  assert (server);
+
+  /* Get current protection instance */
+  pthread_mutex_lock (&pool->mutex);
+  protect = pool->syn_protect;
+  pthread_mutex_unlock (&pool->mutex);
+
+  /* If no SYN protection, fall back to rate-limited accept */
+  if (protect == NULL)
+    {
+      if (action_out)
+        *action_out = SYN_ACTION_ALLOW;
+      return SocketPool_accept_limited (pool, server);
+    }
+
+  /* Accept the connection first to get client IP */
+  TRY { client = Socket_accept (server); }
+  EXCEPT (Socket_Failed)
+  {
+    /* Actual error - propagate */
+    RERAISE;
+  }
+  END_TRY;
+
+  if (client == NULL)
+    {
+      /* Would block - not an error */
+      if (action_out)
+        *action_out = SYN_ACTION_ALLOW;
+      return NULL;
+    }
+
+  /* Get client IP for SYN protection check */
+  client_ip = Socket_getpeeraddr (client);
+
+  /* Check with SYN protection module */
+  action = SocketSYNProtect_check (protect, client_ip, NULL);
+
+  if (action_out)
+    *action_out = action;
+
+  /* Handle action */
+  switch (action)
+    {
+    case SYN_ACTION_ALLOW:
+      /* Normal accept - check rate limits still */
+      if (!SocketPool_accept_allowed (pool, client_ip))
+        {
+          SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
+          Socket_free (&client);
+          return NULL;
+        }
+      /* Track IP for per-IP limiting */
+      SocketPool_track_ip (pool, client_ip);
+      SocketSYNProtect_report_success (protect, client_ip);
+      break;
+
+    case SYN_ACTION_THROTTLE:
+      /* Apply throttle delay, then allow */
+      apply_syn_throttle (action, protect);
+      if (!SocketPool_accept_allowed (pool, client_ip))
+        {
+          SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
+          Socket_free (&client);
+          return NULL;
+        }
+      SocketPool_track_ip (pool, client_ip);
+      SocketSYNProtect_report_success (protect, client_ip);
+      break;
+
+    case SYN_ACTION_CHALLENGE:
+      /* Apply TCP_DEFER_ACCEPT challenge */
+      apply_syn_challenge (client, action, protect);
+      if (!SocketPool_accept_allowed (pool, client_ip))
+        {
+          SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
+          Socket_free (&client);
+          return NULL;
+        }
+      SocketPool_track_ip (pool, client_ip);
+      /* Report success only after challenge - caller should verify data received */
+      break;
+
+    case SYN_ACTION_BLOCK:
+      /* Reject connection immediately */
+      SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
+      Socket_free (&client);
+      return NULL;
+    }
+
+  return client;
 }
 
 #undef T

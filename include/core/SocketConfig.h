@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <sys/socket.h>
@@ -284,6 +285,95 @@ extern const char *Socket_safe_strerror (int errnum);
 /* Maximum IP address string length (IPv6 with scope) */
 #ifndef SOCKET_IP_MAX_LEN
 #define SOCKET_IP_MAX_LEN 64
+#endif
+
+/* ============================================================================
+ * SYN Flood Protection Configuration
+ * ============================================================================ */
+
+/* Sliding window duration for rate measurement (milliseconds) */
+#ifndef SOCKET_SYN_DEFAULT_WINDOW_MS
+#define SOCKET_SYN_DEFAULT_WINDOW_MS 10000
+#endif
+
+/* Maximum connection attempts per IP per window */
+#ifndef SOCKET_SYN_DEFAULT_MAX_PER_WINDOW
+#define SOCKET_SYN_DEFAULT_MAX_PER_WINDOW 50
+#endif
+
+/* Global connection rate limit (all IPs, per second) */
+#ifndef SOCKET_SYN_DEFAULT_GLOBAL_PER_SEC
+#define SOCKET_SYN_DEFAULT_GLOBAL_PER_SEC 1000
+#endif
+
+/* Minimum success/attempt ratio before IP becomes suspect */
+#ifndef SOCKET_SYN_DEFAULT_MIN_SUCCESS_RATIO
+#define SOCKET_SYN_DEFAULT_MIN_SUCCESS_RATIO 0.3f
+#endif
+
+/* Artificial delay for throttled connections (milliseconds) */
+#ifndef SOCKET_SYN_DEFAULT_THROTTLE_DELAY_MS
+#define SOCKET_SYN_DEFAULT_THROTTLE_DELAY_MS 100
+#endif
+
+/* Block duration for misbehaving IPs (milliseconds) */
+#ifndef SOCKET_SYN_DEFAULT_BLOCK_DURATION_MS
+#define SOCKET_SYN_DEFAULT_BLOCK_DURATION_MS 60000
+#endif
+
+/* TCP_DEFER_ACCEPT timeout for challenged connections (seconds) */
+#ifndef SOCKET_SYN_DEFAULT_DEFER_SEC
+#define SOCKET_SYN_DEFAULT_DEFER_SEC 5
+#endif
+
+/* Score threshold below which connections are throttled */
+#ifndef SOCKET_SYN_DEFAULT_SCORE_THROTTLE
+#define SOCKET_SYN_DEFAULT_SCORE_THROTTLE 0.7f
+#endif
+
+/* Score threshold below which connections are challenged */
+#ifndef SOCKET_SYN_DEFAULT_SCORE_CHALLENGE
+#define SOCKET_SYN_DEFAULT_SCORE_CHALLENGE 0.4f
+#endif
+
+/* Score threshold below which connections are blocked */
+#ifndef SOCKET_SYN_DEFAULT_SCORE_BLOCK
+#define SOCKET_SYN_DEFAULT_SCORE_BLOCK 0.2f
+#endif
+
+/* Score recovery rate per second (time-based decay) */
+#ifndef SOCKET_SYN_DEFAULT_SCORE_DECAY
+#define SOCKET_SYN_DEFAULT_SCORE_DECAY 0.01f
+#endif
+
+/* Score penalty per new connection attempt */
+#ifndef SOCKET_SYN_DEFAULT_PENALTY_ATTEMPT
+#define SOCKET_SYN_DEFAULT_PENALTY_ATTEMPT 0.02f
+#endif
+
+/* Score penalty per connection failure */
+#ifndef SOCKET_SYN_DEFAULT_PENALTY_FAILURE
+#define SOCKET_SYN_DEFAULT_PENALTY_FAILURE 0.05f
+#endif
+
+/* Score reward per successful connection */
+#ifndef SOCKET_SYN_DEFAULT_REWARD_SUCCESS
+#define SOCKET_SYN_DEFAULT_REWARD_SUCCESS 0.05f
+#endif
+
+/* Maximum unique IPs to track (LRU eviction when exceeded) */
+#ifndef SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS
+#define SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS 100000
+#endif
+
+/* Maximum whitelist entries */
+#ifndef SOCKET_SYN_DEFAULT_MAX_WHITELIST
+#define SOCKET_SYN_DEFAULT_MAX_WHITELIST 1000
+#endif
+
+/* Maximum blacklist entries */
+#ifndef SOCKET_SYN_DEFAULT_MAX_BLACKLIST
+#define SOCKET_SYN_DEFAULT_MAX_BLACKLIST 10000
 #endif
 
 /* ============================================================================
@@ -620,6 +710,24 @@ union align
 #define SOCKET_HAS_TCP_USER_TIMEOUT 1
 #else
 #define SOCKET_HAS_TCP_USER_TIMEOUT 0
+#endif
+
+/* TCP_DEFER_ACCEPT: Linux-specific option for SYN flood protection.
+ * Delays accept() completion until client sends data.
+ * On BSD/macOS, use SO_ACCEPTFILTER instead. */
+#ifdef TCP_DEFER_ACCEPT
+#define SOCKET_TCP_DEFER_ACCEPT TCP_DEFER_ACCEPT
+#define SOCKET_HAS_TCP_DEFER_ACCEPT 1
+#else
+#define SOCKET_HAS_TCP_DEFER_ACCEPT 0
+#endif
+
+/* SO_ACCEPTFILTER: BSD/macOS equivalent of TCP_DEFER_ACCEPT.
+ * Used with struct accept_filter_arg and filter name "dataready". */
+#ifdef SO_ACCEPTFILTER
+#define SOCKET_HAS_SO_ACCEPTFILTER 1
+#else
+#define SOCKET_HAS_SO_ACCEPTFILTER 0
 #endif
 
 /* ============================================================================
