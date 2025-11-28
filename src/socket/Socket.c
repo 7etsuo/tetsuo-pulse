@@ -533,6 +533,9 @@ Socket_isconnected (T socket)
 
   assert (socket);
 
+  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory */
+  memset (&addr, 0, sizeof (addr));
+
   /* Check if we have cached peer address */
   if (socket->base->remoteaddr != NULL)
     return 1;
@@ -575,6 +578,9 @@ Socket_isbound (T socket)
   socklen_t len = sizeof (addr);
 
   assert (socket);
+
+  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory */
+  memset (&addr, 0, sizeof (addr));
 
   /* Check if we have cached local address */
   if (socket->base->localaddr != NULL)
@@ -1066,6 +1072,10 @@ Socket_accept (T socket)
   T newsocket = NULL;
 
   assert (socket);
+
+  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory
+   * when accept only partially fills the structure (e.g., Unix sockets). */
+  memset (&addr, 0, sizeof (addr));
 
   TRY
   {

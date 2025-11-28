@@ -538,6 +538,7 @@ SocketCommon_get_family (SocketBase_T base, bool raise_on_fail,
 
   struct sockaddr_storage addr;
   len = sizeof (addr);
+  memset (&addr, 0, sizeof (addr));
   if (getsockname (SocketBase_fd (base), (struct sockaddr *)&addr, &len) == 0)
     return addr.ss_family;
 
@@ -745,6 +746,10 @@ SocketCommon_update_local_endpoint (SocketBase_T base)
 {
   struct sockaddr_storage local;
   socklen_t len = sizeof (local);
+
+  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory
+   * when getsockname only partially fills the structure (e.g., Unix sockets). */
+  memset (&local, 0, sizeof (local));
 
   if (getsockname (SocketBase_fd (base), (struct sockaddr *)&local, &len) < 0)
     {
@@ -1456,6 +1461,11 @@ SocketCommon_cache_endpoint (Arena_T arena, const struct sockaddr *addr,
   assert (addr);
   assert (addr_out);
   assert (port_out);
+
+  /* Initialize buffers to ensure deterministic behavior even if getnameinfo
+   * doesn't fully populate them (e.g., for Unix domain sockets). */
+  memset (host, 0, sizeof (host));
+  memset (serv, 0, sizeof (serv));
 
   result
       = getnameinfo (addr, addrlen, host, sizeof (host), serv, sizeof (serv),
