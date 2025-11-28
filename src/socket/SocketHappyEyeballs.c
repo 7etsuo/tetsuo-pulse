@@ -457,7 +457,6 @@ static void
 he_process_dns_completion (T he)
 {
   struct addrinfo *result;
-  int error;
 
   if (!he->dns || !he->dns_request)
     return;
@@ -465,7 +464,7 @@ he_process_dns_completion (T he)
   result = SocketDNS_getresult (he->dns, he->dns_request);
   if (!result)
     {
-      error = SocketDNS_geterror (he->dns, he->dns_request);
+      int error = SocketDNS_geterror (he->dns, he->dns_request);
       if (error != 0)
         he_handle_dns_error (he, error);
       return;
