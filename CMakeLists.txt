@@ -463,6 +463,8 @@ if(ENABLE_FUZZING)
         fuzz_socketpoll
         fuzz_socketdgram
         fuzz_exception
+        fuzz_async
+        fuzz_connect
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
@@ -473,6 +475,7 @@ if(ENABLE_FUZZING)
             fuzz_tls_certs
             fuzz_tls_verify
             fuzz_tls_sni
+            fuzz_tls_io
         )
     endif()
     
