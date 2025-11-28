@@ -224,7 +224,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake build-essential libssl-dev cppcheck clang-tidy
+          sudo apt-get install -y cmake build-essential libssl-dev libevent-dev cppcheck clang-tidy
 
       - name: Configure CMake
         run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_TLS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
@@ -244,7 +244,14 @@ jobs:
       - name: Run clang-tidy
         run: |
           # Find all source files and run clang-tidy
-          find src -name '*.c' -print0 | xargs -0 -P $(nproc) -I {} \
+          # Exclude platform-specific and benchmark files not analyzable on Linux:
+          # - SocketPoll_kqueue.c: BSD/macOS only (uses sys/event.h)
+          # - benchmark_libevent.c: Requires libevent headers which may not be in include path
+          # - benchmark_*.c: Benchmarks are not core library code
+          find src -name '*.c' \
+            ! -name 'SocketPoll_kqueue.c' \
+            ! -name 'benchmark_*.c' \
+            -print0 | xargs -0 -P $(nproc) -I {} \
             clang-tidy {} -p build --warnings-as-errors='*' 2>&1 | tee clang-tidy-output.txt
           # Check if any errors were found
           if grep -q "error:" clang-tidy-output.txt; then
