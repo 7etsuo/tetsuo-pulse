@@ -102,9 +102,9 @@ parse_protocols_from_fuzz (const uint8_t *data, size_t size,
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
-  SocketTLSContext_T ctx = NULL;
-  const char **protos = NULL;
-  size_t count = 0;
+  SocketTLSContext_T volatile ctx = NULL;
+  const char *volatile *volatile protos = NULL;
+  volatile size_t count = 0;
 
   if (size < 3)
     return 0;
@@ -117,28 +117,28 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   {
     /* Create a minimal client context for testing */
     ctx = SocketTLSContext_new_client (NULL);
-    if (!ctx)
-      return 0;
 
     /* Parse protocols from fuzz data */
-    parse_protocols_from_fuzz (proto_data, proto_size, &protos, &count);
+    parse_protocols_from_fuzz (proto_data, proto_size, 
+                               (const char ***)&protos, (size_t *)&count);
 
-    if (protos && count > 0)
+    if (ctx && protos && count > 0)
       {
         switch (op % 3)
           {
           case 0:
             /* Test set_alpn_protos with fuzzed protocol list */
-            SocketTLSContext_set_alpn_protos (ctx, (const char **)protos,
-                                              count);
+            SocketTLSContext_set_alpn_protos ((SocketTLSContext_T)ctx, 
+                                              (const char **)protos, count);
             break;
 
           case 1:
             /* Test with single protocol */
             if (count >= 1)
               {
-                const char *single[1] = { protos[0] };
-                SocketTLSContext_set_alpn_protos (ctx, single, 1);
+                const char *single[1] = { (const char *)protos[0] };
+                SocketTLSContext_set_alpn_protos ((SocketTLSContext_T)ctx, 
+                                                  single, 1);
               }
             break;
 
@@ -146,8 +146,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             /* Test with subset of protocols */
             {
               size_t subset = (count > 2) ? count / 2 : count;
-              SocketTLSContext_set_alpn_protos (ctx, (const char **)protos,
-                                                subset);
+              SocketTLSContext_set_alpn_protos ((SocketTLSContext_T)ctx,
+                                                (const char **)protos, subset);
             }
             break;
           }
@@ -160,9 +160,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   FINALLY
   {
     if (protos)
-      free (protos);
+      free ((void *)protos);
     if (ctx)
-      SocketTLSContext_free (&ctx);
+      {
+        SocketTLSContext_T tmp = (SocketTLSContext_T)ctx;
+        SocketTLSContext_free (&tmp);
+        ctx = NULL;
+      }
   }
   END_TRY;
 

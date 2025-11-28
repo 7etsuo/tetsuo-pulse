@@ -457,6 +457,7 @@ if(ENABLE_FUZZING)
         fuzz_reconnect
         fuzz_socketio
         fuzz_address_parse
+        fuzz_cidr_parse
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
@@ -464,6 +465,8 @@ if(ENABLE_FUZZING)
         list(APPEND FUZZ_SOURCES
             fuzz_tls_alpn
             fuzz_tls_session
+            fuzz_tls_certs
+            fuzz_tls_verify
         )
     endif()
     
