@@ -180,3 +180,42 @@ jobs:
           verbose: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # Static analysis (cppcheck + clang-tidy)
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libssl-dev cppcheck clang-tidy
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_TLS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Run cppcheck
+        run: |
+          cppcheck --enable=warning,style,performance,portability \
+            --error-exitcode=1 \
+            --suppress=missingIncludeSystem \
+            --suppress=unmatchedSuppression \
+            --std=c11 \
+            -I include \
+            --inline-suppr \
+            src/ include/
+
+      - name: Run clang-tidy
+        run: |
+          # Find all source files and run clang-tidy
+          find src -name '*.c' -print0 | xargs -0 -P $(nproc) -I {} \
+            clang-tidy {} -p build --warnings-as-errors='*' 2>&1 | tee clang-tidy-output.txt
+          # Check if any errors were found
+          if grep -q "error:" clang-tidy-output.txt; then
+            echo "clang-tidy found errors"
+            exit 1
+          fi
