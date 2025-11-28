@@ -284,8 +284,8 @@ backend_del (PollBackend_T backend, int fd)
         backend->fd_to_index[last_fd] = index;
     }
 
-  /* Clear mapping for removed FD */
-  if (fd >= 0 && fd < backend->max_fd)
+  /* Clear mapping for removed FD (fd >= 0 guaranteed by early return) */
+  if (fd < backend->max_fd)
     backend->fd_to_index[fd] = -1;
 
   backend->nfds--;
