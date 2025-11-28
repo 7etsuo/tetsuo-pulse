@@ -79,6 +79,37 @@ jobs:
         run: ctest --output-on-failure --parallel 1
         # Note: Parallel=1 for sanitizers to get clearer error output
 
+  # Valgrind memcheck (Linux only)
+  valgrind:
+    name: Valgrind Memcheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libssl-dev libevent-dev valgrind
+
+      - name: Configure CMake (Debug, no sanitizers)
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_TLS=ON
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Run tests under Valgrind
+        working-directory: build
+        run: |
+          for test in test_*; do
+            if [ -x "$test" ] && [ -f "$test" ]; then
+              echo "=== Running $test under Valgrind ==="
+              valgrind --leak-check=full --track-fds=yes --error-exitcode=1 \
+                --suppressions=../valgrind.supp ./$test || exit 1
+            fi
+          done
+
   # macOS build (kqueue backend)
   macos:
     name: macOS Build
