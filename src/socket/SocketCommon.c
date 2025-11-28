@@ -642,6 +642,27 @@ SocketCommon_setcloexec_with_error (SocketBase_T base, int enable,
     }
 }
 
+void
+SocketCommon_disable_sigpipe (int fd)
+{
+  /* On BSD/macOS, use SO_NOSIGPIPE to suppress SIGPIPE at socket level.
+   * This is a one-time setup done at socket creation.
+   * On Linux, MSG_NOSIGNAL is used per-send operation instead. */
+#if SOCKET_HAS_SO_NOSIGPIPE
+  int optval = 1;
+  if (setsockopt (fd, SOL_SOCKET, SO_NOSIGPIPE, &optval, sizeof (optval)) < 0)
+    {
+      /* Log but don't fail - SIGPIPE handling is best-effort.
+       * Application can still use signal(SIGPIPE, SIG_IGN) as fallback. */
+      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                       "Failed to set SO_NOSIGPIPE on fd %d: %s", fd,
+                       strerror (errno));
+    }
+#else
+  (void)fd; /* Suppress unused parameter warning on Linux */
+#endif
+}
+
 /* ==================== Base Lifecycle ==================== */
 
 SocketBase_T
@@ -712,6 +733,9 @@ SocketCommon_init_base (SocketBase_T base, int fd, int domain, int type,
   pthread_mutex_lock (&socket_default_timeouts_mutex);
   base->timeouts = socket_default_timeouts;
   pthread_mutex_unlock (&socket_default_timeouts_mutex);
+
+  /* Suppress SIGPIPE at socket level on BSD/macOS */
+  SocketCommon_disable_sigpipe (fd);
 }
 
 void

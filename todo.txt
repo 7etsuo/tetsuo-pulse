@@ -3,4 +3,3 @@ Add SOCKET_VERSION macros
 Create examples/ directory
 Add fuzzing harnesses for security-critical paths
 Add CONTRIBUTING.md + SECURITY.md
-Handle SIGPIPE internally via MSG_NOSIGNAL

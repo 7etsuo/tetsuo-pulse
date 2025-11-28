@@ -155,6 +155,8 @@ resolve_sendto_address (const char *host, int port, struct addrinfo **res)
  *
  * Returns: Bytes sent, or 0 if would block
  * Raises: SocketDgram_Failed on error or if len > SAFE_UDP_SIZE
+ *
+ * Uses MSG_NOSIGNAL to suppress SIGPIPE on broken connections.
  */
 static ssize_t
 perform_sendto (T socket, const void *buf, size_t len, struct addrinfo *res)
@@ -167,7 +169,7 @@ perform_sendto (T socket, const void *buf, size_t len, struct addrinfo *res)
       RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
-  ssize_t sent = sendto (SocketBase_fd (socket->base), buf, len, 0,
+  ssize_t sent = sendto (SocketBase_fd (socket->base), buf, len, MSG_NOSIGNAL,
                          res->ai_addr, res->ai_addrlen);
   if (sent < 0)
     {
@@ -299,7 +301,8 @@ SocketDgram_send (T socket, const void *buf, size_t len)
   assert (buf);
   assert (len > 0);
 
-  sent = send (SocketBase_fd (socket->base), buf, len, 0);
+  /* Use MSG_NOSIGNAL to suppress SIGPIPE on broken connections */
+  sent = send (SocketBase_fd (socket->base), buf, len, MSG_NOSIGNAL);
   if (sent < 0)
     {
       if (socketio_is_wouldblock ())
@@ -699,6 +702,7 @@ SocketDgram_connect (T socket, const char *host, int port)
 ssize_t
 SocketDgram_sendv (T socket, const struct iovec *iov, int iovcnt)
 {
+  struct msghdr msg;
   ssize_t result;
   size_t total_len;
 
@@ -715,7 +719,12 @@ SocketDgram_sendv (T socket, const struct iovec *iov, int iovcnt)
       RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
-  result = writev (SocketBase_fd (socket->base), iov, iovcnt);
+  /* Use sendmsg() instead of writev() to support MSG_NOSIGNAL */
+  memset (&msg, 0, sizeof (msg));
+  msg.msg_iov = (struct iovec *)iov; /* Cast away const for msghdr */
+  msg.msg_iovlen = (size_t)iovcnt;
+
+  result = sendmsg (SocketBase_fd (socket->base), &msg, MSG_NOSIGNAL);
   if (result < 0)
     {
       if (socketio_is_wouldblock ())

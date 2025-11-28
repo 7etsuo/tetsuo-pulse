@@ -187,6 +187,22 @@ endif()
 # Custom target to build both libraries (default)
 add_custom_target(lib ALL DEPENDS socket_static socket_shared)
 
+# Generate pkg-config file
+set(PC_LIBS_PRIVATE "")
+if(SOCKET_HAS_TLS)
+    set(PC_LIBS_PRIVATE "-lssl -lcrypto")
+endif()
+
+configure_file(
+    ${CMAKE_SOURCE_DIR}/libsocket.pc.in
+    ${CMAKE_BINARY_DIR}/libsocket.pc
+    @ONLY
+)
+
+install(FILES ${CMAKE_BINARY_DIR}/libsocket.pc
+    DESTINATION lib/pkgconfig
+)
+
 # Installation targets (optional)
 
 # Header files for installation

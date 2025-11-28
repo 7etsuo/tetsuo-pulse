@@ -101,6 +101,7 @@ extern void SocketCommon_setreuseaddr (SocketBase_T base, Except_T exc_type);
 extern void SocketCommon_setreuseport (SocketBase_T base, Except_T exc_type);
 extern void SocketCommon_settimeout (SocketBase_T base, int timeout_sec, Except_T exc_type);
 extern void SocketCommon_setcloexec_with_error (SocketBase_T base, int enable, Except_T exc_type);
+extern void SocketCommon_disable_sigpipe (int fd); /* Suppress SIGPIPE via SO_NOSIGPIPE (BSD/macOS) */
 
 extern struct addrinfo *SocketCommon_copy_addrinfo (const struct addrinfo *src); /* Implementation of public deep copy function - see SocketCommon.h */
 
