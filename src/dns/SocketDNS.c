@@ -718,5 +718,173 @@ SocketDNS_request_settimeout (struct SocketDNS_T *dns,
   pthread_mutex_unlock (&dns->mutex);
 }
 
+/*
+ * =============================================================================
+ * Public API - Synchronous Resolution with Timeout
+ * =============================================================================
+ */
+
+/**
+ * compute_deadline - Calculate absolute deadline for pthread_cond_timedwait
+ * @timeout_ms: Timeout in milliseconds
+ * @deadline: Output timespec structure
+ *
+ * Uses CLOCK_REALTIME as required by pthread_cond_timedwait.
+ */
+static void
+compute_deadline (int timeout_ms, struct timespec *deadline)
+{
+  clock_gettime (CLOCK_REALTIME, deadline);
+  deadline->tv_sec += timeout_ms / 1000;
+  deadline->tv_nsec += (timeout_ms % 1000) * 1000000L;
+
+  /* Normalize nanoseconds */
+  if (deadline->tv_nsec >= 1000000000L)
+    {
+      deadline->tv_sec++;
+      deadline->tv_nsec -= 1000000000L;
+    }
+}
+
+/**
+ * wait_for_completion - Wait for request completion with timeout
+ * @dns: DNS resolver instance (mutex must be held on entry, held on exit)
+ * @req: Request to wait for
+ * @timeout_ms: Timeout in milliseconds (0 = no timeout)
+ *
+ * Returns: 0 on completion, ETIMEDOUT on timeout
+ */
+static int
+wait_for_completion (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
+                     int timeout_ms)
+{
+  struct timespec deadline;
+  int rc = 0;
+
+  if (timeout_ms > 0)
+    compute_deadline (timeout_ms, &deadline);
+
+  while (req->state != REQ_COMPLETE && req->state != REQ_CANCELLED)
+    {
+      if (timeout_ms > 0)
+        {
+          rc = pthread_cond_timedwait (&dns->result_cond, &dns->mutex,
+                                       &deadline);
+          if (rc == ETIMEDOUT)
+            return ETIMEDOUT;
+        }
+      else
+        {
+          pthread_cond_wait (&dns->result_cond, &dns->mutex);
+        }
+    }
+
+  return 0;
+}
+
+struct addrinfo *
+SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
+                        const struct addrinfo *hints, int timeout_ms)
+{
+  Request_T req;
+  struct addrinfo *result = NULL;
+  int error;
+  int effective_timeout;
+
+  /* Validate DNS resolver */
+  if (!dns)
+    {
+      SOCKET_ERROR_MSG ("SocketDNS_resolve_sync requires non-NULL dns resolver");
+      RAISE_DNS_ERROR (SocketDNS_Failed);
+    }
+
+  /* Use resolver default timeout if not specified */
+  effective_timeout = (timeout_ms > 0) ? timeout_ms : dns->request_timeout_ms;
+
+  /* Fast path: NULL host (wildcard) or IP addresses don't need DNS resolution */
+  if (host == NULL || is_ip_address (host))
+    {
+      struct addrinfo local_hints;
+      int gai_result;
+
+      memset (&local_hints, 0, sizeof (local_hints));
+      local_hints.ai_family = hints ? hints->ai_family : AF_UNSPEC;
+      local_hints.ai_socktype = hints ? hints->ai_socktype : SOCK_STREAM;
+      local_hints.ai_protocol = hints ? hints->ai_protocol : 0;
+
+      if (host == NULL)
+        {
+          /* Wildcard address - use AI_PASSIVE for bind */
+          local_hints.ai_flags = AI_PASSIVE;
+          if (hints)
+            local_hints.ai_flags |= hints->ai_flags;
+        }
+      else
+        {
+          /* IP address - use AI_NUMERICHOST to skip DNS */
+          local_hints.ai_flags = AI_NUMERICHOST;
+          if (hints)
+            local_hints.ai_flags |= (hints->ai_flags & ~AI_PASSIVE);
+        }
+
+      char port_str[16];
+      snprintf (port_str, sizeof (port_str), "%d", port);
+
+      gai_result = getaddrinfo (host, port_str, &local_hints, &result);
+      if (gai_result != 0)
+        {
+          SOCKET_ERROR_MSG ("Failed to resolve address: %s (%s)",
+                            host ? host : "(wildcard)",
+                            gai_strerror (gai_result));
+          RAISE_DNS_ERROR (SocketDNS_Failed);
+        }
+      return result;
+    }
+
+  /* Submit async request (no callback = polling mode) */
+  req = SocketDNS_resolve (dns, host, port, NULL, NULL);
+
+  /* Set per-request timeout if specified */
+  if (effective_timeout > 0)
+    SocketDNS_request_settimeout (dns, req, effective_timeout);
+
+  /* Wait for completion under mutex */
+  pthread_mutex_lock (&dns->mutex);
+
+  if (wait_for_completion (dns, req, effective_timeout) == ETIMEDOUT)
+    {
+      /* Cancel the timed-out request */
+      req->state = REQ_CANCELLED;
+      req->error = EAI_AGAIN;
+      hash_table_remove (dns, req);
+      pthread_mutex_unlock (&dns->mutex);
+
+      SOCKET_ERROR_MSG ("DNS resolution timed out after %d ms: %s",
+                        effective_timeout, host ? host : "(wildcard)");
+      RAISE_DNS_ERROR (SocketDNS_Failed);
+    }
+
+  /* Check for errors */
+  error = req->error;
+  if (error != 0)
+    {
+      hash_table_remove (dns, req);
+      pthread_mutex_unlock (&dns->mutex);
+
+      SOCKET_ERROR_MSG ("DNS resolution failed: %s (%s)", host ? host : "(wildcard)",
+                        gai_strerror (error));
+      RAISE_DNS_ERROR (SocketDNS_Failed);
+    }
+
+  /* Transfer ownership of result to caller */
+  result = req->result;
+  req->result = NULL;
+  hash_table_remove (dns, req);
+
+  pthread_mutex_unlock (&dns->mutex);
+
+  return result;
+}
+
 #undef T
 #undef Request_T

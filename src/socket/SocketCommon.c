@@ -23,6 +23,7 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -44,6 +45,7 @@
 #include "core/SocketConfig.h"
 #define SOCKET_LOG_COMPONENT "SocketCommon"
 #include "core/SocketUtil.h"
+#include "dns/SocketDNS.h"
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 
@@ -53,6 +55,70 @@ SocketTimeouts_T socket_default_timeouts
         .dns_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS,
         .operation_timeout_ms = SOCKET_DEFAULT_OPERATION_TIMEOUT_MS };
 pthread_mutex_t socket_default_timeouts_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ * =============================================================================
+ * Global DNS Resolver with Lazy Initialization
+ *
+ * Provides timeout-guaranteed DNS resolution for all Socket/SocketDgram APIs.
+ * The resolver is lazily initialized on first use via pthread_once.
+ * =============================================================================
+ */
+static SocketDNS_T g_dns_resolver = NULL;
+static pthread_once_t g_dns_init_once = PTHREAD_ONCE_INIT;
+static pthread_mutex_t g_dns_config_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int g_dns_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
+
+/**
+ * init_global_dns_resolver - One-time initialization of global DNS resolver
+ *
+ * Called exactly once via pthread_once. Creates the global DNS resolver
+ * with default configuration.
+ */
+static void
+init_global_dns_resolver (void)
+{
+  g_dns_resolver = SocketDNS_new ();
+  if (g_dns_resolver)
+    SocketDNS_settimeout (g_dns_resolver, g_dns_timeout_ms);
+}
+
+SocketDNS_T
+SocketCommon_get_dns_resolver (void)
+{
+  pthread_once (&g_dns_init_once, init_global_dns_resolver);
+  return g_dns_resolver;
+}
+
+void
+SocketCommon_set_dns_timeout (int timeout_ms)
+{
+  pthread_mutex_lock (&g_dns_config_mutex);
+
+  /* Handle -1 as "reset to default" */
+  if (timeout_ms == -1)
+    timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
+  else if (timeout_ms < 0)
+    timeout_ms = 0;
+
+  g_dns_timeout_ms = timeout_ms;
+
+  /* Update the resolver if already initialized */
+  if (g_dns_resolver)
+    SocketDNS_settimeout (g_dns_resolver, timeout_ms);
+
+  pthread_mutex_unlock (&g_dns_config_mutex);
+}
+
+int
+SocketCommon_get_dns_timeout (void)
+{
+  int timeout;
+  pthread_mutex_lock (&g_dns_config_mutex);
+  timeout = g_dns_timeout_ms;
+  pthread_mutex_unlock (&g_dns_config_mutex);
+  return timeout;
+}
 
 const Except_T SocketCommon_Failed
     = { &SocketCommon_Failed, "SocketCommon operation failed" };
@@ -332,34 +398,162 @@ SocketCommon_cidr_match (const char *ip_str, const char *cidr_str)
   return 1;
 }
 
+/* ==================== RFC 1123 Hostname Validation ==================== */
+
+/**
+ * socketcommon_is_valid_label_char - Check if character is valid for hostname
+ * label
+ * @c: Character to check
+ * @at_start: True if this is the first character of a label
+ *
+ * Returns: true if valid character for position
+ *
+ * Per RFC 1123: label start must be alphanumeric; other positions allow hyphen.
+ * This prevents malformed hostnames from reaching getaddrinfo() and causing
+ * 5+ second DNS timeouts.
+ */
+static bool
+socketcommon_is_valid_label_char (char c, bool at_start)
+{
+  if (at_start)
+    return isalnum ((unsigned char)c) != 0;
+  return isalnum ((unsigned char)c) != 0 || c == '-';
+}
+
+/**
+ * socketcommon_is_valid_label_length - Check label length within RFC 1035
+ * bounds
+ * @label_len: Current label length
+ *
+ * Returns: true if within bounds (1 to 63)
+ *
+ * Labels must be 1-63 characters. Empty labels (from consecutive dots "..")
+ * are invalid per RFC 1035.
+ */
+static bool
+socketcommon_is_valid_label_length (int label_len)
+{
+  return label_len > 0 && label_len <= 63;
+}
+
+/**
+ * socketcommon_validate_hostname_labels - Validate RFC 1123 hostname labels
+ * @hostname: Hostname string to validate
+ *
+ * Returns: 1 if all labels valid, 0 if invalid
+ *
+ * Validates that each dot-separated label:
+ * - Starts with alphanumeric character (not hyphen or dot)
+ * - Contains only alphanumeric or hyphen characters
+ * - Has length between 1 and 63 characters
+ */
+static int
+socketcommon_validate_hostname_labels (const char *hostname)
+{
+  const char *p = hostname;
+  int label_len = 0;
+  bool at_label_start = true;
+
+  while (*p)
+    {
+      if (*p == '.')
+        {
+          /* Dot separator - validate completed label and reset
+           * Rejects consecutive dots (label_len=0) as empty labels per RFC 1035
+           */
+          if (!socketcommon_is_valid_label_length (label_len))
+            return 0;
+          at_label_start = true;
+          label_len = 0;
+        }
+      else
+        {
+          /* Label character - validate and update state */
+          if (!socketcommon_is_valid_label_char (*p, at_label_start))
+            return 0;
+          at_label_start = false;
+          label_len++;
+        }
+      p++;
+    }
+
+  /* Validate final label - reject trailing dot with empty final label */
+  return socketcommon_is_valid_label_length (label_len);
+}
+
+/**
+ * socketcommon_is_ip_address - Check if string is an IP address
+ * @host: String to check
+ *
+ * Returns: 1 if valid IPv4 or IPv6 address, 0 if hostname
+ *
+ * IP addresses bypass hostname validation since they go directly to
+ * inet_pton() without DNS resolution.
+ */
+static int
+socketcommon_is_ip_address (const char *host)
+{
+  struct in_addr addr4;
+  struct in6_addr addr6;
+
+  if (inet_pton (AF_INET, host, &addr4) == 1)
+    return 1;
+  if (inet_pton (AF_INET6, host, &addr6) == 1)
+    return 1;
+  return 0;
+}
+
+/**
+ * socketcommon_validate_hostname_internal - Validate hostname with RFC 1123
+ * compliance
+ * @host: Hostname to validate (NULL allowed for wildcard bind)
+ * @use_exceptions: If true, raise exception on invalid; if false, return -1
+ * @exception_type: Exception type to raise on failure
+ *
+ * Returns: 0 on success, -1 on failure
+ *
+ * WARNING: This function only validates hostname SYNTAX per RFC 1123.
+ * It does NOT prevent DNS resolution delays for non-existent domains.
+ * DNS resolution via getaddrinfo() can block for 5+ seconds with retries.
+ *
+ * For applications requiring non-blocking behavior:
+ * - Use IP addresses directly (no DNS lookup needed)
+ * - Use SocketDNS for async resolution with timeout control
+ * - Use "localhost" for local testing
+ */
 int
 socketcommon_validate_hostname_internal (const char *host, int use_exceptions,
                                          Except_T exception_type)
 {
-  size_t host_len = host ? strlen (host) : 0;
-  size_t i;
+  size_t host_len;
 
-  if (host_len > SOCKET_ERROR_MAX_HOSTNAME)
+  /* NULL is valid - used for wildcard bind with AI_PASSIVE */
+  if (!host)
+    return 0;
+
+  host_len = strlen (host);
+
+  /* Check length bounds */
+  if (host_len == 0 || host_len > SOCKET_ERROR_MAX_HOSTNAME)
     {
-      SOCKET_ERROR_MSG ("Host name too long (max %d characters)",
+      SOCKET_ERROR_MSG ("Invalid hostname length: %zu (max %d)", host_len,
                         SOCKET_ERROR_MAX_HOSTNAME);
       if (use_exceptions)
         RAISE_MODULE_ERROR (exception_type);
       return -1;
     }
 
-  for (i = 0; i < host_len; i++)
+  /* Skip validation for IP addresses - they bypass DNS resolution */
+  if (socketcommon_is_ip_address (host))
+    return 0;
+
+  /* RFC 1123 hostname validation */
+  if (!socketcommon_validate_hostname_labels (host))
     {
-      char c = host[i];
-      if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-            || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == ':'
-            || c == '%'))
-        {
-          SOCKET_ERROR_MSG ("Invalid character in hostname: '%c'", c);
-          if (use_exceptions)
-            RAISE_MODULE_ERROR (exception_type);
-          return -1;
-        }
+      SOCKET_ERROR_MSG ("Invalid hostname format: %.64s", host);
+      if (use_exceptions)
+        RAISE_MODULE_ERROR (exception_type);
+      return -1;
     }
 
   return 0;
@@ -849,23 +1043,70 @@ SocketCommon_setup_hints (struct addrinfo *hints, int socktype, int flags)
   hints->ai_protocol = 0;
 }
 
+/**
+ * socketcommon_perform_getaddrinfo - Perform DNS resolution with timeout
+ * @host: Hostname or IP address (NULL for wildcard)
+ * @port_str: Port number as string
+ * @hints: Address resolution hints
+ * @res: Output pointer for result
+ * @use_exceptions: If true, raise exceptions on error
+ * @exception_type: Exception type to raise
+ *
+ * Returns: 0 on success, -1 on failure
+ *
+ * Uses the global DNS resolver with timeout guarantees. This prevents
+ * unbounded blocking on DNS failures (which could block for 30+ seconds
+ * with direct getaddrinfo calls).
+ */
 static int
 socketcommon_perform_getaddrinfo (const char *host, const char *port_str,
                                   const struct addrinfo *hints,
                                   struct addrinfo **res, int use_exceptions,
                                   Except_T exception_type)
 {
-  int result = getaddrinfo (host, port_str, hints, res);
-  if (result != 0)
+  SocketDNS_T dns;
+  int port;
+  int timeout_ms;
+
+  /* Parse port string to integer */
+  port = (port_str && *port_str) ? atoi (port_str) : 0;
+
+  /* Get global DNS resolver with timeout support */
+  dns = SocketCommon_get_dns_resolver ();
+  if (!dns)
+    {
+      /* Fallback to direct getaddrinfo if resolver unavailable */
+      int result = getaddrinfo (host, port_str, hints, res);
+      if (result != 0)
+        {
+          const char *safe_host = socketcommon_get_safe_host (host);
+          SOCKET_ERROR_MSG ("Invalid host/IP address: %.*s (%s)",
+                            SOCKET_ERROR_MAX_HOSTNAME, safe_host,
+                            gai_strerror (result));
+          if (use_exceptions)
+            RAISE_MODULE_ERROR (exception_type);
+          return -1;
+        }
+      return 0;
+    }
+
+  /* Get configured timeout */
+  timeout_ms = SocketCommon_get_dns_timeout ();
+
+  /* Use async DNS resolver with timeout guarantee */
+  TRY
+    *res = SocketDNS_resolve_sync (dns, host, port, hints, timeout_ms);
+  EXCEPT (SocketDNS_Failed)
     {
       const char *safe_host = socketcommon_get_safe_host (host);
-      SOCKET_ERROR_MSG ("Invalid host/IP address: %.*s (%s)",
-                        SOCKET_ERROR_MAX_HOSTNAME, safe_host,
-                        gai_strerror (result));
+      SOCKET_ERROR_MSG ("DNS resolution failed: %.*s",
+                        SOCKET_ERROR_MAX_HOSTNAME, safe_host);
       if (use_exceptions)
         RAISE_MODULE_ERROR (exception_type);
       return -1;
     }
+  END_TRY;
+
   return 0;
 }
 

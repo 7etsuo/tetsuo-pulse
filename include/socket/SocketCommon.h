@@ -558,4 +558,52 @@ SocketLiveCount_get (struct SocketLiveCount *tracker)
   return count;
 }
 
+/*
+ * =============================================================================
+ * Global DNS Resolution Configuration
+ *
+ * These functions configure the global DNS resolver used by Socket_bind(),
+ * Socket_connect(), SocketDgram_bind(), and SocketDgram_connect(). The global
+ * resolver provides timeout guarantees for all DNS operations.
+ * =============================================================================
+ */
+
+/* Forward declaration - full type in SocketDNS.h */
+typedef struct SocketDNS_T *SocketDNS_T;
+
+/**
+ * SocketCommon_get_dns_resolver - Get global DNS resolver instance
+ *
+ * Returns: Global DNS resolver (lazily initialized on first call)
+ *
+ * Thread-safe: Yes - uses pthread_once for initialization
+ *
+ * The global DNS resolver is shared across all Socket and SocketDgram
+ * operations. It provides timeout guarantees for DNS resolution.
+ */
+extern SocketDNS_T SocketCommon_get_dns_resolver (void);
+
+/**
+ * SocketCommon_set_dns_timeout - Set global DNS resolution timeout
+ * @timeout_ms: Timeout in milliseconds (0 = infinite, -1 = use default)
+ *
+ * Thread-safe: Yes - protected by mutex
+ *
+ * Affects all subsequent hostname resolution via Socket/SocketDgram APIs.
+ * Default: SOCKET_DEFAULT_DNS_TIMEOUT_MS (5000ms)
+ *
+ * Setting timeout_ms to 0 disables timeout (infinite wait).
+ * Setting timeout_ms to -1 resets to default.
+ */
+extern void SocketCommon_set_dns_timeout (int timeout_ms);
+
+/**
+ * SocketCommon_get_dns_timeout - Get current global DNS timeout
+ *
+ * Returns: Current timeout in milliseconds (0 = infinite)
+ *
+ * Thread-safe: Yes
+ */
+extern int SocketCommon_get_dns_timeout (void);
+
 #endif /* SOCKETCOMMON_INCLUDED */

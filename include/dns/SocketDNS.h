@@ -231,6 +231,40 @@ extern void SocketDNS_request_settimeout (T dns, Request_T req,
 extern Request_T
 SocketDNS_create_completed_request (T dns, struct addrinfo *result, int port);
 
+/**
+ * SocketDNS_resolve_sync - Synchronous DNS resolution with timeout guarantee
+ * @dns: DNS resolver instance (NULL uses global default - not yet implemented)
+ * @host: Hostname to resolve (NULL for wildcard bind)
+ * @port: Port number
+ * @hints: Address hints (may be NULL for defaults)
+ * @timeout_ms: Timeout in milliseconds (0 = use resolver default)
+ *
+ * Returns: addrinfo result (caller must call freeaddrinfo())
+ * Raises: SocketDNS_Failed on error or timeout
+ *
+ * Thread-safe: Yes - uses internal synchronization
+ *
+ * This function provides synchronous DNS resolution with GUARANTEED timeout.
+ * Unlike raw getaddrinfo() which can block for 30+ seconds, this function
+ * uses the async DNS worker thread pool internally and enforces the specified
+ * timeout using condition variable wait.
+ *
+ * Use this function when you need blocking DNS resolution but cannot afford
+ * unbounded blocking time (e.g., in network servers handling untrusted input).
+ *
+ * For IP addresses, resolution is instant (no DNS lookup needed).
+ *
+ * Usage:
+ *   struct addrinfo *res = SocketDNS_resolve_sync(dns, "example.com", 80,
+ *                                                  NULL, 5000);
+ *   // Use res...
+ *   freeaddrinfo(res);
+ */
+extern struct addrinfo *SocketDNS_resolve_sync (T dns, const char *host,
+                                                 int port,
+                                                 const struct addrinfo *hints,
+                                                 int timeout_ms);
+
 #undef T
 #undef Request_T
 #endif

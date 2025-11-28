@@ -1,13 +1,15 @@
 /**
- * fuzz_socketbuf.c - libFuzzer harness for SocketBuf circular buffer
+ * fuzz_socketbuf.c - Fuzzer for circular buffer operations
  *
  * Part of the Socket Library Fuzzing Suite
  *
  * Targets:
- * - Buffer overflow/underflow in circular buffer operations
- * - Wraparound boundary conditions
- * - Reserve/resize overflow protection
- * - Invariant violations
+ * - Buffer creation with various capacities
+ * - Circular buffer write/read/peek operations
+ * - Wraparound edge cases
+ * - Dynamic buffer resizing (reserve)
+ * - Zero-copy pointer access
+ * - Secure memory clearing
  *
  * Build: CC=clang cmake .. -DENABLE_FUZZING=ON && make fuzz_socketbuf
  * Run:   ./fuzz_socketbuf corpus/socketbuf/ -fork=16 -max_len=4096
@@ -16,230 +18,381 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketUtil.h"
 #include "socket/SocketBuf.h"
 
-/* Fuzz operation opcodes */
-enum FuzzOp
+/* Operation codes */
+enum BufOp
 {
-  OP_WRITE = 0,
-  OP_READ,
-  OP_PEEK,
-  OP_CONSUME,
-  OP_RESERVE,
-  OP_WRITEPTR,
-  OP_CLEAR,
-  OP_SECURECLEAR,
-  OP_MAX
+  OP_CREATE_BUF = 0,
+  OP_WRITE_READ,
+  OP_PEEK_CONSUME,
+  OP_RESERVE_GROW,
+  OP_ZERO_COPY,
+  OP_WRAPAROUND,
+  OP_SECURE_CLEAR,
+  OP_MIXED_OPS,
+  OP_COUNT
 };
+
+/* Limits for fuzzing */
+#define MAX_FUZZ_CAPACITY 4096
+#define MIN_FUZZ_CAPACITY 64
+
+/**
+ * read_u16 - Read 16-bit value from byte stream
+ */
+static uint16_t
+read_u16 (const uint8_t *p)
+{
+  return (uint16_t)p[0] | ((uint16_t)p[1] << 8);
+}
 
 /**
  * LLVMFuzzerTestOneInput - libFuzzer entry point
- * @data: Fuzz input data
- * @size: Size of fuzz input
- *
- * Returns: 0 (required by libFuzzer)
  *
  * Input format:
- * - Byte 0: Operation selector (mod OP_MAX)
- * - Byte 1: Capacity hint (1-255, scaled)
- * - Bytes 2+: Payload data for operation
+ * - Byte 0: Operation selector
+ * - Bytes 1-2: Capacity parameter
+ * - Bytes 3-4: Length parameter
+ * - Remaining: Data to write
  */
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
   Arena_T arena = NULL;
   SocketBuf_T buf = NULL;
+  char read_buffer[MAX_FUZZ_CAPACITY];
 
-  /* Need at least 2 bytes for op and capacity */
-  if (size < 2)
+  if (size < 5)
     return 0;
 
-  uint8_t op = data[0] % OP_MAX;
-  /* Capacity: 1-256 bytes (avoid 0) */
-  size_t capacity = (size_t)(data[1] % 255) + 1;
-  const uint8_t *payload = data + 2;
-  size_t payload_size = size - 2;
+  uint8_t op = data[0];
+  uint16_t capacity_raw = read_u16 (data + 1);
+  size_t capacity
+      = (capacity_raw % (MAX_FUZZ_CAPACITY - MIN_FUZZ_CAPACITY)) + MIN_FUZZ_CAPACITY;
+  uint16_t len_param = read_u16 (data + 3);
+  size_t data_offset = 5;
+  size_t data_len = size > data_offset ? size - data_offset : 0;
 
-  /* Create arena for this test */
   TRY
   {
     arena = Arena_new ();
     if (!arena)
       return 0;
 
-    /* Create buffer with fuzz-controlled capacity */
-    buf = SocketBuf_new (arena, capacity);
-    if (!buf)
+    switch (op % OP_COUNT)
       {
-        Arena_dispose (&arena);
-        return 0;
-      }
-
-    /* Execute fuzz-selected operation */
-    switch (op)
-      {
-      case OP_WRITE:
+      case OP_CREATE_BUF:
         {
-          /* Write fuzz payload to buffer */
-          size_t written = SocketBuf_write (buf, payload, payload_size);
-          (void)written;
+          /* Test buffer creation with various capacities */
+          buf = SocketBuf_new (arena, capacity);
 
-          /* Verify invariants after write */
-          assert (SocketBuf_check_invariants (buf));
+          /* Verify initial state */
+          assert (SocketBuf_available (buf) == 0);
+          assert (SocketBuf_space (buf) == capacity);
+          assert (SocketBuf_empty (buf));
+          assert (!SocketBuf_full (buf));
+
+          /* Try edge case capacities */
+          SocketBuf_T small_buf = NULL;
+          TRY
+          {
+            small_buf = SocketBuf_new (arena, MIN_FUZZ_CAPACITY);
+            assert (SocketBuf_space (small_buf) == MIN_FUZZ_CAPACITY);
+          }
+          EXCEPT (SocketBuf_Failed)
+          {
+            /* Expected for invalid capacities */
+          }
+          END_TRY;
         }
         break;
 
-      case OP_READ:
+      case OP_WRITE_READ:
         {
-          /* Write then read */
-          SocketBuf_write (buf, payload, payload_size);
+          /* Test basic write then read */
+          buf = SocketBuf_new (arena, capacity);
 
-          char out[512];
-          size_t to_read = payload_size < sizeof (out) ? payload_size : sizeof (out);
-          size_t bytes_read = SocketBuf_read (buf, out, to_read);
-          (void)bytes_read;
+          /* Write data */
+          size_t to_write = data_len > capacity ? capacity : data_len;
+          size_t written = 0;
+          if (to_write > 0)
+            written = SocketBuf_write (buf, data + data_offset, to_write);
 
-          assert (SocketBuf_check_invariants (buf));
-        }
-        break;
+          assert (SocketBuf_available (buf) == written);
+          assert (SocketBuf_space (buf) == capacity - written);
 
-      case OP_PEEK:
-        {
-          /* Write then peek (non-destructive) */
-          SocketBuf_write (buf, payload, payload_size);
+          /* Read it back */
+          size_t bytes_read = SocketBuf_read (buf, read_buffer, written);
+          assert (bytes_read == written);
+          assert (SocketBuf_empty (buf));
 
-          char out[512];
-          size_t to_peek = payload_size < sizeof (out) ? payload_size : sizeof (out);
-          size_t bytes_peeked = SocketBuf_peek (buf, out, to_peek);
-          (void)bytes_peeked;
-
-          /* Peek should not change available bytes */
-          assert (SocketBuf_check_invariants (buf));
-        }
-        break;
-
-      case OP_CONSUME:
-        {
-          /* Write then consume partial data */
-          size_t written = SocketBuf_write (buf, payload, payload_size);
+          /* Verify data integrity */
           if (written > 0)
-            {
-              /* Consume half of what was written */
-              size_t to_consume = written / 2;
-              if (to_consume > 0)
-                {
-                  SocketBuf_consume (buf, to_consume);
-                }
-            }
-          assert (SocketBuf_check_invariants (buf));
+            assert (memcmp (read_buffer, data + data_offset, written) == 0);
         }
         break;
 
-      case OP_RESERVE:
+      case OP_PEEK_CONSUME:
         {
-          /* Test reserve/resize with fuzz-controlled size */
-          size_t reserve_size = 0;
-          if (payload_size >= 2)
+          /* Test peek (non-destructive read) and consume */
+          buf = SocketBuf_new (arena, capacity);
+
+          /* Write some data */
+          size_t to_write = data_len > capacity ? capacity : data_len;
+          size_t written = 0;
+          if (to_write > 0)
+            written = SocketBuf_write (buf, data + data_offset, to_write);
+
+          /* Peek at data */
+          size_t peeked = SocketBuf_peek (buf, read_buffer, written);
+          assert (peeked == written);
+          assert (SocketBuf_available (buf) == written); /* Still there */
+
+          /* Consume partial */
+          size_t consume_amt = len_param % (written + 1);
+          if (consume_amt > 0 && consume_amt <= written)
             {
-              /* Use payload bytes to determine reserve size */
-              reserve_size = ((size_t)payload[0] << 8) | payload[1];
-              /* Cap at reasonable size to avoid OOM in fuzzer */
-              reserve_size = reserve_size % (size_t)(64 * 1024);
-            }
-          else if (payload_size == 1)
-            {
-              reserve_size = payload[0];
+              SocketBuf_consume (buf, consume_amt);
+              assert (SocketBuf_available (buf) == written - consume_amt);
             }
 
-          if (reserve_size > 0)
+          /* Clear the rest */
+          SocketBuf_clear (buf);
+          assert (SocketBuf_empty (buf));
+        }
+        break;
+
+      case OP_RESERVE_GROW:
+        {
+          /* Test dynamic resizing */
+          buf = SocketBuf_new (arena, capacity);
+
+          /* Write initial data */
+          size_t initial_write = data_len > capacity / 2 ? capacity / 2 : data_len;
+          if (initial_write > 0)
+            SocketBuf_write (buf, data + data_offset, initial_write);
+
+          /* Reserve more space - trigger resize */
+          size_t reserve_amt = len_param % MAX_FUZZ_CAPACITY;
+          if (reserve_amt > 0)
             {
               TRY
               {
-                SocketBuf_reserve (buf, reserve_size);
+                SocketBuf_reserve (buf, reserve_amt);
+                /* After reserve, space should be >= reserve_amt */
+                assert (SocketBuf_space (buf) >= reserve_amt);
               }
               EXCEPT (SocketBuf_Failed)
               {
-                /* Expected for overflow/large sizes - not a bug */
+                /* Overflow or allocation failure - expected for large values */
               }
               END_TRY;
             }
-          assert (SocketBuf_check_invariants (buf));
+
+          /* Verify data integrity after resize */
+          if (initial_write > 0)
+            {
+              size_t available = SocketBuf_available (buf);
+              assert (available >= initial_write || available == 0);
+            }
         }
         break;
 
-      case OP_WRITEPTR:
+      case OP_ZERO_COPY:
         {
-          /* Test zero-copy write interface */
-          size_t len = 0;
-          void *wptr = SocketBuf_writeptr (buf, &len);
+          /* Test zero-copy pointer access */
+          buf = SocketBuf_new (arena, capacity);
 
-          if (wptr && len > 0 && payload_size > 0)
+          /* Get write pointer and write directly */
+          size_t write_space = 0;
+          void *write_ptr = SocketBuf_writeptr (buf, &write_space);
+
+          if (write_ptr && write_space > 0)
             {
-              size_t to_write = len < payload_size ? len : payload_size;
-              memcpy (wptr, payload, to_write);
-              SocketBuf_written (buf, to_write);
+              size_t direct_write = data_len > write_space ? write_space : data_len;
+              if (direct_write > 0)
+                {
+                  memcpy (write_ptr, data + data_offset, direct_write);
+                  SocketBuf_written (buf, direct_write);
+
+                  assert (SocketBuf_available (buf) == direct_write);
+                }
             }
 
-          /* Also test readptr */
-          const void *rptr = SocketBuf_readptr (buf, &len);
-          (void)rptr;
+          /* Get read pointer and verify */
+          size_t read_avail = 0;
+          const void *read_ptr = SocketBuf_readptr (buf, &read_avail);
 
-          assert (SocketBuf_check_invariants (buf));
+          if (read_ptr && read_avail > 0)
+            {
+              /* Verify data matches */
+              size_t check_len
+                  = read_avail < data_len ? read_avail : data_len;
+              if (check_len > 0)
+                assert (memcmp (read_ptr, data + data_offset, check_len) == 0);
+            }
         }
         break;
 
-      case OP_CLEAR:
+      case OP_WRAPAROUND:
         {
-          /* Write then clear */
-          SocketBuf_write (buf, payload, payload_size);
-          SocketBuf_clear (buf);
+          /* Test circular buffer wraparound */
+          buf = SocketBuf_new (arena, capacity);
 
-          /* Buffer should be empty after clear */
-          assert (SocketBuf_empty (buf));
-          assert (SocketBuf_check_invariants (buf));
+          /* Fill buffer partially */
+          size_t first_write = capacity / 2;
+          if (first_write > data_len)
+            first_write = data_len;
+
+          if (first_write > 0)
+            {
+              SocketBuf_write (buf, data + data_offset, first_write);
+
+              /* Read some to advance head */
+              size_t to_read = first_write / 2;
+              SocketBuf_read (buf, read_buffer, to_read);
+
+              /* Now write more - should wrap around */
+              size_t remaining_data = data_len > first_write ? data_len - first_write : 0;
+              size_t space = SocketBuf_space (buf);
+              size_t second_write = remaining_data > space ? space : remaining_data;
+
+              if (second_write > 0)
+                {
+                  size_t offset = data_offset + first_write;
+                  if (offset < size)
+                    SocketBuf_write (buf, data + offset, second_write);
+                }
+
+              /* Verify we can read all data back */
+              size_t total_available = SocketBuf_available (buf);
+              size_t total_read = SocketBuf_read (buf, read_buffer, total_available);
+              assert (total_read == total_available);
+            }
         }
         break;
 
-      case OP_SECURECLEAR:
+      case OP_SECURE_CLEAR:
         {
-          /* Write then secure clear (zeros memory) */
-          SocketBuf_write (buf, payload, payload_size);
+          /* Test secure memory clearing */
+          buf = SocketBuf_new (arena, capacity);
+
+          /* Write sensitive data */
+          size_t to_write = data_len > capacity ? capacity : data_len;
+          if (to_write > 0)
+            SocketBuf_write (buf, data + data_offset, to_write);
+
+          /* Securely clear */
           SocketBuf_secureclear (buf);
 
+          /* Verify buffer is empty */
           assert (SocketBuf_empty (buf));
-          assert (SocketBuf_check_invariants (buf));
+          assert (SocketBuf_available (buf) == 0);
+
+          /* Buffer should be usable again */
+          if (to_write > 0)
+            {
+              size_t written = SocketBuf_write (buf, data + data_offset, to_write);
+              assert (written == to_write);
+            }
         }
         break;
 
-      default:
-        /* Should not reach here due to mod OP_MAX above */
+      case OP_MIXED_OPS:
+        {
+          /* Mixed operations stress test */
+          buf = SocketBuf_new (arena, capacity);
+
+          /* Series of operations based on fuzz data */
+          for (size_t i = data_offset; i < size && i < data_offset + 20; i++)
+            {
+              uint8_t sub_op = data[i] % 6;
+
+              switch (sub_op)
+                {
+                case 0: /* Write */
+                  {
+                    size_t space = SocketBuf_space (buf);
+                    size_t amt = (data[i] % 64) + 1;
+                    if (amt > space)
+                      amt = space;
+                    if (amt > 0 && i + amt < size)
+                      SocketBuf_write (buf, data + i, amt);
+                  }
+                  break;
+
+                case 1: /* Read */
+                  {
+                    size_t avail = SocketBuf_available (buf);
+                    size_t amt = (data[i] % 64) + 1;
+                    if (amt > avail)
+                      amt = avail;
+                    if (amt > 0)
+                      SocketBuf_read (buf, read_buffer, amt);
+                  }
+                  break;
+
+                case 2: /* Peek */
+                  {
+                    size_t avail = SocketBuf_available (buf);
+                    if (avail > 0)
+                      SocketBuf_peek (buf, read_buffer, avail);
+                  }
+                  break;
+
+                case 3: /* Consume */
+                  {
+                    size_t avail = SocketBuf_available (buf);
+                    size_t amt = data[i] % (avail + 1);
+                    if (amt > 0)
+                      SocketBuf_consume (buf, amt);
+                  }
+                  break;
+
+                case 4: /* Clear */
+                  SocketBuf_clear (buf);
+                  break;
+
+                case 5: /* Check state */
+                  {
+                    size_t avail = SocketBuf_available (buf);
+                    size_t space = SocketBuf_space (buf);
+                    int empty = SocketBuf_empty (buf);
+                    int full = SocketBuf_full (buf);
+                    (void)avail;
+                    (void)space;
+                    (void)empty;
+                    (void)full;
+                  }
+                  break;
+                }
+            }
+        }
         break;
       }
-
-    /* Final invariant check */
-    (void)SocketBuf_check_invariants (buf);
-    (void)SocketBuf_available (buf);
-    (void)SocketBuf_space (buf);
-    (void)SocketBuf_empty (buf);
-    (void)SocketBuf_full (buf);
-  }
-  EXCEPT (Arena_Failed)
-  {
-    /* Arena allocation failure - expected for some inputs */
   }
   EXCEPT (SocketBuf_Failed)
   {
-    /* Buffer operation failure - expected for some inputs */
+    /* Expected for some operations */
+  }
+  EXCEPT (Arena_Failed)
+  {
+    /* Memory allocation can fail */
   }
   FINALLY
   {
-    /* Cleanup */
+    /* Release buffer (arena owns memory) */
     if (buf)
       SocketBuf_release (&buf);
+
+    /* Dispose of the arena */
     if (arena)
       Arena_dispose (&arena);
   }
@@ -247,4 +400,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

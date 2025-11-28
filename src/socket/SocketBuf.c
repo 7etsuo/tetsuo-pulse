@@ -490,7 +490,9 @@ SocketBuf_reserve (T buf, size_t min_space)
   if (buf->size + min_space <= buf->capacity)
     return;
 
-  size_t new_cap = reserve_calc_new_capacity (buf->capacity, min_space);
+  /* Need new capacity to hold existing data (buf->size) PLUS min_space */
+  size_t needed = buf->size + min_space;
+  size_t new_cap = reserve_calc_new_capacity (buf->capacity, needed);
   if (new_cap == 0)
     {
       SOCKET_ERROR_MSG ("SocketBuf reserve overflow");
