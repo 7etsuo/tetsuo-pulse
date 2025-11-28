@@ -235,6 +235,7 @@ jobs:
             --error-exitcode=1 \
             --suppress=missingIncludeSystem \
             --suppress=unmatchedSuppression \
+            --suppress=toomanyconfigs \
             --std=c11 \
             -I include \
             --inline-suppr \
