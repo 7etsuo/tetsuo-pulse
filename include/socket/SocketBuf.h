@@ -19,8 +19,15 @@
  * to worry about circular buffer complexities.
  */
 
+#include "core/Except.h"
+
 #define T SocketBuf_T
 typedef struct T *T;
+
+/**
+ * Exception thrown on buffer operation failure
+ */
+extern const Except_T SocketBuf_Failed;
 
 /**
  * SocketBuf_new - Create a new circular buffer

@@ -205,7 +205,7 @@ TEST (arena_large_allocation)
   ASSERT_NOT_NULL (arena);
 
   /* Allocate a reasonably large chunk */
-  size_t large_size = 1024 * 1024; /* 1MB */
+  size_t large_size = (size_t)1024 * 1024; /* 1MB */
   void *ptr = ALLOC (arena, large_size);
   ASSERT_NOT_NULL (ptr);
 
@@ -403,7 +403,7 @@ TEST (arena_very_large_allocation)
   ASSERT_NOT_NULL (arena);
 
   /* Allocate close to maximum size */
-  size_t large_size = 10 * 1024 * 1024; /* 10MB */
+  size_t large_size = (size_t)10 * 1024 * 1024; /* 10MB */
   void *ptr = ALLOC (arena, large_size);
   ASSERT_NOT_NULL (ptr);
 

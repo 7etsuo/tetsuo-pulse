@@ -992,34 +992,43 @@ SocketPool_connect_async (T pool, const char *host, int port,
     socket = create_pool_socket ();
     apply_pool_timeouts (socket);
 
-    req = SocketDNS_resolve (dns, host, port, async_connect_dns_callback, ctx);
-    if (!req)
-      {
-        SOCKET_ERROR_MSG ("Failed to start DNS resolution");
-        RAISE_POOL_ERROR (SocketPool_Failed);
-      }
-
-    /* Initialize context */
+    /* Initialize context BEFORE DNS resolve - callback may fire immediately
+     * for IP addresses that don't need actual DNS lookup (e.g. "127.0.0.1") */
     ctx->pool = pool;
     ctx->socket = socket;
-    ctx->req = req;
     ctx->cb = callback;
     ctx->user_data = data;
     ctx->next = NULL;
 
-    /* Security: Check async pending limit before adding */
+    /* Security: Check async pending limit before starting DNS */
     if (!add_async_context (pool, ctx))
       {
-        /* Cancel DNS request to prevent callback from using freed resources */
-        SocketDNS_cancel (dns, req);
         SOCKET_ERROR_MSG ("Async connect limit reached (%d pending)",
                           SOCKET_POOL_MAX_ASYNC_PENDING);
         RAISE_POOL_ERROR (SocketPool_Failed);
       }
+
+    req = SocketDNS_resolve (dns, host, port, async_connect_dns_callback, ctx);
+    if (!req)
+      {
+        /* Remove context from list since DNS resolve failed */
+        remove_async_context (pool, ctx);
+        SOCKET_ERROR_MSG ("Failed to start DNS resolution");
+        RAISE_POOL_ERROR (SocketPool_Failed);
+      }
+
+    /* Store request handle after successful DNS resolve */
+    ctx->req = req;
   }
   ELSE
   {
     /* Cleanup on any exception (Socket_Failed or SocketPool_Failed) */
+    if (ctx && ctx->socket)
+      {
+        /* Context was added to list - remove it first */
+        remove_async_context (pool, ctx);
+        ctx->socket = NULL;
+      }
     if (socket)
       Socket_free ((Socket_T *)&socket);
     pthread_mutex_unlock (&pool->mutex);
