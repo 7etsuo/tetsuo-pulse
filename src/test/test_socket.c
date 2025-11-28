@@ -4212,6 +4212,95 @@ TEST (socketcommon_sync_iov_progress_basic)
   ASSERT_EQ (100, original[1].iov_len);  /* Unchanged */
 }
 
+TEST (socketcommon_sync_iov_progress_null_original)
+{
+  struct iovec original[2];
+  struct iovec copy[2];
+  char buf1[100];
+
+  /* Case: original entry already consumed (NULL base), copy advanced on next
+   * entry. This tests the UBSan fix - no pointer arithmetic on NULL. */
+  original[0].iov_base = NULL;
+  original[0].iov_len = 0;
+  original[1].iov_base = buf1;
+  original[1].iov_len = 100;
+
+  /* Copy has advanced second iovec by 10 bytes */
+  copy[0].iov_base = NULL;
+  copy[0].iov_len = 0;
+  copy[1].iov_base = buf1 + 10;
+  copy[1].iov_len = 90;
+
+  SocketCommon_sync_iov_progress (original, copy, 2);
+
+  /* First entry should remain NULL/0 (no UB) */
+  ASSERT_EQ (NULL, original[0].iov_base);
+  ASSERT_EQ (0, original[0].iov_len);
+
+  /* Second entry should be advanced by 10 */
+  ASSERT_EQ (buf1 + 10, original[1].iov_base);
+  ASSERT_EQ (90, original[1].iov_len);
+}
+
+TEST (socketcommon_sync_iov_progress_null_copy)
+{
+  struct iovec original[2];
+  struct iovec copy[2];
+  char buf1[100], buf2[50];
+
+  /* Case: copy base is NULL (fully advanced past this vector), original was
+   * non-NULL. Original should be marked as fully consumed. */
+  original[0].iov_base = buf1;
+  original[0].iov_len = 100;
+  original[1].iov_base = buf2;
+  original[1].iov_len = 50;
+
+  /* Copy fully consumed first iovec (NULL base), second unchanged */
+  copy[0].iov_base = NULL;
+  copy[0].iov_len = 0;
+  copy[1].iov_base = buf2;
+  copy[1].iov_len = 50;
+
+  SocketCommon_sync_iov_progress (original, copy, 2);
+
+  /* First entry should be fully consumed (NULL/0) */
+  ASSERT_EQ (NULL, original[0].iov_base);
+  ASSERT_EQ (0, original[0].iov_len);
+
+  /* Second entry unchanged (bases equal) */
+  ASSERT_EQ (buf2, original[1].iov_base);
+  ASSERT_EQ (50, original[1].iov_len);
+}
+
+TEST (socketcommon_sync_iov_progress_full_consume)
+{
+  struct iovec original[2];
+  struct iovec copy[2];
+  char buf1[100], buf2[50];
+
+  /* Case: copy advanced exactly to end of buffer (copied >= iov_len) */
+  original[0].iov_base = buf1;
+  original[0].iov_len = 100;
+  original[1].iov_base = buf2;
+  original[1].iov_len = 50;
+
+  /* Copy advanced first iovec entirely (pointer at end, len = 0) */
+  copy[0].iov_base = buf1 + 100;
+  copy[0].iov_len = 0;
+  copy[1].iov_base = buf2;
+  copy[1].iov_len = 50;
+
+  SocketCommon_sync_iov_progress (original, copy, 2);
+
+  /* First entry should be clamped to fully consumed */
+  ASSERT_EQ (NULL, original[0].iov_base);
+  ASSERT_EQ (0, original[0].iov_len);
+
+  /* Second entry unchanged */
+  ASSERT_EQ (buf2, original[1].iov_base);
+  ASSERT_EQ (50, original[1].iov_len);
+}
+
 TEST (socketcommon_calculate_total_iov_len_null)
 {
   volatile int raised = 0;
