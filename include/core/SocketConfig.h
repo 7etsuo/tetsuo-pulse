@@ -482,7 +482,7 @@ union align
 #endif
 
 #ifndef ARENA_FAILURE
-#define ARENA_FAILURE -1
+#define ARENA_FAILURE (-1)
 #endif
 
 #ifndef ARENA_CHUNK_REUSED

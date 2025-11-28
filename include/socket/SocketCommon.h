@@ -24,6 +24,7 @@
 /* Common exception types (Except_T is defined in Except.h) */
 extern const Except_T Socket_Failed;
 extern const Except_T SocketDgram_Failed;
+extern const Except_T SocketCommon_Failed;
 
 /**
  * SocketCommon_setup_hints - Initialize addrinfo hints structure

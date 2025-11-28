@@ -51,6 +51,27 @@ if(ENABLE_COVERAGE)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
 endif()
 
+# Fuzzing options (requires Clang with libFuzzer)
+option(ENABLE_FUZZING "Enable libFuzzer fuzzing harnesses (requires Clang)" OFF)
+
+if(ENABLE_FUZZING)
+    if(NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
+        message(FATAL_ERROR "Fuzzing requires Clang compiler with libFuzzer support. "
+                            "Use: CC=clang cmake .. -DENABLE_FUZZING=ON")
+    endif()
+    
+    # Disable conflicting sanitizer options when fuzzing
+    if(ENABLE_ASAN OR ENABLE_UBSAN OR ENABLE_SANITIZERS)
+        message(WARNING "Sanitizers already configured - fuzzer will use its own sanitizer settings")
+    endif()
+    
+    message(STATUS "Fuzzing enabled (libFuzzer)")
+    
+    # Base fuzzer flags (applied to all fuzzer targets)
+    set(FUZZER_COMPILE_FLAGS "-fsanitize=fuzzer-no-link,address,undefined -fno-omit-frame-pointer -g")
+    set(FUZZER_LINK_FLAGS "-fsanitize=fuzzer,address,undefined")
+endif()
+
 # Default to Debug build
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
@@ -412,5 +433,71 @@ if(LIBEVENT_FOUND)
     message(STATUS "LibEvent found - building benchmark_libevent")
 else()
     message(STATUS "LibEvent not found - skipping benchmark_libevent (install libevent-dev)")
+endif()
+
+# =============================================================================
+# Fuzzing Targets (libFuzzer)
+# =============================================================================
+# Build with: CC=clang cmake .. -DENABLE_FUZZING=ON -DCMAKE_BUILD_TYPE=Debug
+# Run with: ./fuzz_socketbuf corpus/socketbuf/ -fork=16 -max_len=4096
+# =============================================================================
+
+if(ENABLE_FUZZING)
+    # Fuzz harness source files
+    set(FUZZ_SOURCES
+        fuzz_socketbuf
+        fuzz_arena
+        fuzz_ip_parse
+        fuzz_dns_validate
+        fuzz_socketbuf_stress
+    )
+    
+    # Create fuzz executable for each harness
+    foreach(fuzz_name ${FUZZ_SOURCES})
+        if(EXISTS "${CMAKE_SOURCE_DIR}/src/fuzz/${fuzz_name}.c")
+            add_executable(${fuzz_name} 
+                src/fuzz/${fuzz_name}.c 
+                $<TARGET_OBJECTS:socket_objects>
+            )
+            
+            # Apply fuzzer compile flags
+            target_compile_options(${fuzz_name} PRIVATE 
+                -fsanitize=fuzzer-no-link,address,undefined 
+                -fno-omit-frame-pointer 
+                -g
+            )
+            
+            # Apply fuzzer link flags
+            target_link_options(${fuzz_name} PRIVATE 
+                -fsanitize=fuzzer,address,undefined
+            )
+            
+            # Link libraries
+            if(SOCKET_HAS_TLS)
+                target_link_libraries(${fuzz_name} pthread m ${OPENSSL_LIBRARIES})
+            else()
+                target_link_libraries(${fuzz_name} pthread m)
+            endif()
+            
+            target_include_directories(${fuzz_name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+            
+            message(STATUS "  Fuzzer: ${fuzz_name}")
+        else()
+            message(STATUS "  Fuzzer: ${fuzz_name} (source not found - skipping)")
+        endif()
+    endforeach()
+    
+    # Custom target to build all fuzzers
+    add_custom_target(fuzzers)
+    foreach(fuzz_name ${FUZZ_SOURCES})
+        if(EXISTS "${CMAKE_SOURCE_DIR}/src/fuzz/${fuzz_name}.c")
+            add_dependencies(fuzzers ${fuzz_name})
+        endif()
+    endforeach()
+    
+    message(STATUS "Fuzzing Configuration:")
+    message(STATUS "  Harnesses: ${FUZZ_SOURCES}")
+    message(STATUS "  Build fuzzers: make fuzzers")
+    message(STATUS "  Run example: ./fuzz_socketbuf corpus/socketbuf/ -fork=16")
 endif()
 
