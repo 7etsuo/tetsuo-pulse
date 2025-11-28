@@ -103,10 +103,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               void *ptr = Arena_alloc (arena, alloc_size, __FILE__, __LINE__);
               if (ptr)
                 {
-                  /* Touch first and last bytes to detect corruption */
-                  ((char *)ptr)[0] = 0xAA;
+                  /* Touch first and last bytes to detect corruption
+                   * Use volatile to prevent compiler optimizing away */
+                  volatile char *vptr = (volatile char *)ptr;
+                  vptr[0] = 0xAA;
                   if (alloc_size > 1)
-                    ((char *)ptr)[alloc_size - 1] = 0xBB;
+                    vptr[alloc_size - 1] = 0xBB;
                 }
             }
         }
@@ -180,9 +182,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               void *ptr = Arena_alloc (arena, alloc_size, __FILE__, __LINE__);
               if (ptr)
                 {
-                  /* Touch boundaries */
-                  ((char *)ptr)[0] = 0xCC;
-                  ((char *)ptr)[alloc_size - 1] = 0xDD;
+                  /* Touch boundaries to detect corruption
+                   * Use volatile to prevent compiler optimizing away */
+                  volatile char *vptr = (volatile char *)ptr;
+                  vptr[0] = 0xCC;
+                  vptr[alloc_size - 1] = 0xDD;
                   total_allocated += alloc_size;
                 }
               i += 2;
