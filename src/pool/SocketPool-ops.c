@@ -856,27 +856,6 @@ remove_async_context (T pool, AsyncConnectContext_T ctx)
 }
 
 /**
- * find_async_context_by_req - Find context by DNS request
- * @pool: Pool instance
- * @req: DNS request handle
- *
- * Returns: Context or NULL if not found
- * Thread-safe: Call with mutex held
- */
-static AsyncConnectContext_T
-find_async_context_by_req (T pool, SocketDNS_Request_T req)
-{
-  AsyncConnectContext_T ctx = pool->async_ctx;
-  while (ctx)
-    {
-      if (ctx->req == req)
-        return ctx;
-      ctx = ctx->next;
-    }
-  return NULL;
-}
-
-/**
  * get_or_create_dns - Get or lazily create pool's DNS resolver
  * @pool: Pool instance
  *
@@ -938,7 +917,7 @@ async_connect_dns_callback (SocketDNS_Request_T req, struct addrinfo *result,
   }
   EXCEPT (Socket_Failed)
   {
-    callback_error = errno ? errno : ECONNREFUSED;
+    callback_error = Socket_geterrno () ? Socket_geterrno () : ECONNREFUSED;
     Socket_free (&ctx->socket);
   }
   END_TRY;
