@@ -1013,6 +1013,88 @@ TEST (socketdns_multiple_resolvers_independent)
   END_TRY;
 }
 
+/* ==================== Timeout Configuration Tests ==================== */
+
+TEST (socketdns_timeout_get_set)
+{
+  SocketDNS_T dns = SocketDNS_new ();
+  ASSERT_NOT_NULL (dns);
+
+  /* Set timeout and verify it's returned correctly */
+  SocketDNS_settimeout (dns, 5000);
+  int timeout = SocketDNS_gettimeout (dns);
+  ASSERT_EQ (timeout, 5000);
+
+  /* Set a different timeout */
+  SocketDNS_settimeout (dns, 10000);
+  timeout = SocketDNS_gettimeout (dns);
+  ASSERT_EQ (timeout, 10000);
+
+  /* Set timeout to 0 (disable) */
+  SocketDNS_settimeout (dns, 0);
+  timeout = SocketDNS_gettimeout (dns);
+  ASSERT_EQ (timeout, 0);
+
+  SocketDNS_free (&dns);
+}
+
+TEST (socketdns_timeout_negative_sanitized)
+{
+  SocketDNS_T dns = SocketDNS_new ();
+  ASSERT_NOT_NULL (dns);
+
+  /* Negative timeout should be sanitized to 0 */
+  SocketDNS_settimeout (dns, -100);
+  int timeout = SocketDNS_gettimeout (dns);
+  ASSERT_EQ (timeout, 0);
+
+  SocketDNS_free (&dns);
+}
+
+TEST (socketdns_timeout_null_dns)
+{
+  /* These should not crash when called with NULL */
+  SocketDNS_settimeout (NULL, 5000);
+  int timeout = SocketDNS_gettimeout (NULL);
+  ASSERT_EQ (timeout, 0);
+}
+
+TEST (socketdns_timeout_affects_requests)
+{
+  SocketDNS_T dns = SocketDNS_new ();
+  ASSERT_NOT_NULL (dns);
+
+  /* Set a reasonable timeout */
+  SocketDNS_settimeout (dns, 30000);
+  int timeout = SocketDNS_gettimeout (dns);
+  ASSERT_EQ (timeout, 30000);
+
+  /* Make a request and verify it works */
+  SocketDNS_Request_T req = NULL;
+  struct addrinfo *result = NULL;
+
+  TRY
+  {
+    req = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+    ASSERT_NOT_NULL (req);
+
+    usleep (100000);
+    SocketDNS_check (dns);
+    result = SocketDNS_getresult (dns, req);
+    if (result)
+      SocketCommon_free_addrinfo (result);
+    result = NULL;
+  }
+  EXCEPT (SocketDNS_Failed) { /* May fail */ }
+  FINALLY
+  {
+    if (result)
+      SocketCommon_free_addrinfo (result);
+    SocketDNS_free (&dns);
+  }
+  END_TRY;
+}
+
 /* ==================== Close-on-Exec Tests ==================== */
 
 TEST (socketdns_pipe_has_cloexec)

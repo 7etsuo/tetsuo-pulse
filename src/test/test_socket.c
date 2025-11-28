@@ -1491,6 +1491,62 @@ TEST (socket_sendfile_transfers_file_data)
   Socket_free (&client);
 }
 
+TEST (socket_sendfile_with_nonzero_offset)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T accepted = NULL;
+  int file_fd = -1;
+  const char *test_file = "/tmp/socket_sendfile_offset_test.txt";
+  const char *test_data = "SKIP_THIS_PART_SEND_THIS_PART";
+  size_t skip_len = 15;  /* "SKIP_THIS_PART_" */
+  size_t send_len = 14;  /* "SEND_THIS_PART" */
+  size_t total_len = skip_len + send_len;
+
+  TRY
+  {
+    /* Create test file */
+    file_fd = open (test_file, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    ASSERT (file_fd >= 0);
+    ASSERT_EQ ((ssize_t)total_len, write (file_fd, test_data, total_len));
+    close (file_fd);
+    file_fd = -1;
+
+    /* Open file for reading */
+    file_fd = open (test_file, O_RDONLY);
+    ASSERT (file_fd >= 0);
+
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 1);
+    Socket_connect (client, "127.0.0.1", Socket_getlocalport (server));
+    accepted = Socket_accept (server);
+
+    /* Transfer file starting from non-zero offset */
+    off_t offset = (off_t)skip_len;  /* Start after "SKIP_THIS_PART_" */
+    ssize_t sent = Socket_sendfile (client, file_fd, &offset, send_len);
+    ASSERT (sent > 0);
+
+    /* Receive data and verify it's the correct part */
+    char recv_buf[256] = { 0 };
+    ssize_t received = Socket_recvall (accepted, recv_buf, sent);
+    ASSERT_EQ (sent, received);
+    /* Should receive "SEND_THIS_PART" */
+    ASSERT_EQ (0, strncmp (recv_buf, "SEND_THIS_PART", send_len));
+  }
+  EXCEPT (Socket_Failed) { (void)0; }
+  EXCEPT (Socket_Closed) { (void)0; }
+  END_TRY;
+
+  if (file_fd >= 0)
+    close (file_fd);
+  unlink (test_file);
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&server);
+  Socket_free (&client);
+}
+
 TEST (socket_sendfileall_transfers_complete_file)
 {
   setup_signals ();
@@ -1653,6 +1709,177 @@ TEST (socket_recvmsg_receives_message_with_iovec)
   (void)0;
   EXCEPT (Socket_Closed)
   (void)0;
+  END_TRY;
+
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&server);
+  Socket_free (&client);
+}
+
+TEST (socket_sendmsg_wouldblock_nonblocking)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T accepted = NULL;
+
+  TRY
+  {
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 1);
+    Socket_connect (client, "127.0.0.1", Socket_getlocalport (server));
+    accepted = Socket_accept (server);
+
+    /* Set non-blocking mode */
+    Socket_setnonblocking (client);
+
+    /* Prepare small message */
+    char buf[] = "test";
+    struct iovec iov[1];
+    iov[0].iov_base = buf;
+    iov[0].iov_len = strlen (buf);
+
+    struct msghdr msg = { 0 };
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+
+    /* Send with MSG_DONTWAIT flag */
+    ssize_t sent = Socket_sendmsg (client, &msg, MSG_DONTWAIT);
+    /* Should succeed or return 0 (would block) */
+    ASSERT (sent >= 0);
+  }
+  EXCEPT (Socket_Failed) { (void)0; }
+  EXCEPT (Socket_Closed) { (void)0; }
+  END_TRY;
+
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&server);
+  Socket_free (&client);
+}
+
+TEST (socket_recvmsg_wouldblock_nonblocking)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T accepted = NULL;
+
+  TRY
+  {
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 1);
+    Socket_connect (client, "127.0.0.1", Socket_getlocalport (server));
+    accepted = Socket_accept (server);
+
+    /* Set non-blocking mode */
+    Socket_setnonblocking (accepted);
+
+    /* Try to receive when no data is available */
+    char buf[64] = { 0 };
+    struct iovec iov[1];
+    iov[0].iov_base = buf;
+    iov[0].iov_len = sizeof (buf);
+
+    struct msghdr msg = { 0 };
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+
+    /* Should return 0 (would block) since no data is available */
+    ssize_t received = Socket_recvmsg (accepted, &msg, MSG_DONTWAIT);
+    ASSERT_EQ (0, received);
+  }
+  EXCEPT (Socket_Failed) { (void)0; }
+  EXCEPT (Socket_Closed) { (void)0; }
+  END_TRY;
+
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&server);
+  Socket_free (&client);
+}
+
+TEST (socket_recvmsg_peer_close)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T accepted = NULL;
+  volatile int closed = 0;
+
+  TRY
+  {
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 1);
+    Socket_connect (client, "127.0.0.1", Socket_getlocalport (server));
+    accepted = Socket_accept (server);
+
+    /* Close the client to trigger peer close */
+    Socket_free (&client);
+    usleep (50000); /* Wait for close to propagate */
+
+    /* Try to receive - should raise Socket_Closed */
+    char buf[64] = { 0 };
+    struct iovec iov[1];
+    iov[0].iov_base = buf;
+    iov[0].iov_len = sizeof (buf);
+
+    struct msghdr msg = { 0 };
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+
+    Socket_recvmsg (accepted, &msg, 0);
+  }
+  EXCEPT (Socket_Closed) { closed = 1; }
+  EXCEPT (Socket_Failed) { (void)0; }
+  END_TRY;
+
+  ASSERT_EQ (1, closed);
+
+  if (accepted)
+    Socket_free (&accepted);
+  Socket_free (&server);
+  if (client)
+    Socket_free (&client);
+}
+
+TEST (socket_sendmsg_with_flags)
+{
+  setup_signals ();
+  Socket_T server = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T accepted = NULL;
+
+  TRY
+  {
+    Socket_bind (server, "127.0.0.1", 0);
+    Socket_listen (server, 1);
+    Socket_connect (client, "127.0.0.1", Socket_getlocalport (server));
+    accepted = Socket_accept (server);
+
+    /* Send with MSG_NOSIGNAL flag */
+    char buf[] = "test with flags";
+    struct iovec iov[1];
+    iov[0].iov_base = buf;
+    iov[0].iov_len = strlen (buf);
+
+    struct msghdr msg = { 0 };
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+
+    ssize_t sent = Socket_sendmsg (client, &msg, MSG_NOSIGNAL);
+    ASSERT (sent > 0);
+    ASSERT_EQ ((ssize_t)strlen (buf), sent);
+
+    /* Receive and verify */
+    char recv_buf[256] = { 0 };
+    ssize_t received = Socket_recvall (accepted, recv_buf, strlen (buf));
+    ASSERT_EQ ((ssize_t)strlen (buf), received);
+    ASSERT_EQ (0, strcmp (recv_buf, buf));
+  }
+  EXCEPT (Socket_Failed) { (void)0; }
+  EXCEPT (Socket_Closed) { (void)0; }
   END_TRY;
 
   if (accepted)
