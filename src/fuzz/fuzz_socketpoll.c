@@ -144,7 +144,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
                     /* Determine events from fuzz data */
                     unsigned events = POLL_READ;
-                    if (size >= (size_t)(6 + i))
+                    if (size >= 6 + (size_t)i)
                       {
                         if (data[5 + i] & 0x01)
                           events |= POLL_WRITE;
@@ -206,7 +206,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                       TRY
                       {
                         unsigned new_events = POLL_READ | POLL_WRITE;
-                        if (size >= (size_t)(7 + i) && (data[6 + i] & 0x01))
+                        if (size >= 7 + (size_t)i && (data[6 + i] & 0x01))
                           new_events = POLL_WRITE;
                         SocketPoll_mod (poll, sockets[i], new_events,
                                         (void *)(uintptr_t) (i + 100));

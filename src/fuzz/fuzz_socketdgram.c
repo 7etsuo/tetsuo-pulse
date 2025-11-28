@@ -539,7 +539,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
                   for (int j = 0; j < iovcnt; j++)
                     {
-                      size_t buf_len = (size > (size_t)(7 + j))
+                      size_t buf_len = (size > 7 + (size_t)j)
                                            ? (data[7 + j] % 64) + 1
                                            : 32;
                       iov[j].iov_base = buffers[j];
