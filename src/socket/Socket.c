@@ -427,9 +427,9 @@ unix_setup_regular_socket (struct sockaddr_un *addr, const char *path,
  * @addr: Output sockaddr_un structure
  * @path: Unix socket path (@ prefix for abstract)
  *
- * Returns: 0 on success
+ * Note: Path validation must be done separately via unix_validate_path()
  */
-static int
+static void
 unix_setup_sockaddr (struct sockaddr_un *addr, const char *path)
 {
   size_t path_len;
@@ -445,8 +445,6 @@ unix_setup_sockaddr (struct sockaddr_un *addr, const char *path)
     unix_setup_abstract_socket (addr, path, path_len);
   else
     unix_setup_regular_socket (addr, path, path_len);
-
-  return 0;
 }
 
 void
@@ -495,8 +493,7 @@ Socket_connect_unix (Socket_T socket, const char *path)
   if (unix_validate_path (path, path_len) < 0)
     RAISE_MODULE_ERROR (Socket_Failed);
 
-  if (unix_setup_sockaddr (&addr, path) != 0)
-    RAISE_MODULE_ERROR (Socket_Failed);
+  unix_setup_sockaddr (&addr, path);
 
   if (connect (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
                sizeof (addr))
@@ -1253,8 +1250,6 @@ SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
   int sv[2] = { -1, -1 };
   Socket_T sock1 = NULL;
   Socket_T sock2 = NULL;
-  Arena_T arena1 = NULL;
-  Arena_T arena2 = NULL;
 
   assert (socket1);
   assert (socket2);
@@ -1264,15 +1259,13 @@ SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
 
   TRY
     {
-      /* Allocate first socket */
-      arena1 = socketpair_allocate_socket (sv[0], type, &sock1);
+      /* Allocate first socket - arena owned by sock1->base */
+      (void)socketpair_allocate_socket (sv[0], type, &sock1);
       sv[0] = -1; /* FD now owned by sock1 */
-      arena1 = NULL; /* Arena owned by sock1->base */
 
-      /* Allocate second socket */
-      arena2 = socketpair_allocate_socket (sv[1], type, &sock2);
+      /* Allocate second socket - arena owned by sock2->base */
+      (void)socketpair_allocate_socket (sv[1], type, &sock2);
       sv[1] = -1; /* FD now owned by sock2 */
-      arena2 = NULL; /* Arena owned by sock2->base */
 
       /* Transfer ownership to caller */
       *socket1 = sock1;
@@ -1283,12 +1276,9 @@ SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
   EXCEPT (Socket_Failed)
     {
       /* Cleanup in reverse acquisition order */
+      /* socketpair_cleanup_socket handles arena via SocketCommon_free_base */
       socketpair_cleanup_socket (sock2, sv[1]);
       socketpair_cleanup_socket (sock1, sv[0]);
-      if (arena2)
-        Arena_dispose (&arena2);
-      if (arena1)
-        Arena_dispose (&arena1);
       RERAISE;
     }
   END_TRY;

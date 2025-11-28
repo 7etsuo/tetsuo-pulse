@@ -267,41 +267,6 @@ socket_data_add_unlocked (T poll, Socket_T socket, void *data)
 }
 
 /**
- * socket_data_update_unlocked - Update data (caller holds lock)
- * @poll: Poll instance
- * @socket: Socket
- * @data: New data
- * Raises: SocketPoll_Failed on allocation failure (fallback)
- *
- * Note: Fallback only updates socket_data_map, not fd_to_socket_map,
- * since the socket should already have been added via socket_data_add_unlocked.
- */
-static void
-socket_data_update_unlocked (T poll, Socket_T socket, void *data)
-{
-  int fd = Socket_fd (socket);
-  unsigned hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
-  SocketData *entry = find_socket_data_entry (poll, hash, socket);
-
-  if (entry)
-    {
-      entry->data = data;
-      return;
-    }
-
-  /* Fallback: socket not found, add new entry (socket_data_map only) */
-#ifndef NDEBUG
-  SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                   "socket_data_update_unlocked fallback (fd %d)", fd);
-#endif
-
-  entry = allocate_socket_data_entry (poll);
-  entry->socket = socket;
-  entry->data = data;
-  insert_socket_data_entry (poll, hash, entry);
-}
-
-/**
  * socket_data_remove_unlocked - Remove mappings (caller holds lock)
  * @poll: Poll instance
  * @socket: Socket
@@ -541,32 +506,6 @@ lookup_socket_and_data_by_fd (const T poll, const int fd,
   /* Socket found but no data entry (shouldn't happen in normal use) */
   *socket_out = socket;
   *data_out = NULL;
-}
-
-/**
- * find_socket_by_fd - Find socket by file descriptor
- * @poll: Poll instance
- * @fd: File descriptor to look up
- * Returns: Socket or NULL if not found
- * Thread-safe: No (must be called with poll mutex held)
- *
- * Performs O(1) lookup using the fd_to_socket_map hash table.
- * For event translation, prefer lookup_socket_and_data_by_fd().
- */
-static Socket_T
-find_socket_by_fd (const T poll, const int fd)
-{
-  unsigned fd_hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
-  FdSocketEntry *entry = poll->fd_to_socket_map[fd_hash];
-
-  while (entry)
-    {
-      if (entry->fd == fd)
-        return entry->socket;
-      entry = entry->next;
-    }
-
-  return NULL;
 }
 
 /* ==================== Event Translation ==================== */

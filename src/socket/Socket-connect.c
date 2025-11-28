@@ -84,7 +84,7 @@ socket_wait_poll_with_retry (int fd, int timeout_ms)
   int result;
 
   while ((result = poll (&pfd, 1, timeout_ms)) < 0 && errno == EINTR)
-    continue;
+    ; /* EINTR retry */
 
   return result;
 }

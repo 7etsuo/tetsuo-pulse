@@ -203,7 +203,7 @@ int SocketCommon_cidr_match (const char *ip_str, const char *cidr_str);
 typedef struct SocketBase_T *SocketBase_T;
 
 extern SocketBase_T SocketCommon_new_base (int domain, int type, int protocol);
-extern void SocketCommon_free_base (SocketBase_T *base);
+extern void SocketCommon_free_base (SocketBase_T *base_ptr);
 
 /**
  * SocketCommon_set_option_int - Set integer socket option

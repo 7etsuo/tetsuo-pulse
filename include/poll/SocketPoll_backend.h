@@ -86,11 +86,11 @@ extern int backend_del (PollBackend_T backend, int fd);
 /**
  * backend_wait - Wait for events
  * @backend: Backend instance
- * @timeout: Timeout in milliseconds (-1 for infinite)
+ * @timeout_ms: Timeout in milliseconds (-1 for infinite)
  * Returns: Number of events ready (>= 0), or -1 on error (sets errno)
  * Note: Returns 0 on timeout
  */
-extern int backend_wait (PollBackend_T backend, int timeout);
+extern int backend_wait (PollBackend_T backend, int timeout_ms);
 
 /**
  * backend_get_event - Get event details for index

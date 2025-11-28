@@ -162,7 +162,7 @@ extern struct SocketDNS_T * allocate_dns_resolver (void);
 extern void initialize_dns_fields (struct SocketDNS_T *dns);
 extern void initialize_dns_components (struct SocketDNS_T *dns);
 extern void setup_thread_attributes (pthread_attr_t *attr);
-extern int create_single_worker_thread (struct SocketDNS_T *dns, int idx);
+extern int create_single_worker_thread (struct SocketDNS_T *dns, int thread_index);
 extern void create_worker_threads (struct SocketDNS_T *dns);
 extern void start_dns_workers (struct SocketDNS_T *dns);
 
