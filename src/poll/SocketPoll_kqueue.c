@@ -8,12 +8,11 @@
  * - Linux: Not supported (use epoll backend instead)
  */
 
-/* Platform guard: kqueue is only available on BSD/macOS */
-#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__NetBSD__)       \
-    && !defined(__OpenBSD__) && !defined(__DragonFly__)
-#error                                                                         \
-    "SocketPoll_kqueue.c requires kqueue (BSD/macOS). Use SocketPoll_epoll.c on Linux or SocketPoll_poll.c as fallback."
-#endif
+/* Platform guard: kqueue is only available on BSD/macOS.
+ * On other platforms, this file compiles as an empty translation unit.
+ * CMake selects the appropriate backend file for each platform. */
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)          \
+    || defined(__OpenBSD__) || defined(__DragonFly__)
 
 #include <assert.h>
 #include <errno.h>
@@ -229,3 +228,5 @@ backend_name (void)
 {
   return "kqueue";
 }
+
+#endif /* BSD/macOS platform guard */
