@@ -1063,6 +1063,74 @@ TEST (socketdgram_sendvall_sends_all_from_multiple_buffers)
 
 /* ==================== recvvall Test ==================== */
 
+TEST (socketdgram_recvv_wouldblock_returns_zero)
+{
+  setup_signals ();
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+
+  TRY
+  {
+    SocketDgram_bind (socket, "127.0.0.1", 0);
+    SocketDgram_setnonblocking (socket);
+
+    /* Prepare receive buffers */
+    char buf1[64] = { 0 };
+    char buf2[64] = { 0 };
+    struct iovec iov[2];
+    iov[0].iov_base = buf1;
+    iov[0].iov_len = sizeof (buf1);
+    iov[1].iov_base = buf2;
+    iov[1].iov_len = sizeof (buf2);
+
+    /* Should return 0 (would block) since no data is available */
+    ssize_t received = SocketDgram_recvv (socket, iov, 2);
+    ASSERT_EQ (0, received);
+  }
+  EXCEPT (SocketDgram_Failed) { (void)0; }
+  END_TRY;
+
+  SocketDgram_free (&socket);
+}
+
+TEST (socketdgram_recvv_single_buffer)
+{
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
+
+  TRY
+  {
+    SocketDgram_bind (receiver, "127.0.0.1", 0);
+    struct sockaddr_in addr;
+    socklen_t len = sizeof (addr);
+    getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+    int port = ntohs (addr.sin_port);
+
+    SocketDgram_connect (sender, "127.0.0.1", port);
+    SocketDgram_connect (receiver, "127.0.0.1",
+                         SocketDgram_getlocalport (sender));
+
+    /* Send data */
+    const char *msg = "Single buffer test";
+    SocketDgram_sendall (sender, msg, strlen (msg));
+
+    /* Receive with single iovec */
+    char buf[64] = { 0 };
+    struct iovec iov[1];
+    iov[0].iov_base = buf;
+    iov[0].iov_len = sizeof (buf);
+
+    ssize_t received = SocketDgram_recvv (receiver, iov, 1);
+    ASSERT (received > 0);
+    ASSERT_EQ (0, memcmp (buf, msg, (size_t)received));
+  }
+  EXCEPT (SocketDgram_Failed) { (void)0; }
+  END_TRY;
+
+  SocketDgram_free (&sender);
+  SocketDgram_free (&receiver);
+}
+
 TEST (socketdgram_recvvall_receives_all_into_multiple_buffers)
 {
   setup_signals ();
@@ -1455,6 +1523,56 @@ TEST (socketdgram_getlocalport_returns_zero_before_bind)
   END_TRY;
 
   SocketDgram_free (&socket);
+}
+
+/* ==================== Debug Live Count Tests ==================== */
+
+TEST (socketdgram_debug_live_count_tracks_sockets)
+{
+  setup_signals ();
+
+  /* Get initial count */
+  int initial_count = SocketDgram_debug_live_count ();
+
+  /* Create some sockets */
+  SocketDgram_T sock1 = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (sock1);
+  ASSERT_EQ (initial_count + 1, SocketDgram_debug_live_count ());
+
+  SocketDgram_T sock2 = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (sock2);
+  ASSERT_EQ (initial_count + 2, SocketDgram_debug_live_count ());
+
+  SocketDgram_T sock3 = SocketDgram_new (AF_INET6, 0);
+  ASSERT_NOT_NULL (sock3);
+  ASSERT_EQ (initial_count + 3, SocketDgram_debug_live_count ());
+
+  /* Free sockets and verify count decreases */
+  SocketDgram_free (&sock1);
+  ASSERT_EQ (initial_count + 2, SocketDgram_debug_live_count ());
+
+  SocketDgram_free (&sock2);
+  ASSERT_EQ (initial_count + 1, SocketDgram_debug_live_count ());
+
+  SocketDgram_free (&sock3);
+  ASSERT_EQ (initial_count, SocketDgram_debug_live_count ());
+}
+
+TEST (socketdgram_debug_live_count_zero_on_cleanup)
+{
+  setup_signals ();
+
+  /* Get initial count (should be 0 if all tests clean up properly) */
+  int initial_count = SocketDgram_debug_live_count ();
+
+  /* Create and immediately free */
+  SocketDgram_T socket = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (socket);
+  ASSERT_EQ (initial_count + 1, SocketDgram_debug_live_count ());
+
+  SocketDgram_free (&socket);
+  ASSERT_NULL (socket);
+  ASSERT_EQ (initial_count, SocketDgram_debug_live_count ());
 }
 
 int

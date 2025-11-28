@@ -404,5 +404,14 @@ extern int SocketDgram_getlocalport (const T socket);
  */
 extern void SocketDgram_setcloexec (T socket, int enable);
 
+/**
+ * SocketDgram_debug_live_count - Get number of live datagram socket instances
+ * Returns: Number of currently allocated SocketDgram instances
+ * Thread-safe: Yes
+ * Note: Test/debug function for leak detection. Returns count of sockets
+ * that have been created but not yet freed.
+ */
+extern int SocketDgram_debug_live_count (void);
+
 #undef T
 #endif
