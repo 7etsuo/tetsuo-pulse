@@ -437,7 +437,7 @@ SocketDgram_getbroadcast (T socket)
       < 0)
     RAISE_MODULE_ERROR (SocketDgram_Failed);
 
-  return opt;
+  return opt ? 1 : 0; /* Normalize to 0 or 1 */
 }
 
 int
