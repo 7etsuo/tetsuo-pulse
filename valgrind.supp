@@ -118,6 +118,47 @@
    fun:__nss_*
 }
 
+# glibc resolver configuration allocation - this is allocated on first DNS
+# query and kept in global state. It's reported as "definitely lost" because
+# glibc doesn't free it at exit, but it's not a real leak - just glibc's
+# intentional design to keep resolver config cached. This affects glibc 2.31+.
+{
+   glibc_resolv_conf_allocate
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:__libc_alloc_buffer_allocate
+   ...
+   fun:__resolv_conf_allocate
+}
+
+{
+   glibc_resolv_conf_load
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   ...
+   fun:__resolv_conf_load
+}
+
+{
+   glibc_resolv_context
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   ...
+   fun:__resolv_context_get
+}
+
+{
+   glibc_res_vinit
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   ...
+   fun:__res_vinit
+}
+
 # =============================================================================
 # dlopen / dynamic linker suppressions
 # =============================================================================

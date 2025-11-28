@@ -102,13 +102,42 @@ jobs:
       - name: Run tests under Valgrind
         working-directory: build
         run: |
+          failed=0
           for test in test_*; do
             if [ -x "$test" ] && [ -f "$test" ]; then
               echo "=== Running $test under Valgrind ==="
-              valgrind --leak-check=full --track-fds=yes --error-exitcode=1 \
-                --suppressions=../valgrind.supp ./$test || exit 1
+              # Run Valgrind and capture output
+              valgrind --leak-check=full --track-fds=yes --error-exitcode=99 \
+                --suppressions=../valgrind.supp ./$test 2>&1 | tee valgrind_output.txt
+              valgrind_exit=${PIPESTATUS[0]}
+              
+              # Check for actual memory errors (exit code 99 means Valgrind found errors)
+              if [ $valgrind_exit -eq 99 ]; then
+                echo "ERROR: Valgrind detected memory errors in $test"
+                cat valgrind_output.txt
+                failed=1
+              fi
+              
+              # Also check for definitely lost memory (not suppressed)
+              if grep -q "definitely lost: [^0]" valgrind_output.txt; then
+                echo "ERROR: Memory leak detected in $test"
+                cat valgrind_output.txt
+                failed=1
+              fi
+              
+              # Check if the test itself failed (non-zero exit not from Valgrind)
+              if [ $valgrind_exit -ne 0 ] && [ $valgrind_exit -ne 99 ]; then
+                echo "ERROR: Test $test failed with exit code $valgrind_exit"
+                failed=1
+              fi
             fi
           done
+          
+          if [ $failed -ne 0 ]; then
+            echo "One or more tests failed under Valgrind"
+            exit 1
+          fi
+          echo "All Valgrind tests passed successfully"
 
   # macOS build (kqueue backend)
   macos:
@@ -239,7 +268,9 @@ jobs:
             --std=c11 \
             -I include \
             --inline-suppr \
-            src/ include/
+            src/ include/ 2>&1 | tee cppcheck-output.txt
+          echo "=== cppcheck output ==="
+          cat cppcheck-output.txt
 
       - name: Run clang-tidy
         run: |
