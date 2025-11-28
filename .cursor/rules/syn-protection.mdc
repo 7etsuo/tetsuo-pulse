@@ -1,0 +1,290 @@
+---
+description: SYN Flood Protection patterns and usage guidelines for the SocketSYNProtect module
+globs: ["**/SocketSYNProtect*", "**/SocketPool*accept*"]
+alwaysApply: false
+---
+
+# SYN Flood Protection Module
+
+This rule documents the SYN flood protection architecture and usage patterns.
+
+## Overview
+
+The `SocketSYNProtect` module provides comprehensive protection against SYN flood attacks through:
+
+1. **Connection Attempt Tracking** - Tracks connection attempts (not just established connections)
+2. **Sliding Window Counters** - Time-windowed rate measurement with smooth interpolation
+3. **Adaptive IP Scoring** - Reputation system that rewards good behavior and penalizes bad
+4. **Automatic Response Actions** - ALLOW, THROTTLE, CHALLENGE, or BLOCK based on score
+5. **Whitelist/Blacklist** - Manual override lists with CIDR support
+6. **Kernel Integration** - TCP_DEFER_ACCEPT for challenge mode
+
+## Architecture
+
+```
+                    ┌─────────────────────────────────────────┐
+                    │           SocketSYNProtect              │
+                    ├─────────────────────────────────────────┤
+                    │  ┌───────────┐  ┌──────────────────┐    │
+     accept() ─────►│  │ Attempt   │  │  IP Reputation   │    │
+                    │  │ Tracker   │  │  Scoring System  │    │
+                    │  │ (sliding  │  │  (adaptive       │    │
+                    │  │  window)  │  │   thresholds)    │    │
+                    │  └─────┬─────┘  └────────┬─────────┘    │
+                    │        │                 │              │
+                    │        └────────┬────────┘              │
+                    │                 ▼                       │
+                    │        ┌────────────────┐               │
+                    │        │ Action Engine  │               │
+                    │        │ ALLOW/THROTTLE │               │
+                    │        │ CHALLENGE/BLOCK│               │
+                    │        └───────┬────────┘               │
+                    │                │                        │
+                    └────────────────┼────────────────────────┘
+                                     ▼
+                              ┌──────────────┐
+                              │  Response    │
+                              │  - Accept    │
+                              │  - Defer     │
+                              │  - Reject    │
+                              └──────────────┘
+```
+
+## Key Types
+
+### Actions
+
+```c
+typedef enum SocketSYN_Action {
+    SYN_ACTION_ALLOW,      /* Normal accept */
+    SYN_ACTION_THROTTLE,   /* Accept with artificial delay */
+    SYN_ACTION_CHALLENGE,  /* TCP_DEFER_ACCEPT (require data) */
+    SYN_ACTION_BLOCK       /* Reject connection */
+} SocketSYN_Action;
+```
+
+### Reputation States
+
+```c
+typedef enum SocketSYN_Reputation {
+    SYN_REP_TRUSTED,       /* Whitelisted or proven good */
+    SYN_REP_NEUTRAL,       /* Unknown/new IP */
+    SYN_REP_SUSPECT,       /* Elevated attempt rate */
+    SYN_REP_HOSTILE        /* Attack pattern detected */
+} SocketSYN_Reputation;
+```
+
+## Usage Patterns
+
+### Basic Server Protection
+
+```c
+/* Create protection with custom config */
+SocketSYNProtect_Config config;
+SocketSYNProtect_config_defaults(&config);
+config.max_attempts_per_window = 30;
+config.block_duration_ms = 120000;
+
+SocketSYNProtect_T protect = SocketSYNProtect_new(arena, &config);
+
+/* Whitelist trusted networks */
+SocketSYNProtect_whitelist_add_cidr(protect, "10.0.0.0/8");
+SocketSYNProtect_whitelist_add_cidr(protect, "192.168.0.0/16");
+
+/* In accept loop */
+while (running) {
+    struct sockaddr_storage addr;
+    socklen_t addrlen = sizeof(addr);
+    
+    int fd = accept(server_fd, (struct sockaddr*)&addr, &addrlen);
+    if (fd < 0) continue;
+    
+    char client_ip[SOCKET_IP_MAX_LEN];
+    get_ip_string(&addr, client_ip, sizeof(client_ip));
+    
+    SocketSYN_Action action = SocketSYNProtect_check(protect, client_ip, NULL);
+    
+    if (action == SYN_ACTION_BLOCK) {
+        close(fd);
+        continue;
+    }
+    
+    if (action == SYN_ACTION_THROTTLE) {
+        usleep(100000);  /* 100ms delay */
+    }
+    
+    handle_client(fd);
+    SocketSYNProtect_report_success(protect, client_ip);
+}
+```
+
+### Pool Integration
+
+```c
+/* Attach to connection pool */
+SocketPool_set_syn_protection(pool, protect);
+
+/* Use protected accept */
+while (running) {
+    SocketSYN_Action action;
+    Socket_T client = SocketPool_accept_protected(pool, server, &action);
+    
+    if (client == NULL)
+        continue;  /* Blocked or would-block */
+    
+    if (action == SYN_ACTION_THROTTLE) {
+        /* Connection was throttled - maybe log it */
+    }
+    
+    handle_client(client);
+}
+```
+
+### Periodic Maintenance
+
+```c
+/* Call in event loop to clean up expired entries */
+SocketSYNProtect_cleanup(protect);
+
+/* Get statistics for monitoring */
+SocketSYNProtect_Stats stats;
+SocketSYNProtect_stats(protect, &stats);
+
+printf("Attempts: %lu, Blocked: %lu, Tracked IPs: %lu\n",
+       stats.total_attempts, stats.total_blocked, 
+       stats.current_tracked_ips);
+```
+
+## Configuration
+
+### Default Configuration Constants
+
+```c
+#define SOCKET_SYN_DEFAULT_WINDOW_MS          10000   /* 10 second window */
+#define SOCKET_SYN_DEFAULT_MAX_PER_WINDOW     50      /* 50 attempts/window/IP */
+#define SOCKET_SYN_DEFAULT_GLOBAL_PER_SEC     1000    /* 1000 global/sec */
+#define SOCKET_SYN_DEFAULT_MIN_SUCCESS_RATIO  0.3f    /* 30% success rate */
+#define SOCKET_SYN_DEFAULT_THROTTLE_DELAY_MS  100     /* 100ms throttle */
+#define SOCKET_SYN_DEFAULT_BLOCK_DURATION_MS  60000   /* 1 minute block */
+#define SOCKET_SYN_DEFAULT_DEFER_SEC          5       /* 5 second defer */
+#define SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS    100000  /* 100k IPs max */
+```
+
+### Score Thresholds
+
+- `score_throttle` (0.7): Score below this triggers THROTTLE
+- `score_challenge` (0.4): Score below this triggers CHALLENGE  
+- `score_block` (0.2): Score below this triggers BLOCK
+
+### Score Adjustments
+
+- `score_decay_per_sec` (0.01): Score recovery rate per second
+- `score_penalty_attempt` (0.02): Penalty per new attempt
+- `score_penalty_failure` (0.05): Penalty per failure
+- `score_reward_success` (0.05): Reward per successful connection
+
+## Implementation Details
+
+### Sliding Window Algorithm
+
+Uses two windows for smooth rate estimation:
+
+```c
+/* 
+ * current_window: accumulating now
+ * previous_window: completed, decaying
+ * 
+ * Effective rate = current + (previous * remaining_fraction)
+ */
+static uint32_t
+calculate_effective_attempts(SocketSYN_IPState *state, int64_t now_ms, 
+                             int window_ms)
+{
+    int64_t window_elapsed = now_ms - state->window_start_ms;
+    
+    if (window_elapsed >= window_ms) {
+        /* Rotate windows */
+        state->attempts_previous = state->attempts_current;
+        state->attempts_current = 0;
+        state->window_start_ms = now_ms;
+        window_elapsed = 0;
+    }
+    
+    float current_progress = (float)window_elapsed / window_ms;
+    float previous_weight = 1.0f - current_progress;
+    
+    return state->attempts_current + 
+           (uint32_t)(state->attempts_previous * previous_weight);
+}
+```
+
+### Memory Management
+
+- Hash table with LRU eviction for bounded memory
+- Configurable `max_tracked_ips` (default: 100,000)
+- Arena allocation or malloc supported
+
+### Thread Safety
+
+- All operations protected by internal mutex
+- Safe to share single instance across threads
+- Atomic statistics counters for lock-free reads
+
+## Integration with Kernel Options
+
+### TCP_DEFER_ACCEPT
+
+For CHALLENGE action, applies `TCP_DEFER_ACCEPT`:
+
+```c
+/* Set on listening socket or accepted socket */
+Socket_setdeferaccept(socket, 5);  /* 5 second timeout */
+```
+
+This delays `accept()` completion until client sends data, filtering SYN-only attacks.
+
+### Platform Support
+
+- **Linux**: `TCP_DEFER_ACCEPT` socket option
+- **BSD/macOS**: `SO_ACCEPTFILTER` with "dataready" filter
+
+## Exceptions
+
+- `SocketSYNProtect_Failed`: Raised on allocation or configuration errors
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `include/core/SocketSYNProtect.h` | Public API header |
+| `include/core/SocketSYNProtect-private.h` | Internal structures |
+| `src/core/SocketSYNProtect.c` | Core implementation |
+| `src/test/test_synprotect.c` | Unit tests |
+| `src/fuzz/fuzz_synprotect.c` | Fuzzing harness |
+
+## Testing
+
+```bash
+# Build and run tests
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+make test_synprotect
+./test_synprotect
+
+# Run with sanitizers
+cmake .. -DENABLE_SANITIZERS=ON
+make test_synprotect
+ASAN_OPTIONS=detect_leaks=1 ./test_synprotect
+```
+
+## Metrics
+
+The module integrates with `SocketMetrics` for observability:
+
+- `total_attempts`: Connection attempts checked
+- `total_allowed`: Attempts allowed
+- `total_throttled`: Attempts throttled
+- `total_challenged`: Attempts challenged
+- `total_blocked`: Attempts blocked
+- `current_tracked_ips`: Currently tracked unique IPs
+- `lru_evictions`: Number of LRU evictions

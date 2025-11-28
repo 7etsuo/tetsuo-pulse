@@ -139,6 +139,9 @@ struct T
   /* Rate limiting support */
   SocketRateLimit_T conn_limiter;   /**< Connection rate limiter (NULL if disabled) */
   SocketIPTracker_T ip_tracker;     /**< Per-IP connection tracker (NULL if disabled) */
+  
+  /* SYN flood protection */
+  SocketSYNProtect_T syn_protect;   /**< SYN flood protection (NULL if disabled) */
 };
 #undef T
 

@@ -137,6 +137,7 @@ set(LIB_SOURCES
     src/core/SocketTimer.c
     src/core/SocketRateLimit.c
     src/core/SocketIPTracker.c
+    src/core/SocketSYNProtect.c
     
     # Socket core (consolidated)
     src/socket/Socket.c
@@ -237,6 +238,8 @@ set(CORE_HEADERS
     include/core/SocketRateLimit.h
     include/core/SocketRateLimit-private.h
     include/core/SocketIPTracker.h
+    include/core/SocketSYNProtect.h
+    include/core/SocketSYNProtect-private.h
 )
 
 set(SOCKET_HEADERS
@@ -346,6 +349,7 @@ set(TEST_SOURCES
     test_ratelimit
     test_async
     test_coverage
+    test_synprotect
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
@@ -365,8 +369,8 @@ add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES})
 
 # Print test configuration
 message(STATUS "Test Suite Configuration:")
-message(STATUS "  Test files: 19")
-message(STATUS "  Total tests: 240+")
+message(STATUS "  Test files: 20")
+message(STATUS "  Total tests: 280+")
 message(STATUS "  Run with: make test (or ctest)")
 
 # Documentation generation (Doxygen)
@@ -465,6 +469,7 @@ if(ENABLE_FUZZING)
         fuzz_exception
         fuzz_async
         fuzz_connect
+        fuzz_synprotect
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)

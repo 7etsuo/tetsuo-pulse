@@ -3,6 +3,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketSYNProtect.h"
 #include "core/SocketUtil.h" /* For socket_error_buf in macros */
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
@@ -497,6 +498,61 @@ extern void SocketPool_release_ip (T pool, const char *ip);
  * Thread-safe: Yes
  */
 extern int SocketPool_ip_count (T pool, const char *ip);
+
+/* ============================================================================
+ * SYN Flood Protection
+ * ============================================================================ */
+
+/**
+ * SocketPool_set_syn_protection - Enable SYN flood protection for pool
+ * @pool: Pool instance
+ * @protect: SYN protection instance (NULL to disable)
+ *
+ * Thread-safe: Yes
+ *
+ * When enabled, SocketPool_accept_protected() will check with the
+ * protection module and apply appropriate actions (throttle, challenge,
+ * or block) before accepting connections.
+ *
+ * The protection module is NOT owned by the pool - caller must ensure
+ * it remains valid and must free it after the pool is freed.
+ */
+extern void SocketPool_set_syn_protection (T pool, SocketSYNProtect_T protect);
+
+/**
+ * SocketPool_get_syn_protection - Get current SYN protection module
+ * @pool: Pool instance
+ *
+ * Returns: Current SYN protection instance, or NULL if disabled
+ * Thread-safe: Yes
+ */
+extern SocketSYNProtect_T SocketPool_get_syn_protection (T pool);
+
+/**
+ * SocketPool_accept_protected - Accept with full SYN flood protection
+ * @pool: Pool instance
+ * @server: Server socket (listening, non-blocking)
+ * @action_out: Output - action taken (optional, may be NULL)
+ *
+ * Returns: New socket if allowed, NULL if blocked/would block
+ * Raises: SocketPool_Failed on actual errors (not protection blocking)
+ * Thread-safe: Yes
+ *
+ * Combines rate limiting, per-IP limits, and SYN protection into a
+ * single accept operation. Actions taken depend on SYN protection result:
+ *
+ * - SYN_ACTION_ALLOW: Accept normally (fastest path)
+ * - SYN_ACTION_THROTTLE: Accept after artificial delay (congestion control)
+ * - SYN_ACTION_CHALLENGE: Set TCP_DEFER_ACCEPT on socket (require data)
+ * - SYN_ACTION_BLOCK: Close connection immediately, return NULL
+ *
+ * If SYN protection is not enabled, behaves like SocketPool_accept_limited().
+ *
+ * Reports success/failure to SYN protection module automatically based on
+ * whether connection completes or fails.
+ */
+extern Socket_T SocketPool_accept_protected (T pool, Socket_T server,
+                                             SocketSYN_Action *action_out);
 
 #undef T
 #endif

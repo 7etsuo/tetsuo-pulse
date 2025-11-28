@@ -554,5 +554,107 @@ Socket_getusertimeout (T socket)
 #endif
 }
 
+/* ==================== SYN Flood Protection Options ==================== */
+
+void
+Socket_setdeferaccept (T socket, int timeout_sec)
+{
+  assert (socket);
+
+  /* Validate timeout */
+  if (timeout_sec < 0)
+    {
+      SOCKET_ERROR_MSG ("Invalid defer accept timeout: %d (must be >= 0)",
+                        timeout_sec);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+#if SOCKET_HAS_TCP_DEFER_ACCEPT
+  /* Linux: TCP_DEFER_ACCEPT takes timeout in seconds */
+  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
+                  SOCKET_TCP_DEFER_ACCEPT, &timeout_sec, sizeof (timeout_sec))
+      < 0)
+    {
+      SOCKET_ERROR_FMT ("Failed to set TCP_DEFER_ACCEPT (timeout_sec=%d)",
+                        timeout_sec);
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+#elif SOCKET_HAS_SO_ACCEPTFILTER
+  /* BSD/macOS: Use SO_ACCEPTFILTER with "dataready" filter */
+  if (timeout_sec > 0)
+    {
+      struct accept_filter_arg afa;
+      memset (&afa, 0, sizeof (afa));
+      strncpy (afa.af_name, "dataready", sizeof (afa.af_name) - 1);
+      if (setsockopt (SocketBase_fd (socket->base), SOL_SOCKET, SO_ACCEPTFILTER,
+                      &afa, sizeof (afa))
+          < 0)
+        {
+          SOCKET_ERROR_FMT ("Failed to set SO_ACCEPTFILTER dataready");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+    }
+  else
+    {
+      /* Disable: Remove accept filter by setting empty filter */
+      struct accept_filter_arg afa;
+      memset (&afa, 0, sizeof (afa));
+      /* Removing filter may fail if none set - ignore EINVAL */
+      if (setsockopt (SocketBase_fd (socket->base), SOL_SOCKET, SO_ACCEPTFILTER,
+                      &afa, sizeof (afa))
+              < 0
+          && errno != EINVAL)
+        {
+          SOCKET_ERROR_FMT ("Failed to clear SO_ACCEPTFILTER");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+    }
+#else
+  (void)timeout_sec;
+  SOCKET_ERROR_MSG ("TCP_DEFER_ACCEPT/SO_ACCEPTFILTER not supported on this "
+                    "platform");
+  RAISE_MODULE_ERROR (Socket_Failed);
+#endif
+}
+
+int
+Socket_getdeferaccept (T socket)
+{
+  assert (socket);
+
+#if SOCKET_HAS_TCP_DEFER_ACCEPT
+  int timeout_sec = 0;
+  socklen_t optlen = sizeof (timeout_sec);
+  if (getsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
+                  SOCKET_TCP_DEFER_ACCEPT, &timeout_sec, &optlen)
+      < 0)
+    {
+      SOCKET_ERROR_FMT ("Failed to get TCP_DEFER_ACCEPT");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  return timeout_sec;
+#elif SOCKET_HAS_SO_ACCEPTFILTER
+  /* BSD/macOS: Can only check if filter is set, not timeout */
+  struct accept_filter_arg afa;
+  socklen_t optlen = sizeof (afa);
+  memset (&afa, 0, sizeof (afa));
+  if (getsockopt (SocketBase_fd (socket->base), SOL_SOCKET, SO_ACCEPTFILTER,
+                  &afa, &optlen)
+      < 0)
+    {
+      if (errno == EINVAL)
+        return 0; /* No filter set */
+      SOCKET_ERROR_FMT ("Failed to get SO_ACCEPTFILTER");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+  /* Return 1 if filter is set (can't get actual timeout on BSD) */
+  return (afa.af_name[0] != '\0') ? 1 : 0;
+#else
+  SOCKET_ERROR_MSG ("TCP_DEFER_ACCEPT/SO_ACCEPTFILTER not supported on this "
+                    "platform");
+  RAISE_MODULE_ERROR (Socket_Failed);
+  return 0; /* Unreachable but silences compiler */
+#endif
+}
 
 #undef T

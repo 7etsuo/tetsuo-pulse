@@ -518,6 +518,38 @@ extern void Socket_shutdown (T socket, int how);
 extern void Socket_setcloexec (T socket, int enable);
 
 /* ============================================================================
+ * SYN Flood Protection Socket Options
+ * ============================================================================ */
+
+/**
+ * Socket_setdeferaccept - Enable TCP_DEFER_ACCEPT
+ * @socket: Listening socket
+ * @timeout_sec: Seconds to wait for data before completing accept
+ *               (0 to disable, max platform-specific)
+ *
+ * Delays accept() completion until client sends data, preventing
+ * SYN-only connections from consuming application resources.
+ * This is a key defense against SYN flood attacks.
+ *
+ * Linux: Uses TCP_DEFER_ACCEPT socket option
+ * BSD/macOS: Uses SO_ACCEPTFILTER with "dataready" filter
+ *
+ * Raises: Socket_Failed on error or if unsupported
+ * Thread-safe: Yes
+ */
+extern void Socket_setdeferaccept (T socket, int timeout_sec);
+
+/**
+ * Socket_getdeferaccept - Get TCP_DEFER_ACCEPT timeout
+ * @socket: Listening socket
+ *
+ * Returns: Current defer accept timeout in seconds, 0 if disabled
+ * Raises: Socket_Failed on error
+ * Thread-safe: Yes
+ */
+extern int Socket_getdeferaccept (T socket);
+
+/* ============================================================================
  * Timeout Configuration
  * ============================================================================ */
 
