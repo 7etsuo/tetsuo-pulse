@@ -329,7 +329,7 @@ sockettimer_skip_cancelled (SocketTimer_heap_T *heap)
  * Thread-safe: No (caller must hold heap->mutex)
  */
 static ssize_t
-sockettimer_find_in_heap (SocketTimer_heap_T *heap,
+sockettimer_find_in_heap (const SocketTimer_heap_T *heap,
                           const struct SocketTimer_T *timer)
 {
   size_t i;
@@ -636,7 +636,7 @@ SocketTimer_heap_peek (SocketTimer_heap_T *heap)
 int64_t
 SocketTimer_heap_peek_delay (const SocketTimer_heap_T *heap)
 {
-  struct SocketTimer_T *timer;
+  const struct SocketTimer_T *timer;
   int64_t now_ms;
   int64_t delay_ms;
 
@@ -730,7 +730,6 @@ SocketTimer_process_expired (SocketTimer_heap_T *heap)
 {
   int fired_count = 0;
   int64_t now_ms;
-  struct SocketTimer_T *timer;
 
   assert (heap);
 
@@ -738,7 +737,7 @@ SocketTimer_process_expired (SocketTimer_heap_T *heap)
 
   while (1)
     {
-      timer = SocketTimer_heap_pop (heap);
+      struct SocketTimer_T *timer = SocketTimer_heap_pop (heap);
       if (!timer)
         break;
 

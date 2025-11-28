@@ -61,6 +61,7 @@ struct ChunkHeader
 union header
 {
   struct ChunkHeader b;
+  // cppcheck-suppress unusedStructMember
   union align a;
 };
 

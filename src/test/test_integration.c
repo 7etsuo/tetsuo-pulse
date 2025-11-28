@@ -4,6 +4,8 @@
  * Tests complete server/client scenarios with Poll, Pool, DNS integration.
  */
 
+/* cppcheck-suppress-file constVariablePointer ; test result inspection */
+
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>

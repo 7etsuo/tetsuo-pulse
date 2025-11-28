@@ -265,7 +265,7 @@ void SocketEvent_register (SocketEventCallback callback, void *userdata);
  * @userdata: User data that was passed to register
  * Thread-safe: Yes
  */
-void SocketEvent_unregister (SocketEventCallback callback, void *userdata);
+void SocketEvent_unregister (SocketEventCallback callback, const void *userdata);
 
 /**
  * Event emission functions - Thread-safe

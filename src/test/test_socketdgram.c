@@ -4,6 +4,10 @@
  * Tests UDP sockets, multicast, broadcast, connected mode, and edge cases.
  */
 
+/* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */
+/* cppcheck-suppress-file unreachableCode ; END_TRY after break */
+/* cppcheck-suppress-file unreadVariable ; intentional test patterns */
+
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <pthread.h>

@@ -202,7 +202,7 @@ extern struct addrinfo *SocketDNS_getresult (T dns, Request_T req);
  * Returns: getaddrinfo() error code or 0 on success
  * Thread-safe: Yes
  */
-extern int SocketDNS_geterror (T dns, Request_T req);
+extern int SocketDNS_geterror (T dns, const struct SocketDNS_Request_T *req);
 
 /**
  * SocketDNS_request_settimeout - Override timeout for specific request

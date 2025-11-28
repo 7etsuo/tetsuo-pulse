@@ -400,14 +400,12 @@ Socket_setcongestion (T socket, const char *algorithm)
 int
 Socket_getcongestion (T socket, char *algorithm, size_t len)
 {
-  socklen_t optlen;
-
   assert (socket);
   assert (algorithm);
   assert (len > 0);
 
 #if SOCKET_HAS_TCP_CONGESTION
-  optlen = (socklen_t)len;
+  socklen_t optlen = (socklen_t)len;
   if (getsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
                   SOCKET_TCP_CONGESTION, algorithm, &optlen)
       < 0)
@@ -416,7 +414,6 @@ Socket_getcongestion (T socket, char *algorithm, size_t len)
     }
   return 0;
 #else
-  (void)optlen;
   return -1;
 #endif
 }
@@ -496,12 +493,11 @@ Socket_setfastopen (T socket, int enable)
 int
 Socket_getfastopen (T socket)
 {
-  int opt = 0;
-  socklen_t optlen = sizeof (opt);
-
   assert (socket);
 
 #if SOCKET_HAS_TCP_FASTOPEN
+  int opt = 0;
+  socklen_t optlen = sizeof (opt);
   if (getsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
                   SOCKET_TCP_FASTOPEN, &opt, &optlen)
       < 0)

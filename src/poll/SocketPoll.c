@@ -837,7 +837,6 @@ SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data)
 {
   int fd;
   unsigned hash;
-  SocketData *entry;
 
   assert (poll);
   assert (socket);
@@ -851,7 +850,7 @@ SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data)
     /* Check socket is in poll set BEFORE modifying backend.
      * This is required because kqueue's mod uses delete+add which would
      * silently succeed for sockets never added to the poll set. */
-    entry = find_socket_data_entry (poll, hash, socket);
+    SocketData *entry = find_socket_data_entry (poll, hash, socket);
     if (!entry)
       {
         SOCKET_ERROR_FMT ("Socket not in poll set (fd=%d)", fd);

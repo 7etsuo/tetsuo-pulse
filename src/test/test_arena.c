@@ -4,6 +4,8 @@
  * Covers allocation, disposal, clearing, and edge cases.
  */
 
+/* cppcheck-suppress-file constVariablePointer ; test allocation success */
+
 #include <assert.h>
 #include <limits.h>
 #include <stddef.h>

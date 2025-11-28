@@ -547,7 +547,7 @@ wrap_fd_as_socket (int newfd)
 static int
 try_add_socket_to_pool (T pool, Socket_T *sock)
 {
-  Connection_T conn = SocketPool_add (pool, *sock);
+  const Connection_T conn = SocketPool_add (pool, *sock);
   if (!conn)
     {
       Socket_free (sock);

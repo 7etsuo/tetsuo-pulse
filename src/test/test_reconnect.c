@@ -14,6 +14,14 @@
  * - Health check functionality
  */
 
+/* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */
+/* cppcheck-suppress-file shadowVariable ; intentional inner loop vars */
+/* cppcheck-suppress-file constVariable ; char arrays modified later */
+
+/* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */
+/* cppcheck-suppress-file shadowVariable ; intentional loop variable */
+/* cppcheck-suppress-file constVariable ; send buffers for Socket_send */
+
 #include "test/Test.h"
 #include "core/Except.h"
 #include "socket/Socket.h"

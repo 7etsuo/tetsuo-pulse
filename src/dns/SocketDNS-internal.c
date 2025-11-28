@@ -809,7 +809,7 @@ queue_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
  * Note: Does NOT unlock mutex - caller is responsible for cleanup
  */
 int
-check_queue_limit (struct SocketDNS_T *dns)
+check_queue_limit (const struct SocketDNS_T *dns)
 {
   return dns->queue_size >= dns->max_pending;
 }
@@ -1258,7 +1258,7 @@ invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 void
 process_single_request (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req,
-                        struct addrinfo *base_hints)
+                        const struct addrinfo *base_hints)
 {
   if (request_timed_out (dns, req))
     {
@@ -1289,13 +1289,14 @@ void *
 worker_thread (void *arg)
 {
   struct SocketDNS_T *dns = (T)arg;
-  struct SocketDNS_Request_T *req;
   struct addrinfo hints;
 
   initialize_addrinfo_hints (&hints);
 
   while (1)
     {
+      struct SocketDNS_Request_T *req;
+
       pthread_mutex_lock (&dns->mutex);
       req = wait_for_request (dns);
       pthread_mutex_unlock (&dns->mutex);

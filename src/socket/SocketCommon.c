@@ -285,7 +285,6 @@ SocketCommon_cidr_match (const char *ip_str, const char *cidr_str)
   int prefix_len;
   int cidr_family;
   int ip_family;
-  int i;
 
   assert (ip_str);
   assert (cidr_str);
@@ -323,7 +322,7 @@ SocketCommon_cidr_match (const char *ip_str, const char *cidr_str)
 
   {
     int addr_bytes = (ip_family == SOCKET_AF_INET) ? 4 : 16;
-    for (i = 0; i < addr_bytes; i++)
+    for (int i = 0; i < addr_bytes; i++)
       {
         if (ip[i] != network[i])
           return 0;
@@ -527,19 +526,22 @@ int
 SocketCommon_get_family (SocketBase_T base, bool raise_on_fail,
                          Except_T exc_type)
 {
-  int family = AF_UNSPEC;
-  socklen_t len = sizeof (family);
-
 #if SOCKET_HAS_SO_DOMAIN
-  if (getsockopt (SocketBase_fd (base), SOL_SOCKET, SO_DOMAIN, &family, &len)
-      == 0)
-    return family;
+  {
+    int family;
+    socklen_t opt_len = sizeof (family);
+    if (getsockopt (SocketBase_fd (base), SOL_SOCKET, SO_DOMAIN, &family,
+                    &opt_len)
+        == 0)
+      return family;
+  }
 #endif
 
   struct sockaddr_storage addr;
-  len = sizeof (addr);
+  socklen_t addr_len = sizeof (addr);
   memset (&addr, 0, sizeof (addr));
-  if (getsockname (SocketBase_fd (base), (struct sockaddr *)&addr, &len) == 0)
+  if (getsockname (SocketBase_fd (base), (struct sockaddr *)&addr, &addr_len)
+      == 0)
     return addr.ss_family;
 
   if (raise_on_fail)
@@ -853,13 +855,10 @@ socketcommon_perform_getaddrinfo (const char *host, const char *port_str,
                                   struct addrinfo **res, int use_exceptions,
                                   Except_T exception_type)
 {
-  int result;
-  const char *safe_host;
-
-  result = getaddrinfo (host, port_str, hints, res);
+  int result = getaddrinfo (host, port_str, hints, res);
   if (result != 0)
     {
-      safe_host = socketcommon_get_safe_host (host);
+      const char *safe_host = socketcommon_get_safe_host (host);
       SOCKET_ERROR_MSG ("Invalid host/IP address: %.*s (%s)",
                         SOCKET_ERROR_MAX_HOSTNAME, safe_host,
                         gai_strerror (result));
@@ -873,7 +872,7 @@ socketcommon_perform_getaddrinfo (const char *host, const char *port_str,
 static int
 socketcommon_find_matching_family (struct addrinfo *res, int socket_family)
 {
-  struct addrinfo *rp;
+  const struct addrinfo *rp;
 
   for (rp = res; rp != NULL; rp = rp->ai_next)
     {
@@ -1611,7 +1610,6 @@ common_multicast_operation (SocketBase_T base, const char *group,
                             Except_T exc_type)
 {
   struct addrinfo *res = NULL;
-  volatile int family;
 
   assert (base);
   assert (group);
@@ -1620,16 +1618,18 @@ common_multicast_operation (SocketBase_T base, const char *group,
 
   TRY
   {
-    family = SocketCommon_get_family (base, true, exc_type);
+    volatile int family = SocketCommon_get_family (base, true, exc_type);
 
     if (family == SOCKET_AF_INET)
       {
-        struct sockaddr_in *sin = (struct sockaddr_in *)res->ai_addr;
+        const struct sockaddr_in *sin
+            = (const struct sockaddr_in *)res->ai_addr;
         common_ipv4_multicast (base, sin->sin_addr, interface, op, exc_type);
       }
     else if (family == SOCKET_AF_INET6)
       {
-        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)res->ai_addr;
+        const struct sockaddr_in6 *sin6
+            = (const struct sockaddr_in6 *)res->ai_addr;
         common_ipv6_multicast (base, sin6->sin6_addr, op, exc_type);
       }
     else

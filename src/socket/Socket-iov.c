@@ -149,7 +149,6 @@ sendfile_transfer_loop (T socket, int file_fd, off_t *offset, size_t count)
 {
   char buffer[SOCKET_SENDFILE_FALLBACK_BUFFER_SIZE];
   volatile size_t total_sent = 0;
-  ssize_t read_bytes, sent_bytes;
 
   TRY
     while (total_sent < count)
@@ -157,7 +156,7 @@ sendfile_transfer_loop (T socket, int file_fd, off_t *offset, size_t count)
         size_t to_read = (count - total_sent < sizeof (buffer))
                              ? (count - total_sent)
                              : sizeof (buffer);
-        read_bytes = read (file_fd, buffer, to_read);
+        ssize_t read_bytes = read (file_fd, buffer, to_read);
         if (read_bytes <= 0)
           {
             if (read_bytes == 0)
@@ -167,7 +166,7 @@ sendfile_transfer_loop (T socket, int file_fd, off_t *offset, size_t count)
             return (size_t)-1;
           }
 
-        sent_bytes = Socket_send (socket, buffer, (size_t)read_bytes);
+        ssize_t sent_bytes = Socket_send (socket, buffer, (size_t)read_bytes);
         if (sent_bytes == 0)
           {
             /* Would block - return partial progress */
@@ -270,7 +269,6 @@ ssize_t
 Socket_sendfileall (T socket, int file_fd, off_t *offset, size_t count)
 {
   volatile size_t total_sent = 0;
-  ssize_t sent;
   off_t current_offset = offset ? *offset : 0;
 
   assert (socket);
@@ -283,7 +281,8 @@ Socket_sendfileall (T socket, int file_fd, off_t *offset, size_t count)
         off_t *current_offset_ptr = offset ? &current_offset : NULL;
         size_t remaining = count - total_sent;
 
-        sent = Socket_sendfile (socket, file_fd, current_offset_ptr, remaining);
+        ssize_t sent
+            = Socket_sendfile (socket, file_fd, current_offset_ptr, remaining);
         if (sent == 0)
           {
             /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
@@ -452,7 +451,7 @@ sendvall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
                     ssize_t *bytes_sent)
 {
   int active_iovcnt = 0;
-  struct iovec *active_iov
+  const struct iovec *active_iov
       = SocketCommon_find_active_iov (iov_copy, iovcnt, &active_iovcnt);
 
   if (active_iov == NULL)

@@ -14,6 +14,8 @@
  * - Error cases
  */
 
+/* cppcheck-suppress-file unreadVariable ; intentional test patterns */
+
 #include "test/Test.h"
 #include "core/Except.h"
 #include "socket/Socket.h"
@@ -269,6 +271,7 @@ TEST (he_async_connect_localhost)
         timeout = 100;
       if (timeout > 100)
         timeout = 100;
+      (void)timeout; /* Suppress unused - testing API, using fixed sleep */
 
       SocketDNS_check (dns);
       SocketHappyEyeballs_process (he);

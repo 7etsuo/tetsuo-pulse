@@ -10,6 +10,9 @@
  * - Socket bandwidth limiting
  */
 
+/* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */
+/* cppcheck-suppress-file redundantAssignment ; intentional test flow */
+
 #include <assert.h>
 #include <pthread.h>
 #include <string.h>

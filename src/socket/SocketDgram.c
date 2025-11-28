@@ -770,7 +770,6 @@ SocketDgram_sendall (T socket, const void *buf, size_t len)
 {
   const char *ptr = (const char *)buf;
   volatile size_t total_sent = 0;
-  ssize_t sent;
 
   assert (socket);
   assert (buf);
@@ -778,7 +777,8 @@ SocketDgram_sendall (T socket, const void *buf, size_t len)
 
   TRY while (total_sent < len)
   {
-    sent = SocketDgram_send (socket, ptr + total_sent, len - total_sent);
+    ssize_t sent
+        = SocketDgram_send (socket, ptr + total_sent, len - total_sent);
     if (sent == 0)
       return (ssize_t)total_sent;
     total_sent += (size_t)sent;
@@ -795,7 +795,6 @@ SocketDgram_recvall (T socket, void *buf, size_t len)
 {
   char *ptr = (char *)buf;
   volatile size_t total_received = 0;
-  ssize_t received;
 
   assert (socket);
   assert (buf);
@@ -803,7 +802,7 @@ SocketDgram_recvall (T socket, void *buf, size_t len)
 
   TRY while (total_received < len)
   {
-    received
+    ssize_t received
         = SocketDgram_recv (socket, ptr + total_received, len - total_received);
     if (received == 0)
       return (ssize_t)total_received;
@@ -822,7 +821,6 @@ SocketDgram_sendvall (T socket, const struct iovec *iov, int iovcnt)
   struct iovec *iov_copy = NULL;
   volatile size_t total_sent = 0;
   size_t total_len;
-  ssize_t sent;
 
   assert (socket);
   assert (iov);
@@ -835,12 +833,12 @@ SocketDgram_sendvall (T socket, const struct iovec *iov, int iovcnt)
   TRY while (total_sent < total_len)
   {
     int active_iovcnt = 0;
-    struct iovec *active_iov = SocketCommon_find_active_iov (iov_copy, iovcnt,
-                                                             &active_iovcnt);
+    const struct iovec *active_iov
+        = SocketCommon_find_active_iov (iov_copy, iovcnt, &active_iovcnt);
     if (active_iov == NULL)
       break;
 
-    sent = SocketDgram_sendv (socket, active_iov, active_iovcnt);
+    ssize_t sent = SocketDgram_sendv (socket, active_iov, active_iovcnt);
     if (sent == 0)
       {
         free (iov_copy);
@@ -864,7 +862,6 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
   struct iovec *iov_copy = NULL;
   volatile size_t total_received = 0;
   size_t total_len;
-  ssize_t received;
 
   assert (socket);
   assert (iov);
@@ -877,12 +874,13 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
   TRY while (total_received < total_len)
   {
     int active_iovcnt = 0;
-    struct iovec *active_iov = SocketCommon_find_active_iov (iov_copy, iovcnt,
-                                                             &active_iovcnt);
+    /* active_iov is non-const because recvv may update iov_base/iov_len */
+    struct iovec *active_iov
+        = SocketCommon_find_active_iov (iov_copy, iovcnt, &active_iovcnt);
     if (active_iov == NULL)
       break;
 
-    received = SocketDgram_recvv (socket, active_iov, active_iovcnt);
+    ssize_t received = SocketDgram_recvv (socket, active_iov, active_iovcnt);
     if (received == 0)
       {
         SocketCommon_sync_iov_progress (iov, iov_copy, iovcnt);

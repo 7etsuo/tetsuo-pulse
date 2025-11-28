@@ -10,6 +10,8 @@
  * 6. Socket_sendfile TLS fallback
  */
 
+/* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */
+
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
