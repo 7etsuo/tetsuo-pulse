@@ -286,6 +286,9 @@ SocketDgram_recvfrom (T socket, void *buf, size_t len, char *host,
   assert (buf);
   assert (len > 0);
 
+  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory */
+  memset (&addr, 0, sizeof (addr));
+
   received = perform_recvfrom (socket, buf, len, &addr, &addrlen);
   if (host && host_len > 0 && port)
     extract_sender_info (&addr, addrlen, host, host_len, port);
@@ -558,6 +561,9 @@ SocketDgram_isconnected (T socket)
   socklen_t len = sizeof (addr);
   assert (socket);
 
+  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory */
+  memset (&addr, 0, sizeof (addr));
+
   if (getpeername (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
                    &len)
       == 0)
@@ -574,6 +580,9 @@ SocketDgram_isbound (T socket)
 
   if (socket->base->localaddr != NULL)
     return 1;
+
+  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory */
+  memset (&addr, 0, sizeof (addr));
 
   if (getsockname (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
                    &len)

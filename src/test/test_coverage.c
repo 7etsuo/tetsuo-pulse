@@ -647,6 +647,7 @@ TEST (cov_socketpool_foreach)
   Arena_T arena = NULL;
   Socket_T server = NULL;
   Socket_T client = NULL;
+  volatile Socket_T accepted = NULL;
   volatile int port = 0;
   int callback_count = 0;
 
@@ -675,7 +676,6 @@ TEST (cov_socketpool_foreach)
 
     /* Accept */
     usleep (50000);
-    volatile Socket_T accepted = NULL;
     TRY { accepted = Socket_accept (server); }
     EXCEPT (Socket_Failed) { /* May fail */ }
     END_TRY;
@@ -694,6 +694,11 @@ TEST (cov_socketpool_foreach)
   }
   FINALLY
   {
+    /* Remove accepted from pool before freeing it */
+    if (accepted && pool)
+      SocketPool_remove (pool, (Socket_T)accepted);
+    if (accepted)
+      Socket_free ((Socket_T *)&accepted);
     if (pool)
       SocketPool_free (&pool);
     if (client)
