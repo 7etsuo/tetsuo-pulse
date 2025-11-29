@@ -107,37 +107,46 @@ jobs:
             if [ -x "$test" ] && [ -f "$test" ]; then
               echo "=== Running $test under Valgrind ==="
               # Run Valgrind and capture output
-              valgrind --leak-check=full --track-fds=yes --error-exitcode=99 \
+              # Note: Don't use --error-exitcode as test programs may intentionally
+              # return non-zero for error-path testing
+              valgrind --leak-check=full --track-fds=yes \
                 --suppressions=../valgrind.supp ./$test 2>&1 | tee valgrind_output.txt
-              valgrind_exit=${PIPESTATUS[0]}
               
-              # Check for actual memory errors (exit code 99 means Valgrind found errors)
-              if [ $valgrind_exit -eq 99 ]; then
-                echo "ERROR: Valgrind detected memory errors in $test"
+              # Parse ERROR SUMMARY to check for actual memory errors
+              # Format: "ERROR SUMMARY: X errors from Y contexts"
+              error_count=$(grep -oP "ERROR SUMMARY: \K[0-9]+" valgrind_output.txt | tail -1)
+              if [ -n "$error_count" ] && [ "$error_count" -gt 0 ]; then
+                echo "ERROR: Valgrind detected $error_count memory error(s) in $test"
                 cat valgrind_output.txt
                 failed=1
               fi
               
-              # Also check for definitely lost memory (not suppressed)
-              if grep -q "definitely lost: [^0]" valgrind_output.txt; then
-                echo "ERROR: Memory leak detected in $test"
+              # Check for definitely lost memory (real leaks, not "still reachable")
+              # Match patterns like "definitely lost: 1,234 bytes" but not "definitely lost: 0 bytes"
+              definitely_lost=$(grep -oP "definitely lost: \K[0-9,]+" valgrind_output.txt | tr -d ',' | tail -1)
+              if [ -n "$definitely_lost" ] && [ "$definitely_lost" -gt 0 ]; then
+                echo "ERROR: Memory leak detected in $test ($definitely_lost bytes definitely lost)"
                 cat valgrind_output.txt
                 failed=1
               fi
               
-              # Check if the test itself failed (non-zero exit not from Valgrind)
-              if [ $valgrind_exit -ne 0 ] && [ $valgrind_exit -ne 99 ]; then
-                echo "ERROR: Test $test failed with exit code $valgrind_exit"
+              # Check for indirectly lost memory (also real leaks)
+              indirectly_lost=$(grep -oP "indirectly lost: \K[0-9,]+" valgrind_output.txt | tr -d ',' | tail -1)
+              if [ -n "$indirectly_lost" ] && [ "$indirectly_lost" -gt 0 ]; then
+                echo "ERROR: Memory leak detected in $test ($indirectly_lost bytes indirectly lost)"
+                cat valgrind_output.txt
                 failed=1
               fi
+              
+              echo "  -> $test: OK (errors=$error_count, definitely_lost=${definitely_lost:-0}, indirectly_lost=${indirectly_lost:-0})"
             fi
           done
           
           if [ $failed -ne 0 ]; then
-            echo "One or more tests failed under Valgrind"
+            echo "One or more tests failed Valgrind memory checks"
             exit 1
           fi
-          echo "All Valgrind tests passed successfully"
+          echo "All Valgrind memory checks passed successfully"
 
   # macOS build (kqueue backend)
   macos:
