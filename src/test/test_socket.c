@@ -5435,10 +5435,10 @@ TEST (socketcommon_resolve_address_family_no_match)
   /* Resolve with use_exceptions=0 and require IPv6, but get IPv4 only */
   int result = SocketCommon_resolve_address ("127.0.0.1", 80, &hints, &res, Socket_Failed,
                                              AF_INET6, 0);
-  /* Should return -1 for no matching family */
+  /* Should return -1 for no matching family, and res is freed on error */
   ASSERT_EQ (-1, result);
-  if (res)
-    freeaddrinfo (res);
+  /* res is NULL after validation failure - the function frees it */
+  ASSERT_EQ (NULL, res);
 }
 
 TEST (socketcommon_set_option_successful)

@@ -837,7 +837,19 @@ SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
                             gai_strerror (gai_result));
           RAISE_DNS_ERROR (SocketDNS_Failed);
         }
-      return result;
+
+      /* Copy the result so all paths return consistently-allocated memory
+       * that should be freed with SocketCommon_free_addrinfo() */
+      struct addrinfo *copy = SocketCommon_copy_addrinfo (result);
+      freeaddrinfo (result);
+
+      if (!copy)
+        {
+          SOCKET_ERROR_MSG ("Failed to copy address info");
+          RAISE_DNS_ERROR (SocketDNS_Failed);
+        }
+
+      return copy;
     }
 
   /* Submit async request (no callback = polling mode) */
