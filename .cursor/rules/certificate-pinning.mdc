@@ -1,0 +1,81 @@
+---
+description: Certificate Pinning (SPKI SHA256) patterns and usage guidelines
+globs: src/tls/SocketTLSContext-pinning.c, include/tls/SocketTLSContext.h
+---
+
+# Certificate Pinning Patterns
+
+This rule documents the Certificate Pinning implementation using SPKI SHA256 hashes, adhering to OWASP Mobile Security guidelines.
+
+## 1. Overview
+
+The library implements SPKI (Subject Public Key Info) pinning. This method hashes the public key information rather than the entire certificate, allowing certificate renewal (with the same key) without breaking the pin.
+
+- **Algorithm**: SHA-256 hash of the DER-encoded SPKI.
+- **Storage**: Sorted array of 32-byte hashes attached to `SocketTLSContext`.
+- **Lookup**: Binary search (O(log n)) for efficient verification during handshake.
+
+## 2. Usage Patterns
+
+### Adding Pins
+Pins can be added via hex strings or extracted from certificate files.
+
+```c
+/* Add pin from hex string (e.g., from openssl output) */
+SocketTLSContext_add_pin_hex(ctx, "sha256//...");
+
+/* Add pin from certificate file */
+SocketTLSContext_add_pin_from_cert(ctx, "server.crt");
+```
+
+### Enforcement
+Pinning can be advisory (log warning) or mandatory (fail handshake).
+
+```c
+/* Enable strict enforcement (default: 0/disabled) */
+SocketTLSContext_set_pin_enforcement(ctx, 1);
+```
+
+### Verification
+Verification is integrated into the TLS handshake via `SocketTLSVerifyCallback`.
+
+## 3. Implementation Details
+
+### Data Structures
+The pinning context is stored within `SocketTLSContext_T`:
+
+```c
+typedef struct {
+    unsigned char hash[32];  /* SHA256 digest */
+} TLSCertPin;
+
+typedef struct {
+    TLSCertPin *pins;        /* Sorted array */
+    size_t count;
+    size_t capacity;
+    int enforce;
+} TLSContextPinning;
+```
+
+### Thread Safety
+- **Configuration**: Not thread-safe. Configure pins before sharing context across threads.
+- **Verification**: Read-only access during handshake is thread-safe.
+
+### Algorithm
+- **Insertion**: hashes are inserted in sorted order (using `memcmp`).
+- **Lookup**: `bsearch` is used to find a matching hash in the sorted array.
+
+## 4. Testing Requirements
+
+### Unit Testing
+- Verify adding valid/invalid hex strings.
+- Verify adding from valid/invalid cert files.
+- Verify handshake success/failure based on enforcement mode.
+- Verify certificate chain traversal (finding pin in intermediate/root).
+
+### Fuzz Testing
+- Use `fuzz_cert_pinning` to test:
+  - Hex string parsing.
+  - Binary hash handling.
+  - SPKI extraction from random data.
+  - Pin verification logic.

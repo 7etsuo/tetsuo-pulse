@@ -231,6 +231,7 @@ ctx_alloc_and_init (const SSL_METHOD *method, int is_server)
   init_stats_mutex (ctx);
   init_sni_certs (&ctx->sni_certs);
   init_alpn (&ctx->alpn);
+  tls_pinning_init (&ctx->pinning);
 
   return ctx;
 }
@@ -370,6 +371,13 @@ SocketTLSContext_free (T *ctx)
         {
           OPENSSL_cleanse (c->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
           c->tickets_enabled = 0;
+        }
+
+      /* Securely clear pinning data before freeing */
+      if (c->pinning.pins && c->pinning.count > 0)
+        {
+          OPENSSL_cleanse (c->pinning.pins,
+                           c->pinning.count * sizeof (TLSCertPin));
         }
 
       if (c->arena)
