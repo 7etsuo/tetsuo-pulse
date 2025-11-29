@@ -32,6 +32,8 @@ set(CMAKE_C_FLAGS "-Wall -Wextra -Werror -D_GNU_SOURCE -pthread -fPIC")
 ### Optional Features
 - TLS support: `-DENABLE_TLS=ON` (auto-detects OpenSSL/LibreSSL)
 - Poll backend: Auto-selected per platform (epoll/kqueue/poll)
+- Fuzzing: `-DENABLE_FUZZING=ON` (requires Clang, see Fuzzing section)
+- Sanitizers: `-DENABLE_SANITIZERS=ON` (ASan + UBSan)
 
 ## 1. TLS1.3 Hardening (CRITICAL)
 **ALWAYS** use the TLS1.3-only configuration defined in SocketTLSConfig.h:
@@ -80,12 +82,14 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 2. **Utilities**: `SocketUtil` (Logging, Metrics, Events, Error Handling), `SocketTimer` (Timers), `SocketRateLimit` (Token Bucket).
 3. **Base Abstraction**: `SocketCommon` (Shared base `SocketBase_T` for Socket/SocketDgram).
 4. **Core I/O**: `Socket` (TCP/Unix), `SocketDgram` (UDP), `SocketBuf` (Buffers), `SocketIO` (I/O helpers).
+   *   *Note*: `Socket.c` integrates core lifecycle, bind, accept, and state logic.
+   *   *Split Files*: `Socket-connect.c`, `Socket-iov.c`, `Socket-options.c` contain specialized logic.
 5. **DNS**: `SocketDNS` (Async DNS with worker threads).
 6. **Event System**: `SocketPoll` (epoll/kqueue/poll abstraction), `SocketAsync` (Async I/O integration).
 7. **Connection Helpers**: `SocketHappyEyeballs` (RFC 8305), `SocketReconnect` (Auto-reconnection with backoff).
-8. **Security**: `SocketSYNProtect` (SYN flood protection with reputation scoring), `SocketIPTracker` (Per-IP connection tracking).
-9. **Application**: `SocketPool` (Connection management with rate limiting and SYN protection integration).
-10. **TLS**: `SocketTLS` (TLS I/O), `SocketTLSContext` (Context management, SNI, ALPN, sessions).
+8. **Security**: `SocketSYNProtect` (SYN flood protection), `SocketIPTracker` (Per-IP limits).
+9. **Application**: `SocketPool` (Connection management).
+10. **TLS**: `SocketTLS` (TLS I/O), `SocketTLSContext` (Context management).
 
 ### Resource Management
 - **Acquisition Order**: Arena -> Server Socket -> Poll -> Timer -> Connection Pool -> Buffers.
@@ -166,13 +170,12 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
 
 ## 6. Module Specific Rules
 
-### SocketCommon (Base Abstraction)
-- **Purpose**: Shared functionality between `Socket` and `SocketDgram`.
-- **Functions**: `SocketCommon_new_base()`, `SocketCommon_free_base()`, address resolution, socket options.
-- **Pattern**: Both Socket_T and SocketDgram_T contain a `SocketBase_T base` pointer.
-
 ### Socket (TCP/Unix)
-- **Structure**: Contains `SocketBase_T base` + TLS fields (when `SOCKET_HAS_TLS` defined).
+- **Split Implementation**: 
+  - `Socket.c`: Core lifecycle (`new`, `free`), `bind`, `accept`, `listen`, state queries (`isconnected`, etc.), and Unix domain specifics.
+  - `Socket-connect.c`: Connection logic.
+  - `Socket-iov.c`: Scatter/gather I/O (`sendv`, `recvv`).
+  - `Socket-options.c`: Socket option getters/setters.
 - **DNS**: `Socket_bind`/`Socket_connect` may block on DNS. Use `SocketDNS` for non-blocking resolution.
 - **Unix Domain**: Support `AF_UNIX`. Prefer absolute paths. Handle stale socket files (unlink before bind).
 - **Lifecycle**: Use `Socket_new()`, `Socket_free()`. Track with `Socket_debug_live_count()`.
@@ -189,167 +192,70 @@ SSL_CTX_set_ciphersuites(ctx, SOCKET_TLS13_CIPHERSUITES);    /* Modern PFS suite
   - `SocketPoll_epoll.c` - Linux (epoll)
   - `SocketPoll_kqueue.c` - BSD/macOS (kqueue)
   - `SocketPoll_poll.c` - POSIX fallback (poll)
-- **Data Map**: Hash table mapping `Socket` -> `User Data` with `SOCKET_HASH_TABLE_SIZE` (1021) buckets.
+- **Data Map**: Hash table mapping `Socket` -> `User Data`.
 - **Hash Function**: Golden ratio multiplicative hash (`HASH_GOLDEN_RATIO = 2654435761u`).
 - **Default Timeout**: Use `SOCKET_POLL_TIMEOUT_USE_DEFAULT` (-2) to use poll's configured default.
-- **Timer Integration**: SocketTimer callbacks fire automatically during `SocketPoll_wait()`.
-- **Async I/O**: Access via `SocketPoll_get_async()` when available.
-
-### SocketPool (Connection Pooling)
-- **Lookup**: O(1) hash table lookup for connections (`SOCKET_HASH_TABLE_SIZE = 1021`).
-- **Thread Safety**: Protect pool operations with mutexes.
-- **Buffer Reuse**: Reuse `SocketBuf` instances to reduce allocation churn.
 
 ### SocketDNS (Async)
 - **Thread Pool**: Use worker threads for `getaddrinfo`.
 - **Signaling**: Use pipe to signal completion to `SocketPoll`.
 - **Ownership**: Caller owns `addrinfo` result and MUST call `freeaddrinfo`.
 - **Timeout**: Propagate via `SocketDNS_request_settimeout()`.
-- **Request Hash**: `SOCKET_DNS_REQUEST_HASH_SIZE` (1021) for O(1) lookup.
 
 ### SocketTimer (Timers)
 - **Min-Heap**: O(log n) insert/cancel, O(1) next-timer lookup.
-- **One-shot and Repeating**: `SocketTimer_add()` vs `SocketTimer_add_repeating()`.
 - **Integration**: Callbacks fire during `SocketPoll_wait()`.
-- **Monotonic Clock**: Uses `CLOCK_MONOTONIC` for immune-to-clock-change timing.
-- **Cancel Safety**: Safe to cancel already-fired or cancelled timers; do NOT cancel from callback.
+- **Monotonic Clock**: Uses `CLOCK_MONOTONIC`.
 
 ### SocketRateLimit (Token Bucket)
 - **Algorithm**: Token bucket for connection rate and bandwidth limiting.
 - **Thread-Safe**: All operations protected by internal mutex.
-- **Arena or Malloc**: `SocketRateLimit_new(arena, rate, bucket)` - NULL arena uses malloc.
 - **Non-Blocking**: `SocketRateLimit_try_acquire()` returns immediately.
-- **Wait Calculation**: `SocketRateLimit_wait_time_ms()` for event loop integration.
 
 ### SocketHappyEyeballs (RFC 8305)
 - **Dual-Stack Racing**: Races IPv6 and IPv4 connections for fastest result.
 - **State Machine**: `IDLE -> RESOLVING -> CONNECTING -> CONNECTED | FAILED | CANCELLED`.
-- **Configuration**: `SocketHE_Config_T` with customizable delays/timeouts.
-- **Sync API**: `SocketHappyEyeballs_connect(host, port, config)` - blocking convenience.
 - **Async API**: `SocketHappyEyeballs_start()` / `_process()` / `_poll()` / `_result()` for event loops.
-- **Default Delays**: 250ms first attempt delay, 5s per-attempt timeout, 30s total timeout.
 
 ### SocketReconnect (Auto-Reconnection)
 - **State Machine**: `DISCONNECTED -> CONNECTING -> CONNECTED -> BACKOFF -> CIRCUIT_OPEN`.
-- **Exponential Backoff**: Configurable initial delay, max delay, multiplier, jitter.
-- **Circuit Breaker**: Opens after consecutive failures, half-open probe after timeout.
-- **Health Monitoring**: Configurable health checks with custom callback support.
-- **Policy Configuration**: `SocketReconnect_Policy_T` structure for all parameters.
-- **I/O Passthrough**: `SocketReconnect_send/recv` auto-reconnects on error.
-- **Event Loop**: `SocketReconnect_pollfd()`, `_process()`, `_tick()`, `_next_timeout_ms()`.
+- **Backoff**: Configurable initial delay, max delay, multiplier, jitter.
+- **Circuit Breaker**: Opens after consecutive failures.
 
 ### SocketTLS (TLS Operations)
 - **TLS1.3 Only**: Strict modern security (see TLSConfig.h).
-- **Handshake States**: `TLS_HANDSHAKE_NOT_STARTED | IN_PROGRESS | WANT_READ | WANT_WRITE | COMPLETE | ERROR`.
 - **Non-Blocking**: `SocketTLS_handshake()` returns state for poll integration.
-- **Blocking Helper**: `SocketTLS_handshake_loop(socket, timeout_ms)` for simple use.
-- **Verification Modes**: `TLS_VERIFY_NONE | PEER | FAIL_IF_NO_PEER_CERT | CLIENT_ONCE`.
-- **TLS Exceptions**: `SocketTLS_Failed`, `SocketTLS_HandshakeFailed`, `SocketTLS_VerifyFailed`, `SocketTLS_ProtocolError`, `SocketTLS_ShutdownFailed`.
-- **Info Functions**: `SocketTLS_get_cipher()`, `_get_version()`, `_get_alpn_selected()`, `_is_session_reused()`.
-
-### SocketTLSContext (Context Management)
-- **Conditional Compilation**: Only available when `SOCKET_HAS_TLS` defined.
-- **SNI Support**: Multiple certificates per context with `SocketTLSContext_add_sni_cert()`.
-- **ALPN**: Protocol negotiation via `SocketTLSContext_set_alpn()`.
-- **Session Management**: Session cache and tickets for resumption.
-- **Verification**: Custom verify callbacks, CRL/OCSP support.
+- **Exceptions**: `SocketTLS_Failed`, `SocketTLS_HandshakeFailed`, `SocketTLS_VerifyFailed`.
 
 ### SocketSYNProtect (SYN Flood Protection)
 - **Purpose**: Prevent SYN flood DoS attacks by tracking connection attempts before accept().
 - **Actions**: `SYN_ACTION_ALLOW`, `SYN_ACTION_THROTTLE`, `SYN_ACTION_CHALLENGE`, `SYN_ACTION_BLOCK`.
-- **Reputation States**: `SYN_REP_TRUSTED`, `SYN_REP_NEUTRAL`, `SYN_REP_SUSPECT`, `SYN_REP_HOSTILE`.
-- **Sliding Window**: Tracks attempts per IP over configurable time window with interpolation.
-- **Reputation Scoring**: Adaptive 0.0-1.0 score with decay, penalty, and reward adjustments.
-- **Data Structures**: Hash table with LRU eviction, separate whitelist (CIDR support) and blacklist (with expiry).
-- **Kernel Integration**: `TCP_DEFER_ACCEPT` (Linux) / `SO_ACCEPTFILTER` (BSD) for CHALLENGE action via `Socket_setdeferaccept()`.
-- **Thread Safety**: All operations protected by internal mutex.
-- **Pool Integration**: Use `SocketPool_set_syn_protection()` and `SocketPool_accept_protected()`.
-- **Lifecycle**: `SocketSYNProtect_new()`, `SocketSYNProtect_free()`, `SocketSYNProtect_cleanup()` (call periodically).
-- **Configuration**: `SocketSYNProtect_Config` with tunable window, thresholds, delays, and score rates.
-- **Statistics**: `SocketSYNProtect_Stats` for monitoring attempts, actions, and tracked IPs.
-
-### SocketIPTracker (Per-IP Connection Tracking)
-- **Purpose**: Track concurrent connections per IP to prevent single-source resource exhaustion.
-- **O(1) Operations**: Hash table for fast track/release/count operations.
-- **Thread Safety**: All operations protected by internal mutex.
-- **Auto-Cleanup**: Zero-count entries automatically removed.
-- **IPv4/IPv6**: Supports both address types via string representation.
-- **Lifecycle**: `SocketIPTracker_new(arena, max_per_ip)`, `SocketIPTracker_free()`.
-- **Core Operations**: `SocketIPTracker_track()` returns 1 if allowed, 0 if limit reached.
-- **Release**: `SocketIPTracker_release()` decrements count when connection closes.
-- **Query**: `SocketIPTracker_count()`, `SocketIPTracker_total()`, `SocketIPTracker_unique_ips()`.
+- **Reputation Scoring**: Adaptive 0.0-1.0 score with decay.
+- **Kernel Integration**: `TCP_DEFER_ACCEPT` (Linux) / `SO_ACCEPTFILTER` (BSD).
 
 ### SocketAsync (Async I/O)
-- **Purpose**: Non-blocking I/O using platform-optimized async mechanisms.
 - **Backends**: io_uring (Linux 5.1+), kqueue AIO (BSD/macOS), edge-triggered fallback.
-- **Integration**: Access via `SocketPoll_get_async()` when available.
-- **Callback-Based**: `SocketAsync_Callback` invoked on completion from `SocketPoll_wait()` context.
-- **Operations**: `SocketAsync_send()`, `SocketAsync_recv()`, `SocketAsync_cancel()`.
-- **Flags**: `ASYNC_FLAG_ZERO_COPY` for sendfile/splice, `ASYNC_FLAG_URGENT` for priority.
-- **Fallback Mode**: Check `SocketAsync_is_available()` - if 0, use regular Socket_send/recv.
-- **Backend Query**: `SocketAsync_backend_name()` returns "io_uring", "kqueue", or "edge-triggered".
+- **Integration**: Access via `SocketPoll_get_async()`.
+- **Operations**: `SocketAsync_send()`, `SocketAsync_recv()`.
 
-### SocketIO (Internal I/O Abstraction)
-- **Purpose**: Internal helper for TLS-aware I/O routing (not public API).
-- **TLS Routing**: `socket_send_internal()`, `socket_recv_internal()` route through SSL when enabled.
-- **Scatter/Gather**: `socket_sendv_internal()`, `socket_recvv_internal()` for iovec operations.
-- **TLS State**: `socket_is_tls_enabled()`, `socket_tls_want_read()`, `socket_tls_want_write()`.
-- **Error Helpers**: `socketio_is_wouldblock()`, `socketio_is_connection_closed_send/recv()`.
+## 7. Fuzzing and Testing
 
-### SocketBuf (Circular Buffer)
-- **Purpose**: Efficient buffering for network I/O with circular buffer implementation.
-- **O(1) Operations**: `SocketBuf_available()`, `SocketBuf_space()`, `SocketBuf_consume()`, `SocketBuf_written()`.
-- **Zero-Copy**: `SocketBuf_readptr()`, `SocketBuf_writeptr()` for direct memory access.
-- **Dynamic Resize**: `SocketBuf_reserve()` doubles capacity or sets to min_space.
-- **Security**: `SocketBuf_secureclear()` zeros memory for sensitive data (passwords, keys).
-- **Invariant Checking**: `SocketBuf_check_invariants()` for runtime validation.
-- **Arena Integration**: Memory freed when arena is disposed, not individually.
+### Fuzzing
+- **Enable**: `cmake .. -DENABLE_FUZZING=ON -DCMAKE_BUILD_TYPE=Debug` (requires Clang).
+- **Scripts**: Use `scripts/run_fuzz_parallel.sh` for massive parallel fuzzing.
+- **Corpus**: Stored in `src/fuzz/corpus/`.
+- **Targets**: 20+ harnesses covering core, socket, dns, and tls modules.
 
-### Arena (Memory Management)
-- **Purpose**: Region-based memory allocator for related object lifetimes.
-- **Allocation**: `Arena_alloc()`, `Arena_calloc()` with file/line tracking.
-- **Bulk Free**: `Arena_dispose()` frees all allocations at once.
-- **Chunk Reuse**: Free chunk cache with `MAX_FREE_CHUNKS` (10) for efficiency.
-- **Thread Safety**: Mutex-protected chunk allocation.
-- **Alignment**: Uses `union align` for proper alignment of all data types.
-- **Overflow Protection**: Validates sizes before calculations.
-
-### Except (Exception Handling)
-- **Purpose**: setjmp/longjmp-based exception system following CII patterns.
-- **Macros**: `TRY`, `EXCEPT(e)`, `FINALLY`, `END_TRY`, `RAISE(e)`, `RERAISE`.
-- **Thread-Local Stack**: `Except_stack` is thread-local for multi-threaded safety.
-- **States**: `Except_entered`, `Except_raised`, `Except_handled`, `Except_finalized`.
-- **Best Practice**: Declare variables used across try/except as `volatile`.
-
-## 7. Naming Conventions
-- **Types**: `ModuleName_T` (e.g., `Socket_T`, `Arena_T`, `SocketHE_T`, `SocketReconnect_T`).
-- **Functions**: `Module_Verb` (e.g., `Socket_bind`, `Arena_alloc`, `SocketHappyEyeballs_connect`).
-- **Private**: `static` functions, lower_snake_case (e.g., `socket_hash`, `translate_events`).
-- **Constants**: `MODULE_NAME` prefix, ALL_CAPS (e.g., `SOCKET_MAX_CONNECTIONS`, `ARENA_CHUNK_SIZE`).
-- **State Enums**: `STATE_NAME` pattern with module prefix (e.g., `HE_STATE_CONNECTING`, `RECONNECT_BACKOFF`).
-- **Exception Types**: `Module_ErrorType` (e.g., `Socket_Failed`, `SocketTLS_HandshakeFailed`).
-- **Callbacks**: `Module_Callback` or `ModuleCallback` (e.g., `SocketReconnect_Callback`, `SocketTimerCallback`).
-
-### Module Exception Naming
-**ALWAYS** declare module exceptions as `const Except_T`:
-```c
-extern const Except_T Socket_Failed;          /* General failure */
-extern const Except_T Socket_Closed;          /* Connection closed */
-extern const Except_T SocketTLS_Failed;       /* TLS operation failure */
-extern const Except_T SocketHE_Failed;        /* Happy Eyeballs failure */
-extern const Except_T SocketSYNProtect_Failed;/* SYN protection failure */
-extern const Except_T SocketIPTracker_Failed; /* IP tracker failure */
-extern const Except_T SocketAsync_Failed;     /* Async I/O failure */
-extern const Except_T SocketBuf_Failed;       /* Buffer operation failure */
-```
+### Testing Rules
+- **Sanitizers**: All tests MUST pass with AddressSanitizer (`ASan`) and UndefinedBehaviorSanitizer (`UBSan`).
+- **Live Count**: Verify `Socket_debug_live_count() == 0` at end of tests.
+- **Async Tests**: Do not wait indefinitely; verify API calls and use `SocketDNS_cancel` for cleanup.
 
 ## 8. Platform Requirements
 - **Target**: Linux/POSIX (primary), BSD/macOS (supported).
 - **C Standard**: C11 with GNU extensions (`_GNU_SOURCE`).
-- **Threads**: `pthread` support required.
-- **IPv6**: Kernel must support IPv6 (dual-stack used).
 - **Poll Backends**: epoll (Linux), kqueue (BSD/macOS), poll (POSIX fallback).
-- **TLS**: OpenSSL 1.1.1+ or LibreSSL (optional, `-DENABLE_TLS=ON`).
+- **TLS**: OpenSSL 1.1.1+ or LibreSSL.
 
 ## 9. State Machine Pattern
 
@@ -368,20 +274,10 @@ typedef enum
 ```
 
 **Modules Using State Machines:**
-- `SocketHappyEyeballs` - `SocketHE_State` (IDLE, RESOLVING, CONNECTING, CONNECTED, FAILED, CANCELLED)
-- `SocketReconnect` - `SocketReconnect_State` (DISCONNECTED, CONNECTING, CONNECTED, BACKOFF, CIRCUIT_OPEN)
-- `SocketTLS` - `TLSHandshakeState` (NOT_STARTED, IN_PROGRESS, WANT_READ, WANT_WRITE, COMPLETE, ERROR)
-- `SocketSYNProtect` - `SocketSYN_Reputation` (TRUSTED, NEUTRAL, SUSPECT, HOSTILE) for IP reputation tracking
-
-**State Machine Integration Pattern:**
-```c
-while (Module_state(ctx) != STATE_COMPLETE && Module_state(ctx) != STATE_FAILED)
-{
-    int timeout = Module_next_timeout_ms(ctx);
-    SocketPoll_wait(poll, &events, timeout);
-    Module_process(ctx);  /* Advance state machine */
-}
-```
+- `SocketHappyEyeballs`
+- `SocketReconnect`
+- `SocketTLS`
+- `SocketSYNProtect`
 
 ## 10. Callback Pattern
 
@@ -396,16 +292,15 @@ Module_set_callback(T ctx, ModuleCallback cb, void *userdata);
 ```
 
 **Modules Using Callbacks:**
-- `SocketTimer` - `SocketTimerCallback` for timer expiry
-- `SocketReconnect` - `SocketReconnect_Callback` for state changes, `SocketReconnect_HealthCheck` for health
-- `SocketLog` - `SocketLogCallback` for custom logging
-- `SocketEvent` - `SocketEventCallback` for connection/DNS events
-- `SocketAsync` - `SocketAsync_Callback` for async I/O completion
+- `SocketTimer`
+- `SocketReconnect`
+- `SocketLog`
+- `SocketEvent`
+- `SocketAsync`
 
 **Callback Safety Rules:**
 - **NEVER** call `Module_free()` from within its own callback.
 - Callbacks execute in the thread that calls `process()` or `SocketPoll_wait()`.
-- Keep callbacks short; defer heavy work to avoid blocking the event loop.
 
 ## 11. Bandwidth Limiting
 
@@ -421,63 +316,14 @@ if (n == 0) {
     /* Rate limited - wait before retry */
     int64_t wait = Socket_bandwidth_wait_ms(socket, len);
 }
-
-/* Query limit */
-size_t limit = Socket_getbandwidth(socket);
 ```
 
-**Integration with Event Loop:**
-```c
-int timeout = (int)Socket_bandwidth_wait_ms(socket, pending_bytes);
-SocketPoll_wait(poll, &events, timeout);
-```
-
-## 12. Configuration Override Pattern
-
-All configuration constants use compile-time override protection:
-
-```c
-/* In SocketConfig.h or module headers */
-#ifndef SOCKET_MAX_CONNECTIONS
-#define SOCKET_MAX_CONNECTIONS 10000UL
-#endif
-
-#ifndef SOCKET_DEFAULT_CONNECT_TIMEOUT_MS
-#define SOCKET_DEFAULT_CONNECT_TIMEOUT_MS 30000
-#endif
-```
-
-**Override at compile time:**
-```bash
-cmake .. -DCMAKE_C_FLAGS="-DSOCKET_MAX_CONNECTIONS=50000"
-```
-
-**Common Configuration Groups:**
-- `SOCKET_*` - General socket limits and defaults
-- `ARENA_*` - Memory arena configuration
-- `SOCKETBUF_*` - Buffer sizes and limits
-- `SOCKET_DNS_*` - DNS resolver configuration
-- `SOCKET_RECONNECT_*` - Reconnection policy defaults
-- `SOCKET_HE_*` - Happy Eyeballs timing defaults
-- `SOCKET_TLS_*` - TLS buffer sizes and limits
-- `SOCKET_SYN_*` - SYN flood protection defaults (window, thresholds, delays)
-- `POLL_*` - Poll backend configuration
-
-## 13. Debugging Patterns
+## 12. Debugging Patterns
 
 ### Live Socket Count Tracking
 Use `SocketLiveCount` for leak detection in tests:
 
 ```c
-/* In SocketCommon.h - shared tracker pattern */
-struct SocketLiveCount
-{
-  int count;
-  pthread_mutex_t mutex;
-};
-
-#define SOCKETLIVECOUNT_STATIC_INIT { 0, PTHREAD_MUTEX_INITIALIZER }
-
 /* Usage in modules */
 static struct SocketLiveCount socket_live_count = SOCKETLIVECOUNT_STATIC_INIT;
 
@@ -491,34 +337,7 @@ SocketLiveCount_decrement(&socket_live_count);
 int Socket_debug_live_count(void);
 ```
 
-### Thread-Local Error Buffer
-All modules share a single thread-local error buffer:
-
-```c
-/* Declared in SocketUtil.h, defined in SocketUtil.c */
-extern __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE];
-extern __thread int socket_last_errno;
-
-/* Access last error */
-const char *Socket_GetLastError(void);
-int Socket_geterrno(void);
-SocketErrorCode Socket_geterrorcode(void);
-```
-
-### Monotonic Time Utilities
-**ALWAYS** use monotonic time for elapsed measurements:
-
-```c
-/* From SocketUtil.h */
-int64_t Socket_get_monotonic_ms(void);
-
-/* Usage for timeouts */
-int64_t start = Socket_get_monotonic_ms();
-/* ... operation ... */
-int64_t elapsed = Socket_get_monotonic_ms() - start;
-```
-
-## 14. Hash Utilities
+## 13. Hash Utilities
 
 Centralized hash functions in `SocketUtil.h`:
 
@@ -528,213 +347,6 @@ unsigned socket_util_hash_fd(int fd, unsigned table_size);
 
 /* Hash pointer (for opaque handle lookups) */
 unsigned socket_util_hash_ptr(const void *ptr, unsigned table_size);
-
-/* Hash unsigned integer (for request IDs) */
-unsigned socket_util_hash_uint(unsigned value, unsigned table_size);
 ```
 
 **Golden Ratio Constant**: `HASH_GOLDEN_RATIO = 2654435761u` (2^32 * (sqrt(5)-1)/2)
-
-## 15. Testing Rules and Edge Cases (CRITICAL)
-
-All tests MUST pass with AddressSanitizer and LeakSanitizer enabled:
-```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
-ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:halt_on_error=1 ctest --output-on-failure
-```
-
-### Socket API Edge Cases
-
-#### AF_UNSPEC is Invalid for socket()
-- **NEVER** use `AF_UNSPEC` (0) as the domain argument to `socket()` - it will fail with `EAFNOSUPPORT`
-- `AF_UNSPEC` is ONLY valid for `getaddrinfo()` hints to indicate "any address family"
-- For socket creation, use `AF_INET`, `AF_INET6`, or `AF_UNIX` explicitly
-```c
-/* BAD - will fail with errno 97 (EAFNOSUPPORT) */
-int fd = socket(AF_UNSPEC, SOCK_STREAM, 0);  /* WRONG! */
-
-/* GOOD - use specific address family */
-int fd = socket(AF_INET, SOCK_STREAM, 0);    /* IPv4 */
-int fd = socket(AF_INET6, SOCK_STREAM, 0);   /* IPv6 */
-```
-
-#### Port 0 is Valid in POSIX
-- Port 0 tells the kernel to assign an available ephemeral port
-- To test "invalid port", use `-1` (negative), not `0`
-```c
-/* BAD - port 0 is valid, kernel assigns port */
-ASSERT_RAISES(Socket_bind(sock, "127.0.0.1", 0));  /* WRONG - won't raise! */
-
-/* GOOD - negative port is invalid */
-ASSERT_RAISES(Socket_bind(sock, "127.0.0.1", -1)); /* Will raise Socket_Failed */
-```
-
-#### Socket Creation Before DNS Resolution
-- When creating sockets for async connect, you cannot know the address family until DNS resolves
-- Use `AF_INET` as default for pool sockets (most common case)
-- Be aware IPv6-only hosts may require `AF_INET6` sockets after DNS resolution
-
-### TRY/EXCEPT Exception Handling Edge Cases
-
-#### Variables Must Be volatile Across setjmp/longjmp
-- Any variable modified inside a TRY block and used after EXCEPT/FINALLY **MUST** be `volatile`
-- GCC warns about this with `-Wclobbered` (enabled by `-Wall`)
-```c
-/* BAD - 'i' may be clobbered by longjmp */
-TRY
-{
-  for (int i = 0; i < 10; i++)  /* WRONG - not volatile */
-    do_something(i);
-}
-EXCEPT(Some_Error) { /* i is undefined here */ }
-END_TRY;
-
-/* GOOD - volatile preserves value across longjmp */
-volatile int i;
-TRY
-{
-  for (i = 0; i < 10; i++)
-    do_something(i);
-}
-EXCEPT(Some_Error) { /* i is safe to use */ }
-END_TRY;
-```
-
-#### Cleanup in All Code Paths
-- Resources allocated before TRY must be freed in ALL paths (success, exception, finally)
-- Initialize pointers to NULL before TRY for safe cleanup
-```c
-Socket_T socket = NULL;  /* Initialize before TRY */
-Arena_T arena = Arena_new();
-
-TRY
-{
-  socket = Socket_new(AF_INET, SOCK_STREAM, 0);
-  /* ... operations ... */
-}
-EXCEPT(Socket_Failed)
-{
-  /* Exception path - cleanup partial state */
-  if (socket)
-    Socket_free(&socket);
-}
-END_TRY;
-
-/* Normal cleanup - may be reached after EXCEPT or success */
-if (socket)
-  Socket_free(&socket);
-Arena_dispose(&arena);
-```
-
-### Async Operation Testing
-
-#### DNS Requests Must Be Cancelled
-- When testing async DNS/connect, cancel pending requests before freeing resources
-- Failure to cancel causes memory leaks (request context, socket, arena chunks)
-```c
-SocketDNS_Request_T req = NULL;
-Socket_T socket = NULL;
-
-TRY
-{
-  int result = SocketPool_prepare_connection(pool, dns, host, port, &socket, &req);
-  /* ... test assertions ... */
-  
-  /* CRITICAL: Cancel DNS request before cleanup */
-  if (req)
-    SocketDNS_cancel(dns, req);
-}
-EXCEPT(SocketPool_Failed)
-{
-  if (socket)
-    Socket_free(&socket);
-}
-END_TRY;
-
-if (socket)
-  Socket_free(&socket);
-```
-
-#### Async Tests Should Not Wait for Completion
-- Async operations require event loop integration to complete properly
-- Unit tests should verify the API can be called, not wait for async completion
-- Use unreachable addresses (RFC 5737 TEST-NET: `192.0.2.x`) for immediate failure
-```c
-/* GOOD - verify API exists without waiting for async completion */
-TRY
-{
-  SocketDNS_Request_T req = SocketPool_connect_async(pool, "192.0.2.1", 80, callback, NULL);
-  (void)req;  /* Don't wait - just verify no crash */
-}
-EXCEPT(SocketPool_Failed) { /* Expected - DNS/connect may fail */ }
-END_TRY;
-```
-
-### Memory Leak Prevention
-
-#### Initialize Arrays Before TRY
-```c
-Socket_T sockets[5];
-volatile int i;
-
-/* Initialize to NULL for safe cleanup */
-for (i = 0; i < 5; i++)
-  sockets[i] = NULL;
-
-TRY
-{
-  for (i = 0; i < 5; i++)
-    sockets[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
-}
-EXCEPT(Socket_Failed) { /* Cleanup handled below */ }
-END_TRY;
-
-/* Cleanup all - NULL-safe */
-for (i = 0; i < 5; i++)
-  if (sockets[i])
-    Socket_free(&sockets[i]);
-```
-
-#### Pool Connections May Be Closed by Resize
-- `SocketPool_resize()` may close connections to shrink the pool
-- Don't assume connections are still valid after resize
-- Use `SocketPool_get()` to verify connection still exists before operations
-
-### Test File Requirements
-
-#### Required Sanitizer Compatibility
-All tests MUST pass with these sanitizer options:
-```bash
-ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:halt_on_error=1
-UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
-```
-
-#### Signal Handling (SIGPIPE)
-The library handles SIGPIPE internally via `MSG_NOSIGNAL` on send operations (Linux/FreeBSD) and `SO_NOSIGPIPE` socket option (BSD/macOS). Applications do **not** need to call `signal(SIGPIPE, SIG_IGN)`.
-
-**Implementation details:**
-- All `send()`, `sendto()`, `sendmsg()` calls use `MSG_NOSIGNAL` flag
-- `writev()` is replaced with `sendmsg()` + `MSG_NOSIGNAL` for scatter/gather I/O
-- On BSD/macOS, `SO_NOSIGPIPE` is set at socket creation via `SocketCommon_disable_sigpipe()`
-- Fallback: On platforms without either mechanism, `MSG_NOSIGNAL` is defined as 0
-
-**Note:** Existing test code with `signal(SIGPIPE, SIG_IGN)` is harmless but no longer required. New tests do not need signal handling setup.
-
-#### GCC Diagnostic Suppression
-Suppress `-Wclobbered` warnings in test files when using volatile correctly:
-```c
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wclobbered"
-#endif
-```
-
-### Code Coverage Requirements
-
-Tests run with `gcov`/`lcov` for coverage analysis. When adding `lcov` patterns:
-- Use `--ignore-errors mismatch` for macro-generated code mismatches
-- Use `--ignore-errors unused` for patterns that may not match files
-```yaml
-# CI coverage generation
-lcov --remove coverage.info '/usr/*' '*/test/*' '*/benchmark*' \
-     --output-file coverage.info --ignore-errors mismatch,unused
-```

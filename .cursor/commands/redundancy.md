@@ -16,6 +16,7 @@ This codebase follows **C Interfaces and Implementations** patterns with:
 - **Centralized error infrastructure** (`SOCKET_DECLARE_MODULE_EXCEPTION`, `SOCKET_RAISE_FMT`)
 - **TLS-aware I/O abstraction** (`socket_send_internal`, `socket_recv_internal`)
 - **Live count debugging** (`SocketLiveCount` for instance tracking)
+- **Split implementation files**: `Socket.c` core, with specialized logic in `Socket-connect.c`, `Socket-iov.c`, `Socket-options.c`.
 
 ## Step-by-Step Redundancy Removal Process
 
