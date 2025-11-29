@@ -60,13 +60,23 @@ verify_mode_to_openssl (TLSVerifyMode mode)
  *
  * Consolidates the SSL_CTX_set_verify call used by both set_verify_mode
  * and set_verify_callback.
+ *
+ * Installs internal callback if:
+ * - User verification callback is set, OR
+ * - Certificate pins are configured
  */
 static void
 apply_verify_settings (T ctx)
 {
   int openssl_mode = verify_mode_to_openssl (ctx->verify_mode);
-  SSL_verify_cb cb
-      = ctx->verify_callback ? (SSL_verify_cb)internal_verify_callback : NULL;
+
+  /* Install callback if user callback set OR pins configured */
+  SSL_verify_cb cb = NULL;
+  if (ctx->verify_callback || ctx->pinning.count > 0)
+    {
+      cb = (SSL_verify_cb)internal_verify_callback;
+    }
+
   SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, cb);
 }
 
@@ -77,11 +87,75 @@ apply_verify_settings (T ctx)
 #endif
 
 /**
+ * check_certificate_pins - Verify certificate chain against pins
+ * @ctx: TLS context with pins configured
+ * @x509_ctx: Certificate store context
+ *
+ * Returns: 1 if match found or no pins configured, 0 if no match
+ *
+ * Checks each certificate in the chain against configured pins.
+ * On mismatch with enforcement enabled, sets X509_V_ERR_APPLICATION_VERIFICATION.
+ */
+static int
+check_certificate_pins (T ctx, X509_STORE_CTX *x509_ctx)
+{
+  if (!ctx || ctx->pinning.count == 0)
+    return 1; /* No pins configured - pass */
+
+  STACK_OF (X509) *chain = X509_STORE_CTX_get0_chain (x509_ctx);
+  if (!chain)
+    {
+      /* Try getting the full chain including untrusted */
+      chain = X509_STORE_CTX_get1_chain (x509_ctx);
+      if (!chain)
+        {
+          /* No chain available yet - check current cert only */
+          X509 *cert = X509_STORE_CTX_get_current_cert (x509_ctx);
+          if (cert)
+            {
+              unsigned char hash[SOCKET_TLS_PIN_HASH_LEN];
+              if (tls_pinning_extract_spki_hash (cert, hash) == 0)
+                {
+                  if (tls_pinning_find (ctx->pinning.pins, ctx->pinning.count,
+                                        hash))
+                    return 1;
+                }
+            }
+          /* No match on current cert */
+          if (ctx->pinning.enforce)
+            {
+              X509_STORE_CTX_set_error (x509_ctx,
+                                        X509_V_ERR_APPLICATION_VERIFICATION);
+              return 0;
+            }
+          return 1; /* Warn only mode */
+        }
+    }
+
+  /* Check each cert in chain */
+  if (tls_pinning_check_chain (ctx, chain))
+    return 1;
+
+  /* No match found */
+  if (ctx->pinning.enforce)
+    {
+      X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
+      return 0;
+    }
+
+  return 1; /* Warn only mode - verification continues */
+}
+
+/**
  * internal_verify_callback - OpenSSL verification wrapper
  * @pre_ok: OpenSSL pre-verification result
  * @x509_ctx: Certificate store context
  *
  * Returns: 1 to continue verification, 0 to fail
+ *
+ * Performs verification in order:
+ * 1. User callback (if set)
+ * 2. Certificate pinning check (if pins configured)
  *
  * Security note: Catches ALL exceptions from user callbacks to prevent
  * uncaught exceptions from propagating through OpenSSL's callback mechanism,
@@ -101,33 +175,53 @@ internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx)
     return pre_ok;
 
   T ctx = (T)sock->tls_ctx;
-  if (!ctx || !ctx->verify_callback)
+  if (!ctx)
     return pre_ok;
 
-  volatile int result;
-  TRY
-  {
-    result = ctx->verify_callback (pre_ok, x509_ctx, ctx, sock,
-                                   ctx->verify_user_data);
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    /* TLS-specific exception - verification failed */
-    result = 0;
-    X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
-  }
-  ELSE
-  {
-    /* Catch all other exceptions to prevent undefined behavior from
-     * uncaught exceptions propagating through OpenSSL callback mechanism */
-    result = 0;
-    X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
-  }
-  END_TRY;
+  volatile int result = pre_ok;
 
-  if (!result)
+  /* Step 1: Call user callback if set */
+  if (ctx->verify_callback)
     {
-      X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
+      TRY
+      {
+        result = ctx->verify_callback (pre_ok, x509_ctx, ctx, sock,
+                                       ctx->verify_user_data);
+      }
+      EXCEPT (SocketTLS_Failed)
+      {
+        /* TLS-specific exception - verification failed */
+        result = 0;
+        X509_STORE_CTX_set_error (x509_ctx,
+                                  X509_V_ERR_APPLICATION_VERIFICATION);
+      }
+      ELSE
+      {
+        /* Catch all other exceptions to prevent undefined behavior from
+         * uncaught exceptions propagating through OpenSSL callback mechanism
+         */
+        result = 0;
+        X509_STORE_CTX_set_error (x509_ctx,
+                                  X509_V_ERR_APPLICATION_VERIFICATION);
+      }
+      END_TRY;
+
+      if (!result)
+        return 0; /* User callback failed - stop here */
+    }
+
+  /* Step 2: Check certificate pins (if configured) */
+  if (ctx->pinning.count > 0)
+    {
+      /* Only check pins at the end of chain (depth 0) to avoid redundant
+       * checks. OpenSSL calls callback for each cert in chain from root to
+       * leaf. */
+      int depth = X509_STORE_CTX_get_error_depth (x509_ctx);
+      if (depth == 0)
+        {
+          if (!check_certificate_pins (ctx, x509_ctx))
+            return 0;
+        }
     }
 
   return result;
