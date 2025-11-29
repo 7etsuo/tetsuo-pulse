@@ -72,6 +72,7 @@ test_simple_try (void)
   END_TRY;
 
   assert (executed == 1);
+  (void)executed; /* Suppress unused-but-set warning */
 }
 
 /**
@@ -92,6 +93,8 @@ test_try_finally (void)
 
   assert (try_executed == 1);
   assert (finally_executed == 1);
+  (void)try_executed;     /* Suppress unused-but-set warning */
+  (void)finally_executed; /* Suppress unused-but-set warning */
 }
 
 /**
@@ -112,6 +115,7 @@ test_raise_catch (uint8_t exc_idx)
 
   /* Verify correct exception was caught */
   assert (caught > 0);
+  (void)caught; /* Suppress unused-but-set warning */
 }
 
 /**
@@ -132,6 +136,7 @@ test_raise_finally (uint8_t exc_idx)
   END_TRY;
 
   assert (finally_ran == 1);
+  (void)finally_ran; /* Suppress unused-but-set warning */
 }
 
 /**
@@ -223,6 +228,7 @@ test_else_handler (uint8_t exc_idx)
   END_TRY;
 
   assert (caught > 0);
+  (void)caught; /* Suppress unused-but-set warning */
 }
 
 /**
@@ -249,6 +255,8 @@ test_reraise (void)
 
   assert (inner_caught == 1);
   assert (outer_caught == 1);
+  (void)inner_caught; /* Suppress unused-but-set warning */
+  (void)outer_caught; /* Suppress unused-but-set warning */
 }
 
 /**

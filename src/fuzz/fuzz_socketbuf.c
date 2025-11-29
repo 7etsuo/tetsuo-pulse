@@ -106,6 +106,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           {
             small_buf = SocketBuf_new (arena, MIN_FUZZ_CAPACITY);
             assert (SocketBuf_space (small_buf) == MIN_FUZZ_CAPACITY);
+            (void)small_buf; /* Suppress unused-but-set warning */
           }
           EXCEPT (SocketBuf_Failed)
           {
