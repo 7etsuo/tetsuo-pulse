@@ -304,6 +304,8 @@ SocketDTLSContext_free (T *ctx_p)
   /* Free SSL_CTX */
   if (ctx->ssl_ctx)
     {
+      /* Flush session cache to prevent memory leaks */
+      SSL_CTX_flush_sessions (ctx->ssl_ctx, 0);
       SSL_CTX_free (ctx->ssl_ctx);
       ctx->ssl_ctx = NULL;
     }
