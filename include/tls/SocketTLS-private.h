@@ -325,6 +325,35 @@ tls_validate_hostname (const char *hostname)
 #define T SocketTLSContext_T
 
 /**
+ * TLSCertPin - Single certificate pin entry (SPKI SHA256 hash)
+ *
+ * Stores a 32-byte SHA256 digest of the SubjectPublicKeyInfo (SPKI) DER
+ * encoding. SPKI pinning is OWASP-recommended as it survives certificate
+ * renewal when the same key is reused.
+ */
+typedef struct
+{
+  unsigned char hash[SOCKET_TLS_PIN_HASH_LEN]; /* SHA256 digest (32 bytes) */
+} TLSCertPin;
+
+/**
+ * TLSContextPinning - Certificate pinning configuration
+ *
+ * Maintains a sorted array of SPKI SHA256 hashes for O(log n) lookup.
+ * For typical deployments (1-5 pins), this is effectively O(1).
+ *
+ * Thread safety: Configuration is NOT thread-safe - perform before sharing.
+ * Verification is read-only post-setup (thread-safe).
+ */
+typedef struct
+{
+  TLSCertPin *pins; /* Sorted array of SHA256 hashes (arena-allocated) */
+  size_t count;     /* Number of pins */
+  size_t capacity;  /* Allocated capacity */
+  int enforce;      /* 1 = fail on mismatch, 0 = warn only (default: 1) */
+} TLSContextPinning;
+
+/**
  * SNI Certificate Mapping - Stores hostname-to-certificate mappings
  */
 typedef struct
@@ -388,6 +417,9 @@ struct T
   SocketTLSVerifyCallback verify_callback;
   void *verify_user_data;
   TLSVerifyMode verify_mode; /* Stored verification mode */
+
+  /* Certificate pinning (SPKI SHA256) */
+  TLSContextPinning pinning;
 };
 
 /* ============================================================================
@@ -541,6 +573,57 @@ extern SocketTLSContext_T tls_context_get_from_ssl_ctx (SSL_CTX *ssl_ctx);
  */
 extern SocketTLSContext_T ctx_alloc_and_init (const SSL_METHOD *method,
                                               int is_server);
+
+/* ============================================================================
+ * Certificate Pinning Internal Functions
+ * ============================================================================
+ */
+
+/**
+ * tls_pinning_init - Initialize pinning structure
+ * @pinning: Pinning structure to initialize
+ */
+static inline void
+tls_pinning_init (TLSContextPinning *pinning)
+{
+  pinning->pins = NULL;
+  pinning->count = 0;
+  pinning->capacity = 0;
+  pinning->enforce = 1; /* Default: strict enforcement */
+}
+
+/**
+ * tls_pinning_extract_spki_hash - Extract SPKI SHA256 hash from certificate
+ * @cert: X509 certificate
+ * @out_hash: Output buffer (must be SOCKET_TLS_PIN_HASH_LEN bytes)
+ *
+ * Returns: 0 on success, -1 on failure
+ *
+ * Computes SHA256 of the SubjectPublicKeyInfo (SPKI) DER encoding.
+ * This is the OWASP-recommended pinning approach.
+ */
+extern int tls_pinning_extract_spki_hash (X509 *cert, unsigned char *out_hash);
+
+/**
+ * tls_pinning_check_chain - Check if any cert in chain matches a pin
+ * @ctx: TLS context with pins configured
+ * @chain: Certificate chain to check
+ *
+ * Returns: 1 if match found, 0 if no match
+ */
+extern int tls_pinning_check_chain (SocketTLSContext_T ctx,
+                                    STACK_OF (X509) * chain);
+
+/**
+ * tls_pinning_find - Binary search for pin in sorted array
+ * @pins: Sorted array of pins
+ * @count: Number of pins
+ * @hash: Hash to search for
+ *
+ * Returns: 1 if found, 0 if not found
+ */
+extern int tls_pinning_find (const TLSCertPin *pins, size_t count,
+                             const unsigned char *hash);
 
 #undef T
 
