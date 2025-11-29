@@ -349,7 +349,9 @@ transfer_result_ownership (struct SocketDNS_Request_T *req)
  * Raises: SocketDNS_Failed on allocation failure
  * Thread-safe: Must be called with mutex locked
  *
- * Copies the addrinfo result and frees the original. The request is marked
+ * Copies the addrinfo result and frees the original using
+ * SocketCommon_free_addrinfo() since callers pass memory allocated via
+ * SocketCommon_copy_addrinfo(), not raw getaddrinfo(). The request is marked
  * as complete and ready for retrieval.
  */
 static void
@@ -368,7 +370,7 @@ init_completed_request_fields (struct SocketDNS_Request_T *req,
     {
       RAISE_DNS_ERROR (SocketDNS_Failed);
     }
-  freeaddrinfo (result);
+  SocketCommon_free_addrinfo (result);
   req->error = 0;
   req->queue_next = NULL;
   req->hash_next = NULL;
