@@ -676,23 +676,13 @@ extern void __gcov_dump (void);
 #define COVERAGE_FLUSH() (void)0
 #endif
 
-/* Signal handler for SIGABRT that flushes coverage data before termination */
+/* Flush coverage before an operation that will abort.
+ * Note: Cannot use COVERAGE_FLUSH in signal handlers because
+ * __llvm_profile_write_file is not async-signal-safe. */
 static void
-sigabrt_handler (int sig)
+flush_coverage_before_abort (void)
 {
-  (void)sig;
-  /* Flush coverage data before abort */
   COVERAGE_FLUSH ();
-  /* Re-raise SIGABRT with default handler to actually terminate */
-  signal (SIGABRT, SIG_DFL);
-  raise (SIGABRT);
-}
-
-/* Setup handler in child process to capture coverage before abort */
-static void
-setup_child_coverage_handler (void)
-{
-  signal (SIGABRT, sigabrt_handler);
 }
 
 /* Test NULL exception pointer causes abort */
@@ -706,7 +696,8 @@ TEST (except_null_pointer_aborts)
     }
   if (pid == 0)
     {
-      setup_child_coverage_handler ();
+      /* Flush coverage before the abort-triggering operation */
+      flush_coverage_before_abort ();
       /* Child: pass NULL to Except_raise - should abort */
       Except_raise (NULL, __FILE__, __LINE__);
       _exit (0); /* Should not reach here */
@@ -729,7 +720,8 @@ TEST (except_uncaught_with_reason_aborts)
     }
   if (pid == 0)
     {
-      setup_child_coverage_handler ();
+      /* Flush coverage before the abort-triggering operation */
+      flush_coverage_before_abort ();
       /* Child: raise exception outside TRY - should abort */
       static const Except_T UncaughtEx = { &UncaughtEx, "Uncaught test" };
       Except_raise (&UncaughtEx, "test_file.c", 42);
@@ -752,7 +744,8 @@ TEST (except_uncaught_no_reason_aborts)
     }
   if (pid == 0)
     {
-      setup_child_coverage_handler ();
+      /* Flush coverage before the abort-triggering operation */
+      flush_coverage_before_abort ();
       /* Child: raise exception with NULL reason outside TRY */
       static const Except_T NoReasonEx = { &NoReasonEx, NULL };
       Except_raise (&NoReasonEx, "test_file.c", 42);
@@ -775,7 +768,8 @@ TEST (except_uncaught_file_no_line_aborts)
     }
   if (pid == 0)
     {
-      setup_child_coverage_handler ();
+      /* Flush coverage before the abort-triggering operation */
+      flush_coverage_before_abort ();
       /* Child: raise with file but line=0 */
       static const Except_T FileNoLineEx = { &FileNoLineEx, "test" };
       Except_raise (&FileNoLineEx, "test_file.c", 0);
@@ -798,7 +792,8 @@ TEST (except_uncaught_no_file_with_line_aborts)
     }
   if (pid == 0)
     {
-      setup_child_coverage_handler ();
+      /* Flush coverage before the abort-triggering operation */
+      flush_coverage_before_abort ();
       /* Child: raise with NULL file but positive line */
       static const Except_T NoFileEx = { &NoFileEx, "test" };
       Except_raise (&NoFileEx, NULL, 42);
@@ -821,7 +816,8 @@ TEST (except_uncaught_no_location_aborts)
     }
   if (pid == 0)
     {
-      setup_child_coverage_handler ();
+      /* Flush coverage before the abort-triggering operation */
+      flush_coverage_before_abort ();
       /* Child: raise with NULL file and line=0 */
       static const Except_T NoLocEx = { &NoLocEx, "test" };
       Except_raise (&NoLocEx, NULL, 0);
