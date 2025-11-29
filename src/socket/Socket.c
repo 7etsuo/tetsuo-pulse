@@ -755,12 +755,12 @@ Socket_bind (T socket, const char *host, int port)
 
     bind_try_addresses ((T)vsock, res, socket_family);
 
-    freeaddrinfo (res);
+    SocketCommon_free_addrinfo (res);
   }
   EXCEPT (Socket_Failed)
   {
     int saved_errno = errno;
-    freeaddrinfo (res);
+    SocketCommon_free_addrinfo (res);
     if (is_common_bind_error (saved_errno))
       {
         errno = saved_errno;
