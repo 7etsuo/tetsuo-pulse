@@ -30,22 +30,39 @@ CONTINUE=0
 BUILD_DIR="build-fuzz"
 CORPUS_BASE="src/fuzz/corpus"
 
-# Fuzzer targets (14 total)
+# Fuzzer targets (27 total)
 TARGETS=(
-    fuzz_socketbuf
+    # Core
     fuzz_arena
-    fuzz_ip_parse
-    fuzz_dns_validate
-    fuzz_socketbuf_stress
-    fuzz_ratelimit
+    fuzz_exception
     fuzz_timer
+    fuzz_ratelimit
     fuzz_iptracker
+    fuzz_synprotect
+    # Socket
+    fuzz_socketbuf
+    fuzz_socketbuf_stress
+    fuzz_socketio
+    fuzz_socketpoll
+    fuzz_socketpool
+    fuzz_socketdgram
+    fuzz_unix_path
+    # DNS/Network
+    fuzz_ip_parse
+    fuzz_cidr_parse
+    fuzz_dns_validate
+    fuzz_address_parse
+    fuzz_connect
     fuzz_happy_eyeballs
     fuzz_reconnect
-    fuzz_socketio
-    fuzz_address_parse
+    fuzz_async
+    # TLS
     fuzz_tls_alpn
     fuzz_tls_session
+    fuzz_tls_certs
+    fuzz_tls_io
+    fuzz_tls_sni
+    fuzz_tls_verify
 )
 
 # Color output
