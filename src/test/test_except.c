@@ -656,23 +656,26 @@ TEST (except_volatile_preservation)
  * child process coverage (the %p is replaced with process ID).
  * Then merge: llvm-profdata merge -sparse *.profraw -o coverage.profdata
  */
-#if defined(__clang__)
-/* LLVM/Clang coverage - declare the profiling runtime function.
- * This function is available when compiling with -fprofile-instr-generate.
- * If not available (non-coverage build), it will be a weak reference. */
-extern void __llvm_profile_write_file (void) __attribute__((weak));
-#define COVERAGE_FLUSH()                                                       \
-  do                                                                           \
-    {                                                                          \
-      if (__llvm_profile_write_file)                                           \
-        __llvm_profile_write_file ();                                          \
-    }                                                                          \
-  while (0)
+/*
+ * Coverage flushing is only enabled when explicitly requested via compile
+ * flags. The weak reference approach doesn't work reliably on all platforms
+ * (especially arm64 macOS), so we only enable coverage flushing when the
+ * build system explicitly enables it.
+ *
+ * To enable coverage flushing:
+ *   - For LLVM/Clang: compile with -DENABLE_LLVM_COVERAGE
+ *   - For GCC: compile with -DENABLE_GCOV_FLUSH
+ */
+#if defined(__clang__) && defined(ENABLE_LLVM_COVERAGE)
+/* LLVM/Clang coverage - requires -fprofile-instr-generate */
+extern void __llvm_profile_write_file (void);
+#define COVERAGE_FLUSH() __llvm_profile_write_file ()
 #elif defined(__GNUC__) && defined(ENABLE_GCOV_FLUSH)
-/* GCC coverage */
+/* GCC coverage - requires --coverage */
 extern void __gcov_dump (void);
 #define COVERAGE_FLUSH() __gcov_dump ()
 #else
+/* No coverage - no-op */
 #define COVERAGE_FLUSH() (void)0
 #endif
 
