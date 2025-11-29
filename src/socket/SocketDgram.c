@@ -42,6 +42,10 @@
 #include "socket/SocketDgram.h"
 #include "socket/SocketIO.h"
 
+#ifdef SOCKET_HAS_TLS
+#include <openssl/ssl.h>
+#endif
+
 #define T SocketDgram_T
 
 const Except_T SocketDgram_Failed
@@ -107,9 +111,21 @@ SocketDgram_free (T *socket)
   if (!s)
     return;
 
-  dgram_live_decrement ();
+  *socket = NULL; /* Invalidate caller pointer before cleanup to avoid UB */
+
+  /* Datagram-specific cleanup (DTLS) before base free */
+#ifdef SOCKET_HAS_TLS
+  if (s->dtls_ssl)
+    {
+      SSL_free ((SSL *)s->dtls_ssl);
+      s->dtls_ssl = NULL;
+    }
+#endif
+
+  /* Common base cleanup: closes fd, disposes arena (frees s too) */
   SocketCommon_free_base (&s->base);
-  *socket = NULL;
+
+  dgram_live_decrement ();
 }
 
 /* ==================== Address Resolution Helpers ==================== */
