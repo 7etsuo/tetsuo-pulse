@@ -1076,13 +1076,26 @@ socketcommon_perform_getaddrinfo (const char *host, const char *port_str,
   if (!dns)
     {
       /* Fallback to direct getaddrinfo if resolver unavailable */
-      int result = getaddrinfo (host, port_str, hints, res);
+      struct addrinfo *tmp = NULL;
+      int result = getaddrinfo (host, port_str, hints, &tmp);
       if (result != 0)
         {
           const char *safe_host = socketcommon_get_safe_host (host);
           SOCKET_ERROR_MSG ("Invalid host/IP address: %.*s (%s)",
                             SOCKET_ERROR_MAX_HOSTNAME, safe_host,
                             gai_strerror (result));
+          if (use_exceptions)
+            RAISE_MODULE_ERROR (exception_type);
+          return -1;
+        }
+
+      /* Copy to ensure consistent allocation for SocketCommon_free_addrinfo */
+      *res = SocketCommon_copy_addrinfo (tmp);
+      freeaddrinfo (tmp);
+
+      if (!*res)
+        {
+          SOCKET_ERROR_MSG ("Failed to copy address info");
           if (use_exceptions)
             RAISE_MODULE_ERROR (exception_type);
           return -1;
@@ -1136,6 +1149,10 @@ socketcommon_validate_address_family (struct addrinfo **res, int socket_family,
 
   if (socketcommon_find_matching_family (*res, socket_family))
     return 0;
+
+  /* Free the result before reporting error to prevent memory leak */
+  SocketCommon_free_addrinfo (*res);
+  *res = NULL;
 
   safe_host = socketcommon_get_safe_host (host);
   SOCKET_ERROR_MSG ("No address found for family %d: %.*s:%d", socket_family,

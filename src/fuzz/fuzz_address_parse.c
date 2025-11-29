@@ -109,7 +109,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               SocketCommon_Failed, AF_UNSPEC, 0);
           (void)result;
           if (res)
-            freeaddrinfo (res);
+            SocketCommon_free_addrinfo (res);
           res = NULL;
         }
         break;
@@ -123,7 +123,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               SocketCommon_Failed, AF_UNSPEC, 0);
           (void)result;
           if (res)
-            freeaddrinfo (res);
+            SocketCommon_free_addrinfo (res);
           res = NULL;
         }
         break;
@@ -137,7 +137,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                                                      AF_UNSPEC, 0);
           (void)result;
           if (res)
-            freeaddrinfo (res);
+            SocketCommon_free_addrinfo (res);
           res = NULL;
         }
         break;
@@ -152,7 +152,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               SocketCommon_Failed, AF_INET, 0);
           (void)result;
           if (res)
-            freeaddrinfo (res);
+            SocketCommon_free_addrinfo (res);
           res = NULL;
         }
         break;
@@ -167,7 +167,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               SocketCommon_Failed, AF_INET6, 0);
           (void)result;
           if (res)
-            freeaddrinfo (res);
+            SocketCommon_free_addrinfo (res);
           res = NULL;
         }
         break;
@@ -198,7 +198,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   FINALLY
   {
     if (res)
-      freeaddrinfo (res);
+      SocketCommon_free_addrinfo (res);
   }
   END_TRY;
 
