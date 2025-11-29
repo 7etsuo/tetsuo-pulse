@@ -177,6 +177,10 @@ if(SOCKET_HAS_TLS)
         src/tls/SocketTLSContext-session.c
         src/tls/SocketTLSContext-verify.c
         src/tls/SocketTLSContext-pinning.c
+        # DTLS (Datagram TLS) support
+        src/tls/SocketDTLS.c
+        src/tls/SocketDTLSContext.c
+        src/tls/SocketDTLS-cookie.c
     )
 endif()
 
@@ -277,6 +281,10 @@ set(TLS_HEADERS
     include/tls/SocketTLS.h
     include/tls/SocketTLSConfig.h
     include/tls/SocketTLSContext.h
+    include/tls/SocketDTLS.h
+    include/tls/SocketDTLSConfig.h
+    include/tls/SocketDTLSContext.h
+    include/tls/SocketDTLS-private.h
 )
 
 set(TEST_HEADERS
@@ -344,6 +352,7 @@ set(TEST_SOURCES
     test_tls_integration
     test_tls_phase4
     test_tls_pinning
+    test_dtls_integration
     test_threadsafety
     test_socketpool_tls
     test_happy_eyeballs
@@ -371,8 +380,8 @@ add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES})
 
 # Print test configuration
 message(STATUS "Test Suite Configuration:")
-message(STATUS "  Test files: 20")
-message(STATUS "  Total tests: 280+")
+message(STATUS "  Test files: 21")
+message(STATUS "  Total tests: 300+")
 message(STATUS "  Run with: make test (or ctest)")
 
 # Documentation generation (Doxygen)
@@ -484,6 +493,11 @@ if(ENABLE_FUZZING)
             fuzz_tls_sni
             fuzz_tls_io
             fuzz_cert_pinning
+            # DTLS fuzz harnesses
+            fuzz_dtls_context
+            fuzz_dtls_io
+            fuzz_dtls_cookie
+            fuzz_dtls_handshake
         )
     endif()
     
