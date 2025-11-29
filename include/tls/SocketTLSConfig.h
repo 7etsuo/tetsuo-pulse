@@ -113,6 +113,19 @@
 #define SOCKET_TLS_MAX_LABEL_LEN 63
 #endif
 
+/* Certificate pinning configuration */
+#ifndef SOCKET_TLS_MAX_PINS
+#define SOCKET_TLS_MAX_PINS 32 /* Max pinned certificates per context */
+#endif
+
+#ifndef SOCKET_TLS_PIN_HASH_LEN
+#define SOCKET_TLS_PIN_HASH_LEN 32 /* SHA256 = 32 bytes */
+#endif
+
+#ifndef SOCKET_TLS_PIN_INITIAL_CAPACITY
+#define SOCKET_TLS_PIN_INITIAL_CAPACITY 4 /* Initial pin array capacity */
+#endif
+
 #else /* SOCKET_HAS_TLS not defined */
 
 /* Stub definitions when TLS is disabled */

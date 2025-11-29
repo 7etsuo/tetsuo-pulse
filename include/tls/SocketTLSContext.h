@@ -422,6 +422,184 @@ extern void SocketTLSContext_get_cache_stats(T ctx, size_t *hits, size_t *misses
  */
 extern void SocketTLSContext_enable_session_tickets(T ctx, const unsigned char *key, size_t key_len);
 
+/* ============================================================================
+ * Certificate Pinning (SPKI SHA256)
+ * ============================================================================
+ *
+ * OWASP-recommended approach: Pin the Subject Public Key Info (SPKI) hash.
+ * SPKI pinning survives certificate renewal when the same key is reused,
+ * making it more maintainable than full certificate pinning.
+ *
+ * Usage:
+ *   // Create client context
+ *   SocketTLSContext_T ctx = SocketTLSContext_new_client("ca-bundle.pem");
+ *
+ *   // Pin by hex-encoded SHA256 hash
+ *   SocketTLSContext_add_pin_hex(ctx,
+ *     "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c");
+ *
+ *   // Or extract from certificate file
+ *   SocketTLSContext_add_pin_from_cert(ctx, "server.crt");
+ *
+ *   // Enable strict enforcement (default, fail if no match)
+ *   SocketTLSContext_set_pin_enforcement(ctx, 1);
+ *
+ * Generate pin from certificate:
+ *   openssl x509 -in cert.pem -pubkey -noout | \
+ *     openssl pkey -pubin -outform DER | \
+ *     openssl dgst -sha256 -hex
+ *
+ * Thread safety: Pin configuration is NOT thread-safe. Configure all pins
+ * before sharing the context across threads. Verification is read-only
+ * and thread-safe.
+ */
+
+/**
+ * SocketTLSContext_add_pin - Add SPKI SHA256 pin (binary format)
+ * @ctx: The TLS context instance
+ * @sha256_hash: 32-byte SHA256 hash of the SPKI DER encoding
+ *
+ * Adds a certificate pin using raw binary hash. The hash is copied to
+ * context-owned storage. Duplicate pins are silently ignored.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if hash is NULL or max pins exceeded
+ * Thread-safe: No - modifies shared context
+ */
+extern void SocketTLSContext_add_pin (T ctx, const unsigned char *sha256_hash);
+
+/**
+ * SocketTLSContext_add_pin_hex - Add SPKI SHA256 pin (hex string)
+ * @ctx: The TLS context instance
+ * @hex_hash: 64-character hex string (optionally prefixed with "sha256//")
+ *
+ * Adds a certificate pin using hex-encoded hash. Accepts both uppercase
+ * and lowercase hex. Optional "sha256//" prefix is stripped for HPKP
+ * compatibility.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if format invalid or max pins exceeded
+ * Thread-safe: No - modifies shared context
+ */
+extern void SocketTLSContext_add_pin_hex (T ctx, const char *hex_hash);
+
+/**
+ * SocketTLSContext_add_pin_from_cert - Extract and add pin from certificate
+ * @ctx: The TLS context instance
+ * @cert_file: Path to PEM-encoded certificate file
+ *
+ * Loads certificate, extracts SPKI, computes SHA256, and adds as pin.
+ * Useful for pinning leaf certificates or intermediate CAs.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if file invalid, parse error, or max pins exceeded
+ * Thread-safe: No - modifies shared context
+ */
+extern void SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file);
+
+/**
+ * SocketTLSContext_add_pin_from_x509 - Add pin from X509 certificate object
+ * @ctx: The TLS context instance
+ * @cert: OpenSSL X509 certificate object
+ *
+ * Extracts SPKI hash from provided X509 and adds as pin. The certificate
+ * is not freed by this function; caller retains ownership.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if cert NULL, extraction fails, or max exceeded
+ * Thread-safe: No - modifies shared context
+ */
+extern void SocketTLSContext_add_pin_from_x509 (T ctx, X509 *cert);
+
+/**
+ * SocketTLSContext_clear_pins - Remove all certificate pins
+ * @ctx: The TLS context instance
+ *
+ * Securely clears all configured pins. Memory is zeroed before release.
+ * Pin enforcement mode is preserved.
+ *
+ * Returns: void
+ * Raises: None
+ * Thread-safe: No - modifies shared context
+ */
+extern void SocketTLSContext_clear_pins (T ctx);
+
+/**
+ * SocketTLSContext_set_pin_enforcement - Set pin enforcement mode
+ * @ctx: The TLS context instance
+ * @enforce: 1 = strict (fail on mismatch), 0 = warn only
+ *
+ * Controls behavior when no pin matches during verification:
+ * - enforce=1 (default): Handshake fails with X509_V_ERR_APPLICATION_VERIFICATION
+ * - enforce=0: Verification continues, mismatch is logged
+ *
+ * Returns: void
+ * Raises: None
+ * Thread-safe: No - modifies shared context
+ */
+extern void SocketTLSContext_set_pin_enforcement (T ctx, int enforce);
+
+/**
+ * SocketTLSContext_get_pin_enforcement - Get current enforcement mode
+ * @ctx: The TLS context instance
+ *
+ * Returns: 1 if strict enforcement, 0 if warn-only
+ * Raises: None
+ * Thread-safe: Yes (read-only)
+ */
+extern int SocketTLSContext_get_pin_enforcement (T ctx);
+
+/**
+ * SocketTLSContext_get_pin_count - Get number of configured pins
+ * @ctx: The TLS context instance
+ *
+ * Returns: Number of pins currently configured
+ * Raises: None
+ * Thread-safe: Yes (read-only)
+ */
+extern size_t SocketTLSContext_get_pin_count (T ctx);
+
+/**
+ * SocketTLSContext_has_pins - Check if any pins are configured
+ * @ctx: The TLS context instance
+ *
+ * Returns: 1 if pins configured, 0 if none
+ * Raises: None
+ * Thread-safe: Yes (read-only)
+ */
+extern int SocketTLSContext_has_pins (T ctx);
+
+/**
+ * SocketTLSContext_verify_pin - Check if hash matches any pin
+ * @ctx: The TLS context instance
+ * @sha256_hash: 32-byte hash to check
+ *
+ * Manual verification without full handshake. Useful for testing
+ * or custom verification logic.
+ *
+ * Returns: 1 if match found, 0 if no match
+ * Raises: None
+ * Thread-safe: Yes (read-only)
+ */
+extern int SocketTLSContext_verify_pin (T ctx, const unsigned char *sha256_hash);
+
+/**
+ * SocketTLSContext_verify_cert_pin - Check if certificate matches any pin
+ * @ctx: The TLS context instance
+ * @cert: X509 certificate to verify
+ *
+ * Extracts SPKI hash from certificate and checks against pins.
+ * Useful for manual chain verification.
+ *
+ * Returns: 1 if match found, 0 if no match
+ * Raises: None
+ * Thread-safe: Yes (read-only)
+ */
+extern int SocketTLSContext_verify_cert_pin (T ctx, X509 *cert);
+
+/* Pinning exception type */
+extern const Except_T SocketTLS_PinVerifyFailed;
+
 /* Internal functions (not part of public API) */
 /**
  * SocketTLSContext_get_ssl_ctx - Get underlying OpenSSL SSL_CTX*
