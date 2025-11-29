@@ -176,6 +176,7 @@ if(SOCKET_HAS_TLS)
         src/tls/SocketTLSContext-alpn.c
         src/tls/SocketTLSContext-session.c
         src/tls/SocketTLSContext-verify.c
+        src/tls/SocketTLSContext-pinning.c
     )
 endif()
 
@@ -342,6 +343,7 @@ set(TEST_SOURCES
     test_integration
     test_tls_integration
     test_tls_phase4
+    test_tls_pinning
     test_threadsafety
     test_socketpool_tls
     test_happy_eyeballs
@@ -481,6 +483,7 @@ if(ENABLE_FUZZING)
             fuzz_tls_verify
             fuzz_tls_sni
             fuzz_tls_io
+            fuzz_cert_pinning
         )
     endif()
     
