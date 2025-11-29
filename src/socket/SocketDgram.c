@@ -667,12 +667,12 @@ SocketDgram_bind (T socket, const char *host, int port)
   if (dgram_try_addresses (socket, res, socket_family, DGRAM_OP_BIND) == 0)
     {
       SocketCommon_update_local_endpoint (socket->base);
-      freeaddrinfo (res);
+      SocketCommon_free_addrinfo (res);
       return;
     }
 
   SocketCommon_format_bind_error (host, port);
-  freeaddrinfo (res);
+  SocketCommon_free_addrinfo (res);
   RAISE_MODULE_ERROR (SocketDgram_Failed);
 }
 
@@ -696,13 +696,13 @@ SocketDgram_connect (T socket, const char *host, int port)
   if (dgram_try_addresses (socket, res, socket_family, DGRAM_OP_CONNECT) == 0)
     {
       SocketCommon_update_local_endpoint (socket->base);
-      freeaddrinfo (res);
+      SocketCommon_free_addrinfo (res);
       return;
     }
 
   SOCKET_ERROR_FMT ("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME,
                     host, port);
-  freeaddrinfo (res);
+  SocketCommon_free_addrinfo (res);
   RAISE_MODULE_ERROR (SocketDgram_Failed);
 }
 

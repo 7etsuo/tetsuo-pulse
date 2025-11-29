@@ -648,12 +648,12 @@ Socket_connect (T socket, const char *host, int port)
         return;
       }
     connect_execute ((T)vsock, res, socket_family);
-    freeaddrinfo (res);
+    SocketCommon_free_addrinfo (res);
   }
   EXCEPT (Socket_Failed)
   {
     int saved_errno = errno;
-    freeaddrinfo (res);
+    SocketCommon_free_addrinfo (res);
     if (socket_is_retriable_connect_error (saved_errno))
       {
         errno = saved_errno;
