@@ -53,11 +53,6 @@ Not available via apt, brew, conan, vcpkg, pkg-config in distros. Users want `ap
 
 ## **Significant Gaps** ⚠️
 
-### 5. **Missing Security Features**
-
-| Feature | Status | Competitor Support |
-|---------|--------|-------------------|
-| DTLS (UDP encryption) | ❌ Missing | Common for IoT/gaming |
 
 ### 6. **Production Ecosystem Integration**
 

@@ -7,6 +7,7 @@
  * - Cookie exchange enable/disable
  *
  * NOTE: Avoids nested TRY/EXCEPT to prevent stack-use-after-scope with ASan.
+ * Uses embedded test certificates for maximum fuzzing speed.
  */
 
 #ifdef SOCKET_HAS_TLS
@@ -17,7 +18,13 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <openssl/bio.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/x509.h>
+
 #include "core/Except.h"
+#include "fuzz_test_certs.h"
 
 /* Ignore SIGPIPE */
 __attribute__ ((constructor)) static void
@@ -35,28 +42,62 @@ ignore_sigpipe (void)
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
-/* Helper to generate test certs */
-static int
-generate_temp_certs (char *cert_path, char *key_path)
+/* Paths for temp cert files (written once at startup) */
+static char g_cert_path[64];
+static char g_key_path[64];
+static int g_certs_ready = 0;
+
+/**
+ * Write embedded certs to temp files (once at startup)
+ *
+ * SocketDTLSContext_new_server() expects file paths, so we write
+ * the embedded certs to temp files once. This is still much faster
+ * than generating certs per-iteration.
+ */
+__attribute__ ((constructor)) static void
+setup_test_certs (void)
 {
-  snprintf (cert_path, 256, "/tmp/fuzz_dtls_cert_%d.pem", getpid ());
-  snprintf (key_path, 256, "/tmp/fuzz_dtls_key_%d.pem", getpid ());
+  FILE *f;
 
-  char cmd[512];
-  snprintf (cmd, sizeof (cmd),
-            "openssl genrsa -out %s 2048 2>/dev/null && "
-            "openssl req -new -x509 -key %s -out %s -days 1 -nodes "
-            "-subj '/CN=fuzz' 2>/dev/null",
-            key_path, key_path, cert_path);
+  snprintf (g_cert_path, sizeof (g_cert_path), "/tmp/fuzz_dtls_cert_%d.pem",
+            getpid ());
+  snprintf (g_key_path, sizeof (g_key_path), "/tmp/fuzz_dtls_key_%d.pem",
+            getpid ());
 
-  return system (cmd);
+  /* Write certificate */
+  f = fopen (g_cert_path, "w");
+  if (f)
+    {
+      fputs (FUZZ_TEST_CERT, f);
+      fclose (f);
+    }
+  else
+    {
+      return;
+    }
+
+  /* Write private key */
+  f = fopen (g_key_path, "w");
+  if (f)
+    {
+      fputs (FUZZ_TEST_KEY, f);
+      fclose (f);
+      g_certs_ready = 1;
+    }
+  else
+    {
+      unlink (g_cert_path);
+    }
 }
 
-static void
-cleanup_certs (const char *cert_path, const char *key_path)
+__attribute__ ((destructor)) static void
+cleanup_test_certs (void)
 {
-  unlink (cert_path);
-  unlink (key_path);
+  if (g_certs_ready)
+    {
+      unlink (g_cert_path);
+      unlink (g_key_path);
+    }
 }
 
 /* Operation types */
@@ -81,17 +122,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   if (size < 2)
     return 0;
 
+  if (!g_certs_ready)
+    return 0; /* Skip if certs not available */
+
   volatile uint8_t op = get_op (data, size);
   SocketDTLSContext_T ctx = NULL;
-  char cert_path[256], key_path[256];
-  int have_certs = 0;
-
-  /* Generate test certificates for server context */
-  if (generate_temp_certs (cert_path, key_path) == 0)
-    have_certs = 1;
-
-  if (!have_certs)
-    return 0; /* Skip if can't generate certs */
 
   /* Single TRY block - no nesting */
   TRY
@@ -99,14 +134,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     switch (op)
       {
       case OP_ENABLE_COOKIE:
-        ctx = SocketDTLSContext_new_server (cert_path, key_path, NULL);
+        ctx = SocketDTLSContext_new_server (g_cert_path, g_key_path, NULL);
         SocketDTLSContext_enable_cookie_exchange (ctx);
         if (SocketDTLSContext_has_cookie_exchange (ctx) != 1)
           abort ();
         break;
 
       case OP_SET_SECRET:
-        ctx = SocketDTLSContext_new_server (cert_path, key_path, NULL);
+        ctx = SocketDTLSContext_new_server (g_cert_path, g_key_path, NULL);
         SocketDTLSContext_enable_cookie_exchange (ctx);
         if (size >= SOCKET_DTLS_COOKIE_SECRET_LEN + 1)
           {
@@ -116,13 +151,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
 
       case OP_ROTATE_SECRET:
-        ctx = SocketDTLSContext_new_server (cert_path, key_path, NULL);
+        ctx = SocketDTLSContext_new_server (g_cert_path, g_key_path, NULL);
         SocketDTLSContext_enable_cookie_exchange (ctx);
         SocketDTLSContext_rotate_cookie_secret (ctx);
         break;
 
       case OP_HAS_COOKIE:
-        ctx = SocketDTLSContext_new_server (cert_path, key_path, NULL);
+        ctx = SocketDTLSContext_new_server (g_cert_path, g_key_path, NULL);
         /* Should be disabled initially */
         if (SocketDTLSContext_has_cookie_exchange (ctx) != 0)
           abort ();
@@ -132,7 +167,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
 
       case OP_MULTIPLE_ROTATIONS:
-        ctx = SocketDTLSContext_new_server (cert_path, key_path, NULL);
+        ctx = SocketDTLSContext_new_server (g_cert_path, g_key_path, NULL);
         SocketDTLSContext_enable_cookie_exchange (ctx);
         /* Stress test rotations */
         for (int i = 0; i < 10; i++)
@@ -153,8 +188,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* Cleanup */
   if (ctx)
     SocketDTLSContext_free (&ctx);
-  if (have_certs)
-    cleanup_certs (cert_path, key_path);
 
   return 0;
 }
@@ -170,4 +203,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 }
 
 #endif /* SOCKET_HAS_TLS */
-

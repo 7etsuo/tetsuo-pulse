@@ -11,9 +11,11 @@
 #   ./scripts/run_fuzz_parallel.sh [OPTIONS]
 #
 # Options:
-#   -j JOBS     Jobs per target (default: 16, total = JOBS * 14 targets)
+#   -j JOBS     Jobs per target (default: 16, total = JOBS * targets)
 #   -t TIME     Total time in seconds (default: 3600 = 1 hour)
 #   -m MAXLEN   Maximum input length (default: 4096)
+#   -g GROUPS   Fuzzer groups to run (comma-separated, default: all)
+#               Groups: all, core, socket, dns, tls, dtls
 #   -r          Use ramdisk corpus (/mnt/fuzz_corpus)
 #   -c          Continue from existing corpus (don't reset)
 #   -q          Quick mode: 5 minutes, 8 jobs per target
@@ -29,17 +31,19 @@ USE_RAMDISK=0
 CONTINUE=0
 BUILD_DIR="build-fuzz"
 CORPUS_BASE="src/fuzz/corpus"
+FUZZ_GROUPS="all"
 
-# Fuzzer targets (27 total)
-TARGETS=(
-    # Core
+# Fuzzer targets by group
+TARGETS_CORE=(
     fuzz_arena
     fuzz_exception
     fuzz_timer
     fuzz_ratelimit
     fuzz_iptracker
     fuzz_synprotect
-    # Socket
+)
+
+TARGETS_SOCKET=(
     fuzz_socketbuf
     fuzz_socketbuf_stress
     fuzz_socketio
@@ -47,7 +51,9 @@ TARGETS=(
     fuzz_socketpool
     fuzz_socketdgram
     fuzz_unix_path
-    # DNS/Network
+)
+
+TARGETS_DNS=(
     fuzz_ip_parse
     fuzz_cidr_parse
     fuzz_dns_validate
@@ -56,7 +62,9 @@ TARGETS=(
     fuzz_happy_eyeballs
     fuzz_reconnect
     fuzz_async
-    # TLS
+)
+
+TARGETS_TLS=(
     fuzz_tls_alpn
     fuzz_tls_session
     fuzz_tls_certs
@@ -64,6 +72,46 @@ TARGETS=(
     fuzz_tls_sni
     fuzz_tls_verify
 )
+
+TARGETS_DTLS=(
+    fuzz_dtls_context
+    fuzz_dtls_cookie
+    fuzz_dtls_handshake
+    fuzz_dtls_io
+)
+
+# Build target list from selected groups
+build_target_list() {
+    TARGETS=()
+    IFS=',' read -ra GROUP_LIST <<< "$FUZZ_GROUPS"
+    for group in "${GROUP_LIST[@]}"; do
+        case "$group" in
+            all)
+                TARGETS+=("${TARGETS_CORE[@]}" "${TARGETS_SOCKET[@]}" "${TARGETS_DNS[@]}" "${TARGETS_TLS[@]}" "${TARGETS_DTLS[@]}")
+                ;;
+            core)
+                TARGETS+=("${TARGETS_CORE[@]}")
+                ;;
+            socket)
+                TARGETS+=("${TARGETS_SOCKET[@]}")
+                ;;
+            dns|network)
+                TARGETS+=("${TARGETS_DNS[@]}")
+                ;;
+            tls)
+                TARGETS+=("${TARGETS_TLS[@]}")
+                ;;
+            dtls)
+                TARGETS+=("${TARGETS_DTLS[@]}")
+                ;;
+            *)
+                log_error "Unknown group: $group"
+                log_info "Valid groups: all, core, socket, dns, tls, dtls"
+                exit 1
+                ;;
+        esac
+    done
+}
 
 # Color output
 RED='\033[0;31m'
@@ -86,24 +134,30 @@ show_usage() {
     echo "  -j JOBS     Jobs per target (default: $JOBS_PER_TARGET)"
     echo "  -t TIME     Total time in seconds (default: $TOTAL_TIME)"
     echo "  -m MAXLEN   Maximum input length (default: $MAX_LEN)"
+    echo "  -g GROUPS   Fuzzer groups to run, comma-separated (default: all)"
+    echo "              Groups: all, core, socket, dns, tls, dtls"
     echo "  -r          Use ramdisk corpus (/mnt/fuzz_corpus)"
     echo "  -c          Continue from existing corpus"
     echo "  -q          Quick mode: 5 min, 8 jobs/target"
     echo "  -h          Show this help"
     echo ""
     echo "Examples:"
-    echo "  $0                    # Default: 16 jobs/target, 1 hour"
+    echo "  $0                    # Default: all groups, 16 jobs/target, 1 hour"
+    echo "  $0 -g dtls            # Only DTLS fuzzers (4 targets)"
+    echo "  $0 -g tls,dtls        # TLS + DTLS fuzzers (10 targets)"
+    echo "  $0 -g core -j 10      # Core fuzzers with 10 jobs each"
     echo "  $0 -j 32 -t 86400     # 32 jobs/target, 24 hours"
     echo "  $0 -r -j 16 -t 3600   # Use ramdisk, 16 jobs, 1 hour"
     echo "  $0 -q                 # Quick 5-minute smoke test"
 }
 
 # Parse arguments
-while getopts "j:t:m:rcqh" opt; do
+while getopts "j:t:m:g:rcqh" opt; do
     case $opt in
         j) JOBS_PER_TARGET=$OPTARG ;;
         t) TOTAL_TIME=$OPTARG ;;
         m) MAX_LEN=$OPTARG ;;
+        g) FUZZ_GROUPS=$OPTARG ;;
         r) USE_RAMDISK=1 ;;
         c) CONTINUE=1 ;;
         q) JOBS_PER_TARGET=8; TOTAL_TIME=300 ;;
@@ -111,6 +165,9 @@ while getopts "j:t:m:rcqh" opt; do
         *) show_usage; exit 1 ;;
     esac
 done
+
+# Build target list from selected groups
+build_target_list
 
 # Determine corpus location
 if [[ $USE_RAMDISK -eq 1 ]]; then
@@ -153,7 +210,8 @@ TOTAL_JOBS=$((JOBS_PER_TARGET * ${#AVAILABLE_TARGETS[@]}))
 NPROC=$(nproc)
 
 log_section "Fuzzing Configuration"
-echo "  Targets:        ${AVAILABLE_TARGETS[*]}"
+echo "  Groups:         $FUZZ_GROUPS"
+echo "  Targets:        ${#AVAILABLE_TARGETS[@]} (${AVAILABLE_TARGETS[*]})"
 echo "  Jobs/target:    $JOBS_PER_TARGET"
 echo "  Total jobs:     $TOTAL_JOBS"
 echo "  Available CPUs: $NPROC"
