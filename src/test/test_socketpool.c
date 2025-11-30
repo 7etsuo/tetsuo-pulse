@@ -2761,6 +2761,354 @@ TEST (socketpool_batch_accept_wrap_fd_fails)
   Arena_dispose (&arena);
 }
 
+/* ==================== Graceful Shutdown (Drain) Tests ==================== */
+
+TEST (socketpool_drain_initial_state_running)
+{
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+
+  /* Pool should start in RUNNING state */
+  ASSERT_EQ (POOL_STATE_RUNNING, SocketPool_state (pool));
+  ASSERT_EQ (POOL_HEALTH_HEALTHY, SocketPool_health (pool));
+  ASSERT_EQ (0, SocketPool_is_draining (pool));
+  ASSERT_EQ (0, SocketPool_is_stopped (pool));
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_drain_empty_pool)
+{
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+
+  /* Drain empty pool - should transition immediately to STOPPED */
+  SocketPool_drain (pool, 5000);
+
+  ASSERT_EQ (POOL_STATE_STOPPED, SocketPool_state (pool));
+  ASSERT_EQ (POOL_HEALTH_STOPPED, SocketPool_health (pool));
+  ASSERT_EQ (0, SocketPool_is_draining (pool));
+  ASSERT_EQ (1, SocketPool_is_stopped (pool));
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_drain_poll_empty)
+{
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+
+  SocketPool_drain (pool, 5000);
+
+  /* Polling an already-stopped pool returns 0 */
+  int result = SocketPool_drain_poll (pool);
+  ASSERT_EQ (0, result);
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_drain_with_connections)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Connection_T conn = SocketPool_add (pool, socket);
+    ASSERT_NOT_NULL (conn);
+    ASSERT_EQ ((size_t)1, SocketPool_count (pool));
+
+    /* Drain with timeout - should enter DRAINING */
+    SocketPool_drain (pool, 5000);
+
+    ASSERT_EQ (POOL_STATE_DRAINING, SocketPool_state (pool));
+    ASSERT_EQ (POOL_HEALTH_DRAINING, SocketPool_health (pool));
+    ASSERT_EQ (1, SocketPool_is_draining (pool));
+    ASSERT_EQ (0, SocketPool_is_stopped (pool));
+
+    /* Poll should return connection count */
+    int remaining = SocketPool_drain_poll (pool);
+    ASSERT_EQ (1, remaining);
+
+    /* Remove connection - simulates connection closing */
+    SocketPool_remove (pool, socket);
+    ASSERT_EQ ((size_t)0, SocketPool_count (pool));
+
+    /* Poll now should complete drain */
+    remaining = SocketPool_drain_poll (pool);
+    ASSERT_EQ (0, remaining);
+    ASSERT_EQ (POOL_STATE_STOPPED, SocketPool_state (pool));
+  }
+  EXCEPT (SocketPool_Failed)
+    ASSERT (0);
+  END_TRY;
+
+  Socket_free (&socket);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_drain_force)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Connection_T conn = SocketPool_add (pool, socket);
+    ASSERT_NOT_NULL (conn);
+
+    /* Force immediate shutdown */
+    SocketPool_drain_force (pool);
+
+    ASSERT_EQ (POOL_STATE_STOPPED, SocketPool_state (pool));
+    ASSERT_EQ ((size_t)0, SocketPool_count (pool));
+  }
+  EXCEPT (SocketPool_Failed)
+    ASSERT (0);
+  END_TRY;
+
+  /* Socket should have been freed by force close - don't double-free */
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_drain_rejects_new_connections)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+  Socket_T socket1 = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_T socket2 = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    /* Add first socket before drain */
+    Connection_T conn1 = SocketPool_add (pool, socket1);
+    ASSERT_NOT_NULL (conn1);
+
+    /* Start drain */
+    SocketPool_drain (pool, 5000);
+    ASSERT_EQ (POOL_STATE_DRAINING, SocketPool_state (pool));
+
+    /* Accept should be rejected during drain */
+    ASSERT_EQ (0, SocketPool_accept_allowed (pool, NULL));
+
+    /* Add should return NULL during drain */
+    Connection_T conn2 = SocketPool_add (pool, socket2);
+    ASSERT_NULL (conn2);
+
+    /* Clean up socket1 */
+    SocketPool_remove (pool, socket1);
+    SocketPool_drain_poll (pool);
+  }
+  EXCEPT (SocketPool_Failed)
+    ASSERT (0);
+  END_TRY;
+
+  Socket_free (&socket1);
+  Socket_free (&socket2);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_drain_remaining_ms)
+{
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Connection_T conn = SocketPool_add (pool, socket);
+    ASSERT_NOT_NULL (conn);
+
+    /* Not draining - should return -1 */
+    ASSERT_EQ (-1, SocketPool_drain_remaining_ms (pool));
+
+    /* Start drain with 10 second timeout */
+    SocketPool_drain (pool, 10000);
+
+    /* Remaining should be close to 10000 (allow 1 second tolerance) */
+    int64_t remaining = SocketPool_drain_remaining_ms (pool);
+    ASSERT (remaining > 9000 && remaining <= 10000);
+
+    /* Clean up */
+    SocketPool_remove (pool, socket);
+    SocketPool_drain_poll (pool);
+  }
+  EXCEPT (SocketPool_Failed)
+    ASSERT (0);
+  END_TRY;
+
+  Socket_free (&socket);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_drain_idempotent)
+{
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+
+  /* Multiple drain calls should be idempotent */
+  SocketPool_drain (pool, 5000);
+  ASSERT_EQ (POOL_STATE_STOPPED, SocketPool_state (pool));
+
+  /* Second drain call should be no-op */
+  SocketPool_drain (pool, 1000);
+  ASSERT_EQ (POOL_STATE_STOPPED, SocketPool_state (pool));
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+static volatile int drain_callback_invoked = 0;
+static volatile int drain_callback_timed_out = -1;
+
+static void
+test_drain_callback (SocketPool_T pool, int timed_out, void *data)
+{
+  (void)pool;
+  (void)data;
+  drain_callback_invoked = 1;
+  drain_callback_timed_out = timed_out;
+}
+
+TEST (socketpool_drain_callback)
+{
+  drain_callback_invoked = 0;
+  drain_callback_timed_out = -1;
+
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+
+  SocketPool_set_drain_callback (pool, test_drain_callback, NULL);
+
+  /* Drain empty pool - callback should be invoked */
+  SocketPool_drain (pool, 5000);
+
+  ASSERT_EQ (1, drain_callback_invoked);
+  ASSERT_EQ (0, drain_callback_timed_out); /* Graceful, not forced */
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_drain_callback_forced)
+{
+  setup_signals ();
+  drain_callback_invoked = 0;
+  drain_callback_timed_out = -1;
+
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Connection_T conn = SocketPool_add (pool, socket);
+    ASSERT_NOT_NULL (conn);
+
+    SocketPool_set_drain_callback (pool, test_drain_callback, NULL);
+
+    /* Force close - callback should be invoked with timed_out=1 */
+    SocketPool_drain_force (pool);
+
+    ASSERT_EQ (1, drain_callback_invoked);
+    ASSERT_EQ (1, drain_callback_timed_out); /* Forced */
+  }
+  EXCEPT (SocketPool_Failed)
+    ASSERT (0);
+  END_TRY;
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_drain_wait_empty)
+{
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+
+  /* drain_wait on empty pool should return immediately with 0 (graceful) */
+  int result = SocketPool_drain_wait (pool, 5000);
+  ASSERT_EQ (0, result);
+  ASSERT_EQ (POOL_STATE_STOPPED, SocketPool_state (pool));
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_drain_zero_timeout_forces)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    Connection_T conn = SocketPool_add (pool, socket);
+    ASSERT_NOT_NULL (conn);
+
+    /* Zero timeout should force close immediately */
+    SocketPool_drain (pool, 0);
+
+    ASSERT_EQ (POOL_STATE_STOPPED, SocketPool_state (pool));
+    ASSERT_EQ ((size_t)0, SocketPool_count (pool));
+  }
+  EXCEPT (SocketPool_Failed)
+    ASSERT (0);
+  END_TRY;
+
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+TEST (socketpool_health_status_mapping)
+{
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 100, 1024);
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+
+  TRY
+  {
+    /* RUNNING -> HEALTHY */
+    ASSERT_EQ (POOL_HEALTH_HEALTHY, SocketPool_health (pool));
+
+    Connection_T conn = SocketPool_add (pool, socket);
+    ASSERT_NOT_NULL (conn);
+
+    /* Start drain */
+    SocketPool_drain (pool, 5000);
+
+    /* DRAINING -> DRAINING */
+    ASSERT_EQ (POOL_HEALTH_DRAINING, SocketPool_health (pool));
+
+    /* Complete drain */
+    SocketPool_remove (pool, socket);
+    SocketPool_drain_poll (pool);
+
+    /* STOPPED -> STOPPED */
+    ASSERT_EQ (POOL_HEALTH_STOPPED, SocketPool_health (pool));
+  }
+  EXCEPT (SocketPool_Failed)
+    ASSERT (0);
+  END_TRY;
+
+  Socket_free (&socket);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
 int
 main (void)
 {

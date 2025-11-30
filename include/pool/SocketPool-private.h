@@ -12,6 +12,7 @@
  */
 
 #include <pthread.h>
+#include <stdint.h>
 #include <time.h>
 
 #include "core/Arena.h"
@@ -142,6 +143,12 @@ struct T
   
   /* SYN flood protection */
   SocketSYNProtect_T syn_protect;   /**< SYN flood protection (NULL if disabled) */
+  
+  /* Graceful shutdown (drain) state */
+  volatile int state;               /**< SocketPool_State (atomic for lock-free reads) */
+  int64_t drain_deadline_ms;        /**< Monotonic deadline for forced shutdown */
+  SocketPool_DrainCallback drain_cb; /**< Drain completion callback */
+  void *drain_cb_data;              /**< User data for drain callback */
 };
 #undef T
 

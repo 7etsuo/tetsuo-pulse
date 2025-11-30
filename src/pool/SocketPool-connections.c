@@ -501,18 +501,35 @@ find_or_create_slot (T pool, Socket_T socket, time_t now)
 }
 
 /**
+ * check_pool_accepting - Check if pool is accepting new connections
+ * @pool: Pool instance
+ *
+ * Returns: 1 if accepting (RUNNING state), 0 if draining or stopped
+ * Thread-safe: Call with mutex held
+ */
+static int
+check_pool_accepting (const T pool)
+{
+  return pool->state == POOL_STATE_RUNNING;
+}
+
+/**
  * add_unlocked - Add socket to pool without locking
  * @pool: Pool instance
  * @socket: Socket to add
  * @now: Current time
  *
- * Returns: Connection or NULL if pool is full
+ * Returns: Connection or NULL if pool is full or draining
  * Thread-safe: Call with mutex held
  */
 static Connection_T
 add_unlocked (T pool, Socket_T socket, time_t now)
 {
   Connection_T conn;
+
+  /* Reject if draining or stopped */
+  if (!check_pool_accepting (pool))
+    return NULL;
 
   if (check_pool_full (pool))
     return NULL;

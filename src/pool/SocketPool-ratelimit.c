@@ -178,6 +178,20 @@ configure_ip_tracker (T pool, int max_conns)
  * ============================================================================ */
 
 /**
+ * check_pool_accepting_unlocked - Check if pool is accepting connections
+ * @pool: Connection pool (must hold mutex)
+ *
+ * Returns: 1 if accepting (RUNNING state), 0 if draining or stopped
+ *
+ * Pools in DRAINING or STOPPED state reject all new connections.
+ */
+static int
+check_pool_accepting_unlocked (const T pool)
+{
+  return pool->state == POOL_STATE_RUNNING;
+}
+
+/**
  * check_rate_limit_unlocked - Check if connection rate allows new connection
  * @pool: Connection pool (must hold mutex)
  *
@@ -433,10 +447,11 @@ SocketPool_getmaxperip (T pool)
  * @pool: Connection pool
  * @client_ip: Client IP address (may be NULL)
  *
- * Returns: 1 if allowed, 0 if rate limited or IP limit reached
+ * Returns: 1 if allowed, 0 if draining/stopped, rate limited, or IP limit reached
  * Thread-safe: Yes - acquires pool mutex
  *
  * Does NOT consume rate tokens - use for pre-check only.
+ * Returns 0 immediately if pool is draining or stopped.
  */
 int
 SocketPool_accept_allowed (T pool, const char *client_ip)
@@ -446,6 +461,14 @@ SocketPool_accept_allowed (T pool, const char *client_ip)
   assert (pool);
 
   pthread_mutex_lock (&pool->mutex);
+
+  /* Reject if draining or stopped */
+  if (!check_pool_accepting_unlocked (pool))
+    {
+      pthread_mutex_unlock (&pool->mutex);
+      return 0;
+    }
+
   allowed = check_rate_limit_unlocked (pool)
             && check_ip_limit_unlocked (pool, client_ip);
   pthread_mutex_unlock (&pool->mutex);
@@ -454,13 +477,33 @@ SocketPool_accept_allowed (T pool, const char *client_ip)
 }
 
 /**
+ * check_pool_accepting - Check if pool is accepting connections (with mutex)
+ * @pool: Connection pool
+ *
+ * Returns: 1 if accepting, 0 if draining or stopped
+ * Thread-safe: Yes - acquires pool mutex
+ */
+static int
+check_pool_accepting (T pool)
+{
+  int accepting;
+
+  pthread_mutex_lock (&pool->mutex);
+  accepting = check_pool_accepting_unlocked (pool);
+  pthread_mutex_unlock (&pool->mutex);
+
+  return accepting;
+}
+
+/**
  * SocketPool_accept_limited - Rate-limited accept
  * @pool: Connection pool
  * @server: Server socket to accept from
  *
- * Returns: Accepted socket, or NULL if rate limited or accept failed
+ * Returns: Accepted socket, or NULL if draining/stopped, rate limited, or accept failed
  * Thread-safe: Yes - acquires pool mutex for rate checks
  *
+ * Returns NULL immediately if pool is draining or stopped.
  * Consumes a rate token before attempting accept. If accept fails,
  * the token is NOT refunded (prevents DoS via rapid accept failures).
  */
@@ -472,6 +515,10 @@ SocketPool_accept_limited (T pool, Socket_T server)
 
   assert (pool);
   assert (server);
+
+  /* Reject if draining or stopped */
+  if (!check_pool_accepting (pool))
+    return NULL;
 
   /* Check and consume rate token */
   if (!try_consume_rate_token (pool))

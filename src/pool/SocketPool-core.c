@@ -382,6 +382,21 @@ initialize_pool_rate_limiting (T pool)
 }
 
 /**
+ * initialize_pool_drain - Initialize graceful shutdown (drain) fields
+ * @pool: Pool instance to initialize
+ *
+ * Sets drain fields to initial RUNNING state with no callback.
+ */
+static void
+initialize_pool_drain (T pool)
+{
+  pool->state = POOL_STATE_RUNNING;
+  pool->drain_deadline_ms = 0;
+  pool->drain_cb = NULL;
+  pool->drain_cb_data = NULL;
+}
+
+/**
  * initialize_pool_reconnect - Initialize reconnection support fields
  * @pool: Pool instance to initialize
  *
@@ -440,6 +455,7 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
   allocate_pool_components (arena, maxconns, pool);
   initialize_pool_fields (pool, arena, maxconns, bufsize);
   initialize_pool_rate_limiting (pool);
+  initialize_pool_drain (pool);
   initialize_pool_reconnect (pool);
   initialize_pool_mutex (pool);
   build_free_list (pool, maxconns);

@@ -499,7 +499,8 @@ static const char *socketmetrics_names[SOCKET_METRIC_COUNT]
         "dns.request_cancelled",  "dns.request_timeout",
         "poll.wakeups",           "poll.events_dispatched",
         "pool.connections_added", "pool.connections_removed",
-        "pool.connections_reused" };
+        "pool.connections_reused", "pool.drain_initiated",
+        "pool.drain_completed" };
 
 /**
  * SocketMetrics_increment - Increment a metric counter

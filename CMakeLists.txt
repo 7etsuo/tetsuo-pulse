@@ -165,6 +165,7 @@ set(LIB_SOURCES
     src/pool/SocketPool-connections.c
     src/pool/SocketPool-ops.c
     src/pool/SocketPool-ratelimit.c
+    src/pool/SocketPool-drain.c
 )
 
 # Add TLS sources if enabled (split for maintainability)

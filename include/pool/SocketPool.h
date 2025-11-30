@@ -554,5 +554,211 @@ extern SocketSYNProtect_T SocketPool_get_syn_protection (T pool);
 extern Socket_T SocketPool_accept_protected (T pool, Socket_T server,
                                              SocketSYN_Action *action_out);
 
+/* ============================================================================
+ * Graceful Shutdown (Drain) API
+ * ============================================================================
+ *
+ * Industry-standard graceful shutdown following patterns from nginx, HAProxy,
+ * and Go http.Server. Provides clean state machine transitions, non-blocking
+ * APIs for event loop integration, and timeout-guaranteed completion.
+ *
+ * State Machine:
+ *                     drain(timeout)
+ *     +---------+    ───────────────>    +----------+
+ *     | RUNNING |                        | DRAINING |
+ *     +---------+                        +----------+
+ *          ^                                  │
+ *          │                                  │ (count == 0 OR timeout)
+ *          │            +----------+          │
+ *          +────────────| STOPPED  |<─────────+
+ *           (restart)   +----------+
+ *
+ * Typical usage:
+ *   SocketPool_drain(pool, 30000);  // Start 30s drain
+ *   while (SocketPool_drain_poll(pool) > 0) {
+ *       // Continue event loop, connections closing naturally
+ *       SocketPoll_wait(poll, &events, SocketPool_drain_remaining_ms(pool));
+ *   }
+ *   SocketPool_free(&pool);
+ */
+
+/**
+ * Pool lifecycle states
+ */
+typedef enum
+{
+  POOL_STATE_RUNNING = 0,   /**< Normal operation - accepting connections */
+  POOL_STATE_DRAINING,      /**< Rejecting new, waiting for existing to close */
+  POOL_STATE_STOPPED        /**< Fully stopped - safe to free */
+} SocketPool_State;
+
+/**
+ * Health status for load balancer integration
+ */
+typedef enum
+{
+  POOL_HEALTH_HEALTHY = 0,  /**< Accept traffic normally */
+  POOL_HEALTH_DRAINING,     /**< Finishing existing connections, reject new */
+  POOL_HEALTH_STOPPED       /**< Not accepting any traffic */
+} SocketPool_Health;
+
+/**
+ * SocketPool_DrainCallback - Callback invoked when drain completes
+ * @pool: Pool instance that completed draining
+ * @timed_out: 1 if drain timed out and forced, 0 if graceful
+ * @data: User data from SocketPool_set_drain_callback
+ *
+ * Called exactly once when pool transitions to STOPPED state.
+ * Safe to call SocketPool_free() from within this callback.
+ * Thread-safe: Invoked from the thread calling drain_poll/drain_wait.
+ */
+typedef void (*SocketPool_DrainCallback) (T pool, int timed_out, void *data);
+
+/**
+ * SocketPool_state - Get current pool lifecycle state
+ * @pool: Pool instance
+ *
+ * Returns: Current SocketPool_State
+ * Thread-safe: Yes - atomic read
+ * Complexity: O(1)
+ */
+extern SocketPool_State SocketPool_state (T pool);
+
+/**
+ * SocketPool_health - Get pool health status for load balancers
+ * @pool: Pool instance
+ *
+ * Returns: Current SocketPool_Health
+ * Thread-safe: Yes - atomic read
+ * Complexity: O(1)
+ *
+ * Maps state to health:
+ * - RUNNING -> HEALTHY
+ * - DRAINING -> DRAINING
+ * - STOPPED -> STOPPED
+ */
+extern SocketPool_Health SocketPool_health (T pool);
+
+/**
+ * SocketPool_is_draining - Check if pool is currently draining
+ * @pool: Pool instance
+ *
+ * Returns: Non-zero if state is DRAINING
+ * Thread-safe: Yes - atomic read
+ * Complexity: O(1)
+ */
+extern int SocketPool_is_draining (T pool);
+
+/**
+ * SocketPool_is_stopped - Check if pool is fully stopped
+ * @pool: Pool instance
+ *
+ * Returns: Non-zero if state is STOPPED
+ * Thread-safe: Yes - atomic read
+ * Complexity: O(1)
+ */
+extern int SocketPool_is_stopped (T pool);
+
+/**
+ * SocketPool_drain - Initiate graceful shutdown
+ * @pool: Pool instance
+ * @timeout_ms: Maximum time to wait for connections to close (milliseconds)
+ *              Use 0 for immediate force-close, -1 for infinite wait
+ *
+ * Thread-safe: Yes
+ * Complexity: O(1)
+ *
+ * Transitions pool from RUNNING to DRAINING state:
+ * 1. Rejects all new connection attempts (accept_* return NULL)
+ * 2. Allows existing connections to continue until closed
+ * 3. After timeout_ms, remaining connections are force-closed
+ *
+ * Call drain_poll() or drain_wait() to complete the shutdown.
+ * Multiple calls are idempotent - only first call has effect.
+ *
+ * Emits: SOCKET_EVENT_POOL_DRAINING event
+ * Logs: "Pool drain initiated" at INFO level
+ */
+extern void SocketPool_drain (T pool, int timeout_ms);
+
+/**
+ * SocketPool_drain_poll - Poll drain progress (non-blocking)
+ * @pool: Pool instance
+ *
+ * Returns:
+ *   >0 - Number of connections still active (keep polling)
+ *    0 - Drain complete, pool is STOPPED (graceful)
+ *   -1 - Drain timed out, connections force-closed, pool is STOPPED
+ *
+ * Thread-safe: Yes
+ * Complexity: O(1) normally, O(n) on timeout (force close)
+ *
+ * Call periodically in event loop to:
+ * - Check if all connections have closed
+ * - Trigger force-close when timeout expires
+ * - Invoke drain callback on completion
+ *
+ * If pool is not draining (RUNNING or already STOPPED), returns count or 0.
+ */
+extern int SocketPool_drain_poll (T pool);
+
+/**
+ * SocketPool_drain_remaining_ms - Get time until forced shutdown
+ * @pool: Pool instance
+ *
+ * Returns: Milliseconds until timeout, 0 if already expired, -1 if not draining
+ * Thread-safe: Yes - atomic read
+ * Complexity: O(1)
+ *
+ * Use as timeout hint for poll/select during drain.
+ */
+extern int64_t SocketPool_drain_remaining_ms (T pool);
+
+/**
+ * SocketPool_drain_force - Force immediate shutdown
+ * @pool: Pool instance
+ *
+ * Thread-safe: Yes
+ * Complexity: O(n) where n = active connections
+ *
+ * Immediately closes all connections and transitions to STOPPED.
+ * Can be called at any time, regardless of current state.
+ * Invokes drain callback with timed_out=1.
+ *
+ * Logs: "Pool drain forced" at WARN level
+ */
+extern void SocketPool_drain_force (T pool);
+
+/**
+ * SocketPool_drain_wait - Blocking drain with internal poll loop
+ * @pool: Pool instance
+ * @timeout_ms: Maximum wait time (milliseconds), -1 for infinite
+ *
+ * Returns: 0 if graceful drain completed, -1 if timed out (forced)
+ * Thread-safe: Yes
+ *
+ * Convenience function that:
+ * 1. Calls SocketPool_drain(timeout_ms)
+ * 2. Polls with exponential backoff (1ms -> 100ms cap)
+ * 3. Returns when pool reaches STOPPED state
+ *
+ * For event-driven applications, prefer drain() + drain_poll() pattern.
+ */
+extern int SocketPool_drain_wait (T pool, int timeout_ms);
+
+/**
+ * SocketPool_set_drain_callback - Register drain completion callback
+ * @pool: Pool instance
+ * @cb: Callback function (NULL to clear)
+ * @data: User data passed to callback
+ *
+ * Thread-safe: Yes
+ *
+ * Callback is invoked exactly once when drain completes (transitions to STOPPED).
+ * Safe to call SocketPool_free() from callback.
+ */
+extern void SocketPool_set_drain_callback (T pool, SocketPool_DrainCallback cb,
+                                           void *data);
+
 #undef T
 #endif
