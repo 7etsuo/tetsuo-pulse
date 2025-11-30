@@ -39,13 +39,13 @@ generate_dtls_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
 
-  /* Generate self-signed certificate for testing */
+  /* Generate self-signed certificate for testing.
+   * Use a simple command compatible with all OpenSSL versions (1.0.2+).
+   * Avoid -addext which has inconsistent behavior across versions. */
   snprintf (cmd, sizeof (cmd),
-            "openssl genrsa -out %s 2048 && "
-            "openssl req -new -x509 -key %s -out %s -days 1 -nodes "
-            "-subj '/CN=localhost' -addext \"basicConstraints = CA:TRUE\" "
-            "2>/dev/null",
-            key_file, key_file, cert_file);
+            "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
+            "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
+            key_file, cert_file);
   if (system (cmd) != 0)
     goto fail;
 
