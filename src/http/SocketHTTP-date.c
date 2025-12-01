@@ -116,12 +116,14 @@ parse_day (const char *s, int *consumed)
 
 /**
  * Skip whitespace, return number of characters skipped
+ * @s: Start of string
+ * @max: Maximum characters to skip (bounds safety)
  */
 static int
-skip_ws (const char *s)
+skip_ws (const char *s, size_t max)
 {
   int n = 0;
-  while (s[n] == ' ' || s[n] == '\t')
+  while ((size_t)n < max && (s[n] == ' ' || s[n] == '\t'))
     n++;
   return n;
 }
@@ -425,7 +427,7 @@ parse_asctime (const char *s, size_t len, time_t *out)
   if (p >= end || *p != ' ')
     return -1;
   p++;
-  int ws = skip_ws (p);
+  int ws = skip_ws (p, (size_t)(end - p));
   p += ws;
 
   /* Parse day (1 or 2 digits) */
