@@ -882,6 +882,11 @@ SocketHTTP2_Stream_recv_headers (SocketHTTP2_Stream_T stream,
   assert (header_count);
   assert (end_stream);
 
+  /* Suppress unused parameter warnings - these will be used
+   * when full header storage is implemented */
+  (void)headers;
+  (void)max_headers;
+
   if (!stream->headers_received)
     {
       *header_count = 0;
@@ -935,6 +940,11 @@ SocketHTTP2_Stream_recv_trailers (SocketHTTP2_Stream_T stream,
   assert (stream);
   assert (trailers || max_trailers == 0);
   assert (trailer_count);
+
+  /* Suppress unused parameter warnings - these will be used
+   * when full trailer storage is implemented */
+  (void)trailers;
+  (void)max_trailers;
 
   if (!stream->trailers_received)
     {

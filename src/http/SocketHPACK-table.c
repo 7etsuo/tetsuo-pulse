@@ -29,129 +29,130 @@
  * ============================================================================ */
 
 /* clang-format off */
+/* Static table entries: { name, value, name_len, value_len } */
 const HPACK_StaticEntry hpack_static_table[SOCKETHPACK_STATIC_TABLE_SIZE] = {
   /* Index 1: :authority */
-  { ":authority", 10, "", 0 },
+  { ":authority", "", 10, 0 },
   /* Index 2: :method GET */
-  { ":method", 7, "GET", 3 },
+  { ":method", "GET", 7, 3 },
   /* Index 3: :method POST */
-  { ":method", 7, "POST", 4 },
+  { ":method", "POST", 7, 4 },
   /* Index 4: :path / */
-  { ":path", 5, "/", 1 },
+  { ":path", "/", 5, 1 },
   /* Index 5: :path /index.html */
-  { ":path", 5, "/index.html", 11 },
+  { ":path", "/index.html", 5, 11 },
   /* Index 6: :scheme http */
-  { ":scheme", 7, "http", 4 },
+  { ":scheme", "http", 7, 4 },
   /* Index 7: :scheme https */
-  { ":scheme", 7, "https", 5 },
+  { ":scheme", "https", 7, 5 },
   /* Index 8: :status 200 */
-  { ":status", 7, "200", 3 },
+  { ":status", "200", 7, 3 },
   /* Index 9: :status 204 */
-  { ":status", 7, "204", 3 },
+  { ":status", "204", 7, 3 },
   /* Index 10: :status 206 */
-  { ":status", 7, "206", 3 },
+  { ":status", "206", 7, 3 },
   /* Index 11: :status 304 */
-  { ":status", 7, "304", 3 },
+  { ":status", "304", 7, 3 },
   /* Index 12: :status 400 */
-  { ":status", 7, "400", 3 },
+  { ":status", "400", 7, 3 },
   /* Index 13: :status 404 */
-  { ":status", 7, "404", 3 },
+  { ":status", "404", 7, 3 },
   /* Index 14: :status 500 */
-  { ":status", 7, "500", 3 },
+  { ":status", "500", 7, 3 },
   /* Index 15: accept-charset */
-  { "accept-charset", 14, "", 0 },
+  { "accept-charset", "", 14, 0 },
   /* Index 16: accept-encoding gzip, deflate */
-  { "accept-encoding", 15, "gzip, deflate", 13 },
+  { "accept-encoding", "gzip, deflate", 15, 13 },
   /* Index 17: accept-language */
-  { "accept-language", 15, "", 0 },
+  { "accept-language", "", 15, 0 },
   /* Index 18: accept-ranges */
-  { "accept-ranges", 13, "", 0 },
+  { "accept-ranges", "", 13, 0 },
   /* Index 19: accept */
-  { "accept", 6, "", 0 },
+  { "accept", "", 6, 0 },
   /* Index 20: access-control-allow-origin */
-  { "access-control-allow-origin", 27, "", 0 },
+  { "access-control-allow-origin", "", 27, 0 },
   /* Index 21: age */
-  { "age", 3, "", 0 },
+  { "age", "", 3, 0 },
   /* Index 22: allow */
-  { "allow", 5, "", 0 },
+  { "allow", "", 5, 0 },
   /* Index 23: authorization */
-  { "authorization", 13, "", 0 },
+  { "authorization", "", 13, 0 },
   /* Index 24: cache-control */
-  { "cache-control", 13, "", 0 },
+  { "cache-control", "", 13, 0 },
   /* Index 25: content-disposition */
-  { "content-disposition", 19, "", 0 },
+  { "content-disposition", "", 19, 0 },
   /* Index 26: content-encoding */
-  { "content-encoding", 16, "", 0 },
+  { "content-encoding", "", 16, 0 },
   /* Index 27: content-language */
-  { "content-language", 16, "", 0 },
+  { "content-language", "", 16, 0 },
   /* Index 28: content-length */
-  { "content-length", 14, "", 0 },
+  { "content-length", "", 14, 0 },
   /* Index 29: content-location */
-  { "content-location", 16, "", 0 },
+  { "content-location", "", 16, 0 },
   /* Index 30: content-range */
-  { "content-range", 13, "", 0 },
+  { "content-range", "", 13, 0 },
   /* Index 31: content-type */
-  { "content-type", 12, "", 0 },
+  { "content-type", "", 12, 0 },
   /* Index 32: cookie */
-  { "cookie", 6, "", 0 },
+  { "cookie", "", 6, 0 },
   /* Index 33: date */
-  { "date", 4, "", 0 },
+  { "date", "", 4, 0 },
   /* Index 34: etag */
-  { "etag", 4, "", 0 },
+  { "etag", "", 4, 0 },
   /* Index 35: expect */
-  { "expect", 6, "", 0 },
+  { "expect", "", 6, 0 },
   /* Index 36: expires */
-  { "expires", 7, "", 0 },
+  { "expires", "", 7, 0 },
   /* Index 37: from */
-  { "from", 4, "", 0 },
+  { "from", "", 4, 0 },
   /* Index 38: host */
-  { "host", 4, "", 0 },
+  { "host", "", 4, 0 },
   /* Index 39: if-match */
-  { "if-match", 8, "", 0 },
+  { "if-match", "", 8, 0 },
   /* Index 40: if-modified-since */
-  { "if-modified-since", 17, "", 0 },
+  { "if-modified-since", "", 17, 0 },
   /* Index 41: if-none-match */
-  { "if-none-match", 13, "", 0 },
+  { "if-none-match", "", 13, 0 },
   /* Index 42: if-range */
-  { "if-range", 8, "", 0 },
+  { "if-range", "", 8, 0 },
   /* Index 43: if-unmodified-since */
-  { "if-unmodified-since", 19, "", 0 },
+  { "if-unmodified-since", "", 19, 0 },
   /* Index 44: last-modified */
-  { "last-modified", 13, "", 0 },
+  { "last-modified", "", 13, 0 },
   /* Index 45: link */
-  { "link", 4, "", 0 },
+  { "link", "", 4, 0 },
   /* Index 46: location */
-  { "location", 8, "", 0 },
+  { "location", "", 8, 0 },
   /* Index 47: max-forwards */
-  { "max-forwards", 12, "", 0 },
+  { "max-forwards", "", 12, 0 },
   /* Index 48: proxy-authenticate */
-  { "proxy-authenticate", 18, "", 0 },
+  { "proxy-authenticate", "", 18, 0 },
   /* Index 49: proxy-authorization */
-  { "proxy-authorization", 19, "", 0 },
+  { "proxy-authorization", "", 19, 0 },
   /* Index 50: range */
-  { "range", 5, "", 0 },
+  { "range", "", 5, 0 },
   /* Index 51: referer */
-  { "referer", 7, "", 0 },
+  { "referer", "", 7, 0 },
   /* Index 52: refresh */
-  { "refresh", 7, "", 0 },
+  { "refresh", "", 7, 0 },
   /* Index 53: retry-after */
-  { "retry-after", 11, "", 0 },
+  { "retry-after", "", 11, 0 },
   /* Index 54: server */
-  { "server", 6, "", 0 },
+  { "server", "", 6, 0 },
   /* Index 55: set-cookie */
-  { "set-cookie", 10, "", 0 },
+  { "set-cookie", "", 10, 0 },
   /* Index 56: strict-transport-security */
-  { "strict-transport-security", 25, "", 0 },
+  { "strict-transport-security", "", 25, 0 },
   /* Index 57: transfer-encoding */
-  { "transfer-encoding", 17, "", 0 },
+  { "transfer-encoding", "", 17, 0 },
   /* Index 58: user-agent */
-  { "user-agent", 10, "", 0 },
+  { "user-agent", "", 10, 0 },
   /* Index 59: vary */
-  { "vary", 4, "", 0 },
+  { "vary", "", 4, 0 },
   /* Index 60: via */
-  { "via", 3, "", 0 },
+  { "via", "", 3, 0 },
   /* Index 61: www-authenticate */
-  { "www-authenticate", 16, "", 0 },
+  { "www-authenticate", "", 16, 0 },
 };
 /* clang-format on */
 

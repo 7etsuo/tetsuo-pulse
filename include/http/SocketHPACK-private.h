@@ -114,12 +114,13 @@ struct SocketHPACK_Decoder
 
 /**
  * Static table entry structure
+ * Field order optimized to minimize padding (pointers first, then integers)
  */
 typedef struct
 {
   const char *name;  /**< Header name (compile-time string) */
-  uint8_t name_len;  /**< Name length */
   const char *value; /**< Header value (compile-time string) */
+  uint8_t name_len;  /**< Name length */
   uint8_t value_len; /**< Value length */
 } HPACK_StaticEntry;
 
