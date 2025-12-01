@@ -8,7 +8,7 @@ Full RFC compliance with security hardening throughout.
 ## Phase Completion Summary
 
 - [x] **Phase 1**: Cryptographic Utilities ✅
-- [ ] **Phase 2**: UTF-8 Validation
+- [x] **Phase 2**: UTF-8 Validation ✅
 - [ ] **Phase 3**: HTTP Core (RFC 9110)
 - [ ] **Phase 4**: HTTP/1.1 Message Syntax (RFC 9112)
 - [ ] **Phase 5**: HPACK Header Compression (RFC 7541)
@@ -336,15 +336,17 @@ void SocketCrypto_secure_clear(void *ptr, size_t len);
 
 ---
 
-## - [ ] Phase 2: UTF-8 Validation
+## - [x] Phase 2: UTF-8 Validation ✅ COMPLETED
 
 Complete UTF-8 validation per Unicode Standard with incremental API for streaming.
 Required for WebSocket text frame validation (RFC 6455 Section 8.1).
 
-### - [ ] Files to Create
+**Status**: Completed (December 2025)
 
-- [ ] `include/core/SocketUTF8.h`
-- [ ] `src/core/SocketUTF8.c`
+### - [x] Files Created ✅
+
+- [x] `include/core/SocketUTF8.h` - Public API header
+- [x] `src/core/SocketUTF8.c` - DFA-based implementation
 
 ### - [ ] API Specification
 
@@ -397,7 +399,7 @@ SocketUTF8_Result SocketUTF8_validate_str(const char *str);
 
 /**
  * UTF-8 incremental validator state
- * Opaque structure - use accessor functions
+ * Public structure for stack allocation - initialized via SocketUTF8_init()
  */
 typedef struct {
     uint32_t state;         /* DFA state */
@@ -495,15 +497,15 @@ SocketUTF8_Result SocketUTF8_count_codepoints(const unsigned char *data,
 const char *SocketUTF8_result_string(SocketUTF8_Result result);
 ```
 
-### - [ ] Implementation Requirements
+### - [x] Implementation Requirements ✅
 
-- [ ] DFA-based validation (Hoehrmann algorithm or equivalent)
-- [ ] O(n) time complexity, O(1) space complexity
-- [ ] Strict rejection of overlong encodings
-- [ ] Strict rejection of surrogate pairs (U+D800-U+DFFF)
-- [ ] Strict rejection of code points > U+10FFFF
-- [ ] Proper handling of incomplete sequences at boundaries
-- [ ] Thread-safe (state per-call, no globals)
+- [x] DFA-based validation (Hoehrmann algorithm)
+- [x] O(n) time complexity, O(1) space complexity
+- [x] Strict rejection of overlong encodings
+- [x] Strict rejection of surrogate pairs (U+D800-U+DFFF)
+- [x] Strict rejection of code points > U+10FFFF
+- [x] Proper handling of incomplete sequences at boundaries
+- [x] Thread-safe (state per-call, no globals)
 
 ### UTF-8 Encoding Reference
 
@@ -514,43 +516,45 @@ const char *SocketUTF8_result_string(SocketUTF8_Result result);
 | 3 | U+0800 | U+FFFF | 1110xxxx | 10xxxxxx | 10xxxxxx | |
 | 4 | U+10000 | U+10FFFF | 11110xxx | 10xxxxxx | 10xxxxxx | 10xxxxxx |
 
-### - [ ] Security Considerations
+### - [x] Security Considerations ✅
 
-- [ ] Reject overlong encodings (e.g., C0 80 for NUL) - security critical
-- [ ] Reject surrogates (used in UTF-16, invalid in UTF-8)
-- [ ] Reject code points > U+10FFFF
-- [ ] No buffer overflows in incremental parser
-- [ ] Validate continuation bytes strictly
+- [x] Reject overlong encodings (e.g., C0 80 for NUL) - security critical
+- [x] Reject surrogates (used in UTF-16, invalid in UTF-8)
+- [x] Reject code points > U+10FFFF
+- [x] No buffer overflows in incremental parser
+- [x] Validate continuation bytes strictly
 
-### - [ ] Tests
+### - [x] Tests ✅
 
-- [ ] `src/test/test_utf8.c`
-  - [ ] ASCII validation
-  - [ ] All 2-byte sequence boundaries
-  - [ ] All 3-byte sequence boundaries  
-  - [ ] All 4-byte sequence boundaries
-  - [ ] Maximum code point U+10FFFF
-  - [ ] Overlong encoding rejection (C0 80, E0 80 80, etc.)
-  - [ ] Surrogate pair rejection (ED A0 80 to ED BF BF)
-  - [ ] Code point > U+10FFFF rejection
-  - [ ] Invalid continuation bytes
-  - [ ] Missing continuation bytes
-  - [ ] Unexpected continuation bytes
-  - [ ] Incremental validation across chunk boundaries
-  - [ ] Multi-byte sequence split across chunks
-  - [ ] Empty input
-  - [ ] Single-byte sequences
-  - [ ] Unicode test files (if available)
+- [x] `src/test/test_utf8.c` (67 tests)
+  - [x] ASCII validation
+  - [x] All 2-byte sequence boundaries
+  - [x] All 3-byte sequence boundaries  
+  - [x] All 4-byte sequence boundaries
+  - [x] Maximum code point U+10FFFF
+  - [x] Overlong encoding rejection (C0 80, E0 80 80, etc.)
+  - [x] Surrogate pair rejection (ED A0 80 to ED BF BF)
+  - [x] Code point > U+10FFFF rejection
+  - [x] Invalid continuation bytes
+  - [x] Missing continuation bytes
+  - [x] Unexpected continuation bytes
+  - [x] Incremental validation across chunk boundaries
+  - [x] Multi-byte sequence split across chunks
+  - [x] Empty input
+  - [x] Single-byte sequences
+  - [x] Encode/decode round-trip tests
 
-### - [ ] Fuzzing Harnesses
+### - [x] Fuzzing Harnesses ✅
 
-- [ ] `src/fuzz/fuzz_utf8_validate.c` - One-shot validation
-- [ ] `src/fuzz/fuzz_utf8_incremental.c` - Incremental validation
+- [x] `src/fuzz/fuzz_utf8_validate.c` - One-shot validation
+- [x] `src/fuzz/fuzz_utf8_incremental.c` - Incremental validation
 
-### - [ ] Build System
+### - [x] Build System ✅
 
-- [ ] Add `src/core/SocketUTF8.c` to `LIB_SOURCES`
-- [ ] Add `test_utf8` to test executables
+- [x] Add `src/core/SocketUTF8.c` to `LIB_SOURCES`
+- [x] Add `include/core/SocketUTF8.h` to `CORE_HEADERS`
+- [x] Add `test_utf8` to test executables
+- [x] Add fuzz harnesses to `FUZZ_SOURCES`
 
 ---
 

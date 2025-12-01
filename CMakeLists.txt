@@ -139,6 +139,7 @@ set(LIB_SOURCES
     src/core/SocketIPTracker.c
     src/core/SocketSYNProtect.c
     src/core/SocketCrypto.c
+    src/core/SocketUTF8.c
     
     # Socket core (consolidated)
     src/socket/Socket.c
@@ -248,6 +249,7 @@ set(CORE_HEADERS
     include/core/SocketSYNProtect.h
     include/core/SocketSYNProtect-private.h
     include/core/SocketCrypto.h
+    include/core/SocketUTF8.h
 )
 
 set(SOCKET_HEADERS
@@ -365,6 +367,7 @@ set(TEST_SOURCES
     test_coverage
     test_synprotect
     test_crypto
+    test_utf8
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
@@ -487,6 +490,8 @@ if(ENABLE_FUZZING)
         fuzz_synprotect
         fuzz_base64_decode
         fuzz_hex_decode
+        fuzz_utf8_validate
+        fuzz_utf8_incremental
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
