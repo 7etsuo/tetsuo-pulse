@@ -163,84 +163,98 @@ parse_imf_fixdate (const char *s, size_t len, time_t *out)
   if (len < 29)
     return -1;
 
+  const char *end = s + len;
+
   /* Skip day name (3 chars) + comma + space */
   const char *p = s;
 
   /* Find comma */
-  while (*p && *p != ',')
+  while (p < end && *p != ',')
     p++;
-  if (*p != ',')
+  if (p >= end || *p != ',')
     return -1;
   p++; /* Skip comma */
 
   /* Skip space */
-  if (*p != ' ')
+  if (p >= end || *p != ' ')
     return -1;
   p++;
 
   /* Parse day (2 digits) */
+  if (p + 2 > end)
+    return -1;
   int day = parse_2digit (p);
   if (day < 1 || day > 31)
     return -1;
   p += 2;
 
   /* Space */
-  if (*p != ' ')
+  if (p >= end || *p != ' ')
     return -1;
   p++;
 
   /* Parse month (3 chars) */
+  if (p + 3 > end)
+    return -1;
   int month = parse_month (p);
   if (month < 0)
     return -1;
   p += 3;
 
   /* Space */
-  if (*p != ' ')
+  if (p >= end || *p != ' ')
     return -1;
   p++;
 
   /* Parse year (4 digits) */
+  if (p + 4 > end)
+    return -1;
   int year = parse_4digit (p);
   if (year < 0)
     return -1;
   p += 4;
 
   /* Space */
-  if (*p != ' ')
+  if (p >= end || *p != ' ')
     return -1;
   p++;
 
   /* Parse time HH:MM:SS */
+  if (p + 2 > end)
+    return -1;
   int hour = parse_2digit (p);
   if (hour < 0 || hour > 23)
     return -1;
   p += 2;
 
-  if (*p != ':')
+  if (p >= end || *p != ':')
     return -1;
   p++;
 
+  if (p + 2 > end)
+    return -1;
   int minute = parse_2digit (p);
   if (minute < 0 || minute > 59)
     return -1;
   p += 2;
 
-  if (*p != ':')
+  if (p >= end || *p != ':')
     return -1;
   p++;
 
+  if (p + 2 > end)
+    return -1;
   int second = parse_2digit (p);
   if (second < 0 || second > 60) /* 60 for leap second */
     return -1;
   p += 2;
 
   /* Space + GMT */
-  if (*p != ' ')
+  if (p >= end || *p != ' ')
     return -1;
   p++;
 
-  if (strncmp (p, "GMT", 3) != 0)
+  if (p + 3 > end || strncmp (p, "GMT", 3) != 0)
     return -1;
 
   /* Build struct tm */
@@ -264,44 +278,54 @@ parse_imf_fixdate (const char *s, size_t len, time_t *out)
 static int
 parse_rfc850 (const char *s, size_t len, time_t *out)
 {
-  (void)len; /* Unused - we rely on null termination */
+  /* RFC 850 minimum: "X, DD-Mon-YY HH:MM:SS GMT" = 26 chars */
+  if (len < 26)
+    return -1;
+
+  const char *end = s + len;
 
   /* Find comma */
   const char *p = s;
-  while (*p && *p != ',')
+  while (p < end && *p != ',')
     p++;
-  if (*p != ',')
+  if (p >= end || *p != ',')
     return -1;
   p++; /* Skip comma */
 
-  /* Skip space */
-  if (*p != ' ')
+  /* Skip space - check bounds first */
+  if (p >= end || *p != ' ')
     return -1;
   p++;
 
   /* Parse day (2 digits) */
+  if (p + 2 > end)
+    return -1;
   int day = parse_2digit (p);
   if (day < 1 || day > 31)
     return -1;
   p += 2;
 
   /* Dash */
-  if (*p != '-')
+  if (p >= end || *p != '-')
     return -1;
   p++;
 
   /* Parse month (3 chars) */
+  if (p + 3 > end)
+    return -1;
   int month = parse_month (p);
   if (month < 0)
     return -1;
   p += 3;
 
   /* Dash */
-  if (*p != '-')
+  if (p >= end || *p != '-')
     return -1;
   p++;
 
   /* Parse 2-digit year */
+  if (p + 2 > end)
+    return -1;
   int year2 = parse_2digit (p);
   if (year2 < 0)
     return -1;
@@ -311,40 +335,46 @@ parse_rfc850 (const char *s, size_t len, time_t *out)
   int year = (year2 >= 69) ? (1900 + year2) : (2000 + year2);
 
   /* Space */
-  if (*p != ' ')
+  if (p >= end || *p != ' ')
     return -1;
   p++;
 
   /* Parse time HH:MM:SS */
+  if (p + 2 > end)
+    return -1;
   int hour = parse_2digit (p);
   if (hour < 0 || hour > 23)
     return -1;
   p += 2;
 
-  if (*p != ':')
+  if (p >= end || *p != ':')
     return -1;
   p++;
 
+  if (p + 2 > end)
+    return -1;
   int minute = parse_2digit (p);
   if (minute < 0 || minute > 59)
     return -1;
   p += 2;
 
-  if (*p != ':')
+  if (p >= end || *p != ':')
     return -1;
   p++;
 
+  if (p + 2 > end)
+    return -1;
   int second = parse_2digit (p);
   if (second < 0 || second > 60)
     return -1;
   p += 2;
 
   /* Space + GMT */
-  if (*p != ' ')
+  if (p >= end || *p != ' ')
     return -1;
   p++;
 
-  if (strncmp (p, "GMT", 3) != 0)
+  if (p + 3 > end || strncmp (p, "GMT", 3) != 0)
     return -1;
 
   /* Build struct tm */
@@ -372,28 +402,35 @@ parse_asctime (const char *s, size_t len, time_t *out)
   if (len < 24)
     return -1;
 
+  const char *end = s + len;
   const char *p = s;
 
   /* Skip day name (3 chars) + space */
+  if (p + 4 > end)
+    return -1;
   p += 3;
   if (*p != ' ')
     return -1;
   p++;
 
   /* Parse month (3 chars) */
+  if (p + 3 > end)
+    return -1;
   int month = parse_month (p);
   if (month < 0)
     return -1;
   p += 3;
 
   /* Space(s) */
-  if (*p != ' ')
+  if (p >= end || *p != ' ')
     return -1;
   p++;
   int ws = skip_ws (p);
   p += ws;
 
   /* Parse day (1 or 2 digits) */
+  if (p >= end)
+    return -1;
   int consumed;
   int day = parse_day (p, &consumed);
   if (day < 1 || day > 31)
@@ -401,40 +438,48 @@ parse_asctime (const char *s, size_t len, time_t *out)
   p += consumed;
 
   /* Space */
-  if (*p != ' ')
+  if (p >= end || *p != ' ')
     return -1;
   p++;
 
   /* Parse time HH:MM:SS */
+  if (p + 2 > end)
+    return -1;
   int hour = parse_2digit (p);
   if (hour < 0 || hour > 23)
     return -1;
   p += 2;
 
-  if (*p != ':')
+  if (p >= end || *p != ':')
     return -1;
   p++;
 
+  if (p + 2 > end)
+    return -1;
   int minute = parse_2digit (p);
   if (minute < 0 || minute > 59)
     return -1;
   p += 2;
 
-  if (*p != ':')
+  if (p >= end || *p != ':')
     return -1;
   p++;
 
+  if (p + 2 > end)
+    return -1;
   int second = parse_2digit (p);
   if (second < 0 || second > 60)
     return -1;
   p += 2;
 
   /* Space */
-  if (*p != ' ')
+  if (p >= end || *p != ' ')
     return -1;
   p++;
 
   /* Parse year (4 digits) */
+  if (p + 4 > end)
+    return -1;
   int year = parse_4digit (p);
   if (year < 0)
     return -1;
