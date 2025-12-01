@@ -376,6 +376,26 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_SYN_DEFAULT_MAX_BLACKLIST 10000
 #endif
 
+/* Score threshold at or above which IP is considered trusted (for reputation) */
+#ifndef SOCKET_SYN_TRUSTED_SCORE_THRESHOLD
+#define SOCKET_SYN_TRUSTED_SCORE_THRESHOLD 0.9f
+#endif
+
+/* IPv6 address size in bytes (used for CIDR parsing) */
+#ifndef SOCKET_IPV6_ADDR_BYTES
+#define SOCKET_IPV6_ADDR_BYTES 16
+#endif
+
+/* IPv4 address size in bytes */
+#ifndef SOCKET_IPV4_ADDR_BYTES
+#define SOCKET_IPV4_ADDR_BYTES 4
+#endif
+
+/* Bits per byte (for CIDR prefix calculations) */
+#ifndef SOCKET_BITS_PER_BYTE
+#define SOCKET_BITS_PER_BYTE 8
+#endif
+
 /* ============================================================================
  * Logging Configuration
  * ============================================================================ */
@@ -819,6 +839,7 @@ union align
   ((size_t)(c) > 0 && (size_t)(c) <= SOCKET_MAX_CONNECTIONS)
 #define SOCKET_VALID_POLL_EVENTS(e)                                           \
   ((int)(e) > 0 && (int)(e) <= SOCKET_MAX_POLL_EVENTS)
+#define SOCKET_VALID_IP_STRING(ip) ((ip) != NULL && (ip)[0] != '\0')
 
 /* SAFE_CLOSE - Close fd with POSIX.1-2008 EINTR handling (no retry) */
 #define SAFE_CLOSE(fd)                                                        \

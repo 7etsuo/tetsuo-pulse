@@ -584,5 +584,35 @@ socket_util_hash_uint (unsigned value, unsigned table_size)
   return (value * HASH_GOLDEN_RATIO) % table_size;
 }
 
+/** DJB2 hash algorithm seed value (Daniel J. Bernstein) */
+#define SOCKET_UTIL_DJB2_SEED 5381u
+
+/**
+ * socket_util_hash_djb2 - Hash string using DJB2 algorithm
+ * @str: String to hash (must not be NULL)
+ * @table_size: Hash table size (should be prime for best distribution)
+ *
+ * Returns: Hash value in range [0, table_size)
+ * Thread-safe: Yes (pure function, no shared state)
+ *
+ * DJB2 hash: hash = hash * 33 + c
+ * The multiplication by 33 is optimized as (hash << 5) + hash.
+ * Provides good distribution for string keys like IP addresses.
+ *
+ * Security note: DJB2 is a fast, simple hash for load distribution.
+ * NOT cryptographic - do not use for security-sensitive purposes.
+ */
+static inline unsigned
+socket_util_hash_djb2 (const char *str, unsigned table_size)
+{
+  unsigned hash = SOCKET_UTIL_DJB2_SEED;
+  int c;
+
+  while ((c = *str++) != '\0')
+    hash = ((hash << 5) + hash) + (unsigned)c;
+
+  return hash % table_size;
+}
+
 #endif /* SOCKETUTIL_INCLUDED */
 

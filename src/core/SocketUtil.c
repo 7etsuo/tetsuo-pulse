@@ -44,6 +44,58 @@
 static volatile int monotonic_fallback_warned = 0;
 
 /**
+ * socket_timespec_to_ms - Convert timespec to milliseconds
+ * @ts: Pointer to timespec structure
+ *
+ * Returns: Time in milliseconds
+ * Thread-safe: Yes (pure function)
+ */
+static int64_t
+socket_timespec_to_ms (const struct timespec *ts)
+{
+  return (int64_t)ts->tv_sec * SOCKET_MS_PER_SECOND
+         + (int64_t)ts->tv_nsec / SOCKET_NS_PER_MS;
+}
+
+/**
+ * socket_try_clock - Attempt to get time from specified clock
+ * @clock_id: Clock to query (CLOCK_MONOTONIC or CLOCK_REALTIME)
+ * @result_ms: Output pointer for result in milliseconds
+ *
+ * Returns: 1 on success, 0 on failure
+ * Thread-safe: Yes
+ */
+static int
+socket_try_clock (clockid_t clock_id, int64_t *result_ms)
+{
+  struct timespec ts;
+
+  if (clock_gettime (clock_id, &ts) == 0)
+    {
+      *result_ms = socket_timespec_to_ms (&ts);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * socket_warn_monotonic_fallback - Emit one-time warning for clock fallback
+ *
+ * Thread-safe: Yes (benign race on flag)
+ */
+static void
+socket_warn_monotonic_fallback (void)
+{
+  if (!monotonic_fallback_warned)
+    {
+      monotonic_fallback_warned = 1;
+      fprintf (stderr,
+               "WARNING: CLOCK_MONOTONIC unavailable, using "
+               "CLOCK_REALTIME (vulnerable to time manipulation)\n");
+    }
+}
+
+/**
  * Socket_get_monotonic_ms - Get current monotonic time in milliseconds
  *
  * Returns: Current monotonic time in milliseconds, or 0 on failure
@@ -58,26 +110,15 @@ static volatile int monotonic_fallback_warned = 0;
 int64_t
 Socket_get_monotonic_ms (void)
 {
-  struct timespec ts;
+  int64_t result_ms;
 
-  /* Try monotonic clock first (immune to system time changes) */
-  if (clock_gettime (CLOCK_MONOTONIC, &ts) == 0)
-    return (int64_t)ts.tv_sec * SOCKET_MS_PER_SECOND
-           + (int64_t)ts.tv_nsec / SOCKET_NS_PER_MS;
+  if (socket_try_clock (CLOCK_MONOTONIC, &result_ms))
+    return result_ms;
 
-  /* Fall back to realtime clock with one-time security warning */
-  if (clock_gettime (CLOCK_REALTIME, &ts) == 0)
+  if (socket_try_clock (CLOCK_REALTIME, &result_ms))
     {
-      /* Emit warning once - race on flag is benign (may warn twice) */
-      if (!monotonic_fallback_warned)
-        {
-          monotonic_fallback_warned = 1;
-          fprintf (stderr,
-                   "WARNING: CLOCK_MONOTONIC unavailable, using "
-                   "CLOCK_REALTIME (vulnerable to time manipulation)\n");
-        }
-      return (int64_t)ts.tv_sec * SOCKET_MS_PER_SECOND
-             + (int64_t)ts.tv_nsec / SOCKET_NS_PER_MS;
+      socket_warn_monotonic_fallback ();
+      return result_ms;
     }
 
   return 0;
@@ -259,13 +300,18 @@ static SocketLogCallback socketlog_callback = NULL;
 static void *socketlog_userdata = NULL;
 
 /* Level names for display */
-static const char *default_level_names[]
-    = { "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL" };
+static const char *const default_level_names[] = {
+  "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
+};
 
-/* Timestamp formatting constants */
-#define SOCKETLOG_DEFAULT_TIMESTAMP "1970-01-01 00:00:00"
-#define SOCKETLOG_TIMESTAMP_FORMAT "%Y-%m-%d %H:%M:%S"
+/* Timestamp formatting constants - use SocketConfig.h naming */
 #define SOCKETLOG_TIMESTAMP_BUFSIZE 32
+#define SOCKETLOG_TIMESTAMP_FORMAT "%Y-%m-%d %H:%M:%S"
+#define SOCKETLOG_DEFAULT_TIMESTAMP "1970-01-01 00:00:00"
+
+/* Truncation indicator for log messages */
+#define SOCKETLOG_TRUNCATION_SUFFIX "..."
+#define SOCKETLOG_TRUNCATION_SUFFIX_LEN 4 /* 3 dots + NUL terminator */
 
 /**
  * socketlog_format_timestamp - Format current time as timestamp string
@@ -273,10 +319,7 @@ static const char *default_level_names[]
  * @bufsize: Size of buffer
  *
  * Returns: Pointer to buf with formatted timestamp
- * Thread-safe: Yes
- *
- * Uses localtime_r/localtime_s for thread-safe time conversion.
- * Falls back to default timestamp on failure.
+ * Thread-safe: Yes (uses localtime_r/localtime_s)
  */
 static const char *
 socketlog_format_timestamp (char *buf, size_t bufsize)
@@ -297,7 +340,7 @@ socketlog_format_timestamp (char *buf, size_t bufsize)
       || strftime (buf, bufsize, SOCKETLOG_TIMESTAMP_FORMAT, &tm_buf) == 0)
     {
       strncpy (buf, SOCKETLOG_DEFAULT_TIMESTAMP, bufsize);
-      buf[bufsize - 1] = '\0'; /* Ensure null termination */
+      buf[bufsize - 1] = '\0';
     }
 
   return buf;
@@ -338,8 +381,7 @@ default_logger (void *userdata, SocketLogLevel level, const char *component,
 
   fprintf (socketlog_get_stream (level), "%s [%s] %s: %s\n",
            socketlog_format_timestamp (ts, sizeof (ts)),
-           SocketLog_levelname (level),
-           component ? component : "(unknown)",
+           SocketLog_levelname (level), component ? component : "(unknown)",
            message ? message : "(null)");
 }
 
@@ -441,6 +483,28 @@ SocketLog_emitf (SocketLogLevel level, const char *component, const char *fmt,
 }
 
 /**
+ * socketlog_apply_truncation - Apply truncation indicator to buffer
+ * @buffer: Buffer to modify
+ * @bufsize: Size of buffer
+ *
+ * Thread-safe: Yes
+ *
+ * Appends "..." to indicate message was truncated.
+ */
+static void
+socketlog_apply_truncation (char *buffer, size_t bufsize)
+{
+  if (bufsize >= SOCKETLOG_TRUNCATION_SUFFIX_LEN)
+    {
+      size_t start = bufsize - SOCKETLOG_TRUNCATION_SUFFIX_LEN;
+      buffer[start] = '.';
+      buffer[start + 1] = '.';
+      buffer[start + 2] = '.';
+      buffer[bufsize - 1] = '\0';
+    }
+}
+
+/**
  * SocketLog_emitfv - Emit formatted log message with va_list
  * @level: Log level
  * @component: Component name
@@ -469,14 +533,8 @@ SocketLog_emitfv (SocketLogLevel level, const char *component, const char *fmt,
 
   written = vsnprintf (buffer, sizeof (buffer), fmt, args);
 
-  /* Indicate truncation if message was too long */
-  if (written >= (int)sizeof (buffer) && sizeof (buffer) >= 4)
-    {
-      buffer[sizeof (buffer) - 4] = '.';
-      buffer[sizeof (buffer) - 3] = '.';
-      buffer[sizeof (buffer) - 2] = '.';
-      buffer[sizeof (buffer) - 1] = '\0';
-    }
+  if (written >= (int)sizeof (buffer))
+    socketlog_apply_truncation (buffer, sizeof (buffer));
 
   SocketLog_emit (level, component, buffer);
 }
@@ -492,15 +550,36 @@ static pthread_mutex_t socketmetrics_mutex = PTHREAD_MUTEX_INITIALIZER;
 static unsigned long long socketmetrics_values[SOCKET_METRIC_COUNT] = { 0ULL };
 
 /* Metric names for display/debugging */
-static const char *socketmetrics_names[SOCKET_METRIC_COUNT]
-    = { "socket.connect_success", "socket.connect_failure",
-        "socket.shutdown_calls",  "dns.request_submitted",
-        "dns.request_completed",  "dns.request_failed",
-        "dns.request_cancelled",  "dns.request_timeout",
-        "poll.wakeups",           "poll.events_dispatched",
-        "pool.connections_added", "pool.connections_removed",
-        "pool.connections_reused", "pool.drain_initiated",
-        "pool.drain_completed" };
+static const char *const socketmetrics_names[SOCKET_METRIC_COUNT] = {
+  "socket.connect_success",
+  "socket.connect_failure",
+  "socket.shutdown_calls",
+  "dns.request_submitted",
+  "dns.request_completed",
+  "dns.request_failed",
+  "dns.request_cancelled",
+  "dns.request_timeout",
+  "poll.wakeups",
+  "poll.events_dispatched",
+  "pool.connections_added",
+  "pool.connections_removed",
+  "pool.connections_reused",
+  "pool.drain_initiated",
+  "pool.drain_completed"
+};
+
+/**
+ * socketmetrics_is_valid - Check if metric index is valid
+ * @metric: Metric to validate
+ *
+ * Returns: 1 if valid, 0 otherwise
+ * Thread-safe: Yes (pure function)
+ */
+static int
+socketmetrics_is_valid (SocketMetric metric)
+{
+  return metric >= 0 && metric < (SocketMetric)SOCKET_METRIC_COUNT;
+}
 
 /**
  * SocketMetrics_increment - Increment a metric counter
@@ -515,7 +594,7 @@ static const char *socketmetrics_names[SOCKET_METRIC_COUNT]
 void
 SocketMetrics_increment (SocketMetric metric, unsigned long value)
 {
-  if (metric < 0 || metric >= (SocketMetric)SOCKET_METRIC_COUNT)
+  if (!socketmetrics_is_valid (metric))
     {
       SocketLog_emitf (SOCKET_LOG_WARN, "SocketMetrics",
                        "Invalid metric %d in increment ignored", (int)metric);
@@ -547,8 +626,7 @@ SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot)
     }
 
   pthread_mutex_lock (&socketmetrics_mutex);
-  memcpy (snapshot->values, socketmetrics_values,
-          sizeof (socketmetrics_values));
+  memcpy (snapshot->values, socketmetrics_values, sizeof (socketmetrics_values));
   pthread_mutex_unlock (&socketmetrics_mutex);
 }
 
@@ -577,7 +655,7 @@ SocketMetrics_reset (void)
 const char *
 SocketMetrics_name (SocketMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_METRIC_COUNT)
+  if (!socketmetrics_is_valid (metric))
     return "unknown";
   return socketmetrics_names[metric];
 }
@@ -713,6 +791,33 @@ socketevent_add_handler_unlocked (SocketEventCallback callback, void *userdata)
 }
 
 /**
+ * socketevent_can_register_unlocked - Check if registration is possible
+ * @callback: Callback to register
+ * @userdata: User data for callback
+ *
+ * Returns: 1 if can register, 0 if duplicate or limit reached
+ * Thread-safe: No (caller must hold socketevent_mutex)
+ *
+ * Logs warnings for duplicate or limit-reached conditions.
+ */
+static int
+socketevent_can_register_unlocked (SocketEventCallback callback,
+                                   const void *userdata)
+{
+  if (socketevent_find_handler_unlocked (callback, userdata) >= 0)
+    return 0;
+
+  if (socketevent_handler_count >= SOCKET_EVENT_MAX_HANDLERS)
+    {
+      SocketLog_emit (SOCKET_LOG_WARN, "SocketEvents",
+                      "Handler limit reached; ignoring registration");
+      return 0;
+    }
+
+  return 1;
+}
+
+/**
  * SocketEvent_register - Register an event handler
  * @callback: Callback function to register
  * @userdata: User data passed to callback
@@ -735,21 +840,9 @@ SocketEvent_register (SocketEventCallback callback, void *userdata)
 
   pthread_mutex_lock (&socketevent_mutex);
 
-  if (socketevent_find_handler_unlocked (callback, userdata) >= 0)
-    {
-      pthread_mutex_unlock (&socketevent_mutex);
-      return;
-    }
+  if (socketevent_can_register_unlocked (callback, userdata))
+    socketevent_add_handler_unlocked (callback, userdata);
 
-  if (socketevent_handler_count >= SOCKET_EVENT_MAX_HANDLERS)
-    {
-      pthread_mutex_unlock (&socketevent_mutex);
-      SocketLog_emit (SOCKET_LOG_WARN, "SocketEvents",
-                      "Handler limit reached; ignoring registration");
-      return;
-    }
-
-  socketevent_add_handler_unlocked (callback, userdata);
   pthread_mutex_unlock (&socketevent_mutex);
 }
 

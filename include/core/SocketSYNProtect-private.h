@@ -14,6 +14,7 @@
 #include "core/Arena.h"
 #include "core/SocketRateLimit.h"
 #include "core/SocketSYNProtect.h"
+#include "core/SocketUtil.h"
 #include <pthread.h>
 #include <stdatomic.h>
 
@@ -170,12 +171,7 @@ struct SocketSYNProtect_T
 static inline unsigned
 synprotect_hash_ip (const char *ip, size_t table_size)
 {
-  /* DJB2 hash algorithm */
-  unsigned hash = 5381;
-  int c;
-  while ((c = *ip++) != '\0')
-    hash = ((hash << 5) + hash) + (unsigned)c;
-  return hash % table_size;
+  return socket_util_hash_djb2 (ip, (unsigned)table_size);
 }
 
 /**

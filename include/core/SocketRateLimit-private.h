@@ -54,23 +54,6 @@
 #define SOCKET_RATELIMIT_MUTEX_UNINITIALIZED 0
 
 /* ============================================================================
- * Thread-Local Exception Handling
- * ============================================================================ */
-
-/**
- * RAISE_RATELIMIT_ERROR - Raise exception with thread-local detailed message
- * @exception: Base exception type to raise
- *
- * Uses centralized exception infrastructure from SocketUtil.h.
- * Creates a thread-local copy of the exception with the current error buffer
- * as the reason string, then raises it. This pattern ensures thread safety.
- *
- * Note: Requires SOCKET_DECLARE_MODULE_EXCEPTION(SocketRateLimit) in .c file.
- */
-#define RAISE_RATELIMIT_ERROR(exception)                                       \
-  SOCKET_RAISE_MODULE_ERROR (SocketRateLimit, exception)
-
-/* ============================================================================
  * Rate Limiter Structure
  * ============================================================================ */
 

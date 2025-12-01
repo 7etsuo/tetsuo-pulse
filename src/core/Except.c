@@ -32,153 +32,297 @@
 
 #include "core/Except.h"
 
-/* Use thread-local storage for exception stack
- * Each thread has its own exception stack - no synchronization needed */
+/* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
+/** Default string for unknown file locations */
+#define EXCEPT_UNKNOWN_FILE "unknown"
+
+/** Format string for uncaught exception header */
+#define EXCEPT_UNCAUGHT_FMT "Uncaught exception"
+
+/** Format string for NULL pointer error */
+#define EXCEPT_NULL_PTR_FMT "FATAL: Except_raise called with NULL exception pointer"
+
+/** Format string for programming error hint */
+#define EXCEPT_PROG_ERROR_FMT "This indicates a programming error in exception usage"
+
+/** Abort message */
+#define EXCEPT_ABORTING_FMT "aborting..."
+
+/* ============================================================================
+ * Thread-Local Storage
+ * ============================================================================
+ */
+
+/**
+ * Thread-local exception stack
+ *
+ * Each thread maintains its own exception stack. No synchronization is
+ * needed between threads since each thread has independent storage.
+ */
 #ifdef _WIN32
 __declspec (thread) Except_Frame *Except_stack = NULL;
 #else
 __thread Except_Frame *Except_stack = NULL;
 #endif
 
+/* ============================================================================
+ * Global Exception Types
+ * ============================================================================
+ */
+
+/** Built-in assertion failure exception */
 const Except_T Assert_Failed = { &Assert_Failed, "Assertion failed" };
 
+/* ============================================================================
+ * Static Helper Functions - Output
+ * ============================================================================
+ */
+
 /**
- * except_validate_pointer - Validate exception pointer is not NULL
- * @e: Exception pointer to validate
+ * except_flush_stderr - Flush stderr and ensure output is written
+ *
+ * Thread-safe: Yes (stderr is thread-safe per POSIX)
+ *
+ * Used before abort() to ensure error messages are visible.
  */
 static void
-except_validate_pointer (const Except_T *e)
+except_flush_stderr (void)
 {
-  if (e == NULL)
-    {
-      fprintf (stderr,
-               "FATAL: Except_raise called with NULL exception pointer\n");
-      fprintf (stderr,
-               "This indicates a programming error in exception usage\n");
-      fprintf (stderr, "aborting...\n");
-      fflush (stderr);
-      abort ();
-    }
+  fflush (stderr);
 }
 
 /**
- * except_print_reason - Print exception reason to stderr
- * @e: Exception with reason to print
+ * except_emit_fatal - Emit a fatal error message to stderr
+ * @message: Message to emit (must not be NULL)
+ *
+ * Thread-safe: Yes
+ *
+ * Writes message to stderr followed by newline.
  */
 static void
-except_print_reason (const Except_T *e)
+except_emit_fatal (const char *message)
 {
-  if (e->reason)
+  assert (message != NULL);
+  fprintf (stderr, "%s\n", message);
+}
+
+/**
+ * except_emit_reason - Write exception reason to stderr
+ * @e: Exception with reason to print
+ *
+ * Thread-safe: Yes
+ *
+ * Outputs ": <reason>" or ": (no reason provided)" if reason is NULL.
+ */
+static void
+except_emit_reason (const Except_T *e)
+{
+  assert (e != NULL);
+
+  if (e->reason != NULL)
     fprintf (stderr, ": %s", e->reason);
   else
     fprintf (stderr, ": (no reason provided)");
 }
 
 /**
- * except_print_location - Print exception location information
+ * except_emit_location - Write source location to stderr
  * @file: Source file (may be NULL)
- * @line: Line number (may be 0)
+ * @line: Line number (may be 0 if unknown)
+ *
+ * Thread-safe: Yes
+ *
+ * Outputs location in format " raised at file:line\n" with graceful
+ * degradation when file or line is unavailable.
  */
 static void
-except_print_location (const char *file, int line)
+except_emit_location (const char *file, int line)
 {
-  if (file)
-    {
-      if (line > 0)
-        fprintf (stderr, " raised at %s:%d\n", file, line);
-      else
-        fprintf (stderr, " raised at %s\n", file);
-    }
+  if (file != NULL && line > 0)
+    fprintf (stderr, " raised at %s:%d\n", file, line);
+  else if (file != NULL)
+    fprintf (stderr, " raised at %s\n", file);
   else if (line > 0)
-    {
-      fprintf (stderr, " raised at line %d\n", line);
-    }
+    fprintf (stderr, " raised at line %d\n", line);
   else
-    {
-      fprintf (stderr, " (location unknown)\n");
-    }
+    fprintf (stderr, " (location unknown)\n");
 }
 
+/* ============================================================================
+ * Static Helper Functions - Validation
+ * ============================================================================
+ */
+
 /**
- * except_handle_uncaught - Handle uncaught exception by printing and aborting
- * @e: Exception that was uncaught
- * @file: Source file where exception was raised
- * @line: Line number where exception was raised
+ * except_validate_not_null - Validate exception pointer is not NULL
+ * @e: Exception pointer to validate
+ *
+ * If the pointer is NULL, prints error message and aborts. This is a
+ * programming error that cannot be recovered from.
+ *
+ * Thread-safe: Yes
  */
 static void
-except_handle_uncaught (const Except_T *e, const char *file, int line)
+except_validate_not_null (const Except_T *e)
 {
-  fprintf (stderr, "Uncaught exception");
-  except_print_reason (e);
-  except_print_location (file, line);
-  fprintf (stderr, "aborting...\n");
-  fflush (stderr);
+  if (e != NULL)
+    return;
+
+  except_emit_fatal (EXCEPT_NULL_PTR_FMT);
+  except_emit_fatal (EXCEPT_PROG_ERROR_FMT);
+  except_emit_fatal (EXCEPT_ABORTING_FMT);
+  except_flush_stderr ();
   abort ();
 }
 
 /**
- * except_store_in_frame - Store exception info in current frame
- * @p: Exception frame to store info in
- * @e: Exception to store
- * @file: Source file location
- * @line: Line number location
+ * except_validate_handler_exists - Check if exception handler exists
+ * @frame: Current exception frame (may be NULL)
+ *
+ * Returns: 1 if handler exists, 0 if no handler (uncaught exception)
+ *
+ * Thread-safe: Yes
+ */
+static int
+except_validate_handler_exists (const Except_Frame *frame)
+{
+  return frame != NULL;
+}
+
+/* ============================================================================
+ * Static Helper Functions - Uncaught Handling
+ * ============================================================================
+ */
+
+/**
+ * except_abort_uncaught - Handle uncaught exception by aborting
+ * @e: Exception that was uncaught
+ * @file: Source file where exception was raised
+ * @line: Line number where exception was raised
+ *
+ * Prints diagnostic information and aborts. This function does not return.
+ *
+ * Thread-safe: Yes
  */
 static void
-except_store_in_frame (Except_Frame *p, const Except_T *e, const char *file, int line)
+except_abort_uncaught (const Except_T *e, const char *file, int line)
 {
-  p->exception = e;
-  p->file = file ? file : "unknown";
-  p->line = line > 0 ? line : 0;
+  fprintf (stderr, "%s", EXCEPT_UNCAUGHT_FMT);
+  except_emit_reason (e);
+  except_emit_location (file, line);
+  except_emit_fatal (EXCEPT_ABORTING_FMT);
+  except_flush_stderr ();
+  abort ();
+}
+
+/* ============================================================================
+ * Static Helper Functions - Frame Management
+ * ============================================================================
+ */
+
+/**
+ * except_store_exception - Store exception info in current frame
+ * @frame: Exception frame to store info in (must not be NULL)
+ * @e: Exception to store (must not be NULL)
+ * @file: Source file location (may be NULL)
+ * @line: Line number location (may be 0)
+ *
+ * Thread-safe: Yes (operates on caller's frame)
+ */
+static void
+except_store_exception (Except_Frame *frame, const Except_T *e,
+                        const char *file, int line)
+{
+  assert (frame != NULL);
+  assert (e != NULL);
+
+  frame->exception = e;
+  frame->file = (file != NULL) ? file : EXCEPT_UNKNOWN_FILE;
+  frame->line = (line > 0) ? line : 0;
 }
 
 /**
- * except_unwind_stack - Unwind exception stack by popping current frame
- * @p: Current exception frame
+ * except_pop_frame - Unwind exception stack by popping current frame
+ * @frame: Current exception frame to pop
+ *
+ * Updates the thread-local exception stack to point to the previous frame.
+ *
+ * Thread-safe: Yes (thread-local storage)
  */
 static void
-except_unwind_stack (Except_Frame *p)
+except_pop_frame (Except_Frame *frame)
 {
-  Except_stack = p->prev;
+  assert (frame != NULL);
+  Except_stack = frame->prev;
 }
 
 /**
- * except_perform_jump - Perform non-local jump to exception handler
- * @p: Exception frame containing jump buffer
+ * except_jump_to_handler - Perform non-local jump to exception handler
+ * @frame: Exception frame containing jump buffer
+ *
+ * This function does not return - it performs a longjmp to the TRY block.
+ *
+ * Thread-safe: Yes (operates on caller's frame)
  */
 static void
-except_perform_jump (Except_Frame *p)
+except_jump_to_handler (Except_Frame *frame)
 {
-  /* Cast jmp_buf to non-volatile for longjmp - jmp_buf array is already saved
-   */
-  jmp_buf *env_ptr = (jmp_buf *)&p->env;
+  jmp_buf *env_ptr;
+
+  assert (frame != NULL);
+
+  /* Cast away volatile - jmp_buf contents already saved by setjmp */
+  env_ptr = (jmp_buf *)&frame->env;
   longjmp (*env_ptr, Except_raised);
 }
+
+/* ============================================================================
+ * Public Functions
+ * ============================================================================
+ */
 
 /**
  * Except_raise - Raise an exception with location information
  * @e: Exception to raise (must not be NULL)
  * @file: Source file where exception was raised (may be NULL)
  * @line: Line number where exception was raised (may be 0)
- * Raises an exception by performing a non-local jump to the nearest exception
- * handler. The exception stack must be properly set up by TRY blocks.
- * Thread Safety: Thread-safe due to thread-local exception stack.
- * No synchronization needed between threads.
+ *
+ * Raises an exception by performing a non-local jump to the nearest
+ * exception handler. The exception stack must be properly set up by
+ * TRY blocks.
+ *
+ * If no handler exists (Except_stack is NULL), this function prints
+ * diagnostic information and calls abort(). This is the correct behavior
+ * for uncaught exceptions - fail-fast rather than continue with undefined
+ * state.
+ *
+ * Returns: Does not return (either jumps to handler or aborts)
+ *
+ * Raises: Performs longjmp to TRY block, or aborts if uncaught
+ *
+ * Thread-safe: Yes - uses thread-local exception stack with no shared
+ *              state between threads.
+ *
  * Security: Validates NULL exception pointer to prevent undefined behavior.
- * Uses abort() for uncaught exceptions (appropriate for fatal errors).
+ *           Uses abort() for uncaught exceptions (fail-fast for safety).
  */
 void
 Except_raise (const Except_T *e, const char *file, int line)
 {
-  /* Read Except_stack into local variable - ensures we get current value */
-  volatile Except_Frame *volatile_p = Except_stack;
-  Except_Frame *p = (Except_Frame *)volatile_p;
+  Except_Frame *frame;
 
-  except_validate_pointer (e);
+  except_validate_not_null (e);
 
-  if (p == NULL)
-    except_handle_uncaught (e, file, line);
+  frame = Except_stack;
 
-  except_store_in_frame (p, e, file, line);
-  except_unwind_stack (p);
-  except_perform_jump (p);
+  if (!except_validate_handler_exists (frame))
+    except_abort_uncaught (e, file, line);
+
+  except_store_exception (frame, e, file, line);
+  except_pop_frame (frame);
+  except_jump_to_handler (frame);
 }
