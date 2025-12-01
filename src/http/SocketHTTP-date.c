@@ -97,13 +97,18 @@ parse_4digit (const char *s)
 
 /**
  * Parse 1-2 digit number (for ANSI C day)
+ * @s: String to parse
+ * @max: Maximum characters available (bounds safety)
+ * @consumed: Output - number of characters consumed
  */
 static int
-parse_day (const char *s, int *consumed)
+parse_day (const char *s, size_t max, int *consumed)
 {
+  if (max < 1)
+    return -1;
   if (isdigit ((unsigned char)s[0]))
     {
-      if (isdigit ((unsigned char)s[1]))
+      if (max >= 2 && isdigit ((unsigned char)s[1]))
         {
           *consumed = 2;
           return (s[0] - '0') * 10 + (s[1] - '0');
@@ -434,7 +439,7 @@ parse_asctime (const char *s, size_t len, time_t *out)
   if (p >= end)
     return -1;
   int consumed;
-  int day = parse_day (p, &consumed);
+  int day = parse_day (p, (size_t)(end - p), &consumed);
   if (day < 1 || day > 31)
     return -1;
   p += consumed;
