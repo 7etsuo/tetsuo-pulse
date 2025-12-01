@@ -13,6 +13,7 @@
 #include "core/SocketCrypto.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* Maximum decode output buffer size */
