@@ -168,6 +168,12 @@ set(LIB_SOURCES
     src/pool/SocketPool-ops.c
     src/pool/SocketPool-ratelimit.c
     src/pool/SocketPool-drain.c
+    
+    # HTTP module (RFC 9110/3986)
+    src/http/SocketHTTP-core.c
+    src/http/SocketHTTP-headers.c
+    src/http/SocketHTTP-uri.c
+    src/http/SocketHTTP-date.c
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -292,6 +298,11 @@ set(TLS_HEADERS
     include/tls/SocketDTLS-private.h
 )
 
+set(HTTP_HEADERS
+    include/http/SocketHTTP.h
+    include/http/SocketHTTP-private.h
+)
+
 set(TEST_HEADERS
     include/test/Test.h
 )
@@ -307,6 +318,7 @@ install(FILES ${DNS_HEADERS} DESTINATION include/dns)
 install(FILES ${POLL_HEADERS} DESTINATION include/poll)
 install(FILES ${POOL_HEADERS} DESTINATION include/pool)
 install(FILES ${TLS_HEADERS} DESTINATION include/tls)
+install(FILES ${HTTP_HEADERS} DESTINATION include/http)
 install(FILES ${TEST_HEADERS} DESTINATION include/test)
 
 # Print build configuration
@@ -368,6 +380,7 @@ set(TEST_SOURCES
     test_synprotect
     test_crypto
     test_utf8
+    test_http_core
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
@@ -492,6 +505,8 @@ if(ENABLE_FUZZING)
         fuzz_hex_decode
         fuzz_utf8_validate
         fuzz_utf8_incremental
+        fuzz_uri_parse
+        fuzz_http_date
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)

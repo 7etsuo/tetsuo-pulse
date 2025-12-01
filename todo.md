@@ -348,7 +348,7 @@ Required for WebSocket text frame validation (RFC 6455 Section 8.1).
 - [x] `include/core/SocketUTF8.h` - Public API header
 - [x] `src/core/SocketUTF8.c` - DFA-based implementation
 
-### - [ ] API Specification
+### - [x] API Specification ✅
 
 ```c
 /* ============================================================================
