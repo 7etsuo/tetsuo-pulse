@@ -15,7 +15,8 @@
 #   -t TIME     Total time in seconds (default: 3600 = 1 hour)
 #   -m MAXLEN   Maximum input length (default: 4096)
 #   -g GROUPS   Fuzzer groups to run (comma-separated, default: all)
-#               Groups: all, core, socket, dns, tls, dtls
+#               Groups: all, core, crypto, utf8, socket, dns, tls, dtls,
+#                       http, http1, hpack, http2
 #   -r          Use ramdisk corpus (/mnt/fuzz_corpus)
 #   -c          Continue from existing corpus (don't reset)
 #   -q          Quick mode: 5 minutes, 8 jobs per target
@@ -41,6 +42,16 @@ TARGETS_CORE=(
     fuzz_ratelimit
     fuzz_iptracker
     fuzz_synprotect
+)
+
+TARGETS_CRYPTO=(
+    fuzz_base64_decode
+    fuzz_hex_decode
+)
+
+TARGETS_UTF8=(
+    fuzz_utf8_validate
+    fuzz_utf8_incremental
 )
 
 TARGETS_SOCKET=(
@@ -71,6 +82,7 @@ TARGETS_TLS=(
     fuzz_tls_io
     fuzz_tls_sni
     fuzz_tls_verify
+    fuzz_cert_pinning
 )
 
 TARGETS_DTLS=(
@@ -80,6 +92,30 @@ TARGETS_DTLS=(
     fuzz_dtls_io
 )
 
+TARGETS_HTTP=(
+    fuzz_uri_parse
+    fuzz_http_date
+)
+
+TARGETS_HTTP1=(
+    fuzz_http1_request
+    fuzz_http1_response
+    fuzz_http1_chunked
+    fuzz_http1_headers
+)
+
+TARGETS_HPACK=(
+    fuzz_hpack_decode
+    fuzz_hpack_huffman
+    fuzz_hpack_integer
+)
+
+TARGETS_HTTP2=(
+    fuzz_http2_frames
+    fuzz_http2_headers
+    fuzz_http2_settings
+)
+
 # Build target list from selected groups
 build_target_list() {
     TARGETS=()
@@ -87,10 +123,16 @@ build_target_list() {
     for group in "${GROUP_LIST[@]}"; do
         case "$group" in
             all)
-                TARGETS+=("${TARGETS_CORE[@]}" "${TARGETS_SOCKET[@]}" "${TARGETS_DNS[@]}" "${TARGETS_TLS[@]}" "${TARGETS_DTLS[@]}")
+                TARGETS+=("${TARGETS_CORE[@]}" "${TARGETS_CRYPTO[@]}" "${TARGETS_UTF8[@]}" "${TARGETS_SOCKET[@]}" "${TARGETS_DNS[@]}" "${TARGETS_TLS[@]}" "${TARGETS_DTLS[@]}" "${TARGETS_HTTP[@]}" "${TARGETS_HTTP1[@]}" "${TARGETS_HPACK[@]}" "${TARGETS_HTTP2[@]}")
                 ;;
             core)
                 TARGETS+=("${TARGETS_CORE[@]}")
+                ;;
+            crypto)
+                TARGETS+=("${TARGETS_CRYPTO[@]}")
+                ;;
+            utf8)
+                TARGETS+=("${TARGETS_UTF8[@]}")
                 ;;
             socket)
                 TARGETS+=("${TARGETS_SOCKET[@]}")
@@ -104,9 +146,21 @@ build_target_list() {
             dtls)
                 TARGETS+=("${TARGETS_DTLS[@]}")
                 ;;
+            http)
+                TARGETS+=("${TARGETS_HTTP[@]}")
+                ;;
+            http1)
+                TARGETS+=("${TARGETS_HTTP1[@]}")
+                ;;
+            hpack)
+                TARGETS+=("${TARGETS_HPACK[@]}")
+                ;;
+            http2)
+                TARGETS+=("${TARGETS_HTTP2[@]}")
+                ;;
             *)
                 log_error "Unknown group: $group"
-                log_info "Valid groups: all, core, socket, dns, tls, dtls"
+                log_info "Valid groups: all, core, crypto, utf8, socket, dns, tls, dtls, http, http1, hpack, http2"
                 exit 1
                 ;;
         esac
@@ -135,16 +189,32 @@ show_usage() {
     echo "  -t TIME     Total time in seconds (default: $TOTAL_TIME)"
     echo "  -m MAXLEN   Maximum input length (default: $MAX_LEN)"
     echo "  -g GROUPS   Fuzzer groups to run, comma-separated (default: all)"
-    echo "              Groups: all, core, socket, dns, tls, dtls"
+    echo "              Groups: all, core, crypto, utf8, socket, dns, tls, dtls,"
+    echo "                      http, http1, hpack, http2"
     echo "  -r          Use ramdisk corpus (/mnt/fuzz_corpus)"
     echo "  -c          Continue from existing corpus"
     echo "  -q          Quick mode: 5 min, 8 jobs/target"
     echo "  -h          Show this help"
     echo ""
+    echo "Fuzzer Groups:"
+    echo "  core   - Arena, exception, timer, rate limit, IP tracker, SYN protect"
+    echo "  crypto - Base64, hex encoding/decoding"
+    echo "  utf8   - UTF-8 validation (one-shot and incremental)"
+    echo "  socket - Socket buffer, I/O, poll, pool, dgram, Unix path"
+    echo "  dns    - IP/CIDR parsing, DNS validation, connect, Happy Eyeballs"
+    echo "  tls    - TLS ALPN, session, certs, I/O, SNI, verify, cert pinning"
+    echo "  dtls   - DTLS context, cookie, handshake, I/O"
+    echo "  http   - URI parsing, HTTP date parsing"
+    echo "  http1  - HTTP/1.1 request, response, chunked, headers"
+    echo "  hpack  - HPACK decode, Huffman, integer coding"
+    echo "  http2  - HTTP/2 frames, headers, settings"
+    echo ""
     echo "Examples:"
     echo "  $0                    # Default: all groups, 16 jobs/target, 1 hour"
-    echo "  $0 -g dtls            # Only DTLS fuzzers (4 targets)"
-    echo "  $0 -g tls,dtls        # TLS + DTLS fuzzers (10 targets)"
+    echo "  $0 -g http2           # Only HTTP/2 fuzzers (3 targets)"
+    echo "  $0 -g http,http1,http2 # All HTTP fuzzers (9 targets)"
+    echo "  $0 -g hpack,http2     # HPACK + HTTP/2 (6 targets)"
+    echo "  $0 -g tls,dtls        # TLS + DTLS fuzzers (11 targets)"
     echo "  $0 -g core -j 10      # Core fuzzers with 10 jobs each"
     echo "  $0 -j 32 -t 86400     # 32 jobs/target, 24 hours"
     echo "  $0 -r -j 16 -t 3600   # Use ramdisk, 16 jobs, 1 hour"
