@@ -224,6 +224,13 @@ set(LIB_SOURCES
     src/http/SocketHPACK.c
     src/http/SocketHPACK-huffman.c
     src/http/SocketHPACK-table.c
+    
+    # HTTP/2 Protocol (RFC 9113)
+    src/http/SocketHTTP2-frame.c
+    src/http/SocketHTTP2-connection.c
+    src/http/SocketHTTP2-stream.c
+    src/http/SocketHTTP2-flow.c
+    src/http/SocketHTTP2-priority.c
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -362,6 +369,8 @@ set(HTTP_HEADERS
     include/http/SocketHTTP1-private.h
     include/http/SocketHPACK.h
     include/http/SocketHPACK-private.h
+    include/http/SocketHTTP2.h
+    include/http/SocketHTTP2-private.h
 )
 
 set(TEST_HEADERS
@@ -444,6 +453,7 @@ set(TEST_SOURCES
     test_http_core
     test_http1_parser
     test_hpack
+    test_http2
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
@@ -577,6 +587,9 @@ if(ENABLE_FUZZING)
         fuzz_hpack_decode
         fuzz_hpack_huffman
         fuzz_hpack_integer
+        fuzz_http2_frames
+        fuzz_http2_headers
+        fuzz_http2_settings
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
