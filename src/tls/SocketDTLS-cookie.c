@@ -17,6 +17,7 @@
 #ifdef SOCKET_HAS_TLS
 
 #include "tls/SocketDTLS-private.h"
+#include "core/SocketCrypto.h"
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
@@ -84,6 +85,10 @@ get_peer_address_from_ssl (SSL *ssl, struct sockaddr_storage *peer_addr,
  * @out_cookie: Output buffer (SOCKET_DTLS_COOKIE_LEN bytes)
  *
  * Returns: 0 on success, -1 on failure
+ *
+ * Note: This function is called from OpenSSL callbacks which expect return
+ * codes, not exceptions. We catch any exceptions from SocketCrypto and
+ * convert them to return codes.
  */
 static int
 compute_cookie_hmac (const unsigned char *secret,
@@ -93,6 +98,7 @@ compute_cookie_hmac (const unsigned char *secret,
   /* Build input: peer_addr || timestamp */
   unsigned char input[sizeof (struct sockaddr_storage) + sizeof (uint32_t)];
   size_t input_len = 0;
+  volatile int result = -1;
 
   memcpy (input, peer_addr, peer_len);
   input_len += peer_len;
@@ -101,16 +107,22 @@ compute_cookie_hmac (const unsigned char *secret,
   memcpy (input + input_len, &ts_net, sizeof (ts_net));
   input_len += sizeof (ts_net);
 
-  /* Compute HMAC-SHA256 */
-  unsigned int hmac_len = 0;
-  unsigned char *result = HMAC (EVP_sha256 (), secret,
-                                SOCKET_DTLS_COOKIE_SECRET_LEN, input, input_len,
-                                out_cookie, &hmac_len);
+  /* Compute HMAC-SHA256 using SocketCrypto.
+   * Catch exceptions since this is called from OpenSSL callbacks
+   * that expect return codes, not exceptions. */
+  TRY
+  {
+    SocketCrypto_hmac_sha256 (secret, SOCKET_DTLS_COOKIE_SECRET_LEN, input,
+                              input_len, out_cookie);
+    result = 0;
+  }
+  EXCEPT (SocketCrypto_Failed)
+  {
+    result = -1;
+  }
+  END_TRY;
 
-  if (!result || hmac_len != SOCKET_DTLS_COOKIE_LEN)
-    return -1;
-
-  return 0;
+  return result;
 }
 
 /* ============================================================================
@@ -303,7 +315,7 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
                            peer_len, timestamp, expected_cookie)
       == 0)
     {
-      if (CRYPTO_memcmp (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN) == 0)
+      if (SocketCrypto_secure_compare (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN) == 0)
         {
           pthread_mutex_unlock (&ctx->cookie.secret_mutex);
           return 1;
@@ -315,7 +327,7 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
                            peer_len, timestamp - 1, expected_cookie)
       == 0)
     {
-      if (CRYPTO_memcmp (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN) == 0)
+      if (SocketCrypto_secure_compare (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN) == 0)
         {
           pthread_mutex_unlock (&ctx->cookie.secret_mutex);
           return 1;
@@ -324,8 +336,8 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
 
   /* Try with previous secret (for rotation) */
   unsigned char zero_secret[SOCKET_DTLS_COOKIE_SECRET_LEN] = { 0 };
-  if (CRYPTO_memcmp (ctx->cookie.prev_secret, zero_secret,
-                     SOCKET_DTLS_COOKIE_SECRET_LEN)
+  if (SocketCrypto_secure_compare (ctx->cookie.prev_secret, zero_secret,
+                                   SOCKET_DTLS_COOKIE_SECRET_LEN)
       != 0)
     {
       /* Previous secret is set */
@@ -334,7 +346,7 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
                                timestamp, expected_cookie)
           == 0)
         {
-          if (CRYPTO_memcmp (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN)
+          if (SocketCrypto_secure_compare (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN)
               == 0)
             {
               pthread_mutex_unlock (&ctx->cookie.secret_mutex);
@@ -347,7 +359,7 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
                                timestamp - 1, expected_cookie)
           == 0)
         {
-          if (CRYPTO_memcmp (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN)
+          if (SocketCrypto_secure_compare (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN)
               == 0)
             {
               pthread_mutex_unlock (&ctx->cookie.secret_mutex);
@@ -358,8 +370,8 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
 
   pthread_mutex_unlock (&ctx->cookie.secret_mutex);
 
-  /* Clear expected cookie from stack */
-  OPENSSL_cleanse (expected_cookie, sizeof (expected_cookie));
+  /* Clear expected cookie from stack using SocketCrypto */
+  SocketCrypto_secure_clear (expected_cookie, sizeof (expected_cookie));
 
   return 0;
 }

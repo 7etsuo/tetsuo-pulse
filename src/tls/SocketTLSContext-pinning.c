@@ -27,11 +27,11 @@
 #ifdef SOCKET_HAS_TLS
 
 #include "tls/SocketTLS-private.h"
+#include "core/SocketCrypto.h"
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <openssl/pem.h>
-#include <openssl/sha.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,24 +52,6 @@ const Except_T SocketTLS_PinVerifyFailed
  */
 
 /**
- * hex_char_to_nibble - Convert hex character to nibble value
- * @c: Hex character ('0'-'9', 'a'-'f', 'A'-'F')
- *
- * Returns: 0-15 on success, -1 on invalid character
- */
-static int
-hex_char_to_nibble (char c)
-{
-  if (c >= '0' && c <= '9')
-    return c - '0';
-  if (c >= 'a' && c <= 'f')
-    return c - 'a' + 10;
-  if (c >= 'A' && c <= 'F')
-    return c - 'A' + 10;
-  return -1;
-}
-
-/**
  * parse_hex_hash - Parse hex string to binary hash
  * @hex: Hex string (64 chars for SHA256)
  * @out: Output buffer (32 bytes)
@@ -77,6 +59,7 @@ hex_char_to_nibble (char c)
  * Returns: 0 on success, -1 on invalid input
  *
  * Accepts optional "sha256//" prefix for compatibility with HPKP format.
+ * Uses SocketCrypto_hex_decode for actual decoding.
  */
 static int
 parse_hex_hash (const char *hex, unsigned char *out)
@@ -92,16 +75,8 @@ parse_hex_hash (const char *hex, unsigned char *out)
   if (len != SOCKET_TLS_PIN_HASH_LEN * 2)
     return -1;
 
-  for (size_t i = 0; i < SOCKET_TLS_PIN_HASH_LEN; i++)
-    {
-      int hi = hex_char_to_nibble (hex[i * 2]);
-      int lo = hex_char_to_nibble (hex[i * 2 + 1]);
-      if (hi < 0 || lo < 0)
-        return -1;
-      out[i] = (unsigned char)((hi << 4) | lo);
-    }
-
-  return 0;
+  /* Use SocketCrypto for hex decoding */
+  return SocketCrypto_hex_decode (hex, len, out) == (ssize_t)SOCKET_TLS_PIN_HASH_LEN ? 0 : -1;
 }
 
 /**
@@ -230,8 +205,8 @@ tls_pinning_extract_spki_hash (X509 *cert, unsigned char *out_hash)
   if (spki_len <= 0 || !spki_der)
     return -1;
 
-  /* Compute SHA256 hash */
-  SHA256 (spki_der, (size_t)spki_len, out_hash);
+  /* Compute SHA256 hash using SocketCrypto */
+  SocketCrypto_sha256 (spki_der, (size_t)spki_len, out_hash);
 
   OPENSSL_free (spki_der);
   return 0;
@@ -413,11 +388,11 @@ SocketTLSContext_clear_pins (T ctx)
 {
   assert (ctx);
 
-  /* Zero out existing pins for security */
+  /* Zero out existing pins for security using SocketCrypto */
   if (ctx->pinning.pins && ctx->pinning.count > 0)
     {
-      OPENSSL_cleanse (ctx->pinning.pins,
-                       ctx->pinning.count * sizeof (TLSCertPin));
+      SocketCrypto_secure_clear (ctx->pinning.pins,
+                                 ctx->pinning.count * sizeof (TLSCertPin));
     }
 
   ctx->pinning.count = 0;

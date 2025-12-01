@@ -14,10 +14,10 @@
 #ifdef SOCKET_HAS_TLS
 
 #include "tls/SocketDTLS-private.h"
+#include "core/SocketCrypto.h"
 #include <assert.h>
 #include <errno.h>
 #include <openssl/err.h>
-#include <openssl/rand.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -293,9 +293,9 @@ SocketDTLSContext_free (T *ctx_p)
 
   T ctx = *ctx_p;
 
-  /* Securely clear cookie secrets */
-  OPENSSL_cleanse (ctx->cookie.secret, sizeof (ctx->cookie.secret));
-  OPENSSL_cleanse (ctx->cookie.prev_secret, sizeof (ctx->cookie.prev_secret));
+  /* Securely clear cookie secrets using SocketCrypto */
+  SocketCrypto_secure_clear (ctx->cookie.secret, sizeof (ctx->cookie.secret));
+  SocketCrypto_secure_clear (ctx->cookie.prev_secret, sizeof (ctx->cookie.prev_secret));
 
   /* Destroy mutexes */
   pthread_mutex_destroy (&ctx->cookie.secret_mutex);
@@ -419,12 +419,12 @@ SocketDTLSContext_enable_cookie_exchange (T ctx)
                                 "Cookie exchange only for server contexts");
     }
 
-  /* Generate random secret */
-  if (RAND_bytes (ctx->cookie.secret, SOCKET_DTLS_COOKIE_SECRET_LEN) != 1)
-    ctx_raise_openssl_error_dtls ("Failed to generate cookie secret");
+  /* Generate random secret using SocketCrypto */
+  if (SocketCrypto_random_bytes (ctx->cookie.secret, SOCKET_DTLS_COOKIE_SECRET_LEN) != 0)
+    RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Failed to generate cookie secret");
 
-  /* Clear previous secret */
-  OPENSSL_cleanse (ctx->cookie.prev_secret, sizeof (ctx->cookie.prev_secret));
+  /* Clear previous secret using SocketCrypto */
+  SocketCrypto_secure_clear (ctx->cookie.prev_secret, sizeof (ctx->cookie.prev_secret));
 
   /* Set OpenSSL cookie callbacks */
   SSL_CTX_set_cookie_generate_cb (ctx->ssl_ctx, dtls_cookie_generate_cb);
@@ -464,11 +464,11 @@ SocketDTLSContext_rotate_cookie_secret (T ctx)
   memcpy (ctx->cookie.prev_secret, ctx->cookie.secret,
           SOCKET_DTLS_COOKIE_SECRET_LEN);
 
-  /* Generate new secret */
-  if (RAND_bytes (ctx->cookie.secret, SOCKET_DTLS_COOKIE_SECRET_LEN) != 1)
+  /* Generate new secret using SocketCrypto */
+  if (SocketCrypto_random_bytes (ctx->cookie.secret, SOCKET_DTLS_COOKIE_SECRET_LEN) != 0)
     {
       pthread_mutex_unlock (&ctx->cookie.secret_mutex);
-      ctx_raise_openssl_error_dtls ("Failed to generate new cookie secret");
+      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Failed to generate new cookie secret");
     }
 
   pthread_mutex_unlock (&ctx->cookie.secret_mutex);
