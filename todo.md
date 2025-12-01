@@ -558,21 +558,23 @@ const char *SocketUTF8_result_string(SocketUTF8_Result result);
 
 ---
 
-## - [ ] Phase 3: HTTP Core (RFC 9110)
+## - [x] Phase 3: HTTP Core (RFC 9110) ✅ COMPLETED
 
 Protocol-agnostic HTTP types, header handling, and URI parsing.
 Foundation for HTTP/1.1 and HTTP/2.
 
-### - [ ] Files to Create
+**Status**: Completed (December 2025)
 
-- [ ] `include/http/SocketHTTP.h` - Public types and utilities
-- [ ] `include/http/SocketHTTP-private.h` - Internal structures
-- [ ] `src/http/SocketHTTP-core.c` - Core utilities
-- [ ] `src/http/SocketHTTP-headers.c` - Header collection
-- [ ] `src/http/SocketHTTP-uri.c` - URI parsing
-- [ ] `src/http/SocketHTTP-date.c` - Date parsing
+### - [x] Files Created ✅
 
-### RFC Sections Covered
+- [x] `include/http/SocketHTTP.h` - Public types and utilities
+- [x] `include/http/SocketHTTP-private.h` - Internal structures
+- [x] `src/http/SocketHTTP-core.c` - Core utilities
+- [x] `src/http/SocketHTTP-headers.c` - Header collection
+- [x] `src/http/SocketHTTP-uri.c` - URI parsing
+- [x] `src/http/SocketHTTP-date.c` - Date parsing
+
+### RFC Sections Covered ✅
 
 - RFC 9110 Section 4: Identifiers (URIs)
 - RFC 9110 Section 5: Fields (Headers)
@@ -582,7 +584,7 @@ Foundation for HTTP/1.1 and HTTP/2.
 - RFC 9110 Section 15: Status Codes
 - RFC 3986: URI Generic Syntax
 
-### - [ ] API Specification
+### - [x] API Specification ✅
 
 ```c
 /* ============================================================================
@@ -999,69 +1001,69 @@ extern const Except_T SocketHTTP_InvalidURI;
 extern const Except_T SocketHTTP_InvalidHeader;
 ```
 
-### - [ ] Implementation Requirements
+### - [x] Implementation Requirements ✅
 
-#### Header Collection
-- [ ] Case-insensitive name lookup (ASCII only per RFC 9110)
-- [ ] Preserve original case for serialization
-- [ ] Support multiple headers with same name
-- [ ] Efficient iteration and lookup
-- [ ] Token parsing for headers like Connection, Transfer-Encoding
-- [ ] Comma-separated value handling
+#### Header Collection ✅
+- [x] Case-insensitive name lookup (ASCII only per RFC 9110)
+- [x] Preserve original case for serialization
+- [x] Support multiple headers with same name
+- [x] Efficient iteration and lookup (O(1) hash table)
+- [x] Token parsing for headers like Connection, Transfer-Encoding
+- [x] Comma-separated value handling
 
-#### URI Parsing (RFC 3986)
-- [ ] Full URI-reference parsing
-- [ ] Absolute URI support
-- [ ] Relative reference support
-- [ ] Percent-encoding handling
-- [ ] IPv6 address support in host
-- [ ] Query string parsing
-- [ ] Fragment handling
+#### URI Parsing (RFC 3986) ✅
+- [x] Full URI-reference parsing
+- [x] Absolute URI support
+- [x] Relative reference support
+- [x] Percent-encoding handling
+- [x] IPv6 address support in host
+- [x] Query string parsing
+- [x] Fragment handling
 
-#### Date Parsing
-- [ ] IMF-fixdate format (preferred)
-- [ ] RFC 850 format (obsolete, must accept)
-- [ ] ANSI C asctime() format (obsolete, must accept)
-- [ ] Timezone handling (always GMT)
+#### Date Parsing ✅
+- [x] IMF-fixdate format (preferred)
+- [x] RFC 850 format (obsolete, must accept)
+- [x] ANSI C asctime() format (obsolete, must accept)
+- [x] Timezone handling (always GMT)
 
-### - [ ] Security Considerations
+### - [x] Security Considerations ✅
 
-- [ ] Header name validation (reject control chars, space, etc.)
-- [ ] Header value validation (reject bare CR, LF, NUL)
-- [ ] URI length limits
-- [ ] Header count limits
-- [ ] Total header size limits
-- [ ] Protection against header injection
+- [x] Header name validation (reject control chars, space, etc.)
+- [x] Header value validation (reject bare CR, LF, NUL)
+- [x] URI length limits (8KB default)
+- [x] Header count limits (128 default)
+- [x] Total header size limits (64KB default)
+- [x] Protection against header injection
 
-### - [ ] Tests
+### - [x] Tests ✅
 
-- [ ] `src/test/test_http_core.c`
-  - [ ] All HTTP methods
-  - [ ] Method properties (safe, idempotent, etc.)
-  - [ ] All status codes
-  - [ ] Status categories
-  - [ ] Header add/get/remove
-  - [ ] Case-insensitive header lookup
-  - [ ] Multi-value headers
-  - [ ] URI parsing (various formats)
-  - [ ] URI encoding/decoding
-  - [ ] Date parsing (all three formats)
-  - [ ] Date formatting
-  - [ ] Media type parsing
-  - [ ] Accept header parsing
-  - [ ] Content negotiation
+- [x] `src/test/test_http_core.c` (190 tests)
+  - [x] All HTTP methods
+  - [x] Method properties (safe, idempotent, etc.)
+  - [x] All status codes
+  - [x] Status categories
+  - [x] Header add/get/remove
+  - [x] Case-insensitive header lookup
+  - [x] Multi-value headers
+  - [x] URI parsing (various formats)
+  - [x] URI encoding/decoding
+  - [x] Date parsing (all three formats)
+  - [x] Date formatting
+  - [x] Media type parsing
+  - [x] Accept header parsing
+  - [x] Content negotiation
 
-### - [ ] Fuzzing Harnesses
+### - [x] Fuzzing Harnesses ✅
 
-- [ ] `src/fuzz/fuzz_uri_parse.c`
-- [ ] `src/fuzz/fuzz_http_date.c`
-- [ ] `src/fuzz/fuzz_media_type.c`
-- [ ] `src/fuzz/fuzz_accept_header.c`
+- [x] `src/fuzz/fuzz_uri_parse.c`
+- [x] `src/fuzz/fuzz_http_date.c`
+- [ ] `src/fuzz/fuzz_media_type.c` (future)
+- [ ] `src/fuzz/fuzz_accept_header.c` (future)
 
-### - [ ] Build System
+### - [x] Build System ✅
 
-- [ ] Add HTTP source files to `LIB_SOURCES`
-- [ ] Add `test_http_core` to test executables
+- [x] Add HTTP source files to `LIB_SOURCES`
+- [x] Add `test_http_core` to test executables
 
 ---
 
