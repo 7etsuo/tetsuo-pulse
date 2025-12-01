@@ -266,6 +266,17 @@ if(SOCKET_HAS_TLS AND OpenSSL_FOUND)
     target_include_directories(socket_objects PRIVATE ${OPENSSL_INCLUDE_DIR})
 endif()
 
+# CRITICAL: Apply fuzzer instrumentation to library objects when fuzzing
+# Without this, the fuzzer only instruments the harness code, not the library!
+if(ENABLE_FUZZING)
+    target_compile_options(socket_objects PRIVATE
+        -fsanitize=fuzzer-no-link,address,undefined
+        -fno-omit-frame-pointer
+        -g
+    )
+    message(STATUS "Library objects compiled with fuzzer instrumentation")
+endif()
+
 # Static library
 add_library(socket_static STATIC $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_static PROPERTIES OUTPUT_NAME socket)
