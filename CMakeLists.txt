@@ -128,6 +128,46 @@ else()
     message(STATUS "TLS support disabled (use -DENABLE_TLS=ON to enable)")
 endif()
 
+# HTTP Compression support (optional - requires zlib and/or brotli)
+option(ENABLE_HTTP_COMPRESSION "Enable HTTP gzip/deflate/brotli compression" OFF)
+set(HTTP_COMPRESSION_LIBS "")
+
+if(ENABLE_HTTP_COMPRESSION)
+    # Find zlib (gzip/deflate)
+    find_package(ZLIB QUIET)
+    if(ZLIB_FOUND)
+        add_definitions(-DSOCKETHTTP1_HAS_ZLIB)
+        list(APPEND HTTP_COMPRESSION_LIBS ZLIB::ZLIB)
+        message(STATUS "zlib found - gzip/deflate compression enabled")
+    else()
+        message(STATUS "zlib not found - gzip/deflate compression disabled")
+    endif()
+    
+    # Find Brotli (optional)
+    find_library(BROTLI_DEC_LIB brotlidec)
+    find_library(BROTLI_ENC_LIB brotlienc)
+    find_path(BROTLI_INCLUDE_DIR brotli/decode.h)
+    
+    if(BROTLI_DEC_LIB AND BROTLI_ENC_LIB AND BROTLI_INCLUDE_DIR)
+        add_definitions(-DSOCKETHTTP1_HAS_BROTLI)
+        list(APPEND HTTP_COMPRESSION_LIBS ${BROTLI_DEC_LIB} ${BROTLI_ENC_LIB})
+        include_directories(${BROTLI_INCLUDE_DIR})
+        message(STATUS "Brotli found - brotli compression enabled")
+    else()
+        message(STATUS "Brotli not found - brotli compression disabled")
+    endif()
+    
+    # Enable compression module if any compression library found
+    if(ZLIB_FOUND OR (BROTLI_DEC_LIB AND BROTLI_ENC_LIB))
+        add_definitions(-DSOCKETHTTP1_HAS_COMPRESSION)
+        message(STATUS "HTTP compression support enabled")
+    else()
+        message(WARNING "HTTP compression requested but no compression libraries found")
+    endif()
+else()
+    message(STATUS "HTTP compression disabled (use -DENABLE_HTTP_COMPRESSION=ON to enable)")
+endif()
+
 # Collect all source files
 set(LIB_SOURCES
     # Core foundation (consolidated)
@@ -174,6 +214,11 @@ set(LIB_SOURCES
     src/http/SocketHTTP-headers.c
     src/http/SocketHTTP-uri.c
     src/http/SocketHTTP-date.c
+    
+    # HTTP/1.1 module (RFC 9112)
+    src/http/SocketHTTP1-parser.c
+    src/http/SocketHTTP1-serialize.c
+    src/http/SocketHTTP1-chunked.c
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -193,6 +238,13 @@ if(SOCKET_HAS_TLS)
     )
 endif()
 
+# Add HTTP compression source if compression enabled
+if(ENABLE_HTTP_COMPRESSION AND (ZLIB_FOUND OR (BROTLI_DEC_LIB AND BROTLI_ENC_LIB)))
+    list(APPEND LIB_SOURCES
+        src/http/SocketHTTP1-compress.c
+    )
+endif()
+
 # Object library for reuse in tests (avoids static library constructor issues)
 add_library(socket_objects OBJECT ${LIB_SOURCES})
 target_include_directories(socket_objects PRIVATE ${CMAKE_SOURCE_DIR}/include)
@@ -206,18 +258,18 @@ endif()
 add_library(socket_static STATIC $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_static PROPERTIES OUTPUT_NAME socket)
 if(SOCKET_HAS_TLS)
-    target_link_libraries(socket_static pthread m ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES})
+    target_link_libraries(socket_static pthread m ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
 else()
-    target_link_libraries(socket_static pthread m ${LIBURING_LIBRARIES})
+    target_link_libraries(socket_static pthread m ${LIBURING_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
 endif()
 
 # Shared library
 add_library(socket_shared SHARED $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_shared PROPERTIES OUTPUT_NAME socket)
 if(SOCKET_HAS_TLS)
-    target_link_libraries(socket_shared pthread m ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES})
+    target_link_libraries(socket_shared pthread m ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
 else()
-    target_link_libraries(socket_shared pthread m ${LIBURING_LIBRARIES})
+    target_link_libraries(socket_shared pthread m ${LIBURING_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
 endif()
 
 # Custom target to build both libraries (default)
@@ -301,6 +353,8 @@ set(TLS_HEADERS
 set(HTTP_HEADERS
     include/http/SocketHTTP.h
     include/http/SocketHTTP-private.h
+    include/http/SocketHTTP1.h
+    include/http/SocketHTTP1-private.h
 )
 
 set(TEST_HEADERS
@@ -381,15 +435,16 @@ set(TEST_SOURCES
     test_crypto
     test_utf8
     test_http_core
+    test_http1_parser
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
 foreach(test_name ${TEST_SOURCES})
     add_executable(${test_name} src/test/${test_name}.c $<TARGET_OBJECTS:socket_objects> $<TARGET_OBJECTS:test_framework>)
     if(SOCKET_HAS_TLS)
-        target_link_libraries(${test_name} pthread m ${OPENSSL_LIBRARIES})
+        target_link_libraries(${test_name} pthread m ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
     else()
-        target_link_libraries(${test_name} pthread m)
+        target_link_libraries(${test_name} pthread m ${HTTP_COMPRESSION_LIBS})
     endif()
     target_include_directories(${test_name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
     add_test(NAME ${test_name} COMMAND ${test_name})
@@ -507,6 +562,10 @@ if(ENABLE_FUZZING)
         fuzz_utf8_incremental
         fuzz_uri_parse
         fuzz_http_date
+        fuzz_http1_request
+        fuzz_http1_response
+        fuzz_http1_chunked
+        fuzz_http1_headers
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
@@ -549,9 +608,9 @@ if(ENABLE_FUZZING)
             
             # Link libraries
             if(SOCKET_HAS_TLS)
-                target_link_libraries(${fuzz_name} pthread m ${OPENSSL_LIBRARIES})
+                target_link_libraries(${fuzz_name} pthread m ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
             else()
-                target_link_libraries(${fuzz_name} pthread m)
+                target_link_libraries(${fuzz_name} pthread m ${HTTP_COMPRESSION_LIBS})
             endif()
             
             target_include_directories(${fuzz_name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
