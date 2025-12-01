@@ -219,6 +219,11 @@ set(LIB_SOURCES
     src/http/SocketHTTP1-parser.c
     src/http/SocketHTTP1-serialize.c
     src/http/SocketHTTP1-chunked.c
+    
+    # HPACK Header Compression (RFC 7541)
+    src/http/SocketHPACK.c
+    src/http/SocketHPACK-huffman.c
+    src/http/SocketHPACK-table.c
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -355,6 +360,8 @@ set(HTTP_HEADERS
     include/http/SocketHTTP-private.h
     include/http/SocketHTTP1.h
     include/http/SocketHTTP1-private.h
+    include/http/SocketHPACK.h
+    include/http/SocketHPACK-private.h
 )
 
 set(TEST_HEADERS
@@ -436,6 +443,7 @@ set(TEST_SOURCES
     test_utf8
     test_http_core
     test_http1_parser
+    test_hpack
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
@@ -566,6 +574,9 @@ if(ENABLE_FUZZING)
         fuzz_http1_response
         fuzz_http1_chunked
         fuzz_http1_headers
+        fuzz_hpack_decode
+        fuzz_hpack_huffman
+        fuzz_hpack_integer
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)

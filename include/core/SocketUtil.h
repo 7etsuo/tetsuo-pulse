@@ -614,5 +614,114 @@ socket_util_hash_djb2 (const char *str, unsigned table_size)
   return hash % table_size;
 }
 
+/**
+ * socket_util_hash_djb2_len - Hash string with explicit length using DJB2
+ * @str: String to hash (may contain null bytes)
+ * @len: Length of string
+ * @table_size: Hash table size (should be prime for best distribution)
+ *
+ * Returns: Hash value in range [0, table_size)
+ * Thread-safe: Yes (pure function, no shared state)
+ *
+ * Length-aware variant for non-null-terminated strings.
+ * Useful for parsing buffers where strings aren't null-terminated.
+ */
+static inline unsigned
+socket_util_hash_djb2_len (const char *str, size_t len, unsigned table_size)
+{
+  unsigned hash = SOCKET_UTIL_DJB2_SEED;
+  size_t i;
+
+  for (i = 0; i < len; i++)
+    hash = ((hash << 5) + hash) + (unsigned char)str[i];
+
+  return hash % table_size;
+}
+
+/**
+ * socket_util_hash_djb2_ci - Case-insensitive DJB2 hash
+ * @str: String to hash (must not be NULL)
+ * @table_size: Hash table size (should be prime for best distribution)
+ *
+ * Returns: Hash value in range [0, table_size)
+ * Thread-safe: Yes (pure function, no shared state)
+ *
+ * Case-insensitive variant for HTTP headers and similar keys.
+ * Converts ASCII uppercase to lowercase before hashing.
+ */
+static inline unsigned
+socket_util_hash_djb2_ci (const char *str, unsigned table_size)
+{
+  unsigned hash = SOCKET_UTIL_DJB2_SEED;
+  int c;
+
+  while ((c = *str++) != '\0')
+    {
+      /* Convert ASCII uppercase to lowercase */
+      if (c >= 'A' && c <= 'Z')
+        c += 32;
+      hash = ((hash << 5) + hash) + (unsigned)c;
+    }
+
+  return hash % table_size;
+}
+
+/**
+ * socket_util_hash_djb2_ci_len - Case-insensitive length-aware DJB2 hash
+ * @str: String to hash (may contain null bytes)
+ * @len: Length of string
+ * @table_size: Hash table size (should be prime for best distribution)
+ *
+ * Returns: Hash value in range [0, table_size)
+ * Thread-safe: Yes (pure function, no shared state)
+ *
+ * Combines length-aware and case-insensitive variants.
+ * Ideal for HTTP header name hashing where names aren't null-terminated.
+ */
+static inline unsigned
+socket_util_hash_djb2_ci_len (const char *str, size_t len, unsigned table_size)
+{
+  unsigned hash = SOCKET_UTIL_DJB2_SEED;
+  size_t i;
+
+  for (i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)str[i];
+      /* Convert ASCII uppercase to lowercase */
+      if (c >= 'A' && c <= 'Z')
+        c += 32;
+      hash = ((hash << 5) + hash) + c;
+    }
+
+  return hash % table_size;
+}
+
+/**
+ * socket_util_round_up_pow2 - Round up to next power of 2
+ * @n: Value to round up (must be > 0)
+ *
+ * Returns: Smallest power of 2 >= n
+ * Thread-safe: Yes (pure function)
+ *
+ * Useful for hash table sizing and circular buffer capacities
+ * where power-of-2 sizes allow efficient modulo via bitwise AND.
+ */
+static inline size_t
+socket_util_round_up_pow2 (size_t n)
+{
+  if (n == 0)
+    return 1;
+  n--;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  n |= n >> 16;
+#if SIZE_MAX > 0xFFFFFFFF
+  n |= n >> 32;
+#endif
+  return n + 1;
+}
+
 #endif /* SOCKETUTIL_INCLUDED */
 
