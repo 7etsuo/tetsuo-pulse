@@ -101,12 +101,21 @@ http2_flow_consume_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
 {
   assert (conn);
 
-  /* Consume connection-level window */
+  /* Check connection-level window */
+  if ((int32_t)bytes > conn->send_window)
+    {
+      return -1; /* Flow control error */
+    }
+
   conn->send_window -= (int32_t)bytes;
 
-  /* Consume stream-level window */
+  /* Check stream-level window */
   if (stream)
     {
+      if ((int32_t)bytes > stream->send_window)
+        {
+          return -1; /* Flow control error */
+        }
       stream->send_window -= (int32_t)bytes;
     }
 

@@ -1200,6 +1200,14 @@ http2_process_headers (SocketHTTP2_Conn_T conn,
   header_block = payload + offset;
   header_block_len = header->length - offset - pad_len;
 
+  /* Check header block size limit */
+  size_t max_header_list = conn->local_settings[SETTINGS_IDX_MAX_HEADER_LIST_SIZE];
+  if (header_block_len > max_header_list)
+    {
+      http2_send_stream_error (conn, header->stream_id, HTTP2_ENHANCE_YOUR_CALM);
+      return -1;
+    }
+
   if (header->flags & HTTP2_FLAG_END_HEADERS)
     {
       /* Complete header block */
@@ -1253,6 +1261,14 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
   if (!stream || !stream->header_block)
     {
       http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+      return -1;
+    }
+
+  /* Check accumulated header block size limit */
+  size_t max_header_list = conn->local_settings[SETTINGS_IDX_MAX_HEADER_LIST_SIZE];
+  if (stream->header_block_len + header->length > max_header_list)
+    {
+      http2_send_stream_error (conn, header->stream_id, HTTP2_ENHANCE_YOUR_CALM);
       return -1;
     }
 
@@ -1382,6 +1398,14 @@ http2_process_push_promise (SocketHTTP2_Conn_T conn,
 
   header_block = payload + offset;
   header_block_len = header->length - offset - pad_len;
+
+  /* Check header block size limit */
+  size_t max_header_list = conn->local_settings[SETTINGS_IDX_MAX_HEADER_LIST_SIZE];
+  if (header_block_len > max_header_list)
+    {
+      http2_send_stream_error (conn, promised_id, HTTP2_ENHANCE_YOUR_CALM);
+      return -1;
+    }
 
   if (header->flags & HTTP2_FLAG_END_HEADERS)
     {

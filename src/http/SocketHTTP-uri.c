@@ -73,6 +73,17 @@ is_host_char (char c)
 }
 
 /**
+ * Check if character is a control character (defense in depth)
+ * Rejects 0x00-0x1F and DEL (0x7F)
+ */
+static inline int
+is_control_char (char c)
+{
+  unsigned char uc = (unsigned char)c;
+  return uc < 0x20 || uc == 0x7F;
+}
+
+/**
  * Allocate and copy string into arena (null-terminated)
  */
 static char *
@@ -375,7 +386,9 @@ SocketHTTP_URI_parse (const char *uri, size_t len, SocketHTTP_URI *result,
           break;
 
         case URI_STATE_FRAGMENT:
-          /* Accept all characters in fragment */
+          /* Reject control characters for defense in depth */
+          if (is_control_char (c))
+            return URI_PARSE_ERROR;
           break;
         }
 
