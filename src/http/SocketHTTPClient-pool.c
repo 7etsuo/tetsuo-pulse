@@ -643,8 +643,16 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
 
   /* No pooling - create temporary entry */
   {
-    /* Allocate on stack for non-pooled case */
+    /* Thread-local storage for non-pooled case */
     static __thread HTTPPoolEntry temp_entry;
+    static __thread Arena_T temp_arena = NULL;
+
+    /* Clean up previous temp arena if it exists */
+    if (temp_arena != NULL)
+      {
+        Arena_dispose (&temp_arena);
+      }
+
     memset (&temp_entry, 0, sizeof (temp_entry));
     temp_entry.host = (char *)uri->host;
     temp_entry.port = port;
@@ -653,8 +661,8 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
     temp_entry.proto.h1.socket = socket;
     temp_entry.in_use = 1;
 
-    /* Create parser in temporary arena */
-    Arena_T temp_arena = Arena_new ();
+    /* Create parser in thread-local arena */
+    temp_arena = Arena_new ();
     if (temp_arena != NULL)
       {
         temp_entry.proto.h1.parser

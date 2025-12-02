@@ -326,7 +326,7 @@ connection_write (ServerConnection *conn)
       return 0; /* Would block */
     }
 
-  SocketBuf_consume (conn->inbuf, (size_t)n);
+  SocketBuf_consume (conn->outbuf, (size_t)n);
   conn->last_activity = server_time ();
 
   return (int)n;

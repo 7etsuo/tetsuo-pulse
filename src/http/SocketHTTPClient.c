@@ -537,14 +537,25 @@ execute_request_internal (SocketHTTPClient_T client,
       result = -1;
     }
 
-  /* Release connection back to pool */
-  if (result == 0 && !conn->closed)
+  /* Release connection back to pool (or close if no pool) */
+  if (client->pool != NULL)
     {
-      httpclient_pool_release (client->pool, conn);
+      if (result == 0 && !conn->closed)
+        {
+          httpclient_pool_release (client->pool, conn);
+        }
+      else
+        {
+          httpclient_pool_close (client->pool, conn);
+        }
     }
   else
     {
-      httpclient_pool_close (client->pool, conn);
+      /* No pool - close the socket directly */
+      if (conn->proto.h1.socket != NULL)
+        {
+          Socket_free (&conn->proto.h1.socket);
+        }
     }
 
   if (result != 0)
