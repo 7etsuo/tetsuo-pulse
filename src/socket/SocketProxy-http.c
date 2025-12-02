@@ -176,7 +176,9 @@ proxy_http_send_connect (struct SocketProxy_Conn_T *conn)
       snprintf (conn->error_buf, sizeof (conn->error_buf), "Request too long");
       return -1;
     }
-  memcpy (buf + len, "\r\n", 2);
+  /* Copy CRLF with null terminator to satisfy clang-tidy; send_len controls
+   * actual bytes sent, so the extra null byte is harmless */
+  memcpy (buf + len, "\r\n", 3);
   len += 2;
 
   conn->send_len = len;
