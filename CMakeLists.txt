@@ -231,6 +231,13 @@ set(LIB_SOURCES
     src/http/SocketHTTP2-stream.c
     src/http/SocketHTTP2-flow.c
     src/http/SocketHTTP2-priority.c
+    
+    # HTTP Client and Server APIs (Phase 7)
+    src/http/SocketHTTPClient.c
+    src/http/SocketHTTPClient-pool.c
+    src/http/SocketHTTPClient-auth.c
+    src/http/SocketHTTPClient-cookie.c
+    src/http/SocketHTTPServer.c
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -382,6 +389,9 @@ set(HTTP_HEADERS
     include/http/SocketHPACK-private.h
     include/http/SocketHTTP2.h
     include/http/SocketHTTP2-private.h
+    include/http/SocketHTTPClient.h
+    include/http/SocketHTTPClient-private.h
+    include/http/SocketHTTPServer.h
 )
 
 set(TEST_HEADERS
@@ -465,6 +475,7 @@ set(TEST_SOURCES
     test_http1_parser
     test_hpack
     test_http2
+    test_http_client
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
