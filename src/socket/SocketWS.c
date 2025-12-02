@@ -822,6 +822,7 @@ SocketWS_compression_enabled (SocketWS_T ws)
 #ifdef SOCKETWS_HAS_DEFLATE
   return ws->compression_enabled;
 #else
+  (void)ws; /* Suppress unused parameter warning when NDEBUG defined */
   return 0;
 #endif
 }

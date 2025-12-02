@@ -98,6 +98,11 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_MAX_LISTEN_BACKLOG 1024
 #endif
 
+/* Maximum file descriptors per SCM_RIGHTS message (FD passing) */
+#ifndef SOCKET_MAX_FDS_PER_MSG
+#define SOCKET_MAX_FDS_PER_MSG 253 /* SCM_MAX_FD on most POSIX systems */
+#endif
+
 /* Hash table size for socket data mapping - prime number */
 #ifndef SOCKET_HASH_TABLE_SIZE
 #define SOCKET_HASH_TABLE_SIZE 1021

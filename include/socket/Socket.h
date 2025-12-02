@@ -694,6 +694,86 @@ extern int Socket_getpeeruid (const T socket);
  */
 extern int Socket_getpeergid (const T socket);
 
+/* ============================================================================
+ * File Descriptor Passing (SCM_RIGHTS)
+ * ============================================================================ */
+
+/**
+ * Socket_sendfd - Send a file descriptor over Unix domain socket
+ * @socket: Connected Unix domain socket (AF_UNIX)
+ * @fd_to_pass: File descriptor to pass (must be >= 0)
+ *
+ * Returns: 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Failed on error, Socket_Closed on disconnect
+ *
+ * Passes a single file descriptor to the peer process using SCM_RIGHTS.
+ * The receiving process gets a new fd referring to the same kernel object.
+ *
+ * PLATFORM REQUIREMENTS:
+ * - POSIX-compliant Unix domain socket (AF_UNIX)
+ * - NOT available on Windows
+ *
+ * SECURITY NOTES:
+ * - Only works with connected Unix domain sockets
+ * - Receiving process should validate the fd type before use
+ *
+ * Thread-safe: Yes (uses thread-local error buffers)
+ */
+extern int Socket_sendfd (T socket, int fd_to_pass);
+
+/**
+ * Socket_recvfd - Receive a file descriptor over Unix domain socket
+ * @socket: Connected Unix domain socket (AF_UNIX)
+ * @fd_received: Output pointer for received file descriptor
+ *
+ * Returns: 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Failed on error, Socket_Closed on disconnect
+ *
+ * Receives a file descriptor from the peer process via SCM_RIGHTS.
+ * The received fd is owned by this process and must be closed when done.
+ *
+ * OWNERSHIP: Caller takes ownership of the received fd and MUST close it.
+ *
+ * Thread-safe: Yes (uses thread-local error buffers)
+ */
+extern int Socket_recvfd (T socket, int *fd_received);
+
+/**
+ * Socket_sendfds - Send multiple file descriptors
+ * @socket: Connected Unix domain socket (AF_UNIX)
+ * @fds: Array of file descriptors to pass (all must be >= 0)
+ * @count: Number of descriptors (1 to SOCKET_MAX_FDS_PER_MSG)
+ *
+ * Returns: 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Failed on error, Socket_Closed on disconnect
+ *
+ * Passes multiple file descriptors atomically in a single message.
+ * All descriptors are either sent together or none are sent.
+ *
+ * Thread-safe: Yes (uses thread-local error buffers)
+ */
+extern int Socket_sendfds (T socket, const int *fds, size_t count);
+
+/**
+ * Socket_recvfds - Receive multiple file descriptors
+ * @socket: Connected Unix domain socket (AF_UNIX)
+ * @fds: Output array for received descriptors (must have max_count capacity)
+ * @max_count: Maximum descriptors to receive
+ * @received_count: Output for actual count received
+ *
+ * Returns: 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK)
+ * Raises: Socket_Failed on error, Socket_Closed on disconnect
+ *
+ * Receives multiple file descriptors from a single message.
+ * On success, *received_count contains the number of fds received.
+ *
+ * OWNERSHIP: Caller takes ownership of all received fds and MUST close them.
+ *
+ * Thread-safe: Yes (uses thread-local error buffers)
+ */
+extern int Socket_recvfds (T socket, int *fds, size_t max_count,
+                           size_t *received_count);
+
 /* Unix domain socket internal helpers */
 extern void SocketUnix_bind (SocketBase_T base, const char *path,
                              Except_T exc_type);

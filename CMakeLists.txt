@@ -199,6 +199,7 @@ set(LIB_SOURCES
     # Socket core (consolidated)
     src/socket/Socket.c
     src/socket/Socket-connect.c
+    src/socket/Socket-fd.c
     src/socket/Socket-iov.c
     src/socket/Socket-options.c
     src/socket/SocketDgram.c

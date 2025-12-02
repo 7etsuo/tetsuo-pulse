@@ -18,6 +18,10 @@
 #include "socket/SocketWS-private.h"
 #include "test/Test.h"
 
+/* Suppress unused variable warnings in Release builds (NDEBUG defined)
+ * where assert() is compiled out */
+#define TEST_UNUSED(x) ((void)(x))
+
 /* ============================================================================
  * Test Counters
  * ============================================================================ */
@@ -180,6 +184,7 @@ test_frame_header_small (void)
   assert ((header[0] & 0x0F) == WS_OPCODE_TEXT);
   assert ((header[1] & 0x80) == 0); /* Not masked */
   assert ((header[1] & 0x7F) == 100);
+  TEST_UNUSED (len);
 
   TEST_PASS ();
 }
@@ -199,6 +204,7 @@ test_frame_header_medium (void)
   assert ((header[1] & 0x7F) == 126);
   assert (header[2] == (1000 >> 8));
   assert (header[3] == (1000 & 0xFF));
+  TEST_UNUSED (len);
 
   TEST_PASS ();
 }
@@ -217,6 +223,7 @@ test_frame_header_large (void)
 
   assert (len == 10);
   assert ((header[1] & 0x7F) == 127);
+  TEST_UNUSED (len);
 
   TEST_PASS ();
 }
@@ -236,6 +243,7 @@ test_frame_header_masked (void)
   assert (len == 6); /* 2 base + 4 mask */
   assert ((header[1] & 0x80) != 0); /* Masked */
   assert (memcmp (header + 2, mask, 4) == 0);
+  TEST_UNUSED (len);
 
   TEST_PASS ();
 }
@@ -263,6 +271,7 @@ test_frame_parse_simple (void)
   assert (frame.opcode == WS_OPCODE_TEXT);
   assert (frame.masked == 0);
   assert (frame.payload_len == 5);
+  TEST_UNUSED (err);
 
   TEST_PASS ();
 }
@@ -289,6 +298,7 @@ test_frame_parse_masked (void)
   assert (frame.mask_key[1] == 0xFA);
   assert (frame.mask_key[2] == 0x21);
   assert (frame.mask_key[3] == 0x3D);
+  TEST_UNUSED (err);
 
   TEST_PASS ();
 }
@@ -309,6 +319,7 @@ test_frame_parse_extended16 (void)
   assert (err == WS_OK);
   assert (consumed == 4);
   assert (frame.payload_len == 256);
+  TEST_UNUSED (err);
 
   TEST_PASS ();
 }
@@ -330,6 +341,7 @@ test_frame_parse_extended64 (void)
   assert (err == WS_OK);
   assert (consumed == 10);
   assert (frame.payload_len == 65536);
+  TEST_UNUSED (err);
 
   TEST_PASS ();
 }
@@ -365,6 +377,7 @@ test_frame_parse_control (void)
   assert (err == WS_OK);
   assert (frame.opcode == WS_OPCODE_CLOSE);
   assert (frame.payload_len == 2);
+  TEST_UNUSED (err);
 
   TEST_PASS ();
 }
@@ -392,6 +405,7 @@ test_frame_parse_incremental (void)
   assert (err == WS_OK);
   assert (consumed == 1);
   assert (frame.payload_len == 5);
+  TEST_UNUSED (err);
 
   TEST_PASS ();
 }
@@ -414,6 +428,7 @@ test_frame_parse_invalid_opcode (void)
   err = ws_frame_parse_header (&frame, data, sizeof (data), &consumed);
 
   assert (err == WS_ERROR_PROTOCOL);
+  TEST_UNUSED (err);
 
   TEST_PASS ();
 }
@@ -433,6 +448,7 @@ test_frame_parse_fragmented_control (void)
 
   /* Control frames must not be fragmented */
   assert (err == WS_ERROR_PROTOCOL);
+  TEST_UNUSED (err);
 
   TEST_PASS ();
 }
@@ -452,6 +468,7 @@ test_frame_parse_control_too_large (void)
 
   /* Control frame payload max 125 bytes */
   assert (err == WS_ERROR_PROTOCOL);
+  TEST_UNUSED (err);
 
   TEST_PASS ();
 }
@@ -571,6 +588,7 @@ test_websocket_key_generation (void)
 
   /* Keys should be different (random) */
   assert (strcmp (key1, key2) != 0);
+  TEST_UNUSED (result);
 
   TEST_PASS ();
 }
@@ -593,6 +611,7 @@ test_websocket_accept_computation (void)
   result = SocketCrypto_websocket_accept (key, accept);
   assert (result == 0);
   assert (strcmp (accept, expected) == 0);
+  TEST_UNUSED (result);
 
   TEST_PASS ();
 }

@@ -398,7 +398,7 @@ ws_send_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
 {
   unsigned char header[SOCKETWS_MAX_HEADER_SIZE];
   unsigned char masked_payload[SOCKETWS_MAX_CONTROL_PAYLOAD];
-  unsigned char mask_key[4];
+  unsigned char mask_key[4] = { 0 }; /* Initialize to silence GCC -O3 warning */
   size_t header_len;
   int masked;
   size_t written;
@@ -478,7 +478,7 @@ ws_send_data_frame (SocketWS_T ws, SocketWS_Opcode opcode,
                     const unsigned char *data, size_t len, int fin)
 {
   unsigned char header[SOCKETWS_MAX_HEADER_SIZE];
-  unsigned char mask_key[4];
+  unsigned char mask_key[4] = { 0 }; /* Initialize to silence GCC -O3 warning */
   size_t header_len;
   int masked;
   size_t written;
