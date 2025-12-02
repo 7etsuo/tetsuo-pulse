@@ -41,6 +41,20 @@ if(ENABLE_UBSAN)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=undefined")
 endif()
 
+# ThreadSanitizer option (incompatible with ASan)
+option(ENABLE_TSAN "Enable ThreadSanitizer (TSan) - incompatible with ASan" OFF)
+
+if(ENABLE_TSAN)
+    if(ENABLE_ASAN)
+        message(FATAL_ERROR "ThreadSanitizer (TSan) is incompatible with AddressSanitizer (ASan). "
+                            "Use only one at a time.")
+    endif()
+    message(STATUS "ThreadSanitizer (TSan) enabled")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=thread -fno-omit-frame-pointer -g")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=thread")
+endif()
+
 # Code coverage option
 option(ENABLE_COVERAGE "Enable code coverage with gcov" OFF)
 
@@ -503,6 +517,10 @@ set(TEST_SOURCES
     test_proxy
     test_websocket
     test_security
+    test_http_integration
+    test_ws_integration
+    test_http2_integration
+    test_proxy_integration
 )
 
 # Create test executables (link against object files to preserve constructor attributes)

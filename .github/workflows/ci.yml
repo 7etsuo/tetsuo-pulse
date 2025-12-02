@@ -45,6 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ASAN_OPTIONS: detect_leaks=1:abort_on_error=1:halt_on_error=1
+      TSAN_OPTIONS: halt_on_error=1:second_deadlock_stack=1
     strategy:
       fail-fast: false
       matrix:
@@ -58,6 +59,9 @@ jobs:
           - sanitizer: asan+ubsan
             cmake_flags: -DENABLE_SANITIZERS=ON
             name: ASan+UBSan
+          - sanitizer: tsan
+            cmake_flags: -DENABLE_TSAN=ON
+            name: ThreadSanitizer
 
     steps:
       - name: Checkout
