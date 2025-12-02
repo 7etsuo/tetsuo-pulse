@@ -194,6 +194,12 @@ set(LIB_SOURCES
     src/socket/SocketHappyEyeballs.c
     src/socket/SocketReconnect.c
     
+    # Proxy module (Phase 8)
+    src/socket/SocketProxy.c
+    src/socket/SocketProxy-http.c
+    src/socket/SocketProxy-socks4.c
+    src/socket/SocketProxy-socks5.c
+    
     # DNS module (consolidated)
     src/dns/SocketDNS.c
     src/dns/SocketDNS-internal.c
@@ -352,6 +358,8 @@ set(SOCKET_HEADERS
     include/socket/SocketHappyEyeballs-private.h
     include/socket/SocketReconnect.h
     include/socket/SocketReconnect-private.h
+    include/socket/SocketProxy.h
+    include/socket/SocketProxy-private.h
 )
 
 set(DNS_HEADERS
@@ -476,6 +484,7 @@ set(TEST_SOURCES
     test_hpack
     test_http2
     test_http_client
+    test_proxy
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
@@ -612,6 +621,10 @@ if(ENABLE_FUZZING)
         fuzz_http2_frames
         fuzz_http2_headers
         fuzz_http2_settings
+        fuzz_proxy_socks5
+        fuzz_proxy_socks4
+        fuzz_proxy_http
+        fuzz_proxy_url
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)

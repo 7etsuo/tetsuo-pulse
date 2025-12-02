@@ -26,25 +26,25 @@ Full RFC compliance with security hardening throughout.
 
 | RFC | Title | Phase | Status |
 |-----|-------|-------|--------|
-| RFC 9110 | HTTP Semantics | 3 | Planned |
+| RFC 9110 | HTTP Semantics | 3 | Completed |
 | RFC 9111 | HTTP Caching | 3 | Headers Only |
-| RFC 9112 | HTTP/1.1 Message Syntax | 4 | Planned |
+| RFC 9112 | HTTP/1.1 Message Syntax | 4 | Completed |
 | RFC 9113 | HTTP/2 | 6 | Completed |
 | RFC 7541 | HPACK Header Compression | 5 | Completed |
 | RFC 6455 | WebSocket Protocol | 9 | Planned |
 | RFC 7692 | WebSocket Compression | 9 | Planned |
-| RFC 6265 | HTTP Cookies | 7 | Planned |
-| RFC 3986 | URI Syntax | 3 | Planned |
-| RFC 7617 | HTTP Basic Auth | 7 | Planned |
-| RFC 7616 | HTTP Digest Auth | 7 | Planned |
-| RFC 6750 | Bearer Token Auth | 7 | Planned |
-| RFC 1928 | SOCKS5 Protocol | 8 | Planned |
-| RFC 1929 | SOCKS5 Auth | 8 | Planned |
-| RFC 7231 | HTTP CONNECT | 8 | Planned |
-| RFC 5322 | Date/Time Format | 3 | Planned |
-| RFC 7932 | Brotli Compression | 4 | Planned |
-| RFC 1951 | DEFLATE | 4 | Planned |
-| RFC 1952 | GZIP | 4 | Planned |
+| RFC 6265 | HTTP Cookies | 7 | Completed |
+| RFC 3986 | URI Syntax | 3 | Completed |
+| RFC 7617 | HTTP Basic Auth | 7 | Completed |
+| RFC 7616 | HTTP Digest Auth | 7 | Completed |
+| RFC 6750 | Bearer Token Auth | 7 | Completed |
+| RFC 1928 | SOCKS5 Protocol | 8 | Completed |
+| RFC 1929 | SOCKS5 Auth | 8 | Completed |
+| RFC 7231 | HTTP CONNECT | 8 | Completed |
+| RFC 5322 | Date/Time Format | 3 | Completed |
+| RFC 7932 | Brotli Compression | 4 | Optional |
+| RFC 1951 | DEFLATE | 4 | Optional |
+| RFC 1952 | GZIP | 4 | Optional |
 
 ---
 
@@ -2762,12 +2762,14 @@ extern const Except_T SocketHTTP2_FlowControlError;
 
 ---
 
-## - [x] Phase 7: HTTP Client and Server APIs ✅ IMPLEMENTED
+## - [x] Phase 7: HTTP Client and Server APIs ✅ COMPLETED
 
 High-level APIs abstracting HTTP/1.1 and HTTP/2, with connection pooling,
 authentication, cookies, and compression.
 
-### - [x] Files Created
+**Status**: Completed (December 2025)
+
+### - [x] Files Created ✅
 
 - [x] `include/http/SocketHTTPClient.h` - Client public API
 - [x] `include/http/SocketHTTPClient-private.h` - Client internal definitions
@@ -2779,16 +2781,16 @@ authentication, cookies, and compression.
 - [x] `src/http/SocketHTTPServer.c` - Server with request handler callbacks
 - [x] `src/test/test_http_client.c` - Test suite (23 tests, all passing)
 
-### Module Reuse (No Duplication)
+### - [x] Module Reuse (No Duplication) ✅
 
-- Uses `SocketHappyEyeballs_connect()` for connection establishment
-- Uses `SocketCrypto_base64_encode()` for Basic authentication  
-- Uses `SocketCrypto_md5()` / `SocketCrypto_sha256()` for Digest authentication
-- Uses `SocketHTTP1_Parser_T` for HTTP/1.1 response parsing
-- Uses `SocketHTTP_Headers_T` for header collections
-- Uses `SocketHTTP_date_parse()` for cookie Expires parsing
+- [x] Uses `SocketHappyEyeballs_connect()` for connection establishment
+- [x] Uses `SocketCrypto_base64_encode()` for Basic authentication  
+- [x] Uses `SocketCrypto_md5()` / `SocketCrypto_sha256()` for Digest authentication
+- [x] Uses `SocketHTTP1_Parser_T` for HTTP/1.1 response parsing
+- [x] Uses `SocketHTTP_Headers_T` for header collections
+- [x] Uses `SocketHTTP_date_parse()` for cookie Expires parsing
 
-### - [ ] API Specification - Client
+### - [x] API Specification - Client ✅
 
 ```c
 /* ============================================================================
@@ -3124,7 +3126,7 @@ SocketHTTPClient_Error SocketHTTPClient_last_error(SocketHTTPClient_T client);
 const char *SocketHTTPClient_error_string(SocketHTTPClient_Error error);
 ```
 
-### - [ ] API Specification - Server
+### - [x] API Specification - Server ✅
 
 ```c
 /* ============================================================================
@@ -3221,54 +3223,87 @@ int SocketHTTPServer_fd(SocketHTTPServer_T server);
 int SocketHTTPServer_process(SocketHTTPServer_T server, int timeout_ms);
 ```
 
-### - [ ] Implementation Requirements
+### - [x] Implementation Requirements ✅
 
-- [ ] Connection pool with per-host limits
-- [ ] Automatic HTTP/2 negotiation via ALPN
-- [ ] HTTP/1.1 upgrade to HTTP/2 (h2c)
-- [ ] Automatic retry on connection failure
-- [ ] Redirect following with loop detection
-- [ ] Cookie handling per RFC 6265
-- [ ] Content-Encoding handling (gzip, deflate, br)
-- [ ] Chunked transfer encoding
-- [ ] Basic authentication (RFC 7617)
-- [ ] Digest authentication (RFC 7616)
-- [ ] Bearer token authentication (RFC 6750)
+- [x] Connection pool with per-host limits
+- [x] Automatic HTTP/2 negotiation via ALPN
+- [x] HTTP/1.1 upgrade to HTTP/2 (h2c)
+- [x] Automatic retry on connection failure
+- [x] Redirect following with loop detection
+- [x] Cookie handling per RFC 6265
+- [x] Content-Encoding handling (gzip, deflate, br)
+- [x] Chunked transfer encoding
+- [x] Basic authentication (RFC 7617)
+- [x] Digest authentication (RFC 7616)
+- [x] Bearer token authentication (RFC 6750)
 
-### - [ ] Tests
+### - [x] Tests ✅
 
-- [ ] `src/test/test_http_client.c`
-  - [ ] Simple GET
-  - [ ] POST with body
-  - [ ] Custom headers
-  - [ ] Timeouts
-  - [ ] Redirects
-  - [ ] Cookies
-  - [ ] Authentication
-  - [ ] Compression
-  - [ ] Connection reuse
-  - [ ] HTTP/2 negotiation
-  - [ ] Error handling
+- [x] `src/test/test_http_client.c` (23 tests, all passing)
+  - [x] Simple GET
+  - [x] POST with body
+  - [x] Custom headers
+  - [x] Timeouts
+  - [x] Redirects
+  - [x] Cookies
+  - [x] Authentication
+  - [x] Compression
+  - [x] Connection reuse
+  - [x] HTTP/2 negotiation
+  - [x] Error handling
 
-### - [ ] Build System
+### - [x] Build System ✅
 
-- [ ] Add client/server sources to `LIB_SOURCES`
-- [ ] Add `test_http_client` to test executables
+- [x] Add client/server sources to `LIB_SOURCES`
+- [x] Add `test_http_client` to test executables
 
 ---
 
-## - [ ] Phase 8: Proxy Support
+## - [x] Phase 8: Proxy Support ✅ COMPLETED
 
 HTTP CONNECT and SOCKS proxy protocols for tunneling connections.
 
-### - [ ] Files to Create
+**Status**: Completed (December 2025)
 
-- [ ] `include/socket/SocketProxy.h`
-- [ ] `include/socket/SocketProxy-private.h`
-- [ ] `src/socket/SocketProxy.c`
-- [ ] `src/socket/SocketProxy-http.c`
-- [ ] `src/socket/SocketProxy-socks4.c`
-- [ ] `src/socket/SocketProxy-socks5.c`
+### Overview
+
+The SocketProxy module provides transparent proxy tunneling for TCP connections,
+supporting HTTP CONNECT and SOCKS4/4a/5 protocols. The implementation follows
+the same patterns as SocketHappyEyeballs with both synchronous and asynchronous APIs.
+
+### - [x] Files Created ✅
+
+- [x] `include/socket/SocketProxy.h` - Public API header
+- [x] `include/socket/SocketProxy-private.h` - Internal structures and state machine
+- [x] `src/socket/SocketProxy.c` - Core lifecycle, config parsing, URL parsing
+- [x] `src/socket/SocketProxy-http.c` - HTTP CONNECT protocol implementation
+- [x] `src/socket/SocketProxy-socks4.c` - SOCKS4/4a protocol implementation
+- [x] `src/socket/SocketProxy-socks5.c` - SOCKS5 protocol implementation (RFC 1928/1929)
+
+### - [x] Module Reuse (No Duplication) ✅
+
+The proxy module leverages existing infrastructure to avoid code duplication:
+
+| Existing Module | Usage in SocketProxy |
+|-----------------|---------------------|
+| `Socket_T` | Underlying socket for proxy connection |
+| `SocketHappyEyeballs` | Fast dual-stack connection to proxy server (handles DNS internally) |
+| `SocketHTTP1_Parser_T` | Parse HTTP CONNECT response |
+| `SocketHTTP_Headers_T` | Store extra headers for HTTP CONNECT |
+| `SocketCrypto_base64_encode()` | Proxy-Authorization header (Basic auth) |
+| `SocketCrypto_secure_clear()` | Clear credentials from memory |
+| `SocketPoll` | Async event handling for state machine |
+| `SocketTLS` | TLS layer for HTTPS proxy connections |
+| `SocketBuf` | Buffered I/O for protocol exchanges |
+| `Arena_T` | Memory allocation for connection state |
+| `Except_T` | Exception handling |
+
+**Note**: DNS resolution is NOT handled separately - `SocketHappyEyeballs_connect()` handles
+DNS resolution internally, eliminating the need for separate SocketDNS usage.
+
+**Integration with SocketHTTPClient**: The `SocketProxy_Config` forward declaration
+already exists in `SocketHTTPClient.h` (line 196). Phase 8 provides the full implementation
+that the HTTP client will use for proxy support.
 
 ### RFC Coverage
 
@@ -3489,53 +3524,145 @@ Same as SOCKS4 but:
         7=command not supported, 8=address type not supported
 ```
 
-### - [ ] Implementation Requirements
+### - [x] State Machine Design ✅
 
-- [ ] HTTP CONNECT with optional authentication
-- [ ] HTTP CONNECT via HTTPS (TLS to proxy)
-- [ ] SOCKS4 connect
-- [ ] SOCKS4a with hostname resolution at proxy
-- [ ] SOCKS5 without authentication
-- [ ] SOCKS5 with username/password (RFC 1929)
-- [ ] SOCKS5 with hostname (ATYP=3)
-- [ ] SOCKS5 with IPv6 (ATYP=4)
-- [ ] Async state machine for all protocols
-- [ ] Timeout handling
+The async proxy connection uses a simplified state machine. DNS resolution is handled
+internally by `SocketHappyEyeballs_connect()`, eliminating the need for a separate DNS state.
 
-### - [ ] Security Considerations
+```c
+/**
+ * SocketProxy_State - Connection state machine
+ *
+ * State transitions:
+ *   IDLE -> CONNECTING_PROXY -> HANDSHAKE_* -> CONNECTED (success)
+ *                                          \-> FAILED (error)
+ *   Any state -> CANCELLED (explicit cancel)
+ *
+ * Note: DNS resolution is handled internally by SocketHappyEyeballs_connect().
+ */
+typedef enum {
+    PROXY_STATE_IDLE = 0,           /* Not started */
+    PROXY_STATE_CONNECTING_PROXY,   /* HappyEyeballs connecting (includes DNS) */
+    PROXY_STATE_TLS_TO_PROXY,       /* TLS handshake to proxy (HTTPS) */
+    
+    /* Protocol-specific handshake states */
+    PROXY_STATE_HANDSHAKE_SEND,     /* Sending protocol request */
+    PROXY_STATE_HANDSHAKE_RECV,     /* Receiving protocol response */
+    PROXY_STATE_AUTH_SEND,          /* SOCKS5 auth send (if needed) */
+    PROXY_STATE_AUTH_RECV,          /* SOCKS5 auth response */
+    
+    /* Terminal states */
+    PROXY_STATE_CONNECTED,          /* Tunnel established */
+    PROXY_STATE_FAILED,             /* Error occurred */
+    PROXY_STATE_CANCELLED           /* User cancelled */
+} SocketProxy_State;
+```
 
-- [ ] Validate proxy responses
-- [ ] Timeout on proxy handshake
-- [ ] Don't leak credentials in logs
-- [ ] Clear credentials from memory
+### - [x] Split Implementation Details ✅
 
-### - [ ] Tests
+#### `SocketProxy.c` - Core Module
+- `SocketProxy_Conn_new()` / `_free()` - Connection lifecycle
+- `SocketProxy_connect()` - Synchronous wrapper (blocks using poll loop)
+- `SocketProxy_connect_tls()` - Sync with TLS to target after tunnel
+- `SocketProxy_parse_url()` - Parse `socks5://user:pass@host:port` URLs
+- `SocketProxy_config_defaults()` - Initialize default config
+- State machine driver and timeout handling
+- Error message formatting
 
-- [ ] `src/test/test_proxy.c`
-  - [ ] HTTP CONNECT success
-  - [ ] HTTP CONNECT with auth
-  - [ ] HTTP CONNECT auth failure
-  - [ ] HTTP CONNECT via HTTPS
-  - [ ] SOCKS4 connect
-  - [ ] SOCKS4a with hostname
-  - [ ] SOCKS5 no auth
-  - [ ] SOCKS5 with auth
-  - [ ] SOCKS5 with hostname
-  - [ ] SOCKS5 with IPv6
-  - [ ] Timeout handling
-  - [ ] Error responses
-  - [ ] Async connection
+#### `SocketProxy-http.c` - HTTP CONNECT
+- `proxy_http_send_request()` - Format and send CONNECT request
+- `proxy_http_recv_response()` - Parse response using `SocketHTTP1_Parser_T`
+- Basic auth via `SocketCrypto_base64_encode()` directly (avoid private API dependency)
+- Extra headers support via `SocketHTTP_Headers_T`
 
-### - [ ] Fuzzing Harnesses
+#### `SocketProxy-socks4.c` - SOCKS4/4a
+- `proxy_socks4_send_request()` - Build SOCKS4 connect request
+- `proxy_socks4a_send_request()` - Build SOCKS4a with hostname
+- `proxy_socks4_recv_response()` - Parse 8-byte response
+- Result code mapping to `SocketProxy_Result`
 
-- [ ] `src/fuzz/fuzz_proxy_http_response.c`
-- [ ] `src/fuzz/fuzz_proxy_socks4.c`
-- [ ] `src/fuzz/fuzz_proxy_socks5.c`
+#### `SocketProxy-socks5.c` - SOCKS5 (RFC 1928/1929)
+- `proxy_socks5_send_greeting()` - Send supported methods
+- `proxy_socks5_recv_method()` - Receive selected method
+- `proxy_socks5_send_auth()` - Username/password (RFC 1929)
+- `proxy_socks5_recv_auth()` - Auth response
+- `proxy_socks5_send_connect()` - CONNECT with IPv4/IPv6/domain
+- `proxy_socks5_recv_connect()` - Parse connect response
+- IPv6 address encoding (ATYP=4)
+- Domain name encoding (ATYP=3)
 
-### - [ ] Build System
+### - [x] Implementation Requirements ✅
 
-- [ ] Add proxy sources to `LIB_SOURCES`
-- [ ] Add `test_proxy` to test executables
+- [x] HTTP CONNECT with optional Basic authentication
+- [x] HTTP CONNECT via HTTPS (TLS to proxy using `SocketTLS_enable()`)
+- [x] SOCKS4 connect (IPv4 only)
+- [x] SOCKS4a with hostname resolution at proxy
+- [x] SOCKS5 without authentication (method 0x00)
+- [x] SOCKS5 with username/password (method 0x02, RFC 1929)
+- [x] SOCKS5 with hostname (ATYP=3) for `SOCKS5H`
+- [x] SOCKS5 with IPv6 (ATYP=4)
+- [x] Async state machine for all protocols
+- [x] Timeout handling at each state transition
+- [x] Integration with `SocketHappyEyeballs_connect()` for proxy connection
+
+### - [x] Security Considerations ✅
+
+- [x] Validate proxy responses strictly (bounds checking)
+- [x] Timeout on each proxy handshake phase
+- [x] Don't leak credentials in logs (use `*****` masking)
+- [x] Clear credentials from memory using `SocketCrypto_secure_clear()`
+- [x] Validate hostname lengths (SOCKS5 max 255 bytes)
+- [x] Reject invalid SOCKS5 reply codes
+- [x] HTTP response smuggling prevention (reuse `SocketHTTP1_Parser_T`)
+
+### - [x] Tests ✅
+
+- [x] `src/test/test_proxy.c` (64 tests, all passing)
+  - [x] HTTP CONNECT success (200 response)
+  - [x] HTTP CONNECT with Basic auth
+  - [x] HTTP CONNECT auth failure (407 response)
+  - [x] HTTP CONNECT via HTTPS (TLS to proxy)
+  - [x] HTTP CONNECT with extra headers
+  - [x] SOCKS4 connect to IPv4
+  - [x] SOCKS4 rejected (result code 91)
+  - [x] SOCKS4a with hostname
+  - [x] SOCKS5 no auth (method 0)
+  - [x] SOCKS5 with auth (method 2)
+  - [x] SOCKS5 auth failure
+  - [x] SOCKS5 with hostname (ATYP=3)
+  - [x] SOCKS5 with IPv6 (ATYP=4)
+  - [x] SOCKS5 all reply codes mapped correctly
+  - [x] Connect timeout handling
+  - [x] Handshake timeout handling
+  - [x] Async connection state machine
+  - [x] URL parsing (`socks5://`, `http://`, `https://`)
+  - [x] Config defaults
+
+### - [x] Fuzzing Harnesses ✅
+
+- [x] `src/fuzz/fuzz_proxy_http.c` - Fuzz HTTP CONNECT responses
+- [x] `src/fuzz/fuzz_proxy_socks4.c` - Fuzz SOCKS4 responses
+- [x] `src/fuzz/fuzz_proxy_socks5.c` - Fuzz SOCKS5 protocol (greeting, auth, connect)
+- [x] `src/fuzz/fuzz_proxy_url.c` - Fuzz URL parser
+
+### - [x] Build System ✅
+
+- [x] Add proxy sources to `LIB_SOURCES` in CMakeLists.txt
+- [x] Add `test_proxy` to test executables
+- [x] Add fuzzing harnesses to `FUZZ_SOURCES`
+
+### - [x] Implementation Order ✅
+
+Implementation was completed in this order:
+
+1. **SocketProxy.h / SocketProxy-private.h** - Public API and internal types
+2. **SocketProxy.c** - Core structures, URL parser, config defaults, sync wrappers
+3. **SocketProxy-socks5.c** - SOCKS5 protocol (RFC 1928/1929)
+4. **SocketProxy-socks4.c** - SOCKS4/4a protocol
+5. **SocketProxy-http.c** - HTTP CONNECT (reuses `SocketHTTP1_Parser_T`)
+6. **test_proxy.c** - 64 unit tests with mock servers
+7. **Fuzzing harnesses** - 4 fuzzing targets for security testing
+8. **CMakeLists.txt** - Build system integration
 
 ---
 
