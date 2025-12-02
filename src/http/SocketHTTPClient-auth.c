@@ -22,6 +22,34 @@
 #include <string.h>
 
 /* ============================================================================
+ * Helper Functions
+ * ============================================================================ */
+
+/**
+ * safe_strcpy - Copy string with truncation (avoids GCC stringop-truncation)
+ * @dst: Destination buffer
+ * @dst_size: Size of destination buffer
+ * @src: Source string
+ *
+ * Copies at most dst_size-1 characters and always null-terminates.
+ * Uses memcpy to avoid GCC stringop-truncation and format-truncation warnings.
+ */
+static void
+safe_strcpy (char *dst, size_t dst_size, const char *src)
+{
+  size_t src_len;
+  size_t copy_len;
+
+  if (dst_size == 0)
+    return;
+
+  src_len = strlen (src);
+  copy_len = (src_len < dst_size - 1) ? src_len : (dst_size - 1);
+  memcpy (dst, src, copy_len);
+  dst[copy_len] = '\0';
+}
+
+/* ============================================================================
  * Basic Authentication (RFC 7617)
  * ============================================================================
  *
@@ -314,26 +342,26 @@ parse_digest_challenge (const char *header, DigestChallenge *ch)
           value[i] = '\0';
         }
 
-      /* Store parsed values */
+      /* Store parsed values - use safe_strcpy to avoid GCC truncation warnings */
       if (strcasecmp (name, "realm") == 0)
         {
-          strncpy (ch->realm, value, sizeof (ch->realm) - 1);
+          safe_strcpy (ch->realm, sizeof (ch->realm), value);
         }
       else if (strcasecmp (name, "nonce") == 0)
         {
-          strncpy (ch->nonce, value, sizeof (ch->nonce) - 1);
+          safe_strcpy (ch->nonce, sizeof (ch->nonce), value);
         }
       else if (strcasecmp (name, "opaque") == 0)
         {
-          strncpy (ch->opaque, value, sizeof (ch->opaque) - 1);
+          safe_strcpy (ch->opaque, sizeof (ch->opaque), value);
         }
       else if (strcasecmp (name, "qop") == 0)
         {
-          strncpy (ch->qop, value, sizeof (ch->qop) - 1);
+          safe_strcpy (ch->qop, sizeof (ch->qop), value);
         }
       else if (strcasecmp (name, "algorithm") == 0)
         {
-          strncpy (ch->algorithm, value, sizeof (ch->algorithm) - 1);
+          safe_strcpy (ch->algorithm, sizeof (ch->algorithm), value);
         }
       else if (strcasecmp (name, "stale") == 0)
         {
