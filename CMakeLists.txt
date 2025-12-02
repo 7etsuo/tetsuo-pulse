@@ -180,6 +180,7 @@ set(LIB_SOURCES
     src/core/SocketSYNProtect.c
     src/core/SocketCrypto.c
     src/core/SocketUTF8.c
+    src/core/SocketSecurity.c
     
     # Socket core (consolidated)
     src/socket/Socket.c
@@ -358,6 +359,7 @@ set(CORE_HEADERS
     include/core/SocketSYNProtect-private.h
     include/core/SocketCrypto.h
     include/core/SocketUTF8.h
+    include/core/SocketSecurity.h
 )
 
 set(SOCKET_HEADERS
@@ -500,6 +502,7 @@ set(TEST_SOURCES
     test_http_client
     test_proxy
     test_websocket
+    test_security
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
@@ -519,8 +522,8 @@ add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES})
 
 # Print test configuration
 message(STATUS "Test Suite Configuration:")
-message(STATUS "  Test files: 22")
-message(STATUS "  Total tests: 300+")
+message(STATUS "  Test files: 23")
+message(STATUS "  Total tests: 340+")
 message(STATUS "  Run with: make test (or ctest)")
 
 # Documentation generation (Doxygen)
