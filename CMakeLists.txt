@@ -200,6 +200,11 @@ set(LIB_SOURCES
     src/socket/SocketProxy-socks4.c
     src/socket/SocketProxy-socks5.c
     
+    # WebSocket module (Phase 9 - RFC 6455)
+    src/socket/SocketWS.c
+    src/socket/SocketWS-handshake.c
+    src/socket/SocketWS-frame.c
+    
     # DNS module (consolidated)
     src/dns/SocketDNS.c
     src/dns/SocketDNS-internal.c
@@ -268,6 +273,15 @@ if(ENABLE_HTTP_COMPRESSION AND (ZLIB_FOUND OR (BROTLI_DEC_LIB AND BROTLI_ENC_LIB
     list(APPEND LIB_SOURCES
         src/http/SocketHTTP1-compress.c
     )
+endif()
+
+# Add WebSocket compression source if zlib available
+if(ZLIB_FOUND)
+    list(APPEND LIB_SOURCES
+        src/socket/SocketWS-deflate.c
+    )
+    add_definitions(-DSOCKETWS_HAS_DEFLATE)
+    message(STATUS "WebSocket permessage-deflate compression enabled")
 endif()
 
 # Object library for reuse in tests (avoids static library constructor issues)
@@ -485,6 +499,7 @@ set(TEST_SOURCES
     test_http2
     test_http_client
     test_proxy
+    test_websocket
 )
 
 # Create test executables (link against object files to preserve constructor attributes)
@@ -504,7 +519,7 @@ add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES})
 
 # Print test configuration
 message(STATUS "Test Suite Configuration:")
-message(STATUS "  Test files: 21")
+message(STATUS "  Test files: 22")
 message(STATUS "  Total tests: 300+")
 message(STATUS "  Run with: make test (or ctest)")
 
@@ -625,6 +640,9 @@ if(ENABLE_FUZZING)
         fuzz_proxy_socks4
         fuzz_proxy_http
         fuzz_proxy_url
+        fuzz_ws_frame
+        fuzz_ws_handshake
+        fuzz_ws_deflate
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
