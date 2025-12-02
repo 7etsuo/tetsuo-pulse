@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['🚀_20quick_20start_0',['🚀 Quick Start',['../index.html#autotoc_md7',1,'']]]
+  ['zero_20copy_20file_20transfer_0',['Zero-Copy File Transfer',['../index.html#autotoc_md31',1,'']]]
 ];

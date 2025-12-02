@@ -7,5 +7,7 @@ var dir_472464c21f3697a4351aeeea96351180 =
     [ "SocketDgram.h", "SocketDgram_8h.html", "SocketDgram_8h" ],
     [ "SocketHappyEyeballs.h", "SocketHappyEyeballs_8h.html", "SocketHappyEyeballs_8h" ],
     [ "SocketIO.h", "SocketIO_8h.html", "SocketIO_8h" ],
-    [ "SocketReconnect.h", "SocketReconnect_8h.html", "SocketReconnect_8h" ]
+    [ "SocketProxy.h", "SocketProxy_8h.html", "SocketProxy_8h" ],
+    [ "SocketReconnect.h", "SocketReconnect_8h.html", "SocketReconnect_8h" ],
+    [ "SocketWS.h", "SocketWS_8h.html", "SocketWS_8h" ]
 ];

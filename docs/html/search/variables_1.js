@@ -1,9 +1,11 @@
 var searchData=
 [
-  ['circuit_5ffailure_5fthreshold_0',['circuit_failure_threshold',['../SocketReconnect_8h.html#af4176c02c394de525164d44893fd5c5a',1,'SocketReconnect_Policy_T']]],
-  ['circuit_5freset_5ftimeout_5fms_1',['circuit_reset_timeout_ms',['../SocketReconnect_8h.html#ae99b002f9e873e6b101c1356f5a7df02',1,'SocketReconnect_Policy_T']]],
-  ['component_2',['component',['../SocketUtil_8h.html#a1ce3b46734d680830bf0ce719bc55f7a',1,'SocketEventRecord']]],
-  ['connect_5ftimeout_5fms_3',['connect_timeout_ms',['../SocketConfig_8h.html#a5d4d6de98cb88315bbe1d3768bedd373',1,'SocketTimeouts_T']]],
-  ['connection_4',['connection',['../SocketUtil_8h.html#a4717d53ebfdfea8477f780ec66151dcb',1,'SocketEventRecord.data']]],
-  ['count_5',['count',['../SocketCommon_8h.html#aa0eb80c5ca5d1e5862958659252abf7e',1,'SocketLiveCount']]]
+  ['backlog_0',['backlog',['../SocketHTTPServer_8h.html#a92d76f73dd8d83287a36bdd3643022ea',1,'SocketHTTPServer_Config']]],
+  ['bind_5faddress_1',['bind_address',['../SocketHTTPServer_8h.html#ab0bf8c280cce766a64efd9064f93bef2',1,'SocketHTTPServer_Config']]],
+  ['block_5fduration_5fms_2',['block_duration_ms',['../SocketSYNProtect_8h.html#a58785babfc923ba70d9c8f0d5b7a44cf',1,'SocketSYNProtect_Config']]],
+  ['block_5funtil_5fms_3',['block_until_ms',['../SocketSYNProtect_8h.html#ae664aa07891130d5bb60edf6a1d72bf7',1,'SocketSYN_IPState']]],
+  ['body_4',['body',['../SocketHTTPClient_8h.html#ab7f8558743b64c751b64ac26231dca31',1,'SocketHTTPClient_Response']]],
+  ['body_5flen_5',['body_len',['../SocketHTTPClient_8h.html#aae64f48637811f9ddbc8e12aea55e0e6',1,'SocketHTTPClient_Response']]],
+  ['bytes_5fneeded_6',['bytes_needed',['../SocketUTF8_8h.html#a075c37180d67223a22af1724ebdd9278',1,'SocketUTF8_State']]],
+  ['bytes_5fseen_7',['bytes_seen',['../SocketUTF8_8h.html#a216e9dcd5edcfb520dd193928984a537',1,'SocketUTF8_State']]]
 ];

@@ -577,6 +577,25 @@ else()
     message(STATUS "Documentation: Doxygen not found - install doxygen to generate API docs")
 endif()
 
+# =============================================================================
+# Examples (optional)
+# =============================================================================
+# Build with: cmake -DBUILD_EXAMPLES=ON ..
+# =============================================================================
+
+option(BUILD_EXAMPLES "Build example programs" OFF)
+
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+    message(STATUS "Examples: Building example programs")
+else()
+    message(STATUS "Examples: Disabled (use -DBUILD_EXAMPLES=ON to enable)")
+endif()
+
+# =============================================================================
+# Benchmarks
+# =============================================================================
+
 add_executable(benchmark_server src/test/benchmark_server.c)
 target_link_libraries(benchmark_server socket_static pthread)
 

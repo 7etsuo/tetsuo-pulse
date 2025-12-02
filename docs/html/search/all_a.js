@@ -1,5 +1,29 @@
 var searchData=
 [
-  ['key_20benefits_0',['Key Benefits',['../md_docs_2ASYNC__IO.html#autotoc_md48',1,'']]],
-  ['kqueue_20macos_20bsd_1',['kqueue (macOS/BSD)',['../md_docs_2ASYNC__IO.html#autotoc_md58',1,'']]]
+  ['f_0',['f',['../unionalign.html#a363eff2b501a06a5f2b8cac89d2674c3',1,'align']]],
+  ['failures_1',['failures',['../security_guide.html#autotoc_md258',1,'Don&apos;t Ignore Verification Failures'],['../SocketSYNProtect_8h.html#a77f8fbce111a5f7338f8cc8cb4a7bca9',1,'SocketSYN_IPState::failures']]],
+  ['fallback_20mode_2',['Fallback Mode',['../async_io_guide.html#autotoc_md61',1,'']]],
+  ['fast_20dual_20stack_3',['Happy Eyeballs (Fast Dual-Stack)',['../index.html#autotoc_md23',1,'']]],
+  ['fd_4',['fd',['../SocketUtil_8h.html#a36eba1e1e343279857ea7f69a597324e',1,'SocketEventRecord.data.connection']]],
+  ['fd_20leaks_5',['Prevent FD Leaks',['../security_guide.html#autotoc_md267',1,'']]],
+  ['features_6',['features',['../index.html#autotoc_md1',1,'Features'],['../http_guide.html#autotoc_md93',1,'HTTP/2 Features']]],
+  ['file_7',['file',['../Except_8h.html#a4c8d0ea0c9437ede53e8703feefe0dc6',1,'Except_Frame']]],
+  ['file_20descriptor_20hygiene_8',['File Descriptor Hygiene',['../security_guide.html#autotoc_md265',1,'']]],
+  ['file_20transfer_9',['Zero-Copy File Transfer',['../index.html#autotoc_md31',1,'']]],
+  ['files_10',['Header Files',['../index.html#autotoc_md37',1,'']]],
+  ['fin_11',['fin',['../SocketWS_8h.html#a54987d666286860044d3f6bd3f513d85',1,'SocketWS_Frame']]],
+  ['finally_12',['FINALLY',['../Except_8h.html#a0e2a75478cd44f1666a6aca626c5c50b',1,'Except.h']]],
+  ['first_5fattempt_5fdelay_5fms_13',['first_attempt_delay_ms',['../SocketHappyEyeballs_8h.html#a718ced26ae9d5f1a9c51980686007af9',1,'SocketHE_Config_T']]],
+  ['flags_14',['flags',['../SocketHTTP2_8h.html#a4008ece540896b7489aff8776f970b79',1,'SocketHTTP2_FrameHeader']]],
+  ['flood_20protection_15',['SYN Flood Protection',['../security_guide.html#autotoc_md247',1,'']]],
+  ['follow_5fredirects_16',['follow_redirects',['../SocketHTTPClient_8h.html#a1e5a28b4e256802af5f979726c728553',1,'SocketHTTPClient_Config']]],
+  ['fp_17',['fp',['../unionalign.html#a24af03c2c2b13ef5e8dac1130ded4f4d',1,'align']]],
+  ['frames_18',['Control Frames',['../websocket_guide.html#autotoc_md138',1,'']]],
+  ['from_20bsd_20sockets_19',['Migration from BSD Sockets',['../migration_guide.html#autotoc_md280',1,'']]],
+  ['from_20libcurl_20',['Migration from libcurl',['../migration_guide.html#autotoc_md287',1,'']]],
+  ['from_20libev_21',['Migration from libev',['../migration_guide.html#autotoc_md301',1,'']]],
+  ['from_20libevent_22',['Migration from libevent',['../migration_guide.html#autotoc_md295',1,'']]],
+  ['from_20openssl_20direct_23',['Migration from OpenSSL Direct',['../migration_guide.html#autotoc_md304',1,'']]],
+  ['from_20synchronous_20to_20async_24',['From Synchronous to Async',['../async_io_guide.html#autotoc_md65',1,'']]],
+  ['full_20configuration_20structure_25',['Full Configuration Structure',['../proxy_guide.html#autotoc_md186',1,'']]]
 ];

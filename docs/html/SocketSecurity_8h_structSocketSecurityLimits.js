@@ -1,0 +1,28 @@
+var SocketSecurity_8h_structSocketSecurityLimits =
+[
+    [ "http1_max_chunk_size", "SocketSecurity_8h.html#a09d8b8ba81dbdfd054852704521c3e3b", null ],
+    [ "http1_max_request_line", "SocketSecurity_8h.html#ae52e94d13f09404b25ea5e6ce8b9a244", null ],
+    [ "http2_max_concurrent_streams", "SocketSecurity_8h.html#aa6ebf2ebd20aad81fe2e3878840af1d3", null ],
+    [ "http2_max_frame_size", "SocketSecurity_8h.html#a8a7f143c56f078ca8b586edf7fde4b01", null ],
+    [ "http2_max_header_list_size", "SocketSecurity_8h.html#af58899d383dfd65a1776b6c01d209728", null ],
+    [ "http_max_body_size", "SocketSecurity_8h.html#a38f13b676cb92ff0a15389c309e19650", null ],
+    [ "http_max_header_name", "SocketSecurity_8h.html#a1a92f68da0f5b92ee678237cc2646da3", null ],
+    [ "http_max_header_size", "SocketSecurity_8h.html#a0c619f8e0d4dd70f4400c29a624e8c19", null ],
+    [ "http_max_header_value", "SocketSecurity_8h.html#a1f586f4e595e16955e23998e04caecf9", null ],
+    [ "http_max_headers", "SocketSecurity_8h.html#afdd207e3668e2e11458948a3aad76833", null ],
+    [ "http_max_uri_length", "SocketSecurity_8h.html#a3b32fafb211e38e9838e9181a8d4531a", null ],
+    [ "max_allocation", "SocketSecurity_8h.html#a1dd545a749e77aa5cb82b7e85bf09e36", null ],
+    [ "max_buffer_size", "SocketSecurity_8h.html#ae43b81b8cf9129c9d6752f34894ba71c", null ],
+    [ "max_connections", "SocketSecurity_8h.html#a144d096fe53602d03295e18d0464232a", null ],
+    [ "ratelimit_burst", "SocketSecurity_8h.html#a1201fdfce0a6d52d800643ff4bfe439a", null ],
+    [ "ratelimit_conn_per_sec", "SocketSecurity_8h.html#aad4c405c76c951df4eb1047556616fc9", null ],
+    [ "ratelimit_max_per_ip", "SocketSecurity_8h.html#a8c183e16c7d5bc9ee671fd0d9dd19534", null ],
+    [ "timeout_connect_ms", "SocketSecurity_8h.html#a57fc2fdec5241008f1d6da53f9e00cf0", null ],
+    [ "timeout_dns_ms", "SocketSecurity_8h.html#a59af712b30f6d94c681a272029976e7d", null ],
+    [ "timeout_idle_ms", "SocketSecurity_8h.html#a896b59f955bafd0a580728136858820f", null ],
+    [ "timeout_request_ms", "SocketSecurity_8h.html#ac1311a4929ead36e3ce915720008e206", null ],
+    [ "tls_max_cert_chain_depth", "SocketSecurity_8h.html#a51b777a9f3dbcfa40b08249110df5c21", null ],
+    [ "tls_session_cache_size", "SocketSecurity_8h.html#af0437c76d97f1c1060cd64292f1d27ff", null ],
+    [ "ws_max_frame_size", "SocketSecurity_8h.html#a71de06121ef88aa459fc42e9f087be64", null ],
+    [ "ws_max_message_size", "SocketSecurity_8h.html#a7066039979bec29150ec1607406bb82f", null ]
+];

@@ -158,9 +158,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ae9ec719e250346605c00e5b3efb2e7d8" id="r_ae9ec719e250346605c00e5b3efb2e7d8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#ae9ec719e250346605c00e5b3efb2e7d8">backend_del</a> (<a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int fd)</td></tr>
 <tr class="memdesc:ae9ec719e250346605c00e5b3efb2e7d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_del - Remove socket from poll set @backend: Backend instance @fd: File descriptor to remove Returns: 0 on success, -1 on failure (sets errno) Note: Should succeed silently if fd not in set  <br /></td></tr>
 <tr class="separator:ae9ec719e250346605c00e5b3efb2e7d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ca26eabe4ea3174d20ea5169a21f15c" id="r_a9ca26eabe4ea3174d20ea5169a21f15c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#a9ca26eabe4ea3174d20ea5169a21f15c">backend_wait</a> (<a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int timeout)</td></tr>
-<tr class="memdesc:a9ca26eabe4ea3174d20ea5169a21f15c"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_wait - Wait for events @backend: Backend instance @timeout: Timeout in milliseconds (-1 for infinite) Returns: Number of events ready (&gt;= 0), or -1 on error (sets errno) Note: Returns 0 on timeout  <br /></td></tr>
-<tr class="separator:a9ca26eabe4ea3174d20ea5169a21f15c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b2c06638f0c76ea3c6c2f38503d266b" id="r_a5b2c06638f0c76ea3c6c2f38503d266b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#a5b2c06638f0c76ea3c6c2f38503d266b">backend_wait</a> (<a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int timeout_ms)</td></tr>
+<tr class="memdesc:a5b2c06638f0c76ea3c6c2f38503d266b"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_wait - Wait for events @backend: Backend instance @timeout_ms: Timeout in milliseconds (-1 for infinite) Returns: Number of events ready (&gt;= 0), or -1 on error (sets errno) Note: Returns 0 on timeout  <br /></td></tr>
+<tr class="separator:a5b2c06638f0c76ea3c6c2f38503d266b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac8fe3c2f41388223c47cb0c59d9428d1" id="r_ac8fe3c2f41388223c47cb0c59d9428d1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#ac8fe3c2f41388223c47cb0c59d9428d1">backend_get_event</a> (<a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int index, int *fd_out, unsigned *events_out)</td></tr>
 <tr class="memdesc:ac8fe3c2f41388223c47cb0c59d9428d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_get_event - Get event details for index @backend: Backend instance @index: Event index (0 to count-1 from backend_wait) @fd_out: Output - file descriptor @events_out: Output - events that occurred Returns: 0 on success, -1 on invalid index  <br /></td></tr>
 <tr class="separator:ac8fe3c2f41388223c47cb0c59d9428d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -490,8 +490,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a9ca26eabe4ea3174d20ea5169a21f15c" name="a9ca26eabe4ea3174d20ea5169a21f15c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9ca26eabe4ea3174d20ea5169a21f15c">&#9670;&#160;</a></span>backend_wait()</h2>
+<a id="a5b2c06638f0c76ea3c6c2f38503d266b" name="a5b2c06638f0c76ea3c6c2f38503d266b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b2c06638f0c76ea3c6c2f38503d266b">&#9670;&#160;</a></span>backend_wait()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -509,7 +509,7 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>timeout</em>&#160;</td>
+          <td class="paramname"><em>timeout_ms</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -524,7 +524,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>backend_wait - Wait for events @backend: Backend instance @timeout: Timeout in milliseconds (-1 for infinite) Returns: Number of events ready (&gt;= 0), or -1 on error (sets errno) Note: Returns 0 on timeout </p>
+<p>backend_wait - Wait for events @backend: Backend instance @timeout_ms: Timeout in milliseconds (-1 for infinite) Returns: Number of events ready (&gt;= 0), or -1 on error (sets errno) Note: Returns 0 on timeout </p>
 
 </div>
 </div>

@@ -1,26 +1,7 @@
 var searchData=
 [
-  ['p_0',['p',['../unionalign.html#ad023bcc02a5fb5381a305b7ed83a644f',1,'align']]],
-  ['peer_5faddr_1',['peer_addr',['../SocketUtil_8h.html#a2acfab89d50b27af645bfecf305c9b90',1,'SocketEventRecord.data.connection']]],
-  ['peer_5fport_2',['peer_port',['../SocketUtil_8h.html#a78f4755292fae2f109358763bfbebb3b',1,'SocketEventRecord.data.connection']]],
-  ['performance_3',['Performance',['../index.html#autotoc_md4',1,'']]],
-  ['performance_20benchmarks_4',['Performance Benchmarks',['../md_docs_2ASYNC__IO.html#autotoc_md71',1,'']]],
-  ['performance_20tuning_5',['Performance Tuning',['../md_docs_2ASYNC__IO.html#autotoc_md56',1,'']]],
-  ['platform_20support_6',['platform support',['../index.html#autotoc_md42',1,'Platform Support'],['../md_docs_2ASYNC__IO.html#autotoc_md47',1,'Platform Support']]],
-  ['poll_7',['poll',['../SocketUtil_8h.html#ab0f6dfb42fa80caee6825bfecd30f094',1,'SocketEventRecord.data']]],
-  ['poll_5ferror_8',['POLL_ERROR',['../SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6a29422ea3bfa0fde21ed413e6f9d7b0d9',1,'SocketPoll.h']]],
-  ['poll_5ffd_5fmap_5fexpand_5fincrement_9',['POLL_FD_MAP_EXPAND_INCREMENT',['../SocketConfig_8h.html#a834e79d67b92d737d55e4ba2b0684025',1,'SocketConfig.h']]],
-  ['poll_5fhangup_10',['POLL_HANGUP',['../SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6aaa263b6ed4ed526b0d9c55f0c2702f4c',1,'SocketPoll.h']]],
-  ['poll_5finitial_5ffd_5fmap_5fsize_11',['POLL_INITIAL_FD_MAP_SIZE',['../SocketConfig_8h.html#a211a6387523fa6487af971831aabf461',1,'SocketConfig.h']]],
-  ['poll_5finitial_5ffds_12',['POLL_INITIAL_FDS',['../SocketConfig_8h.html#a673275383493d8cff8bc582fef311e42',1,'SocketConfig.h']]],
-  ['poll_5fread_13',['POLL_READ',['../SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8',1,'SocketPoll.h']]],
-  ['poll_5fwrite_14',['POLL_WRITE',['../SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195',1,'SocketPoll.h']]],
-  ['pollbackend_5ft_15',['PollBackend_T',['../SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b',1,'SocketPoll_backend.h']]],
-  ['pool_20with_20buffers_16',['Connection Pool with Buffers',['../index.html#autotoc_md27',1,'']]],
-  ['port_17',['port',['../SocketUtil_8h.html#a901555fb06e346cb065ceb9808dcfc25',1,'SocketEventRecord.data.dns']]],
-  ['practices_18',['Best Practices',['../md_docs_2ASYNC__IO.html#autotoc_md64',1,'']]],
-  ['prefer_5fipv6_19',['prefer_ipv6',['../SocketHappyEyeballs_8h.html#a2286078d8352300a92ddd005f756ae8b',1,'SocketHE_Config_T']]],
-  ['prev_20',['prev',['../Except_8h.html#a4a5323a9c98b198d171a7f0409f3bbae',1,'Except_Frame']]],
-  ['processing_20completions_21',['Processing Completions',['../md_docs_2ASYNC__IO.html#autotoc_md53',1,'']]],
-  ['protocol_2dp_22',['Protocol-p',['../namespace_3globalScope_4.html#protocolProtocol-p',1,'']]]
+  ['keepalive_5ftimeout_5fms_0',['keepalive_timeout_ms',['../SocketHTTPServer_8h.html#a1e78410c99812889132c0977539d170b',1,'SocketHTTPServer_Config']]],
+  ['key_20benefits_1',['Key Benefits',['../async_io_guide.html#autotoc_md50',1,'']]],
+  ['key_20differences_2',['Key Differences',['../migration_guide.html#autotoc_md312',1,'']]],
+  ['kqueue_20macos_20bsd_3',['kqueue (macOS/BSD)',['../async_io_guide.html#autotoc_md60',1,'']]]
 ];

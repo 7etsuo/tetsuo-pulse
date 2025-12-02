@@ -157,7 +157,7 @@ TCP Echo Server</h2>
 <div class="line"><span class="preprocessor">#include &lt;signal.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -194,7 +194,7 @@ TCP Echo Server</h2>
 <div class="ttc" id="aExcept_8h_html_ad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="Except_8h.html#ad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00103">Except.h:103</a></div></div>
 <div class="ttc" id="aExcept_8h_html_ae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="Except_8h.html#ae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00139">Except.h:139</a></div></div>
 <div class="ttc" id="aSocket_8h_html"><div class="ttname"><a href="Socket_8h.html">Socket.h</a></div></div>
-<div class="ttc" id="aSocket_8h_html_a1bcdb0c6d5827c2493bd622fa7751f14"><div class="ttname"><a href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></div><div class="ttdeci">struct Socket_T * Socket_T</div><div class="ttdef"><b>Definition</b> <a href="Socket_8h_source.html#l00045">Socket.h:45</a></div></div>
+<div class="ttc" id="aSocket_8h_html_a1bcdb0c6d5827c2493bd622fa7751f14"><div class="ttname"><a href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></div><div class="ttdeci">struct Socket_T * Socket_T</div><div class="ttdef"><b>Definition</b> <a href="Socket_8h_source.html#l00046">Socket.h:46</a></div></div>
 <div class="ttc" id="aSocket_8h_html_a225f4a8fd657fd52a05146c6fc4f58b0"><div class="ttname"><a href="Socket_8h.html#a225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a></div><div class="ttdeci">const Except_T Socket_Failed</div><div class="ttdoc">General socket operation failure.</div></div>
 <div class="ttc" id="aSocket_8h_html_a2c6f352cec920859c71206898ed135fc"><div class="ttname"><a href="Socket_8h.html#a2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr</a></div><div class="ttdeci">void Socket_setreuseaddr(Socket_T socket)</div><div class="ttdoc">Socket_setreuseaddr - Enable address reuse @socket: Socket to modify Raises: Socket_Failed on error.</div></div>
 <div class="ttc" id="aSocket_8h_html_a32b67d95639513cd6a602f6175b48f15"><div class="ttname"><a href="Socket_8h.html#a32b67d95639513cd6a602f6175b48f15">Socket_accept</a></div><div class="ttdeci">Socket_T Socket_accept(Socket_T socket)</div><div class="ttdoc">Socket_accept - Accept incoming connection @socket: Listening socket Returns: New socket or NULL if w...</div></div>
@@ -204,6 +204,7 @@ TCP Echo Server</h2>
 <div class="ttc" id="aSocket_8h_html_a95db343f47445925cecd6b20054518e9"><div class="ttname"><a href="Socket_8h.html#a95db343f47445925cecd6b20054518e9">Socket_recv</a></div><div class="ttdeci">ssize_t Socket_recv(Socket_T socket, void *buf, size_t len)</div><div class="ttdoc">Socket_recv - Receive data @socket: Connected socket @buf: Buffer for received data @len: Buffer size...</div></div>
 <div class="ttc" id="aSocket_8h_html_ab24b026bc4c69e6f766211f44675e189"><div class="ttname"><a href="Socket_8h.html#ab24b026bc4c69e6f766211f44675e189">Socket_listen</a></div><div class="ttdeci">void Socket_listen(Socket_T socket, int backlog)</div><div class="ttdoc">Socket_listen - Listen for incoming connections @socket: Bound socket @backlog: Maximum pending conne...</div></div>
 <div class="ttc" id="aSocket_8h_html_acb65d693d8c93e2a1fe6411dd0d0af98"><div class="ttname"><a href="Socket_8h.html#acb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind</a></div><div class="ttdeci">void Socket_bind(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Socket_bind - Bind socket to address and port @socket: Socket to bind @host: IP address or NULL/&quot;0....</div></div>
+<div class="ttc" id="ahttp2__client_8c_html_a3c04138a5bfe5d72780bb7e82a18e627"><div class="ttname"><a href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a></div><div class="ttdeci">int main(int argc, char **argv)</div><div class="ttdef"><b>Definition</b> <a href="http2__client_8c_source.html#l00044">http2_client.c:44</a></div></div>
 </div><!-- fragment --><hr  />
 <h2><a class="anchor" id="autotoc_md11"></a>
 TCP Client</h2>
@@ -214,7 +215,7 @@ TCP Client</h2>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -253,7 +254,7 @@ Event-Driven Server (Non-Blocking)</h2>
 <div class="line"><span class="preprocessor">#include &lt;signal.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -323,7 +324,7 @@ UDP Echo Server</h2>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Except_8h.html">core/Except.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    <a class="code hl_typedef" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> server = <a class="code hl_function" href="SocketDgram_8h.html#ad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a>(AF_INET, 0);</div>
 <div class="line">    </div>
@@ -368,7 +369,7 @@ UDP Client</h2>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    <a class="code hl_typedef" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> client = <a class="code hl_function" href="SocketDgram_8h.html#ad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a>(AF_INET, 0);</div>
 <div class="line">    </div>
@@ -406,7 +407,7 @@ TLS Client (Secure Connection)</h2>
 <div class="line"><span class="preprocessor">#include &lt;signal.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -484,7 +485,7 @@ Unix Domain Socket Server</h2>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;unistd.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -531,7 +532,7 @@ Happy Eyeballs (Fast Dual-Stack)</h2>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -584,7 +585,7 @@ Auto-Reconnecting Client</h2>
 <div class="line">    printf(<span class="stringliteral">&quot;State: %s\n&quot;</span>, states[state]);</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -651,7 +652,7 @@ Connection Pool with Buffers</h2>
 <div class="line"><span class="preprocessor">#include &lt;signal.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -711,13 +712,13 @@ Connection Pool with Buffers</h2>
 <div class="ttc" id="aArena_8h_html_a6a6d6890eb6ed1248ae1a5f0c677c7a4"><div class="ttname"><a href="Arena_8h.html#a6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a></div><div class="ttdeci">Arena_T Arena_new(void)</div><div class="ttdoc">Arena_new - Create a new memory arena Returns: New arena instance, or NULL on allocation failure Note...</div></div>
 <div class="ttc" id="aArena_8h_html_ac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00038">Arena.h:38</a></div></div>
 <div class="ttc" id="aSocketBuf_8h_html_a4aacfb9008833f24abec18b1d65d0d42"><div class="ttname"><a href="SocketBuf_8h.html#a4aacfb9008833f24abec18b1d65d0d42">SocketBuf_read</a></div><div class="ttdeci">size_t SocketBuf_read(SocketBuf_T buf, void *data, size_t len)</div><div class="ttdoc">SocketBuf_read - Read and remove data from buffer @buf: Buffer instance @data: Destination buffer @le...</div></div>
-<div class="ttc" id="aSocketBuf_8h_html_ad4b3ec10874282833e1b15760efa1b6c"><div class="ttname"><a href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></div><div class="ttdeci">struct SocketBuf_T * SocketBuf_T</div><div class="ttdef"><b>Definition</b> <a href="SocketBuf_8h_source.html#l00023">SocketBuf.h:23</a></div></div>
+<div class="ttc" id="aSocketBuf_8h_html_ad4b3ec10874282833e1b15760efa1b6c"><div class="ttname"><a href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></div><div class="ttdeci">struct SocketBuf_T * SocketBuf_T</div><div class="ttdef"><b>Definition</b> <a href="SocketBuf_8h_source.html#l00025">SocketBuf.h:25</a></div></div>
 <div class="ttc" id="aSocketBuf_8h_html_ae4d5d95ed126030f6414b7f607cd555e"><div class="ttname"><a href="SocketBuf_8h.html#ae4d5d95ed126030f6414b7f607cd555e">SocketBuf_readptr</a></div><div class="ttdeci">const void * SocketBuf_readptr(SocketBuf_T buf, size_t *len)</div><div class="ttdoc">SocketBuf_readptr - Get direct read pointer @buf: Buffer instance @len: Output - contiguous bytes ava...</div></div>
 <div class="ttc" id="aSocketPool_8h_html"><div class="ttname"><a href="SocketPool_8h.html">SocketPool.h</a></div></div>
 <div class="ttc" id="aSocketPool_8h_html_a21b17f01e3036b53fed194c6b3c0b95f"><div class="ttname"><a href="SocketPool_8h.html#a21b17f01e3036b53fed194c6b3c0b95f">SocketPool_get</a></div><div class="ttdeci">Connection_T SocketPool_get(SocketPool_T pool, Socket_T socket)</div><div class="ttdoc">SocketPool_get - Look up connection by socket @pool: Pool instance @socket: Socket to find Returns: C...</div></div>
 <div class="ttc" id="aSocketPool_8h_html_a2774ba952af4a9a218e33b492aed1a18"><div class="ttname"><a href="SocketPool_8h.html#a2774ba952af4a9a218e33b492aed1a18">SocketPool_new</a></div><div class="ttdeci">SocketPool_T SocketPool_new(Arena_T arena, size_t maxconns, size_t bufsize)</div><div class="ttdoc">SocketPool_new - Create a new connection pool @arena: Arena for memory allocation @maxconns: Maximum ...</div></div>
-<div class="ttc" id="aSocketPool_8h_html_a424a0221f5eef0991c244d83d02d8b2c"><div class="ttname"><a href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a></div><div class="ttdeci">struct Connection * Connection_T</div><div class="ttdef"><b>Definition</b> <a href="SocketPool_8h_source.html#l00040">SocketPool.h:40</a></div></div>
-<div class="ttc" id="aSocketPool_8h_html_a9b894da8ce452934ac1e3ab806060ae9"><div class="ttname"><a href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a></div><div class="ttdeci">struct SocketPool_T * SocketPool_T</div><div class="ttdef"><b>Definition</b> <a href="SocketPool_8h_source.html#l00037">SocketPool.h:37</a></div></div>
+<div class="ttc" id="aSocketPool_8h_html_a424a0221f5eef0991c244d83d02d8b2c"><div class="ttname"><a href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a></div><div class="ttdeci">struct Connection * Connection_T</div><div class="ttdef"><b>Definition</b> <a href="SocketPool_8h_source.html#l00041">SocketPool.h:41</a></div></div>
+<div class="ttc" id="aSocketPool_8h_html_a9b894da8ce452934ac1e3ab806060ae9"><div class="ttname"><a href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a></div><div class="ttdeci">struct SocketPool_T * SocketPool_T</div><div class="ttdef"><b>Definition</b> <a href="SocketPool_8h_source.html#l00038">SocketPool.h:38</a></div></div>
 <div class="ttc" id="aSocketPool_8h_html_ab2a7df0479b8f9ac899672afdb488b94"><div class="ttname"><a href="SocketPool_8h.html#ab2a7df0479b8f9ac899672afdb488b94">SocketPool_cleanup</a></div><div class="ttdeci">void SocketPool_cleanup(SocketPool_T pool, time_t idle_timeout)</div><div class="ttdoc">SocketPool_cleanup - Remove idle connections @pool: Pool instance @idle_timeout: Seconds inactive bef...</div></div>
 <div class="ttc" id="aSocketPool_8h_html_ac7720c7b7d679624fa95bdefe9a38494"><div class="ttname"><a href="SocketPool_8h.html#ac7720c7b7d679624fa95bdefe9a38494">SocketPool_add</a></div><div class="ttdeci">Connection_T SocketPool_add(SocketPool_T pool, Socket_T socket)</div><div class="ttdoc">SocketPool_add - Add socket to pool @pool: Pool instance @socket: Socket to add Returns: New connecti...</div></div>
 <div class="ttc" id="aSocketPool_8h_html_acdffcf1802367df60db15c649fc7072d"><div class="ttname"><a href="SocketPool_8h.html#acdffcf1802367df60db15c649fc7072d">SocketPool_remove</a></div><div class="ttdeci">void SocketPool_remove(SocketPool_T pool, Socket_T socket)</div><div class="ttdoc">SocketPool_remove - Remove socket from pool @pool: Pool instance @socket: Socket to remove Clears buf...</div></div>
@@ -731,7 +732,7 @@ Async DNS Resolution</h2>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;netdb.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    <a class="code hl_typedef" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns = <a class="code hl_function" href="SocketDNS_8h.html#a799f4d96c77eef54ecb9be5523b591fd">SocketDNS_new</a>();</div>
 <div class="line">    <a class="code hl_typedef" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll = <a class="code hl_function" href="SocketPoll_8h.html#ac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(100);</div>
@@ -789,7 +790,7 @@ Zero-Copy File Transfer</h2>
 <div class="line"><span class="preprocessor">#include &lt;sys/stat.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;unistd.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span> *argv[])</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span> *argv[])</div>
 <div class="line">{</div>
 <div class="line">    <span class="keywordflow">if</span> (argc &lt; 3) {</div>
 <div class="line">        fprintf(stderr, <span class="stringliteral">&quot;Usage: %s &lt;host&gt; &lt;file&gt;\n&quot;</span>, argv[0]);</div>
@@ -837,7 +838,7 @@ Scatter/Gather I/O</h2>
 <div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;sys/uio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -879,7 +880,7 @@ Advanced TCP Options</h2>
 <div class="line"><span class="preprocessor">#include &lt;signal.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -1008,12 +1009,35 @@ Platform Support</h1>
 <hr  />
 <h1><a class="anchor" id="autotoc_md44"></a>
 Documentation</h1>
+<h2><a class="anchor" id="autotoc_md45"></a>
+API Reference</h2>
 <ul>
 <li><b><a href="files.html" target="_blank">Files</a></b> — Header file reference</li>
 <li><b><a href="annotated.html" target="_blank">Data Structures</a></b> — Structs and types</li>
 <li><b><a href="globals.html" target="_blank">API Reference</a></b> — Complete function index</li>
-<li><b><a href="md_docs_2_a_s_y_n_c__i_o.html" target="_blank">Async I/O Guide</a></b> — io_uring patterns </li>
 </ul>
+<h2><a class="anchor" id="autotoc_md46"></a>
+Guides</h2>
+<ul>
+<li><b><a class="el" href="http_guide.html">HTTP Guide</a></b> — HTTP/1.1 and HTTP/2 client/server</li>
+<li><b><a class="el" href="websocket_guide.html">WebSocket Guide</a></b> — WebSocket client/server (RFC 6455)</li>
+<li><b><a class="el" href="proxy_guide.html">Proxy Guide</a></b> — HTTP CONNECT and SOCKS proxy tunneling</li>
+<li><b><a class="el" href="security_guide.html">Security Guide</a></b> — TLS configuration and best practices</li>
+<li><b><a class="el" href="migration_guide.html">Migration Guide</a></b> — Migrate from libcurl, libevent, etc.</li>
+<li><b><a class="el" href="async_io_guide.html">Async I/O Guide</a></b> — io_uring patterns</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md47"></a>
+Examples</h2>
+<p>Standalone example programs are in the <code>examples/</code> directory:</p><ul>
+<li><code><a class="el" href="http__get_8c.html">http_get.c</a></code> — Simple HTTP GET request</li>
+<li><code><a class="el" href="http__post_8c.html">http_post.c</a></code> — HTTP POST with JSON</li>
+<li><code><a class="el" href="http2__client_8c.html">http2_client.c</a></code> — HTTP/2 protocol</li>
+<li><code><a class="el" href="http__server_8c.html">http_server.c</a></code> — Basic HTTP server</li>
+<li><code><a class="el" href="websocket__client_8c.html">websocket_client.c</a></code> — WebSocket client</li>
+<li><code><a class="el" href="websocket__server_8c.html">websocket_server.c</a></code> — WebSocket echo server</li>
+<li><code><a class="el" href="proxy__connect_8c.html">proxy_connect.c</a></code> — SOCKS5/HTTP proxy tunneling</li>
+</ul>
+<p>Build examples with <code>cmake -DBUILD_EXAMPLES=ON ..</code> </p>
 </div></div><!-- PageDoc -->
 </div><!-- contents -->
 </div><!-- doc-content -->

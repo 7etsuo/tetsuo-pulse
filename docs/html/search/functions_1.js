@@ -7,5 +7,5 @@ var searchData=
   ['backend_5fmod_4',['backend_mod',['../SocketPoll__backend_8h.html#a4b929e888a5088e59cd045c41759363e',1,'SocketPoll_backend.h']]],
   ['backend_5fname_5',['backend_name',['../SocketPoll__backend_8h.html#a2edb00f128ad773d62c8f11c516153d9',1,'SocketPoll_backend.h']]],
   ['backend_5fnew_6',['backend_new',['../SocketPoll__backend_8h.html#ae1b5045d5537dde7eb2cce1e8deae997',1,'SocketPoll_backend.h']]],
-  ['backend_5fwait_7',['backend_wait',['../SocketPoll__backend_8h.html#a9ca26eabe4ea3174d20ea5169a21f15c',1,'SocketPoll_backend.h']]]
+  ['backend_5fwait_7',['backend_wait',['../SocketPoll__backend_8h.html#a5b2c06638f0c76ea3c6c2f38503d266b',1,'SocketPoll_backend.h']]]
 ];

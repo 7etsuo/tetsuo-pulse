@@ -18,5 +18,6 @@ var SocketBuf_8h =
     [ "SocketBuf_space", "SocketBuf_8h.html#a4f511809edb33ba3ff3a051544bff0d1", null ],
     [ "SocketBuf_write", "SocketBuf_8h.html#abad296e666bf8d65669ab7c71d6b8d97", null ],
     [ "SocketBuf_writeptr", "SocketBuf_8h.html#a0d845ceca49625b8c317310a757ad9dc", null ],
-    [ "SocketBuf_written", "SocketBuf_8h.html#a2e4e93aa0feab70464515b0ef3a57186", null ]
+    [ "SocketBuf_written", "SocketBuf_8h.html#a2e4e93aa0feab70464515b0ef3a57186", null ],
+    [ "SocketBuf_Failed", "SocketBuf_8h.html#a246f86a3226316f3922ee9eba0436777", null ]
 ];

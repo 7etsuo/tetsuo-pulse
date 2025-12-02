@@ -1,30 +1,5 @@
 var searchData=
 [
-  ['calloc_0',['CALLOC',['../Arena_8h.html#af5249a1778cd6cf5db0e2e410b292934',1,'Arena.h']]],
-  ['cancellation_1',['Cancellation',['../md_docs_2ASYNC__IO.html#autotoc_md54',1,'']]],
-  ['circuit_5ffailure_5fthreshold_2',['circuit_failure_threshold',['../SocketReconnect_8h.html#af4176c02c394de525164d44893fd5c5a',1,'SocketReconnect_Policy_T']]],
-  ['circuit_5freset_5ftimeout_5fms_3',['circuit_reset_timeout_ms',['../SocketReconnect_8h.html#ae99b002f9e873e6b101c1356f5a7df02',1,'SocketReconnect_Policy_T']]],
-  ['client_4',['client',['../index.html#autotoc_md25',1,'Auto-Reconnecting Client'],['../index.html#autotoc_md11',1,'TCP Client'],['../index.html#autotoc_md17',1,'UDP Client']]],
-  ['client_20secure_20connection_5',['TLS Client (Secure Connection)',['../index.html#autotoc_md19',1,'']]],
-  ['complete_20example_3a_20echo_20server_6',['Complete Example: Echo Server',['../md_docs_2ASYNC__IO.html#autotoc_md55',1,'']]],
-  ['completions_7',['Processing Completions',['../md_docs_2ASYNC__IO.html#autotoc_md53',1,'']]],
-  ['component_8',['component',['../SocketUtil_8h.html#a1ce3b46734d680830bf0ce719bc55f7a',1,'SocketEventRecord']]],
-  ['connect_5ftimeout_5fms_9',['connect_timeout_ms',['../SocketConfig_8h.html#a5d4d6de98cb88315bbe1d3768bedd373',1,'SocketTimeouts_T']]],
-  ['connection_10',['connection',['../SocketUtil_8h.html#a4717d53ebfdfea8477f780ec66151dcb',1,'SocketEventRecord.data::connection'],['../index.html#autotoc_md19',1,'TLS Client (Secure Connection)']]],
-  ['connection_20pool_20with_20buffers_11',['Connection Pool with Buffers',['../index.html#autotoc_md27',1,'']]],
-  ['connection_5fdata_12',['Connection_data',['../SocketPool_8h.html#a1faf8c706d1ed9418446fc155fa289dd',1,'SocketPool.h']]],
-  ['connection_5fhas_5freconnect_13',['Connection_has_reconnect',['../SocketPool_8h.html#a548e5fadc02daadb2388d09bf8aec167',1,'SocketPool.h']]],
-  ['connection_5finbuf_14',['Connection_inbuf',['../SocketPool_8h.html#a24170577512ce3a19fe195ab9c3576bf',1,'SocketPool.h']]],
-  ['connection_5fisactive_15',['Connection_isactive',['../SocketPool_8h.html#af52bba490d68b2dd5448a61a1cc820a1',1,'SocketPool.h']]],
-  ['connection_5flastactivity_16',['Connection_lastactivity',['../SocketPool_8h.html#a68397aca39e8902ee26108dcb86b5db1',1,'SocketPool.h']]],
-  ['connection_5foutbuf_17',['Connection_outbuf',['../SocketPool_8h.html#a6d7573f71d8853943029cfd55fa3fb3a',1,'SocketPool.h']]],
-  ['connection_5freconnect_18',['Connection_reconnect',['../SocketPool_8h.html#a0ea55ad82560acb8b5b44dceebc7c02f',1,'SocketPool.h']]],
-  ['connection_5fsetdata_19',['Connection_setdata',['../SocketPool_8h.html#ab48a53bc1b36954d521104fedf9012c1',1,'SocketPool.h']]],
-  ['connection_5fsocket_20',['Connection_socket',['../SocketPool_8h.html#aaeff7efb1109a312f56e35689b67c652',1,'SocketPool.h']]],
-  ['connection_5ft_21',['Connection_T',['../SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c',1,'SocketPool.h']]],
-  ['context_22',['Getting Async Context',['../md_docs_2ASYNC__IO.html#autotoc_md50',1,'']]],
-  ['copy_20file_20transfer_23',['Zero-Copy File Transfer',['../index.html#autotoc_md31',1,'']]],
-  ['core_20networking_24',['Core Networking',['../index.html#autotoc_md2',1,'']]],
-  ['count_25',['count',['../SocketCommon_8h.html#aa0eb80c5ca5d1e5862958659252abf7e',1,'SocketLiveCount']]],
-  ['cpu_20usage_26',['High CPU Usage',['../md_docs_2ASYNC__IO.html#autotoc_md68',1,'']]]
+  ['3_0',['Why TLS 1.3?',['../security_guide.html#autotoc_md225',1,'']]],
+  ['3_20configuration_1',['TLS 1.3 Configuration',['../security_guide.html#autotoc_md222',1,'']]]
 ];

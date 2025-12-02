@@ -134,7 +134,7 @@ $(document).ready(function(){initNavTree('Socket_8h.html',''); initResizable(); 
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="Socket_8h__dep__incl.svg" width="100%" height="437"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="Socket_8h__dep__incl.svg" width="100%" height="547"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
 </div>
 <p><a href="Socket_8h_source.html">Go to the source code of this file.</a></p>
@@ -301,6 +301,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a18ad1f92bb3233c463ea4067b69f73c2" id="r_a18ad1f92bb3233c463ea4067b69f73c2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a18ad1f92bb3233c463ea4067b69f73c2">Socket_setcloexec</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int enable)</td></tr>
 <tr class="memdesc:a18ad1f92bb3233c463ea4067b69f73c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setcloexec - Control close-on-exec flag @socket: Socket to modify @enable: 1 to enable CLOEXEC, 0 to disable Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a18ad1f92bb3233c463ea4067b69f73c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5b9e684faf1a8d5c1ccb9e231ef1354" id="r_ab5b9e684faf1a8d5c1ccb9e231ef1354"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ab5b9e684faf1a8d5c1ccb9e231ef1354">Socket_setdeferaccept</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int timeout_sec)</td></tr>
+<tr class="memdesc:ab5b9e684faf1a8d5c1ccb9e231ef1354"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setdeferaccept - Enable TCP_DEFER_ACCEPT @socket: Listening socket @timeout_sec: Seconds to wait for data before completing accept (0 to disable, max platform-specific)  <br /></td></tr>
+<tr class="separator:ab5b9e684faf1a8d5c1ccb9e231ef1354"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a80f9fc5782bf3caf5228e458d3f3c112" id="r_a80f9fc5782bf3caf5228e458d3f3c112"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a80f9fc5782bf3caf5228e458d3f3c112">Socket_getdeferaccept</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
+<tr class="memdesc:a80f9fc5782bf3caf5228e458d3f3c112"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getdeferaccept - Get TCP_DEFER_ACCEPT timeout @socket: Listening socket.  <br /></td></tr>
+<tr class="separator:a80f9fc5782bf3caf5228e458d3f3c112"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5fa0449e34ebfb141da236023da3edb7" id="r_a5fa0449e34ebfb141da236023da3edb7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a5fa0449e34ebfb141da236023da3edb7">Socket_timeouts_get</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a> *timeouts)</td></tr>
 <tr class="memdesc:a5fa0449e34ebfb141da236023da3edb7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_timeouts_get - Retrieve per-socket timeout configuration @socket: Socket instance @timeouts: Output timeout structure.  <br /></td></tr>
 <tr class="separator:a5fa0449e34ebfb141da236023da3edb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -408,7 +414,7 @@ Variables</h2></td></tr>
 <li>POSIX threads (pthread) for thread-safe error reporting</li>
 <li>NOT portable to Windows without Winsock adaptation</li>
 </ul>
-<p>CRITICAL: Applications MUST call signal(SIGPIPE, SIG_IGN) during initialization to prevent process termination on broken pipe errors (required on macOS/BSD).</p>
+<p>SIGPIPE HANDLING (automatic - no application action required): The library handles SIGPIPE internally. All send operations use MSG_NOSIGNAL (Linux/FreeBSD), and SO_NOSIGPIPE is set at socket creation (BSD/macOS). Applications do NOT need to call signal(SIGPIPE, SIG_IGN).</p>
 <p>Error Handling:</p><ul>
 <li>Socket_Failed: General socket errors</li>
 <li>Socket_Closed: Connection terminated by peer</li>
@@ -420,7 +426,7 @@ Variables</h2></td></tr>
 <li>Applied to DNS resolution and blocking connect() paths </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="Socket_8h_source.html#l00044">44</a> of file <a class="el" href="Socket_8h_source.html">Socket.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Socket_8h_source.html#l00045">45</a> of file <a class="el" href="Socket_8h_source.html">Socket.h</a>.</p>
 
 </div>
 </div>
@@ -437,7 +443,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Socket_8h_source.html#l00045">45</a> of file <a class="el" href="Socket_8h_source.html">Socket.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Socket_8h_source.html#l00046">46</a> of file <a class="el" href="Socket_8h_source.html">Socket.h</a>.</p>
 
 </div>
 </div>
@@ -763,6 +769,8 @@ Variables</h2></td></tr>
 <p>Socket_connect - Connect to remote host @socket: Socket to connect @host: Remote IP address or hostname @port: Remote port WARNING: May block 30+ seconds during DNS resolution if hostname provided. </p>
 <p>Raises: Socket_Failed on error </p>
 
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>.</p>
+
 </div>
 </div>
 <a id="aa3f4e3781b8abe542d0fd907788c5c01" name="aa3f4e3781b8abe542d0fd907788c5c01"></a>
@@ -983,6 +991,8 @@ Variables</h2></td></tr>
 
 <p>Socket_fd - Get underlying file descriptor @socket: Socket instance Returns: File descriptor. </p>
 
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+
 </div>
 </div>
 <a id="a74ad7a9bb8deaf499c59d90d6e411f37" name="a74ad7a9bb8deaf499c59d90d6e411f37"></a>
@@ -1010,6 +1020,8 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Socket_free - Free a socket and close the connection @socket: Pointer to socket (will be set to NULL) </p>
+
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
 </div>
 </div>
@@ -1083,6 +1095,35 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Socket_getcongestion - Get TCP congestion control algorithm @socket: Socket to query @algorithm: Output buffer for algorithm name @len: Buffer length Returns: 0 on success, -1 on error or if not supported. </p>
+
+</div>
+</div>
+<a id="a80f9fc5782bf3caf5228e458d3f3c112" name="a80f9fc5782bf3caf5228e458d3f3c112"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80f9fc5782bf3caf5228e458d3f3c112">&#9670;&#160;</a></span>Socket_getdeferaccept()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Socket_getdeferaccept </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
+          <td class="paramname"><em>socket</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Socket_getdeferaccept - Get TCP_DEFER_ACCEPT timeout @socket: Listening socket. </p>
+<p>Returns: Current defer accept timeout in seconds, 0 if disabled Raises: Socket_Failed on error Thread-safe: Yes </p>
 
 </div>
 </div>
@@ -1190,6 +1231,8 @@ Variables</h2></td></tr>
 
 <p>Socket_getlocaladdr - Get local IP address @socket: Socket instance Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable Note: String is owned by socket, valid until socket freed. </p>
 
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+
 </div>
 </div>
 <a id="a3bdedaea9dac966d75343cdffa5d1f3e" name="a3bdedaea9dac966d75343cdffa5d1f3e"></a>
@@ -1217,6 +1260,8 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Socket_getlocalport - Get local port number @socket: Socket instance Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable. </p>
+
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
 </div>
 </div>
@@ -1662,6 +1707,8 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>.</p>
+
 </div>
 </div>
 <a id="ae7c6b82ec5bf6be8131532de9ade5caf" name="ae7c6b82ec5bf6be8131532de9ade5caf"></a>
@@ -1733,6 +1780,8 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Socket_recv - Receive data @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) Returns: Bytes received (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other. </p>
+
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
 </div>
 </div>
@@ -2090,6 +2139,8 @@ Variables</h2></td></tr>
 
 <p>Socket_sendall - Send all data (handles partial sends) @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Total bytes sent (always equals len on success) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors. </p>
 
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+
 </div>
 </div>
 <a id="ad1003c289820587894dbfcad9b567c43" name="ad1003c289820587894dbfcad9b567c43"></a>
@@ -2437,6 +2488,47 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Socket_setcongestion - Set TCP congestion control algorithm @socket: Socket to modify @algorithm: Algorithm name (e.g., "cubic", "reno", "bbr") Raises: Socket_Failed on error or if not supported Note: Only available on Linux 2.6.13+. </p>
+
+</div>
+</div>
+<a id="ab5b9e684faf1a8d5c1ccb9e231ef1354" name="ab5b9e684faf1a8d5c1ccb9e231ef1354"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab5b9e684faf1a8d5c1ccb9e231ef1354">&#9670;&#160;</a></span>Socket_setdeferaccept()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Socket_setdeferaccept </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>timeout_sec</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Socket_setdeferaccept - Enable TCP_DEFER_ACCEPT @socket: Listening socket @timeout_sec: Seconds to wait for data before completing accept (0 to disable, max platform-specific) </p>
+<p>Delays accept() completion until client sends data, preventing SYN-only connections from consuming application resources. This is a key defense against SYN flood attacks.</p>
+<p>Linux: Uses TCP_DEFER_ACCEPT socket option BSD/macOS: Uses SO_ACCEPTFILTER with "dataready" filter</p>
+<p>Raises: Socket_Failed on error or if unsupported Thread-safe: Yes </p>
 
 </div>
 </div>
@@ -3183,6 +3275,8 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>General socket operation failure. </p>
+
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
 </div>
 </div>

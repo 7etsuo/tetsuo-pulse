@@ -1,5 +1,23 @@
 var searchData=
 [
-  ['i_0',['i',['../unionalign.html#a8f750b35b1359be92173466ddd63b7e7',1,'align']]],
-  ['initial_5fdelay_5fms_1',['initial_delay_ms',['../SocketReconnect_8h.html#abf740738ffd922747329556ebd6052ca',1,'SocketReconnect_Policy_T']]]
+  ['handshake_5ftimeout_5fms_0',['handshake_timeout_ms',['../SocketProxy_8h.html#aaefad91d7469f34f214a7fac5e1779d6',1,'SocketProxy_Config']]],
+  ['has_5fbody_1',['has_body',['../SocketHTTP_8h.html#a49f204f98e783e66d7ff44a41d776a91',1,'SocketHTTP_MethodProperties']]],
+  ['header_5ftable_5fsize_2',['header_table_size',['../SocketHTTP2_8h.html#a0a3a1ca12e972c4cc3eb021be7edfb3a',1,'SocketHTTP2_Config']]],
+  ['headers_3',['headers',['../SocketHTTPClient_8h.html#a8b459516887245f8e4b77f8d8517ede1',1,'SocketHTTPClient_Response']]],
+  ['health_5fcheck_5finterval_5fms_4',['health_check_interval_ms',['../SocketReconnect_8h.html#aaa80956d1e58e84adfab7063e1936f95',1,'SocketReconnect_Policy_T']]],
+  ['health_5fcheck_5ftimeout_5fms_5',['health_check_timeout_ms',['../SocketReconnect_8h.html#ade4054b2276dfc3c6b06a4b759241208',1,'SocketReconnect_Policy_T']]],
+  ['host_6',['host',['../SocketProxy_8h.html#a507287d832417162da30794693e16a6e',1,'SocketProxy_Config::host'],['../SocketUtil_8h.html#a67b3dba8bc6778101892eb77249db32e',1,'SocketEventRecord.data.dns::host']]],
+  ['http1_5fmax_5fchunk_5fsize_7',['http1_max_chunk_size',['../SocketSecurity_8h.html#a09d8b8ba81dbdfd054852704521c3e3b',1,'SocketSecurityLimits']]],
+  ['http1_5fmax_5frequest_5fline_8',['http1_max_request_line',['../SocketSecurity_8h.html#ae52e94d13f09404b25ea5e6ce8b9a244',1,'SocketSecurityLimits']]],
+  ['http2_5fmax_5fconcurrent_5fstreams_9',['http2_max_concurrent_streams',['../SocketSecurity_8h.html#aa6ebf2ebd20aad81fe2e3878840af1d3',1,'SocketSecurityLimits']]],
+  ['http2_5fmax_5fframe_5fsize_10',['http2_max_frame_size',['../SocketSecurity_8h.html#a8a7f143c56f078ca8b586edf7fde4b01',1,'SocketSecurityLimits']]],
+  ['http2_5fmax_5fheader_5flist_5fsize_11',['http2_max_header_list_size',['../SocketSecurity_8h.html#af58899d383dfd65a1776b6c01d209728',1,'SocketSecurityLimits']]],
+  ['http_5fmax_5fbody_5fsize_12',['http_max_body_size',['../SocketSecurity_8h.html#a38f13b676cb92ff0a15389c309e19650',1,'SocketSecurityLimits']]],
+  ['http_5fmax_5fheader_5fname_13',['http_max_header_name',['../SocketSecurity_8h.html#a1a92f68da0f5b92ee678237cc2646da3',1,'SocketSecurityLimits']]],
+  ['http_5fmax_5fheader_5fsize_14',['http_max_header_size',['../SocketSecurity_8h.html#a0c619f8e0d4dd70f4400c29a624e8c19',1,'SocketSecurityLimits']]],
+  ['http_5fmax_5fheader_5fvalue_15',['http_max_header_value',['../SocketSecurity_8h.html#a1f586f4e595e16955e23998e04caecf9',1,'SocketSecurityLimits']]],
+  ['http_5fmax_5fheaders_16',['http_max_headers',['../SocketSecurity_8h.html#afdd207e3668e2e11458948a3aad76833',1,'SocketSecurityLimits']]],
+  ['http_5fmax_5furi_5flength_17',['http_max_uri_length',['../SocketSecurity_8h.html#a3b32fafb211e38e9838e9181a8d4531a',1,'SocketSecurityLimits']]],
+  ['http_5fonly_18',['http_only',['../SocketHTTPClient_8h.html#ae47a67be4b88e83dd7c877f63af2ae8a',1,'SocketHTTPClient_Cookie']]],
+  ['huffman_5fencode_19',['huffman_encode',['../SocketHPACK_8h.html#aba9258c14594154c007f55e14213cf2f',1,'SocketHPACK_EncoderConfig']]]
 ];

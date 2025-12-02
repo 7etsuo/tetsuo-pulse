@@ -134,7 +134,7 @@ $(document).ready(function(){initNavTree('SocketDNS_8h.html',''); initResizable(
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="SocketDNS_8h__dep__incl.svg" width="100%" height="492"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="SocketDNS_8h__dep__incl.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
 </div>
 <p><a href="SocketDNS_8h_source.html">Go to the source code of this file.</a></p>
@@ -192,15 +192,18 @@ Functions</h2></td></tr>
 <tr class="memitem:af116c65d3617976fd55b1e3cf68d01ff" id="r_af116c65d3617976fd55b1e3cf68d01ff"><td class="memItemLeft" align="right" valign="top">struct addrinfo *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDNS_8h.html#af116c65d3617976fd55b1e3cf68d01ff">SocketDNS_getresult</a> (<a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns, <a class="el" href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a> req)</td></tr>
 <tr class="memdesc:af116c65d3617976fd55b1e3cf68d01ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDNS_getresult - Get result of completed request @dns: DNS resolver instance @req: Request handle Returns: Completed addrinfo result or NULL if pending/error/cancelled Thread-safe: Yes - protected by internal mutex Retrieves the result of a completed DNS resolution.  <br /></td></tr>
 <tr class="separator:af116c65d3617976fd55b1e3cf68d01ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6cacdd3d812c8cdc353239e4af4aa624" id="r_a6cacdd3d812c8cdc353239e4af4aa624"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDNS_8h.html#a6cacdd3d812c8cdc353239e4af4aa624">SocketDNS_geterror</a> (<a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns, <a class="el" href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a> req)</td></tr>
-<tr class="memdesc:a6cacdd3d812c8cdc353239e4af4aa624"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDNS_geterror - Get error code for completed request @dns: DNS resolver instance @req: Request handle Returns: getaddrinfo() error code or 0 on success Thread-safe: Yes.  <br /></td></tr>
-<tr class="separator:a6cacdd3d812c8cdc353239e4af4aa624"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69d8d4c9f020bf781d541df7ecaf5acf" id="r_a69d8d4c9f020bf781d541df7ecaf5acf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDNS_8h.html#a69d8d4c9f020bf781d541df7ecaf5acf">SocketDNS_geterror</a> (<a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns, const struct <a class="el" href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a> *req)</td></tr>
+<tr class="memdesc:a69d8d4c9f020bf781d541df7ecaf5acf"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDNS_geterror - Get error code for completed request @dns: DNS resolver instance @req: Request handle Returns: getaddrinfo() error code or 0 on success Thread-safe: Yes.  <br /></td></tr>
+<tr class="separator:a69d8d4c9f020bf781d541df7ecaf5acf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a009b2ac023375f1416344ab445d15667" id="r_a009b2ac023375f1416344ab445d15667"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDNS_8h.html#a009b2ac023375f1416344ab445d15667">SocketDNS_request_settimeout</a> (<a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns, <a class="el" href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a> req, int timeout_ms)</td></tr>
 <tr class="memdesc:a009b2ac023375f1416344ab445d15667"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDNS_request_settimeout - Override timeout for specific request @dns: DNS resolver instance @req: Request handle @timeout_ms: Timeout in milliseconds (0 disables timeout for this request) Thread-safe: Yes.  <br /></td></tr>
 <tr class="separator:a009b2ac023375f1416344ab445d15667"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d42c9ab57cf57e394874bf801db4087" id="r_a1d42c9ab57cf57e394874bf801db4087"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDNS_8h.html#a1d42c9ab57cf57e394874bf801db4087">SocketDNS_create_completed_request</a> (<a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns, struct addrinfo *result, int port)</td></tr>
 <tr class="memdesc:a1d42c9ab57cf57e394874bf801db4087"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDNS_create_completed_request - Create a completed request from pre-resolved addrinfo @dns: DNS resolver instance.  <br /></td></tr>
 <tr class="separator:a1d42c9ab57cf57e394874bf801db4087"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab988727825887d34e87d144d30c30c2f" id="r_ab988727825887d34e87d144d30c30c2f"><td class="memItemLeft" align="right" valign="top">struct addrinfo *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDNS_8h.html#ab988727825887d34e87d144d30c30c2f">SocketDNS_resolve_sync</a> (<a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns, const char *host, int port, const struct addrinfo *hints, int timeout_ms)</td></tr>
+<tr class="memdesc:ab988727825887d34e87d144d30c30c2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDNS_resolve_sync - Synchronous DNS resolution with timeout guarantee @dns: DNS resolver instance (NULL uses global default - not yet implemented) @host: Hostname to resolve (NULL for wildcard bind) @port: Port number @hints: Address hints (may be NULL for defaults) @timeout_ms: Timeout in milliseconds (0 = use resolver default)  <br /></td></tr>
+<tr class="separator:ab988727825887d34e87d144d30c30c2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -456,8 +459,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a6cacdd3d812c8cdc353239e4af4aa624" name="a6cacdd3d812c8cdc353239e4af4aa624"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6cacdd3d812c8cdc353239e4af4aa624">&#9670;&#160;</a></span>SocketDNS_geterror()</h2>
+<a id="a69d8d4c9f020bf781d541df7ecaf5acf" name="a69d8d4c9f020bf781d541df7ecaf5acf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69d8d4c9f020bf781d541df7ecaf5acf">&#9670;&#160;</a></span>SocketDNS_geterror()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -474,7 +477,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a>&#160;</td>
+          <td class="paramtype">const struct <a class="el" href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a> *&#160;</td>
           <td class="paramname"><em>req</em>&#160;</td>
         </tr>
         <tr>
@@ -560,7 +563,7 @@ Variables</h2></td></tr>
 <p>Returns NULL if:</p><ul>
 <li>Request is still pending</li>
 <li>Request was cancelled</li>
-<li>Resolution failed (check error via <a class="el" href="SocketDNS_8h.html#a6cacdd3d812c8cdc353239e4af4aa624" title="SocketDNS_geterror - Get error code for completed request @dns: DNS resolver instance @req: Request h...">SocketDNS_geterror()</a>) The caller owns the returned addrinfo structure and must call freeaddrinfo() when done. The request handle becomes invalid after the result is retrieved. Performance: O(1) hash table lookup </li>
+<li>Resolution failed (check error via <a class="el" href="SocketDNS_8h.html#a69d8d4c9f020bf781d541df7ecaf5acf" title="SocketDNS_geterror - Get error code for completed request @dns: DNS resolver instance @req: Request h...">SocketDNS_geterror()</a>) The caller owns the returned addrinfo structure and must call freeaddrinfo() when done. The request handle becomes invalid after the result is retrieved. Performance: O(1) hash table lookup </li>
 </ul>
 
 </div>
@@ -753,6 +756,68 @@ Variables</h2></td></tr>
 <li>Request cancelled via <a class="el" href="SocketDNS_8h.html#ae1d672627973547345ad91e2e83f30b6" title="SocketDNS_cancel - Cancel a pending DNS resolution @dns: DNS resolver instance @req: Request handle t...">SocketDNS_cancel()</a></li>
 <li>Resolver freed via <a class="el" href="SocketDNS_8h.html#abdc83f21f67b5b8557f35d7ffa4c839c" title="SocketDNS_free - Free a DNS resolver @dns: Pointer to resolver (will be set to NULL) Drains pending r...">SocketDNS_free()</a> Performance: O(1) queue insertion </li>
 </ul>
+
+</div>
+</div>
+<a id="ab988727825887d34e87d144d30c30c2f" name="ab988727825887d34e87d144d30c30c2f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab988727825887d34e87d144d30c30c2f">&#9670;&#160;</a></span>SocketDNS_resolve_sync()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct addrinfo * SocketDNS_resolve_sync </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a>&#160;</td>
+          <td class="paramname"><em>dns</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>host</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>port</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const struct addrinfo *&#160;</td>
+          <td class="paramname"><em>hints</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>timeout_ms</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketDNS_resolve_sync - Synchronous DNS resolution with timeout guarantee @dns: DNS resolver instance (NULL uses global default - not yet implemented) @host: Hostname to resolve (NULL for wildcard bind) @port: Port number @hints: Address hints (may be NULL for defaults) @timeout_ms: Timeout in milliseconds (0 = use resolver default) </p>
+<p>Returns: addrinfo result (caller must call freeaddrinfo()) Raises: SocketDNS_Failed on error or timeout</p>
+<p>Thread-safe: Yes - uses internal synchronization</p>
+<p>This function provides synchronous DNS resolution with GUARANTEED timeout. Unlike raw getaddrinfo() which can block for 30+ seconds, this function uses the async DNS worker thread pool internally and enforces the specified timeout using condition variable wait.</p>
+<p>Use this function when you need blocking DNS resolution but cannot afford unbounded blocking time (e.g., in network servers handling untrusted input).</p>
+<p>For IP addresses, resolution is instant (no DNS lookup needed).</p>
+<p>Usage: struct addrinfo *res = SocketDNS_resolve_sync(dns, "example.com", 80, NULL, 5000); // Use res... freeaddrinfo(res); </p>
 
 </div>
 </div>

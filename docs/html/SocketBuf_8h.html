@@ -113,19 +113,21 @@ $(document).ready(function(){initNavTree('SocketBuf_8h.html',''); initResizable(
   <div class="summary">
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">SocketBuf.h File Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &lt;stdbool.h&gt;</code><br />
+<code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Include dependency graph for SocketBuf.h:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketBuf_8h__incl.svg" width="278" height="256"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketBuf_8h__incl.svg" width="299" height="256"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div><div class="textblock"><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> This graph shows which files directly or indirectly include this file:</div>
@@ -201,6 +203,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a2e4e93aa0feab70464515b0ef3a57186" id="r_a2e4e93aa0feab70464515b0ef3a57186"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a2e4e93aa0feab70464515b0ef3a57186">SocketBuf_written</a> (<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t len)</td></tr>
 <tr class="memdesc:a2e4e93aa0feab70464515b0ef3a57186"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketBuf_written - Commit written data @buf: Buffer instance @len: Bytes written to writeptr Asserts if len &gt; space available Performance: O(1)  <br /></td></tr>
 <tr class="separator:a2e4e93aa0feab70464515b0ef3a57186"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a246f86a3226316f3922ee9eba0436777" id="r_a246f86a3226316f3922ee9eba0436777"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a246f86a3226316f3922ee9eba0436777">SocketBuf_Failed</a></td></tr>
+<tr class="memdesc:a246f86a3226316f3922ee9eba0436777"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception thrown on buffer operation failure.  <br /></td></tr>
+<tr class="separator:a246f86a3226316f3922ee9eba0436777"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
@@ -223,7 +231,7 @@ Functions</h2></td></tr>
 <li>Memory managed by Arena allocator The buffer automatically handles wraparound, so users don't need to worry about circular buffer complexities. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00022">22</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00024">24</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
 
 </div>
 </div>
@@ -240,7 +248,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00023">23</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00025">25</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
 
 </div>
 </div>
@@ -831,6 +839,31 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>SocketBuf_written - Commit written data @buf: Buffer instance @len: Bytes written to writeptr Asserts if len &gt; space available Performance: O(1) </p>
+
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
+<a id="a246f86a3226316f3922ee9eba0436777" name="a246f86a3226316f3922ee9eba0436777"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a246f86a3226316f3922ee9eba0436777">&#9670;&#160;</a></span>SocketBuf_Failed</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketBuf_Failed</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Exception thrown on buffer operation failure. </p>
 
 </div>
 </div>

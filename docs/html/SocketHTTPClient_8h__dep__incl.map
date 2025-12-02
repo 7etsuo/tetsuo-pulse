@@ -1,0 +1,9 @@
+<map id="SocketHTTPClient.h" name="SocketHTTPClient.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="97,5,240,31"/>
+<area shape="rect" id="Node000002" href="$http2__client_8c.html" title=" " alt="" coords="5,79,105,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="140,40,75,81,72,76,137,36"/>
+<area shape="rect" id="Node000003" href="$http__get_8c.html" title=" " alt="" coords="129,79,209,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="171,44,171,79,166,79,166,44"/>
+<area shape="rect" id="Node000004" href="$http__post_8c.html" title=" " alt="" coords="233,79,320,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="199,36,260,76,258,81,196,40"/>
+</map>

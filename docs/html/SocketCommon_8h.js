@@ -7,6 +7,7 @@ var SocketCommon_8h =
     [ "SocketBase_T", "SocketCommon_8h.html#a875ae9df41c30f375802590471923dd1", null ],
     [ "SOCKETLIVECOUNT_STATIC_INIT", "SocketCommon_8h.html#afdd7aa5138146bb99a2360fface85b12", null ],
     [ "SocketBase_T", "SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2", null ],
+    [ "SocketDNS_T", "SocketCommon_8h.html#ac9190fe07142a017f86dae46145cb2fd", null ],
     [ "SocketCommon_advance_iov", "SocketCommon_8h.html#a33af6b6698782c490ff383bb37c197e7", null ],
     [ "SocketCommon_alloc_iov_copy", "SocketCommon_8h.html#a0ccd95f99962c7a6631b93bf9adfea4d", null ],
     [ "SocketCommon_cache_endpoint", "SocketCommon_8h.html#adfc31bff834af43e2a6ee2facd9951d4", null ],
@@ -20,7 +21,9 @@ var SocketCommon_8h =
     [ "SocketCommon_find_active_iov", "SocketCommon_8h.html#a0b9037b75f684ba9a4fda235b0bf0ca0", null ],
     [ "SocketCommon_format_bind_error", "SocketCommon_8h.html#ae1c533bda5b245453885e07e2a7b4e83", null ],
     [ "SocketCommon_free_addrinfo", "SocketCommon_8h.html#a6c73595d93eeee7b21ad12b980770f5a", null ],
-    [ "SocketCommon_free_base", "SocketCommon_8h.html#afed48d9f1859fe37c82e1c2f412354d0", null ],
+    [ "SocketCommon_free_base", "SocketCommon_8h.html#aaeb641ee1edaa618b8680babae9a98c6", null ],
+    [ "SocketCommon_get_dns_resolver", "SocketCommon_8h.html#a70954c6e125769d15ffd6c3e31c89b75", null ],
+    [ "SocketCommon_get_dns_timeout", "SocketCommon_8h.html#a4abf1412f29d6cec69326ca2a10e9e21", null ],
     [ "SocketCommon_get_socket_family", "SocketCommon_8h.html#ab555c6739c1f1582b1d1aebfb008897e", null ],
     [ "SocketCommon_getoption_int", "SocketCommon_8h.html#a229de2f12f6169d6817195fb6490267d", null ],
     [ "SocketCommon_getoption_timeval", "SocketCommon_8h.html#a5c81dabc2c964625f56fd02b0a4f9c93", null ],
@@ -34,6 +37,7 @@ var SocketCommon_8h =
     [ "SocketCommon_resolve_address", "SocketCommon_8h.html#a7fc66958f42deef2824a80188baf4534", null ],
     [ "SocketCommon_reverse_lookup", "SocketCommon_8h.html#a19eb14b9730f57df54eb5db71e1f5489", null ],
     [ "SocketCommon_set_cloexec_fd", "SocketCommon_8h.html#ac32f45a0216c1be50d0a411459bc426c", null ],
+    [ "SocketCommon_set_dns_timeout", "SocketCommon_8h.html#a8df045c4215eb7538ad543cd9368864c", null ],
     [ "SocketCommon_set_nonblock", "SocketCommon_8h.html#aff179c5fc64896d364008582e755a8c4", null ],
     [ "SocketCommon_set_option_int", "SocketCommon_8h.html#a0a2e7917d36f5e23eab8c1238433dfba", null ],
     [ "SocketCommon_set_ttl", "SocketCommon_8h.html#a1eab30cecc7dae2a4c02efd95c5feae5", null ],
@@ -54,5 +58,6 @@ var SocketCommon_8h =
     [ "socket_default_timeouts", "SocketCommon_8h.html#a34162df185e6971334bb98c3c00a2ad0", null ],
     [ "socket_default_timeouts_mutex", "SocketCommon_8h.html#a9c962297b30fb9c609c3170d508a8c12", null ],
     [ "Socket_Failed", "SocketCommon_8h.html#a225f4a8fd657fd52a05146c6fc4f58b0", null ],
+    [ "SocketCommon_Failed", "SocketCommon_8h.html#a4218ae116e8def59908f76fd1e9dbe3e", null ],
     [ "SocketDgram_Failed", "SocketCommon_8h.html#a28354c49d1726c674932f420a57bb21d", null ]
 ];

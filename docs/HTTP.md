@@ -1,0 +1,470 @@
+# HTTP Guide {#http_guide}
+
+Complete guide to HTTP/1.1 and HTTP/2 support in the Socket Library.
+
+---
+
+## Quick Start
+
+### Simple HTTP GET
+
+```c
+#include "http/SocketHTTPClient.h"
+
+SocketHTTPClient_T client = SocketHTTPClient_new(NULL);
+SocketHTTPClient_Response response = {0};
+
+if (SocketHTTPClient_get(client, "https://example.com", &response) == 0) {
+    printf("Status: %d\n", response.status_code);
+    printf("Body: %.*s\n", (int)response.body_len, (char*)response.body);
+}
+
+SocketHTTPClient_Response_free(&response);
+SocketHTTPClient_free(&client);
+```
+
+### Simple HTTP POST
+
+```c
+const char *json = "{\"name\": \"value\"}";
+
+if (SocketHTTPClient_post(client, "https://api.example.com/data",
+                          "application/json", json, strlen(json),
+                          &response) == 0) {
+    printf("Status: %d\n", response.status_code);
+}
+```
+
+---
+
+## HTTP Client API
+
+The `SocketHTTPClient_T` provides a high-level HTTP client with automatic:
+- Protocol negotiation (HTTP/1.1 and HTTP/2)
+- Connection pooling
+- Cookie handling
+- Redirect following
+- Compression (gzip/deflate/brotli)
+
+### Creating a Client
+
+```c
+/* With default configuration */
+SocketHTTPClient_T client = SocketHTTPClient_new(NULL);
+
+/* With custom configuration */
+SocketHTTPClient_Config config;
+SocketHTTPClient_config_defaults(&config);
+
+config.max_version = HTTP_VERSION_2_0;        /* Prefer HTTP/2 */
+config.follow_redirects = 5;                   /* Max 5 redirects */
+config.connect_timeout_ms = 10000;             /* 10 second timeout */
+config.enable_connection_pool = 1;             /* Enable pooling */
+config.max_connections_per_host = 6;           /* HTTP/1.1 default */
+
+SocketHTTPClient_T client = SocketHTTPClient_new(&config);
+```
+
+### Configuration Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `max_version` | `HTTP_VERSION_2_0` | Maximum HTTP version to use |
+| `enable_connection_pool` | `1` | Enable connection reuse |
+| `max_connections_per_host` | `6` | Per-host connection limit |
+| `max_total_connections` | `100` | Total connection limit |
+| `connect_timeout_ms` | `30000` | Connection timeout |
+| `request_timeout_ms` | `60000` | Request timeout |
+| `follow_redirects` | `10` | Max redirects (0 = disabled) |
+| `accept_encoding` | All | Accepted compression methods |
+| `auto_decompress` | `1` | Auto-decompress responses |
+| `verify_ssl` | `1` | Verify TLS certificates |
+
+### Simple API
+
+The simple API covers common use cases:
+
+```c
+/* GET request */
+int SocketHTTPClient_get(client, url, &response);
+
+/* HEAD request */
+int SocketHTTPClient_head(client, url, &response);
+
+/* POST request */
+int SocketHTTPClient_post(client, url, content_type, body, body_len, &response);
+
+/* PUT request */
+int SocketHTTPClient_put(client, url, content_type, body, body_len, &response);
+
+/* DELETE request */
+int SocketHTTPClient_delete(client, url, &response);
+```
+
+### Request Builder API
+
+For more control, use the request builder:
+
+```c
+SocketHTTPClient_Request_T req = SocketHTTPClient_Request_new(
+    client, HTTP_METHOD_POST, "https://api.example.com/upload");
+
+/* Add headers */
+SocketHTTPClient_Request_header(req, "Content-Type", "application/json");
+SocketHTTPClient_Request_header(req, "Authorization", "Bearer token123");
+SocketHTTPClient_Request_header(req, "X-Custom-Header", "value");
+
+/* Set body */
+const char *body = "{\"data\": \"test\"}";
+SocketHTTPClient_Request_body(req, body, strlen(body));
+
+/* Set timeout */
+SocketHTTPClient_Request_timeout(req, 5000);  /* 5 seconds */
+
+/* Execute */
+SocketHTTPClient_Response response;
+if (SocketHTTPClient_Request_execute(req, &response) == 0) {
+    /* Handle response */
+}
+
+SocketHTTPClient_Request_free(&req);
+SocketHTTPClient_Response_free(&response);
+```
+
+### Response Handling
+
+```c
+typedef struct {
+    int status_code;              /* HTTP status code (200, 404, etc.) */
+    SocketHTTP_Headers_T headers; /* Response headers */
+    void *body;                   /* Response body */
+    size_t body_len;              /* Body length */
+    SocketHTTP_Version version;   /* Protocol version used */
+    Arena_T arena;                /* Internal - for cleanup */
+} SocketHTTPClient_Response;
+
+/* Access headers */
+const char *content_type = SocketHTTP_Headers_get(response.headers, "Content-Type");
+
+/* Always free response when done */
+SocketHTTPClient_Response_free(&response);
+```
+
+---
+
+## Authentication
+
+The client supports multiple authentication methods:
+
+### Basic Authentication (RFC 7617)
+
+```c
+SocketHTTPClient_Auth auth = {0};
+auth.type = HTTP_AUTH_BASIC;
+auth.username = "user";
+auth.password = "secret";
+
+SocketHTTPClient_Request_T req = SocketHTTPClient_Request_new(
+    client, HTTP_METHOD_GET, "https://api.example.com/protected");
+SocketHTTPClient_Request_auth(req, &auth);
+SocketHTTPClient_Request_execute(req, &response);
+```
+
+### Digest Authentication (RFC 7616)
+
+```c
+auth.type = HTTP_AUTH_DIGEST;
+auth.username = "user";
+auth.password = "secret";
+/* Digest auth handles challenges automatically */
+```
+
+### Bearer Token (RFC 6750)
+
+```c
+auth.type = HTTP_AUTH_BEARER;
+auth.token = "eyJhbGciOiJIUzI1NiIs...";
+```
+
+---
+
+## Cookie Handling
+
+The client includes a cookie jar (RFC 6265):
+
+```c
+/* Create cookie jar */
+SocketHTTPClient_CookieJar_T jar = SocketHTTPClient_CookieJar_new(NULL);
+
+/* Associate with client */
+SocketHTTPClient_set_cookie_jar(client, jar);
+
+/* Cookies are automatically managed:
+ * - Set-Cookie headers populate the jar
+ * - Matching cookies sent with requests
+ * - Domain/path/expiry honored */
+
+/* Manual cookie operations */
+SocketHTTPClient_CookieJar_set(jar, "example.com", "/", "session", "abc123");
+const char *value = SocketHTTPClient_CookieJar_get(jar, "example.com", "/", "session");
+
+/* Persistence */
+SocketHTTPClient_CookieJar_save(jar, "/path/to/cookies.txt");
+SocketHTTPClient_CookieJar_load(jar, "/path/to/cookies.txt");
+
+SocketHTTPClient_CookieJar_free(&jar);
+```
+
+---
+
+## HTTP/2 Features
+
+When connecting to an HTTPS endpoint, the client automatically negotiates HTTP/2 via ALPN if the server supports it.
+
+### Checking Protocol Version
+
+```c
+SocketHTTPClient_Response response;
+SocketHTTPClient_get(client, "https://example.com", &response);
+
+if (response.version == HTTP_VERSION_2_0) {
+    printf("Using HTTP/2\n");
+}
+```
+
+### HTTP/2 Benefits
+
+- **Multiplexing**: Multiple requests over single connection
+- **Header Compression**: HPACK reduces overhead
+- **Binary Protocol**: More efficient parsing
+- **Server Push**: Server can push resources (server-side)
+
+### HTTP/2 Cleartext (h2c)
+
+For non-TLS HTTP/2 (rare):
+
+```c
+config.allow_http2_cleartext = 1;  /* Enable h2c upgrade */
+```
+
+---
+
+## HTTP Server API
+
+The `SocketHTTPServer_T` provides an event-driven HTTP server:
+
+### Creating a Server
+
+```c
+#include "http/SocketHTTPServer.h"
+
+SocketHTTPServer_Config config;
+SocketHTTPServer_config_defaults(&config);
+config.port = 8080;
+config.bind_address = "0.0.0.0";
+config.max_connections = 1000;
+
+SocketHTTPServer_T server = SocketHTTPServer_new(&config);
+```
+
+### Request Handler
+
+```c
+void my_handler(SocketHTTPServer_Request_T req, void *userdata) {
+    /* Get request details */
+    SocketHTTP_Method method = SocketHTTPServer_Request_method(req);
+    const char *path = SocketHTTPServer_Request_path(req);
+    const char *query = SocketHTTPServer_Request_query(req);
+    SocketHTTP_Headers_T headers = SocketHTTPServer_Request_headers(req);
+    const void *body = SocketHTTPServer_Request_body(req);
+    size_t body_len = SocketHTTPServer_Request_body_len(req);
+    
+    /* Set response */
+    SocketHTTPServer_Request_status(req, 200);
+    SocketHTTPServer_Request_header(req, "Content-Type", "text/html");
+    SocketHTTPServer_Request_body_string(req, "<h1>Hello!</h1>");
+    
+    /* Finish response */
+    SocketHTTPServer_Request_finish(req);
+}
+
+SocketHTTPServer_set_handler(server, my_handler, NULL);
+```
+
+### Running the Server
+
+```c
+/* Start listening */
+SocketHTTPServer_start(server);
+
+/* Event loop */
+while (running) {
+    SocketHTTPServer_process(server, 1000);  /* 1 second timeout */
+}
+
+/* Shutdown */
+SocketHTTPServer_stop(server);
+SocketHTTPServer_free(&server);
+```
+
+### WebSocket Upgrade
+
+The server can detect and handle WebSocket upgrades:
+
+```c
+void my_handler(SocketHTTPServer_Request_T req, void *userdata) {
+    if (SocketHTTPServer_Request_is_websocket(req)) {
+        SocketWS_T ws = SocketHTTPServer_Request_upgrade_websocket(req);
+        if (ws) {
+            /* Handle WebSocket - see WEBSOCKET.md */
+            /* Don't call finish() after upgrade */
+            return;
+        }
+    }
+    
+    /* Normal HTTP handling */
+    SocketHTTPServer_Request_finish(req);
+}
+```
+
+---
+
+## Error Handling
+
+### Client Exceptions
+
+```c
+TRY {
+    SocketHTTPClient_get(client, url, &response);
+}
+EXCEPT(SocketHTTPClient_DNSFailed) {
+    /* DNS resolution failed */
+}
+EXCEPT(SocketHTTPClient_ConnectFailed) {
+    /* Connection to server failed */
+}
+EXCEPT(SocketHTTPClient_TLSFailed) {
+    /* TLS/SSL error */
+}
+EXCEPT(SocketHTTPClient_Timeout) {
+    /* Request timed out */
+}
+EXCEPT(SocketHTTPClient_TooManyRedirects) {
+    /* Redirect limit exceeded */
+}
+EXCEPT(SocketHTTPClient_ProtocolError) {
+    /* HTTP parse error */
+}
+EXCEPT(SocketHTTPClient_ResponseTooLarge) {
+    /* Response exceeded max_response_size */
+}
+FINALLY {
+    SocketHTTPClient_Response_free(&response);
+}
+END_TRY;
+```
+
+### Server Exceptions
+
+```c
+TRY {
+    SocketHTTPServer_start(server);
+}
+EXCEPT(SocketHTTPServer_BindFailed) {
+    /* Port in use or permission denied */
+}
+EXCEPT(SocketHTTPServer_Failed) {
+    /* General server error */
+}
+END_TRY;
+```
+
+---
+
+## Proxy Support
+
+The HTTP client can connect through proxies:
+
+```c
+#include "socket/SocketProxy.h"
+
+/* Configure proxy */
+SocketProxy_Config proxy;
+SocketProxy_config_defaults(&proxy);
+proxy.type = SOCKET_PROXY_SOCKS5;
+proxy.host = "proxy.example.com";
+proxy.port = 1080;
+
+/* Set as default proxy for client */
+config.proxy = &proxy;
+SocketHTTPClient_T client = SocketHTTPClient_new(&config);
+```
+
+See [PROXY.md](@ref proxy_guide) for complete proxy documentation.
+
+---
+
+## Advanced Topics
+
+### Streaming Requests
+
+For large uploads:
+
+```c
+ssize_t read_callback(void *buf, size_t len, void *userdata) {
+    FILE *fp = userdata;
+    return fread(buf, 1, len, fp);
+}
+
+FILE *fp = fopen("large_file.bin", "rb");
+SocketHTTPClient_Request_body_stream(req, read_callback, fp);
+```
+
+### Custom TLS Context
+
+```c
+SocketTLSContext_T tls = SocketTLSContext_new_client(NULL);
+SocketTLSContext_set_verify_mode(tls, SSL_VERIFY_PEER);
+SocketTLSContext_set_ca_file(tls, "/path/to/ca-bundle.crt");
+
+config.tls_context = tls;
+```
+
+### Connection Pooling Behavior
+
+- HTTP/1.1: Multiple connections per host (default: 6)
+- HTTP/2: Single connection with multiplexed streams
+- Idle connections automatically closed after `idle_timeout_ms`
+- Pool cleaned on `SocketHTTPClient_free()`
+
+---
+
+## Thread Safety
+
+- `SocketHTTPClient_T` instances are **NOT** thread-safe
+- Use one client per thread, or protect with mutex
+- Response data can be safely used from any thread after request completes
+- `SocketHTTPServer_T` instances are **NOT** thread-safe
+- Use one server per thread for event loop
+
+---
+
+## Performance Tips
+
+1. **Reuse clients** - Creating clients is expensive
+2. **Use HTTP/2** - Better for multiple requests to same host
+3. **Enable pooling** - Avoid connection setup overhead
+4. **Set appropriate timeouts** - Prevent hung connections
+5. **Use compression** - Reduce bandwidth (auto-enabled)
+6. **Consider async** - For high concurrency scenarios
+
+---
+
+## See Also
+
+- [WebSocket Guide](@ref websocket_guide)
+- [Proxy Guide](@ref proxy_guide)
+- [Security Guide](@ref security_guide)
+- @ref SocketHTTPClient.h
+- @ref SocketHTTPServer.h
+

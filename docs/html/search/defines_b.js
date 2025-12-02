@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['validate_5ffd_0',['VALIDATE_FD',['../SocketPoll__backend_8h.html#a72ef813749c8c54d8f8ccf64ba724a0a',1,'SocketPoll_backend.h']]]
+  ['udp_5fmax_5fpayload_0',['UDP_MAX_PAYLOAD',['../SocketConfig_8h.html#a7b0cb8d09882f145ebd41ad5a5932a30',1,'SocketConfig.h']]]
 ];

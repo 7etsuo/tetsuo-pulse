@@ -113,6 +113,7 @@ $(document).ready(function(){initNavTree('SocketPool_8h.html',''); initResizable
   <div class="summary">
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">SocketPool.h File Reference</div></div>
@@ -120,6 +121,7 @@ $(document).ready(function(){initNavTree('SocketPool_8h.html',''); initResizable
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="SocketSYNProtect_8h_source.html">core/SocketSYNProtect.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketUtil_8h_source.html">core/SocketUtil.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Socket_8h_source.html">socket/Socket.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketBuf_8h_source.html">socket/SocketBuf.h</a>&quot;</code><br />
@@ -152,6 +154,32 @@ Typedefs</h2></td></tr>
 <tr class="memitem:a5441c8cf779cd74fbb9f39bd322c33bd" id="r_a5441c8cf779cd74fbb9f39bd322c33bd"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a5441c8cf779cd74fbb9f39bd322c33bd">SocketPool_ConnectCallback</a>) (<a class="el" href="SocketPool_8h.html#a424a0221f5eef0991c244d83d02d8b2c">Connection_T</a> conn, int error, void *data)</td></tr>
 <tr class="memdesc:a5441c8cf779cd74fbb9f39bd322c33bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_ConnectCallback - Callback for async connection completion @conn: Completed connection or NULL on error @error: 0 on success, error code on failure @data: User data from SocketPool_connect_async.  <br /></td></tr>
 <tr class="separator:a5441c8cf779cd74fbb9f39bd322c33bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7679db7b1be62e465d9896944f3ad20" id="r_ad7679db7b1be62e465d9896944f3ad20"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#ad7679db7b1be62e465d9896944f3ad20">SocketPool_DrainCallback</a>) (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool, int timed_out, void *data)</td></tr>
+<tr class="memdesc:ad7679db7b1be62e465d9896944f3ad20"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_DrainCallback - Callback invoked when drain completes @pool: Pool instance that completed draining @timed_out: 1 if drain timed out and forced, 0 if graceful @data: User data from SocketPool_set_drain_callback.  <br /></td></tr>
+<tr class="separator:ad7679db7b1be62e465d9896944f3ad20"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:ae5f905ecace343c3b462dfadd5fa8056" id="r_ae5f905ecace343c3b462dfadd5fa8056"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#ae5f905ecace343c3b462dfadd5fa8056">SocketPool_State</a> { <br />
+&#160;&#160;<a class="el" href="SocketPool_8h.html#ae5f905ecace343c3b462dfadd5fa8056a6c2b7ace544a9999526d4314075694f5">POOL_STATE_RUNNING</a> = 0
+, <br />
+&#160;&#160;<a class="el" href="SocketPool_8h.html#ae5f905ecace343c3b462dfadd5fa8056a24af61ac7dffa2f526a693507b11075b">POOL_STATE_DRAINING</a>
+, <br />
+&#160;&#160;<a class="el" href="SocketPool_8h.html#ae5f905ecace343c3b462dfadd5fa8056a937e01590410f41013603cedffd2d2d9">POOL_STATE_STOPPED</a>
+<br />
+ }</td></tr>
+<tr class="memdesc:ae5f905ecace343c3b462dfadd5fa8056"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pool lifecycle states.  <a href="SocketPool_8h.html#ae5f905ecace343c3b462dfadd5fa8056">More...</a><br /></td></tr>
+<tr class="separator:ae5f905ecace343c3b462dfadd5fa8056"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97c30d41df98c69bb394f0a91c3759ae" id="r_a97c30d41df98c69bb394f0a91c3759ae"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a97c30d41df98c69bb394f0a91c3759ae">SocketPool_Health</a> { <br />
+&#160;&#160;<a class="el" href="SocketPool_8h.html#a97c30d41df98c69bb394f0a91c3759aea42517e08f6d9119b5f96fe68b5623e2d">POOL_HEALTH_HEALTHY</a> = 0
+, <br />
+&#160;&#160;<a class="el" href="SocketPool_8h.html#a97c30d41df98c69bb394f0a91c3759aea972a5e12c8d2b2b17477779aece54c74">POOL_HEALTH_DRAINING</a>
+, <br />
+&#160;&#160;<a class="el" href="SocketPool_8h.html#a97c30d41df98c69bb394f0a91c3759aea083eb1503d53d80d116c0ee25022b819">POOL_HEALTH_STOPPED</a>
+<br />
+ }</td></tr>
+<tr class="memdesc:a97c30d41df98c69bb394f0a91c3759ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Health status for load balancer integration.  <a href="SocketPool_8h.html#a97c30d41df98c69bb394f0a91c3759ae">More...</a><br /></td></tr>
+<tr class="separator:a97c30d41df98c69bb394f0a91c3759ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -266,6 +294,45 @@ Functions</h2></td></tr>
 <tr class="memitem:ace0da0754ae023a89aee4b96a4e50845" id="r_ace0da0754ae023a89aee4b96a4e50845"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#ace0da0754ae023a89aee4b96a4e50845">SocketPool_ip_count</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool, const char *ip)</td></tr>
 <tr class="memdesc:ace0da0754ae023a89aee4b96a4e50845"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_ip_count - Get connection count for IP @pool: Pool instance @ip: IP address to query.  <br /></td></tr>
 <tr class="separator:ace0da0754ae023a89aee4b96a4e50845"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a847e3ae8d165d8a999ef76a68d21ffa5" id="r_a847e3ae8d165d8a999ef76a68d21ffa5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a847e3ae8d165d8a999ef76a68d21ffa5">SocketPool_set_syn_protection</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool, <a class="el" href="SocketSYNProtect_8h.html#a2d44b8e90f00f2e635f7bf123e2e4c10">SocketSYNProtect_T</a> protect)</td></tr>
+<tr class="memdesc:a847e3ae8d165d8a999ef76a68d21ffa5"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_set_syn_protection - Enable SYN flood protection for pool @pool: Pool instance @protect: SYN protection instance (NULL to disable)  <br /></td></tr>
+<tr class="separator:a847e3ae8d165d8a999ef76a68d21ffa5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9047fb0f2c05a4f208c023b5e81196e3" id="r_a9047fb0f2c05a4f208c023b5e81196e3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketSYNProtect_8h.html#a2d44b8e90f00f2e635f7bf123e2e4c10">SocketSYNProtect_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a9047fb0f2c05a4f208c023b5e81196e3">SocketPool_get_syn_protection</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool)</td></tr>
+<tr class="memdesc:a9047fb0f2c05a4f208c023b5e81196e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_get_syn_protection - Get current SYN protection module @pool: Pool instance.  <br /></td></tr>
+<tr class="separator:a9047fb0f2c05a4f208c023b5e81196e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a899c660b21bf96befd2b5ea9f6937988" id="r_a899c660b21bf96befd2b5ea9f6937988"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a899c660b21bf96befd2b5ea9f6937988">SocketPool_accept_protected</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> server, <a class="el" href="SocketSYNProtect_8h.html#aca8f2a71ab649ccd408fd3fdb3b693b9">SocketSYN_Action</a> *action_out)</td></tr>
+<tr class="memdesc:a899c660b21bf96befd2b5ea9f6937988"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_accept_protected - Accept with full SYN flood protection @pool: Pool instance @server: Server socket (listening, non-blocking) @action_out: Output - action taken (optional, may be NULL)  <br /></td></tr>
+<tr class="separator:a899c660b21bf96befd2b5ea9f6937988"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a62267ba3008f826b6952624dbc6a29" id="r_a0a62267ba3008f826b6952624dbc6a29"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPool_8h.html#ae5f905ecace343c3b462dfadd5fa8056">SocketPool_State</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a0a62267ba3008f826b6952624dbc6a29">SocketPool_state</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool)</td></tr>
+<tr class="memdesc:a0a62267ba3008f826b6952624dbc6a29"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_state - Get current pool lifecycle state @pool: Pool instance.  <br /></td></tr>
+<tr class="separator:a0a62267ba3008f826b6952624dbc6a29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac801c2d9c4fd944334de2a551993bd89" id="r_ac801c2d9c4fd944334de2a551993bd89"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPool_8h.html#a97c30d41df98c69bb394f0a91c3759ae">SocketPool_Health</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#ac801c2d9c4fd944334de2a551993bd89">SocketPool_health</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool)</td></tr>
+<tr class="memdesc:ac801c2d9c4fd944334de2a551993bd89"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_health - Get pool health status for load balancers @pool: Pool instance.  <br /></td></tr>
+<tr class="separator:ac801c2d9c4fd944334de2a551993bd89"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5245d1cd6578a86f1045529d07fe511c" id="r_a5245d1cd6578a86f1045529d07fe511c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a5245d1cd6578a86f1045529d07fe511c">SocketPool_is_draining</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool)</td></tr>
+<tr class="memdesc:a5245d1cd6578a86f1045529d07fe511c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_is_draining - Check if pool is currently draining @pool: Pool instance.  <br /></td></tr>
+<tr class="separator:a5245d1cd6578a86f1045529d07fe511c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ee3c9502d314b58f9eba33827dd28cf" id="r_a6ee3c9502d314b58f9eba33827dd28cf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a6ee3c9502d314b58f9eba33827dd28cf">SocketPool_is_stopped</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool)</td></tr>
+<tr class="memdesc:a6ee3c9502d314b58f9eba33827dd28cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_is_stopped - Check if pool is fully stopped @pool: Pool instance.  <br /></td></tr>
+<tr class="separator:a6ee3c9502d314b58f9eba33827dd28cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24cd4e2f757497906a5aef89b133b068" id="r_a24cd4e2f757497906a5aef89b133b068"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a24cd4e2f757497906a5aef89b133b068">SocketPool_drain</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool, int timeout_ms)</td></tr>
+<tr class="memdesc:a24cd4e2f757497906a5aef89b133b068"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_drain - Initiate graceful shutdown @pool: Pool instance @timeout_ms: Maximum time to wait for connections to close (milliseconds) Use 0 for immediate force-close, -1 for infinite wait.  <br /></td></tr>
+<tr class="separator:a24cd4e2f757497906a5aef89b133b068"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2cbe6c95119cbb4b30f981b9d07f3e9b" id="r_a2cbe6c95119cbb4b30f981b9d07f3e9b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a2cbe6c95119cbb4b30f981b9d07f3e9b">SocketPool_drain_poll</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool)</td></tr>
+<tr class="memdesc:a2cbe6c95119cbb4b30f981b9d07f3e9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_drain_poll - Poll drain progress (non-blocking) @pool: Pool instance.  <br /></td></tr>
+<tr class="separator:a2cbe6c95119cbb4b30f981b9d07f3e9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae14b85a2cd7a0a4302f84478840cfb23" id="r_ae14b85a2cd7a0a4302f84478840cfb23"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#ae14b85a2cd7a0a4302f84478840cfb23">SocketPool_drain_remaining_ms</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool)</td></tr>
+<tr class="memdesc:ae14b85a2cd7a0a4302f84478840cfb23"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_drain_remaining_ms - Get time until forced shutdown @pool: Pool instance.  <br /></td></tr>
+<tr class="separator:ae14b85a2cd7a0a4302f84478840cfb23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0cbc1088d796c166f582de4d17e5d968" id="r_a0cbc1088d796c166f582de4d17e5d968"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a0cbc1088d796c166f582de4d17e5d968">SocketPool_drain_force</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool)</td></tr>
+<tr class="memdesc:a0cbc1088d796c166f582de4d17e5d968"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_drain_force - Force immediate shutdown @pool: Pool instance.  <br /></td></tr>
+<tr class="separator:a0cbc1088d796c166f582de4d17e5d968"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f0fdd6e4245f2844081d935b2d3c8a2" id="r_a3f0fdd6e4245f2844081d935b2d3c8a2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a3f0fdd6e4245f2844081d935b2d3c8a2">SocketPool_drain_wait</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool, int timeout_ms)</td></tr>
+<tr class="memdesc:a3f0fdd6e4245f2844081d935b2d3c8a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_drain_wait - Blocking drain with internal poll loop @pool: Pool instance @timeout_ms: Maximum wait time (milliseconds), -1 for infinite.  <br /></td></tr>
+<tr class="separator:a3f0fdd6e4245f2844081d935b2d3c8a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a254e5c125de7413e1fa2a8809350d4e0" id="r_a254e5c125de7413e1fa2a8809350d4e0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a254e5c125de7413e1fa2a8809350d4e0">SocketPool_set_drain_callback</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool, <a class="el" href="SocketPool_8h.html#ad7679db7b1be62e465d9896944f3ad20">SocketPool_DrainCallback</a> cb, void *data)</td></tr>
+<tr class="memdesc:a254e5c125de7413e1fa2a8809350d4e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_set_drain_callback - Register drain completion callback @pool: Pool instance @cb: Callback function (NULL to clear) @data: User data passed to callback.  <br /></td></tr>
+<tr class="separator:a254e5c125de7413e1fa2a8809350d4e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -299,7 +366,7 @@ Variables</h2></td></tr>
 <li>NOT portable to Windows without pthreads adaptation </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00036">36</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00037">37</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -316,7 +383,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00040">40</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00041">41</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -347,7 +414,26 @@ Variables</h2></td></tr>
 </ul>
 <p>The pool mutex is NOT held during callback invocation, so the callback MAY safely call other SocketPool functions. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00066">66</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00067">67</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+
+</div>
+</div>
+<a id="ad7679db7b1be62e465d9896944f3ad20" name="ad7679db7b1be62e465d9896944f3ad20"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad7679db7b1be62e465d9896944f3ad20">&#9670;&#160;</a></span>SocketPool_DrainCallback</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef void(* SocketPool_DrainCallback) (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool, int timed_out, void *data)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>SocketPool_DrainCallback - Callback invoked when drain completes @pool: Pool instance that completed draining @timed_out: 1 if drain timed out and forced, 0 if graceful @data: User data from SocketPool_set_drain_callback. </p>
+<p>Called exactly once when pool transitions to STOPPED state. Safe to call <a class="el" href="SocketPool_8h.html#afb57544a14c977302953fd36634bd004" title="SocketPool_free - Free a connection pool @pool: Pointer to pool (will be set to NULL) Note: Does not ...">SocketPool_free()</a> from within this callback. Thread-safe: Invoked from the thread calling drain_poll/drain_wait. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00615">615</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -363,7 +449,60 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00037">37</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00038">38</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="a97c30d41df98c69bb394f0a91c3759ae" name="a97c30d41df98c69bb394f0a91c3759ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a97c30d41df98c69bb394f0a91c3759ae">&#9670;&#160;</a></span>SocketPool_Health</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="SocketPool_8h.html#a97c30d41df98c69bb394f0a91c3759ae">SocketPool_Health</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Health status for load balancer integration. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a97c30d41df98c69bb394f0a91c3759aea42517e08f6d9119b5f96fe68b5623e2d" name="a97c30d41df98c69bb394f0a91c3759aea42517e08f6d9119b5f96fe68b5623e2d"></a>POOL_HEALTH_HEALTHY&#160;</td><td class="fielddoc"><p>Accept traffic normally. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a97c30d41df98c69bb394f0a91c3759aea972a5e12c8d2b2b17477779aece54c74" name="a97c30d41df98c69bb394f0a91c3759aea972a5e12c8d2b2b17477779aece54c74"></a>POOL_HEALTH_DRAINING&#160;</td><td class="fielddoc"><p>Finishing existing connections, reject new. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a97c30d41df98c69bb394f0a91c3759aea083eb1503d53d80d116c0ee25022b819" name="a97c30d41df98c69bb394f0a91c3759aea083eb1503d53d80d116c0ee25022b819"></a>POOL_HEALTH_STOPPED&#160;</td><td class="fielddoc"><p>Not accepting any traffic. </p>
+</td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00598">598</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+
+</div>
+</div>
+<a id="ae5f905ecace343c3b462dfadd5fa8056" name="ae5f905ecace343c3b462dfadd5fa8056"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5f905ecace343c3b462dfadd5fa8056">&#9670;&#160;</a></span>SocketPool_State</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="SocketPool_8h.html#ae5f905ecace343c3b462dfadd5fa8056">SocketPool_State</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Pool lifecycle states. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ae5f905ecace343c3b462dfadd5fa8056a6c2b7ace544a9999526d4314075694f5" name="ae5f905ecace343c3b462dfadd5fa8056a6c2b7ace544a9999526d4314075694f5"></a>POOL_STATE_RUNNING&#160;</td><td class="fielddoc"><p>Normal operation - accepting connections. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ae5f905ecace343c3b462dfadd5fa8056a24af61ac7dffa2f526a693507b11075b" name="ae5f905ecace343c3b462dfadd5fa8056a24af61ac7dffa2f526a693507b11075b"></a>POOL_STATE_DRAINING&#160;</td><td class="fielddoc"><p>Rejecting new, waiting for existing to close. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ae5f905ecace343c3b462dfadd5fa8056a937e01590410f41013603cedffd2d2d9" name="ae5f905ecace343c3b462dfadd5fa8056a937e01590410f41013603cedffd2d2d9"></a>POOL_STATE_STOPPED&#160;</td><td class="fielddoc"><p>Fully stopped - safe to free. </p>
+</td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00588">588</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -770,6 +909,60 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a899c660b21bf96befd2b5ea9f6937988" name="a899c660b21bf96befd2b5ea9f6937988"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a899c660b21bf96befd2b5ea9f6937988">&#9670;&#160;</a></span>SocketPool_accept_protected()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> SocketPool_accept_protected </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
+          <td class="paramname"><em>server</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="SocketSYNProtect_8h.html#aca8f2a71ab649ccd408fd3fdb3b693b9">SocketSYN_Action</a> *&#160;</td>
+          <td class="paramname"><em>action_out</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_accept_protected - Accept with full SYN flood protection @pool: Pool instance @server: Server socket (listening, non-blocking) @action_out: Output - action taken (optional, may be NULL) </p>
+<p>Returns: New socket if allowed, NULL if blocked/would block Raises: SocketPool_Failed on actual errors (not protection blocking) Thread-safe: Yes</p>
+<p>Combines rate limiting, per-IP limits, and SYN protection into a single accept operation. Actions taken depend on SYN protection result:</p>
+<ul>
+<li>SYN_ACTION_ALLOW: Accept normally (fastest path)</li>
+<li>SYN_ACTION_THROTTLE: Accept after artificial delay (congestion control)</li>
+<li>SYN_ACTION_CHALLENGE: Set TCP_DEFER_ACCEPT on socket (require data)</li>
+<li>SYN_ACTION_BLOCK: Close connection immediately, return NULL</li>
+</ul>
+<p>If SYN protection is not enabled, behaves like <a class="el" href="SocketPool_8h.html#abd8219ceff615ad4a4064cf389f137a6" title="SocketPool_accept_limited - Rate-limited accept @pool: Pool instance @server: Server socket to accept...">SocketPool_accept_limited()</a>.</p>
+<p>Reports success/failure to SYN protection module automatically based on whether connection completes or fails. </p>
+
+</div>
+</div>
 <a id="ac7720c7b7d679624fa95bdefe9a38494" name="ac7720c7b7d679624fa95bdefe9a38494"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac7720c7b7d679624fa95bdefe9a38494">&#9670;&#160;</a></span>SocketPool_add()</h2>
 
@@ -978,6 +1171,194 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a24cd4e2f757497906a5aef89b133b068" name="a24cd4e2f757497906a5aef89b133b068"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24cd4e2f757497906a5aef89b133b068">&#9670;&#160;</a></span>SocketPool_drain()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketPool_drain </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>timeout_ms</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_drain - Initiate graceful shutdown @pool: Pool instance @timeout_ms: Maximum time to wait for connections to close (milliseconds) Use 0 for immediate force-close, -1 for infinite wait. </p>
+<p>Thread-safe: Yes Complexity: O(1)</p>
+<p>Transitions pool from RUNNING to DRAINING state:</p><ol type="1">
+<li>Rejects all new connection attempts (accept_* return NULL)</li>
+<li>Allows existing connections to continue until closed</li>
+<li>After timeout_ms, remaining connections are force-closed</li>
+</ol>
+<p>Call drain_poll() or drain_wait() to complete the shutdown. Multiple calls are idempotent - only first call has effect.</p>
+<p>Emits: SOCKET_EVENT_POOL_DRAINING event Logs: "Pool drain initiated" at INFO level </p>
+
+</div>
+</div>
+<a id="a0cbc1088d796c166f582de4d17e5d968" name="a0cbc1088d796c166f582de4d17e5d968"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0cbc1088d796c166f582de4d17e5d968">&#9670;&#160;</a></span>SocketPool_drain_force()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketPool_drain_force </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_drain_force - Force immediate shutdown @pool: Pool instance. </p>
+<p>Thread-safe: Yes Complexity: O(n) where n = active connections</p>
+<p>Immediately closes all connections and transitions to STOPPED. Can be called at any time, regardless of current state. Invokes drain callback with timed_out=1.</p>
+<p>Logs: "Pool drain forced" at WARN level </p>
+
+</div>
+</div>
+<a id="a2cbe6c95119cbb4b30f981b9d07f3e9b" name="a2cbe6c95119cbb4b30f981b9d07f3e9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2cbe6c95119cbb4b30f981b9d07f3e9b">&#9670;&#160;</a></span>SocketPool_drain_poll()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketPool_drain_poll </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_drain_poll - Poll drain progress (non-blocking) @pool: Pool instance. </p>
+<p>Returns: &gt;0 - Number of connections still active (keep polling) 0 - Drain complete, pool is STOPPED (graceful) -1 - Drain timed out, connections force-closed, pool is STOPPED</p>
+<p>Thread-safe: Yes Complexity: O(1) normally, O(n) on timeout (force close)</p>
+<p>Call periodically in event loop to:</p><ul>
+<li>Check if all connections have closed</li>
+<li>Trigger force-close when timeout expires</li>
+<li>Invoke drain callback on completion</li>
+</ul>
+<p>If pool is not draining (RUNNING or already STOPPED), returns count or 0. </p>
+
+</div>
+</div>
+<a id="ae14b85a2cd7a0a4302f84478840cfb23" name="ae14b85a2cd7a0a4302f84478840cfb23"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae14b85a2cd7a0a4302f84478840cfb23">&#9670;&#160;</a></span>SocketPool_drain_remaining_ms()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t SocketPool_drain_remaining_ms </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_drain_remaining_ms - Get time until forced shutdown @pool: Pool instance. </p>
+<p>Returns: Milliseconds until timeout, 0 if already expired, -1 if not draining Thread-safe: Yes - atomic read Complexity: O(1)</p>
+<p>Use as timeout hint for poll/select during drain. </p>
+
+</div>
+</div>
+<a id="a3f0fdd6e4245f2844081d935b2d3c8a2" name="a3f0fdd6e4245f2844081d935b2d3c8a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f0fdd6e4245f2844081d935b2d3c8a2">&#9670;&#160;</a></span>SocketPool_drain_wait()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketPool_drain_wait </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>timeout_ms</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_drain_wait - Blocking drain with internal poll loop @pool: Pool instance @timeout_ms: Maximum wait time (milliseconds), -1 for infinite. </p>
+<p>Returns: 0 if graceful drain completed, -1 if timed out (forced) Thread-safe: Yes</p>
+<p>Convenience function that:</p><ol type="1">
+<li>Calls SocketPool_drain(timeout_ms)</li>
+<li>Polls with exponential backoff (1ms -&gt; 100ms cap)</li>
+<li>Returns when pool reaches STOPPED state</li>
+</ol>
+<p>For event-driven applications, prefer drain() + drain_poll() pattern. </p>
+
+</div>
+</div>
 <a id="a94ef5658ee53e87337b931b549ff35f2" name="a94ef5658ee53e87337b931b549ff35f2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a94ef5658ee53e87337b931b549ff35f2">&#9670;&#160;</a></span>SocketPool_enable_reconnect()</h2>
 
@@ -1145,6 +1526,35 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a9047fb0f2c05a4f208c023b5e81196e3" name="a9047fb0f2c05a4f208c023b5e81196e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9047fb0f2c05a4f208c023b5e81196e3">&#9670;&#160;</a></span>SocketPool_get_syn_protection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="SocketSYNProtect_8h.html#a2d44b8e90f00f2e635f7bf123e2e4c10">SocketSYNProtect_T</a> SocketPool_get_syn_protection </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_get_syn_protection - Get current SYN protection module @pool: Pool instance. </p>
+<p>Returns: Current SYN protection instance, or NULL if disabled Thread-safe: Yes </p>
+
+</div>
+</div>
 <a id="adc0d9937eb377068134cab141b8bcfad" name="adc0d9937eb377068134cab141b8bcfad"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adc0d9937eb377068134cab141b8bcfad">&#9670;&#160;</a></span>SocketPool_getconnrate()</h2>
 
@@ -1203,6 +1613,40 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="ac801c2d9c4fd944334de2a551993bd89" name="ac801c2d9c4fd944334de2a551993bd89"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac801c2d9c4fd944334de2a551993bd89">&#9670;&#160;</a></span>SocketPool_health()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="SocketPool_8h.html#a97c30d41df98c69bb394f0a91c3759ae">SocketPool_Health</a> SocketPool_health </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_health - Get pool health status for load balancers @pool: Pool instance. </p>
+<p>Returns: Current SocketPool_Health Thread-safe: Yes - atomic read Complexity: O(1)</p>
+<p>Maps state to health:</p><ul>
+<li>RUNNING -&gt; HEALTHY</li>
+<li>DRAINING -&gt; DRAINING</li>
+<li>STOPPED -&gt; STOPPED </li>
+</ul>
+
+</div>
+</div>
 <a id="ace0da0754ae023a89aee4b96a4e50845" name="ace0da0754ae023a89aee4b96a4e50845"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ace0da0754ae023a89aee4b96a4e50845">&#9670;&#160;</a></span>SocketPool_ip_count()</h2>
 
@@ -1239,6 +1683,64 @@ Variables</h2></td></tr>
 
 <p>SocketPool_ip_count - Get connection count for IP @pool: Pool instance @ip: IP address to query. </p>
 <p>Returns: Number of tracked connections from this IP Thread-safe: Yes </p>
+
+</div>
+</div>
+<a id="a5245d1cd6578a86f1045529d07fe511c" name="a5245d1cd6578a86f1045529d07fe511c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5245d1cd6578a86f1045529d07fe511c">&#9670;&#160;</a></span>SocketPool_is_draining()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketPool_is_draining </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_is_draining - Check if pool is currently draining @pool: Pool instance. </p>
+<p>Returns: Non-zero if state is DRAINING Thread-safe: Yes - atomic read Complexity: O(1) </p>
+
+</div>
+</div>
+<a id="a6ee3c9502d314b58f9eba33827dd28cf" name="a6ee3c9502d314b58f9eba33827dd28cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ee3c9502d314b58f9eba33827dd28cf">&#9670;&#160;</a></span>SocketPool_is_stopped()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketPool_is_stopped </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_is_stopped - Check if pool is fully stopped @pool: Pool instance. </p>
+<p>Returns: Non-zero if state is STOPPED Thread-safe: Yes - atomic read Complexity: O(1) </p>
 
 </div>
 </div>
@@ -1601,6 +2103,52 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a254e5c125de7413e1fa2a8809350d4e0" name="a254e5c125de7413e1fa2a8809350d4e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a254e5c125de7413e1fa2a8809350d4e0">&#9670;&#160;</a></span>SocketPool_set_drain_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketPool_set_drain_callback </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#ad7679db7b1be62e465d9896944f3ad20">SocketPool_DrainCallback</a>&#160;</td>
+          <td class="paramname"><em>cb</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>data</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_set_drain_callback - Register drain completion callback @pool: Pool instance @cb: Callback function (NULL to clear) @data: User data passed to callback. </p>
+<p>Thread-safe: Yes</p>
+<p>Callback is invoked exactly once when drain completes (transitions to STOPPED). Safe to call <a class="el" href="SocketPool_8h.html#afb57544a14c977302953fd36634bd004" title="SocketPool_free - Free a connection pool @pool: Pointer to pool (will be set to NULL) Note: Does not ...">SocketPool_free()</a> from callback. </p>
+
+</div>
+</div>
 <a id="ae4b6b07007da08326b53c069a4c1f2ea" name="ae4b6b07007da08326b53c069a4c1f2ea"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae4b6b07007da08326b53c069a4c1f2ea">&#9670;&#160;</a></span>SocketPool_set_reconnect_policy()</h2>
 
@@ -1638,6 +2186,47 @@ Variables</h2></td></tr>
 <p>SocketPool_set_reconnect_policy - Set default reconnection policy for pool @pool: Pool instance @policy: Reconnection policy (NULL to disable auto-reconnect) </p>
 <p>Thread-safe: Yes</p>
 <p>Sets the default reconnection policy for connections in this pool. Does not affect existing connections - use <a class="el" href="SocketPool_8h.html#a94ef5658ee53e87337b931b549ff35f2" title="SocketPool_enable_reconnect - Enable auto-reconnect for a connection @pool: Pool instance @conn: Conn...">SocketPool_enable_reconnect()</a> for those. </p>
+
+</div>
+</div>
+<a id="a847e3ae8d165d8a999ef76a68d21ffa5" name="a847e3ae8d165d8a999ef76a68d21ffa5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a847e3ae8d165d8a999ef76a68d21ffa5">&#9670;&#160;</a></span>SocketPool_set_syn_protection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketPool_set_syn_protection </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="SocketSYNProtect_8h.html#a2d44b8e90f00f2e635f7bf123e2e4c10">SocketSYNProtect_T</a>&#160;</td>
+          <td class="paramname"><em>protect</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_set_syn_protection - Enable SYN flood protection for pool @pool: Pool instance @protect: SYN protection instance (NULL to disable) </p>
+<p>Thread-safe: Yes</p>
+<p>When enabled, <a class="el" href="SocketPool_8h.html#a899c660b21bf96befd2b5ea9f6937988" title="SocketPool_accept_protected - Accept with full SYN flood protection @pool: Pool instance @server: Ser...">SocketPool_accept_protected()</a> will check with the protection module and apply appropriate actions (throttle, challenge, or block) before accepting connections.</p>
+<p>The protection module is NOT owned by the pool - caller must ensure it remains valid and must free it after the pool is freed. </p>
 
 </div>
 </div>
@@ -1724,6 +2313,35 @@ Variables</h2></td></tr>
 <p>SocketPool_setmaxperip - Set maximum connections per IP @pool: Pool instance @max_conns: Maximum connections per IP (0 = unlimited) </p>
 <p>Thread-safe: Yes</p>
 <p>Enables per-IP connection limiting to prevent single-source attacks. New connections from IPs that exceed the limit will be rejected. </p>
+
+</div>
+</div>
+<a id="a0a62267ba3008f826b6952624dbc6a29" name="a0a62267ba3008f826b6952624dbc6a29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a62267ba3008f826b6952624dbc6a29">&#9670;&#160;</a></span>SocketPool_state()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="SocketPool_8h.html#ae5f905ecace343c3b462dfadd5fa8056">SocketPool_State</a> SocketPool_state </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPool_state - Get current pool lifecycle state @pool: Pool instance. </p>
+<p>Returns: Current SocketPool_State Thread-safe: Yes - atomic read Complexity: O(1) </p>
 
 </div>
 </div>

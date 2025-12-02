@@ -840,7 +840,27 @@ END_TRY;
 
 ## Documentation
 
+### API Reference
 - **[Files](files.html)** — Header file reference
 - **[Data Structures](annotated.html)** — Structs and types
 - **[API Reference](globals.html)** — Complete function index
-- **[Async I/O Guide](md_docs_2_a_s_y_n_c__i_o.html)** — io_uring patterns
+
+### Guides
+- **[HTTP Guide](@ref http_guide)** — HTTP/1.1 and HTTP/2 client/server
+- **[WebSocket Guide](@ref websocket_guide)** — WebSocket client/server (RFC 6455)
+- **[Proxy Guide](@ref proxy_guide)** — HTTP CONNECT and SOCKS proxy tunneling
+- **[Security Guide](@ref security_guide)** — TLS configuration and best practices
+- **[Migration Guide](@ref migration_guide)** — Migrate from libcurl, libevent, etc.
+- **[Async I/O Guide](@ref async_io_guide)** — io_uring patterns
+
+### Examples
+Standalone example programs are in the `examples/` directory:
+- `http_get.c` — Simple HTTP GET request
+- `http_post.c` — HTTP POST with JSON
+- `http2_client.c` — HTTP/2 protocol
+- `http_server.c` — Basic HTTP server
+- `websocket_client.c` — WebSocket client
+- `websocket_server.c` — WebSocket echo server
+- `proxy_connect.c` — SOCKS5/HTTP proxy tunneling
+
+Build examples with `cmake -DBUILD_EXAMPLES=ON ..`

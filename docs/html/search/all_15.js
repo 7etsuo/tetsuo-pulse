@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['validate_5ffd_0',['VALIDATE_FD',['../SocketPoll__backend_8h.html#a72ef813749c8c54d8f8ccf64ba724a0a',1,'SocketPoll_backend.h']]],
-  ['values_1',['values',['../SocketUtil_8h.html#ad4bec382c27642da1ce45dcf676684e6',1,'SocketMetricsSnapshot']]]
+  ['quick_20start_0',['quick start',['../index.html#autotoc_md6',1,'Quick Start'],['../http_guide.html#autotoc_md75',1,'Quick Start'],['../websocket_guide.html#autotoc_md123',1,'Quick Start'],['../proxy_guide.html#autotoc_md172',1,'Quick Start']]]
 ];

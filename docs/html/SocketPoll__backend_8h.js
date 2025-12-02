@@ -9,5 +9,5 @@ var SocketPoll__backend_8h =
     [ "backend_mod", "SocketPoll__backend_8h.html#a4b929e888a5088e59cd045c41759363e", null ],
     [ "backend_name", "SocketPoll__backend_8h.html#a2edb00f128ad773d62c8f11c516153d9", null ],
     [ "backend_new", "SocketPoll__backend_8h.html#ae1b5045d5537dde7eb2cce1e8deae997", null ],
-    [ "backend_wait", "SocketPoll__backend_8h.html#a9ca26eabe4ea3174d20ea5169a21f15c", null ]
+    [ "backend_wait", "SocketPoll__backend_8h.html#a5b2c06638f0c76ea3c6c2f38503d266b", null ]
 ];

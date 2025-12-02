@@ -133,7 +133,7 @@ $(document).ready(function(){initNavTree('SocketTLS_8h.html',''); initResizable(
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketTLS_8h__dep__incl.svg" width="155" height="110"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="SocketTLS_8h__dep__incl.svg" width="100%" height="492"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
 </div>
 <p><a href="SocketTLS_8h_source.html">Go to the source code of this file.</a></p>
@@ -374,6 +374,8 @@ Variables</h2></td></tr>
 <p>Returns: void Raises: SocketTLS_Failed if TLS cannot be enabled (e.g., already enabled, invalid socket, context error) Thread-safe: No - modifies socket state directly</p>
 <p>Usage note: Call after <a class="el" href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e" title="Socket_connect - Connect to remote host @socket: Socket to connect @host: Remote IP address or hostna...">Socket_connect()</a> or <a class="el" href="Socket_8h.html#a32b67d95639513cd6a602f6175b48f15" title="Socket_accept - Accept incoming connection @socket: Listening socket Returns: New socket or NULL if w...">Socket_accept()</a> but before any TLS I/O. The handshake must be performed separately using <a class="el" href="SocketTLS_8h.html#aeaa77dd7852b535baf17b53ee2518454" title="SocketTLS_handshake - Perform non-blocking TLS handshake @socket: The socket instance with TLS enable...">SocketTLS_handshake()</a>. </p>
 
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+
 </div>
 </div>
 <a id="a56acd283757bb0af4f4d59d3c0f218ea" name="a56acd283757bb0af4f4d59d3c0f218ea"></a>
@@ -433,6 +435,8 @@ Variables</h2></td></tr>
 <p>SocketTLS_get_cipher - Get negotiated cipher suite name @socket: The socket instance with completed handshake. </p>
 <p>Returns the name of the cipher suite negotiated during handshake (e.g., "TLS_AES_256_GCM_SHA384").</p>
 <p>Returns: Const string with cipher name, or NULL if unavailable Raises: None Thread-safe: Yes - reads immutable post-handshake state </p>
+
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
 </div>
 </div>
@@ -540,6 +544,8 @@ Variables</h2></td></tr>
 <p>Returns the TLS protocol version string (e.g., "TLSv1.3").</p>
 <p>Returns: Const string with version, or NULL if unavailable Raises: None Thread-safe: Yes </p>
 
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+
 </div>
 </div>
 <a id="aeaa77dd7852b535baf17b53ee2518454" name="aeaa77dd7852b535baf17b53ee2518454"></a>
@@ -570,6 +576,8 @@ Variables</h2></td></tr>
 <p>Performs one step of the TLS handshake. For non-blocking sockets, this may return WANT_READ or WANT_WRITE indicating more data or writability is needed. Call repeatedly in a poll loop until TLS_HANDSHAKE_COMPLETE is returned.</p>
 <p>Returns: TLSHandshakeState indicating progress (COMPLETE, WANT_READ, WANT_WRITE, ERROR) Raises: SocketTLS_HandshakeFailed on fatal handshake errors (e.g., protocol mismatch, cert verify fail) Thread-safe: No - modifies socket TLS state and SSL object</p>
 <p>Note: Integrates with SocketPoll by checking tls_last_handshake_state for pending I/O. </p>
+
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
 </div>
 </div>
@@ -689,6 +697,8 @@ Variables</h2></td></tr>
 <p>Returns: Number of bytes received, or 0 if would block or EOF Raises: SocketTLS_Failed on TLS errors, Socket_Closed on clean shutdown Thread-safe: No - modifies SSL buffers and state</p>
 <p>Note: Application must handle partial reads by looping until desired amount received. </p>
 
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+
 </div>
 </div>
 <a id="abdb38e692dde58bbec4ab905eeb8b3aa" name="abdb38e692dde58bbec4ab905eeb8b3aa"></a>
@@ -736,6 +746,8 @@ Variables</h2></td></tr>
 <p>Returns: Number of bytes sent, or 0 if would block Raises: SocketTLS_Failed on TLS errors, Socket_Closed if connection closed Thread-safe: No - modifies SSL buffers and state</p>
 <p>Note: Does not perform partial sends; application must loop if needed. </p>
 
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+
 </div>
 </div>
 <a id="a15d2c8f4eaea80114bbd2123da025e56" name="a15d2c8f4eaea80114bbd2123da025e56"></a>
@@ -776,6 +788,8 @@ Variables</h2></td></tr>
 <p>Sets the Server Name Indication (SNI) hostname for the TLS connection. This is required for virtual hosting on servers and enables hostname verification for clients. The hostname is validated and allocated in the socket's arena. Should be called after <a class="el" href="SocketTLS_8h.html#ab9a8fb788aa1f0d21b5773bc43a48d6f" title="SocketTLS_enable - Enable TLS on a socket using the provided context @socket: The socket instance to ...">SocketTLS_enable()</a> but before <a class="el" href="SocketTLS_8h.html#aeaa77dd7852b535baf17b53ee2518454" title="SocketTLS_handshake - Perform non-blocking TLS handshake @socket: The socket instance with TLS enable...">SocketTLS_handshake()</a>.</p>
 <p>Returns: void Raises: SocketTLS_Failed if TLS not enabled, invalid hostname, or OpenSSL error Thread-safe: No - modifies socket and SSL state </p>
 
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+
 </div>
 </div>
 <a id="ab11506db6f41f31e9fc170b3d0e848f1" name="ab11506db6f41f31e9fc170b3d0e848f1"></a>
@@ -805,6 +819,8 @@ Variables</h2></td></tr>
 <p>SocketTLS_shutdown - Perform graceful TLS connection shutdown @socket: The socket instance with TLS enabled. </p>
 <p>Initiates a bidirectional TLS shutdown (close_notify alert). May need multiple calls for full shutdown in non-blocking mode. Call before Socket_close() to ensure proper TLS termination.</p>
 <p>Returns: void Raises: SocketTLS_ShutdownFailed on error Thread-safe: No - modifies SSL object state </p>
+
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
 </div>
 </div>
@@ -850,6 +866,8 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
 </div>
 </div>
@@ -916,6 +934,8 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
 </div>
 </div>

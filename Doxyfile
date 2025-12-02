@@ -146,7 +146,13 @@ ALIASES                = "complexity=\par Complexity\n" \
 
 INPUT                  = include \
                          docs/mainpage.md \
-                         docs/ASYNC_IO.md
+                         docs/ASYNC_IO.md \
+                         docs/HTTP.md \
+                         docs/WEBSOCKET.md \
+                         docs/PROXY.md \
+                         docs/SECURITY.md \
+                         docs/MIGRATION.md \
+                         examples
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.h \
                          *.c \

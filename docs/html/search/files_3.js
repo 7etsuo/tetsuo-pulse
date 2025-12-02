@@ -1,23 +1,5 @@
 var searchData=
 [
-  ['socket_2eh_0',['Socket.h',['../Socket_8h.html',1,'']]],
-  ['socketasync_2eh_1',['SocketAsync.h',['../SocketAsync_8h.html',1,'']]],
-  ['socketbuf_2eh_2',['SocketBuf.h',['../SocketBuf_8h.html',1,'']]],
-  ['socketcommon_2eh_3',['SocketCommon.h',['../SocketCommon_8h.html',1,'']]],
-  ['socketconfig_2eh_4',['SocketConfig.h',['../SocketConfig_8h.html',1,'']]],
-  ['socketdgram_2eh_5',['SocketDgram.h',['../SocketDgram_8h.html',1,'']]],
-  ['socketdns_2eh_6',['SocketDNS.h',['../SocketDNS_8h.html',1,'']]],
-  ['sockethappyeyeballs_2eh_7',['SocketHappyEyeballs.h',['../SocketHappyEyeballs_8h.html',1,'']]],
-  ['socketio_2eh_8',['SocketIO.h',['../SocketIO_8h.html',1,'']]],
-  ['socketiptracker_2eh_9',['SocketIPTracker.h',['../SocketIPTracker_8h.html',1,'']]],
-  ['socketpoll_2eh_10',['SocketPoll.h',['../SocketPoll_8h.html',1,'']]],
-  ['socketpoll_5fbackend_2eh_11',['SocketPoll_backend.h',['../SocketPoll__backend_8h.html',1,'']]],
-  ['socketpool_2eh_12',['SocketPool.h',['../SocketPool_8h.html',1,'']]],
-  ['socketratelimit_2eh_13',['SocketRateLimit.h',['../SocketRateLimit_8h.html',1,'']]],
-  ['socketreconnect_2eh_14',['SocketReconnect.h',['../SocketReconnect_8h.html',1,'']]],
-  ['sockettimer_2eh_15',['SocketTimer.h',['../SocketTimer_8h.html',1,'']]],
-  ['sockettls_2eh_16',['SocketTLS.h',['../SocketTLS_8h.html',1,'']]],
-  ['sockettlsconfig_2eh_17',['SocketTLSConfig.h',['../SocketTLSConfig_8h.html',1,'']]],
-  ['sockettlscontext_2eh_18',['SocketTLSContext.h',['../SocketTLSContext_8h.html',1,'']]],
-  ['socketutil_2eh_19',['SocketUtil.h',['../SocketUtil_8h.html',1,'']]]
+  ['mainpage_2emd_0',['mainpage.md',['../mainpage_8md.html',1,'']]],
+  ['migration_2emd_1',['MIGRATION.md',['../MIGRATION_8md.html',1,'']]]
 ];

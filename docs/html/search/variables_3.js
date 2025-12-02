@@ -1,7 +1,11 @@
 var searchData=
 [
-  ['env_0',['env',['../Except_8h.html#abce4b8de2bbf7d6fb6ef52d618309264',1,'Except_Frame']]],
-  ['events_1',['events',['../SocketPoll_8h.html#ac526bc7e51851919ae7b0f3cec5934bc',1,'SocketEvent_T']]],
-  ['except_5fstack_2',['Except_stack',['../Except_8h.html#a3d38c6361ecf1c4873bbcb2de8a50874',1,'Except.h']]],
-  ['exception_3',['exception',['../Except_8h.html#a41f49d856fa1e252bc5f7439f6feeaf8',1,'Except_Frame']]]
+  ['d_0',['d',['../unionalign.html#a2e1b983804fcd308a884ad14d938b443',1,'align']]],
+  ['data_1',['data',['../SocketUtil_8h.html#a46454b1b915024075996facfd55e75a2',1,'SocketEventRecord::data'],['../SocketPoll_8h.html#acb5b92ec2f2954ee3baa024a74ce4655',1,'SocketEvent_T::data'],['../SocketWS_8h.html#af7c3a0707d0a280d08242b3668e4bc14',1,'SocketWS_Message::data']]],
+  ['deflate_5fmax_5fwindow_5fbits_2',['deflate_max_window_bits',['../SocketWS_8h.html#aaaf3a4b3929373f6d34097ee3360edd7',1,'SocketWS_Config']]],
+  ['deflate_5fno_5fcontext_5ftakeover_3',['deflate_no_context_takeover',['../SocketWS_8h.html#a6990f2e1597412e0fd8101407944f51d',1,'SocketWS_Config']]],
+  ['dns_4',['dns',['../SocketUtil_8h.html#ab3bf60b851ebaeb2768b01a32e2ef32f',1,'SocketEventRecord.data']]],
+  ['dns_5ftimeout_5fms_5',['dns_timeout_ms',['../SocketConfig_8h.html#ad49a90a8aab8a8b6c63592c7856737ba',1,'SocketTimeouts_T::dns_timeout_ms'],['../SocketHTTPClient_8h.html#a6e7fd7c2a4f862fc8d613d4662a7e2e1',1,'SocketHTTPClient_Config::dns_timeout_ms']]],
+  ['domain_6',['domain',['../SocketHTTPClient_8h.html#a0dc75016531006762afa85a21130ac13',1,'SocketHTTPClient_Cookie']]],
+  ['dtls_5ferror_5fbuf_7',['dtls_error_buf',['../SocketDTLS_8h.html#a98be42b85e655b670661ae1690f1c433',1,'SocketDTLS.h']]]
 ];

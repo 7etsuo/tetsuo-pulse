@@ -120,6 +120,7 @@ $(document).ready(function(){initNavTree('SocketConfig_8h.html',''); initResizab
 <div class="textblock"><code>#include &lt;errno.h&gt;</code><br />
 <code>#include &lt;fcntl.h&gt;</code><br />
 <code>#include &lt;netinet/in.h&gt;</code><br />
+<code>#include &lt;netinet/tcp.h&gt;</code><br />
 <code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &lt;stdio.h&gt;</code><br />
 <code>#include &lt;sys/socket.h&gt;</code><br />
@@ -137,7 +138,7 @@ $(document).ready(function(){initNavTree('SocketConfig_8h.html',''); initResizab
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="SocketConfig_8h__dep__incl.svg" width="100%" height="547"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="SocketConfig_8h__dep__incl.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
 </div>
 <p><a href="SocketConfig_8h_source.html">Go to the source code of this file.</a></p>
@@ -152,6 +153,16 @@ Data Structures</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
+<tr class="memitem:a804342bb2c0ff468a794cefdbe784581" id="r_a804342bb2c0ff468a794cefdbe784581"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a804342bb2c0ff468a794cefdbe784581">SOCKET_VERSION_MAJOR</a>&#160;&#160;&#160;0</td></tr>
+<tr class="separator:a804342bb2c0ff468a794cefdbe784581"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e8e7af9a925dfd168fd9d57d420b31e" id="r_a5e8e7af9a925dfd168fd9d57d420b31e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a5e8e7af9a925dfd168fd9d57d420b31e">SOCKET_VERSION_MINOR</a>&#160;&#160;&#160;1</td></tr>
+<tr class="separator:a5e8e7af9a925dfd168fd9d57d420b31e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9e9c414384981ffd1cb1f4ce1242c18" id="r_ae9e9c414384981ffd1cb1f4ce1242c18"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ae9e9c414384981ffd1cb1f4ce1242c18">SOCKET_VERSION_PATCH</a>&#160;&#160;&#160;0</td></tr>
+<tr class="separator:ae9e9c414384981ffd1cb1f4ce1242c18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac86c0a6be253f84d0f811e4d522332b1" id="r_ac86c0a6be253f84d0f811e4d522332b1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ac86c0a6be253f84d0f811e4d522332b1">SOCKET_VERSION_STRING</a>&#160;&#160;&#160;&quot;0.1.0&quot;</td></tr>
+<tr class="separator:ac86c0a6be253f84d0f811e4d522332b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56f6263f07f74e065a182e5508c00779" id="r_a56f6263f07f74e065a182e5508c00779"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a56f6263f07f74e065a182e5508c00779">SOCKET_VERSION</a></td></tr>
+<tr class="separator:a56f6263f07f74e065a182e5508c00779"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a72f1e9bc10cc82fb4ee1915335d60152" id="r_a72f1e9bc10cc82fb4ee1915335d60152"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a72f1e9bc10cc82fb4ee1915335d60152">SOCKET_MAX_CONNECTIONS</a>&#160;&#160;&#160;10000UL</td></tr>
 <tr class="separator:a72f1e9bc10cc82fb4ee1915335d60152"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a72443e4b95fbd8ef4d191b754b4324dc" id="r_a72443e4b95fbd8ef4d191b754b4324dc"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a72443e4b95fbd8ef4d191b754b4324dc">SOCKET_MAX_BUFFER_SIZE</a>&#160;&#160;&#160;(1024 * 1024) /* 1MB */</td></tr>
@@ -241,6 +252,48 @@ Macros</h2></td></tr>
 <tr class="separator:ae01e59a813f363fb3fe000809646df28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05cfd90047517ee1ae9f869294c834a4" id="r_a05cfd90047517ee1ae9f869294c834a4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a05cfd90047517ee1ae9f869294c834a4">SOCKET_IP_MAX_LEN</a>&#160;&#160;&#160;64</td></tr>
 <tr class="separator:a05cfd90047517ee1ae9f869294c834a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae062b2bac82d2ca78edc6658135b25a4" id="r_ae062b2bac82d2ca78edc6658135b25a4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ae062b2bac82d2ca78edc6658135b25a4">SOCKET_SYN_DEFAULT_WINDOW_MS</a>&#160;&#160;&#160;10000</td></tr>
+<tr class="separator:ae062b2bac82d2ca78edc6658135b25a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c43db9a86f5f49f85c535b7e01a9cd2" id="r_a8c43db9a86f5f49f85c535b7e01a9cd2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a8c43db9a86f5f49f85c535b7e01a9cd2">SOCKET_SYN_DEFAULT_MAX_PER_WINDOW</a>&#160;&#160;&#160;50</td></tr>
+<tr class="separator:a8c43db9a86f5f49f85c535b7e01a9cd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af02ac0a68cee3923b135a1e423622f61" id="r_af02ac0a68cee3923b135a1e423622f61"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#af02ac0a68cee3923b135a1e423622f61">SOCKET_SYN_DEFAULT_GLOBAL_PER_SEC</a>&#160;&#160;&#160;1000</td></tr>
+<tr class="separator:af02ac0a68cee3923b135a1e423622f61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0b03e45dca47aec6f4203011b1161f3" id="r_ae0b03e45dca47aec6f4203011b1161f3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ae0b03e45dca47aec6f4203011b1161f3">SOCKET_SYN_DEFAULT_MIN_SUCCESS_RATIO</a>&#160;&#160;&#160;0.3f</td></tr>
+<tr class="separator:ae0b03e45dca47aec6f4203011b1161f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae5bbd0b37027680dfa2c0c58773fef6" id="r_aae5bbd0b37027680dfa2c0c58773fef6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#aae5bbd0b37027680dfa2c0c58773fef6">SOCKET_SYN_DEFAULT_THROTTLE_DELAY_MS</a>&#160;&#160;&#160;100</td></tr>
+<tr class="separator:aae5bbd0b37027680dfa2c0c58773fef6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff44ca76156e6010520f4d231fbf7109" id="r_aff44ca76156e6010520f4d231fbf7109"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#aff44ca76156e6010520f4d231fbf7109">SOCKET_SYN_DEFAULT_BLOCK_DURATION_MS</a>&#160;&#160;&#160;60000</td></tr>
+<tr class="separator:aff44ca76156e6010520f4d231fbf7109"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7883d7f2995a8046776d818de6dbaa2e" id="r_a7883d7f2995a8046776d818de6dbaa2e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a7883d7f2995a8046776d818de6dbaa2e">SOCKET_SYN_DEFAULT_DEFER_SEC</a>&#160;&#160;&#160;5</td></tr>
+<tr class="separator:a7883d7f2995a8046776d818de6dbaa2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a91a7da051b6462f126bc329f1e5cda" id="r_a8a91a7da051b6462f126bc329f1e5cda"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a8a91a7da051b6462f126bc329f1e5cda">SOCKET_SYN_DEFAULT_SCORE_THROTTLE</a>&#160;&#160;&#160;0.7f</td></tr>
+<tr class="separator:a8a91a7da051b6462f126bc329f1e5cda"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67a51dcadef9eb934f3342e9e02f6fd5" id="r_a67a51dcadef9eb934f3342e9e02f6fd5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a67a51dcadef9eb934f3342e9e02f6fd5">SOCKET_SYN_DEFAULT_SCORE_CHALLENGE</a>&#160;&#160;&#160;0.4f</td></tr>
+<tr class="separator:a67a51dcadef9eb934f3342e9e02f6fd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9608aa5a6bbbe4cbc60c9442d094cfd0" id="r_a9608aa5a6bbbe4cbc60c9442d094cfd0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a9608aa5a6bbbe4cbc60c9442d094cfd0">SOCKET_SYN_DEFAULT_SCORE_BLOCK</a>&#160;&#160;&#160;0.2f</td></tr>
+<tr class="separator:a9608aa5a6bbbe4cbc60c9442d094cfd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b8d879d7477b5a59170487f2ef38cd0" id="r_a8b8d879d7477b5a59170487f2ef38cd0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a8b8d879d7477b5a59170487f2ef38cd0">SOCKET_SYN_DEFAULT_SCORE_DECAY</a>&#160;&#160;&#160;0.01f</td></tr>
+<tr class="separator:a8b8d879d7477b5a59170487f2ef38cd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4122f191a253666fdb691929b3cd4173" id="r_a4122f191a253666fdb691929b3cd4173"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a4122f191a253666fdb691929b3cd4173">SOCKET_SYN_DEFAULT_PENALTY_ATTEMPT</a>&#160;&#160;&#160;0.02f</td></tr>
+<tr class="separator:a4122f191a253666fdb691929b3cd4173"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f01c6ca60bf199d42dde59f0159074c" id="r_a4f01c6ca60bf199d42dde59f0159074c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a4f01c6ca60bf199d42dde59f0159074c">SOCKET_SYN_DEFAULT_PENALTY_FAILURE</a>&#160;&#160;&#160;0.05f</td></tr>
+<tr class="separator:a4f01c6ca60bf199d42dde59f0159074c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a0acbe7229a03abfe70205717d511c4" id="r_a9a0acbe7229a03abfe70205717d511c4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a9a0acbe7229a03abfe70205717d511c4">SOCKET_SYN_DEFAULT_REWARD_SUCCESS</a>&#160;&#160;&#160;0.05f</td></tr>
+<tr class="separator:a9a0acbe7229a03abfe70205717d511c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a842d1a441b3a55a43f2066087ff6ff59" id="r_a842d1a441b3a55a43f2066087ff6ff59"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a842d1a441b3a55a43f2066087ff6ff59">SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS</a>&#160;&#160;&#160;100000</td></tr>
+<tr class="separator:a842d1a441b3a55a43f2066087ff6ff59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1a28d9573c05725ca3abb96239b83ee" id="r_ac1a28d9573c05725ca3abb96239b83ee"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ac1a28d9573c05725ca3abb96239b83ee">SOCKET_SYN_DEFAULT_MAX_WHITELIST</a>&#160;&#160;&#160;1000</td></tr>
+<tr class="separator:ac1a28d9573c05725ca3abb96239b83ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac82e2e73ae29b0b0e8699d8b81bb29c3" id="r_ac82e2e73ae29b0b0e8699d8b81bb29c3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ac82e2e73ae29b0b0e8699d8b81bb29c3">SOCKET_SYN_DEFAULT_MAX_BLACKLIST</a>&#160;&#160;&#160;10000</td></tr>
+<tr class="separator:ac82e2e73ae29b0b0e8699d8b81bb29c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0908a428243a18d0260754d417e023a" id="r_ab0908a428243a18d0260754d417e023a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ab0908a428243a18d0260754d417e023a">SOCKET_SYN_TRUSTED_SCORE_THRESHOLD</a>&#160;&#160;&#160;0.9f</td></tr>
+<tr class="separator:ab0908a428243a18d0260754d417e023a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a812e1a3066fafa145324e13ec013cb47" id="r_a812e1a3066fafa145324e13ec013cb47"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a812e1a3066fafa145324e13ec013cb47">SOCKET_IPV6_ADDR_BYTES</a>&#160;&#160;&#160;16</td></tr>
+<tr class="separator:a812e1a3066fafa145324e13ec013cb47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1b769b5903588b4e6cbd40864a30d8e" id="r_ae1b769b5903588b4e6cbd40864a30d8e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ae1b769b5903588b4e6cbd40864a30d8e">SOCKET_IPV4_ADDR_BYTES</a>&#160;&#160;&#160;4</td></tr>
+<tr class="separator:ae1b769b5903588b4e6cbd40864a30d8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c869f123d7c29c39cfe7d1dedd998a0" id="r_a0c869f123d7c29c39cfe7d1dedd998a0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a0c869f123d7c29c39cfe7d1dedd998a0">SOCKET_BITS_PER_BYTE</a>&#160;&#160;&#160;8</td></tr>
+<tr class="separator:a0c869f123d7c29c39cfe7d1dedd998a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6359d7f5856bc1d8e19de36b71156f7a" id="r_a6359d7f5856bc1d8e19de36b71156f7a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a6359d7f5856bc1d8e19de36b71156f7a">SOCKET_LOG_BUFFER_SIZE</a>&#160;&#160;&#160;1024</td></tr>
 <tr class="separator:a6359d7f5856bc1d8e19de36b71156f7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab28724709065957c1e13fd4c9b8e873a" id="r_ab28724709065957c1e13fd4c9b8e873a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a>&#160;&#160;&#160;1024</td></tr>
@@ -301,7 +354,7 @@ Macros</h2></td></tr>
 <tr class="separator:a235602fcede4fb9bc69be7f5ca97665e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0ed91b25c305280f9b71295fe1a3360" id="r_ae0ed91b25c305280f9b71295fe1a3360"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ae0ed91b25c305280f9b71295fe1a3360">ARENA_SUCCESS</a>&#160;&#160;&#160;0</td></tr>
 <tr class="separator:ae0ed91b25c305280f9b71295fe1a3360"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a78d9c75a31ffd984a1165184a0387d8a" id="r_a78d9c75a31ffd984a1165184a0387d8a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a78d9c75a31ffd984a1165184a0387d8a">ARENA_FAILURE</a>&#160;&#160;&#160;-1</td></tr>
+<tr class="memitem:a78d9c75a31ffd984a1165184a0387d8a" id="r_a78d9c75a31ffd984a1165184a0387d8a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a78d9c75a31ffd984a1165184a0387d8a">ARENA_FAILURE</a>&#160;&#160;&#160;(-1)</td></tr>
 <tr class="separator:a78d9c75a31ffd984a1165184a0387d8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a330e671ddbefb1ef08ee48275781353f" id="r_a330e671ddbefb1ef08ee48275781353f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a330e671ddbefb1ef08ee48275781353f">ARENA_CHUNK_REUSED</a>&#160;&#160;&#160;1</td></tr>
 <tr class="separator:a330e671ddbefb1ef08ee48275781353f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -401,6 +454,10 @@ Macros</h2></td></tr>
 <tr class="separator:a680a9b46408253f21f2fae08fab1a073"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e0034bad5cc9db994f51ea107fed151" id="r_a2e0034bad5cc9db994f51ea107fed151"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a2e0034bad5cc9db994f51ea107fed151">SOCKET_HAS_TCP_USER_TIMEOUT</a>&#160;&#160;&#160;0</td></tr>
 <tr class="separator:a2e0034bad5cc9db994f51ea107fed151"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab97bd3e7337b376f6be804f25d4d9c6d" id="r_ab97bd3e7337b376f6be804f25d4d9c6d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ab97bd3e7337b376f6be804f25d4d9c6d">SOCKET_HAS_TCP_DEFER_ACCEPT</a>&#160;&#160;&#160;0</td></tr>
+<tr class="separator:ab97bd3e7337b376f6be804f25d4d9c6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a219b0a63c1ee02ecb27a9c932da08a51" id="r_a219b0a63c1ee02ecb27a9c932da08a51"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a219b0a63c1ee02ecb27a9c932da08a51">SOCKET_HAS_SO_ACCEPTFILTER</a>&#160;&#160;&#160;0</td></tr>
+<tr class="separator:a219b0a63c1ee02ecb27a9c932da08a51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc73d2f6f2da35365e09b28eff6364b8" id="r_abc73d2f6f2da35365e09b28eff6364b8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#abc73d2f6f2da35365e09b28eff6364b8">SOCKET_IPV6_V6ONLY</a>&#160;&#160;&#160;IPV6_V6ONLY</td></tr>
 <tr class="separator:abc73d2f6f2da35365e09b28eff6364b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6718d10ef55392425b3e4eea07ee15ce" id="r_a6718d10ef55392425b3e4eea07ee15ce"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a6718d10ef55392425b3e4eea07ee15ce">SOCKET_IPV6_UNICAST_HOPS</a>&#160;&#160;&#160;IPV6_UNICAST_HOPS</td></tr>
@@ -431,8 +488,12 @@ Macros</h2></td></tr>
 <tr class="separator:a5549c3faf506d9057ac05de132462f87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30e4937ecabbc1aafef3092ed4d062e4" id="r_a30e4937ecabbc1aafef3092ed4d062e4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a30e4937ecabbc1aafef3092ed4d062e4">SOCKET_SHUT_RDWR</a>&#160;&#160;&#160;SHUT_RDWR</td></tr>
 <tr class="separator:a30e4937ecabbc1aafef3092ed4d062e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d8596dc13da264d86966c08b435110a" id="r_a6d8596dc13da264d86966c08b435110a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a6d8596dc13da264d86966c08b435110a">SOCKET_MSG_NOSIGNAL</a>&#160;&#160;&#160;MSG_NOSIGNAL</td></tr>
+<tr class="memitem:a9f55d0e90dc8cc6b2287312435cdde48" id="r_a9f55d0e90dc8cc6b2287312435cdde48"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a9f55d0e90dc8cc6b2287312435cdde48">MSG_NOSIGNAL</a>&#160;&#160;&#160;0</td></tr>
+<tr class="separator:a9f55d0e90dc8cc6b2287312435cdde48"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d8596dc13da264d86966c08b435110a" id="r_a6d8596dc13da264d86966c08b435110a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a6d8596dc13da264d86966c08b435110a">SOCKET_MSG_NOSIGNAL</a>&#160;&#160;&#160;<a class="el" href="SocketConfig_8h.html#a9f55d0e90dc8cc6b2287312435cdde48">MSG_NOSIGNAL</a></td></tr>
 <tr class="separator:a6d8596dc13da264d86966c08b435110a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8ffdac83de0d6abd074776faf8eb016" id="r_ac8ffdac83de0d6abd074776faf8eb016"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ac8ffdac83de0d6abd074776faf8eb016">SOCKET_HAS_SO_NOSIGPIPE</a>&#160;&#160;&#160;0</td></tr>
+<tr class="separator:ac8ffdac83de0d6abd074776faf8eb016"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a72227e2f5945efa472401c12608ae6f0" id="r_a72227e2f5945efa472401c12608ae6f0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a72227e2f5945efa472401c12608ae6f0">SOCKET_DEFAULT_KEEPALIVE_IDLE</a>&#160;&#160;&#160;60</td></tr>
 <tr class="separator:a72227e2f5945efa472401c12608ae6f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac35dee011f3919c4720812ef8b163f03" id="r_ac35dee011f3919c4720812ef8b163f03"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#ac35dee011f3919c4720812ef8b163f03">SOCKET_DEFAULT_KEEPALIVE_INTERVAL</a>&#160;&#160;&#160;10</td></tr>
@@ -451,6 +512,8 @@ Macros</h2></td></tr>
 <tr class="separator:a43c348045ef81f2408c0afd49c1f299a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3934edfea9b109a06dc66e7487959b4" id="r_af3934edfea9b109a06dc66e7487959b4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#af3934edfea9b109a06dc66e7487959b4">SOCKET_VALID_POLL_EVENTS</a>(e)&#160;&#160;&#160;  ((int)(e) &gt; 0 &amp;&amp; (int)(e) &lt;= <a class="el" href="SocketConfig_8h.html#ab6d7f45fcb5eae5fe42694e8e123cab4">SOCKET_MAX_POLL_EVENTS</a>)</td></tr>
 <tr class="separator:af3934edfea9b109a06dc66e7487959b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abaa7560b3f05cac2ed3d0a2f245c8bdb" id="r_abaa7560b3f05cac2ed3d0a2f245c8bdb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#abaa7560b3f05cac2ed3d0a2f245c8bdb">SOCKET_VALID_IP_STRING</a>(ip)&#160;&#160;&#160;((ip) != NULL &amp;&amp; (ip)[0] != '\0')</td></tr>
+<tr class="separator:abaa7560b3f05cac2ed3d0a2f245c8bdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71b9fcff797cf3624ea3ec9c02805291" id="r_a71b9fcff797cf3624ea3ec9c02805291"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a71b9fcff797cf3624ea3ec9c02805291">SAFE_CLOSE</a>(fd)</td></tr>
 <tr class="separator:a71b9fcff797cf3624ea3ec9c02805291"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -474,7 +537,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <div class="textblock"><p><a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T" title="SocketTimeouts_T - Timeout configuration structure.">SocketTimeouts_T</a> - Timeout configuration structure. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00386">386</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00511">511</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -512,7 +575,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00453">453</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00578">578</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -528,7 +591,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00478">478</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00603">603</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -544,7 +607,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00474">474</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00599">599</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -560,7 +623,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00096">96</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00112">112</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -576,7 +639,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00490">490</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00615">615</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -592,7 +655,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00111">111</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00127">127</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -603,12 +666,12 @@ General operation timeout in ms (0 = infinite) </td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define ARENA_FAILURE&#160;&#160;&#160;-1</td>
+          <td class="memname">#define ARENA_FAILURE&#160;&#160;&#160;(-1)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00470">470</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00595">595</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -624,7 +687,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00101">101</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00117">117</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -640,7 +703,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00106">106</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00122">122</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -656,7 +719,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00486">486</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00611">611</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -672,7 +735,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00482">482</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00607">607</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -688,7 +751,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00466">466</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00591">591</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -704,7 +767,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00462">462</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00587">587</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -720,7 +783,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00458">458</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00583">583</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -736,7 +799,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00432">432</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00557">557</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -752,7 +815,23 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00332">332</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00457">457</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a9f55d0e90dc8cc6b2287312435cdde48" name="a9f55d0e90dc8cc6b2287312435cdde48"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f55d0e90dc8cc6b2287312435cdde48">&#9670;&#160;</a></span>MSG_NOSIGNAL</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define MSG_NOSIGNAL&#160;&#160;&#160;0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00810">810</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -768,7 +847,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00204">204</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00220">220</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -784,7 +863,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00200">200</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00216">216</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -800,7 +879,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00196">196</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00212">212</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -831,7 +910,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
 <div class="line">  while (0)</div>
 <div class="ttc" id="aSocketConfig_8h_html_a481ecfe6b9e5c83515c92d1808e4b2f9"><div class="ttname"><a href="SocketConfig_8h.html#a481ecfe6b9e5c83515c92d1808e4b2f9">Socket_safe_strerror</a></div><div class="ttdeci">const char * Socket_safe_strerror(int errnum)</div><div class="ttdoc">SocketConfig.h - Socket Library Configuration.</div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00683">683</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00845">845</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -847,7 +926,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00052">52</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00068">68</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -863,7 +942,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00527">527</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00652">652</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -879,7 +958,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00528">528</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00653">653</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -895,7 +974,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00529">529</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00654">654</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -911,7 +990,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00526">526</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00651">651</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -927,7 +1006,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00647">647</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00790">790</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -943,7 +1022,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00648">648</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00791">791</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -959,7 +1038,23 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00646">646</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00789">789</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a0c869f123d7c29c39cfe7d1dedd998a0" name="a0c869f123d7c29c39cfe7d1dedd998a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c869f123d7c29c39cfe7d1dedd998a0">&#9670;&#160;</a></span>SOCKET_BITS_PER_BYTE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_BITS_PER_BYTE&#160;&#160;&#160;8</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00396">396</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -980,7 +1075,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
 <p>When disabled (0, default), <a class="el" href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e" title="Socket_connect - Connect to remote host @socket: Socket to connect @host: Remote IP address or hostna...">Socket_connect()</a> uses sequential connection attempts for backwards compatibility.</p>
 <p>Can be overridden at compile time with -DSOCKET_CONNECT_HAPPY_EYEBALLS=1 </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00364">364</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00489">489</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -996,7 +1091,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00344">344</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00469">469</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1012,7 +1107,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00670">670</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00831">831</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1028,7 +1123,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00368">368</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00493">493</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1044,7 +1139,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00376">376</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00501">501</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1060,7 +1155,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00504">504</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00629">629</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1076,7 +1171,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00669">669</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00830">830</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1092,7 +1187,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00667">667</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00828">828</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1108,7 +1203,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00668">668</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00829">829</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1124,7 +1219,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00372">372</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00497">497</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1140,7 +1235,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00380">380</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00505">505</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1156,7 +1251,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00402">402</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00527">527</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1172,7 +1267,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00398">398</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00523">523</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1188,7 +1283,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00524">524</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00649">649</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1204,7 +1299,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00178">178</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00194">194</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1220,7 +1315,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00159">159</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00175">175</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1236,7 +1331,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00155">155</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00171">171</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1252,7 +1347,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00173">173</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00189">189</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1268,7 +1363,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00183">183</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00199">199</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1284,7 +1379,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00168">168</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00184">184</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1300,7 +1395,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00151">151</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00167">167</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1316,7 +1411,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00188">188</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00204">204</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1332,7 +1427,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00163">163</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00179">179</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1348,7 +1443,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00289">289</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00414">414</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1364,7 +1459,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00299">299</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00424">424</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1380,7 +1475,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00303">303</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00428">428</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1396,7 +1491,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00308">308</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00433">433</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1412,7 +1507,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00312">312</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00437">437</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1428,7 +1523,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00237">237</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00253">253</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1444,7 +1539,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00568">568</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00693">693</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1460,7 +1555,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00560">560</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00685">685</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1476,7 +1571,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00337">337</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00462">462</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1492,7 +1587,23 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00336">336</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00461">461</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a219b0a63c1ee02ecb27a9c932da08a51" name="a219b0a63c1ee02ecb27a9c932da08a51"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a219b0a63c1ee02ecb27a9c932da08a51">&#9670;&#160;</a></span>SOCKET_HAS_SO_ACCEPTFILTER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_HAS_SO_ACCEPTFILTER&#160;&#160;&#160;0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00750">750</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1508,7 +1619,23 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00562">562</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00687">687</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ac8ffdac83de0d6abd074776faf8eb016" name="ac8ffdac83de0d6abd074776faf8eb016"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8ffdac83de0d6abd074776faf8eb016">&#9670;&#160;</a></span>SOCKET_HAS_SO_NOSIGPIPE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_HAS_SO_NOSIGPIPE&#160;&#160;&#160;0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00821">821</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1524,7 +1651,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00548">548</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00673">673</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1540,7 +1667,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00556">556</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00681">681</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1556,7 +1683,23 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00590">590</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00715">715</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ab97bd3e7337b376f6be804f25d4d9c6d" name="ab97bd3e7337b376f6be804f25d4d9c6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab97bd3e7337b376f6be804f25d4d9c6d">&#9670;&#160;</a></span>SOCKET_HAS_TCP_DEFER_ACCEPT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_HAS_TCP_DEFER_ACCEPT&#160;&#160;&#160;0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00742">742</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1572,7 +1715,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00600">600</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00725">725</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1588,7 +1731,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00607">607</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00732">732</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1604,7 +1747,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00087">87</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00103">103</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1620,7 +1763,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00639">639</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00782">782</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1636,7 +1779,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00640">640</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00783">783</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1652,7 +1795,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00271">271</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00287">287</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1668,7 +1811,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00266">266</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00282">282</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1684,7 +1827,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00638">638</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00781">781</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1700,7 +1843,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00533">533</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00658">658</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1716,7 +1859,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00534">534</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00659">659</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1732,7 +1875,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00531">531</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00656">656</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1748,7 +1891,23 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00532">532</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00657">657</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ae1b769b5903588b4e6cbd40864a30d8e" name="ae1b769b5903588b4e6cbd40864a30d8e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1b769b5903588b4e6cbd40864a30d8e">&#9670;&#160;</a></span>SOCKET_IPV4_ADDR_BYTES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_IPV4_ADDR_BYTES&#160;&#160;&#160;4</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00391">391</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1764,7 +1923,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00068">68</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00084">84</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1780,7 +1939,23 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00516">516</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00641">641</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a812e1a3066fafa145324e13ec013cb47" name="a812e1a3066fafa145324e13ec013cb47"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a812e1a3066fafa145324e13ec013cb47">&#9670;&#160;</a></span>SOCKET_IPV6_ADDR_BYTES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_IPV6_ADDR_BYTES&#160;&#160;&#160;16</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00386">386</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1796,7 +1971,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00064">64</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00080">80</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1812,7 +1987,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00517">517</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00642">642</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1828,7 +2003,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00632">632</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00775">775</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1844,7 +2019,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00614">614</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00757">757</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1860,7 +2035,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00280">280</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00405">405</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1876,7 +2051,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00038">38</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00054">54</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1892,7 +2067,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00033">33</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00049">49</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1908,7 +2083,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00505">505</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00630">630</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1924,7 +2099,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00082">82</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00098">98</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1940,7 +2115,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00077">77</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00093">93</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1956,7 +2131,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00072">72</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00088">88</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1972,7 +2147,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00213">213</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00229">229</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1988,7 +2163,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00060">60</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00076">76</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2004,7 +2179,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00043">43</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00059">59</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2020,7 +2195,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00497">497</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00622">622</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2031,12 +2206,12 @@ General operation timeout in ms (0 = infinite) </td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define SOCKET_MSG_NOSIGNAL&#160;&#160;&#160;MSG_NOSIGNAL</td>
+          <td class="memname">#define SOCKET_MSG_NOSIGNAL&#160;&#160;&#160;<a class="el" href="SocketConfig_8h.html#a9f55d0e90dc8cc6b2287312435cdde48">MSG_NOSIGNAL</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00661">661</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00813">813</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2052,7 +2227,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00671">671</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00832">832</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2068,7 +2243,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00651">651</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00794">794</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2084,7 +2259,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00652">652</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00795">795</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2100,7 +2275,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00649">649</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00792">792</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2116,7 +2291,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00650">650</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00793">793</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2132,7 +2307,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00498">498</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00623">623</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2148,7 +2323,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00423">423</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00548">548</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2164,7 +2339,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00327">327</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00452">452</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2180,7 +2355,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00406">406</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00531">531</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2199,7 +2374,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
 <p>Maximum number of pending async connect operations per pool. </p>
 <p>Prevents resource exhaustion from excessive concurrent connect attempts. Security: Limits memory consumption from async context allocations. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00419">419</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00544">544</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2215,7 +2390,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00410">410</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00535">535</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2231,7 +2406,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00317">317</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00442">442</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2247,7 +2422,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00514">514</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00639">639</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2263,7 +2438,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00261">261</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00277">277</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2279,7 +2454,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00251">251</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00267">267</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2295,7 +2470,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00246">246</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00262">262</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2311,7 +2486,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00256">256</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00272">272</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2327,7 +2502,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00056">56</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00072">72</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2343,7 +2518,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00658">658</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00801">801</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2359,7 +2534,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00660">660</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00803">803</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2375,7 +2550,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00659">659</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00802">802</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2391,7 +2566,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00569">569</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00694">694</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2407,7 +2582,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00561">561</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00686">686</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2423,7 +2598,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00570">570</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00695">695</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2439,7 +2614,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00575">575</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00700">700</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2455,7 +2630,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00573">573</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00698">698</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2471,7 +2646,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00571">571</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00696">696</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2487,7 +2662,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00541">541</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00666">666</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2503,7 +2678,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00547">547</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00672">672</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2519,7 +2694,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00574">574</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00699">699</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2535,7 +2710,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00572">572</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00697">697</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2551,7 +2726,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00555">555</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00680">680</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2567,7 +2742,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00540">540</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00665">665</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2583,7 +2758,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00523">523</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00648">648</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2599,7 +2774,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00294">294</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00419">419</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2619,7 +2794,295 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00511">511</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00636">636</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="aff44ca76156e6010520f4d231fbf7109" name="aff44ca76156e6010520f4d231fbf7109"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aff44ca76156e6010520f4d231fbf7109">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_BLOCK_DURATION_MS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_BLOCK_DURATION_MS&#160;&#160;&#160;60000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00321">321</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a7883d7f2995a8046776d818de6dbaa2e" name="a7883d7f2995a8046776d818de6dbaa2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7883d7f2995a8046776d818de6dbaa2e">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_DEFER_SEC</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_DEFER_SEC&#160;&#160;&#160;5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00326">326</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="af02ac0a68cee3923b135a1e423622f61" name="af02ac0a68cee3923b135a1e423622f61"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af02ac0a68cee3923b135a1e423622f61">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_GLOBAL_PER_SEC</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_GLOBAL_PER_SEC&#160;&#160;&#160;1000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00306">306</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ac82e2e73ae29b0b0e8699d8b81bb29c3" name="ac82e2e73ae29b0b0e8699d8b81bb29c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac82e2e73ae29b0b0e8699d8b81bb29c3">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_MAX_BLACKLIST</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_MAX_BLACKLIST&#160;&#160;&#160;10000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00376">376</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a8c43db9a86f5f49f85c535b7e01a9cd2" name="a8c43db9a86f5f49f85c535b7e01a9cd2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c43db9a86f5f49f85c535b7e01a9cd2">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_MAX_PER_WINDOW</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_MAX_PER_WINDOW&#160;&#160;&#160;50</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00301">301</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a842d1a441b3a55a43f2066087ff6ff59" name="a842d1a441b3a55a43f2066087ff6ff59"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a842d1a441b3a55a43f2066087ff6ff59">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS&#160;&#160;&#160;100000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00366">366</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ac1a28d9573c05725ca3abb96239b83ee" name="ac1a28d9573c05725ca3abb96239b83ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1a28d9573c05725ca3abb96239b83ee">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_MAX_WHITELIST</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_MAX_WHITELIST&#160;&#160;&#160;1000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00371">371</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ae0b03e45dca47aec6f4203011b1161f3" name="ae0b03e45dca47aec6f4203011b1161f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae0b03e45dca47aec6f4203011b1161f3">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_MIN_SUCCESS_RATIO</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_MIN_SUCCESS_RATIO&#160;&#160;&#160;0.3f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00311">311</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a4122f191a253666fdb691929b3cd4173" name="a4122f191a253666fdb691929b3cd4173"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4122f191a253666fdb691929b3cd4173">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_PENALTY_ATTEMPT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_PENALTY_ATTEMPT&#160;&#160;&#160;0.02f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00351">351</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a4f01c6ca60bf199d42dde59f0159074c" name="a4f01c6ca60bf199d42dde59f0159074c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f01c6ca60bf199d42dde59f0159074c">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_PENALTY_FAILURE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_PENALTY_FAILURE&#160;&#160;&#160;0.05f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00356">356</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a9a0acbe7229a03abfe70205717d511c4" name="a9a0acbe7229a03abfe70205717d511c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a0acbe7229a03abfe70205717d511c4">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_REWARD_SUCCESS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_REWARD_SUCCESS&#160;&#160;&#160;0.05f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00361">361</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a9608aa5a6bbbe4cbc60c9442d094cfd0" name="a9608aa5a6bbbe4cbc60c9442d094cfd0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9608aa5a6bbbe4cbc60c9442d094cfd0">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_SCORE_BLOCK</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_SCORE_BLOCK&#160;&#160;&#160;0.2f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00341">341</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a67a51dcadef9eb934f3342e9e02f6fd5" name="a67a51dcadef9eb934f3342e9e02f6fd5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67a51dcadef9eb934f3342e9e02f6fd5">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_SCORE_CHALLENGE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_SCORE_CHALLENGE&#160;&#160;&#160;0.4f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00336">336</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a8b8d879d7477b5a59170487f2ef38cd0" name="a8b8d879d7477b5a59170487f2ef38cd0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b8d879d7477b5a59170487f2ef38cd0">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_SCORE_DECAY</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_SCORE_DECAY&#160;&#160;&#160;0.01f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00346">346</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a8a91a7da051b6462f126bc329f1e5cda" name="a8a91a7da051b6462f126bc329f1e5cda"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a91a7da051b6462f126bc329f1e5cda">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_SCORE_THROTTLE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_SCORE_THROTTLE&#160;&#160;&#160;0.7f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00331">331</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="aae5bbd0b37027680dfa2c0c58773fef6" name="aae5bbd0b37027680dfa2c0c58773fef6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae5bbd0b37027680dfa2c0c58773fef6">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_THROTTLE_DELAY_MS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_THROTTLE_DELAY_MS&#160;&#160;&#160;100</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00316">316</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ae062b2bac82d2ca78edc6658135b25a4" name="ae062b2bac82d2ca78edc6658135b25a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae062b2bac82d2ca78edc6658135b25a4">&#9670;&#160;</a></span>SOCKET_SYN_DEFAULT_WINDOW_MS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_DEFAULT_WINDOW_MS&#160;&#160;&#160;10000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00296">296</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ab0908a428243a18d0260754d417e023a" name="ab0908a428243a18d0260754d417e023a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0908a428243a18d0260754d417e023a">&#9670;&#160;</a></span>SOCKET_SYN_TRUSTED_SCORE_THRESHOLD</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_SYN_TRUSTED_SCORE_THRESHOLD&#160;&#160;&#160;0.9f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00381">381</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2635,7 +3098,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00584">584</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00709">709</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2651,7 +3114,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00582">582</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00707">707</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2667,7 +3130,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00583">583</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00708">708</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2683,7 +3146,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00581">581</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00706">706</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2699,7 +3162,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00218">218</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00234">234</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2715,7 +3178,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00228">228</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00244">244</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2731,7 +3194,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00223">223</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00239">239</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2751,7 +3214,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00512">512</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00637">637</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2767,7 +3230,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00515">515</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00640">640</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2787,7 +3250,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00675">675</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00836">836</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2807,7 +3270,27 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00677">677</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00838">838</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="abaa7560b3f05cac2ed3d0a2f245c8bdb" name="abaa7560b3f05cac2ed3d0a2f245c8bdb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abaa7560b3f05cac2ed3d0a2f245c8bdb">&#9670;&#160;</a></span>SOCKET_VALID_IP_STRING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_VALID_IP_STRING</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">ip</td><td>)</td>
+          <td>&#160;&#160;&#160;((ip) != NULL &amp;&amp; (ip)[0] != '\0')</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00842">842</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2827,7 +3310,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00679">679</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00840">840</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2847,7 +3330,92 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00674">674</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00835">835</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a56f6263f07f74e065a182e5508c00779" name="a56f6263f07f74e065a182e5508c00779"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a56f6263f07f74e065a182e5508c00779">&#9670;&#160;</a></span>SOCKET_VERSION</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_VERSION</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line">  ((<a class="code hl_define" href="SocketConfig_8h.html#a804342bb2c0ff468a794cefdbe784581">SOCKET_VERSION_MAJOR</a> * 10000) + (<a class="code hl_define" href="SocketConfig_8h.html#a5e8e7af9a925dfd168fd9d57d420b31e">SOCKET_VERSION_MINOR</a> * 100)              \</div>
+<div class="line">   + <a class="code hl_define" href="SocketConfig_8h.html#ae9e9c414384981ffd1cb1f4ce1242c18">SOCKET_VERSION_PATCH</a>)</div>
+<div class="ttc" id="aSocketConfig_8h_html_a5e8e7af9a925dfd168fd9d57d420b31e"><div class="ttname"><a href="SocketConfig_8h.html#a5e8e7af9a925dfd168fd9d57d420b31e">SOCKET_VERSION_MINOR</a></div><div class="ttdeci">#define SOCKET_VERSION_MINOR</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l00033">SocketConfig.h:33</a></div></div>
+<div class="ttc" id="aSocketConfig_8h_html_a804342bb2c0ff468a794cefdbe784581"><div class="ttname"><a href="SocketConfig_8h.html#a804342bb2c0ff468a794cefdbe784581">SOCKET_VERSION_MAJOR</a></div><div class="ttdeci">#define SOCKET_VERSION_MAJOR</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l00032">SocketConfig.h:32</a></div></div>
+<div class="ttc" id="aSocketConfig_8h_html_ae9e9c414384981ffd1cb1f4ce1242c18"><div class="ttname"><a href="SocketConfig_8h.html#ae9e9c414384981ffd1cb1f4ce1242c18">SOCKET_VERSION_PATCH</a></div><div class="ttdeci">#define SOCKET_VERSION_PATCH</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l00034">SocketConfig.h:34</a></div></div>
+</div><!-- fragment -->
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00039">39</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a804342bb2c0ff468a794cefdbe784581" name="a804342bb2c0ff468a794cefdbe784581"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a804342bb2c0ff468a794cefdbe784581">&#9670;&#160;</a></span>SOCKET_VERSION_MAJOR</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_VERSION_MAJOR&#160;&#160;&#160;0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00032">32</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a5e8e7af9a925dfd168fd9d57d420b31e" name="a5e8e7af9a925dfd168fd9d57d420b31e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e8e7af9a925dfd168fd9d57d420b31e">&#9670;&#160;</a></span>SOCKET_VERSION_MINOR</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_VERSION_MINOR&#160;&#160;&#160;1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00033">33</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ae9e9c414384981ffd1cb1f4ce1242c18" name="ae9e9c414384981ffd1cb1f4ce1242c18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9e9c414384981ffd1cb1f4ce1242c18">&#9670;&#160;</a></span>SOCKET_VERSION_PATCH</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_VERSION_PATCH&#160;&#160;&#160;0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00034">34</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ac86c0a6be253f84d0f811e4d522332b1" name="ac86c0a6be253f84d0f811e4d522332b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac86c0a6be253f84d0f811e4d522332b1">&#9670;&#160;</a></span>SOCKET_VERSION_STRING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_VERSION_STRING&#160;&#160;&#160;&quot;0.1.0&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00036">36</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2863,7 +3431,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00130">130</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00146">146</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2879,7 +3447,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00125">125</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00141">141</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2902,7 +3470,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
 </ul>
 <p>Prevents integer overflow when calculating buffer sizes. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00143">143</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00159">159</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2918,7 +3486,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00120">120</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00136">136</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2934,7 +3502,7 @@ General operation timeout in ms (0 = infinite) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00048">48</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00064">64</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>

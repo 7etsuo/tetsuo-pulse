@@ -113,7 +113,8 @@ $(document).ready(function(){initNavTree('SocketTLSContext_8h.html',''); initRes
   <div class="summary">
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">SocketTLSContext.h File Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -128,6 +129,13 @@ $(document).ready(function(){initNavTree('SocketTLSContext_8h.html',''); initRes
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="SocketTLSContext_8h__incl.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
+</div>
+</div><div class="textblock"><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-1-trigger" src="closed.png" alt="+"/> This graph shows which files directly or indirectly include this file:</div>
+<div id="dynsection-1-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-1-content" class="dyncontent" style="display:none;">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="SocketTLSContext_8h__dep__incl.svg" width="100%" height="437"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
 </div>
 <p><a href="SocketTLSContext_8h_source.html">Go to the source code of this file.</a></p>
@@ -216,12 +224,50 @@ Functions</h2></td></tr>
 <tr class="memitem:ae7d40e475eec529625a3d6ba74d23f4a" id="r_ae7d40e475eec529625a3d6ba74d23f4a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ae7d40e475eec529625a3d6ba74d23f4a">SocketTLSContext_enable_session_tickets</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const unsigned char *key, size_t key_len)</td></tr>
 <tr class="memdesc:ae7d40e475eec529625a3d6ba74d23f4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_enable_session_tickets - Enable stateless session resumption using tickets @ctx: The TLS context instance @key: Ticket encryption key material (SOCKET_TLS_TICKET_KEY_LEN bytes required) @key_len: Length of key (must be SOCKET_TLS_TICKET_KEY_LEN = 80 bytes)  <br /></td></tr>
 <tr class="separator:ae7d40e475eec529625a3d6ba74d23f4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34caeef50e78017625d2eb62142a7e45" id="r_a34caeef50e78017625d2eb62142a7e45"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a34caeef50e78017625d2eb62142a7e45">SocketTLSContext_add_pin</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const unsigned char *sha256_hash)</td></tr>
+<tr class="memdesc:a34caeef50e78017625d2eb62142a7e45"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_add_pin - Add SPKI SHA256 pin (binary format) @ctx: The TLS context instance @sha256_hash: 32-byte SHA256 hash of the SPKI DER encoding.  <br /></td></tr>
+<tr class="separator:a34caeef50e78017625d2eb62142a7e45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd50881da0db97098204ff6fa920bb26" id="r_afd50881da0db97098204ff6fa920bb26"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#afd50881da0db97098204ff6fa920bb26">SocketTLSContext_add_pin_hex</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *hex_hash)</td></tr>
+<tr class="memdesc:afd50881da0db97098204ff6fa920bb26"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_add_pin_hex - Add SPKI SHA256 pin (hex string) @ctx: The TLS context instance @hex_hash: 64-character hex string (optionally prefixed with "sha256//")  <br /></td></tr>
+<tr class="separator:afd50881da0db97098204ff6fa920bb26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa535f69cf93b2f0dec403e71336b0682" id="r_aa535f69cf93b2f0dec403e71336b0682"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#aa535f69cf93b2f0dec403e71336b0682">SocketTLSContext_add_pin_from_cert</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *cert_file)</td></tr>
+<tr class="memdesc:aa535f69cf93b2f0dec403e71336b0682"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_add_pin_from_cert - Extract and add pin from certificate @ctx: The TLS context instance @cert_file: Path to PEM-encoded certificate file.  <br /></td></tr>
+<tr class="separator:aa535f69cf93b2f0dec403e71336b0682"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa8e82b71c4a6b575b6ac8de258e56361" id="r_aa8e82b71c4a6b575b6ac8de258e56361"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#aa8e82b71c4a6b575b6ac8de258e56361">SocketTLSContext_add_pin_from_x509</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, X509 *cert)</td></tr>
+<tr class="memdesc:aa8e82b71c4a6b575b6ac8de258e56361"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_add_pin_from_x509 - Add pin from X509 certificate object @ctx: The TLS context instance @cert: OpenSSL X509 certificate object.  <br /></td></tr>
+<tr class="separator:aa8e82b71c4a6b575b6ac8de258e56361"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae201aacce977d32ab0187dd8b97d6c9a" id="r_ae201aacce977d32ab0187dd8b97d6c9a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ae201aacce977d32ab0187dd8b97d6c9a">SocketTLSContext_clear_pins</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
+<tr class="memdesc:ae201aacce977d32ab0187dd8b97d6c9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_clear_pins - Remove all certificate pins @ctx: The TLS context instance.  <br /></td></tr>
+<tr class="separator:ae201aacce977d32ab0187dd8b97d6c9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a972b0da962c5515936444b6921182d" id="r_a8a972b0da962c5515936444b6921182d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a8a972b0da962c5515936444b6921182d">SocketTLSContext_set_pin_enforcement</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, int enforce)</td></tr>
+<tr class="memdesc:a8a972b0da962c5515936444b6921182d"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_pin_enforcement - Set pin enforcement mode @ctx: The TLS context instance @enforce: 1 = strict (fail on mismatch), 0 = warn only.  <br /></td></tr>
+<tr class="separator:a8a972b0da962c5515936444b6921182d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d03fb564c11628d54e76a1c177b8494" id="r_a9d03fb564c11628d54e76a1c177b8494"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a9d03fb564c11628d54e76a1c177b8494">SocketTLSContext_get_pin_enforcement</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
+<tr class="memdesc:a9d03fb564c11628d54e76a1c177b8494"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_get_pin_enforcement - Get current enforcement mode @ctx: The TLS context instance.  <br /></td></tr>
+<tr class="separator:a9d03fb564c11628d54e76a1c177b8494"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec2e531425cc03bff359517f60aa474c" id="r_aec2e531425cc03bff359517f60aa474c"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#aec2e531425cc03bff359517f60aa474c">SocketTLSContext_get_pin_count</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
+<tr class="memdesc:aec2e531425cc03bff359517f60aa474c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_get_pin_count - Get number of configured pins @ctx: The TLS context instance.  <br /></td></tr>
+<tr class="separator:aec2e531425cc03bff359517f60aa474c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea37c149f7babbf14c28caf0ffef97cf" id="r_aea37c149f7babbf14c28caf0ffef97cf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#aea37c149f7babbf14c28caf0ffef97cf">SocketTLSContext_has_pins</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
+<tr class="memdesc:aea37c149f7babbf14c28caf0ffef97cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_has_pins - Check if any pins are configured @ctx: The TLS context instance.  <br /></td></tr>
+<tr class="separator:aea37c149f7babbf14c28caf0ffef97cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac051204c676250b114e00af223055686" id="r_ac051204c676250b114e00af223055686"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ac051204c676250b114e00af223055686">SocketTLSContext_verify_pin</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const unsigned char *sha256_hash)</td></tr>
+<tr class="memdesc:ac051204c676250b114e00af223055686"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_verify_pin - Check if hash matches any pin @ctx: The TLS context instance @sha256_hash: 32-byte hash to check.  <br /></td></tr>
+<tr class="separator:ac051204c676250b114e00af223055686"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa2f2365d0ee66069b1e935fe72ad26f" id="r_aaa2f2365d0ee66069b1e935fe72ad26f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#aaa2f2365d0ee66069b1e935fe72ad26f">SocketTLSContext_verify_cert_pin</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, X509 *cert)</td></tr>
+<tr class="memdesc:aaa2f2365d0ee66069b1e935fe72ad26f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_verify_cert_pin - Check if certificate matches any pin @ctx: The TLS context instance @cert: X509 certificate to verify.  <br /></td></tr>
+<tr class="separator:aaa2f2365d0ee66069b1e935fe72ad26f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6e8aae1b6b1182d3f83b8673fdbbe945" id="r_a6e8aae1b6b1182d3f83b8673fdbbe945"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a6e8aae1b6b1182d3f83b8673fdbbe945">SocketTLSContext_get_ssl_ctx</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
 <tr class="memdesc:a6e8aae1b6b1182d3f83b8673fdbbe945"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_get_ssl_ctx - Get underlying OpenSSL SSL_CTX* @ctx: The TLS context instance.  <br /></td></tr>
 <tr class="separator:a6e8aae1b6b1182d3f83b8673fdbbe945"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39bd71708494c1c833d3064c3a70f8ad" id="r_a39bd71708494c1c833d3064c3a70f8ad"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a39bd71708494c1c833d3064c3a70f8ad">SocketTLSContext_is_server</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
 <tr class="memdesc:a39bd71708494c1c833d3064c3a70f8ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_is_server - Check if context is server-mode @ctx: The TLS context instance.  <br /></td></tr>
 <tr class="separator:a39bd71708494c1c833d3064c3a70f8ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a445003fff70029dd096df971801be0e4" id="r_a445003fff70029dd096df971801be0e4"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a445003fff70029dd096df971801be0e4">SocketTLS_PinVerifyFailed</a></td></tr>
+<tr class="separator:a445003fff70029dd096df971801be0e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
@@ -391,6 +437,196 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a34caeef50e78017625d2eb62142a7e45" name="a34caeef50e78017625d2eb62142a7e45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34caeef50e78017625d2eb62142a7e45">&#9670;&#160;</a></span>SocketTLSContext_add_pin()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketTLSContext_add_pin </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td>
+          <td class="paramname"><em>ctx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const unsigned char *&#160;</td>
+          <td class="paramname"><em>sha256_hash</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLSContext_add_pin - Add SPKI SHA256 pin (binary format) @ctx: The TLS context instance @sha256_hash: 32-byte SHA256 hash of the SPKI DER encoding. </p>
+<p>Adds a certificate pin using raw binary hash. The hash is copied to context-owned storage. Duplicate pins are silently ignored.</p>
+<p>Returns: void Raises: SocketTLS_Failed if hash is NULL or max pins exceeded Thread-safe: No - modifies shared context </p>
+
+</div>
+</div>
+<a id="aa535f69cf93b2f0dec403e71336b0682" name="aa535f69cf93b2f0dec403e71336b0682"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa535f69cf93b2f0dec403e71336b0682">&#9670;&#160;</a></span>SocketTLSContext_add_pin_from_cert()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketTLSContext_add_pin_from_cert </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td>
+          <td class="paramname"><em>ctx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>cert_file</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLSContext_add_pin_from_cert - Extract and add pin from certificate @ctx: The TLS context instance @cert_file: Path to PEM-encoded certificate file. </p>
+<p>Loads certificate, extracts SPKI, computes SHA256, and adds as pin. Useful for pinning leaf certificates or intermediate CAs.</p>
+<p>Returns: void Raises: SocketTLS_Failed if file invalid, parse error, or max pins exceeded Thread-safe: No - modifies shared context </p>
+
+</div>
+</div>
+<a id="aa8e82b71c4a6b575b6ac8de258e56361" name="aa8e82b71c4a6b575b6ac8de258e56361"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa8e82b71c4a6b575b6ac8de258e56361">&#9670;&#160;</a></span>SocketTLSContext_add_pin_from_x509()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketTLSContext_add_pin_from_x509 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td>
+          <td class="paramname"><em>ctx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">X509 *&#160;</td>
+          <td class="paramname"><em>cert</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLSContext_add_pin_from_x509 - Add pin from X509 certificate object @ctx: The TLS context instance @cert: OpenSSL X509 certificate object. </p>
+<p>Extracts SPKI hash from provided X509 and adds as pin. The certificate is not freed by this function; caller retains ownership.</p>
+<p>Returns: void Raises: SocketTLS_Failed if cert NULL, extraction fails, or max exceeded Thread-safe: No - modifies shared context </p>
+
+</div>
+</div>
+<a id="afd50881da0db97098204ff6fa920bb26" name="afd50881da0db97098204ff6fa920bb26"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd50881da0db97098204ff6fa920bb26">&#9670;&#160;</a></span>SocketTLSContext_add_pin_hex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketTLSContext_add_pin_hex </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td>
+          <td class="paramname"><em>ctx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>hex_hash</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLSContext_add_pin_hex - Add SPKI SHA256 pin (hex string) @ctx: The TLS context instance @hex_hash: 64-character hex string (optionally prefixed with "sha256//") </p>
+<p>Adds a certificate pin using hex-encoded hash. Accepts both uppercase and lowercase hex. Optional "sha256//" prefix is stripped for HPKP compatibility.</p>
+<p>Returns: void Raises: SocketTLS_Failed if format invalid or max pins exceeded Thread-safe: No - modifies shared context </p>
+
+</div>
+</div>
+<a id="ae201aacce977d32ab0187dd8b97d6c9a" name="ae201aacce977d32ab0187dd8b97d6c9a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae201aacce977d32ab0187dd8b97d6c9a">&#9670;&#160;</a></span>SocketTLSContext_clear_pins()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketTLSContext_clear_pins </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td>
+          <td class="paramname"><em>ctx</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLSContext_clear_pins - Remove all certificate pins @ctx: The TLS context instance. </p>
+<p>Securely clears all configured pins. Memory is zeroed before release. Pin enforcement mode is preserved.</p>
+<p>Returns: void Raises: None Thread-safe: No - modifies shared context </p>
+
+</div>
+</div>
 <a id="a6f0a68e802e789df40eaa28cb641a422" name="a6f0a68e802e789df40eaa28cb641a422"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6f0a68e802e789df40eaa28cb641a422">&#9670;&#160;</a></span>SocketTLSContext_enable_session_cache()</h2>
 
@@ -513,6 +749,8 @@ Functions</h2></td></tr>
 <p>Frees the SSL_CTX, Arena (internal allocations), SNI arrays/certs/keys, ALPN data. Caller must not use context after free. Reverse of new_server/client.</p>
 <p>Returns: void Raises: None (safe for NULL) Thread-safe: Yes (but avoid concurrent use) </p>
 
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+
 </div>
 </div>
 <a id="a2093721c235cb8ebc83e90606abdcb33" name="a2093721c235cb8ebc83e90606abdcb33"></a>
@@ -567,6 +805,64 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="aec2e531425cc03bff359517f60aa474c" name="aec2e531425cc03bff359517f60aa474c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec2e531425cc03bff359517f60aa474c">&#9670;&#160;</a></span>SocketTLSContext_get_pin_count()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketTLSContext_get_pin_count </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td>
+          <td class="paramname"><em>ctx</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLSContext_get_pin_count - Get number of configured pins @ctx: The TLS context instance. </p>
+<p>Returns: Number of pins currently configured Raises: None Thread-safe: Yes (read-only) </p>
+
+</div>
+</div>
+<a id="a9d03fb564c11628d54e76a1c177b8494" name="a9d03fb564c11628d54e76a1c177b8494"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9d03fb564c11628d54e76a1c177b8494">&#9670;&#160;</a></span>SocketTLSContext_get_pin_enforcement()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketTLSContext_get_pin_enforcement </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td>
+          <td class="paramname"><em>ctx</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLSContext_get_pin_enforcement - Get current enforcement mode @ctx: The TLS context instance. </p>
+<p>Returns: 1 if strict enforcement, 0 if warn-only Raises: None Thread-safe: Yes (read-only) </p>
+
+</div>
+</div>
 <a id="a6e8aae1b6b1182d3f83b8673fdbbe945" name="a6e8aae1b6b1182d3f83b8673fdbbe945"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6e8aae1b6b1182d3f83b8673fdbbe945">&#9670;&#160;</a></span>SocketTLSContext_get_ssl_ctx()</h2>
 
@@ -594,6 +890,35 @@ Functions</h2></td></tr>
 <p>SocketTLSContext_get_ssl_ctx - Get underlying OpenSSL SSL_CTX* @ctx: The TLS context instance. </p>
 <p>Internal access to raw SSL_CTX for <a class="el" href="SocketTLS_8h.html#ab9a8fb788aa1f0d21b5773bc43a48d6f" title="SocketTLS_enable - Enable TLS on a socket using the provided context @socket: The socket instance to ...">SocketTLS_enable()</a> etc.</p>
 <p>Returns: void* to SSL_CTX (cast as needed) Raises: None Thread-safe: Yes </p>
+
+</div>
+</div>
+<a id="aea37c149f7babbf14c28caf0ffef97cf" name="aea37c149f7babbf14c28caf0ffef97cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea37c149f7babbf14c28caf0ffef97cf">&#9670;&#160;</a></span>SocketTLSContext_has_pins()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketTLSContext_has_pins </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td>
+          <td class="paramname"><em>ctx</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLSContext_has_pins - Check if any pins are configured @ctx: The TLS context instance. </p>
+<p>Returns: 1 if pins configured, 0 if none Raises: None Thread-safe: Yes (read-only) </p>
 
 </div>
 </div>
@@ -780,6 +1105,8 @@ Functions</h2></td></tr>
 <p>SocketTLSContext_new_client - Create client TLS context @ca_file: Optional path to CA file/directory for server verification (NULL to disable) </p>
 <p>Creates a client-side TLS context with TLS1.3-only and modern ciphers. Loads CA if provided and enables peer verification.</p>
 <p>Returns: New opaque SocketTLSContext_T instance Raises: SocketTLS_Failed on OpenSSL errors or invalid CA Thread-safe: Yes </p>
+
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
 </div>
 </div>
@@ -1191,6 +1518,49 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a8a972b0da962c5515936444b6921182d" name="a8a972b0da962c5515936444b6921182d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a972b0da962c5515936444b6921182d">&#9670;&#160;</a></span>SocketTLSContext_set_pin_enforcement()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketTLSContext_set_pin_enforcement </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td>
+          <td class="paramname"><em>ctx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>enforce</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLSContext_set_pin_enforcement - Set pin enforcement mode @ctx: The TLS context instance @enforce: 1 = strict (fail on mismatch), 0 = warn only. </p>
+<p>Controls behavior when no pin matches during verification:</p><ul>
+<li>enforce=1 (default): Handshake fails with X509_V_ERR_APPLICATION_VERIFICATION</li>
+<li>enforce=0: Verification continues, mismatch is logged</li>
+</ul>
+<p>Returns: void Raises: None Thread-safe: No - modifies shared context </p>
+
+</div>
+</div>
 <a id="a51fa29a23c87a8f2a9c7b71b6731fb50" name="a51fa29a23c87a8f2a9c7b71b6731fb50"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a51fa29a23c87a8f2a9c7b71b6731fb50">&#9670;&#160;</a></span>SocketTLSContext_set_session_cache_size()</h2>
 
@@ -1310,6 +1680,109 @@ Functions</h2></td></tr>
 <p>SocketTLSContext_set_verify_mode - Set certificate verification policy @ctx: The TLS context instance @mode: Verification mode enum (TLS_VERIFY_NONE, PEER, etc.) </p>
 <p>Configures peer cert verification behavior, mapping to OpenSSL SSL_VERIFY_* flags.</p>
 <p>Returns: void Raises: SocketTLS_Failed on invalid mode Thread-safe: No </p>
+
+</div>
+</div>
+<a id="aaa2f2365d0ee66069b1e935fe72ad26f" name="aaa2f2365d0ee66069b1e935fe72ad26f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa2f2365d0ee66069b1e935fe72ad26f">&#9670;&#160;</a></span>SocketTLSContext_verify_cert_pin()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketTLSContext_verify_cert_pin </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td>
+          <td class="paramname"><em>ctx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">X509 *&#160;</td>
+          <td class="paramname"><em>cert</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLSContext_verify_cert_pin - Check if certificate matches any pin @ctx: The TLS context instance @cert: X509 certificate to verify. </p>
+<p>Extracts SPKI hash from certificate and checks against pins. Useful for manual chain verification.</p>
+<p>Returns: 1 if match found, 0 if no match Raises: None Thread-safe: Yes (read-only) </p>
+
+</div>
+</div>
+<a id="ac051204c676250b114e00af223055686" name="ac051204c676250b114e00af223055686"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac051204c676250b114e00af223055686">&#9670;&#160;</a></span>SocketTLSContext_verify_pin()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketTLSContext_verify_pin </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td>
+          <td class="paramname"><em>ctx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const unsigned char *&#160;</td>
+          <td class="paramname"><em>sha256_hash</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLSContext_verify_pin - Check if hash matches any pin @ctx: The TLS context instance @sha256_hash: 32-byte hash to check. </p>
+<p>Manual verification without full handshake. Useful for testing or custom verification logic.</p>
+<p>Returns: 1 if match found, 0 if no match Raises: None Thread-safe: Yes (read-only) </p>
+
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
+<a id="a445003fff70029dd096df971801be0e4" name="a445003fff70029dd096df971801be0e4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a445003fff70029dd096df971801be0e4">&#9670;&#160;</a></span>SocketTLS_PinVerifyFailed</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketTLS_PinVerifyFailed</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

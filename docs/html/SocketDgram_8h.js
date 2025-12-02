@@ -4,6 +4,7 @@ var SocketDgram_8h =
     [ "SocketDgram_T", "SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f", null ],
     [ "SocketDgram_bind", "SocketDgram_8h.html#a0c81d9ef1d90e7ab34dd7286f13878ee", null ],
     [ "SocketDgram_connect", "SocketDgram_8h.html#abcb18c16142d3b5ef49bee08a96e15fa", null ],
+    [ "SocketDgram_debug_live_count", "SocketDgram_8h.html#a0e8f0a454d58b2ff87878e39960c9187", null ],
     [ "SocketDgram_fd", "SocketDgram_8h.html#a54e91e6824df0c114a5e6a4d79e5c6fb", null ],
     [ "SocketDgram_free", "SocketDgram_8h.html#a020169c79640786afa4c36fd1dc965e4", null ],
     [ "SocketDgram_getbroadcast", "SocketDgram_8h.html#ae6c2bde38c3a7addb7cfffe98a253f60", null ],

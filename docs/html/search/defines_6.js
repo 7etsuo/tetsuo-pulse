@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['poll_5ffd_5fmap_5fexpand_5fincrement_0',['POLL_FD_MAP_EXPAND_INCREMENT',['../SocketConfig_8h.html#a834e79d67b92d737d55e4ba2b0684025',1,'SocketConfig.h']]],
-  ['poll_5finitial_5ffd_5fmap_5fsize_1',['POLL_INITIAL_FD_MAP_SIZE',['../SocketConfig_8h.html#a211a6387523fa6487af971831aabf461',1,'SocketConfig.h']]],
-  ['poll_5finitial_5ffds_2',['POLL_INITIAL_FDS',['../SocketConfig_8h.html#a673275383493d8cff8bc582fef311e42',1,'SocketConfig.h']]]
+  ['max_5fclients_0',['MAX_CLIENTS',['../websocket__server_8c.html#a0a8f91f93d75a07f0ae45077db45b3eb',1,'websocket_server.c']]],
+  ['msg_5fnosignal_1',['MSG_NOSIGNAL',['../SocketConfig_8h.html#a9f55d0e90dc8cc6b2287312435cdde48',1,'SocketConfig.h']]]
 ];
