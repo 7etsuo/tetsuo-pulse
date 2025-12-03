@@ -201,6 +201,11 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
 
   SocketHTTPClient_T c = *client;
 
+  /* CRITICAL: Save arena pointer BEFORE any cleanup that might free client
+   * structure. The client is allocated from its own arena, so we must save
+   * the arena pointer before disposing it. */
+  Arena_T arena = c->arena;
+
   /* Free connection pool */
   if (c->pool != NULL)
     {
@@ -220,10 +225,10 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
   /* Free default TLS context if we created it */
   /* Note: TLS context cleanup would go here if we owned it */
 
-  /* Dispose arena (frees everything) */
-  if (c->arena != NULL)
+  /* Dispose arena (frees everything including client structure itself) */
+  if (arena != NULL)
     {
-      Arena_dispose (&c->arena);
+      Arena_dispose (&arena);
     }
 
   *client = NULL;
@@ -272,20 +277,52 @@ execute_http1_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
     }
 
   /* Send request headers */
-  ssize_t sent = Socket_send (conn->proto.h1.socket, buf, (size_t)n);
-  if (sent < 0 || (size_t)sent != (size_t)n)
+  ssize_t sent = -1;
+  TRY
+    {
+      sent = Socket_send (conn->proto.h1.socket, buf, (size_t)n);
+    }
+  EXCEPT (Socket_Closed)
+    {
+      /* Connection was closed by server - can happen on keep-alive reuse */
+      conn->closed = 1;
+      HTTPCLIENT_ERROR_MSG ("Connection closed while sending request headers");
+      return -1;
+    }
+  EXCEPT (Socket_Failed)
     {
       HTTPCLIENT_ERROR_FMT ("Failed to send request headers");
+      return -1;
+    }
+  END_TRY;
+  if (sent < 0 || (size_t)sent != (size_t)n)
+    {
+      HTTPCLIENT_ERROR_FMT ("Failed to send request headers (partial write)");
       return -1;
     }
 
   /* Send body if present */
   if (req->body != NULL && req->body_len > 0)
     {
-      sent = Socket_send (conn->proto.h1.socket, req->body, req->body_len);
-      if (sent < 0 || (size_t)sent != req->body_len)
+      TRY
+        {
+          sent = Socket_send (conn->proto.h1.socket, req->body, req->body_len);
+        }
+      EXCEPT (Socket_Closed)
+        {
+          conn->closed = 1;
+          HTTPCLIENT_ERROR_MSG ("Connection closed while sending request body");
+          return -1;
+        }
+      EXCEPT (Socket_Failed)
         {
           HTTPCLIENT_ERROR_FMT ("Failed to send request body");
+          return -1;
+        }
+      END_TRY;
+      if (sent < 0 || (size_t)sent != req->body_len)
+        {
+          HTTPCLIENT_ERROR_FMT ("Failed to send request body (partial write)");
           return -1;
         }
     }
@@ -302,21 +339,29 @@ execute_http1_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
   SocketHTTP1_Parser_reset (conn->proto.h1.parser);
 
   /* Receive and parse response */
-  size_t total_body = 0;
-  char *body_buf = NULL;
-  size_t body_capacity = 0;
-  const SocketHTTP_Response *parsed_resp = NULL;
+  volatile size_t total_body = 0;
+  char *volatile body_buf = NULL;
+  volatile size_t body_capacity = 0;
+  const SocketHTTP_Response *volatile parsed_resp = NULL;
+  volatile int recv_closed = 0;
 
   while (1)
     {
-      n = Socket_recv (conn->proto.h1.socket, buf, sizeof (buf));
-      if (n <= 0)
+      TRY
         {
-          if (n == 0)
-            {
-              /* Connection closed */
-              conn->closed = 1;
-            }
+          n = Socket_recv (conn->proto.h1.socket, buf, sizeof (buf));
+        }
+      EXCEPT (Socket_Closed)
+        {
+          /* Connection closed by peer */
+          recv_closed = 1;
+          n = 0;
+        }
+      END_TRY;
+      
+      if (recv_closed || n <= 0)
+        {
+          conn->closed = 1;
           break;
         }
 
@@ -346,13 +391,19 @@ execute_http1_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
         {
           char body_chunk[4096];
           size_t body_consumed, body_written;
+          size_t remaining = (size_t)n - consumed;
 
-          while ((result = SocketHTTP1_Parser_read_body (
-                      conn->proto.h1.parser, buf + consumed, (size_t)n - consumed,
-                      &body_consumed, body_chunk, sizeof (body_chunk),
-                      &body_written))
-                 == HTTP1_OK)
+          while (remaining > 0)
             {
+              result = SocketHTTP1_Parser_read_body (
+                      conn->proto.h1.parser, buf + consumed, remaining,
+                      &body_consumed, body_chunk, sizeof (body_chunk),
+                      &body_written);
+              
+              /* HTTP1_INCOMPLETE (1) means more data needed, keep going */
+              if (result != HTTP1_OK && result != HTTP1_INCOMPLETE)
+                break;
+              
               if (body_written > 0)
                 {
                   /* Grow body buffer if needed */
@@ -378,8 +429,7 @@ execute_http1_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
                   total_body += body_written;
                 }
               consumed += body_consumed;
-              if (consumed >= (size_t)n)
-                break;
+              remaining -= body_consumed;
             }
         }
 

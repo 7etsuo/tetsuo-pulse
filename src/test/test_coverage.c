@@ -27,12 +27,13 @@
 #include "poll/SocketPoll.h"
 
 #include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
 #include <signal.h>
+#include <stdatomic.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 
 #ifdef SOCKET_HAS_TLS
@@ -1084,8 +1085,8 @@ TEST (cov_arena_calloc)
  * DNS Edge Cases
  * ============================================================================ */
 
-static volatile int dns_callback_called = 0;
-static volatile int dns_callback_error = 0;
+static atomic_int dns_callback_called = 0;
+static atomic_int dns_callback_error = 0;
 
 static void
 dns_test_callback (SocketDNS_Request_T req, struct addrinfo *result, int error,

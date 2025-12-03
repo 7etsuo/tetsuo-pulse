@@ -1,49 +1,85 @@
 # Socket Library
 
-High-performance, exception-driven socket toolkit for POSIX systems. Provides a clean, modern API for TCP, UDP, and Unix domain sockets with comprehensive error handling, zero-copy I/O, cross-platform event polling, and optional TLS 1.3 support.
+High-performance, exception-driven socket toolkit for POSIX systems. Provides a clean, modern C API for TCP, UDP, Unix domain sockets, HTTP/1.1, HTTP/2, WebSocket, and TLS/DTLS with comprehensive error handling, zero-copy I/O, and cross-platform event polling.
 
 ## Features
 
-### Core Capabilities
+### Core Networking
 - **TCP Stream Sockets** - Full-featured TCP client/server with scatter/gather I/O
 - **UDP Datagram Sockets** - Connectionless and connected modes with multicast/broadcast
-- **Unix Domain Sockets** - IPC sockets with peer credential support (Linux)
-- **TLS/SSL Support** - TLS 1.3-only by default with SNI, ALPN, session resumption, CRL/OCSP
-- **Exception-Based Error Handling** - Clean error propagation with `TRY/EXCEPT/FINALLY`
-- **Asynchronous DNS Resolution** - Non-blocking DNS with thread pool and timeouts
-- **Cross-Platform Event Polling** - epoll (Linux), kqueue (BSD/macOS), poll fallback
-- **Connection Pooling** - O(1) lookup, rate limiting, auto-reconnection, batch accept
-- **Zero-Copy I/O** - Platform-optimized `sendfile()` and scatter/gather I/O
-- **Happy Eyeballs (RFC 8305)** - Fast dual-stack IPv4/IPv6 connection racing
-- **Automatic Reconnection** - Exponential backoff with circuit breaker pattern
-- **Async I/O** - io_uring (Linux 5.1+), kqueue AIO (BSD/macOS), edge-triggered fallback
+- **Unix Domain Sockets** - IPC sockets with peer credential support and file descriptor passing
+- **TLS 1.3 Support** - Modern TLS with SNI, ALPN, session resumption, CRL/OCSP, certificate pinning
+- **DTLS 1.2+ Support** - Secure UDP with cookie exchange for DoS protection
 
-### Production-Ready Features
-- **Thread-safe error reporting** with thread-local buffers
+### HTTP Protocol Stack
+- **HTTP/1.1** - Table-driven DFA parser (RFC 9112), chunked encoding, request smuggling prevention
+- **HTTP/2** - Binary framing, stream multiplexing, flow control, server push (RFC 9113)
+- **HPACK** - Header compression with static/dynamic tables, Huffman coding (RFC 7541)
+- **HTTP Client** - Connection pooling, authentication (Basic/Digest/Bearer), cookies (RFC 6265)
+- **HTTP Server** - Event-driven request handling, keep-alive, graceful shutdown
+
+### WebSocket
+- **RFC 6455 Compliant** - Full WebSocket protocol implementation
+- **permessage-deflate** - Compression extension (RFC 7692) via zlib
+- **Incremental UTF-8** - DFA-based text frame validation
+- **Auto-Ping/Pong** - Configurable heartbeat with timer integration
+
+### Proxy Tunneling
+- **HTTP CONNECT** - Proxy tunneling with Basic authentication
+- **SOCKS4/4a** - Legacy SOCKS support
+- **SOCKS5** - RFC 1928/1929 with username/password authentication
+- **Async API** - Non-blocking proxy connection with state machine
+
+### Event System
+- **Cross-Platform Polling** - epoll (Linux), kqueue (BSD/macOS), poll fallback
+- **Edge-Triggered Mode** - High-performance event notification
+- **Async I/O** - io_uring (Linux 5.1+), kqueue AIO (BSD/macOS)
+- **Timers** - One-shot and repeating with O(log n) min-heap
+
+### Connection Management
+- **Connection Pooling** - O(1) lookup with hash tables, per-connection I/O buffers
+- **Happy Eyeballs** - RFC 8305 dual-stack IPv4/IPv6 connection racing
+- **Auto-Reconnection** - Exponential backoff with circuit breaker pattern
+- **Graceful Shutdown** - Pool drain state machine with timeout guarantee
+
+### Security Hardening
+- **SYN Flood Protection** - Reputation scoring, throttling, kernel integration
+- **Per-IP Tracking** - Connection limits and rate limiting per client
+- **Rate Limiting** - Token bucket algorithm for connections and bandwidth
+- **Request Smuggling Prevention** - Strict HTTP parsing with RFC compliance
+
+### Infrastructure
+- **Exception-Based Errors** - Clean error propagation with `TRY/EXCEPT/FINALLY`
+- **Arena Memory Management** - Efficient allocation with overflow protection
+- **Asynchronous DNS** - Non-blocking resolution with thread pool and timeouts
+- **Zero-Copy I/O** - Platform-optimized `sendfile()` and scatter/gather I/O
 - **Observability** - Pluggable logging, metrics collection, event dispatching
-- **Rate limiting** - Token bucket algorithm for connections and bandwidth
-- **Timers** - One-shot and repeating timers with O(log n) min-heap
-- **Per-socket bandwidth throttling** with event loop integration
-- **Configurable timeouts** - Global defaults and per-socket overrides
-- **Memory-safe arena allocation** with overflow protection
-- **SIGPIPE handling** - Automatic (no application code required)
+- **Cryptographic Utilities** - SHA-1/256, HMAC, Base64, secure random
 
 ## Platform Requirements
 
 - **POSIX-compliant system** (Linux, BSD, macOS)
-- **IPv6 support** in kernel (for dual-stack sockets)
-- **POSIX threads** (pthread) for thread-safe operations
 - **C11 compiler** with GNU extensions
+- **POSIX threads** (pthread) for thread-safe operations
+- **IPv6 support** in kernel (for dual-stack sockets)
 - **NOT portable to Windows** without Winsock adaptation layer
 
 ### Platform-Specific Features
+
 | Feature | Linux | BSD/macOS | Fallback |
 |---------|-------|-----------|----------|
 | Event polling | epoll | kqueue | poll(2) |
 | Async I/O | io_uring (5.1+) | kqueue AIO | edge-triggered |
 | TCP Fast Open | 3.7+ | 10.0+/10.11+ | disabled |
 | Congestion control | configurable | - | - |
-| Peer credentials | SO_PEERCRED | - | - |
+| Peer credentials | SO_PEERCRED | LOCAL_PEERCRED | - |
+| SYN protection | TCP_DEFER_ACCEPT | SO_ACCEPTFILTER | userspace |
+
+### TLS/DTLS Requirements
+
+- **OpenSSL 1.1.1+** or **LibreSSL** with TLS 1.3 support
+- TLS 1.3-only by default (configurable)
+- DTLS 1.2 minimum for secure UDP
 
 ## Quick Start
 
@@ -55,7 +91,7 @@ cmake -S . -B build
 cmake --build build -j
 
 # Run tests
-cmake --build build --target test
+cd build && ctest --output-on-failure
 
 # Build with TLS support (auto-detects OpenSSL/LibreSSL)
 cmake -S . -B build -DENABLE_TLS=ON
@@ -63,8 +99,8 @@ cmake -S . -B build -DENABLE_TLS=ON
 # Build with sanitizers for debugging
 cmake -S . -B build -DENABLE_SANITIZERS=ON
 
-# Build with code coverage
-cmake -S . -B build -DENABLE_COVERAGE=ON
+# Build with fuzzing support (requires Clang)
+cmake -S . -B build -DENABLE_FUZZING=ON -DCMAKE_C_COMPILER=clang
 ```
 
 ### Basic TCP Server
@@ -200,6 +236,231 @@ SocketPoll_free(&poll);
 Socket_free(&server);
 ```
 
+### HTTP Client
+
+```c
+#include "http/SocketHTTPClient.h"
+
+/* Simple GET request */
+SocketHTTPClient_T client = SocketHTTPClient_new(NULL);
+SocketHTTPClient_Response_T resp = SocketHTTPClient_get(client, "https://example.com/api");
+
+printf("Status: %d\n", SocketHTTPClient_Response_status(resp));
+printf("Body: %.*s\n", 
+       (int)SocketHTTPClient_Response_body_len(resp),
+       SocketHTTPClient_Response_body(resp));
+
+SocketHTTPClient_Response_free(&resp);
+
+/* Request builder pattern */
+SocketHTTPClient_Request_T req = SocketHTTPClient_Request_new(client, "POST", "https://api.example.com/data");
+SocketHTTPClient_Request_header(req, "Content-Type", "application/json");
+SocketHTTPClient_Request_body(req, "{\"key\": \"value\"}", 16);
+SocketHTTPClient_Request_timeout(req, 30000);
+
+resp = SocketHTTPClient_Request_execute(req);
+SocketHTTPClient_Request_free(&req);
+SocketHTTPClient_Response_free(&resp);
+
+/* Authentication */
+SocketHTTPClient_setauth(client, HTTPCLIENT_AUTH_BASIC, "user", "password");
+
+/* Cookie jar */
+SocketHTTPClient_CookieJar_T jar = SocketHTTPClient_CookieJar_new(NULL);
+SocketHTTPClient_set_cookie_jar(client, jar);
+
+SocketHTTPClient_free(&client);
+```
+
+### HTTP Server
+
+```c
+#include "http/SocketHTTPServer.h"
+
+void handle_request(SocketHTTPServer_Request_T req, SocketHTTPServer_Response_T resp, void *data)
+{
+    const char *method = SocketHTTPServer_Request_method(req);
+    const char *uri = SocketHTTPServer_Request_uri(req);
+    
+    if (strcmp(method, "GET") == 0 && strcmp(uri, "/") == 0) {
+        SocketHTTPServer_Response_status(resp, 200);
+        SocketHTTPServer_Response_header(resp, "Content-Type", "text/html");
+        SocketHTTPServer_Response_body(resp, "<h1>Hello World</h1>", 20);
+    } else {
+        SocketHTTPServer_Response_status(resp, 404);
+        SocketHTTPServer_Response_body(resp, "Not Found", 9);
+    }
+    
+    SocketHTTPServer_Response_send(resp);
+}
+
+SocketHTTPServer_Config config = HTTPSERVER_CONFIG_DEFAULTS;
+config.port = 8080;
+config.max_connections = 1000;
+
+SocketHTTPServer_T server = SocketHTTPServer_new(NULL, &config);
+SocketHTTPServer_set_handler(server, handle_request, NULL);
+SocketHTTPServer_start(server);
+
+/* Event loop */
+while (running) {
+    SocketHTTPServer_poll(server, 1000);
+}
+
+SocketHTTPServer_stop(server);
+SocketHTTPServer_free(&server);
+```
+
+### WebSocket Client
+
+```c
+#include "socket/SocketWS.h"
+
+Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+Socket_connect(sock, "echo.websocket.org", 80);
+
+SocketWS_Config ws_config = SOCKETWS_CONFIG_DEFAULTS;
+SocketWS_T ws = SocketWS_client_new(sock, "echo.websocket.org", "/", &ws_config);
+
+/* Perform handshake */
+TRY
+    SocketWS_handshake(ws);
+    
+    /* Send text message */
+    SocketWS_send_text(ws, "Hello, WebSocket!", 17);
+    
+    /* Receive message */
+    SocketWS_Message msg;
+    if (SocketWS_recv_message(ws, &msg) == WS_OK) {
+        printf("Received: %.*s\n", (int)msg.len, msg.data);
+        SocketWS_Message_free(&msg);
+    }
+    
+    /* Graceful close */
+    SocketWS_close(ws, WS_CLOSE_NORMAL, "Goodbye", 7);
+EXCEPT(SocketWS_Failed)
+    fprintf(stderr, "WebSocket error: %s\n", Socket_GetLastError());
+END_TRY;
+
+SocketWS_free(&ws);
+Socket_free(&sock);
+```
+
+### WebSocket Server
+
+```c
+#include "socket/SocketWS.h"
+#include "http/SocketHTTP1.h"
+
+/* Check if request is WebSocket upgrade */
+if (SocketWS_is_upgrade(headers)) {
+    SocketWS_Config ws_config = SOCKETWS_CONFIG_DEFAULTS;
+    SocketWS_T ws = SocketWS_server_accept(client_socket, headers, &ws_config);
+    
+    if (ws) {
+        /* WebSocket connection established */
+        while (SocketWS_state(ws) == WS_STATE_OPEN) {
+            SocketWS_Message msg;
+            int result = SocketWS_recv_message(ws, &msg);
+            
+            if (result == WS_OK) {
+                /* Echo back */
+                if (msg.opcode == WS_OPCODE_TEXT) {
+                    SocketWS_send_text(ws, msg.data, msg.len);
+                } else if (msg.opcode == WS_OPCODE_BINARY) {
+                    SocketWS_send_binary(ws, msg.data, msg.len);
+                }
+                SocketWS_Message_free(&msg);
+            }
+        }
+        SocketWS_free(&ws);
+    }
+} else {
+    SocketWS_server_reject(client_socket, 400, "Bad Request");
+}
+```
+
+### Proxy Tunneling
+
+```c
+#include "socket/SocketProxy.h"
+
+/* SOCKS5 proxy configuration */
+SocketProxy_Config proxy = {0};
+proxy.type = SOCKET_PROXY_SOCKS5;
+proxy.host = "proxy.example.com";
+proxy.port = 1080;
+proxy.username = "user";
+proxy.password = "secret";
+
+Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+
+/* Connect through proxy (synchronous) */
+SocketProxy_Result result = SocketProxy_connect(sock, &proxy, "target.example.com", 443);
+if (result == PROXY_OK) {
+    /* Socket is now tunneled - proceed with TLS handshake if needed */
+    SocketTLS_enable(sock, tls_ctx);
+    SocketTLS_handshake_loop(sock, 10000);
+}
+
+/* HTTP CONNECT proxy */
+SocketProxy_Config http_proxy = {0};
+http_proxy.type = SOCKET_PROXY_HTTP;
+http_proxy.host = "httpproxy.example.com";
+http_proxy.port = 8080;
+http_proxy.username = "user";
+http_proxy.password = "pass";
+
+/* Asynchronous proxy connection */
+SocketProxy_Conn_T conn = SocketProxy_Conn_new(sock, &http_proxy, "target.com", 443);
+while (!SocketProxy_Conn_poll(conn)) {
+    int timeout = SocketProxy_Conn_next_timeout_ms(conn);
+    SocketPoll_wait(poll, &events, timeout);
+    SocketProxy_Conn_process(conn);
+}
+result = SocketProxy_Conn_result(conn);
+SocketProxy_Conn_free(&conn);
+```
+
+### DTLS (Secure UDP)
+
+```c
+#include "tls/SocketDTLS.h"
+#include "tls/SocketDTLSContext.h"
+#include "socket/SocketDgram.h"
+
+/* DTLS Client */
+SocketDgram_T sock = SocketDgram_new(AF_INET, 0);
+SocketDgram_connect(sock, "server.example.com", 5684);
+
+SocketDTLSContext_T ctx = SocketDTLSContext_new_client("ca-bundle.crt");
+SocketDTLS_enable(sock, ctx);
+SocketDTLS_set_hostname(sock, "server.example.com");
+
+DTLSHandshakeState state = SocketDTLS_handshake_loop(sock, 5000);
+if (state == DTLS_HANDSHAKE_COMPLETE) {
+    /* Send encrypted datagram */
+    SocketDTLS_send(sock, "Hello DTLS", 10);
+    
+    char buf[1024];
+    ssize_t n = SocketDTLS_recv(sock, buf, sizeof(buf));
+}
+
+SocketDTLS_shutdown(sock);
+SocketDgram_free(&sock);
+SocketDTLSContext_free(&ctx);
+
+/* DTLS Server with cookie exchange */
+SocketDgram_T server = SocketDgram_new(AF_INET, 0);
+SocketDgram_bind(server, "0.0.0.0", 5684);
+
+SocketDTLSContext_T srv_ctx = SocketDTLSContext_new_server("cert.pem", "key.pem", NULL);
+SocketDTLSContext_enable_cookie_exchange(srv_ctx);  /* DoS protection */
+SocketDTLS_enable(server, srv_ctx);
+
+/* Handle incoming connections with SocketDTLS_listen() */
+```
+
 ### UDP Server
 
 ```c
@@ -258,6 +519,79 @@ SocketPool_cleanup(pool, 300);  /* Remove idle > 300 seconds */
 
 SocketPool_free(&pool);
 Arena_dispose(&arena);
+```
+
+### SYN Flood Protection
+
+```c
+#include "core/SocketSYNProtect.h"
+
+SocketSYNProtect_Config config = SYNPROTECT_CONFIG_DEFAULTS;
+config.max_connections_per_ip = 10;
+config.connection_rate_limit = 100;
+config.challenge_threshold = 0.5;  /* Reputation score threshold */
+config.block_threshold = 0.2;
+
+SocketSYNProtect_T protect = SocketSYNProtect_new(NULL, &config);
+
+/* On each incoming connection */
+struct sockaddr_in client_addr;
+socklen_t addr_len = sizeof(client_addr);
+int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &addr_len);
+
+SYNAction action = SocketSYNProtect_check(protect, &client_addr, addr_len);
+
+switch (action) {
+case SYN_ACTION_ALLOW:
+    /* Accept connection normally */
+    break;
+case SYN_ACTION_THROTTLE:
+    /* Accept but add delay */
+    usleep(100000);
+    break;
+case SYN_ACTION_CHALLENGE:
+    /* Send SYN cookie / challenge */
+    break;
+case SYN_ACTION_BLOCK:
+    /* Reject connection */
+    close(client_fd);
+    break;
+}
+
+/* Report connection result for reputation update */
+SocketSYNProtect_report(protect, &client_addr, addr_len, success);
+
+/* Get statistics */
+SocketSYNProtect_Stats stats;
+SocketSYNProtect_stats(protect, &stats);
+
+SocketSYNProtect_free(&protect);
+```
+
+### Graceful Shutdown
+
+```c
+#include "pool/SocketPool.h"
+
+/* Non-blocking drain for event loops */
+SocketPool_drain(pool, 30000);  /* Start 30s drain */
+while (SocketPool_drain_poll(pool) > 0) {
+    SocketPoll_wait(poll, &events, SocketPool_drain_remaining_ms(pool));
+    /* Process remaining events, connections closing naturally */
+}
+SocketPool_free(&pool);
+
+/* Blocking drain (convenience) */
+int result = SocketPool_drain_wait(pool, 30000);
+if (result < 0) {
+    /* Timeout - connections were force-closed */
+}
+
+/* Health check for load balancers */
+SocketPool_Health health = SocketPool_health(pool);
+if (health == POOL_HEALTH_DRAINING) {
+    /* Return 503 to load balancer */
+}
 ```
 
 ### Happy Eyeballs Connection (RFC 8305)
@@ -346,10 +680,6 @@ SocketDNS_Request_T req = SocketDNS_resolve(dns, "example.com", 80, NULL, NULL);
 
 /* Per-request timeout override */
 SocketDNS_request_settimeout(dns, req, 10000);
-
-/* Add DNS to poll set */
-int dns_fd = SocketDNS_pollfd(dns);
-/* Use a wrapper socket or raw fd polling */
 
 /* In event loop, check for completions */
 SocketDNS_check(dns);
@@ -454,83 +784,6 @@ SocketRateLimit_configure(limiter, 200, 100);
 SocketRateLimit_free(&limiter);
 ```
 
-### Zero-Copy File Transfer
-
-```c
-int file_fd = open("largefile.bin", O_RDONLY);
-struct stat st;
-fstat(file_fd, &st);
-
-off_t offset = 0;
-ssize_t sent = Socket_sendfileall(socket, file_fd, &offset, st.st_size);
-close(file_fd);
-```
-
-### Scatter/Gather I/O
-
-```c
-struct iovec iov[3];
-iov[0].iov_base = header;
-iov[0].iov_len = header_len;
-iov[1].iov_base = body;
-iov[1].iov_len = body_len;
-iov[2].iov_base = footer;
-iov[2].iov_len = footer_len;
-
-/* Send all data atomically */
-ssize_t sent = Socket_sendvall(socket, iov, 3);
-```
-
-### Unix Domain Sockets
-
-```c
-#include "socket/Socket.h"
-
-/* Stream socket pair for IPC */
-Socket_T sock1, sock2;
-SocketPair_new(SOCK_STREAM, &sock1, &sock2);
-
-/* Server socket */
-Socket_T server = Socket_new(AF_UNIX, SOCK_STREAM, 0);
-Socket_bind_unix(server, "/tmp/my.sock");
-Socket_listen(server, 10);
-
-/* Client connection */
-Socket_T client = Socket_new(AF_UNIX, SOCK_STREAM, 0);
-Socket_connect_unix(client, "/tmp/my.sock");
-
-/* Get peer credentials (Linux only) */
-int peer_pid = Socket_getpeerpid(accepted);
-int peer_uid = Socket_getpeeruid(accepted);
-int peer_gid = Socket_getpeergid(accepted);
-
-/* Abstract namespace (Linux only - prefix with @) */
-Socket_bind_unix(server, "@abstract-socket");
-```
-
-### Timeout Configuration
-
-```c
-#include "socket/Socket.h"
-
-/* Set global default timeouts */
-SocketTimeouts_T defaults = {
-    .connect_timeout_ms = 30000,
-    .dns_timeout_ms = 5000
-};
-Socket_timeouts_setdefaults(&defaults);
-
-/* Per-socket timeout override */
-Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
-SocketTimeouts_T timeouts;
-Socket_timeouts_get(socket, &timeouts);
-timeouts.connect_timeout_ms = 10000;
-Socket_timeouts_set(socket, &timeouts);
-
-/* Legacy timeout (send/recv) */
-Socket_settimeout(socket, 30);  /* 30 seconds */
-```
-
 ### TLS/SSL Secure Communication
 
 ```c
@@ -559,7 +812,6 @@ SocketTLS_set_hostname(socket, "example.com");  /* SNI + verification */
 TLSHandshakeState state = SocketTLS_handshake_loop(socket, 10000);
 if (state != TLS_HANDSHAKE_COMPLETE) {
     fprintf(stderr, "Handshake failed\n");
-    /* Handle error */
 }
 
 /* Check negotiated protocol */
@@ -609,6 +861,111 @@ SocketTLSContext_set_ocsp_response(ctx, ocsp_response, ocsp_len);
 unsigned char ticket_key[80];
 generate_ticket_key(ticket_key, sizeof(ticket_key));
 SocketTLSContext_enable_session_tickets(ctx, ticket_key, sizeof(ticket_key));
+```
+
+### Zero-Copy File Transfer
+
+```c
+int file_fd = open("largefile.bin", O_RDONLY);
+struct stat st;
+fstat(file_fd, &st);
+
+off_t offset = 0;
+ssize_t sent = Socket_sendfileall(socket, file_fd, &offset, st.st_size);
+close(file_fd);
+```
+
+### Scatter/Gather I/O
+
+```c
+struct iovec iov[3];
+iov[0].iov_base = header;
+iov[0].iov_len = header_len;
+iov[1].iov_base = body;
+iov[1].iov_len = body_len;
+iov[2].iov_base = footer;
+iov[2].iov_len = footer_len;
+
+/* Send all data atomically */
+ssize_t sent = Socket_sendvall(socket, iov, 3);
+```
+
+### Unix Domain Sockets with FD Passing
+
+```c
+#include "socket/Socket.h"
+
+/* Stream socket pair for IPC */
+Socket_T sock1, sock2;
+SocketPair_new(SOCK_STREAM, &sock1, &sock2);
+
+/* Server socket */
+Socket_T server = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+Socket_bind_unix(server, "/tmp/my.sock");
+Socket_listen(server, 10);
+
+/* Client connection */
+Socket_T client = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+Socket_connect_unix(client, "/tmp/my.sock");
+
+/* Get peer credentials (Linux only) */
+int peer_pid = Socket_getpeerpid(accepted);
+int peer_uid = Socket_getpeeruid(accepted);
+int peer_gid = Socket_getpeergid(accepted);
+
+/* Abstract namespace (Linux only - prefix with @) */
+Socket_bind_unix(server, "@abstract-socket");
+
+/* File descriptor passing (SCM_RIGHTS) */
+int fd_to_pass = open("/etc/passwd", O_RDONLY);
+Socket_sendfd(sock1, fd_to_pass, "hello", 5);
+close(fd_to_pass);
+
+/* Receive passed FD */
+int received_fd;
+char buf[256];
+ssize_t n = Socket_recvfd(sock2, &received_fd, buf, sizeof(buf));
+/* received_fd is now a valid FD in this process */
+close(received_fd);
+
+/* Multiple FD passing */
+int fds[3] = {fd1, fd2, fd3};
+Socket_sendfds(sock1, fds, 3, "data", 4);
+
+int received_fds[3];
+int num_fds;
+Socket_recvfds(sock2, received_fds, 3, &num_fds, buf, sizeof(buf));
+```
+
+### Cryptographic Utilities
+
+```c
+#include "core/SocketCrypto.h"
+
+/* SHA-256 hash */
+unsigned char hash[SOCKET_CRYPTO_SHA256_SIZE];
+SocketCrypto_sha256(data, data_len, hash);
+
+/* HMAC-SHA256 */
+unsigned char mac[SOCKET_CRYPTO_SHA256_SIZE];
+SocketCrypto_hmac_sha256(key, key_len, data, data_len, mac);
+
+/* Base64 encoding */
+size_t encoded_len = SocketCrypto_base64_encoded_size(data_len);
+char *encoded = malloc(encoded_len);
+SocketCrypto_base64_encode(data, data_len, encoded, encoded_len);
+
+/* Cryptographically secure random */
+unsigned char random_bytes[32];
+SocketCrypto_random_bytes(random_bytes, sizeof(random_bytes));
+
+/* Constant-time comparison (prevents timing attacks) */
+if (SocketCrypto_secure_compare(expected, actual, len)) {
+    /* Match */
+}
+
+/* Secure memory clearing */
+SocketCrypto_secure_clear(password, password_len);
 ```
 
 ### Observability
@@ -707,6 +1064,21 @@ Socket_setsndbuf(socket, 262144);
 - `SocketRateLimit_available()` - Get available tokens
 - `SocketRateLimit_configure()` - Reconfigure at runtime
 
+#### SocketCrypto (Cryptographic Utilities)
+- `SocketCrypto_sha1()` / `SocketCrypto_sha256()` / `SocketCrypto_md5()` - Hash functions
+- `SocketCrypto_hmac_sha256()` - HMAC message authentication
+- `SocketCrypto_base64_encode()` / `SocketCrypto_base64_decode()` - Base64 encoding
+- `SocketCrypto_hex_encode()` / `SocketCrypto_hex_decode()` - Hexadecimal encoding
+- `SocketCrypto_random_bytes()` - Cryptographically secure random
+- `SocketCrypto_secure_compare()` - Constant-time comparison
+- `SocketCrypto_secure_clear()` - Secure memory clearing
+- `SocketCrypto_websocket_key()` / `SocketCrypto_websocket_accept()` - WebSocket handshake
+
+#### SocketUTF8 (UTF-8 Validation)
+- `SocketUTF8_validate()` - One-shot validation
+- `SocketUTF8_init()` / `_update()` / `_finish()` - Incremental validation
+- `SocketUTF8_encode()` / `SocketUTF8_decode()` - Codepoint conversion
+
 ### Socket Module (TCP Stream Sockets)
 
 #### Creation and Lifecycle
@@ -732,6 +1104,10 @@ Socket_setsndbuf(socket, 262144);
 - `Socket_sendfile()` / `Socket_sendfileall()` - Zero-copy file transfer
 - `Socket_sendmsg()` / `Socket_recvmsg()` - Advanced message I/O
 
+#### File Descriptor Passing (Unix Domain)
+- `Socket_sendfd()` / `Socket_recvfd()` - Single FD passing
+- `Socket_sendfds()` / `Socket_recvfds()` - Multiple FD passing
+
 #### Bandwidth Limiting
 - `Socket_setbandwidth()` - Set bandwidth limit (bytes/sec)
 - `Socket_getbandwidth()` - Get bandwidth limit
@@ -750,10 +1126,6 @@ Socket_setsndbuf(socket, 262144);
 - `Socket_setfastopen()` / `Socket_getfastopen()` - TCP Fast Open
 - `Socket_setusertimeout()` / `Socket_getusertimeout()` - TCP user timeout (Linux)
 - `Socket_setcloexec()` - Close-on-exec flag
-
-#### Timeout Configuration
-- `Socket_timeouts_set()` / `Socket_timeouts_get()` - Per-socket timeouts
-- `Socket_timeouts_setdefaults()` / `Socket_timeouts_getdefaults()` - Global defaults
 
 #### Unix Domain Sockets
 - `Socket_bind_unix()` - Bind to Unix socket path
@@ -780,7 +1152,6 @@ Socket_setsndbuf(socket, 262144);
 - `SocketDgram_send()` / `SocketDgram_recv()` - Connected I/O
 - `SocketDgram_sendall()` / `SocketDgram_recvall()` - Complete I/O
 - `SocketDgram_sendv()` / `SocketDgram_recvv()` - Scatter/gather I/O
-- `SocketDgram_sendvall()` / `SocketDgram_recvvall()` - Complete scatter/gather
 
 #### Multicast/Broadcast
 - `SocketDgram_setbroadcast()` - Enable broadcast
@@ -819,15 +1190,20 @@ Socket_setsndbuf(socket, 262144);
 - `SocketPool_accept_batch()` - Batch accept
 - `SocketPool_track_ip()` / `SocketPool_release_ip()` - IP tracking
 
+#### Graceful Shutdown
+- `SocketPool_drain()` - Start non-blocking drain
+- `SocketPool_drain_poll()` - Poll drain progress
+- `SocketPool_drain_wait()` - Blocking drain
+- `SocketPool_drain_force()` - Force-close all connections
+- `SocketPool_drain_remaining_ms()` - Time until forced shutdown
+- `SocketPool_state()` / `SocketPool_health()` - State queries
+- `SocketPool_set_drain_callback()` - Completion callback
+
 #### Reconnection
 - `SocketPool_set_reconnect_policy()` - Set default reconnection policy
 - `SocketPool_enable_reconnect()` / `SocketPool_disable_reconnect()` - Per-connection
 - `SocketPool_process_reconnects()` - Process reconnection state machines
 - `SocketPool_reconnect_timeout_ms()` - Get next timeout
-
-#### Async Connect
-- `SocketPool_connect_async()` - Async connection with callback
-- `SocketPool_prepare_connection()` - Prepare async connection
 
 #### Connection Accessors
 - `Connection_socket()` - Get connection's socket
@@ -835,7 +1211,6 @@ Socket_setsndbuf(socket, 262144);
 - `Connection_data()` / `Connection_setdata()` - User data
 - `Connection_lastactivity()` - Last activity time
 - `Connection_isactive()` - Check if active
-- `Connection_reconnect()` / `Connection_has_reconnect()` - Reconnection context
 
 ### SocketDNS Module (Asynchronous DNS)
 
@@ -896,58 +1271,156 @@ Socket_setsndbuf(socket, 262144);
 - `SocketAsync_is_available()` - Check platform support
 - `SocketAsync_backend_name()` - Get backend name
 
-### SocketTLS Module (TLS/SSL)
+### SocketProxy Module (Proxy Tunneling)
 
-#### TLS Operations
+#### Configuration
+- `SocketProxy_parse_url()` - Parse proxy URL (socks5://user:pass@host:port)
+
+#### Synchronous API
+- `SocketProxy_connect()` - Connect through proxy
+- `SocketProxy_connect_tls()` - Connect through proxy with TLS to target
+
+#### Asynchronous API
+- `SocketProxy_Conn_new()` - Create async proxy connection
+- `SocketProxy_Conn_free()` - Free connection
+- `SocketProxy_Conn_poll()` - Check if complete
+- `SocketProxy_Conn_process()` - Process events
+- `SocketProxy_Conn_result()` - Get result
+- `SocketProxy_Conn_next_timeout_ms()` - Get next timeout
+- `SocketProxy_Conn_poll_events()` - Get poll events
+
+### HTTP Modules
+
+#### SocketHTTP (HTTP Core - RFC 9110)
+- `SocketHTTP_method_*()` - Method utilities (safe, idempotent, cacheable)
+- `SocketHTTP_status_*()` - Status code utilities
+- `SocketHTTP_Headers_new()` / `_free()` - Header collection lifecycle
+- `SocketHTTP_Headers_add()` / `_get()` / `_remove()` - Header management
+- `SocketHTTP_URI_parse()` - RFC 3986 URI parsing
+- `SocketHTTP_date_parse()` - HTTP-date parsing
+
+#### SocketHTTP1 (HTTP/1.1 - RFC 9112)
+- `SocketHTTP1_Parser_new()` / `_free()` - Parser lifecycle
+- `SocketHTTP1_Parser_execute()` - Incremental parsing
+- `SocketHTTP1_Parser_reset()` - Reset parser state
+- `SocketHTTP1_serialize_request()` / `_response()` - Serialization
+- `SocketHTTP1_chunk_encode()` / `_final()` - Chunked encoding
+
+#### SocketHPACK (Header Compression - RFC 7541)
+- `SocketHPACK_Encoder_new()` / `_free()` - Encoder lifecycle
+- `SocketHPACK_Encoder_encode()` - Encode headers
+- `SocketHPACK_Decoder_new()` / `_free()` - Decoder lifecycle
+- `SocketHPACK_Decoder_decode()` - Decode headers
+- `SocketHPACK_huffman_encode()` / `_decode()` - Huffman coding
+
+#### SocketHTTP2 (HTTP/2 - RFC 9113)
+- `SocketHTTP2_Conn_new()` / `_free()` - Connection lifecycle
+- `SocketHTTP2_Conn_handshake()` - Connection preface exchange
+- `SocketHTTP2_Conn_process()` - Frame processing
+- `SocketHTTP2_Conn_settings()` / `_ping()` / `_goaway()` - Control frames
+- `SocketHTTP2_Stream_new()` - Create stream
+- `SocketHTTP2_Stream_send_headers()` / `_send_data()` - Send data
+- `SocketHTTP2_Stream_recv_headers()` / `_recv_data()` - Receive data
+
+#### SocketHTTPClient (HTTP Client API)
+- `SocketHTTPClient_new()` / `_free()` - Client lifecycle
+- `SocketHTTPClient_get()` / `_post()` / `_put()` / `_delete()` / `_head()` - Simple API
+- `SocketHTTPClient_Request_new()` / `_execute()` - Request builder
+- `SocketHTTPClient_Request_header()` / `_body()` / `_timeout()` - Request configuration
+- `SocketHTTPClient_setauth()` - Authentication
+- `SocketHTTPClient_CookieJar_*()` - Cookie management
+
+#### SocketHTTPServer (HTTP Server API)
+- `SocketHTTPServer_new()` / `_free()` - Server lifecycle
+- `SocketHTTPServer_start()` / `_stop()` - Server control
+- `SocketHTTPServer_set_handler()` - Set request handler
+- `SocketHTTPServer_poll()` / `_process()` - Event loop
+- `SocketHTTPServer_Request_*()` - Request accessors
+- `SocketHTTPServer_Response_*()` - Response building
+
+### SocketWS Module (WebSocket - RFC 6455)
+
+#### Client API
+- `SocketWS_client_new()` - Create WebSocket client
+- `SocketWS_handshake()` - Perform handshake
+
+#### Server API
+- `SocketWS_is_upgrade()` - Check for WebSocket upgrade
+- `SocketWS_server_accept()` - Accept WebSocket connection
+- `SocketWS_server_reject()` - Reject upgrade request
+
+#### Message I/O
+- `SocketWS_send_text()` / `SocketWS_send_binary()` - Send messages
+- `SocketWS_recv_message()` - Receive message
+- `SocketWS_Message_free()` - Free message
+
+#### Control Frames
+- `SocketWS_ping()` / `SocketWS_pong()` - Ping/pong
+- `SocketWS_close()` - Initiate close
+
+#### Event Loop
+- `SocketWS_pollfd()` - Get poll file descriptor
+- `SocketWS_poll_events()` - Get poll events
+- `SocketWS_process()` - Process events
+- `SocketWS_state()` - Get connection state
+- `SocketWS_free()` - Free connection
+
+### TLS Modules
+
+#### SocketTLS (TLS Operations)
 - `SocketTLS_enable()` - Enable TLS on socket
 - `SocketTLS_set_hostname()` - Set SNI hostname
 - `SocketTLS_handshake()` - Perform handshake step
 - `SocketTLS_handshake_loop()` - Complete handshake with timeout
 - `SocketTLS_shutdown()` - Graceful TLS shutdown
 - `SocketTLS_send()` / `SocketTLS_recv()` - Encrypted I/O
-
-#### TLS Information
 - `SocketTLS_get_cipher()` - Get negotiated cipher
 - `SocketTLS_get_version()` - Get TLS version
 - `SocketTLS_get_verify_result()` - Get verification result
-- `SocketTLS_get_verify_error_string()` - Get verification error
 - `SocketTLS_is_session_reused()` - Check session resumption
 - `SocketTLS_get_alpn_selected()` - Get negotiated ALPN protocol
-- `SocketTLS_get_ocsp_status()` - Get OCSP status
 
-### SocketTLSContext Module (TLS Context)
-
-#### Context Creation
-- `SocketTLSContext_new_server()` - Create server context
-- `SocketTLSContext_new_client()` - Create client context
+#### SocketTLSContext (TLS Context)
+- `SocketTLSContext_new_server()` / `_new_client()` - Create context
 - `SocketTLSContext_free()` - Free context
-
-#### Certificate Management
 - `SocketTLSContext_load_certificate()` - Load cert/key pair
 - `SocketTLSContext_add_certificate()` - Add SNI certificate
 - `SocketTLSContext_load_ca()` - Load CA certificates
 - `SocketTLSContext_set_verify_mode()` - Set verification policy
-- `SocketTLSContext_set_verify_callback()` - Custom verification
-- `SocketTLSContext_load_crl()` - Load CRL
-- `SocketTLSContext_refresh_crl()` - Refresh CRL
+- `SocketTLSContext_load_crl()` / `_refresh_crl()` - CRL management
+- `SocketTLSContext_set_ocsp_response()` - OCSP stapling
+- `SocketTLSContext_set_alpn_protos()` - ALPN protocols
+- `SocketTLSContext_enable_session_cache()` - Session caching
+- `SocketTLSContext_enable_session_tickets()` - Session tickets
 
-#### OCSP Stapling
-- `SocketTLSContext_set_ocsp_response()` - Set static OCSP response
-- `SocketTLSContext_set_ocsp_gen_callback()` - Dynamic OCSP generation
+#### SocketDTLS (DTLS Operations)
+- `SocketDTLS_enable()` - Enable DTLS on UDP socket
+- `SocketDTLS_set_hostname()` - Set SNI hostname
+- `SocketDTLS_handshake()` / `SocketDTLS_handshake_loop()` - Handshake
+- `SocketDTLS_send()` / `SocketDTLS_recv()` - Encrypted I/O
+- `SocketDTLS_shutdown()` - Graceful shutdown
 
-#### Protocol Configuration
-- `SocketTLSContext_set_min_protocol()` / `SocketTLSContext_set_max_protocol()` - TLS version
-- `SocketTLSContext_set_cipher_list()` - Cipher suites
+#### SocketDTLSContext (DTLS Context)
+- `SocketDTLSContext_new_server()` / `_new_client()` - Create context
+- `SocketDTLSContext_free()` - Free context
+- `SocketDTLSContext_enable_cookie_exchange()` - DoS protection
 
-#### ALPN
-- `SocketTLSContext_set_alpn_protos()` - Set ALPN protocols
-- `SocketTLSContext_set_alpn_callback()` - Custom ALPN selection
+### Security Modules
 
-#### Session Management
-- `SocketTLSContext_enable_session_cache()` - Enable session caching
-- `SocketTLSContext_set_session_cache_size()` - Set cache size
-- `SocketTLSContext_get_cache_stats()` - Get cache statistics
-- `SocketTLSContext_enable_session_tickets()` - Enable session tickets
+#### SocketSYNProtect (SYN Flood Protection)
+- `SocketSYNProtect_new()` / `_free()` - Lifecycle
+- `SocketSYNProtect_check()` - Check connection (returns action)
+- `SocketSYNProtect_report()` - Report connection result
+- `SocketSYNProtect_stats()` - Get statistics
+- `SocketSYNProtect_reset()` - Reset all state
+
+#### SocketIPTracker (Per-IP Tracking)
+- `SocketIPTracker_new()` / `_free()` - Lifecycle
+- `SocketIPTracker_track()` - Track connection from IP
+- `SocketIPTracker_release()` - Release connection
+- `SocketIPTracker_count()` - Get connection count for IP
+- `SocketIPTracker_allowed()` - Check if connection allowed
+- `SocketIPTracker_cleanup()` - Remove stale entries
 
 ### Observability
 
@@ -978,6 +1451,7 @@ Socket_setsndbuf(socket, 262144);
 
 ### Exception Types
 
+#### Core Exceptions
 - `Socket_Failed` - General socket operation failure
 - `Socket_Closed` - Connection closed by peer
 - `SocketUnix_Failed` - Unix socket operation failure
@@ -985,16 +1459,49 @@ Socket_setsndbuf(socket, 262144);
 - `SocketPoll_Failed` - Event polling failure
 - `SocketPool_Failed` - Connection pool operation failure
 - `SocketDNS_Failed` - DNS resolution failure
-- `SocketHE_Failed` - Happy Eyeballs connection failure
-- `SocketReconnect_Failed` - Reconnection operation failure
 - `SocketTimer_Failed` - Timer operation failure
 - `SocketRateLimit_Failed` - Rate limiter failure
 - `SocketAsync_Failed` - Async I/O failure
+- `SocketCrypto_Failed` - Cryptographic operation failure
+
+#### Connection Exceptions
+- `SocketHE_Failed` - Happy Eyeballs connection failure
+- `SocketReconnect_Failed` - Reconnection operation failure
+- `SocketProxy_Failed` - Proxy connection failure
+
+#### TLS/DTLS Exceptions
 - `SocketTLS_Failed` - General TLS operation failure
 - `SocketTLS_HandshakeFailed` - TLS handshake failure
 - `SocketTLS_VerifyFailed` - Certificate verification failure
 - `SocketTLS_ProtocolError` - TLS protocol error
 - `SocketTLS_ShutdownFailed` - TLS shutdown failure
+- `SocketDTLS_Failed` - General DTLS operation failure
+- `SocketDTLS_HandshakeFailed` - DTLS handshake failure
+- `SocketDTLS_VerifyFailed` - DTLS certificate verification failure
+- `SocketDTLS_CookieFailed` - DTLS cookie exchange failure
+- `SocketDTLS_TimeoutExpired` - DTLS handshake timeout
+
+#### HTTP Exceptions
+- `SocketHTTP_ParseError` - HTTP parsing error
+- `SocketHTTP_InvalidURI` - Invalid URI
+- `SocketHTTP_InvalidHeader` - Invalid header
+- `SocketHTTP1_ParseError` - HTTP/1.1 parsing error
+- `SocketHPACK_Failed` - HPACK compression error
+- `SocketHTTP2_ProtocolError` - HTTP/2 protocol error
+- `SocketHTTP2_StreamError` - HTTP/2 stream error
+- `SocketHTTP2_FlowControlError` - HTTP/2 flow control error
+- `SocketHTTPClient_Failed` - HTTP client failure
+- `SocketHTTPClient_Timeout` - HTTP client timeout
+- `SocketHTTPClient_TLSError` - HTTP client TLS error
+- `SocketHTTPServer_Failed` - HTTP server failure
+
+#### WebSocket Exceptions
+- `SocketWS_Failed` - WebSocket operation failure
+- `SocketWS_ProtocolError` - WebSocket protocol error
+- `SocketWS_Closed` - WebSocket connection closed
+
+#### Security Exceptions
+- `SocketSYNProtect_Failed` - SYN protection failure
 
 ## Building
 
@@ -1003,7 +1510,8 @@ Socket_setsndbuf(socket, 262144);
 - CMake 3.10+
 - C11 compiler with GNU extensions and pthread support
 - POSIX-compliant system
-- OpenSSL 1.1.1+ or LibreSSL (optional, for TLS support)
+- OpenSSL 1.1.1+ or LibreSSL (optional, for TLS/DTLS support)
+- zlib (optional, for HTTP compression and WebSocket permessage-deflate)
 
 ### Build Commands
 
@@ -1015,8 +1523,6 @@ cmake -S . -B build
 cmake --build build -j
 
 # Run tests
-cmake --build build --target test
-# or
 cd build && ctest --output-on-failure
 
 # Generate API documentation (requires Doxygen)
@@ -1031,11 +1537,13 @@ cmake --install build --prefix /usr/local
 | Option | Description | Default |
 |--------|-------------|---------|
 | `CMAKE_BUILD_TYPE` | Debug or Release | Debug |
-| `ENABLE_TLS` | Enable TLS/SSL support | ON (auto-detect) |
+| `ENABLE_TLS` | Enable TLS/DTLS support | ON (auto-detect) |
+| `ENABLE_HTTP_COMPRESSION` | Enable gzip/deflate/brotli | OFF |
 | `ENABLE_SANITIZERS` | Enable ASan + UBSan | OFF |
-| `ENABLE_ASAN` | Enable AddressSanitizer | OFF |
-| `ENABLE_UBSAN` | Enable UndefinedBehaviorSanitizer | OFF |
+| `ENABLE_ASAN` | Enable AddressSanitizer only | OFF |
+| `ENABLE_UBSAN` | Enable UndefinedBehaviorSanitizer only | OFF |
 | `ENABLE_COVERAGE` | Enable gcov coverage | OFF |
+| `ENABLE_FUZZING` | Enable fuzz testing (requires Clang) | OFF |
 
 ### Poll Backend Selection
 
@@ -1044,19 +1552,34 @@ The poll backend is automatically selected based on platform:
 - **BSD/macOS** - kqueue
 - **Other POSIX** - poll(2) fallback
 
+### Async I/O Backend Selection
+
+- **Linux 5.1+** - io_uring (true async)
+- **BSD/macOS** - kqueue AIO
+- **Fallback** - Edge-triggered polling
+
 ## Thread Safety
 
-- **Socket operations** - Thread-safe per socket (one thread per socket recommended)
-- **Error reporting** - Thread-local (safe for concurrent use)
-- **SocketPoll** - Thread-safe (protected by mutexes)
-- **SocketPool** - Thread-safe (protected by mutexes)
-- **SocketDNS** - Thread-safe (uses thread pool)
-- **SocketTimer** - Thread-safe
-- **SocketRateLimit** - Thread-safe (internal mutex)
-- **Metrics/Logging** - Thread-safe (atomic operations)
-- **SocketHappyEyeballs** - NOT thread-safe per instance
-- **SocketReconnect** - NOT thread-safe per instance
-- **TLS contexts** - Thread-safe after setup (read-only sharing)
+| Component | Thread Safety | Notes |
+|-----------|---------------|-------|
+| Socket operations | Per-socket | One thread per socket recommended |
+| Error reporting | Thread-local | Safe for concurrent use |
+| SocketPoll | Thread-safe | Protected by mutexes |
+| SocketPool | Thread-safe | Protected by mutexes |
+| SocketDNS | Thread-safe | Uses thread pool |
+| SocketTimer | Thread-safe | Integrated with poll |
+| SocketRateLimit | Thread-safe | Internal mutex |
+| Metrics/Logging | Thread-safe | Atomic operations |
+| SocketCrypto | Thread-safe | No global state |
+| SocketUTF8 | Thread-safe | No global state |
+| SocketHappyEyeballs | NOT thread-safe | One instance per thread |
+| SocketReconnect | NOT thread-safe | One instance per thread |
+| SocketProxy | NOT thread-safe | One instance per thread |
+| SocketWS | NOT thread-safe | One instance per thread |
+| HTTP/2 connections | NOT thread-safe | One instance per thread |
+| HTTP client | Thread-safe | Request instances are NOT |
+| HTTP server | NOT thread-safe | One instance per thread |
+| TLS/DTLS contexts | Thread-safe | Read-only after setup |
 
 ## Memory Management
 
@@ -1070,36 +1593,112 @@ Socket_free(&socket);  /* Frees socket and internal arena */
 Arena_dispose(&arena); /* Free external arena if used */
 ```
 
+Key patterns:
+- Use `Arena_alloc()` / `Arena_calloc()` for object lifecycle management
+- Use `Arena_dispose()` to free entire contexts at once
+- All arithmetic checked for integer overflow
+- Use `SocketCrypto_secure_clear()` for sensitive data
+
 ## Performance Considerations
 
+### I/O Performance
 - **Zero-copy I/O** - Uses platform-specific `sendfile()` when available
 - **Scatter/gather I/O** - Efficient multi-buffer operations via `writev()`/`readv()`
 - **Event polling** - O(1) event delivery with epoll/kqueue
+- **Edge-triggered mode** - Minimal syscall overhead
+
+### Data Structures
 - **Connection pooling** - O(1) lookup with hash tables
 - **Timers** - O(log n) insert/cancel with min-heap
-- **Non-blocking I/O** - Full support for async operations
-- **Session resumption** - TLS session caching reduces handshake overhead
-- **Async I/O** - io_uring/kqueue for true async operations
+- **HPACK** - O(1) FIFO dynamic table with circular buffer
 
-## Examples
+### Parsing
+- **DFA-based parsing** - O(n) HTTP/1.1 and UTF-8 validation
+- **Table-driven** - Minimal branch misprediction
+- **Incremental** - Stream-friendly, no full buffering required
 
-See `src/test/` directory for comprehensive usage examples:
-- `test_socket.c` - TCP socket examples
-- `test_socketdgram.c` - UDP socket examples
-- `test_socketpoll.c` - Event polling examples
-- `test_socketpool.c` - Connection pooling examples
-- `test_socketdns.c` - Async DNS examples
-- `test_happy_eyeballs.c` - RFC 8305 examples
-- `test_reconnect.c` - Auto-reconnection examples
-- `test_ratelimit.c` - Rate limiting examples
-- `test_tls_integration.c` - TLS examples
-- `test_integration.c` - Integration test scenarios
+### Protocol Efficiency
+- **HTTP/2 multiplexing** - Single connection for concurrent requests
+- **HPACK compression** - Reduces header overhead by 85-90%
+- **WebSocket framing** - 8-byte aligned XOR masking
+- **Session resumption** - TLS/DTLS session caching reduces handshake overhead
+
+### Async Operations
+- **io_uring** - True async I/O on Linux 5.1+
+- **Non-blocking DNS** - Thread pool prevents blocking
+- **Happy Eyeballs** - Parallel connection attempts for minimal latency
+
+## Testing and Quality
+
+### Test Suite
+
+The library includes comprehensive tests in `src/test/`:
+
+| Category | Test Files |
+|----------|------------|
+| Core | `test_arena.c`, `test_except.c`, `test_crypto.c`, `test_utf8.c` |
+| Socket | `test_socket.c`, `test_socketdgram.c`, `test_socketbuf.c` |
+| Networking | `test_socketpoll.c`, `test_socketpool.c`, `test_socketdns.c` |
+| Connection | `test_happy_eyeballs.c`, `test_reconnect.c`, `test_proxy.c` |
+| HTTP | `test_http_core.c`, `test_http1_parser.c`, `test_hpack.c`, `test_http2.c` |
+| WebSocket | `test_websocket.c`, `test_ws_integration.c` |
+| TLS/DTLS | `test_tls_integration.c`, `test_dtls_integration.c` |
+| Security | `test_synprotect.c`, `test_ratelimit.c`, `test_security.c` |
+| Integration | `test_integration.c`, `test_http_integration.c`, `test_proxy_integration.c` |
+
+### Fuzz Testing
+
+24+ fuzz harnesses in `src/fuzz/` covering:
+- HTTP/1.1 parser
+- HTTP/2 frame parsing
+- HPACK encoder/decoder
+- WebSocket framing
+- URI parsing
+- UTF-8 validation
+- TLS handshake
+
+```bash
+# Build with fuzzing
+cmake -S . -B build -DENABLE_FUZZING=ON -DCMAKE_C_COMPILER=clang
+cmake --build build
+
+# Run parallel fuzzing
+./scripts/run_fuzz_parallel.sh
+```
+
+### Sanitizers
+
+All tests pass with:
+- AddressSanitizer (ASan)
+- UndefinedBehaviorSanitizer (UBSan)
+- Valgrind memory checking
+
+```bash
+# Build with sanitizers
+cmake -S . -B build -DENABLE_SANITIZERS=ON
+cmake --build build
+cd build && ctest --output-on-failure
+
+# Valgrind
+valgrind --leak-check=full --track-fds=yes \
+    --suppressions=../valgrind.supp ./test_socket
+```
+
+### Continuous Integration
+
+GitHub Actions pipeline (`.github/workflows/ci.yml`):
+
+| Job | Platform | Description |
+|-----|----------|-------------|
+| `build` | Ubuntu | Debug and Release builds |
+| `sanitizers` | Ubuntu | ASan, UBSan, combined |
+| `valgrind` | Ubuntu | Memory leak checking |
+| `macos` | macOS | kqueue backend testing |
+| `macos-sanitizers` | macOS | Cross-platform sanitizers |
+| `coverage` | Ubuntu | Code coverage with lcov |
+| `static-analysis` | Ubuntu | cppcheck + clang-tidy |
 
 ## Documentation
-
-- **Release Notes** - See [RELEASE_NOTES.md](RELEASE_NOTES.md) for latest changes
-- **Architecture** - See `.cursor/rules/` for detailed design patterns
-- **API Documentation** - All functions include Doxygen-style comments
 
 ### Generating API Reference
 
@@ -1115,6 +1714,18 @@ cmake --build build --target doc
 xdg-open docs/html/index.html  # Linux
 open docs/html/index.html      # macOS
 ```
+
+### Additional Documentation
+
+- **[RELEASE_NOTES.md](RELEASE_NOTES.md)** - Release history and changelog
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[docs/](docs/)** - Detailed feature documentation
+  - `HTTP.md` - HTTP stack documentation
+  - `WEBSOCKET.md` - WebSocket implementation details
+  - `ASYNC_IO.md` - Async I/O patterns
+  - `PROXY.md` - Proxy tunneling guide
+  - `SECURITY.md` - Security features and hardening
+  - `MIGRATION.md` - API migration guide
 
 ## License
 

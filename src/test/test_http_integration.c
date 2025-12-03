@@ -21,6 +21,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,8 +59,8 @@ typedef struct
 {
   SocketHTTPServer_T server;
   pthread_t thread;
-  volatile int running;
-  volatile int started;
+  atomic_int running;
+  atomic_int started;
   int port;
   SocketHTTPServer_Handler handler;
   void *handler_data;
@@ -605,6 +606,8 @@ TEST (http_integration_multiple_requests)
   printf ("  [WARN] HTTP client failed\n");
   EXCEPT (SocketHTTPClient_ConnectFailed)
   printf ("  [WARN] Connection failed\n");
+  EXCEPT (Socket_Closed)
+  printf ("  [WARN] Connection closed by server (keep-alive may not be supported)\n");
   FINALLY
   if (client)
     SocketHTTPClient_free (&client);

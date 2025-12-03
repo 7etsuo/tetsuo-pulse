@@ -348,15 +348,15 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "Arena_8h.html",
-"SocketConfig_8h.html#aa5594e0bf4a9a492cc6e9dd7bcdae74c",
-"SocketDgram_8h.html#af54f02197f8c0dc53fbdf333d476aae2",
-"SocketHTTP2_8h.html#aac66e768242c701bf092296fa1dd2e19",
-"SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5a37bc28ad2189c682b316e17c9357e8d0",
-"SocketPool_8h.html#ae5f905ecace343c3b462dfadd5fa8056",
-"SocketSecurity_8h.html#a71de06121ef88aa459fc42e9f087be64",
-"SocketUtil_8h.html#acb8273a8b69ebd471d3bf7da0290349b",
-"async_io_guide.html#autotoc_md68",
-"proxy__connect_8c.html#a3c04138a5bfe5d72780bb7e82a18e627"
+"SocketConfig_8h.html#aa4457fd2dac639801c08d5b7633cf0e8",
+"SocketDgram_8h.html#ae6c2bde38c3a7addb7cfffe98a253f60",
+"SocketHTTP2_8h.html#aac497f685932335cce6c3868243edf3c",
+"SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5a3298165f45b28384f35c073b19e1f80b",
+"SocketPool_8h.html#ae4b6b07007da08326b53c069a4c1f2ea",
+"SocketSecurity_8h.html#a7066039979bec29150ec1607406bb82f",
+"SocketUtil_8h.html#acaa8bd0edd40626f55e609edb16a99c9",
+"async_io_guide.html#autotoc_md63",
+"migration_guide.html#autotoc_md315"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

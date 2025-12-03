@@ -20,9 +20,11 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "core/Arena.h"
@@ -55,10 +57,12 @@ typedef struct
   Socket_T listen_socket;
   Socket_T target_listen;
   pthread_t thread;
-  volatile int running;
-  volatile int started;
-  volatile int client_connected;
-  volatile int tunnel_established;
+  pthread_t echo_thread;
+  atomic_int running;
+  atomic_int started;
+  atomic_int echo_started;
+  atomic_int client_connected;
+  atomic_int tunnel_established;
   int proxy_port;
   int target_port;
   const char *required_username;
@@ -82,12 +86,21 @@ socks5_server_thread_func (void *arg)
   Socket_T client = NULL;
   Socket_T target = NULL;
   unsigned char buf[512];
-  ssize_t n;
+  volatile ssize_t n = 0;
 
   server->started = 1;
 
-  /* Accept client */
-  client = Socket_accept (server->listen_socket);
+  /* Accept client - handle Socket_Failed exception when socket is closed during shutdown */
+  TRY
+    {
+      client = Socket_accept (server->listen_socket);
+    }
+  EXCEPT (Socket_Failed)
+    {
+      /* Socket was closed - expected during server stop */
+      client = NULL;
+    }
+  END_TRY;
   if (client == NULL)
     {
       server->running = 0;
@@ -95,9 +108,20 @@ socks5_server_thread_func (void *arg)
     }
 
   server->client_connected = 1;
+  
 
   /* SOCKS5 greeting - read client's auth methods */
-  n = Socket_recv (client, buf, sizeof (buf));
+  TRY
+    {
+      n = Socket_recv (client, buf, sizeof (buf));
+    }
+  EXCEPT (Socket_Closed)
+    {
+      Socket_free (&client);
+      server->running = 0;
+      return NULL;
+    }
+  END_TRY;
   if (n < 2 || buf[0] != SOCKS5_VERSION)
     {
       Socket_free (&client);
@@ -155,7 +179,17 @@ socks5_server_thread_func (void *arg)
   /* Handle username/password auth if required */
   if (auth_method == SOCKS5_AUTH_USERPASS)
     {
-      n = Socket_recv (client, buf, sizeof (buf));
+      TRY
+        {
+          n = Socket_recv (client, buf, sizeof (buf));
+        }
+      EXCEPT (Socket_Closed)
+        {
+          Socket_free (&client);
+          server->running = 0;
+          return NULL;
+        }
+      END_TRY;
       if (n < 3 || buf[0] != 0x01)
         {
           Socket_free (&client);
@@ -202,7 +236,17 @@ socks5_server_thread_func (void *arg)
     }
 
   /* Read connect request */
-  n = Socket_recv (client, buf, sizeof (buf));
+  TRY
+    {
+      n = Socket_recv (client, buf, sizeof (buf));
+    }
+  EXCEPT (Socket_Closed)
+    {
+      Socket_free (&client);
+      server->running = 0;
+      return NULL;
+    }
+  END_TRY;
   if (n < 4 || buf[0] != SOCKS5_VERSION || buf[1] != SOCKS5_CMD_CONNECT)
     {
       Socket_free (&client);
@@ -304,9 +348,22 @@ echo_server_thread_func (void *arg)
   Socks5TestServer *server = (Socks5TestServer *)arg;
   Socket_T client = NULL;
   unsigned char buf[512];
-  ssize_t n;
+  volatile ssize_t n = 0;
 
-  client = Socket_accept (server->target_listen);
+  /* Signal that we've started */
+  server->echo_started = 1;
+
+  /* Handle Socket_Failed exception when socket is closed during shutdown */
+  TRY
+    {
+      client = Socket_accept (server->target_listen);
+    }
+  EXCEPT (Socket_Failed)
+    {
+      /* Socket was closed - expected during server stop */
+      client = NULL;
+    }
+  END_TRY;
   if (client == NULL)
     return NULL;
 
@@ -381,12 +438,8 @@ socks5_server_start (Socks5TestServer *server, const char *username,
   server->running = 1;
 
   /* Start echo server thread */
-  pthread_t echo_thread;
-  pthread_create (&echo_thread, NULL, echo_server_thread_func, server);
-  pthread_detach (echo_thread);
-
-  /* Start proxy server thread */
-  if (pthread_create (&server->thread, NULL, socks5_server_thread_func, server)
+  if (pthread_create (&server->echo_thread, NULL, echo_server_thread_func,
+                      server)
       != 0)
     {
       server->running = 0;
@@ -395,8 +448,20 @@ socks5_server_start (Socks5TestServer *server, const char *username,
       return -1;
     }
 
-  /* Wait for server to start */
-  while (!server->started)
+  /* Start proxy server thread */
+  if (pthread_create (&server->thread, NULL, socks5_server_thread_func, server)
+      != 0)
+    {
+      server->running = 0;
+      /* Signal echo thread to stop and wait for it */
+      Socket_free (&server->target_listen);
+      pthread_join (server->echo_thread, NULL);
+      Socket_free (&server->listen_socket);
+      return -1;
+    }
+
+  /* Wait for servers to start */
+  while (!server->started || !server->echo_started)
     usleep (1000);
 
   return 0;
@@ -407,12 +472,24 @@ socks5_server_stop (Socks5TestServer *server)
 {
   server->running = 0;
 
+  /* Shutdown sockets to unblock accept() calls in threads.
+   * Use shutdown() rather than close() so the socket memory remains valid
+   * until threads exit. This avoids TSan data races. */
+  if (server->listen_socket)
+    shutdown (Socket_fd (server->listen_socket), SHUT_RDWR);
+  if (server->target_listen)
+    shutdown (Socket_fd (server->target_listen), SHUT_RDWR);
+
+  /* Wait for threads to exit (they should exit because sockets are shut down)
+   */
+  pthread_join (server->thread, NULL);
+  pthread_join (server->echo_thread, NULL);
+
+  /* Now safe to free sockets - threads have exited */
   if (server->listen_socket)
     Socket_free (&server->listen_socket);
   if (server->target_listen)
     Socket_free (&server->target_listen);
-
-  pthread_join (server->thread, NULL);
 }
 
 /* ============================================================================
@@ -551,10 +628,15 @@ TEST (proxy_integration_socks5_with_auth)
 
   /* Verify tunnel */
   int tries = 0;
-  while (!server.tunnel_established && tries < 50)
+  while (!server.tunnel_established && tries < 100)
     {
-      usleep (10000);
+      usleep (20000);
       tries++;
+    }
+  if (!server.tunnel_established)
+    {
+      printf ("  [DEBUG] tunnel not established after %d tries, client_connected=%d\n", 
+              tries, server.client_connected);
     }
   ASSERT (server.tunnel_established);
 

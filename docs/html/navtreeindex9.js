@@ -1,5 +1,10 @@
 var NAVTREEINDEX9 =
 {
+"migration_guide.html#autotoc_md315":[12,6,2],
+"migration_guide.html#autotoc_md317":[12,7],
+"migration_guide.html#autotoc_md319":[12,8],
+"pages.html":[],
+"proxy__connect_8c.html":[14,0,1,4],
 "proxy__connect_8c.html#a3c04138a5bfe5d72780bb7e82a18e627":[14,0,1,4,0],
 "proxy__connect_8c.html#a55da5ed30bd1853bac8e253ed4e1db47":[14,0,1,4,3],
 "proxy__connect_8c.html#aabc38c84d6370a74bc1987510537bb20":[14,0,1,4,1],

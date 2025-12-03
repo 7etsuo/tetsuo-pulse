@@ -26,6 +26,7 @@
 #include "core/Arena.h"
 #include "core/SocketUtil.h"
 
+#include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
 #include <pthread.h>
@@ -182,18 +183,21 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
   ServerConnection *conn;
   Arena_T arena;
 
-  arena = Arena_new ();
-  if (arena == NULL)
+  /* Allocate connection structure with malloc (not from arena) so it remains
+   * valid during Arena_dispose in connection_close */
+  conn = malloc (sizeof (*conn));
+  if (conn == NULL)
     return NULL;
 
-  conn = Arena_alloc (arena, sizeof (*conn), __FILE__, __LINE__);
-  if (conn == NULL)
+  memset (conn, 0, sizeof (*conn));
+
+  arena = Arena_new ();
+  if (arena == NULL)
     {
-      Arena_dispose (&arena);
+      free (conn);
       return NULL;
     }
 
-  memset (conn, 0, sizeof (*conn));
   conn->arena = arena;
   conn->socket = socket;
   conn->state = CONN_STATE_READING_REQUEST;
@@ -212,6 +216,7 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
   if (conn->parser == NULL)
     {
       Arena_dispose (&arena);
+      free (conn);
       return NULL;
     }
 
@@ -222,6 +227,7 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
   if (conn->inbuf == NULL || conn->outbuf == NULL)
     {
       Arena_dispose (&arena);
+      free (conn);
       return NULL;
     }
 
@@ -230,6 +236,7 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
   if (conn->response_headers == NULL)
     {
       Arena_dispose (&arena);
+      free (conn);
       return NULL;
     }
 
@@ -277,18 +284,33 @@ connection_close (SocketHTTPServer_T server, ServerConnection *conn)
     {
       Arena_dispose (&conn->arena);
     }
+
+  /* Free connection structure (allocated with malloc, not from arena) */
+  free (conn);
 }
 
 static int
 connection_read (ServerConnection *conn)
 {
   char buf[4096];
-  ssize_t n;
+  volatile ssize_t n = 0;
+  volatile int closed = 0;
 
-  n = Socket_recv (conn->socket, buf, sizeof (buf));
-  if (n <= 0)
+  TRY
     {
-      if (n == 0 || (errno != EAGAIN && errno != EWOULDBLOCK))
+      n = Socket_recv (conn->socket, buf, sizeof (buf));
+    }
+  EXCEPT (Socket_Closed)
+    {
+      /* Client closed connection - handle gracefully */
+      closed = 1;
+      n = 0;
+    }
+  END_TRY;
+
+  if (closed || n <= 0)
+    {
+      if (closed || n == 0 || (errno != EAGAIN && errno != EWOULDBLOCK))
         {
           conn->state = CONN_STATE_CLOSED;
           return -1;
@@ -310,15 +332,27 @@ connection_write (ServerConnection *conn)
   const void *data;
   size_t len;
   ssize_t n;
+  volatile int closed = 0;
 
   data = SocketBuf_readptr (conn->outbuf, &len);
   if (len == 0)
     return 0;
 
-  n = Socket_send (conn->socket, data, len);
-  if (n <= 0)
+  TRY
     {
-      if (n == 0 || (errno != EAGAIN && errno != EWOULDBLOCK))
+      n = Socket_send (conn->socket, data, len);
+    }
+  EXCEPT (Socket_Closed)
+    {
+      /* Client closed connection */
+      closed = 1;
+      n = 0;
+    }
+  END_TRY;
+
+  if (closed || n <= 0)
+    {
+      if (closed || n == 0 || (errno != EAGAIN && errno != EWOULDBLOCK))
         {
           conn->state = CONN_STATE_CLOSED;
           return -1;
@@ -426,13 +460,23 @@ connection_send_response (ServerConnection *conn)
     }
 
   /* Send headers */
-  Socket_send (conn->socket, buf, (size_t)len);
-
-  /* Send body */
-  if (conn->response_body != NULL && conn->response_body_len > 0)
+  TRY
     {
-      Socket_send (conn->socket, conn->response_body, conn->response_body_len);
+      Socket_sendall (conn->socket, buf, (size_t)len);
+
+      /* Send body */
+      if (conn->response_body != NULL && conn->response_body_len > 0)
+        {
+          Socket_sendall (conn->socket, conn->response_body, conn->response_body_len);
+        }
     }
+  EXCEPT (Socket_Closed)
+    {
+      /* Client closed connection during response - handle gracefully */
+      conn->state = CONN_STATE_CLOSED;
+      return;
+    }
+  END_TRY;
 
   /* Check keep-alive */
   if (SocketHTTP1_Parser_should_keepalive (conn->parser))
@@ -505,18 +549,20 @@ SocketHTTPServer_new (const SocketHTTPServer_Config *config)
       config = &default_config;
     }
 
-  arena = Arena_new ();
-  if (arena == NULL)
+  /* Allocate server structure with malloc (not from arena) so it remains
+   * valid during Arena_dispose in SocketHTTPServer_free */
+  server = malloc (sizeof (*server));
+  if (server == NULL)
     {
-      HTTPSERVER_ERROR_MSG ("Failed to create server arena");
+      HTTPSERVER_ERROR_MSG ("Failed to allocate server structure");
       RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
     }
 
-  server = Arena_alloc (arena, sizeof (*server), __FILE__, __LINE__);
-  if (server == NULL)
+  arena = Arena_new ();
+  if (arena == NULL)
     {
-      Arena_dispose (&arena);
-      HTTPSERVER_ERROR_MSG ("Failed to allocate server structure");
+      free (server);
+      HTTPSERVER_ERROR_MSG ("Failed to create server arena");
       RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
     }
 
@@ -529,6 +575,7 @@ SocketHTTPServer_new (const SocketHTTPServer_Config *config)
   if (server->poll == NULL)
     {
       Arena_dispose (&arena);
+      free (server);
       HTTPSERVER_ERROR_MSG ("Failed to create poll instance");
       RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
     }
@@ -571,25 +618,81 @@ SocketHTTPServer_free (SocketHTTPServer_T *server)
       Arena_dispose (&s->arena);
     }
 
+  /* Free server structure (allocated with malloc, not from arena) */
+  free (s);
   *server = NULL;
+}
+
+/**
+ * is_ipv4_address - Check if address string is IPv4
+ * @addr: Address string to check
+ *
+ * Returns: 1 if IPv4, 0 otherwise
+ */
+static int
+is_ipv4_address (const char *addr)
+{
+  struct in_addr dummy;
+  return inet_pton (AF_INET, addr, &dummy) == 1;
+}
+
+/**
+ * is_ipv6_address - Check if address string is IPv6
+ * @addr: Address string to check
+ *
+ * Returns: 1 if IPv6, 0 otherwise
+ */
+static int
+is_ipv6_address (const char *addr)
+{
+  struct in6_addr dummy;
+  return inet_pton (AF_INET6, addr, &dummy) == 1;
 }
 
 int
 SocketHTTPServer_start (SocketHTTPServer_T server)
 {
-  const char *bind_addr;
+  const char *volatile bind_addr;
+  volatile int socket_family;
 
   assert (server != NULL);
 
   if (server->running)
     return 0;
 
-  /* Create listen socket */
-  server->listen_socket = Socket_new (AF_INET6, SOCK_STREAM, 0);
-  if (server->listen_socket == NULL)
+  /* Determine bind address and appropriate socket family */
+  bind_addr = server->config.bind_address;
+  if (bind_addr == NULL || strcmp (bind_addr, "") == 0)
     {
-      /* Try IPv4 */
+      /* No address specified - use dual-stack IPv6 or fall back to IPv4 */
+      bind_addr = "::";
+      socket_family = AF_INET6;
+    }
+  else if (is_ipv4_address (bind_addr))
+    {
+      /* Explicit IPv4 address - use IPv4 socket */
+      socket_family = AF_INET;
+    }
+  else if (is_ipv6_address (bind_addr))
+    {
+      /* Explicit IPv6 address - use IPv6 socket */
+      socket_family = AF_INET6;
+    }
+  else
+    {
+      /* Hostname - try IPv6 first for dual-stack support */
+      socket_family = AF_INET6;
+    }
+
+  /* Create listen socket with appropriate family */
+  server->listen_socket = Socket_new (socket_family, SOCK_STREAM, 0);
+  if (server->listen_socket == NULL && socket_family == AF_INET6)
+    {
+      /* IPv6 failed, try IPv4 */
+      socket_family = AF_INET;
       server->listen_socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+      if (bind_addr && strcmp (bind_addr, "::") == 0)
+        bind_addr = "0.0.0.0";
     }
 
   if (server->listen_socket == NULL)
@@ -601,18 +704,14 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
   Socket_setreuseaddr (server->listen_socket);
 
   /* Bind */
-  bind_addr = server->config.bind_address;
-  if (bind_addr == NULL)
-    bind_addr = "::";
-
   TRY
     {
       Socket_bind (server->listen_socket, bind_addr, server->config.port);
     }
   EXCEPT (Socket_Failed)
     {
-      /* Try 0.0.0.0 if :: failed */
-      if (strcmp (bind_addr, "::") == 0)
+      /* Try 0.0.0.0 if :: failed on IPv6 socket */
+      if (socket_family == AF_INET6 && strcmp (bind_addr, "::") == 0)
         {
           TRY
             {

@@ -328,8 +328,8 @@ $(document).ready(function(){initNavTree('websocket__server_8c_source.html','');
 <div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>      <span class="keywordflow">if</span> (<a class="code hl_function" href="SocketWS_8h.html#aa40def588d31ab50126603fa720f83b0">SocketWS_state</a> (ws) == <a class="code hl_enumvalue" href="SocketWS_8h.html#ab8b49607a661224d66bb264b1e597e2da4356293e46722d1fa27ca8624f62b296">WS_STATE_CLOSED</a>)</div>
 <div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>        {</div>
 <div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>          printf (<span class="stringliteral">&quot;WebSocket client disconnected\n&quot;</span>);</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>          <a class="code hl_function" href="SocketWS_8h.html#aa040ebe5bc5f2673b04b15091a45b944">SocketWS_free</a> (&amp;ws);</div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>          <a class="code hl_function" href="websocket__server_8c.html#a076c7de77cb74d1a0468ee51bf569ba5">remove_ws_client</a> (<a class="code hl_variable" href="websocket__server_8c.html#a1ecbd69317b6899634ceb14e9acb2e59">ws_clients</a>[i]);</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>          <a class="code hl_function" href="websocket__server_8c.html#a076c7de77cb74d1a0468ee51bf569ba5">remove_ws_client</a> (ws);  <span class="comment">/* Remove from array first */</span></div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>          <a class="code hl_function" href="SocketWS_8h.html#aa040ebe5bc5f2673b04b15091a45b944">SocketWS_free</a> (&amp;ws);    <span class="comment">/* Then free the WebSocket */</span></div>
 <div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>          i--; <span class="comment">/* Adjust index after removal */</span></div>
 <div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>          <span class="keywordflow">continue</span>;</div>
 <div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>        }</div>
@@ -362,8 +362,8 @@ $(document).ready(function(){initNavTree('websocket__server_8c_source.html','');
 <div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>              <span class="comment">/* Connection closed */</span></div>
 <div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>              printf (<span class="stringliteral">&quot;WebSocket client closed connection (code: %d)\n&quot;</span>,</div>
 <div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>                      SocketWS_close_code (ws));</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>              <a class="code hl_function" href="SocketWS_8h.html#aa040ebe5bc5f2673b04b15091a45b944">SocketWS_free</a> (&amp;ws);</div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>              <a class="code hl_function" href="websocket__server_8c.html#a076c7de77cb74d1a0468ee51bf569ba5">remove_ws_client</a> (<a class="code hl_variable" href="websocket__server_8c.html#a1ecbd69317b6899634ceb14e9acb2e59">ws_clients</a>[i]);</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>              <a class="code hl_function" href="websocket__server_8c.html#a076c7de77cb74d1a0468ee51bf569ba5">remove_ws_client</a> (ws);  <span class="comment">/* Remove from array first */</span></div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>              <a class="code hl_function" href="SocketWS_8h.html#aa040ebe5bc5f2673b04b15091a45b944">SocketWS_free</a> (&amp;ws);    <span class="comment">/* Then free the WebSocket */</span></div>
 <div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>              i--;</div>
 <div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>            }</div>
 <div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>        }</div>
@@ -375,10 +375,10 @@ $(document).ready(function(){initNavTree('websocket__server_8c_source.html','');
 <div class="foldopen" id="foldopen00281" data-start="{" data-end="}">
 <div class="line"><a id="l00281" name="l00281"></a><span class="lineno"><a class="line" href="websocket__server_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">  281</a></span><a class="code hl_function" href="websocket__server_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a> (<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span> **argv)</div>
 <div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>{</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>  <span class="keywordtype">int</span> port = 8080;</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>  <span class="keyword">volatile</span> <span class="keywordtype">int</span> port = 8080;</div>
 <div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>  <a class="code hl_typedef" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server = NULL;</div>
 <div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>  <a class="code hl_struct" href="SocketHTTPServer_8h.html#structSocketHTTPServer__Config">SocketHTTPServer_Config</a> config;</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>  <span class="keywordtype">int</span> result = 0;</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>  <span class="keyword">volatile</span> <span class="keywordtype">int</span> result = 0;</div>
 <div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span> </div>
 <div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>  <span class="comment">/* Parse port */</span></div>
 <div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>  <span class="keywordflow">if</span> (argc &gt; 1)</div>

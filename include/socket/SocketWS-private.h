@@ -45,6 +45,116 @@
 #define SOCKETWS_MAX_FRAME_SIZE (16 * 1024 * 1024)
 #endif
 
+/* ============================================================================
+ * Handshake Constants (RFC 6455 Section 4)
+ * ============================================================================ */
+
+/** WebSocket protocol version per RFC 6455 */
+#define SOCKETWS_PROTOCOL_VERSION "13"
+
+/** Maximum size for HTTP upgrade request buffer */
+#ifndef SOCKETWS_HANDSHAKE_REQUEST_SIZE
+#define SOCKETWS_HANDSHAKE_REQUEST_SIZE 4096
+#endif
+
+/** Maximum size for HTTP upgrade response buffer */
+#ifndef SOCKETWS_HANDSHAKE_RESPONSE_SIZE
+#define SOCKETWS_HANDSHAKE_RESPONSE_SIZE 4096
+#endif
+
+/** Value for Upgrade header in WebSocket handshake */
+#define SOCKETWS_UPGRADE_VALUE "websocket"
+
+/** Value for Connection header in WebSocket handshake */
+#define SOCKETWS_CONNECTION_VALUE "Upgrade"
+
+/** Default HTTP port (used to omit port from Host header) */
+#define SOCKETWS_DEFAULT_HTTP_PORT 80
+
+/** Default HTTPS port (used to omit port from Host header) */
+#define SOCKETWS_DEFAULT_HTTPS_PORT 443
+
+/** Expected length of Base64-encoded Sec-WebSocket-Key */
+#define SOCKETWS_KEY_BASE64_LENGTH 24
+
+/** No port specified (for Host header logic) */
+#define SOCKETWS_NO_PORT 0
+
+/* ============================================================================
+ * XOR Masking Constants (RFC 6455 Section 5.3)
+ * ============================================================================ */
+
+/** Alignment size for optimized 64-bit XOR masking */
+#define SOCKETWS_XOR_ALIGN_SIZE 8
+
+/** Mask for 8-byte alignment check: (ptr & MASK) gives misalignment */
+#define SOCKETWS_XOR_ALIGN_MASK 7
+
+/** RFC 6455: Mask key is always 4 bytes */
+#define SOCKETWS_MASK_KEY_SIZE 4
+
+/** Wrap mask for mask key indexing: (offset & MASK) cycles 0-3 */
+#define SOCKETWS_MASK_KEY_INDEX_MASK 3
+
+/* ============================================================================
+ * Frame Header Constants (RFC 6455 Section 5.2)
+ * ============================================================================ */
+
+/** Minimum frame header size: 1 byte (FIN+RSV+opcode) + 1 byte (MASK+len) */
+#define SOCKETWS_BASE_HEADER_SIZE 2
+
+/** Payload length value indicating 16-bit extended length follows */
+#define SOCKETWS_EXTENDED_LEN_16 126
+
+/** Payload length value indicating 64-bit extended length follows */
+#define SOCKETWS_EXTENDED_LEN_64 127
+
+/** Maximum payload length that fits in 7-bit field */
+#define SOCKETWS_MAX_7BIT_PAYLOAD 125
+
+/** Maximum payload length that fits in 16-bit extended field */
+#define SOCKETWS_MAX_16BIT_PAYLOAD 65535
+
+/** Size of 16-bit extended length field */
+#define SOCKETWS_EXTENDED_LEN_16_SIZE 2
+
+/** Size of 64-bit extended length field */
+#define SOCKETWS_EXTENDED_LEN_64_SIZE 8
+
+/* ============================================================================
+ * Frame Header Bit Masks (RFC 6455 Section 5.2)
+ * ============================================================================ */
+
+/** FIN bit: indicates final fragment of message */
+#define SOCKETWS_FIN_BIT 0x80
+
+/** RSV1 bit: used for permessage-deflate compression */
+#define SOCKETWS_RSV1_BIT 0x40
+
+/** RSV2 bit: reserved, must be 0 */
+#define SOCKETWS_RSV2_BIT 0x20
+
+/** RSV3 bit: reserved, must be 0 */
+#define SOCKETWS_RSV3_BIT 0x10
+
+/** Opcode mask: lower 4 bits of first byte */
+#define SOCKETWS_OPCODE_MASK 0x0F
+
+/** MASK bit: indicates payload is masked (second byte, bit 7) */
+#define SOCKETWS_MASK_BIT 0x80
+
+/** Payload length mask: lower 7 bits of second byte */
+#define SOCKETWS_PAYLOAD_LEN_MASK 0x7F
+
+/* ============================================================================
+ * Send Buffer Configuration
+ * ============================================================================ */
+
+/** Chunk size for data frame payload sending (8KB) */
+#ifndef SOCKETWS_SEND_CHUNK_SIZE
+#define SOCKETWS_SEND_CHUNK_SIZE 8192
+#endif
+
 /** Maximum reassembled message size (default 64MB) */
 #ifndef SOCKETWS_MAX_MESSAGE_SIZE
 #define SOCKETWS_MAX_MESSAGE_SIZE (64 * 1024 * 1024)

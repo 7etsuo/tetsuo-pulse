@@ -86,6 +86,7 @@ typedef struct HTTPPoolEntry
       SocketHTTP1_Parser_T parser;
       SocketBuf_T inbuf;
       SocketBuf_T outbuf;
+      Arena_T conn_arena; /**< Arena for connection resources (parser, buffers) */
     } h1;
     struct
     {

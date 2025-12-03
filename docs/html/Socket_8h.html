@@ -349,6 +349,18 @@ Functions</h2></td></tr>
 <tr class="memitem:a64a5bd6dc33ef5f000b9f7d334a1fdfa" id="r_a64a5bd6dc33ef5f000b9f7d334a1fdfa"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a64a5bd6dc33ef5f000b9f7d334a1fdfa">Socket_getpeergid</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
 <tr class="memdesc:a64a5bd6dc33ef5f000b9f7d334a1fdfa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getpeergid - Get peer group ID (Linux only) @socket: Connected Unix domain socket Returns: Peer group ID, or (gid_t)-1 if unavailable.  <br /></td></tr>
 <tr class="separator:a64a5bd6dc33ef5f000b9f7d334a1fdfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a001e932180b059a805ca53a8edbeef15" id="r_a001e932180b059a805ca53a8edbeef15"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a001e932180b059a805ca53a8edbeef15">Socket_sendfd</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int fd_to_pass)</td></tr>
+<tr class="memdesc:a001e932180b059a805ca53a8edbeef15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_sendfd - Send a file descriptor over Unix domain socket @socket: Connected Unix domain socket (AF_UNIX) @fd_to_pass: File descriptor to pass (must be &gt;= 0)  <br /></td></tr>
+<tr class="separator:a001e932180b059a805ca53a8edbeef15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad1236a73c0cac828b3079b74d1b0996d" id="r_ad1236a73c0cac828b3079b74d1b0996d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ad1236a73c0cac828b3079b74d1b0996d">Socket_recvfd</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int *fd_received)</td></tr>
+<tr class="memdesc:ad1236a73c0cac828b3079b74d1b0996d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_recvfd - Receive a file descriptor over Unix domain socket @socket: Connected Unix domain socket (AF_UNIX) @fd_received: Output pointer for received file descriptor.  <br /></td></tr>
+<tr class="separator:ad1236a73c0cac828b3079b74d1b0996d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70c2f94b87d307842c7d11de0b6a2bce" id="r_a70c2f94b87d307842c7d11de0b6a2bce"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a70c2f94b87d307842c7d11de0b6a2bce">Socket_sendfds</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const int *fds, size_t count)</td></tr>
+<tr class="memdesc:a70c2f94b87d307842c7d11de0b6a2bce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_sendfds - Send multiple file descriptors @socket: Connected Unix domain socket (AF_UNIX) @fds: Array of file descriptors to pass (all must be &gt;= 0) @count: Number of descriptors (1 to SOCKET_MAX_FDS_PER_MSG)  <br /></td></tr>
+<tr class="separator:a70c2f94b87d307842c7d11de0b6a2bce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab806cbdac1b78ff644c4f841151cf3a8" id="r_ab806cbdac1b78ff644c4f841151cf3a8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ab806cbdac1b78ff644c4f841151cf3a8">Socket_recvfds</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int *fds, size_t max_count, size_t *received_count)</td></tr>
+<tr class="memdesc:ab806cbdac1b78ff644c4f841151cf3a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_recvfds - Receive multiple file descriptors @socket: Connected Unix domain socket (AF_UNIX) @fds: Output array for received descriptors (must have max_count capacity) @max_count: Maximum descriptors to receive @received_count: Output for actual count received.  <br /></td></tr>
+<tr class="separator:ab806cbdac1b78ff644c4f841151cf3a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad12cd27d2531c8ea2b762e0ab4659d63" id="r_ad12cd27d2531c8ea2b762e0ab4659d63"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ad12cd27d2531c8ea2b762e0ab4659d63">SocketUnix_bind</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, const char *path, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
 <tr class="separator:ad12cd27d2531c8ea2b762e0ab4659d63"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afadda7c72f287b85c490f04aec8623e1" id="r_afadda7c72f287b85c490f04aec8623e1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#afadda7c72f287b85c490f04aec8623e1">SocketUnix_connect</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, const char *path, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
@@ -1875,6 +1887,102 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="ad1236a73c0cac828b3079b74d1b0996d" name="ad1236a73c0cac828b3079b74d1b0996d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad1236a73c0cac828b3079b74d1b0996d">&#9670;&#160;</a></span>Socket_recvfd()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Socket_recvfd </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *&#160;</td>
+          <td class="paramname"><em>fd_received</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Socket_recvfd - Receive a file descriptor over Unix domain socket @socket: Connected Unix domain socket (AF_UNIX) @fd_received: Output pointer for received file descriptor. </p>
+<p>Returns: 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Failed on error, Socket_Closed on disconnect</p>
+<p>Receives a file descriptor from the peer process via SCM_RIGHTS. The received fd is owned by this process and must be closed when done.</p>
+<p>OWNERSHIP: Caller takes ownership of the received fd and MUST close it.</p>
+<p>Thread-safe: Yes (uses thread-local error buffers) </p>
+
+</div>
+</div>
+<a id="ab806cbdac1b78ff644c4f841151cf3a8" name="ab806cbdac1b78ff644c4f841151cf3a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab806cbdac1b78ff644c4f841151cf3a8">&#9670;&#160;</a></span>Socket_recvfds()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Socket_recvfds </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *&#160;</td>
+          <td class="paramname"><em>fds</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>max_count</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t *&#160;</td>
+          <td class="paramname"><em>received_count</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Socket_recvfds - Receive multiple file descriptors @socket: Connected Unix domain socket (AF_UNIX) @fds: Output array for received descriptors (must have max_count capacity) @max_count: Maximum descriptors to receive @received_count: Output for actual count received. </p>
+<p>Returns: 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Failed on error, Socket_Closed on disconnect</p>
+<p>Receives multiple file descriptors from a single message. On success, *received_count contains the number of fds received.</p>
+<p>OWNERSHIP: Caller takes ownership of all received fds and MUST close them.</p>
+<p>Thread-safe: Yes (uses thread-local error buffers) </p>
+
+</div>
+</div>
 <a id="a92c972ba69ef189d5d802e4d1889a9c6" name="a92c972ba69ef189d5d802e4d1889a9c6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a92c972ba69ef189d5d802e4d1889a9c6">&#9670;&#160;</a></span>Socket_recvmsg()</h2>
 
@@ -2140,6 +2248,102 @@ Variables</h2></td></tr>
 <p>Socket_sendall - Send all data (handles partial sends) @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Total bytes sent (always equals len on success) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors. </p>
 
 <p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+
+</div>
+</div>
+<a id="a001e932180b059a805ca53a8edbeef15" name="a001e932180b059a805ca53a8edbeef15"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a001e932180b059a805ca53a8edbeef15">&#9670;&#160;</a></span>Socket_sendfd()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Socket_sendfd </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>fd_to_pass</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Socket_sendfd - Send a file descriptor over Unix domain socket @socket: Connected Unix domain socket (AF_UNIX) @fd_to_pass: File descriptor to pass (must be &gt;= 0) </p>
+<p>Returns: 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Failed on error, Socket_Closed on disconnect</p>
+<p>Passes a single file descriptor to the peer process using SCM_RIGHTS. The receiving process gets a new fd referring to the same kernel object.</p>
+<p>PLATFORM REQUIREMENTS:</p><ul>
+<li>POSIX-compliant Unix domain socket (AF_UNIX)</li>
+<li>NOT available on Windows</li>
+</ul>
+<p>SECURITY NOTES:</p><ul>
+<li>Only works with connected Unix domain sockets</li>
+<li>Receiving process should validate the fd type before use</li>
+</ul>
+<p>Thread-safe: Yes (uses thread-local error buffers) </p>
+
+</div>
+</div>
+<a id="a70c2f94b87d307842c7d11de0b6a2bce" name="a70c2f94b87d307842c7d11de0b6a2bce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70c2f94b87d307842c7d11de0b6a2bce">&#9670;&#160;</a></span>Socket_sendfds()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Socket_sendfds </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const int *&#160;</td>
+          <td class="paramname"><em>fds</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>count</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Socket_sendfds - Send multiple file descriptors @socket: Connected Unix domain socket (AF_UNIX) @fds: Array of file descriptors to pass (all must be &gt;= 0) @count: Number of descriptors (1 to SOCKET_MAX_FDS_PER_MSG) </p>
+<p>Returns: 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Failed on error, Socket_Closed on disconnect</p>
+<p>Passes multiple file descriptors atomically in a single message. All descriptors are either sent together or none are sent.</p>
+<p>Thread-safe: Yes (uses thread-local error buffers) </p>
 
 </div>
 </div>

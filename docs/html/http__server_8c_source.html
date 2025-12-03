@@ -261,10 +261,10 @@ $(document).ready(function(){initNavTree('http__server_8c_source.html',''); init
 <div class="foldopen" id="foldopen00162" data-start="{" data-end="}">
 <div class="line"><a id="l00162" name="l00162"></a><span class="lineno"><a class="line" href="http__server_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">  162</a></span><a class="code hl_function" href="http__server_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a> (<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span> **argv)</div>
 <div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>{</div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>  <span class="keywordtype">int</span> port = 8080;</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>  <span class="keyword">volatile</span> <span class="keywordtype">int</span> port = 8080;</div>
 <div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>  <a class="code hl_typedef" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server = NULL;</div>
 <div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>  <a class="code hl_struct" href="SocketHTTPServer_8h.html#structSocketHTTPServer__Config">SocketHTTPServer_Config</a> config;</div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>  <span class="keywordtype">int</span> result = 0;</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>  <span class="keyword">volatile</span> <span class="keywordtype">int</span> result = 0;</div>
 <div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span> </div>
 <div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>  <span class="comment">/* Parse port from command line */</span></div>
 <div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>  <span class="keywordflow">if</span> (argc &gt; 1)</div>

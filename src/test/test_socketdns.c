@@ -9,6 +9,7 @@
 /* cppcheck-suppress-file redundantAssignment ; test code patterns */
 
 #include <pthread.h>
+#include <stdatomic.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -224,7 +225,7 @@ slow_queue_callback (SocketDNS_Request_T req, struct addrinfo *result,
     SocketCommon_free_addrinfo (result);
 }
 
-static int callback_invoked;
+static atomic_int callback_invoked;
 static void
 test_callback (SocketDNS_Request_T req, struct addrinfo *result, int error,
                void *data)
@@ -256,7 +257,7 @@ TEST (socketdns_callback_invoked)
   END_TRY;
 }
 
-static int test_received_data;
+static atomic_int test_received_data;
 
 static void
 callback_check_data (SocketDNS_Request_T r, struct addrinfo *res, int err,

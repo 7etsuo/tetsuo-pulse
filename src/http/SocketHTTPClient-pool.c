@@ -177,6 +177,11 @@ pool_entry_close (HTTPPoolEntry *entry)
         {
           SocketBuf_release (&entry->proto.h1.outbuf);
         }
+      /* Dispose of connection arena (frees parser, buffers memory) */
+      if (entry->proto.h1.conn_arena != NULL)
+        {
+          Arena_dispose (&entry->proto.h1.conn_arena);
+        }
     }
   else if (entry->version == HTTP_VERSION_2)
     {
@@ -466,6 +471,9 @@ create_http1_connection (HTTPPool *pool, Socket_T socket, const char *host,
   /* Create I/O buffers */
   entry->proto.h1.inbuf = SocketBuf_new (conn_arena, POOL_IO_BUFFER_SIZE);
   entry->proto.h1.outbuf = SocketBuf_new (conn_arena, POOL_IO_BUFFER_SIZE);
+
+  /* Store arena for cleanup */
+  entry->proto.h1.conn_arena = conn_arena;
 
   /* Add to pool */
   pool_hash_add (pool, entry);

@@ -23,9 +23,11 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "core/Arena.h"
@@ -64,9 +66,9 @@ typedef struct
   Socket_T client_socket;
   SocketWS_T ws;
   pthread_t thread;
-  volatile int running;
-  volatile int connected;
-  volatile int handshake_done;
+  atomic_int running;
+  atomic_int connected;
+  atomic_int handshake_done;
   int port;
   Arena_T arena;
 } WSTestServer;
@@ -247,13 +249,17 @@ ws_server_stop (WSTestServer *server)
 {
   server->running = 0;
 
-  /* Close listen socket to unblock accept */
+  /* Shutdown listen socket to unblock accept.
+   * Use shutdown() rather than close() so the socket memory remains valid
+   * until the thread exits. This avoids TSan data races. */
   if (server->listen_socket)
-    {
-      Socket_free (&server->listen_socket);
-    }
+    shutdown (Socket_fd (server->listen_socket), SHUT_RDWR);
 
   pthread_join (server->thread, NULL);
+
+  /* Now safe to free - thread has exited */
+  if (server->listen_socket)
+    Socket_free (&server->listen_socket);
 
   if (server->arena)
     Arena_dispose (&server->arena);

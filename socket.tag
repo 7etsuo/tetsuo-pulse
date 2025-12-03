@@ -593,6 +593,13 @@
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>SOCKET_MAX_FDS_PER_MSG</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a9b64483d1dd5d32bba7937741c36cabf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>SOCKET_HASH_TABLE_SIZE</name>
       <anchorfile>SocketConfig_8h.html</anchorfile>
       <anchor>a9aab9f1282519c6c66aca1271deffe84</anchor>
@@ -7980,6 +7987,34 @@
       <anchorfile>Socket_8h.html</anchorfile>
       <anchor>a64a5bd6dc33ef5f000b9f7d334a1fdfa</anchor>
       <arglist>(const Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Socket_sendfd</name>
+      <anchorfile>Socket_8h.html</anchorfile>
+      <anchor>a001e932180b059a805ca53a8edbeef15</anchor>
+      <arglist>(Socket_T socket, int fd_to_pass)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Socket_recvfd</name>
+      <anchorfile>Socket_8h.html</anchorfile>
+      <anchor>ad1236a73c0cac828b3079b74d1b0996d</anchor>
+      <arglist>(Socket_T socket, int *fd_received)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Socket_sendfds</name>
+      <anchorfile>Socket_8h.html</anchorfile>
+      <anchor>a70c2f94b87d307842c7d11de0b6a2bce</anchor>
+      <arglist>(Socket_T socket, const int *fds, size_t count)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Socket_recvfds</name>
+      <anchorfile>Socket_8h.html</anchorfile>
+      <anchor>ab806cbdac1b78ff644c4f841151cf3a8</anchor>
+      <arglist>(Socket_T socket, int *fds, size_t max_count, size_t *received_count)</arglist>
     </member>
     <member kind="function">
       <type>void</type>

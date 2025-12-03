@@ -1,5 +1,6 @@
 var NAVTREEINDEX2 =
 {
+"SocketDgram_8h.html#ae6c2bde38c3a7addb7cfffe98a253f60":[14,0,2,5,4,7],
 "SocketDgram_8h.html#af54f02197f8c0dc53fbdf333d476aae2":[14,0,2,5,4,11],
 "SocketDgram_8h.html#af832ef8734ab4dfb43ad639470461bda":[14,0,2,5,4,19],
 "SocketDgram_8h.html#af96de127ecced1b5d8166e6a039e664c":[14,0,2,5,4,20],
@@ -248,6 +249,5 @@ var NAVTREEINDEX2 =
 "SocketHTTP2_8h.html#aa270fdaf04a54c3d7bf5a795aa00481f":[14,0,2,2,3,65],
 "SocketHTTP2_8h.html#aa503c5a217c84181f7adf368f5eea13f":[14,0,2,2,3,2,1],
 "SocketHTTP2_8h.html#aaaacd21ea311866f022dc2819cdf3970":[14,0,2,2,3,32],
-"SocketHTTP2_8h.html#aab92659a1ac39f911a7031a8fa57532b":[14,0,2,2,3,30],
-"SocketHTTP2_8h.html#aac497f685932335cce6c3868243edf3c":[14,0,2,2,3,52]
+"SocketHTTP2_8h.html#aab92659a1ac39f911a7031a8fa57532b":[14,0,2,2,3,30]
 };

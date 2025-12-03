@@ -53,6 +53,11 @@
 /** Nanoseconds per millisecond */
 #define SOCKET_PROXY_NS_PER_MS 1000000LL
 
+/** Default poll timeout when no specific timeout is pending (ms) */
+#ifndef SOCKET_PROXY_DEFAULT_POLL_TIMEOUT_MS
+#define SOCKET_PROXY_DEFAULT_POLL_TIMEOUT_MS 1000
+#endif
+
 /* ============================================================================
  * SOCKS Protocol Constants (RFC 1928, RFC 1929)
  * ============================================================================ */

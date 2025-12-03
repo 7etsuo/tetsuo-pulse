@@ -231,7 +231,7 @@ $(document).ready(function(){initNavTree('proxy__connect_8c_source.html',''); in
 <div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>  <span class="keywordtype">int</span> target_port;</div>
 <div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>  <a class="code hl_struct" href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a> proxy_config;</div>
 <div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>  <a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = NULL;</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>  <span class="keywordtype">int</span> result = 0;</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>  <span class="keyword">volatile</span> <span class="keywordtype">int</span> result = 0;</div>
 <div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span> </div>
 <div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>  <span class="comment">/* Parse arguments */</span></div>
 <div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>  <span class="keywordflow">if</span> (argc &lt; 4)</div>
@@ -384,7 +384,7 @@ $(document).ready(function(){initNavTree('proxy__connect_8c_source.html',''); in
 <div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>  }</div>
 <div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>  <a class="code hl_define" href="Except_8h.html#ab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a> (<a class="code hl_variable" href="Socket_8h.html#a225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a>)</div>
 <div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>  {</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>    fprintf (stderr, <span class="stringliteral">&quot;Socket error: %s\n&quot;</span>, Socket_error ());</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>    fprintf (stderr, <span class="stringliteral">&quot;Socket error\n&quot;</span>);</div>
 <div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>    result = 1;</div>
 <div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>  }</div>
 <div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span><span class="preprocessor">#ifdef SOCKET_HAS_TLS</span></div>

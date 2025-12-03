@@ -118,7 +118,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>Except_stack&#160;:&#160;<a class="el" href="Except_8h.html#a3d38c6361ecf1c4873bbcb2de8a50874">Except.h</a></li>
 <li>SAFE_CLOSE&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a71b9fcff797cf3624ea3ec9c02805291">SocketConfig.h</a></li>
 <li>SAFE_UDP_SIZE&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a7f6c789e54c4efbc66d4a9cbc947734f">SocketConfig.h</a></li>
-<li>signal_handler()&#160;:&#160;<a class="el" href="http__server_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">http_server.c</a>, <a class="el" href="websocket__server_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">websocket_server.c</a>, <a class="el" href="websocket__client_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">websocket_client.c</a></li>
+<li>signal_handler()&#160;:&#160;<a class="el" href="websocket__client_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">websocket_client.c</a>, <a class="el" href="websocket__server_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">websocket_server.c</a>, <a class="el" href="http__server_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">http_server.c</a></li>
 <li>SOCKET_AF_INET&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a04ce265041d74932e7d3354651fd0a79">SocketConfig.h</a></li>
 <li>SOCKET_AF_INET6&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a7a754a1f4470597ea52da2a678378100">SocketConfig.h</a></li>
 <li>SOCKET_AF_UNIX&#160;:&#160;<a class="el" href="SocketConfig_8h.html#af26b9f671650b58e0bd264a71ec3cbfa">SocketConfig.h</a></li>
@@ -289,6 +289,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKET_MAX_BUFFER_SIZE&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a72443e4b95fbd8ef4d191b754b4324dc">SocketConfig.h</a></li>
 <li>SOCKET_MAX_CONNECTIONS&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a72f1e9bc10cc82fb4ee1915335d60152">SocketConfig.h</a></li>
 <li>SOCKET_MAX_EVENT_BATCH&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a5528f1e60147c0bb8dfa520faa03988e">SocketConfig.h</a></li>
+<li>SOCKET_MAX_FDS_PER_MSG&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a9b64483d1dd5d32bba7937741c36cabf">SocketConfig.h</a></li>
 <li>SOCKET_MAX_LISTEN_BACKLOG&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a2fb10bfccfe83fb0bb5873949cf8a2f7">SocketConfig.h</a></li>
 <li>SOCKET_MAX_POLL_EVENTS&#160;:&#160;<a class="el" href="SocketConfig_8h.html#ab6d7f45fcb5eae5fe42694e8e123cab4">SocketConfig.h</a></li>
 <li>SOCKET_MAX_PORT&#160;:&#160;<a class="el" href="SocketConfig_8h.html#a5d3af7fc5447a76f5f64430362d6dfcf">SocketConfig.h</a></li>
@@ -371,6 +372,8 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>socket_send_internal()&#160;:&#160;<a class="el" href="SocketIO_8h.html#ad65971e86ea8dcbaa79e4e457612d3a6">SocketIO.h</a></li>
 <li>Socket_send_limited()&#160;:&#160;<a class="el" href="Socket_8h.html#a274b6782b2029d2d8aa33579ad60a4c1">Socket.h</a></li>
 <li>Socket_sendall()&#160;:&#160;<a class="el" href="Socket_8h.html#a6ea9ad33d78c50d327c9677b52849bcb">Socket.h</a></li>
+<li>Socket_sendfd()&#160;:&#160;<a class="el" href="Socket_8h.html#a001e932180b059a805ca53a8edbeef15">Socket.h</a></li>
+<li>Socket_sendfds()&#160;:&#160;<a class="el" href="Socket_8h.html#a70c2f94b87d307842c7d11de0b6a2bce">Socket.h</a></li>
 <li>Socket_sendfile()&#160;:&#160;<a class="el" href="Socket_8h.html#ad1003c289820587894dbfcad9b567c43">Socket.h</a></li>
 <li>SOCKET_SENDFILE_FALLBACK_BUFFER_SIZE&#160;:&#160;<a class="el" href="SocketConfig_8h.html#af86c34b79f0c5546c8b538edcd9372e1">SocketConfig.h</a></li>
 <li>Socket_sendfileall()&#160;:&#160;<a class="el" href="Socket_8h.html#a6262f6ab4c927347abc0fb3c105a0575">Socket.h</a></li>
@@ -933,8 +936,8 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketPool_set_syn_protection()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a847e3ae8d165d8a999ef76a68d21ffa5">SocketPool.h</a></li>
 <li>SocketPool_setconnrate()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a204d43047f820499ae59b7984f00b148">SocketPool.h</a></li>
 <li>SocketPool_setmaxperip()&#160;:&#160;<a class="el" href="SocketPool_8h.html#af8991c65cdec81d2a8db01a2f820a42b">SocketPool.h</a></li>
-<li>SocketPool_state()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a0a62267ba3008f826b6952624dbc6a29">SocketPool.h</a></li>
 <li>SocketPool_State&#160;:&#160;<a class="el" href="SocketPool_8h.html#ae5f905ecace343c3b462dfadd5fa8056">SocketPool.h</a></li>
+<li>SocketPool_state()&#160;:&#160;<a class="el" href="SocketPool_8h.html#a0a62267ba3008f826b6952624dbc6a29">SocketPool.h</a></li>
 <li>SocketProxy_config_defaults()&#160;:&#160;<a class="el" href="SocketProxy_8h.html#a197242786615adf218d849747bc0fd67">SocketProxy.h</a></li>
 <li>SocketProxy_Conn_cancel()&#160;:&#160;<a class="el" href="SocketProxy_8h.html#a2853a36e933b9ac3803173169b1b159e">SocketProxy.h</a></li>
 <li>SocketProxy_Conn_error()&#160;:&#160;<a class="el" href="SocketProxy_8h.html#a93a495a98a7efa7ecc9d42ce838d4a3e">SocketProxy.h</a></li>
@@ -1105,8 +1108,8 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketWS_server_accept()&#160;:&#160;<a class="el" href="SocketWS_8h.html#a29e02ecca2d5a1b78d0eaf2c08883960">SocketWS.h</a></li>
 <li>SocketWS_server_reject()&#160;:&#160;<a class="el" href="SocketWS_8h.html#ad6e400c85623f8603c5965d38b1a60e0">SocketWS.h</a></li>
 <li>SocketWS_socket()&#160;:&#160;<a class="el" href="SocketWS_8h.html#a00e6f2953f92843874cd7b6c3e363288">SocketWS.h</a></li>
-<li>SocketWS_State&#160;:&#160;<a class="el" href="SocketWS_8h.html#ab8b49607a661224d66bb264b1e597e2d">SocketWS.h</a></li>
 <li>SocketWS_state()&#160;:&#160;<a class="el" href="SocketWS_8h.html#aa40def588d31ab50126603fa720f83b0">SocketWS.h</a></li>
+<li>SocketWS_State&#160;:&#160;<a class="el" href="SocketWS_8h.html#ab8b49607a661224d66bb264b1e597e2d">SocketWS.h</a></li>
 <li>SocketWS_T&#160;:&#160;<a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketHTTPServer.h</a>, <a class="el" href="SocketWS_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS.h</a></li>
 <li>SYN_ACTION_ALLOW&#160;:&#160;<a class="el" href="SocketSYNProtect_8h.html#aca8f2a71ab649ccd408fd3fdb3b693b9ab7af7c3605f188d109f9528dd72a7af8">SocketSYNProtect.h</a></li>
 <li>SYN_ACTION_BLOCK&#160;:&#160;<a class="el" href="SocketSYNProtect_8h.html#aca8f2a71ab649ccd408fd3fdb3b693b9aefd772a5165c7769765f8008396893fa">SocketSYNProtect.h</a></li>

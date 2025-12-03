@@ -134,13 +134,13 @@ generate_cidr (char *buf, size_t bufsize, const uint8_t **data, size_t *remainin
       snprintf (buf, bufsize, "%u.%u.%u.%u/%u", read_byte (data, remaining),
                 read_byte (data, remaining), read_byte (data, remaining),
                 read_byte (data, remaining),
-                read_byte (data, remaining) % 33);
+                (unsigned)(read_byte (data, remaining) % 33));
       break;
 
     case 1: /* Valid IPv6 CIDR */
       snprintf (buf, bufsize, "%x:%x::%x/%u", read_byte (data, remaining),
                 read_byte (data, remaining), read_byte (data, remaining),
-                read_byte (data, remaining) % 129);
+                (unsigned)(read_byte (data, remaining) % 129));
       break;
 
     case 2: /* Invalid CIDR */

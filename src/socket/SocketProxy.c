@@ -26,7 +26,6 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
-#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -474,53 +473,84 @@ socketproxy_advance_state (struct SocketProxy_Conn_T *conn)
 }
 
 /* ============================================================================
- * Async Connection - Lifecycle
+ * Async Connection - Helper Functions
  * ============================================================================ */
 
-SocketProxy_Conn_T
-SocketProxy_Conn_new (const SocketProxy_Config *proxy, const char *target_host,
-                      int target_port)
+/**
+ * proxy_validate_config - Validate proxy configuration
+ * @proxy: Proxy configuration
+ *
+ * Returns: 0 on success, raises SocketProxy_Failed on error
+ */
+static int
+proxy_validate_config (const SocketProxy_Config *proxy)
 {
-  SocketProxy_Conn_T conn;
-  Arena_T arena;
-  size_t host_len;
-  size_t target_len;
-  SocketHE_Config_T he_config;
-
-  assert (proxy != NULL);
-  assert (target_host != NULL);
-  assert (target_port > 0 && target_port <= 65535);
-
-  /* Validate proxy config */
   if (proxy->type == SOCKET_PROXY_NONE || proxy->host == NULL)
     {
       PROXY_ERROR_MSG ("Invalid proxy configuration");
       RAISE_PROXY_ERROR (SocketProxy_Failed);
     }
+  return 0;
+}
 
-  /* Validate target hostname length (SOCKS5 limit) */
-  target_len = strlen (target_host);
-  if (target_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
+/**
+ * proxy_validate_target - Validate target hostname
+ * @target_host: Target hostname
+ * @target_len_out: Output - hostname length
+ *
+ * Returns: 0 on success, raises SocketProxy_Failed on error
+ */
+static int
+proxy_validate_target (const char *target_host, size_t *target_len_out)
+{
+  *target_len_out = strlen (target_host);
+  if (*target_len_out > SOCKET_PROXY_MAX_HOSTNAME_LEN)
     {
       PROXY_ERROR_MSG ("Target hostname too long (max %d)",
                        SOCKET_PROXY_MAX_HOSTNAME_LEN);
       RAISE_PROXY_ERROR (SocketProxy_Failed);
     }
+  return 0;
+}
 
-  /* Create arena */
-  arena = Arena_new ();
-  if (arena == NULL)
-    {
-      PROXY_ERROR_MSG ("Failed to create arena");
-      RAISE_PROXY_ERROR (SocketProxy_Failed);
-    }
+/**
+ * proxy_copy_string - Copy string to arena
+ * @arena: Memory arena
+ * @src: Source string (may be NULL)
+ *
+ * Returns: Copied string or NULL if src is NULL
+ */
+static char *
+proxy_copy_string (Arena_T arena, const char *src)
+{
+  size_t len;
+  char *dst;
 
-  /* Allocate context */
-  conn = Arena_alloc (arena, sizeof (*conn), __FILE__, __LINE__);
+  if (src == NULL)
+    return NULL;
+
+  len = strlen (src);
+  dst = Arena_alloc (arena, len + 1, __FILE__, __LINE__);
+  memcpy (dst, src, len + 1);
+  return dst;
+}
+
+/**
+ * proxy_init_context - Initialize connection context
+ * @conn: Connection context
+ * @arena: Memory arena
+ * @proxy: Proxy configuration
+ * @target_host: Target hostname
+ * @target_port: Target port
+ * @target_len: Target hostname length
+ */
+static void
+proxy_init_context (struct SocketProxy_Conn_T *conn, Arena_T arena,
+                    const SocketProxy_Config *proxy, const char *target_host,
+                    int target_port, size_t target_len)
+{
   memset (conn, 0, sizeof (*conn));
   conn->arena = arena;
-
-  /* Copy configuration */
   conn->type = proxy->type;
   conn->proxy_port = proxy->port;
   conn->target_port = target_port;
@@ -531,105 +561,156 @@ SocketProxy_Conn_new (const SocketProxy_Config *proxy, const char *target_host,
                                    ? proxy->handshake_timeout_ms
                                    : SOCKET_PROXY_DEFAULT_HANDSHAKE_TIMEOUT_MS;
 
-  /* Copy strings */
-  host_len = strlen (proxy->host);
-  conn->proxy_host = Arena_alloc (arena, host_len + 1, __FILE__, __LINE__);
-  memcpy (conn->proxy_host, proxy->host, host_len + 1);
-
+  conn->proxy_host = proxy_copy_string (arena, proxy->host);
   conn->target_host = Arena_alloc (arena, target_len + 1, __FILE__, __LINE__);
   memcpy (conn->target_host, target_host, target_len + 1);
-
-  if (proxy->username != NULL)
-    {
-      size_t len = strlen (proxy->username);
-      conn->username = Arena_alloc (arena, len + 1, __FILE__, __LINE__);
-      memcpy (conn->username, proxy->username, len + 1);
-    }
-
-  if (proxy->password != NULL)
-    {
-      size_t len = strlen (proxy->password);
-      conn->password = Arena_alloc (arena, len + 1, __FILE__, __LINE__);
-      memcpy (conn->password, proxy->password, len + 1);
-    }
-
+  conn->username = proxy_copy_string (arena, proxy->username);
+  conn->password = proxy_copy_string (arena, proxy->password);
   conn->extra_headers = proxy->extra_headers;
 
-  /* Initialize state */
   conn->state = PROXY_STATE_IDLE;
   conn->proto_state = PROTO_STATE_INIT;
   conn->result = PROXY_IN_PROGRESS;
   conn->start_time_ms = socketproxy_get_time_ms ();
+}
 
-  /* Start connection to proxy via HappyEyeballs */
+/**
+ * proxy_build_initial_request - Build initial protocol request
+ * @conn: Connection context
+ *
+ * Returns: 0 on success, sets error on failure
+ */
+static int
+proxy_build_initial_request (struct SocketProxy_Conn_T *conn)
+{
+  switch (conn->type)
+    {
+    case SOCKET_PROXY_SOCKS5:
+    case SOCKET_PROXY_SOCKS5H:
+      if (proxy_socks5_send_greeting (conn) < 0)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                                 "Failed to build SOCKS5 greeting");
+          return -1;
+        }
+      break;
+
+    case SOCKET_PROXY_SOCKS4:
+      if (proxy_socks4_send_connect (conn) < 0)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                                 "Failed to build SOCKS4 request");
+          return -1;
+        }
+      break;
+
+    case SOCKET_PROXY_SOCKS4A:
+      if (proxy_socks4a_send_connect (conn) < 0)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                                 "Failed to build SOCKS4a request");
+          return -1;
+        }
+      break;
+
+    case SOCKET_PROXY_HTTP:
+    case SOCKET_PROXY_HTTPS:
+      if (proxy_http_send_connect (conn) < 0)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                                 "Failed to build HTTP CONNECT request");
+          return -1;
+        }
+      break;
+
+    default:
+      socketproxy_set_error (conn, PROXY_ERROR_UNSUPPORTED,
+                             "Unsupported proxy type");
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * proxy_connect_to_server - Connect to proxy server via HappyEyeballs
+ * @conn: Connection context
+ *
+ * Returns: 0 on success, -1 on failure (sets error)
+ */
+static int
+proxy_connect_to_server (struct SocketProxy_Conn_T *conn)
+{
+  SocketHE_Config_T he_config;
+
   SocketHappyEyeballs_config_defaults (&he_config);
   he_config.total_timeout_ms = conn->connect_timeout_ms;
 
   TRY
     conn->socket = SocketHappyEyeballs_connect (conn->proxy_host,
-                                                 conn->proxy_port, &he_config);
-    if (conn->socket == NULL)
-      {
-        socketproxy_set_error (conn, PROXY_ERROR_CONNECT,
-                               "Failed to connect to proxy %s:%d",
-                               conn->proxy_host, conn->proxy_port);
-        return conn;
-      }
-
-    /* Set non-blocking for async I/O */
-    Socket_setnonblocking (conn->socket);
-
-    /* Move to handshake phase */
-    conn->state = PROXY_STATE_HANDSHAKE_SEND;
-    conn->handshake_start_time_ms = socketproxy_get_time_ms ();
-
-    /* Build initial protocol request */
-    switch (conn->type)
-      {
-      case SOCKET_PROXY_SOCKS5:
-      case SOCKET_PROXY_SOCKS5H:
-        if (proxy_socks5_send_greeting (conn) < 0)
-          {
-            socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                   "Failed to build SOCKS5 greeting");
-          }
-        break;
-
-      case SOCKET_PROXY_SOCKS4:
-        if (proxy_socks4_send_connect (conn) < 0)
-          {
-            socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                   "Failed to build SOCKS4 request");
-          }
-        break;
-
-      case SOCKET_PROXY_SOCKS4A:
-        if (proxy_socks4a_send_connect (conn) < 0)
-          {
-            socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                   "Failed to build SOCKS4a request");
-          }
-        break;
-
-      case SOCKET_PROXY_HTTP:
-      case SOCKET_PROXY_HTTPS:
-        if (proxy_http_send_connect (conn) < 0)
-          {
-            socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                   "Failed to build HTTP CONNECT request");
-          }
-        break;
-
-      default:
-        socketproxy_set_error (conn, PROXY_ERROR_UNSUPPORTED,
-                               "Unsupported proxy type");
-        break;
-      }
-
+                                                conn->proxy_port, &he_config);
   EXCEPT (SocketHE_Failed)
     socketproxy_set_error (conn, PROXY_ERROR_CONNECT,
                            "HappyEyeballs connection failed");
+    return -1;
   END_TRY;
+
+  if (conn->socket == NULL)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_CONNECT,
+                             "Failed to connect to proxy %s:%d",
+                             conn->proxy_host, conn->proxy_port);
+      return -1;
+    }
+
+  return 0;
+}
+
+/* ============================================================================
+ * Async Connection - Lifecycle
+ * ============================================================================ */
+
+SocketProxy_Conn_T
+SocketProxy_Conn_new (const SocketProxy_Config *proxy, const char *target_host,
+                      int target_port)
+{
+  SocketProxy_Conn_T conn;
+  Arena_T arena;
+  size_t target_len;
+
+  assert (proxy != NULL);
+  assert (target_host != NULL);
+  assert (target_port > 0 && target_port <= 65535);
+
+  /* Validate inputs */
+  proxy_validate_config (proxy);
+  proxy_validate_target (target_host, &target_len);
+
+  /* Create arena */
+  arena = Arena_new ();
+  if (arena == NULL)
+    {
+      PROXY_ERROR_MSG ("Failed to create arena");
+      RAISE_PROXY_ERROR (SocketProxy_Failed);
+    }
+
+  /* Allocate and initialize context */
+  conn = Arena_alloc (arena, sizeof (*conn), __FILE__, __LINE__);
+  proxy_init_context (conn, arena, proxy, target_host, target_port, target_len);
+
+  /* Connect to proxy server */
+  if (proxy_connect_to_server (conn) < 0)
+    return conn;
+
+  /* Set non-blocking for async I/O */
+  Socket_setnonblocking (conn->socket);
+
+  /* Move to handshake phase */
+  conn->state = PROXY_STATE_HANDSHAKE_SEND;
+  conn->handshake_start_time_ms = socketproxy_get_time_ms ();
+
+  /* Build initial protocol request */
+  proxy_build_initial_request (conn);
 
   return conn;
 }
@@ -638,11 +719,17 @@ void
 SocketProxy_Conn_free (SocketProxy_Conn_T *conn)
 {
   SocketProxy_Conn_T c;
+  Arena_T arena;
 
   if (conn == NULL || *conn == NULL)
     return;
 
   c = *conn;
+
+  /* CRITICAL: Save arena pointer BEFORE any cleanup that might free connection
+   * structure. The connection is allocated from its own arena, so we must save
+   * the arena pointer before disposing it. */
+  arena = c->arena;
 
   /* Clear credentials from memory */
   if (c->password != NULL)
@@ -662,8 +749,8 @@ SocketProxy_Conn_free (SocketProxy_Conn_T *conn)
       SocketHTTP1_Parser_free (&c->http_parser);
     }
 
-  /* Free arena (releases all memory) */
-  Arena_dispose (&c->arena);
+  /* Free arena (releases all memory including connection structure itself) */
+  Arena_dispose (&arena);
 
   *conn = NULL;
 }
@@ -797,161 +884,243 @@ SocketProxy_Conn_cancel (SocketProxy_Conn_T conn)
 }
 
 /* ============================================================================
+ * Async Connection - Process Helper Functions
+ * ============================================================================ */
+
+/**
+ * proxy_check_timeout - Check if handshake has timed out
+ * @conn: Connection context
+ *
+ * Returns: 0 if not timed out, -1 if timed out (sets error)
+ */
+static int
+proxy_check_timeout (struct SocketProxy_Conn_T *conn)
+{
+  int64_t elapsed = socketproxy_elapsed_ms (conn->handshake_start_time_ms);
+
+  if (elapsed >= conn->handshake_timeout_ms)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_TIMEOUT,
+                             "Proxy handshake timeout (%d ms)",
+                             conn->handshake_timeout_ms);
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * proxy_process_send - Process send states
+ * @conn: Connection context
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+proxy_process_send (struct SocketProxy_Conn_T *conn)
+{
+  int ret = socketproxy_do_send (conn);
+
+  if (ret < 0)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "Send failed: %s", strerror (errno));
+      return -1;
+    }
+  if (ret == 0)
+    socketproxy_advance_state (conn);
+
+  return 0;
+}
+
+/**
+ * proxy_socks5_send_connect_request - Send SOCKS5 connect after auth
+ * @conn: Connection context
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+proxy_socks5_send_connect_request (struct SocketProxy_Conn_T *conn)
+{
+  conn->state = PROXY_STATE_HANDSHAKE_SEND;
+  conn->recv_len = 0;
+  conn->recv_offset = 0;
+
+  if (proxy_socks5_send_connect (conn) < 0)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "Failed to build connect");
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * proxy_socks5_handle_method_response - Handle SOCKS5 method selection response
+ * @conn: Connection context
+ *
+ * Returns: Result code
+ */
+static SocketProxy_Result
+proxy_socks5_handle_method_response (struct SocketProxy_Conn_T *conn)
+{
+  SocketProxy_Result res = proxy_socks5_recv_method (conn);
+
+  if (res != PROXY_OK)
+    return res;
+
+  if (conn->socks5_need_auth)
+    {
+      conn->state = PROXY_STATE_AUTH_SEND;
+      if (proxy_socks5_send_auth (conn) < 0)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                                 "Failed to build auth");
+          return PROXY_ERROR_PROTOCOL;
+        }
+    }
+  else
+    {
+      if (proxy_socks5_send_connect_request (conn) < 0)
+        return PROXY_ERROR_PROTOCOL;
+    }
+
+  return PROXY_IN_PROGRESS;
+}
+
+/**
+ * proxy_socks5_process_recv - Process SOCKS5 receive state
+ * @conn: Connection context
+ *
+ * Returns: Result code
+ */
+static SocketProxy_Result
+proxy_socks5_process_recv (struct SocketProxy_Conn_T *conn)
+{
+  SocketProxy_Result res;
+
+  if (conn->state == PROXY_STATE_AUTH_RECV)
+    {
+      res = proxy_socks5_recv_auth (conn);
+      if (res == PROXY_OK)
+        {
+          if (proxy_socks5_send_connect_request (conn) < 0)
+            return PROXY_ERROR_PROTOCOL;
+          return PROXY_IN_PROGRESS;
+        }
+      return res;
+    }
+
+  switch (conn->proto_state)
+    {
+    case PROTO_STATE_SOCKS5_GREETING_SENT:
+      return proxy_socks5_handle_method_response (conn);
+
+    case PROTO_STATE_SOCKS5_AUTH_RECEIVED:
+      if (proxy_socks5_send_connect_request (conn) < 0)
+        return PROXY_ERROR_PROTOCOL;
+      return PROXY_IN_PROGRESS;
+
+    case PROTO_STATE_SOCKS5_CONNECT_SENT:
+      return proxy_socks5_recv_connect (conn);
+
+    default:
+      return PROXY_IN_PROGRESS;
+    }
+}
+
+/**
+ * proxy_dispatch_protocol_recv - Dispatch to protocol-specific receive handler
+ * @conn: Connection context
+ *
+ * Returns: Result code
+ */
+static SocketProxy_Result
+proxy_dispatch_protocol_recv (struct SocketProxy_Conn_T *conn)
+{
+  switch (conn->type)
+    {
+    case SOCKET_PROXY_SOCKS5:
+    case SOCKET_PROXY_SOCKS5H:
+      return proxy_socks5_process_recv (conn);
+
+    case SOCKET_PROXY_SOCKS4:
+    case SOCKET_PROXY_SOCKS4A:
+      return proxy_socks4_recv_response (conn);
+
+    case SOCKET_PROXY_HTTP:
+    case SOCKET_PROXY_HTTPS:
+      return proxy_http_recv_response (conn);
+
+    default:
+      return PROXY_ERROR_UNSUPPORTED;
+    }
+}
+
+/**
+ * proxy_process_recv - Process receive states
+ * @conn: Connection context
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+proxy_process_recv (struct SocketProxy_Conn_T *conn)
+{
+  int ret;
+  SocketProxy_Result res;
+
+  ret = socketproxy_do_recv (conn);
+  if (ret < 0)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "Receive failed: %s", strerror (errno));
+      return -1;
+    }
+  if (ret == 0 && conn->recv_len == 0)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "Connection closed by proxy");
+      return -1;
+    }
+
+  res = proxy_dispatch_protocol_recv (conn);
+
+  if (res == PROXY_OK)
+    {
+      conn->state = PROXY_STATE_CONNECTED;
+      conn->result = PROXY_OK;
+    }
+  else if (res != PROXY_IN_PROGRESS)
+    {
+      socketproxy_set_error (conn, res, "Protocol handshake failed");
+    }
+
+  return 0;
+}
+
+/* ============================================================================
  * Async Connection - Process
  * ============================================================================ */
 
 void
 SocketProxy_Conn_process (SocketProxy_Conn_T conn)
 {
-  int ret;
-  SocketProxy_Result res;
-  int64_t elapsed;
-
   assert (conn != NULL);
 
   if (SocketProxy_Conn_poll (conn))
     return;
 
-  /* Check timeout */
-  elapsed = socketproxy_elapsed_ms (conn->handshake_start_time_ms);
-  if (elapsed >= conn->handshake_timeout_ms)
-    {
-      socketproxy_set_error (conn, PROXY_ERROR_TIMEOUT,
-                             "Proxy handshake timeout (%d ms)",
-                             conn->handshake_timeout_ms);
-      return;
-    }
+  if (proxy_check_timeout (conn) < 0)
+    return;
 
-  /* Process based on state */
   switch (conn->state)
     {
     case PROXY_STATE_HANDSHAKE_SEND:
     case PROXY_STATE_AUTH_SEND:
-      ret = socketproxy_do_send (conn);
-      if (ret < 0)
-        {
-          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                 "Send failed: %s", strerror (errno));
-          return;
-        }
-      if (ret == 0)
-        {
-          /* Send complete, move to receive */
-          socketproxy_advance_state (conn);
-        }
+      proxy_process_send (conn);
       break;
 
     case PROXY_STATE_HANDSHAKE_RECV:
     case PROXY_STATE_AUTH_RECV:
-      ret = socketproxy_do_recv (conn);
-      if (ret < 0)
-        {
-          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                 "Receive failed: %s", strerror (errno));
-          return;
-        }
-      if (ret == 0 && conn->recv_len == 0)
-        {
-          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                 "Connection closed by proxy");
-          return;
-        }
-
-      /* Parse response based on protocol */
-      switch (conn->type)
-        {
-        case SOCKET_PROXY_SOCKS5:
-        case SOCKET_PROXY_SOCKS5H:
-          if (conn->state == PROXY_STATE_AUTH_RECV)
-            {
-              res = proxy_socks5_recv_auth (conn);
-            }
-          else
-            {
-              /* Check current proto state */
-              switch (conn->proto_state)
-                {
-                case PROTO_STATE_SOCKS5_GREETING_SENT:
-                  res = proxy_socks5_recv_method (conn);
-                  if (res == PROXY_OK)
-                    {
-                      if (conn->socks5_need_auth)
-                        {
-                          /* Need to send auth */
-                          conn->state = PROXY_STATE_AUTH_SEND;
-                          if (proxy_socks5_send_auth (conn) < 0)
-                            {
-                              socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                                     "Failed to build auth");
-                              return;
-                            }
-                        }
-                      else
-                        {
-                          /* No auth, send connect */
-                          conn->state = PROXY_STATE_HANDSHAKE_SEND;
-                          conn->recv_len = 0;
-                          conn->recv_offset = 0;
-                          if (proxy_socks5_send_connect (conn) < 0)
-                            {
-                              socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                                     "Failed to build connect");
-                              return;
-                            }
-                        }
-                      res = PROXY_IN_PROGRESS;
-                    }
-                  break;
-
-                case PROTO_STATE_SOCKS5_AUTH_RECEIVED:
-                  /* After auth, send connect */
-                  conn->state = PROXY_STATE_HANDSHAKE_SEND;
-                  conn->recv_len = 0;
-                  conn->recv_offset = 0;
-                  if (proxy_socks5_send_connect (conn) < 0)
-                    {
-                      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                             "Failed to build connect");
-                      return;
-                    }
-                  res = PROXY_IN_PROGRESS;
-                  break;
-
-                case PROTO_STATE_SOCKS5_CONNECT_SENT:
-                  res = proxy_socks5_recv_connect (conn);
-                  break;
-
-                default:
-                  res = PROXY_IN_PROGRESS;
-                  break;
-                }
-            }
-          break;
-
-        case SOCKET_PROXY_SOCKS4:
-        case SOCKET_PROXY_SOCKS4A:
-          res = proxy_socks4_recv_response (conn);
-          break;
-
-        case SOCKET_PROXY_HTTP:
-        case SOCKET_PROXY_HTTPS:
-          res = proxy_http_recv_response (conn);
-          break;
-
-        default:
-          res = PROXY_ERROR_UNSUPPORTED;
-          break;
-        }
-
-      if (res == PROXY_OK)
-        {
-          conn->state = PROXY_STATE_CONNECTED;
-          conn->result = PROXY_OK;
-        }
-      else if (res != PROXY_IN_PROGRESS)
-        {
-          socketproxy_set_error (conn, res, "Protocol handshake failed");
-        }
+      proxy_process_recv (conn);
       break;
 
     default:
@@ -1009,7 +1178,7 @@ SocketProxy_connect (const SocketProxy_Config *proxy, const char *target_host,
 
         timeout = SocketProxy_Conn_next_timeout_ms (conn);
         if (timeout < 0)
-          timeout = 1000;
+          timeout = SOCKET_PROXY_DEFAULT_POLL_TIMEOUT_MS;
 
         if (poll (&pfd, 1, timeout) < 0)
           {

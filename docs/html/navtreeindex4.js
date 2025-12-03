@@ -1,5 +1,6 @@
 var NAVTREEINDEX4 =
 {
+"SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5a3298165f45b28384f35c073b19e1f80b":[14,0,2,2,1,8,2],
 "SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5a37bc28ad2189c682b316e17c9357e8d0":[14,0,2,2,1,8,1],
 "SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5a45a7cf54667d5b2df0ec0a24fdab8249":[14,0,2,2,1,8,0],
 "SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5ad0050914cb5041feedb0d11d04e7151b":[14,0,2,2,1,8,3],
@@ -248,6 +249,5 @@ var NAVTREEINDEX4 =
 "SocketPool_8h.html#ad7679db7b1be62e465d9896944f3ad20":[14,0,2,4,0,3],
 "SocketPool_8h.html#adba094d10381f1646de6a3e1e2bd0c36":[14,0,2,4,0,57],
 "SocketPool_8h.html#adc0d9937eb377068134cab141b8bcfad":[14,0,2,4,0,35],
-"SocketPool_8h.html#ae14b85a2cd7a0a4302f84478840cfb23":[14,0,2,4,0,28],
-"SocketPool_8h.html#ae4b6b07007da08326b53c069a4c1f2ea":[14,0,2,4,0,51]
+"SocketPool_8h.html#ae14b85a2cd7a0a4302f84478840cfb23":[14,0,2,4,0,28]
 };

@@ -100,6 +100,7 @@ var SocketConfig_8h =
     [ "SOCKET_MAX_BUFFER_SIZE", "SocketConfig_8h.html#a72443e4b95fbd8ef4d191b754b4324dc", null ],
     [ "SOCKET_MAX_CONNECTIONS", "SocketConfig_8h.html#a72f1e9bc10cc82fb4ee1915335d60152", null ],
     [ "SOCKET_MAX_EVENT_BATCH", "SocketConfig_8h.html#a5528f1e60147c0bb8dfa520faa03988e", null ],
+    [ "SOCKET_MAX_FDS_PER_MSG", "SocketConfig_8h.html#a9b64483d1dd5d32bba7937741c36cabf", null ],
     [ "SOCKET_MAX_LISTEN_BACKLOG", "SocketConfig_8h.html#a2fb10bfccfe83fb0bb5873949cf8a2f7", null ],
     [ "SOCKET_MAX_POLL_EVENTS", "SocketConfig_8h.html#ab6d7f45fcb5eae5fe42694e8e123cab4", null ],
     [ "SOCKET_MAX_PORT", "SocketConfig_8h.html#a5d3af7fc5447a76f5f64430362d6dfcf", null ],

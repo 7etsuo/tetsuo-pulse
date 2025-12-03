@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdatomic.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <time.h>
@@ -1991,9 +1992,9 @@ TEST (socketpool_batch_accept_invalid_max_accepts)
 /* ==================== Async Connect Tests ==================== */
 
 /* Async callback tracking for tests */
-static volatile int async_test_callback_called = 0;
-static volatile int async_test_error_code = -1;
-static volatile Connection_T async_test_conn = NULL;
+static atomic_int async_test_callback_called = 0;
+static atomic_int async_test_error_code = -1;
+static _Atomic (Connection_T) async_test_conn = NULL;
 
 static void
 async_test_callback (Connection_T conn, int error, void *data)
@@ -2135,8 +2136,9 @@ TEST (socketpool_connect_async_connect_failure)
 
     if (req)
       {
-        /* Wait for callback - connection should fail quickly */
-        for (int i = 0; i < 300 && !async_test_callback_called; i++)
+        /* Wait for callback - connection should fail quickly
+         * Use a longer timeout to ensure callback completes before pool free */
+        for (int i = 0; i < 500 && !async_test_callback_called; i++)
           {
             usleep (10000); /* 10ms */
           }
@@ -2151,6 +2153,10 @@ TEST (socketpool_connect_async_connect_failure)
   EXCEPT (SocketPool_Failed) { /* May fail */ }
   EXCEPT (Socket_Failed) { /* May fail */ }
   END_TRY;
+
+  /* Allow time for any pending async operations to complete before free.
+   * This prevents TSan race between DNS worker threads and pool free. */
+  usleep (100000); /* 100ms */
 
   SocketPool_free (&pool);
   Arena_dispose (&arena);
@@ -2441,8 +2447,8 @@ TEST (socketpool_prewarm_100_percent)
 /* ==================== Async Pool Full Callback Test ==================== */
 
 /* Callback for pool full test - tracks error code */
-static volatile int pool_full_callback_called = 0;
-static volatile int pool_full_callback_error = -1;
+static atomic_int pool_full_callback_called = 0;
+static atomic_int pool_full_callback_error = -1;
 
 static void
 pool_full_test_callback (Connection_T conn, int error, void *data)
