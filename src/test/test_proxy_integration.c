@@ -118,8 +118,8 @@ socks5_server_thread_func (void *arg)
 
   server->client_connected = 1;
 
-  /* Set timeout to prevent blocking forever on macOS */
-  Socket_settimeout (client, 5);
+  /* Set short timeout to prevent blocking forever and speed up cleanup */
+  Socket_settimeout (client, 2);
 
   /* SOCKS5 greeting - read client's auth methods */
   TRY
@@ -304,7 +304,7 @@ socks5_server_thread_func (void *arg)
   /* Connect to target (use our local target server) */
   TRY
   target = Socket_new (AF_INET, SOCK_STREAM, 0);
-  Socket_settimeout (target, 5);
+  Socket_settimeout (target, 2);
   Socket_connect (target, "127.0.0.1", server->target_port);
   EXCEPT (Socket_Failed)
   /* Send failure response */
@@ -402,8 +402,8 @@ echo_server_thread_func (void *arg)
       return NULL;
     }
 
-  /* Set timeout to prevent blocking forever on macOS */
-  Socket_settimeout (client, 5);
+  /* Set short timeout to prevent blocking forever and speed up cleanup */
+  Socket_settimeout (client, 2);
 
   /* Echo received data - handle Socket_Closed from dummy unblock connections */
   TRY
@@ -548,7 +548,14 @@ socks5_server_stop (Socks5TestServer *server)
   if (server->target_listen)
     unblock_accept (server->target_port);
 
-  /* Wait for threads to exit */
+  /* Also shutdown the listening sockets to interrupt any blocking operations.
+   * This helps if a thread is blocked in recv() instead of accept(). */
+  if (server->listen_socket)
+    shutdown (Socket_fd (server->listen_socket), SHUT_RDWR);
+  if (server->target_listen)
+    shutdown (Socket_fd (server->target_listen), SHUT_RDWR);
+
+  /* Wait for threads to exit - with timeouts set, this should be quick */
   pthread_join (server->thread, NULL);
   pthread_join (server->echo_thread, NULL);
 
