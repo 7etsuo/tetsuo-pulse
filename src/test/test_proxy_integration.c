@@ -109,7 +109,9 @@ socks5_server_thread_func (void *arg)
     }
 
   server->client_connected = 1;
-  
+
+  /* Set timeout to prevent blocking forever on macOS */
+  Socket_settimeout (client, 5);
 
   /* SOCKS5 greeting - read client's auth methods */
   TRY
@@ -294,6 +296,7 @@ socks5_server_thread_func (void *arg)
   /* Connect to target (use our local target server) */
   TRY
   target = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_settimeout (target, 5);
   Socket_connect (target, "127.0.0.1", server->target_port);
   EXCEPT (Socket_Failed)
   /* Send failure response */
@@ -325,16 +328,31 @@ socks5_server_thread_func (void *arg)
 
   /* Simple relay: forward data in both directions */
   /* For testing, just forward one message each way */
-  n = Socket_recv (client, buf, sizeof (buf));
-  if (n > 0)
+  /* Use TRY/EXCEPT to handle timeout or closed socket gracefully */
+  TRY
     {
-      Socket_send (target, buf, (size_t)n);
-      n = Socket_recv (target, buf, sizeof (buf));
+      n = Socket_recv (client, buf, sizeof (buf));
       if (n > 0)
         {
-          Socket_send (client, buf, (size_t)n);
+          Socket_send (target, buf, (size_t)n);
+          n = Socket_recv (target, buf, sizeof (buf));
+          if (n > 0)
+            {
+              Socket_send (client, buf, (size_t)n);
+            }
         }
     }
+  EXCEPT (Socket_Closed)
+    {
+      /* Connection closed - expected */
+      (void)0;
+    }
+  EXCEPT (Socket_Failed)
+    {
+      /* Timeout or other error - expected during shutdown */
+      (void)0;
+    }
+  END_TRY;
 
   Socket_free (&target);
   Socket_free (&client);
@@ -367,6 +385,9 @@ echo_server_thread_func (void *arg)
   END_TRY;
   if (client == NULL)
     return NULL;
+
+  /* Set timeout to prevent blocking forever on macOS */
+  Socket_settimeout (client, 5);
 
   /* Echo received data - handle Socket_Closed from dummy unblock connections */
   TRY
