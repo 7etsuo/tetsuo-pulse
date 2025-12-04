@@ -528,9 +528,12 @@ free_tls_sessions (T pool)
  * free_pending_async_contexts - Free sockets in pending async connect contexts
  * @pool: Pool instance
  *
- * Must be called before freeing DNS resolver to prevent socket leaks.
+ * Must be called AFTER freeing DNS resolver (which waits for worker threads).
  * When DNS resolver is freed, pending callbacks won't be invoked, so we
  * must manually free the sockets that were allocated for async connects.
+ *
+ * The callback sets ctx->socket = NULL via Socket_free(), so we only free
+ * sockets that weren't already freed by completed callbacks.
  */
 static void
 free_pending_async_contexts (T pool)
@@ -551,15 +554,22 @@ free_pending_async_contexts (T pool)
  * @pool: Pool instance
  *
  * Also cancels any pending async connect operations.
+ *
+ * IMPORTANT: DNS resolver must be freed FIRST to ensure worker threads
+ * have completed (including any in-progress callbacks). Only after workers
+ * are joined can we safely free sockets in pending async contexts without
+ * risking a data race with concurrent callback execution.
  */
 static void
 free_dns_resolver (T pool)
 {
-  /* Free sockets in pending async contexts before DNS resolver */
-  free_pending_async_contexts (pool);
-
+  /* First, shutdown DNS resolver and wait for all worker threads to complete.
+   * This ensures no callbacks are currently executing or will execute. */
   if (pool->dns)
     SocketDNS_free (&pool->dns);
+
+  /* Now safe to free sockets in pending async contexts - no race with callbacks */
+  free_pending_async_contexts (pool);
 }
 
 /**
