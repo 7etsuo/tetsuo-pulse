@@ -18,6 +18,7 @@
  */
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdatomic.h>
@@ -367,12 +368,21 @@ echo_server_thread_func (void *arg)
   if (client == NULL)
     return NULL;
 
-  /* Echo received data */
-  n = Socket_recv (client, buf, sizeof (buf));
-  if (n > 0)
+  /* Echo received data - handle Socket_Closed from dummy unblock connections */
+  TRY
     {
-      Socket_send (client, buf, (size_t)n);
+      n = Socket_recv (client, buf, sizeof (buf));
+      if (n > 0)
+        {
+          Socket_send (client, buf, (size_t)n);
+        }
     }
+  EXCEPT (Socket_Closed)
+    {
+      /* Connection closed - expected during shutdown */
+      (void)0;
+    }
+  END_TRY;
 
   Socket_free (&client);
   return NULL;
@@ -467,21 +477,41 @@ socks5_server_start (Socks5TestServer *server, const char *username,
   return 0;
 }
 
+/* Helper to connect to a listening socket to unblock accept() */
+static void
+unblock_accept (int port)
+{
+  int fd = socket (AF_INET, SOCK_STREAM, 0);
+  if (fd >= 0)
+    {
+      struct sockaddr_in addr;
+      memset (&addr, 0, sizeof (addr));
+      addr.sin_family = AF_INET;
+      addr.sin_port = htons (port);
+      addr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
+      /* Non-blocking connect - we don't care if it succeeds */
+      int flags = fcntl (fd, F_GETFL, 0);
+      if (flags >= 0)
+        fcntl (fd, F_SETFL, flags | O_NONBLOCK);
+      connect (fd, (struct sockaddr *)&addr, sizeof (addr));
+      close (fd);
+    }
+}
+
 static void
 socks5_server_stop (Socks5TestServer *server)
 {
   server->running = 0;
 
-  /* Shutdown sockets to unblock accept() calls in threads.
-   * Use shutdown() rather than close() so the socket memory remains valid
-   * until threads exit. This avoids TSan data races. */
+  /* To unblock accept() on both Linux and macOS, we connect dummy clients.
+   * On macOS, shutdown() on a listening socket does NOT unblock accept(),
+   * but connecting to it will cause accept() to return. */
   if (server->listen_socket)
-    shutdown (Socket_fd (server->listen_socket), SHUT_RDWR);
+    unblock_accept (server->proxy_port);
   if (server->target_listen)
-    shutdown (Socket_fd (server->target_listen), SHUT_RDWR);
+    unblock_accept (server->target_port);
 
-  /* Wait for threads to exit (they should exit because sockets are shut down)
-   */
+  /* Wait for threads to exit */
   pthread_join (server->thread, NULL);
   pthread_join (server->echo_thread, NULL);
 
@@ -693,6 +723,9 @@ TEST (proxy_integration_socks5_bad_auth)
 
   EXCEPT (Socket_Failed)
   /* Expected - connection may be closed */
+  (void) 0;
+  EXCEPT (Socket_Closed)
+  /* Expected - server closes connection on auth failure */
   (void) 0;
   EXCEPT (SocketProxy_Failed)
   /* Expected - auth failure */

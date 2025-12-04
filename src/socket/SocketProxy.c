@@ -394,12 +394,23 @@ socketproxy_set_error (struct SocketProxy_Conn_T *conn, SocketProxy_Result resul
 int
 socketproxy_do_send (struct SocketProxy_Conn_T *conn)
 {
-  ssize_t n;
+  volatile ssize_t n = 0;
+  volatile int caught_closed = 0;
 
   while (conn->send_offset < conn->send_len)
     {
-      n = Socket_send (conn->socket, conn->send_buf + conn->send_offset,
-                       conn->send_len - conn->send_offset);
+      caught_closed = 0;
+      TRY
+        n = Socket_send (conn->socket, conn->send_buf + conn->send_offset,
+                         conn->send_len - conn->send_offset);
+      EXCEPT (Socket_Closed)
+        /* Connection closed by peer */
+        caught_closed = 1;
+      END_TRY;
+
+      if (caught_closed)
+        return -1;
+
       if (n < 0)
         {
           if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -415,7 +426,8 @@ socketproxy_do_send (struct SocketProxy_Conn_T *conn)
 int
 socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
 {
-  ssize_t n;
+  volatile ssize_t n = 0;
+  volatile int caught_closed = 0;
   size_t space;
 
   space = sizeof (conn->recv_buf) - conn->recv_len;
@@ -425,7 +437,16 @@ socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
       return -1;
     }
 
-  n = Socket_recv (conn->socket, conn->recv_buf + conn->recv_len, space);
+  TRY
+    n = Socket_recv (conn->socket, conn->recv_buf + conn->recv_len, space);
+  EXCEPT (Socket_Closed)
+    /* Connection closed by peer */
+    caught_closed = 1;
+  END_TRY;
+
+  if (caught_closed)
+    return 0; /* Treat as EOF */
+
   if (n < 0)
     {
       if (errno == EAGAIN || errno == EWOULDBLOCK)
