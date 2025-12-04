@@ -1260,11 +1260,19 @@ process_single_request (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req,
                         const struct addrinfo *base_hints)
 {
+  /* Acquire mutex before checking timeout to prevent race with
+   * SocketDNS_request_settimeout() which modifies timeout_override_ms.
+   * The main thread writes under mutex, so we must also read under mutex. */
+  pthread_mutex_lock (&dns->mutex);
   if (request_timed_out (dns, req))
     {
-      handle_request_timeout (dns, req);
+      /* Call mark_request_timeout directly since we already hold mutex
+       * (handle_request_timeout would deadlock by trying to lock again) */
+      mark_request_timeout (dns, req);
+      pthread_mutex_unlock (&dns->mutex);
       return;
     }
+  pthread_mutex_unlock (&dns->mutex);
 
   struct addrinfo local_hints;
   prepare_local_hints (&local_hints, base_hints, req);
