@@ -49,9 +49,92 @@ typedef struct T *T;
  * Exception Types
  * ============================================================================ */
 
-extern const Except_T Socket_Failed; /**< General socket operation failure */
-extern const Except_T Socket_Closed; /**< Connection closed by peer */
-extern const Except_T SocketUnix_Failed; /**< Unix socket operation failure */
+/**
+ * Socket_Failed - General socket operation failure
+ *
+ * Category: NETWORK (usually) or PROTOCOL (configuration errors)
+ * Retryable: Depends on errno - use Socket_error_is_retryable() to check
+ *
+ * Raised for:
+ * - Socket creation failures (socket(), bind(), listen(), accept())
+ * - Connection failures (connect())
+ * - I/O failures (send(), recv())
+ * - Option setting failures (setsockopt())
+ *
+ * Check errno via Socket_geterrno() for specific error code.
+ */
+extern const Except_T Socket_Failed;
+
+/**
+ * Socket_Closed - Connection closed by peer
+ *
+ * Category: NETWORK
+ * Retryable: Yes - indicates graceful close or reset, reconnect may succeed
+ *
+ * Raised when:
+ * - recv() returns 0 (graceful close)
+ * - ECONNRESET during I/O (connection reset)
+ * - EPIPE during send (broken pipe)
+ *
+ * This is a normal condition for connection-oriented sockets.
+ */
+extern const Except_T Socket_Closed;
+
+/**
+ * SocketUnix_Failed - Unix domain socket operation failure
+ *
+ * Category: NETWORK or APPLICATION
+ * Retryable: Depends on errno
+ *
+ * Raised for Unix domain socket specific errors:
+ * - Path too long
+ * - Socket file doesn't exist (ENOENT)
+ * - Permission denied (EACCES)
+ */
+extern const Except_T SocketUnix_Failed;
+
+/* ============================================================================
+ * Error Retryability Helpers
+ * ============================================================================ */
+
+/**
+ * Socket_error_is_retryable - Check if an errno indicates a retryable error
+ * @err: errno value to check
+ *
+ * Returns: 1 if error is typically retryable, 0 if fatal
+ * Thread-safe: Yes (pure function)
+ *
+ * This is a convenience wrapper around SocketError_is_retryable_errno()
+ * for socket-specific error handling.
+ *
+ * Retryable errors (return 1):
+ * - ECONNREFUSED: Server not listening, may start later
+ * - ECONNRESET: Connection dropped, can reconnect
+ * - ETIMEDOUT: Timeout, may succeed on retry
+ * - ENETUNREACH: Network route may recover
+ * - EHOSTUNREACH: Host may become reachable
+ * - EAGAIN/EWOULDBLOCK: Resource temporarily unavailable
+ * - EINTR: Interrupted by signal
+ *
+ * Fatal errors (return 0):
+ * - EACCES: Permission denied (won't change)
+ * - EADDRINUSE: Address in use (won't change)
+ * - EBADF: Bad file descriptor (programming error)
+ * - EINVAL: Invalid argument (programming error)
+ * - ENOMEM: Out of memory (system issue)
+ * - EMFILE/ENFILE: Too many open files (system limit)
+ *
+ * Usage:
+ *   TRY
+ *     Socket_connect(sock, host, port);
+ *   EXCEPT(Socket_Failed)
+ *     if (Socket_error_is_retryable(Socket_geterrno()))
+ *       // Schedule retry with backoff
+ *     else
+ *       // Log error and give up
+ *   END_TRY;
+ */
+extern int Socket_error_is_retryable (int err);
 
 /* ============================================================================
  * Socket Creation and Lifecycle

@@ -127,6 +127,52 @@
 #define HTTPCLIENT_MAX_AUTH_RETRIES 2
 #endif
 
+/* ============================================================================
+ * Retry Configuration
+ * ============================================================================
+ *
+ * Automatic retry for transient failures (DNS, connect, timeout).
+ * Uses exponential backoff with jitter to prevent thundering herd.
+ *
+ * SAFETY: Only idempotent requests should enable retry_on_5xx.
+ * Non-idempotent requests (POST/PUT/DELETE) may cause duplicate actions.
+ */
+
+/** Enable automatic retry (default: disabled for backward compatibility) */
+#ifndef HTTPCLIENT_DEFAULT_ENABLE_RETRY
+#define HTTPCLIENT_DEFAULT_ENABLE_RETRY 0
+#endif
+
+/** Maximum retry attempts (default: 3) */
+#ifndef HTTPCLIENT_DEFAULT_MAX_RETRIES
+#define HTTPCLIENT_DEFAULT_MAX_RETRIES 3
+#endif
+
+/** Initial backoff delay in milliseconds (default: 100ms) */
+#ifndef HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS
+#define HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS 100
+#endif
+
+/** Maximum backoff delay in milliseconds (default: 10s) */
+#ifndef HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS
+#define HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS 10000
+#endif
+
+/** Retry on connection errors (ECONNREFUSED, ENETUNREACH, etc.) */
+#ifndef HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT
+#define HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT 1
+#endif
+
+/** Retry on request timeout */
+#ifndef HTTPCLIENT_DEFAULT_RETRY_ON_TIMEOUT
+#define HTTPCLIENT_DEFAULT_RETRY_ON_TIMEOUT 1
+#endif
+
+/** Retry on 5xx server errors (use only for idempotent requests!) */
+#ifndef HTTPCLIENT_DEFAULT_RETRY_ON_5XX
+#define HTTPCLIENT_DEFAULT_RETRY_ON_5XX 0
+#endif
+
 /**
  * Default maximum response body size (0 = unlimited)
  *

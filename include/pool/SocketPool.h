@@ -71,8 +71,25 @@ typedef void (*SocketPool_ResizeCallback) (T pool, size_t old_size,
  */
 typedef void (*SocketPool_ConnectCallback) (Connection_T conn, int error, void *data);
 
-/* Exception types */
-extern const Except_T SocketPool_Failed; /**< Pool operation failure */
+/* ============================================================================
+ * Exception Types
+ * ============================================================================ */
+
+/**
+ * SocketPool_Failed - Pool operation failure
+ *
+ * Category: RESOURCE or APPLICATION
+ * Retryable: Depends on specific operation
+ *
+ * Raised for:
+ * - Pool capacity exhaustion (RESOURCE, retryable after drain)
+ * - Invalid parameters (APPLICATION, not retryable)
+ * - Memory allocation failures (RESOURCE, not retryable)
+ * - Connection validation failures (NETWORK, retryable)
+ *
+ * Check errno or context for specific failure reason.
+ */
+extern const Except_T SocketPool_Failed;
 
 /**
  * SocketPool_new - Create a new connection pool

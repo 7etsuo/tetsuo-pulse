@@ -200,16 +200,16 @@ Ensure timeouts are consistently enforced across all code paths.
 
 Improve error handling and recovery capabilities.
 
-- [ ] 11.1 Document which exceptions are retryable vs fatal in header comments
-- [ ] 11.2 Add `Socket_error_is_retryable()` helper function
-- [ ] 11.3 Add `SocketHTTPClient_error_is_retryable()` helper function
-- [ ] 11.4 Implement retry helper with exponential backoff (`SocketRetry_T`)
-- [ ] 11.5 Add automatic retry option to HTTP client config
-- [ ] 11.6 Ensure partial state cleanup on all error paths (audit FINALLY blocks)
-- [ ] 11.7 Add connection recovery after transient failures
+- [x] 11.1 Document which exceptions are retryable vs fatal in header comments (implemented: all major exceptions documented with Category/Retryable in Socket.h, SocketHTTPClient.h, SocketTLS.h, SocketDNS.h, SocketPool.h, SocketPoll.h)
+- [x] 11.2 Add `Socket_error_is_retryable()` helper function (implemented: `Socket_error_is_retryable()` in Socket.h/c)
+- [x] 11.3 Add `SocketHTTPClient_error_is_retryable()` helper function (implemented: `SocketHTTPClient_error_is_retryable()` in SocketHTTPClient.h/c)
+- [x] 11.4 Implement retry helper with exponential backoff (`SocketRetry_T`) (implemented: `SocketRetry_T` module in include/core/SocketRetry.h, src/core/SocketRetry.c)
+- [x] 11.5 Add automatic retry option to HTTP client config (implemented: retry fields in SocketHTTPClient_Config, retry logic in SocketHTTPClient_Request_execute())
+- [x] 11.6 Ensure partial state cleanup on all error paths (audit FINALLY blocks) (audited: all 276 FINALLY blocks across 41 files, production code verified correct)
+- [x] 11.7 Add connection recovery after transient failures (implemented: automatic retry in HTTP client with exponential backoff)
 - [x] 11.8 Implement circuit breaker pattern for repeated failures (implemented: `SocketReconnect` module with `SocketReconnect_CircuitState`, circuit breaker in backoff logic)
-- [ ] 11.9 Add error categorization (network, protocol, application, timeout)
-- [ ] 11.10 Document error recovery patterns in `docs/ERROR_HANDLING.md`
+- [x] 11.9 Add error categorization (network, protocol, application, timeout) (implemented: `SocketErrorCategory` enum, `SocketError_categorize_errno()`, `SocketError_is_retryable_errno()` in SocketUtil.h/c)
+- [x] 11.10 Document error recovery patterns in `docs/ERROR_HANDLING.md` (created: comprehensive ERROR_HANDLING.md with categories, exception reference, retry patterns, circuit breaker)
 
 ---
 

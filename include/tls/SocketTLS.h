@@ -27,12 +27,64 @@ extern __thread char tls_error_buf[];
 #define T SocketTLS_T
 typedef struct T *T;
 
-/* TLS-specific exception types */
-extern const Except_T SocketTLS_Failed;          /* General TLS operation failure */
-extern const Except_T SocketTLS_HandshakeFailed; /* TLS handshake failure */
-extern const Except_T SocketTLS_VerifyFailed;  /* Certificate verification failure */
-extern const Except_T SocketTLS_ProtocolError; /* TLS protocol error */
-extern const Except_T SocketTLS_ShutdownFailed; /* TLS shutdown failure */
+/* ============================================================================
+ * Exception Types
+ * ============================================================================
+ *
+ * RETRYABILITY: TLS errors are generally NOT retryable as they indicate
+ * configuration issues, certificate problems, or protocol mismatches.
+ */
+
+/**
+ * SocketTLS_Failed - General TLS operation failure
+ *
+ * Category: PROTOCOL
+ * Retryable: NO - Usually indicates configuration or setup error
+ */
+extern const Except_T SocketTLS_Failed;
+
+/**
+ * SocketTLS_HandshakeFailed - TLS handshake could not complete
+ *
+ * Category: PROTOCOL
+ * Retryable: NO - Protocol/version mismatch or server rejection
+ *
+ * Raised when handshake fails due to:
+ * - Protocol version mismatch
+ * - Cipher suite negotiation failure
+ * - Server rejection
+ */
+extern const Except_T SocketTLS_HandshakeFailed;
+
+/**
+ * SocketTLS_VerifyFailed - Certificate verification failure
+ *
+ * Category: PROTOCOL
+ * Retryable: NO - Certificate won't change on retry
+ *
+ * Raised when peer certificate fails verification:
+ * - Expired certificate
+ * - Invalid signature
+ * - Hostname mismatch
+ * - Unknown CA
+ */
+extern const Except_T SocketTLS_VerifyFailed;
+
+/**
+ * SocketTLS_ProtocolError - TLS protocol error
+ *
+ * Category: PROTOCOL
+ * Retryable: NO - Protocol violation by peer
+ */
+extern const Except_T SocketTLS_ProtocolError;
+
+/**
+ * SocketTLS_ShutdownFailed - TLS shutdown failure
+ *
+ * Category: PROTOCOL
+ * Retryable: NO - Connection already broken
+ */
+extern const Except_T SocketTLS_ShutdownFailed;
 
 /* TLS handshake state (for polling/integration) */
 typedef enum

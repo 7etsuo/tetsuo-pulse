@@ -672,6 +672,87 @@ const char *Socket_safe_strerror (int errnum);
 #define SOCKET_ECONNRESET "Connection reset by peer"
 
 /* ============================================================================
+ * ERROR CATEGORIZATION
+ * ============================================================================
+ *
+ * Provides error classification for determining retry eligibility and
+ * appropriate error handling strategies.
+ *
+ * Categories:
+ * - NETWORK: Transient network errors (usually retryable)
+ * - PROTOCOL: Protocol/format errors (usually not retryable)
+ * - APPLICATION: Application-level errors (context-dependent)
+ * - TIMEOUT: Timeout errors (usually retryable with backoff)
+ * - RESOURCE: Resource exhaustion (may be retryable after delay)
+ * - UNKNOWN: Unclassified errors
+ */
+
+/**
+ * SocketErrorCategory - High-level error classification
+ *
+ * Used to determine appropriate error handling strategy:
+ * - NETWORK errors are typically transient and retryable
+ * - PROTOCOL errors indicate bugs or misconfiguration
+ * - APPLICATION errors depend on business logic
+ * - TIMEOUT errors are retryable with exponential backoff
+ * - RESOURCE errors may resolve after releasing resources
+ */
+typedef enum SocketErrorCategory
+{
+  SOCKET_ERROR_CATEGORY_NETWORK = 0,   /**< Network-level: ECONNRESET, ECONNREFUSED, etc. */
+  SOCKET_ERROR_CATEGORY_PROTOCOL,      /**< Protocol-level: Parse errors, invalid responses */
+  SOCKET_ERROR_CATEGORY_APPLICATION,   /**< App-level: Auth failures, 4xx responses */
+  SOCKET_ERROR_CATEGORY_TIMEOUT,       /**< Timeout errors: ETIMEDOUT, deadline exceeded */
+  SOCKET_ERROR_CATEGORY_RESOURCE,      /**< Resource exhaustion: OOM, fd limits */
+  SOCKET_ERROR_CATEGORY_UNKNOWN        /**< Unclassified errors */
+} SocketErrorCategory;
+
+/**
+ * SocketError_categorize_errno - Categorize an errno value
+ * @err: errno value to categorize
+ *
+ * Returns: SocketErrorCategory for the given errno
+ * Thread-safe: Yes (pure function)
+ *
+ * Maps common POSIX errno values to high-level categories:
+ * - NETWORK: ECONNREFUSED, ECONNRESET, ECONNABORTED, ENETUNREACH,
+ *            EHOSTUNREACH, ENETDOWN, EPIPE, ENOTCONN
+ * - TIMEOUT: ETIMEDOUT
+ * - RESOURCE: ENOMEM, EMFILE, ENFILE, ENOBUFS, ENOSPC
+ * - PROTOCOL: EINVAL, EPROTO, EPROTONOSUPPORT, EAFNOSUPPORT
+ * - UNKNOWN: All other errors
+ */
+extern SocketErrorCategory SocketError_categorize_errno (int err);
+
+/**
+ * SocketError_category_name - Get string name for error category
+ * @category: Error category
+ *
+ * Returns: Static string with category name
+ * Thread-safe: Yes (returns static data)
+ */
+extern const char *SocketError_category_name (SocketErrorCategory category);
+
+/**
+ * SocketError_is_retryable_errno - Check if errno indicates retryable error
+ * @err: errno value to check
+ *
+ * Returns: 1 if error is typically retryable, 0 if fatal
+ * Thread-safe: Yes (pure function)
+ *
+ * Retryable errors include:
+ * - Network transient: ECONNREFUSED, ECONNRESET, ENETUNREACH, EHOSTUNREACH
+ * - Timeout: ETIMEDOUT
+ * - Temporary resource: EAGAIN, EWOULDBLOCK, EINTR
+ *
+ * Non-retryable errors include:
+ * - Configuration: EACCES, EADDRINUSE, EADDRNOTAVAIL, EPERM
+ * - Programming: EBADF, ENOTSOCK, EINVAL, EFAULT
+ * - Permanent resource: ENOMEM, EMFILE, ENFILE
+ */
+extern int SocketError_is_retryable_errno (int err);
+
+/* ============================================================================
  * Centralized Exception Infrastructure
  * ============================================================================ */
 

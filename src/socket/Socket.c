@@ -59,6 +59,25 @@ SOCKET_DECLARE_MODULE_EXCEPTION(Socket);
 /* Macro to raise exception with detailed error message */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(Socket, e)
 
+/* ============================================================================
+ * Error Retryability
+ * ============================================================================ */
+
+/**
+ * Socket_error_is_retryable - Check if errno indicates retryable error
+ * @err: errno value to check
+ *
+ * Returns: 1 if error is typically retryable, 0 if fatal
+ * Thread-safe: Yes (pure function)
+ *
+ * Wrapper around SocketError_is_retryable_errno() for consistency.
+ */
+int
+Socket_error_is_retryable (int err)
+{
+  return SocketError_is_retryable_errno (err);
+}
+
 /* Static helper functions */
 
 #ifdef SOCKET_HAS_TLS

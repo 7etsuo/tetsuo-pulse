@@ -49,8 +49,27 @@ typedef struct T *T;
 #define Request_T SocketDNS_Request_T
 typedef struct Request_T *Request_T;
 
-/* Exception types */
-extern const Except_T SocketDNS_Failed; /**< DNS resolution operation failure */
+/* ============================================================================
+ * Exception Types
+ * ============================================================================ */
+
+/**
+ * SocketDNS_Failed - DNS resolution operation failure
+ *
+ * Category: NETWORK
+ * Retryable: YES - DNS servers may recover, cache may refresh
+ *
+ * Raised when DNS resolution fails:
+ * - Server unreachable (transient)
+ * - Query timeout (transient)
+ * - Invalid hostname (permanent)
+ * - NXDOMAIN (permanent)
+ *
+ * Check the error code from callback for specific failure reason.
+ * Transient failures (EAI_AGAIN, EAI_NODATA) are worth retrying.
+ * Permanent failures (EAI_NONAME, EAI_FAIL) should not be retried.
+ */
+extern const Except_T SocketDNS_Failed;
 
 /**
  * SocketDNS_Callback - Callback function for async DNS resolution

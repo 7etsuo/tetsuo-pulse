@@ -196,6 +196,7 @@ set(LIB_SOURCES
     src/core/SocketUTF8.c
     src/core/SocketSecurity.c
     src/core/SocketMetrics.c
+    src/core/SocketRetry.c
     
     # Socket core (consolidated)
     src/socket/Socket.c

@@ -25,8 +25,10 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /* ============================================================================
  * Centralized Exception Infrastructure
@@ -75,6 +77,46 @@ static const char *error_strings[] = {
   [HTTPCLIENT_ERROR_CANCELLED] = "Request cancelled",
   [HTTPCLIENT_ERROR_OUT_OF_MEMORY] = "Out of memory"
 };
+
+/* ============================================================================
+ * Error Retryability
+ * ============================================================================ */
+
+/**
+ * SocketHTTPClient_error_is_retryable - Check if error code is retryable
+ * @error: Error code from async operation
+ *
+ * Returns: 1 if error is typically retryable, 0 if fatal
+ * Thread-safe: Yes (pure function)
+ *
+ * Determines if a failed request should be retried based on error type.
+ */
+int
+SocketHTTPClient_error_is_retryable (SocketHTTPClient_Error error)
+{
+  switch (error)
+    {
+    /* Retryable errors - transient conditions that may resolve */
+    case HTTPCLIENT_ERROR_DNS:       /* DNS server may recover */
+    case HTTPCLIENT_ERROR_CONNECT:   /* Server may restart */
+    case HTTPCLIENT_ERROR_TIMEOUT:   /* Network congestion may clear */
+      return 1;
+
+    /* Non-retryable errors - permanent or configuration issues */
+    case HTTPCLIENT_OK:                      /* Not an error */
+    case HTTPCLIENT_ERROR_TLS:               /* Config mismatch */
+    case HTTPCLIENT_ERROR_PROTOCOL:          /* Server bug */
+    case HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS: /* Redirect loop */
+    case HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE: /* Size limit */
+    case HTTPCLIENT_ERROR_CANCELLED:         /* User cancelled */
+    case HTTPCLIENT_ERROR_OUT_OF_MEMORY:     /* Resource exhaustion */
+      return 0;
+
+    default:
+      /* Unknown errors default to non-retryable for safety */
+      return 0;
+    }
+}
 
 /* Forward declaration for secure clearing of auth credentials */
 static void secure_clear_auth (SocketHTTPClient_Auth *auth);
@@ -133,6 +175,15 @@ SocketHTTPClient_config_defaults (SocketHTTPClient_Config *config)
 
   /* Limits */
   config->max_response_size = HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE;
+
+  /* Retry configuration (default: disabled for backward compatibility) */
+  config->enable_retry = HTTPCLIENT_DEFAULT_ENABLE_RETRY;
+  config->max_retries = HTTPCLIENT_DEFAULT_MAX_RETRIES;
+  config->retry_initial_delay_ms = HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS;
+  config->retry_max_delay_ms = HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS;
+  config->retry_on_connection_error = HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT;
+  config->retry_on_timeout = HTTPCLIENT_DEFAULT_RETRY_ON_TIMEOUT;
+  config->retry_on_5xx = HTTPCLIENT_DEFAULT_RETRY_ON_5XX;
 }
 
 /* ============================================================================
@@ -1549,16 +1600,245 @@ SocketHTTPClient_Request_auth (SocketHTTPClient_Request_T req,
   req->auth = auth_copy;
 }
 
+/**
+ * calculate_retry_delay - Calculate backoff delay for retry attempt
+ * @client: HTTP client with retry config
+ * @attempt: Current attempt number (1-based)
+ *
+ * Returns: Delay in milliseconds with jitter applied
+ * Thread-safe: Yes
+ */
+static int
+calculate_retry_delay (SocketHTTPClient_T client, int attempt)
+{
+  double delay;
+  double jitter_range;
+  double jitter_factor;
+
+  /* Exponential backoff: initial * 2^(attempt-1) */
+  delay = (double)client->config.retry_initial_delay_ms
+          * pow (2.0, (double)(attempt - 1));
+
+  /* Cap at max delay */
+  if (delay > (double)client->config.retry_max_delay_ms)
+    delay = (double)client->config.retry_max_delay_ms;
+
+  /* Add 25% jitter: delay * (1 + 0.25 * (2*random - 1)) */
+  jitter_factor = (double)rand () / (double)RAND_MAX; /* 0 to 1 */
+  jitter_range = delay * 0.25;
+  delay += jitter_range * (2.0 * jitter_factor - 1.0);
+
+  /* Ensure positive delay */
+  if (delay < 1.0)
+    delay = 1.0;
+
+  return (int)delay;
+}
+
+/**
+ * retry_sleep_ms - Sleep for specified milliseconds
+ * @ms: Milliseconds to sleep
+ *
+ * Thread-safe: Yes
+ */
+static void
+retry_sleep_ms (int ms)
+{
+  struct timespec req;
+  struct timespec rem;
+
+  if (ms <= 0)
+    return;
+
+  req.tv_sec = ms / 1000;
+  req.tv_nsec = (ms % 1000) * 1000000L;
+
+  while (nanosleep (&req, &rem) == -1)
+    {
+      if (errno != EINTR)
+        break;
+      req = rem;
+    }
+}
+
+/**
+ * should_retry_error - Check if error code should trigger retry
+ * @client: HTTP client with retry config
+ * @error: Error code to check
+ *
+ * Returns: 1 if should retry, 0 otherwise
+ */
+static int
+should_retry_error (SocketHTTPClient_T client, SocketHTTPClient_Error error)
+{
+  switch (error)
+    {
+    case HTTPCLIENT_ERROR_DNS:
+    case HTTPCLIENT_ERROR_CONNECT:
+      return client->config.retry_on_connection_error;
+
+    case HTTPCLIENT_ERROR_TIMEOUT:
+      return client->config.retry_on_timeout;
+
+    default:
+      return 0;
+    }
+}
+
+/**
+ * should_retry_status - Check if HTTP status should trigger retry
+ * @client: HTTP client with retry config
+ * @status: HTTP status code
+ *
+ * Returns: 1 if should retry, 0 otherwise
+ */
+static int
+should_retry_status (SocketHTTPClient_T client, int status)
+{
+  if (status >= 500 && status < 600)
+    return client->config.retry_on_5xx;
+
+  return 0;
+}
+
 int
 SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
                                   SocketHTTPClient_Response *response)
 {
+  SocketHTTPClient_T client;
+  int attempt;
+  volatile int result;  /* volatile due to use across TRY/EXCEPT */
+  int delay_ms;
+
   assert (req != NULL);
   assert (response != NULL);
 
+  client = req->client;
   memset (response, 0, sizeof (*response));
 
-  return execute_request_internal (req->client, req, response, 0, 0);
+  /* If retry is disabled, just execute once */
+  if (!client->config.enable_retry || client->config.max_retries <= 0)
+    return execute_request_internal (client, req, response, 0, 0);
+
+  /* Execute with retry logic */
+  for (attempt = 1; attempt <= client->config.max_retries + 1; attempt++)
+    {
+      /* Clear response for fresh attempt */
+      if (attempt > 1)
+        {
+          /* Clean up previous response if any */
+          if (response->arena != NULL)
+            {
+              Arena_dispose (&response->arena);
+              response->arena = NULL;
+            }
+          memset (response, 0, sizeof (*response));
+        }
+
+      /* Attempt the request */
+      TRY
+        {
+          result = execute_request_internal (client, req, response, 0, 0);
+        }
+      EXCEPT (SocketHTTPClient_DNSFailed)
+        {
+          client->last_error = HTTPCLIENT_ERROR_DNS;
+          result = -1;
+        }
+      EXCEPT (SocketHTTPClient_ConnectFailed)
+        {
+          client->last_error = HTTPCLIENT_ERROR_CONNECT;
+          result = -1;
+        }
+      EXCEPT (SocketHTTPClient_Timeout)
+        {
+          client->last_error = HTTPCLIENT_ERROR_TIMEOUT;
+          result = -1;
+        }
+      EXCEPT (Socket_Failed)
+        {
+          /* Map socket errors to connect errors for retry purposes */
+          if (SocketError_is_retryable_errno (Socket_geterrno ()))
+            client->last_error = HTTPCLIENT_ERROR_CONNECT;
+          else
+            client->last_error = HTTPCLIENT_ERROR_CONNECT;
+          result = -1;
+        }
+      END_TRY;
+
+      /* Success - return immediately */
+      if (result == 0)
+        {
+          /* Check if we need to retry on 5xx */
+          if (response->status_code >= 500 && response->status_code < 600
+              && should_retry_status (client, response->status_code)
+              && attempt <= client->config.max_retries)
+            {
+              /* Log and retry on 5xx */
+              SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
+                               "Attempt %d: Server returned %d, retrying",
+                               attempt, response->status_code);
+            }
+          else
+            {
+              /* Success or non-retryable status */
+              return 0;
+            }
+        }
+      else
+        {
+          /* Error - check if retryable */
+          if (!should_retry_error (client, client->last_error))
+            {
+              /* Non-retryable error - propagate exception */
+              switch (client->last_error)
+                {
+                case HTTPCLIENT_ERROR_DNS:
+                  RAISE (SocketHTTPClient_DNSFailed);
+                  break;
+                case HTTPCLIENT_ERROR_CONNECT:
+                  RAISE (SocketHTTPClient_ConnectFailed);
+                  break;
+                case HTTPCLIENT_ERROR_TIMEOUT:
+                  RAISE (SocketHTTPClient_Timeout);
+                  break;
+                default:
+                  return -1;
+                }
+            }
+        }
+
+      /* Check if more attempts allowed */
+      if (attempt > client->config.max_retries)
+        break;
+
+      /* Calculate and apply backoff delay */
+      delay_ms = calculate_retry_delay (client, attempt);
+
+      SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
+                       "Attempt %d failed (error=%d), retrying in %d ms",
+                       attempt, client->last_error, delay_ms);
+
+      retry_sleep_ms (delay_ms);
+    }
+
+  /* All retries exhausted - raise the last error */
+  switch (client->last_error)
+    {
+    case HTTPCLIENT_ERROR_DNS:
+      RAISE (SocketHTTPClient_DNSFailed);
+      break;
+    case HTTPCLIENT_ERROR_CONNECT:
+      RAISE (SocketHTTPClient_ConnectFailed);
+      break;
+    case HTTPCLIENT_ERROR_TIMEOUT:
+      RAISE (SocketHTTPClient_Timeout);
+      break;
+    default:
+      break;
+    }
+
+  return -1;
 }
 
 /* ============================================================================

@@ -291,6 +291,194 @@ Socket_safe_strerror (int errnum)
 }
 
 /* ===========================================================================
+ * ERROR CATEGORIZATION SUBSYSTEM
+ * ===========================================================================*/
+
+/* Category names for display */
+static const char *const socket_error_category_names[] = {
+  "NETWORK",
+  "PROTOCOL",
+  "APPLICATION",
+  "TIMEOUT",
+  "RESOURCE",
+  "UNKNOWN"
+};
+
+/**
+ * SocketError_categorize_errno - Categorize an errno value
+ * @err: errno value to categorize
+ *
+ * Returns: SocketErrorCategory for the given errno
+ * Thread-safe: Yes (pure function)
+ *
+ * Maps POSIX errno values to high-level categories for error handling.
+ */
+SocketErrorCategory
+SocketError_categorize_errno (int err)
+{
+  switch (err)
+    {
+    /* No error */
+    case 0:
+      return SOCKET_ERROR_CATEGORY_UNKNOWN;
+
+    /* Network errors - typically transient, retryable */
+    case ECONNREFUSED:
+    case ECONNRESET:
+    case ECONNABORTED:
+    case ENETUNREACH:
+    case EHOSTUNREACH:
+#ifdef ENETDOWN
+    case ENETDOWN:
+#endif
+#ifdef ENETRESET
+    case ENETRESET:
+#endif
+    case EPIPE:
+    case ENOTCONN:
+      return SOCKET_ERROR_CATEGORY_NETWORK;
+
+    /* Timeout errors */
+    case ETIMEDOUT:
+      return SOCKET_ERROR_CATEGORY_TIMEOUT;
+
+    /* Resource exhaustion errors */
+    case ENOMEM:
+    case EMFILE:
+    case ENFILE:
+    case ENOBUFS:
+#ifdef ENOSPC
+    case ENOSPC:
+#endif
+      return SOCKET_ERROR_CATEGORY_RESOURCE;
+
+    /* Protocol/configuration errors - usually not retryable */
+    case EINVAL:
+#ifdef EPROTO
+    case EPROTO:
+#endif
+    case EPROTONOSUPPORT:
+    case EAFNOSUPPORT:
+    case EOPNOTSUPP:
+    case ENOTSOCK:
+    case EBADF:
+    case EFAULT:
+      return SOCKET_ERROR_CATEGORY_PROTOCOL;
+
+    /* Permission/address errors - configuration issues */
+    case EACCES:
+    case EPERM:
+    case EADDRINUSE:
+    case EADDRNOTAVAIL:
+      return SOCKET_ERROR_CATEGORY_APPLICATION;
+
+    /* Temporary conditions (not really errors) */
+    case EAGAIN:
+#if EWOULDBLOCK != EAGAIN
+    case EWOULDBLOCK:
+#endif
+    case EINTR:
+    case EINPROGRESS:
+    case EALREADY:
+    case EISCONN:
+      return SOCKET_ERROR_CATEGORY_NETWORK;
+
+    default:
+      return SOCKET_ERROR_CATEGORY_UNKNOWN;
+    }
+}
+
+/**
+ * SocketError_category_name - Get string name for error category
+ * @category: Error category
+ *
+ * Returns: Static string with category name
+ * Thread-safe: Yes (returns static data)
+ */
+const char *
+SocketError_category_name (SocketErrorCategory category)
+{
+  if (category < SOCKET_ERROR_CATEGORY_NETWORK
+      || category > SOCKET_ERROR_CATEGORY_UNKNOWN)
+    return "UNKNOWN";
+  return socket_error_category_names[category];
+}
+
+/**
+ * SocketError_is_retryable_errno - Check if errno indicates retryable error
+ * @err: errno value to check
+ *
+ * Returns: 1 if error is typically retryable, 0 if fatal
+ * Thread-safe: Yes (pure function)
+ *
+ * Determines if an error is transient and worth retrying. This is used
+ * by retry logic to decide whether to attempt reconnection.
+ */
+int
+SocketError_is_retryable_errno (int err)
+{
+  switch (err)
+    {
+    /* Network transient errors - server may come back */
+    case ECONNREFUSED:  /* Server not listening yet */
+    case ECONNRESET:    /* Connection dropped */
+    case ECONNABORTED:  /* Connection aborted */
+    case ENETUNREACH:   /* Network route may recover */
+    case EHOSTUNREACH:  /* Host may come online */
+#ifdef ENETDOWN
+    case ENETDOWN:      /* Network interface may recover */
+#endif
+#ifdef ENETRESET
+    case ENETRESET:     /* Network reset, can retry */
+#endif
+    case EPIPE:         /* Write to closed socket */
+    case ENOTCONN:      /* Socket not connected */
+
+    /* Timeout - may succeed with retry */
+    case ETIMEDOUT:
+
+    /* Temporary conditions - always retryable */
+    case EAGAIN:
+#if EWOULDBLOCK != EAGAIN
+    case EWOULDBLOCK:
+#endif
+    case EINTR:         /* Interrupted by signal */
+    case EINPROGRESS:   /* Non-blocking connect in progress */
+    case EALREADY:      /* Operation already in progress */
+      return 1;
+
+    /* Non-retryable errors */
+
+    /* Configuration/permission errors - won't change on retry */
+    case EACCES:
+    case EPERM:
+    case EADDRINUSE:
+    case EADDRNOTAVAIL:
+    case EAFNOSUPPORT:
+    case EPROTONOSUPPORT:
+    case EOPNOTSUPP:
+
+    /* Programming errors - bugs that won't fix themselves */
+    case EBADF:
+    case ENOTSOCK:
+    case EINVAL:
+    case EFAULT:
+    case EISCONN:
+
+    /* Resource exhaustion - may need intervention */
+    case ENOMEM:
+    case EMFILE:
+    case ENFILE:
+    case ENOBUFS:
+      return 0;
+
+    default:
+      /* Unknown errors default to non-retryable for safety */
+      return 0;
+    }
+}
+
+/* ===========================================================================
  * LOGGING SUBSYSTEM
  * ===========================================================================*/
 

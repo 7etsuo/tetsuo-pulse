@@ -70,30 +70,110 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ *
+ * RETRYABILITY GUIDE:
+ * - RETRYABLE exceptions indicate transient failures that may succeed on retry
+ * - NON-RETRYABLE exceptions indicate permanent failures or configuration errors
+ * - Use SocketHTTPClient_error_is_retryable() to check programmatically
+ */
 
-/** General client failure */
+/**
+ * SocketHTTPClient_Failed - General client failure
+ *
+ * Category: Varies
+ * Retryable: Depends on underlying cause - check errno
+ *
+ * Raised for unclassified errors. Check Socket_geterrno() for details.
+ */
 extern const Except_T SocketHTTPClient_Failed;
 
-/** DNS resolution failure */
+/**
+ * SocketHTTPClient_DNSFailed - DNS resolution failure
+ *
+ * Category: NETWORK
+ * Retryable: YES - DNS servers may recover, cache may refresh
+ *
+ * Raised when hostname cannot be resolved. May be transient
+ * (DNS server overloaded) or permanent (invalid hostname).
+ */
 extern const Except_T SocketHTTPClient_DNSFailed;
 
-/** Connection failure */
+/**
+ * SocketHTTPClient_ConnectFailed - TCP connection failure
+ *
+ * Category: NETWORK
+ * Retryable: YES - Server may restart, network may recover
+ *
+ * Raised when TCP connect() fails. Common causes:
+ * - ECONNREFUSED: Server not listening (may start later)
+ * - ENETUNREACH: Network route unavailable (may recover)
+ * - EHOSTUNREACH: Host unreachable (may become reachable)
+ */
 extern const Except_T SocketHTTPClient_ConnectFailed;
 
-/** TLS/SSL failure */
+/**
+ * SocketHTTPClient_TLSFailed - TLS/SSL handshake or I/O failure
+ *
+ * Category: PROTOCOL
+ * Retryable: NO - Usually indicates configuration mismatch
+ *
+ * Raised for TLS errors:
+ * - Certificate verification failure
+ * - Protocol version mismatch
+ * - Cipher suite negotiation failure
+ *
+ * Retrying won't help unless TLS configuration is changed.
+ */
 extern const Except_T SocketHTTPClient_TLSFailed;
 
-/** Request timeout */
+/**
+ * SocketHTTPClient_Timeout - Request timeout exceeded
+ *
+ * Category: TIMEOUT
+ * Retryable: YES - Network congestion may clear
+ *
+ * Raised when request exceeds configured timeout. May succeed
+ * on retry if server/network recovers.
+ */
 extern const Except_T SocketHTTPClient_Timeout;
 
-/** Protocol error (HTTP parse error) */
+/**
+ * SocketHTTPClient_ProtocolError - HTTP protocol error
+ *
+ * Category: PROTOCOL
+ * Retryable: NO - Server response is malformed
+ *
+ * Raised when HTTP response cannot be parsed:
+ * - Invalid status line
+ * - Malformed headers
+ * - Invalid chunked encoding
+ *
+ * Indicates server bug or proxy corruption.
+ */
 extern const Except_T SocketHTTPClient_ProtocolError;
 
-/** Too many redirects */
+/**
+ * SocketHTTPClient_TooManyRedirects - Redirect limit exceeded
+ *
+ * Category: APPLICATION
+ * Retryable: NO - Indicates redirect loop or misconfiguration
+ *
+ * Raised when redirect count exceeds max_redirects config.
+ * Usually indicates server misconfiguration (redirect loop).
+ */
 extern const Except_T SocketHTTPClient_TooManyRedirects;
 
-/** Response too large */
+/**
+ * SocketHTTPClient_ResponseTooLarge - Response body exceeds limit
+ *
+ * Category: RESOURCE
+ * Retryable: NO - Server response is too large
+ *
+ * Raised when response body exceeds max_response_size config.
+ * Retry would produce same result. Increase limit or use
+ * streaming API for large responses.
+ */
 extern const Except_T SocketHTTPClient_ResponseTooLarge;
 
 /* ============================================================================
@@ -102,6 +182,17 @@ extern const Except_T SocketHTTPClient_ResponseTooLarge;
 
 /**
  * Error codes for async operations
+ *
+ * Retryability by error code:
+ * - HTTPCLIENT_ERROR_DNS: YES - DNS may recover
+ * - HTTPCLIENT_ERROR_CONNECT: YES - Server may restart
+ * - HTTPCLIENT_ERROR_TLS: NO - Configuration issue
+ * - HTTPCLIENT_ERROR_TIMEOUT: YES - Transient congestion
+ * - HTTPCLIENT_ERROR_PROTOCOL: NO - Server bug
+ * - HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS: NO - Redirect loop
+ * - HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE: NO - Size limit
+ * - HTTPCLIENT_ERROR_CANCELLED: NO - User cancelled
+ * - HTTPCLIENT_ERROR_OUT_OF_MEMORY: NO - Resource exhaustion
  */
 typedef enum
 {
@@ -116,6 +207,37 @@ typedef enum
   HTTPCLIENT_ERROR_CANCELLED,
   HTTPCLIENT_ERROR_OUT_OF_MEMORY
 } SocketHTTPClient_Error;
+
+/**
+ * SocketHTTPClient_error_is_retryable - Check if error code is retryable
+ * @error: Error code from async operation
+ *
+ * Returns: 1 if error is typically retryable, 0 if fatal
+ * Thread-safe: Yes (pure function)
+ *
+ * Use this to decide whether to retry a failed request:
+ *
+ * Example:
+ *   SocketHTTPClient_Error err = SocketHTTPClient_Request_error(req);
+ *   if (SocketHTTPClient_error_is_retryable(err))
+ *     // Schedule retry with exponential backoff
+ *   else
+ *     // Log error and give up
+ *
+ * Retryable errors:
+ * - DNS failures (server may recover)
+ * - Connection failures (server may restart)
+ * - Timeouts (network may clear)
+ *
+ * Non-retryable errors:
+ * - TLS failures (configuration issue)
+ * - Protocol errors (server bug)
+ * - Redirect loops (server misconfiguration)
+ * - Size limits (won't change on retry)
+ * - Cancellation (user initiated)
+ * - Out of memory (system issue)
+ */
+extern int SocketHTTPClient_error_is_retryable (SocketHTTPClient_Error error);
 
 /* ============================================================================
  * Authentication Types
@@ -222,6 +344,22 @@ typedef struct
 
   /* Limits */
   size_t max_response_size; /**< Max response body (0 = unlimited) */
+
+  /* Retry configuration (Phase 11)
+   *
+   * Automatic retry with exponential backoff for transient failures.
+   *
+   * IMPORTANT: Only enable retry_on_5xx for idempotent requests (GET, HEAD,
+   * OPTIONS, PUT, DELETE). Non-idempotent requests (POST) may cause
+   * duplicate side effects if retried.
+   */
+  int enable_retry;              /**< Enable automatic retry (default: 0) */
+  int max_retries;               /**< Max retry attempts (default: 3) */
+  int retry_initial_delay_ms;    /**< Initial backoff delay (default: 100ms) */
+  int retry_max_delay_ms;        /**< Max backoff delay (default: 10s) */
+  int retry_on_connection_error; /**< Retry on connect failures (default: 1) */
+  int retry_on_timeout;          /**< Retry on timeouts (default: 1) */
+  int retry_on_5xx;              /**< Retry on 5xx responses (default: 0) */
 } SocketHTTPClient_Config;
 
 /* ============================================================================

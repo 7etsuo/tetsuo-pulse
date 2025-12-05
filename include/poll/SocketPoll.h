@@ -34,7 +34,22 @@ typedef struct SocketAsync_T *SocketAsync_T;
 #define T SocketPoll_T
 typedef struct T *T;
 
-/* Exception for poll failures */
+/* ============================================================================
+ * Exception Types
+ * ============================================================================ */
+
+/**
+ * SocketPoll_Failed - Poll operation failure
+ *
+ * Category: RESOURCE or PROTOCOL
+ * Retryable: Depends on errno
+ *
+ * Raised for:
+ * - epoll/kqueue creation failure (RESOURCE, not retryable)
+ * - Invalid socket (PROTOCOL, not retryable)
+ * - Duplicate socket add (PROTOCOL, not retryable)
+ * - EMFILE/ENFILE (RESOURCE, retryable after fd cleanup)
+ */
 extern const Except_T SocketPoll_Failed;
 
 /**
