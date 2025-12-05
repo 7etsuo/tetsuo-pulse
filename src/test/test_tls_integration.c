@@ -33,22 +33,42 @@
 #include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"
 
-/* Helper to generate temporary self-signed certificate */
+/* Helper to generate temporary self-signed certificate with CA extensions
+ * Uses config file approach for LibreSSL/macOS compatibility (-addext not supported) */
 static int
 generate_test_certs (const char *cert_file, const char *key_file)
 {
-  char cmd[1024];
+  char cmd[2048];
+  const char *conf_file = "/tmp/openssl_test.cnf";
+  FILE *f;
 
-  /* Generate self-signed certificate for testing */
+  /* Create OpenSSL config file with CA extensions (LibreSSL compatible) */
+  f = fopen (conf_file, "w");
+  if (!f)
+    return -1;
+  fprintf (f, "[req]\n"
+              "distinguished_name = req_dn\n"
+              "x509_extensions = v3_ca\n"
+              "[req_dn]\n"
+              "CN = localhost\n"
+              "[v3_ca]\n"
+              "basicConstraints = CA:TRUE\n"
+              "keyUsage = keyCertSign, cRLSign\n");
+  fclose (f);
+
+  /* Generate self-signed certificate for testing using config file */
   snprintf (cmd, sizeof (cmd),
-            "openssl genrsa -out %s 2048 && "
+            "openssl genrsa -out %s 2048 2>/dev/null && "
             "openssl req -new -x509 -key %s -out %s -days 1 -nodes "
-            "-subj '/CN=localhost' -addext \"basicConstraints = CA:TRUE\" "
-            "2>/dev/null",
-            key_file, key_file, cert_file);
+            "-subj '/CN=localhost' -config %s -extensions v3_ca 2>/dev/null",
+            key_file, key_file, cert_file, conf_file);
   if (system (cmd) != 0)
-    goto fail;
+    {
+      unlink (conf_file);
+      goto fail;
+    }
 
+  unlink (conf_file);
   return 0;
 
 fail:
