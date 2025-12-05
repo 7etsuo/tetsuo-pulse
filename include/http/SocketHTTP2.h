@@ -56,7 +56,12 @@
 #define SOCKETHTTP2_DEFAULT_ENABLE_PUSH 1
 #endif
 
-/** Default SETTINGS_MAX_CONCURRENT_STREAMS */
+/**
+ * Default SETTINGS_MAX_CONCURRENT_STREAMS
+ *
+ * ENFORCEMENT: Checked in http2_stream_create() before creating new streams.
+ * Returns NULL if limit exceeded.
+ */
 #ifndef SOCKETHTTP2_DEFAULT_MAX_CONCURRENT_STREAMS
 #define SOCKETHTTP2_DEFAULT_MAX_CONCURRENT_STREAMS 100
 #endif
@@ -74,7 +79,12 @@
 /** Maximum allowed SETTINGS_MAX_FRAME_SIZE (2^24 - 1) */
 #define SOCKETHTTP2_MAX_MAX_FRAME_SIZE 16777215
 
-/** Default SETTINGS_MAX_HEADER_LIST_SIZE */
+/**
+ * Default SETTINGS_MAX_HEADER_LIST_SIZE
+ *
+ * ENFORCEMENT: Checked in http2_decode_headers() before processing.
+ * Returns COMPRESSION_ERROR if exceeded.
+ */
 #ifndef SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE
 #define SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE (16 * 1024)
 #endif

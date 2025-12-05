@@ -7,6 +7,32 @@
  * Centralized configuration for HTTP client module.
  * All magic numbers are defined here with compile-time override support.
  *
+ * CONFIGURABLE LIMITS SUMMARY
+ *
+ * All limits can be overridden at compile time with -D flags or at runtime
+ * via SocketHTTPClient_Config fields.
+ *
+ * RESOURCE LIMITS:
+ *   HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE - 0 (unlimited) - Max response body
+ *   HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST - 6 - Per-host connection limit
+ *   HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS - 100 - Total connection limit
+ *   HTTPCLIENT_DEFAULT_MAX_REDIRECTS - 10 - Max redirect hops
+ *   HTTPCLIENT_MAX_AUTH_RETRIES - 2 - Max auth retry attempts
+ *
+ * TIMEOUT LIMITS:
+ *   HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS - 30s - Connection timeout
+ *   HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS - 60s - Full request timeout
+ *   HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS - 10s - DNS resolution timeout
+ *   HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS - 60s - Idle connection timeout
+ *
+ * ENFORCEMENT:
+ *   - max_response_size: Checked during body accumulation (raises exception)
+ *   - max_conns_per_host: Enforced by connection pool
+ *   - max_redirects: Checked before each redirect (raises TooManyRedirects)
+ *
+ * METRICS:
+ *   - SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED incremented on size violation
+ *
  * Constants are grouped by category:
  * - Error buffers
  * - Connection pool
@@ -101,7 +127,16 @@
 #define HTTPCLIENT_MAX_AUTH_RETRIES 2
 #endif
 
-/** Default maximum response body size (0 = unlimited) */
+/**
+ * Default maximum response body size (0 = unlimited)
+ *
+ * ENFORCEMENT: Checked during body accumulation in receive_http1_response().
+ * Raises SocketHTTPClient_ResponseTooLarge exception when exceeded.
+ * Increments SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED metric.
+ *
+ * Recommendation: Set to non-zero value in production to prevent memory
+ * exhaustion attacks (e.g., 10MB for typical API responses).
+ */
 #ifndef HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE
 #define HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE 0
 #endif

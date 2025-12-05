@@ -45,7 +45,12 @@
 #define SOCKETHPACK_DEFAULT_TABLE_SIZE 4096
 #endif
 
-/** Maximum dynamic table size */
+/**
+ * Maximum dynamic table size
+ *
+ * ENFORCEMENT: Table size updates are validated in SocketHPACK_Decoder_decode().
+ * Rejects updates exceeding settings_max_table_size.
+ */
 #ifndef SOCKETHPACK_MAX_TABLE_SIZE
 #define SOCKETHPACK_MAX_TABLE_SIZE (64 * 1024)
 #endif

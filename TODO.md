@@ -161,18 +161,18 @@ Enhance connection pool for production reliability.
 
 Verify and strengthen resource limit enforcement.
 
-- [ ] 9.1 Audit `HTTPSERVER_DEFAULT_MAX_HEADER_SIZE` enforcement in parser
-- [ ] 9.2 Audit `HTTPSERVER_DEFAULT_MAX_BODY_SIZE` enforcement during streaming
-- [ ] 9.3 Audit `HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE` enforcement
-- [ ] 9.4 Add per-connection memory tracking
-- [ ] 9.5 Add global memory limit for library allocations
-- [ ] 9.6 Implement allocation failure graceful handling
-- [ ] 9.7 Add `SocketConfig_set_max_memory()` for global memory limit
-- [ ] 9.8 Verify HTTP/2 `MAX_CONCURRENT_STREAMS` enforcement
-- [ ] 9.9 Verify HTTP/2 `MAX_HEADER_LIST_SIZE` enforcement
-- [ ] 9.10 Verify HPACK dynamic table size limits are enforced
-- [ ] 9.11 Add resource limit exceeded metrics
-- [ ] 9.12 Document all configurable limits in headers
+- [x] 9.1 Audit `HTTPSERVER_DEFAULT_MAX_HEADER_SIZE` enforcement in parser (passed to HTTP/1.1 parser config in `connection_new()`)
+- [x] 9.2 Audit `HTTPSERVER_DEFAULT_MAX_BODY_SIZE` enforcement during streaming (checked before body allocation, returns 413)
+- [x] 9.3 Audit `HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE` enforcement (checked during body accumulation, raises `ResponseTooLarge`)
+- [x] 9.4 Add per-connection memory tracking (implemented: `memory_used` field in `ServerConnection`, `SocketHTTPServer_Request_memory_used()` accessor)
+- [x] 9.5 Add global memory limit for library allocations (implemented: atomic `global_memory_used`/`global_memory_limit` in Arena.c)
+- [x] 9.6 Implement allocation failure graceful handling (implemented: `global_memory_try_alloc()` returns failure, Arena returns NULL)
+- [x] 9.7 Add `SocketConfig_set_max_memory()` for global memory limit (implemented: `set/get_max_memory()`, `get_memory_used()` in SocketConfig.h/Arena.c)
+- [x] 9.8 Verify HTTP/2 `MAX_CONCURRENT_STREAMS` enforcement (verified: enforced in `http2_stream_create()`, documented in SocketHTTP2.h)
+- [x] 9.9 Verify HTTP/2 `MAX_HEADER_LIST_SIZE` enforcement (verified: enforced in `http2_decode_headers()`, documented in SocketHTTP2.h)
+- [x] 9.10 Verify HPACK dynamic table size limits are enforced (verified: enforced in `SocketHPACK_Decoder_decode()`, documented in SocketHPACK.h)
+- [x] 9.11 Add resource limit exceeded metrics (implemented: `SOCKET_CTR_LIMIT_*` counters for header/body/response/memory/connections/streams/header_list)
+- [x] 9.12 Document all configurable limits in headers (documented: SocketHTTPServer.h, SocketHTTPClient-config.h, SocketConfig.h, SocketHTTP1.h)
 
 ---
 
@@ -337,7 +337,7 @@ Track potential future enhancements (lower priority).
 | 6. Logging | 13 | 13 | 100% |
 | 7. Metrics | 13 | 13 | 100% |
 | 8. Connection Pool | 12 | 10 | 83% |
-| 9. Resource Limits | 12 | 0 | 0% |
+| 9. Resource Limits | 12 | 12 | 100% |
 | 10. Timeout Verification | 13 | 0 | 0% |
 | 11. Error Recovery | 10 | 1 | 10% |
 | 12. Signal Handling | 8 | 0 | 0% |
@@ -346,7 +346,7 @@ Track potential future enhancements (lower priority).
 | 15. Build and Release | 13 | 2 | 15% |
 | 16. Performance | 12 | 3 | 25% |
 | 17. Future Features | 10 | 0 | 0% |
-| **TOTAL** | **202** | **97** | **48%** |
+| **TOTAL** | **202** | **109** | **54%** |
 
 ---
 

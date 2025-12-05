@@ -33,6 +33,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
+#include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
 
 #define T Arena_T
@@ -90,6 +91,71 @@ SOCKET_DECLARE_MODULE_EXCEPTION (Arena);
 static struct ChunkHeader *freechunks = NULL;
 static int nfree = 0;
 static pthread_mutex_t arena_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* ==================== Global Memory Limit Tracking ==================== */
+
+/* Atomic counters for global memory tracking */
+static _Atomic size_t global_memory_used = 0;
+static _Atomic size_t global_memory_limit = 0; /* 0 = unlimited */
+
+void
+SocketConfig_set_max_memory (size_t max_bytes)
+{
+  global_memory_limit = max_bytes;
+}
+
+size_t
+SocketConfig_get_max_memory (void)
+{
+  return global_memory_limit;
+}
+
+size_t
+SocketConfig_get_memory_used (void)
+{
+  return global_memory_used;
+}
+
+/**
+ * global_memory_try_alloc - Try to allocate bytes from global limit
+ * @nbytes: Number of bytes to allocate
+ *
+ * Returns: 1 if allocation allowed, 0 if would exceed limit
+ * Thread-safe: Yes (atomic compare-exchange)
+ */
+static int
+global_memory_try_alloc (size_t nbytes)
+{
+  size_t limit = global_memory_limit;
+
+  /* No limit set - always allow */
+  if (limit == 0)
+    {
+      global_memory_used += nbytes;
+      return 1;
+    }
+
+  /* Check if allocation would exceed limit */
+  size_t current = global_memory_used;
+  if (current + nbytes > limit)
+    return 0;
+
+  /* Atomically update */
+  global_memory_used += nbytes;
+  return 1;
+}
+
+/**
+ * global_memory_release - Release bytes back to global pool
+ * @nbytes: Number of bytes to release
+ *
+ * Thread-safe: Yes (atomic subtraction)
+ */
+static void
+global_memory_release (size_t nbytes)
+{
+  global_memory_used -= nbytes;
+}
 
 /* ==================== Validation Macros ==================== */
 
@@ -324,9 +390,21 @@ arena_allocate_new_chunk (size_t total_size, struct ChunkHeader **ptr_out,
 {
   struct ChunkHeader *ptr;
 
+  /* Check global memory limit before allocation */
+  if (!global_memory_try_alloc (total_size))
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_MEMORY_EXCEEDED);
+      SOCKET_ERROR_MSG ("Global memory limit exceeded: requested %zu bytes, "
+                        "limit %zu, used %zu",
+                        total_size, SocketConfig_get_max_memory (),
+                        SocketConfig_get_memory_used ());
+      return ARENA_FAILURE;
+    }
+
   ptr = malloc (total_size);
   if (ptr == NULL)
     {
+      global_memory_release (total_size); /* Rollback tracking */
       SOCKET_ERROR_MSG ("Cannot allocate new chunk: %zu bytes", total_size);
       return ARENA_FAILURE;
     }
@@ -334,6 +412,7 @@ arena_allocate_new_chunk (size_t total_size, struct ChunkHeader **ptr_out,
   if (!chunk_validate_pointer (ptr, total_size))
     {
       free (ptr);
+      global_memory_release (total_size); /* Rollback tracking */
       SOCKET_ERROR_MSG ("Invalid pointer arithmetic for chunk allocation");
       return ARENA_FAILURE;
     }
@@ -431,14 +510,23 @@ arena_return_chunk_to_pool (struct ChunkHeader *chunk)
 {
   int added;
 
+  size_t chunk_total_size;
+
   assert (chunk);
+
+  /* Calculate total size from chunk_size + header */
+  chunk_total_size = sizeof (union header) + chunk->chunk_size;
 
   pthread_mutex_lock (&arena_mutex);
   added = chunk_add_to_cache_unlocked (chunk);
   pthread_mutex_unlock (&arena_mutex);
 
   if (!added)
-    free (chunk);
+    {
+      free (chunk);
+      /* Release from global memory tracking when actually freed */
+      global_memory_release (chunk_total_size);
+    }
 }
 
 /* ================================================================

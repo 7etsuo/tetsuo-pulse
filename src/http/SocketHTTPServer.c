@@ -29,6 +29,7 @@
 #include "http/SocketHTTPServer.h"
 #include "core/Arena.h"
 #include "core/SocketIPTracker.h"
+#include "core/SocketMetrics.h"
 #include "core/SocketRateLimit.h"
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP.h"
@@ -171,6 +172,9 @@ typedef struct ServerConnection
   int64_t response_start_ms;
   size_t request_count;
   size_t active_requests; /* For HTTP/2 multiplexing */
+
+  /* Memory tracking */
+  size_t memory_used; /* Total bytes allocated for this connection */
 
   Arena_T arena;
 
@@ -366,6 +370,11 @@ find_rate_limiter (SocketHTTPServer_T server, const char *path)
  * Internal Helper Functions - Connection
  * ============================================================================ */
 
+/* Forward declaration - used by connection_parse_request */
+static void connection_send_error (SocketHTTPServer_T server,
+                                   ServerConnection *conn, int status,
+                                   const char *body);
+
 static ServerConnection *
 connection_new (SocketHTTPServer_T server, Socket_T socket)
 {
@@ -399,8 +408,12 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
       conn->client_addr[sizeof (conn->client_addr) - 1] = '\0';
     }
 
-  /* Create parser */
-  conn->parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
+  /* Create parser with server's configured limits */
+  SocketHTTP1_Config parser_config;
+  SocketHTTP1_config_defaults (&parser_config);
+  parser_config.max_header_size = server->config.max_header_size;
+  conn->parser
+      = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &parser_config, arena);
   if (conn->parser == NULL)
     {
       Arena_dispose (&arena);
@@ -427,6 +440,9 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
       free (conn);
       return NULL;
     }
+
+  /* Initialize memory tracking (base allocation: conn struct + I/O buffers) */
+  conn->memory_used = sizeof (*conn) + (2 * HTTPSERVER_IO_BUFFER_SIZE);
 
   /* Track per-IP connections */
   if (server->ip_tracker != NULL && conn->client_addr[0] != '\0')
@@ -603,8 +619,6 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
   size_t consumed;
   SocketHTTP1_Result result;
 
-  (void)server;
-
   data = SocketBuf_readptr (conn->inbuf, &len);
   if (len == 0)
     return 0;
@@ -631,6 +645,16 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
               = SocketHTTP1_Parser_content_length (conn->parser);
           if (content_len > 0)
             {
+              /* Enforce max body size limit */
+              if ((size_t)content_len > server->config.max_body_size)
+                {
+                  SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+                  connection_send_error (server, conn, 413,
+                                         "Payload Too Large");
+                  conn->state = CONN_STATE_CLOSED;
+                  return -1;
+                }
+
               conn->body_capacity = (size_t)content_len;
               conn->body
                   = Arena_alloc (conn->arena, conn->body_capacity, __FILE__,
@@ -640,6 +664,9 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
                   conn->state = CONN_STATE_CLOSED;
                   return -1;
                 }
+
+              /* Track body buffer in connection memory */
+              conn->memory_used += conn->body_capacity;
 
               data = SocketBuf_readptr (conn->inbuf, &len);
               if (len > 0)
@@ -1486,6 +1513,13 @@ SocketHTTPServer_Request_arena (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
   return req->arena;
+}
+
+size_t
+SocketHTTPServer_Request_memory_used (SocketHTTPServer_Request_T req)
+{
+  assert (req != NULL);
+  return req->conn->memory_used;
 }
 
 /* ============================================================================

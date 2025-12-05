@@ -42,7 +42,34 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * Size Limits and Capacity Configuration
- * ============================================================================ */
+ * ============================================================================
+ *
+ * CONFIGURABLE LIMITS SUMMARY
+ *
+ * All limits can be overridden at compile time with -D flags.
+ *
+ * CONNECTION LIMITS:
+ *   SOCKET_MAX_CONNECTIONS - 10000 - Maximum connections in pool
+ *   SOCKET_MAX_POLL_EVENTS - 1024 - Max events per poll iteration
+ *
+ * BUFFER LIMITS:
+ *   SOCKET_MAX_BUFFER_SIZE - 1MB - Maximum buffer per connection
+ *   SOCKET_MIN_BUFFER_SIZE - 512B - Minimum buffer size
+ *
+ * ARENA (MEMORY) LIMITS:
+ *   ARENA_CHUNK_SIZE - 4KB - Default arena chunk size
+ *   ARENA_MAX_ALLOC_SIZE - 100MB - Maximum single allocation
+ *   ARENA_MAX_FREE_CHUNKS - 10 - Maximum cached free chunks
+ *
+ * RUNTIME GLOBAL MEMORY LIMIT:
+ *   Use SocketConfig_set_max_memory() to set a global memory limit.
+ *   Arena allocations will fail when the limit is exceeded.
+ *   Query with SocketConfig_get_memory_used() / SocketConfig_get_max_memory().
+ *
+ * ENFORCEMENT:
+ *   - All limits enforced at runtime with graceful failure
+ *   - SOCKET_CTR_LIMIT_MEMORY_EXCEEDED incremented when global limit exceeded
+ */
 
 /* Maximum number of connections in pool (can be overridden at compile time) */
 #ifndef SOCKET_MAX_CONNECTIONS
@@ -851,6 +878,41 @@ union align
 #define SOCKET_DEFAULT_KEEPALIVE_COUNT 3
 #define SOCKET_DEFAULT_DATAGRAM_TTL 64
 #define SOCKET_MULTICAST_DEFAULT_INTERFACE 0
+
+/* ============================================================================
+ * Global Memory Limit Configuration
+ * ============================================================================
+ *
+ * These functions control the global memory limit for Arena allocations.
+ * When a limit is set, Arena_alloc will return NULL if the allocation
+ * would exceed the configured limit.
+ *
+ * Thread-safe: Yes (uses atomic operations)
+ */
+
+/**
+ * SocketConfig_set_max_memory - Set global memory limit for Arena allocations
+ * @max_bytes: Maximum total bytes (0 = unlimited, default)
+ *
+ * Thread-safe: Yes (atomic store)
+ */
+extern void SocketConfig_set_max_memory (size_t max_bytes);
+
+/**
+ * SocketConfig_get_max_memory - Get current global memory limit
+ *
+ * Returns: Maximum bytes configured (0 = unlimited)
+ * Thread-safe: Yes (atomic load)
+ */
+extern size_t SocketConfig_get_max_memory (void);
+
+/**
+ * SocketConfig_get_memory_used - Get current total memory usage
+ *
+ * Returns: Total bytes currently allocated via Arena
+ * Thread-safe: Yes (atomic load)
+ */
+extern size_t SocketConfig_get_memory_used (void);
 
 /* Validation macros */
 #define SOCKET_VALID_PORT(p) ((int)(p) >= 0 && (int)(p) <= 65535)

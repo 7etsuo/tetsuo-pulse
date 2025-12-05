@@ -20,6 +20,7 @@
 #include "socket/SocketHappyEyeballs.h"
 #include "core/Arena.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
 
 #include <assert.h>
@@ -375,6 +376,7 @@ typedef struct
   char *body_buf;
   size_t total_body;
   size_t body_capacity;
+  size_t max_size; /**< Maximum allowed size (0 = unlimited) */
   Arena_T arena;
 } HTTP1BodyAccumulator;
 
@@ -384,7 +386,7 @@ typedef struct
  * @data: Data to accumulate
  * @len: Data length
  *
- * Returns: 0 on success, -1 on memory allocation failure
+ * Returns: 0 on success, -1 on memory allocation failure, -2 on size limit exceeded
  */
 static int
 accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
@@ -394,6 +396,10 @@ accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
   if (len == 0)
     return 0;
 
+  /* Check max response size limit */
+  if (acc->max_size > 0 && acc->total_body + len > acc->max_size)
+    return -2; /* Size limit exceeded */
+
   /* Grow buffer if needed */
   if (acc->total_body + len > acc->body_capacity)
     {
@@ -402,6 +408,10 @@ accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
                                     : acc->body_capacity * 2;
       while (new_cap < acc->total_body + len)
         new_cap *= 2;
+
+      /* Clamp to max_size if set to avoid over-allocation */
+      if (acc->max_size > 0 && new_cap > acc->max_size)
+        new_cap = acc->max_size;
 
       char *new_buf
           = Arena_alloc (acc->arena, new_cap, __FILE__, __LINE__);
@@ -429,7 +439,7 @@ accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
  * @consumed: Offset into buffer where unparsed data starts
  * @acc: Body accumulator
  *
- * Returns: 0 on success, -1 on error
+ * Returns: 0 on success, -1 on error, -2 on response size limit exceeded
  */
 static int
 read_http1_body_data (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
@@ -439,6 +449,7 @@ read_http1_body_data (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
   size_t body_consumed, body_written;
   size_t remaining;
   SocketHTTP1_Result result;
+  int acc_result;
 
   assert (conn != NULL);
   assert (buf != NULL);
@@ -459,8 +470,9 @@ read_http1_body_data (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
 
       if (body_written > 0)
         {
-          if (accumulate_body_chunk (acc, body_chunk, body_written) < 0)
-            return -1;
+          acc_result = accumulate_body_chunk (acc, body_chunk, body_written);
+          if (acc_result < 0)
+            return acc_result; /* -1 = memory error, -2 = size limit exceeded */
         }
 
       *consumed += body_consumed;
@@ -474,12 +486,14 @@ read_http1_body_data (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
  * receive_http1_response - Receive and parse HTTP/1.1 response
  * @conn: Pool connection entry
  * @response: Output response structure
+ * @max_response_size: Maximum response body size (0 = unlimited)
  *
- * Returns: 0 on success, -1 on error
+ * Returns: 0 on success, -1 on error, -2 on response size limit exceeded
  */
 static int
 receive_http1_response (HTTPPoolEntry *conn,
-                        SocketHTTPClient_Response *response)
+                        SocketHTTPClient_Response *response,
+                        size_t max_response_size)
 {
   char buf[HTTPCLIENT_REQUEST_BUFFER_SIZE];
   volatile ssize_t n;
@@ -488,7 +502,7 @@ receive_http1_response (HTTPPoolEntry *conn,
   Arena_T resp_arena;
   const SocketHTTP_Response *volatile parsed_resp = NULL;
   volatile int recv_closed = 0;
-  HTTP1BodyAccumulator acc = { NULL, 0, 0, NULL };
+  HTTP1BodyAccumulator acc = { NULL, 0, 0, 0, NULL };
 
   assert (conn != NULL);
   assert (response != NULL);
@@ -502,6 +516,7 @@ receive_http1_response (HTTPPoolEntry *conn,
     }
 
   acc.arena = resp_arena;
+  acc.max_size = max_response_size;
 
   /* Reset parser for response */
   SocketHTTP1_Parser_reset (conn->proto.h1.parser);
@@ -551,10 +566,12 @@ receive_http1_response (HTTPPoolEntry *conn,
           && SocketHTTP1_Parser_body_mode (conn->proto.h1.parser)
                  != HTTP1_BODY_NONE)
         {
-          if (read_http1_body_data (conn, buf, (size_t)n, &consumed, &acc) < 0)
+          int body_result
+              = read_http1_body_data (conn, buf, (size_t)n, &consumed, &acc);
+          if (body_result < 0)
             {
               Arena_dispose (&resp_arena);
-              return -1;
+              return body_result; /* -1 = error, -2 = size limit exceeded */
             }
         }
 
@@ -593,8 +610,9 @@ receive_http1_response (HTTPPoolEntry *conn,
  * @conn: Pool connection entry
  * @req: Client request
  * @response: Output response
+ * @max_response_size: Maximum response body size (0 = unlimited)
  *
- * Returns: 0 on success, -1 on error
+ * Returns: 0 on success, -1 on error, -2 on response size limit exceeded
  *
  * Orchestrates the HTTP/1.1 request by calling helper functions:
  * 1. Build request structure
@@ -605,7 +623,8 @@ receive_http1_response (HTTPPoolEntry *conn,
 static int
 execute_http1_request (HTTPPoolEntry *conn,
                        const SocketHTTPClient_Request_T req,
-                       SocketHTTPClient_Response *response)
+                       SocketHTTPClient_Response *response,
+                       size_t max_response_size)
 {
   SocketHTTP_Request http_req;
 
@@ -625,7 +644,7 @@ execute_http1_request (HTTPPoolEntry *conn,
     return -1;
 
   /* Receive and parse response */
-  return receive_http1_response (conn, response);
+  return receive_http1_response (conn, response, max_response_size);
 }
 
 /* ============================================================================
@@ -1177,7 +1196,8 @@ execute_request_internal (SocketHTTPClient_T client,
   /* Execute based on protocol version */
   if (conn->version == HTTP_VERSION_1_1 || conn->version == HTTP_VERSION_1_0)
     {
-      result = execute_http1_request (conn, req, response);
+      result = execute_http1_request (conn, req, response,
+                                      client->config.max_response_size);
     }
   else
     {
@@ -1200,6 +1220,16 @@ execute_request_internal (SocketHTTPClient_T client,
 
   /* Release connection */
   release_connection (client, conn, result == 0);
+
+  if (result == -2)
+    {
+      /* Response size limit exceeded */
+      SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED);
+      client->last_error = HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE;
+      HTTPCLIENT_ERROR_MSG ("Response body exceeds max_response_size (%zu)",
+                           client->config.max_response_size);
+      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_ResponseTooLarge);
+    }
 
   if (result != 0)
     return -1;

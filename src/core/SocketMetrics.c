@@ -153,7 +153,15 @@ static const char *const counter_names[SOCKET_COUNTER_METRIC_COUNT] = {
   /* Poll */
   "poll_wakeups",
   "poll_events_dispatched",
-  "poll_timeout_expirations"
+  "poll_timeout_expirations",
+  /* Resource Limits */
+  "limit_header_size_exceeded",
+  "limit_body_size_exceeded",
+  "limit_response_size_exceeded",
+  "limit_memory_exceeded",
+  "limit_connections_exceeded",
+  "limit_streams_exceeded",
+  "limit_header_list_exceeded"
 };
 
 static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
@@ -206,7 +214,15 @@ static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
   /* Poll */
   "Poll/epoll wakeup count",
   "Events dispatched from poll",
-  "Poll timeout expirations"
+  "Poll timeout expirations",
+  /* Resource Limits */
+  "HTTP header size limit exceeded",
+  "HTTP body size limit exceeded",
+  "HTTP response size limit exceeded",
+  "Global memory limit exceeded",
+  "Maximum connections limit exceeded",
+  "HTTP/2 max streams limit exceeded",
+  "HTTP/2 header list size limit exceeded"
 };
 
 static const char *const gauge_names[SOCKET_GAUGE_METRIC_COUNT] = {

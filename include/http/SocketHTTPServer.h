@@ -61,7 +61,37 @@ typedef struct SocketWS *SocketWS_T;
 
 /* ============================================================================
  * Configuration Constants
- * ============================================================================ */
+ * ============================================================================
+ *
+ * CONFIGURABLE LIMITS SUMMARY
+ *
+ * All limits can be overridden at compile time with -D flags or at runtime
+ * via SocketHTTPServer_Config fields.
+ *
+ * RESOURCE LIMITS:
+ *   HTTPSERVER_DEFAULT_MAX_HEADER_SIZE  - 64KB   - Max total header size
+ *   HTTPSERVER_DEFAULT_MAX_BODY_SIZE    - 10MB   - Max request body size
+ *   HTTPSERVER_DEFAULT_MAX_CONNECTIONS  - 1000   - Max concurrent connections
+ *   HTTPSERVER_DEFAULT_MAX_CONNECTIONS_PER_CLIENT - 100 - Per-IP limit
+ *   HTTPSERVER_DEFAULT_MAX_REQUESTS_PER_CONN - 1000 - Max requests per connection
+ *   HTTPSERVER_DEFAULT_MAX_CONCURRENT_REQUESTS - 100 - HTTP/2 streams
+ *
+ * TIMEOUT LIMITS:
+ *   HTTPSERVER_DEFAULT_REQUEST_TIMEOUT_MS - 30s - Idle timeout
+ *   HTTPSERVER_DEFAULT_KEEPALIVE_TIMEOUT_MS - 60s - Keep-alive timeout
+ *   HTTPSERVER_DEFAULT_REQUEST_READ_TIMEOUT_MS - 30s - Full request read
+ *   HTTPSERVER_DEFAULT_RESPONSE_WRITE_TIMEOUT_MS - 60s - Full response write
+ *
+ * ENFORCEMENT:
+ *   - max_header_size: Enforced by HTTP/1.1 parser (returns error)
+ *   - max_body_size: Enforced before body allocation (returns 413)
+ *   - max_connections: Enforced in accept loop (rejects new clients)
+ *   - max_connections_per_client: Enforced via SocketIPTracker
+ *
+ * METRICS:
+ *   - SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED incremented on body limit violation
+ *   - SOCKET_CTR_LIMIT_HEADER_SIZE_EXCEEDED incremented on header limit violation
+ */
 
 /** Default listen backlog */
 #ifndef HTTPSERVER_DEFAULT_BACKLOG
@@ -83,12 +113,18 @@ typedef struct SocketWS *SocketWS_T;
 #define HTTPSERVER_DEFAULT_KEEPALIVE_TIMEOUT_MS 60000
 #endif
 
-/** Default maximum header size */
+/**
+ * Default maximum header size
+ * ENFORCEMENT: Passed to HTTP/1.1 parser config, enforced during parsing.
+ */
 #ifndef HTTPSERVER_DEFAULT_MAX_HEADER_SIZE
 #define HTTPSERVER_DEFAULT_MAX_HEADER_SIZE (64 * 1024)
 #endif
 
-/** Default maximum body size */
+/**
+ * Default maximum body size
+ * ENFORCEMENT: Checked before body allocation. Returns 413 Payload Too Large.
+ */
 #ifndef HTTPSERVER_DEFAULT_MAX_BODY_SIZE
 #define HTTPSERVER_DEFAULT_MAX_BODY_SIZE (10 * 1024 * 1024)
 #endif
@@ -442,6 +478,16 @@ SocketHTTPServer_Request_version (SocketHTTPServer_Request_T req);
  * SocketHTTPServer_Request_arena - Get request arena
  */
 extern Arena_T SocketHTTPServer_Request_arena (SocketHTTPServer_Request_T req);
+
+/**
+ * SocketHTTPServer_Request_memory_used - Get connection memory usage
+ * @req: Request context
+ *
+ * Returns: Total bytes allocated for this connection (including buffers, body)
+ * Thread-safe: No
+ */
+extern size_t
+SocketHTTPServer_Request_memory_used (SocketHTTPServer_Request_T req);
 
 /* ============================================================================
  * Response Building

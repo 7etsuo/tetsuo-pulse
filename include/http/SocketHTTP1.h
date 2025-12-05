@@ -39,7 +39,36 @@
 
 /* ============================================================================
  * Configuration Limits
- * ============================================================================ */
+ * ============================================================================
+ *
+ * CONFIGURABLE LIMITS SUMMARY
+ *
+ * All limits can be overridden at compile time with -D flags or at runtime
+ * via SocketHTTP1_Config.
+ *
+ * MESSAGE STRUCTURE LIMITS:
+ *   SOCKETHTTP1_MAX_REQUEST_LINE - 8KB - Max request/status line
+ *   SOCKETHTTP1_MAX_URI_LEN - 8KB - Max URI length
+ *   SOCKETHTTP1_MAX_HEADER_NAME - 256B - Max header name length
+ *   SOCKETHTTP1_MAX_HEADER_VALUE - 8KB - Max header value length
+ *   SOCKETHTTP1_MAX_HEADERS - 100 - Max number of headers
+ *   SOCKETHTTP1_MAX_HEADER_SIZE - 64KB - Max total header size
+ *
+ * CHUNKED ENCODING LIMITS:
+ *   SOCKETHTTP1_MAX_CHUNK_SIZE - 16MB - Max single chunk size
+ *   SOCKETHTTP1_MAX_CHUNK_EXT - 1KB - Max chunk extension length
+ *   SOCKETHTTP1_MAX_TRAILER_SIZE - 4KB - Max trailer headers size
+ *
+ * ENFORCEMENT:
+ *   - All limits enforced during parsing
+ *   - Returns HTTP1_ERROR_LINE_TOO_LONG, HTTP1_ERROR_HEADER_TOO_LARGE, etc.
+ *   - Request smuggling prevention per RFC 9112 Section 6.3
+ *
+ * SECURITY:
+ *   - Rejects both Content-Length AND Transfer-Encoding (smuggling prevention)
+ *   - Rejects multiple differing Content-Length values
+ *   - Validates all header names/values for injection attacks
+ */
 
 /** Maximum request/status line length */
 #ifndef SOCKETHTTP1_MAX_REQUEST_LINE

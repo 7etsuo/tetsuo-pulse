@@ -181,6 +181,15 @@ typedef enum SocketCounterMetric
   SOCKET_CTR_POLL_EVENTS_DISPATCHED,           /**< Events dispatched */
   SOCKET_CTR_POLL_TIMEOUT_EXPIRATIONS,         /**< Poll timeout expirations */
 
+  /* Resource Limit Counters */
+  SOCKET_CTR_LIMIT_HEADER_SIZE_EXCEEDED,       /**< Header size limit exceeded */
+  SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED,         /**< Body size limit exceeded */
+  SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED,     /**< Response size limit exceeded */
+  SOCKET_CTR_LIMIT_MEMORY_EXCEEDED,            /**< Global memory limit exceeded */
+  SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED,       /**< Max connections exceeded */
+  SOCKET_CTR_LIMIT_STREAMS_EXCEEDED,           /**< HTTP/2 max streams exceeded */
+  SOCKET_CTR_LIMIT_HEADER_LIST_EXCEEDED,       /**< HTTP/2 header list size exceeded */
+
   SOCKET_COUNTER_METRIC_COUNT                  /**< Number of counter metrics */
 } SocketCounterMetric;
 
