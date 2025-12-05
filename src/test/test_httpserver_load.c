@@ -221,7 +221,7 @@ typedef struct
 {
   SocketHTTPServer_T server;
   int duration_ms;
-  volatile int *stop_flag;
+  atomic_int *stop_flag;
 } ServerArgs;
 
 static void *
@@ -229,7 +229,7 @@ server_thread (void *arg)
 {
   ServerArgs *args = (ServerArgs *)arg;
 
-  while (!*args->stop_flag)
+  while (!atomic_load (args->stop_flag))
     {
       SocketHTTPServer_process (args->server, 10);
     }
@@ -328,7 +328,7 @@ TEST (httpserver_single_request)
   ASSERT_EQ (0, SocketHTTPServer_start (server));
 
   /* Run server briefly in background */
-  volatile int stop_flag = 0;
+  atomic_int stop_flag = 0;
   ServerArgs sargs = { server, 0, &stop_flag };
   pthread_t server_tid;
   pthread_create (&server_tid, NULL, server_thread, &sargs);
@@ -366,7 +366,7 @@ TEST (httpserver_single_request)
   close (fd);
 
   /* Stop server */
-  stop_flag = 1;
+  atomic_store (&stop_flag, 1);
   pthread_join (server_tid, NULL);
 
   SocketHTTPServer_free (&server);
@@ -391,7 +391,7 @@ TEST (httpserver_streaming_response)
   SocketHTTPServer_set_handler (server, streaming_handler, NULL);
   ASSERT_EQ (0, SocketHTTPServer_start (server));
 
-  volatile int stop_flag = 0;
+  atomic_int stop_flag = 0;
   ServerArgs sargs = { server, 0, &stop_flag };
   pthread_t server_tid;
   pthread_create (&server_tid, NULL, server_thread, &sargs);
@@ -438,7 +438,7 @@ TEST (httpserver_streaming_response)
     }
   close (fd);
 
-  stop_flag = 1;
+  atomic_store (&stop_flag, 1);
   pthread_join (server_tid, NULL);
 
   SocketHTTPServer_free (&server);
@@ -464,7 +464,7 @@ TEST (httpserver_validation_reject)
   SocketHTTPServer_set_validator (server, validation_callback, NULL);
   ASSERT_EQ (0, SocketHTTPServer_start (server));
 
-  volatile int stop_flag = 0;
+  atomic_int stop_flag = 0;
   ServerArgs sargs = { server, 0, &stop_flag };
   pthread_t server_tid;
   pthread_create (&server_tid, NULL, server_thread, &sargs);
@@ -500,7 +500,7 @@ TEST (httpserver_validation_reject)
     }
   close (fd);
 
-  stop_flag = 1;
+  atomic_store (&stop_flag, 1);
   pthread_join (server_tid, NULL);
 
   SocketHTTPServer_free (&server);
@@ -533,7 +533,7 @@ TEST (httpserver_rate_limiting)
   SocketHTTPServer_set_rate_limit (server, NULL, limiter); /* Global */
   ASSERT_EQ (0, SocketHTTPServer_start (server));
 
-  volatile int stop_flag = 0;
+  atomic_int stop_flag = 0;
   ServerArgs sargs = { server, 0, &stop_flag };
   pthread_t server_tid;
   pthread_create (&server_tid, NULL, server_thread, &sargs);
@@ -577,7 +577,7 @@ TEST (httpserver_rate_limiting)
   /* Should have some rate limited requests */
   ASSERT (rate_limited > 0);
 
-  stop_flag = 1;
+  atomic_store (&stop_flag, 1);
   pthread_join (server_tid, NULL);
 
   SocketRateLimit_free (&limiter);
@@ -638,7 +638,7 @@ TEST (httpserver_statistics)
   SocketHTTPServer_set_handler (server, simple_handler, NULL);
   ASSERT_EQ (0, SocketHTTPServer_start (server));
 
-  volatile int stop_flag = 0;
+  atomic_int stop_flag = 0;
   ServerArgs sargs = { server, 0, &stop_flag };
   pthread_t server_tid;
   pthread_create (&server_tid, NULL, server_thread, &sargs);
@@ -688,7 +688,7 @@ TEST (httpserver_statistics)
   SocketHTTPServer_stats (server, &stats);
   ASSERT_EQ (0, stats.total_requests);
 
-  stop_flag = 1;
+  atomic_store (&stop_flag, 1);
   pthread_join (server_tid, NULL);
 
   SocketHTTPServer_free (&server);
@@ -719,7 +719,7 @@ TEST (httpserver_concurrent_connections)
   SocketHTTPServer_set_handler (server, simple_handler, NULL);
   ASSERT_EQ (0, SocketHTTPServer_start (server));
 
-  volatile int stop_flag = 0;
+  atomic_int stop_flag = 0;
   ServerArgs sargs = { server, 0, &stop_flag };
   pthread_t server_tid;
   pthread_create (&server_tid, NULL, server_thread, &sargs);
@@ -747,7 +747,7 @@ TEST (httpserver_concurrent_connections)
 
   usleep (100000);
 
-  stop_flag = 1;
+  atomic_store (&stop_flag, 1);
   pthread_join (server_tid, NULL);
 
   /* Verify test results */
@@ -776,7 +776,7 @@ TEST (httpserver_per_client_limit)
   SocketHTTPServer_set_handler (server, simple_handler, NULL);
   ASSERT_EQ (0, SocketHTTPServer_start (server));
 
-  volatile int stop_flag = 0;
+  atomic_int stop_flag = 0;
   ServerArgs sargs = { server, 0, &stop_flag };
   pthread_t server_tid;
   pthread_create (&server_tid, NULL, server_thread, &sargs);
@@ -817,7 +817,7 @@ TEST (httpserver_per_client_limit)
         close (fds[i]);
     }
 
-  stop_flag = 1;
+  atomic_store (&stop_flag, 1);
   pthread_join (server_tid, NULL);
 
   /* Should have been limited (some may still connect due to timing) */
