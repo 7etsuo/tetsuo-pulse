@@ -241,35 +241,87 @@ if (result == PROXY_OK) {
 
 ## Asynchronous API
 
-For non-blocking operation in event loops:
+For non-blocking operation in event loops, the library provides two async APIs:
 
-### Starting Connection
+### Fully Async API (Recommended)
+
+Use `SocketProxy_Conn_start()` for completely non-blocking operation from the start.
+This is the preferred API for event-driven applications:
 
 ```c
+#include "socket/SocketProxy.h"
+#include "dns/SocketDNS.h"
+#include "poll/SocketPoll.h"
+
+/* Create external resources (typically owned by your event loop) */
+SocketDNS_T dns = SocketDNS_new(4);  /* 4 worker threads */
+SocketPoll_T poll = SocketPoll_new(128);
+
+/* Start fully async proxy connection */
+SocketProxy_Conn_T conn = SocketProxy_Conn_start(dns, poll, &proxy, 
+                                                  "target.com", 443);
+
+/* Event loop */
+while (!SocketProxy_Conn_poll(conn)) {
+    SocketEvent_T events[32];
+    int timeout = SocketProxy_Conn_next_timeout_ms(conn);
+    
+    int n = SocketPoll_wait(poll, events, 32, timeout);
+    
+    /* Process the proxy connection */
+    SocketProxy_Conn_process(conn);
+    
+    /* Handle other events in your application... */
+}
+
+/* Check result */
+if (SocketProxy_Conn_result(conn) == PROXY_OK) {
+    Socket_T sock = SocketProxy_Conn_socket(conn);
+    /* Tunnel established - use socket */
+} else {
+    printf("Failed: %s\n", SocketProxy_Conn_error(conn));
+}
+
+SocketProxy_Conn_free(&conn);
+```
+
+### Blocking Connect API
+
+Use `SocketProxy_Conn_new()` when you want blocking connection to the proxy
+server followed by async handshake. This is simpler but blocks during the
+initial DNS resolution and TCP connection:
+
+```c
+/* Blocking connect, async handshake */
 SocketProxy_Conn_T conn = SocketProxy_Conn_new(&proxy, "target.com", 443);
 ```
 
-### Polling Progress
+### Polling for Handshake
+
+After starting the connection, poll for the handshake file descriptor:
 
 ```c
-/* Get file descriptor for polling */
+/* Get fd and events for handshake phase */
 int fd = SocketProxy_Conn_fd(conn);
-unsigned events = SocketProxy_Conn_poll_events(conn);
+unsigned events = SocketProxy_Conn_events(conn);
 
-/* Add to poll */
-SocketPoll_add(poll, fd, events, conn);
+/* NOTE: During CONNECTING_PROXY state (fully async API only),
+ * fd returns -1 because HappyEyeballs manages its own fds
+ * internally via the poll instance you provided.
+ * Just call SocketPoll_wait() and SocketProxy_Conn_process(). */
 ```
 
 ### Processing Events
 
 ```c
 while (!SocketProxy_Conn_poll(conn)) {
-    /* Wait for events */
-    SocketEvent_T events[10];
-    int n = SocketPoll_wait(poll, events, 10, 
-                            SocketProxy_Conn_next_timeout_ms(conn));
+    int timeout = SocketProxy_Conn_next_timeout_ms(conn);
     
-    /* Process */
+    /* Wait for events on your poll instance */
+    SocketEvent_T events[32];
+    int n = SocketPoll_wait(poll, events, 32, timeout);
+    
+    /* Process the proxy state machine */
     SocketProxy_Conn_process(conn);
 }
 ```
@@ -283,7 +335,7 @@ if (SocketProxy_Conn_poll(conn)) {
     if (result == PROXY_OK) {
         /* Get tunneled socket (ownership transferred) */
         Socket_T sock = SocketProxy_Conn_socket(conn);
-        /* Use socket */
+        /* Use socket - it's in blocking mode after transfer */
     } else {
         const char *error = SocketProxy_Conn_error(conn);
         printf("Failed: %s\n", error);
@@ -296,9 +348,19 @@ SocketProxy_Conn_free(&conn);
 ### Cancellation
 
 ```c
-/* Cancel in-progress operation */
+/* Cancel in-progress operation from any state */
 SocketProxy_Conn_cancel(conn);
+
+/* Result will be PROXY_ERROR_CANCELLED */
+assert(SocketProxy_Conn_result(conn) == PROXY_ERROR_CANCELLED);
 ```
+
+### API Comparison
+
+| Function | Initial Connect | Use Case |
+|----------|----------------|----------|
+| `SocketProxy_Conn_start()` | Non-blocking (HappyEyeballs) | Event-driven apps |
+| `SocketProxy_Conn_new()` | Blocking | Simple async handshake |
 
 ---
 

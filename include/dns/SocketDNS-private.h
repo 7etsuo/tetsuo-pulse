@@ -132,21 +132,10 @@ struct SocketDNS_T {
 
 /* Thread-local exception - extern declaration (defined in SocketDNS.c) */
 extern const Except_T SocketDNS_Failed;
-#ifdef _WIN32
-extern __declspec(thread) Except_T SocketDNS_DetailedException;
-#else
-extern __thread Except_T SocketDNS_DetailedException;
-#endif
 
-/* Raise DNS error using thread-local exception copy */
-#define RAISE_DNS_ERROR(exception)                                            \
-  do                                                                          \
-    {                                                                         \
-      SocketDNS_DetailedException = (exception);                              \
-      SocketDNS_DetailedException.reason = socket_error_buf;                  \
-      RAISE (SocketDNS_DetailedException);                                    \
-    }                                                                         \
-  while (0)
+/* NOTE: Error raising uses SOCKET_RAISE_MSG/FMT directly (combined format+raise).
+ * Each .c file that raises exceptions must include SOCKET_DECLARE_MODULE_EXCEPTION.
+ * See SocketDNS.c and SocketDNS-internal.c for the pattern. */
 
 /*
  * =============================================================================

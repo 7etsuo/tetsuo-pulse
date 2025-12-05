@@ -10,33 +10,40 @@
  * - Validation functions (hostname, IP address, port validation)
  */
 
-/* All includes must come before T macro definition to avoid conflicts */
+/* System headers first */
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <errno.h>
 #include <string.h>
 
+/* Project headers - Arena.h included to ensure T macro is defined/undefined
+ * before we define our module's T. SocketDNS-private.h forward-declares Arena_T
+ * but doesn't include Arena.h to avoid T macro conflicts in other contexts. */
 #include "core/Arena.h"
 #include "dns/SocketDNS.h"
 #include "dns/SocketDNS-private.h"
 
-/* Undefine T from Arena.h, then define our module's T */
-#undef T
+/* Define our module's T macro (Arena.h undefs T at end of header) */
+#undef T /* Defensive: ensure clean slate */
 #define T SocketDNS_T
 #define Request_T SocketDNS_Request_T
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS"
 
-/* SocketDNS module exception and thread-local detailed exception */
+/* SocketDNS module exception - global constant shared by all threads */
 const Except_T SocketDNS_Failed
     = { &SocketDNS_Failed, "SocketDNS operation failed" };
 
-#ifdef _WIN32
-__declspec (thread) Except_T SocketDNS_DetailedException;
-#else
-__thread Except_T SocketDNS_DetailedException;
-#endif
+/**
+ * Thread-local exception for detailed error messages.
+ *
+ * SOCKET_DECLARE_MODULE_EXCEPTION creates a static __thread variable
+ * (SocketDNS_DetailedException) used by SOCKET_RAISE_MSG/FMT macros.
+ * Each .c file using these macros needs its own declaration due to
+ * static linkage. Thread-local storage ensures safe concurrent use.
+ */
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 
 /*
  * =============================================================================
@@ -184,15 +191,14 @@ validate_resolve_params (const char *host, int port)
       /* validate_hostname handles all length and format checks */
       if (!is_ip_address (host) && !validate_hostname (host))
         {
-          SOCKET_ERROR_MSG ("Invalid hostname format");
-          RAISE_DNS_ERROR (SocketDNS_Failed);
+          SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                            "Invalid hostname format");
         }
     }
 
   if (!SOCKET_VALID_PORT (port))
     {
-      SOCKET_ERROR_MSG ("Invalid port number");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed, "Invalid port number");
     }
 }
 
@@ -368,7 +374,8 @@ init_completed_request_fields (struct SocketDNS_Request_T *req,
   req->result = SocketCommon_copy_addrinfo (result);
   if (!req->result)
     {
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Failed to copy address info");
     }
   SocketCommon_free_addrinfo (result);
   req->error = 0;
@@ -432,8 +439,8 @@ validate_dns_instance (const struct SocketDNS_T *dns)
 {
   if (!dns)
     {
-      SOCKET_ERROR_MSG ("Invalid NULL dns resolver");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Invalid NULL dns resolver");
     }
 }
 
@@ -473,8 +480,8 @@ submit_resolve_request (struct SocketDNS_T *dns, Request_T req)
     {
       size_t max_pending = dns->max_pending;
       pthread_mutex_unlock (&dns->mutex);
-      SOCKET_ERROR_MSG ("DNS request queue full (max %zu pending)", max_pending);
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "DNS request queue full (max %zu pending)", max_pending);
     }
 
   submit_dns_request (dns, req);
@@ -544,8 +551,8 @@ SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
 
   if (!dns)
     {
-      SOCKET_ERROR_MSG ("Invalid NULL dns resolver");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Invalid NULL dns resolver");
     }
 
   pthread_mutex_lock (&dns->mutex);
@@ -553,10 +560,10 @@ SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
   if (max_pending < queue_depth)
     {
       pthread_mutex_unlock (&dns->mutex);
-      SOCKET_ERROR_MSG (
+      SOCKET_RAISE_MSG (
+          SocketDNS, SocketDNS_Failed,
           "Cannot set max pending (%zu) below current queue depth (%zu)",
           max_pending, queue_depth);
-      RAISE_DNS_ERROR (SocketDNS_Failed);
     }
 
   dns->max_pending = max_pending;
@@ -690,9 +697,8 @@ SocketDNS_create_completed_request (struct SocketDNS_T *dns,
 {
   if (!dns || !result)
     {
-      SOCKET_ERROR_MSG (
-          "Invalid NULL dns or result in create_completed_request");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Invalid NULL dns or result in create_completed_request");
     }
 
   Request_T req = allocate_request_structure (dns);
@@ -740,11 +746,11 @@ compute_deadline (int timeout_ms, struct timespec *deadline)
   deadline->tv_sec += timeout_ms / 1000;
   deadline->tv_nsec += (timeout_ms % 1000) * 1000000L;
 
-  /* Normalize nanoseconds */
-  if (deadline->tv_nsec >= 1000000000L)
+  /* Normalize nanoseconds (handle overflow from ms->ns conversion) */
+  if (deadline->tv_nsec >= SOCKET_NS_PER_SECOND)
     {
       deadline->tv_sec++;
-      deadline->tv_nsec -= 1000000000L;
+      deadline->tv_nsec -= SOCKET_NS_PER_SECOND;
     }
 }
 
@@ -783,120 +789,193 @@ wait_for_completion (struct SocketDNS_T *dns,
   return 0;
 }
 
+/**
+ * setup_hints_for_fast_path - Setup addrinfo hints for fast-path resolution
+ * @local_hints: Output hints structure
+ * @hints: User-provided hints (may be NULL)
+ * @host: Host string (NULL for wildcard)
+ *
+ * Initializes hints for getaddrinfo fast-path (IP address or wildcard).
+ * For NULL host, sets AI_PASSIVE for bind. For IP, sets AI_NUMERICHOST.
+ */
+static void
+setup_hints_for_fast_path (struct addrinfo *local_hints,
+                           const struct addrinfo *hints, const char *host)
+{
+  memset (local_hints, 0, sizeof (*local_hints));
+  local_hints->ai_family = hints ? hints->ai_family : AF_UNSPEC;
+  local_hints->ai_socktype = hints ? hints->ai_socktype : SOCK_STREAM;
+  local_hints->ai_protocol = hints ? hints->ai_protocol : 0;
+
+  if (host == NULL)
+    {
+      local_hints->ai_flags = AI_PASSIVE;
+      if (hints)
+        local_hints->ai_flags |= hints->ai_flags;
+    }
+  else
+    {
+      local_hints->ai_flags = AI_NUMERICHOST;
+      if (hints)
+        local_hints->ai_flags |= (hints->ai_flags & ~AI_PASSIVE);
+    }
+}
+
+/**
+ * resolve_fast_path - Resolve IP address or wildcard without async DNS
+ * @host: IP address string or NULL for wildcard
+ * @port: Port number
+ * @hints: User-provided hints (may be NULL)
+ *
+ * Returns: Copied addrinfo result (caller must free with
+ * SocketCommon_free_addrinfo) Raises: SocketDNS_Failed on resolution or copy
+ * failure
+ *
+ * Fast path for IP addresses and wildcard that bypasses async DNS.
+ * Uses AI_NUMERICHOST or AI_PASSIVE to skip DNS lookup.
+ */
+static struct addrinfo *
+resolve_fast_path (const char *host, int port, const struct addrinfo *hints)
+{
+  struct addrinfo local_hints;
+  struct addrinfo *result = NULL;
+  struct addrinfo *copy;
+  char port_str[SOCKET_DNS_PORT_STR_SIZE];
+  int gai_result;
+
+  setup_hints_for_fast_path (&local_hints, hints, host);
+
+  snprintf (port_str, sizeof (port_str), "%d", port);
+
+  gai_result = getaddrinfo (host, port_str, &local_hints, &result);
+  if (gai_result != 0)
+    {
+      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                        "Failed to resolve address: %s (%s)",
+                        host ? host : "(wildcard)", gai_strerror (gai_result));
+    }
+
+  copy = SocketCommon_copy_addrinfo (result);
+  freeaddrinfo (result);
+
+  if (!copy)
+    {
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Failed to copy address info");
+    }
+
+  return copy;
+}
+
+/**
+ * handle_sync_timeout - Handle timeout during synchronous resolution
+ * @dns: DNS resolver instance (mutex must be held)
+ * @req: Request that timed out
+ * @timeout_ms: Timeout value for error message
+ * @host: Hostname for error message
+ *
+ * Raises: SocketDNS_Failed (always)
+ *
+ * Cancels the request and raises timeout exception. Unlocks mutex before raise.
+ */
+static void
+handle_sync_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
+                     int timeout_ms, const char *host)
+{
+  req->state = REQ_CANCELLED;
+  req->error = EAI_AGAIN;
+  hash_table_remove (dns, req);
+  pthread_mutex_unlock (&dns->mutex);
+
+  SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                    "DNS resolution timed out after %d ms: %s", timeout_ms,
+                    host ? host : "(wildcard)");
+}
+
+/**
+ * handle_sync_error - Handle error during synchronous resolution
+ * @dns: DNS resolver instance (mutex must be held)
+ * @req: Request that failed
+ * @error: Error code from getaddrinfo
+ * @host: Hostname for error message
+ *
+ * Raises: SocketDNS_Failed (always)
+ *
+ * Removes request from hash table and raises error. Unlocks mutex before raise.
+ */
+static void
+handle_sync_error (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
+                   int error, const char *host)
+{
+  hash_table_remove (dns, req);
+  pthread_mutex_unlock (&dns->mutex);
+
+  SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed, "DNS resolution failed: %s (%s)",
+                    host ? host : "(wildcard)", gai_strerror (error));
+}
+
+/**
+ * resolve_async_with_wait - Submit async request and wait for completion
+ * @dns: DNS resolver instance
+ * @host: Hostname to resolve
+ * @port: Port number
+ * @timeout_ms: Effective timeout in milliseconds
+ *
+ * Returns: Resolved addrinfo (caller must free with SocketCommon_free_addrinfo)
+ * Raises: SocketDNS_Failed on timeout or resolution error
+ *
+ * Submits async request and blocks until completion or timeout.
+ */
+static struct addrinfo *
+resolve_async_with_wait (struct SocketDNS_T *dns, const char *host, int port,
+                         int timeout_ms)
+{
+  struct addrinfo *result;
+  Request_T req;
+  int error;
+
+  req = SocketDNS_resolve (dns, host, port, NULL, NULL);
+
+  if (timeout_ms > 0)
+    SocketDNS_request_settimeout (dns, req, timeout_ms);
+
+  pthread_mutex_lock (&dns->mutex);
+
+  if (wait_for_completion (dns, req, timeout_ms) == ETIMEDOUT)
+    handle_sync_timeout (dns, req, timeout_ms, host);
+
+  error = req->error;
+  if (error != 0)
+    handle_sync_error (dns, req, error, host);
+
+  result = req->result;
+  req->result = NULL;
+  hash_table_remove (dns, req);
+  pthread_mutex_unlock (&dns->mutex);
+
+  return result;
+}
+
 struct addrinfo *
 SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
                         const struct addrinfo *hints, int timeout_ms)
 {
-  Request_T req;
-  struct addrinfo *result = NULL;
-  int error;
   int effective_timeout;
 
-  /* Validate DNS resolver */
   if (!dns)
     {
-      SOCKET_ERROR_MSG ("SocketDNS_resolve_sync requires non-NULL dns resolver");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "SocketDNS_resolve_sync requires non-NULL dns resolver");
     }
 
-  /* Use resolver default timeout if not specified */
   effective_timeout = (timeout_ms > 0) ? timeout_ms : dns->request_timeout_ms;
 
-  /* Fast path: NULL host (wildcard) or IP addresses don't need DNS resolution */
+  /* Fast path: IP addresses and wildcard don't need async DNS */
   if (host == NULL || is_ip_address (host))
-    {
-      struct addrinfo local_hints;
-      int gai_result;
+    return resolve_fast_path (host, port, hints);
 
-      memset (&local_hints, 0, sizeof (local_hints));
-      local_hints.ai_family = hints ? hints->ai_family : AF_UNSPEC;
-      local_hints.ai_socktype = hints ? hints->ai_socktype : SOCK_STREAM;
-      local_hints.ai_protocol = hints ? hints->ai_protocol : 0;
-
-      if (host == NULL)
-        {
-          /* Wildcard address - use AI_PASSIVE for bind */
-          local_hints.ai_flags = AI_PASSIVE;
-          if (hints)
-            local_hints.ai_flags |= hints->ai_flags;
-        }
-      else
-        {
-          /* IP address - use AI_NUMERICHOST to skip DNS */
-          local_hints.ai_flags = AI_NUMERICHOST;
-          if (hints)
-            local_hints.ai_flags |= (hints->ai_flags & ~AI_PASSIVE);
-        }
-
-      char port_str[16];
-      snprintf (port_str, sizeof (port_str), "%d", port);
-
-      gai_result = getaddrinfo (host, port_str, &local_hints, &result);
-      if (gai_result != 0)
-        {
-          SOCKET_ERROR_MSG ("Failed to resolve address: %s (%s)",
-                            host ? host : "(wildcard)",
-                            gai_strerror (gai_result));
-          RAISE_DNS_ERROR (SocketDNS_Failed);
-        }
-
-      /* Copy the result so all paths return consistently-allocated memory
-       * that should be freed with SocketCommon_free_addrinfo() */
-      struct addrinfo *copy = SocketCommon_copy_addrinfo (result);
-      freeaddrinfo (result);
-
-      if (!copy)
-        {
-          SOCKET_ERROR_MSG ("Failed to copy address info");
-          RAISE_DNS_ERROR (SocketDNS_Failed);
-        }
-
-      return copy;
-    }
-
-  /* Submit async request (no callback = polling mode) */
-  req = SocketDNS_resolve (dns, host, port, NULL, NULL);
-
-  /* Set per-request timeout if specified */
-  if (effective_timeout > 0)
-    SocketDNS_request_settimeout (dns, req, effective_timeout);
-
-  /* Wait for completion under mutex */
-  pthread_mutex_lock (&dns->mutex);
-
-  if (wait_for_completion (dns, req, effective_timeout) == ETIMEDOUT)
-    {
-      /* Cancel the timed-out request */
-      req->state = REQ_CANCELLED;
-      req->error = EAI_AGAIN;
-      hash_table_remove (dns, req);
-      pthread_mutex_unlock (&dns->mutex);
-
-      SOCKET_ERROR_MSG ("DNS resolution timed out after %d ms: %s",
-                        effective_timeout, host ? host : "(wildcard)");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
-    }
-
-  /* Check for errors */
-  error = req->error;
-  if (error != 0)
-    {
-      hash_table_remove (dns, req);
-      pthread_mutex_unlock (&dns->mutex);
-
-      SOCKET_ERROR_MSG ("DNS resolution failed: %s (%s)", host ? host : "(wildcard)",
-                        gai_strerror (error));
-      RAISE_DNS_ERROR (SocketDNS_Failed);
-    }
-
-  /* Transfer ownership of result to caller */
-  result = req->result;
-  req->result = NULL;
-  hash_table_remove (dns, req);
-
-  pthread_mutex_unlock (&dns->mutex);
-
-  return result;
+  /* Hostname requires async resolution with timeout */
+  return resolve_async_with_wait (dns, host, port, effective_timeout);
 }
 
 #undef T

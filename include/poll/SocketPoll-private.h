@@ -15,6 +15,7 @@
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
 #include "core/SocketTimer-private.h"
+#include "core/SocketUtil.h" /* REFACTOR: For SOCKET_RAISE_MODULE_ERROR */
 #include "poll/SocketPoll.h"
 #include "poll/SocketPoll_backend.h"
 #include "socket/Socket.h"
@@ -70,28 +71,18 @@ struct T
 /* ==================== Exception Handling ==================== */
 
 /**
- * Thread-local exception for detailed error messages.
- * Persists across longjmp, unlike stack-local variables.
- */
-#ifdef _WIN32
-extern __declspec (thread) Except_T SocketPoll_DetailedException;
-#else
-extern __thread Except_T SocketPoll_DetailedException;
-#endif
-
-/**
  * RAISE_POLL_ERROR - Raise exception with detailed error message
- * Creates a thread-local copy of the exception with detailed reason.
- * Uses thread-local storage to ensure the exception persists across longjmp.
+ *
+ * REFACTOR: Now uses centralized SOCKET_RAISE_MODULE_ERROR from SocketUtil.h
+ * which handles thread-local exception copy with socket_error_buf reason.
+ * Use SOCKET_ERROR_FMT/MSG macros to populate socket_error_buf first.
+ *
+ * Thread-safe: Creates thread-local copy of exception.
+ *
+ * NOTE: The thread-local exception SocketPoll_DetailedException is declared
+ * in SocketPoll.c using SOCKET_DECLARE_MODULE_EXCEPTION(SocketPoll).
  */
-#define RAISE_POLL_ERROR(exception)                                            \
-  do                                                                           \
-    {                                                                          \
-      SocketPoll_DetailedException = (exception);                              \
-      SocketPoll_DetailedException.reason = socket_error_buf;                  \
-      RAISE (SocketPoll_DetailedException);                                    \
-    }                                                                          \
-  while (0)
+#define RAISE_POLL_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketPoll, e)
 
 /* ==================== Timer Heap Access ==================== */
 

@@ -33,6 +33,21 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS-internal"
 
+/**
+ * Thread-local exception for detailed error messages.
+ *
+ * Each compilation unit that uses SOCKET_RAISE_MSG/FMT/MODULE_ERROR macros
+ * with a module name must declare its own thread-local exception variable.
+ * The 'static __thread' storage class ensures:
+ * - Internal linkage (no symbol conflicts between files)
+ * - Thread-local storage (safe for concurrent exception raising)
+ *
+ * Both SocketDNS.c and SocketDNS-internal.c need this declaration because
+ * they each use SOCKET_RAISE_MSG(SocketDNS, ...) which expands to use
+ * SocketDNS_DetailedException.
+ */
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
+
 /*
  * =============================================================================
  * Synchronization - Mutex and Condition Variables
@@ -50,8 +65,8 @@ initialize_mutex (struct SocketDNS_T *dns)
   if (pthread_mutex_init (&dns->mutex, NULL) != 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_NONE);
-      SOCKET_ERROR_MSG ("Failed to initialize DNS resolver mutex");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Failed to initialize DNS resolver mutex");
     }
 }
 
@@ -66,9 +81,8 @@ initialize_queue_condition (struct SocketDNS_T *dns)
   if (pthread_cond_init (&dns->queue_cond, NULL) != 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_MUTEX);
-      SOCKET_ERROR_MSG (
-          "Failed to initialize DNS resolver condition variable");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Failed to initialize DNS resolver condition variable");
     }
 }
 
@@ -83,9 +97,9 @@ initialize_result_condition (struct SocketDNS_T *dns)
   if (pthread_cond_init (&dns->result_cond, NULL) != 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
-      SOCKET_ERROR_MSG (
+      SOCKET_RAISE_MSG (
+          SocketDNS, SocketDNS_Failed,
           "Failed to initialize DNS resolver result condition variable");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
     }
 }
 
@@ -114,8 +128,8 @@ create_completion_pipe (struct SocketDNS_T *dns)
   if (pipe (dns->pipefd) < 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
-      SOCKET_ERROR_FMT ("Failed to create completion pipe");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                        "Failed to create completion pipe");
     }
 
   /* Set CLOEXEC on both pipe ends */
@@ -129,8 +143,8 @@ create_completion_pipe (struct SocketDNS_T *dns)
       dns->pipefd[1] = -1;
       cleanup_on_init_failure (dns, DNS_CLEAN_PIPE);
       errno = saved_errno;
-      SOCKET_ERROR_FMT ("Failed to set close-on-exec flag on pipe");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                        "Failed to set close-on-exec flag on pipe");
     }
 }
 
@@ -146,15 +160,14 @@ set_pipe_nonblocking (struct SocketDNS_T *dns)
   if (flags < 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_ARENA);
-      SOCKET_ERROR_FMT ("Failed to get pipe flags");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed, "Failed to get pipe flags");
     }
 
   if (fcntl (dns->pipefd[0], F_SETFL, flags | O_NONBLOCK) < 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_ARENA);
-      SOCKET_ERROR_FMT ("Failed to set pipe to non-blocking");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                        "Failed to set pipe to non-blocking");
     }
 }
 
@@ -190,8 +203,8 @@ allocate_dns_resolver (void)
   dns = calloc (1, sizeof (*dns));
   if (!dns)
     {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate DNS resolver");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate DNS resolver");
     }
 
   return dns;
@@ -227,8 +240,8 @@ initialize_dns_components (struct SocketDNS_T *dns)
   if (!dns->arena)
     {
       free (dns);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate DNS resolver arena");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate DNS resolver arena");
     }
 
   initialize_synchronization (dns);
@@ -324,8 +337,8 @@ create_worker_threads (struct SocketDNS_T *dns)
         {
           /* Thread creation failed - cleanup and raise error */
           cleanup_on_init_failure (dns, DNS_CLEAN_ARENA);
-          SOCKET_ERROR_FMT ("Failed to create DNS worker thread %d", i);
-          RAISE_DNS_ERROR (SocketDNS_Failed);
+          SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                            "Failed to create DNS worker thread %d", i);
         }
     }
 }
@@ -343,8 +356,8 @@ start_dns_workers (struct SocketDNS_T *dns)
   if (!dns->workers)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_ARENA);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate worker thread array");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate worker thread array");
     }
   create_worker_threads (dns);
 }
@@ -593,8 +606,8 @@ allocate_request_structure (struct SocketDNS_T *dns)
   req = ALLOC (dns->arena, sizeof (*req));
   if (!req)
     {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate DNS request");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate DNS request");
     }
 
   return req;
@@ -624,15 +637,14 @@ allocate_request_hostname (struct SocketDNS_T *dns,
   /* Overflow check - defensive (already limited by validate_hostname) */
   if (host_len > SIZE_MAX - 1)
     {
-      SOCKET_ERROR_MSG ("Hostname length overflow");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed, "Hostname length overflow");
     }
 
   req->host = ALLOC (dns->arena, host_len + 1);
   if (!req->host)
     {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate hostname");
-      RAISE_DNS_ERROR (SocketDNS_Failed);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate hostname");
     }
 
   memcpy (req->host, host, host_len);

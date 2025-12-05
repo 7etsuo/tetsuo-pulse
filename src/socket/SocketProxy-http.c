@@ -280,68 +280,57 @@ proxy_http_status_to_result (int status)
 {
   /* 2xx Success */
   if (status >= 200 && status < 300)
-    {
-      return PROXY_OK;
-    }
+    return PROXY_OK;
 
-  /* Specific error codes */
+  /* Specific error codes
+   * REFACTOR: Now uses PROXY_ERROR_MSG macro which delegates to
+   * centralized socket_error_buf from SocketUtil.h */
   switch (status)
     {
     case 400: /* Bad Request */
-      snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                "HTTP 400 Bad Request");
+      PROXY_ERROR_MSG ("HTTP 400 Bad Request");
       return PROXY_ERROR_PROTOCOL;
 
     case 403: /* Forbidden */
-      snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                "HTTP 403 Forbidden");
+      PROXY_ERROR_MSG ("HTTP 403 Forbidden");
       return PROXY_ERROR_FORBIDDEN;
 
     case 404: /* Not Found */
-      snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                "HTTP 404 Not Found");
+      PROXY_ERROR_MSG ("HTTP 404 Not Found");
       return PROXY_ERROR_HOST_UNREACHABLE;
 
     case 407: /* Proxy Authentication Required */
-      snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                "HTTP 407 Proxy Authentication Required");
+      PROXY_ERROR_MSG ("HTTP 407 Proxy Authentication Required");
       return PROXY_ERROR_AUTH_REQUIRED;
 
     case 500: /* Internal Server Error */
-      snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                "HTTP 500 Internal Server Error");
+      PROXY_ERROR_MSG ("HTTP 500 Internal Server Error");
       return PROXY_ERROR;
 
     case 502: /* Bad Gateway */
-      snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                "HTTP 502 Bad Gateway");
+      PROXY_ERROR_MSG ("HTTP 502 Bad Gateway");
       return PROXY_ERROR_HOST_UNREACHABLE;
 
     case 503: /* Service Unavailable */
-      snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                "HTTP 503 Service Unavailable");
+      PROXY_ERROR_MSG ("HTTP 503 Service Unavailable");
       return PROXY_ERROR;
 
     case 504: /* Gateway Timeout */
-      snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                "HTTP 504 Gateway Timeout");
+      PROXY_ERROR_MSG ("HTTP 504 Gateway Timeout");
       return PROXY_ERROR_TIMEOUT;
 
     default:
       if (status >= 400 && status < 500)
         {
-          snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                    "HTTP %d Client Error", status);
+          PROXY_ERROR_MSG ("HTTP %d Client Error", status);
           return PROXY_ERROR;
         }
       if (status >= 500)
         {
-          snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                    "HTTP %d Server Error", status);
+          PROXY_ERROR_MSG ("HTTP %d Server Error", status);
           return PROXY_ERROR;
         }
-      snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                "Unexpected HTTP status: %d", status);
+      PROXY_ERROR_MSG ("Unexpected HTTP status: %d", status);
       return PROXY_ERROR_PROTOCOL;
     }
 }

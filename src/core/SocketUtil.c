@@ -89,9 +89,9 @@ socket_warn_monotonic_fallback (void)
   if (!monotonic_fallback_warned)
     {
       monotonic_fallback_warned = 1;
-      fprintf (stderr,
-               "WARNING: CLOCK_MONOTONIC unavailable, using "
-               "CLOCK_REALTIME (vulnerable to time manipulation)\n");
+      SocketLog_emit (SOCKET_LOG_WARN, "Socket",
+                      "CLOCK_MONOTONIC unavailable, using CLOCK_REALTIME "
+                      "(vulnerable to time manipulation)");
     }
 }
 
@@ -294,10 +294,11 @@ Socket_safe_strerror (int errnum)
  * LOGGING SUBSYSTEM
  * ===========================================================================*/
 
-/* Mutex protecting callback and userdata */
+/* Mutex protecting callback, userdata, and log level */
 static pthread_mutex_t socketlog_mutex = PTHREAD_MUTEX_INITIALIZER;
 static SocketLogCallback socketlog_callback = NULL;
 static void *socketlog_userdata = NULL;
+static SocketLogLevel socketlog_min_level = SOCKET_LOG_INFO;
 
 /* Level names for display */
 static const char *const default_level_names[] = {
@@ -440,6 +441,41 @@ SocketLog_levelname (SocketLogLevel level)
 }
 
 /**
+ * SocketLog_setlevel - Set minimum log level for filtering
+ * @min_level: Minimum level to emit (messages below this are suppressed)
+ *
+ * Thread-safe: Yes (mutex protected)
+ *
+ * Sets the global minimum log level. Log messages with severity below
+ * min_level will be silently discarded. Default is SOCKET_LOG_INFO.
+ */
+void
+SocketLog_setlevel (SocketLogLevel min_level)
+{
+  pthread_mutex_lock (&socketlog_mutex);
+  socketlog_min_level = min_level;
+  pthread_mutex_unlock (&socketlog_mutex);
+}
+
+/**
+ * SocketLog_getlevel - Get current minimum log level
+ *
+ * Returns: Current minimum log level
+ * Thread-safe: Yes (mutex protected)
+ */
+SocketLogLevel
+SocketLog_getlevel (void)
+{
+  SocketLogLevel level;
+
+  pthread_mutex_lock (&socketlog_mutex);
+  level = socketlog_min_level;
+  pthread_mutex_unlock (&socketlog_mutex);
+
+  return level;
+}
+
+/**
  * SocketLog_emit - Emit a log message
  * @level: Log level
  * @component: Component name (may be NULL)
@@ -448,14 +484,21 @@ SocketLog_levelname (SocketLogLevel level)
  * Thread-safe: Yes
  *
  * Invokes the current logging callback with the provided message.
+ * Messages with level below the configured minimum are suppressed.
  */
 void
 SocketLog_emit (SocketLogLevel level, const char *component,
                 const char *message)
 {
   void *userdata = NULL;
-  SocketLogCallback callback = SocketLog_getcallback (&userdata);
+  SocketLogCallback callback;
 
+  /* Early exit if level is below minimum - avoid lock overhead for
+   * suppressed messages by reading level first */
+  if (level < SocketLog_getlevel ())
+    return;
+
+  callback = SocketLog_getcallback (&userdata);
   callback (userdata, level, component, message);
 }
 
@@ -537,6 +580,216 @@ SocketLog_emitfv (SocketLogLevel level, const char *component, const char *fmt,
     socketlog_apply_truncation (buffer, sizeof (buffer));
 
   SocketLog_emit (level, component, buffer);
+}
+
+/* ===========================================================================
+ * LOGGING CONTEXT SUBSYSTEM
+ * ===========================================================================*/
+
+/* Thread-local logging context for correlation IDs */
+#ifdef _WIN32
+static __declspec (thread) SocketLogContext socketlog_context = { "", "", -1 };
+static __declspec (thread) int socketlog_context_set = 0;
+#else
+static __thread SocketLogContext socketlog_context = { "", "", -1 };
+static __thread int socketlog_context_set = 0;
+#endif
+
+/**
+ * SocketLog_setcontext - Set thread-local logging context
+ * @ctx: Context to copy (NULL clears context)
+ *
+ * Thread-safe: Yes (uses thread-local storage)
+ *
+ * Sets the logging context for the current thread. The context is
+ * copied, so the caller may free or modify ctx after this call.
+ */
+void
+SocketLog_setcontext (const SocketLogContext *ctx)
+{
+  if (ctx == NULL)
+    {
+      SocketLog_clearcontext ();
+      return;
+    }
+
+  memcpy (&socketlog_context, ctx, sizeof (SocketLogContext));
+
+  /* Ensure null termination of ID strings */
+  socketlog_context.trace_id[SOCKET_LOG_ID_SIZE - 1] = '\0';
+  socketlog_context.request_id[SOCKET_LOG_ID_SIZE - 1] = '\0';
+
+  socketlog_context_set = 1;
+}
+
+/**
+ * SocketLog_getcontext - Get thread-local logging context
+ *
+ * Returns: Pointer to thread-local context, or NULL if not set
+ * Thread-safe: Yes (uses thread-local storage)
+ *
+ * Returns pointer to internal thread-local storage. Do not modify
+ * the returned pointer; use SocketLog_setcontext to update.
+ */
+const SocketLogContext *
+SocketLog_getcontext (void)
+{
+  if (!socketlog_context_set)
+    return NULL;
+
+  return &socketlog_context;
+}
+
+/**
+ * SocketLog_clearcontext - Clear thread-local logging context
+ *
+ * Thread-safe: Yes (uses thread-local storage)
+ *
+ * Clears the logging context for the current thread.
+ */
+void
+SocketLog_clearcontext (void)
+{
+  memset (&socketlog_context, 0, sizeof (SocketLogContext));
+  socketlog_context.connection_fd = -1;
+  socketlog_context_set = 0;
+}
+
+/* ===========================================================================
+ * STRUCTURED LOGGING SUBSYSTEM
+ * ===========================================================================*/
+
+/* Structured logging callback and userdata */
+static SocketLogStructuredCallback socketlog_structured_callback = NULL;
+static void *socketlog_structured_userdata = NULL;
+
+/**
+ * SocketLog_setstructuredcallback - Set structured logging callback
+ * @callback: Callback function or NULL to disable structured logging
+ * @userdata: User data passed to callback
+ *
+ * Thread-safe: Yes (mutex protected)
+ */
+void
+SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
+                                 void *userdata)
+{
+  pthread_mutex_lock (&socketlog_mutex);
+  socketlog_structured_callback = callback;
+  socketlog_structured_userdata = userdata;
+  pthread_mutex_unlock (&socketlog_mutex);
+}
+
+/**
+ * socketlog_format_fields - Format structured fields as key=value string
+ * @buffer: Output buffer
+ * @bufsize: Buffer size
+ * @fields: Array of fields
+ * @field_count: Number of fields
+ *
+ * Returns: Number of characters written (excluding NUL)
+ * Thread-safe: Yes
+ *
+ * Formats fields as " key1=value1 key2=value2" (with leading space).
+ */
+static size_t
+socketlog_format_fields (char *buffer, size_t bufsize,
+                         const SocketLogField *fields, size_t field_count)
+{
+  size_t pos = 0;
+  size_t i;
+
+  for (i = 0; i < field_count && pos < bufsize - 1; i++)
+    {
+      int written;
+
+      if (fields[i].key == NULL || fields[i].value == NULL)
+        continue;
+
+      written = snprintf (buffer + pos, bufsize - pos, " %s=%s", fields[i].key,
+                          fields[i].value);
+
+      if (written < 0)
+        break;
+
+      if ((size_t)written >= bufsize - pos)
+        {
+          /* Truncated - stop adding fields */
+          pos = bufsize - 1;
+          break;
+        }
+
+      pos += (size_t)written;
+    }
+
+  return pos;
+}
+
+/**
+ * SocketLog_emit_structured - Emit log message with structured fields
+ * @level: Log level
+ * @component: Component name
+ * @message: Log message
+ * @fields: Array of key-value pairs (may be NULL)
+ * @field_count: Number of fields
+ *
+ * Thread-safe: Yes
+ *
+ * Emits a log message with structured key-value pairs. If a structured
+ * callback is set, it receives the fields directly. Otherwise, fields
+ * are formatted as "key=value" pairs appended to the message.
+ */
+void
+SocketLog_emit_structured (SocketLogLevel level, const char *component,
+                           const char *message, const SocketLogField *fields,
+                           size_t field_count)
+{
+  SocketLogStructuredCallback structured_cb;
+  void *structured_userdata;
+
+  /* Early exit if level is below minimum */
+  if (level < SocketLog_getlevel ())
+    return;
+
+  /* Check for structured callback */
+  pthread_mutex_lock (&socketlog_mutex);
+  structured_cb = socketlog_structured_callback;
+  structured_userdata = socketlog_structured_userdata;
+  pthread_mutex_unlock (&socketlog_mutex);
+
+  if (structured_cb != NULL)
+    {
+      /* Use structured callback - provides direct field access */
+      structured_cb (structured_userdata, level, component, message, fields,
+                     field_count, SocketLog_getcontext ());
+    }
+  else if (fields != NULL && field_count > 0)
+    {
+      /* Fallback: format fields as string and use regular logging */
+      char buffer[SOCKET_LOG_BUFFER_SIZE];
+      size_t msg_len;
+      size_t remaining;
+
+      msg_len = message ? strlen (message) : 0;
+
+      if (msg_len >= sizeof (buffer))
+        msg_len = sizeof (buffer) - 1;
+
+      if (message)
+        memcpy (buffer, message, msg_len);
+
+      remaining = sizeof (buffer) - msg_len;
+      socketlog_format_fields (buffer + msg_len, remaining, fields,
+                               field_count);
+
+      buffer[sizeof (buffer) - 1] = '\0';
+      SocketLog_emit (level, component, buffer);
+    }
+  else
+    {
+      /* No fields - use regular emit */
+      SocketLog_emit (level, component, message);
+    }
 }
 
 /* ===========================================================================

@@ -154,9 +154,28 @@ SocketHTTPClient_Response_free(&response);
 
 ## Authentication
 
-The client supports multiple authentication methods:
+The client supports three authentication schemes. All authentication is handled
+automatically - the client will retry requests when receiving 401 responses.
+
+### Supported Authentication Types
+
+| Type | RFC | Description | Use Case |
+|------|-----|-------------|----------|
+| `HTTP_AUTH_BASIC` | RFC 7617 | Base64 encoded credentials | Simple APIs |
+| `HTTP_AUTH_DIGEST` | RFC 7616 | Challenge-response with hash | Legacy systems |
+| `HTTP_AUTH_BEARER` | RFC 6750 | Token-based (OAuth 2.0) | Modern APIs |
+
+**Not Supported:**
+- NTLM (Microsoft proprietary, requires DES/MD4)
+- Negotiate/SPNEGO (requires GSSAPI/Kerberos)
+- AWS Signature (use dedicated AWS SDK)
 
 ### Basic Authentication (RFC 7617)
+
+Sends `Authorization: Basic base64(username:password)` with every request.
+
+**WARNING:** Credentials are sent in cleartext (base64 is encoding, not encryption).
+Only use Basic auth over HTTPS!
 
 ```c
 SocketHTTPClient_Auth auth = {0};
@@ -164,6 +183,10 @@ auth.type = HTTP_AUTH_BASIC;
 auth.username = "user";
 auth.password = "secret";
 
+/* Set as default for all requests */
+SocketHTTPClient_set_auth(client, &auth);
+
+/* Or per-request */
 SocketHTTPClient_Request_T req = SocketHTTPClient_Request_new(
     client, HTTP_METHOD_GET, "https://api.example.com/protected");
 SocketHTTPClient_Request_auth(req, &auth);
@@ -172,19 +195,71 @@ SocketHTTPClient_Request_execute(req, &response);
 
 ### Digest Authentication (RFC 7616)
 
+More secure than Basic - uses challenge-response with hashing. The client:
+1. Makes initial request
+2. Receives 401 with `WWW-Authenticate: Digest ...` challenge
+3. Computes response using MD5 or SHA-256
+4. Retries request with `Authorization: Digest ...` header
+
 ```c
+SocketHTTPClient_Auth auth = {0};
 auth.type = HTTP_AUTH_DIGEST;
 auth.username = "user";
 auth.password = "secret";
-/* Digest auth handles challenges automatically */
+
+/* Digest auth handles 401 challenges automatically */
+SocketHTTPClient_set_auth(client, &auth);
+SocketHTTPClient_get(client, "https://api.example.com/data", &response);
 ```
+
+**Supported Features:**
+- MD5 and SHA-256 algorithms
+- `qop=auth` (authentication quality of protection)
+- Stale nonce handling (automatic retry on expired nonce)
+
+**Limitations:**
+- `qop=auth-int` (integrity protection) is NOT supported
+- Session-based algorithms (`MD5-sess`, `SHA-256-sess`) are NOT supported
 
 ### Bearer Token (RFC 6750)
 
+For OAuth 2.0 and JWT-based authentication:
+
 ```c
+SocketHTTPClient_Auth auth = {0};
 auth.type = HTTP_AUTH_BEARER;
-auth.token = "eyJhbGciOiJIUzI1NiIs...";
+auth.token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
+
+SocketHTTPClient_set_auth(client, &auth);
 ```
+
+Sends `Authorization: Bearer <token>` with every request.
+
+**Note:** The application is responsible for:
+- Obtaining tokens (OAuth flows, API key management)
+- Refreshing expired tokens
+- Handling token revocation
+
+### Credential Security
+
+Credentials are securely cleared from memory when:
+- Setting new authentication (old credentials cleared)
+- Freeing the client (`SocketHTTPClient_free()`)
+- After generating authorization headers
+
+The library uses `SocketCrypto_secure_clear()` which prevents compiler
+optimization from removing the clearing operation.
+
+### Automatic 401 Retry
+
+The client automatically handles 401 responses:
+
+1. **Basic Auth:** If credentials weren't sent, retries once
+2. **Digest Auth:** Computes response from challenge, retries
+3. **Stale Nonce:** If server indicates `stale=true`, retries with new nonce
+4. **Max Retries:** 2 retries to prevent infinite loops
+
+After max retries, the 401 response is returned to the application.
 
 ---
 

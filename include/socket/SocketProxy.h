@@ -80,6 +80,8 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "dns/SocketDNS.h"
+#include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 
 /* Forward declarations for optional TLS */
@@ -348,7 +350,44 @@ extern SocketProxy_Result SocketProxy_tunnel (Socket_T socket,
  * ============================================================================ */
 
 /**
- * SocketProxy_Conn_new - Start async proxy connection
+ * SocketProxy_Conn_start - Start truly async proxy connection (event-driven)
+ * @dns: DNS resolver instance (caller-owned, must outlive operation)
+ * @poll: Poll instance for connection monitoring (caller-owned)
+ * @proxy: Proxy configuration
+ * @target_host: Target hostname or IP
+ * @target_port: Target port (1-65535)
+ *
+ * Returns: Proxy connection context
+ * Raises: SocketProxy_Failed on initialization failure
+ * Thread-safe: No (operate from single thread)
+ *
+ * Starts fully asynchronous proxy connection using external DNS and poll
+ * resources. This is the preferred API for event-driven applications.
+ * The operation is completely non-blocking from the start.
+ *
+ * Caller must:
+ * 1. Call SocketProxy_Conn_process() after each poll wait
+ * 2. Check SocketProxy_Conn_poll() for completion
+ * 3. Call SocketProxy_Conn_socket() to get the tunneled socket
+ * 4. Call SocketProxy_Conn_free() to release context
+ *
+ * Usage example:
+ *   SocketProxy_Conn_T conn = SocketProxy_Conn_start(dns, poll, &proxy,
+ *                                                    "target.com", 443);
+ *   while (!SocketProxy_Conn_poll(conn)) {
+ *       int timeout = SocketProxy_Conn_next_timeout_ms(conn);
+ *       SocketPoll_wait(poll, &events, timeout);
+ *       SocketProxy_Conn_process(conn);
+ *   }
+ *   Socket_T sock = SocketProxy_Conn_socket(conn);
+ *   SocketProxy_Conn_free(&conn);
+ */
+extern T SocketProxy_Conn_start (SocketDNS_T dns, SocketPoll_T poll,
+                                 const SocketProxy_Config *proxy,
+                                 const char *target_host, int target_port);
+
+/**
+ * SocketProxy_Conn_new - Start async proxy connection (blocking connect)
  * @proxy: Proxy configuration
  * @target_host: Target hostname or IP
  * @target_port: Target port (1-65535)
@@ -357,7 +396,14 @@ extern SocketProxy_Result SocketProxy_tunnel (Socket_T socket,
  * Raises: SocketProxy_Failed on initialization failure
  * Thread-safe: Yes (creates new instance)
  *
- * Starts asynchronous proxy connection. Caller must:
+ * NOTE: This function blocks during the initial proxy connection phase.
+ * For fully non-blocking operation, use SocketProxy_Conn_start() instead.
+ *
+ * Starts proxy connection with blocking connect to proxy server, then
+ * async handshake. This is a convenience wrapper that creates internal
+ * DNS and poll resources.
+ *
+ * Caller must:
  * 1. Call SocketProxy_Conn_process() after each poll wait
  * 2. Check SocketProxy_Conn_poll() for completion
  * 3. Call SocketProxy_Conn_socket() to get the tunneled socket

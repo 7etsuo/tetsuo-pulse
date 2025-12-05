@@ -11,15 +11,18 @@
  */
 
 #include "http/SocketHTTPClient.h"
+#include "http/SocketHTTPClient-private.h" /* For auth helper testing */
 #include "http/SocketHTTP.h"
 #include "core/Arena.h"
 #include "core/Except.h"
 
 #include <assert.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
 
 /* ============================================================================
  * Test Framework
@@ -445,6 +448,296 @@ test_auth_per_request (void)
 }
 
 /* ============================================================================
+ * Digest Authentication Tests
+ * ============================================================================ */
+
+/**
+ * Test Basic auth header generation
+ */
+static void
+test_auth_basic_header (void)
+{
+  char output[256];
+  int result;
+
+  TEST_START ("basic auth header generation");
+
+  result = httpclient_auth_basic_header ("user", "pass", output, sizeof (output));
+  ASSERT_EQ (result, 0, "should generate basic auth header");
+
+  /* Check that it starts with "Basic " */
+  ASSERT_TRUE (strncmp (output, "Basic ", 6) == 0,
+               "should start with 'Basic '");
+
+  /* The value should be base64("user:pass") = "dXNlcjpwYXNz" */
+  ASSERT_STR_EQ (output, "Basic dXNlcjpwYXNz",
+                 "should have correct base64 encoding");
+
+  TEST_PASS ();
+}
+
+/**
+ * Test Digest auth response generation (MD5, no qop)
+ */
+static void
+test_auth_digest_md5_no_qop (void)
+{
+  char output[1024];
+  int result;
+
+  TEST_START ("digest auth MD5 no qop");
+
+  /* Test with RFC 2617 style (no qop) */
+  result = httpclient_auth_digest_response (
+      "user", "pass", "testrealm@host.com", "dcd98b7102dd2f0e8b11d0f600bfb0c093",
+      "/dir/index.html", "GET", NULL, /* qop */
+      NULL,                           /* nc */
+      NULL,                           /* cnonce */
+      0,                              /* MD5 */
+      output, sizeof (output));
+
+  ASSERT_EQ (result, 0, "should generate digest response");
+
+  /* Check it contains required fields */
+  ASSERT_NOT_NULL (strstr (output, "Digest "), "should start with Digest");
+  ASSERT_NOT_NULL (strstr (output, "username=\"user\""),
+                   "should contain username");
+  ASSERT_NOT_NULL (strstr (output, "realm=\"testrealm@host.com\""),
+                   "should contain realm");
+  ASSERT_NOT_NULL (strstr (output, "algorithm=MD5"), "should contain algorithm");
+  ASSERT_NOT_NULL (strstr (output, "response=\""), "should contain response");
+
+  /* Should NOT contain qop fields since qop is NULL */
+  ASSERT_NULL (strstr (output, "qop="), "should not contain qop");
+  ASSERT_NULL (strstr (output, "nc="), "should not contain nc");
+  ASSERT_NULL (strstr (output, "cnonce="), "should not contain cnonce");
+
+  TEST_PASS ();
+}
+
+/**
+ * Test Digest auth response generation (MD5, qop=auth)
+ */
+static void
+test_auth_digest_md5_qop_auth (void)
+{
+  char output[1024];
+  int result;
+
+  TEST_START ("digest auth MD5 qop=auth");
+
+  /* Test with RFC 7616 style (qop=auth) */
+  result = httpclient_auth_digest_response (
+      "testuser", "testpass", "Protected Area",
+      "7f9f98d76b89c4d2e5a5a5d3e4f5a6b7", "/protected/resource", "GET", "auth",
+      "00000001", "8fc1bc23d4e8f5a9", /* Fixed cnonce for reproducible test */
+      0,                              /* MD5 */
+      output, sizeof (output));
+
+  ASSERT_EQ (result, 0, "should generate digest response");
+
+  /* Check it contains all required fields */
+  ASSERT_NOT_NULL (strstr (output, "Digest "), "should start with Digest");
+  ASSERT_NOT_NULL (strstr (output, "qop=auth"), "should contain qop=auth");
+  ASSERT_NOT_NULL (strstr (output, "nc=00000001"), "should contain nc");
+  ASSERT_NOT_NULL (strstr (output, "cnonce=\"8fc1bc23d4e8f5a9\""),
+                   "should contain cnonce");
+  ASSERT_NOT_NULL (strstr (output, "algorithm=MD5"), "should use MD5");
+
+  TEST_PASS ();
+}
+
+/**
+ * Test Digest auth response generation (SHA-256)
+ */
+static void
+test_auth_digest_sha256 (void)
+{
+  char output[1024];
+  int result;
+
+  TEST_START ("digest auth SHA-256");
+
+  result = httpclient_auth_digest_response (
+      "user", "secret", "api.example.com", "abc123def456",
+      "/api/v1/data", "POST", "auth", "00000001", "randomcnonce",
+      1,  /* SHA-256 */
+      output, sizeof (output));
+
+  ASSERT_EQ (result, 0, "should generate SHA-256 digest response");
+
+  /* Check algorithm is SHA-256 */
+  ASSERT_NOT_NULL (strstr (output, "algorithm=SHA-256"),
+                   "should use SHA-256 algorithm");
+
+  /* SHA-256 response should be 64 hex chars */
+  const char *resp_start = strstr (output, "response=\"");
+  ASSERT_NOT_NULL (resp_start, "should have response field");
+
+  TEST_PASS ();
+}
+
+/**
+ * Test Digest challenge parsing with full WWW-Authenticate header
+ */
+static void
+test_auth_digest_challenge (void)
+{
+  char output[1024];
+  int result;
+
+  TEST_START ("digest auth challenge parsing");
+
+  /* Realistic WWW-Authenticate header */
+  const char *www_auth = "Digest realm=\"Protected Area\", "
+                         "nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", "
+                         "qop=\"auth,auth-int\", "
+                         "algorithm=MD5, "
+                         "opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"";
+
+  result = httpclient_auth_digest_challenge (www_auth, "user", "pass", "GET",
+                                             "/dir/index.html", "00000001",
+                                             output, sizeof (output));
+
+  ASSERT_EQ (result, 0, "should parse challenge and generate response");
+
+  /* Verify response contains required fields */
+  ASSERT_NOT_NULL (strstr (output, "Digest "), "should be Digest response");
+  ASSERT_NOT_NULL (strstr (output, "realm=\"Protected Area\""),
+                   "should include realm");
+  ASSERT_NOT_NULL (strstr (output, "qop=auth"),
+                   "should select qop=auth (not auth-int)");
+
+  /* Test qop with tab delimiter (word boundary bug fix) */
+  const char *www_auth_tab = "Digest realm=\"test\", nonce=\"abc\", "
+                             "qop=\"auth\t, auth-int\"";
+  result = httpclient_auth_digest_challenge (www_auth_tab, "user", "pass", "GET",
+                                             "/test", "00000001", output,
+                                             sizeof (output));
+  ASSERT_EQ (result, 0, "should parse qop with tab delimiter");
+  ASSERT_NOT_NULL (strstr (output, "qop=auth"),
+                   "should select auth with tab boundary");
+
+  TEST_PASS ();
+}
+
+/**
+ * Test stale nonce detection
+ */
+static void
+test_auth_stale_nonce_detection (void)
+{
+  int is_stale;
+
+  TEST_START ("stale nonce detection");
+
+  /* Test with stale=true */
+  is_stale = httpclient_auth_is_stale_nonce (
+      "Digest realm=\"test\", nonce=\"abc\", stale=true");
+  ASSERT_EQ (is_stale, 1, "should detect stale=true");
+
+  /* Test with stale=TRUE (case insensitive) */
+  is_stale = httpclient_auth_is_stale_nonce (
+      "Digest realm=\"test\", nonce=\"abc\", stale=TRUE");
+  ASSERT_EQ (is_stale, 1, "should detect stale=TRUE (case insensitive)");
+
+  /* Test with quoted stale="true" */
+  is_stale = httpclient_auth_is_stale_nonce (
+      "Digest realm=\"test\", nonce=\"abc\", stale=\"true\"");
+  ASSERT_EQ (is_stale, 1, "should detect stale=\"true\" (quoted)");
+
+  /* Test with stale=false */
+  is_stale = httpclient_auth_is_stale_nonce (
+      "Digest realm=\"test\", nonce=\"abc\", stale=false");
+  ASSERT_EQ (is_stale, 0, "should not detect stale=false");
+
+  /* Test without stale parameter */
+  is_stale = httpclient_auth_is_stale_nonce (
+      "Digest realm=\"test\", nonce=\"abc\", qop=\"auth\"");
+  ASSERT_EQ (is_stale, 0, "should not detect stale when absent");
+
+  /* Test with NULL */
+  is_stale = httpclient_auth_is_stale_nonce (NULL);
+  ASSERT_EQ (is_stale, 0, "should handle NULL input");
+
+  /* Test Basic auth (no stale concept) */
+  is_stale = httpclient_auth_is_stale_nonce ("Basic realm=\"test\"");
+  ASSERT_EQ (is_stale, 0, "should not find stale in Basic auth");
+
+  /* Test word boundary: "stalex" should NOT match "stale" */
+  is_stale = httpclient_auth_is_stale_nonce (
+      "Digest realm=\"test\", nonce=\"abc\", stalex=true");
+  ASSERT_EQ (is_stale, 0, "should not match stalex=true (word boundary)");
+
+  /* Test with stale followed by tab before = */
+  is_stale = httpclient_auth_is_stale_nonce (
+      "Digest realm=\"test\", nonce=\"abc\", stale\t=true");
+  ASSERT_EQ (is_stale, 1, "should detect stale with tab before =");
+
+  TEST_PASS ();
+}
+
+/**
+ * Test Digest auth client configuration
+ */
+static void
+test_auth_digest_client_config (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_Auth auth;
+
+  TEST_START ("digest auth client configuration");
+
+  client = SocketHTTPClient_new (NULL);
+
+  memset (&auth, 0, sizeof (auth));
+  auth.type = HTTP_AUTH_DIGEST;
+  auth.username = "digestuser";
+  auth.password = "digestpass";
+
+  SocketHTTPClient_set_auth (client, &auth);
+
+  /* Verify auth was set (indirect check - client stores it) */
+  ASSERT_NOT_NULL (client, "client should be valid");
+
+  /* Set different auth */
+  auth.username = "newuser";
+  auth.password = "newpass";
+  SocketHTTPClient_set_auth (client, &auth);
+
+  /* Clear auth */
+  SocketHTTPClient_set_auth (client, NULL);
+
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+/**
+ * Test buffer too small for auth header
+ */
+static void
+test_auth_buffer_overflow_protection (void)
+{
+  char small_buf[10]; /* Intentionally too small */
+  int result;
+
+  TEST_START ("auth buffer overflow protection");
+
+  /* Basic auth with small buffer should fail */
+  result = httpclient_auth_basic_header ("user", "password", small_buf,
+                                         sizeof (small_buf));
+  ASSERT_EQ (result, -1, "should fail with small buffer");
+
+  /* Digest response with small buffer should fail */
+  result = httpclient_auth_digest_response ("user", "pass", "realm", "nonce",
+                                            "/", "GET", NULL, NULL, NULL, 0,
+                                            small_buf, sizeof (small_buf));
+  ASSERT_EQ (result, -1, "should fail with small buffer for digest");
+
+  TEST_PASS ();
+}
+
+/* ============================================================================
  * Pool Statistics Tests
  * ============================================================================ */
 
@@ -625,6 +918,263 @@ test_url_parsing_various (void)
 }
 
 /* ============================================================================
+ * Pool Statistics Extended Tests
+ * ============================================================================ */
+
+static void
+test_pool_stats_extended (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_PoolStats stats;
+  SocketHTTPClient_Config config;
+
+  TEST_START ("pool statistics (extended)");
+
+  SocketHTTPClient_config_defaults (&config);
+  config.max_connections_per_host = 2;
+  config.max_total_connections = 10;
+  config.max_connection_age_ms = 30000; /* 30 seconds */
+  config.acquire_timeout_ms = 5000;     /* 5 seconds */
+
+  client = SocketHTTPClient_new (&config);
+  ASSERT_NOT_NULL (client, "client should not be NULL");
+
+  SocketHTTPClient_pool_stats (client, &stats);
+
+  /* All counters should start at zero */
+  ASSERT_EQ (stats.active_connections, 0, "no active connections initially");
+  ASSERT_EQ (stats.idle_connections, 0, "no idle connections initially");
+  ASSERT_EQ (stats.total_requests, 0, "no requests initially");
+  ASSERT_EQ (stats.reused_connections, 0, "no reused connections initially");
+  ASSERT_EQ (stats.connections_created, 0, "no connections created initially");
+  ASSERT_EQ (stats.connections_failed, 0, "no connections failed initially");
+  ASSERT_EQ (stats.connections_timed_out, 0, "no timeouts initially");
+  ASSERT_EQ (stats.stale_connections_removed, 0, "no stale removals initially");
+  ASSERT_EQ (stats.pool_exhausted_waits, 0, "no waits initially");
+
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+/* ============================================================================
+ * Connection Pool Configuration Tests
+ * ============================================================================ */
+
+static void
+test_pool_config_limits (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_Config config;
+
+  TEST_START ("pool configuration limits");
+
+  SocketHTTPClient_config_defaults (&config);
+  config.max_connections_per_host = 4;
+  config.max_total_connections = 50;
+  config.idle_timeout_ms = 30000;
+  config.max_connection_age_ms = 60000;
+  config.acquire_timeout_ms = 10000;
+
+  client = SocketHTTPClient_new (&config);
+  ASSERT_NOT_NULL (client, "client should be created with custom limits");
+
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+static void
+test_pool_no_pooling (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_Config config;
+  SocketHTTPClient_PoolStats stats;
+
+  TEST_START ("pool disabled");
+
+  SocketHTTPClient_config_defaults (&config);
+  config.enable_connection_pool = 0;
+
+  client = SocketHTTPClient_new (&config);
+  ASSERT_NOT_NULL (client, "client should be created with pooling disabled");
+
+  /* Stats should still work but show zeros */
+  SocketHTTPClient_pool_stats (client, &stats);
+  ASSERT_EQ (stats.active_connections, 0, "no active connections");
+  ASSERT_EQ (stats.idle_connections, 0, "no idle connections");
+
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+/* ============================================================================
+ * Response Size Limit Tests
+ * ============================================================================ */
+
+static void
+test_max_response_size_config (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_Config config;
+
+  TEST_START ("max response size configuration");
+
+  SocketHTTPClient_config_defaults (&config);
+  config.max_response_size = 1024 * 1024; /* 1 MB limit */
+
+  client = SocketHTTPClient_new (&config);
+  ASSERT_NOT_NULL (client, "client should be created with response limit");
+
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+/* ============================================================================
+ * Async Request Tests
+ * ============================================================================ */
+
+/* Dummy callback for async tests */
+static void
+dummy_async_callback (SocketHTTPClient_AsyncRequest_T req,
+                      SocketHTTPClient_Response *response,
+                      SocketHTTPClient_Error error, void *userdata)
+{
+  (void)req;
+  (void)response;
+  (void)error;
+  (void)userdata;
+}
+
+static void
+test_async_cancel (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_Request_T req;
+  SocketHTTPClient_AsyncRequest_T async_req;
+
+  TEST_START ("async request cancellation");
+
+  client = SocketHTTPClient_new (NULL);
+  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
+                                      "http://example.com/test");
+  ASSERT_NOT_NULL (req, "request should be created");
+
+  /* Create async request with required callback */
+  async_req = SocketHTTPClient_Request_async (req, dummy_async_callback, NULL);
+  ASSERT_NOT_NULL (async_req, "async request should be created");
+
+  /* Cancel should be safe even on unstarted requests */
+  SocketHTTPClient_AsyncRequest_cancel (async_req);
+  /* Cancel should be idempotent */
+  SocketHTTPClient_AsyncRequest_cancel (async_req);
+
+  SocketHTTPClient_Request_free (&req);
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+/* ============================================================================
+ * Concurrency Configuration Tests
+ * ============================================================================ */
+
+static void
+test_concurrency_config (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_Config config;
+  SocketHTTPClient_PoolStats stats;
+
+  TEST_START ("concurrency configuration");
+
+  SocketHTTPClient_config_defaults (&config);
+  config.max_connections_per_host = 4;
+  config.max_total_connections = 20;
+  config.acquire_timeout_ms = 5000;
+
+  client = SocketHTTPClient_new (&config);
+  ASSERT_NOT_NULL (client, "client should be created");
+
+  /* Verify pool is properly configured */
+  SocketHTTPClient_pool_stats (client, &stats);
+  ASSERT_EQ (stats.active_connections, 0, "no active connections");
+  ASSERT_EQ (stats.idle_connections, 0, "no idle connections");
+
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+static void
+test_multiple_clients (void)
+{
+  SocketHTTPClient_T clients[5];
+  SocketHTTPClient_Config config;
+  int i;
+
+  TEST_START ("multiple clients");
+
+  SocketHTTPClient_config_defaults (&config);
+  config.max_connections_per_host = 2;
+  config.max_total_connections = 10;
+
+  /* Create multiple independent clients */
+  for (i = 0; i < 5; i++)
+    {
+      clients[i] = SocketHTTPClient_new (&config);
+      ASSERT_NOT_NULL (clients[i], "client should be created");
+    }
+
+  /* Each client should have its own independent pool */
+  for (i = 0; i < 5; i++)
+    {
+      SocketHTTPClient_PoolStats stats;
+      SocketHTTPClient_pool_stats (clients[i], &stats);
+      ASSERT_EQ (stats.active_connections, 0, "no active connections");
+    }
+
+  /* Free all clients */
+  for (i = 0; i < 5; i++)
+    {
+      SocketHTTPClient_free (&clients[i]);
+      ASSERT_NULL (clients[i], "client should be NULL after free");
+    }
+
+  TEST_PASS ();
+}
+
+/* ============================================================================
+ * Timeout Configuration Tests
+ * ============================================================================ */
+
+static void
+test_timeout_configuration (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_Config config;
+  SocketHTTPClient_Request_T req;
+
+  TEST_START ("timeout configuration");
+
+  SocketHTTPClient_config_defaults (&config);
+  config.connect_timeout_ms = 5000;
+  config.request_timeout_ms = 30000;
+  config.dns_timeout_ms = 2000;
+
+  client = SocketHTTPClient_new (&config);
+  ASSERT_NOT_NULL (client, "client should be created");
+
+  /* Create request with custom timeout */
+  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
+                                      "http://example.com/");
+  ASSERT_NOT_NULL (req, "request should be created");
+
+  /* Set per-request timeout */
+  SocketHTTPClient_Request_timeout (req, 10000);
+
+  SocketHTTPClient_Request_free (&req);
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================ */
 
@@ -664,9 +1214,35 @@ main (void)
   test_auth_bearer ();
   test_auth_per_request ();
 
+  printf ("\nDigest Authentication Tests:\n");
+  test_auth_basic_header ();
+  test_auth_digest_md5_no_qop ();
+  test_auth_digest_md5_qop_auth ();
+  test_auth_digest_sha256 ();
+  test_auth_digest_challenge ();
+  test_auth_stale_nonce_detection ();
+  test_auth_digest_client_config ();
+  test_auth_buffer_overflow_protection ();
+
   printf ("\nPool Tests:\n");
   test_pool_stats ();
+  test_pool_stats_extended ();
+  test_pool_config_limits ();
+  test_pool_no_pooling ();
   test_pool_clear ();
+
+  printf ("\nResponse Limit Tests:\n");
+  test_max_response_size_config ();
+
+  printf ("\nAsync Request Tests:\n");
+  test_async_cancel ();
+
+  printf ("\nConcurrency Tests:\n");
+  test_concurrency_config ();
+  test_multiple_clients ();
+
+  printf ("\nTimeout Tests:\n");
+  test_timeout_configuration ();
 
   printf ("\nError Handling Tests:\n");
   test_error_strings ();

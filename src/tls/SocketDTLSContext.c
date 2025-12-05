@@ -80,7 +80,7 @@ static void
 ctx_raise_openssl_error_dtls (const char *context)
 {
   unsigned long err = ERR_get_error ();
-  char err_str[256];
+  char err_str[SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE];
 
   if (err != 0)
     {

@@ -1,0 +1,238 @@
+/**
+ * SocketHTTPClient-config.h - HTTP Client Configuration Constants
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
+ *
+ * Centralized configuration for HTTP client module.
+ * All magic numbers are defined here with compile-time override support.
+ *
+ * Constants are grouped by category:
+ * - Error buffers
+ * - Connection pool
+ * - Timeouts
+ * - Connection limits
+ * - Cookie configuration
+ * - Authentication buffers
+ * - Request/Response limits
+ */
+
+#ifndef SOCKETHTTPCLIENT_CONFIG_INCLUDED
+#define SOCKETHTTPCLIENT_CONFIG_INCLUDED
+
+/* ============================================================================
+ * Error Buffer Configuration
+ * ============================================================================ */
+
+/** Error message buffer size (bytes) */
+#ifndef HTTPCLIENT_ERROR_BUFSIZE
+#define HTTPCLIENT_ERROR_BUFSIZE 256
+#endif
+
+/* ============================================================================
+ * Connection Pool Configuration
+ * ============================================================================ */
+
+/** Default hash table size for connection pool (prime for better distribution) */
+#ifndef HTTPCLIENT_POOL_HASH_SIZE
+#define HTTPCLIENT_POOL_HASH_SIZE 127
+#endif
+
+/** Larger hash table size for pools with >100 connections */
+#ifndef HTTPCLIENT_POOL_LARGE_HASH_SIZE
+#define HTTPCLIENT_POOL_LARGE_HASH_SIZE 251
+#endif
+
+/** Threshold for switching to larger hash table */
+#ifndef HTTPCLIENT_POOL_LARGE_THRESHOLD
+#define HTTPCLIENT_POOL_LARGE_THRESHOLD 100
+#endif
+
+/** I/O buffer size for pooled connections (bytes) */
+#ifndef HTTPCLIENT_IO_BUFFER_SIZE
+#define HTTPCLIENT_IO_BUFFER_SIZE 8192
+#endif
+
+/* ============================================================================
+ * Default Timeouts (milliseconds)
+ * ============================================================================ */
+
+/** Default connection timeout */
+#ifndef HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS
+#define HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS 30000
+#endif
+
+/** Default request timeout */
+#ifndef HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS
+#define HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS 60000
+#endif
+
+/** Default DNS resolution timeout */
+#ifndef HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS
+#define HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS 10000
+#endif
+
+/** Default idle connection timeout */
+#ifndef HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS
+#define HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS 60000
+#endif
+
+/* ============================================================================
+ * Connection Limits
+ * ============================================================================ */
+
+/** Maximum redirects to follow (prevents infinite redirect loops) */
+#ifndef HTTPCLIENT_DEFAULT_MAX_REDIRECTS
+#define HTTPCLIENT_DEFAULT_MAX_REDIRECTS 10
+#endif
+
+/** Per-host connection limit (matches browser defaults) */
+#ifndef HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST
+#define HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST 6
+#endif
+
+/** Total connection limit across all hosts */
+#ifndef HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS
+#define HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS 100
+#endif
+
+/** Maximum authentication retries (prevents loops on bad credentials) */
+#ifndef HTTPCLIENT_MAX_AUTH_RETRIES
+#define HTTPCLIENT_MAX_AUTH_RETRIES 2
+#endif
+
+/** Default maximum response body size (0 = unlimited) */
+#ifndef HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE
+#define HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE 0
+#endif
+
+/* ============================================================================
+ * Cookie Configuration
+ * ============================================================================ */
+
+/** Cookie jar hash table size (prime for better distribution) */
+#ifndef HTTPCLIENT_COOKIE_HASH_SIZE
+#define HTTPCLIENT_COOKIE_HASH_SIZE 127
+#endif
+
+/** Maximum cookie name length (bytes) */
+#ifndef HTTPCLIENT_COOKIE_MAX_NAME_LEN
+#define HTTPCLIENT_COOKIE_MAX_NAME_LEN 256
+#endif
+
+/** Maximum cookie value length (bytes) */
+#ifndef HTTPCLIENT_COOKIE_MAX_VALUE_LEN
+#define HTTPCLIENT_COOKIE_MAX_VALUE_LEN 4096
+#endif
+
+/** Maximum cookie domain length (bytes) */
+#ifndef HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN
+#define HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN 256
+#endif
+
+/** Maximum cookie path length (bytes) */
+#ifndef HTTPCLIENT_COOKIE_MAX_PATH_LEN
+#define HTTPCLIENT_COOKIE_MAX_PATH_LEN 1024
+#endif
+
+/* ============================================================================
+ * Authentication Buffer Sizes
+ *
+ * These are internal buffer sizes for authentication header generation.
+ * They are sized to handle typical use cases with some margin.
+ * ============================================================================ */
+
+/** Credentials buffer size (username:password before base64) */
+#ifndef HTTPCLIENT_AUTH_CREDENTIALS_SIZE
+#define HTTPCLIENT_AUTH_CREDENTIALS_SIZE 512
+#endif
+
+/** Maximum Digest auth A1/A2 buffer size */
+#ifndef HTTPCLIENT_DIGEST_A_BUFFER_SIZE
+#define HTTPCLIENT_DIGEST_A_BUFFER_SIZE 512
+#endif
+
+/** Maximum Digest auth response buffer size */
+#ifndef HTTPCLIENT_DIGEST_RESPONSE_SIZE
+#define HTTPCLIENT_DIGEST_RESPONSE_SIZE 256
+#endif
+
+/** Digest auth cnonce size (bytes of random data) */
+#ifndef HTTPCLIENT_DIGEST_CNONCE_SIZE
+#define HTTPCLIENT_DIGEST_CNONCE_SIZE 16
+#endif
+
+/** Digest auth cnonce hex string size (2 chars per byte + null) */
+#ifndef HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE
+#define HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE 33
+#endif
+
+/** Nonce count buffer size (e.g., "00000001") */
+#ifndef HTTPCLIENT_DIGEST_NC_SIZE
+#define HTTPCLIENT_DIGEST_NC_SIZE 16
+#endif
+
+/* ============================================================================
+ * Request/Response Buffer Limits
+ * ============================================================================ */
+
+/** Request line/header serialization buffer size */
+#ifndef HTTPCLIENT_REQUEST_BUFFER_SIZE
+#define HTTPCLIENT_REQUEST_BUFFER_SIZE 8192
+#endif
+
+/** Response body read chunk size */
+#ifndef HTTPCLIENT_BODY_CHUNK_SIZE
+#define HTTPCLIENT_BODY_CHUNK_SIZE 4096
+#endif
+
+/** Host header buffer size */
+#ifndef HTTPCLIENT_HOST_HEADER_SIZE
+#define HTTPCLIENT_HOST_HEADER_SIZE 256
+#endif
+
+/** Cookie header buffer size (for outgoing requests) */
+#ifndef HTTPCLIENT_COOKIE_HEADER_SIZE
+#define HTTPCLIENT_COOKIE_HEADER_SIZE 4096
+#endif
+
+/** Authorization header buffer size (Basic/Digest/Bearer) */
+#ifndef HTTPCLIENT_AUTH_HEADER_SIZE
+#define HTTPCLIENT_AUTH_HEADER_SIZE 512
+#endif
+
+/** Large authorization header size (for Digest with long params) */
+#ifndef HTTPCLIENT_AUTH_HEADER_LARGE_SIZE
+#define HTTPCLIENT_AUTH_HEADER_LARGE_SIZE 1024
+#endif
+
+/** URI string buffer size for Digest auth */
+#ifndef HTTPCLIENT_URI_BUFFER_SIZE
+#define HTTPCLIENT_URI_BUFFER_SIZE 512
+#endif
+
+/** Maximum number of Set-Cookie headers to process per response */
+#ifndef HTTPCLIENT_MAX_SET_COOKIES
+#define HTTPCLIENT_MAX_SET_COOKIES 16
+#endif
+
+/* ============================================================================
+ * Default User-Agent
+ * ============================================================================ */
+
+/** Default User-Agent string */
+#ifndef HTTPCLIENT_DEFAULT_USER_AGENT
+#define HTTPCLIENT_DEFAULT_USER_AGENT "SocketHTTPClient/1.0"
+#endif
+
+/* ============================================================================
+ * Encoding Constants (Content-Encoding support flags)
+ * ============================================================================ */
+
+#define HTTPCLIENT_ENCODING_IDENTITY 0x00
+#define HTTPCLIENT_ENCODING_GZIP     0x01
+#define HTTPCLIENT_ENCODING_DEFLATE  0x02
+#define HTTPCLIENT_ENCODING_BR       0x04
+
+#endif /* SOCKETHTTPCLIENT_CONFIG_INCLUDED */
+

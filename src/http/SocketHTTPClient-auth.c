@@ -61,7 +61,7 @@ int
 httpclient_auth_basic_header (const char *username, const char *password,
                               char *output, size_t output_size)
 {
-  char credentials[512];
+  char credentials[HTTPCLIENT_AUTH_CREDENTIALS_SIZE];
   size_t cred_len;
   ssize_t encoded_len;
   size_t prefix_len;
@@ -151,11 +151,11 @@ httpclient_auth_digest_response (const char *username, const char *password,
                                  const char *cnonce, int use_sha256,
                                  char *output, size_t output_size)
 {
-  char a1[512];
-  char a2[512];
+  char a1[HTTPCLIENT_DIGEST_A_BUFFER_SIZE];
+  char a2[HTTPCLIENT_DIGEST_A_BUFFER_SIZE];
   char ha1_hex[65]; /* 64 chars for SHA-256 hex + null */
   char ha2_hex[65];
-  char response_input[512];
+  char response_input[HTTPCLIENT_DIGEST_A_BUFFER_SIZE];
   char response_hex[65];
   size_t len;
 
@@ -179,7 +179,11 @@ httpclient_auth_digest_response (const char *username, const char *password,
   /* Clear sensitive A1 data immediately */
   SocketCrypto_secure_clear (a1, sizeof (a1));
 
-  /* Compute H(A2) = H(method:uri) */
+  /* Compute H(A2) = H(method:uri)
+   *
+   * NOTE: For qop=auth-int, A2 would be method:uri:H(entity-body)
+   * but we only support qop=auth, so A2 is always method:uri.
+   */
   len = (size_t)snprintf (a2, sizeof (a2), "%s:%s", method, uri);
   if (len >= sizeof (a2))
     return -1;
@@ -187,7 +191,7 @@ httpclient_auth_digest_response (const char *username, const char *password,
   digest_hash (a2, len, use_sha256, ha2_hex);
 
   /* Compute response */
-  if (qop != NULL && (strcmp (qop, "auth") == 0 || strcmp (qop, "auth-int") == 0))
+  if (qop != NULL && strcmp (qop, "auth") == 0)
     {
       /* RFC 7616 with qop */
       /* response = H(H(A1):nonce:nc:cnonce:qop:H(A2)) */
@@ -213,7 +217,7 @@ httpclient_auth_digest_response (const char *username, const char *password,
 
   /* Build Authorization header value */
   int written;
-  if (qop != NULL && (strcmp (qop, "auth") == 0 || strcmp (qop, "auth-int") == 0))
+  if (qop != NULL && strcmp (qop, "auth") == 0)
     {
       written = snprintf (output, output_size,
                           "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", "
@@ -390,11 +394,11 @@ parse_digest_challenge (const char *header, DigestChallenge *ch)
 static void
 generate_cnonce (char *cnonce, size_t size)
 {
-  unsigned char random_bytes[16];
+  unsigned char random_bytes[HTTPCLIENT_DIGEST_CNONCE_SIZE];
   size_t hex_len;
 
   assert (cnonce != NULL);
-  assert (size >= 33); /* 16 bytes * 2 hex chars + null */
+  assert (size >= HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE);
 
   /* Generate random bytes using SocketCrypto */
   if (SocketCrypto_random_bytes (random_bytes, sizeof (random_bytes)) != 0)
@@ -446,7 +450,7 @@ httpclient_auth_digest_challenge (const char *www_authenticate,
                                   size_t output_size)
 {
   DigestChallenge ch;
-  char cnonce[33];
+  char cnonce[HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE];
   int use_sha256;
   const char *qop = NULL;
 
@@ -469,18 +473,133 @@ httpclient_auth_digest_challenge (const char *www_authenticate,
   /* Generate cnonce */
   generate_cnonce (cnonce, sizeof (cnonce));
 
-  /* Select qop if available (prefer auth) */
+  /* Select qop if available (only "auth" is supported)
+   *
+   * NOTE: qop=auth-int is NOT supported because it requires:
+   *   A2 = method:uri:H(entity-body)
+   * We don't have access to the request body in this function.
+   * Most servers support qop=auth which is sufficient for auth protection.
+   *
+   * If server only offers auth-int, we fall back to no-qop mode (RFC 2617).
+   */
   if (ch.qop[0] != '\0')
     {
-      if (strstr (ch.qop, "auth-int") != NULL)
-        qop = "auth-int";
-      if (strstr (ch.qop, "auth") != NULL)
-        qop = "auth"; /* auth takes precedence */
+      /* Check for "auth" token (not just substring to avoid "auth-int" match) */
+      const char *p = ch.qop;
+      while (*p)
+        {
+          /* Skip whitespace and commas */
+          while (*p == ' ' || *p == ',' || *p == '\t')
+            p++;
+          if (*p == '\0')
+            break;
+
+          /* Check if this token is exactly "auth" (with word boundary) */
+          if (strncmp (p, "auth", 4) == 0
+              && (p[4] == '\0' || p[4] == ',' || p[4] == ' ' || p[4] == '\t'))
+            {
+              qop = "auth";
+              break;
+            }
+
+          /* Skip to next token */
+          while (*p && *p != ',')
+            p++;
+        }
     }
 
   /* Generate response */
   return httpclient_auth_digest_response (username, password, ch.realm, ch.nonce,
                                           uri, method, qop, nc_value, cnonce,
                                           use_sha256, output, output_size);
+}
+
+/* ============================================================================
+ * Stale Nonce Detection
+ * ============================================================================ */
+
+/**
+ * Check if WWW-Authenticate header contains stale=true
+ *
+ * This indicates the server nonce has expired and the client should
+ * retry with a new nonce, not that credentials are invalid.
+ */
+int
+httpclient_auth_is_stale_nonce (const char *www_authenticate)
+{
+  const char *p;
+
+  if (www_authenticate == NULL)
+    return 0;
+
+  /* Skip "Digest " prefix if present */
+  if (strncasecmp (www_authenticate, "Digest ", 7) == 0)
+    p = www_authenticate + 7;
+  else
+    p = www_authenticate;
+
+  /* Search for stale=true (case-insensitive) */
+  while (*p)
+    {
+      /* Skip whitespace and commas */
+      while (*p == ' ' || *p == '\t' || *p == ',')
+        p++;
+
+      if (*p == '\0')
+        break;
+
+      /* Check for "stale" with word boundary (must be followed by '=', space,
+       * or tab, not another alphanumeric char like "stalex") */
+      if (strncasecmp (p, "stale", 5) == 0
+          && (p[5] == '=' || p[5] == ' ' || p[5] == '\t'))
+        {
+          p += 5;
+          /* Skip optional whitespace around '=' */
+          while (*p == ' ' || *p == '\t')
+            p++;
+          if (*p != '=')
+            continue;
+          p++;
+          while (*p == ' ' || *p == '\t')
+            p++;
+
+          /* Check for true (unquoted or quoted) */
+          if (strncasecmp (p, "true", 4) == 0)
+            {
+              char next = p[4];
+              if (next == '\0' || next == ',' || next == ' ' || next == '\t')
+                return 1;
+            }
+          else if (*p == '"' && strncasecmp (p + 1, "true", 4) == 0
+                   && p[5] == '"')
+            {
+              return 1;
+            }
+        }
+
+      /* Skip to next parameter */
+      while (*p && *p != ',')
+        {
+          if (*p == '"')
+            {
+              p++;
+              /* Skip quoted value */
+              while (*p && *p != '"')
+                {
+                  if (*p == '\\' && *(p + 1))
+                    p++;
+                  p++;
+                }
+              if (*p == '"')
+                p++;
+            }
+          else
+            {
+              p++;
+            }
+        }
+    }
+
+  return 0;
 }
 

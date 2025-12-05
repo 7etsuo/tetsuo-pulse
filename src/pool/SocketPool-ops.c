@@ -23,6 +23,11 @@
 #include "dns/SocketDNS.h"
 #include "pool/SocketPool-private.h"
 #include "socket/SocketCommon.h"
+/* SocketUtil.h included via SocketPool-private.h */
+
+/* Override default log component (SocketUtil.h sets "Socket") */
+#undef SOCKET_LOG_COMPONENT
+#define SOCKET_LOG_COMPONENT "SocketPool"
 
 #define T SocketPool_T
 

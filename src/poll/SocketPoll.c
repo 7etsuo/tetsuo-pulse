@@ -26,11 +26,12 @@
 
 #include "poll/SocketPoll-private.h"
 #include "poll/SocketPoll_backend.h"
-/* Arena.h, Except.h, Socket.h, SocketAsync.h included via SocketPoll-private.h */
+/* Arena.h, Except.h, Socket.h, SocketAsync.h, SocketUtil.h included via SocketPoll-private.h */
 
+/* Override default log component (SocketUtil.h sets "Socket") */
+#undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketPoll"
 #include "core/SocketConfig.h"
-#include "core/SocketUtil.h"
 
 /* Include timer private header after struct definition */
 #include "core/SocketTimer-private.h"
@@ -46,12 +47,12 @@
 const Except_T SocketPoll_Failed
     = { &SocketPoll_Failed, "SocketPoll operation failed" };
 
-/* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-__declspec (thread) Except_T SocketPoll_DetailedException = { NULL, NULL };
-#else
-__thread Except_T SocketPoll_DetailedException = { NULL, NULL };
-#endif
+/**
+ * Thread-local exception for detailed error messages.
+ * REFACTOR: Now uses centralized SOCKET_DECLARE_MODULE_EXCEPTION macro
+ * from SocketUtil.h instead of manual platform-specific declarations.
+ */
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketPoll);
 
 /* ==================== Forward Declarations ==================== */
 

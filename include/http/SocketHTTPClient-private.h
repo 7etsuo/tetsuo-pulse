@@ -12,6 +12,7 @@
 #define SOCKETHTTPCLIENT_PRIVATE_INCLUDED
 
 #include "http/SocketHTTPClient.h"
+#include "http/SocketHTTPClient-config.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
 #include "http/SocketHTTP2.h"
@@ -23,40 +24,43 @@
 #include <time.h>
 
 /* ============================================================================
- * Thread-Local Error Buffer
- * ============================================================================ */
+ * Exception Handling (Centralized)
+ * ============================================================================
+ *
+ * REFACTOR: Uses centralized exception infrastructure from SocketUtil.h
+ * instead of module-specific thread-local buffers and exception copies.
+ *
+ * Benefits:
+ * - Single thread-local error buffer (socket_error_buf) for all modules
+ * - Consistent error formatting with SOCKET_ERROR_FMT/MSG macros
+ * - Thread-safe exception raising via SOCKET_RAISE_MODULE_ERROR
+ * - Automatic logging integration via SocketLog_emit
+ *
+ * The thread-local exception (HTTPClient_DetailedException) is declared
+ * in SocketHTTPClient.c using SOCKET_DECLARE_MODULE_EXCEPTION(HTTPClient).
+ */
 
-#define HTTPCLIENT_ERROR_BUFSIZE 256
+/* Override log component for this module */
+#undef SOCKET_LOG_COMPONENT
+#define SOCKET_LOG_COMPONENT "HTTPClient"
 
-#ifdef _WIN32
-extern __declspec(thread) char httpclient_error_buf[HTTPCLIENT_ERROR_BUFSIZE];
-#else
-extern __thread char httpclient_error_buf[HTTPCLIENT_ERROR_BUFSIZE];
-#endif
+/**
+ * Error formatting macros - delegate to centralized infrastructure.
+ * Uses socket_error_buf from SocketUtil.h (thread-local, 256 bytes).
+ */
+#define HTTPCLIENT_ERROR_FMT(fmt, ...) SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__)
+#define HTTPCLIENT_ERROR_MSG(fmt, ...) SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__)
 
-/* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-static __declspec(thread) Except_T HTTPClient_DetailedException;
-#else
-static __thread Except_T HTTPClient_DetailedException;
-#endif
-
-/* Error formatting macros using centralized utilities */
-#define HTTPCLIENT_ERROR_FMT(fmt, ...)                                         \
-  snprintf (httpclient_error_buf, HTTPCLIENT_ERROR_BUFSIZE,                    \
-            fmt " (errno: %d - %s)", ##__VA_ARGS__, errno, strerror (errno))
-
-#define HTTPCLIENT_ERROR_MSG(fmt, ...)                                         \
-  snprintf (httpclient_error_buf, HTTPCLIENT_ERROR_BUFSIZE, fmt, ##__VA_ARGS__)
-
-#define RAISE_HTTPCLIENT_ERROR(exception)                                      \
-  do                                                                           \
-    {                                                                          \
-      HTTPClient_DetailedException = (exception);                              \
-      HTTPClient_DetailedException.reason = httpclient_error_buf;              \
-      RAISE (HTTPClient_DetailedException);                                    \
-    }                                                                          \
-  while (0)
+/**
+ * RAISE_HTTPCLIENT_ERROR - Raise exception with detailed error message
+ *
+ * Creates a thread-local copy of the exception with reason from
+ * socket_error_buf. Thread-safe: prevents race conditions when
+ * multiple threads raise same exception type.
+ *
+ * Requires: SOCKET_DECLARE_MODULE_EXCEPTION(HTTPClient) in .c file.
+ */
+#define RAISE_HTTPCLIENT_ERROR(e) SOCKET_RAISE_MODULE_ERROR (HTTPClient, e)
 
 /* ============================================================================
  * Connection Pool Entry
@@ -134,6 +138,7 @@ typedef struct HTTPPool
   /* Statistics */
   size_t total_requests;
   size_t reused_connections;
+  size_t connections_failed;
 } HTTPPool;
 
 /* ============================================================================
@@ -303,6 +308,43 @@ extern int httpclient_auth_digest_response (const char *username,
                                             char *output,
                                             size_t output_size);
 
+/**
+ * httpclient_auth_digest_challenge - Handle Digest WWW-Authenticate challenge
+ * @www_authenticate: WWW-Authenticate header value
+ * @username: User's username
+ * @password: User's password
+ * @method: HTTP method (GET, POST, etc.)
+ * @uri: Request URI
+ * @nc_value: Nonce count (e.g., "00000001")
+ * @output: Output buffer for Authorization header value
+ * @output_size: Size of output buffer
+ *
+ * Returns: 0 on success, -1 on error
+ *
+ * Parses a Digest challenge and generates the appropriate Authorization
+ * header value. Handles both MD5 and SHA-256 algorithms, qop=auth.
+ * NOTE: qop=auth-int is NOT supported.
+ */
+extern int httpclient_auth_digest_challenge (const char *www_authenticate,
+                                             const char *username,
+                                             const char *password,
+                                             const char *method,
+                                             const char *uri,
+                                             const char *nc_value,
+                                             char *output,
+                                             size_t output_size);
+
+/**
+ * httpclient_auth_is_stale_nonce - Check if WWW-Authenticate contains stale=true
+ * @www_authenticate: WWW-Authenticate header value
+ *
+ * Returns: 1 if stale=true present, 0 otherwise
+ *
+ * Used to determine if a 401 response is due to an expired nonce
+ * (which should be retried) vs. invalid credentials (which should not).
+ */
+extern int httpclient_auth_is_stale_nonce (const char *www_authenticate);
+
 /* Cookie helpers */
 extern int httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
                                            const SocketHTTP_URI *uri,
@@ -312,11 +354,22 @@ extern int httpclient_parse_set_cookie (const char *value, size_t len,
                                         SocketHTTPClient_Cookie *cookie,
                                         Arena_T arena);
 
-/* Hash function for host:port */
+/**
+ * httpclient_host_hash - Hash function for host:port connection pool key
+ * @host: Hostname (case-insensitive hashing)
+ * @port: Port number
+ * @table_size: Hash table size
+ *
+ * Returns: Hash bucket index
+ *
+ * Uses DJB2 algorithm with case-insensitive hostname hashing.
+ * Combines hostname and port into a single hash for pool lookup.
+ * Uses SOCKET_UTIL_DJB2_SEED from SocketUtil.h for consistency.
+ */
 static inline unsigned
 httpclient_host_hash (const char *host, int port, size_t table_size)
 {
-  unsigned hash = 5381;
+  unsigned hash = SOCKET_UTIL_DJB2_SEED;
   while (*host)
     {
       unsigned char c = (unsigned char)*host++;

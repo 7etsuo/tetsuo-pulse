@@ -38,12 +38,27 @@
 #define SOCKET_HASH_SIZE SOCKET_HASH_TABLE_SIZE
 
 /* ============================================================================
- * Thread-Local Exception Handling
- * ============================================================================ */
+ * Exception Handling
+ * ============================================================================
+ *
+ * Thread-local exception for detailed error messages across all SocketPool
+ * implementation files. Uses the centralized error buffer (socket_error_buf)
+ * from SocketUtil.h for consistent error formatting.
+ *
+ * Benefits:
+ * - Single thread-local error buffer (socket_error_buf) for all modules
+ * - Consistent error formatting with SOCKET_ERROR_FMT/MSG macros
+ * - Thread-safe exception raising
+ * - Automatic logging integration via SocketLog_emit
+ *
+ * NOTE: For multi-file modules like SocketPool, we use an extern declaration
+ * here and the actual definition in SocketPool-core.c. This allows all
+ * implementation files to share the same thread-local exception variable.
+ */
 
 /**
  * Thread-local exception for detailed error messages.
- * Each thread gets its own copy to prevent race conditions.
+ * Extern declaration - defined in SocketPool-core.c.
  */
 #ifdef _WIN32
 extern __declspec (thread) Except_T SocketPool_DetailedException;
@@ -52,11 +67,11 @@ extern __thread Except_T SocketPool_DetailedException;
 #endif
 
 /**
- * RAISE_POOL_ERROR - Raise exception with thread-local detailed message
- * @exception: Base exception type to raise
+ * RAISE_POOL_ERROR - Raise exception with detailed error message
  *
- * Creates a thread-local copy of the exception with detailed reason
- * from socket_error_buf, then raises it.
+ * Creates a thread-local copy of the exception with reason from
+ * socket_error_buf. Thread-safe: prevents race conditions when
+ * multiple threads raise same exception type.
  */
 #define RAISE_POOL_ERROR(exception)                                           \
   do                                                                          \

@@ -22,6 +22,7 @@
 #include "socket/SocketHappyEyeballs.h"
 #include "socket/SocketBuf.h"
 #include "core/Arena.h"
+#include "core/SocketUtil.h"
 
 #ifdef SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
@@ -36,10 +37,13 @@
 
 /* ============================================================================
  * Pool Configuration
- * ============================================================================ */
-
-#define POOL_DEFAULT_HASH_SIZE 127
-#define POOL_IO_BUFFER_SIZE 8192
+ * ============================================================================
+ * Pool constants are defined in SocketHTTPClient-config.h:
+ *   - HTTPCLIENT_POOL_HASH_SIZE (127) - default hash table size
+ *   - HTTPCLIENT_IO_BUFFER_SIZE (8192) - I/O buffer size per connection
+ *   - HTTPCLIENT_POOL_LARGE_HASH_SIZE (251) - large pool hash size
+ *   - HTTPCLIENT_POOL_LARGE_THRESHOLD (100) - threshold for larger hash
+ */
 
 /* ============================================================================
  * Internal Helper Functions
@@ -47,14 +51,14 @@
 
 /**
  * Get monotonic time in seconds
+ *
+ * REFACTOR: Uses Socket_get_monotonic_ms() from SocketUtil.h and converts
+ * to seconds for backward compatibility with pool_time() callers.
  */
 static time_t
 pool_time (void)
 {
-  struct timespec ts;
-  if (clock_gettime (CLOCK_MONOTONIC, &ts) == 0)
-    return ts.tv_sec;
-  return time (NULL);
+  return (time_t)(Socket_get_monotonic_ms () / SOCKET_MS_PER_SECOND);
 }
 
 /**
@@ -238,9 +242,9 @@ httpclient_pool_new (Arena_T arena, const SocketHTTPClient_Config *config)
   pool->arena = arena;
 
   /* Calculate hash table size */
-  hash_size = POOL_DEFAULT_HASH_SIZE;
-  if (config->max_total_connections > 100)
-    hash_size = 251; /* Larger prime for more connections */
+  hash_size = HTTPCLIENT_POOL_HASH_SIZE;
+  if (config->max_total_connections > HTTPCLIENT_POOL_LARGE_THRESHOLD)
+    hash_size = HTTPCLIENT_POOL_LARGE_HASH_SIZE; /* Larger prime for more connections */
 
   pool->hash_size = hash_size;
   pool->hash_table = Arena_calloc (arena, hash_size, sizeof (HTTPPoolEntry *),
@@ -407,18 +411,60 @@ httpclient_pool_cleanup_idle (HTTPPool *pool)
 }
 
 /* ============================================================================
- * Connection Establishment
+ * Connection Establishment - Helper Functions
  * ============================================================================ */
 
 /**
- * Create new HTTP/1.1 connection
+ * create_http1_entry_resources - Allocate HTTP/1.1 parser and buffers
+ * @entry: Pool entry to initialize
+ * @pool: Pool for arena allocation
+ *
+ * Returns: 0 on success, -1 on failure
+ *
+ * Creates a connection arena, parser, and I/O buffers for the entry.
+ */
+static int
+create_http1_entry_resources (HTTPPoolEntry *entry, HTTPPool *pool)
+{
+  Arena_T conn_arena;
+
+  conn_arena = Arena_new ();
+  if (conn_arena == NULL)
+    return -1;
+
+  entry->proto.h1.parser
+      = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, conn_arena);
+  if (entry->proto.h1.parser == NULL)
+    {
+      Arena_dispose (&conn_arena);
+      return -1;
+    }
+
+  entry->proto.h1.inbuf = SocketBuf_new (conn_arena, HTTPCLIENT_IO_BUFFER_SIZE);
+  entry->proto.h1.outbuf = SocketBuf_new (conn_arena, HTTPCLIENT_IO_BUFFER_SIZE);
+  entry->proto.h1.conn_arena = conn_arena;
+
+  (void)pool; /* Used for consistency, arena comes from entry */
+  return 0;
+}
+
+/**
+ * create_http1_connection - Create new HTTP/1.1 pool entry
+ * @pool: Connection pool
+ * @socket: Connected socket
+ * @host: Target hostname
+ * @port: Target port
+ * @is_secure: 1 for HTTPS, 0 for HTTP
+ *
+ * Returns: New pool entry, or NULL on failure
+ *
+ * Allocates entry, copies host, creates parser/buffers, adds to pool.
  */
 static HTTPPoolEntry *
 create_http1_connection (HTTPPool *pool, Socket_T socket, const char *host,
                          int port, int is_secure)
 {
   HTTPPoolEntry *entry;
-  Arena_T conn_arena;
   size_t host_len;
 
   entry = pool_entry_alloc (pool);
@@ -436,6 +482,7 @@ create_http1_connection (HTTPPool *pool, Socket_T socket, const char *host,
     }
   memcpy (entry->host, host, host_len + 1);
 
+  /* Initialize entry fields */
   entry->port = port;
   entry->is_secure = is_secure;
   entry->version = HTTP_VERSION_1_1;
@@ -443,13 +490,10 @@ create_http1_connection (HTTPPool *pool, Socket_T socket, const char *host,
   entry->last_used = entry->created_at;
   entry->in_use = 1;
   entry->closed = 0;
-
-  /* Set up HTTP/1.1 protocol state */
   entry->proto.h1.socket = socket;
 
-  /* Create parser */
-  conn_arena = Arena_new ();
-  if (conn_arena == NULL)
+  /* Create parser and buffers */
+  if (create_http1_entry_resources (entry, pool) != 0)
     {
       entry->proto.h1.socket = NULL;
       entry->next = pool->free_entries;
@@ -457,25 +501,7 @@ create_http1_connection (HTTPPool *pool, Socket_T socket, const char *host,
       return NULL;
     }
 
-  entry->proto.h1.parser
-      = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, conn_arena);
-  if (entry->proto.h1.parser == NULL)
-    {
-      Arena_dispose (&conn_arena);
-      entry->proto.h1.socket = NULL;
-      entry->next = pool->free_entries;
-      pool->free_entries = entry;
-      return NULL;
-    }
-
-  /* Create I/O buffers */
-  entry->proto.h1.inbuf = SocketBuf_new (conn_arena, POOL_IO_BUFFER_SIZE);
-  entry->proto.h1.outbuf = SocketBuf_new (conn_arena, POOL_IO_BUFFER_SIZE);
-
-  /* Store arena for cleanup */
-  entry->proto.h1.conn_arena = conn_arena;
-
-  /* Add to pool */
+  /* Add to pool structures */
   pool_hash_add (pool, entry);
   pool_list_add (pool, entry);
   pool->current_count++;
@@ -484,6 +510,291 @@ create_http1_connection (HTTPPool *pool, Socket_T socket, const char *host,
   return entry;
 }
 
+/**
+ * pool_try_get_connection - Try to get existing connection from pool
+ * @client: HTTP client
+ * @host: Target hostname
+ * @port: Target port
+ * @is_secure: 1 for HTTPS, 0 for HTTP
+ *
+ * Returns: Pool entry if found, NULL otherwise
+ *
+ * First tries direct lookup, then checks limits and cleans idle if needed.
+ */
+static HTTPPoolEntry *
+pool_try_get_connection (SocketHTTPClient_T client, const char *host, int port,
+                         int is_secure)
+{
+  HTTPPoolEntry *entry;
+  size_t host_count;
+  int at_host_limit;
+  int at_total_limit;
+
+  if (client->pool == NULL)
+    return NULL;
+
+  /* Try direct lookup first */
+  entry = httpclient_pool_get (client->pool, host, port, is_secure);
+  if (entry != NULL)
+    return entry;
+
+  /* Check connection limits */
+  pthread_mutex_lock (&client->pool->mutex);
+  host_count = pool_count_for_host (client->pool, host, port, is_secure);
+  at_host_limit = (host_count >= client->pool->max_per_host);
+  at_total_limit = (client->pool->current_count >= client->pool->max_total);
+  pthread_mutex_unlock (&client->pool->mutex);
+
+  if (!at_host_limit && !at_total_limit)
+    return NULL; /* No limits hit, proceed to create new connection */
+
+  /* Clean up idle connections and retry */
+  httpclient_pool_cleanup_idle (client->pool);
+  return httpclient_pool_get (client->pool, host, port, is_secure);
+}
+
+/**
+ * establish_tcp_connection - Create TCP connection with Happy Eyeballs
+ * @client: HTTP client
+ * @host: Target hostname
+ * @port: Target port
+ *
+ * Returns: Connected socket, or NULL on failure
+ *
+ * Uses Happy Eyeballs for fast dual-stack connection establishment.
+ */
+static Socket_T
+establish_tcp_connection (SocketHTTPClient_T client, const char *host, int port)
+{
+  SocketHE_Config_T he_config;
+  volatile Socket_T socket = NULL;
+
+  SocketHappyEyeballs_config_defaults (&he_config);
+  he_config.total_timeout_ms = client->config.connect_timeout_ms;
+  he_config.attempt_timeout_ms = client->config.connect_timeout_ms / 2;
+
+  TRY
+    {
+      socket = SocketHappyEyeballs_connect (host, port, &he_config);
+    }
+  EXCEPT (SocketHE_Failed)
+    {
+      socket = NULL;
+    }
+  END_TRY;
+
+  if (socket == NULL)
+    {
+      client->last_error = HTTPCLIENT_ERROR_CONNECT;
+      if (client->pool != NULL)
+        {
+          pthread_mutex_lock (&client->pool->mutex);
+          client->pool->connections_failed++;
+          pthread_mutex_unlock (&client->pool->mutex);
+        }
+      HTTPCLIENT_ERROR_MSG ("Connection to %s:%d failed", host, port);
+    }
+
+  return socket;
+}
+
+#ifdef SOCKET_HAS_TLS
+/**
+ * ensure_tls_context - Get or create TLS context
+ * @client: HTTP client
+ *
+ * Returns: TLS context, or NULL on failure
+ */
+static SocketTLSContext_T
+ensure_tls_context (SocketHTTPClient_T client)
+{
+  if (client->config.tls_context != NULL)
+    return client->config.tls_context;
+
+  if (client->default_tls_ctx != NULL)
+    return client->default_tls_ctx;
+
+  TRY
+    {
+      client->default_tls_ctx = SocketTLSContext_new_client (NULL);
+    }
+  EXCEPT (SocketTLS_Failed)
+    {
+      return NULL;
+    }
+  END_TRY;
+
+  return client->default_tls_ctx;
+}
+
+/**
+ * setup_tls_connection - Enable TLS and perform handshake
+ * @client: HTTP client
+ * @socket: Connected TCP socket
+ * @hostname: SNI hostname
+ *
+ * Returns: 0 on success, -1 on failure (socket freed on error)
+ */
+static int
+setup_tls_connection (SocketHTTPClient_T client, Socket_T *socket,
+                      const char *hostname)
+{
+  SocketTLSContext_T tls_ctx;
+
+  tls_ctx = ensure_tls_context (client);
+  if (tls_ctx == NULL)
+    {
+      Socket_free (socket);
+      client->last_error = HTTPCLIENT_ERROR_TLS;
+      return -1;
+    }
+
+  /* Enable TLS on socket */
+  TRY
+    {
+      SocketTLS_enable (*socket, tls_ctx);
+    }
+  EXCEPT (SocketTLS_Failed)
+    {
+      Socket_free (socket);
+      client->last_error = HTTPCLIENT_ERROR_TLS;
+      return -1;
+    }
+  END_TRY;
+
+  /* Set SNI hostname */
+  SocketTLS_set_hostname (*socket, hostname);
+
+  /* Perform handshake */
+  TRY
+    {
+      int result = SocketTLS_handshake (*socket);
+      if (result != 0)
+        {
+          Socket_free (socket);
+          client->last_error = HTTPCLIENT_ERROR_TLS;
+          return -1;
+        }
+    }
+  EXCEPT (SocketTLS_HandshakeFailed)
+    {
+      Socket_free (socket);
+      client->last_error = HTTPCLIENT_ERROR_TLS;
+      return -1;
+    }
+  EXCEPT (SocketTLS_VerifyFailed)
+    {
+      Socket_free (socket);
+      client->last_error = HTTPCLIENT_ERROR_TLS;
+      return -1;
+    }
+  END_TRY;
+
+  return 0;
+}
+#endif /* SOCKET_HAS_TLS */
+
+/**
+ * create_temp_entry - Create temporary entry for non-pooled connections
+ * @socket: Connected socket
+ * @host: Target hostname
+ * @port: Target port
+ * @is_secure: 1 for HTTPS, 0 for HTTP
+ *
+ * Returns: Thread-local pool entry
+ *
+ * Uses thread-local storage for non-pooled case. The thread-local arena
+ * is reused across calls within the same thread, with previous allocations
+ * cleaned up on each new call.
+ *
+ * MEMORY NOTE: The thread-local arena is freed on each subsequent call,
+ * but will not be freed if the thread exits without making another call.
+ * This is acceptable because:
+ * 1. Non-pooled mode is rare (pooling is enabled by default)
+ * 2. Memory is small (~8KB per thread)
+ * 3. Thread exit typically means process exit or thread pool reuse
+ * For long-running servers, always use connection pooling.
+ */
+static HTTPPoolEntry *
+create_temp_entry (Socket_T socket, const char *host, int port, int is_secure)
+{
+  static __thread HTTPPoolEntry temp_entry;
+  static __thread Arena_T temp_arena = NULL;
+
+  /* Clean up previous temp arena if it exists.
+   * This ensures we don't accumulate memory across multiple requests
+   * within the same thread. */
+  if (temp_arena != NULL)
+    {
+      Arena_dispose (&temp_arena);
+      temp_arena = NULL;
+    }
+
+  memset (&temp_entry, 0, sizeof (temp_entry));
+  temp_entry.host = (char *)host;
+  temp_entry.port = port;
+  temp_entry.is_secure = is_secure;
+  temp_entry.version = HTTP_VERSION_1_1;
+  temp_entry.proto.h1.socket = socket;
+  temp_entry.in_use = 1;
+
+  /* Create parser in thread-local arena */
+  temp_arena = Arena_new ();
+  if (temp_arena != NULL)
+    {
+      temp_entry.proto.h1.parser
+          = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, temp_arena);
+    }
+
+  return &temp_entry;
+}
+
+/**
+ * create_pooled_entry - Create pool entry for new connection
+ * @client: HTTP client
+ * @socket: Connected socket (freed on error)
+ * @host: Target hostname
+ * @port: Target port
+ * @is_secure: 1 for HTTPS, 0 for HTTP
+ *
+ * Returns: Pool entry, or NULL on failure
+ */
+static HTTPPoolEntry *
+create_pooled_entry (SocketHTTPClient_T client, Socket_T socket,
+                     const char *host, int port, int is_secure)
+{
+  HTTPPoolEntry *entry;
+
+  pthread_mutex_lock (&client->pool->mutex);
+  entry = create_http1_connection (client->pool, socket, host, port, is_secure);
+  pthread_mutex_unlock (&client->pool->mutex);
+
+  if (entry == NULL)
+    {
+      Socket_free (&socket);
+      client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
+    }
+
+  return entry;
+}
+
+/* ============================================================================
+ * Connection Establishment - Main Function
+ * ============================================================================ */
+
+/**
+ * httpclient_connect - Get or create connection to host
+ * @client: HTTP client
+ * @uri: Target URI
+ *
+ * Returns: Pool entry for connection, or NULL on failure
+ *
+ * Orchestrates connection establishment:
+ * 1. Try existing pool connection
+ * 2. Establish TCP via Happy Eyeballs
+ * 3. Set up TLS if needed
+ * 4. Create pool entry (or temporary for non-pooled)
+ */
 HTTPPoolEntry *
 httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
 {
@@ -491,10 +802,6 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
   Socket_T socket;
   int port;
   int is_secure;
-  SocketHE_Config_T he_config;
-#ifdef SOCKET_HAS_TLS
-  volatile SocketTLSContext_T tls_ctx = NULL;
-#endif
 
   assert (client != NULL);
   assert (uri != NULL);
@@ -505,121 +812,21 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
   port = SocketHTTP_URI_get_port (uri, is_secure ? 443 : 80);
 
   /* Try to get existing connection from pool */
-  if (client->pool != NULL)
-    {
-      entry = httpclient_pool_get (client->pool, uri->host, port, is_secure);
-      if (entry != NULL)
-        return entry;
+  entry = pool_try_get_connection (client, uri->host, port, is_secure);
+  if (entry != NULL)
+    return entry;
 
-      /* Check if we're at the per-host limit */
-      pthread_mutex_lock (&client->pool->mutex);
-      size_t host_count
-          = pool_count_for_host (client->pool, uri->host, port, is_secure);
-      int at_host_limit = (host_count >= client->pool->max_per_host);
-      int at_total_limit
-          = (client->pool->current_count >= client->pool->max_total);
-      pthread_mutex_unlock (&client->pool->mutex);
-
-      if (at_host_limit || at_total_limit)
-        {
-          /* Clean up idle connections and retry */
-          httpclient_pool_cleanup_idle (client->pool);
-
-          entry = httpclient_pool_get (client->pool, uri->host, port, is_secure);
-          if (entry != NULL)
-            return entry;
-        }
-    }
-
-  /* Create new connection using Happy Eyeballs */
-  SocketHappyEyeballs_config_defaults (&he_config);
-  he_config.total_timeout_ms = client->config.connect_timeout_ms;
-  he_config.attempt_timeout_ms = client->config.connect_timeout_ms / 2;
-
-  TRY
-    {
-      socket = SocketHappyEyeballs_connect (uri->host, port, &he_config);
-    }
-  EXCEPT (SocketHE_Failed)
-    {
-      client->last_error = HTTPCLIENT_ERROR_CONNECT;
-      HTTPCLIENT_ERROR_MSG ("Connection to %s:%d failed", uri->host, port);
-      return NULL;
-    }
-  END_TRY;
-
+  /* Establish new TCP connection */
+  socket = establish_tcp_connection (client, uri->host, port);
   if (socket == NULL)
-    {
-      client->last_error = HTTPCLIENT_ERROR_CONNECT;
-      return NULL;
-    }
+    return NULL;
 
   /* Handle TLS if needed */
 #ifdef SOCKET_HAS_TLS
   if (is_secure)
     {
-      tls_ctx = client->config.tls_context;
-
-      /* Create default TLS context if not provided */
-      if (tls_ctx == NULL)
-        {
-          if (client->default_tls_ctx == NULL)
-            {
-              TRY
-                {
-                  client->default_tls_ctx = SocketTLSContext_new_client (NULL);
-                }
-              EXCEPT (SocketTLS_Failed)
-                {
-                  Socket_free (&socket);
-                  client->last_error = HTTPCLIENT_ERROR_TLS;
-                  return NULL;
-                }
-              END_TRY;
-            }
-          tls_ctx = client->default_tls_ctx;
-        }
-
-      /* Enable TLS on socket */
-      TRY
-        {
-          SocketTLS_enable (socket, tls_ctx);
-        }
-      EXCEPT (SocketTLS_Failed)
-        {
-          Socket_free (&socket);
-          client->last_error = HTTPCLIENT_ERROR_TLS;
-          return NULL;
-        }
-      END_TRY;
-
-      /* Set SNI hostname */
-      SocketTLS_set_hostname (socket, uri->host);
-
-      /* Perform handshake */
-      TRY
-        {
-          int result = SocketTLS_handshake (socket);
-          if (result != 0)
-            {
-              Socket_free (&socket);
-              client->last_error = HTTPCLIENT_ERROR_TLS;
-              return NULL;
-            }
-        }
-      EXCEPT (SocketTLS_HandshakeFailed)
-        {
-          Socket_free (&socket);
-          client->last_error = HTTPCLIENT_ERROR_TLS;
-          return NULL;
-        }
-      EXCEPT (SocketTLS_VerifyFailed)
-        {
-          Socket_free (&socket);
-          client->last_error = HTTPCLIENT_ERROR_TLS;
-          return NULL;
-        }
-      END_TRY;
+      if (setup_tls_connection (client, &socket, uri->host) != 0)
+        return NULL;
     }
 #else
   if (is_secure)
@@ -631,54 +838,11 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
     }
 #endif
 
-  /* Create pool entry */
+  /* Create pool entry or temporary entry */
   if (client->pool != NULL)
-    {
-      pthread_mutex_lock (&client->pool->mutex);
-      entry = create_http1_connection (client->pool, socket, uri->host, port,
-                                       is_secure);
-      pthread_mutex_unlock (&client->pool->mutex);
+    return create_pooled_entry (client, socket, uri->host, port, is_secure);
 
-      if (entry == NULL)
-        {
-          Socket_free (&socket);
-          client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
-          return NULL;
-        }
-
-      return entry;
-    }
-
-  /* No pooling - create temporary entry */
-  {
-    /* Thread-local storage for non-pooled case */
-    static __thread HTTPPoolEntry temp_entry;
-    static __thread Arena_T temp_arena = NULL;
-
-    /* Clean up previous temp arena if it exists */
-    if (temp_arena != NULL)
-      {
-        Arena_dispose (&temp_arena);
-      }
-
-    memset (&temp_entry, 0, sizeof (temp_entry));
-    temp_entry.host = (char *)uri->host;
-    temp_entry.port = port;
-    temp_entry.is_secure = is_secure;
-    temp_entry.version = HTTP_VERSION_1_1;
-    temp_entry.proto.h1.socket = socket;
-    temp_entry.in_use = 1;
-
-    /* Create parser in thread-local arena */
-    temp_arena = Arena_new ();
-    if (temp_arena != NULL)
-      {
-        temp_entry.proto.h1.parser
-            = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, temp_arena);
-      }
-
-    return &temp_entry;
-  }
+  return create_temp_entry (socket, uri->host, port, is_secure);
 }
 
 /* ============================================================================

@@ -626,6 +626,7 @@ union align
 
 #define SOCKET_MS_PER_SECOND 1000
 #define SOCKET_NS_PER_MS 1000000LL
+#define SOCKET_NS_PER_SECOND 1000000000LL
 
 /* ============================================================================
  * Async I/O Configuration

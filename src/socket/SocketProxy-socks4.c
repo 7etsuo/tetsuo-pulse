@@ -250,18 +250,16 @@ proxy_socks4_reply_to_result (int reply)
       return PROXY_ERROR_FORBIDDEN;
 
     case SOCKS4_REPLY_NO_IDENTD:
-      snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                "SOCKS4 rejected: no identd service on client");
+      /* REFACTOR: Now uses centralized socket_error_buf from SocketUtil.h */
+      PROXY_ERROR_MSG ("SOCKS4 rejected: no identd service on client");
       return PROXY_ERROR_AUTH_REQUIRED;
 
     case SOCKS4_REPLY_IDENTD_MISMATCH:
-      snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                "SOCKS4 rejected: identd user mismatch");
+      PROXY_ERROR_MSG ("SOCKS4 rejected: identd user mismatch");
       return PROXY_ERROR_AUTH_FAILED;
 
     default:
-      snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,
-                "Unknown SOCKS4 reply code: %d", reply);
+      PROXY_ERROR_MSG ("Unknown SOCKS4 reply code: %d", reply);
       return PROXY_ERROR_PROTOCOL;
     }
 }

@@ -17,8 +17,12 @@
 #include <string.h>
 #include <time.h>
 
-#include "core/SocketUtil.h"
 #include "pool/SocketPool-private.h"
+/* SocketUtil.h included via SocketPool-private.h */
+
+/* Override default log component (SocketUtil.h sets "Socket") */
+#undef SOCKET_LOG_COMPONENT
+#define SOCKET_LOG_COMPONENT "SocketPool"
 
 #define T SocketPool_T
 
@@ -29,7 +33,14 @@
 const Except_T SocketPool_Failed
     = { &SocketPool_Failed, "SocketPool operation failed" };
 
-/* Thread-local exception instance (declared extern in private header) */
+/**
+ * Thread-local exception for detailed error messages.
+ * Definition - extern declaration in SocketPool-private.h.
+ *
+ * NOTE: Cannot use SOCKET_DECLARE_MODULE_EXCEPTION macro here because
+ * that creates a static (file-local) variable, but SocketPool is split
+ * across multiple .c files that all need to share this exception variable.
+ */
 #ifdef _WIN32
 __declspec (thread) Except_T SocketPool_DetailedException;
 #else

@@ -13,6 +13,7 @@
 
 #include "core/Arena.h"
 #include "core/SocketUtil.h"
+#include "dns/SocketDNS.h"
 #include "http/SocketHTTP1.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
@@ -142,38 +143,43 @@ typedef enum
 } SocketProxy_ProtoState;
 
 /* ============================================================================
- * Thread-Local Error Buffer
- * ============================================================================ */
+ * Exception Handling (Centralized)
+ * ============================================================================
+ *
+ * REFACTOR: Now uses centralized exception infrastructure from SocketUtil.h
+ * instead of module-specific thread-local buffers and exception copies.
+ *
+ * Benefits:
+ * - Single thread-local error buffer (socket_error_buf) for all modules
+ * - Consistent error formatting with SOCKET_ERROR_FMT/MSG macros
+ * - Thread-safe exception raising via SOCKET_RAISE_MODULE_ERROR
+ * - Automatic logging integration via SocketLog_emit
+ *
+ * The thread-local exception (Proxy_DetailedException) is declared
+ * in SocketProxy.c using SOCKET_DECLARE_MODULE_EXCEPTION(Proxy).
+ */
 
-#ifdef _WIN32
-extern __declspec (thread) char proxy_error_buf[SOCKET_PROXY_ERROR_BUFSIZE];
-#else
-extern __thread char proxy_error_buf[SOCKET_PROXY_ERROR_BUFSIZE];
-#endif
+/* Override log component for this module */
+#undef SOCKET_LOG_COMPONENT
+#define SOCKET_LOG_COMPONENT "Proxy"
 
-/* Thread-local exception for detailed error messages */
-#ifdef _WIN32
-static __declspec (thread) Except_T Proxy_DetailedException;
-#else
-static __thread Except_T Proxy_DetailedException;
-#endif
+/**
+ * Error formatting macros - delegate to centralized infrastructure.
+ * Uses socket_error_buf from SocketUtil.h (thread-local, 256 bytes).
+ */
+#define PROXY_ERROR_FMT(fmt, ...) SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__)
+#define PROXY_ERROR_MSG(fmt, ...) SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__)
 
-/* Error formatting macros */
-#define PROXY_ERROR_FMT(fmt, ...)                                              \
-  snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE,                       \
-            fmt " (errno: %d - %s)", ##__VA_ARGS__, errno, strerror (errno))
-
-#define PROXY_ERROR_MSG(fmt, ...)                                              \
-  snprintf (proxy_error_buf, SOCKET_PROXY_ERROR_BUFSIZE, fmt, ##__VA_ARGS__)
-
-#define RAISE_PROXY_ERROR(exception)                                           \
-  do                                                                           \
-    {                                                                          \
-      Proxy_DetailedException = (exception);                                   \
-      Proxy_DetailedException.reason = proxy_error_buf;                        \
-      RAISE (Proxy_DetailedException);                                         \
-    }                                                                          \
-  while (0)
+/**
+ * RAISE_PROXY_ERROR - Raise exception with detailed error message
+ *
+ * Creates a thread-local copy of the exception with reason from
+ * socket_error_buf. Thread-safe: prevents race conditions when
+ * multiple threads raise same exception type.
+ *
+ * Requires: SOCKET_DECLARE_MODULE_EXCEPTION(Proxy) in .c file.
+ */
+#define RAISE_PROXY_ERROR(e) SOCKET_RAISE_MODULE_ERROR (Proxy, e)
 
 /* ============================================================================
  * Main Context Structure
@@ -206,7 +212,12 @@ struct SocketProxy_Conn_T
   Arena_T arena;      /**< Memory arena for all allocations */
   Socket_T socket;    /**< Proxy socket (transferred to caller on success) */
   SocketBuf_T recvbuf;/**< Receive buffer for protocol parsing */
+
+  /* Async connection resources */
+  SocketDNS_T dns;    /**< DNS resolver for async connection */
+  SocketPoll_T poll;  /**< Poll instance for async connection */
   SocketHE_T he;      /**< HappyEyeballs context (during connect) */
+  int owns_dns_poll;  /**< 1 if we own dns/poll (sync wrapper), 0 if external */
 
   /* HTTP CONNECT specific */
   SocketHTTP1_Parser_T http_parser; /**< HTTP response parser */

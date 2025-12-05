@@ -21,6 +21,7 @@
 #include "http/SocketHTTPClient-private.h"
 #include "http/SocketHTTP.h"
 #include "core/Arena.h"
+#include "core/SocketUtil.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -32,26 +33,37 @@
 
 /* ============================================================================
  * Cookie Jar Configuration
- * ============================================================================ */
-
-#define COOKIE_HASH_SIZE 127
-#define COOKIE_MAX_NAME_LEN 256
-#define COOKIE_MAX_VALUE_LEN 4096
-#define COOKIE_MAX_DOMAIN_LEN 256
-#define COOKIE_MAX_PATH_LEN 1024
+ * ============================================================================
+ * Cookie constants are defined in SocketHTTPClient-config.h:
+ *   - HTTPCLIENT_COOKIE_HASH_SIZE (127) - hash table size
+ *   - HTTPCLIENT_COOKIE_MAX_NAME_LEN (256) - max name length
+ *   - HTTPCLIENT_COOKIE_MAX_VALUE_LEN (4096) - max value length
+ *   - HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN (256) - max domain length
+ *   - HTTPCLIENT_COOKIE_MAX_PATH_LEN (1024) - max path length
+ */
 
 /* ============================================================================
  * Internal Helper Functions
  * ============================================================================ */
 
 /**
- * Hash function for cookie lookup (domain:path:name)
+ * cookie_hash - Hash function for cookie lookup (domain:path:name)
+ * @domain: Cookie domain (case-insensitive)
+ * @path: Cookie path (case-sensitive)
+ * @name: Cookie name (case-sensitive)
+ * @table_size: Hash table size
+ *
+ * Returns: Hash bucket index
+ *
+ * Uses DJB2 algorithm. Domain is hashed case-insensitively per RFC 6265,
+ * while path and name are case-sensitive.
+ * Uses SOCKET_UTIL_DJB2_SEED from SocketUtil.h for consistency.
  */
 static unsigned
 cookie_hash (const char *domain, const char *path, const char *name,
              size_t table_size)
 {
-  unsigned hash = 5381;
+  unsigned hash = SOCKET_UTIL_DJB2_SEED;
 
   /* Hash domain (case-insensitive) */
   while (*domain)
@@ -62,7 +74,7 @@ cookie_hash (const char *domain, const char *path, const char *name,
       hash = ((hash << 5) + hash) ^ c;
     }
 
-  /* Hash path */
+  /* Hash path (case-sensitive) */
   while (*path)
     {
       hash = ((hash << 5) + hash) ^ (unsigned char)*path++;
@@ -216,25 +228,8 @@ get_default_path (const char *request_path, char *output, size_t output_size)
   output[len] = '\0';
 }
 
-/**
- * Duplicate string into arena
- */
-static char *
-arena_strdup (Arena_T arena, const char *str)
-{
-  size_t len;
-  char *copy;
-
-  if (str == NULL)
-    return NULL;
-
-  len = strlen (str);
-  copy = Arena_alloc (arena, len + 1, __FILE__, __LINE__);
-  if (copy != NULL)
-    memcpy (copy, str, len + 1);
-
-  return copy;
-}
+/* REFACTOR: Removed local socket_util_arena_strdup - use socket_util_socket_util_arena_strdup() 
+ * from SocketUtil.h instead. Avoids code duplication. */
 
 /* ============================================================================
  * Cookie Jar Lifecycle
@@ -259,10 +254,10 @@ SocketHTTPClient_CookieJar_new (void)
 
   memset (jar, 0, sizeof (*jar));
   jar->arena = arena;
-  jar->hash_size = COOKIE_HASH_SIZE;
+  jar->hash_size = HTTPCLIENT_COOKIE_HASH_SIZE;
 
   jar->hash_table
-      = Arena_calloc (arena, COOKIE_HASH_SIZE, sizeof (CookieEntry *), __FILE__,
+      = Arena_calloc (arena, HTTPCLIENT_COOKIE_HASH_SIZE, sizeof (CookieEntry *), __FILE__,
                       __LINE__);
   if (jar->hash_table == NULL)
     {
@@ -332,7 +327,7 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
                  == 0)
         {
           /* Replace existing cookie */
-          entry->cookie.value = arena_strdup (jar->arena, cookie->value);
+          entry->cookie.value = socket_util_arena_strdup (jar->arena, cookie->value);
           entry->cookie.expires = cookie->expires;
           entry->cookie.secure = cookie->secure;
           entry->cookie.http_only = cookie->http_only;
@@ -354,10 +349,10 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
   memset (entry, 0, sizeof (*entry));
 
   /* Copy cookie data */
-  entry->cookie.name = arena_strdup (jar->arena, cookie->name);
-  entry->cookie.value = arena_strdup (jar->arena, cookie->value);
-  entry->cookie.domain = arena_strdup (jar->arena, cookie->domain);
-  entry->cookie.path = arena_strdup (jar->arena,
+  entry->cookie.name = socket_util_arena_strdup (jar->arena, cookie->name);
+  entry->cookie.value = socket_util_arena_strdup (jar->arena, cookie->value);
+  entry->cookie.domain = socket_util_arena_strdup (jar->arena, cookie->domain);
+  entry->cookie.path = socket_util_arena_strdup (jar->arena,
                                      cookie->path ? cookie->path : "/");
   entry->cookie.expires = cookie->expires;
   entry->cookie.secure = cookie->secure;
@@ -580,6 +575,39 @@ SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
  * Cookie Request/Response Integration
  * ============================================================================ */
 
+/**
+ * cookie_matches_request - Check if cookie matches request
+ * @cookie: Cookie to check
+ * @host: Request hostname
+ * @path: Request path
+ * @is_secure: 1 if HTTPS, 0 if HTTP
+ * @now: Current time for expiration check
+ *
+ * Returns: 1 if cookie should be sent, 0 otherwise
+ */
+static int
+cookie_matches_request (const SocketHTTPClient_Cookie *cookie, const char *host,
+                        const char *path, int is_secure, time_t now)
+{
+  /* Check expiration */
+  if (cookie->expires > 0 && cookie->expires < now)
+    return 0;
+
+  /* Check secure flag */
+  if (cookie->secure && !is_secure)
+    return 0;
+
+  /* Check domain match */
+  if (!domain_matches (host, cookie->domain))
+    return 0;
+
+  /* Check path match */
+  if (!path_matches (path, cookie->path))
+    return 0;
+
+  return 1;
+}
+
 int
 httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
                                 const SocketHTTP_URI *uri, char *output,
@@ -610,29 +638,8 @@ httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
         {
           const SocketHTTPClient_Cookie *c = &entry->cookie;
 
-          /* Check expiration */
-          if (c->expires > 0 && c->expires < now)
-            {
-              entry = entry->next;
-              continue;
-            }
-
-          /* Check secure flag */
-          if (c->secure && !is_secure)
-            {
-              entry = entry->next;
-              continue;
-            }
-
-          /* Check domain match */
-          if (!domain_matches (uri->host, c->domain))
-            {
-              entry = entry->next;
-              continue;
-            }
-
-          /* Check path match */
-          if (!path_matches (request_path, c->path))
+          if (!cookie_matches_request (c, uri->host, request_path, is_secure,
+                                       now))
             {
               entry = entry->next;
               continue;
@@ -667,6 +674,311 @@ httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
   return (int)written;
 }
 
+/* ============================================================================
+ * Set-Cookie Parsing Helpers
+ * ============================================================================ */
+
+/**
+ * skip_whitespace - Skip leading whitespace characters
+ * @p: Current position pointer
+ * @end: End of string
+ *
+ * Returns: Pointer to first non-whitespace character
+ */
+static const char *
+skip_whitespace (const char *p, const char *end)
+{
+  while (p < end && (*p == ' ' || *p == '\t'))
+    p++;
+  return p;
+}
+
+/**
+ * trim_trailing_whitespace - Find end after trimming trailing whitespace
+ * @start: Start of string
+ * @end: Current end position
+ *
+ * Returns: New end position after trimming
+ */
+static const char *
+trim_trailing_whitespace (const char *start, const char *end)
+{
+  while (end > start && (*(end - 1) == ' ' || *(end - 1) == '\t'))
+    end--;
+  return end;
+}
+
+/**
+ * parse_cookie_name_value - Parse name=value from Set-Cookie header
+ * @p: Start of cookie string (modified to point past value)
+ * @end: End of cookie string
+ * @cookie: Cookie to populate with name and value
+ * @arena: Arena for allocation
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int
+parse_cookie_name_value (const char **p, const char *end,
+                         SocketHTTPClient_Cookie *cookie, Arena_T arena)
+{
+  const char *name_start, *name_end;
+  const char *value_start, *value_end;
+  const char *ptr;
+  size_t name_len, val_len;
+  char *n, *v;
+
+  ptr = *p;
+
+  /* Skip leading whitespace */
+  ptr = skip_whitespace (ptr, end);
+
+  /* Parse name */
+  name_start = ptr;
+  while (ptr < end && *ptr != '=' && *ptr != ';')
+    ptr++;
+  name_end = trim_trailing_whitespace (name_start, ptr);
+
+  if (name_end == name_start || ptr >= end || *ptr != '=')
+    return -1; /* Invalid cookie */
+
+  ptr++; /* Skip '=' */
+
+  /* Parse value */
+  value_start = ptr;
+
+  /* Handle quoted value */
+  if (ptr < end && *ptr == '"')
+    {
+      value_start = ++ptr;
+      while (ptr < end && *ptr != '"')
+        ptr++;
+      value_end = ptr;
+      if (ptr < end)
+        ptr++; /* Skip closing quote */
+    }
+  else
+    {
+      while (ptr < end && *ptr != ';')
+        ptr++;
+      value_end = ptr;
+    }
+
+  value_end = trim_trailing_whitespace (value_start, value_end);
+
+  /* Allocate name and value */
+  name_len = (size_t)(name_end - name_start);
+  val_len = (size_t)(value_end - value_start);
+
+  n = Arena_alloc (arena, name_len + 1, __FILE__, __LINE__);
+  v = Arena_alloc (arena, val_len + 1, __FILE__, __LINE__);
+
+  if (n == NULL || v == NULL)
+    return -1;
+
+  memcpy (n, name_start, name_len);
+  n[name_len] = '\0';
+  memcpy (v, value_start, val_len);
+  v[val_len] = '\0';
+
+  cookie->name = n;
+  cookie->value = v;
+  *p = ptr;
+
+  return 0;
+}
+
+/**
+ * parse_cookie_attribute - Parse and apply a single cookie attribute
+ * @attr_start: Start of attribute name
+ * @attr_len: Length of attribute name
+ * @attr_value_start: Start of attribute value (NULL if flag-only)
+ * @attr_val_len: Length of attribute value
+ * @cookie: Cookie to update
+ * @arena: Arena for allocation
+ */
+static void
+parse_cookie_attribute (const char *attr_start, size_t attr_len,
+                        const char *attr_value_start, size_t attr_val_len,
+                        SocketHTTPClient_Cookie *cookie, Arena_T arena)
+{
+  /* Boolean attributes */
+  if (attr_len == 6 && strncasecmp (attr_start, "Secure", 6) == 0)
+    {
+      cookie->secure = 1;
+      return;
+    }
+
+  if (attr_len == 8 && strncasecmp (attr_start, "HttpOnly", 8) == 0)
+    {
+      cookie->http_only = 1;
+      return;
+    }
+
+  /* Value-required attributes */
+  if (attr_value_start == NULL)
+    return;
+
+  if (attr_len == 7 && strncasecmp (attr_start, "Expires", 7) == 0)
+    {
+      time_t expires;
+      if (SocketHTTP_date_parse (attr_value_start, attr_val_len, &expires) == 0)
+        cookie->expires = expires;
+    }
+  else if (attr_len == 7 && strncasecmp (attr_start, "Max-Age", 7) == 0)
+    {
+      char max_age_str[32];
+      if (attr_val_len < sizeof (max_age_str))
+        {
+          memcpy (max_age_str, attr_value_start, attr_val_len);
+          max_age_str[attr_val_len] = '\0';
+          cookie->expires = parse_max_age (max_age_str);
+        }
+    }
+  else if (attr_len == 6 && strncasecmp (attr_start, "Domain", 6) == 0)
+    {
+      char *d = Arena_alloc (arena, attr_val_len + 2, __FILE__, __LINE__);
+      if (d != NULL)
+        {
+          /* Ensure leading dot for domain matching */
+          if (attr_value_start[0] != '.')
+            {
+              d[0] = '.';
+              memcpy (d + 1, attr_value_start, attr_val_len);
+              d[attr_val_len + 1] = '\0';
+            }
+          else
+            {
+              memcpy (d, attr_value_start, attr_val_len);
+              d[attr_val_len] = '\0';
+            }
+          cookie->domain = d;
+        }
+    }
+  else if (attr_len == 4 && strncasecmp (attr_start, "Path", 4) == 0)
+    {
+      char *pt = Arena_alloc (arena, attr_val_len + 1, __FILE__, __LINE__);
+      if (pt != NULL)
+        {
+          memcpy (pt, attr_value_start, attr_val_len);
+          pt[attr_val_len] = '\0';
+          cookie->path = pt;
+        }
+    }
+  else if (attr_len == 8 && strncasecmp (attr_start, "SameSite", 8) == 0)
+    {
+      char ss[16];
+      if (attr_val_len < sizeof (ss))
+        {
+          memcpy (ss, attr_value_start, attr_val_len);
+          ss[attr_val_len] = '\0';
+          cookie->same_site = parse_same_site (ss);
+        }
+    }
+}
+
+/**
+ * parse_cookie_attributes - Parse all attributes from Set-Cookie header
+ * @p: Position after name=value (modified during parsing)
+ * @end: End of cookie string
+ * @cookie: Cookie to update with attributes
+ * @arena: Arena for allocation
+ */
+static void
+parse_cookie_attributes (const char **p, const char *end,
+                         SocketHTTPClient_Cookie *cookie, Arena_T arena)
+{
+  const char *ptr = *p;
+
+  while (ptr < end)
+    {
+      const char *attr_start, *attr_end;
+      const char *attr_value_start = NULL, *attr_value_end = NULL;
+
+      /* Skip ';' and whitespace */
+      while (ptr < end && (*ptr == ';' || *ptr == ' ' || *ptr == '\t'))
+        ptr++;
+
+      if (ptr >= end)
+        break;
+
+      /* Parse attribute name */
+      attr_start = ptr;
+      while (ptr < end && *ptr != '=' && *ptr != ';')
+        ptr++;
+      attr_end = trim_trailing_whitespace (attr_start, ptr);
+
+      /* Parse attribute value if present */
+      if (ptr < end && *ptr == '=')
+        {
+          ptr++;
+          ptr = skip_whitespace (ptr, end);
+          attr_value_start = ptr;
+          while (ptr < end && *ptr != ';')
+            ptr++;
+          attr_value_end = trim_trailing_whitespace (attr_value_start, ptr);
+        }
+
+      /* Process this attribute */
+      parse_cookie_attribute (
+          attr_start, (size_t)(attr_end - attr_start), attr_value_start,
+          attr_value_start ? (size_t)(attr_value_end - attr_value_start) : 0,
+          cookie, arena);
+    }
+
+  *p = ptr;
+}
+
+/**
+ * apply_cookie_defaults - Apply default values from request URI
+ * @cookie: Cookie to update
+ * @request_uri: Request URI for defaults
+ * @arena: Arena for allocation
+ */
+static void
+apply_cookie_defaults (SocketHTTPClient_Cookie *cookie,
+                       const SocketHTTP_URI *request_uri, Arena_T arena)
+{
+  char default_path[HTTPCLIENT_COOKIE_MAX_PATH_LEN];
+
+  /* Set domain from request host if not specified */
+  if (cookie->domain == NULL && request_uri != NULL
+      && request_uri->host != NULL)
+    {
+      cookie->domain = socket_util_arena_strdup (arena, request_uri->host);
+    }
+
+  /* Set path from request path if not specified */
+  if (cookie->path == NULL)
+    {
+      if (request_uri != NULL && request_uri->path != NULL)
+        {
+          get_default_path (request_uri->path, default_path,
+                            sizeof (default_path));
+          cookie->path = socket_util_arena_strdup (arena, default_path);
+        }
+      else
+        {
+          cookie->path = socket_util_arena_strdup (arena, "/");
+        }
+    }
+}
+
+/* ============================================================================
+ * Set-Cookie Parsing Main Function
+ * ============================================================================ */
+
+/**
+ * httpclient_parse_set_cookie - Parse Set-Cookie header value
+ * @value: Set-Cookie header value
+ * @len: Length of value (0 for strlen)
+ * @request_uri: Request URI for defaults
+ * @cookie: Output cookie structure
+ * @arena: Arena for allocation
+ *
+ * Returns: 0 on success, -1 on failure
+ *
+ * Parses RFC 6265 Set-Cookie header into cookie structure.
+ */
 int
 httpclient_parse_set_cookie (const char *value, size_t len,
                              const SocketHTTP_URI *request_uri,
@@ -674,9 +986,6 @@ httpclient_parse_set_cookie (const char *value, size_t len,
 {
   const char *p = value;
   const char *end = value + (len > 0 ? len : strlen (value));
-  const char *name_start, *name_end;
-  const char *value_start, *value_end;
-  char default_path[COOKIE_MAX_PATH_LEN];
 
   assert (value != NULL);
   assert (cookie != NULL);
@@ -684,214 +993,17 @@ httpclient_parse_set_cookie (const char *value, size_t len,
 
   memset (cookie, 0, sizeof (*cookie));
 
-  /* Skip leading whitespace */
-  while (p < end && (*p == ' ' || *p == '\t'))
-    p++;
-
-  /* Parse name */
-  name_start = p;
-  while (p < end && *p != '=' && *p != ';')
-    p++;
-  name_end = p;
-
-  /* Trim trailing whitespace from name */
-  while (name_end > name_start
-         && (*(name_end - 1) == ' ' || *(name_end - 1) == '\t'))
-    name_end--;
-
-  if (name_end == name_start || p >= end || *p != '=')
-    return -1; /* Invalid cookie */
-
-  p++; /* Skip '=' */
-
-  /* Parse value */
-  value_start = p;
-
-  /* Handle quoted value */
-  if (p < end && *p == '"')
-    {
-      value_start = ++p;
-      while (p < end && *p != '"')
-        p++;
-      value_end = p;
-      if (p < end)
-        p++; /* Skip closing quote */
-    }
-  else
-    {
-      while (p < end && *p != ';')
-        p++;
-      value_end = p;
-    }
-
-  /* Trim trailing whitespace from value */
-  while (value_end > value_start
-         && (*(value_end - 1) == ' ' || *(value_end - 1) == '\t'))
-    value_end--;
-
-  /* Allocate name and value */
-  {
-    size_t name_len = (size_t)(name_end - name_start);
-    size_t val_len = (size_t)(value_end - value_start);
-    char *n = Arena_alloc (arena, name_len + 1, __FILE__, __LINE__);
-    char *v = Arena_alloc (arena, val_len + 1, __FILE__, __LINE__);
-
-    if (n == NULL || v == NULL)
-      return -1;
-
-    memcpy (n, name_start, name_len);
-    n[name_len] = '\0';
-    memcpy (v, value_start, val_len);
-    v[val_len] = '\0';
-
-    cookie->name = n;
-    cookie->value = v;
-  }
+  /* Parse name=value */
+  if (parse_cookie_name_value (&p, end, cookie, arena) != 0)
+    return -1;
 
   /* Parse attributes */
-  while (p < end)
-    {
-      const char *attr_start, *attr_end;
-      const char *attr_value_start = NULL, *attr_value_end = NULL;
+  parse_cookie_attributes (&p, end, cookie, arena);
 
-      /* Skip ';' and whitespace */
-      while (p < end && (*p == ';' || *p == ' ' || *p == '\t'))
-        p++;
+  /* Apply defaults from request URI */
+  apply_cookie_defaults (cookie, request_uri, arena);
 
-      if (p >= end)
-        break;
-
-      /* Parse attribute name */
-      attr_start = p;
-      while (p < end && *p != '=' && *p != ';')
-        p++;
-      attr_end = p;
-
-      /* Trim trailing whitespace */
-      while (attr_end > attr_start
-             && (*(attr_end - 1) == ' ' || *(attr_end - 1) == '\t'))
-        attr_end--;
-
-      /* Parse attribute value if present */
-      if (p < end && *p == '=')
-        {
-          p++;
-          while (p < end && (*p == ' ' || *p == '\t'))
-            p++;
-          attr_value_start = p;
-          while (p < end && *p != ';')
-            p++;
-          attr_value_end = p;
-
-          /* Trim trailing whitespace */
-          while (attr_value_end > attr_value_start
-                 && (*(attr_value_end - 1) == ' '
-                     || *(attr_value_end - 1) == '\t'))
-            attr_value_end--;
-        }
-
-      /* Process attribute */
-      size_t attr_len = (size_t)(attr_end - attr_start);
-      size_t attr_val_len
-          = attr_value_start ? (size_t)(attr_value_end - attr_value_start) : 0;
-
-      if (attr_len == 6 && strncasecmp (attr_start, "Secure", 6) == 0)
-        {
-          cookie->secure = 1;
-        }
-      else if (attr_len == 8 && strncasecmp (attr_start, "HttpOnly", 8) == 0)
-        {
-          cookie->http_only = 1;
-        }
-      else if (attr_len == 7 && strncasecmp (attr_start, "Expires", 7) == 0
-               && attr_value_start != NULL)
-        {
-          /* Parse Expires using SocketHTTP_date_parse() */
-          time_t expires;
-          if (SocketHTTP_date_parse (attr_value_start, attr_val_len, &expires)
-              == 0)
-            {
-              cookie->expires = expires;
-            }
-        }
-      else if (attr_len == 7 && strncasecmp (attr_start, "Max-Age", 7) == 0
-               && attr_value_start != NULL)
-        {
-          char max_age_str[32];
-          if (attr_val_len < sizeof (max_age_str))
-            {
-              memcpy (max_age_str, attr_value_start, attr_val_len);
-              max_age_str[attr_val_len] = '\0';
-              cookie->expires = parse_max_age (max_age_str);
-            }
-        }
-      else if (attr_len == 6 && strncasecmp (attr_start, "Domain", 6) == 0
-               && attr_value_start != NULL)
-        {
-          char *d = Arena_alloc (arena, attr_val_len + 2, __FILE__, __LINE__);
-          if (d != NULL)
-            {
-              /* Ensure leading dot for domain matching */
-              if (attr_value_start[0] != '.')
-                {
-                  d[0] = '.';
-                  memcpy (d + 1, attr_value_start, attr_val_len);
-                  d[attr_val_len + 1] = '\0';
-                }
-              else
-                {
-                  memcpy (d, attr_value_start, attr_val_len);
-                  d[attr_val_len] = '\0';
-                }
-              cookie->domain = d;
-            }
-        }
-      else if (attr_len == 4 && strncasecmp (attr_start, "Path", 4) == 0
-               && attr_value_start != NULL)
-        {
-          char *pt = Arena_alloc (arena, attr_val_len + 1, __FILE__, __LINE__);
-          if (pt != NULL)
-            {
-              memcpy (pt, attr_value_start, attr_val_len);
-              pt[attr_val_len] = '\0';
-              cookie->path = pt;
-            }
-        }
-      else if (attr_len == 8 && strncasecmp (attr_start, "SameSite", 8) == 0)
-        {
-          if (attr_value_start != NULL)
-            {
-              char ss[16];
-              if (attr_val_len < sizeof (ss))
-                {
-                  memcpy (ss, attr_value_start, attr_val_len);
-                  ss[attr_val_len] = '\0';
-                  cookie->same_site = parse_same_site (ss);
-                }
-            }
-        }
-    }
-
-  /* Set defaults from request URI */
-  if (cookie->domain == NULL && request_uri != NULL && request_uri->host != NULL)
-    {
-      cookie->domain = arena_strdup (arena, request_uri->host);
-    }
-
-  if (cookie->path == NULL)
-    {
-      if (request_uri != NULL && request_uri->path != NULL)
-        {
-          get_default_path (request_uri->path, default_path,
-                            sizeof (default_path));
-          cookie->path = arena_strdup (arena, default_path);
-        }
-      else
-        {
-          cookie->path = arena_strdup (arena, "/");
-        }
-    }
-
+  /* Validate required fields */
   if (cookie->domain == NULL || cookie->name == NULL)
     return -1;
 

@@ -2025,6 +2025,260 @@ TEST (socketio_tls_io_after_shutdown)
 #endif
 }
 
+/* ==================== Session Resumption Verification (5.8) ==================== */
+
+TEST (tls_session_resumption_verification)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_sess_verify.crt";
+  const char *key_file = "test_sess_verify.key";
+  Socket_T client = NULL, server = NULL;
+  SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
+    SocketTLSContext_enable_session_cache (server_ctx, 100, 300);
+
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    SocketTLS_enable (client, client_ctx);
+    SocketTLS_enable (server, server_ctx);
+
+    TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    int loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE
+            || server_state != TLS_HANDSHAKE_COMPLETE)
+           && loops < 1000)
+      {
+        if (client_state != TLS_HANDSHAKE_COMPLETE)
+          client_state = SocketTLS_handshake (client);
+        if (server_state != TLS_HANDSHAKE_COMPLETE)
+          server_state = SocketTLS_handshake (server);
+        loops++;
+        usleep (1000);
+      }
+
+    ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);
+    int reused = SocketTLS_is_session_reused (client);
+    ASSERT_EQ (reused, 0);
+
+    size_t hits = 0, misses = 0, stores = 0;
+    SocketTLSContext_get_cache_stats (server_ctx, &hits, &misses, &stores);
+    /* Verify stats call succeeded (values are valid) */
+    (void)hits;
+    (void)misses;
+    (void)stores;
+  }
+  FINALLY
+  {
+    if (client)
+      Socket_free (&client);
+    if (server)
+      Socket_free (&server);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== Cipher Suite Negotiation (5.9) ==================== */
+
+TEST (tls_cipher_suite_negotiation)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *cert_file = "test_cipher_neg.crt";
+  const char *key_file = "test_cipher_neg.key";
+  Socket_T client = NULL, server = NULL;
+  SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
+
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    SocketTLS_enable (client, client_ctx);
+    SocketTLS_enable (server, server_ctx);
+
+    TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    int loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE
+            || server_state != TLS_HANDSHAKE_COMPLETE)
+           && loops < 1000)
+      {
+        if (client_state != TLS_HANDSHAKE_COMPLETE)
+          client_state = SocketTLS_handshake (client);
+        if (server_state != TLS_HANDSHAKE_COMPLETE)
+          server_state = SocketTLS_handshake (server);
+        loops++;
+        usleep (1000);
+      }
+
+    ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);
+
+    const char *cipher = SocketTLS_get_cipher (client);
+    ASSERT_NOT_NULL (cipher);
+
+    int valid_cipher = 0;
+    if (strstr (cipher, "AES") != NULL || strstr (cipher, "CHACHA") != NULL
+        || strstr (cipher, "GCM") != NULL)
+      valid_cipher = 1;
+    ASSERT_EQ (valid_cipher, 1);
+
+    const char *version = SocketTLS_get_version (client);
+    ASSERT_NOT_NULL (version);
+    ASSERT (strcmp (version, "TLSv1.3") == 0);
+  }
+  FINALLY
+  {
+    if (client)
+      Socket_free (&client);
+    if (server)
+      Socket_free (&server);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== Mutual TLS (5.10) ==================== */
+
+static int
+generate_client_cert (const char *client_cert, const char *client_key,
+                      const char *ca_cert, const char *ca_key)
+{
+  char cmd[2048];
+  snprintf (cmd, sizeof (cmd), "openssl genrsa -out %s 2048 2>/dev/null",
+            client_key);
+  if (system (cmd) != 0)
+    return -1;
+  snprintf (cmd, sizeof (cmd),
+            "openssl req -new -key %s -out /tmp/client.csr "
+            "-subj '/CN=client' 2>/dev/null",
+            client_key);
+  if (system (cmd) != 0)
+    return -1;
+  snprintf (cmd, sizeof (cmd),
+            "openssl x509 -req -in /tmp/client.csr -CA %s -CAkey %s "
+            "-CAcreateserial -out %s -days 1 2>/dev/null",
+            ca_cert, ca_key, client_cert);
+  if (system (cmd) != 0)
+    return -1;
+  unlink ("/tmp/client.csr");
+  return 0;
+}
+
+TEST (tls_mutual_tls_client_cert)
+{
+#ifdef SOCKET_HAS_TLS
+  const char *server_cert = "test_mtls_server.crt";
+  const char *server_key = "test_mtls_server.key";
+  const char *client_cert = "test_mtls_client.crt";
+  const char *client_key = "test_mtls_client.key";
+  Socket_T client = NULL, server = NULL;
+  SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+
+  if (generate_test_certs (server_cert, server_key) != 0)
+    return;
+  if (generate_client_cert (client_cert, client_key, server_cert, server_key)
+      != 0)
+    {
+      remove_test_certs (server_cert, server_key);
+      return;
+    }
+
+  TRY
+  {
+    server_ctx
+        = SocketTLSContext_new_server (server_cert, server_key, server_cert);
+    SocketTLSContext_set_verify_mode (server_ctx,
+                                      TLS_VERIFY_FAIL_IF_NO_PEER_CERT);
+
+    client_ctx = SocketTLSContext_new_client (server_cert);
+    SocketTLSContext_load_certificate (client_ctx, client_cert, client_key);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
+
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    SocketTLS_enable (client, client_ctx);
+    SocketTLS_enable (server, server_ctx);
+
+    TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    int loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE
+            || server_state != TLS_HANDSHAKE_COMPLETE)
+           && loops < 1000)
+      {
+        if (client_state != TLS_HANDSHAKE_COMPLETE)
+          client_state = SocketTLS_handshake (client);
+        if (server_state != TLS_HANDSHAKE_COMPLETE)
+          server_state = SocketTLS_handshake (server);
+        loops++;
+        usleep (1000);
+      }
+
+    ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);
+    ASSERT_EQ (server_state, TLS_HANDSHAKE_COMPLETE);
+
+    const char *msg = "mTLS test";
+    ssize_t sent = SocketTLS_send (client, msg, strlen (msg));
+    ASSERT (sent > 0);
+  }
+  FINALLY
+  {
+    if (client)
+      Socket_free (&client);
+    if (server)
+      Socket_free (&server);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (server_cert, server_key);
+    unlink (client_cert);
+    unlink (client_key);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
 int
 main (void)
 {

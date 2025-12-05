@@ -21,6 +21,7 @@
 
 #include "core/Arena.h"
 #include "core/SocketCrypto.h"
+#include "dns/SocketDNS.h"
 #include "poll/SocketPoll.h"
 #include "socket/SocketHappyEyeballs.h"
 
@@ -42,17 +43,18 @@
 const Except_T SocketProxy_Failed
     = { &SocketProxy_Failed, "Proxy operation failed" };
 
+/**
+ * Thread-local exception for detailed error messages.
+ * REFACTOR: Now uses centralized SOCKET_DECLARE_MODULE_EXCEPTION macro
+ * from SocketUtil.h instead of manual platform-specific declarations.
+ */
+SOCKET_DECLARE_MODULE_EXCEPTION (Proxy);
+
 /* ============================================================================
- * Thread-Local Error Buffer
+ * Thread-Local Static Buffer for URL Parsing
  * ============================================================================ */
 
-#ifdef _WIN32
-__declspec (thread) char proxy_error_buf[SOCKET_PROXY_ERROR_BUFSIZE] = { 0 };
-#else
-__thread char proxy_error_buf[SOCKET_PROXY_ERROR_BUFSIZE] = { 0 };
-#endif
-
-/* Thread-local static buffer for URL parsing */
+/* Thread-local static buffer for URL parsing when arena is NULL */
 #ifdef _WIN32
 static __declspec (thread) char
     proxy_static_buf[SOCKET_PROXY_STATIC_BUFFER_SIZE];
@@ -515,17 +517,20 @@ proxy_validate_config (const SocketProxy_Config *proxy)
 }
 
 /**
- * proxy_validate_target - Validate target hostname
+ * proxy_validate_target - Validate target hostname length
  * @target_host: Target hostname
- * @target_len_out: Output - hostname length
  *
  * Returns: 0 on success, raises SocketProxy_Failed on error
+ *
+ * REFACTOR: Removed target_len_out parameter - validation is
+ * self-contained and caller no longer needs the length value.
  */
 static int
-proxy_validate_target (const char *target_host, size_t *target_len_out)
+proxy_validate_target (const char *target_host)
 {
-  *target_len_out = strlen (target_host);
-  if (*target_len_out > SOCKET_PROXY_MAX_HOSTNAME_LEN)
+  size_t target_len = strlen (target_host);
+
+  if (target_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
     {
       PROXY_ERROR_MSG ("Target hostname too long (max %d)",
                        SOCKET_PROXY_MAX_HOSTNAME_LEN);
@@ -534,27 +539,8 @@ proxy_validate_target (const char *target_host, size_t *target_len_out)
   return 0;
 }
 
-/**
- * proxy_copy_string - Copy string to arena
- * @arena: Memory arena
- * @src: Source string (may be NULL)
- *
- * Returns: Copied string or NULL if src is NULL
- */
-static char *
-proxy_copy_string (Arena_T arena, const char *src)
-{
-  size_t len;
-  char *dst;
-
-  if (src == NULL)
-    return NULL;
-
-  len = strlen (src);
-  dst = Arena_alloc (arena, len + 1, __FILE__, __LINE__);
-  memcpy (dst, src, len + 1);
-  return dst;
-}
+/* REFACTOR: Removed proxy_copy_string() - now uses socket_util_arena_strdup()
+ * from SocketUtil.h which provides the same functionality. */
 
 /**
  * proxy_init_context - Initialize connection context
@@ -563,12 +549,14 @@ proxy_copy_string (Arena_T arena, const char *src)
  * @proxy: Proxy configuration
  * @target_host: Target hostname
  * @target_port: Target port
- * @target_len: Target hostname length
+ *
+ * REFACTOR: Removed target_len parameter - socket_util_arena_strdup
+ * handles length calculation internally.
  */
 static void
 proxy_init_context (struct SocketProxy_Conn_T *conn, Arena_T arena,
                     const SocketProxy_Config *proxy, const char *target_host,
-                    int target_port, size_t target_len)
+                    int target_port)
 {
   memset (conn, 0, sizeof (*conn));
   conn->arena = arena;
@@ -582,11 +570,10 @@ proxy_init_context (struct SocketProxy_Conn_T *conn, Arena_T arena,
                                    ? proxy->handshake_timeout_ms
                                    : SOCKET_PROXY_DEFAULT_HANDSHAKE_TIMEOUT_MS;
 
-  conn->proxy_host = proxy_copy_string (arena, proxy->host);
-  conn->target_host = Arena_alloc (arena, target_len + 1, __FILE__, __LINE__);
-  memcpy (conn->target_host, target_host, target_len + 1);
-  conn->username = proxy_copy_string (arena, proxy->username);
-  conn->password = proxy_copy_string (arena, proxy->password);
+  conn->proxy_host = socket_util_arena_strdup (arena, proxy->host);
+  conn->target_host = socket_util_arena_strdup (arena, target_host);
+  conn->username = socket_util_arena_strdup (arena, proxy->username);
+  conn->password = socket_util_arena_strdup (arena, proxy->password);
   conn->extra_headers = proxy->extra_headers;
 
   conn->state = PROXY_STATE_IDLE;
@@ -654,13 +641,13 @@ proxy_build_initial_request (struct SocketProxy_Conn_T *conn)
 }
 
 /**
- * proxy_connect_to_server - Connect to proxy server via HappyEyeballs
+ * proxy_connect_to_server_sync - Connect to proxy server via HappyEyeballs (blocking)
  * @conn: Connection context
  *
  * Returns: 0 on success, -1 on failure (sets error)
  */
 static int
-proxy_connect_to_server (struct SocketProxy_Conn_T *conn)
+proxy_connect_to_server_sync (struct SocketProxy_Conn_T *conn)
 {
   SocketHE_Config_T he_config;
 
@@ -687,25 +674,62 @@ proxy_connect_to_server (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
+/**
+ * proxy_start_async_connect - Start async connection to proxy server
+ * @conn: Connection context
+ *
+ * Returns: 0 on success, -1 on failure (sets error)
+ */
+static int
+proxy_start_async_connect (struct SocketProxy_Conn_T *conn)
+{
+  SocketHE_Config_T he_config;
+
+  SocketHappyEyeballs_config_defaults (&he_config);
+  he_config.total_timeout_ms = conn->connect_timeout_ms;
+
+  TRY
+    conn->he = SocketHappyEyeballs_start (conn->dns, conn->poll, conn->proxy_host,
+                                          conn->proxy_port, &he_config);
+  EXCEPT (SocketHE_Failed)
+    socketproxy_set_error (conn, PROXY_ERROR_CONNECT,
+                           "Failed to start async connection to proxy");
+    return -1;
+  END_TRY;
+
+  if (conn->he == NULL)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_CONNECT,
+                             "Failed to start connection to proxy %s:%d",
+                             conn->proxy_host, conn->proxy_port);
+      return -1;
+    }
+
+  conn->state = PROXY_STATE_CONNECTING_PROXY;
+  return 0;
+}
+
 /* ============================================================================
  * Async Connection - Lifecycle
  * ============================================================================ */
 
 SocketProxy_Conn_T
-SocketProxy_Conn_new (const SocketProxy_Config *proxy, const char *target_host,
-                      int target_port)
+SocketProxy_Conn_start (SocketDNS_T dns, SocketPoll_T poll,
+                        const SocketProxy_Config *proxy, const char *target_host,
+                        int target_port)
 {
   SocketProxy_Conn_T conn;
   Arena_T arena;
-  size_t target_len;
 
+  assert (dns != NULL);
+  assert (poll != NULL);
   assert (proxy != NULL);
   assert (target_host != NULL);
   assert (target_port > 0 && target_port <= 65535);
 
   /* Validate inputs */
   proxy_validate_config (proxy);
-  proxy_validate_target (target_host, &target_len);
+  proxy_validate_target (target_host);
 
   /* Create arena */
   arena = Arena_new ();
@@ -717,10 +741,49 @@ SocketProxy_Conn_new (const SocketProxy_Config *proxy, const char *target_host,
 
   /* Allocate and initialize context */
   conn = Arena_alloc (arena, sizeof (*conn), __FILE__, __LINE__);
-  proxy_init_context (conn, arena, proxy, target_host, target_port, target_len);
+  proxy_init_context (conn, arena, proxy, target_host, target_port);
 
-  /* Connect to proxy server */
-  if (proxy_connect_to_server (conn) < 0)
+  /* Store external DNS/poll references */
+  conn->dns = dns;
+  conn->poll = poll;
+  conn->owns_dns_poll = 0; /* External resources - don't free */
+
+  /* Start async connection to proxy server */
+  if (proxy_start_async_connect (conn) < 0)
+    return conn; /* Return in FAILED state */
+
+  return conn;
+}
+
+SocketProxy_Conn_T
+SocketProxy_Conn_new (const SocketProxy_Config *proxy, const char *target_host,
+                      int target_port)
+{
+  SocketProxy_Conn_T conn;
+  Arena_T arena;
+
+  assert (proxy != NULL);
+  assert (target_host != NULL);
+  assert (target_port > 0 && target_port <= 65535);
+
+  /* Validate inputs */
+  proxy_validate_config (proxy);
+  proxy_validate_target (target_host);
+
+  /* Create arena */
+  arena = Arena_new ();
+  if (arena == NULL)
+    {
+      PROXY_ERROR_MSG ("Failed to create arena");
+      RAISE_PROXY_ERROR (SocketProxy_Failed);
+    }
+
+  /* Allocate and initialize context */
+  conn = Arena_alloc (arena, sizeof (*conn), __FILE__, __LINE__);
+  proxy_init_context (conn, arena, proxy, target_host, target_port);
+
+  /* Connect to proxy server (blocking) */
+  if (proxy_connect_to_server_sync (conn) < 0)
     return conn;
 
   /* Set non-blocking for async I/O */
@@ -758,6 +821,12 @@ SocketProxy_Conn_free (SocketProxy_Conn_T *conn)
       SocketCrypto_secure_clear (c->password, strlen (c->password));
     }
 
+  /* Free HappyEyeballs context if active */
+  if (c->he != NULL)
+    {
+      SocketHappyEyeballs_free (&c->he);
+    }
+
   /* Close socket if not transferred */
   if (c->socket != NULL && !c->transferred)
     {
@@ -768,6 +837,15 @@ SocketProxy_Conn_free (SocketProxy_Conn_T *conn)
   if (c->http_parser != NULL)
     {
       SocketHTTP1_Parser_free (&c->http_parser);
+    }
+
+  /* Free owned DNS/poll resources (sync wrapper case) */
+  if (c->owns_dns_poll)
+    {
+      if (c->dns != NULL)
+        SocketDNS_free (&c->dns);
+      if (c->poll != NULL)
+        SocketPoll_free (&c->poll);
     }
 
   /* Free arena (releases all memory including connection structure itself) */
@@ -844,6 +922,12 @@ SocketProxy_Conn_fd (SocketProxy_Conn_T conn)
 {
   assert (conn != NULL);
 
+  /* During CONNECTING_PROXY, HappyEyeballs manages its own fds via
+   * the poll instance passed to SocketProxy_Conn_start(). Return -1
+   * to indicate no direct fd to poll. */
+  if (conn->state == PROXY_STATE_CONNECTING_PROXY)
+    return -1;
+
   if (conn->socket == NULL)
     return -1;
 
@@ -857,6 +941,12 @@ SocketProxy_Conn_events (SocketProxy_Conn_T conn)
 
   switch (conn->state)
     {
+    case PROXY_STATE_CONNECTING_PROXY:
+      /* HappyEyeballs manages its own poll events via the poll
+       * instance passed to SocketProxy_Conn_start(). Caller should
+       * use SocketPoll_wait() on their poll instance. */
+      return 0;
+
     case PROXY_STATE_HANDSHAKE_SEND:
     case PROXY_STATE_AUTH_SEND:
       return POLL_WRITE;
@@ -881,6 +971,14 @@ SocketProxy_Conn_next_timeout_ms (SocketProxy_Conn_T conn)
   if (SocketProxy_Conn_poll (conn))
     return -1;
 
+  /* During CONNECTING_PROXY, use HappyEyeballs timeout */
+  if (conn->state == PROXY_STATE_CONNECTING_PROXY && conn->he != NULL)
+    return SocketHappyEyeballs_next_timeout_ms (conn->he);
+
+  /* During handshake phases, use handshake timeout */
+  if (conn->handshake_start_time_ms == 0)
+    return SOCKET_PROXY_DEFAULT_POLL_TIMEOUT_MS;
+
   elapsed = socketproxy_elapsed_ms (conn->handshake_start_time_ms);
   remaining = conn->handshake_timeout_ms - (int)elapsed;
 
@@ -897,6 +995,13 @@ SocketProxy_Conn_cancel (SocketProxy_Conn_T conn)
 
   conn->state = PROXY_STATE_CANCELLED;
   conn->result = PROXY_ERROR_CANCELLED;
+
+  /* Cancel HappyEyeballs if still connecting */
+  if (conn->he != NULL)
+    {
+      SocketHappyEyeballs_cancel (conn->he);
+      SocketHappyEyeballs_free (&conn->he);
+    }
 
   if (conn->socket != NULL && !conn->transferred)
     {
@@ -927,6 +1032,71 @@ proxy_check_timeout (struct SocketProxy_Conn_T *conn)
       return -1;
     }
   return 0;
+}
+
+/**
+ * proxy_process_connecting - Process CONNECTING_PROXY state
+ * @conn: Connection context
+ *
+ * Returns: 0 if still connecting, 1 if connected and transitioned, -1 on error
+ */
+static int
+proxy_process_connecting (struct SocketProxy_Conn_T *conn)
+{
+  SocketHE_State he_state;
+
+  if (conn->he == NULL)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_CONNECT,
+                             "No HappyEyeballs context");
+      return -1;
+    }
+
+  /* Process HappyEyeballs state machine */
+  SocketHappyEyeballs_process (conn->he);
+
+  /* Check if HappyEyeballs is complete */
+  if (!SocketHappyEyeballs_poll (conn->he))
+    return 0; /* Still connecting */
+
+  he_state = SocketHappyEyeballs_state (conn->he);
+
+  if (he_state == HE_STATE_CONNECTED)
+    {
+      /* Get the connected socket */
+      conn->socket = SocketHappyEyeballs_result (conn->he);
+      SocketHappyEyeballs_free (&conn->he);
+
+      if (conn->socket == NULL)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_CONNECT,
+                                 "Failed to get socket from HappyEyeballs");
+          return -1;
+        }
+
+      /* Set non-blocking for async handshake */
+      Socket_setnonblocking (conn->socket);
+
+      /* Transition to handshake phase */
+      conn->state = PROXY_STATE_HANDSHAKE_SEND;
+      conn->handshake_start_time_ms = socketproxy_get_time_ms ();
+
+      /* Build initial protocol request */
+      if (proxy_build_initial_request (conn) < 0)
+        return -1;
+
+      return 1; /* Connected and transitioned */
+    }
+  else
+    {
+      /* Connection failed */
+      const char *error = SocketHappyEyeballs_error (conn->he);
+      socketproxy_set_error (conn, PROXY_ERROR_CONNECT,
+                             "Failed to connect to proxy: %s",
+                             error ? error : "unknown error");
+      SocketHappyEyeballs_free (&conn->he);
+      return -1;
+    }
 }
 
 /**
@@ -1129,18 +1299,23 @@ SocketProxy_Conn_process (SocketProxy_Conn_T conn)
   if (SocketProxy_Conn_poll (conn))
     return;
 
-  if (proxy_check_timeout (conn) < 0)
-    return;
-
   switch (conn->state)
     {
+    case PROXY_STATE_CONNECTING_PROXY:
+      proxy_process_connecting (conn);
+      break;
+
     case PROXY_STATE_HANDSHAKE_SEND:
     case PROXY_STATE_AUTH_SEND:
+      if (proxy_check_timeout (conn) < 0)
+        return;
       proxy_process_send (conn);
       break;
 
     case PROXY_STATE_HANDSHAKE_RECV:
     case PROXY_STATE_AUTH_RECV:
+      if (proxy_check_timeout (conn) < 0)
+        return;
       proxy_process_recv (conn);
       break;
 
@@ -1157,12 +1332,110 @@ SocketProxy_Result
 SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
                     const char *target_host, int target_port)
 {
-  /* Not implemented yet - use SocketProxy_connect instead */
-  (void)socket;
-  (void)proxy;
-  (void)target_host;
-  (void)target_port;
-  return PROXY_ERROR_UNSUPPORTED;
+  struct SocketProxy_Conn_T conn_struct;
+  struct SocketProxy_Conn_T *conn = &conn_struct;
+  size_t target_len;
+  int fd;
+  int was_nonblocking;
+  int flags;
+  struct pollfd pfd;
+  int timeout;
+  SocketProxy_Result result;
+
+  assert (socket != NULL);
+  assert (proxy != NULL);
+  assert (target_host != NULL);
+  assert (target_port > 0 && target_port <= 65535);
+
+  if (proxy->type == SOCKET_PROXY_NONE)
+    return PROXY_ERROR_UNSUPPORTED;
+
+  target_len = strlen (target_host);
+  if (target_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
+    return PROXY_ERROR_PROTOCOL;
+
+  /* Initialize context on stack (no arena allocation) */
+  memset (conn, 0, sizeof (*conn));
+  conn->type = proxy->type;
+  conn->proxy_host = (char *)proxy->host;
+  conn->proxy_port = proxy->port;
+  conn->target_host = (char *)target_host;
+  conn->target_port = target_port;
+  conn->username = (char *)proxy->username;
+  conn->password = (char *)proxy->password;
+  conn->extra_headers = proxy->extra_headers;
+  conn->connect_timeout_ms = proxy->connect_timeout_ms > 0
+                                 ? proxy->connect_timeout_ms
+                                 : SOCKET_PROXY_DEFAULT_CONNECT_TIMEOUT_MS;
+  conn->handshake_timeout_ms = proxy->handshake_timeout_ms > 0
+                                   ? proxy->handshake_timeout_ms
+                                   : SOCKET_PROXY_DEFAULT_HANDSHAKE_TIMEOUT_MS;
+  conn->socket = socket;
+  conn->state = PROXY_STATE_HANDSHAKE_SEND;
+  conn->proto_state = PROTO_STATE_INIT;
+  conn->result = PROXY_IN_PROGRESS;
+  conn->start_time_ms = socketproxy_get_time_ms ();
+  conn->handshake_start_time_ms = conn->start_time_ms;
+
+  /* Check and set non-blocking mode */
+  fd = Socket_fd (socket);
+  flags = fcntl (fd, F_GETFL);
+  was_nonblocking = (flags >= 0 && (flags & O_NONBLOCK));
+
+  if (!was_nonblocking)
+    {
+      Socket_setnonblocking (socket);
+    }
+
+  /* Build initial protocol request */
+  if (proxy_build_initial_request (conn) < 0)
+    {
+      if (!was_nonblocking)
+        proxy_clear_nonblocking (fd);
+      return conn->result;
+    }
+
+  /* Poll loop for handshake */
+  while (!SocketProxy_Conn_poll (conn))
+    {
+      pfd.fd = fd;
+      pfd.events = 0;
+      if (SocketProxy_Conn_events (conn) & POLL_READ)
+        pfd.events |= POLLIN;
+      if (SocketProxy_Conn_events (conn) & POLL_WRITE)
+        pfd.events |= POLLOUT;
+      pfd.revents = 0;
+
+      timeout = SocketProxy_Conn_next_timeout_ms (conn);
+      if (timeout < 0)
+        timeout = SOCKET_PROXY_DEFAULT_POLL_TIMEOUT_MS;
+
+      if (poll (&pfd, 1, timeout) < 0)
+        {
+          if (errno == EINTR)
+            continue;
+          socketproxy_set_error (conn, PROXY_ERROR, "poll failed");
+          break;
+        }
+
+      SocketProxy_Conn_process (conn);
+    }
+
+  result = conn->result;
+
+  /* Restore blocking mode if it was originally blocking */
+  if (!was_nonblocking)
+    proxy_clear_nonblocking (fd);
+
+  /* Clear password from stack buffer */
+  if (conn->password != NULL)
+    {
+      /* Note: We don't clear here because conn->password points to
+       * the caller's proxy->password string which we shouldn't modify.
+       * The caller is responsible for clearing their credentials. */
+    }
+
+  return result;
 }
 
 Socket_T

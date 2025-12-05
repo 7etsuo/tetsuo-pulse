@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
 
@@ -111,6 +112,240 @@ void SocketLog_emitf (SocketLogLevel level, const char *component,
  */
 void SocketLog_emitfv (SocketLogLevel level, const char *component,
                        const char *fmt, va_list args);
+
+/**
+ * SocketLog_setlevel - Set minimum log level for filtering
+ * @min_level: Minimum level to emit (messages below this are suppressed)
+ *
+ * Thread-safe: Yes (mutex protected)
+ *
+ * Sets the global minimum log level. Log messages with severity below
+ * min_level will be silently discarded. Default is SOCKET_LOG_INFO.
+ *
+ * Example:
+ *   SocketLog_setlevel(SOCKET_LOG_DEBUG);  // Enable debug logging
+ *   SocketLog_setlevel(SOCKET_LOG_WARN);   // Only warnings and above
+ */
+extern void SocketLog_setlevel (SocketLogLevel min_level);
+
+/**
+ * SocketLog_getlevel - Get current minimum log level
+ *
+ * Returns: Current minimum log level
+ * Thread-safe: Yes (mutex protected)
+ */
+extern SocketLogLevel SocketLog_getlevel (void);
+
+/* Default log component - modules should override before including this header */
+#ifndef SOCKET_LOG_COMPONENT
+#define SOCKET_LOG_COMPONENT "Socket"
+#endif
+
+/* ----------------------------------------------------------------------------
+ * Convenience Logging Macros
+ * ---------------------------------------------------------------------------- 
+ *
+ * These macros provide ergonomic logging that automatically uses the
+ * SOCKET_LOG_COMPONENT macro defined by each module. Each module should
+ * define SOCKET_LOG_COMPONENT before including this header:
+ *
+ *   #undef SOCKET_LOG_COMPONENT
+ *   #define SOCKET_LOG_COMPONENT "MyModule"
+ *
+ * Usage:
+ *   SOCKET_LOG_DEBUG_MSG("Connection established fd=%d", fd);
+ *   SOCKET_LOG_ERROR_MSG("Failed to bind: %s", strerror(errno));
+ */
+
+/* Log at TRACE level (most verbose, detailed tracing) */
+#define SOCKET_LOG_TRACE_MSG(fmt, ...)                                         \
+  SocketLog_emitf (SOCKET_LOG_TRACE, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
+
+/* Log at DEBUG level (debugging information) */
+#define SOCKET_LOG_DEBUG_MSG(fmt, ...)                                         \
+  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
+
+/* Log at INFO level (normal operational messages) */
+#define SOCKET_LOG_INFO_MSG(fmt, ...)                                          \
+  SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
+
+/* Log at WARN level (warning conditions) */
+#define SOCKET_LOG_WARN_MSG(fmt, ...)                                          \
+  SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
+
+/* Log at ERROR level (error conditions) */
+#define SOCKET_LOG_ERROR_MSG(fmt, ...)                                         \
+  SocketLog_emitf (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
+
+/* Log at FATAL level (critical errors, typically before abort) */
+#define SOCKET_LOG_FATAL_MSG(fmt, ...)                                         \
+  SocketLog_emitf (SOCKET_LOG_FATAL, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
+
+/* ----------------------------------------------------------------------------
+ * Thread-Local Logging Context
+ * ---------------------------------------------------------------------------- 
+ *
+ * Provides correlation IDs for distributed tracing and request tracking.
+ * Each thread can set its own context that will be available to custom
+ * logging callbacks for inclusion in log output.
+ *
+ * Usage:
+ *   SocketLogContext ctx = {0};
+ *   strncpy(ctx.trace_id, "abc-123-def", sizeof(ctx.trace_id) - 1);
+ *   ctx.connection_fd = client_fd;
+ *   SocketLog_setcontext(&ctx);
+ *
+ *   // ... handle request - all logs will have context available ...
+ *
+ *   SocketLog_clearcontext();
+ */
+
+/* UUID size: 36 chars (8-4-4-4-12) + NUL */
+#define SOCKET_LOG_ID_SIZE 37
+
+/**
+ * SocketLogContext - Thread-local logging context for correlation
+ *
+ * Custom logging callbacks can access this via SocketLog_getcontext()
+ * to include correlation IDs in structured log output.
+ */
+typedef struct SocketLogContext
+{
+  char trace_id[SOCKET_LOG_ID_SIZE];   /**< Distributed trace ID (e.g., UUID) */
+  char request_id[SOCKET_LOG_ID_SIZE]; /**< Request-specific ID */
+  int connection_fd;                   /**< Associated file descriptor (-1 if none) */
+} SocketLogContext;
+
+/**
+ * SocketLog_setcontext - Set thread-local logging context
+ * @ctx: Context to copy (NULL clears context)
+ *
+ * Thread-safe: Yes (uses thread-local storage)
+ *
+ * Sets the logging context for the current thread. The context is
+ * copied, so the caller may free or modify ctx after this call.
+ */
+extern void SocketLog_setcontext (const SocketLogContext *ctx);
+
+/**
+ * SocketLog_getcontext - Get thread-local logging context
+ *
+ * Returns: Pointer to thread-local context, or NULL if not set
+ * Thread-safe: Yes (uses thread-local storage)
+ *
+ * Returns pointer to internal thread-local storage. Do not modify
+ * the returned pointer; use SocketLog_setcontext to update.
+ */
+extern const SocketLogContext *SocketLog_getcontext (void);
+
+/**
+ * SocketLog_clearcontext - Clear thread-local logging context
+ *
+ * Thread-safe: Yes (uses thread-local storage)
+ *
+ * Equivalent to SocketLog_setcontext(NULL).
+ */
+extern void SocketLog_clearcontext (void);
+
+/* ----------------------------------------------------------------------------
+ * Structured Logging
+ * ---------------------------------------------------------------------------- 
+ *
+ * Provides key-value pair logging for machine-parseable output.
+ * Custom callbacks can format these fields as JSON, logfmt, etc.
+ *
+ * Usage:
+ *   SocketLogField fields[] = {
+ *       {"fd", "42"},
+ *       {"bytes", "1024"},
+ *       {"peer", "192.168.1.1"}
+ *   };
+ *   SocketLog_emit_structured(SOCKET_LOG_INFO, "Socket",
+ *                             "Connection established",
+ *                             fields, 3);
+ *
+ * Or with the convenience macro:
+ *   SocketLog_emit_structured(SOCKET_LOG_INFO, "Socket",
+ *                             "Connection established",
+ *                             SOCKET_LOG_FIELDS(
+ *                                 {"fd", "42"},
+ *                                 {"bytes", "1024"}
+ *                             ));
+ */
+
+/**
+ * SocketLogField - Key-value pair for structured logging
+ *
+ * Both key and value must be valid for the duration of the log call.
+ * Values should be pre-formatted as strings.
+ */
+typedef struct SocketLogField
+{
+  const char *key;   /**< Field name (e.g., "fd", "bytes", "peer") */
+  const char *value; /**< Field value as string */
+} SocketLogField;
+
+/**
+ * SocketLogStructuredCallback - Extended callback with structured fields
+ * @userdata: User-provided context
+ * @level: Log severity level
+ * @component: Module/component name
+ * @message: Log message
+ * @fields: Array of key-value pairs (may be NULL)
+ * @field_count: Number of fields in array
+ * @context: Thread-local context (may be NULL)
+ *
+ * Callbacks should check for NULL fields/context before accessing.
+ */
+typedef void (*SocketLogStructuredCallback) (
+    void *userdata, SocketLogLevel level, const char *component,
+    const char *message, const SocketLogField *fields, size_t field_count,
+    const SocketLogContext *context);
+
+/**
+ * SocketLog_setstructuredcallback - Set structured logging callback
+ * @callback: Callback function or NULL to disable structured logging
+ * @userdata: User data passed to callback
+ *
+ * Thread-safe: Yes (mutex protected)
+ *
+ * When set, SocketLog_emit_structured() will invoke this callback
+ * instead of the regular callback, providing access to structured fields.
+ */
+extern void SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
+                                             void *userdata);
+
+/**
+ * SocketLog_emit_structured - Emit log message with structured fields
+ * @level: Log level
+ * @component: Component name
+ * @message: Log message
+ * @fields: Array of key-value pairs (may be NULL)
+ * @field_count: Number of fields
+ *
+ * Thread-safe: Yes
+ *
+ * Emits a log message with structured key-value pairs. If a structured
+ * callback is set, it receives the fields directly. Otherwise, fields
+ * are formatted as "key=value" pairs appended to the message.
+ */
+extern void SocketLog_emit_structured (SocketLogLevel level,
+                                       const char *component,
+                                       const char *message,
+                                       const SocketLogField *fields,
+                                       size_t field_count);
+
+/**
+ * SOCKET_LOG_FIELDS - Convenience macro for creating field arrays
+ *
+ * Usage:
+ *   SocketLog_emit_structured(level, component, message,
+ *                             SOCKET_LOG_FIELDS({"key1", "val1"},
+ *                                               {"key2", "val2"}));
+ */
+#define SOCKET_LOG_FIELDS(...)                                                 \
+  (SocketLogField[]){ __VA_ARGS__ },                                           \
+      (sizeof ((SocketLogField[]){ __VA_ARGS__ }) / sizeof (SocketLogField))
 
 /* ============================================================================
  * METRICS SUBSYSTEM
@@ -325,11 +560,6 @@ extern __declspec (thread) int socket_last_errno;
 #else
 extern __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE];
 extern __thread int socket_last_errno;
-#endif
-
-/* Default log component (overridable before including this header) */
-#ifndef SOCKET_LOG_COMPONENT
-#define SOCKET_LOG_COMPONENT "Socket"
 #endif
 
 /**
@@ -721,6 +951,72 @@ socket_util_round_up_pow2 (size_t n)
   n |= n >> 32;
 #endif
   return n + 1;
+}
+
+/* ============================================================================
+ * String Utilities
+ * ============================================================================ */
+
+/**
+ * socket_util_arena_strdup - Duplicate string into arena
+ * @arena: Arena for allocation
+ * @str: String to duplicate (may be NULL)
+ *
+ * Returns: Duplicated string in arena, or NULL if str is NULL or alloc fails
+ * Thread-safe: Yes (if arena is thread-safe)
+ *
+ * Convenience function to duplicate a string into an arena.
+ * Avoids repeated strlen+alloc+memcpy pattern in calling code.
+ */
+static inline char *
+socket_util_arena_strdup (Arena_T arena, const char *str)
+{
+  size_t len;
+  char *copy;
+
+  if (str == NULL)
+    return NULL;
+
+  len = strlen (str);
+  copy = Arena_alloc (arena, len + 1, __FILE__, __LINE__);
+  if (copy != NULL)
+    memcpy (copy, str, len + 1);
+
+  return copy;
+}
+
+/**
+ * socket_util_arena_strndup - Duplicate string with max length into arena
+ * @arena: Arena for allocation
+ * @str: String to duplicate (may be NULL)
+ * @maxlen: Maximum characters to copy (excluding null terminator)
+ *
+ * Returns: Duplicated string in arena, or NULL if str is NULL or alloc fails
+ * Thread-safe: Yes (if arena is thread-safe)
+ *
+ * Duplicates at most maxlen characters from str. Always null-terminates.
+ */
+static inline char *
+socket_util_arena_strndup (Arena_T arena, const char *str, size_t maxlen)
+{
+  size_t len;
+  char *copy;
+
+  if (str == NULL)
+    return NULL;
+
+  len = strlen (str);
+  if (len > maxlen)
+    len = maxlen;
+
+  copy = Arena_alloc (arena, len + 1, __FILE__, __LINE__);
+  if (copy != NULL)
+    {
+      memcpy (copy, str, len);
+      copy[len] = '\0';
+    }
+
+  return copy;
 }
 
 #endif /* SOCKETUTIL_INCLUDED */

@@ -40,6 +40,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "http/SocketHTTP.h"
+#include "http/SocketHTTPClient-config.h"
 
 /* Forward declarations for optional TLS */
 #ifdef SOCKET_HAS_TLS
@@ -50,66 +51,22 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 
 /* ============================================================================
  * Configuration Constants
+ * ============================================================================
+ * All configuration constants are defined in SocketHTTPClient-config.h.
+ * This includes:
+ *   - HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST (6)
+ *   - HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS (100)
+ *   - HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS (30000)
+ *   - HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS (60000)
+ *   - HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS (10000)
+ *   - HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS (60000)
+ *   - HTTPCLIENT_DEFAULT_MAX_REDIRECTS (10)
+ *   - HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE (0)
+ *   - HTTPCLIENT_DEFAULT_USER_AGENT
+ *   - HTTPCLIENT_POOL_HASH_SIZE (127)
+ *   - HTTPCLIENT_ENCODING_* flags
+ * All constants support compile-time override via #ifndef guards.
  * ============================================================================ */
-
-/** Default maximum connections per host */
-#ifndef HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST
-#define HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST 6
-#endif
-
-/** Default maximum total connections */
-#ifndef HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS
-#define HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS 100
-#endif
-
-/** Default connect timeout (ms) */
-#ifndef HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS
-#define HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS 30000
-#endif
-
-/** Default request timeout (ms) */
-#ifndef HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS
-#define HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS 60000
-#endif
-
-/** Default DNS timeout (ms) */
-#ifndef HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS
-#define HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS 10000
-#endif
-
-/** Default idle connection timeout (ms) */
-#ifndef HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS
-#define HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS 60000
-#endif
-
-/** Default maximum redirects */
-#ifndef HTTPCLIENT_DEFAULT_MAX_REDIRECTS
-#define HTTPCLIENT_DEFAULT_MAX_REDIRECTS 10
-#endif
-
-/** Default maximum response body size (0 = unlimited) */
-#ifndef HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE
-#define HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE 0
-#endif
-
-/** Default User-Agent string */
-#ifndef HTTPCLIENT_DEFAULT_USER_AGENT
-#define HTTPCLIENT_DEFAULT_USER_AGENT "SocketHTTPClient/1.0"
-#endif
-
-/** Connection pool hash table size */
-#ifndef HTTPCLIENT_POOL_HASH_SIZE
-#define HTTPCLIENT_POOL_HASH_SIZE 127
-#endif
-
-/* ============================================================================
- * Content Encoding Flags
- * ============================================================================ */
-
-#define HTTPCLIENT_ENCODING_IDENTITY 0x00
-#define HTTPCLIENT_ENCODING_GZIP 0x01
-#define HTTPCLIENT_ENCODING_DEFLATE 0x02
-#define HTTPCLIENT_ENCODING_BR 0x04
 
 /* ============================================================================
  * Exception Types
@@ -162,6 +119,32 @@ typedef enum
 
 /* ============================================================================
  * Authentication Types
+ * ============================================================================
+ *
+ * Supported authentication schemes:
+ *
+ * HTTP_AUTH_BASIC (RFC 7617):
+ *   - Simple base64(username:password) encoding
+ *   - Credentials sent with every request (no challenge-response)
+ *   - Only use over HTTPS (credentials transmitted in cleartext)
+ *
+ * HTTP_AUTH_DIGEST (RFC 7616):
+ *   - Challenge-response authentication with MD5 or SHA-256
+ *   - Supports qop=auth (integrity protection of request)
+ *   - Automatic 401 retry with proper response generation
+ *   - Handles stale nonce refresh automatically
+ *   - NOTE: qop=auth-int (body integrity) is NOT supported
+ *
+ * HTTP_AUTH_BEARER (RFC 6750):
+ *   - OAuth 2.0 bearer token authentication
+ *   - Token sent in Authorization header
+ *   - Application responsible for token management/refresh
+ *
+ * NOT SUPPORTED:
+ *   - NTLM (Microsoft proprietary, requires DES/MD4/NTLMv2)
+ *   - Negotiate/SPNEGO (requires GSSAPI/Kerberos integration)
+ *   - AWS Signature (v2/v4) - use dedicated AWS SDK
+ *   - Hawk, HOBA, Mutual, OAuth 1.0a
  * ============================================================================ */
 
 /**
@@ -169,12 +152,10 @@ typedef enum
  */
 typedef enum
 {
-  HTTP_AUTH_NONE = 0,
-  HTTP_AUTH_BASIC,    /**< RFC 7617 */
-  HTTP_AUTH_DIGEST,   /**< RFC 7616 */
-  HTTP_AUTH_BEARER,   /**< RFC 6750 */
-  HTTP_AUTH_NTLM,     /**< Microsoft NTLM (not implemented) */
-  HTTP_AUTH_NEGOTIATE /**< SPNEGO/Kerberos (not implemented) */
+  HTTP_AUTH_NONE = 0, /**< No authentication */
+  HTTP_AUTH_BASIC,    /**< RFC 7617 - Basic Authentication */
+  HTTP_AUTH_DIGEST,   /**< RFC 7616 - Digest Access Authentication */
+  HTTP_AUTH_BEARER    /**< RFC 6750 - Bearer Token (OAuth 2.0) */
 } SocketHTTPClient_AuthType;
 
 /**
@@ -213,6 +194,8 @@ typedef struct
   size_t max_connections_per_host; /**< Per-host limit (default: 6) */
   size_t max_total_connections;  /**< Total limit (default: 100) */
   int idle_timeout_ms;           /**< Idle connection timeout */
+  int max_connection_age_ms;     /**< Max connection age (0 = unlimited) */
+  int acquire_timeout_ms;        /**< Timeout waiting for pool slot */
 
   /* Timeouts */
   int connect_timeout_ms; /**< Connection timeout */
@@ -643,10 +626,15 @@ extern void SocketHTTPClient_set_auth (SocketHTTPClient_T client,
  */
 typedef struct
 {
-  size_t active_connections;
-  size_t idle_connections;
-  size_t total_requests;
-  size_t reused_connections;
+  size_t active_connections;      /**< Connections currently in use */
+  size_t idle_connections;        /**< Connections available for reuse */
+  size_t total_requests;          /**< Total requests made */
+  size_t reused_connections;      /**< Times a pooled connection was reused */
+  size_t connections_created;     /**< Total connections created */
+  size_t connections_failed;      /**< Connection attempts that failed */
+  size_t connections_timed_out;   /**< Connections that timed out waiting */
+  size_t stale_connections_removed; /**< Stale/dead connections cleaned up */
+  size_t pool_exhausted_waits;    /**< Times we waited for pool slot */
 } SocketHTTPClient_PoolStats;
 
 /**

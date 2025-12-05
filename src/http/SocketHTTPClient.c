@@ -19,6 +19,7 @@
 #include "socket/Socket.h"
 #include "socket/SocketHappyEyeballs.h"
 #include "core/Arena.h"
+#include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
 
 #include <assert.h>
@@ -27,14 +28,14 @@
 #include <string.h>
 
 /* ============================================================================
- * Thread-Local Error Buffer
- * ============================================================================ */
-
-#ifdef _WIN32
-__declspec(thread) char httpclient_error_buf[HTTPCLIENT_ERROR_BUFSIZE] = { 0 };
-#else
-__thread char httpclient_error_buf[HTTPCLIENT_ERROR_BUFSIZE] = { 0 };
-#endif
+ * Centralized Exception Infrastructure
+ * ============================================================================
+ *
+ * REFACTOR: Uses centralized exception handling from SocketUtil.h.
+ * The thread-local exception is declared here; error messages use the
+ * shared socket_error_buf from SocketUtil.h.
+ */
+SOCKET_DECLARE_MODULE_EXCEPTION (HTTPClient);
 
 /* ============================================================================
  * Exception Definitions
@@ -73,6 +74,16 @@ static const char *error_strings[] = {
   [HTTPCLIENT_ERROR_CANCELLED] = "Request cancelled",
   [HTTPCLIENT_ERROR_OUT_OF_MEMORY] = "Out of memory"
 };
+
+/* Forward declaration for secure clearing of auth credentials */
+static void secure_clear_auth (SocketHTTPClient_Auth *auth);
+
+/* Forward declaration for recursive request execution.
+ * Used by handle_401_auth_retry() and handle_redirect() for retry logic. */
+static int execute_request_internal (SocketHTTPClient_T client,
+                                     SocketHTTPClient_Request_T req,
+                                     SocketHTTPClient_Response *response,
+                                     int redirect_count, int auth_retry_count);
 
 /* ============================================================================
  * Configuration Defaults
@@ -164,16 +175,11 @@ SocketHTTPClient_new (const SocketHTTPClient_Config *config)
   /* Copy configuration */
   client->config = *config;
 
-  /* Duplicate user agent string into arena */
+  /* Duplicate user agent string into arena using centralized utility */
   if (config->user_agent != NULL)
     {
-      size_t len = strlen (config->user_agent);
-      char *ua = Arena_alloc (arena, len + 1, __FILE__, __LINE__);
-      if (ua != NULL)
-        {
-          memcpy (ua, config->user_agent, len + 1);
-          client->config.user_agent = ua;
-        }
+      client->config.user_agent
+          = socket_util_arena_strdup (arena, config->user_agent);
     }
 
   /* Create connection pool */
@@ -213,10 +219,10 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
       c->pool = NULL;
     }
 
-  /* Free default auth if allocated separately */
+  /* Securely clear credentials before arena disposal */
   if (c->default_auth != NULL)
     {
-      /* Auth strings are in arena, just clear */
+      secure_clear_auth (c->default_auth);
       c->default_auth = NULL;
     }
 
@@ -235,41 +241,54 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
 }
 
 /* ============================================================================
- * Internal: Execute HTTP Request
+ * Internal: HTTP/1.1 Request Helpers
  * ============================================================================ */
 
 /**
- * Execute HTTP request using HTTP/1.1
+ * build_http1_request - Build HTTP/1.1 request structure for serialization
+ * @req: Client request
+ * @http_req: Output HTTP request structure
+ *
+ * Initializes the HTTP request structure from client request data.
+ */
+static void
+build_http1_request (SocketHTTPClient_Request_T req,
+                     SocketHTTP_Request *http_req)
+{
+  assert (req != NULL);
+  assert (http_req != NULL);
+
+  memset (http_req, 0, sizeof (*http_req));
+
+  http_req->method = req->method;
+  http_req->version = HTTP_VERSION_1_1;
+  http_req->authority = req->uri.host;
+  http_req->path = req->uri.path ? req->uri.path : "/";
+  http_req->scheme = req->uri.scheme;
+  http_req->headers = req->headers;
+  http_req->has_body = (req->body != NULL && req->body_len > 0);
+  http_req->content_length = (int64_t)req->body_len;
+}
+
+/**
+ * send_http1_headers - Serialize and send HTTP/1.1 request headers
+ * @conn: Pool connection entry
+ * @http_req: HTTP request to serialize
+ *
+ * Returns: 0 on success, -1 on error
  */
 static int
-execute_http1_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
-                       SocketHTTPClient_Response *response)
+send_http1_headers (HTTPPoolEntry *conn, const SocketHTTP_Request *http_req)
 {
-  char buf[8192];
+  char buf[HTTPCLIENT_REQUEST_BUFFER_SIZE];
   ssize_t n;
-  size_t consumed;
-  SocketHTTP1_Result result;
-  Arena_T resp_arena;
+  volatile ssize_t sent = -1;
 
   assert (conn != NULL);
-  assert (req != NULL);
-  assert (response != NULL);
-
-  /* Build request structure for serialization */
-  SocketHTTP_Request http_req;
-  memset (&http_req, 0, sizeof (http_req));
-
-  http_req.method = req->method;
-  http_req.version = HTTP_VERSION_1_1;
-  http_req.authority = req->uri.host;
-  http_req.path = req->uri.path ? req->uri.path : "/";
-  http_req.scheme = req->uri.scheme;
-  http_req.headers = req->headers;
-  http_req.has_body = (req->body != NULL && req->body_len > 0);
-  http_req.content_length = (int64_t)req->body_len;
+  assert (http_req != NULL);
 
   /* Serialize request */
-  n = SocketHTTP1_serialize_request (&http_req, buf, sizeof (buf));
+  n = SocketHTTP1_serialize_request (http_req, buf, sizeof (buf));
   if (n < 0)
     {
       HTTPCLIENT_ERROR_MSG ("Failed to serialize request");
@@ -277,14 +296,12 @@ execute_http1_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
     }
 
   /* Send request headers */
-  ssize_t sent = -1;
   TRY
     {
       sent = Socket_send (conn->proto.h1.socket, buf, (size_t)n);
     }
   EXCEPT (Socket_Closed)
     {
-      /* Connection was closed by server - can happen on keep-alive reuse */
       conn->closed = 1;
       HTTPCLIENT_ERROR_MSG ("Connection closed while sending request headers");
       return -1;
@@ -295,37 +312,186 @@ execute_http1_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
       return -1;
     }
   END_TRY;
+
   if (sent < 0 || (size_t)sent != (size_t)n)
     {
       HTTPCLIENT_ERROR_FMT ("Failed to send request headers (partial write)");
       return -1;
     }
 
-  /* Send body if present */
-  if (req->body != NULL && req->body_len > 0)
+  return 0;
+}
+
+/**
+ * send_http1_body - Send HTTP/1.1 request body
+ * @conn: Pool connection entry
+ * @body: Body data
+ * @body_len: Body length
+ *
+ * Returns: 0 on success, -1 on error
+ * Note: Returns 0 if body is NULL or empty.
+ */
+static int
+send_http1_body (HTTPPoolEntry *conn, const void *body, size_t body_len)
+{
+  volatile ssize_t sent = -1;
+
+  assert (conn != NULL);
+
+  if (body == NULL || body_len == 0)
+    return 0;
+
+  TRY
     {
-      TRY
-        {
-          sent = Socket_send (conn->proto.h1.socket, req->body, req->body_len);
-        }
-      EXCEPT (Socket_Closed)
-        {
-          conn->closed = 1;
-          HTTPCLIENT_ERROR_MSG ("Connection closed while sending request body");
-          return -1;
-        }
-      EXCEPT (Socket_Failed)
-        {
-          HTTPCLIENT_ERROR_FMT ("Failed to send request body");
-          return -1;
-        }
-      END_TRY;
-      if (sent < 0 || (size_t)sent != req->body_len)
-        {
-          HTTPCLIENT_ERROR_FMT ("Failed to send request body (partial write)");
-          return -1;
-        }
+      sent = Socket_send (conn->proto.h1.socket, body, body_len);
     }
+  EXCEPT (Socket_Closed)
+    {
+      conn->closed = 1;
+      HTTPCLIENT_ERROR_MSG ("Connection closed while sending request body");
+      return -1;
+    }
+  EXCEPT (Socket_Failed)
+    {
+      HTTPCLIENT_ERROR_FMT ("Failed to send request body");
+      return -1;
+    }
+  END_TRY;
+
+  if (sent < 0 || (size_t)sent != body_len)
+    {
+      HTTPCLIENT_ERROR_FMT ("Failed to send request body (partial write)");
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * HTTP/1.1 response body accumulator state
+ */
+typedef struct
+{
+  char *body_buf;
+  size_t total_body;
+  size_t body_capacity;
+  Arena_T arena;
+} HTTP1BodyAccumulator;
+
+/**
+ * accumulate_body_chunk - Accumulate body data into buffer
+ * @acc: Body accumulator
+ * @data: Data to accumulate
+ * @len: Data length
+ *
+ * Returns: 0 on success, -1 on memory allocation failure
+ */
+static int
+accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
+{
+  assert (acc != NULL);
+
+  if (len == 0)
+    return 0;
+
+  /* Grow buffer if needed */
+  if (acc->total_body + len > acc->body_capacity)
+    {
+      size_t new_cap
+          = acc->body_capacity == 0 ? HTTPCLIENT_BODY_CHUNK_SIZE
+                                    : acc->body_capacity * 2;
+      while (new_cap < acc->total_body + len)
+        new_cap *= 2;
+
+      char *new_buf
+          = Arena_alloc (acc->arena, new_cap, __FILE__, __LINE__);
+      if (new_buf == NULL)
+        return -1;
+
+      if (acc->body_buf != NULL)
+        memcpy (new_buf, acc->body_buf, acc->total_body);
+
+      acc->body_buf = new_buf;
+      acc->body_capacity = new_cap;
+    }
+
+  memcpy (acc->body_buf + acc->total_body, data, len);
+  acc->total_body += len;
+
+  return 0;
+}
+
+/**
+ * read_http1_body_data - Read body data from parser
+ * @conn: Pool connection entry
+ * @buf: Input buffer with data to parse
+ * @buf_len: Data length in buffer
+ * @consumed: Offset into buffer where unparsed data starts
+ * @acc: Body accumulator
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+read_http1_body_data (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
+                      size_t *consumed, HTTP1BodyAccumulator *acc)
+{
+  char body_chunk[HTTPCLIENT_BODY_CHUNK_SIZE];
+  size_t body_consumed, body_written;
+  size_t remaining;
+  SocketHTTP1_Result result;
+
+  assert (conn != NULL);
+  assert (buf != NULL);
+  assert (consumed != NULL);
+  assert (acc != NULL);
+
+  remaining = buf_len - *consumed;
+
+  while (remaining > 0)
+    {
+      result = SocketHTTP1_Parser_read_body (
+          conn->proto.h1.parser, buf + *consumed, remaining, &body_consumed,
+          body_chunk, sizeof (body_chunk), &body_written);
+
+      /* HTTP1_INCOMPLETE means more data needed, keep going */
+      if (result != HTTP1_OK && result != HTTP1_INCOMPLETE)
+        break;
+
+      if (body_written > 0)
+        {
+          if (accumulate_body_chunk (acc, body_chunk, body_written) < 0)
+            return -1;
+        }
+
+      *consumed += body_consumed;
+      remaining -= body_consumed;
+    }
+
+  return 0;
+}
+
+/**
+ * receive_http1_response - Receive and parse HTTP/1.1 response
+ * @conn: Pool connection entry
+ * @response: Output response structure
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+receive_http1_response (HTTPPoolEntry *conn,
+                        SocketHTTPClient_Response *response)
+{
+  char buf[HTTPCLIENT_REQUEST_BUFFER_SIZE];
+  volatile ssize_t n;
+  size_t consumed;
+  SocketHTTP1_Result result;
+  Arena_T resp_arena;
+  const SocketHTTP_Response *volatile parsed_resp = NULL;
+  volatile int recv_closed = 0;
+  HTTP1BodyAccumulator acc = { NULL, 0, 0, NULL };
+
+  assert (conn != NULL);
+  assert (response != NULL);
 
   /* Create arena for response */
   resp_arena = Arena_new ();
@@ -335,16 +501,12 @@ execute_http1_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
       return -1;
     }
 
+  acc.arena = resp_arena;
+
   /* Reset parser for response */
   SocketHTTP1_Parser_reset (conn->proto.h1.parser);
 
-  /* Receive and parse response */
-  volatile size_t total_body = 0;
-  char *volatile body_buf = NULL;
-  volatile size_t body_capacity = 0;
-  const SocketHTTP_Response *volatile parsed_resp = NULL;
-  volatile int recv_closed = 0;
-
+  /* Receive and parse response loop */
   while (1)
     {
       TRY
@@ -353,12 +515,11 @@ execute_http1_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
         }
       EXCEPT (Socket_Closed)
         {
-          /* Connection closed by peer */
           recv_closed = 1;
           n = 0;
         }
       END_TRY;
-      
+
       if (recv_closed || n <= 0)
         {
           conn->closed = 1;
@@ -381,7 +542,8 @@ execute_http1_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
           && SocketHTTP1_Parser_state (conn->proto.h1.parser)
                  >= HTTP1_STATE_BODY)
         {
-          parsed_resp = SocketHTTP1_Parser_get_response (conn->proto.h1.parser);
+          parsed_resp
+              = SocketHTTP1_Parser_get_response (conn->proto.h1.parser);
         }
 
       /* Read body if present */
@@ -389,47 +551,10 @@ execute_http1_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
           && SocketHTTP1_Parser_body_mode (conn->proto.h1.parser)
                  != HTTP1_BODY_NONE)
         {
-          char body_chunk[4096];
-          size_t body_consumed, body_written;
-          size_t remaining = (size_t)n - consumed;
-
-          while (remaining > 0)
+          if (read_http1_body_data (conn, buf, (size_t)n, &consumed, &acc) < 0)
             {
-              result = SocketHTTP1_Parser_read_body (
-                      conn->proto.h1.parser, buf + consumed, remaining,
-                      &body_consumed, body_chunk, sizeof (body_chunk),
-                      &body_written);
-              
-              /* HTTP1_INCOMPLETE (1) means more data needed, keep going */
-              if (result != HTTP1_OK && result != HTTP1_INCOMPLETE)
-                break;
-              
-              if (body_written > 0)
-                {
-                  /* Grow body buffer if needed */
-                  if (total_body + body_written > body_capacity)
-                    {
-                      size_t new_cap
-                          = body_capacity == 0 ? 4096 : body_capacity * 2;
-                      while (new_cap < total_body + body_written)
-                        new_cap *= 2;
-                      char *new_buf = Arena_alloc (resp_arena, new_cap,
-                                                   __FILE__, __LINE__);
-                      if (new_buf == NULL)
-                        {
-                          Arena_dispose (&resp_arena);
-                          return -1;
-                        }
-                      if (body_buf != NULL)
-                        memcpy (new_buf, body_buf, total_body);
-                      body_buf = new_buf;
-                      body_capacity = new_cap;
-                    }
-                  memcpy (body_buf + total_body, body_chunk, body_written);
-                  total_body += body_written;
-                }
-              consumed += body_consumed;
-              remaining -= body_consumed;
+              Arena_dispose (&resp_arena);
+              return -1;
             }
         }
 
@@ -452,59 +577,123 @@ execute_http1_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
   response->status_code = parsed_resp->status_code;
   response->version = parsed_resp->version;
   response->headers = parsed_resp->headers;
-  response->body = body_buf;
-  response->body_len = total_body;
+  response->body = acc.body_buf;
+  response->body_len = acc.total_body;
   response->arena = resp_arena;
 
   return 0;
 }
 
+/* ============================================================================
+ * Internal: Execute HTTP Request
+ * ============================================================================ */
+
 /**
- * Internal request execution with redirect handling
+ * execute_http1_request - Execute complete HTTP/1.1 request-response cycle
+ * @conn: Pool connection entry
+ * @req: Client request
+ * @response: Output response
+ *
+ * Returns: 0 on success, -1 on error
+ *
+ * Orchestrates the HTTP/1.1 request by calling helper functions:
+ * 1. Build request structure
+ * 2. Send headers
+ * 3. Send body (if present)
+ * 4. Receive response
  */
 static int
-execute_request_internal (SocketHTTPClient_T client,
-                          SocketHTTPClient_Request_T req,
-                          SocketHTTPClient_Response *response, int redirect_count)
+execute_http1_request (HTTPPoolEntry *conn,
+                       const SocketHTTPClient_Request_T req,
+                       SocketHTTPClient_Response *response)
 {
-  HTTPPoolEntry *conn;
-  int result;
+  SocketHTTP_Request http_req;
 
-  assert (client != NULL);
+  assert (conn != NULL);
   assert (req != NULL);
   assert (response != NULL);
 
-  /* Check redirect limit */
-  if (redirect_count > client->config.follow_redirects)
-    {
-      client->last_error = HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS;
-      HTTPCLIENT_ERROR_MSG ("Too many redirects (%d)", redirect_count);
-      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_TooManyRedirects);
-    }
+  /* Build request structure */
+  build_http1_request (req, &http_req);
 
-  /* Get or create connection */
-  conn = httpclient_connect (client, &req->uri);
-  if (conn == NULL)
-    {
-      client->last_error = HTTPCLIENT_ERROR_CONNECT;
-      return -1;
-    }
+  /* Send headers */
+  if (send_http1_headers (conn, &http_req) < 0)
+    return -1;
 
-  /* Add standard headers if not present */
-  if (!SocketHTTP_Headers_has (req->headers, "Host"))
+  /* Send body if present */
+  if (send_http1_body (conn, req->body, req->body_len) < 0)
+    return -1;
+
+  /* Receive and parse response */
+  return receive_http1_response (conn, response);
+}
+
+/* ============================================================================
+ * Internal: Request Header Helpers
+ * ============================================================================ */
+
+/**
+ * add_host_header - Add Host header if not present
+ * @req: Request to modify
+ */
+static void
+add_host_header (SocketHTTPClient_Request_T req)
+{
+  char host_header[HTTPCLIENT_HOST_HEADER_SIZE];
+
+  if (SocketHTTP_Headers_has (req->headers, "Host"))
+    return;
+
+  if (req->uri.port == -1 || req->uri.port == 80 || req->uri.port == 443)
     {
-      char host_header[256];
-      if (req->uri.port == -1 || req->uri.port == 80 || req->uri.port == 443)
-        {
-          snprintf (host_header, sizeof (host_header), "%s", req->uri.host);
-        }
-      else
-        {
-          snprintf (host_header, sizeof (host_header), "%s:%d", req->uri.host,
-                    req->uri.port);
-        }
-      SocketHTTP_Headers_add (req->headers, "Host", host_header);
+      snprintf (host_header, sizeof (host_header), "%s", req->uri.host);
     }
+  else
+    {
+      snprintf (host_header, sizeof (host_header), "%s:%d", req->uri.host,
+                req->uri.port);
+    }
+  SocketHTTP_Headers_add (req->headers, "Host", host_header);
+}
+
+/**
+ * add_accept_encoding_header - Add Accept-Encoding if auto_decompress enabled
+ * @client: HTTP client
+ * @req: Request to modify
+ */
+static void
+add_accept_encoding_header (SocketHTTPClient_T client,
+                            SocketHTTPClient_Request_T req)
+{
+  char encoding[64] = "";
+
+  if (!client->config.auto_decompress)
+    return;
+  if (SocketHTTP_Headers_has (req->headers, "Accept-Encoding"))
+    return;
+
+  if (client->config.accept_encoding & HTTPCLIENT_ENCODING_GZIP)
+    strcat (encoding, "gzip");
+  if (client->config.accept_encoding & HTTPCLIENT_ENCODING_DEFLATE)
+    {
+      if (encoding[0])
+        strcat (encoding, ", ");
+      strcat (encoding, "deflate");
+    }
+  if (encoding[0])
+    SocketHTTP_Headers_add (req->headers, "Accept-Encoding", encoding);
+}
+
+/**
+ * add_standard_headers - Add standard headers (Host, User-Agent, etc.)
+ * @client: HTTP client
+ * @req: Request to modify
+ */
+static void
+add_standard_headers (SocketHTTPClient_T client,
+                      SocketHTTPClient_Request_T req)
+{
+  add_host_header (req);
 
   if (!SocketHTTP_Headers_has (req->headers, "User-Agent")
       && client->config.user_agent != NULL)
@@ -513,84 +702,403 @@ execute_request_internal (SocketHTTPClient_T client,
                               client->config.user_agent);
     }
 
-  /* Add Accept-Encoding if auto_decompress enabled */
-  if (client->config.auto_decompress
-      && !SocketHTTP_Headers_has (req->headers, "Accept-Encoding"))
+  add_accept_encoding_header (client, req);
+}
+
+/**
+ * add_cookie_header - Add cookies from jar if present
+ * @client: HTTP client
+ * @req: Request to modify
+ */
+static void
+add_cookie_header (SocketHTTPClient_T client, SocketHTTPClient_Request_T req)
+{
+  char cookie_header[HTTPCLIENT_COOKIE_HEADER_SIZE];
+
+  if (client->cookie_jar == NULL)
+    return;
+
+  if (httpclient_cookies_for_request (client->cookie_jar, &req->uri,
+                                      cookie_header, sizeof (cookie_header))
+      > 0)
     {
-      char encoding[64] = "";
-      if (client->config.accept_encoding & HTTPCLIENT_ENCODING_GZIP)
-        strcat (encoding, "gzip");
-      if (client->config.accept_encoding & HTTPCLIENT_ENCODING_DEFLATE)
-        {
-          if (encoding[0])
-            strcat (encoding, ", ");
-          strcat (encoding, "deflate");
-        }
-      if (encoding[0])
-        SocketHTTP_Headers_add (req->headers, "Accept-Encoding", encoding);
+      SocketHTTP_Headers_add (req->headers, "Cookie", cookie_header);
     }
+}
 
-  /* Add cookies from jar */
-  if (client->cookie_jar != NULL)
+/**
+ * add_initial_auth_header - Add authentication header for first request
+ * @client: HTTP client
+ * @req: Request to modify
+ *
+ * Adds Basic or Bearer auth on first request. Digest auth requires
+ * a challenge first so is not added here.
+ */
+static void
+add_initial_auth_header (SocketHTTPClient_T client,
+                         SocketHTTPClient_Request_T req)
+{
+  SocketHTTPClient_Auth *auth;
+  char auth_header[HTTPCLIENT_AUTH_HEADER_SIZE];
+
+  auth = req->auth != NULL ? req->auth : client->default_auth;
+  if (auth == NULL)
+    return;
+
+  if (auth->type == HTTP_AUTH_BASIC)
     {
-      char cookie_header[4096];
-      if (httpclient_cookies_for_request (client->cookie_jar, &req->uri,
-                                          cookie_header, sizeof (cookie_header))
-          > 0)
+      if (httpclient_auth_basic_header (auth->username, auth->password,
+                                        auth_header, sizeof (auth_header))
+          == 0)
         {
-          SocketHTTP_Headers_add (req->headers, "Cookie", cookie_header);
-        }
-    }
-
-  /* Add authentication header */
-  if (req->auth != NULL || client->default_auth != NULL)
-    {
-      SocketHTTPClient_Auth *auth
-          = req->auth != NULL ? req->auth : client->default_auth;
-      char auth_header[512];
-
-      if (auth->type == HTTP_AUTH_BASIC)
-        {
-          if (httpclient_auth_basic_header (auth->username, auth->password,
-                                            auth_header, sizeof (auth_header))
-              == 0)
-            {
-              SocketHTTP_Headers_add (req->headers, "Authorization",
-                                      auth_header);
-            }
-        }
-      else if (auth->type == HTTP_AUTH_BEARER && auth->token != NULL)
-        {
-          snprintf (auth_header, sizeof (auth_header), "Bearer %s",
-                    auth->token);
           SocketHTTP_Headers_add (req->headers, "Authorization", auth_header);
         }
     }
-
-  /* Add Content-Length if body present */
-  if (req->body != NULL && req->body_len > 0)
+  else if (auth->type == HTTP_AUTH_BEARER && auth->token != NULL)
     {
-      char cl_header[32];
-      snprintf (cl_header, sizeof (cl_header), "%zu", req->body_len);
-      SocketHTTP_Headers_set (req->headers, "Content-Length", cl_header);
+      snprintf (auth_header, sizeof (auth_header), "Bearer %s", auth->token);
+      SocketHTTP_Headers_add (req->headers, "Authorization", auth_header);
     }
+}
 
-  /* Execute based on protocol version */
-  if (conn->version == HTTP_VERSION_1_1 || conn->version == HTTP_VERSION_1_0)
+/**
+ * add_content_length_header - Add Content-Length if body present
+ * @req: Request to modify
+ */
+static void
+add_content_length_header (SocketHTTPClient_Request_T req)
+{
+  char cl_header[32];
+
+  if (req->body == NULL || req->body_len == 0)
+    return;
+
+  snprintf (cl_header, sizeof (cl_header), "%zu", req->body_len);
+  SocketHTTP_Headers_set (req->headers, "Content-Length", cl_header);
+}
+
+/**
+ * store_response_cookies - Store Set-Cookie headers from response
+ * @client: HTTP client
+ * @req: Original request (for URI)
+ * @response: Response containing Set-Cookie headers
+ */
+static void
+store_response_cookies (SocketHTTPClient_T client,
+                        SocketHTTPClient_Request_T req,
+                        SocketHTTPClient_Response *response)
+{
+  const char *set_cookies[HTTPCLIENT_MAX_SET_COOKIES];
+  size_t cookie_count;
+  size_t i;
+
+  if (client->cookie_jar == NULL)
+    return;
+
+  cookie_count = SocketHTTP_Headers_get_all (
+      response->headers, "Set-Cookie", set_cookies, HTTPCLIENT_MAX_SET_COOKIES);
+
+  for (i = 0; i < cookie_count; i++)
     {
-      result = execute_http1_request (conn, req, response);
+      SocketHTTPClient_Cookie cookie;
+      if (httpclient_parse_set_cookie (set_cookies[i], strlen (set_cookies[i]),
+                                       &req->uri, &cookie, response->arena)
+          == 0)
+        {
+          SocketHTTPClient_CookieJar_set (client->cookie_jar, &cookie);
+        }
+    }
+}
+
+/* ============================================================================
+ * Internal: 401 Authentication Retry Helpers
+ * ============================================================================ */
+
+/**
+ * build_digest_auth_uri - Build URI string for digest auth
+ * @req: Request with URI
+ * @uri_str: Output buffer
+ * @uri_size: Buffer size
+ */
+static void
+build_digest_auth_uri (SocketHTTPClient_Request_T req, char *uri_str,
+                       size_t uri_size)
+{
+  if (req->uri.query != NULL && req->uri.query[0] != '\0')
+    {
+      snprintf (uri_str, uri_size, "%s?%s",
+                req->uri.path ? req->uri.path : "/", req->uri.query);
     }
   else
     {
-      /* HTTP/2 - TODO: implement in pool module */
-      HTTPCLIENT_ERROR_MSG ("HTTP/2 not yet implemented");
-      result = -1;
+      snprintf (uri_str, uri_size, "%s", req->uri.path ? req->uri.path : "/");
+    }
+}
+
+/**
+ * try_digest_auth_retry - Attempt digest auth response to challenge
+ * @req: Request with auth credentials
+ * @client: HTTP client (for default auth)
+ * @www_auth: WWW-Authenticate header value
+ * @auth_retry_count: Current retry count
+ * @auth_header: Output buffer for Authorization header
+ * @auth_header_size: Buffer size
+ *
+ * Returns: 1 if should retry with auth_header, 0 otherwise
+ */
+static int
+try_digest_auth_retry (SocketHTTPClient_Request_T req,
+                       SocketHTTPClient_T client, const char *www_auth,
+                       int auth_retry_count, char *auth_header,
+                       size_t auth_header_size)
+{
+  SocketHTTPClient_Auth *auth;
+  const char *method_str;
+  char nc_value[HTTPCLIENT_DIGEST_NC_SIZE];
+  char uri_str[HTTPCLIENT_URI_BUFFER_SIZE];
+
+  auth = req->auth != NULL ? req->auth : client->default_auth;
+  if (auth == NULL || auth->type != HTTP_AUTH_DIGEST)
+    return 0;
+
+  if (strncasecmp (www_auth, "Digest ", 7) != 0)
+    return 0;
+
+  method_str = SocketHTTP_method_name (req->method);
+  snprintf (nc_value, sizeof (nc_value), "%08x", auth_retry_count + 1);
+  build_digest_auth_uri (req, uri_str, sizeof (uri_str));
+
+  if (httpclient_auth_digest_challenge (www_auth, auth->username,
+                                        auth->password, method_str, uri_str,
+                                        nc_value, auth_header, auth_header_size)
+      == 0)
+    {
+      return 1;
     }
 
-  /* Release connection back to pool (or close if no pool) */
+  return 0;
+}
+
+/**
+ * try_basic_auth_retry - Attempt basic auth when not already sent
+ * @req: Request with auth credentials
+ * @client: HTTP client (for default auth)
+ * @www_auth: WWW-Authenticate header value
+ * @auth_retry_count: Current retry count
+ * @auth_header: Output buffer for Authorization header
+ * @auth_header_size: Buffer size
+ *
+ * Returns: 1 if should retry with auth_header, 0 otherwise
+ */
+static int
+try_basic_auth_retry (SocketHTTPClient_Request_T req,
+                      SocketHTTPClient_T client, const char *www_auth,
+                      int auth_retry_count, char *auth_header,
+                      size_t auth_header_size)
+{
+  SocketHTTPClient_Auth *auth;
+  int already_sent;
+
+  auth = req->auth != NULL ? req->auth : client->default_auth;
+  if (auth == NULL || auth->type != HTTP_AUTH_BASIC)
+    return 0;
+
+  if (strncasecmp (www_auth, "Basic ", 6) != 0)
+    return 0;
+
+  /* Only retry once - if we already sent and got 401, creds are wrong */
+  if (auth_retry_count != 0)
+    return 0;
+
+  already_sent
+      = (SocketHTTP_Headers_get (req->headers, "Authorization") != NULL);
+  if (already_sent)
+    return 0;
+
+  if (httpclient_auth_basic_header (auth->username, auth->password, auth_header,
+                                    auth_header_size)
+      == 0)
+    {
+      return 1;
+    }
+
+  return 0;
+}
+
+/**
+ * handle_401_auth_retry - Handle 401 Unauthorized with auth retry
+ * @client: HTTP client
+ * @req: Request
+ * @response: Current 401 response
+ * @redirect_count: Current redirect count
+ * @auth_retry_count: Current auth retry count
+ *
+ * Returns: 0 if handled (response updated), 1 if not handled, -1 on error
+ */
+static int
+handle_401_auth_retry (SocketHTTPClient_T client,
+                       SocketHTTPClient_Request_T req,
+                       SocketHTTPClient_Response *response, int redirect_count,
+                       int auth_retry_count)
+{
+  SocketHTTPClient_Auth *auth;
+  const char *www_auth;
+  char auth_header[HTTPCLIENT_AUTH_HEADER_LARGE_SIZE];
+  int should_retry = 0;
+
+  if (response->status_code != 401)
+    return 1; /* Not a 401 */
+
+  if (auth_retry_count >= HTTPCLIENT_MAX_AUTH_RETRIES)
+    return 1; /* Max retries reached */
+
+  auth = req->auth != NULL ? req->auth : client->default_auth;
+  if (auth == NULL)
+    return 1; /* No credentials */
+
+  if (auth->type != HTTP_AUTH_BASIC && auth->type != HTTP_AUTH_DIGEST)
+    return 1; /* Unsupported auth type */
+
+  www_auth = SocketHTTP_Headers_get (response->headers, "WWW-Authenticate");
+  if (www_auth == NULL)
+    return 1; /* No challenge */
+
+  /* Try digest auth first, then basic */
+  should_retry = try_digest_auth_retry (req, client, www_auth, auth_retry_count,
+                                        auth_header, sizeof (auth_header));
+  if (!should_retry)
+    {
+      should_retry
+          = try_basic_auth_retry (req, client, www_auth, auth_retry_count,
+                                  auth_header, sizeof (auth_header));
+    }
+
+  if (!should_retry)
+    return 1; /* Can't retry */
+
+  /* Prepare for retry */
+  SocketHTTPClient_Response_free (response);
+  SocketHTTP_Headers_set (req->headers, "Authorization", auth_header);
+  SocketCrypto_secure_clear (auth_header, sizeof (auth_header));
+
+  /* Recurse with incremented auth retry count */
+  return execute_request_internal (client, req, response, redirect_count,
+                                   auth_retry_count + 1);
+}
+
+/* ============================================================================
+ * Internal: Redirect Handling Helpers
+ * ============================================================================ */
+
+/**
+ * is_redirect_status - Check if status code is a redirect
+ * @status_code: HTTP status code
+ *
+ * Returns: 1 if redirect, 0 otherwise
+ */
+static int
+is_redirect_status (int status_code)
+{
+  return (status_code == 301 || status_code == 302 || status_code == 303
+          || status_code == 307 || status_code == 308);
+}
+
+/**
+ * should_follow_redirect - Determine if redirect should be followed
+ * @client: HTTP client
+ * @req: Request
+ * @status_code: Response status code
+ *
+ * Returns: 1 if should follow, 0 otherwise
+ */
+static int
+should_follow_redirect (SocketHTTPClient_T client,
+                        SocketHTTPClient_Request_T req, int status_code)
+{
+  if (client->config.follow_redirects <= 0)
+    return 0;
+
+  if (!is_redirect_status (status_code))
+    return 0;
+
+  /* Check if POST should follow redirect */
+  if (req->method == HTTP_METHOD_POST && !client->config.redirect_on_post)
+    {
+      /* 303 See Other always changes to GET */
+      if (status_code != 303)
+        return 0;
+    }
+
+  return 1;
+}
+
+/**
+ * handle_redirect - Handle redirect response
+ * @client: HTTP client
+ * @req: Request (modified on redirect)
+ * @response: Current response
+ * @redirect_count: Current redirect count
+ *
+ * Returns: 0 if handled (response updated), 1 if not handled, -1 on error
+ */
+static int
+handle_redirect (SocketHTTPClient_T client, SocketHTTPClient_Request_T req,
+                 SocketHTTPClient_Response *response, int redirect_count)
+{
+  const char *location;
+  SocketHTTP_URIResult uri_result;
+  int status_code;
+
+  if (!should_follow_redirect (client, req, response->status_code))
+    return 1; /* Not following */
+
+  location = SocketHTTP_Headers_get (response->headers, "Location");
+  if (location == NULL)
+    return 1; /* No location header */
+
+  status_code = response->status_code;
+
+  /* Free current response */
+  SocketHTTPClient_Response_free (response);
+
+  /* Parse new location */
+  uri_result = SocketHTTP_URI_parse (location, 0, &req->uri, req->arena);
+  if (uri_result != URI_PARSE_OK)
+    {
+      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
+      HTTPCLIENT_ERROR_MSG ("Invalid redirect location: %s", location);
+      return -1;
+    }
+
+  /* 303 changes method to GET */
+  if (status_code == 303)
+    {
+      req->method = HTTP_METHOD_GET;
+      req->body = NULL;
+      req->body_len = 0;
+    }
+
+  /* Recurse with incremented redirect count (reset auth retry) */
+  return execute_request_internal (client, req, response, redirect_count + 1,
+                                   0);
+}
+
+/* ============================================================================
+ * Internal: Connection Management Helpers
+ * ============================================================================ */
+
+/**
+ * release_connection - Release connection back to pool or close
+ * @client: HTTP client
+ * @conn: Pool entry to release
+ * @success: 1 if request succeeded, 0 on failure
+ */
+static void
+release_connection (SocketHTTPClient_T client, HTTPPoolEntry *conn, int success)
+{
   if (client->pool != NULL)
     {
-      if (result == 0 && !conn->closed)
+      if (success && !conn->closed)
         {
           httpclient_pool_release (client->pool, conn);
         }
@@ -607,82 +1115,108 @@ execute_request_internal (SocketHTTPClient_T client,
           Socket_free (&conn->proto.h1.socket);
         }
     }
+}
 
-  if (result != 0)
+/* ============================================================================
+ * Internal: Execute Request
+ * ============================================================================ */
+
+/**
+ * execute_request_internal - Internal request execution with retry handling
+ * @client: HTTP client
+ * @req: Request to execute
+ * @response: Output response
+ * @redirect_count: Current redirect depth
+ * @auth_retry_count: Current auth retry count
+ *
+ * Returns: 0 on success, -1 on error
+ * Raises: SocketHTTPClient_TooManyRedirects on redirect limit
+ *
+ * Orchestrates HTTP request execution with redirect and auth retry handling.
+ */
+static int
+execute_request_internal (SocketHTTPClient_T client,
+                          SocketHTTPClient_Request_T req,
+                          SocketHTTPClient_Response *response, int redirect_count,
+                          int auth_retry_count)
+{
+  HTTPPoolEntry *conn;
+  int result;
+  int retry_result;
+
+  assert (client != NULL);
+  assert (req != NULL);
+  assert (response != NULL);
+
+  /* Check redirect limit */
+  if (redirect_count > client->config.follow_redirects)
     {
+      client->last_error = HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS;
+      HTTPCLIENT_ERROR_MSG ("Too many redirects (%d)", redirect_count);
+      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_TooManyRedirects);
+    }
+
+  /* Check auth retry limit - return current response as-is */
+  if (auth_retry_count > HTTPCLIENT_MAX_AUTH_RETRIES)
+    return 0;
+
+  /* Get or create connection */
+  conn = httpclient_connect (client, &req->uri);
+  if (conn == NULL)
+    {
+      client->last_error = HTTPCLIENT_ERROR_CONNECT;
       return -1;
     }
 
-  /* Store cookies from response */
-  if (client->cookie_jar != NULL)
-    {
-      const char *set_cookies[16];
-      size_t cookie_count = SocketHTTP_Headers_get_all (
-          response->headers, "Set-Cookie", set_cookies, 16);
+  /* Add all request headers */
+  add_standard_headers (client, req);
+  add_cookie_header (client, req);
+  add_initial_auth_header (client, req);
+  add_content_length_header (req);
 
-      for (size_t i = 0; i < cookie_count; i++)
-        {
-          SocketHTTPClient_Cookie cookie;
-          if (httpclient_parse_set_cookie (set_cookies[i],
-                                           strlen (set_cookies[i]), &req->uri,
-                                           &cookie, response->arena)
-              == 0)
-            {
-              SocketHTTPClient_CookieJar_set (client->cookie_jar, &cookie);
-            }
-        }
+  /* Execute based on protocol version */
+  if (conn->version == HTTP_VERSION_1_1 || conn->version == HTTP_VERSION_1_0)
+    {
+      result = execute_http1_request (conn, req, response);
     }
+  else
+    {
+      /* HTTP/2 is not yet supported in the HTTP client.
+       *
+       * Implementation requirements:
+       * - Connection pool would need to track H2 streams separately
+       * - Use SocketHTTP2_Conn_T instead of raw sockets for multiplexing
+       * - Handle SETTINGS, WINDOW_UPDATE, and stream lifecycle
+       * - Integrate HPACK encoder/decoder per connection
+       *
+       * Status: Planned for future release.
+       * Workaround: Configure client with max_version = HTTP_VERSION_1_1
+       *             or ensure server supports HTTP/1.1 fallback.
+       */
+      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
+      HTTPCLIENT_ERROR_MSG ("HTTP/2 not yet implemented - use HTTP/1.1");
+      result = -1;
+    }
+
+  /* Release connection */
+  release_connection (client, conn, result == 0);
+
+  if (result != 0)
+    return -1;
+
+  /* Store cookies from response */
+  store_response_cookies (client, req, response);
+
+  /* Handle 401 authentication retry */
+  retry_result = handle_401_auth_retry (client, req, response, redirect_count,
+                                        auth_retry_count);
+  if (retry_result <= 0)
+    return retry_result;
 
   /* Handle redirects */
-  if (client->config.follow_redirects > 0
-      && (response->status_code == 301 || response->status_code == 302
-          || response->status_code == 303 || response->status_code == 307
-          || response->status_code == 308))
-    {
-      const char *location
-          = SocketHTTP_Headers_get (response->headers, "Location");
-      if (location != NULL)
-        {
-          /* Check if POST should follow redirect */
-          int should_follow = 1;
-          if (req->method == HTTP_METHOD_POST
-              && !client->config.redirect_on_post)
-            {
-              /* 303 See Other always changes to GET */
-              if (response->status_code != 303)
-                should_follow = 0;
-            }
-
-          if (should_follow)
-            {
-              /* Free current response */
-              SocketHTTPClient_Response_free (response);
-
-              /* Parse new location */
-              SocketHTTP_URIResult uri_result = SocketHTTP_URI_parse (
-                  location, 0, &req->uri, req->arena);
-              if (uri_result != URI_PARSE_OK)
-                {
-                  client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
-                  HTTPCLIENT_ERROR_MSG ("Invalid redirect location: %s",
-                                       location);
-                  return -1;
-                }
-
-              /* 303 changes method to GET */
-              if (response->status_code == 303)
-                {
-                  req->method = HTTP_METHOD_GET;
-                  req->body = NULL;
-                  req->body_len = 0;
-                }
-
-              /* Recurse with incremented redirect count */
-              return execute_request_internal (client, req, response,
-                                               redirect_count + 1);
-            }
-        }
-    }
+  retry_result = handle_redirect (client, req, response, redirect_count);
+  if (retry_result <= 0)
+    return retry_result;
 
   return 0;
 }
@@ -977,37 +1511,10 @@ SocketHTTPClient_Request_auth (SocketHTTPClient_Request_T req,
 
   *auth_copy = *auth;
 
-  /* Copy strings into arena */
-  if (auth->username != NULL)
-    {
-      size_t len = strlen (auth->username);
-      char *s = Arena_alloc (req->arena, len + 1, __FILE__, __LINE__);
-      if (s != NULL)
-        {
-          memcpy (s, auth->username, len + 1);
-          auth_copy->username = s;
-        }
-    }
-  if (auth->password != NULL)
-    {
-      size_t len = strlen (auth->password);
-      char *s = Arena_alloc (req->arena, len + 1, __FILE__, __LINE__);
-      if (s != NULL)
-        {
-          memcpy (s, auth->password, len + 1);
-          auth_copy->password = s;
-        }
-    }
-  if (auth->token != NULL)
-    {
-      size_t len = strlen (auth->token);
-      char *s = Arena_alloc (req->arena, len + 1, __FILE__, __LINE__);
-      if (s != NULL)
-        {
-          memcpy (s, auth->token, len + 1);
-          auth_copy->token = s;
-        }
-    }
+  /* Copy strings into arena using centralized utility */
+  auth_copy->username = socket_util_arena_strdup (req->arena, auth->username);
+  auth_copy->password = socket_util_arena_strdup (req->arena, auth->password);
+  auth_copy->token = socket_util_arena_strdup (req->arena, auth->token);
 
   req->auth = auth_copy;
 }
@@ -1021,18 +1528,49 @@ SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
 
   memset (response, 0, sizeof (*response));
 
-  return execute_request_internal (req->client, req, response, 0);
+  return execute_request_internal (req->client, req, response, 0, 0);
 }
 
 /* ============================================================================
  * Authentication Management
  * ============================================================================ */
 
+/**
+ * Securely clear auth credentials stored in arena
+ */
+static void
+secure_clear_auth (SocketHTTPClient_Auth *auth)
+{
+  if (auth == NULL)
+    return;
+
+  /* Securely clear sensitive strings (password, token) */
+  if (auth->password != NULL)
+    {
+      size_t len = strlen (auth->password);
+      SocketCrypto_secure_clear ((void *)auth->password, len);
+    }
+  if (auth->token != NULL)
+    {
+      size_t len = strlen (auth->token);
+      SocketCrypto_secure_clear ((void *)auth->token, len);
+    }
+
+  /* Clear the struct itself (not strictly necessary but good hygiene) */
+  SocketCrypto_secure_clear (auth, sizeof (*auth));
+}
+
 void
 SocketHTTPClient_set_auth (SocketHTTPClient_T client,
                            const SocketHTTPClient_Auth *auth)
 {
   assert (client != NULL);
+
+  /* Securely clear old credentials before setting new ones */
+  if (client->default_auth != NULL)
+    {
+      secure_clear_auth (client->default_auth);
+    }
 
   if (auth == NULL)
     {
@@ -1048,37 +1586,10 @@ SocketHTTPClient_set_auth (SocketHTTPClient_T client,
 
   *auth_copy = *auth;
 
-  /* Copy strings */
-  if (auth->username != NULL)
-    {
-      size_t len = strlen (auth->username);
-      char *s = Arena_alloc (client->arena, len + 1, __FILE__, __LINE__);
-      if (s != NULL)
-        {
-          memcpy (s, auth->username, len + 1);
-          auth_copy->username = s;
-        }
-    }
-  if (auth->password != NULL)
-    {
-      size_t len = strlen (auth->password);
-      char *s = Arena_alloc (client->arena, len + 1, __FILE__, __LINE__);
-      if (s != NULL)
-        {
-          memcpy (s, auth->password, len + 1);
-          auth_copy->password = s;
-        }
-    }
-  if (auth->token != NULL)
-    {
-      size_t len = strlen (auth->token);
-      char *s = Arena_alloc (client->arena, len + 1, __FILE__, __LINE__);
-      if (s != NULL)
-        {
-          memcpy (s, auth->token, len + 1);
-          auth_copy->token = s;
-        }
-    }
+  /* Copy strings using centralized utility */
+  auth_copy->username = socket_util_arena_strdup (client->arena, auth->username);
+  auth_copy->password = socket_util_arena_strdup (client->arena, auth->password);
+  auth_copy->token = socket_util_arena_strdup (client->arena, auth->token);
 
   client->default_auth = auth_copy;
 }

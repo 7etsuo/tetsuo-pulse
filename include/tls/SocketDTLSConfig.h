@@ -181,6 +181,11 @@
 #define SOCKET_DTLS_ERROR_BUFSIZE 512
 #endif
 
+/* OpenSSL error string buffer size for temporary error formatting */
+#ifndef SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE
+#define SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE 256
+#endif
+
 /* Maximum certificate chain depth */
 #ifndef SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH
 #define SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH 10

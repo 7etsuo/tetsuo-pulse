@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <openssl/x509_vfy.h>
+#include <poll.h>
 #include <string.h>
 
 #define T SocketTLS_T
@@ -363,6 +364,75 @@ SocketTLS_handshake (Socket_T socket)
 
   socket->tls_last_handshake_state = state;
   return state;
+}
+
+TLSHandshakeState
+SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
+{
+  assert (socket);
+
+  REQUIRE_TLS_ENABLED (socket, SocketTLS_HandshakeFailed);
+
+  if (socket->tls_handshake_done)
+    return TLS_HANDSHAKE_COMPLETE;
+
+  int fd = SocketBase_fd (socket->base);
+  if (fd < 0)
+    RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed, "Invalid socket fd");
+
+  struct pollfd pfd;
+  pfd.fd = fd;
+  pfd.events = POLLIN | POLLOUT;
+
+  int elapsed_ms = 0;
+  int poll_interval = SOCKET_TLS_POLL_INTERVAL_MS;
+
+  while (elapsed_ms < timeout_ms || timeout_ms == 0)
+    {
+      TLSHandshakeState state = SocketTLS_handshake (socket);
+
+      switch (state)
+        {
+        case TLS_HANDSHAKE_COMPLETE:
+          return TLS_HANDSHAKE_COMPLETE;
+
+        case TLS_HANDSHAKE_ERROR:
+          return TLS_HANDSHAKE_ERROR;
+
+        case TLS_HANDSHAKE_WANT_READ:
+          pfd.events = POLLIN;
+          break;
+
+        case TLS_HANDSHAKE_WANT_WRITE:
+          pfd.events = POLLOUT;
+          break;
+
+        default:
+          pfd.events = POLLIN | POLLOUT;
+          break;
+        }
+
+      /* Non-blocking mode: return current state immediately */
+      if (timeout_ms == 0)
+        return state;
+
+      int rc = poll (&pfd, 1, poll_interval);
+      if (rc < 0)
+        {
+          if (errno == EINTR)
+            continue;
+          TLS_ERROR_FMT ("poll failed: %s", strerror (errno));
+          RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
+        }
+
+      elapsed_ms += poll_interval;
+    }
+
+  /* Timeout reached */
+  TLS_ERROR_MSG ("TLS handshake timeout");
+  RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
+
+  return TLS_HANDSHAKE_ERROR; /* Unreachable */
 }
 
 void

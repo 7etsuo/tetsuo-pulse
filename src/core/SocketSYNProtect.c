@@ -18,7 +18,6 @@
 #include "core/SocketUtil.h"
 #include <arpa/inet.h>
 #include <assert.h>
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -157,13 +156,14 @@ lru_touch (T protect, SocketSYN_IPEntry *entry)
 
 /**
  * find_ip_entry - Find IP entry in hash table
- * @protect: Protection instance (must hold mutex)
+ * @protect: Protection instance (must hold mutex, read-only access)
  * @ip: IP address string
  *
  * Returns: Entry pointer or NULL if not found
+ * Thread-safe: No (caller must hold mutex)
  */
 static SocketSYN_IPEntry *
-find_ip_entry (const T protect, const char *ip)
+find_ip_entry (const struct SocketSYNProtect_T *protect, const char *ip)
 {
   unsigned bucket = synprotect_hash_ip (ip, protect->ip_table_size);
   SocketSYN_IPEntry *entry = protect->ip_table[bucket];
@@ -670,15 +670,16 @@ whitelist_check_bucket (const SocketSYN_WhitelistEntry *entry, const char *ip)
 
 /**
  * whitelist_check_all_cidrs - Check all buckets for CIDR match
- * @protect: Protection instance
+ * @protect: Protection instance (read-only access)
  * @ip: IP address to check
  * @skip_bucket: Bucket to skip (already checked)
  *
  * Returns: 1 if found, 0 otherwise
+ * Thread-safe: No (caller must hold mutex)
  */
 static int
-whitelist_check_all_cidrs (const T protect, const char *ip,
-                           unsigned skip_bucket)
+whitelist_check_all_cidrs (const struct SocketSYNProtect_T *protect,
+                           const char *ip, unsigned skip_bucket)
 {
   for (size_t i = 0; i < SOCKET_SYN_LIST_HASH_SIZE; i++)
     {
@@ -698,13 +699,14 @@ whitelist_check_all_cidrs (const T protect, const char *ip,
 
 /**
  * whitelist_check - Check if IP is whitelisted
- * @protect: Protection instance (must hold mutex)
+ * @protect: Protection instance (must hold mutex, read-only access)
  * @ip: IP address to check
  *
  * Returns: 1 if whitelisted, 0 otherwise
+ * Thread-safe: No (caller must hold mutex)
  */
 static int
-whitelist_check (const T protect, const char *ip)
+whitelist_check (const struct SocketSYNProtect_T *protect, const char *ip)
 {
   unsigned bucket;
 
@@ -725,14 +727,16 @@ whitelist_check (const T protect, const char *ip)
 
 /**
  * blacklist_check - Check if IP is blacklisted
- * @protect: Protection instance (must hold mutex)
+ * @protect: Protection instance (must hold mutex, read-only access)
  * @ip: IP address to check
  * @now_ms: Current timestamp
  *
  * Returns: 1 if blacklisted and not expired, 0 otherwise
+ * Thread-safe: No (caller must hold mutex)
  */
 static int
-blacklist_check (const T protect, const char *ip, int64_t now_ms)
+blacklist_check (const struct SocketSYNProtect_T *protect, const char *ip,
+                 int64_t now_ms)
 {
   unsigned bucket;
   const SocketSYN_BlacklistEntry *entry;
@@ -863,6 +867,60 @@ process_ip_attempt (T protect, SocketSYN_IPEntry *entry, int64_t now_ms)
     entry->state.block_until_ms = now_ms + protect->config.block_duration_ms;
 
   return action;
+}
+
+/* ============================================================================
+ * Internal Helper Functions - Initialization Cleanup
+ * ============================================================================ */
+
+/**
+ * Cleanup stages for SocketSYNProtect_new() error handling
+ * Each stage includes cleanup of all previous stages
+ */
+typedef enum
+{
+  SYN_CLEANUP_NONE = 0,
+  SYN_CLEANUP_MUTEX,
+  SYN_CLEANUP_IP_TABLE,
+  SYN_CLEANUP_WHITELIST,
+  SYN_CLEANUP_BLACKLIST,
+  SYN_CLEANUP_LIMITER
+} SYN_CleanupStage;
+
+/**
+ * cleanup_synprotect_init - Clean up partially initialized SYN protection
+ * @protect: Protection instance to clean up
+ * @stage: Stage reached before failure (cleanup from this point back)
+ *
+ * Handles cleanup in reverse order of initialization.
+ * Thread-safe: No (called during construction only)
+ */
+static void
+cleanup_synprotect_init (T protect, SYN_CleanupStage stage)
+{
+  switch (stage)
+    {
+    case SYN_CLEANUP_LIMITER:
+      if (protect->global_limiter != NULL)
+        SocketRateLimit_free (&protect->global_limiter);
+      /* FALLTHROUGH */
+    case SYN_CLEANUP_BLACKLIST:
+      free_memory (protect, protect->blacklist_table);
+      /* FALLTHROUGH */
+    case SYN_CLEANUP_WHITELIST:
+      free_memory (protect, protect->whitelist_table);
+      /* FALLTHROUGH */
+    case SYN_CLEANUP_IP_TABLE:
+      free_memory (protect, protect->ip_table);
+      /* FALLTHROUGH */
+    case SYN_CLEANUP_MUTEX:
+      pthread_mutex_destroy (&protect->mutex);
+      /* FALLTHROUGH */
+    case SYN_CLEANUP_NONE:
+      if (protect->use_malloc)
+        free (protect);
+      break;
+    }
 }
 
 /* ============================================================================
@@ -1082,6 +1140,85 @@ SocketSYNProtect_config_defaults (SocketSYNProtect_Config *config)
   config->max_blacklist = SOCKET_SYN_DEFAULT_MAX_BLACKLIST;
 }
 
+/**
+ * synprotect_get_config - Get or create default config
+ * @config: User-provided config (may be NULL)
+ * @local_config: Storage for default config if needed
+ *
+ * Returns: Pointer to config to use
+ */
+static const SocketSYNProtect_Config *
+synprotect_get_config (const SocketSYNProtect_Config *config,
+                       SocketSYNProtect_Config *local_config)
+{
+  if (config == NULL)
+    {
+      SocketSYNProtect_config_defaults (local_config);
+      return local_config;
+    }
+
+  *local_config = *config;
+  return local_config;
+}
+
+/**
+ * synprotect_alloc_structure - Allocate SYN protection structure
+ * @arena: Arena for allocation (may be NULL for malloc)
+ *
+ * Returns: Allocated structure, or NULL on failure
+ */
+static T
+synprotect_alloc_structure (Arena_T arena)
+{
+  if (arena != NULL)
+    return Arena_alloc (arena, sizeof (struct SocketSYNProtect_T), __FILE__,
+                        __LINE__);
+  return malloc (sizeof (struct SocketSYNProtect_T));
+}
+
+/**
+ * synprotect_init_base - Initialize base structure fields
+ * @protect: Protection instance
+ * @arena: Arena used for allocation
+ * @config: Configuration to copy
+ */
+static void
+synprotect_init_base (T protect, Arena_T arena,
+                      const SocketSYNProtect_Config *config)
+{
+  memset (protect, 0, sizeof (*protect));
+  protect->arena = arena;
+  protect->use_malloc = (arena == NULL);
+  memcpy (&protect->config, config, sizeof (protect->config));
+}
+
+/**
+ * synprotect_init_mutex - Initialize mutex
+ * @protect: Protection instance
+ *
+ * Returns: 1 on success, 0 on failure
+ */
+static int
+synprotect_init_mutex (T protect)
+{
+  if (pthread_mutex_init (&protect->mutex, NULL) != 0)
+    return 0;
+
+  protect->initialized = 1;
+  return 1;
+}
+
+/**
+ * synprotect_finalize - Finalize successful initialization
+ * @protect: Protection instance
+ */
+static void
+synprotect_finalize (T protect)
+{
+  protect->start_time_ms = Socket_get_monotonic_ms ();
+  init_atomic_stats (protect);
+}
+
 T
 SocketSYNProtect_new (Arena_T arena, const SocketSYNProtect_Config *config)
 {
@@ -1089,85 +1226,51 @@ SocketSYNProtect_new (Arena_T arena, const SocketSYNProtect_Config *config)
   SocketSYNProtect_Config local_config;
   const SocketSYNProtect_Config *cfg;
 
-  if (config == NULL)
-    {
-      SocketSYNProtect_config_defaults (&local_config);
-      cfg = &local_config;
-    }
-  else
-    {
-      local_config = *config;
-      cfg = &local_config;
-    }
+  cfg = synprotect_get_config (config, &local_config);
 
-  if (arena != NULL)
-    protect = Arena_alloc (arena, sizeof (*protect), __FILE__, __LINE__);
-  else
-    protect = malloc (sizeof (*protect));
-
+  protect = synprotect_alloc_structure (arena);
   if (protect == NULL)
     SOCKET_RAISE_MSG (SocketSYNProtect, SocketSYNProtect_Failed,
                       "Failed to allocate SYN protection structure");
 
-  memset (protect, 0, sizeof (*protect));
-  protect->arena = arena;
-  protect->use_malloc = (arena == NULL);
-  memcpy (&protect->config, cfg, sizeof (protect->config));
+  synprotect_init_base (protect, arena, cfg);
 
-  if (pthread_mutex_init (&protect->mutex, NULL) != 0)
+  if (!synprotect_init_mutex (protect))
     {
-      if (protect->use_malloc)
-        free (protect);
+      cleanup_synprotect_init (protect, SYN_CLEANUP_NONE);
       SOCKET_RAISE_FMT (SocketSYNProtect, SocketSYNProtect_Failed,
                         "Failed to initialize mutex");
     }
-  protect->initialized = 1;
 
   if (!init_ip_hash_table (protect))
     {
-      pthread_mutex_destroy (&protect->mutex);
-      if (protect->use_malloc)
-        free (protect);
+      cleanup_synprotect_init (protect, SYN_CLEANUP_MUTEX);
       SOCKET_RAISE_MSG (SocketSYNProtect, SocketSYNProtect_Failed,
                         "Failed to allocate IP hash table");
     }
 
   if (!init_whitelist_table (protect))
     {
-      free_memory (protect, protect->ip_table);
-      pthread_mutex_destroy (&protect->mutex);
-      if (protect->use_malloc)
-        free (protect);
+      cleanup_synprotect_init (protect, SYN_CLEANUP_IP_TABLE);
       SOCKET_RAISE_MSG (SocketSYNProtect, SocketSYNProtect_Failed,
                         "Failed to allocate whitelist hash table");
     }
 
   if (!init_blacklist_table (protect))
     {
-      free_memory (protect, protect->whitelist_table);
-      free_memory (protect, protect->ip_table);
-      pthread_mutex_destroy (&protect->mutex);
-      if (protect->use_malloc)
-        free (protect);
+      cleanup_synprotect_init (protect, SYN_CLEANUP_WHITELIST);
       SOCKET_RAISE_MSG (SocketSYNProtect, SocketSYNProtect_Failed,
                         "Failed to allocate blacklist hash table");
     }
 
   if (!init_global_limiter (protect, cfg))
     {
-      free_memory (protect, protect->blacklist_table);
-      free_memory (protect, protect->whitelist_table);
-      free_memory (protect, protect->ip_table);
-      pthread_mutex_destroy (&protect->mutex);
-      if (protect->use_malloc)
-        free (protect);
+      cleanup_synprotect_init (protect, SYN_CLEANUP_BLACKLIST);
       SOCKET_RAISE_MSG (SocketSYNProtect, SocketSYNProtect_Failed,
                         "Failed to create global rate limiter");
     }
 
-  protect->start_time_ms = Socket_get_monotonic_ms ();
-  init_atomic_stats (protect);
-
+  synprotect_finalize (protect);
   return protect;
 }
 
@@ -1688,13 +1791,15 @@ SocketSYNProtect_get_ip_state (T protect, const char *ip,
 
 /**
  * count_currently_blocked - Count IPs with active blocks
- * @protect: Protection instance (must hold mutex)
+ * @protect: Protection instance (must hold mutex, read-only access)
  * @now_ms: Current timestamp
  *
  * Returns: Number of blocked IPs
+ * Thread-safe: No (caller must hold mutex)
  */
 static size_t
-count_currently_blocked (const T protect, int64_t now_ms)
+count_currently_blocked (const struct SocketSYNProtect_T *protect,
+                         int64_t now_ms)
 {
   size_t blocked_count = 0;
 
