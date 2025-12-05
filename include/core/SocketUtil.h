@@ -398,10 +398,13 @@ void SocketMetrics_increment (SocketMetric metric, unsigned long value);
 void SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot);
 
 /**
- * SocketMetrics_reset - Reset all metrics to zero
+ * SocketMetrics_legacy_reset - Reset legacy metrics to zero
  * Thread-safe: Yes
+ *
+ * NOTE: This is the legacy API. For new code, use SocketMetrics_reset()
+ * from SocketMetrics.h.
  */
-void SocketMetrics_reset (void);
+void SocketMetrics_legacy_reset (void);
 
 /**
  * SocketMetrics_name - Get human-readable name for a metric

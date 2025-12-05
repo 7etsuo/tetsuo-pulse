@@ -2648,7 +2648,7 @@ TEST (socketmetrics_snapshot_exports)
 {
   SocketMetricsSnapshot snapshot = { { 0ULL } };
 
-  SocketMetrics_reset ();
+  SocketMetrics_legacy_reset ();
   SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 3);
   SocketMetrics_increment (SOCKET_METRIC_POLL_WAKEUPS, 1);
   SocketMetrics_getsnapshot (&snapshot);
@@ -2659,7 +2659,7 @@ TEST (socketmetrics_snapshot_exports)
                                                  SOCKET_METRIC_POLL_WAKEUPS));
   ASSERT_EQ (SOCKET_METRIC_COUNT, SocketMetrics_count ());
 
-  SocketMetrics_reset ();
+  SocketMetrics_legacy_reset ();
   SocketMetrics_getsnapshot (&snapshot);
   ASSERT_EQ (0ULL, SocketMetrics_snapshot_value (
                        &snapshot, SOCKET_METRIC_SOCKET_CONNECT_SUCCESS));
@@ -2692,7 +2692,7 @@ TEST (socketmetrics_all_metric_types)
 {
   SocketMetricsSnapshot snapshot = { { 0ULL } };
 
-  SocketMetrics_reset ();
+  SocketMetrics_legacy_reset ();
   SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
   SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_FAILURE, 2);
   SocketMetrics_increment (SOCKET_METRIC_SOCKET_SHUTDOWN_CALL, 3);
@@ -2751,7 +2751,7 @@ TEST (socketmetrics_increment_by_value)
 {
   SocketMetricsSnapshot snapshot = { { 0ULL } };
 
-  SocketMetrics_reset ();
+  SocketMetrics_legacy_reset ();
   SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 5);
   SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 3);
   SocketMetrics_getsnapshot (&snapshot);

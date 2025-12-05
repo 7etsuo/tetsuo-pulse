@@ -18,7 +18,9 @@
  */
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdatomic.h>
@@ -514,7 +516,13 @@ socks5_server_start (Socks5TestServer *server, const char *username,
   return 0;
 }
 
-/* Helper to connect to a listening socket to unblock accept() */
+/* Helper to connect to a listening socket to unblock accept()
+ *
+ * On macOS, a non-blocking connect that immediately closes may not actually
+ * establish the connection before the socket is closed, leaving accept() blocked.
+ * We use poll() to wait for the connection to be established (or fail) before
+ * closing, ensuring the server's accept() sees the connection attempt.
+ */
 static void
 unblock_accept (int port)
 {
@@ -522,15 +530,29 @@ unblock_accept (int port)
   if (fd >= 0)
     {
       struct sockaddr_in addr;
+      struct pollfd pfd;
+      int result;
+
       memset (&addr, 0, sizeof (addr));
       addr.sin_family = AF_INET;
       addr.sin_port = htons (port);
       addr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
-      /* Non-blocking connect - we don't care if it succeeds */
+
+      /* Set non-blocking for connect */
       int flags = fcntl (fd, F_GETFL, 0);
       if (flags >= 0)
         fcntl (fd, F_SETFL, flags | O_NONBLOCK);
-      connect (fd, (struct sockaddr *)&addr, sizeof (addr));
+
+      result = connect (fd, (struct sockaddr *)&addr, sizeof (addr));
+      if (result < 0 && errno == EINPROGRESS)
+        {
+          /* Wait for connection to complete or fail (max 100ms) */
+          pfd.fd = fd;
+          pfd.events = POLLOUT;
+          pfd.revents = 0;
+          poll (&pfd, 1, 100);
+        }
+
       close (fd);
     }
 }

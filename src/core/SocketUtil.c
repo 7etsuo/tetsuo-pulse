@@ -805,17 +805,26 @@ SocketLog_emit_structured (SocketLogLevel level, const char *component,
 }
 
 /* ===========================================================================
- * METRICS SUBSYSTEM
- * ===========================================================================*/
+ * LEGACY METRICS SUBSYSTEM
+ * ===========================================================================
+ *
+ * NOTE: This is the legacy basic metrics system. For production use, prefer
+ * the comprehensive SocketMetrics system in SocketMetrics.h which provides:
+ * - Counter, gauge, and histogram metrics
+ * - Latency percentile calculations (p50, p95, p99)
+ * - Prometheus, StatsD, and JSON export formats
+ *
+ * This legacy system is kept for backward compatibility with existing code.
+ */
 
 /* Mutex protecting metric values */
-static pthread_mutex_t socketmetrics_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t socketmetrics_legacy_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Metric values array */
-static unsigned long long socketmetrics_values[SOCKET_METRIC_COUNT] = { 0ULL };
+static unsigned long long socketmetrics_legacy_values[SOCKET_METRIC_COUNT] = { 0ULL };
 
 /* Metric names for display/debugging */
-static const char *const socketmetrics_names[SOCKET_METRIC_COUNT] = {
+static const char *const socketmetrics_legacy_names[SOCKET_METRIC_COUNT] = {
   "socket.connect_success",
   "socket.connect_failure",
   "socket.shutdown_calls",
@@ -834,51 +843,51 @@ static const char *const socketmetrics_names[SOCKET_METRIC_COUNT] = {
 };
 
 /**
- * socketmetrics_is_valid - Check if metric index is valid
+ * socketmetrics_legacy_is_valid - Check if metric index is valid
  * @metric: Metric to validate
  *
  * Returns: 1 if valid, 0 otherwise
  * Thread-safe: Yes (pure function)
  */
 static int
-socketmetrics_is_valid (SocketMetric metric)
+socketmetrics_legacy_is_valid (SocketMetric metric)
 {
   return metric >= 0 && metric < (SocketMetric)SOCKET_METRIC_COUNT;
 }
 
 /**
- * SocketMetrics_increment - Increment a metric counter
+ * SocketMetrics_increment - Increment a legacy metric counter
  * @metric: Metric to increment (from SocketMetric enum)
  * @value: Amount to add to the metric
  *
  * Thread-safe: Yes (mutex protected)
  *
- * Increments the specified metric by the given value. Invalid metric
- * indices are logged and ignored.
+ * NOTE: This is the legacy API. For new code, use SocketMetrics_counter_inc()
+ * from SocketMetrics.h.
  */
 void
 SocketMetrics_increment (SocketMetric metric, unsigned long value)
 {
-  if (!socketmetrics_is_valid (metric))
+  if (!socketmetrics_legacy_is_valid (metric))
     {
       SocketLog_emitf (SOCKET_LOG_WARN, "SocketMetrics",
                        "Invalid metric %d in increment ignored", (int)metric);
       return;
     }
 
-  pthread_mutex_lock (&socketmetrics_mutex);
-  socketmetrics_values[metric] += value;
-  pthread_mutex_unlock (&socketmetrics_mutex);
+  pthread_mutex_lock (&socketmetrics_legacy_mutex);
+  socketmetrics_legacy_values[metric] += value;
+  pthread_mutex_unlock (&socketmetrics_legacy_mutex);
 }
 
 /**
- * SocketMetrics_getsnapshot - Get atomic snapshot of all metrics
+ * SocketMetrics_getsnapshot - Get atomic snapshot of legacy metrics
  * @snapshot: Output structure to receive metric values
  *
  * Thread-safe: Yes (mutex protected)
  *
- * Copies all current metric values atomically to the provided snapshot
- * structure. NULL snapshots are logged and ignored.
+ * NOTE: This is the legacy API. For new code, use SocketMetrics_get()
+ * from SocketMetrics.h.
  */
 void
 SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot)
@@ -890,28 +899,29 @@ SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot)
       return;
     }
 
-  pthread_mutex_lock (&socketmetrics_mutex);
-  memcpy (snapshot->values, socketmetrics_values, sizeof (socketmetrics_values));
-  pthread_mutex_unlock (&socketmetrics_mutex);
+  pthread_mutex_lock (&socketmetrics_legacy_mutex);
+  memcpy (snapshot->values, socketmetrics_legacy_values, sizeof (socketmetrics_legacy_values));
+  pthread_mutex_unlock (&socketmetrics_legacy_mutex);
 }
 
 /**
- * SocketMetrics_reset - Reset all metrics to zero
+ * SocketMetrics_legacy_reset - Reset legacy metrics to zero
  *
  * Thread-safe: Yes (mutex protected)
  *
- * Clears all metric values. Useful for testing or periodic resets.
+ * NOTE: This is the legacy API. For new code, use SocketMetrics_reset()
+ * from SocketMetrics.h.
  */
 void
-SocketMetrics_reset (void)
+SocketMetrics_legacy_reset (void)
 {
-  pthread_mutex_lock (&socketmetrics_mutex);
-  memset (socketmetrics_values, 0, sizeof (socketmetrics_values));
-  pthread_mutex_unlock (&socketmetrics_mutex);
+  pthread_mutex_lock (&socketmetrics_legacy_mutex);
+  memset (socketmetrics_legacy_values, 0, sizeof (socketmetrics_legacy_values));
+  pthread_mutex_unlock (&socketmetrics_legacy_mutex);
 }
 
 /**
- * SocketMetrics_name - Get human-readable name for a metric
+ * SocketMetrics_name - Get human-readable name for a legacy metric
  * @metric: Metric to get name for
  *
  * Returns: Static string with metric name, or "unknown" for invalid metrics
@@ -920,13 +930,13 @@ SocketMetrics_reset (void)
 const char *
 SocketMetrics_name (SocketMetric metric)
 {
-  if (!socketmetrics_is_valid (metric))
+  if (!socketmetrics_legacy_is_valid (metric))
     return "unknown";
-  return socketmetrics_names[metric];
+  return socketmetrics_legacy_names[metric];
 }
 
 /**
- * SocketMetrics_count - Get total number of defined metrics
+ * SocketMetrics_count - Get total number of legacy metrics
  *
  * Returns: Number of metrics in the SocketMetric enum
  * Thread-safe: Yes (returns constant)
