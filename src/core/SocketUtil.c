@@ -492,13 +492,21 @@ SocketLog_emit (SocketLogLevel level, const char *component,
 {
   void *userdata = NULL;
   SocketLogCallback callback;
+  SocketLogLevel min_level;
 
-  /* Early exit if level is below minimum - avoid lock overhead for
-   * suppressed messages by reading level first */
-  if (level < SocketLog_getlevel ())
+  /* Read level and callback under single lock to avoid:
+   * 1. Double mutex acquisition overhead
+   * 2. Race condition between level check and callback retrieval */
+  pthread_mutex_lock (&socketlog_mutex);
+  min_level = socketlog_min_level;
+  callback = socketlog_callback ? socketlog_callback : default_logger;
+  userdata = socketlog_userdata;
+  pthread_mutex_unlock (&socketlog_mutex);
+
+  /* Early exit if level is below minimum */
+  if (level < min_level)
     return;
 
-  callback = SocketLog_getcallback (&userdata);
   callback (userdata, level, component, message);
 }
 
@@ -746,16 +754,20 @@ SocketLog_emit_structured (SocketLogLevel level, const char *component,
 {
   SocketLogStructuredCallback structured_cb;
   void *structured_userdata;
+  SocketLogLevel min_level;
 
-  /* Early exit if level is below minimum */
-  if (level < SocketLog_getlevel ())
-    return;
-
-  /* Check for structured callback */
+  /* Read level and structured callback under single lock to avoid:
+   * 1. Double mutex acquisition overhead
+   * 2. Race condition between level check and callback retrieval */
   pthread_mutex_lock (&socketlog_mutex);
+  min_level = socketlog_min_level;
   structured_cb = socketlog_structured_callback;
   structured_userdata = socketlog_structured_userdata;
   pthread_mutex_unlock (&socketlog_mutex);
+
+  /* Early exit if level is below minimum */
+  if (level < min_level)
+    return;
 
   if (structured_cb != NULL)
     {
