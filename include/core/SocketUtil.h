@@ -18,11 +18,13 @@
  */
 
 #include <errno.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "core/Arena.h"
 #include "core/Except.h"
@@ -1024,6 +1026,130 @@ socket_util_arena_strndup (Arena_T arena, const char *str, size_t maxlen)
     }
 
   return copy;
+}
+
+/* ============================================================================
+ * TIMEOUT CALCULATION HELPERS
+ * ============================================================================
+ *
+ * These helpers provide consistent timeout calculation across all modules.
+ * They use CLOCK_MONOTONIC for reliable timing that isn't affected by
+ * system clock changes.
+ */
+
+/**
+ * SocketTimeout_now_ms - Get current monotonic time in milliseconds
+ *
+ * Returns: Current time in milliseconds from monotonic clock
+ * Thread-safe: Yes
+ */
+static inline int64_t
+SocketTimeout_now_ms (void)
+{
+  struct timespec ts;
+  clock_gettime (CLOCK_MONOTONIC, &ts);
+  return (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
+
+/**
+ * SocketTimeout_deadline_ms - Create deadline from timeout
+ * @timeout_ms: Timeout in milliseconds (0 or negative = no deadline)
+ *
+ * Returns: Absolute deadline in milliseconds, or 0 if no timeout
+ * Thread-safe: Yes
+ */
+static inline int64_t
+SocketTimeout_deadline_ms (int timeout_ms)
+{
+  if (timeout_ms <= 0)
+    return 0;
+  return SocketTimeout_now_ms () + timeout_ms;
+}
+
+/**
+ * SocketTimeout_remaining_ms - Calculate remaining time until deadline
+ * @deadline_ms: Deadline from SocketTimeout_deadline_ms() (0 = no deadline)
+ *
+ * Returns: Remaining milliseconds (0 if expired, -1 if no deadline)
+ * Thread-safe: Yes
+ */
+static inline int64_t
+SocketTimeout_remaining_ms (int64_t deadline_ms)
+{
+  int64_t remaining;
+
+  if (deadline_ms == 0)
+    return -1; /* No deadline = infinite */
+
+  remaining = deadline_ms - SocketTimeout_now_ms ();
+  return (remaining > 0) ? remaining : 0;
+}
+
+/**
+ * SocketTimeout_expired - Check if deadline has passed
+ * @deadline_ms: Deadline from SocketTimeout_deadline_ms() (0 = no deadline)
+ *
+ * Returns: 1 if expired, 0 if not expired or no deadline
+ * Thread-safe: Yes
+ */
+static inline int
+SocketTimeout_expired (int64_t deadline_ms)
+{
+  if (deadline_ms == 0)
+    return 0; /* No deadline = never expires */
+
+  return SocketTimeout_now_ms () >= deadline_ms;
+}
+
+/**
+ * SocketTimeout_poll_timeout - Adjust poll timeout to not exceed deadline
+ * @current_timeout_ms: Current poll timeout (-1 = infinite)
+ * @deadline_ms: Deadline from SocketTimeout_deadline_ms() (0 = no deadline)
+ *
+ * Returns: Adjusted timeout for poll() (minimum of current and remaining)
+ * Thread-safe: Yes
+ *
+ * Usage: Use as the timeout argument to poll() when you need to respect
+ * both a regular poll interval and an overall operation deadline.
+ */
+static inline int
+SocketTimeout_poll_timeout (int current_timeout_ms, int64_t deadline_ms)
+{
+  int64_t remaining;
+
+  if (deadline_ms == 0)
+    return current_timeout_ms; /* No deadline */
+
+  remaining = SocketTimeout_remaining_ms (deadline_ms);
+  if (remaining == 0)
+    return 0; /* Already expired */
+
+  if (remaining == -1)
+    return current_timeout_ms; /* No deadline (shouldn't happen here) */
+
+  /* Cap remaining to INT_MAX for poll() */
+  if (remaining > INT_MAX)
+    remaining = INT_MAX;
+
+  /* Return minimum of current timeout and remaining */
+  if (current_timeout_ms < 0)
+    return (int)remaining;
+
+  return (current_timeout_ms < (int)remaining) ? current_timeout_ms
+                                               : (int)remaining;
+}
+
+/**
+ * SocketTimeout_elapsed_ms - Calculate elapsed time since start
+ * @start_ms: Start time from SocketTimeout_now_ms()
+ *
+ * Returns: Elapsed milliseconds since start
+ * Thread-safe: Yes
+ */
+static inline int64_t
+SocketTimeout_elapsed_ms (int64_t start_ms)
+{
+  return SocketTimeout_now_ms () - start_ms;
 }
 
 #endif /* SOCKETUTIL_INCLUDED */

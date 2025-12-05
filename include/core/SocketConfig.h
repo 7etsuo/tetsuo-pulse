@@ -547,6 +547,49 @@ typedef struct SocketTimeouts
   int operation_timeout_ms; /**< General operation timeout in ms (0 = infinite) */
 } SocketTimeouts_T;
 
+/**
+ * SocketTimeouts_Extended_T - Extended per-phase timeout configuration
+ *
+ * Provides granular control over individual operation phases. This structure
+ * allows fine-tuned timeout settings for production deployments where different
+ * phases may have different latency characteristics.
+ *
+ * Timeout precedence (highest to lowest):
+ * 1. Per-request timeout (if supported by API)
+ * 2. Per-socket extended timeouts (this structure)
+ * 3. Per-socket basic timeouts (SocketTimeouts_T)
+ * 4. Global defaults (Socket_timeouts_setdefaults)
+ *
+ * A value of 0 means "use default from basic timeout structure".
+ * A value of -1 means "no timeout (infinite)".
+ */
+typedef struct SocketTimeouts_Extended
+{
+  /* DNS resolution phase */
+  int dns_timeout_ms;       /**< DNS resolution (0 = use basic, -1 = infinite) */
+
+  /* Connection establishment phase */
+  int connect_timeout_ms;   /**< TCP connect (0 = use basic, -1 = infinite) */
+
+  /* TLS handshake phase */
+  int tls_timeout_ms;       /**< TLS handshake (0 = use operation_timeout_ms) */
+
+  /* Request/response cycle */
+  int request_timeout_ms;   /**< Full request cycle (0 = use operation_timeout_ms) */
+
+  /* Generic operation timeout (fallback for unspecified phases) */
+  int operation_timeout_ms; /**< Default for other ops (0 = use basic, -1 = infinite) */
+} SocketTimeouts_Extended_T;
+
+/* Default values for extended timeouts (in milliseconds) */
+#ifndef SOCKET_DEFAULT_TLS_TIMEOUT_MS
+#define SOCKET_DEFAULT_TLS_TIMEOUT_MS 30000 /**< 30 seconds for TLS handshake */
+#endif
+
+#ifndef SOCKET_DEFAULT_REQUEST_TIMEOUT_MS
+#define SOCKET_DEFAULT_REQUEST_TIMEOUT_MS 60000 /**< 60 seconds for request cycle */
+#endif
+
 /* ============================================================================
  * Pool Configuration
  * ============================================================================ */

@@ -95,6 +95,7 @@ SocketHappyEyeballs_config_defaults (SocketHE_Config_T *config)
   config->first_attempt_delay_ms = SOCKET_HE_DEFAULT_FIRST_ATTEMPT_DELAY_MS;
   config->attempt_timeout_ms = SOCKET_HE_DEFAULT_ATTEMPT_TIMEOUT_MS;
   config->total_timeout_ms = SOCKET_HE_DEFAULT_TOTAL_TIMEOUT_MS;
+  config->dns_timeout_ms = SOCKET_HE_DEFAULT_DNS_TIMEOUT_MS;
   config->prefer_ipv6 = 1;
   config->max_attempts = SOCKET_HE_DEFAULT_MAX_ATTEMPTS;
 }
@@ -308,6 +309,30 @@ he_cancel_dns (T he)
 }
 
 /**
+ * he_calculate_dns_timeout - Calculate effective DNS timeout
+ * @he: Happy Eyeballs context
+ *
+ * Returns: DNS timeout in milliseconds (0 = no timeout)
+ *
+ * Uses dns_timeout_ms if set, otherwise limits by total_timeout_ms.
+ */
+static int
+he_calculate_dns_timeout (const T he)
+{
+  int dns_timeout = he->config.dns_timeout_ms;
+
+  /* If explicit DNS timeout set, use it */
+  if (dns_timeout > 0)
+    return dns_timeout;
+
+  /* Otherwise, limit DNS phase to total timeout */
+  if (he->config.total_timeout_ms > 0)
+    return he->config.total_timeout_ms;
+
+  return 0; /* No timeout */
+}
+
+/**
  * he_start_dns_resolution - Start async DNS resolution
  * @he: Happy Eyeballs context
  *
@@ -316,6 +341,8 @@ he_cancel_dns (T he)
 static int
 he_start_dns_resolution (T he)
 {
+  int dns_timeout;
+
   assert (he);
   assert (he->dns);
 
@@ -326,9 +353,15 @@ he_start_dns_resolution (T he)
       return -1;
     }
 
+  /* Propagate DNS timeout to resolver */
+  dns_timeout = he_calculate_dns_timeout (he);
+  if (dns_timeout > 0)
+    SocketDNS_request_settimeout (he->dns, he->dns_request, dns_timeout);
+
   he->state = HE_STATE_RESOLVING;
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "Started DNS resolution for %s:%d", he->host, he->port);
+                   "Started DNS resolution for %s:%d (timeout=%dms)", he->host,
+                   he->port, dns_timeout);
   return 0;
 }
 

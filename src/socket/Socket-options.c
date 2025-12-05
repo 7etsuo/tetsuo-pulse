@@ -141,6 +141,51 @@ Socket_timeouts_setdefaults (const SocketTimeouts_T *timeouts)
   SocketCommon_timeouts_setdefaults (timeouts);
 }
 
+void
+Socket_timeouts_set_extended (T socket, const SocketTimeouts_Extended_T *extended)
+{
+  assert (socket);
+  assert (extended);
+
+  /* Map extended timeouts to basic structure
+   * Extended provides more granular control with the same underlying storage */
+
+  /* DNS timeout */
+  if (extended->dns_timeout_ms != 0)
+    socket->base->timeouts.dns_timeout_ms
+        = socketcommon_sanitize_timeout (extended->dns_timeout_ms);
+
+  /* Connect timeout */
+  if (extended->connect_timeout_ms != 0)
+    socket->base->timeouts.connect_timeout_ms
+        = socketcommon_sanitize_timeout (extended->connect_timeout_ms);
+
+  /* Operation timeout (used for TLS and general operations) */
+  if (extended->operation_timeout_ms != 0)
+    socket->base->timeouts.operation_timeout_ms
+        = socketcommon_sanitize_timeout (extended->operation_timeout_ms);
+  else if (extended->tls_timeout_ms != 0)
+    /* If TLS timeout set but not operation, use TLS timeout for operations */
+    socket->base->timeouts.operation_timeout_ms
+        = socketcommon_sanitize_timeout (extended->tls_timeout_ms);
+
+  /* Note: request_timeout_ms is handled at the HTTP client level, not socket */
+}
+
+void
+Socket_timeouts_get_extended (const T socket, SocketTimeouts_Extended_T *extended)
+{
+  assert (socket);
+  assert (extended);
+
+  /* Map basic timeouts to extended structure */
+  extended->dns_timeout_ms = socket->base->timeouts.dns_timeout_ms;
+  extended->connect_timeout_ms = socket->base->timeouts.connect_timeout_ms;
+  extended->tls_timeout_ms = socket->base->timeouts.operation_timeout_ms;
+  extended->request_timeout_ms = 0; /* Not tracked at socket level */
+  extended->operation_timeout_ms = socket->base->timeouts.operation_timeout_ms;
+}
+
 /* ==================== Shutdown ==================== */
 
 /**

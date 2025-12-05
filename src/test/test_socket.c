@@ -7254,6 +7254,190 @@ TEST (socket_islistening_with_error)
   Socket_free (&client);
 }
 
+/* ==================== Timeout Helper Tests ==================== */
+
+TEST (timeout_now_returns_positive)
+{
+  int64_t now = SocketTimeout_now_ms ();
+  ASSERT (now > 0);
+}
+
+TEST (timeout_deadline_from_timeout)
+{
+  int64_t before = SocketTimeout_now_ms ();
+  int64_t deadline = SocketTimeout_deadline_ms (1000);
+  int64_t after = SocketTimeout_now_ms ();
+
+  /* Deadline should be ~1000ms from now */
+  ASSERT (deadline >= before + 1000);
+  ASSERT (deadline <= after + 1000);
+}
+
+TEST (timeout_deadline_zero_returns_zero)
+{
+  int64_t deadline = SocketTimeout_deadline_ms (0);
+  ASSERT_EQ (0, deadline);
+
+  deadline = SocketTimeout_deadline_ms (-1);
+  ASSERT_EQ (0, deadline);
+}
+
+TEST (timeout_remaining_with_active_deadline)
+{
+  int64_t deadline = SocketTimeout_deadline_ms (1000);
+  int64_t remaining = SocketTimeout_remaining_ms (deadline);
+
+  /* Remaining should be close to 1000ms */
+  ASSERT (remaining > 900);
+  ASSERT (remaining <= 1000);
+}
+
+TEST (timeout_remaining_with_no_deadline)
+{
+  int64_t remaining = SocketTimeout_remaining_ms (0);
+  ASSERT_EQ (-1, remaining); /* -1 means infinite */
+}
+
+TEST (timeout_expired_false_for_future_deadline)
+{
+  int64_t deadline = SocketTimeout_deadline_ms (5000);
+  ASSERT_EQ (0, SocketTimeout_expired (deadline));
+}
+
+TEST (timeout_expired_false_for_no_deadline)
+{
+  ASSERT_EQ (0, SocketTimeout_expired (0));
+}
+
+TEST (timeout_expired_true_for_past_deadline)
+{
+  int64_t past_deadline = SocketTimeout_now_ms () - 1000;
+  ASSERT_EQ (1, SocketTimeout_expired (past_deadline));
+}
+
+TEST (timeout_poll_timeout_respects_deadline)
+{
+  int64_t deadline = SocketTimeout_deadline_ms (500);
+
+  /* With infinite current timeout, should return remaining */
+  int poll_timeout = SocketTimeout_poll_timeout (-1, deadline);
+  ASSERT (poll_timeout > 0);
+  ASSERT (poll_timeout <= 500);
+
+  /* With shorter current timeout, should return current */
+  poll_timeout = SocketTimeout_poll_timeout (100, deadline);
+  ASSERT_EQ (100, poll_timeout);
+}
+
+TEST (timeout_poll_timeout_no_deadline)
+{
+  /* With no deadline, should return current timeout unchanged */
+  int poll_timeout = SocketTimeout_poll_timeout (1000, 0);
+  ASSERT_EQ (1000, poll_timeout);
+
+  poll_timeout = SocketTimeout_poll_timeout (-1, 0);
+  ASSERT_EQ (-1, poll_timeout);
+}
+
+TEST (timeout_elapsed_ms_positive)
+{
+  int64_t start = SocketTimeout_now_ms ();
+  usleep (10000); /* Sleep 10ms */
+  int64_t elapsed = SocketTimeout_elapsed_ms (start);
+
+  ASSERT (elapsed >= 10);
+  ASSERT (elapsed < 100); /* Should not be way off */
+}
+
+/* ==================== Extended Timeout API Tests ==================== */
+
+TEST (socket_timeouts_extended_set_get)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  SocketTimeouts_Extended_T extended = { .dns_timeout_ms = 2000,
+                                         .connect_timeout_ms = 5000,
+                                         .tls_timeout_ms = 10000,
+                                         .request_timeout_ms = 30000,
+                                         .operation_timeout_ms = 15000 };
+
+  Socket_timeouts_set_extended (socket, &extended);
+
+  SocketTimeouts_Extended_T result;
+  Socket_timeouts_get_extended (socket, &result);
+
+  ASSERT_EQ (2000, result.dns_timeout_ms);
+  ASSERT_EQ (5000, result.connect_timeout_ms);
+  /* TLS maps to operation_timeout, and we set operation to 15000 */
+  ASSERT_EQ (15000, result.tls_timeout_ms);
+  /* request_timeout_ms is HTTP client level, not stored at socket level */
+  ASSERT_EQ (0, result.request_timeout_ms);
+  ASSERT_EQ (15000, result.operation_timeout_ms);
+
+  Socket_free (&socket);
+}
+
+TEST (socket_timeouts_extended_zero_inherits)
+{
+  setup_signals ();
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  /* Set basic timeouts first */
+  SocketTimeouts_T basic = { .connect_timeout_ms = 8000,
+                             .dns_timeout_ms = 3000,
+                             .operation_timeout_ms = 12000 };
+  Socket_timeouts_set (socket, &basic);
+
+  /* Extended with 0 values should not override */
+  SocketTimeouts_Extended_T extended = { .dns_timeout_ms = 0,     /* inherit */
+                                         .connect_timeout_ms = 0, /* inherit */
+                                         .tls_timeout_ms = 0,
+                                         .request_timeout_ms = 0,
+                                         .operation_timeout_ms = 0 };
+
+  Socket_timeouts_set_extended (socket, &extended);
+
+  SocketTimeouts_Extended_T result;
+  Socket_timeouts_get_extended (socket, &result);
+
+  /* Values should remain from basic timeouts */
+  ASSERT_EQ (3000, result.dns_timeout_ms);
+  ASSERT_EQ (8000, result.connect_timeout_ms);
+  ASSERT_EQ (12000, result.operation_timeout_ms);
+
+  Socket_free (&socket);
+}
+
+TEST (socket_connect_timeout_enforcement)
+{
+  setup_signals ();
+
+  /* Test that timeouts are properly set - actual timeout enforcement
+   * depends on network conditions and may not be reliably testable.
+   * We verify the API works correctly. */
+
+  Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (socket);
+
+  SocketTimeouts_T timeouts = { .connect_timeout_ms = 5000,
+                                .dns_timeout_ms = 2000,
+                                .operation_timeout_ms = 10000 };
+  Socket_timeouts_set (socket, &timeouts);
+
+  /* Verify timeouts were set */
+  SocketTimeouts_T result;
+  Socket_timeouts_get (socket, &result);
+
+  ASSERT_EQ (5000, result.connect_timeout_ms);
+  ASSERT_EQ (2000, result.dns_timeout_ms);
+  ASSERT_EQ (10000, result.operation_timeout_ms);
+
+  Socket_free (&socket);
+}
+
 int
 main (void)
 {

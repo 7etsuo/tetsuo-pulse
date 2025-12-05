@@ -579,6 +579,36 @@ extern void Socket_timeouts_getdefaults (SocketTimeouts_T *timeouts);
  */
 extern void Socket_timeouts_setdefaults (const SocketTimeouts_T *timeouts);
 
+/**
+ * Socket_timeouts_set_extended - Set per-socket extended timeout configuration
+ * @socket: Socket to modify
+ * @extended: Extended per-phase timeout configuration
+ *
+ * Sets granular per-phase timeouts for advanced use cases. The extended
+ * timeouts provide finer control than SocketTimeouts_T, allowing different
+ * timeouts for DNS, connect, TLS, and request phases.
+ *
+ * Values of 0 in the extended structure mean "inherit from basic timeouts".
+ * Values of -1 mean "no timeout (infinite)".
+ *
+ * Thread-safe: No - caller must ensure exclusive access
+ */
+extern void Socket_timeouts_set_extended (T socket,
+                                          const SocketTimeouts_Extended_T *extended);
+
+/**
+ * Socket_timeouts_get_extended - Retrieve per-socket extended timeout configuration
+ * @socket: Socket to query
+ * @extended: Output structure for extended timeouts
+ *
+ * Retrieves the current extended timeout configuration. If extended timeouts
+ * haven't been set, returns the basic timeouts mapped to the extended structure.
+ *
+ * Thread-safe: No - caller must ensure exclusive access
+ */
+extern void Socket_timeouts_get_extended (const T socket,
+                                          SocketTimeouts_Extended_T *extended);
+
 /* ============================================================================
  * Bandwidth Limiting
  * ============================================================================ */

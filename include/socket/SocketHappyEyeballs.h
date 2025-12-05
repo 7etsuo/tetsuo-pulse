@@ -110,6 +110,7 @@ typedef struct SocketHE_Config
   int first_attempt_delay_ms; /**< Delay before starting second family (250ms) */
   int attempt_timeout_ms;     /**< Per-attempt connection timeout (5000ms) */
   int total_timeout_ms;       /**< Overall operation timeout (30000ms) */
+  int dns_timeout_ms;         /**< DNS resolution timeout (5000ms, 0=use total) */
   int prefer_ipv6;            /**< 1 = IPv6 first (default), 0 = IPv4 first */
   int max_attempts;           /**< Maximum simultaneous attempts (2) */
 } SocketHE_Config_T;
@@ -131,6 +132,11 @@ typedef struct SocketHE_Config
 /** Total operation timeout including DNS and all connection attempts */
 #ifndef SOCKET_HE_DEFAULT_TOTAL_TIMEOUT_MS
 #define SOCKET_HE_DEFAULT_TOTAL_TIMEOUT_MS 30000
+#endif
+
+/** DNS resolution timeout (0 = use total_timeout_ms as limit) */
+#ifndef SOCKET_HE_DEFAULT_DNS_TIMEOUT_MS
+#define SOCKET_HE_DEFAULT_DNS_TIMEOUT_MS 5000
 #endif
 
 /** Maximum simultaneous connection attempts (per RFC 8305 recommendation) */

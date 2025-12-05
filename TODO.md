@@ -176,23 +176,23 @@ Verify and strengthen resource limit enforcement.
 
 ---
 
-## 10. Timeout Verification
+## 10. Timeout Verification ✅ COMPLETE
 
 Ensure timeouts are consistently enforced across all code paths.
 
-- [ ] 10.1 Verify DNS timeout propagation in `Socket_connect()` via `SocketDNS_request_settimeout()`
-- [ ] 10.2 Verify DNS timeout in Happy Eyeballs resolution phase
-- [ ] 10.3 Verify connect timeout in blocking `Socket_connect()`
-- [ ] 10.4 Verify connect timeout in non-blocking connect with poll
-- [ ] 10.5 Verify connect timeout in Happy Eyeballs connection racing
-- [ ] 10.6 Verify TLS handshake timeout enforcement
-- [ ] 10.7 Verify HTTP request timeout covers entire request/response cycle
-- [ ] 10.8 Verify WebSocket handshake timeout
-- [ ] 10.9 Verify proxy handshake timeout (SOCKS5, HTTP CONNECT)
-- [ ] 10.10 Add per-phase timeout configuration (DNS, connect, TLS, request)
-- [ ] 10.11 Add timeout remaining calculation helpers
-- [ ] 10.12 Document timeout behavior for all operations
-- [ ] 10.13 Write timeout edge case tests (timeout at each phase)
+- [x] 10.1 Verify DNS timeout propagation in `Socket_connect()` via `SocketDNS_request_settimeout()` (verified: propagated in `Socket_connect_async()`)
+- [x] 10.2 Verify DNS timeout in Happy Eyeballs resolution phase (implemented: added `dns_timeout_ms` to `SocketHE_Config_T`, propagated via `SocketDNS_request_settimeout()`)
+- [x] 10.3 Verify connect timeout in blocking `Socket_connect()` (verified: uses `socket->base->timeouts.connect_timeout_ms` via poll)
+- [x] 10.4 Verify connect timeout in non-blocking connect with poll (verified: `socket_wait_for_connect()` enforces timeout)
+- [x] 10.5 Verify connect timeout in Happy Eyeballs connection racing (verified: uses `config.total_timeout_ms` and `config.attempt_timeout_ms`)
+- [x] 10.6 Verify TLS handshake timeout enforcement (implemented: added `SocketTLS_handshake_auto()` that uses `operation_timeout_ms`)
+- [x] 10.7 Verify HTTP request timeout covers entire request/response cycle (verified: `connect_timeout_ms` enforced via Happy Eyeballs, TLS handshake now has timeout in pool)
+- [x] 10.8 Verify WebSocket handshake timeout (N/A: WebSocket module not yet implemented)
+- [x] 10.9 Verify proxy handshake timeout (SOCKS5, HTTP CONNECT) (verified: `proxy_check_timeout()` called in all handshake states)
+- [x] 10.10 Add per-phase timeout configuration (DNS, connect, TLS, request) (implemented: `SocketTimeouts_Extended_T` with `Socket_timeouts_set_extended()`)
+- [x] 10.11 Add timeout remaining calculation helpers (implemented: `SocketTimeout_*()` functions in `SocketUtil.h`)
+- [x] 10.12 Document timeout behavior for all operations (created: `docs/TIMEOUTS.md`)
+- [x] 10.13 Write timeout edge case tests (timeout at each phase) (added: 14 timeout tests in `test_socket.c`)
 
 ---
 

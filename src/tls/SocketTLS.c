@@ -435,6 +435,21 @@ SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
   return TLS_HANDSHAKE_ERROR; /* Unreachable */
 }
 
+TLSHandshakeState
+SocketTLS_handshake_auto (Socket_T socket)
+{
+  int timeout_ms;
+
+  assert (socket);
+
+  /* Use socket's operation timeout, falling back to TLS default */
+  timeout_ms = socket->base->timeouts.operation_timeout_ms;
+  if (timeout_ms <= 0)
+    timeout_ms = SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS;
+
+  return SocketTLS_handshake_loop (socket, timeout_ms);
+}
+
 void
 SocketTLS_shutdown (Socket_T socket)
 {

@@ -134,6 +134,24 @@ extern TLSHandshakeState SocketTLS_handshake_loop (Socket_T socket,
                                                    int timeout_ms);
 
 /**
+ * SocketTLS_handshake_auto - Complete handshake using socket's timeout config
+ * @socket: The socket instance with TLS enabled
+ *
+ * Convenience function that performs a TLS handshake using the socket's
+ * configured operation_timeout_ms. If operation_timeout_ms is 0 or not set,
+ * uses SOCKET_DEFAULT_TLS_HANDSHAKE_TIMEOUT_MS (30 seconds).
+ *
+ * This is the recommended function for production code as it automatically
+ * uses the socket's timeout configuration, ensuring consistent timeout
+ * behavior across the application.
+ *
+ * Returns: TLSHandshakeState (COMPLETE on success, ERROR on failure/timeout)
+ * Raises: SocketTLS_HandshakeFailed on error or timeout
+ * Thread-safe: No
+ */
+extern TLSHandshakeState SocketTLS_handshake_auto (Socket_T socket);
+
+/**
  * SocketTLS_shutdown - Perform graceful TLS connection shutdown
  * @socket: The socket instance with TLS enabled
  *

@@ -26,6 +26,7 @@
 
 #ifdef SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
+#include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"
 #endif
 
@@ -665,11 +666,16 @@ setup_tls_connection (SocketHTTPClient_T client, Socket_T *socket,
   /* Set SNI hostname */
   SocketTLS_set_hostname (*socket, hostname);
 
-  /* Perform handshake */
+  /* Perform handshake with timeout
+   * Use connect_timeout_ms for TLS handshake as part of connection phase */
   TRY
     {
-      int result = SocketTLS_handshake (*socket);
-      if (result != 0)
+      int tls_timeout = client->config.connect_timeout_ms;
+      if (tls_timeout <= 0)
+        tls_timeout = SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS;
+
+      TLSHandshakeState result = SocketTLS_handshake_loop (*socket, tls_timeout);
+      if (result != TLS_HANDSHAKE_COMPLETE)
         {
           Socket_free (socket);
           client->last_error = HTTPCLIENT_ERROR_TLS;
