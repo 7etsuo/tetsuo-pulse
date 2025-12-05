@@ -1626,6 +1626,7 @@ SocketHTTPServer_Request_push (SocketHTTPServer_Request_T req, const char *path,
   assert (req != NULL);
   assert (path != NULL);
 
+  (void)path;
   (void)headers;
 
   /* HTTP/2 push not yet integrated - return error for HTTP/1.1 */
