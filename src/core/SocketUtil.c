@@ -839,7 +839,11 @@ static const char *const socketmetrics_legacy_names[SOCKET_METRIC_COUNT] = {
   "pool.connections_removed",
   "pool.connections_reused",
   "pool.drain_initiated",
-  "pool.drain_completed"
+  "pool.drain_completed",
+  "pool.health_checks",
+  "pool.health_failures",
+  "pool.validation_failures",
+  "pool.idle_cleanups"
 };
 
 /**

@@ -535,5 +535,145 @@ SocketPool_set_drain_callback (T pool, SocketPool_DrainCallback cb, void *data)
   pthread_mutex_unlock (&pool->mutex);
 }
 
+/* ============================================================================
+ * Idle Connection Cleanup
+ * ============================================================================ */
+
+/**
+ * SocketPool_set_idle_timeout - Set idle connection timeout
+ * @pool: Pool instance
+ * @timeout_sec: Idle timeout in seconds (0 to disable)
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketPool_set_idle_timeout (T pool, time_t timeout_sec)
+{
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+  pool->idle_timeout_sec = timeout_sec;
+  pthread_mutex_unlock (&pool->mutex);
+}
+
+/**
+ * SocketPool_get_idle_timeout - Get idle connection timeout
+ * @pool: Pool instance
+ *
+ * Returns: Current idle timeout in seconds (0 = disabled)
+ * Thread-safe: Yes
+ */
+time_t
+SocketPool_get_idle_timeout (T pool)
+{
+  time_t timeout;
+
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+  timeout = pool->idle_timeout_sec;
+  pthread_mutex_unlock (&pool->mutex);
+
+  return timeout;
+}
+
+/**
+ * SocketPool_idle_cleanup_due_ms - Get time until next idle cleanup
+ * @pool: Pool instance
+ *
+ * Returns: Milliseconds until next cleanup, -1 if disabled
+ * Thread-safe: Yes
+ */
+int64_t
+SocketPool_idle_cleanup_due_ms (T pool)
+{
+  int64_t now_ms;
+  int64_t next_cleanup_ms;
+  int64_t remaining;
+
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+
+  /* Disabled if idle timeout is 0 */
+  if (pool->idle_timeout_sec == 0)
+    {
+      pthread_mutex_unlock (&pool->mutex);
+      return -1;
+    }
+
+  now_ms = Socket_get_monotonic_ms ();
+  next_cleanup_ms = pool->last_cleanup_ms + pool->cleanup_interval_ms;
+  remaining = next_cleanup_ms - now_ms;
+
+  pthread_mutex_unlock (&pool->mutex);
+
+  return remaining > 0 ? remaining : 0;
+}
+
+/**
+ * SocketPool_run_idle_cleanup - Run idle connection cleanup if due
+ * @pool: Pool instance
+ *
+ * Returns: Number of connections cleaned up
+ * Thread-safe: Yes
+ */
+size_t
+SocketPool_run_idle_cleanup (T pool)
+{
+  int64_t now_ms;
+  int64_t next_cleanup_ms;
+  time_t idle_timeout;
+  size_t cleaned_count = 0;
+
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+
+  /* Check if idle cleanup is enabled */
+  if (pool->idle_timeout_sec == 0)
+    {
+      pthread_mutex_unlock (&pool->mutex);
+      return 0;
+    }
+
+  /* Check if cleanup is due */
+  now_ms = Socket_get_monotonic_ms ();
+  next_cleanup_ms = pool->last_cleanup_ms + pool->cleanup_interval_ms;
+
+  if (now_ms < next_cleanup_ms)
+    {
+      pthread_mutex_unlock (&pool->mutex);
+      return 0;
+    }
+
+  /* Update last cleanup time and get timeout */
+  pool->last_cleanup_ms = now_ms;
+  idle_timeout = pool->idle_timeout_sec;
+
+  pthread_mutex_unlock (&pool->mutex);
+
+  /* Run cleanup - SocketPool_cleanup handles its own locking */
+  /* Get count before */
+  size_t count_before = SocketPool_count (pool);
+  SocketPool_cleanup (pool, idle_timeout);
+  size_t count_after = SocketPool_count (pool);
+
+  cleaned_count = count_before > count_after ? count_before - count_after : 0;
+
+  /* Update statistics if any connections were cleaned */
+  if (cleaned_count > 0)
+    {
+      pthread_mutex_lock (&pool->mutex);
+      pool->stats_idle_cleanups += cleaned_count;
+      pthread_mutex_unlock (&pool->mutex);
+
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "Idle cleanup removed %zu connections", cleaned_count);
+    }
+
+  return cleaned_count;
+}
+
 #undef T
 

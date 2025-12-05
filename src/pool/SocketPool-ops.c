@@ -278,11 +278,15 @@ handle_shrink_excess (T pool, size_t new_maxconns)
  *
  * Raises: SocketPool_Failed on error
  * Thread-safe: Yes - uses internal mutex
+ *
+ * If a resize callback is set, it is invoked after successful resize.
  */
 void
 SocketPool_resize (T pool, size_t new_maxconns)
 {
   size_t old_maxconns;
+  SocketPool_ResizeCallback cb = NULL;
+  void *cb_data = NULL;
 
   assert (pool);
 
@@ -320,7 +324,21 @@ SocketPool_resize (T pool, size_t new_maxconns)
     relink_free_slots (pool, new_maxconns);
 
   pool->maxconns = new_maxconns;
+
+  /* Capture callback info before releasing lock */
+  cb = pool->resize_cb;
+  cb_data = pool->resize_cb_data;
+
   pthread_mutex_unlock (&pool->mutex);
+
+  /* Invoke resize callback outside lock to prevent deadlock */
+  if (cb)
+    {
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "Pool resized from %zu to %zu connections",
+                       old_maxconns, new_maxconns);
+      cb (pool, old_maxconns, new_maxconns, cb_data);
+    }
 }
 
 /* ============================================================================

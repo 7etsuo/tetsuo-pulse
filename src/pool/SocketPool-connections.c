@@ -13,6 +13,8 @@
  */
 
 #include <assert.h>
+#include <errno.h>
+#include <sys/socket.h>
 #include <time.h>
 
 #include "pool/SocketPool-private.h"
@@ -29,6 +31,10 @@
 #endif
 
 #define T SocketPool_T
+
+/* Forward declarations */
+static void release_connection_resources (T pool, Connection_T conn,
+                                          Socket_T socket);
 
 /* ============================================================================
  * Free List Management
@@ -199,6 +205,7 @@ initialize_connection (Connection_T conn, Socket_T socket, time_t now)
   conn->socket = socket;
   conn->data = NULL;
   conn->last_activity = now;
+  conn->created_at = now;
   conn->active = 1;
 }
 
@@ -476,6 +483,7 @@ setup_new_connection (T pool, Connection_T conn, Socket_T socket, time_t now)
   initialize_connection (conn, socket, now);
   insert_into_hash_table (pool, conn, socket);
   increment_pool_count (pool);
+  pool->stats_total_added++;
   SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_ADDED, 1);
   return conn;
 }
@@ -600,12 +608,47 @@ get_unlocked (T pool, Socket_T socket, time_t now)
 }
 
 /**
+ * run_validation_callback_unlocked - Run validation callback if set
+ * @pool: Pool instance (mutex held)
+ * @conn: Connection to validate
+ *
+ * Returns: 1 if connection is valid (or no callback set), 0 if invalid
+ * Thread-safe: Call with mutex held
+ */
+static int
+run_validation_callback_unlocked (T pool, Connection_T conn)
+{
+  SocketPool_ValidationCallback cb;
+  void *cb_data;
+
+  cb = pool->validation_cb;
+  cb_data = pool->validation_cb_data;
+
+  if (!cb)
+    return 1; /* No callback = always valid */
+
+  /* Call validation callback (with mutex held - keep it short!) */
+  if (cb (conn, cb_data))
+    return 1;
+
+  /* Validation failed */
+  pool->stats_validation_failures++;
+  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                   "Connection validation callback returned invalid");
+  return 0;
+}
+
+/**
  * SocketPool_get - Look up connection by socket
  * @pool: Pool instance
  * @socket: Socket to find
  *
- * Returns: Connection or NULL if not found
+ * Returns: Connection or NULL if not found or validation failed
  * Thread-safe: Yes - uses internal mutex
+ *
+ * If a validation callback is set, it is called before returning the
+ * connection. If the callback returns 0, the connection is removed
+ * from the pool and NULL is returned.
  */
 Connection_T
 SocketPool_get (T pool, Socket_T socket)
@@ -620,6 +663,24 @@ SocketPool_get (T pool, Socket_T socket)
 
   pthread_mutex_lock (&pool->mutex);
   conn = get_unlocked (pool, socket, now);
+
+  /* Run validation callback if connection found */
+  if (conn && !run_validation_callback_unlocked (pool, conn))
+    {
+      /* Validation failed - remove connection */
+      remove_from_hash_table (pool, conn, socket);
+      release_connection_resources (pool, conn, socket);
+      return_to_free_list (pool, conn);
+      decrement_pool_count (pool);
+      SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REMOVED, 1);
+      pthread_mutex_unlock (&pool->mutex);
+      return NULL;
+    }
+
+  /* Update reuse stats if connection found */
+  if (conn)
+    pool->stats_total_reused++;
+
   pthread_mutex_unlock (&pool->mutex);
 
   return conn;
@@ -685,6 +746,7 @@ remove_unlocked (T pool, Socket_T socket)
   release_connection_resources (pool, conn, socket);
   return_to_free_list (pool, conn);
   decrement_pool_count (pool);
+  pool->stats_total_removed++;
   SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REMOVED, 1);
 }
 
@@ -958,6 +1020,124 @@ Connection_isactive (const Connection_T conn)
 {
   assert (conn);
   return conn->active;
+}
+
+/**
+ * Connection_created_at - Get connection creation timestamp
+ * @conn: Connection instance
+ *
+ * Returns: Creation timestamp (time_t)
+ * Thread-safe: Yes - read-only access
+ */
+time_t
+Connection_created_at (const Connection_T conn)
+{
+  assert (conn);
+  return conn->created_at;
+}
+
+/* ============================================================================
+ * Connection Health Check
+ * ============================================================================ */
+
+/**
+ * check_socket_error - Check socket for errors via SO_ERROR
+ * @fd: File descriptor to check
+ *
+ * Returns: 0 if no error, non-zero error code otherwise
+ * Thread-safe: Yes - pure system call
+ */
+static int
+check_socket_error (int fd)
+{
+  int error = 0;
+  socklen_t len = sizeof (error);
+
+  if (fd < 0)
+    return EBADF;
+
+  if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
+    return errno;
+
+  return error;
+}
+
+/**
+ * check_connection_stale - Check if connection is stale (exceeded idle timeout)
+ * @conn: Connection to check
+ * @idle_timeout_sec: Idle timeout in seconds (0 = no check)
+ * @now: Current time
+ *
+ * Returns: 1 if stale, 0 if not
+ */
+static int
+check_connection_stale (const Connection_T conn, time_t idle_timeout_sec,
+                        time_t now)
+{
+  if (idle_timeout_sec == 0)
+    return 0;
+
+  return difftime (now, conn->last_activity) > (double)idle_timeout_sec;
+}
+
+/**
+ * SocketPool_check_connection - Check health of a connection
+ * @pool: Pool instance
+ * @conn: Connection to check
+ *
+ * Returns: Health status of the connection
+ * Thread-safe: Yes
+ */
+SocketPool_ConnHealth
+SocketPool_check_connection (T pool, Connection_T conn)
+{
+  int fd;
+  int error;
+  time_t idle_timeout;
+  time_t now;
+
+  assert (pool);
+  assert (conn);
+
+  /* Check if connection is active */
+  if (!conn->active || !conn->socket)
+    return POOL_CONN_DISCONNECTED;
+
+  /* Get file descriptor */
+  fd = Socket_fd (conn->socket);
+  if (fd < 0)
+    return POOL_CONN_DISCONNECTED;
+
+  /* Check for socket errors */
+  error = check_socket_error (fd);
+  if (error != 0)
+    {
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "Connection health check: SO_ERROR=%d (%s)", error,
+                       Socket_safe_strerror (error));
+      return POOL_CONN_ERROR;
+    }
+
+  /* Check if socket is still connected using Socket_isconnected if available */
+  if (!Socket_isconnected (conn->socket))
+    return POOL_CONN_DISCONNECTED;
+
+  /* Check for staleness */
+  pthread_mutex_lock (&pool->mutex);
+  idle_timeout = pool->idle_timeout_sec;
+  pool->stats_health_checks++;
+  pthread_mutex_unlock (&pool->mutex);
+
+  now = time (NULL);
+  if (check_connection_stale (conn, idle_timeout, now))
+    {
+      pthread_mutex_lock (&pool->mutex);
+      pool->stats_health_failures++;
+      pthread_mutex_unlock (&pool->mutex);
+      return POOL_CONN_STALE;
+    }
+
+  return POOL_CONN_HEALTHY;
 }
 
 #undef T

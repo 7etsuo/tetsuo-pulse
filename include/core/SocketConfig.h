@@ -553,6 +553,21 @@ typedef struct SocketTimeouts
 #define SOCKET_PERCENTAGE_DIVISOR 100
 #endif
 
+/* Default idle timeout for pool connections (seconds, 0 = disabled) */
+#ifndef SOCKET_POOL_DEFAULT_IDLE_TIMEOUT
+#define SOCKET_POOL_DEFAULT_IDLE_TIMEOUT 300 /* 5 minutes */
+#endif
+
+/* Interval between idle connection cleanup runs (milliseconds) */
+#ifndef SOCKET_POOL_DEFAULT_CLEANUP_INTERVAL_MS
+#define SOCKET_POOL_DEFAULT_CLEANUP_INTERVAL_MS 60000 /* 1 minute */
+#endif
+
+/* Time window for calculating pool churn rate statistics (seconds) */
+#ifndef SOCKET_POOL_STATS_WINDOW_SEC
+#define SOCKET_POOL_STATS_WINDOW_SEC 60
+#endif
+
 /* ============================================================================
  * Hash and Algorithm Constants
  * ============================================================================ */

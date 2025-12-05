@@ -40,6 +40,11 @@ typedef struct T *T;
 /* Opaque connection type - use accessor functions */
 typedef struct Connection *Connection_T;
 
+/* Forward declarations for callback types used in pool structure */
+typedef int (*SocketPool_ValidationCallback) (Connection_T conn, void *data);
+typedef void (*SocketPool_ResizeCallback) (T pool, size_t old_size,
+                                           size_t new_size, void *data);
+
 /**
  * SocketPool_ConnectCallback - Callback for async connection completion
  * @conn: Completed connection or NULL on error
@@ -759,6 +764,212 @@ extern int SocketPool_drain_wait (T pool, int timeout_ms);
  */
 extern void SocketPool_set_drain_callback (T pool, SocketPool_DrainCallback cb,
                                            void *data);
+
+/* ============================================================================
+ * Idle Connection Cleanup
+ * ============================================================================ */
+
+/**
+ * SocketPool_set_idle_timeout - Set idle connection timeout
+ * @pool: Pool instance
+ * @timeout_sec: Idle timeout in seconds (0 to disable automatic cleanup)
+ *
+ * Thread-safe: Yes
+ *
+ * When enabled, connections idle longer than timeout_sec will be removed
+ * during periodic cleanup. Use SocketPool_idle_cleanup_due_ms() to get
+ * the time until next cleanup for poll timeout integration.
+ */
+extern void SocketPool_set_idle_timeout (T pool, time_t timeout_sec);
+
+/**
+ * SocketPool_get_idle_timeout - Get idle connection timeout
+ * @pool: Pool instance
+ *
+ * Returns: Current idle timeout in seconds (0 = disabled)
+ * Thread-safe: Yes
+ */
+extern time_t SocketPool_get_idle_timeout (T pool);
+
+/**
+ * SocketPool_idle_cleanup_due_ms - Get time until next idle cleanup
+ * @pool: Pool instance
+ *
+ * Returns: Milliseconds until next cleanup, -1 if disabled
+ * Thread-safe: Yes
+ *
+ * Use as timeout hint for poll/select to ensure timely cleanup.
+ * Returns -1 if idle timeout is disabled (timeout_sec == 0).
+ */
+extern int64_t SocketPool_idle_cleanup_due_ms (T pool);
+
+/**
+ * SocketPool_run_idle_cleanup - Run idle connection cleanup if due
+ * @pool: Pool instance
+ *
+ * Returns: Number of connections cleaned up
+ * Thread-safe: Yes
+ *
+ * Call periodically (e.g., after each poll iteration) to remove
+ * idle connections. Only performs cleanup if cleanup interval has passed.
+ * Does nothing if idle timeout is disabled.
+ */
+extern size_t SocketPool_run_idle_cleanup (T pool);
+
+/* ============================================================================
+ * Connection Health Check
+ * ============================================================================ */
+
+/**
+ * Connection health status
+ */
+typedef enum
+{
+  POOL_CONN_HEALTHY = 0,    /**< Connection is healthy and usable */
+  POOL_CONN_DISCONNECTED,   /**< Connection has been disconnected */
+  POOL_CONN_ERROR,          /**< Connection has a socket error */
+  POOL_CONN_STALE           /**< Connection has exceeded max age */
+} SocketPool_ConnHealth;
+
+/**
+ * SocketPool_check_connection - Check health of a connection
+ * @pool: Pool instance
+ * @conn: Connection to check
+ *
+ * Returns: Health status of the connection
+ * Thread-safe: Yes
+ *
+ * Checks:
+ * - Socket is still connected (SO_ERROR check)
+ * - Socket is not in error state
+ * - Connection has not exceeded idle timeout
+ */
+extern SocketPool_ConnHealth SocketPool_check_connection (T pool,
+                                                          Connection_T conn);
+
+/* ============================================================================
+ * Connection Validation Callback
+ * ============================================================================ */
+
+/**
+ * SocketPool_ValidationCallback - Callback to validate connection before reuse
+ * (Type defined earlier in header)
+ * @conn: Connection being validated
+ * @data: User data from SocketPool_set_validation_callback
+ *
+ * Returns: Non-zero if connection is valid, 0 if connection should be removed
+ *
+ * Called during SocketPool_get() before returning a connection.
+ * If callback returns 0, connection is removed from pool and NULL is returned.
+ * Thread-safe: Callback is invoked with pool mutex held - keep it short!
+ */
+
+/**
+ * SocketPool_set_validation_callback - Set connection validation callback
+ * @pool: Pool instance
+ * @cb: Validation callback (NULL to disable)
+ * @data: User data passed to callback
+ *
+ * Thread-safe: Yes
+ *
+ * When set, callback is invoked during SocketPool_get() to validate
+ * connections before reuse. Use for application-level health checks.
+ */
+extern void SocketPool_set_validation_callback (T pool,
+                                                SocketPool_ValidationCallback cb,
+                                                void *data);
+
+/* ============================================================================
+ * Pool Resize Callback
+ * ============================================================================ */
+
+/**
+ * SocketPool_ResizeCallback - Callback invoked after pool resize
+ * (Type defined earlier in header)
+ * @pool: Pool instance
+ * @old_size: Previous maximum connections
+ * @new_size: New maximum connections
+ * @data: User data from SocketPool_set_resize_callback
+ *
+ * Thread-safe: Callback is invoked outside pool mutex.
+ */
+
+/**
+ * SocketPool_set_resize_callback - Register pool resize notification callback
+ * @pool: Pool instance
+ * @cb: Callback function (NULL to clear)
+ * @data: User data passed to callback
+ *
+ * Thread-safe: Yes
+ *
+ * Callback is invoked after successful pool resize operations.
+ */
+extern void SocketPool_set_resize_callback (T pool, SocketPool_ResizeCallback cb,
+                                            void *data);
+
+/* ============================================================================
+ * Pool Statistics
+ * ============================================================================ */
+
+/**
+ * SocketPool_Stats - Pool statistics snapshot
+ *
+ * All counters are cumulative since pool creation or last reset.
+ * Rates are calculated over the configured statistics window.
+ */
+typedef struct SocketPool_Stats
+{
+  /* Cumulative counters */
+  uint64_t total_added;             /**< Total connections added to pool */
+  uint64_t total_removed;           /**< Total connections removed from pool */
+  uint64_t total_reused;            /**< Total connections reused (returned via get) */
+  uint64_t total_health_checks;     /**< Total health checks performed */
+  uint64_t total_health_failures;   /**< Total health check failures */
+  uint64_t total_validation_failures; /**< Total validation callback failures */
+  uint64_t total_idle_cleanups;     /**< Connections removed due to idle timeout */
+  
+  /* Current state */
+  size_t current_active;            /**< Current active connection count */
+  size_t current_idle;              /**< Current idle connection count (active but not in use) */
+  size_t max_connections;           /**< Maximum connection capacity */
+  
+  /* Calculated metrics */
+  double reuse_rate;                /**< Reuse rate: reused / (added + reused) */
+  double avg_connection_age_sec;    /**< Average age of active connections (seconds) */
+  double churn_rate_per_sec;        /**< Churn rate: (added + removed) / window_sec */
+} SocketPool_Stats;
+
+/**
+ * SocketPool_get_stats - Get pool statistics snapshot
+ * @pool: Pool instance
+ * @stats: Output statistics structure
+ *
+ * Thread-safe: Yes
+ *
+ * Fills stats with current pool statistics. Calculated metrics
+ * (reuse_rate, avg_connection_age, churn_rate) are computed at call time.
+ */
+extern void SocketPool_get_stats (T pool, SocketPool_Stats *stats);
+
+/**
+ * SocketPool_reset_stats - Reset pool statistics counters
+ * @pool: Pool instance
+ *
+ * Thread-safe: Yes
+ *
+ * Resets all cumulative counters to zero and restarts the statistics window.
+ * Current state values (active, idle, max) are not affected.
+ */
+extern void SocketPool_reset_stats (T pool);
+
+/**
+ * Connection_created_at - Get connection creation timestamp
+ * @conn: Connection instance
+ *
+ * Returns: Creation timestamp (time_t)
+ * Thread-safe: Yes - read-only access
+ */
+extern time_t Connection_created_at (const Connection_T conn);
 
 #undef T
 #endif

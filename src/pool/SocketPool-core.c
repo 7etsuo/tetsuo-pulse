@@ -250,6 +250,7 @@ SocketPool_connections_initialize_slot (struct Connection *conn)
   conn->outbuf = NULL;
   conn->data = NULL;
   conn->last_activity = 0;
+  conn->created_at = 0;
   conn->active = 0;
   conn->hash_next = NULL;
   conn->free_next = NULL;
@@ -421,6 +422,54 @@ initialize_pool_reconnect (T pool)
 }
 
 /**
+ * initialize_pool_idle_cleanup - Initialize idle connection cleanup fields
+ * @pool: Pool instance to initialize
+ *
+ * Sets idle cleanup to defaults from configuration.
+ */
+static void
+initialize_pool_idle_cleanup (T pool)
+{
+  pool->idle_timeout_sec = SOCKET_POOL_DEFAULT_IDLE_TIMEOUT;
+  pool->last_cleanup_ms = Socket_get_monotonic_ms ();
+  pool->cleanup_interval_ms = SOCKET_POOL_DEFAULT_CLEANUP_INTERVAL_MS;
+}
+
+/**
+ * initialize_pool_callbacks - Initialize callback fields
+ * @pool: Pool instance to initialize
+ *
+ * Sets validation and resize callbacks to disabled.
+ */
+static void
+initialize_pool_callbacks (T pool)
+{
+  pool->validation_cb = NULL;
+  pool->validation_cb_data = NULL;
+  pool->resize_cb = NULL;
+  pool->resize_cb_data = NULL;
+}
+
+/**
+ * initialize_pool_stats - Initialize statistics tracking fields
+ * @pool: Pool instance to initialize
+ *
+ * Zeros all statistics counters and sets start time.
+ */
+static void
+initialize_pool_stats (T pool)
+{
+  pool->stats_total_added = 0;
+  pool->stats_total_removed = 0;
+  pool->stats_total_reused = 0;
+  pool->stats_health_checks = 0;
+  pool->stats_health_failures = 0;
+  pool->stats_validation_failures = 0;
+  pool->stats_idle_cleanups = 0;
+  pool->stats_start_time_ms = Socket_get_monotonic_ms ();
+}
+
+/**
  * validate_pool_params - Validate pool creation parameters
  * @arena: Arena (must not be NULL)
  * @maxconns: Maximum connections (must be valid range)
@@ -468,6 +517,9 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
   initialize_pool_rate_limiting (pool);
   initialize_pool_drain (pool);
   initialize_pool_reconnect (pool);
+  initialize_pool_idle_cleanup (pool);
+  initialize_pool_callbacks (pool);
+  initialize_pool_stats (pool);
   initialize_pool_mutex (pool);
   build_free_list (pool, maxconns);
   return pool;
@@ -951,6 +1003,208 @@ Connection_has_reconnect (const Connection_T conn)
   if (!conn)
     return 0;
   return conn->reconnect != NULL;
+}
+
+/* ============================================================================
+ * Callback Configuration
+ * ============================================================================ */
+
+/**
+ * SocketPool_set_validation_callback - Set connection validation callback
+ * @pool: Pool instance
+ * @cb: Validation callback (NULL to disable)
+ * @data: User data passed to callback
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketPool_set_validation_callback (T pool, SocketPool_ValidationCallback cb,
+                                    void *data)
+{
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+  pool->validation_cb = cb;
+  pool->validation_cb_data = data;
+  pthread_mutex_unlock (&pool->mutex);
+}
+
+/**
+ * SocketPool_set_resize_callback - Register pool resize notification callback
+ * @pool: Pool instance
+ * @cb: Callback function (NULL to clear)
+ * @data: User data passed to callback
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketPool_set_resize_callback (T pool, SocketPool_ResizeCallback cb,
+                                void *data)
+{
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+  pool->resize_cb = cb;
+  pool->resize_cb_data = data;
+  pthread_mutex_unlock (&pool->mutex);
+}
+
+/* ============================================================================
+ * Pool Statistics
+ * ============================================================================ */
+
+/**
+ * calculate_reuse_rate - Calculate connection reuse rate
+ * @added: Total connections added
+ * @reused: Total connections reused
+ *
+ * Returns: Reuse rate (0.0 to 1.0)
+ */
+static double
+calculate_reuse_rate (uint64_t added, uint64_t reused)
+{
+  uint64_t total = added + reused;
+  if (total == 0)
+    return 0.0;
+  return (double)reused / (double)total;
+}
+
+/**
+ * calculate_avg_connection_age - Calculate average connection age
+ * @pool: Pool instance (mutex must be held)
+ * @now: Current time
+ *
+ * Returns: Average age in seconds
+ */
+static double
+calculate_avg_connection_age (T pool, time_t now)
+{
+  size_t active_count = 0;
+  double total_age = 0.0;
+
+  for (size_t i = 0; i < pool->maxconns; i++)
+    {
+      struct Connection *conn = &pool->connections[i];
+      if (conn->active && conn->created_at > 0)
+        {
+          total_age += difftime (now, conn->created_at);
+          active_count++;
+        }
+    }
+
+  if (active_count == 0)
+    return 0.0;
+
+  return total_age / (double)active_count;
+}
+
+/**
+ * calculate_churn_rate - Calculate connection churn rate
+ * @added: Total connections added
+ * @removed: Total connections removed
+ * @window_sec: Time window in seconds
+ *
+ * Returns: Churn rate per second
+ */
+static double
+calculate_churn_rate (uint64_t added, uint64_t removed, double window_sec)
+{
+  if (window_sec <= 0.0)
+    return 0.0;
+  return (double)(added + removed) / window_sec;
+}
+
+/**
+ * count_idle_connections - Count idle connections
+ * @pool: Pool instance (mutex must be held)
+ *
+ * Returns: Number of connections that are active but have been idle
+ *
+ * Note: All active connections are considered "idle" in this simple model
+ * since we don't track "in-use" state separately. For more sophisticated
+ * tracking, the caller should manage borrowed/returned state externally.
+ */
+static size_t
+count_idle_connections (T pool)
+{
+  /* In this simple model, active connections = idle connections
+   * A more sophisticated model would track "borrowed" vs "returned" state */
+  return pool->count;
+}
+
+/**
+ * SocketPool_get_stats - Get pool statistics snapshot
+ * @pool: Pool instance
+ * @stats: Output statistics structure
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketPool_get_stats (T pool, SocketPool_Stats *stats)
+{
+  int64_t now_ms;
+  time_t now;
+  double window_sec;
+
+  assert (pool);
+  assert (stats);
+
+  now_ms = Socket_get_monotonic_ms ();
+  now = time (NULL);
+
+  pthread_mutex_lock (&pool->mutex);
+
+  /* Cumulative counters */
+  stats->total_added = pool->stats_total_added;
+  stats->total_removed = pool->stats_total_removed;
+  stats->total_reused = pool->stats_total_reused;
+  stats->total_health_checks = pool->stats_health_checks;
+  stats->total_health_failures = pool->stats_health_failures;
+  stats->total_validation_failures = pool->stats_validation_failures;
+  stats->total_idle_cleanups = pool->stats_idle_cleanups;
+
+  /* Current state */
+  stats->current_active = pool->count;
+  stats->current_idle = count_idle_connections (pool);
+  stats->max_connections = pool->maxconns;
+
+  /* Calculated metrics */
+  stats->reuse_rate = calculate_reuse_rate (pool->stats_total_added,
+                                            pool->stats_total_reused);
+  stats->avg_connection_age_sec = calculate_avg_connection_age (pool, now);
+
+  /* Churn rate over stats window */
+  window_sec = (double)(now_ms - pool->stats_start_time_ms) / 1000.0;
+  stats->churn_rate_per_sec = calculate_churn_rate (pool->stats_total_added,
+                                                    pool->stats_total_removed,
+                                                    window_sec);
+
+  pthread_mutex_unlock (&pool->mutex);
+}
+
+/**
+ * SocketPool_reset_stats - Reset pool statistics counters
+ * @pool: Pool instance
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketPool_reset_stats (T pool)
+{
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+
+  pool->stats_total_added = 0;
+  pool->stats_total_removed = 0;
+  pool->stats_total_reused = 0;
+  pool->stats_health_checks = 0;
+  pool->stats_health_failures = 0;
+  pool->stats_validation_failures = 0;
+  pool->stats_idle_cleanups = 0;
+  pool->stats_start_time_ms = Socket_get_monotonic_ms ();
+
+  pthread_mutex_unlock (&pool->mutex);
 }
 
 #undef T

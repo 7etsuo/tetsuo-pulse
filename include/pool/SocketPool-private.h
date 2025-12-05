@@ -93,6 +93,7 @@ struct Connection
   SocketBuf_T outbuf;
   void *data;
   time_t last_activity;
+  time_t created_at;                /**< Connection creation timestamp (for age tracking) */
   int active;
   struct Connection *hash_next;
   struct Connection *free_next;
@@ -164,6 +165,29 @@ struct T
   int64_t drain_deadline_ms;        /**< Monotonic deadline for forced shutdown */
   SocketPool_DrainCallback drain_cb; /**< Drain completion callback */
   void *drain_cb_data;              /**< User data for drain callback */
+  
+  /* Idle connection cleanup */
+  time_t idle_timeout_sec;          /**< Idle timeout in seconds (0 = disabled) */
+  int64_t last_cleanup_ms;          /**< Last cleanup timestamp (monotonic) */
+  int64_t cleanup_interval_ms;      /**< Interval between cleanup runs */
+  
+  /* Validation callback */
+  SocketPool_ValidationCallback validation_cb; /**< Connection validation callback */
+  void *validation_cb_data;         /**< User data for validation callback */
+  
+  /* Resize callback */
+  SocketPool_ResizeCallback resize_cb; /**< Pool resize notification callback */
+  void *resize_cb_data;             /**< User data for resize callback */
+  
+  /* Statistics tracking */
+  uint64_t stats_total_added;       /**< Total connections added */
+  uint64_t stats_total_removed;     /**< Total connections removed */
+  uint64_t stats_total_reused;      /**< Total connections reused */
+  uint64_t stats_health_checks;     /**< Total health checks performed */
+  uint64_t stats_health_failures;   /**< Total health check failures */
+  uint64_t stats_validation_failures; /**< Total validation callback failures */
+  uint64_t stats_idle_cleanups;     /**< Total connections cleaned up due to idle */
+  int64_t stats_start_time_ms;      /**< Statistics window start time */
 };
 #undef T
 

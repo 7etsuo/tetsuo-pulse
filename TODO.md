@@ -142,16 +142,16 @@ Add metrics collection and export capabilities.
 
 Enhance connection pool for production reliability.
 
-- [ ] 8.1 Implement periodic idle connection cleanup timer in `SocketPool-drain.c`
-- [ ] 8.2 Add configurable idle timeout (`SocketPool_set_idle_timeout()`)
+- [x] 8.1 Implement periodic idle connection cleanup timer in `SocketPool-drain.c` (implemented: `SocketPool_run_idle_cleanup()`, `SocketPool_idle_cleanup_due_ms()`)
+- [x] 8.2 Add configurable idle timeout (`SocketPool_set_idle_timeout()`) (implemented: `SocketPool_set_idle_timeout()`, `SocketPool_get_idle_timeout()`)
 - [x] 8.3 Implement TCP keepalive probe for dead connection detection (implemented: `Socket_setkeepalive()` / `Socket_getkeepalive()`)
-- [ ] 8.4 Add connection health check before reuse (`SocketPool_check_connection()`)
-- [ ] 8.5 Implement connection validation callback hook
+- [x] 8.4 Add connection health check before reuse (`SocketPool_check_connection()`) (implemented: `SocketPool_ConnHealth` enum, `SocketPool_check_connection()`)
+- [x] 8.5 Implement connection validation callback hook (implemented: `SocketPool_ValidationCallback`, `SocketPool_set_validation_callback()`)
 - [x] 8.6 Add connection age tracking and max age limit (implemented: `max_connection_age_ms` in `SocketHTTPClient_Config`)
 - [x] 8.7 Implement connection prewarming (`SocketPool_prewarm()` enhancement) (implemented: `SocketPool_prewarm()`)
-- [ ] 8.8 Add pool resize notification callback
+- [x] 8.8 Add pool resize notification callback (implemented: `SocketPool_ResizeCallback`, `SocketPool_set_resize_callback()`)
 - [x] 8.9 Implement per-host connection limits in HTTP client pool (implemented: `max_connections_per_host` in `SocketHTTPClient_Config`)
-- [ ] 8.10 Add pool statistics: reuse rate, average connection age, churn rate
+- [x] 8.10 Add pool statistics: reuse rate, average connection age, churn rate (implemented: `SocketPool_Stats`, `SocketPool_get_stats()`, `SocketPool_reset_stats()`)
 - [ ] 8.11 Test pool behavior under connection storms
 - [ ] 8.12 Test pool behavior when backend servers restart
 
@@ -336,7 +336,7 @@ Track potential future enhancements (lower priority).
 | 5. TLS/Security | 12 | 12 | 100% |
 | 6. Logging | 13 | 13 | 100% |
 | 7. Metrics | 13 | 13 | 100% |
-| 8. Connection Pool | 12 | 4 | 33% |
+| 8. Connection Pool | 12 | 10 | 83% |
 | 9. Resource Limits | 12 | 0 | 0% |
 | 10. Timeout Verification | 13 | 0 | 0% |
 | 11. Error Recovery | 10 | 1 | 10% |
@@ -346,7 +346,7 @@ Track potential future enhancements (lower priority).
 | 15. Build and Release | 13 | 2 | 15% |
 | 16. Performance | 12 | 3 | 25% |
 | 17. Future Features | 10 | 0 | 0% |
-| **TOTAL** | **202** | **91** | **45%** |
+| **TOTAL** | **202** | **97** | **48%** |
 
 ---
 
