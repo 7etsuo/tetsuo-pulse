@@ -651,6 +651,13 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
                   conn->body_len = to_copy;
                   SocketBuf_consume (conn->inbuf, to_copy);
                 }
+
+              /* Check if we need to read more body data */
+              if (conn->body_len < conn->body_capacity)
+                {
+                  conn->state = CONN_STATE_READING_BODY;
+                  return 0; /* Need more data */
+                }
             }
         }
 
@@ -1215,6 +1222,33 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
       if (connection_parse_request (server, conn) == 1)
         {
           requests_processed = server_handle_parsed_request (server, conn);
+        }
+    }
+
+  /* Continue reading request body if needed */
+  if (conn->state == CONN_STATE_READING_BODY)
+    {
+      const void *data;
+      size_t len;
+
+      data = SocketBuf_readptr (conn->inbuf, &len);
+      if (len > 0)
+        {
+          size_t remaining = conn->body_capacity - conn->body_len;
+          size_t to_copy = len;
+          if (to_copy > remaining)
+            to_copy = remaining;
+
+          memcpy ((char *)conn->body + conn->body_len, data, to_copy);
+          conn->body_len += to_copy;
+          SocketBuf_consume (conn->inbuf, to_copy);
+
+          /* Check if body is complete */
+          if (conn->body_len >= conn->body_capacity)
+            {
+              conn->state = CONN_STATE_HANDLING;
+              requests_processed = server_handle_parsed_request (server, conn);
+            }
         }
     }
 
