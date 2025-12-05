@@ -2556,8 +2556,9 @@ TEST (rc_async_connect_connection_refused)
 
   TRY
   {
-    /* Use localhost with port 1 - exercises connection paths */
-    conn = SocketReconnect_new ("127.0.0.1", 1, &policy, NULL, NULL);
+    /* Use localhost with high ephemeral port - exercises connection paths */
+    /* Note: Port 1 was used previously but causes long timeouts on macOS */
+    conn = SocketReconnect_new ("127.0.0.1", 59981, &policy, NULL, NULL);
   }
   EXCEPT (SocketReconnect_Failed)
   {
@@ -2604,8 +2605,9 @@ TEST (rc_async_connect_poll_error_handling)
 
   TRY
   {
-    /* Use localhost port 1 - connection refused/permission denied */
-    conn = SocketReconnect_new ("127.0.0.1", 1, &policy, NULL, NULL);
+    /* Use localhost high ephemeral port - connection refused */
+    /* Note: Port 1 was used previously but causes long timeouts on macOS */
+    conn = SocketReconnect_new ("127.0.0.1", 59982, &policy, NULL, NULL);
   }
   EXCEPT (SocketReconnect_Failed)
   {
@@ -2659,8 +2661,9 @@ TEST (rc_next_timeout_in_backoff_state)
 
   TRY
   {
-    /* Connect to localhost port 1 - exercises state machine */
-    conn = SocketReconnect_new ("127.0.0.1", 1, &policy, NULL, NULL);
+    /* Connect to localhost high ephemeral port - exercises state machine */
+    /* Note: Port 1 was used previously but causes long timeouts on macOS */
+    conn = SocketReconnect_new ("127.0.0.1", 59983, &policy, NULL, NULL);
   }
   EXCEPT (SocketReconnect_Failed)
   {
@@ -2727,7 +2730,8 @@ TEST (rc_backoff_minimum_delay)
   policy.max_attempts = 5;
   policy.circuit_failure_threshold = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 1, &policy, NULL, NULL); }
+  /* Note: Port 1 was used previously but causes long timeouts on macOS */
+  TRY { conn = SocketReconnect_new ("127.0.0.1", 59984, &policy, NULL, NULL); }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -2785,7 +2789,8 @@ TEST (rc_circuit_open_blocks_attempts)
   policy.initial_delay_ms = 5;
   policy.max_delay_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 1, &policy, NULL, NULL); }
+  /* Note: Port 1 was used previously but causes long timeouts on macOS */
+  TRY { conn = SocketReconnect_new ("127.0.0.1", 59985, &policy, NULL, NULL); }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -2842,7 +2847,8 @@ TEST (rc_circuit_open_to_half_open_transition)
   policy.initial_delay_ms = 5;
   policy.max_delay_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 1, &policy, NULL, NULL); }
+  /* Note: Port 1 was used previously but causes long timeouts on macOS */
+  TRY { conn = SocketReconnect_new ("127.0.0.1", 59989, &policy, NULL, NULL); }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
