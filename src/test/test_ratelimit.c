@@ -109,9 +109,11 @@ TEST (ratelimit_refill_over_time)
     /* Create limiter: 1000 tokens/sec, bucket of 100 */
     limiter = SocketRateLimit_new (arena, 1000, 100);
 
-    /* Drain the bucket */
+    /* Drain the bucket - note: we don't assert 0 immediately because
+     * SocketRateLimit_available() calls refill internally, and under
+     * ThreadSanitizer overhead, time can elapse between try_acquire
+     * and available calls, causing tokens to refill */
     SocketRateLimit_try_acquire (limiter, 100);
-    ASSERT_EQ (0, SocketRateLimit_available (limiter));
 
     /* Wait for refill (50ms should give ~50 tokens)
      * Use wider tolerance for CI systems with variable timing */
