@@ -37,6 +37,11 @@
 #define SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS 30000 /* 30 seconds */
 #endif
 
+/* TLS handshake poll interval for handshake_loop */
+#ifndef SOCKET_TLS_POLL_INTERVAL_MS
+#define SOCKET_TLS_POLL_INTERVAL_MS 100 /* 100ms polling interval */
+#endif
+
 /* TLS read/write buffer sizes */
 #ifndef SOCKET_TLS_BUFFER_SIZE
 #define SOCKET_TLS_BUFFER_SIZE 16384 /* 16KB - TLS record max */
@@ -124,6 +129,15 @@
 
 #ifndef SOCKET_TLS_PIN_INITIAL_CAPACITY
 #define SOCKET_TLS_PIN_INITIAL_CAPACITY 4 /* Initial pin array capacity */
+#endif
+
+/* CRL auto-refresh configuration */
+#ifndef SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL
+#define SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL 60 /* Minimum 60 seconds */
+#endif
+
+#ifndef SOCKET_TLS_CRL_MAX_PATH_LEN
+#define SOCKET_TLS_CRL_MAX_PATH_LEN 4096 /* Max CRL path length */
 #endif
 
 #else /* SOCKET_HAS_TLS not defined */

@@ -277,6 +277,8 @@ if(SOCKET_HAS_TLS)
         src/tls/SocketTLSContext-session.c
         src/tls/SocketTLSContext-verify.c
         src/tls/SocketTLSContext-pinning.c
+        src/tls/SocketTLSContext-ct.c
+        src/tls/SocketTLSContext-crl.c
         # DTLS (Datagram TLS) support
         src/tls/SocketDTLS.c
         src/tls/SocketDTLSContext.c
@@ -522,6 +524,7 @@ set(TEST_SOURCES
     test_ws_integration
     test_http2_integration
     test_proxy_integration
+    test_httpserver_load
 )
 
 # Create test executables (link against object files to preserve constructor attributes)

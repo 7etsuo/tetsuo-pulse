@@ -134,7 +134,8 @@ init_stats_mutex (T ctx)
  * configure_tls13_only - Apply TLS1.3-only security settings
  * @ssl_ctx: OpenSSL context to configure
  *
- * Sets minimum/maximum protocol to TLS1.3 and configures modern ciphers.
+ * Sets minimum/maximum protocol to TLS1.3, configures modern ciphers,
+ * and disables renegotiation for security.
  *
  * Raises: SocketTLS_Failed on configuration failure
  */
@@ -158,6 +159,17 @@ configure_tls13_only (SSL_CTX *ssl_ctx)
       SSL_CTX_free (ssl_ctx);
       ctx_raise_openssl_error ("Failed to set secure ciphersuites");
     }
+
+  /* Disable TLS renegotiation to prevent:
+   * - CVE-2009-3555 (prefix injection attack)
+   * - Triple Handshake Attack
+   * - DoS via repeated renegotiation
+   *
+   * Note: TLS 1.3 doesn't support renegotiation at all, but this also
+   * protects if TLS 1.2 is ever re-enabled via set_min_protocol. */
+#ifdef SSL_OP_NO_RENEGOTIATION
+  SSL_CTX_set_options (ssl_ctx, SSL_OP_NO_RENEGOTIATION);
+#endif
 }
 
 /**

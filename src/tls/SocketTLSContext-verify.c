@@ -293,6 +293,12 @@ SocketTLSContext_refresh_crl (T ctx, const char *crl_path)
   SocketTLSContext_load_crl (ctx, crl_path);
 }
 
+void
+SocketTLSContext_reload_crl (T ctx, const char *crl_path)
+{
+  SocketTLSContext_load_crl (ctx, crl_path);
+}
+
 /* ============================================================================
  * Protocol Configuration
  * ============================================================================
@@ -539,6 +545,77 @@ SocketTLS_get_ocsp_status (Socket_T socket)
   int result = validate_ocsp_basic_response (resp);
   OCSP_RESPONSE_free (resp);
   return result;
+}
+
+/* ============================================================================
+ * OCSP Stapling Client Enable
+ * ============================================================================
+ */
+
+void
+SocketTLSContext_enable_ocsp_stapling (T ctx)
+{
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+
+  if (ctx->is_server)
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                         "OCSP stapling request is for client contexts only");
+
+  /* Enable the TLS status_request extension (OCSP stapling) */
+  if (SSL_CTX_set_tlsext_status_type (ctx->ssl_ctx, TLSEXT_STATUSTYPE_ocsp) != 1)
+    {
+      ctx_raise_openssl_error ("Failed to enable OCSP stapling request");
+    }
+
+  ctx->ocsp_stapling_enabled = 1;
+}
+
+int
+SocketTLSContext_ocsp_stapling_enabled (T ctx)
+{
+  assert (ctx);
+  return ctx->ocsp_stapling_enabled;
+}
+
+/* ============================================================================
+ * Custom Certificate Store Callback
+ * ============================================================================
+ *
+ * Note: OpenSSL doesn't provide a simple X509_STORE_set_lookup_certs_cb.
+ * Instead, we store the callback and user_data for use during verification.
+ * The callback can be invoked from a custom verify callback set via
+ * SocketTLSContext_set_verify_callback().
+ *
+ * For advanced use cases, consider:
+ * 1. Pre-populating the store with X509_STORE_add_cert()
+ * 2. Using a custom X509_LOOKUP_METHOD via X509_STORE_add_lookup()
+ * 3. Using the verify callback to dynamically add certificates
+ */
+
+void
+SocketTLSContext_set_cert_lookup_callback (T ctx,
+                                           SocketTLSCertLookupCallback callback,
+                                           void *user_data)
+{
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+
+  ctx->cert_lookup_callback = (void *)callback;
+  ctx->cert_lookup_user_data = user_data;
+
+  /* Note: The callback will be available for use in custom verify callbacks.
+   * OpenSSL doesn't have a built-in hook for certificate lookup during
+   * chain building. To use this callback:
+   *
+   * 1. Set a custom verify callback via SocketTLSContext_set_verify_callback()
+   * 2. In your callback, when verification fails due to missing issuer:
+   *    - Get the cert being verified from X509_STORE_CTX_get_current_cert()
+   *    - Get issuer name from X509_get_issuer_name()
+   *    - Call your lookup callback to find the issuer
+   *    - Add found cert via X509_STORE_add_cert() and retry
+   *
+   * For simpler use cases, pre-populate the store before verification. */
 }
 
 #undef T

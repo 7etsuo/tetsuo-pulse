@@ -479,9 +479,250 @@ log_warn("Auth failed for user %s", user);
 
 ---
 
+## TLS Configuration Best Practices
+
+### Protocol Version
+
+The library enforces TLS 1.3 only by default. **Do not weaken this**:
+
+```c
+/* Default: TLS 1.3 only - keep it this way */
+#define SOCKET_TLS_MIN_VERSION TLS1_3_VERSION
+#define SOCKET_TLS_MAX_VERSION TLS1_3_VERSION
+
+/* BAD: Don't lower the minimum version */
+// SocketTLSContext_set_min_protocol(ctx, TLS1_VERSION);  // INSECURE!
+```
+
+**Why TLS 1.3 only?**
+- Removes all legacy vulnerable ciphers (RC4, DES, 3DES, etc.)
+- No renegotiation (eliminates CVE-2009-3555 class attacks)
+- Mandatory forward secrecy (all key exchanges are ephemeral)
+- Encrypted handshake (protects certificate from passive observers)
+- Faster: 1-RTT handshake, optional 0-RTT resumption
+
+### Cipher Suite Configuration
+
+The library uses secure TLS 1.3 cipher suites by default:
+
+```c
+/* Default: Modern AEAD ciphers with PFS */
+#define SOCKET_TLS13_CIPHERSUITES \
+    "TLS_AES_256_GCM_SHA384:"     \
+    "TLS_CHACHA20_POLY1305_SHA256:" \
+    "TLS_AES_128_GCM_SHA256"
+```
+
+All three ciphers provide:
+- **AEAD encryption** (authenticated encryption with associated data)
+- **256-bit or 128-bit keys** (both considered secure)
+- **Perfect Forward Secrecy** (compromised long-term key doesn't decrypt past traffic)
+
+### Certificate Verification
+
+**Always verify server certificates in production**:
+
+```c
+/* Client: Enable verification */
+SocketTLSContext_T ctx = SocketTLSContext_new_client("/etc/ssl/certs/ca-certificates.crt");
+SocketTLSContext_set_verify_mode(ctx, TLS_VERIFY_PEER);
+
+/* BAD: Never disable verification in production */
+// SocketTLSContext_set_verify_mode(ctx, TLS_VERIFY_NONE);  // INSECURE!
+```
+
+### Mutual TLS (mTLS)
+
+For high-security applications, require client certificates:
+
+```c
+/* Server: Require client certificate */
+SocketTLSContext_T server_ctx = SocketTLSContext_new_server(
+    "server.crt", "server.key", "ca.crt");
+SocketTLSContext_set_verify_mode(server_ctx, TLS_VERIFY_FAIL_IF_NO_PEER_CERT);
+
+/* Client: Provide certificate */
+SocketTLSContext_T client_ctx = SocketTLSContext_new_client("ca.crt");
+SocketTLSContext_load_certificate(client_ctx, "client.crt", "client.key");
+```
+
+### OCSP Stapling
+
+Enable OCSP stapling for real-time revocation checking:
+
+```c
+/* Client: Request OCSP status */
+SocketTLSContext_enable_ocsp_stapling(client_ctx);
+
+/* After handshake, check status */
+OCSPStatus status = SocketTLS_get_ocsp_status(socket);
+if (status == OCSP_STATUS_REVOKED) {
+    /* Certificate revoked - abort! */
+    Socket_free(&socket);
+}
+
+/* Server: Provide OCSP response */
+SocketTLSContext_set_ocsp_response(server_ctx, ocsp_response, ocsp_len);
+```
+
+### Certificate Transparency
+
+Enable CT verification to detect misissued certificates:
+
+```c
+/* Client: Require valid SCTs */
+SocketTLSContext_enable_ct(ctx, CT_VALIDATION_STRICT);
+
+/* Or permissive mode (log but don't fail) */
+SocketTLSContext_enable_ct(ctx, CT_VALIDATION_PERMISSIVE);
+```
+
+### Certificate Revocation Lists (CRL)
+
+CRLs provide certificate revocation checking without online OCSP queries:
+
+**Initial CRL Loading:**
+
+```c
+/* Load CRL from file or directory */
+SocketTLSContext_load_crl(ctx, "/path/to/crl.pem");
+
+/* CRL directory (OpenSSL hashed names required) */
+SocketTLSContext_load_crl(ctx, "/etc/ssl/crls/");
+```
+
+**Manual CRL Refresh Workflow:**
+
+CRLs have expiration dates and must be refreshed periodically:
+
+```c
+/* 1. Download updated CRL from CA's distribution point */
+/* (Use curl, wget, or HTTP client to fetch from CDP URL) */
+
+/* 2. Reload CRL into context */
+SocketTLSContext_reload_crl(ctx, "/path/to/updated-crl.pem");
+
+/* 3. Schedule next refresh before CRL expires */
+/* Typically refresh at 50% of validity period */
+```
+
+**Automatic CRL Refresh:**
+
+For production systems, configure automatic refresh:
+
+```c
+/* Enable automatic CRL refresh every 6 hours */
+SocketTLSContext_set_crl_auto_refresh(ctx, "/path/to/crl.pem", 
+                                       6 * 3600,  /* 6 hours */
+                                       crl_refresh_callback,
+                                       user_data);
+
+/* Callback notifies application of refresh success/failure */
+void crl_refresh_callback(SocketTLSContext_T ctx, const char *path,
+                          int success, void *data) {
+    if (!success) {
+        log_error("CRL refresh failed for %s", path);
+        /* Consider alerting or using cached CRL */
+    }
+}
+
+/* Cancel auto-refresh when done */
+SocketTLSContext_cancel_crl_auto_refresh(ctx);
+```
+
+**CRL Best Practices:**
+
+- **Refresh frequency:** Check CRL's nextUpdate field; refresh at 50% of validity
+- **Fallback:** Cache last known good CRL in case download fails
+- **Delta CRLs:** Not currently supported; use complete CRLs
+- **Multiple CRLs:** Call `load_crl()` multiple times for different issuers
+- **CRL vs OCSP:** Use OCSP stapling for real-time checks; CRLs for offline validation
+
+**Generating CRL Hash Links (for directory mode):**
+
+```bash
+# OpenSSL requires hashed symlinks for CRL directories
+c_rehash /etc/ssl/crls/
+# Or manually:
+ln -s crl.pem $(openssl crl -hash -noout -in crl.pem).r0
+```
+
+### Session Resumption Security
+
+Session resumption improves performance but has security considerations:
+
+```c
+/* Enable with appropriate timeout */
+SocketTLSContext_enable_session_cache(ctx, 1000, 300);  /* 5 min timeout */
+
+/* For high-security: disable session tickets */
+/* (Session tickets encrypt session state with server key - if key
+   is compromised, all past sessions can be decrypted) */
+```
+
+**Session Ticket Key Rotation:**
+- Rotate session ticket keys regularly (every few hours)
+- Use `SocketTLSContext_rotate_ticket_key()` for key rotation
+- Old tickets become invalid after rotation
+
+### Renegotiation Protection
+
+TLS renegotiation is disabled by default (SSL_OP_NO_RENEGOTIATION):
+
+```c
+/* Renegotiation is automatically disabled for all contexts.
+ * TLS 1.3 doesn't support renegotiation at all.
+ * For TLS 1.2 (if ever enabled), renegotiation is blocked.
+ *
+ * Renegotiation vulnerabilities:
+ * - CVE-2009-3555: Prefix injection attack
+ * - Triple Handshake Attack
+ * - DoS via repeated renegotiation
+ */
+```
+
+### Private Key Protection
+
+```c
+/* Use strong key files with restricted permissions */
+chmod 600 server.key  /* Owner read/write only */
+
+/* Consider using encrypted keys */
+/* The library will prompt for passphrase or use callback */
+
+/* For production: Use HSM or key management service */
+```
+
+### TLS Security Checklist
+
+**Server Configuration:**
+- [ ] TLS 1.3 only (default)
+- [ ] Valid certificate from trusted CA
+- [ ] Strong private key (RSA 2048+ or ECDSA P-256+)
+- [ ] OCSP stapling enabled
+- [ ] Session ticket key rotation
+- [ ] Certificate Transparency support
+
+**Client Configuration:**
+- [ ] Verify server certificates
+- [ ] Use system CA bundle or explicit trust anchor
+- [ ] Consider certificate pinning for known servers
+- [ ] Enable OCSP stapling request
+- [ ] Enable CT verification in strict mode
+
+**Both:**
+- [ ] Keep OpenSSL updated
+- [ ] Monitor for new vulnerabilities
+- [ ] Test with tools like testssl.sh or ssllabs.com
+- [ ] Log TLS errors for security monitoring
+
+---
+
 ## See Also
 
-- @ref SocketTLSConfig.h - TLS configuration
+- @ref SocketTLSConfig.h - TLS configuration constants
+- @ref SocketTLSContext.h - TLS context management
+- @ref SocketTLS.h - TLS socket operations
 - @ref SocketSYNProtect.h - DoS protection
 - @ref SocketRateLimit.h - Rate limiting
 - @ref SocketCrypto.h - Cryptographic utilities

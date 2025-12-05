@@ -223,6 +223,111 @@ extern void SocketTLSContext_load_crl(T ctx, const char *crl_path);
  */
 extern void SocketTLSContext_refresh_crl(T ctx, const char *crl_path);
 
+/**
+ * SocketTLSContext_reload_crl - Reload CRL from path (alias for refresh_crl)
+ * @ctx: TLS context
+ * @crl_path: Path to CRL file or directory
+ *
+ * Reloads the CRL from the specified path. This is an alias for
+ * SocketTLSContext_refresh_crl() provided for semantic clarity.
+ * Use when you have downloaded an updated CRL and want to reload it.
+ *
+ * Thread-safe: No
+ * Raises: SocketTLS_Failed on load error
+ */
+extern void SocketTLSContext_reload_crl(T ctx, const char *crl_path);
+
+/* ============================================================================
+ * CRL Auto-Refresh Support
+ * ============================================================================
+ *
+ * Automatic CRL refresh for long-running applications. The library will
+ * attempt to reload the CRL file at the specified interval. A callback
+ * notifies the application of success or failure.
+ *
+ * IMPORTANT: Auto-refresh requires the application to call
+ * SocketTLSContext_crl_check_refresh() periodically (e.g., from event loop).
+ * The library does not spawn background threads for refresh.
+ *
+ * Usage:
+ *   SocketTLSContext_set_crl_auto_refresh(ctx, "/path/to/crl.pem", 
+ *                                          3600, my_callback, data);
+ *   // In event loop:
+ *   SocketTLSContext_crl_check_refresh(ctx);
+ */
+
+/**
+ * SocketTLSCrlCallback - CRL refresh notification callback
+ * @ctx: TLS context that was refreshed
+ * @path: Path to CRL file
+ * @success: 1 if refresh succeeded, 0 if failed
+ * @user_data: User data from set_crl_auto_refresh
+ *
+ * Called after each refresh attempt. On failure, the old CRL remains
+ * in effect. Application should log failures and potentially alert.
+ */
+typedef void (*SocketTLSCrlCallback)(T ctx, const char *path, 
+                                      int success, void *user_data);
+
+/**
+ * SocketTLSContext_set_crl_auto_refresh - Enable automatic CRL refresh
+ * @ctx: TLS context instance
+ * @crl_path: Path to CRL file (copied to context)
+ * @interval_seconds: Refresh interval (minimum 60, 0 to disable)
+ * @callback: Optional callback for refresh notifications (may be NULL)
+ * @user_data: User data passed to callback
+ *
+ * Configures automatic CRL refresh. The CRL will be reloaded every
+ * interval_seconds. Call SocketTLSContext_crl_check_refresh() from
+ * your event loop to trigger scheduled refreshes.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed on invalid parameters
+ * Thread-safe: No - configure before sharing context
+ */
+extern void SocketTLSContext_set_crl_auto_refresh(T ctx, const char *crl_path,
+                                                   long interval_seconds,
+                                                   SocketTLSCrlCallback callback,
+                                                   void *user_data);
+
+/**
+ * SocketTLSContext_cancel_crl_auto_refresh - Disable automatic CRL refresh
+ * @ctx: TLS context instance
+ *
+ * Cancels any configured automatic refresh. The current CRL remains loaded.
+ *
+ * Returns: void
+ * Raises: None
+ * Thread-safe: No
+ */
+extern void SocketTLSContext_cancel_crl_auto_refresh(T ctx);
+
+/**
+ * SocketTLSContext_crl_check_refresh - Check and perform CRL refresh if due
+ * @ctx: TLS context instance
+ *
+ * Call this periodically from your event loop. If a refresh is scheduled
+ * and due, it will reload the CRL and invoke the callback.
+ *
+ * Returns: 1 if refresh was performed, 0 if not due or not configured
+ * Raises: None (errors reported via callback)
+ * Thread-safe: No
+ */
+extern int SocketTLSContext_crl_check_refresh(T ctx);
+
+/**
+ * SocketTLSContext_crl_next_refresh_ms - Get milliseconds until next refresh
+ * @ctx: TLS context instance
+ *
+ * Returns time until next scheduled CRL refresh. Useful for setting
+ * poll/select timeouts in event loops.
+ *
+ * Returns: Milliseconds until next refresh, -1 if auto-refresh disabled
+ * Raises: None
+ * Thread-safe: Yes (read-only)
+ */
+extern long SocketTLSContext_crl_next_refresh_ms(T ctx);
+
 /* OCSP Stapling Support */
 
 /**
@@ -270,6 +375,81 @@ extern void SocketTLSContext_set_ocsp_gen_callback(T ctx, SocketTLSOcspGenCallba
  * Thread-safe: Yes (post-handshake)
  */
 extern int SocketTLS_get_ocsp_status(Socket_T socket);
+
+/**
+ * SocketTLSContext_enable_ocsp_stapling - Enable OCSP stapling request (client)
+ * @ctx: TLS context instance (client only)
+ *
+ * Configures client context to request OCSP stapled responses from servers
+ * during TLS handshake. After handshake, use SocketTLS_get_ocsp_status()
+ * to check the stapled response.
+ *
+ * Note: This enables the STATUS_REQUEST TLS extension. The server must
+ * support OCSP stapling and have a valid OCSP response configured.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if server context or OpenSSL error
+ * Thread-safe: No - modifies shared context
+ */
+extern void SocketTLSContext_enable_ocsp_stapling(T ctx);
+
+/**
+ * SocketTLSContext_ocsp_stapling_enabled - Check if OCSP stapling is enabled
+ * @ctx: TLS context instance
+ *
+ * Returns: 1 if OCSP stapling request enabled, 0 otherwise
+ * Raises: None
+ * Thread-safe: Yes (read-only)
+ */
+extern int SocketTLSContext_ocsp_stapling_enabled(T ctx);
+
+/* ============================================================================
+ * Custom Certificate Store Callback
+ * ============================================================================
+ *
+ * For advanced use cases where certificates are loaded from non-filesystem
+ * sources (e.g., database, HSM, remote service).
+ *
+ * Usage:
+ *   X509 *my_cert_lookup(X509_STORE_CTX *ctx, X509_NAME *name, void *data) {
+ *       // Lookup certificate by subject name
+ *       return load_cert_from_database(name);
+ *   }
+ *   SocketTLSContext_set_cert_lookup_callback(ctx, my_cert_lookup, db_conn);
+ */
+
+/**
+ * SocketTLSCertLookupCallback - Custom certificate lookup function
+ * @store_ctx: OpenSSL store context for current verification
+ * @name: Subject name being looked up
+ * @user_data: User data from set_cert_lookup_callback
+ *
+ * Returns: X509 certificate if found (caller takes ownership), NULL otherwise
+ * Thread-safe: Must be thread-safe if context is shared
+ */
+typedef X509 *(*SocketTLSCertLookupCallback)(X509_STORE_CTX *store_ctx,
+                                              X509_NAME *name, 
+                                              void *user_data);
+
+/**
+ * SocketTLSContext_set_cert_lookup_callback - Register custom cert lookup
+ * @ctx: TLS context instance
+ * @callback: Lookup function (NULL to disable)
+ * @user_data: User data passed to callback
+ *
+ * Sets a custom callback for certificate lookup during verification.
+ * This allows loading certificates from databases, HSMs, or other sources
+ * instead of the filesystem.
+ *
+ * Note: Requires OpenSSL 1.1.0+ for X509_STORE_set_lookup_certs_cb.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if not supported or OpenSSL error
+ * Thread-safe: No - configure before sharing context
+ */
+extern void SocketTLSContext_set_cert_lookup_callback(T ctx,
+                                                       SocketTLSCertLookupCallback callback,
+                                                       void *user_data);
 
 /* Protocol configuration */
 /**
@@ -599,6 +779,58 @@ extern int SocketTLSContext_verify_cert_pin (T ctx, X509 *cert);
 
 /* Pinning exception type */
 extern const Except_T SocketTLS_PinVerifyFailed;
+
+/* ============================================================================
+ * Certificate Transparency (RFC 6962)
+ * ============================================================================
+ *
+ * CT helps detect mis-issued certificates by requiring them to be logged
+ * in publicly auditable CT logs. Clients verify Signed Certificate
+ * Timestamps (SCTs) embedded in certificates, TLS extensions, or OCSP.
+ *
+ * Requires OpenSSL 1.1.0+ with CT support compiled in.
+ *
+ * Usage:
+ *   SocketTLSContext_T ctx = SocketTLSContext_new_client("ca-bundle.pem");
+ *   SocketTLSContext_enable_ct(ctx, CT_VALIDATION_STRICT);
+ *   // ... connections will require valid SCTs
+ *
+ * Thread safety: Configuration is NOT thread-safe - perform before sharing.
+ */
+
+/**
+ * CTValidationMode - Certificate Transparency validation mode
+ */
+typedef enum
+{
+  CT_VALIDATION_PERMISSIVE = 0, /**< Log but don't fail on missing SCTs */
+  CT_VALIDATION_STRICT = 1      /**< Require valid SCTs, fail otherwise */
+} CTValidationMode;
+
+/**
+ * SocketTLSContext_enable_ct - Enable Certificate Transparency verification
+ * @ctx: The TLS context instance (client only)
+ * @mode: Validation mode (strict or permissive)
+ *
+ * Enables CT verification for client connections. In strict mode,
+ * connections fail if no valid SCTs are present. In permissive mode,
+ * missing SCTs are logged but don't cause failure.
+ *
+ * Returns: void
+ * Raises: SocketTLS_Failed if CT not supported or server context
+ * Thread-safe: No - modifies shared context
+ */
+extern void SocketTLSContext_enable_ct (T ctx, CTValidationMode mode);
+
+/**
+ * SocketTLSContext_ct_enabled - Check if CT verification is enabled
+ * @ctx: The TLS context instance
+ *
+ * Returns: 1 if CT enabled, 0 if disabled
+ * Raises: None
+ * Thread-safe: Yes (read-only)
+ */
+extern int SocketTLSContext_ct_enabled (T ctx);
 
 /* Internal functions (not part of public API) */
 /**

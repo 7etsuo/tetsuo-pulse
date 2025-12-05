@@ -420,6 +420,24 @@ struct T
 
   /* Certificate pinning (SPKI SHA256) */
   TLSContextPinning pinning;
+
+  /* Certificate Transparency (RFC 6962) */
+  int ct_enabled;            /**< 1 if CT verification enabled */
+  CTValidationMode ct_mode;  /**< CT validation mode (strict/permissive) */
+
+  /* CRL Auto-Refresh Configuration */
+  char *crl_refresh_path;    /**< Path to CRL file for auto-refresh (arena-allocated) */
+  long crl_refresh_interval; /**< Refresh interval in seconds (0 = disabled) */
+  time_t crl_next_refresh;   /**< Next scheduled refresh time (monotonic) */
+  void *crl_callback;        /**< SocketTLSCrlCallback (cast to avoid circular deps) */
+  void *crl_user_data;       /**< User data for CRL callback */
+
+  /* OCSP Stapling Client Mode */
+  int ocsp_stapling_enabled; /**< 1 if client requests OCSP stapling */
+
+  /* Custom Certificate Store Lookup */
+  void *cert_lookup_callback; /**< SocketTLSCertLookupCallback (cast) */
+  void *cert_lookup_user_data; /**< User data for cert lookup callback */
 };
 
 /* ============================================================================
