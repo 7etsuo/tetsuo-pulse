@@ -87,36 +87,56 @@ test_server_start (TestServer *ts, SocketHTTPServer_Handler handler,
 {
   SocketHTTPServer_Config config;
   int port;
+  volatile int retries;
+  volatile int server_started = 0;
 
   memset (ts, 0, sizeof (*ts));
 
-  port = get_test_port ();
-  ts->port = port;
   ts->handler = handler;
   ts->handler_data = handler_data;
 
-  SocketHTTPServer_config_defaults (&config);
-  config.port = port;
-  config.bind_address = "127.0.0.1";
-  config.request_timeout_ms = 5000;
-  config.keepalive_timeout_ms = 10000;
-
-  TRY
-  ts->server = SocketHTTPServer_new (&config);
-  EXCEPT (SocketHTTPServer_Failed)
-  fprintf (stderr, "Failed to create server: %s\n",
-           SocketHTTPServer_Failed.reason);
-  return -1;
-  END_TRY;
-
-  if (ts->server == NULL)
-    return -1;
-
-  SocketHTTPServer_set_handler (ts->server, handler, handler_data);
-
-  if (SocketHTTPServer_start (ts->server) < 0)
+  /* Retry with different ports if bind fails (handles port conflicts in CI) */
+  for (retries = 0; retries < 10 && !server_started; retries++)
     {
-      SocketHTTPServer_free (&ts->server);
+      port = get_test_port ();
+      ts->port = port;
+
+      SocketHTTPServer_config_defaults (&config);
+      config.port = port;
+      config.bind_address = "127.0.0.1";
+      config.request_timeout_ms = 5000;
+      config.keepalive_timeout_ms = 10000;
+
+      TRY
+      ts->server = SocketHTTPServer_new (&config);
+      if (ts->server != NULL)
+        {
+          SocketHTTPServer_set_handler (ts->server, handler, handler_data);
+          if (SocketHTTPServer_start (ts->server) >= 0)
+            {
+              server_started = 1;
+            }
+          else
+            {
+              SocketHTTPServer_free (&ts->server);
+              ts->server = NULL;
+            }
+        }
+      EXCEPT (SocketHTTPServer_Failed)
+      /* Port might be in use, try next port */
+      ts->server = NULL;
+      EXCEPT (SocketHTTPServer_BindFailed)
+      /* Port might be in use, try next port */
+      ts->server = NULL;
+      END_TRY;
+
+      if (!server_started && retries < 9)
+        usleep (10000); /* Small delay before retry */
+    }
+
+  if (!server_started || ts->server == NULL)
+    {
+      fprintf (stderr, "Failed to start server after %d retries\n", retries);
       return -1;
     }
 

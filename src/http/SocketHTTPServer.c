@@ -257,6 +257,9 @@ struct SocketHTTPServer
   /* Latency tracking */
   LatencyTracker latency;
 
+  /* Thread safety for statistics */
+  pthread_mutex_t stats_mutex;
+
   int running;
   Arena_T arena;
 };
@@ -433,7 +436,9 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
           /* Connection limit reached for this IP */
           Arena_dispose (&arena);
           free (conn);
+          pthread_mutex_lock (&server->stats_mutex);
           server->connections_rejected++;
+          pthread_mutex_unlock (&server->stats_mutex);
           return NULL;
         }
     }
@@ -443,8 +448,10 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
   if (server->connections != NULL)
     server->connections->prev = conn;
   server->connections = conn;
+  pthread_mutex_lock (&server->stats_mutex);
   server->connection_count++;
   server->total_connections++;
+  pthread_mutex_unlock (&server->stats_mutex);
 
   return conn;
 }
@@ -482,7 +489,9 @@ connection_close (SocketHTTPServer_T server, ServerConnection *conn)
   if (conn->next != NULL)
     conn->next->prev = conn->prev;
 
+  pthread_mutex_lock (&server->stats_mutex);
   server->connection_count--;
+  pthread_mutex_unlock (&server->stats_mutex);
 
   /* Free arena */
   if (conn->arena != NULL)
@@ -519,7 +528,9 @@ connection_read (SocketHTTPServer_T server, ServerConnection *conn)
     }
 
   conn->last_activity_ms = server_time_ms ();
+  pthread_mutex_lock (&server->stats_mutex);
   server->total_bytes_received += (size_t)n;
+  pthread_mutex_unlock (&server->stats_mutex);
 
   SocketBuf_write (conn->inbuf, buf, (size_t)n);
 
@@ -548,7 +559,9 @@ connection_send_data (SocketHTTPServer_T server, ServerConnection *conn,
     }
 
   conn->last_activity_ms = server_time_ms ();
+  pthread_mutex_lock (&server->stats_mutex);
   server->total_bytes_sent += (size_t)sent;
+  pthread_mutex_unlock (&server->stats_mutex);
 
   return 0;
 }
@@ -662,9 +675,17 @@ connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
 
   /* Track errors */
   if (conn->response_status >= 400 && conn->response_status < 500)
-    server->errors_4xx++;
+    {
+      pthread_mutex_lock (&server->stats_mutex);
+      server->errors_4xx++;
+      pthread_mutex_unlock (&server->stats_mutex);
+    }
   else if (conn->response_status >= 500)
-    server->errors_5xx++;
+    {
+      pthread_mutex_lock (&server->stats_mutex);
+      server->errors_5xx++;
+      pthread_mutex_unlock (&server->stats_mutex);
+    }
 
   if (conn->response_body_len > 0 && !conn->response_streaming)
     {
@@ -826,6 +847,9 @@ SocketHTTPServer_new (const SocketHTTPServer_Config *config)
   /* Initialize latency tracker */
   latency_init (&server->latency);
 
+  /* Initialize stats mutex */
+  pthread_mutex_init (&server->stats_mutex, NULL);
+
   return server;
 }
 
@@ -873,6 +897,8 @@ SocketHTTPServer_free (SocketHTTPServer_T *server)
     {
       Arena_dispose (&s->arena);
     }
+
+  pthread_mutex_destroy (&s->stats_mutex);
 
   free (s);
   *server = NULL;
@@ -1052,7 +1078,9 @@ server_check_rate_limit (SocketHTTPServer_T server, ServerConnection *conn)
       = find_rate_limiter (server, conn->request ? conn->request->path : NULL);
   if (limiter != NULL && !SocketRateLimit_try_acquire (limiter, 1))
     {
+      pthread_mutex_lock (&server->stats_mutex);
       server->rate_limited++;
+      pthread_mutex_unlock (&server->stats_mutex);
       connection_send_error (server, conn, 429, "Too Many Requests");
       return 0;
     }
@@ -1116,17 +1144,19 @@ server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
   conn->response_status = 200;
 
   server->handler (&req_ctx, server->handler_userdata);
-  server->total_requests++;
 
   /* Update RPS tracking */
   now = server_time_ms ();
   sec_idx = (size_t)((now / 1000) % HTTPSERVER_RPS_WINDOW_SECONDS);
+  pthread_mutex_lock (&server->stats_mutex);
+  server->total_requests++;
   if (sec_idx != server->rps_index)
     {
       server->request_counts[sec_idx] = 0;
       server->rps_index = sec_idx;
     }
   server->request_counts[sec_idx]++;
+  pthread_mutex_unlock (&server->stats_mutex);
 
   return 1;
 }
@@ -1214,7 +1244,9 @@ server_check_connection_timeout (SocketHTTPServer_T server,
   if (conn->state == CONN_STATE_READING_REQUEST
       && idle_ms > server->config.keepalive_timeout_ms)
     {
+      pthread_mutex_lock (&server->stats_mutex);
       server->timeouts++;
+      pthread_mutex_unlock (&server->stats_mutex);
       connection_close (server, conn);
       return 1;
     }
@@ -1223,7 +1255,9 @@ server_check_connection_timeout (SocketHTTPServer_T server,
   if (conn->state == CONN_STATE_READING_BODY && conn->request_start_ms > 0
       && (now - conn->request_start_ms) > server->config.request_read_timeout_ms)
     {
+      pthread_mutex_lock (&server->stats_mutex);
       server->timeouts++;
+      pthread_mutex_unlock (&server->stats_mutex);
       connection_close (server, conn);
       return 1;
     }
@@ -1234,7 +1268,9 @@ server_check_connection_timeout (SocketHTTPServer_T server,
       && (now - conn->response_start_ms)
              > server->config.response_write_timeout_ms)
     {
+      pthread_mutex_lock (&server->stats_mutex);
       server->timeouts++;
+      pthread_mutex_unlock (&server->stats_mutex);
       connection_close (server, conn);
       return 1;
     }
@@ -1901,6 +1937,8 @@ SocketHTTPServer_stats (SocketHTTPServer_T server, SocketHTTPServer_Stats *stats
 
   memset (stats, 0, sizeof (*stats));
 
+  pthread_mutex_lock (&server->stats_mutex);
+
   stats->active_connections = server->connection_count;
   stats->total_connections = server->total_connections;
   stats->connections_rejected = server->connections_rejected;
@@ -1926,12 +1964,16 @@ SocketHTTPServer_stats (SocketHTTPServer_T server, SocketHTTPServer_Stats *stats
   stats->p50_request_time_us = latency_percentile (&server->latency, 50);
   stats->p95_request_time_us = latency_percentile (&server->latency, 95);
   stats->p99_request_time_us = latency_percentile (&server->latency, 99);
+
+  pthread_mutex_unlock (&server->stats_mutex);
 }
 
 void
 SocketHTTPServer_stats_reset (SocketHTTPServer_T server)
 {
   assert (server != NULL);
+
+  pthread_mutex_lock (&server->stats_mutex);
 
   server->total_connections = server->connection_count;
   server->total_requests = 0;
@@ -1945,4 +1987,6 @@ SocketHTTPServer_stats_reset (SocketHTTPServer_T server)
 
   memset (server->request_counts, 0, sizeof (server->request_counts));
   latency_init (&server->latency);
+
+  pthread_mutex_unlock (&server->stats_mutex);
 }
