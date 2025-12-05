@@ -2194,27 +2194,61 @@ TEST (tls_cipher_suite_negotiation)
 
 /* ==================== Mutual TLS (5.10) ==================== */
 
+/* Generate client certificate with proper extensions for mTLS
+ * Uses config file approach for LibreSSL/macOS compatibility */
 static int
 generate_client_cert (const char *client_cert, const char *client_key,
                       const char *ca_cert, const char *ca_key)
 {
   char cmd[2048];
+  const char *conf_file = "/tmp/openssl_client.cnf";
+  FILE *f;
+
+  /* Generate client private key */
   snprintf (cmd, sizeof (cmd), "openssl genrsa -out %s 2048 2>/dev/null",
             client_key);
   if (system (cmd) != 0)
     return -1;
+
+  /* Create OpenSSL config file with client auth extensions */
+  f = fopen (conf_file, "w");
+  if (!f)
+    return -1;
+  fprintf (f, "[req]\n"
+              "distinguished_name = req_dn\n"
+              "[req_dn]\n"
+              "CN = client\n"
+              "[client_ext]\n"
+              "basicConstraints = CA:FALSE\n"
+              "keyUsage = digitalSignature, keyEncipherment\n"
+              "extendedKeyUsage = clientAuth\n");
+  fclose (f);
+
+  /* Generate CSR */
   snprintf (cmd, sizeof (cmd),
             "openssl req -new -key %s -out /tmp/client.csr "
-            "-subj '/CN=client' 2>/dev/null",
-            client_key);
+            "-subj '/CN=client' -config %s 2>/dev/null",
+            client_key, conf_file);
   if (system (cmd) != 0)
-    return -1;
+    {
+      unlink (conf_file);
+      return -1;
+    }
+
+  /* Sign with CA, including extensions */
   snprintf (cmd, sizeof (cmd),
             "openssl x509 -req -in /tmp/client.csr -CA %s -CAkey %s "
-            "-CAcreateserial -out %s -days 1 2>/dev/null",
-            ca_cert, ca_key, client_cert);
+            "-CAcreateserial -out %s -days 1 "
+            "-extfile %s -extensions client_ext 2>/dev/null",
+            ca_cert, ca_key, client_cert, conf_file);
   if (system (cmd) != 0)
-    return -1;
+    {
+      unlink (conf_file);
+      unlink ("/tmp/client.csr");
+      return -1;
+    }
+
+  unlink (conf_file);
   unlink ("/tmp/client.csr");
   return 0;
 }
