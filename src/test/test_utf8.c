@@ -2,7 +2,6 @@
  * test_utf8.c - Unit tests for SocketUTF8 module
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Tests UTF-8 validation against Unicode test vectors and security cases:
  * - Valid ASCII and multi-byte sequences

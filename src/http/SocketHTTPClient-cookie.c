@@ -2,7 +2,6 @@
  * SocketHTTPClient-cookie.c - HTTP Cookie Implementation (RFC 6265)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements cookie storage and management:
  * - Cookie parsing from Set-Cookie headers

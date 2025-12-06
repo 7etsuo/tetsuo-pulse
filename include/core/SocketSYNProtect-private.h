@@ -5,7 +5,6 @@
  * SocketSYNProtect-private.h - Internal structures for SYN protection
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This header contains internal implementation details not part of the
  * public API. Do not include directly - use SocketSYNProtect.h instead.

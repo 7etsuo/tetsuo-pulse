@@ -2,7 +2,6 @@
  * test_proxy.c - Tests for Proxy Tunneling Support
  *
  * Part of the Socket Library Test Suite
- * Following C Interfaces and Implementations patterns
  *
  * Tests cover:
  * - Configuration defaults

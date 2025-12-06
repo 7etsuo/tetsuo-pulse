@@ -2,7 +2,6 @@
  * fuzz_hpack_huffman.c - Fuzzing harness for HPACK Huffman decoding
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Tests Huffman decoder robustness against malformed input.
  */

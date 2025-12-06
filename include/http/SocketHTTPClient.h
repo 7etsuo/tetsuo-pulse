@@ -2,7 +2,6 @@
  * SocketHTTPClient.h - HTTP Client API
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * High-level HTTP client abstracting HTTP/1.1 and HTTP/2 with:
  * - Connection pooling with per-host limits

@@ -2,7 +2,6 @@
  * SocketHTTP-uri.c - URI Parsing (RFC 3986)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements URI parsing using a single-pass state machine parser.
  * Handles absolute URIs, relative references, and IPv6 addresses.

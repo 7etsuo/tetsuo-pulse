@@ -2,7 +2,6 @@
  * SocketProxy-http.c - HTTP CONNECT Protocol Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements HTTP CONNECT method for proxy tunneling (RFC 7231 Section 4.3.6).
  *

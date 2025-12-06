@@ -2,7 +2,6 @@
  * fuzz_http1_chunked.c - Fuzzing harness for HTTP/1.1 chunked encoding
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  */
 
 #include "core/Arena.h"

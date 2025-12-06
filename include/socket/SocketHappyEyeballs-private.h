@@ -5,7 +5,6 @@
  * SocketHappyEyeballs-private.h - Internal structures for Happy Eyeballs
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This header contains internal implementation details for the Happy Eyeballs
  * module. Not for public use - structures may change without notice.

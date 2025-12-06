@@ -2,7 +2,6 @@
  * SocketTimer.c - Timer subsystem with min-heap implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This module provides a timer subsystem for scheduling callbacks
  * using a min-heap data structure for efficient O(log n) operations.

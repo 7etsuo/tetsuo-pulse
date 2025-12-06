@@ -2,7 +2,6 @@
  * SocketHTTP1-chunked.c - HTTP/1.1 Chunked Transfer Encoding
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements RFC 9112 Section 7.1 chunked transfer coding:
  * - Chunk encoding for requests/responses

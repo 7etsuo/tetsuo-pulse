@@ -2,7 +2,6 @@
  * test_reconnect.c - Tests for Automatic Reconnection Framework
  *
  * Part of the Socket Library Test Suite
- * Following C Interfaces and Implementations patterns
  *
  * Tests cover:
  * - Policy configuration defaults and customization

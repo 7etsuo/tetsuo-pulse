@@ -2,7 +2,6 @@
  * SocketWS-handshake.c - WebSocket Handshake (RFC 6455 Section 4)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * HTTP upgrade handshake for WebSocket connections.
  *

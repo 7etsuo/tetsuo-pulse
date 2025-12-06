@@ -2,7 +2,6 @@
  * fuzz_proxy_http.c - Fuzzing harness for HTTP CONNECT response parsing
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Fuzzes HTTP CONNECT response parsing:
  * - Uses SocketHTTP1_Parser_T internally

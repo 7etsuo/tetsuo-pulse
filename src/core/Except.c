@@ -2,7 +2,6 @@
  * Except.c - Exception handling implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns (Hanson, 1996)
  *
  * This module provides a structured exception handling mechanism for C,
  * enabling non-local jumps with proper cleanup semantics via TRY/EXCEPT/

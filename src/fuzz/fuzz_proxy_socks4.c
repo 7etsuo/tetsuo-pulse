@@ -2,7 +2,6 @@
  * fuzz_proxy_socks4.c - Fuzzing harness for SOCKS4/4a protocol parsing
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Fuzzes SOCKS4 response parsing:
  * - Connect response

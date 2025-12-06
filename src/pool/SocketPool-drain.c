@@ -2,7 +2,6 @@
  * SocketPool-drain.c - Graceful shutdown (drain) implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements industry-standard graceful shutdown following patterns from
  * nginx, HAProxy, Envoy, and Go http.Server:
@@ -214,6 +213,35 @@ shutdown_socket_gracefully (Socket_T sock)
   END_TRY;
 }
 
+/**
+ * force_close_all_connections - Force close all active connections
+ * @pool: Pool instance
+ *
+ * Thread-safe: Call with mutex held
+ * Complexity: O(n) where n = active connections
+ *
+ * Collects all active sockets, releases lock, then closes them.
+ * This prevents holding the lock during potentially slow close operations.
+ *
+ * THREAD SAFETY NOTE:
+ * This function is designed to be called only during drain when the pool is
+ * in DRAINING state. During drain, SocketPool_add() rejects new connections,
+ * but SocketPool_remove() may still be called by other threads.
+ *
+ * If another thread calls SocketPool_remove() + Socket_free() on a socket
+ * that is in our collected list, there is a potential use-after-free when
+ * we try to call SocketPool_remove() on the same socket. However:
+ *
+ * 1. The second SocketPool_remove() will return early (find_slot returns NULL)
+ * 2. The Socket_free() will be on already-freed memory (undefined behavior)
+ *
+ * MITIGATION: Applications should ensure that during drain, only the drain
+ * mechanism itself calls Socket_free() on pool connections. Normal application
+ * code should stop processing connections when drain is initiated.
+ *
+ * FUTURE IMPROVEMENT: Consider adding a "closing" flag to Connection to
+ * prevent concurrent removal and double-free scenarios.
+ */
 static void
 force_close_all_connections (T pool)
 {
@@ -230,6 +258,14 @@ force_close_all_connections (T pool)
   if (!to_close)
     {
       /* Fallback: allocate temporary buffer */
+      /* Security: Check for integer overflow before multiplication to prevent
+       * heap buffer overflow from undersized allocation */
+      if (pool->maxconns > SIZE_MAX / sizeof (Socket_T))
+        {
+          SocketLog_emitf (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,
+                           "Integer overflow in force close buffer size");
+          return;
+        }
       to_close = malloc (pool->maxconns * sizeof (Socket_T));
       if (!to_close)
         {
@@ -327,7 +363,13 @@ SocketPool_drain (T pool, int timeout_ms)
     }
   else
     {
-      pool->drain_deadline_ms = now_ms + timeout_ms;
+      /* Security: Overflow-safe deadline calculation with saturation.
+       * While practically impossible (requires ~292 million years uptime),
+       * defense-in-depth dictates protecting against INT64 overflow. */
+      if (now_ms > INT64_MAX - timeout_ms)
+        pool->drain_deadline_ms = INT64_MAX; /* Saturate on overflow */
+      else
+        pool->drain_deadline_ms = now_ms + timeout_ms;
     }
 
   /* Transition to DRAINING with release semantics */
@@ -628,7 +670,13 @@ SocketPool_idle_cleanup_due_ms (T pool)
     }
 
   now_ms = Socket_get_monotonic_ms ();
-  next_cleanup_ms = pool->last_cleanup_ms + pool->cleanup_interval_ms;
+
+  /* Security: Overflow-safe addition with saturation */
+  if (pool->last_cleanup_ms > INT64_MAX - pool->cleanup_interval_ms)
+    next_cleanup_ms = INT64_MAX;
+  else
+    next_cleanup_ms = pool->last_cleanup_ms + pool->cleanup_interval_ms;
+
   remaining = next_cleanup_ms - now_ms;
 
   pthread_mutex_unlock (&pool->mutex);
@@ -664,7 +712,12 @@ SocketPool_run_idle_cleanup (T pool)
 
   /* Check if cleanup is due */
   now_ms = Socket_get_monotonic_ms ();
-  next_cleanup_ms = pool->last_cleanup_ms + pool->cleanup_interval_ms;
+
+  /* Security: Overflow-safe addition with saturation */
+  if (pool->last_cleanup_ms > INT64_MAX - pool->cleanup_interval_ms)
+    next_cleanup_ms = INT64_MAX;
+  else
+    next_cleanup_ms = pool->last_cleanup_ms + pool->cleanup_interval_ms;
 
   if (now_ms < next_cleanup_ms)
     {

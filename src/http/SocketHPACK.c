@@ -2,7 +2,6 @@
  * SocketHPACK.c - HPACK Header Compression Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements RFC 7541 HPACK:
  * - Integer encoding/decoding (Section 5.1)

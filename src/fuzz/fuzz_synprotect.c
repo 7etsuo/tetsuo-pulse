@@ -2,7 +2,6 @@
  * fuzz_synprotect.c - SYN Flood Protection Fuzzing Harness
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Fuzzes the SYN flood protection module with random:
  * - IP address strings (including malformed)

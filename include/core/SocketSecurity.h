@@ -2,7 +2,6 @@
  * SocketSecurity.h - Centralized Security Configuration and Utilities
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This header consolidates all security-related configuration, limits,
  * and validation utilities from across the socket library into a single

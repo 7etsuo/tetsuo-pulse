@@ -5,7 +5,6 @@
  * SocketConfig.h - Socket Library Configuration
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This header provides compile-time configuration for the socket library
  * including all size limits, platform detection, and socket option mappings.

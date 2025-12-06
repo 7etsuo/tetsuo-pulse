@@ -2,7 +2,6 @@
  * SocketDTLSContext.c - DTLS Context Management Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements DTLS context lifecycle, certificate loading, cookie exchange
  * configuration, and session management using OpenSSL.

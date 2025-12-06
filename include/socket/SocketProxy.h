@@ -2,7 +2,6 @@
  * SocketProxy.h - Proxy Tunneling Support
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Provides transparent proxy tunneling for TCP connections, supporting
  * HTTP CONNECT and SOCKS4/4a/5 protocols. The implementation follows

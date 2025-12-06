@@ -2,7 +2,6 @@
  * SocketTLSContext-pinning.c - Certificate Pinning (SPKI SHA256)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements OWASP-recommended SPKI (Subject Public Key Info) SHA256 pinning.
  * SPKI pinning hashes the SubjectPublicKeyInfo DER encoding, which survives
@@ -80,21 +79,6 @@ parse_hex_hash (const char *hex, unsigned char *out)
 }
 
 /**
- * pin_compare - Compare two pins for qsort/bsearch
- * @a: First pin
- * @b: Second pin
- *
- * Returns: <0 if a<b, 0 if equal, >0 if a>b
- */
-static int
-pin_compare (const void *a, const void *b)
-{
-  const TLSCertPin *pa = (const TLSCertPin *)a;
-  const TLSCertPin *pb = (const TLSCertPin *)b;
-  return memcmp (pa->hash, pb->hash, SOCKET_TLS_PIN_HASH_LEN);
-}
-
-/**
  * ensure_pin_capacity - Ensure pin array has capacity for more pins
  * @ctx: TLS context
  *
@@ -140,46 +124,26 @@ ensure_pin_capacity (T ctx)
 }
 
 /**
- * insert_pin_sorted - Insert pin maintaining sorted order
+ * insert_pin - Insert pin at end of array
  * @ctx: TLS context
  * @hash: Hash to insert
  *
- * Inserts pin at correct position to maintain sorted order.
- * Duplicates are silently ignored.
+ * Inserts pin at the end of the array. Order doesn't matter since
+ * tls_pinning_find() uses constant-time linear scan.
+ * Duplicates are detected using constant-time comparison and silently ignored.
  */
 static void
-insert_pin_sorted (T ctx, const unsigned char *hash)
+insert_pin (T ctx, const unsigned char *hash)
 {
-  /* Check for duplicate */
+  /* Check for duplicate using constant-time comparison */
   if (tls_pinning_find (ctx->pinning.pins, ctx->pinning.count, hash))
     return;
 
   ensure_pin_capacity (ctx);
 
-  /* Find insertion point using binary search */
-  size_t lo = 0;
-  size_t hi = ctx->pinning.count;
-
-  while (lo < hi)
-    {
-      size_t mid = lo + (hi - lo) / 2;
-      int cmp = memcmp (hash, ctx->pinning.pins[mid].hash,
-                        SOCKET_TLS_PIN_HASH_LEN);
-      if (cmp < 0)
-        hi = mid;
-      else
-        lo = mid + 1;
-    }
-
-  /* Shift elements to make room */
-  if (lo < ctx->pinning.count)
-    {
-      memmove (&ctx->pinning.pins[lo + 1], &ctx->pinning.pins[lo],
-               (ctx->pinning.count - lo) * sizeof (TLSCertPin));
-    }
-
-  /* Insert new pin */
-  memcpy (ctx->pinning.pins[lo].hash, hash, SOCKET_TLS_PIN_HASH_LEN);
+  /* Append at end - order doesn't matter for constant-time scan */
+  memcpy (ctx->pinning.pins[ctx->pinning.count].hash, hash,
+          SOCKET_TLS_PIN_HASH_LEN);
   ctx->pinning.count++;
 }
 
@@ -224,23 +188,24 @@ tls_pinning_find (const TLSCertPin *pins, size_t count,
   if (!pins || count == 0 || !hash)
     return 0;
 
-  /* Binary search */
-  size_t lo = 0;
-  size_t hi = count;
-
-  while (lo < hi)
+  /* Linear scan with constant-time comparison for each pin.
+   * This prevents timing attacks that could leak information about
+   * configured pins. With typical pin counts (1-5), performance is fine.
+   * We scan all pins to maintain constant-time behavior regardless of
+   * which pin matches (or if any match). */
+  int found = 0;
+  for (size_t i = 0; i < count; i++)
     {
-      size_t mid = lo + (hi - lo) / 2;
-      int cmp = memcmp (hash, pins[mid].hash, SOCKET_TLS_PIN_HASH_LEN);
-      if (cmp == 0)
-        return 1;
-      if (cmp < 0)
-        hi = mid;
-      else
-        lo = mid + 1;
+      /* SocketCrypto_secure_compare returns 0 on match (like memcmp) */
+      if (SocketCrypto_secure_compare (hash, pins[i].hash,
+                                       SOCKET_TLS_PIN_HASH_LEN) == 0)
+        {
+          found = 1;
+          /* Don't break - continue scanning for constant time */
+        }
     }
 
-  return 0;
+  return found;
 }
 
 /* ============================================================================
@@ -288,7 +253,7 @@ SocketTLSContext_add_pin (T ctx, const unsigned char *sha256_hash)
       RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "PIN hash cannot be NULL");
     }
 
-  insert_pin_sorted (ctx, sha256_hash);
+  insert_pin (ctx, sha256_hash);
 }
 
 void
@@ -311,7 +276,7 @@ SocketTLSContext_add_pin_hex (T ctx, const char *hex_hash)
                            hex_hash);
     }
 
-  insert_pin_sorted (ctx, hash);
+  insert_pin (ctx, hash);
 }
 
 void
@@ -360,7 +325,7 @@ SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
 
   X509_free (cert);
 
-  insert_pin_sorted (ctx, hash);
+  insert_pin (ctx, hash);
 }
 
 void
@@ -380,7 +345,7 @@ SocketTLSContext_add_pin_from_x509 (T ctx, X509 *cert)
                            "Failed to extract SPKI hash from X509 certificate");
     }
 
-  insert_pin_sorted (ctx, hash);
+  insert_pin (ctx, hash);
 }
 
 void

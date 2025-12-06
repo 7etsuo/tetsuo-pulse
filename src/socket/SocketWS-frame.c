@@ -2,7 +2,6 @@
  * SocketWS-frame.c - WebSocket Frame Processing (RFC 6455 Section 5)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Frame parsing, serialization, and optimized XOR masking.
  *

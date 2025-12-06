@@ -2,7 +2,6 @@
  * SocketHTTP-private.h - Internal HTTP Core Structures
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This header contains internal structures for the HTTP module.
  * NOT for public consumption - use SocketHTTP.h instead.

@@ -2,7 +2,6 @@
  * SocketHTTPClient.c - HTTP Client Core Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements client lifecycle, configuration, and simple synchronous API.
  * Leverages existing infrastructure:

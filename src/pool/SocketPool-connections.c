@@ -2,7 +2,6 @@
  * SocketPool-connections.c - Connection management, accessors, and cleanup
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Consolidated from:
  * - Connection add/get/remove operations

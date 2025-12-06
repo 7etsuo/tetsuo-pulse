@@ -2,7 +2,6 @@
  * fuzz_hpack_decode.c - Fuzzing harness for HPACK header block decoding
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Tests HPACK decoder robustness against malformed input.
  */

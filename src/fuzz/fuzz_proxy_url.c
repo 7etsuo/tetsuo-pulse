@@ -2,7 +2,6 @@
  * fuzz_proxy_url.c - Fuzzing harness for proxy URL parsing
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Fuzzes proxy URL parsing:
  * - All supported schemes (http, https, socks4, socks4a, socks5, socks5h)

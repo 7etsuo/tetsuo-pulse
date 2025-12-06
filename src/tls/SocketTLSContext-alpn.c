@@ -2,7 +2,6 @@
  * SocketTLSContext-alpn.c - ALPN Protocol Negotiation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Application-Layer Protocol Negotiation (ALPN) support for TLS connections.
  * Handles protocol list configuration, wire format conversion, server-side
@@ -63,6 +62,11 @@ parse_client_protos (const unsigned char *in, unsigned int inlen,
     {
       /* Read protocol length byte */
       unsigned char len = in[offset++];
+
+      /* RFC 7301: Protocol names must be 1-255 bytes (0 is invalid) */
+      if (len == 0)
+        break; /* Malformed: empty protocol name is invalid per RFC 7301 */
+
       if (offset + len > inlen)
         break; /* Malformed: length exceeds remaining data */
 

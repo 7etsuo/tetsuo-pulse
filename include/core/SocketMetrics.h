@@ -5,7 +5,6 @@
  * SocketMetrics.h - Production-Grade Metrics and Observability
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This header provides comprehensive metrics collection and export capabilities
  * for production monitoring and observability. It tracks performance metrics

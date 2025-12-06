@@ -2,7 +2,6 @@
  * SocketHTTPServer.h - HTTP Server API
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * High-level HTTP server supporting HTTP/1.1 and HTTP/2:
  * - Event-driven request handling

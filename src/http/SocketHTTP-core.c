@@ -2,7 +2,6 @@
  * SocketHTTP-core.c - HTTP Core Utilities
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements HTTP methods, status codes, versions, and character tables.
  */
@@ -414,28 +413,37 @@ SocketHTTP_header_value_valid (const char *value, size_t len)
   if (len > SOCKETHTTP_MAX_HEADER_VALUE)
     return 0;
 
-  /* Per RFC 9110, reject NUL, bare CR, bare LF */
+  /*
+   * SECURITY: Reject NUL, CR, and LF in header values to prevent
+   * HTTP header injection attacks (CWE-113).
+   *
+   * Per RFC 9110 Section 5.5, field values should not contain CR or LF
+   * except in obsolete line folding (obs-fold), which is deprecated.
+   * For security, we reject ALL CR and LF characters to prevent:
+   *   - Header injection via CRLF sequences
+   *   - Response splitting attacks
+   *   - Cache poisoning
+   *   - Session hijacking via injected Set-Cookie headers
+   *
+   * Note: Applications that need to include CR/LF must use proper
+   * encoding (e.g., percent-encoding for URIs, quoted-string for some
+   * headers, or multipart for bodies).
+   */
   for (size_t i = 0; i < len; i++)
     {
       unsigned char c = (unsigned char)value[i];
 
-      /* Reject NUL */
+      /* Reject NUL - always invalid in HTTP */
       if (c == 0)
         return 0;
 
-      /* Reject bare CR (not followed by LF) */
+      /* Reject CR - prevents CRLF injection */
       if (c == '\r')
-        {
-          if (i + 1 >= len || value[i + 1] != '\n')
-            return 0;
-        }
+        return 0;
 
-      /* Reject bare LF (not preceded by CR) */
+      /* Reject LF - prevents header line termination injection */
       if (c == '\n')
-        {
-          if (i == 0 || value[i - 1] != '\r')
-            return 0;
-        }
+        return 0;
     }
   return 1;
 }

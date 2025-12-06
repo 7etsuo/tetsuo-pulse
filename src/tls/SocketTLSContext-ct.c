@@ -2,7 +2,6 @@
  * SocketTLSContext-ct.c - Certificate Transparency Support
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements Certificate Transparency (RFC 6962) verification for TLS clients.
  * CT helps detect mis-issued certificates by requiring them to be logged in

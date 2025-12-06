@@ -2,7 +2,6 @@
  * test_happy_eyeballs.c - Tests for Happy Eyeballs (RFC 8305) Implementation
  *
  * Part of the Socket Library Test Suite
- * Following C Interfaces and Implementations patterns
  *
  * Tests cover:
  * - Configuration defaults and customization

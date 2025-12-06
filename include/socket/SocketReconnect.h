@@ -10,7 +10,6 @@
  * SocketReconnect.h - Automatic Reconnection Framework
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Provides automatic reconnection with exponential backoff, circuit breaker
  * pattern, and health monitoring for resilient network connections.

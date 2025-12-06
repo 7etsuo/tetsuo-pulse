@@ -5,7 +5,6 @@
  * SocketUtil.h - Consolidated utility header (Logging, Metrics, Events, Error)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This header consolidates the observability, instrumentation, and error
  * handling utilities into a single include for cleaner dependencies.

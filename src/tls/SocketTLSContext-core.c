@@ -2,7 +2,6 @@
  * SocketTLSContext-core.c - TLS Context Core Operations
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Core TLS context lifecycle: creation, destruction, and basic accessors.
  * Handles SSL_CTX allocation, TLS1.3 configuration, ex_data registration,
@@ -58,6 +57,11 @@ init_exdata_idx (void)
 /**
  * ctx_raise_openssl_error - Format and raise OpenSSL error
  * @context: Error context description
+ *
+ * Reads the first error from OpenSSL's error queue, formats it into
+ * the thread-local error buffer, and raises SocketTLS_Failed.
+ * Clears the entire error queue to prevent stale errors from affecting
+ * subsequent operations or leaking information.
  */
 void
 ctx_raise_openssl_error (const char *context)
@@ -76,6 +80,10 @@ ctx_raise_openssl_error (const char *context)
       snprintf (tls_context_error_buf, SOCKET_TLS_ERROR_BUFSIZE,
                 "%s: Unknown TLS error", context);
     }
+
+  /* Clear remaining errors to prevent stale error information from
+   * affecting subsequent operations or leaking to callers */
+  ERR_clear_error ();
 
   RAISE_CTX_ERROR (SocketTLS_Failed);
 }
@@ -378,12 +386,10 @@ SocketTLSContext_free (T *ctx)
           c->ssl_ctx = NULL;
         }
 
-      /* Securely clear session ticket key material before freeing */
-      if (c->tickets_enabled)
-        {
-          OPENSSL_cleanse (c->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
-          c->tickets_enabled = 0;
-        }
+      /* Securely clear session ticket key material before freeing.
+       * Always clear regardless of tickets_enabled flag for defense in depth. */
+      OPENSSL_cleanse (c->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
+      c->tickets_enabled = 0;
 
       /* Securely clear pinning data before freeing */
       if (c->pinning.pins && c->pinning.count > 0)

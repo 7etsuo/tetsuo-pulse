@@ -2,7 +2,6 @@
  * SocketProxy-socks5.c - SOCKS5 Protocol Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements SOCKS Protocol Version 5 (RFC 1928) and
  * Username/Password Authentication (RFC 1929).

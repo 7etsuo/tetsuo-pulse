@@ -2,7 +2,6 @@
  * SocketWS.h - WebSocket Protocol (RFC 6455)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Complete WebSocket implementation with compression extension support.
  *

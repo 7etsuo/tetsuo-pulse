@@ -2,7 +2,6 @@
  * SocketUtil.c - Core utility subsystems
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This file consolidates the core utility and observability modules:
  * - Error handling (thread-local error buffers, errno mapping)

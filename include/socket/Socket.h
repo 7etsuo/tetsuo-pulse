@@ -5,7 +5,6 @@
  * Socket.h - Socket Abstraction Layer
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * High-level, exception-based TCP/IP/Unix domain socket interface.
  * This header consolidates all socket operations including:

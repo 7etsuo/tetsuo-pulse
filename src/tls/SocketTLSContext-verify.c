@@ -2,7 +2,6 @@
  * SocketTLSContext-verify.c - TLS Verification and Revocation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Certificate verification mode, custom callbacks, CRL loading,
  * OCSP stapling, and protocol version/cipher configuration.

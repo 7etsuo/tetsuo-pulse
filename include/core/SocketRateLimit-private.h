@@ -5,7 +5,6 @@
  * SocketRateLimit-private.h - Private declarations for SocketRateLimit module
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Internal structure definitions for the token bucket rate limiter.
  * Include only from SocketRateLimit.c and related implementation files.

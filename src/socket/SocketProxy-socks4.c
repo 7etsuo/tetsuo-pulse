@@ -2,7 +2,6 @@
  * SocketProxy-socks4.c - SOCKS4/4a Protocol Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements SOCKS4 and SOCKS4a protocols (de-facto standards, no RFC).
  *

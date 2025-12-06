@@ -2,7 +2,6 @@
  * test_http1_parser.c - HTTP/1.1 Parser Test Suite
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Comprehensive tests for RFC 9112 HTTP/1.1 message parsing.
  */

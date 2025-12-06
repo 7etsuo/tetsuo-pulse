@@ -2,7 +2,6 @@
  * SocketHTTPClient-private.h - HTTP Client Internal Definitions
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Internal structures and helper functions for HTTP client implementation.
  * NOT part of public API - do not include from application code.

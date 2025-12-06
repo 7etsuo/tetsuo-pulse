@@ -2,7 +2,6 @@
  * SocketHTTP.h - HTTP Core Types and Utilities (RFC 9110)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Provides protocol-agnostic HTTP types, header handling, URI parsing,
  * and date/media type utilities. Foundation for HTTP/1.1 and HTTP/2.
@@ -558,9 +557,17 @@ extern int SocketHTTP_header_name_valid (const char *name, size_t len);
  * @value: Header value
  * @len: Value length
  *
- * Per RFC 9110, rejects NUL, bare CR, bare LF.
+ * SECURITY: Rejects NUL, CR, and LF characters to prevent HTTP header
+ * injection attacks (CWE-113). Per RFC 9110 Section 5.5, obs-fold (CRLF
+ * followed by SP/HTAB) is deprecated and should not be generated.
  *
- * Returns: 1 if valid, 0 otherwise
+ * This stricter validation prevents:
+ * - CRLF injection for header manipulation
+ * - Response splitting attacks
+ * - Cache poisoning via injected headers
+ * - Session hijacking via injected Set-Cookie
+ *
+ * Returns: 1 if valid (no NUL/CR/LF), 0 otherwise
  * Thread-safe: Yes
  */
 extern int SocketHTTP_header_value_valid (const char *value, size_t len);

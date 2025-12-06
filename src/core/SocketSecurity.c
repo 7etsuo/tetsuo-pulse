@@ -2,7 +2,6 @@
  * SocketSecurity.c - Centralized Security Configuration and Utilities
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implementation of security limit queries and validation utilities.
  */

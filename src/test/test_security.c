@@ -2,7 +2,6 @@
  * test_security.c - Comprehensive Security Test Suite
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Tests security measures across all components:
  * - Integer overflow protection

@@ -2,7 +2,6 @@
  * SocketUTF8.h - UTF-8 Validation for Socket Library
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Provides complete UTF-8 validation per Unicode Standard with incremental
  * API for streaming. Required for WebSocket text frame validation

@@ -2,7 +2,6 @@
  * SocketSYNProtect.c - SYN Flood Protection Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements comprehensive SYN flood protection with:
  * - Sliding window connection attempt tracking

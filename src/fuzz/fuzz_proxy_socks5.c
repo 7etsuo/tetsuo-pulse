@@ -2,7 +2,6 @@
  * fuzz_proxy_socks5.c - Fuzzing harness for SOCKS5 protocol parsing
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Fuzzes SOCKS5 response parsing:
  * - Method selection response

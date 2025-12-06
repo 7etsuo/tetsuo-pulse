@@ -2,7 +2,6 @@
  * SocketWS-private.h - Internal structures for WebSocket Support
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This header contains internal implementation details for the SocketWS
  * module. Not for public use - structures may change without notice.

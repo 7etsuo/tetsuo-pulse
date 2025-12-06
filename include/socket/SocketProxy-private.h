@@ -2,7 +2,6 @@
  * SocketProxy-private.h - Internal structures for Proxy Support
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This header contains internal implementation details for the SocketProxy
  * module. Not for public use - structures may change without notice.

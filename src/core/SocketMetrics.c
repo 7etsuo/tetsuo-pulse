@@ -2,7 +2,6 @@
  * SocketMetrics.c - Production-Grade Metrics Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This file implements the comprehensive metrics collection and export system
  * for production monitoring and observability.

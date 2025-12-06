@@ -2,7 +2,6 @@
  * SocketTLSContext-session.c - TLS Session Management
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * TLS session caching and session ticket support. Enables faster subsequent
  * connections via session resumption. Tracks cache statistics for monitoring.

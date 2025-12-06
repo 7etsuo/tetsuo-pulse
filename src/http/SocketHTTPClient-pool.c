@@ -2,7 +2,6 @@
  * SocketHTTPClient-pool.c - HTTP Connection Pool Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * HTTP connection pool with:
  * - Per-host keying (host:port:secure)

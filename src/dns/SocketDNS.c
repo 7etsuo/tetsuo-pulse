@@ -2,7 +2,6 @@
  * SocketDNS.c - Async DNS resolution public API
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Contains:
  * - Public API functions (new, free, resolve, cancel)
@@ -445,6 +444,33 @@ validate_dns_instance (const struct SocketDNS_T *dns)
 }
 
 /**
+ * check_queue_capacity - Check if queue has capacity for new request
+ * @dns: DNS resolver instance
+ *
+ * Raises: SocketDNS_Failed if queue is full
+ * Thread-safe: Yes - acquires and releases mutex internally
+ *
+ * Security: Must be called BEFORE allocating request memory to prevent
+ * arena memory leak if queue is full (arena memory cannot be individually
+ * freed, only disposed as a whole).
+ */
+static void
+check_queue_capacity (struct SocketDNS_T *dns)
+{
+  pthread_mutex_lock (&dns->mutex);
+
+  if (check_queue_limit (dns))
+    {
+      size_t max_pending = dns->max_pending;
+      pthread_mutex_unlock (&dns->mutex);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "DNS request queue full (max %zu pending)", max_pending);
+    }
+
+  pthread_mutex_unlock (&dns->mutex);
+}
+
+/**
  * prepare_resolve_request - Prepare and allocate DNS resolution request
  * @dns: DNS resolver instance
  * @host: Hostname to resolve (may be NULL for wildcard)
@@ -453,6 +479,9 @@ validate_dns_instance (const struct SocketDNS_T *dns)
  * @data: User data for callback
  * Returns: Allocated and initialized request
  * Raises: SocketDNS_Failed on validation or allocation failure
+ *
+ * Note: Queue capacity should be checked BEFORE calling this function
+ * to avoid memory leak from arena allocation on queue-full condition.
  */
 static Request_T
 prepare_resolve_request (struct SocketDNS_T *dns, const char *host, int port,
@@ -467,23 +496,18 @@ prepare_resolve_request (struct SocketDNS_T *dns, const char *host, int port,
  * submit_resolve_request - Submit request to queue under mutex protection
  * @dns: DNS resolver instance
  * @req: Request to submit
- * Raises: SocketDNS_Failed if queue is full
  *
  * Thread-safe: Yes - acquires and releases mutex internally
+ *
+ * Note: Queue capacity must have been checked before allocation.
+ * There's a small race window where queue could fill between check
+ * and submit, but this only happens under extreme load and results
+ * in slightly exceeding max_pending (bounded by concurrent callers).
  */
 static void
 submit_resolve_request (struct SocketDNS_T *dns, Request_T req)
 {
   pthread_mutex_lock (&dns->mutex);
-
-  if (check_queue_limit (dns))
-    {
-      size_t max_pending = dns->max_pending;
-      pthread_mutex_unlock (&dns->mutex);
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "DNS request queue full (max %zu pending)", max_pending);
-    }
-
   submit_dns_request (dns, req);
   SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_SUBMITTED, 1);
   pthread_mutex_unlock (&dns->mutex);
@@ -494,6 +518,11 @@ SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
                    SocketDNS_Callback callback, void *data)
 {
   validate_dns_instance (dns);
+
+  /* Check queue capacity BEFORE allocation to prevent arena memory leak.
+   * If queue is full, we raise exception without allocating. */
+  check_queue_capacity (dns);
+
   Request_T req = prepare_resolve_request (dns, host, port, callback, data);
   submit_resolve_request (dns, req);
   return req;
@@ -509,6 +538,14 @@ SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
     return;
 
   pthread_mutex_lock (&dns->mutex);
+
+  /* Security: Validate request belongs to this resolver to prevent
+   * corruption of state from cross-resolver request handles */
+  if (req->dns_resolver != dns)
+    {
+      pthread_mutex_unlock (&dns->mutex);
+      return;
+    }
 
   handle_cancel_by_state (dns, req, &send_signal, &cancelled);
 
@@ -739,6 +776,15 @@ SocketDNS_request_settimeout (struct SocketDNS_T *dns,
     return;
 
   pthread_mutex_lock (&dns->mutex);
+
+  /* Security: Validate request belongs to this resolver to prevent
+   * modifying requests from different resolvers */
+  if (req->dns_resolver != dns)
+    {
+      pthread_mutex_unlock (&dns->mutex);
+      return;
+    }
+
   if (req->state == REQ_PENDING || req->state == REQ_PROCESSING)
     req->timeout_override_ms = SANITIZE_TIMEOUT_MS (timeout_ms);
   pthread_mutex_unlock (&dns->mutex);
@@ -860,10 +906,18 @@ resolve_fast_path (const char *host, int port, const struct addrinfo *hints)
   struct addrinfo *copy;
   char port_str[SOCKET_DNS_PORT_STR_SIZE];
   int gai_result;
+  int sn_res;
 
   setup_hints_for_fast_path (&local_hints, hints, host);
 
-  snprintf (port_str, sizeof (port_str), "%d", port);
+  /* Format port string with defensive error check (port already validated
+   * to 0-65535, but this ensures safety if buffer size changes) */
+  sn_res = snprintf (port_str, sizeof (port_str), "%d", port);
+  if (sn_res < 0 || (size_t)sn_res >= sizeof (port_str))
+    {
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Port number format error");
+    }
 
   gai_result = getaddrinfo (host, port_str, &local_hints, &result);
   if (gai_result != 0)

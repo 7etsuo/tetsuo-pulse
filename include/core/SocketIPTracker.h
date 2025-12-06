@@ -5,7 +5,6 @@
  * SocketIPTracker.h - Per-IP Connection Tracking
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Tracks the number of concurrent connections from each IP address.
  * Used to enforce per-IP connection limits to prevent single-source

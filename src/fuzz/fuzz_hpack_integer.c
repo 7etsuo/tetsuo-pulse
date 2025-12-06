@@ -2,7 +2,6 @@
  * fuzz_hpack_integer.c - Fuzzing harness for HPACK integer decoding
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Tests integer decoder robustness against malformed input.
  */

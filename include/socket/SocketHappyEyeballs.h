@@ -5,7 +5,6 @@
  * SocketHappyEyeballs.h - Happy Eyeballs (RFC 8305) Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements the Happy Eyeballs algorithm for fast dual-stack connection
  * establishment. This algorithm races IPv6 and IPv4 connection attempts

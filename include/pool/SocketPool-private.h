@@ -5,7 +5,6 @@
  * SocketPool-private.h - Private implementation details for SocketPool
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Contains internal structures, macros, and function declarations shared
  * across SocketPool implementation files. Not for public use.

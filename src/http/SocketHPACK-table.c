@@ -2,7 +2,6 @@
  * SocketHPACK-table.c - HPACK Static and Dynamic Table Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements RFC 7541 Section 2.3 (Static Table) and Section 2.3.2 (Dynamic Table):
  * - Static table with 61 pre-defined header entries

@@ -2,7 +2,6 @@
  * SocketHTTP1.h - HTTP/1.1 Message Syntax (RFC 9112)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Provides HTTP/1.1 message parsing, serialization, and chunked encoding.
  * Builds on SocketHTTP.h for core types (methods, status codes, headers, URI).

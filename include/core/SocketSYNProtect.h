@@ -5,7 +5,6 @@
  * SocketSYNProtect.h - SYN Flood Protection Module
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Provides comprehensive SYN flood attack protection through:
  * - Connection attempt tracking (not just established connections)

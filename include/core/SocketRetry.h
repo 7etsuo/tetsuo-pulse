@@ -5,7 +5,6 @@
  * SocketRetry.h - Generic Retry Framework with Exponential Backoff
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Provides a generic retry mechanism with exponential backoff and jitter.
  * Can be used for any operation that may fail transiently.

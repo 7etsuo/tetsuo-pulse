@@ -2,7 +2,6 @@
  * SocketCrypto.h - Cryptographic Utilities for Socket Library
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Provides cryptographic primitives required for HTTP/2, WebSocket, and
  * security features. Thin wrappers around OpenSSL with fallbacks when

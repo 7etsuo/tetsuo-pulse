@@ -391,22 +391,23 @@ initialize_poll_arena (T poll)
  * @poll: Poll instance
  * @maxevents: Maximum events
  * Raises: SocketPoll_Failed on failure
+ *
+ * Security: Uses standard SIZE_MAX-based overflow check to prevent
+ * heap corruption from truncated allocation sizes.
  */
 static void
 allocate_poll_event_arrays (T poll, int maxevents)
 {
-  size_t array_size;
-
   if (maxevents <= 0 || maxevents > SOCKET_MAX_POLL_EVENTS)
     INIT_FAIL ("Invalid maxevents value");
 
-  /* Calculate array size with overflow check */
-  array_size = (size_t)maxevents * sizeof (*poll->socketevents);
-  if (array_size / sizeof (*poll->socketevents) != (size_t)maxevents)
+  /* Check for multiplication overflow before allocation
+   * Security: Standard pattern using SIZE_MAX / sizeof for overflow detection */
+  if ((size_t)maxevents > SIZE_MAX / sizeof (*poll->socketevents))
     INIT_FAIL ("Array size overflow");
 
   poll->socketevents
-      = CALLOC (poll->arena, maxevents, sizeof (*poll->socketevents));
+      = CALLOC (poll->arena, (size_t)maxevents, sizeof (*poll->socketevents));
 
   if (!poll->socketevents)
     INIT_FAIL (SOCKET_ENOMEM ": Cannot allocate event arrays");
@@ -908,22 +909,48 @@ SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data)
 
 /* ==================== Remove Socket from Poll ==================== */
 
+/**
+ * SocketPoll_del - Remove socket from poll set
+ * @poll: Poll instance
+ * @socket: Socket to remove
+ *
+ * Thread-safe: Yes (holds mutex during entire operation)
+ *
+ * Security: The mutex is held during both data map removal AND backend_del
+ * to prevent TOCTOU race conditions where fd could be reused by another
+ * thread between checking and deleting.
+ */
 void
 SocketPoll_del (T poll, Socket_T socket)
 {
   int fd;
+  int backend_result;
+  int saved_errno;
 
   assert (poll);
   assert (socket);
 
+  pthread_mutex_lock (&poll->mutex);
+
+  /* Get fd while holding mutex to prevent TOCTOU race
+   * Security: Ensures fd is valid and consistent with data map state */
   fd = Socket_fd (socket);
 
-  pthread_mutex_lock (&poll->mutex);
+  /* Remove from data maps */
   socket_data_remove_unlocked (poll, socket);
+
+  /* Remove from backend while still holding mutex
+   * Security: Prevents race where fd could be reused between
+   * data map removal and backend removal */
+  backend_result = backend_del (poll->backend, fd);
+  saved_errno = errno;
+
   pthread_mutex_unlock (&poll->mutex);
 
-  if (backend_del (poll->backend, fd) < 0 && errno != ENOENT)
+  /* Check result after releasing mutex (error handling doesn't need lock) */
+  if (backend_result < 0 && saved_errno != ENOENT)
     {
+      errno = saved_errno;
       SOCKET_ERROR_FMT ("Failed to remove socket from poll (fd=%d)", fd);
       RAISE_POLL_ERROR (SocketPoll_Failed);
     }

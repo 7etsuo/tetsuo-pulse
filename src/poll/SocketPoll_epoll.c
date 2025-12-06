@@ -31,6 +31,14 @@ backend_new (int maxevents)
 
   assert (maxevents > 0);
 
+  /* Defense-in-depth: Check for overflow even though maxevents is bounded
+   * by SOCKET_MAX_POLL_EVENTS. This ensures safety if limits are changed. */
+  if ((size_t)maxevents > SIZE_MAX / sizeof (struct epoll_event))
+    {
+      errno = EOVERFLOW;
+      return NULL;
+    }
+
   backend = calloc (1, sizeof (*backend));
   if (!backend)
     return NULL;
@@ -42,7 +50,7 @@ backend_new (int maxevents)
       return NULL;
     }
 
-  backend->events = calloc (maxevents, sizeof (struct epoll_event));
+  backend->events = calloc ((size_t)maxevents, sizeof (struct epoll_event));
   if (!backend->events)
     {
       SAFE_CLOSE (backend->epfd);

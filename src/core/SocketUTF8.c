@@ -2,7 +2,6 @@
  * SocketUTF8.c - UTF-8 Validation Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements DFA-based UTF-8 validation using the Hoehrmann algorithm,
  * which provides O(n) time complexity with O(1) space complexity.

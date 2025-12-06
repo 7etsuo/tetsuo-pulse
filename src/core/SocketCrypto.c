@@ -2,7 +2,6 @@
  * SocketCrypto.c - Cryptographic Utilities Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Provides cryptographic primitives as thin wrappers around OpenSSL.
  * When SOCKET_HAS_TLS is not defined, provides fallbacks where possible

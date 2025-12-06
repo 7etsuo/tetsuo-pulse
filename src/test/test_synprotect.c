@@ -2,7 +2,6 @@
  * test_synprotect.c - SYN Flood Protection Tests
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Comprehensive tests for SYN flood protection including:
  * - Lifecycle (new/free)

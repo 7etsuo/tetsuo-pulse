@@ -60,7 +60,6 @@ This document outlines the comprehensive refactoring plan for the HTTP module fi
  * SocketHTTPClient-config.h - HTTP Client Configuration Constants
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Centralized configuration for HTTP client module.
  * All magic numbers should be defined here.

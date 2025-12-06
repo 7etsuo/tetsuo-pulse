@@ -2,7 +2,6 @@
  * SocketTLSContext-certs.c - TLS Certificate Management
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Certificate loading, CA loading, and SNI-based certificate selection.
  * Handles server certificate chains, private keys, and hostname-based
@@ -21,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h> /* strcasecmp for RFC 6066 case-insensitive SNI matching */
 
 #define T SocketTLSContext_T
 
@@ -117,12 +117,13 @@ apply_sni_cert (SSL *ssl, X509 *cert, EVP_PKEY *pkey)
 /**
  * find_sni_cert_index - Find certificate index matching hostname
  * @ctx: TLS context with SNI certificates
- * @hostname: Hostname to match (exact case-sensitive match)
+ * @hostname: Hostname to match (case-insensitive per RFC 6066)
  *
  * Returns: Index of matching certificate, or -1 if not found
  *
  * Note: Uses O(n) linear scan. Sufficient for typical SNI certificate
  * counts (< 100). For high-volume virtual hosting, consider hash table.
+ * Per RFC 6066 Section 3, hostnames are DNS names which are case-insensitive.
  */
 static int
 find_sni_cert_index (const T ctx, const char *hostname)
@@ -130,7 +131,7 @@ find_sni_cert_index (const T ctx, const char *hostname)
   for (size_t i = 0; i < ctx->sni_certs.count; i++)
     {
       const char *stored = ctx->sni_certs.hostnames[i];
-      if (stored && strcmp (stored, hostname) == 0)
+      if (stored && strcasecmp (stored, hostname) == 0)
         return (int)i;
     }
   return -1;

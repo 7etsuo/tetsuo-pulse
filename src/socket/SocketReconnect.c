@@ -2,7 +2,6 @@
  * SocketReconnect.c - Automatic Reconnection Framework Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements automatic reconnection with exponential backoff, circuit breaker
  * pattern, and health monitoring.

@@ -2,7 +2,6 @@
  * SocketHTTPServer.c - HTTP Server Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Production-ready HTTP server with:
  * - Non-blocking I/O with SocketPoll integration

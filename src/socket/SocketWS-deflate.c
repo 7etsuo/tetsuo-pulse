@@ -2,7 +2,6 @@
  * SocketWS-deflate.c - WebSocket Compression Extension (RFC 7692)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements permessage-deflate compression extension for WebSocket.
  * Only compiled when SOCKETWS_HAS_DEFLATE is defined (requires zlib).

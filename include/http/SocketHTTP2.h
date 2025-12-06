@@ -2,7 +2,6 @@
  * SocketHTTP2.h - HTTP/2 Protocol Implementation (RFC 9113)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Provides complete HTTP/2 implementation with:
  * - Binary framing layer (9-byte frame headers)

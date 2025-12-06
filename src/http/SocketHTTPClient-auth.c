@@ -2,7 +2,6 @@
  * SocketHTTPClient-auth.c - HTTP Authentication Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements HTTP authentication schemes:
  * - Basic Authentication (RFC 7617) - Uses SocketCrypto_base64_encode()

@@ -2,7 +2,6 @@
  * SocketTLS.c - TLS Socket Integration
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements TLS/SSL integration for sockets using OpenSSL. Provides:
  * - Transparent encryption/decryption via wrapper functions
@@ -600,6 +599,7 @@ SocketTLS_get_verify_error_string (Socket_T socket, char *buf, size_t size)
   if (err)
     {
       ERR_error_string_n (err, buf, size);
+      ERR_clear_error (); /* Clear the error queue after reading */
       return buf;
     }
 

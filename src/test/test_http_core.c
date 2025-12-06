@@ -408,12 +408,29 @@ test_header_validation (void)
 
   TEST_ASSERT (SocketHTTP_header_value_valid ("normal value", 12) == 1,
                "Normal value valid");
-  TEST_ASSERT (SocketHTTP_header_value_valid ("value\r\n with fold", 17) == 1,
-               "CRLF valid");
+
+  /*
+   * SECURITY FIX: CRLF sequences are now rejected to prevent header injection
+   * attacks (CWE-113). Per RFC 9110 Section 5.5, obs-fold (CRLF + space/tab)
+   * is deprecated and should not be generated. Rejecting all CR/LF prevents:
+   * - HTTP response splitting
+   * - Header injection
+   * - Cache poisoning
+   * - Session hijacking via injected Set-Cookie headers
+   */
+  TEST_ASSERT (SocketHTTP_header_value_valid ("value\r\n with fold", 17) == 0,
+               "CRLF invalid (header injection prevention)");
   TEST_ASSERT (SocketHTTP_header_value_valid ("value\n bad", 10) == 0,
                "Bare LF invalid");
   TEST_ASSERT (SocketHTTP_header_value_valid ("value\r bad", 10) == 0,
                "Bare CR invalid");
+
+  /* Additional injection prevention tests */
+  TEST_ASSERT (SocketHTTP_header_value_valid ("inject\r\nSet-Cookie: x=y", 22)
+                   == 0,
+               "CRLF injection attempt blocked");
+  TEST_ASSERT (SocketHTTP_header_value_valid ("val\x00ue", 6) == 0,
+               "NUL byte invalid");
 }
 
 /* ============================================================================

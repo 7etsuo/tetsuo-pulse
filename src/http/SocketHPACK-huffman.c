@@ -2,7 +2,6 @@
  * SocketHPACK-huffman.c - HPACK Huffman Encoding/Decoding
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements RFC 7541 Appendix B Huffman coding with:
  * - O(n) single-pass DFA-based decoding

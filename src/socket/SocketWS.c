@@ -2,7 +2,6 @@
  * SocketWS.c - WebSocket Protocol Core (RFC 6455)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Core WebSocket lifecycle, configuration, state management, and I/O.
  * Frame parsing and handshake logic are in separate files.

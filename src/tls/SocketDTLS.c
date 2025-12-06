@@ -2,7 +2,6 @@
  * SocketDTLS.c - DTLS Socket Integration Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements DTLS/SSL integration for datagram sockets using OpenSSL. Provides:
  * - Transparent encryption/decryption via wrapper functions

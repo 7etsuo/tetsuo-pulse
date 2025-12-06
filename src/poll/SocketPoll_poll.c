@@ -152,6 +152,9 @@ find_fd_index (PollBackend_T backend, int fd)
  *
  * Expands the fd_to_index mapping table if needed to accommodate fd.
  * Uses POLL_FD_MAP_EXPAND_INCREMENT to avoid frequent reallocations.
+ *
+ * Security: Includes overflow checks for both int and size_t calculations
+ * to prevent heap corruption from integer overflow.
  */
 static int
 ensure_fd_mapping (PollBackend_T backend, int fd)
@@ -171,12 +174,22 @@ ensure_fd_mapping (PollBackend_T backend, int fd)
 
   /* Expand mapping table */
   new_max = fd + POLL_FD_MAP_EXPAND_INCREMENT;
-  new_mapping = calloc (new_max, sizeof (int));
+
+  /* Check for size_t overflow before calloc
+   * Security: Prevents heap corruption from truncated allocation size */
+  if ((size_t)new_max > SIZE_MAX / sizeof (int))
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
+
+  new_mapping = calloc ((size_t)new_max, sizeof (int));
   if (!new_mapping)
     return -1;
 
   /* Copy old mappings */
-  memcpy (new_mapping, backend->fd_to_index, backend->max_fd * sizeof (int));
+  memcpy (new_mapping, backend->fd_to_index,
+          (size_t)backend->max_fd * sizeof (int));
 
   /* Initialize new entries to invalid */
   init_fd_mapping_range (new_mapping, backend->max_fd, new_max);
@@ -196,24 +209,41 @@ ensure_fd_mapping (PollBackend_T backend, int fd)
  * Returns: 0 on success, -1 on failure
  *
  * Doubles the capacity of the fds array when full.
- * Includes overflow protection for capacity calculation.
+ * Includes overflow protection for both capacity and size calculations.
+ *
+ * Security: Uses explicit multiplication overflow check before realloc
+ * to prevent heap corruption from integer overflow.
  */
 static int
 ensure_capacity (PollBackend_T backend)
 {
   struct pollfd *new_fds;
   int new_capacity;
+  size_t alloc_size;
 
   if (backend->nfds < backend->capacity)
     return 0;
 
-  /* Check for overflow before doubling */
+  /* Check for int overflow before doubling */
   if (backend->capacity > INT_MAX / 2)
-    return -1;
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
 
   /* Double the capacity */
   new_capacity = backend->capacity * 2;
-  new_fds = realloc (backend->fds, new_capacity * sizeof (struct pollfd));
+
+  /* Check for size_t overflow before realloc
+   * Security: Prevents heap corruption from truncated allocation size */
+  if ((size_t)new_capacity > SIZE_MAX / sizeof (struct pollfd))
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
+  alloc_size = (size_t)new_capacity * sizeof (struct pollfd);
+
+  new_fds = realloc (backend->fds, alloc_size);
   if (!new_fds)
     return -1;
 

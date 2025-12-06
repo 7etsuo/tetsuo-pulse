@@ -2,7 +2,6 @@
  * SocketDTLS-cookie.c - DTLS Cookie Exchange Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements RFC 6347 stateless cookie exchange for DoS protection.
  * Server sends HelloVerifyRequest with cookie before allocating state.

@@ -2,7 +2,6 @@
  * SocketHTTP-date.c - HTTP Date Parsing (RFC 9110 Section 5.6.7)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements HTTP-date parsing supporting all three formats required by RFC 9110:
  * - IMF-fixdate: Sun, 06 Nov 1994 08:49:37 GMT (preferred)

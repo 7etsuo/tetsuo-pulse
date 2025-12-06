@@ -2,7 +2,6 @@
  * SocketHTTP1-parser.c - HTTP/1.1 DFA-based Incremental Parser
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements RFC 9112 HTTP/1.1 message parsing with:
  * - O(n) time complexity via DFA state machine

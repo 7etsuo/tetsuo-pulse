@@ -2,7 +2,6 @@
  * SocketProxy.c - Proxy Tunneling Support Core Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Core module providing:
  * - Configuration defaults and URL parsing

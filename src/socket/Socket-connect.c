@@ -2,7 +2,6 @@
  * Socket-connect.c - Socket connect operations
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements all socket connection operations including TCP and Unix domain
  * sockets. Provides synchronous connection with proper timeout handling and

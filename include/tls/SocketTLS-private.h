@@ -2,7 +2,6 @@
  * SocketTLS-private.h - TLS Internal Shared Definitions
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Internal header for all TLS module implementation files. Contains shared
  * helper function declarations, error handling macros, internal types,
@@ -236,6 +235,8 @@ tls_handle_ssl_error (Socket_T socket, SSL *ssl, int ssl_result)
  * @context: Context string for error message
  *
  * Formats current OpenSSL error into tls_error_buf with context.
+ * Clears the entire error queue to prevent stale errors from affecting
+ * subsequent operations or leaking information.
  */
 static inline void
 tls_format_openssl_error (const char *context)
@@ -254,6 +255,10 @@ tls_format_openssl_error (const char *context)
       snprintf (tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "%s: Unknown error",
                 context);
     }
+
+  /* Clear remaining errors to prevent stale error information from
+   * affecting subsequent operations or leaking to callers */
+  ERR_clear_error ();
 }
 
 /* ============================================================================
@@ -377,15 +382,16 @@ typedef struct
 /**
  * TLSContextPinning - Certificate pinning configuration
  *
- * Maintains a sorted array of SPKI SHA256 hashes for O(log n) lookup.
- * For typical deployments (1-5 pins), this is effectively O(1).
+ * Maintains an array of SPKI SHA256 hashes with constant-time lookup.
+ * Uses linear scan with SocketCrypto_secure_compare() to prevent timing
+ * attacks. For typical deployments (1-5 pins), this is effectively O(1).
  *
  * Thread safety: Configuration is NOT thread-safe - perform before sharing.
  * Verification is read-only post-setup (thread-safe).
  */
 typedef struct
 {
-  TLSCertPin *pins; /* Sorted array of SHA256 hashes (arena-allocated) */
+  TLSCertPin *pins; /* Array of SHA256 hashes (arena-allocated) */
   size_t count;     /* Number of pins */
   size_t capacity;  /* Allocated capacity */
   int enforce;      /* 1 = fail on mismatch, 0 = warn only (default: 1) */
@@ -671,10 +677,13 @@ extern int tls_pinning_check_chain (SocketTLSContext_T ctx,
                                     STACK_OF (X509) * chain);
 
 /**
- * tls_pinning_find - Binary search for pin in sorted array
- * @pins: Sorted array of pins
+ * tls_pinning_find - Constant-time search for pin in array
+ * @pins: Array of pins
  * @count: Number of pins
  * @hash: Hash to search for
+ *
+ * Uses constant-time comparison to prevent timing attacks.
+ * Scans all pins regardless of match position.
  *
  * Returns: 1 if found, 0 if not found
  */

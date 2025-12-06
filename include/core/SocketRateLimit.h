@@ -5,7 +5,6 @@
  * SocketRateLimit.h - Token Bucket Rate Limiter
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements a token bucket rate limiter for controlling connection rates
  * and bandwidth throttling. The token bucket algorithm allows bursting

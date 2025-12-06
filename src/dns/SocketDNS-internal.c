@@ -2,7 +2,6 @@
  * SocketDNS-internal.c - Internal implementation for async DNS resolution
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Contains:
  * - Initialization and allocation functions
@@ -721,6 +720,9 @@ hash_table_insert (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
  * @dns: DNS resolver instance
  * @req: Request to remove
  * Thread-safe: Must be called with mutex locked
+ *
+ * Security: Bounds-checks hash_value to prevent out-of-bounds access
+ * from corrupted request handles or use-after-free scenarios.
  */
 void
 hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
@@ -729,6 +731,12 @@ hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   Request_T *pp;
 
   hash = req->hash_value;
+
+  /* Defensive bounds check - prevent out-of-bounds access if
+   * hash_value is corrupted or request is from different resolver */
+  if (hash >= SOCKET_DNS_REQUEST_HASH_SIZE)
+    return;
+
   pp = &dns->request_hash[hash];
   while (*pp)
     {
@@ -1236,26 +1244,48 @@ handle_resolution_result (struct SocketDNS_T *dns,
  * invoke_callback - Invoke completion callback if provided
  * @dns: DNS resolver instance
  * @req: Completed request
- * Thread-safe: Called without mutex held (callback may take time); locks
- * briefly to clear result.
- * Note: Callback receives ownership of result. Clears req->result after to
- * prevent use-after-free. SocketDNS_getresult() returns NULL if callback provided.
+ *
+ * Thread-safe: Acquires mutex briefly to safely extract callback info,
+ * releases before invoking callback (which may take arbitrary time),
+ * then re-acquires to clear result pointer.
+ *
+ * Security: Callback receives ownership of result. The result pointer is
+ * cleared after callback returns to prevent use-after-free. The check for
+ * req->callback prevents double-free in SocketDNS_cancel scenarios.
+ * SocketDNS_getresult() returns NULL if callback was provided.
  */
 void
 invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
-  if (req->callback && req->state == REQ_COMPLETE)
-    {
-      /* Callback receives ownership of result */
-      struct addrinfo *result = req->result;
-      req->callback (req, result, req->error, req->callback_data);
+  SocketDNS_Callback callback;
+  void *callback_data;
+  struct addrinfo *result;
+  int error;
 
-      /* Clear result pointer after callback to prevent use-after-free.
-       * Callback has taken ownership and freed it. */
-      pthread_mutex_lock (&dns->mutex);
-      req->result = NULL;
+  /* Extract callback info under mutex for safe concurrent access.
+   * Another thread could be calling SocketDNS_cancel concurrently. */
+  pthread_mutex_lock (&dns->mutex);
+  if (!req->callback || req->state != REQ_COMPLETE)
+    {
       pthread_mutex_unlock (&dns->mutex);
+      return;
     }
+
+  /* Copy callback info while holding mutex */
+  callback = req->callback;
+  callback_data = req->callback_data;
+  result = req->result;
+  error = req->error;
+  pthread_mutex_unlock (&dns->mutex);
+
+  /* Invoke callback without mutex held (callback may take arbitrary time) */
+  callback (req, result, error, callback_data);
+
+  /* Clear result pointer after callback to prevent use-after-free.
+   * Callback has taken ownership and freed it. */
+  pthread_mutex_lock (&dns->mutex);
+  req->result = NULL;
+  pthread_mutex_unlock (&dns->mutex);
 }
 
 /**

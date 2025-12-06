@@ -2,7 +2,6 @@
  * test_hpack.c - Unit tests for HPACK Header Compression
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Tests RFC 7541 HPACK implementation including:
  * - Integer encoding/decoding (Appendix C.1)

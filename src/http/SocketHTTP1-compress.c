@@ -2,7 +2,6 @@
  * SocketHTTP1-compress.c - HTTP/1.1 Content Encoding Support
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements RFC 9110 Section 8.4 content coding:
  * - gzip (RFC 1952) via zlib

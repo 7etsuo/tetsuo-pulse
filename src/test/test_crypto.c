@@ -2,7 +2,6 @@
  * test_crypto.c - Unit tests for SocketCrypto module
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Tests cryptographic primitives against official test vectors from:
  * - SHA-1: RFC 3174

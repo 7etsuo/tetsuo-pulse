@@ -2,7 +2,6 @@
  * SocketDTLS-private.h - DTLS Internal Shared Definitions
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Internal header for all DTLS module implementation files. Contains shared
  * helper function declarations, error handling macros, internal types,

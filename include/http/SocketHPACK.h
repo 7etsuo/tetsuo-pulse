@@ -2,7 +2,6 @@
  * SocketHPACK.h - HPACK Header Compression (RFC 7541)
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Provides HPACK header compression for HTTP/2, including:
  * - Static table (61 common headers per RFC 7541 Appendix A)

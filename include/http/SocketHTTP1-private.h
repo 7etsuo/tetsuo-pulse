@@ -2,7 +2,6 @@
  * SocketHTTP1-private.h - Internal HTTP/1.1 Parser Structures
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * This header contains internal structures for the HTTP/1.1 parser.
  * NOT for public consumption - use SocketHTTP1.h instead.

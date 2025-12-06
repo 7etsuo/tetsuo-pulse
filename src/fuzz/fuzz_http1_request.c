@@ -2,7 +2,6 @@
  * fuzz_http1_request.c - Fuzzing harness for HTTP/1.1 request parsing
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  */
 
 #include "core/Arena.h"

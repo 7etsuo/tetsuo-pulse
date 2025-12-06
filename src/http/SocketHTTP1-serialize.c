@@ -2,7 +2,6 @@
  * SocketHTTP1-serialize.c - HTTP/1.1 Request/Response Serialization
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements RFC 9112 HTTP/1.1 message serialization:
  * - Request line: METHOD SP Request-Target SP HTTP-Version CRLF

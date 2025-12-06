@@ -2,7 +2,6 @@
  * SocketRateLimit.c - Token Bucket Rate Limiter Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements the token bucket algorithm for rate limiting:
  * - Tokens are added at a constant rate (tokens_per_sec)

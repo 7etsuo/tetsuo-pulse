@@ -2,7 +2,6 @@
  * SocketHPACK-private.h - HPACK Internal Structures and Constants
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Internal header for HPACK implementation. Do not include directly.
  */

@@ -2,7 +2,6 @@
  * SocketIPTracker.c - Per-IP Connection Tracking Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Hash table-based IP connection tracking with:
  * - Chained collision handling using DJB2 hash algorithm

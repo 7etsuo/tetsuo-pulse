@@ -2,7 +2,6 @@
  * SocketTLSContext-crl.c - CRL Auto-Refresh Support
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements automatic CRL (Certificate Revocation List) refresh for
  * long-running applications. Refresh is cooperative - the application

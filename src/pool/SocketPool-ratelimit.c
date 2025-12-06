@@ -2,7 +2,6 @@
  * SocketPool-ratelimit.c - Rate Limiting Implementation for SocketPool
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements connection rate limiting and per-IP connection limits:
  * - Connection rate limiting using token bucket algorithm

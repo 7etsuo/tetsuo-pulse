@@ -2,7 +2,6 @@
  * Arena.c - Arena memory allocator
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * An arena (also called a memory pool or region) is a memory management
  * technique where allocations are made from a large chunk of memory.

@@ -2,7 +2,6 @@
  * SocketRetry.c - Generic Retry Framework Implementation
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements exponential backoff retry logic with jitter.
  * Algorithm matches SocketReconnect for consistency.

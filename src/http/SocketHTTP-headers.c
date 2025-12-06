@@ -2,7 +2,6 @@
  * SocketHTTP-headers.c - HTTP Header Collection
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Implements HTTP header collection with O(1) average case
  * case-insensitive lookup using hash table with separate chaining.

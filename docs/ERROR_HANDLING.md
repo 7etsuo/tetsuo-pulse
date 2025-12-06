@@ -4,7 +4,7 @@ This guide documents error handling patterns, error categorization, retry strate
 
 ## Overview
 
-The socket library uses exception-based error handling following the patterns from "C Interfaces and Implementations" (Hanson). Errors are categorized to help determine appropriate recovery strategies.
+The socket library uses exception-based error handling. Errors are categorized to help determine appropriate recovery strategies.
 
 ## Error Categories
 

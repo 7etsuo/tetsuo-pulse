@@ -2,7 +2,6 @@
  * SocketPool-core.c - Core pool lifecycle, hash, and allocation functions
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Consolidated from:
  * - Pool creation and destruction

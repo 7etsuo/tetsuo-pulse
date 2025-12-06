@@ -2,7 +2,6 @@
  * SocketPool-ops.c - Pool operations: resize, tuning, accept, async
  *
  * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
  *
  * Consolidated from:
  * - Pool resize and capacity management
