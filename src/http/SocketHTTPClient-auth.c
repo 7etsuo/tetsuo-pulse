@@ -699,6 +699,7 @@ generate_cnonce (char *cnonce, size_t size)
 {
   unsigned char random_bytes[HTTPCLIENT_DIGEST_CNONCE_SIZE];
 
+  (void)size; /* Used only in assertion */
   assert (cnonce != NULL);
   assert (size >= HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE);
 
