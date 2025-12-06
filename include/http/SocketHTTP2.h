@@ -372,7 +372,7 @@ extern void SocketHTTP2_config_defaults (SocketHTTP2_Config *config,
  * Thread-safe: Yes (arena must be thread-safe or thread-local)
  */
 extern SocketHTTP2_Conn_T SocketHTTP2_Conn_new (Socket_T socket,
-                                                volatile const SocketHTTP2_Config *config,
+                                                const SocketHTTP2_Config *config,
                                                 Arena_T arena);
 
 /**

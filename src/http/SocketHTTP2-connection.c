@@ -343,7 +343,6 @@ alloc_conn (Arena_T arena)
   memset (conn, 0, sizeof (*conn));
 
   return conn;
-#pragma GCC diagnostic pop
 }
 
 static void
@@ -363,20 +362,19 @@ init_connection_components (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *c
  * Connection Creation
  * ============================================================================ */
 
+/* Suppress GCC-specific clobbered warning (doesn't exist in Clang) */
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclobbered"
+#endif
 
 SocketHTTP2_Conn_T
-SocketHTTP2_Conn_new (Socket_T socket, volatile const SocketHTTP2_Config *config,
+SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
                       Arena_T arena)
 {
   SocketHTTP2_Conn_T conn = NULL;
   SocketHTTP2_Config default_config;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wclobbered"
-
-
+  const SocketHTTP2_Config *cfg;
 
   assert (socket);
   assert (arena);
@@ -385,10 +383,13 @@ SocketHTTP2_Conn_new (Socket_T socket, volatile const SocketHTTP2_Config *config
   if (config == NULL)
     {
       SocketHTTP2_config_defaults (&default_config, HTTP2_ROLE_CLIENT);
-      config = &default_config;
+      cfg = &default_config;
+    }
+  else
+    {
+      cfg = config;
     }
 
-  volatile const SocketHTTP2_Config *config_local = config;
   TRY
     {
       /* Allocate and initialize connection structure */
@@ -396,24 +397,24 @@ SocketHTTP2_Conn_new (Socket_T socket, volatile const SocketHTTP2_Config *config
 
       conn->socket = socket;
       conn->arena = arena;
-      conn->role = config->role;
+      conn->role = cfg->role;
       conn->state = HTTP2_CONN_STATE_INIT;
 
       /* Initialize settings and flow control */
-      init_local_settings (conn, (const SocketHTTP2_Config *) config_local);
+      init_local_settings (conn, cfg);
       init_peer_settings (conn);
-      init_flow_control (conn, (const SocketHTTP2_Config *) config_local);
+      init_flow_control (conn, cfg);
 
       /* Initialize internal components (buffers, HPACK, streams) */
-      init_connection_components (conn, (const SocketHTTP2_Config *) config_local);
+      init_connection_components (conn, cfg);
 
       /* Initialize stream IDs based on role */
-      conn->next_stream_id = (config_local->role == HTTP2_ROLE_CLIENT) ? 1 : 2;
+      conn->next_stream_id = (cfg->role == HTTP2_ROLE_CLIENT) ? 1 : 2;
 
       /* Store timeouts */
-      conn->settings_timeout_ms = config_local->settings_timeout_ms;
-      conn->ping_timeout_ms = config_local->ping_timeout_ms;
-      conn->idle_timeout_ms = config_local->idle_timeout_ms;
+      conn->settings_timeout_ms = cfg->settings_timeout_ms;
+      conn->ping_timeout_ms = cfg->ping_timeout_ms;
+      conn->idle_timeout_ms = cfg->idle_timeout_ms;
     }
   EXCEPT (SocketHTTP2_ProtocolError)
     {
@@ -423,8 +424,11 @@ SocketHTTP2_Conn_new (Socket_T socket, volatile const SocketHTTP2_Config *config
   END_TRY;
 
   return conn;
-#pragma GCC diagnostic pop
 }
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 void
 SocketHTTP2_Conn_free (SocketHTTP2_Conn_T *conn)
@@ -1545,7 +1549,6 @@ SocketHTTP2_Conn_upgrade_client (Socket_T socket,
   conn->state = HTTP2_CONN_STATE_SETTINGS_SENT;
 
   return conn;
-#pragma GCC diagnostic pop
 }
 
 SocketHTTP2_Conn_T
@@ -1590,5 +1593,4 @@ SocketHTTP2_Conn_upgrade_server (Socket_T socket,
   conn->state = HTTP2_CONN_STATE_SETTINGS_SENT;
 
   return conn;
-#pragma GCC diagnostic pop
 }
