@@ -14,6 +14,7 @@
 #ifdef SOCKET_HAS_TLS
 
 #include "tls/SocketTLS-private.h"
+#include "core/SocketUtil.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,14 +25,7 @@
  * Thread-Local Error Buffers
  * ============================================================================
  */
-
-#ifdef _WIN32
-__declspec (thread) char tls_context_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
-__declspec (thread) Except_T SocketTLSContext_DetailedException;
-#else
-__thread char tls_context_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
-__thread Except_T SocketTLSContext_DetailedException;
-#endif
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLSContext);
 
 /* Global ex_data index for context lookup (thread-safe initialization) */
 int tls_context_exdata_idx = -1;
@@ -72,13 +66,11 @@ ctx_raise_openssl_error (const char *context)
   if (err != 0)
     {
       ERR_error_string_n (err, err_str, sizeof (err_str));
-      snprintf (tls_context_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "%s: %s",
-                context, err_str);
+      SOCKET_ERROR_MSG("%s: %s", context, err_str);
     }
   else
     {
-      snprintf (tls_context_error_buf, SOCKET_TLS_ERROR_BUFSIZE,
-                "%s: Unknown TLS error", context);
+      SOCKET_ERROR_MSG("%s: Unknown TLS error", context);
     }
 
   /* Clear remaining errors to prevent stale error information from

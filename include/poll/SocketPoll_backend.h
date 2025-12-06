@@ -18,9 +18,25 @@
 
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
+#include "core/Arena.h"
 
 /* Forward declaration of backend-specific poll structure */
 typedef struct PollBackend_T *PollBackend_T;
+
+/* Common backend macros for duplication removal */
+#ifndef VALIDATE_MAXEVENTS
+#define VALIDATE_MAXEVENTS(maxevents, event_type) \
+  do { \
+    if ((size_t)(maxevents) <= 0) { \
+      errno = EINVAL; \
+      return NULL; \
+    } \
+    if ((size_t)(maxevents) > SIZE_MAX / sizeof(event_type)) { \
+      errno = EOVERFLOW; \
+      return NULL; \
+    } \
+  } while (0)
+#endif
 
 /* ==================== Common Backend Macros ==================== */
 
@@ -45,14 +61,16 @@ typedef struct PollBackend_T *PollBackend_T;
 
 /**
  * backend_new - Create new backend instance
+ * @arena: Arena for memory allocation (backend and events allocated here)
  * @maxevents: Maximum events to return per wait
- * Returns: Backend instance or NULL on failure
+ * Returns: Backend instance or NULL on failure (arena allocations leaked on partial failure, freed by caller arena dispose)
  */
-extern PollBackend_T backend_new (int maxevents);
+extern PollBackend_T backend_new (Arena_T arena, int maxevents);
 
 /**
- * backend_free - Free backend instance
- * @backend: Backend to free
+ * backend_free - Close backend resources
+ * @backend: Backend instance (fd closed, memory freed by arena dispose)
+ * Note: Only closes the backend fd; memory allocations (struct, events array) are owned by arena and freed by Arena_dispose
  */
 extern void backend_free (PollBackend_T backend);
 
@@ -85,22 +103,22 @@ extern int backend_del (PollBackend_T backend, int fd);
 
 /**
  * backend_wait - Wait for events
- * @backend: Backend instance
+ * @backend: Backend instance (const - does not modify backend state)
  * @timeout_ms: Timeout in milliseconds (-1 for infinite)
  * Returns: Number of events ready (>= 0), or -1 on error (sets errno)
- * Note: Returns 0 on timeout
+ * Note: Returns 0 on timeout or EINTR (signal interrupt)
  */
-extern int backend_wait (PollBackend_T backend, int timeout_ms);
+extern int backend_wait (const PollBackend_T backend, int timeout_ms);
 
 /**
  * backend_get_event - Get event details for index
- * @backend: Backend instance
+ * @backend: Backend instance (const - read-only access to events array)
  * @index: Event index (0 to count-1 from backend_wait)
  * @fd_out: Output - file descriptor
  * @events_out: Output - events that occurred
  * Returns: 0 on success, -1 on invalid index
  */
-extern int backend_get_event (PollBackend_T backend, int index, int *fd_out,
+extern int backend_get_event (const PollBackend_T backend, int index, int *fd_out,
                               unsigned *events_out);
 
 /**

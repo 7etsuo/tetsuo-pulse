@@ -331,22 +331,23 @@ free_expired_session (Connection_T conn)
 /**
  * validate_saved_session - Validate and expire TLS session if needed
  * @conn: Connection to validate
+ * @now: Current time for expiration check
  *
  * Thread-safe: Call with pool mutex held
  * No-op when TLS is disabled.
  */
 void
-validate_saved_session (Connection_T conn)
+validate_saved_session (Connection_T conn, time_t now)
 {
 #ifdef SOCKET_HAS_TLS
   if (!conn->tls_session)
     return;
 
-  time_t now = safe_time ();
   if (session_is_expired (conn->tls_session, now))
     free_expired_session (conn);
 #else
   (void)conn;
+  (void)now;
 #endif
 }
 
@@ -502,7 +503,10 @@ find_or_create_slot (T pool, Socket_T socket, time_t now)
   Connection_T conn = find_slot (pool, socket);
 
   if (conn)
-    return handle_existing_slot (conn, now);
+    {
+      pool->stats_total_reused++;
+      return handle_existing_slot (conn, now);
+    }
 
   conn = find_free_slot (pool);
   if (!conn || prepare_free_slot (pool, conn) != 0)
@@ -600,8 +604,8 @@ get_unlocked (T pool, Socket_T socket, time_t now)
 
   if (conn)
     {
-      conn->last_activity = now;
-      validate_saved_session (conn);
+      update_existing_slot (conn, now);
+      validate_saved_session (conn, now);
     }
 
   return conn;
@@ -650,6 +654,8 @@ run_validation_callback_unlocked (T pool, Connection_T conn)
  * connection. If the callback returns 0, the connection is removed
  * from the pool and NULL is returned.
  */
+static void remove_known_connection (T pool, Connection_T conn, Socket_T socket);
+
 Connection_T
 SocketPool_get (T pool, Socket_T socket)
 {
@@ -668,18 +674,17 @@ SocketPool_get (T pool, Socket_T socket)
   if (conn && !run_validation_callback_unlocked (pool, conn))
     {
       /* Validation failed - remove connection */
-      remove_from_hash_table (pool, conn, socket);
-      release_connection_resources (pool, conn, socket);
-      return_to_free_list (pool, conn);
-      decrement_pool_count (pool);
-      SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REMOVED, 1);
+      remove_known_connection (pool, conn, socket);
       pthread_mutex_unlock (&pool->mutex);
       return NULL;
     }
 
   /* Update reuse stats if connection found */
   if (conn)
-    pool->stats_total_reused++;
+    {
+      pool->stats_total_reused++;
+      SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REUSED, 1);
+    }
 
   pthread_mutex_unlock (&pool->mutex);
 
@@ -728,6 +733,29 @@ release_connection_resources (T pool, Connection_T conn, Socket_T socket)
 }
 
 /**
+ * remove_known_connection - Remove a known connection from pool
+ * @pool: Pool instance
+ * @conn: Connection to remove (must be valid and in pool)
+ * @socket: Associated socket for hash table removal
+ *
+ * Performs hash removal, resource release, free list return, count decrement,
+ * and stats update.
+ *
+ * Thread-safe: Call with pool mutex held
+ * Raises: None (assumes conn valid)
+ */
+static void
+remove_known_connection (T pool, Connection_T conn, Socket_T socket)
+{
+  remove_from_hash_table (pool, conn, socket);
+  release_connection_resources (pool, conn, socket);
+  return_to_free_list (pool, conn);
+  decrement_pool_count (pool);
+  pool->stats_total_removed++;
+  SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REMOVED, 1);
+}
+
+/**
  * remove_unlocked - Remove socket from pool without locking
  * @pool: Pool instance
  * @socket: Socket to remove
@@ -742,12 +770,7 @@ remove_unlocked (T pool, Socket_T socket)
   if (!conn)
     return;
 
-  remove_from_hash_table (pool, conn, socket);
-  release_connection_resources (pool, conn, socket);
-  return_to_free_list (pool, conn);
-  decrement_pool_count (pool);
-  pool->stats_total_removed++;
-  SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REMOVED, 1);
+  remove_known_connection (pool, conn, socket);
 }
 
 /**
@@ -776,6 +799,21 @@ SocketPool_remove (T pool, Socket_T socket)
  * ============================================================================ */
 
 /**
+ * is_timed_out - Check if time difference exceeds timeout
+ * @now: Current time
+ * @last_activity: Last activity time
+ * @timeout: Timeout in seconds
+ *
+ * Returns: Non-zero if (now - last_activity) > timeout
+ * Thread-safe: Yes - pure function
+ */
+static int
+is_timed_out (time_t now, time_t last_activity, time_t timeout)
+{
+  return difftime (now, last_activity) > (double)timeout;
+}
+
+/**
  * should_close_connection - Determine if connection should be closed
  * @idle_timeout: Idle timeout in seconds (0 means close all)
  * @now: Current time
@@ -789,7 +827,7 @@ should_close_connection (time_t idle_timeout, time_t now, time_t last_activity)
 {
   if (idle_timeout == 0)
     return 1;
-  return difftime (now, last_activity) > (double)idle_timeout;
+  return is_timed_out (now, last_activity, idle_timeout);
 }
 
 /**
@@ -824,7 +862,7 @@ static void
 process_connection_for_cleanup (T pool, Connection_T conn, time_t idle_timeout,
                                 time_t now, size_t *close_count)
 {
-  validate_saved_session (conn);
+  validate_saved_session (conn, now);
 
   if (is_connection_idle (conn, idle_timeout, now))
     pool->cleanup_buffer[(*close_count)++] = conn->socket;
@@ -1062,22 +1100,39 @@ check_socket_error (int fd)
   return error;
 }
 
-/**
- * check_connection_stale - Check if connection is stale (exceeded idle timeout)
- * @conn: Connection to check
- * @idle_timeout_sec: Idle timeout in seconds (0 = no check)
- * @now: Current time
- *
- * Returns: 1 if stale, 0 if not
- */
-static int
-check_connection_stale (const Connection_T conn, time_t idle_timeout_sec,
-                        time_t now)
-{
-  if (idle_timeout_sec == 0)
-    return 0;
 
-  return difftime (now, conn->last_activity) > (double)idle_timeout_sec;
+/**
+ * check_socket_health - Check basic socket health (error and connected state)
+ * @conn: Connection to check
+ *
+ * Performs SO_ERROR check and connection validity check.
+ *
+ * Returns: POOL_CONN_HEALTHY if healthy, else specific error code
+ * Thread-safe: Yes
+ */
+static SocketPool_ConnHealth
+check_socket_health (const Connection_T conn)
+{
+  if (!conn->active || !conn->socket)
+    return POOL_CONN_DISCONNECTED;
+
+  int fd = Socket_fd (conn->socket);
+  if (fd < 0)
+    return POOL_CONN_DISCONNECTED;
+
+  int error = check_socket_error (fd);
+  if (error != 0)
+    {
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "Connection health check: SO_ERROR=%d (%s)", error,
+                       Socket_safe_strerror (error));
+      return POOL_CONN_ERROR;
+    }
+
+  if (!Socket_isconnected (conn->socket))
+    return POOL_CONN_DISCONNECTED;
+
+  return POOL_CONN_HEALTHY;
 }
 
 /**
@@ -1091,51 +1146,28 @@ check_connection_stale (const Connection_T conn, time_t idle_timeout_sec,
 SocketPool_ConnHealth
 SocketPool_check_connection (T pool, Connection_T conn)
 {
-  int fd;
-  int error;
   time_t idle_timeout;
-  time_t now;
 
   assert (pool);
   assert (conn);
 
-  /* Check if connection is active */
-  if (!conn->active || !conn->socket)
-    return POOL_CONN_DISCONNECTED;
-
-  /* Get file descriptor */
-  fd = Socket_fd (conn->socket);
-  if (fd < 0)
-    return POOL_CONN_DISCONNECTED;
-
-  /* Check for socket errors */
-  error = check_socket_error (fd);
-  if (error != 0)
-    {
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "Connection health check: SO_ERROR=%d (%s)", error,
-                       Socket_safe_strerror (error));
-      return POOL_CONN_ERROR;
-    }
-
-  /* Check if socket is still connected using Socket_isconnected if available */
-  if (!Socket_isconnected (conn->socket))
-    return POOL_CONN_DISCONNECTED;
+  SocketPool_ConnHealth res = check_socket_health (conn);
+  if (res != POOL_CONN_HEALTHY)
+    return res;
 
   /* Check for staleness */
   pthread_mutex_lock (&pool->mutex);
-  idle_timeout = pool->idle_timeout_sec;
   pool->stats_health_checks++;
-  pthread_mutex_unlock (&pool->mutex);
-
-  now = safe_time ();
-  if (check_connection_stale (conn, idle_timeout, now))
+  idle_timeout = pool->idle_timeout_sec;
+  time_t check_now = safe_time ();
+  int is_stale = (idle_timeout > 0 && is_timed_out (check_now, conn->last_activity, idle_timeout));
+  if (is_stale)
     {
-      pthread_mutex_lock (&pool->mutex);
       pool->stats_health_failures++;
       pthread_mutex_unlock (&pool->mutex);
       return POOL_CONN_STALE;
     }
+  pthread_mutex_unlock (&pool->mutex);
 
   return POOL_CONN_HEALTHY;
 }

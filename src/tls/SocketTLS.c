@@ -19,11 +19,12 @@
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketTLSContext.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketUtil.h"
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <openssl/x509_vfy.h>
-#include <poll.h>
+#include "poll/SocketPoll.h"
 #include <string.h>
 
 #define T SocketTLS_T
@@ -47,19 +48,33 @@ const Except_T SocketTLS_ShutdownFailed
  * Thread-Local Error Buffers
  * ============================================================================
  */
-
-#ifdef _WIN32
-__declspec (thread) Except_T SocketTLS_DetailedException;
-__declspec (thread) char tls_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
-#else
-__thread Except_T SocketTLS_DetailedException;
-__thread char tls_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
-#endif
-
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLS);
 /* ============================================================================
  * Internal Helper Functions
  * ============================================================================
  */
+
+/**
+ * tls_alloc_buf - Allocate a TLS buffer from socket arena
+ * @socket: Socket instance
+ * @purpose: Buffer purpose string ("read" or "write") for error messages
+ *
+ * Allocates a buffer of SOCKET_TLS_BUFFER_SIZE bytes from the socket's arena.
+ * Initializes length to 0 implicitly via allocation (assuming zeroed).
+ *
+ * Returns: Allocated buffer pointer
+ * Raises: SocketTLS_Failed on allocation failure
+ * Thread-safe: No
+ */
+static void *
+tls_alloc_buf (Socket_T socket, const char *purpose)
+{
+  Arena_T arena = SocketBase_arena (socket->base);
+  void *buf = Arena_alloc (arena, SOCKET_TLS_BUFFER_SIZE, __FILE__, __LINE__);
+  if (!buf)
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to allocate TLS %s buffer", purpose);
+  return buf;
+}
 
 /**
  * allocate_tls_buffers - Allocate TLS read/write buffers
@@ -75,34 +90,41 @@ allocate_tls_buffers (Socket_T socket)
 
   if (!socket->tls_read_buf)
     {
-      socket->tls_read_buf
-          = Arena_alloc (SocketBase_arena (socket->base),
-                         SOCKET_TLS_BUFFER_SIZE, __FILE__, __LINE__);
-      if (!socket->tls_read_buf)
-        RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
-                             "Failed to allocate TLS read buffer");
+      socket->tls_read_buf = tls_alloc_buf (socket, "read");
       socket->tls_read_buf_len = 0;
     }
 
   if (!socket->tls_write_buf)
     {
-      socket->tls_write_buf
-          = Arena_alloc (SocketBase_arena (socket->base),
-                         SOCKET_TLS_BUFFER_SIZE, __FILE__, __LINE__);
-      if (!socket->tls_write_buf)
-        RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
-                             "Failed to allocate TLS write buffer");
+      socket->tls_write_buf = tls_alloc_buf (socket, "write");
       socket->tls_write_buf_len = 0;
     }
+}
+
+/**
+ * tls_secure_clear_buf - Securely clear a TLS buffer if allocated
+ * @buf: Buffer pointer
+ * @size: Buffer size
+ *
+ * Uses SocketCrypto_secure_clear to wipe sensitive data that cannot be optimized away.
+ * No-op if buf is NULL.
+ * Thread-safe: Yes
+ */
+static void
+tls_secure_clear_buf (void *buf, size_t size)
+{
+  if (buf)
+    SocketCrypto_secure_clear (buf, size);
 }
 
 /**
  * free_tls_resources - Cleanup TLS resources
  * @socket: Socket instance
  *
- * Securely clears sensitive TLS buffers using OPENSSL_cleanse() before
+ * Securely clears sensitive TLS buffers using SocketCrypto_secure_clear before
  * releasing them. This prevents potential exposure of decrypted application
  * data through memory disclosure attacks (core dumps, cold boot, etc.).
+ * Thread-safe: No
  */
 static void
 free_tls_resources (Socket_T socket)
@@ -118,23 +140,20 @@ free_tls_resources (Socket_T socket)
     }
 
   /* Securely clear TLS buffers that may contain sensitive decrypted data */
-  if (socket->tls_read_buf)
-    SocketCrypto_secure_clear (socket->tls_read_buf, SOCKET_TLS_BUFFER_SIZE);
-
-  if (socket->tls_write_buf)
-    SocketCrypto_secure_clear (socket->tls_write_buf, SOCKET_TLS_BUFFER_SIZE);
+  tls_secure_clear_buf (socket->tls_read_buf, SOCKET_TLS_BUFFER_SIZE);
+  tls_secure_clear_buf (socket->tls_write_buf, SOCKET_TLS_BUFFER_SIZE);
 
   /* Clear SNI hostname (may contain sensitive connection info) */
   if (socket->tls_sni_hostname)
     {
       size_t hostname_len = strlen (socket->tls_sni_hostname);
       SocketCrypto_secure_clear ((void *)socket->tls_sni_hostname, hostname_len);
+      socket->tls_sni_hostname = NULL;
     }
 
   socket->tls_enabled = 0;
   socket->tls_handshake_done = 0;
   socket->tls_shutdown_done = 0;
-  socket->tls_sni_hostname = NULL;
   socket->tls_read_buf = NULL;
   socket->tls_write_buf = NULL;
   socket->tls_read_buf_len = 0;
@@ -369,82 +388,94 @@ SocketTLS_handshake (Socket_T socket)
  *
  * Returns: Poll event flags (POLLIN, POLLOUT, or both)
  */
-static short
+static unsigned
 state_to_poll_events (TLSHandshakeState state)
 {
   switch (state)
     {
     case TLS_HANDSHAKE_WANT_READ:
-      return POLLIN;
+      return POLL_READ;
     case TLS_HANDSHAKE_WANT_WRITE:
-      return POLLOUT;
+      return POLL_WRITE;
     default:
-      return POLLIN | POLLOUT;
+      return POLL_READ | POLL_WRITE;
     }
 }
 
 /**
- * do_handshake_poll - Perform poll wait for handshake I/O
- * @fd: Socket file descriptor
- * @events: Poll events to wait for
+ * do_handshake_poll - Perform poll wait for handshake I/O using SocketPoll
+ * @socket: Socket instance
+ * @events: Poll events to wait for (SocketPoll_Events bitmask)
  * @timeout_ms: Poll timeout in milliseconds
  *
- * Returns: 1 on success, 0 on EINTR (retry), raises exception on error
+ * Returns: 1 if socket is ready (events occurred), 0 on timeout or EINTR (retry)
+ * Raises: SocketTLS_HandshakeFailed on poll error
+ * Thread-safe: No
  */
 static int
-do_handshake_poll (int fd, short events, int timeout_ms)
+do_handshake_poll (Socket_T socket, unsigned events, int timeout_ms)
 {
-  struct pollfd pfd;
+  SocketPoll_T poll = NULL;
   int rc;
 
-  pfd.fd = fd;
-  pfd.events = events;
-  pfd.revents = 0;
-
-  rc = poll (&pfd, 1, timeout_ms);
-  if (rc < 0)
+  TRY
     {
-      if (errno == EINTR)
-        return 0; /* Caller should retry */
-      TLS_ERROR_FMT ("poll failed: %s", strerror (errno));
-      RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
-    }
+      poll = SocketPoll_new (16); /* Small capacity for single FD poll */
+      if (!poll)
+        RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed, "Failed to create temporary poll instance");
 
-  return 1;
+      SocketPoll_add (poll, socket, events, NULL);
+
+      SocketEvent_T evs[16];
+      SocketEvent_T *events = evs;
+      rc = SocketPoll_wait (poll, &events, timeout_ms);
+      if (rc < 0)
+        {
+          if (errno == EINTR)
+            return 0; /* Caller should retry */
+          TLS_ERROR_FMT ("SocketPoll_wait failed: %s", strerror (errno));
+          RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
+        }
+      /* rc >= 0: success (0=timeout, >0=ready) */
+    }
+  FINALLY
+    {
+      if (poll)
+        SocketPoll_free (&poll);
+    }
+  END_TRY;
+
+  return 1; /* Success (ready or timeout) */
 }
 
 /**
  * validate_handshake_preconditions - Check socket is ready for handshake loop
  * @socket: Socket to validate
  *
- * Returns: File descriptor if valid
  * Raises: SocketTLS_HandshakeFailed on error
+ * Thread-safe: No
  */
-static int
+static void
 validate_handshake_preconditions (Socket_T socket)
 {
-  int fd;
-
   REQUIRE_TLS_ENABLED (socket, SocketTLS_HandshakeFailed);
 
-  fd = SocketBase_fd (socket->base);
+  int fd = SocketBase_fd (socket->base);
   if (fd < 0)
     RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed, "Invalid socket fd");
-
-  return fd;
 }
 
 TLSHandshakeState
 SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
 {
-  int fd, elapsed_ms;
+  int elapsed_ms;
 
   assert (socket);
 
   if (socket->tls_handshake_done)
     return TLS_HANDSHAKE_COMPLETE;
 
-  fd = validate_handshake_preconditions (socket);
+  validate_handshake_preconditions (socket);
   elapsed_ms = 0;
 
   while (elapsed_ms < timeout_ms || timeout_ms == 0)
@@ -458,7 +489,7 @@ SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
       if (timeout_ms == 0)
         return state;
 
-      if (do_handshake_poll (fd, state_to_poll_events (state),
+      if (do_handshake_poll (socket, state_to_poll_events (state),
                              SOCKET_TLS_POLL_INTERVAL_MS))
         elapsed_ms += SOCKET_TLS_POLL_INTERVAL_MS;
     }

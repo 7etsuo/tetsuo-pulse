@@ -264,9 +264,9 @@ extern void invoke_callback (struct SocketDNS_T *dns,
  */
 
 /* Validation */
-extern bool is_ip_address (const char *host);
-extern int validate_hostname_label (const char *label, size_t *len);
-extern int validate_hostname (const char *hostname);
+
+
+
 extern void validate_resolve_params (const char *host, int port);
 
 #endif /* SOCKETDNS_PRIVATE_INCLUDED */

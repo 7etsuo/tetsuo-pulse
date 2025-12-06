@@ -206,7 +206,7 @@ init_peer_settings (SocketHTTP2_Conn_T conn)
 {
   conn->peer_settings[SETTINGS_IDX_HEADER_TABLE_SIZE]
       = SOCKETHTTP2_DEFAULT_HEADER_TABLE_SIZE;
-  conn->peer_settings[SETTINGS_IDX_ENABLE_PUSH] = 1;
+  conn->peer_settings[SETTINGS_IDX_ENABLE_PUSH] = SOCKETHTTP2_DEFAULT_ENABLE_PUSH;
   conn->peer_settings[SETTINGS_IDX_MAX_CONCURRENT_STREAMS] = UINT32_MAX;
   conn->peer_settings[SETTINGS_IDX_INITIAL_WINDOW_SIZE]
       = SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE;
@@ -233,15 +233,22 @@ init_flow_control (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
  * create_io_buffers - Create send and receive buffers
  * @conn: Connection to initialize
  *
- * Returns: 0 on success, -1 on failure
+ * Raises: SocketHTTP2_ProtocolError on allocation failure
  */
-static int
+static void
 create_io_buffers (SocketHTTP2_Conn_T conn)
 {
   conn->recv_buf = SocketBuf_new (conn->arena, HTTP2_IO_BUFFER_SIZE);
-  conn->send_buf = SocketBuf_new (conn->arena, HTTP2_IO_BUFFER_SIZE);
+  if (!conn->recv_buf) {
+    SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+                      "Failed to allocate HTTP/2 I/O buffers");
+  }
 
-  return (conn->recv_buf && conn->send_buf) ? 0 : -1;
+  conn->send_buf = SocketBuf_new (conn->arena, HTTP2_IO_BUFFER_SIZE);
+  if (!conn->send_buf) {
+    SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+                      "Failed to allocate HTTP/2 I/O buffers");
+  }
 }
 
 /**
@@ -249,9 +256,9 @@ create_io_buffers (SocketHTTP2_Conn_T conn)
  * @conn: Connection to initialize
  * @header_table_size: Maximum dynamic table size
  *
- * Returns: 0 on success, -1 on failure
+ * Raises: SocketHTTP2_ProtocolError on creation failure
  */
-static int
+static void
 create_hpack_encoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size)
 {
   SocketHPACK_EncoderConfig enc_config;
@@ -259,8 +266,10 @@ create_hpack_encoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size)
   SocketHPACK_encoder_config_defaults (&enc_config);
   enc_config.max_table_size = header_table_size;
   conn->encoder = SocketHPACK_Encoder_new (&enc_config, conn->arena);
-
-  return conn->encoder ? 0 : -1;
+  if (!conn->encoder) {
+    SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+                      "Failed to create HPACK encoder");
+  }
 }
 
 /**
@@ -269,9 +278,9 @@ create_hpack_encoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size)
  * @header_table_size: Maximum dynamic table size
  * @max_header_list_size: Maximum header list size
  *
- * Returns: 0 on success, -1 on failure
+ * Raises: SocketHTTP2_ProtocolError on creation failure
  */
-static int
+static void
 create_hpack_decoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size,
                       uint32_t max_header_list_size)
 {
@@ -281,22 +290,70 @@ create_hpack_decoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size,
   dec_config.max_table_size = header_table_size;
   dec_config.max_header_list_size = max_header_list_size;
   conn->decoder = SocketHPACK_Decoder_new (&dec_config, conn->arena);
-
-  return conn->decoder ? 0 : -1;
+  if (!conn->decoder) {
+    SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+                      "Failed to create HPACK decoder");
+  }
 }
 
 /**
  * create_stream_hash_table - Allocate stream hash table
  * @conn: Connection to initialize
  *
- * Returns: 0 on success, -1 on failure
+ * Raises: SocketHTTP2_ProtocolError on allocation failure
  */
-static int
+static void
 create_stream_hash_table (SocketHTTP2_Conn_T conn)
 {
   conn->streams = Arena_calloc (conn->arena, HTTP2_STREAM_HASH_SIZE,
                                 sizeof (*conn->streams), __FILE__, __LINE__);
-  return conn->streams ? 0 : -1;
+  if (!conn->streams) {
+    SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+                      "Failed to allocate stream hash table");
+  }
+}
+
+/**
+ * init_connection_components - Initialize internal components (I/O buffers, HPACK encoder/decoder, stream hash table)
+ * @conn: Connection to initialize
+ * @config: Configuration source for HPACK settings
+ *
+ * Raises: SocketHTTP2_ProtocolError on any allocation or creation failure
+ */
+/**
+ * alloc_conn - Allocate and zero-initialize connection structure
+ * @arena: Memory arena
+ *
+ * Returns: Allocated connection, raises on failure
+ * Raises: SocketHTTP2_ProtocolError on allocation failure
+ */
+static SocketHTTP2_Conn_T
+alloc_conn (Arena_T arena)
+{
+  SocketHTTP2_Conn_T conn;
+
+  conn = Arena_alloc (arena, sizeof (*conn), __FILE__, __LINE__);
+  if (!conn)
+    {
+      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+                        "Failed to allocate HTTP/2 connection");
+    }
+  memset (conn, 0, sizeof (*conn));
+
+  return conn;
+}
+
+static void
+init_connection_components (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
+{
+  create_io_buffers (conn);
+
+  create_hpack_encoder (conn, config->header_table_size);
+
+  create_hpack_decoder (conn, config->header_table_size,
+                            config->max_header_list_size);
+
+  create_stream_hash_table (conn);  /* Now raises internally */
 }
 
 /* ============================================================================
@@ -320,14 +377,8 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
       config = &default_config;
     }
 
-  /* Allocate connection structure */
-  conn = Arena_alloc (arena, sizeof (*conn), __FILE__, __LINE__);
-  if (!conn)
-    {
-      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
-                        "Failed to allocate HTTP/2 connection");
-    }
-  memset (conn, 0, sizeof (*conn));
+  /* Allocate and initialize connection structure */
+  conn = alloc_conn (arena);
 
   conn->socket = socket;
   conn->arena = arena;
@@ -339,34 +390,8 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
   init_peer_settings (conn);
   init_flow_control (conn, config);
 
-  /* Create I/O buffers */
-  if (create_io_buffers (conn) < 0)
-    {
-      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
-                        "Failed to allocate HTTP/2 I/O buffers");
-    }
-
-  /* Create HPACK encoder/decoder */
-  if (create_hpack_encoder (conn, config->header_table_size) < 0)
-    {
-      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
-                        "Failed to create HPACK encoder");
-    }
-
-  if (create_hpack_decoder (conn, config->header_table_size,
-                            config->max_header_list_size)
-      < 0)
-    {
-      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
-                        "Failed to create HPACK decoder");
-    }
-
-  /* Allocate stream hash table */
-  if (create_stream_hash_table (conn) < 0)
-    {
-      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
-                        "Failed to allocate stream hash table");
-    }
+  /* Initialize internal components (buffers, HPACK, streams) */
+  init_connection_components (conn, config);
 
   /* Initialize stream IDs based on role */
   conn->next_stream_id = (config->role == HTTP2_ROLE_CLIENT) ? 1 : 2;
@@ -387,16 +412,7 @@ SocketHTTP2_Conn_free (SocketHTTP2_Conn_T *conn)
 
   SocketHTTP2_Conn_T c = *conn;
 
-  /* Free all streams - memory managed by arena, just traverse and clear */
-  for (size_t i = 0; i < HTTP2_STREAM_HASH_SIZE; i++)
-    {
-      SocketHTTP2_Stream_T stream = c->streams[i];
-      while (stream)
-        {
-          SocketHTTP2_Stream_T next = stream->hash_next;
-          stream = next;
-        }
-    }
+
 
   /* Free HPACK encoder/decoder */
   if (c->encoder)
@@ -528,7 +544,7 @@ should_send_setting (uint16_t id, uint32_t value)
     case HTTP2_SETTINGS_HEADER_TABLE_SIZE:
       return value != SOCKETHTTP2_DEFAULT_HEADER_TABLE_SIZE;
     case HTTP2_SETTINGS_ENABLE_PUSH:
-      return value != 1;
+      return value != SOCKETHTTP2_DEFAULT_ENABLE_PUSH;
     case HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS:
       return 1; /* Always send this one */
     case HTTP2_SETTINGS_INITIAL_WINDOW_SIZE:
@@ -1340,21 +1356,6 @@ http2_process_rst_stream (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
-/* ============================================================================
- * PRIORITY Processing (Deprecated)
- * ============================================================================ */
-
-int
-http2_process_priority (SocketHTTP2_Conn_T conn,
-                        const SocketHTTP2_FrameHeader *header,
-                        const unsigned char *payload)
-{
-  /* RFC 9113: PRIORITY frames are deprecated and should be ignored */
-  (void) conn;
-  (void) header;
-  (void) payload;
-  return 0;
-}
 
 /* ============================================================================
  * h2c Upgrade Support

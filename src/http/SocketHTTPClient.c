@@ -11,23 +11,23 @@
  * - SocketHTTP for headers, URI, methods
  */
 
-#include "http/SocketHTTPClient.h"
-#include "http/SocketHTTPClient-private.h"
-#include "http/SocketHTTP.h"
-#include "http/SocketHTTP1.h"
-#include "socket/Socket.h"
-#include "socket/SocketHappyEyeballs.h"
-#include "core/Arena.h"
-#include "core/SocketCrypto.h"
-#include "core/SocketMetrics.h"
-#include "core/SocketUtil.h"
-
 #include <assert.h>
 #include <errno.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#include "core/Arena.h"
+#include "core/SocketCrypto.h"
+#include "core/SocketMetrics.h"
+#include "core/SocketUtil.h"
+#include "http/SocketHTTP.h"
+#include "http/SocketHTTP1.h"
+#include "http/SocketHTTPClient.h"
+#include "http/SocketHTTPClient-private.h"
+#include "socket/Socket.h"
+#include "socket/SocketHappyEyeballs.h"
 
 /* ============================================================================
  * Centralized Exception Infrastructure
@@ -292,6 +292,85 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
 }
 
 /* ============================================================================
+ * Safe Socket I/O Helpers - Common exception handling for send/recv
+ * ============================================================================ */
+
+/**
+ * safe_socket_send - Send data with exception handling and connection state update
+ * @conn: Connection entry (updated on close/error)
+ * @data: Data to send
+ * @len: Length of data
+ * @op_desc: Description for error messages (e.g., "send headers")
+ *
+ * Returns: Number of bytes sent, or -1 on error
+ * Thread-safe: No (assumes single-threaded access to conn)
+ *
+ * Handles Socket_Closed by setting conn->closed=1 and logging.
+ * Handles Socket_Failed by logging errno details.
+ * Uses Socket_send which routes through TLS if enabled.
+ */
+static ssize_t
+safe_socket_send (HTTPPoolEntry *conn, const void *data, size_t len, const char *op_desc)
+{
+  volatile ssize_t sent;
+
+  TRY
+    {
+      sent = Socket_send (conn->proto.h1.socket, data, len);
+    }
+  EXCEPT (Socket_Closed)
+    {
+      conn->closed = 1;
+      HTTPCLIENT_ERROR_FMT ("Connection closed while %s", op_desc ? op_desc : "sending data");
+      return -1;
+    }
+  EXCEPT (Socket_Failed)
+    {
+      HTTPCLIENT_ERROR_FMT ("Failed to %s: %s", op_desc ? op_desc : "send data",
+                            Socket_safe_strerror (Socket_geterrno ()) );
+      return -1;
+    }
+  END_TRY;
+
+  return sent;
+}
+
+/**
+ * safe_socket_recv - Receive data with exception handling
+ * @conn: Connection entry (updated on close)
+ * @buf: Output buffer
+ * @size: Buffer size
+ * @n: Output bytes received
+ *
+ * Returns: 0 on success (n set), -1 on closed/error
+ * Thread-safe: No
+ */
+static int
+safe_socket_recv (HTTPPoolEntry *conn, char *buf, size_t size, ssize_t *n)
+{
+  volatile int closed = 0;
+
+  TRY
+    {
+      *n = Socket_recv (conn->proto.h1.socket, buf, size);
+    }
+  EXCEPT (Socket_Closed)
+    {
+      closed = 1;
+      *n = 0;
+    }
+  END_TRY;
+
+  if (closed || *n <= 0)
+    {
+      conn->closed = 1;
+      return -1;
+    }
+
+  return 0;
+}
+
+/* ============================================================================
  * Internal: HTTP/1.1 Request Helpers
  * ============================================================================ */
 
@@ -347,26 +426,10 @@ send_http1_headers (HTTPPoolEntry *conn, const SocketHTTP_Request *http_req)
     }
 
   /* Send request headers */
-  TRY
-    {
-      sent = Socket_send (conn->proto.h1.socket, buf, (size_t)n);
-    }
-  EXCEPT (Socket_Closed)
-    {
-      conn->closed = 1;
-      HTTPCLIENT_ERROR_MSG ("Connection closed while sending request headers");
-      return -1;
-    }
-  EXCEPT (Socket_Failed)
-    {
-      HTTPCLIENT_ERROR_FMT ("Failed to send request headers");
-      return -1;
-    }
-  END_TRY;
-
+  sent = safe_socket_send (conn, buf, (size_t)n, "send request headers");
   if (sent < 0 || (size_t)sent != (size_t)n)
     {
-      HTTPCLIENT_ERROR_FMT ("Failed to send request headers (partial write)");
+      HTTPCLIENT_ERROR_FMT ("Failed to send request headers (partial write: %zd/%zu)", sent, (size_t)n);
       return -1;
     }
 
@@ -392,26 +455,10 @@ send_http1_body (HTTPPoolEntry *conn, const void *body, size_t body_len)
   if (body == NULL || body_len == 0)
     return 0;
 
-  TRY
-    {
-      sent = Socket_send (conn->proto.h1.socket, body, body_len);
-    }
-  EXCEPT (Socket_Closed)
-    {
-      conn->closed = 1;
-      HTTPCLIENT_ERROR_MSG ("Connection closed while sending request body");
-      return -1;
-    }
-  EXCEPT (Socket_Failed)
-    {
-      HTTPCLIENT_ERROR_FMT ("Failed to send request body");
-      return -1;
-    }
-  END_TRY;
-
+  sent = safe_socket_send (conn, body, body_len, "send request body");
   if (sent < 0 || (size_t)sent != body_len)
     {
-      HTTPCLIENT_ERROR_FMT ("Failed to send request body (partial write)");
+      HTTPCLIENT_ERROR_FMT ("Failed to send request body (partial write: %zd/%zu)", sent, body_len);
       return -1;
     }
 
@@ -545,26 +592,11 @@ static int
 recv_http1_chunk (HTTPPoolEntry *conn, char *buf, size_t buf_size,
                   ssize_t *bytes_read)
 {
-  volatile ssize_t n = -1;
-  volatile int closed = 0;
+  ssize_t recv_n;
+  if (safe_socket_recv (conn, buf, buf_size, &recv_n) < 0)
+    return -1;
 
-  TRY
-    {
-      n = Socket_recv (conn->proto.h1.socket, buf, buf_size);
-    }
-  EXCEPT (Socket_Closed)
-    {
-      closed = 1;
-      n = 0;
-    }
-  END_TRY;
-
-  *bytes_read = n;
-  if (closed || n <= 0)
-    {
-      conn->closed = 1;
-      return -1;
-    }
+  *bytes_read = recv_n;
   return 0;
 }
 
@@ -1712,43 +1744,8 @@ SocketHTTPClient_Request_auth (SocketHTTPClient_Request_T req,
  * Returns: Delay in milliseconds with jitter applied
  * Thread-safe: Yes
  */
-/**
- * calculate_retry_delay - Calculate backoff delay for retry attempt
- * @client: HTTP client with retry config
- * @attempt: Current attempt number (1-based)
- *
- * Returns: Delay in milliseconds with jitter applied
- * Thread-safe: Yes (uses rand() which may need seeding)
- *
- * Uses exponential backoff: initial * 2^(attempt-1), capped at max_delay.
- * Applies +/- HTTPCLIENT_RETRY_JITTER_FACTOR jitter to prevent thundering herd.
- */
-static int
-calculate_retry_delay (SocketHTTPClient_T client, int attempt)
-{
-  double delay;
-  double jitter_range;
-  double random_factor;
-
-  /* Exponential backoff: initial * 2^(attempt-1) */
-  delay = (double)client->config.retry_initial_delay_ms
-          * pow (2.0, (double)(attempt - 1));
-
-  /* Cap at max delay */
-  if (delay > (double)client->config.retry_max_delay_ms)
-    delay = (double)client->config.retry_max_delay_ms;
-
-  /* Apply jitter: delay * (1 +/- jitter_factor * random) */
-  random_factor = (double)rand () / (double)RAND_MAX; /* 0 to 1 */
-  jitter_range = delay * HTTPCLIENT_RETRY_JITTER_FACTOR;
-  delay += jitter_range * (2.0 * random_factor - 1.0);
-
-  /* Ensure positive delay */
-  if (delay < 1.0)
-    delay = 1.0;
-
-  return (int)delay;
-}
+/* calculate_retry_delay moved to SocketHTTPClient-retry.c */
+extern int httpclient_calculate_retry_delay (SocketHTTPClient_T client, int attempt);
 
 /**
  * retry_sleep_ms - Sleep for specified milliseconds
@@ -1777,14 +1774,14 @@ retry_sleep_ms (int ms)
 }
 
 /**
- * should_retry_error - Check if error code should trigger retry
+ * httpclient_should_retry_error - Check if error code should trigger retry
  * @client: HTTP client with retry config
  * @error: Error code to check
  *
  * Returns: 1 if should retry, 0 otherwise
  */
-static int
-should_retry_error (SocketHTTPClient_T client, SocketHTTPClient_Error error)
+int
+httpclient_should_retry_error (SocketHTTPClient_T client, SocketHTTPClient_Error error)
 {
   switch (error)
     {
@@ -1939,7 +1936,7 @@ handle_failed_attempt (SocketHTTPClient_T client, int attempt)
   int delay_ms;
 
   /* Non-retryable error - propagate exception */
-  if (!should_retry_error (client, client->last_error))
+  if (!httpclient_should_retry_error (client, client->last_error))
     {
       raise_last_error (client);
       return 0;
@@ -1950,7 +1947,7 @@ handle_failed_attempt (SocketHTTPClient_T client, int attempt)
     return 0;
 
   /* Calculate and apply backoff delay */
-  delay_ms = calculate_retry_delay (client, attempt);
+  delay_ms = httpclient_calculate_retry_delay (client, attempt);
   SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
                    "Attempt %d failed (error=%d), retrying in %d ms", attempt,
                    client->last_error, delay_ms);

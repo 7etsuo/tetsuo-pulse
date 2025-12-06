@@ -28,7 +28,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
+#include <errno.h>
+
 #include <time.h>
 
 #include "core/SocketConfig.h"
@@ -123,83 +124,109 @@ Socket_get_monotonic_ms (void)
 }
 
 /* ===========================================================================
+ * ERROR MAPPING TABLE
+ * ===========================================================================*/
+
+/**
+ * SocketErrorMapping - Comprehensive errno to error info mapping
+ *
+ * Single source of truth for errno classification across all error functions.
+ * Data-driven approach eliminates code duplication in switch statements.
+ */
+typedef struct SocketErrorMapping {
+  int err;
+  SocketErrorCode code;
+  SocketErrorCategory category;
+  int retryable;
+} SocketErrorMapping;
+
+static const SocketErrorMapping error_mappings[] = {
+  { 0, SOCKET_ERROR_NONE, SOCKET_ERROR_CATEGORY_UNKNOWN, 0 },
+  { EINVAL, SOCKET_ERROR_EINVAL, SOCKET_ERROR_CATEGORY_PROTOCOL, 0 },
+  { EACCES, SOCKET_ERROR_EACCES, SOCKET_ERROR_CATEGORY_APPLICATION, 0 },
+  { EADDRINUSE, SOCKET_ERROR_EADDRINUSE, SOCKET_ERROR_CATEGORY_APPLICATION, 0 },
+  { EADDRNOTAVAIL, SOCKET_ERROR_EADDRNOTAVAIL, SOCKET_ERROR_CATEGORY_APPLICATION, 0 },
+  { EAFNOSUPPORT, SOCKET_ERROR_EAFNOSUPPORT, SOCKET_ERROR_CATEGORY_PROTOCOL, 0 },
+  { EAGAIN, SOCKET_ERROR_EAGAIN, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+#ifdef EWOULDBLOCK
+  { EWOULDBLOCK, SOCKET_ERROR_EWOULDBLOCK, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+#endif
+  { EALREADY, SOCKET_ERROR_EALREADY, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+  { EBADF, SOCKET_ERROR_EBADF, SOCKET_ERROR_CATEGORY_PROTOCOL, 0 },
+  { ECONNREFUSED, SOCKET_ERROR_ECONNREFUSED, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+  { ECONNRESET, SOCKET_ERROR_ECONNRESET, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+  { EFAULT, SOCKET_ERROR_EFAULT, SOCKET_ERROR_CATEGORY_PROTOCOL, 0 },
+  { EHOSTUNREACH, SOCKET_ERROR_EHOSTUNREACH, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+  { EINPROGRESS, SOCKET_ERROR_EINPROGRESS, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+  { EINTR, SOCKET_ERROR_EINTR, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+  { EISCONN, SOCKET_ERROR_EISCONN, SOCKET_ERROR_CATEGORY_PROTOCOL, 0 },
+  { EMFILE, SOCKET_ERROR_EMFILE, SOCKET_ERROR_CATEGORY_RESOURCE, 0 },
+  { ENETUNREACH, SOCKET_ERROR_ENETUNREACH, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+  { ENOBUFS, SOCKET_ERROR_ENOBUFS, SOCKET_ERROR_CATEGORY_RESOURCE, 0 },
+  { ENOMEM, SOCKET_ERROR_ENOMEM, SOCKET_ERROR_CATEGORY_RESOURCE, 0 },
+  { ENOTCONN, SOCKET_ERROR_ENOTCONN, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+  { ENOTSOCK, SOCKET_ERROR_ENOTSOCK, SOCKET_ERROR_CATEGORY_PROTOCOL, 0 },
+  { EOPNOTSUPP, SOCKET_ERROR_EOPNOTSUPP, SOCKET_ERROR_CATEGORY_PROTOCOL, 0 },
+  { EPIPE, SOCKET_ERROR_EPIPE, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+  { EPROTONOSUPPORT, SOCKET_ERROR_EPROTONOSUPPORT, SOCKET_ERROR_CATEGORY_PROTOCOL, 0 },
+  { ETIMEDOUT, SOCKET_ERROR_ETIMEDOUT, SOCKET_ERROR_CATEGORY_TIMEOUT, 1 },
+  /* Additional errnos from categorize and retryable functions */
+  { ECONNABORTED, SOCKET_ERROR_UNKNOWN, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+#ifdef ENETDOWN
+  { ENETDOWN, SOCKET_ERROR_UNKNOWN, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+#endif
+#ifdef ENETRESET
+  { ENETRESET, SOCKET_ERROR_UNKNOWN, SOCKET_ERROR_CATEGORY_NETWORK, 1 },
+#endif
+  { ENFILE, SOCKET_ERROR_UNKNOWN, SOCKET_ERROR_CATEGORY_RESOURCE, 0 },
+#ifdef ENOSPC
+  { ENOSPC, SOCKET_ERROR_UNKNOWN, SOCKET_ERROR_CATEGORY_RESOURCE, 0 },
+#endif
+#ifdef EPROTO
+  { EPROTO, SOCKET_ERROR_UNKNOWN, SOCKET_ERROR_CATEGORY_PROTOCOL, 0 },
+#endif
+  { EPERM, SOCKET_ERROR_UNKNOWN, SOCKET_ERROR_CATEGORY_APPLICATION, 0 },
+};
+
+#define NUM_ERROR_MAPPINGS (sizeof(error_mappings) / sizeof(error_mappings[0]))
+
+/**
+ * socket_find_error_mapping - Find error mapping entry for given errno
+ * @err: errno value to look up
+ *
+ * Returns: Pointer to mapping entry if found, NULL otherwise
+ * Thread-safe: Yes (pure function, const data)
+ */
+static const SocketErrorMapping *
+socket_find_error_mapping (int err)
+{
+  for (size_t i = 0; i < NUM_ERROR_MAPPINGS; i++) {
+    if (error_mappings[i].err == err) {
+      return &error_mappings[i];
+    }
+  }
+  return NULL;
+}
+
+/* ===========================================================================
  * ERROR HANDLING SUBSYSTEM
  * ===========================================================================*/
 
 /**
- * socket_errno_to_errorcode - Map errno value to SocketErrorCode
+ * socket_errno_to_errorcode - Map errno value to SocketErrorCode via table lookup
  * @errno_val: errno value to map
  *
- * Returns: Corresponding SocketErrorCode enum value
- * Thread-safe: Yes (pure function)
+ * Returns: Corresponding SocketErrorCode enum value from error_mappings table
+ * Thread-safe: Yes (pure function, const data)
  *
- * Maps common POSIX errno values to structured SocketErrorCode values
- * for programmatic error handling.
+ * Table-driven mapping of POSIX errno to SocketErrorCode using centralized
+ * error_mappings table. Unknown errnos map to SOCKET_ERROR_UNKNOWN.
  */
 static SocketErrorCode
 socket_errno_to_errorcode (int errno_val)
 {
-  switch (errno_val)
-    {
-    case 0:
-      return SOCKET_ERROR_NONE;
-    case EINVAL:
-      return SOCKET_ERROR_EINVAL;
-    case EACCES:
-      return SOCKET_ERROR_EACCES;
-    case EADDRINUSE:
-      return SOCKET_ERROR_EADDRINUSE;
-    case EADDRNOTAVAIL:
-      return SOCKET_ERROR_EADDRNOTAVAIL;
-    case EAFNOSUPPORT:
-      return SOCKET_ERROR_EAFNOSUPPORT;
-    case EAGAIN:
-      return SOCKET_ERROR_EAGAIN;
-#if EWOULDBLOCK != EAGAIN
-    case EWOULDBLOCK:
-      return SOCKET_ERROR_EWOULDBLOCK;
-#endif
-    case EALREADY:
-      return SOCKET_ERROR_EALREADY;
-    case EBADF:
-      return SOCKET_ERROR_EBADF;
-    case ECONNREFUSED:
-      return SOCKET_ERROR_ECONNREFUSED;
-    case ECONNRESET:
-      return SOCKET_ERROR_ECONNRESET;
-    case EFAULT:
-      return SOCKET_ERROR_EFAULT;
-    case EHOSTUNREACH:
-      return SOCKET_ERROR_EHOSTUNREACH;
-    case EINPROGRESS:
-      return SOCKET_ERROR_EINPROGRESS;
-    case EINTR:
-      return SOCKET_ERROR_EINTR;
-    case EISCONN:
-      return SOCKET_ERROR_EISCONN;
-    case EMFILE:
-      return SOCKET_ERROR_EMFILE;
-    case ENETUNREACH:
-      return SOCKET_ERROR_ENETUNREACH;
-    case ENOBUFS:
-      return SOCKET_ERROR_ENOBUFS;
-    case ENOMEM:
-      return SOCKET_ERROR_ENOMEM;
-    case ENOTCONN:
-      return SOCKET_ERROR_ENOTCONN;
-    case ENOTSOCK:
-      return SOCKET_ERROR_ENOTSOCK;
-    case EOPNOTSUPP:
-      return SOCKET_ERROR_EOPNOTSUPP;
-    case EPIPE:
-      return SOCKET_ERROR_EPIPE;
-    case EPROTONOSUPPORT:
-      return SOCKET_ERROR_EPROTONOSUPPORT;
-    case ETIMEDOUT:
-      return SOCKET_ERROR_ETIMEDOUT;
-    default:
-      return SOCKET_ERROR_UNKNOWN;
-    }
+  const SocketErrorMapping *m = socket_find_error_mapping(errno_val);
+  return m ? m->code : SOCKET_ERROR_UNKNOWN;
 }
 
 /* Thread-local error buffer for detailed error messages */
@@ -307,87 +334,20 @@ static const char *const socket_error_category_names[] = {
   (sizeof (socket_error_category_names) / sizeof (socket_error_category_names[0]))
 
 /**
- * SocketError_categorize_errno - Categorize an errno value
+ * SocketError_categorize_errno - Categorize errno using centralized table
  * @err: errno value to categorize
  *
- * Returns: SocketErrorCategory for the given errno
- * Thread-safe: Yes (pure function)
+ * Returns: SocketErrorCategory from error_mappings table or UNKNOWN
+ * Thread-safe: Yes (pure function, const data)
  *
- * Maps POSIX errno values to high-level categories for error handling.
+ * Table-driven categorization using error_mappings. Covers all previously
+ * switch-mapped errnos plus additional ones for completeness.
  */
 SocketErrorCategory
 SocketError_categorize_errno (int err)
 {
-  switch (err)
-    {
-    /* No error */
-    case 0:
-      return SOCKET_ERROR_CATEGORY_UNKNOWN;
-
-    /* Network errors - typically transient, retryable */
-    case ECONNREFUSED:
-    case ECONNRESET:
-    case ECONNABORTED:
-    case ENETUNREACH:
-    case EHOSTUNREACH:
-#ifdef ENETDOWN
-    case ENETDOWN:
-#endif
-#ifdef ENETRESET
-    case ENETRESET:
-#endif
-    case EPIPE:
-    case ENOTCONN:
-      return SOCKET_ERROR_CATEGORY_NETWORK;
-
-    /* Timeout errors */
-    case ETIMEDOUT:
-      return SOCKET_ERROR_CATEGORY_TIMEOUT;
-
-    /* Resource exhaustion errors */
-    case ENOMEM:
-    case EMFILE:
-    case ENFILE:
-    case ENOBUFS:
-#ifdef ENOSPC
-    case ENOSPC:
-#endif
-      return SOCKET_ERROR_CATEGORY_RESOURCE;
-
-    /* Protocol/configuration errors - usually not retryable */
-    case EINVAL:
-#ifdef EPROTO
-    case EPROTO:
-#endif
-    case EPROTONOSUPPORT:
-    case EAFNOSUPPORT:
-    case EOPNOTSUPP:
-    case ENOTSOCK:
-    case EBADF:
-    case EFAULT:
-      return SOCKET_ERROR_CATEGORY_PROTOCOL;
-
-    /* Permission/address errors - configuration issues */
-    case EACCES:
-    case EPERM:
-    case EADDRINUSE:
-    case EADDRNOTAVAIL:
-      return SOCKET_ERROR_CATEGORY_APPLICATION;
-
-    /* Temporary conditions (not really errors) */
-    case EAGAIN:
-#if EWOULDBLOCK != EAGAIN
-    case EWOULDBLOCK:
-#endif
-    case EINTR:
-    case EINPROGRESS:
-    case EALREADY:
-    case EISCONN:
-      return SOCKET_ERROR_CATEGORY_NETWORK;
-
-    default:
-      return SOCKET_ERROR_CATEGORY_UNKNOWN;
-    }
+  const SocketErrorMapping *m = socket_find_error_mapping(err);
+  return m ? m->category : SOCKET_ERROR_CATEGORY_UNKNOWN;
 }
 
 /**
@@ -406,77 +366,20 @@ SocketError_category_name (SocketErrorCategory category)
 }
 
 /**
- * SocketError_is_retryable_errno - Check if errno indicates retryable error
+ * SocketError_is_retryable_errno - Check if errno is retryable using table
  * @err: errno value to check
  *
- * Returns: 1 if error is typically retryable, 0 if fatal
- * Thread-safe: Yes (pure function)
+ * Returns: 1 if retryable per error_mappings table, 0 otherwise
+ * Thread-safe: Yes (pure function, const data)
  *
- * Determines if an error is transient and worth retrying. This is used
- * by retry logic to decide whether to attempt reconnection.
+ * Table-driven retryability check using centralized error_mappings.
+ * Unknown errnos default to non-retryable for safety.
  */
 int
 SocketError_is_retryable_errno (int err)
 {
-  switch (err)
-    {
-    /* Network transient errors - server may come back */
-    case ECONNREFUSED:  /* Server not listening yet */
-    case ECONNRESET:    /* Connection dropped */
-    case ECONNABORTED:  /* Connection aborted */
-    case ENETUNREACH:   /* Network route may recover */
-    case EHOSTUNREACH:  /* Host may come online */
-#ifdef ENETDOWN
-    case ENETDOWN:      /* Network interface may recover */
-#endif
-#ifdef ENETRESET
-    case ENETRESET:     /* Network reset, can retry */
-#endif
-    case EPIPE:         /* Write to closed socket */
-    case ENOTCONN:      /* Socket not connected */
-
-    /* Timeout - may succeed with retry */
-    case ETIMEDOUT:
-
-    /* Temporary conditions - always retryable */
-    case EAGAIN:
-#if EWOULDBLOCK != EAGAIN
-    case EWOULDBLOCK:
-#endif
-    case EINTR:         /* Interrupted by signal */
-    case EINPROGRESS:   /* Non-blocking connect in progress */
-    case EALREADY:      /* Operation already in progress */
-      return 1;
-
-    /* Non-retryable errors */
-
-    /* Configuration/permission errors - won't change on retry */
-    case EACCES:
-    case EPERM:
-    case EADDRINUSE:
-    case EADDRNOTAVAIL:
-    case EAFNOSUPPORT:
-    case EPROTONOSUPPORT:
-    case EOPNOTSUPP:
-
-    /* Programming errors - bugs that won't fix themselves */
-    case EBADF:
-    case ENOTSOCK:
-    case EINVAL:
-    case EFAULT:
-    case EISCONN:
-
-    /* Resource exhaustion - may need intervention */
-    case ENOMEM:
-    case EMFILE:
-    case ENFILE:
-    case ENOBUFS:
-      return 0;
-
-    default:
-      /* Unknown errors default to non-retryable for safety */
-      return 0;
-    }
+  const SocketErrorMapping *m = socket_find_error_mapping(err);
+  return m ? m->retryable : 0;
 }
 
 /* ===========================================================================
@@ -489,6 +392,9 @@ static SocketLogCallback socketlog_callback = NULL;
 static void *socketlog_userdata = NULL;
 static SocketLogLevel socketlog_min_level = SOCKET_LOG_INFO;
 
+static SocketLogStructuredCallback socketlog_structured_callback = NULL;
+static void *socketlog_structured_userdata = NULL;
+
 /* Level names for display (indexed by SocketLogLevel) */
 static const char *const default_level_names[] = {
   "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
@@ -499,7 +405,7 @@ static const char *const default_level_names[] = {
   (sizeof (default_level_names) / sizeof (default_level_names[0]))
 
 /* Timestamp formatting constants - use SocketConfig.h naming */
-#define SOCKETLOG_TIMESTAMP_BUFSIZE 32
+#define SOCKETLOG_TIMESTAMP_BUFSIZE 64
 #define SOCKETLOG_TIMESTAMP_FORMAT "%Y-%m-%d %H:%M:%S"
 #define SOCKETLOG_DEFAULT_TIMESTAMP "1970-01-01 00:00:00"
 
@@ -651,6 +557,21 @@ SocketLog_setlevel (SocketLogLevel min_level)
 }
 
 /**
+ * SocketLogAllInfo - All logging configuration info acquired under single lock
+ *
+ * Contains fallback and structured callbacks/userdata plus should_log flag.
+ * Used internally to consolidate mutex acquisitions across logging subsystems.
+ */
+typedef struct SocketLogAllInfo
+{
+  SocketLogCallback fallback_callback;
+  void *fallback_userdata;
+  SocketLogStructuredCallback structured_callback;
+  void *structured_userdata;
+  int should_log;
+} SocketLogAllInfo;
+
+/**
  * SocketLogCallbackInfo - Internal structure for callback acquisition
  *
  * Used by socketlog_acquire_callback to return all necessary callback info
@@ -664,28 +585,44 @@ typedef struct SocketLogCallbackInfo
 } SocketLogCallbackInfo;
 
 /**
- * socketlog_acquire_callback - Acquire callback info under mutex
- * @level: Log level to check against minimum
+ * socketlog_acquire_all_info - Acquire all logging configuration under mutex
  *
- * Returns: Callback info structure with should_log flag
+ * @level: Log level to check against minimum for should_log
+ *
+ * Returns: Structure containing all protected log state
  * Thread-safe: Yes (mutex protected)
  *
- * Consolidates the common pattern of: lock, read min_level, read callback,
- * unlock, check level. Returns all info needed to invoke callback.
+ * Copies all logging callbacks, userdata, and computes should_log under
+ * single mutex acquisition to minimize lock contention.
  */
-static SocketLogCallbackInfo
-socketlog_acquire_callback (SocketLogLevel level)
+static SocketLogAllInfo
+socketlog_acquire_all_info (SocketLogLevel level)
 {
-  SocketLogCallbackInfo info;
+  SocketLogAllInfo info;
 
   pthread_mutex_lock (&socketlog_mutex);
   info.should_log = (level >= socketlog_min_level);
-  info.callback = socketlog_callback ? socketlog_callback : default_logger;
-  info.userdata = socketlog_userdata;
+  info.fallback_callback = socketlog_callback ? socketlog_callback : default_logger;
+  info.fallback_userdata = socketlog_userdata;
+  info.structured_callback = socketlog_structured_callback;
+  info.structured_userdata = socketlog_structured_userdata;
   pthread_mutex_unlock (&socketlog_mutex);
 
   return info;
 }
+
+/**
+ * socketlog_acquire_callback - Acquire non-structured log callback info
+ * @level: Log level to check against minimum
+ *
+ * Returns: Callback info structure with should_log flag
+ * Thread-safe: Yes (delegates to socketlog_acquire_all_info)
+ *
+ * Acquires logging state via socketlog_acquire_all_info and extracts
+ * non-structured fields. Minimizes lock contention by reusing consolidated
+ * acquisition.
+ */
+
 
 /**
  * SocketLog_getlevel - Get current minimum log level
@@ -720,12 +657,11 @@ void
 SocketLog_emit (SocketLogLevel level, const char *component,
                 const char *message)
 {
-  SocketLogCallbackInfo info = socketlog_acquire_callback (level);
-
-  if (!info.should_log)
+  SocketLogAllInfo all = socketlog_acquire_all_info (level);
+  if (!all.should_log)
     return;
 
-  info.callback (info.userdata, level, component, message);
+  all.fallback_callback (all.fallback_userdata, level, component, message);
 }
 
 /**
@@ -885,9 +821,7 @@ SocketLog_clearcontext (void)
  * STRUCTURED LOGGING SUBSYSTEM
  * ===========================================================================*/
 
-/* Structured logging callback and userdata */
-static SocketLogStructuredCallback socketlog_structured_callback = NULL;
-static void *socketlog_structured_userdata = NULL;
+
 
 /**
  * SocketLogStructuredInfo - Internal structure for structured callback
@@ -904,30 +838,16 @@ typedef struct SocketLogStructuredInfo
 } SocketLogStructuredInfo;
 
 /**
- * socketlog_acquire_structured_callback - Acquire structured callback info
+ * socketlog_acquire_structured_callback - Acquire structured and fallback log info
  * @level: Log level to check against minimum
  *
- * Returns: Structured callback info with fallback and should_log flag
- * Thread-safe: Yes (mutex protected)
+ * Returns: Structured info with fallback fields and should_log flag
+ * Thread-safe: Yes (delegates to socketlog_acquire_all_info)
  *
- * Acquires both structured callback and fallback callback in single lock.
+ * Acquires all logging state via socketlog_acquire_all_info. Provides both
+ * structured and fallback callbacks/userdata under single lock acquisition.
  */
-static SocketLogStructuredInfo
-socketlog_acquire_structured_callback (SocketLogLevel level)
-{
-  SocketLogStructuredInfo info;
 
-  pthread_mutex_lock (&socketlog_mutex);
-  info.should_log = (level >= socketlog_min_level);
-  info.structured_callback = socketlog_structured_callback;
-  info.structured_userdata = socketlog_structured_userdata;
-  info.fallback_callback
-      = socketlog_callback ? socketlog_callback : default_logger;
-  info.fallback_userdata = socketlog_userdata;
-  pthread_mutex_unlock (&socketlog_mutex);
-
-  return info;
-}
 
 /**
  * SocketLog_setstructuredcallback - Set structured logging callback
@@ -947,6 +867,41 @@ SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
 }
 
 /**
+ * socketlog_append_field_if_space - Append single field if space available
+ * @buffer: Output buffer
+ * @pos: Current position in buffer (updated on success)
+ * @bufsize: Total buffer size
+ * @field: Field to append
+ *
+ * Returns: 1 on success, 0 if truncated or null field, -1 on snprintf error
+ * Thread-safe: Yes (pure function)
+ *
+ * Appends " key=value" if field valid and space available. Updates pos on success.
+ */
+static int
+socketlog_append_field_if_space (char *buffer, size_t *pos, size_t bufsize,
+                                 const SocketLogField *field)
+{
+  if (field->key == NULL || field->value == NULL)
+    return 0;
+
+  size_t remaining = bufsize - *pos;
+  int written = snprintf (buffer + *pos, remaining, " %s=%s",
+                          field->key, field->value);
+
+  if (written < 0)
+    return -1;
+
+  if ((size_t)written >= remaining) {
+    *pos = bufsize - 1;  /* Indicate truncation */
+    return 0;
+  }
+
+  *pos += (size_t)written;
+  return 1;
+}
+
+/**
  * socketlog_format_fields - Format structured fields as key=value string
  * @buffer: Output buffer
  * @bufsize: Buffer size
@@ -957,6 +912,7 @@ SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
  * Thread-safe: Yes
  *
  * Formats fields as " key1=value1 key2=value2" (with leading space).
+ * Uses socketlog_append_field_if_space for modular field appending.
  */
 static size_t
 socketlog_format_fields (char *buffer, size_t bufsize,
@@ -967,25 +923,11 @@ socketlog_format_fields (char *buffer, size_t bufsize,
 
   for (i = 0; i < field_count && pos < bufsize - 1; i++)
     {
-      int written;
-
-      if (fields[i].key == NULL || fields[i].value == NULL)
-        continue;
-
-      written = snprintf (buffer + pos, bufsize - pos, " %s=%s", fields[i].key,
-                          fields[i].value);
-
-      if (written < 0)
-        break;
-
-      if ((size_t)written >= bufsize - pos)
-        {
-          /* Truncated - stop adding fields */
-          pos = bufsize - 1;
-          break;
-        }
-
-      pos += (size_t)written;
+      int res = socketlog_append_field_if_space (buffer, &pos, bufsize, &fields[i]);
+      if (res < 0)
+        break;  /* snprintf error */
+      if (res == 0)
+        break;  /* null field or truncated */
     }
 
   return pos;
@@ -1004,47 +946,118 @@ socketlog_format_fields (char *buffer, size_t bufsize,
  *
  * Internal helper that handles the actual emission after callback acquisition.
  */
+/**
+ * socketlog_call_structured - Invoke structured logging callback
+ * @all: All info structure
+ * @level: Log level
+ * @component: Component name
+ * @message: Log message
+ * @fields: Structured fields
+ * @field_count: Number of fields
+ *
+ * Thread-safe: Yes (delegates to callback)
+ */
 static void
-socketlog_emit_structured_with_callback (const SocketLogStructuredInfo *info,
-                                         SocketLogLevel level,
-                                         const char *component,
-                                         const char *message,
-                                         const SocketLogField *fields,
-                                         size_t field_count)
+socketlog_call_structured (const SocketLogAllInfo *all,
+                           SocketLogLevel level,
+                           const char *component,
+                           const char *message,
+                           const SocketLogField *fields,
+                           size_t field_count)
 {
-  if (info->structured_callback != NULL)
+  all->structured_callback (all->structured_userdata, level, component,
+                            message, fields, field_count,
+                            SocketLog_getcontext ());
+}
+
+/**
+ * socketlog_call_fallback - Invoke fallback logging callback
+ * @all: All info structure
+ * @level: Log level
+ * @component: Component name
+ * @message: Log message
+ *
+ * Thread-safe: Yes (delegates to callback)
+ */
+static void
+socketlog_call_fallback (const SocketLogAllInfo *all,
+                         SocketLogLevel level,
+                         const char *component,
+                         const char *message)
+{
+  all->fallback_callback (all->fallback_userdata, level, component, message);
+}
+
+/**
+ * socketlog_format_and_call_fallback - Format fields and invoke fallback callback
+ * @all: All info structure
+ * @level: Log level
+ * @component: Component name
+ * @message: Original log message
+ * @fields: Structured fields to format
+ * @field_count: Number of fields
+ *
+ * Formats fields as " key=value" appended to message copy, then calls fallback.
+ * Thread-safe: Yes
+ */
+static void
+socketlog_format_and_call_fallback (const SocketLogAllInfo *all,
+                                    SocketLogLevel level,
+                                    const char *component,
+                                    const char *message,
+                                    const SocketLogField *fields,
+                                    size_t field_count)
+{
+  char buffer[SOCKET_LOG_BUFFER_SIZE];
+  size_t msg_len = message ? strlen (message) : 0;
+  size_t remaining;
+
+  if (msg_len >= sizeof (buffer))
+    msg_len = sizeof (buffer) - 1;
+
+  if (message)
+    memcpy (buffer, message, msg_len);
+
+  remaining = sizeof (buffer) - msg_len;
+  socketlog_format_fields (buffer + msg_len, remaining, fields, field_count);
+
+  buffer[sizeof (buffer) - 1] = '\0';
+  socketlog_call_fallback (all, level, component, buffer);
+}
+
+/**
+ * socketlog_emit_structured_with_all - Emit structured log using all info
+ * @all: Acquired all logging info
+ * @level: Log level
+ * @component: Component name
+ * @message: Log message
+ * @fields: Structured fields (may be NULL)
+ * @field_count: Number of fields
+ *
+ * Thread-safe: Yes
+ *
+ * Dispatches to structured callback if available, otherwise formats fields
+ * into fallback message or uses message directly.
+ */
+static void
+socketlog_emit_structured_with_all (const SocketLogAllInfo *all,
+                                    SocketLogLevel level,
+                                    const char *component,
+                                    const char *message,
+                                    const SocketLogField *fields,
+                                    size_t field_count)
+{
+  if (all->structured_callback != NULL)
     {
-      /* Use structured callback - provides direct field access */
-      info->structured_callback (info->structured_userdata, level, component,
-                                 message, fields, field_count,
-                                 SocketLog_getcontext ());
+      socketlog_call_structured (all, level, component, message, fields, field_count);
     }
   else if (fields != NULL && field_count > 0)
     {
-      /* Fallback: format fields as string and use regular logging */
-      char buffer[SOCKET_LOG_BUFFER_SIZE];
-      size_t msg_len = message ? strlen (message) : 0;
-      size_t remaining;
-
-      if (msg_len >= sizeof (buffer))
-        msg_len = sizeof (buffer) - 1;
-
-      if (message)
-        memcpy (buffer, message, msg_len);
-
-      remaining = sizeof (buffer) - msg_len;
-      socketlog_format_fields (buffer + msg_len, remaining, fields,
-                               field_count);
-
-      buffer[sizeof (buffer) - 1] = '\0';
-      info->fallback_callback (info->fallback_userdata, level, component,
-                               buffer);
+      socketlog_format_and_call_fallback (all, level, component, message, fields, field_count);
     }
   else
     {
-      /* No fields - use fallback callback directly */
-      info->fallback_callback (info->fallback_userdata, level, component,
-                               message);
+      socketlog_call_fallback (all, level, component, message);
     }
 }
 
@@ -1067,13 +1080,12 @@ SocketLog_emit_structured (SocketLogLevel level, const char *component,
                            const char *message, const SocketLogField *fields,
                            size_t field_count)
 {
-  SocketLogStructuredInfo info = socketlog_acquire_structured_callback (level);
-
-  if (!info.should_log)
+  SocketLogAllInfo all = socketlog_acquire_all_info (level);
+  if (!all.should_log)
     return;
 
-  socketlog_emit_structured_with_callback (&info, level, component, message,
-                                           fields, field_count);
+  socketlog_emit_structured_with_all (&all, level, component, message,
+                                      fields, field_count);
 }
 
 /* ===========================================================================

@@ -274,6 +274,15 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_MAX_TIMER_TIMEOUT_MS 300000
 #endif
 
+/* Maximum allowed delay or interval for individual timers (~1 year in ms)
+ * Prevents resource exhaustion from extremely long timers and potential
+ * int64_t overflow in expiry calculations after long uptime.
+ * Can be overridden at compile time.
+ */
+#ifndef SOCKET_MAX_TIMER_DELAY_MS
+#define SOCKET_MAX_TIMER_DELAY_MS (INT64_C(31536000000)) /* 365 days */
+#endif
+
 /* Timer error buffer size for detailed error messages */
 #ifndef SOCKET_TIMER_ERROR_BUFSIZE
 #define SOCKET_TIMER_ERROR_BUFSIZE 256
@@ -287,6 +296,11 @@ extern const char *Socket_safe_strerror (int errnum);
 /* Growth factor when resizing timer heap (must be > 1) */
 #ifndef SOCKET_TIMER_HEAP_GROWTH_FACTOR
 #define SOCKET_TIMER_HEAP_GROWTH_FACTOR 2
+#endif
+
+/* Maximum number of timers per heap to prevent resource exhaustion (default 100000) */
+#ifndef SOCKET_MAX_TIMERS_PER_HEAP
+#define SOCKET_MAX_TIMERS_PER_HEAP 100000
 #endif
 
 /* ============================================================================

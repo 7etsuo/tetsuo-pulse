@@ -244,31 +244,23 @@ ws_mask_payload_offset (unsigned char *data, size_t len,
  * Header Buffer Helpers
  * ============================================================================ */
 
-/**
- * ws_copy_to_header_buf - Copy data into header buffer until target reached
- * @frame: Frame parsing state
- * @data: Pointer to input data pointer (advanced on return)
- * @len: Pointer to remaining length (decreased on return)
- * @target_size: Target header size to reach
- *
- * Copies bytes from *data into frame->header_buf until header_len reaches
- * target_size or input is exhausted.
- *
- * Returns: Number of bytes copied
- */
-static size_t
-ws_copy_to_header_buf (SocketWS_FrameParse *frame, const unsigned char **data,
-                       size_t *len, size_t target_size)
-{
-  size_t need = target_size - frame->header_len;
-  size_t copy_len = (need < *len) ? need : *len;
 
+static SocketWS_Error
+ws_read_header_to_target (SocketWS_FrameParse *frame, const unsigned char **data,
+                          size_t *len, size_t *consumed, size_t target)
+{
+  size_t need = target - frame->header_len;
+  if (need == 0)
+    return WS_OK;
+
+  size_t copy_len = (need < *len) ? need : *len;
   memcpy (frame->header_buf + frame->header_len, *data, copy_len);
   frame->header_len += copy_len;
   *data += copy_len;
   *len -= copy_len;
+  *consumed += copy_len;
 
-  return copy_len;
+  return (frame->header_len < target) ? WS_ERROR_WOULD_BLOCK : WS_OK;
 }
 
 /* ============================================================================
@@ -425,10 +417,9 @@ ws_process_header_state (SocketWS_FrameParse *frame, const unsigned char **data,
 {
   SocketWS_Error err;
 
-  *consumed += ws_copy_to_header_buf (frame, data, len, SOCKETWS_BASE_HEADER_SIZE);
-
-  if (frame->header_len < SOCKETWS_BASE_HEADER_SIZE)
-    return WS_ERROR_WOULD_BLOCK;
+  err = ws_read_header_to_target (frame, data, len, consumed, SOCKETWS_BASE_HEADER_SIZE);
+  if (err != WS_OK)
+    return err;
 
   ws_parse_basic_header (frame);
 
@@ -457,10 +448,9 @@ ws_process_extended_len_state (SocketWS_FrameParse *frame,
 {
   SocketWS_Error err;
 
-  *consumed += ws_copy_to_header_buf (frame, data, len, frame->header_needed);
-
-  if (frame->header_len < frame->header_needed)
-    return WS_ERROR_WOULD_BLOCK;
+  err = ws_read_header_to_target (frame, data, len, consumed, frame->header_needed);
+  if (err != WS_OK)
+    return err;
 
   err = ws_parse_extended_length (frame);
   if (err != WS_OK)
@@ -492,10 +482,11 @@ ws_process_mask_key_state (SocketWS_FrameParse *frame,
                            const unsigned char **data, size_t *len,
                            size_t *consumed)
 {
-  *consumed += ws_copy_to_header_buf (frame, data, len, frame->header_needed);
+  SocketWS_Error err;
 
-  if (frame->header_len < frame->header_needed)
-    return WS_ERROR_WOULD_BLOCK;
+  err = ws_read_header_to_target (frame, data, len, consumed, frame->header_needed);
+  if (err != WS_OK)
+    return err;
 
   ws_extract_mask_key (frame);
 
@@ -921,31 +912,24 @@ ws_send_data_frame (SocketWS_T ws, SocketWS_Opcode opcode,
  *
  * Returns: 0 if control frame handled, -1 on error, -2 if need more data
  */
+static void
+ws_read_and_unmask_chunk (SocketWS_T ws, unsigned char *buf, size_t len);
+
 static int
 ws_recv_control_payload (SocketWS_T ws, size_t available)
 {
   unsigned char control_payload[SOCKETWS_MAX_CONTROL_PAYLOAD];
-  size_t payload_remaining;
-  size_t to_read;
-
-  payload_remaining = ws->frame.payload_len - ws->frame.payload_received;
-  to_read = (available < payload_remaining) ? available : payload_remaining;
+  size_t payload_remaining = ws->frame.payload_len - ws->frame.payload_received;
+  size_t to_read = (available < payload_remaining) ? available : payload_remaining;
 
   if (to_read > SOCKETWS_MAX_CONTROL_PAYLOAD)
     to_read = SOCKETWS_MAX_CONTROL_PAYLOAD;
 
-  SocketBuf_read (ws->recv_buf, control_payload, to_read);
-
-  if (ws->frame.masked)
-    ws_mask_payload_offset (control_payload, to_read, ws->frame.mask_key,
-                            (size_t)ws->frame.payload_received);
-
-  ws->frame.payload_received += to_read;
+  ws_read_and_unmask_chunk (ws, control_payload, to_read);
 
   if (ws->frame.payload_received < ws->frame.payload_len)
     return -2;
 
-  /* Control frame complete - handle it */
   int result = ws_handle_control_frame (ws, ws->frame.opcode, control_payload,
                                         (size_t)ws->frame.payload_len);
 
@@ -963,23 +947,14 @@ ws_recv_control_payload (SocketWS_T ws, size_t available)
 static int
 ws_recv_data_payload (SocketWS_T ws, size_t to_read)
 {
-  unsigned char *payload_buf;
-  int is_text;
-
-  payload_buf = ALLOC (ws->arena, to_read);
+  unsigned char *payload_buf = ALLOC (ws->arena, to_read);
   if (!payload_buf)
     {
       ws_set_error (ws, WS_ERROR, "Failed to allocate payload buffer");
       return -1;
     }
 
-  SocketBuf_read (ws->recv_buf, payload_buf, to_read);
-
-  if (ws->frame.masked)
-    ws_mask_payload_offset (payload_buf, to_read, ws->frame.mask_key,
-                            (size_t)ws->frame.payload_received);
-
-  ws->frame.payload_received += to_read;
+  ws_read_and_unmask_chunk (ws, payload_buf, to_read);
 
   /* Set message type on first fragment */
   if (ws->message.fragment_count == 0 && ws_is_data_opcode (ws->frame.opcode))
@@ -988,7 +963,7 @@ ws_recv_data_payload (SocketWS_T ws, size_t to_read)
       ws->message.compressed = ws->frame.rsv1;
     }
 
-  is_text = (ws->message.type == WS_OPCODE_TEXT);
+  int is_text = (ws->message.type == WS_OPCODE_TEXT);
   return ws_message_append (ws, payload_buf, to_read, is_text);
 }
 
@@ -1015,6 +990,30 @@ ws_finalize_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
 
   ws_frame_reset (&ws->frame);
   return -2;
+}
+
+/**
+ * ws_read_and_unmask_chunk - Read chunk from recv buf and unmask if needed
+ * @ws: WebSocket context
+ * @buf: Output buffer for chunk
+ * @len: Number of bytes to read
+ *
+ * Assumes SocketBuf_available >= len.
+ * Updates frame.payload_received.
+ */
+static void
+ws_read_and_unmask_chunk (SocketWS_T ws, unsigned char *buf, size_t len)
+{
+  SocketBuf_read (ws->recv_buf, buf, len);
+
+  size_t offset = ws->frame.payload_received;
+  if (ws->frame.masked)
+    {
+      ws_mask_payload_offset (buf, len, ws->frame.mask_key,
+                              offset & SOCKETWS_MASK_KEY_INDEX_MASK);
+    }
+
+  ws->frame.payload_received += len;
 }
 
 /**

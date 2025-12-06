@@ -376,12 +376,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP1);
  * Constants
  * ============================================================================ */
 
-/* Initial token buffer sizes - internal implementation detail */
-#define HTTP1_INITIAL_METHOD_BUF 16
-#define HTTP1_INITIAL_URI_BUF 256
-#define HTTP1_INITIAL_REASON_BUF 64
-#define HTTP1_INITIAL_NAME_BUF 64
-#define HTTP1_INITIAL_VALUE_BUF 256
+/* Initial token buffer sizes - see SocketHTTP1-private.h for defaults */
 
 /* HTTP version single-digit limit */
 #define HTTP1_MAX_VERSION_DIGIT 9
@@ -462,19 +457,19 @@ static int
 init_token_buffers (SocketHTTP1_Parser_T parser)
 {
   if (http1_tokenbuf_init (&parser->method_buf, parser->arena,
-                           HTTP1_INITIAL_METHOD_BUF)
+                           HTTP1_DEFAULT_METHOD_BUF_SIZE)
           < 0
       || http1_tokenbuf_init (&parser->uri_buf, parser->arena,
-                              HTTP1_INITIAL_URI_BUF)
+                              HTTP1_DEFAULT_URI_BUF_SIZE)
              < 0
       || http1_tokenbuf_init (&parser->reason_buf, parser->arena,
-                              HTTP1_INITIAL_REASON_BUF)
+                              HTTP1_DEFAULT_REASON_BUF_SIZE)
              < 0
       || http1_tokenbuf_init (&parser->name_buf, parser->arena,
-                              HTTP1_INITIAL_NAME_BUF)
+                              HTTP1_DEFAULT_HEADER_NAME_BUF_SIZE)
              < 0
       || http1_tokenbuf_init (&parser->value_buf, parser->arena,
-                              HTTP1_INITIAL_VALUE_BUF)
+                              HTTP1_DEFAULT_HEADER_VALUE_BUF_SIZE)
              < 0)
     {
       return -1;
@@ -633,13 +628,14 @@ SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser)
 static int64_t
 parse_content_length (const SocketHTTP_Headers_T headers)
 {
-  const char *cl_values[2];
+  const size_t MAX_CL_HEADERS = 2;
+  const char *cl_values[MAX_CL_HEADERS];
   size_t count;
   int64_t value;
   const char *cl;
   const char *p;
 
-  count = SocketHTTP_Headers_get_all (headers, "Content-Length", cl_values, 2);
+  count = SocketHTTP_Headers_get_all (headers, "Content-Length", cl_values, MAX_CL_HEADERS);
 
   if (count == 0)
     return -2; /* Not present */
@@ -861,6 +857,31 @@ check_upgrade (SocketHTTP1_Parser_T parser)
     }
 }
 
+/**
+ * finalize_common - Common finalization for request/response after headers
+ * @parser: Parser instance
+ * @version: Parsed HTTP version
+ *
+ * Handles body mode determination, keepalive, upgrade checks.
+ * Caller must set message.version and message.headers before calling.
+ *
+ * Returns: HTTP1_OK or error
+ */
+static SocketHTTP1_Result
+finalize_common (SocketHTTP1_Parser_T parser, SocketHTTP_Version version)
+{
+  SocketHTTP1_Result result;
+
+  result = determine_body_mode (parser);
+  if (result != HTTP1_OK)
+    return result;
+
+  parser->keepalive = determine_keepalive (version, parser->headers);
+  check_upgrade (parser);
+
+  return HTTP1_OK;
+}
+
 /* ============================================================================
  * Message Finalization
  * ============================================================================ */
@@ -896,35 +917,16 @@ finalize_request (SocketHTTP1_Parser_T parser)
   /* Set headers */
   req->headers = parser->headers;
 
-  /* Determine body mode */
-  result = determine_body_mode (parser);
+  result = finalize_common (parser, version);
   if (result != HTTP1_OK)
     return result;
 
-  /* Determine if request has body based on method and body mode */
-  if (req->method == HTTP_METHOD_GET || req->method == HTTP_METHOD_HEAD
-      || req->method == HTTP_METHOD_DELETE
-      || req->method == HTTP_METHOD_OPTIONS
-      || req->method == HTTP_METHOD_TRACE)
-    {
-      req->has_body = (parser->body_mode != HTTP1_BODY_NONE);
-    }
-  else
-    {
-      req->has_body = (parser->body_mode != HTTP1_BODY_NONE);
-    }
-
+  req->has_body = (parser->body_mode != HTTP1_BODY_NONE);
   req->content_length = parser->content_length;
 
   /* Check for Expect: 100-continue */
   if (SocketHTTP_Headers_contains (parser->headers, "Expect", "100-continue"))
     parser->expects_continue = 1;
-
-  /* Determine keep-alive */
-  parser->keepalive = determine_keepalive (version, parser->headers);
-
-  /* Check for Upgrade */
-  check_upgrade (parser);
 
   return HTTP1_OK;
 }
@@ -965,16 +967,12 @@ finalize_response (SocketHTTP1_Parser_T parser)
       return HTTP1_OK;
     }
 
-  /* Determine body mode from headers */
-  result = determine_body_mode (parser);
+  result = finalize_common (parser, version);
   if (result != HTTP1_OK)
     return result;
 
   resp->has_body = (parser->body_mode != HTTP1_BODY_NONE);
   resp->content_length = parser->content_length;
-
-  /* Determine keep-alive */
-  parser->keepalive = determine_keepalive (version, parser->headers);
 
   return HTTP1_OK;
 }
@@ -1296,6 +1294,209 @@ calculate_next_body_state (SocketHTTP1_Parser_T parser,
 }
 
 /* ============================================================================
+ * DFA Parser Core - Header Parsing Loop
+ * ============================================================================ */
+
+/**
+ * parse_headers_loop - Inner DFA loop for header parsing
+ * @parser: Parser instance
+ * @data: Input data
+ * @len: Input length
+ * @consumed: Bytes consumed output
+ * @state_table: State transition table
+ * @action_table: Action table
+ *
+ * Processes bytes using DFA tables until body state or end.
+ * Updates parser state and internal_state.
+ *
+ * Returns: HTTP1_INCOMPLETE if more data needed, HTTP1_OK if headers/body ready or error.
+ * On error, sets parser->error and *consumed.
+ */
+/**
+ * handle_dfa_action - Execute DFA action for current byte
+ * @parser: Parser instance
+ * @action: Action to execute
+ * @c: Current byte
+ * @p: Current position
+ * @loop_data: Data start for consumed calc
+ * @data: Original data start
+ * @consumed: Consumed output
+ * @next_state: Output next state (modified)
+ *
+ * Returns: HTTP1_OK or error code
+ */
+static SocketHTTP1_Result
+handle_dfa_action (SocketHTTP1_Parser_T parser, uint8_t action, uint8_t c,
+                   const char *p, const char *loop_data, const char *data,
+                   size_t *consumed, HTTP1_InternalState current_state,
+                   HTTP1_InternalState *next_state)
+{
+  SocketHTTP1_Result result;
+
+  switch (action)
+    {
+    case HTTP1_ACT_NONE:
+      /* Just transition, no side effect */
+      return HTTP1_OK;
+
+    case HTTP1_ACT_STORE_METHOD:
+    case HTTP1_ACT_STORE_URI:
+    case HTTP1_ACT_STORE_REASON:
+    case HTTP1_ACT_STORE_NAME:
+    case HTTP1_ACT_STORE_VALUE:
+      result = handle_store_action (parser, action, (char)c, p, loop_data, consumed);
+      return result;
+
+    case HTTP1_ACT_METHOD_END:
+      result = handle_method_end (parser, p, loop_data, consumed);
+      return result;
+
+    case HTTP1_ACT_URI_END:
+      result = handle_uri_end (parser, p, loop_data, consumed);
+      return result;
+
+    case HTTP1_ACT_VERSION_MAJ:
+    case HTTP1_ACT_VERSION_MIN:
+      result = handle_version_digit (parser, action, (char)c, p, loop_data, consumed);
+      return result;
+
+    case HTTP1_ACT_STATUS_DIGIT:
+      result = handle_status_digit (parser, (char)c, p, loop_data, consumed);
+      return result;
+
+    case HTTP1_ACT_HEADER_END:
+      result = add_current_header (parser);
+      if (result != HTTP1_OK)
+        {
+          set_error (parser, result);
+          *consumed = (size_t)(p - data);
+          return result;
+        }
+      return HTTP1_OK;
+
+    case HTTP1_ACT_HEADERS_DONE:
+      /* Headers complete - finalize message */
+      if (parser->mode == HTTP1_PARSE_REQUEST)
+        result = finalize_request (parser);
+      else
+        result = finalize_response (parser);
+
+      if (result != HTTP1_OK)
+        {
+          set_error (parser, result);
+          *consumed = (size_t)(p - data) + 1;
+          return result;
+        }
+
+      calculate_next_body_state (parser, next_state);
+      parser->internal_state = *next_state;
+      *consumed = (size_t)(p - data) + 1;
+      return HTTP1_OK;
+
+    case HTTP1_ACT_ERROR:
+    default:
+      set_error (parser, state_to_error (current_state));
+      *consumed = (size_t)(p - data);
+      return parser->error;
+    }
+}
+
+static SocketHTTP1_Result
+parse_headers_loop (SocketHTTP1_Parser_T parser,
+                    const char *data, size_t len, size_t *consumed,
+                    const uint8_t (*state_table)[HTTP1_NUM_CLASSES],
+                    const uint8_t (*action_table)[HTTP1_NUM_CLASSES])
+{
+  const char *p;
+  const char *end;
+  HTTP1_InternalState state;
+  SocketHTTP1_Result result;
+  const char *loop_data = data;  /* For error consumed calc */
+
+  *consumed = 0;
+
+  p = data;
+  end = data + len;
+  state = parser->internal_state;
+
+  while (p < end)
+    {
+      uint8_t c = (uint8_t)*p;
+      uint8_t cc = http1_char_class[c];
+      HTTP1_InternalState next_state;
+      uint8_t action;
+
+      /* Handle body/trailer states outside the table-driven loop */
+      if (state >= HTTP1_PS_BODY_IDENTITY)
+        {
+          parser->internal_state = state;
+          *consumed = (size_t)(p - data);
+          if (state == HTTP1_PS_COMPLETE)
+            return HTTP1_OK;
+          if (state == HTTP1_PS_ERROR)
+            return parser->error;
+          /* Body states handled by read_body function */
+          return HTTP1_OK;
+        }
+
+      /* Table lookups - the core of the optimization */
+      next_state = (HTTP1_InternalState)state_table[state][cc];
+      action = action_table[state][cc];
+
+      result = handle_dfa_action (parser, action, c, p, loop_data, data, consumed, state, &next_state);
+      if (result != HTTP1_OK)
+        return result;
+
+      /* Check for error transition */
+      if (next_state == HTTP1_PS_ERROR)
+        {
+          set_error (parser, state_to_error (state));
+          *consumed = (size_t)(p - data);
+          return parser->error;
+        }
+
+      /* Update state and counters */
+      state = next_state;
+      parser->line_length++;
+
+      /* Check line length limit */
+      if (state <= HTTP1_PS_LINE_CR
+          && parser->line_length > parser->config.max_request_line)
+        {
+          set_error (parser, HTTP1_ERROR_LINE_TOO_LONG);
+          *consumed = (size_t)(p - data);
+          return parser->error;
+        }
+
+      /* Reset line length on header start */
+      if (state == HTTP1_PS_HEADER_START)
+        {
+          parser->line_length = 0;
+          parser->state = HTTP1_STATE_HEADERS;
+        }
+
+      p++;
+
+      if (state >= HTTP1_PS_BODY_IDENTITY)
+        {
+          parser->internal_state = state;
+          *consumed = (size_t)(p - data);
+          if (state == HTTP1_PS_COMPLETE)
+            return HTTP1_OK;
+          if (state == HTTP1_PS_ERROR)
+            return parser->error;
+          /* Body states handled by read_body function */
+          return HTTP1_OK;
+        }
+
+    }
+
+  parser->internal_state = state;
+  *consumed = len;
+  return HTTP1_INCOMPLETE;
+}
+
+/* ============================================================================
  * DFA Parser Core - Main Loop
  * ============================================================================ */
 
@@ -1346,139 +1547,7 @@ SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
       action_table = http1_resp_action;
     }
 
-  p = data;
-  end = data + len;
-  state = parser->internal_state;
-
-  /* ========== TABLE-DRIVEN HOT LOOP ========== */
-  while (p < end)
-    {
-      uint8_t c = (uint8_t)*p;
-      uint8_t cc = http1_char_class[c];
-      HTTP1_InternalState next_state;
-      uint8_t action;
-
-      /* Handle body/trailer states outside the table-driven loop */
-      if (state >= HTTP1_PS_BODY_IDENTITY)
-        {
-          parser->internal_state = state;
-          *consumed = (size_t)(p - data);
-
-          if (state == HTTP1_PS_COMPLETE)
-            return HTTP1_OK;
-          if (state == HTTP1_PS_ERROR)
-            return parser->error;
-
-          /* Body states handled by read_body function */
-          return HTTP1_OK;
-        }
-
-      /* Table lookups - the core of the optimization */
-      next_state = (HTTP1_InternalState)state_table[state][cc];
-      action = action_table[state][cc];
-
-      /* Execute action */
-      switch (action)
-        {
-        case HTTP1_ACT_NONE:
-          /* Just transition, no side effect */
-          break;
-
-        case HTTP1_ACT_STORE_METHOD:
-        case HTTP1_ACT_STORE_URI:
-        case HTTP1_ACT_STORE_REASON:
-        case HTTP1_ACT_STORE_NAME:
-        case HTTP1_ACT_STORE_VALUE:
-          result = handle_store_action (parser, action, (char)c, p, data,
-                                        consumed);
-          if (result != HTTP1_OK)
-            return result;
-          break;
-
-        case HTTP1_ACT_METHOD_END:
-          result = handle_method_end (parser, p, data, consumed);
-          if (result != HTTP1_OK)
-            return result;
-          break;
-
-        case HTTP1_ACT_URI_END:
-          result = handle_uri_end (parser, p, data, consumed);
-          if (result != HTTP1_OK)
-            return result;
-          break;
-
-        case HTTP1_ACT_VERSION_MAJ:
-        case HTTP1_ACT_VERSION_MIN:
-          result = handle_version_digit (parser, action, (char)c, p, data,
-                                         consumed);
-          if (result != HTTP1_OK)
-            return result;
-          break;
-
-        case HTTP1_ACT_STATUS_DIGIT:
-          result = handle_status_digit (parser, (char)c, p, data, consumed);
-          if (result != HTTP1_OK)
-            return result;
-          break;
-
-        case HTTP1_ACT_HEADER_END:
-          result = add_current_header (parser);
-          if (result != HTTP1_OK)
-            {
-              set_error (parser, result);
-              *consumed = (size_t)(p - data);
-              return result;
-            }
-          break;
-
-        case HTTP1_ACT_HEADERS_DONE:
-          /* Headers complete - finalize message */
-          if (parser->mode == HTTP1_PARSE_REQUEST)
-            result = finalize_request (parser);
-          else
-            result = finalize_response (parser);
-
-          if (result != HTTP1_OK)
-            RETURN_PARSE_ERROR (parser, result, p, data, consumed);
-
-          calculate_next_body_state (parser, &next_state);
-          parser->internal_state = next_state;
-          *consumed = (size_t)(p - data) + 1;
-          return HTTP1_OK;
-
-        case HTTP1_ACT_ERROR:
-        default:
-          RETURN_PARSE_ERROR (parser, state_to_error (state), p, data,
-                              consumed);
-        }
-
-      /* Check for error transition */
-      if (next_state == HTTP1_PS_ERROR)
-        RETURN_PARSE_ERROR (parser, state_to_error (state), p, data, consumed);
-
-      /* Update state and counters */
-      state = next_state;
-      parser->line_length++;
-
-      /* Check line length limit */
-      if (state <= HTTP1_PS_LINE_CR
-          && parser->line_length > parser->config.max_request_line)
-        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_LINE_TOO_LONG, p, data,
-                            consumed);
-
-      /* Reset line length on header start */
-      if (state == HTTP1_PS_HEADER_START)
-        {
-          parser->line_length = 0;
-          parser->state = HTTP1_STATE_HEADERS;
-        }
-
-      p++;
-    }
-
-  parser->internal_state = state;
-  *consumed = len;
-  return HTTP1_INCOMPLETE;
+  return parse_headers_loop (parser, data, len, consumed, state_table, action_table);
 }
 
 /* Undefine internal macro */

@@ -37,11 +37,9 @@
 #define SOCKET_HE_ERROR_BUFSIZE 256
 #endif
 
-/** Milliseconds per second for time conversion */
-#define SOCKET_HE_MS_PER_SEC 1000
 
-/** Nanoseconds per millisecond for time conversion */
-#define SOCKET_HE_NS_PER_MS 1000000LL
+
+
 
 /* ============================================================================
  * Connection Attempt State
@@ -164,47 +162,19 @@ struct SocketHE_T
   char error_buf[SOCKET_HE_ERROR_BUFSIZE]; /**< Error message buffer */
 };
 
+/* Iteration macro for attempt list to reduce duplication */
+#define HE_FOREACH_ATTEMPT(he, iter) \
+  for (SocketHE_Attempt_T *iter = (he)->attempts; iter; iter = iter->next)
+
 /* ============================================================================
  * Internal Helper Functions
  * ============================================================================ */
 
 /**
- * sockethe_get_time_ms - Get monotonic time in milliseconds
- *
- * Uses CLOCK_MONOTONIC for reliable elapsed time measurement that is
- * not affected by system clock adjustments (NTP, manual changes, etc).
- *
- * Returns: Current monotonic time in milliseconds, or 0 on error
- * Thread-safe: Yes
+ * NOTE: Monotonic time functions use Socket_get_monotonic_ms() from SocketUtil.h
+ * Elapsed time pattern:
+ *   int64_t now = Socket_get_monotonic_ms();
+ *   int64_t elapsed = (now > start_ms) ? (now - start_ms) : 0;
  */
-static inline int64_t
-sockethe_get_time_ms (void)
-{
-  struct timespec ts;
-
-  if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0)
-    return 0;
-
-  return (int64_t)ts.tv_sec * SOCKET_HE_MS_PER_SEC
-         + (int64_t)ts.tv_nsec / SOCKET_HE_NS_PER_MS;
-}
-
-/**
- * sockethe_elapsed_ms - Calculate elapsed time in milliseconds
- * @start_ms: Start time from sockethe_get_time_ms()
- *
- * Returns: Elapsed milliseconds since start_ms (always non-negative)
- * Thread-safe: Yes
- *
- * If the clock wraps or returns an error, returns 0 to avoid
- * spurious timeout triggers.
- */
-static inline int64_t
-sockethe_elapsed_ms (const int64_t start_ms)
-{
-  int64_t elapsed = sockethe_get_time_ms () - start_ms;
-
-  return (elapsed < 0) ? 0 : elapsed;
-}
 
 #endif /* SOCKETHAPPYEYEBALLS_PRIVATE_INCLUDED */

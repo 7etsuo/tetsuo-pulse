@@ -21,6 +21,8 @@
 
 #define T SocketTLSContext_T
 
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLSContext);
+
 /* ============================================================================
  * Configuration Constants
  * ============================================================================

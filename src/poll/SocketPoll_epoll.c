@@ -19,14 +19,18 @@
 
 #include "core/SocketConfig.h"
 #include "poll/SocketPoll_backend.h"
+#include "core/Arena.h"
 
 /* Backend instance structure */
-struct PollBackend_T
+#define T PollBackend_T
+typedef struct T *T;
+struct T
 {
   int epfd;                   /* epoll file descriptor */
   struct epoll_event *events; /* Event array for results */
   int maxevents;              /* Maximum events per wait */
 };
+#undef T
 
 /**
  * translate_to_epoll - Convert abstract poll events to epoll events
@@ -93,7 +97,7 @@ translate_from_epoll (unsigned epoll_events)
  * to eliminate code duplication.
  */
 static int
-epoll_ctl_helper (PollBackend_T backend, int fd, unsigned events, int op)
+epoll_ctl_helper (const PollBackend_T backend, int fd, unsigned events, int op)
 {
   struct epoll_event ev = { 0 };
 
@@ -105,46 +109,40 @@ epoll_ctl_helper (PollBackend_T backend, int fd, unsigned events, int op)
 
 /**
  * backend_new - Create new epoll backend instance
+ * @arena: Arena for allocations (backend struct and events array)
  * @maxevents: Maximum events to return per wait (must be > 0)
  *
- * Returns: New backend instance, or NULL on failure (errno set).
+ * Returns: New backend instance, or NULL on failure (errno set). On partial
+ * failure, allocated memory is left allocated in arena (freed by Arena_dispose).
  *
- * Creates an epoll instance and allocates the event array for
- * storing results from epoll_wait. Uses epoll_create1(0) for
+ * Creates an epoll instance and allocates the event array from arena
+ * for storing results from epoll_wait. Uses epoll_create1(0) for
  * close-on-exec behavior.
  */
 PollBackend_T
-backend_new (int maxevents)
+backend_new (Arena_T arena, int maxevents)
 {
   PollBackend_T backend;
 
-  assert (maxevents > 0);
+  assert (arena != NULL);
 
-  /* Defense-in-depth: Check for overflow even though maxevents is bounded
-   * by SOCKET_MAX_POLL_EVENTS. This ensures safety if limits are changed. */
-  if ((size_t)maxevents > SIZE_MAX / sizeof (struct epoll_event))
-    {
-      errno = EOVERFLOW;
-      return NULL;
-    }
+  VALIDATE_MAXEVENTS (maxevents, struct epoll_event);
 
-  backend = calloc (1, sizeof (*backend));
+  backend = CALLOC (arena, 1, sizeof (*backend));
   if (!backend)
     return NULL;
 
   backend->epfd = epoll_create1 (0);
   if (backend->epfd < 0)
     {
-      free (backend);
-      return NULL;
+      return NULL; /* partial allocation leaked to arena dispose */
     }
 
-  backend->events = calloc ((size_t)maxevents, sizeof (struct epoll_event));
+  backend->events = CALLOC (arena, (size_t)maxevents, sizeof (struct epoll_event));
   if (!backend->events)
     {
       SAFE_CLOSE (backend->epfd);
-      free (backend);
-      return NULL;
+      return NULL; /* partial allocations leaked to arena dispose */
     }
 
   backend->maxevents = maxevents;
@@ -152,10 +150,11 @@ backend_new (int maxevents)
 }
 
 /**
- * backend_free - Free epoll backend instance
- * @backend: Backend instance to free (must not be NULL)
+ * backend_free - Close epoll backend resources
+ * @backend: Backend instance (fd closed; memory freed by arena dispose)
  *
- * Closes the epoll file descriptor and frees all allocated memory.
+ * Closes the epoll file descriptor. Memory allocations (struct, events array)
+ * are owned by arena and freed separately by Arena_dispose.
  */
 void
 backend_free (PollBackend_T backend)
@@ -163,8 +162,7 @@ backend_free (PollBackend_T backend)
   assert (backend);
 
   SAFE_CLOSE (backend->epfd);
-  free (backend->events);
-  free (backend);
+  /* events and backend memory freed by arena dispose */
 }
 
 /**
@@ -236,16 +234,17 @@ backend_del (PollBackend_T backend, int fd)
 
 /**
  * backend_wait - Wait for events on the epoll interest set
- * @backend: Poll backend instance
+ * @backend: Poll backend instance (const - read-only)
  * @timeout_ms: Timeout in milliseconds (-1 for infinite, 0 for non-blocking)
  *
  * Returns: Number of ready events (0 on timeout/interrupt), -1 on error.
  *
  * Blocks until events are ready or timeout expires. Returns 0 if
  * interrupted by signal (EINTR) for seamless signal handling.
+ * Thread-safe: No (epoll_wait not thread-safe)
  */
 int
-backend_wait (PollBackend_T backend, int timeout_ms)
+backend_wait (const PollBackend_T backend, int timeout_ms)
 {
   int nev;
 
@@ -266,7 +265,7 @@ backend_wait (PollBackend_T backend, int timeout_ms)
 
 /**
  * backend_get_event - Retrieve event at specified index
- * @backend: Poll backend instance
+ * @backend: Poll backend instance (const - read-only)
  * @index: Event index (0 to nev-1 from backend_wait)
  * @fd_out: Output for file descriptor
  * @events_out: Output for abstract poll event flags
@@ -275,9 +274,10 @@ backend_wait (PollBackend_T backend, int timeout_ms)
  *
  * Retrieves the fd and translated events for a ready event.
  * Must be called after backend_wait returns > 0.
+ * Thread-safe: No
  */
 int
-backend_get_event (PollBackend_T backend, int index, int *fd_out,
+backend_get_event (const PollBackend_T backend, int index, int *fd_out,
                    unsigned *events_out)
 {
   struct epoll_event *ev;

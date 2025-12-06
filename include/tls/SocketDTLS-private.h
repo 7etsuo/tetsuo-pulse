@@ -22,6 +22,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketUtil.h"
 #include "socket/SocketDgram-private.h"
 #include "tls/SocketDTLS.h"
 #include "tls/SocketDTLSConfig.h"
@@ -39,52 +40,24 @@
  */
 
 /**
- * Thread-local error buffer for detailed DTLS error messages.
- * Shared across all DTLS implementation files.
- */
-#ifdef _WIN32
-extern __declspec (thread) char dtls_error_buf[];
-#else
-extern __thread char dtls_error_buf[];
-#endif
-
-/**
- * Thread-local exception copy for detailed DTLS error messages.
- * Prevents race conditions when multiple threads raise same exception.
- */
-#ifdef _WIN32
-extern __declspec (thread) Except_T SocketDTLS_DetailedException;
-#else
-extern __thread Except_T SocketDTLS_DetailedException;
-#endif
-
-/**
  * RAISE_DTLS_ERROR - Raise DTLS exception with detailed error message
  * @exception: Exception type to raise
  *
- * Creates thread-local copy of exception with reason from dtls_error_buf.
+ * Uses centralized socket_error_buf and SocketDTLS_DetailedException.
  */
-#define RAISE_DTLS_ERROR(exception)                                            \
-  do                                                                           \
-    {                                                                          \
-      SocketDTLS_DetailedException = (exception);                              \
-      SocketDTLS_DetailedException.reason = dtls_error_buf;                    \
-      RAISE (SocketDTLS_DetailedException);                                    \
-    }                                                                          \
-  while (0)
+#define RAISE_DTLS_ERROR(exception) \
+  SOCKET_RAISE_MODULE_ERROR(SocketDTLS, exception)
 
 /**
  * RAISE_DTLS_ERROR_MSG - Raise DTLS exception with specific message
  * @exception: Exception type to raise
  * @msg: Error message string
  */
-#define RAISE_DTLS_ERROR_MSG(exception, msg)                                   \
-  do                                                                           \
-    {                                                                          \
-      DTLS_ERROR_MSG (msg);                                                    \
-      RAISE_DTLS_ERROR (exception);                                            \
-    }                                                                          \
-  while (0)
+#define RAISE_DTLS_ERROR_MSG(exception, msg) \
+  do { \
+    SOCKET_ERROR_MSG(msg); \
+    RAISE_DTLS_ERROR(exception); \
+  } while (0)
 
 /**
  * REQUIRE_DTLS_ENABLED - Validate DTLS is enabled on socket
@@ -102,17 +75,19 @@ extern __thread Except_T SocketDTLS_DetailedException;
 /**
  * DTLS_ERROR_MSG - Format simple error message
  * @msg: Message string
+ *
+ * Uses centralized socket_error_buf.
  */
-#define DTLS_ERROR_MSG(msg)                                                    \
-  snprintf (dtls_error_buf, SOCKET_DTLS_ERROR_BUFSIZE, "%s", (msg))
+#define DTLS_ERROR_MSG(msg) SOCKET_ERROR_MSG(msg)
 
 /**
  * DTLS_ERROR_FMT - Format error message with arguments
  * @fmt: Format string
  * @...: Format arguments
+ *
+ * Uses centralized socket_error_buf with errno if set.
  */
-#define DTLS_ERROR_FMT(fmt, ...)                                               \
-  snprintf (dtls_error_buf, SOCKET_DTLS_ERROR_BUFSIZE, fmt, __VA_ARGS__)
+#define DTLS_ERROR_FMT(fmt, ...) SOCKET_ERROR_FMT(fmt, ##__VA_ARGS__)
 
 /**
  * VALIDATE_DTLS_IO_READY - Validate socket is ready for DTLS I/O
@@ -208,7 +183,7 @@ dtls_handle_ssl_error (SocketDgram_T socket, SSL *ssl, int ssl_result)
  * dtls_format_openssl_error - Format OpenSSL error into buffer
  * @context: Context string for error message
  *
- * Formats current OpenSSL error into dtls_error_buf with context.
+ * Formats current OpenSSL error into socket_error_buf with context.
  */
 static inline void
 dtls_format_openssl_error (const char *context)
@@ -219,13 +194,11 @@ dtls_format_openssl_error (const char *context)
   if (err != 0)
     {
       ERR_error_string_n (err, err_str, sizeof (err_str));
-      snprintf (dtls_error_buf, SOCKET_DTLS_ERROR_BUFSIZE, "%s: %s", context,
-                err_str);
+      SOCKET_ERROR_MSG("%s: %s", context, err_str);
     }
   else
     {
-      snprintf (dtls_error_buf, SOCKET_DTLS_ERROR_BUFSIZE, "%s: Unknown error",
-                context);
+      SOCKET_ERROR_MSG("%s: Unknown error", context);
     }
 }
 
@@ -265,48 +238,7 @@ dtls_validate_file_path (const char *path)
   return 1;
 }
 
-/**
- * dtls_validate_hostname - Validate SNI hostname format
- * @hostname: Hostname string to validate
- *
- * Returns: 1 if valid, 0 if invalid
- */
-static inline int
-dtls_validate_hostname (const char *hostname)
-{
-  if (!hostname)
-    return 0;
 
-  size_t len = strlen (hostname);
-  if (len == 0 || len > SOCKET_DTLS_MAX_SNI_LEN)
-    return 0;
-
-  const char *p = hostname;
-  int label_len = 0;
-
-  while (*p)
-    {
-      if (*p == '.')
-        {
-          if (label_len == 0 || label_len > 63)
-            return 0;
-          label_len = 0;
-        }
-      else
-        {
-          if (!(isalnum ((unsigned char)*p) || *p == '-'))
-            return 0;
-          if (*p == '-' && label_len == 0)
-            return 0;
-          label_len++;
-          if (label_len > 63)
-            return 0;
-        }
-      p++;
-    }
-
-  return (label_len > 0 && label_len <= 63);
-}
 
 /* ============================================================================
  * SocketDTLSContext_T Structure Definition

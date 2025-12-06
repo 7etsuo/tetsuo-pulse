@@ -108,6 +108,7 @@ extern struct addrinfo *SocketCommon_copy_addrinfo (const struct addrinfo *src);
 /* Internal helper functions shared between SocketCommon-resolve.c and SocketCommon-utils.c */
 extern const char *socketcommon_get_safe_host (const char *host);
 extern int socketcommon_validate_hostname_internal (const char *host, int use_exceptions, Except_T exception_type);
+extern bool socketcommon_is_ip_address (const char *host);
 extern void socketcommon_convert_port_to_string (int port, char *port_str, size_t bufsize);
 
 /* Forward declarations of module exceptions - avoids duplicating in each .c file */

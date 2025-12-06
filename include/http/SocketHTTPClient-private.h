@@ -368,18 +368,19 @@ extern int httpclient_parse_set_cookie (const char *value, size_t len,
 static inline unsigned
 httpclient_host_hash (const char *host, int port, size_t table_size)
 {
-  unsigned hash = SOCKET_UTIL_DJB2_SEED;
-  while (*host)
-    {
-      unsigned char c = (unsigned char)*host++;
-      /* Case-insensitive hash for hostname */
-      if (c >= 'A' && c <= 'Z')
-        c = c + ('a' - 'A');
-      hash = ((hash << 5) + hash) ^ c;
-    }
-  hash = ((hash << 5) + hash) ^ (unsigned)port;
-  return hash % table_size;
+  size_t host_len = strlen (host);
+  unsigned host_hash = socket_util_hash_djb2_ci_len (host, host_len, table_size);
+  unsigned port_hash = socket_util_hash_uint ((unsigned)port, table_size);
+  unsigned combined = host_hash ^ port_hash;
+  return socket_util_hash_uint (combined, table_size);
 }
+
+/* Retry helpers (from SocketHTTPClient-retry.c) */
+extern int httpclient_should_retry_error (SocketHTTPClient_T client, SocketHTTPClient_Error error);
+extern int httpclient_should_retry_status (SocketHTTPClient_T client, int status);
+extern int httpclient_calculate_retry_delay (SocketHTTPClient_T client, int attempt);
+extern void httpclient_retry_sleep_ms (int ms);
+extern void httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
 
 #endif /* SOCKETHTTPCLIENT_PRIVATE_INCLUDED */
 

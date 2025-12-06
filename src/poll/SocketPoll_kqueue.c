@@ -34,21 +34,25 @@
 
 #include "core/SocketConfig.h"
 #include "poll/SocketPoll_backend.h"
+#include "core/Arena.h"
 
 /**
  * Backend instance structure
  *
  * Encapsulates kqueue state for event polling operations.
  */
-struct PollBackend_T
+#define T PollBackend_T
+struct T
 {
   int kq;                /* kqueue file descriptor */
   struct kevent *events; /* Event array for kevent() results */
   int maxevents;         /* Maximum events per wait call */
 };
+#undef T
 
 /**
  * backend_new - Create a new kqueue backend instance
+ * @arena: Arena for allocations
  * @maxevents: Maximum number of events to return per wait call
  *
  * Returns: New backend instance, or NULL on failure (errno set)
@@ -57,37 +61,30 @@ struct PollBackend_T
  * the event array. Cleanup is handled automatically on partial failure.
  */
 PollBackend_T
-backend_new (int maxevents)
+backend_new (Arena_T arena, int maxevents)
 {
   PollBackend_T backend;
 
+  assert (arena != NULL);
   assert (maxevents > 0);
 
-  /* Defense-in-depth: Check for overflow even though maxevents is bounded
-   * by SOCKET_MAX_POLL_EVENTS. This ensures safety if limits are changed. */
-  if ((size_t)maxevents > SIZE_MAX / sizeof (struct kevent))
-    {
-      errno = EOVERFLOW;
-      return NULL;
-    }
+  VALIDATE_MAXEVENTS (maxevents, struct kevent);
 
-  backend = calloc (1, sizeof (*backend));
+  backend = CALLOC (arena, 1, sizeof (*backend));
   if (!backend)
     return NULL;
 
   backend->kq = kqueue ();
   if (backend->kq < 0)
     {
-      free (backend);
-      return NULL;
+      return NULL; /* partial allocation leaked to arena dispose */
     }
 
-  backend->events = calloc ((size_t)maxevents, sizeof (struct kevent));
+  backend->events = CALLOC (arena, (size_t)maxevents, sizeof (struct kevent));
   if (!backend->events)
     {
       SAFE_CLOSE (backend->kq);
-      free (backend);
-      return NULL;
+      return NULL; /* partial allocations leaked to arena dispose */
     }
 
   backend->maxevents = maxevents;
@@ -95,11 +92,11 @@ backend_new (int maxevents)
 }
 
 /**
- * backend_free - Free a kqueue backend instance
- * @backend: Backend instance to free (must not be NULL)
+ * backend_free - Close kqueue backend resources
+ * @backend: Backend instance (kq closed; memory freed by arena dispose)
  *
- * Closes the kqueue fd, frees the event array, and frees the backend
- * structure. Resources are released in reverse order of creation.
+ * Closes the kqueue fd. Memory allocations (struct, events array) are
+ * owned by arena and freed by Arena_dispose.
  */
 void
 backend_free (PollBackend_T backend)
@@ -107,11 +104,7 @@ backend_free (PollBackend_T backend)
   assert (backend);
 
   SAFE_CLOSE (backend->kq);
-
-  if (backend->events)
-    free (backend->events);
-
-  free (backend);
+  /* events and backend memory freed by arena dispose */
 }
 
 /**
@@ -231,7 +224,7 @@ backend_del (PollBackend_T backend, int fd)
 
 /**
  * backend_wait - Wait for events on monitored file descriptors
- * @backend: Backend instance (must not be NULL)
+ * @backend: Backend instance (const - read-only)
  * @timeout_ms: Timeout in milliseconds (-1 for infinite wait)
  *
  * Returns: Number of events ready (0 on timeout or EINTR), -1 on error
@@ -240,9 +233,10 @@ backend_del (PollBackend_T backend, int fd)
  * stored in the backend's internal event array and can be retrieved
  * via backend_get_event(). EINTR is handled by returning 0, allowing
  * the caller to retry or handle signals.
+ * Thread-safe: No (kevent not thread-safe)
  */
 int
-backend_wait (PollBackend_T backend, int timeout_ms)
+backend_wait (const PollBackend_T backend, int timeout_ms)
 {
   struct timespec ts;
   struct timespec *timeout_ptr = NULL;
@@ -275,7 +269,7 @@ backend_wait (PollBackend_T backend, int timeout_ms)
 
 /**
  * backend_get_event - Retrieve event details from wait results
- * @backend: Backend instance (must not be NULL)
+ * @backend: Backend instance (const - read-only access)
  * @index: Event index (0 to nev-1 from backend_wait return value)
  * @fd_out: Output: file descriptor that triggered the event
  * @events_out: Output: event flags (POLL_READ | POLL_WRITE | POLL_ERROR | POLL_HANGUP)
@@ -286,9 +280,10 @@ backend_wait (PollBackend_T backend, int timeout_ms)
  * kqueue reports each filter (read/write) as a separate event, unlike
  * epoll which can combine them. EV_EOF is mapped to POLL_HANGUP,
  * indicating the peer has closed the connection.
+ * Thread-safe: No
  */
 int
-backend_get_event (PollBackend_T backend, int index, int *fd_out,
+backend_get_event (const PollBackend_T backend, int index, int *fd_out,
                    unsigned *events_out)
 {
   struct kevent *kev;

@@ -25,7 +25,7 @@
 #include "core/SocketUtil.h"
 
 #include <assert.h>
-#include <ctype.h>
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,30 +69,16 @@ static unsigned
 cookie_hash (const char *domain, const char *path, const char *name,
              size_t table_size)
 {
-  unsigned hash = SOCKET_UTIL_DJB2_SEED;
+  unsigned h_domain = socket_util_hash_djb2_ci(domain, table_size);
+  unsigned h_path = socket_util_hash_djb2(path, table_size);
+  unsigned h_name = socket_util_hash_djb2(name, table_size);
 
-  /* Hash domain (case-insensitive per RFC 6265) */
-  while (*domain)
-    {
-      unsigned char c = (unsigned char)*domain++;
-      if (c >= 'A' && c <= 'Z')
-        c = c + ('a' - 'A');
-      hash = ((hash << 5) + hash) + c; /* Additive DJB2 for consistency */
-    }
+  /* Combine hashes sequentially to approximate original behavior */
+  unsigned hash = h_domain;
+  hash = ((hash << 5) + hash + h_path) % table_size;
+  hash = ((hash << 5) + hash + h_name) % table_size;
 
-  /* Hash path (case-sensitive) */
-  while (*path)
-    {
-      hash = ((hash << 5) + hash) + (unsigned char)*path++;
-    }
-
-  /* Hash name (case-sensitive for cookies) */
-  while (*name)
-    {
-      hash = ((hash << 5) + hash) + (unsigned char)*name++;
-    }
-
-  return hash % table_size;
+  return hash;
 }
 
 /**
@@ -187,6 +173,13 @@ path_matches (const char *request_path, const char *cookie_path)
 /**
  * Parse Max-Age attribute value
  */
+/**
+ * parse_max_age - Parse Max-Age attribute value from cookie
+ * @value: String value of Max-Age (e.g. "3600")
+ *
+ * Returns: Unix timestamp of expiration, or 0 if invalid/session cookie
+ * Note: Negative Max-Age treated as immediate expiration (time_t 1)
+ */
 static time_t
 parse_max_age (const char *value)
 {
@@ -210,6 +203,12 @@ parse_max_age (const char *value)
 
 /**
  * Parse SameSite attribute value
+ */
+/**
+ * parse_same_site - Parse SameSite attribute value
+ * @value: String value ("Strict", "Lax", "None", case-insensitive)
+ *
+ * Returns: Parsed SameSite enum, defaults to LAX if unknown
  */
 static SocketHTTPClient_SameSite
 parse_same_site (const char *value)
@@ -277,15 +276,17 @@ SocketHTTPClient_CookieJar_new (void)
   Arena_T arena;
 
   arena = Arena_new ();
-  if (arena == NULL)
+  if (arena == NULL) {
+    SOCKET_ERROR_MSG("Arena_new failed");
     return NULL;
+  }
 
   jar = Arena_alloc (arena, sizeof (*jar), __FILE__, __LINE__);
-  if (jar == NULL)
-    {
-      Arena_dispose (&arena);
-      return NULL;
-    }
+  if (jar == NULL) {
+    SOCKET_ERROR_MSG("Arena_alloc failed for jar struct");
+    Arena_dispose (&arena);
+    return NULL;
+  }
 
   memset (jar, 0, sizeof (*jar));
   jar->arena = arena;
@@ -294,17 +295,17 @@ SocketHTTPClient_CookieJar_new (void)
   jar->hash_table
       = Arena_calloc (arena, HTTPCLIENT_COOKIE_HASH_SIZE, sizeof (CookieEntry *), __FILE__,
                       __LINE__);
-  if (jar->hash_table == NULL)
-    {
-      Arena_dispose (&arena);
-      return NULL;
-    }
+  if (jar->hash_table == NULL) {
+    SOCKET_ERROR_MSG("Arena_calloc failed for hash table");
+    Arena_dispose (&jar->arena);
+    return NULL;
+  }
 
-  if (pthread_mutex_init (&jar->mutex, NULL) != 0)
-    {
-      Arena_dispose (&arena);
-      return NULL;
-    }
+  if (pthread_mutex_init (&jar->mutex, NULL) != 0) {
+    SOCKET_ERROR_FMT("pthread_mutex_init failed for cookie jar");
+    Arena_dispose (&jar->arena);
+    return NULL;
+  }
 
   return jar;
 }
@@ -327,6 +328,99 @@ SocketHTTPClient_CookieJar_free (SocketHTTPClient_CookieJar_T *jar)
   *jar = NULL;
 }
 
+/**
+ * cookie_entry_update_value_flags - Update cookie value and flags in existing entry
+ * @entry: Cookie entry to update
+ * @cookie: New cookie data for value and flags
+ * @arena: Arena for strdup value
+ *
+ * Returns: 0 on success, -1 on alloc fail
+ * Thread-safe: No (caller must hold mutex)
+ */
+static int
+cookie_entry_update_value_flags (CookieEntry *entry,
+                                 const SocketHTTPClient_Cookie *cookie,
+                                 Arena_T arena)
+{
+  entry->cookie.value = socket_util_arena_strdup (arena, cookie->value);
+  if (entry->cookie.value == NULL) {
+    SOCKET_ERROR_MSG("socket_util_arena_strdup failed for cookie value update");
+    return -1;
+  }
+  entry->cookie.expires = cookie->expires;
+  entry->cookie.secure = cookie->secure;
+  entry->cookie.http_only = cookie->http_only;
+  entry->cookie.same_site = cookie->same_site;
+  return 0;
+}
+
+/**
+ * cookie_entry_init_full - Initialize new cookie entry with full data
+ * @entry: Pre-allocated entry to initialize
+ * @cookie: Source cookie data
+ * @effective_path: Path to store (already resolved NULL to "/")
+ * @arena: Arena for allocations
+ *
+ * Returns: 0 on success, -1 on alloc fail
+ * Thread-safe: No (caller must hold mutex)
+ */
+static int
+cookie_entry_init_full (CookieEntry *entry,
+                        const SocketHTTPClient_Cookie *cookie,
+                        const char *effective_path,
+                        Arena_T arena)
+{
+  memset (entry, 0, sizeof (*entry));
+
+  entry->cookie.name = socket_util_arena_strdup (arena, cookie->name);
+  entry->cookie.value = socket_util_arena_strdup (arena, cookie->value);
+  entry->cookie.domain = socket_util_arena_strdup (arena, cookie->domain);
+  entry->cookie.path = socket_util_arena_strdup (arena, effective_path);
+  entry->cookie.expires = cookie->expires;
+  entry->cookie.secure = cookie->secure;
+  entry->cookie.http_only = cookie->http_only;
+  entry->cookie.same_site = cookie->same_site;
+
+  if (entry->cookie.name == NULL || entry->cookie.value == NULL ||
+      entry->cookie.domain == NULL || entry->cookie.path == NULL) {
+    SOCKET_ERROR_MSG("socket_util_arena_strdup failed for new cookie fields");
+    return -1;
+  }
+  return 0;
+}
+
+/**
+ * cookie_jar_find_entry - Find cookie entry by domain, path, name
+ * @jar: Cookie jar
+ * @domain: Domain to match (case-insensitive)
+ * @path: Path to match (case-sensitive, NULL defaults to "/")
+ * @name: Name to match (case-sensitive)
+ *
+ * Returns: Matching entry or NULL
+ * Thread-safe: No (caller must hold mutex)
+ */
+static CookieEntry *
+cookie_jar_find_entry (SocketHTTPClient_CookieJar_T jar,
+                       const char *domain, const char *path, const char *name)
+{
+  const char *effective_path = path ? path : "/";
+  unsigned hash = cookie_hash (domain, effective_path, name, jar->hash_size);
+
+  CookieEntry *entry = jar->hash_table[hash];
+  while (entry != NULL)
+    {
+      const char *entry_path = entry->cookie.path ? entry->cookie.path : "/";
+      if (strcmp (entry->cookie.name, name) == 0 &&
+          strcasecmp (entry->cookie.domain, domain) == 0 &&
+          strcmp (entry_path, effective_path) == 0)
+        {
+          return entry;
+        }
+      entry = entry->next;
+    }
+  return NULL;
+}
+
 /* ============================================================================
  * Cookie Storage Operations
  * ============================================================================ */
@@ -335,10 +429,6 @@ int
 SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
                                 const SocketHTTPClient_Cookie *cookie)
 {
-  unsigned hash;
-  CookieEntry *entry;
-  CookieEntry **pp;
-
   assert (jar != NULL);
   assert (cookie != NULL);
   assert (cookie->name != NULL);
@@ -347,59 +437,33 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
 
   pthread_mutex_lock (&jar->mutex);
 
-  hash = cookie_hash (cookie->domain, cookie->path ? cookie->path : "/",
-                      cookie->name, jar->hash_size);
+  const char *effective_path = cookie->path ? cookie->path : "/";
+  unsigned hash = cookie_hash (cookie->domain, effective_path, cookie->name, jar->hash_size);
 
-  /* Look for existing cookie to replace */
-  pp = &jar->hash_table[hash];
-  while (*pp != NULL)
-    {
-      entry = *pp;
-      if (strcmp (entry->cookie.name, cookie->name) == 0
-          && strcasecmp (entry->cookie.domain, cookie->domain) == 0
-          && strcmp (entry->cookie.path ? entry->cookie.path : "/",
-                     cookie->path ? cookie->path : "/")
-                 == 0)
-        {
-          /* Replace existing cookie */
-          entry->cookie.value = socket_util_arena_strdup (jar->arena, cookie->value);
-          entry->cookie.expires = cookie->expires;
-          entry->cookie.secure = cookie->secure;
-          entry->cookie.http_only = cookie->http_only;
-          entry->cookie.same_site = cookie->same_site;
-          pthread_mutex_unlock (&jar->mutex);
-          return 0;
-        }
-      pp = &entry->next;
+  CookieEntry *entry = cookie_jar_find_entry (jar, cookie->domain, effective_path, cookie->name);
+
+  if (entry != NULL) {
+    /* Replace existing cookie */
+    if (cookie_entry_update_value_flags (entry, cookie, jar->arena) != 0) {
+      pthread_mutex_unlock (&jar->mutex);
+      return -1;
     }
+    pthread_mutex_unlock (&jar->mutex);
+    return 0;
+  }
 
   /* Create new entry */
   entry = Arena_alloc (jar->arena, sizeof (*entry), __FILE__, __LINE__);
-  if (entry == NULL)
-    {
-      pthread_mutex_unlock (&jar->mutex);
-      return -1;
-    }
+  if (entry == NULL) {
+    SOCKET_ERROR_MSG("Arena_alloc failed for new cookie entry");
+    pthread_mutex_unlock (&jar->mutex);
+    return -1;
+  }
 
-  memset (entry, 0, sizeof (*entry));
-
-  /* Copy cookie data */
-  entry->cookie.name = socket_util_arena_strdup (jar->arena, cookie->name);
-  entry->cookie.value = socket_util_arena_strdup (jar->arena, cookie->value);
-  entry->cookie.domain = socket_util_arena_strdup (jar->arena, cookie->domain);
-  entry->cookie.path = socket_util_arena_strdup (jar->arena,
-                                     cookie->path ? cookie->path : "/");
-  entry->cookie.expires = cookie->expires;
-  entry->cookie.secure = cookie->secure;
-  entry->cookie.http_only = cookie->http_only;
-  entry->cookie.same_site = cookie->same_site;
-
-  if (entry->cookie.name == NULL || entry->cookie.value == NULL
-      || entry->cookie.domain == NULL)
-    {
-      pthread_mutex_unlock (&jar->mutex);
-      return -1;
-    }
+  if (cookie_entry_init_full (entry, cookie, effective_path, jar->arena) != 0) {
+    pthread_mutex_unlock (&jar->mutex);
+    return -1;
+  }
 
   /* Add to hash table */
   entry->next = jar->hash_table[hash];
@@ -415,35 +479,19 @@ SocketHTTPClient_CookieJar_get (SocketHTTPClient_CookieJar_T jar,
                                 const char *domain, const char *path,
                                 const char *name)
 {
-  unsigned hash;
-  CookieEntry *entry;
-
   assert (jar != NULL);
   assert (domain != NULL);
   assert (name != NULL);
 
-  if (path == NULL)
-    path = "/";
+  const char *effective_path = path ? path : "/";
 
   pthread_mutex_lock (&jar->mutex);
 
-  hash = cookie_hash (domain, path, name, jar->hash_size);
-
-  entry = jar->hash_table[hash];
-  while (entry != NULL)
-    {
-      if (strcmp (entry->cookie.name, name) == 0
-          && strcasecmp (entry->cookie.domain, domain) == 0
-          && strcmp (entry->cookie.path ? entry->cookie.path : "/", path) == 0)
-        {
-          pthread_mutex_unlock (&jar->mutex);
-          return &entry->cookie;
-        }
-      entry = entry->next;
-    }
+  CookieEntry *entry = cookie_jar_find_entry (jar, domain, effective_path, name);
 
   pthread_mutex_unlock (&jar->mutex);
-  return NULL;
+
+  return entry ? &entry->cookie : NULL;
 }
 
 void
@@ -510,8 +558,10 @@ SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
   assert (filename != NULL);
 
   f = fopen (filename, "r");
-  if (f == NULL)
+  if (f == NULL) {
+    SOCKET_ERROR_FMT("fopen(\"%s\", \"r\") failed", filename);
     return -1;
+  }
 
   while (fgets (line, sizeof (line), f) != NULL)
     {
@@ -550,9 +600,17 @@ SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
           cookie.name = name;
           cookie.value = value;
 
-          SocketHTTPClient_CookieJar_set (jar, &cookie);
+          if (SocketHTTPClient_CookieJar_set (jar, &cookie) != 0) {
+            SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT, "Failed to add cookie from file line (error: %s)", Socket_GetLastError ());
+          }
         }
     }
+
+  if (ferror (f)) {
+    SOCKET_ERROR_MSG("Error reading cookie file %s", filename);
+    fclose (f);
+    return -1;
+  }
 
   fclose (f);
   return 0;
@@ -569,8 +627,10 @@ SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
   assert (filename != NULL);
 
   f = fopen (filename, "w");
-  if (f == NULL)
+  if (f == NULL) {
+    SOCKET_ERROR_FMT("fopen(\"%s\", \"w\") failed", filename);
     return -1;
+  }
 
   /* Write header */
   fprintf (f, "# Netscape HTTP Cookie File\n");
@@ -601,6 +661,12 @@ SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
     }
 
   pthread_mutex_unlock (&jar->mutex);
+
+  if (ferror (f)) {
+    SOCKET_ERROR_MSG("Error writing to cookie file %s", filename);
+    fclose (f);
+    return -1;
+  }
 
   fclose (f);
   return 0;
@@ -720,6 +786,14 @@ httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
  *
  * Returns: Pointer to first non-whitespace character
  */
+/**
+ * skip_whitespace - Skip leading whitespace characters in cookie attributes
+ * @p: Current position pointer (updated)
+ * @end: End of string
+ *
+ * Returns: Pointer to first non-whitespace character or end
+ * Thread-safe: Yes (pure function)
+ */
 static const char *
 skip_whitespace (const char *p, const char *end)
 {
@@ -735,12 +809,95 @@ skip_whitespace (const char *p, const char *end)
  *
  * Returns: New end position after trimming
  */
+/**
+ * trim_trailing_whitespace - Trim trailing whitespace from string end
+ * @start: Start of string (for bounds check)
+ * @end: Current end position (updated)
+ *
+ * Returns: New end position after trimming trailing spaces/tabs
+ * Thread-safe: Yes (pure function)
+ */
 static const char *
 trim_trailing_whitespace (const char *start, const char *end)
 {
   while (end > start && (*(end - 1) == ' ' || *(end - 1) == '\t'))
     end--;
   return end;
+}
+
+/**
+ * parse_token - Parse a token (non-quoted name or attribute) 
+ * @p: Current position (updated)
+ * @end: End of string
+ * @token_start: Output start of token
+ * @token_end: Output end of token (trimmed)
+ *
+ * Returns: 0 on success, -1 if empty or invalid token
+ * Thread-safe: Yes
+ */
+static int
+parse_token (const char **p, const char *end, 
+             const char **token_start, const char **token_end)
+{
+  *p = skip_whitespace (*p, end);
+  const char *start = *p;
+  if (start >= end)
+    return -1;
+
+  const char *tok_end = start;
+  while (tok_end < end && *tok_end != '=' && *tok_end != ';')
+    tok_end++;
+  const char *trimmed_end = trim_trailing_whitespace (start, tok_end);
+
+  if (trimmed_end == start)
+    return -1; /* Empty token */
+
+  *p = tok_end;
+  *token_start = start;
+  *token_end = trimmed_end;
+  return 0;
+}
+
+/**
+ * parse_value - Parse cookie value (quoted or unquoted)
+ * @p: Current position (updated)
+ * @end: End of string
+ * @value_start: Output start of value
+ * @value_end: Output end of value (trimmed)
+ *
+ * Handles quoted values with escape check? No, per RFC simple ".
+ * Returns: 0 on success, -1 on invalid (unclosed quote)
+ * Thread-safe: Yes
+ */
+static int
+parse_value (const char **p, const char *end, 
+             const char **value_start, const char **value_end)
+{
+  *p = skip_whitespace (*p, end);
+  const char *start = *p;
+  if (start >= end)
+    return -1;
+
+  if (*start == '"') {
+    const char *s = ++ (*p);
+    while (*p < end && **p != '"')
+      (*p)++;
+    const char *e = *p;
+    if (*p >= end || **p != '"') {
+      SOCKET_ERROR_MSG("Unclosed quoted cookie value in Set-Cookie header");
+      return -1;
+    }
+    (*p)++; /* Skip closing quote */
+    *value_end = trim_trailing_whitespace (s, e);
+    *value_start = s;
+  } else {
+    const char *s = start;
+    while (*p < end && **p != ';')
+      (*p)++;
+    *value_end = trim_trailing_whitespace (s, *p);
+    *value_start = s;
+  }
+  return 0;
 }
 
 /**
@@ -773,8 +930,10 @@ parse_cookie_name_value (const char **p, const char *end,
     ptr++;
   name_end = trim_trailing_whitespace (name_start, ptr);
 
-  if (name_end == name_start || ptr >= end || *ptr != '=')
-    return -1; /* Invalid cookie */
+  if (name_end == name_start || ptr >= end || *ptr != '=') {
+    SOCKET_ERROR_MSG("Invalid cookie name in Set-Cookie header");
+    return -1;
+  }
 
   ptr++; /* Skip '=' */
 
@@ -788,8 +947,12 @@ parse_cookie_name_value (const char **p, const char *end,
       while (ptr < end && *ptr != '"')
         ptr++;
       value_end = ptr;
-      if (ptr < end)
+      if (ptr < end && *ptr == '"') {
         ptr++; /* Skip closing quote */
+      } else {
+        SOCKET_ERROR_MSG("Unclosed quoted cookie value in Set-Cookie header");
+        return -1;
+      }
     }
   else
     {
@@ -807,8 +970,10 @@ parse_cookie_name_value (const char **p, const char *end,
   n = Arena_alloc (arena, name_len + 1, __FILE__, __LINE__);
   v = Arena_alloc (arena, val_len + 1, __FILE__, __LINE__);
 
-  if (n == NULL || v == NULL)
+  if (n == NULL || v == NULL) {
+    SOCKET_ERROR_MSG("Arena_alloc failed for cookie name or value strings");
     return -1;
+  }
 
   memcpy (n, name_start, name_len);
   n[name_len] = '\0';
@@ -1029,8 +1194,10 @@ httpclient_parse_set_cookie (const char *value, size_t len,
   memset (cookie, 0, sizeof (*cookie));
 
   /* Parse name=value */
-  if (parse_cookie_name_value (&p, end, cookie, arena) != 0)
+  if (parse_cookie_name_value (&p, end, cookie, arena) != 0) {
+    SOCKET_ERROR_MSG("Invalid Set-Cookie: missing or malformed name=value");
     return -1;
+  }
 
   /* Parse attributes */
   parse_cookie_attributes (&p, end, cookie, arena);
@@ -1039,8 +1206,10 @@ httpclient_parse_set_cookie (const char *value, size_t len,
   apply_cookie_defaults (cookie, request_uri, arena);
 
   /* Validate required fields */
-  if (cookie->domain == NULL || cookie->name == NULL)
+  if (cookie->domain == NULL || cookie->name == NULL) {
+    SOCKET_ERROR_MSG("Invalid Set-Cookie: missing required domain or name field after parsing");
     return -1;
+  }
 
   return 0;
 }

@@ -862,7 +862,7 @@ SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config)
   memset (config, 0, sizeof (*config));
 
   config->port = 8080;
-  config->bind_address = NULL;
+  config->bind_address = "0.0.0.0";
   config->backlog = HTTPSERVER_DEFAULT_BACKLOG;
 
   config->tls_context = NULL;
@@ -1058,6 +1058,19 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
     }
 
   Socket_setreuseaddr (server->listen_socket);
+
+#ifdef AF_INET6
+  if (socket_family == AF_INET6)
+    {
+      int v6only = 0;
+      if (setsockopt (Socket_fd (server->listen_socket), IPPROTO_IPV6, IPV6_V6ONLY,
+                      &v6only, sizeof (v6only)) < 0)
+        {
+          HTTPSERVER_ERROR_MSG ("Failed to disable IPv6-only mode: %s", strerror (errno));
+          // Non-fatal: continue, but log warning
+        }
+    }
+#endif
 
   TRY { Socket_bind (server->listen_socket, bind_addr, server->config.port); }
   EXCEPT (Socket_Failed)

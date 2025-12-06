@@ -97,8 +97,14 @@ SocketWS_config_defaults (SocketWS_Config *config)
  *
  * Returns: Allocated context, or NULL on error
  */
+/**
+ * ws_alloc_struct - Allocate and zero WebSocket structure
+ * @arena: Memory arena
+ *
+ * Returns: Allocated structure or NULL
+ */
 static SocketWS_T
-ws_alloc_context (Arena_T arena, const SocketWS_Config *config)
+ws_alloc_struct (Arena_T arena)
 {
   SocketWS_T ws;
 
@@ -109,7 +115,17 @@ ws_alloc_context (Arena_T arena, const SocketWS_Config *config)
   memset (ws, 0, sizeof (*ws));
   ws->arena = arena;
 
-  /* Copy configuration */
+  return ws;
+}
+
+/**
+ * ws_init_config - Initialize configuration
+ * @ws: WebSocket context
+ * @config: Input config or NULL for defaults
+ */
+static void
+ws_init_config (SocketWS_T ws, const SocketWS_Config *config)
+{
   if (config)
     memcpy (&ws->config, config, sizeof (ws->config));
   else
@@ -117,24 +133,60 @@ ws_alloc_context (Arena_T arena, const SocketWS_Config *config)
 
   ws->role = ws->config.role;
   ws->state = WS_STATE_CONNECTING;
+}
 
-  /* Allocate buffers */
-  ws->recv_buf = SocketBuf_new (arena, SOCKETWS_RECV_BUFFER_SIZE);
+/**
+ * ws_init_buffers - Allocate receive and send buffers
+ * @ws: WebSocket context
+ *
+ * Returns: 0 on success, -1 on failure (previous buffers freed)
+ */
+static int
+ws_init_buffers (SocketWS_T ws)
+{
+  ws->recv_buf = SocketBuf_new (ws->arena, SOCKETWS_RECV_BUFFER_SIZE);
   if (!ws->recv_buf)
-    return NULL;
+    return -1;
 
-  ws->send_buf = SocketBuf_new (arena, SOCKETWS_SEND_BUFFER_SIZE);
+  ws->send_buf = SocketBuf_new (ws->arena, SOCKETWS_SEND_BUFFER_SIZE);
   if (!ws->send_buf)
+    {
+      SocketBuf_release (&ws->recv_buf);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * ws_init_parsers - Initialize frame and message parsers
+ * @ws: WebSocket context
+ */
+static void
+ws_init_parsers (SocketWS_T ws)
+{
+  ws_frame_reset (&ws->frame);
+  ws_message_reset (&ws->message);
+  ws->last_pong_received_time = Socket_get_monotonic_ms ();
+}
+
+static SocketWS_T
+ws_alloc_context (Arena_T arena, const SocketWS_Config *config)
+{
+  SocketWS_T ws;
+  int rc;
+
+  ws = ws_alloc_struct (arena);
+  if (!ws)
     return NULL;
 
-  /* Initialize frame parsing */
-  ws_frame_reset (&ws->frame);
+  ws_init_config (ws, config);
 
-  /* Initialize message assembly */
-  ws_message_reset (&ws->message);
+  rc = ws_init_buffers (ws);
+  if (rc < 0)
+    return NULL;
 
-  /* Initialize timestamps using monotonic clock */
-  ws->last_pong_received_time = Socket_get_monotonic_ms ();
+  ws_init_parsers (ws);
 
   return ws;
 }
@@ -166,6 +218,25 @@ ws_set_error (SocketWS_T ws, SocketWS_Error error, const char *fmt, ...)
     {
       ws->error_buf[0] = '\0';
     }
+}
+
+/**
+ * ws_ensure_open - Ensure WebSocket is in open state for data/control frames
+ * @ws: WebSocket context
+ *
+ * Returns: 1 if open and ready, 0 otherwise (error set)
+ * Raises: None
+ * Thread-safe: No
+ */
+static int
+ws_ensure_open (SocketWS_T ws)
+{
+  if (ws->state != WS_STATE_OPEN)
+    {
+      ws_set_error (ws, WS_ERROR_CLOSED, "Connection not open");
+      return 0;
+    }
+  return 1;
 }
 
 /* ============================================================================
@@ -363,12 +434,38 @@ ws_message_finalize (SocketWS_T ws)
  * I/O Helpers
  * ============================================================================ */
 
+/**
+ * ws_send_contiguous - Send contiguous data from send buffer
+ * @ws: WebSocket context
+ * @ptr: Data pointer
+ * @available: Available length
+ *
+ * Returns: Bytes sent, 0 would block/empty, -1 error
+ * Raises: None (sets ws error)
+ */
+static ssize_t
+ws_send_contiguous (SocketWS_T ws, const void *ptr, size_t available)
+{
+  ssize_t sent;
+
+  sent = Socket_send (ws->socket, ptr, available);
+  if (sent < 0)
+    {
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return 0;
+      ws_set_error (ws, WS_ERROR, "Socket send failed");
+      return -1;
+    }
+
+  SocketBuf_consume (ws->send_buf, (size_t)sent);
+  return sent;
+}
+
 ssize_t
 ws_flush_send_buffer (SocketWS_T ws)
 {
   size_t available;
   const void *ptr;
-  ssize_t sent;
 
   assert (ws);
   assert (ws->socket);
@@ -382,41 +479,23 @@ ws_flush_send_buffer (SocketWS_T ws)
   if (!ptr || available == 0)
     return 0;
 
-  /* Send data */
-  sent = Socket_send (ws->socket, ptr, available);
-  if (sent < 0)
-    {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
-        return 0;
-      ws_set_error (ws, WS_ERROR, "Socket send failed");
-      return -1;
-    }
-
-  /* Consume sent bytes */
-  SocketBuf_consume (ws->send_buf, (size_t)sent);
-
-  return sent;
+  return ws_send_contiguous (ws, ptr, available);
 }
 
-ssize_t
-ws_fill_recv_buffer (SocketWS_T ws)
+/**
+ * ws_recv_contiguous - Receive into contiguous buffer space
+ * @ws: WebSocket context
+ * @ptr: Write pointer
+ * @space: Available space
+ *
+ * Returns: Bytes received, 0 EOF/would block, -1 error
+ * Raises: None (sets ws error)
+ */
+static ssize_t
+ws_recv_contiguous (SocketWS_T ws, void *ptr, size_t space)
 {
-  size_t space;
-  void *ptr;
   ssize_t received;
 
-  assert (ws);
-  assert (ws->socket);
-
-  /* Get contiguous write pointer */
-  ptr = SocketBuf_writeptr (ws->recv_buf, &space);
-  if (!ptr || space == 0)
-    {
-      /* Buffer full */
-      return 0;
-    }
-
-  /* Receive data */
   received = Socket_recv (ws->socket, ptr, space);
   if (received < 0)
     {
@@ -432,10 +511,28 @@ ws_fill_recv_buffer (SocketWS_T ws)
       return 0;
     }
 
-  /* Commit received bytes */
   SocketBuf_written (ws->recv_buf, (size_t)received);
-
   return received;
+}
+
+ssize_t
+ws_fill_recv_buffer (SocketWS_T ws)
+{
+  size_t space;
+  void *ptr;
+
+  assert (ws);
+  assert (ws->socket);
+
+  /* Get contiguous write pointer */
+  ptr = SocketBuf_writeptr (ws->recv_buf, &space);
+  if (!ptr || space == 0)
+    {
+      /* Buffer full */
+      return 0;
+    }
+
+  return ws_recv_contiguous (ws, ptr, space);
 }
 
 /* ============================================================================
@@ -462,16 +559,24 @@ ws_store_close_reason (SocketWS_T ws, const char *reason, size_t reason_len)
     }
 }
 
-int
-ws_send_close (SocketWS_T ws, SocketWS_CloseCode code, const char *reason)
+/**
+ * ws_build_close_payload - Build CLOSE frame payload
+ * @payload: Output buffer
+ * @payload_len: Output length
+ * @code: Close code
+ * @reason: Reason string or NULL
+ *
+ * Fills payload with code + reason (truncated if needed)
+ * Returns: 0 on success
+ */
+static int
+ws_build_close_payload (unsigned char *payload, size_t *payload_len,
+                        SocketWS_CloseCode code, const char *reason)
 {
-  unsigned char payload[SOCKETWS_MAX_CONTROL_PAYLOAD];
-  size_t payload_len = 0;
   size_t reason_len = 0;
 
-  assert (ws);
+  *payload_len = 0;
 
-  /* Calculate reason length once */
   if (reason)
     {
       reason_len = strlen (reason);
@@ -479,30 +584,76 @@ ws_send_close (SocketWS_T ws, SocketWS_CloseCode code, const char *reason)
         reason_len = SOCKETWS_MAX_CLOSE_REASON;
     }
 
-  /* Build payload: 2-byte code + optional reason */
   if (code != WS_CLOSE_NO_STATUS)
     {
       payload[0] = (code >> 8) & 0xFF;
       payload[1] = code & 0xFF;
-      payload_len = 2;
+      *payload_len = 2;
 
       if (reason_len > 0)
         {
           memcpy (payload + 2, reason, reason_len);
-          payload_len += reason_len;
+          *payload_len += reason_len;
         }
     }
 
-  /* Store close info */
+  return 0;
+}
+
+/**
+ * ws_prepare_close_state - Prepare close state and info
+ * @ws: WebSocket context
+ * @code: Close code
+ * @reason: Reason or NULL
+ * @payload: Payload buffer
+ * @payload_len: Payload length output
+ *
+ * Updates state, stores info, builds payload
+ * Returns: 0 on success, -1 if invalid code/reason
+ */
+static int
+ws_prepare_close_state (SocketWS_T ws, SocketWS_CloseCode code,
+                        const char *reason, unsigned char *payload,
+                        size_t *payload_len)
+{
+  if (ws->state == WS_STATE_CLOSED || ws->close_sent)
+    return 0; /* Already closed/sent */
+
+  if (!ws_is_valid_close_code (code))
+    {
+      ws_set_error (ws, WS_ERROR_PROTOCOL, "Invalid close code %d", (int)code);
+      return -1;
+    }
+
+  if (ws_build_close_payload (payload, payload_len, code, reason) < 0)
+    return -1;
+
   ws->close_code = code;
-  ws_store_close_reason (ws, reason, reason_len);
+  ws_store_close_reason (ws, reason, *payload_len > 2 ? *payload_len - 2 : 0);
   ws->close_sent = 1;
 
-  /* Transition state */
   if (ws->state == WS_STATE_OPEN)
     ws->state = WS_STATE_CLOSING;
 
-  /* Send the frame - implementation in SocketWS-frame.c */
+  return 1; /* Prepared, send needed */
+}
+
+int
+ws_send_close (SocketWS_T ws, SocketWS_CloseCode code, const char *reason)
+{
+  unsigned char payload[SOCKETWS_MAX_CONTROL_PAYLOAD];
+  size_t payload_len;
+  int prepared;
+
+  assert (ws);
+
+  prepared = ws_prepare_close_state (ws, code, reason, payload, &payload_len);
+  if (prepared < 0)
+    return -1;
+  if (prepared == 0)
+    return 0; /* Already closed */
+
+  /* Send the frame */
   return ws_send_control_frame (ws, WS_OPCODE_CLOSE, payload, payload_len);
 }
 
@@ -557,50 +708,103 @@ ws_send_pong (SocketWS_T ws, const unsigned char *payload, size_t len)
  *
  * Returns: 0 on success, -1 on error
  */
+/**
+ * ws_parse_close_payload - Parse CLOSE frame payload
+ * @payload: Input payload
+ * @len: Payload length
+ * @code_out: Output close code
+ * @reason_out: Output reason string
+ * @reason_len_out: Output reason length
+ *
+ * Parses code (first 2 bytes) and reason (rest).
+ * Returns: 1 if parsed, 0 if invalid (<2 bytes)
+ */
+static int
+ws_parse_close_payload (const unsigned char *payload, size_t len,
+                        SocketWS_CloseCode *code_out,
+                        const char **reason_out, size_t *reason_len_out)
+{
+  *code_out = WS_CLOSE_NO_STATUS;
+  *reason_out = NULL;
+  *reason_len_out = 0;
+
+  if (len < 2)
+    return 0;
+
+  *code_out = (SocketWS_CloseCode)((payload[0] << 8) | payload[1]);
+  if (len > 2)
+    {
+      *reason_out = (const char *)(payload + 2);
+      *reason_len_out = len - 2;
+    }
+
+  return 1;
+}
+
+/**
+ * ws_validate_and_store_close_reason - Validate and store close reason
+ * @ws: WebSocket context
+ * @reason: Reason string
+ * @reason_len: Length
+ *
+ * Validates UTF-8 if enabled, truncates if too long, stores.
+ * Returns: 0 on success, -1 invalid UTF-8
+ */
+static int
+ws_validate_and_store_close_reason (SocketWS_T ws, const char *reason,
+                                    size_t reason_len)
+{
+  if (reason_len > SOCKETWS_MAX_CLOSE_REASON)
+    reason_len = SOCKETWS_MAX_CLOSE_REASON;
+
+  /* Validate close reason as UTF-8 */
+  if (ws->config.validate_utf8 && reason_len > 0)
+    {
+      SocketUTF8_Result result = SocketUTF8_validate ((const unsigned char *)reason, reason_len);
+      if (result != UTF8_VALID)
+        {
+          ws_set_error (ws, WS_ERROR_INVALID_UTF8, "Invalid UTF-8 in close reason");
+          return -1;
+        }
+    }
+
+  ws_store_close_reason (ws, reason, reason_len);
+  return 0;
+}
+
 static int
 ws_handle_close_frame (SocketWS_T ws, const unsigned char *payload, size_t len)
 {
-  int code = WS_CLOSE_NO_STATUS;
-  const char *reason = NULL;
-  size_t reason_len = 0;
+  SocketWS_CloseCode code;
+  const char *reason;
+  size_t reason_len;
+  int parsed;
 
-  /* Parse close payload */
-  if (len >= 2)
+  parsed = ws_parse_close_payload (payload, len, &code, &reason, &reason_len);
+  if (!parsed)
     {
-      code = (payload[0] << 8) | payload[1];
-      if (len > 2)
-        {
-          reason = (const char *)(payload + 2);
-          reason_len = len - 2;
-
-          /* Validate close reason as UTF-8 */
-          if (ws->config.validate_utf8)
-            {
-              SocketUTF8_Result result
-                  = SocketUTF8_validate (payload + 2, reason_len);
-              if (result != UTF8_VALID)
-                {
-                  ws_set_error (ws, WS_ERROR_INVALID_UTF8,
-                                "Invalid UTF-8 in close reason");
-                  ws_send_close (ws, WS_CLOSE_INVALID_PAYLOAD, "Invalid UTF-8");
-                  return -1;
-                }
-            }
-        }
+      /* Invalid payload, but per RFC treat as no status */
+      code = WS_CLOSE_NO_STATUS;
+      reason = NULL;
+      reason_len = 0;
     }
 
   /* Store peer's close info */
   ws->close_received = 1;
   if (code != WS_CLOSE_NO_STATUS)
-    ws->close_code = (SocketWS_CloseCode)code;
+    ws->close_code = code;
 
-  if (reason_len > SOCKETWS_MAX_CLOSE_REASON)
-    reason_len = SOCKETWS_MAX_CLOSE_REASON;
-  ws_store_close_reason (ws, reason, reason_len);
+  if (ws_validate_and_store_close_reason (ws, reason, reason_len) < 0)
+    {
+      /* Send protocol error close */
+      ws_send_close (ws, WS_CLOSE_INVALID_PAYLOAD, "Invalid UTF-8 in close reason");
+      ws->state = WS_STATE_CLOSED;
+      return -1;
+    }
 
-  /* Respond with close if we haven't sent one */
+  /* Respond with close if we haven't sent one (echo code) */
   if (!ws->close_sent)
-    ws_send_close (ws, (SocketWS_CloseCode)code, NULL);
+    ws_send_close (ws, code, NULL);
 
   /* Transition to closed */
   ws->state = WS_STATE_CLOSED;
@@ -744,16 +948,14 @@ ws_create_context (const SocketWS_Config *config)
   arena = Arena_new ();
   if (!arena)
     {
-      SOCKET_ERROR_MSG ("Failed to create arena");
-      RAISE_WS_ERROR (SocketWS_Failed);
+      SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed, "Failed to create arena");
     }
 
   ws = ws_alloc_context (arena, config);
   if (!ws)
     {
       Arena_dispose (&arena);
-      SOCKET_ERROR_MSG ("Failed to allocate WebSocket context");
-      RAISE_WS_ERROR (SocketWS_Failed);
+      SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed, "Failed to allocate WebSocket context");
     }
 
   return ws;
@@ -780,8 +982,7 @@ SocketWS_client_new (Socket_T socket, const char *host, const char *path,
 
     if (ws_handshake_client_init (ws) < 0)
       {
-        SOCKET_ERROR_MSG ("Failed to initialize handshake");
-        RAISE_WS_ERROR (SocketWS_Failed);
+        SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed, "Failed to initialize handshake");
       }
   }
   EXCEPT (SocketWS_Failed)
@@ -814,8 +1015,7 @@ SocketWS_server_accept (Socket_T socket, const SocketHTTP_Request *request,
 
     if (ws_handshake_server_init (ws, request) < 0)
       {
-        SOCKET_ERROR_MSG ("Failed to initialize server handshake");
-        RAISE_WS_ERROR (SocketWS_Failed);
+        SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed, "Failed to initialize server handshake");
       }
   }
   EXCEPT (SocketWS_Failed)
@@ -1059,11 +1259,8 @@ SocketWS_send_text (SocketWS_T ws, const char *data, size_t len)
 {
   assert (ws);
 
-  if (ws->state != WS_STATE_OPEN)
-    {
-      ws_set_error (ws, WS_ERROR_CLOSED, "Connection not open");
-      return -1;
-    }
+  if (!ws_ensure_open (ws))
+    return -1;
 
   /* Validate UTF-8 if configured */
   if (ws->config.validate_utf8)
@@ -1088,11 +1285,8 @@ SocketWS_send_binary (SocketWS_T ws, const void *data, size_t len)
 {
   assert (ws);
 
-  if (ws->state != WS_STATE_OPEN)
-    {
-      ws_set_error (ws, WS_ERROR_CLOSED, "Connection not open");
-      return -1;
-    }
+  if (!ws_ensure_open (ws))
+    return -1;
 
   return ws_send_data_frame (ws, WS_OPCODE_BINARY, data, len, 1);
 }
@@ -1102,11 +1296,8 @@ SocketWS_ping (SocketWS_T ws, const void *data, size_t len)
 {
   assert (ws);
 
-  if (ws->state != WS_STATE_OPEN)
-    {
-      ws_set_error (ws, WS_ERROR_CLOSED, "Connection not open");
-      return -1;
-    }
+  if (!ws_ensure_open (ws))
+    return -1;
 
   return ws_send_ping (ws, data, len);
 }
@@ -1116,11 +1307,8 @@ SocketWS_pong (SocketWS_T ws, const void *data, size_t len)
 {
   assert (ws);
 
-  if (ws->state != WS_STATE_OPEN)
-    {
-      ws_set_error (ws, WS_ERROR_CLOSED, "Connection not open");
-      return -1;
-    }
+  if (!ws_ensure_open (ws))
+    return -1;
 
   return ws_send_pong (ws, data, len);
 }

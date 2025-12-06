@@ -80,6 +80,10 @@ typedef struct SocketRetry_Policy
 #define SOCKET_RETRY_DEFAULT_JITTER 0.25
 #endif
 
+#ifndef SOCKET_RETRY_MAX_ATTEMPTS
+#define SOCKET_RETRY_MAX_ATTEMPTS 10000
+#endif
+
 /* ============================================================================
  * Callback Types
  * ============================================================================ */
@@ -145,7 +149,7 @@ typedef struct SocketRetry_Stats
  * @policy: Retry policy (NULL for defaults)
  *
  * Returns: New retry context
- * Raises: SocketRetry_Failed on allocation failure
+ * Raises: SocketRetry_Failed on allocation failure or invalid policy parameters
  * Thread-safe: Yes (creates new instance)
  */
 extern T SocketRetry_new (const SocketRetry_Policy *policy);
@@ -240,6 +244,7 @@ extern void SocketRetry_get_policy (T retry, SocketRetry_Policy *policy);
  * @retry: Retry context
  * @policy: New policy settings
  *
+ * Raises: SocketRetry_Failed on NULL arguments or invalid policy parameters
  * Thread-safe: No
  */
 extern void SocketRetry_set_policy (T retry, const SocketRetry_Policy *policy);

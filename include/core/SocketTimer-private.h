@@ -83,7 +83,7 @@ struct SocketTimer_T *SocketTimer_heap_peek (SocketTimer_heap_T *heap);
  * Returns: Milliseconds until next timer (>= 0), or -1 if no timers
  * Thread-safe: Yes - uses heap mutex
  */
-int64_t SocketTimer_heap_peek_delay (const SocketTimer_heap_T *heap);
+int64_t SocketTimer_heap_peek_delay (SocketTimer_heap_T *heap);
 
 /**
  * SocketTimer_process_expired - Fire all expired timers and return count

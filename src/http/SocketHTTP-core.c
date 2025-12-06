@@ -7,8 +7,8 @@
  * Implements HTTP methods, status codes, versions, and character tables.
  */
 
-#include <assert.h>
-#include <ctype.h>
+
+
 #include <string.h>
 #include <strings.h>
 
@@ -149,27 +149,99 @@ const unsigned char sockethttp_hex_value[256] = {
 };
 
 /* ============================================================================
+ * Version Lookup Table
+ * ============================================================================ */
+
+static const struct {
+    size_t      len;
+    const char *str;
+    SocketHTTP_Version ver;
+} version_table[] = {
+    { 8, "HTTP/0.9", HTTP_VERSION_0_9 },
+    { 8, "HTTP/1.0", HTTP_VERSION_1_0 },
+    { 8, "HTTP/1.1", HTTP_VERSION_1_1 },
+    { 6, "HTTP/2",   HTTP_VERSION_2   },
+    { 6, "HTTP/3",   HTTP_VERSION_3   },
+    { 0, NULL,       0               }
+};
+
+/* ============================================================================
+ * Helper Functions
+ * ============================================================================ */
+
+/**
+ * sockethttp_effective_length - Get effective string length
+ *
+ * @str: Input string (non-NULL)
+ * @len: Provided length, or 0 to use strlen
+ *
+ * Returns: Length of the string
+ * Thread-safe: Yes
+ */
+static size_t
+sockethttp_effective_length (const char *str, size_t len)
+{
+    return len == 0 ? strlen (str) : len;
+}
+
+/**
+ * sockethttp_is_token - Validate token characters
+ *
+ * @s: String to validate
+ * @len: Length of string
+ *
+ * Per RFC 9110 token definition.
+ *
+ * Returns: 1 if all characters are valid tchar, 0 otherwise
+ * Thread-safe: Yes
+ */
+static int
+sockethttp_is_token (const char *s, size_t len)
+{
+    for (size_t i = 0; i < len; i++) {
+        if (!SOCKETHTTP_IS_TCHAR (s[i])) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/**
+ * sockethttp_header_value_is_safe - Check header value for injection chars
+ *
+ * @s: Header value string
+ * @len: Length
+ *
+ * Rejects NUL, CR, LF to prevent header injection.
+ *
+ * Returns: 1 if safe, 0 otherwise
+ * Thread-safe: Yes
+ */
+static int
+sockethttp_header_value_is_safe (const char *s, size_t len)
+{
+    for (size_t i = 0; i < len; i++) {
+        unsigned char c = (unsigned char)s[i];
+        if (c == 0 || c == '\r' || c == '\n') {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/* ============================================================================
  * HTTP Version Functions
  * ============================================================================ */
 
 const char *
 SocketHTTP_version_string (SocketHTTP_Version version)
 {
-  switch (version)
-    {
-    case HTTP_VERSION_0_9:
-      return "HTTP/0.9";
-    case HTTP_VERSION_1_0:
-      return "HTTP/1.0";
-    case HTTP_VERSION_1_1:
-      return "HTTP/1.1";
-    case HTTP_VERSION_2:
-      return "HTTP/2";
-    case HTTP_VERSION_3:
-      return "HTTP/3";
-    default:
-      return "HTTP/?";
+  for (int i = 0; version_table[i].str != NULL; i++) {
+    if (version_table[i].ver == version) {
+      return version_table[i].str;
     }
+  }
+  return "HTTP/?";
 }
 
 SocketHTTP_Version
@@ -177,26 +249,13 @@ SocketHTTP_version_parse (const char *str, size_t len)
 {
   if (!str)
     return HTTP_VERSION_0_9;
-  if (len == 0)
-    len = strlen (str);
-
-  if (len == 8)
-    {
-      if (memcmp (str, "HTTP/1.1", 8) == 0)
-        return HTTP_VERSION_1_1;
-      if (memcmp (str, "HTTP/1.0", 8) == 0)
-        return HTTP_VERSION_1_0;
-      if (memcmp (str, "HTTP/0.9", 8) == 0)
-        return HTTP_VERSION_0_9;
+  len = sockethttp_effective_length (str, len);
+  for (int i = 0; version_table[i].str != NULL; i++) {
+    if (len == version_table[i].len &&
+        memcmp (str, version_table[i].str, len) == 0) {
+      return version_table[i].ver;
     }
-  else if (len == 6)
-    {
-      if (memcmp (str, "HTTP/2", 6) == 0)
-        return HTTP_VERSION_2;
-      if (memcmp (str, "HTTP/3", 6) == 0)
-        return HTTP_VERSION_3;
-    }
-
+  }
   return HTTP_VERSION_0_9;
 }
 
@@ -243,8 +302,7 @@ SocketHTTP_method_parse (const char *str, size_t len)
 {
   if (!str)
     return HTTP_METHOD_UNKNOWN;
-  if (len == 0)
-    len = strlen (str);
+  len = sockethttp_effective_length (str, len);
 
   for (int i = 0; method_table[i].name != NULL; i++)
     {
@@ -273,16 +331,14 @@ SocketHTTP_method_properties (SocketHTTP_Method method)
 int
 SocketHTTP_method_valid (const char *str, size_t len)
 {
-  if (!str || len == 0)
+  if (!str)
+    return 0;
+  len = sockethttp_effective_length (str, len);
+  if (len == 0)
     return 0;
 
   /* Per RFC 9110, method is a token */
-  for (size_t i = 0; i < len; i++)
-    {
-      if (!SOCKETHTTP_IS_TCHAR (str[i]))
-        return 0;
-    }
-  return 1;
+  return sockethttp_is_token (str, len);
 }
 
 /* ============================================================================
@@ -413,19 +469,14 @@ SocketHTTP_status_valid (int code)
 int
 SocketHTTP_header_name_valid (const char *name, size_t len)
 {
-  if (!name || len == 0)
+  if (!name)
     return 0;
-
-  if (len > SOCKETHTTP_MAX_HEADER_NAME)
+  len = sockethttp_effective_length (name, len);
+  if (len == 0 || len > SOCKETHTTP_MAX_HEADER_NAME)
     return 0;
 
   /* Header name must be a token per RFC 9110 */
-  for (size_t i = 0; i < len; i++)
-    {
-      if (!SOCKETHTTP_IS_TCHAR (name[i]))
-        return 0;
-    }
-  return 1;
+  return sockethttp_is_token (name, len);
 }
 
 int
@@ -433,7 +484,7 @@ SocketHTTP_header_value_valid (const char *value, size_t len)
 {
   if (!value)
     return len == 0;
-
+  len = sockethttp_effective_length (value, len);
   if (len > SOCKETHTTP_MAX_HEADER_VALUE)
     return 0;
 
@@ -453,23 +504,7 @@ SocketHTTP_header_value_valid (const char *value, size_t len)
    * encoding (e.g., percent-encoding for URIs, quoted-string for some
    * headers, or multipart for bodies).
    */
-  for (size_t i = 0; i < len; i++)
-    {
-      unsigned char c = (unsigned char)value[i];
-
-      /* Reject NUL - always invalid in HTTP */
-      if (c == 0)
-        return 0;
-
-      /* Reject CR - prevents CRLF injection */
-      if (c == '\r')
-        return 0;
-
-      /* Reject LF - prevents header line termination injection */
-      if (c == '\n')
-        return 0;
-    }
-  return 1;
+  return sockethttp_header_value_is_safe (value, len);
 }
 
 /* ============================================================================
@@ -496,8 +531,7 @@ SocketHTTP_coding_parse (const char *name, size_t len)
 {
   if (!name)
     return HTTP_CODING_UNKNOWN;
-  if (len == 0)
-    len = strlen (name);
+  len = sockethttp_effective_length (name, len);
 
   for (int i = 0; coding_table[i].name != NULL; i++)
     {

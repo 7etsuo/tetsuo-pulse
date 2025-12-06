@@ -29,13 +29,16 @@
 #include <time.h>
 
 #include "core/SocketConfig.h"
+#include "core/Arena.h"
 #include "poll/SocketPoll_backend.h"
+#include "core/Arena.h"
 
 /* Sentinel value indicating FD not in poll set */
 #define FD_INDEX_INVALID (-1)
 
 /* Backend instance structure */
-struct PollBackend_T
+#define T PollBackend_T
+struct T
 {
   struct pollfd *fds;  /* Array of pollfd structures */
   int *fd_to_index;    /* FD to index mapping (for O(1) lookup) */
@@ -45,7 +48,118 @@ struct PollBackend_T
   int last_wait_count; /* Number of events from last wait */
   int max_fd;          /* Maximum FD value seen */
 };
+#undef T
 
+/* ==================== Safe Allocation Helpers ==================== */
+
+/**
+ * safe_calc_size - Safely calculate total size for array allocation
+ * @num: Number of elements
+ * @elem_size: Size of each element
+ * @total_out: Output total bytes (only set on success)
+ *
+ * Returns: 0 on success, -1 on overflow (sets errno to EOVERFLOW)
+ * Thread-safe: Yes
+ */
+static int
+safe_calc_size (size_t num, size_t elem_size, size_t *total_out)
+{
+  if (num == 0 || elem_size == 0)
+    {
+      if (total_out)
+        *total_out = 0;
+      return 0;
+    }
+  if (num > SIZE_MAX / elem_size)
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
+  if (total_out)
+    *total_out = num * elem_size;
+  return 0;
+}
+
+/**
+ * safe_calloc_array - Safely allocate zeroed array with overflow protection
+ * @num: Number of elements
+ * @elem_size: Size of each element
+ *
+ * Returns: Allocated array or NULL on failure (errno set)
+ * Thread-safe: Yes
+ * Note: Uses safe_calc_size internally
+ */
+static void *
+safe_calloc_array (size_t num, size_t elem_size)
+{
+  size_t total;
+  if (safe_calc_size (num, elem_size, &total) < 0)
+    return NULL;
+  return calloc (num, elem_size);
+}
+
+/**
+ * safe_realloc_array - Safely reallocate array with overflow protection
+ * @ptr: Pointer to reallocate (NULL ok for initial alloc)
+ * @num: New number of elements
+ * @elem_size: Size of each element
+ *
+ * Returns: Reallocated array or NULL on failure (errno set)
+ * Thread-safe: Yes
+ * Note: Preserves content up to min(old_size, new_size); new area undefined
+ */
+static void *
+safe_realloc_array (void *ptr, size_t num, size_t elem_size)
+{
+  size_t total;
+  if (safe_calc_size (num, elem_size, &total) < 0)
+    return NULL;
+  return realloc (ptr, total);
+}
+
+/* ==================== Integer Safe Arithmetic Helpers ==================== */
+
+/**
+ * safe_int_add - Safely add two positive integers with overflow check
+ * @a: First operand (non-negative)
+ * @b: Second operand (positive increment)
+ * @result_out: Output result (only set on success)
+ *
+ * Returns: 0 on success, -1 on overflow (sets errno to EOVERFLOW)
+ * Thread-safe: Yes
+ * Note: Assumes a >= 0, b > 0 for FD/capacity expansion
+ */
+static int
+safe_int_add (int a, int b, int *result_out)
+{
+  if (a > INT_MAX - b)
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
+  *result_out = a + b;
+  return 0;
+}
+
+/**
+ * safe_int_double - Safely double a positive integer with overflow check
+ * @val: Value to double (positive capacity)
+ * @result_out: Output doubled value (only set on success)
+ *
+ * Returns: 0 on success, -1 on overflow (sets errno to EOVERFLOW)
+ * Thread-safe: Yes
+ */
+static int
+safe_int_double (int val, int *result_out)
+{
+  if (val > INT_MAX / 2)
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
+  *result_out = val * 2;
+  return 0;
+}
 /* ==================== Initialization Helpers ==================== */
 
 /**
@@ -79,40 +193,51 @@ allocate_fd_mapping (const int size)
 {
   int *mapping;
 
-  mapping = calloc (size, sizeof (int));
+  mapping = safe_calloc_array ((size_t)size, sizeof (int));
   if (mapping)
     init_fd_mapping_range (mapping, 0, size);
 
   return mapping;
 }
 
+static int
+alloc_and_init_fds (PollBackend_T backend)
+{
+  backend->fds = safe_calloc_array ((size_t)backend->capacity, sizeof (struct pollfd));
+  return backend->fds ? 0 : -1;
+}
+
+static int
+alloc_and_init_fd_mapping (PollBackend_T backend)
+{
+  backend->fd_to_index = allocate_fd_mapping (backend->max_fd);
+  return backend->fd_to_index ? 0 : -1;
+}
+
 PollBackend_T
-backend_new (const int maxevents)
+backend_new (Arena_T arena, const int maxevents)
 {
   PollBackend_T backend;
 
+  assert (arena != NULL);
   assert (maxevents > 0);
 
-  backend = calloc (1, sizeof (*backend));
+  backend = CALLOC (arena, 1, sizeof (*backend));
   if (!backend)
     return NULL;
 
   backend->capacity = POLL_INITIAL_FDS;
-  backend->fds = calloc (backend->capacity, sizeof (struct pollfd));
-  if (!backend->fds)
+  if (alloc_and_init_fds (backend) < 0)
     {
-      free (backend);
-      return NULL;
+      return NULL; /* arena owns backend */
     }
 
   /* Allocate FD mapping table - size based on typical FD range */
   backend->max_fd = POLL_INITIAL_FD_MAP_SIZE;
-  backend->fd_to_index = allocate_fd_mapping (backend->max_fd);
-  if (!backend->fd_to_index)
+  if (alloc_and_init_fd_mapping (backend) < 0)
     {
-      free (backend->fds);
-      free (backend);
-      return NULL;
+      free (backend->fds); /* stdlib free */
+      return NULL; /* arena owns backend */
     }
 
   backend->nfds = 0;
@@ -128,12 +253,12 @@ backend_free (PollBackend_T backend)
   assert (backend);
 
   if (backend->fds)
-    free (backend->fds);
+    free (backend->fds); /* Dynamic realloc from heap */
 
   if (backend->fd_to_index)
-    free (backend->fd_to_index);
+    free (backend->fd_to_index); /* Dynamic from heap */
 
-  free (backend);
+  /* backend struct freed by arena dispose */
 }
 
 /* ==================== FD Lookup Helpers ==================== */
@@ -175,41 +300,20 @@ static int
 ensure_fd_mapping (PollBackend_T backend, const int fd)
 {
   int new_max;
-  int *new_mapping;
 
   if (fd < backend->max_fd)
     return 0;
 
-  /* Check for integer overflow before expansion */
-  if (fd > INT_MAX - POLL_FD_MAP_EXPAND_INCREMENT)
-    {
-      errno = EOVERFLOW;
-      return -1;
-    }
+  if (safe_int_add (fd, POLL_FD_MAP_EXPAND_INCREMENT, &new_max) < 0)
+    return -1;
 
-  /* Expand mapping table */
-  new_max = fd + POLL_FD_MAP_EXPAND_INCREMENT;
-
-  /* Check for size_t overflow before calloc
-   * Security: Prevents heap corruption from truncated allocation size */
-  if ((size_t)new_max > SIZE_MAX / sizeof (int))
-    {
-      errno = EOVERFLOW;
-      return -1;
-    }
-
-  new_mapping = calloc ((size_t)new_max, sizeof (int));
+  int *new_mapping = safe_realloc_array (backend->fd_to_index, (size_t)new_max, sizeof (int));
   if (!new_mapping)
     return -1;
 
-  /* Copy old mappings */
-  memcpy (new_mapping, backend->fd_to_index,
-          (size_t)backend->max_fd * sizeof (int));
-
-  /* Initialize new entries to invalid */
+  /* Initialize new entries to invalid (realloc may not zero new area) */
   init_fd_mapping_range (new_mapping, backend->max_fd, new_max);
 
-  free (backend->fd_to_index);
   backend->fd_to_index = new_mapping;
   backend->max_fd = new_max;
 
@@ -232,33 +336,15 @@ ensure_fd_mapping (PollBackend_T backend, const int fd)
 static int
 ensure_capacity (PollBackend_T backend)
 {
-  struct pollfd *new_fds;
   int new_capacity;
-  size_t alloc_size;
 
   if (backend->nfds < backend->capacity)
     return 0;
 
-  /* Check for int overflow before doubling */
-  if (backend->capacity > INT_MAX / 2)
-    {
-      errno = EOVERFLOW;
-      return -1;
-    }
+  if (safe_int_double (backend->capacity, &new_capacity) < 0)
+    return -1;
 
-  /* Double the capacity */
-  new_capacity = backend->capacity * 2;
-
-  /* Check for size_t overflow before realloc
-   * Security: Prevents heap corruption from truncated allocation size */
-  if ((size_t)new_capacity > SIZE_MAX / sizeof (struct pollfd))
-    {
-      errno = EOVERFLOW;
-      return -1;
-    }
-  alloc_size = (size_t)new_capacity * sizeof (struct pollfd);
-
-  new_fds = realloc (backend->fds, alloc_size);
+  struct pollfd *new_fds = safe_realloc_array (backend->fds, (size_t)new_capacity, sizeof (struct pollfd));
   if (!new_fds)
     return -1;
 
@@ -323,6 +409,22 @@ translate_from_poll_events (const short revents)
 
 /* ==================== Backend Interface Implementation ==================== */
 
+static int
+add_fd_to_array (PollBackend_T backend, int fd, unsigned events)
+{
+  int index = backend->nfds;
+  backend->fds[index].fd = fd;
+  backend->fds[index].events = translate_to_poll_events (events);
+  backend->fds[index].revents = 0;
+  return index;
+}
+
+static void
+update_fd_mapping (PollBackend_T backend, int fd, int index)
+{
+  backend->fd_to_index[fd] = index;
+}
+
 int
 backend_add (PollBackend_T backend, const int fd, const unsigned events)
 {
@@ -346,15 +448,8 @@ backend_add (PollBackend_T backend, const int fd, const unsigned events)
   if (ensure_fd_mapping (backend, fd) < 0)
     return -1;
 
-  /* Add to pollfd array */
-  index = backend->nfds;
-  backend->fds[index].fd = fd;
-  backend->fds[index].events = translate_to_poll_events (events);
-  backend->fds[index].revents = 0;
-
-  /* Update mapping for O(1) lookup */
-  backend->fd_to_index[fd] = index;
-
+  index = add_fd_to_array (backend, fd, events);
+  update_fd_mapping (backend, fd, index);
   backend->nfds++;
 
   return 0;
@@ -382,12 +477,50 @@ backend_mod (PollBackend_T backend, const int fd, const unsigned events)
   return 0;
 }
 
+/**
+ * swap_remove_from_array - Swap remove FD at index with last element
+ * @backend: Backend instance
+ * @index: Index to remove
+ *
+ * Swaps fds[index] with fds[nfds-1], updates mapping for moved FD.
+ * Does not update removed FD mapping or decrement nfds.
+ * Thread-safe: No
+ */
+static void
+swap_remove_from_array (PollBackend_T backend, int index)
+{
+  int last_index = backend->nfds - 1;
+  int last_fd;
+
+  if (index != last_index)
+    {
+      backend->fds[index] = backend->fds[last_index];
+
+      last_fd = backend->fds[index].fd;
+      if (last_fd >= 0 && last_fd < backend->max_fd)
+        backend->fd_to_index[last_fd] = index;
+    }
+}
+
+/**
+ * remove_fd_from_mapping - Clear FD mapping entry
+ * @backend: Backend instance
+ * @fd: File descriptor to remove from mapping
+ *
+ * Sets fd_to_index[fd] = FD_INDEX_INVALID if in range.
+ * Thread-safe: No
+ */
+static void
+remove_fd_from_mapping (PollBackend_T backend, int fd)
+{
+  if (fd >= 0 && fd < backend->max_fd)
+    backend->fd_to_index[fd] = FD_INDEX_INVALID;
+}
+
 int
 backend_del (PollBackend_T backend, const int fd)
 {
   int index;
-  int last_index;
-  int last_fd;
 
   assert (backend);
 
@@ -402,34 +535,44 @@ backend_del (PollBackend_T backend, const int fd)
       return 0;
     }
 
-  /* Remove from array by swapping with last element */
-  last_index = backend->nfds - 1;
-
-  if (index != last_index)
-    {
-      /* Swap with last element */
-      backend->fds[index] = backend->fds[last_index];
-
-      /* Update mapping for moved FD */
-      last_fd = backend->fds[index].fd;
-      if (last_fd >= 0 && last_fd < backend->max_fd)
-        backend->fd_to_index[last_fd] = index;
-    }
-
-  /* Clear mapping for removed FD (fd >= 0 guaranteed by early return) */
-  if (fd < backend->max_fd)
-    backend->fd_to_index[fd] = FD_INDEX_INVALID;
-
+  swap_remove_from_array (backend, index);
+  remove_fd_from_mapping (backend, fd);
   backend->nfds--;
 
   return 0;
 }
 
-int
-backend_wait (PollBackend_T backend, const int timeout_ms)
+/**
+ * perform_poll_wait - Perform the actual poll(2) system call
+ * @backend: Backend instance
+ * @timeout_ms: Timeout in ms
+ *
+ * Handles poll(2) call, EINTR restart simulation, and stores event count.
+ * Returns: Number of ready events or -1 on error (non-EINTR)
+ * Thread-safe: No
+ */
+static int
+perform_poll_wait (PollBackend_T backend, int timeout_ms)
 {
   int result;
 
+  result = poll (backend->fds, backend->nfds, timeout_ms);
+
+  if (result < 0)
+    {
+      /* poll was interrupted by signal - treat as timeout */
+      if (errno == EINTR)
+        return 0;
+      return -1;
+    }
+
+  backend->last_wait_count = result;
+  return result;
+}
+
+int
+backend_wait (const PollBackend_T backend, const int timeout_ms)
+{
   assert (backend);
 
   if (backend->nfds == 0)
@@ -445,18 +588,7 @@ backend_wait (PollBackend_T backend, const int timeout_ms)
       return 0;
     }
 
-  result = poll (backend->fds, backend->nfds, timeout_ms);
-
-  if (result < 0)
-    {
-      /* poll was interrupted by signal */
-      if (errno == EINTR)
-        return 0;
-      return -1;
-    }
-
-  backend->last_wait_count = result;
-  return result;
+  return perform_poll_wait (backend, timeout_ms);
 }
 
 /**
@@ -475,7 +607,7 @@ backend_wait (PollBackend_T backend, const int timeout_ms)
  * For high-performance applications, prefer epoll or kqueue backends.
  */
 int
-backend_get_event (PollBackend_T backend, const int index, int *fd_out,
+backend_get_event (const PollBackend_T backend, const int index, int *fd_out,
                    unsigned *events_out)
 {
   int i;

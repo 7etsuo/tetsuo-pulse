@@ -1,76 +1,71 @@
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/Arena.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/Except.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketCrypto.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketIPTracker.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketMetrics.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketRateLimit.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketRetry.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketSecurity.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketSYNProtect.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketTimer.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketUTF8.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketUtil.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/dns/SocketDNS-internal.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/dns/SocketDNS.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHPACK-huffman.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHPACK-table.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHPACK.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP-core.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP-date.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP-headers.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP-uri.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP1-chunked.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP1-compress.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP1-parser.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP1-serialize.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP2-connection.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP2-flow.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP2-frame.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP2-priority.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP2-stream.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTPClient-auth.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTPClient-cookie.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTPClient-pool.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTPClient.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTPServer.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/poll/SocketPoll_epoll.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/poll/SocketPoll_kqueue.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/poll/SocketPoll_poll.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/poll/SocketPoll.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/pool/SocketPool-connections.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/pool/SocketPool-core.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/pool/SocketPool-drain.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/pool/SocketPool-ops.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/pool/SocketPool-ratelimit.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/Socket-connect.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/Socket-fd.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/Socket-iov.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/Socket-options.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/Socket.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketAsync.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketBuf.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketCommon.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketDgram.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketHappyEyeballs.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketIO.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketProxy-http.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketProxy-socks4.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketProxy-socks5.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketProxy.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketReconnect.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketWS-deflate.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketWS-frame.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketWS-handshake.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketWS.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketDTLS-cookie.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketDTLS.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketDTLSContext.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLS.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-alpn.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-certs.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-core.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-crl.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-ct.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-pinning.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-session.c
-@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-verify.c
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketRateLimit.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketRetry.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketSecurity.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketSYNProtect.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketTimer.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketUTF8.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/core/SocketUtil.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/dns/SocketDNS-internal.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/dns/SocketDNS.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHPACK-huffman.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHPACK-table.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHPACK.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP-core.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP-date.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP-headers.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP-uri.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP1-chunked.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP1-compress.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP1-parser.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP1-serialize.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP2-connection.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP2-flow.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP2-frame.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP2-priority.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTP2-stream.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTPClient-auth.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTPClient-cookie.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTPClient-pool.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTPClient.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/http/SocketHTTPServer.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/poll/SocketPoll_epoll.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/poll/SocketPoll_kqueue.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/poll/SocketPoll_poll.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/poll/SocketPoll.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/pool/SocketPool-connections.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/pool/SocketPool-core.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/pool/SocketPool-drain.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/pool/SocketPool-ops.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/pool/SocketPool-ratelimit.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/Socket-connect.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/Socket-fd.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/Socket-iov.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/Socket-options.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/Socket.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketAsync.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketBuf.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketCommon.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketDgram.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketHappyEyeballs.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketIO.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketProxy-http.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketProxy-socks4.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketProxy-socks5.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketProxy.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketReconnect.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketWS-deflate.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketWS-frame.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketWS-handshake.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/socket/SocketWS.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketDTLS-cookie.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketDTLS.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketDTLSContext.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLS.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-alpn.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-certs.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-core.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-crl.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-ct.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-pinning.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-session.c"
+grok --yolo --prompt "@.cursor/commands/redundancy.md and @.cursor/commands/refactor.md @src/tls/SocketTLSContext-verify.c"

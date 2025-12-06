@@ -196,7 +196,7 @@ extern int http2_frame_send (SocketHTTP2_Conn_T conn,
  *
  * Returns: Stream or NULL if not found
  */
-extern SocketHTTP2_Stream_T http2_stream_lookup (SocketHTTP2_Conn_T conn,
+extern SocketHTTP2_Stream_T http2_stream_lookup (const SocketHTTP2_Conn_T conn,
                                                  uint32_t stream_id);
 
 /**

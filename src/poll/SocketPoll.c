@@ -366,7 +366,7 @@ allocate_poll_structure (void)
 static void
 initialize_poll_backend (T poll, int maxevents)
 {
-  poll->backend = backend_new (maxevents);
+  poll->backend = backend_new (poll->arena, maxevents);
 
   if (!poll->backend)
     INIT_FAIL_FMT ("Failed to create %s backend", backend_name ());
@@ -674,12 +674,12 @@ SocketPoll_new (int maxevents)
   TRY
   {
     poll = allocate_poll_structure ();
-    initialize_poll_backend ((T)poll, maxevents);
     ((T)poll)->maxevents = maxevents;
     ((T)poll)->default_timeout_ms = SOCKET_DEFAULT_POLL_TIMEOUT;
     ((T)poll)->registered_count = 0;
     ((T)poll)->max_registered = SOCKET_POLL_MAX_REGISTERED;
     initialize_poll_arena ((T)poll);
+    initialize_poll_backend ((T)poll, maxevents);
     allocate_poll_event_arrays ((T)poll, maxevents);
     /* Note: Hash tables already zeroed by calloc in allocate_poll_structure */
     initialize_poll_mutex ((T)poll);

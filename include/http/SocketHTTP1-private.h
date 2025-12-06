@@ -418,5 +418,12 @@ http1_tokenbuf_terminate (HTTP1_TokenBuf *buf, Arena_T arena, size_t max_size)
  */
 #define http1_is_field_vchar(c) (http1_is_vchar (c) || http1_is_obs_text (c))
 
+/* Initial token buffer sizes */
+#define HTTP1_DEFAULT_METHOD_BUF_SIZE 16
+#define HTTP1_DEFAULT_URI_BUF_SIZE 256
+#define HTTP1_DEFAULT_REASON_BUF_SIZE 64
+#define HTTP1_DEFAULT_HEADER_NAME_BUF_SIZE 64
+#define HTTP1_DEFAULT_HEADER_VALUE_BUF_SIZE 256
+
 #endif /* SOCKETHTTP1_PRIVATE_INCLUDED */
 

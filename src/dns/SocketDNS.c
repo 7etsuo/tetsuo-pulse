@@ -10,8 +10,7 @@
  */
 
 /* System headers first */
-#include <arpa/inet.h>
-#include <ctype.h>
+
 #include <errno.h>
 #include <string.h>
 
@@ -21,6 +20,7 @@
 #include "core/Arena.h"
 #include "dns/SocketDNS.h"
 #include "dns/SocketDNS-private.h"
+#include "socket/SocketCommon-private.h"
 
 /* Define our module's T macro (Arena.h undefs T at end of header) */
 #undef T /* Defensive: ensure clean slate */
@@ -54,19 +54,10 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
  * is_ip_address - Check if string is a valid IP address (IPv4 or IPv6)
  * @host: Host string to check
  * Returns: 1 if valid IP address, 0 otherwise
+ * 
+ * Wrapper for common implementation to maintain API compatibility.
  */
-bool
-is_ip_address (const char *host)
-{
-  if (!host)
-    return false;
-
-  struct in_addr ipv4;
-  struct in6_addr ipv6;
-
-  return inet_pton (AF_INET, host, &ipv4) == 1
-         || inet_pton (AF_INET6, host, &ipv6) == 1;
-}
+/* is_ip_address removed: use socketcommon_is_ip_address directly */
 
 /**
  * is_valid_label_char - Check if character is valid in hostname label
@@ -78,13 +69,7 @@ is_ip_address (const char *host)
  *
  * Per RFC 1123: label start must be alphanumeric; other positions allow hyphen.
  */
-static bool
-is_valid_label_char (char c, bool at_start)
-{
-  if (at_start)
-    return isalnum ((unsigned char)c);
-  return isalnum ((unsigned char)c) || c == '-';
-}
+/* is_valid_label_char removed: duplicate in SocketCommon.c */
 
 /**
  * is_valid_label_length - Check label length is within bounds
@@ -98,12 +83,7 @@ is_valid_label_char (char c, bool at_start)
  * A label_len of 0 indicates an empty label (e.g., consecutive dots ".."),
  * which is invalid per RFC 1035.
  */
-static bool
-is_valid_label_length (int label_len)
-{
-  /* RFC 1035: max label length is 63; min is 1 (empty labels invalid) */
-  return label_len > 0 && label_len <= SOCKET_DNS_MAX_LABEL_LENGTH;
-}
+/* is_valid_label_length removed: duplicate in SocketCommon.c */
 
 /**
  * validate_hostname_label - Validate hostname labels per RFC 1123
@@ -118,62 +98,12 @@ is_valid_label_length (int label_len)
  * - Contains only alphanumeric or hyphen characters
  * - Has length between 1 and SOCKET_DNS_MAX_LABEL_LENGTH (63)
  */
-int
-validate_hostname_label (const char *label, size_t *len)
-{
-  const char *p = label;
-  int label_len = 0;
-  bool at_label_start = true;
-
-  while (*p)
-    {
-      if (*p == '.')
-        {
-          /* Dot separator - validate completed label and reset
-           * Rejects consecutive dots (label_len=0) as empty labels per RFC 1035 */
-          if (!is_valid_label_length (label_len))
-            return 0;
-          at_label_start = true;
-          label_len = 0;
-        }
-      else
-        {
-          /* Label character - validate and update state */
-          if (!is_valid_label_char (*p, at_label_start))
-            return 0;
-          at_label_start = false;
-          label_len++;
-        }
-      p++;
-    }
-
-  /* Validate final label */
-  if (!is_valid_label_length (label_len))
-    return 0;
-
-  if (len)
-    *len = (size_t)(p - label);
-  return 1;
-}
-
-/**
- * validate_hostname - Validate hostname format and constraints
- * @hostname: Hostname string to validate
- * Returns: 1 if valid hostname, 0 otherwise
- * Validates hostname length and calls validate_hostname_label for each label.
+/* validate_hostname_label removed: duplicate implementation in SocketCommon.c
+ * Use socketcommon_validate_hostname_labels(hostname) which returns 1/0 valid.
+ * Note: no length output; compute strlen separately if needed.
  */
-int
-validate_hostname (const char *hostname)
-{
-  if (!hostname)
-    return 0;
 
-  size_t len = strlen (hostname);
-  if (len == 0 || len > SOCKET_ERROR_MAX_HOSTNAME)
-    return 0;
-
-  return validate_hostname_label (hostname, NULL);
-}
+/* validate_hostname removed: use socketcommon_validate_hostname_internal or SocketCommon_validate_hostname directly */
 
 /**
  * validate_resolve_params - Validate parameters for DNS resolution
@@ -184,21 +114,18 @@ validate_hostname (const char *hostname)
 void
 validate_resolve_params (const char *host, int port)
 {
-  /* Host validation - NULL is allowed for wildcard bind with AI_PASSIVE */
+  /* Host validation - NULL is allowed for wildcard bind with AI_PASSIVE.
+   * Uses SocketCommon validation to avoid duplication. */
+
   if (host != NULL)
     {
-      /* validate_hostname handles all length and format checks */
-      if (!is_ip_address (host) && !validate_hostname (host))
+      if (!socketcommon_is_ip_address (host))
         {
-          SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                            "Invalid hostname format");
+          SocketCommon_validate_hostname (host, SocketDNS_Failed);
         }
     }
 
-  if (!SOCKET_VALID_PORT (port))
-    {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed, "Invalid port number");
-    }
+  SocketCommon_validate_port (port, SocketDNS_Failed);
 }
 
 /*
@@ -816,8 +743,8 @@ static void
 compute_deadline (int timeout_ms, struct timespec *deadline)
 {
   clock_gettime (CLOCK_REALTIME, deadline);
-  deadline->tv_sec += timeout_ms / 1000;
-  deadline->tv_nsec += (timeout_ms % 1000) * 1000000L;
+  deadline->tv_sec += timeout_ms / SOCKET_MS_PER_SECOND;
+  deadline->tv_nsec += (timeout_ms % SOCKET_MS_PER_SECOND) * (SOCKET_NS_PER_SECOND / SOCKET_MS_PER_SECOND);
 
   /* Normalize nanoseconds (handle overflow from ms->ns conversion) */
   if (deadline->tv_nsec >= SOCKET_NS_PER_SECOND)
@@ -871,28 +798,7 @@ wait_for_completion (struct SocketDNS_T *dns,
  * Initializes hints for getaddrinfo fast-path (IP address or wildcard).
  * For NULL host, sets AI_PASSIVE for bind. For IP, sets AI_NUMERICHOST.
  */
-static void
-setup_hints_for_fast_path (struct addrinfo *local_hints,
-                           const struct addrinfo *hints, const char *host)
-{
-  memset (local_hints, 0, sizeof (*local_hints));
-  local_hints->ai_family = hints ? hints->ai_family : AF_UNSPEC;
-  local_hints->ai_socktype = hints ? hints->ai_socktype : SOCK_STREAM;
-  local_hints->ai_protocol = hints ? hints->ai_protocol : 0;
-
-  if (host == NULL)
-    {
-      local_hints->ai_flags = AI_PASSIVE;
-      if (hints)
-        local_hints->ai_flags |= hints->ai_flags;
-    }
-  else
-    {
-      local_hints->ai_flags = AI_NUMERICHOST;
-      if (hints)
-        local_hints->ai_flags |= (hints->ai_flags & ~AI_PASSIVE);
-    }
-}
+/* setup_hints_for_fast_path removed: logic now in SocketCommon_resolve_address */
 
 /**
  * resolve_fast_path - Resolve IP address or wildcard without async DNS
@@ -907,46 +813,7 @@ setup_hints_for_fast_path (struct addrinfo *local_hints,
  * Fast path for IP addresses and wildcard that bypasses async DNS.
  * Uses AI_NUMERICHOST or AI_PASSIVE to skip DNS lookup.
  */
-static struct addrinfo *
-resolve_fast_path (const char *host, int port, const struct addrinfo *hints)
-{
-  struct addrinfo local_hints;
-  struct addrinfo *result = NULL;
-  struct addrinfo *copy;
-  char port_str[SOCKET_DNS_PORT_STR_SIZE];
-  int gai_result;
-  int sn_res;
-
-  setup_hints_for_fast_path (&local_hints, hints, host);
-
-  /* Format port string with defensive error check (port already validated
-   * to 0-65535, but this ensures safety if buffer size changes) */
-  sn_res = snprintf (port_str, sizeof (port_str), "%d", port);
-  if (sn_res < 0 || (size_t)sn_res >= sizeof (port_str))
-    {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Port number format error");
-    }
-
-  gai_result = getaddrinfo (host, port_str, &local_hints, &result);
-  if (gai_result != 0)
-    {
-      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
-                        "Failed to resolve address: %s (%s)",
-                        host ? host : "(wildcard)", gai_strerror (gai_result));
-    }
-
-  copy = SocketCommon_copy_addrinfo (result);
-  freeaddrinfo (result);
-
-  if (!copy)
-    {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Failed to copy address info");
-    }
-
-  return copy;
-}
+/* resolve_fast_path removed: replaced with SocketCommon_resolve_address call for code reuse */
 
 /**
  * handle_sync_timeout - Handle timeout during synchronous resolution
@@ -1051,9 +918,16 @@ SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
 
   effective_timeout = (timeout_ms > 0) ? timeout_ms : dns->request_timeout_ms;
 
-  /* Fast path: IP addresses and wildcard don't need async DNS */
-  if (host == NULL || is_ip_address (host))
-    return resolve_fast_path (host, port, hints);
+  /* Fast path: IP addresses and wildcard use SocketCommon synchronous resolution */
+  if (host == NULL || socketcommon_is_ip_address (host))
+    {
+      struct addrinfo *tmp_res = NULL;
+      int family = hints ? hints->ai_family : AF_UNSPEC;
+      SocketCommon_resolve_address (host, port, hints, &tmp_res, SocketDNS_Failed, family, 1);
+      struct addrinfo *result = SocketCommon_copy_addrinfo (tmp_res);
+      SocketCommon_free_addrinfo (tmp_res);
+      return result;
+    }
 
   /* Hostname requires async resolution with timeout */
   return resolve_async_with_wait (dns, host, port, effective_timeout);

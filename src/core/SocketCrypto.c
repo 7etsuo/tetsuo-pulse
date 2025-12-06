@@ -61,7 +61,44 @@ const Except_T SocketCrypto_Failed
 /* Thread-local exception for detailed error messages */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketCrypto);
 
-/* Use SOCKET_RAISE_MSG directly for clarity - no wrapper needed */
+/* Common macros to reduce code duplication in error checking */
+
+/**
+ * SOCKET_CRYPTO_CHECK_INPUT - Validate input pointer for non-zero length
+ * @ptr: Pointer to validate
+ * @len: Length associated with pointer
+ * @name: Function-specific name for error message (e.g., "SHA-256")
+ *
+ * Raises SocketCrypto_Failed if ptr is NULL and len > 0.
+ * Thread-safe: Yes
+ */
+#define SOCKET_CRYPTO_CHECK_INPUT(ptr, len, name) do { \
+    if (!(ptr) && (len) > 0) \
+        SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, \
+            name ": NULL input with non-zero length"); \
+} while (0)
+
+/**
+ * SOCKET_CRYPTO_REQUIRE_TLS - Raise exception if TLS support not available
+ *
+ * Uses __func__ for specific function name in message.
+ * Thread-safe: Yes
+ */
+#define SOCKET_CRYPTO_REQUIRE_TLS do { \
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, \
+        "%s requires TLS support (SOCKET_HAS_TLS)", __func__); \
+} while (0)
+
+/**
+ * SOCKET_CRYPTO_RAISE_COMPUTE_FAILED - Raise computation failure with function-specific message
+ * @name: Prefix name (e.g., "SHA-1")
+ *
+ * Thread-safe: Yes
+ */
+#define SOCKET_CRYPTO_RAISE_COMPUTE_FAILED(name) \
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, name " computation failed")
+
+/* Use SOCKET_RAISE_MSG directly for clarity where macros not applicable */
 
 /* ============================================================================
  * Static Constants
@@ -114,14 +151,13 @@ SocketCrypto_sha1 (const void *input, size_t input_len,
 {
   assert (output);
 
-  if (!input && input_len > 0)
-    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "SHA-1: NULL input with non-zero length");
+  SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-1");
 
 #ifdef SOCKET_HAS_TLS
   if (!SHA1 ((const unsigned char *)input, input_len, output))
-    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "SHA-1 computation failed");
+    SOCKET_CRYPTO_RAISE_COMPUTE_FAILED("SHA-1");
 #else
-  SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "SHA-1 requires TLS support (SOCKET_HAS_TLS)");
+  SOCKET_CRYPTO_REQUIRE_TLS;
 #endif
 }
 
@@ -131,14 +167,13 @@ SocketCrypto_sha256 (const void *input, size_t input_len,
 {
   assert (output);
 
-  if (!input && input_len > 0)
-    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "SHA-256: NULL input with non-zero length");
+  SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-256");
 
 #ifdef SOCKET_HAS_TLS
   if (!SHA256 ((const unsigned char *)input, input_len, output))
-    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "SHA-256 computation failed");
+    SOCKET_CRYPTO_RAISE_COMPUTE_FAILED("SHA-256");
 #else
-  SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "SHA-256 requires TLS support (SOCKET_HAS_TLS)");
+  SOCKET_CRYPTO_REQUIRE_TLS;
 #endif
 }
 
@@ -148,25 +183,29 @@ SocketCrypto_md5 (const void *input, size_t input_len,
 {
   assert (output);
 
-  if (!input && input_len > 0)
-    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "MD5: NULL input with non-zero length");
+  SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "MD5");
 
 #ifdef SOCKET_HAS_TLS
-  EVP_MD_CTX *ctx = EVP_MD_CTX_new ();
-  if (!ctx)
-    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "MD5: Failed to create context");
-
-  if (EVP_DigestInit_ex (ctx, EVP_md5 (), NULL) != 1
-      || EVP_DigestUpdate (ctx, input, input_len) != 1
-      || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
+  EVP_MD_CTX *ctx = NULL;
+  TRY
     {
-      EVP_MD_CTX_free (ctx);
-      SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "MD5 computation failed");
-    }
+      ctx = EVP_MD_CTX_new ();
+      if (!ctx)
+        SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "MD5: Failed to create context");
 
-  EVP_MD_CTX_free (ctx);
+      if (EVP_DigestInit_ex (ctx, EVP_md5 (), NULL) != 1
+          || EVP_DigestUpdate (ctx, input, input_len) != 1
+          || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
+        SOCKET_CRYPTO_RAISE_COMPUTE_FAILED("MD5");
+    }
+  FINALLY
+    {
+      if (ctx)
+        EVP_MD_CTX_free (ctx);
+    }
+  END_TRY;
 #else
-  SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "MD5 requires TLS support (SOCKET_HAS_TLS)");
+  SOCKET_CRYPTO_REQUIRE_TLS;
 #endif
 }
 
@@ -181,11 +220,8 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
 {
   assert (output);
 
-  if (!key && key_len > 0)
-    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "HMAC-SHA256: NULL key with non-zero length");
-
-  if (!data && data_len > 0)
-    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "HMAC-SHA256: NULL data with non-zero length");
+  SOCKET_CRYPTO_CHECK_INPUT (key, key_len, "HMAC-SHA256 key");
+  SOCKET_CRYPTO_CHECK_INPUT (data, data_len, "HMAC-SHA256 data");
 
 #ifdef SOCKET_HAS_TLS
   /*
@@ -203,9 +239,9 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
               data_len, output, &hmac_len);
 
   if (!result || hmac_len != SOCKET_CRYPTO_SHA256_SIZE)
-    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "HMAC-SHA256 computation failed");
+    SOCKET_CRYPTO_RAISE_COMPUTE_FAILED("HMAC-SHA256");
 #else
-  SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "HMAC-SHA256 requires TLS support (SOCKET_HAS_TLS)");
+  SOCKET_CRYPTO_REQUIRE_TLS;
 #endif
 }
 
@@ -266,9 +302,13 @@ SocketCrypto_base64_decoded_size (size_t input_len)
 }
 
 /**
- * base64_encode_triplet - Encode 3 input bytes to 4 base64 characters
- * @in: Input bytes (at least 3 bytes)
- * @out: Output buffer (at least 4 bytes)
+ * base64_encode_triplet - Encode 3 input bytes to 4 base64 characters (RFC 4648)
+ * @in: Input bytes (exactly 3 bytes)
+ * @out: Output buffer (exactly 4 bytes, no null terminator)
+ *
+ * Encodes a complete triplet without padding.
+ *
+ * Thread-safe: Yes
  */
 static void
 base64_encode_triplet (const unsigned char *in, char *out)
@@ -280,10 +320,14 @@ base64_encode_triplet (const unsigned char *in, char *out)
 }
 
 /**
- * base64_encode_remainder - Handle final 1-2 bytes with padding
- * @in: Input bytes
+ * base64_encode_remainder - Handle final 1-2 bytes with padding (RFC 4648)
+ * @in: Input bytes (1 or 2 bytes available)
  * @remaining: Number of remaining bytes (1 or 2)
- * @out: Output buffer (at least 4 bytes)
+ * @out: Output buffer (exactly 4 bytes, includes padding and no null)
+ *
+ * Adds '=' padding as required.
+ *
+ * Thread-safe: Yes
  */
 static void
 base64_encode_remainder (const unsigned char *in, size_t remaining, char *out)
@@ -350,10 +394,11 @@ SocketCrypto_base64_encode (const void *input, size_t input_len, char *output,
 }
 
 /**
- * base64_is_whitespace - Check if character is base64 whitespace
+ * base64_is_whitespace - Check if character is ignorable whitespace per RFC 4648 Section 3.3
  * @c: Character to check
  *
- * Returns: 1 if whitespace (space, tab, newline, carriage return), 0 otherwise
+ * Returns: 1 if space, tab, newline, or carriage return (ignored in decoding), 0 otherwise
+ * Thread-safe: Yes
  */
 static int
 base64_is_whitespace (unsigned char c)
@@ -362,14 +407,18 @@ base64_is_whitespace (unsigned char c)
 }
 
 /**
- * base64_decode_block - Decode a complete 4-character block
- * @buffer: 4 decoded 6-bit values
- * @padding_count: Number of padding characters
- * @output: Output buffer
- * @out_pos: Current output position (updated)
- * @output_size: Maximum output size
+ * base64_decode_block - Decode complete 4-character Base64 block (RFC 4648)
+ * @buffer: 4 decoded 6-bit values (0-63)
+ * @padding_count: Number of '=' padding chars (0-2)
+ * @output: Output buffer for decoded bytes
+ * @out_pos: Current position in output (updated)
+ * @output_size: Remaining space in output buffer
  *
- * Returns: 0 on success, -1 on error
+ * Outputs 3-padding_count bytes.
+ * Performs bounds check on output buffer.
+ *
+ * Returns: 0 on success, -1 if output buffer too small
+ * Thread-safe: Yes
  */
 static int
 base64_decode_block (const unsigned char *buffer, int padding_count,
@@ -390,14 +439,18 @@ base64_decode_block (const unsigned char *buffer, int padding_count,
 }
 
 /**
- * base64_decode_partial_block - Handle remaining bytes without padding
- * @buffer: Partial block buffer (will be zero-padded)
- * @buffer_pos: Number of valid bytes in buffer
+ * base64_decode_partial_block - Decode incomplete final block (no padding expected)
+ * @buffer: Partial block buffer (1-3 valid 6-bit values, will be zero-padded to 4)
+ * @buffer_pos: Number of valid 6-bit values in buffer (2 or 3)
  * @output: Output buffer
- * @out_pos: Current output position (updated on success)
- * @output_size: Maximum output size
+ * @out_pos: Current output position (updated)
+ * @output_size: Remaining output capacity
  *
- * Returns: 0 on success, -1 on error
+ * Handles cases where input ends without proper padding (non-conformant input).
+ * Outputs 1 or 2 bytes depending on buffer_pos.
+ *
+ * Returns: 0 on success, -1 if insufficient data or buffer overflow
+ * Thread-safe: Yes
  */
 static int
 base64_decode_partial_block (unsigned char *buffer, int buffer_pos,
@@ -431,16 +484,21 @@ base64_decode_partial_block (unsigned char *buffer, int buffer_pos,
 }
 
 /**
- * base64_decode_char - Process a single character in base64 decoding
- * @c: Input character
- * @buffer: 4-byte decode buffer
- * @buffer_pos: Current position in buffer (updated)
- * @padding_count: Count of padding chars seen (updated)
- * @output: Output buffer
- * @out_pos: Current output position (updated)
- * @output_size: Maximum output size
+ * base64_decode_char - Process one input character during incremental decoding (RFC 4648)
+ * @c: Input character from Base64 string
+ * @buffer: Temporary 4-value buffer for block assembly (updated)
+ * @buffer_pos: Current fill level of buffer (0-3, updated)
+ * @padding_count: Count of '=' padding encountered (updated)
+ * @output: Decoded output buffer
+ * @out_pos: Current position in output (updated on block completion)
+ * @output_size: Remaining capacity in output buffer
  *
- * Returns: 0 on success, -1 on error, 1 to skip (whitespace)
+ * Handles whitespace skipping, padding, invalid chars, and block completion.
+ * Accumulates 6-bit values until full block, then decodes to output.
+ *
+ * Returns: 0 continue (success), 1 skip char (whitespace), -1 error (invalid)
+ * Thread-safe: Yes
+ * Raises: None (caller checks return value)
  */
 static int
 base64_decode_char (unsigned char c, unsigned char *buffer, int *buffer_pos,
@@ -568,10 +626,13 @@ SocketCrypto_hex_encode (const void *input, size_t input_len, char *output,
 }
 
 /**
- * hex_char_to_nibble - Convert hex character to nibble value
+ * hex_char_to_nibble - Convert single hex character to 4-bit nibble (0-F)
  * @c: Hex character ('0'-'9', 'a'-'f', 'A'-'F')
  *
- * Returns: 0-15 on success, -1 on invalid character
+ * Supports both uppercase and lowercase.
+ *
+ * Returns: 0-15 on valid hex digit, -1 on invalid
+ * Thread-safe: Yes
  */
 static int
 hex_char_to_nibble (char c)

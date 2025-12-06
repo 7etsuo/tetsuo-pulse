@@ -89,7 +89,8 @@ dgram_alloc_structure (SocketBase_T base)
 T
 SocketDgram_new (int domain, int protocol)
 {
-  SocketBase_T base = NULL;
+  SocketBase_T volatile base = NULL;
+  SocketBase_T base_handle;
   T sock;
 
   TRY base = SocketCommon_new_base (domain, SOCKET_DGRAM_TYPE, protocol);
@@ -99,14 +100,16 @@ SocketDgram_new (int domain, int protocol)
   RAISE_MODULE_ERROR (SocketDgram_Failed);
   END_TRY;
 
-  if (!base || !SocketBase_arena (base))
+  base_handle = (SocketBase_T)base;
+
+  if (!base_handle || !SocketBase_arena (base_handle))
     {
       SOCKET_ERROR_MSG ("Invalid base from new_base (null arena)");
       RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
-  sock = dgram_alloc_structure (base);
-  sock->base = base;
+  sock = dgram_alloc_structure (base_handle);
+  sock->base = base_handle;
   dgram_live_increment ();
   return sock;
 }
@@ -267,7 +270,7 @@ SocketDgram_sendto (T socket, const void *buf, size_t len, const char *host,
                     int port)
 {
   struct addrinfo *res = NULL;
-  ssize_t sent;
+  volatile ssize_t sent = 0;
 
   assert (socket);
   assert (buf);
@@ -282,7 +285,7 @@ SocketDgram_sendto (T socket, const void *buf, size_t len, const char *host,
   FINALLY freeaddrinfo (res);
   END_TRY;
 
-  return sent;
+  return (ssize_t)sent;
 }
 
 ssize_t
@@ -918,7 +921,8 @@ ssize_t
 SocketDgram_sendvall (T socket, const struct iovec *iov, int iovcnt)
 {
   struct iovec *iov_copy;
-  size_t total_len, total_sent;
+  size_t total_len;
+  volatile size_t total_sent = 0;
 
   assert (socket);
   dgram_validate_iov (iov, iovcnt);
@@ -937,7 +941,8 @@ ssize_t
 SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
 {
   struct iovec *iov_copy;
-  size_t total_len, total_received;
+  size_t total_len;
+  volatile size_t total_received = 0;
 
   assert (socket);
   dgram_validate_iov (iov, iovcnt);

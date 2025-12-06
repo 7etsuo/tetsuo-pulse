@@ -732,7 +732,7 @@ TEST (socketdns_resolve_empty_hostname)
     {
       ASSERT_NOT_NULL (Except_frame.exception);
       ASSERT_NOT_NULL (
-          strstr (Except_frame.exception->reason, "Invalid hostname format"));
+          strstr (Except_frame.exception->reason, "Invalid hostname length"));
       caught = 1;
     }
     END_TRY;

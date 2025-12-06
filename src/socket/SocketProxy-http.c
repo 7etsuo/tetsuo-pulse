@@ -21,11 +21,11 @@
 #include "socket/SocketProxy.h"
 
 #include "core/SocketCrypto.h"
-#include "http/SocketHTTP.h"
+
 #include "http/SocketHTTP1.h"
 
-#include <assert.h>
-#include <errno.h>
+
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -35,16 +35,16 @@
  * ============================================================================ */
 
 /** Buffer size for Basic auth credentials (username:password) */
-#define SOCKET_PROXY_CREDENTIALS_BUFSIZE 512
+#define SOCKET_PROXY_CREDENTIALS_BUFSIZE (SOCKET_PROXY_MAX_USERNAME_LEN + SOCKET_PROXY_MAX_PASSWORD_LEN + 2)
 
 /** Buffer size for Base64-encoded auth header value */
-#define SOCKET_PROXY_AUTH_HEADER_BUFSIZE 768
+#define SOCKET_PROXY_AUTH_HEADER_BUFSIZE ((SOCKET_PROXY_CREDENTIALS_BUFSIZE * 4 / 3) + SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN + 32)
 
 /** Length of "Basic " prefix for Proxy-Authorization header */
-#define SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN 6
+#define SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN (sizeof("Basic ") - 1)
 
 /** CRLF size for HTTP line endings */
-#define SOCKET_PROXY_CRLF_SIZE 2
+#define SOCKET_PROXY_CRLF_SIZE (sizeof("\r\n") - 1)
 
 /* ============================================================================
  * Helper Functions

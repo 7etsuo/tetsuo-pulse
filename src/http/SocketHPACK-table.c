@@ -13,13 +13,12 @@
  * power-of-2 rounding to avoid code duplication.
  */
 
-#include "http/SocketHPACK-private.h"
-#include "http/SocketHPACK.h"
-
-#include "core/SocketUtil.h"
-
 #include <assert.h>
 #include <string.h>
+
+#include "core/SocketUtil.h"
+#include "http/SocketHPACK.h"
+#include "http/SocketHPACK-private.h"
 
 /* ============================================================================
  * Internal Constants
@@ -422,6 +421,28 @@ hpack_table_evict (SocketHPACK_Table_T table, size_t required_space)
   return evicted;
 }
 
+static void
+hpack_table_clear (SocketHPACK_Table_T table)
+{
+  assert (table != NULL);
+  table->head = 0;
+  table->tail = 0;
+  table->count = 0;
+  table->size = 0;
+}
+
+/**
+ * SocketHPACK_Table_set_max_size - Update maximum dynamic table size
+ * @table: Dynamic table
+ * @max_size: New maximum size in bytes
+ *
+ * Updates max_size and evicts entries if current size exceeds new limit.
+ * If max_size == 0, clears the table entirely.
+ * Clamped to SOCKETHPACK_MAX_TABLE_SIZE.
+ *
+ * Returns: void
+ * Thread-safe: No (caller must synchronize)
+ */
 void
 SocketHPACK_Table_set_max_size (SocketHPACK_Table_T table, size_t max_size)
 {
@@ -432,19 +453,11 @@ SocketHPACK_Table_set_max_size (SocketHPACK_Table_T table, size_t max_size)
 
   table->max_size = max_size;
 
-  /* Evict entries if necessary */
+  /* Evict or clear as necessary */
   if (max_size == 0)
-    {
-      /* Clear the table */
-      table->head = 0;
-      table->tail = 0;
-      table->count = 0;
-      table->size = 0;
-    }
+    hpack_table_clear (table);
   else
-    {
-      hpack_table_evict (table, 0);
-    }
+    hpack_table_evict (table, 0);
 }
 
 SocketHPACK_Result
@@ -476,6 +489,52 @@ SocketHPACK_Table_get (SocketHPACK_Table_T table, size_t index,
   return HPACK_OK;
 }
 
+/**
+ * hpack_duplicate_header_strings - Allocate and duplicate header name/value strings from arena
+ * @arena: Arena for allocation
+ * @name: Source name (may be NULL if name_len == 0)
+ * @name_len: Length of name
+ * @value: Source value (may be NULL if value_len == 0)
+ * @value_len: Length of value
+ * @name_out: Output allocated name copy (null-terminated)
+ * @value_out: Output allocated value copy (null-terminated)
+ *
+ * Duplicates strings with null-termination for safe usage.
+ * On allocation failure, returns HPACK_ERROR (partial alloc not cleaned as arena-managed).
+ *
+ * Returns: HPACK_OK or HPACK_ERROR
+ * Thread-safe: Yes (if arena is)
+ * Note: Strings owned by caller? No, arena lifetime.
+ */
+static SocketHPACK_Result
+hpack_duplicate_header_strings (Arena_T arena,
+                                const char *name, size_t name_len,
+                                const char *value, size_t value_len,
+                                char **name_out, char **value_out)
+{
+  assert (arena != NULL);
+  assert (name_out != NULL);
+  assert (value_out != NULL);
+
+  *name_out = ALLOC (arena, name_len + 1);
+  if (*name_out == NULL)
+    return HPACK_ERROR;
+
+  if (name_len > 0)
+    memcpy (*name_out, name, name_len);
+  (*name_out)[name_len] = '\0';
+
+  *value_out = ALLOC (arena, value_len + 1);
+  if (*value_out == NULL)
+    return HPACK_ERROR;
+
+  if (value_len > 0)
+    memcpy (*value_out, value, value_len);
+  (*value_out)[value_len] = '\0';
+
+  return HPACK_OK;
+}
+
 SocketHPACK_Result
 SocketHPACK_Table_add (SocketHPACK_Table_T table, const char *name,
                        size_t name_len, const char *value, size_t value_len)
@@ -491,38 +550,22 @@ SocketHPACK_Table_add (SocketHPACK_Table_T table, const char *name,
 
   entry_size = hpack_entry_size (name_len, value_len);
 
-  /* If entry is larger than table, just clear the table */
+  /* If entry larger than table capacity, clear table (RFC 7541) */
   if (entry_size > table->max_size)
     {
-      table->head = 0;
-      table->tail = 0;
-      table->count = 0;
-      table->size = 0;
+      hpack_table_clear (table);
       return HPACK_OK;
     }
 
-  /* Evict entries to make room */
+  /* Evict to make room for new entry */
   hpack_table_evict (table, entry_size);
 
-  /* Allocate strings from arena */
-  name_copy = ALLOC (table->arena, name_len + 1);
-  if (name_copy == NULL)
+  /* Duplicate header strings */
+  if (hpack_duplicate_header_strings (table->arena, name, name_len, value, value_len,
+                                      &name_copy, &value_copy) != HPACK_OK)
     return HPACK_ERROR;
 
-  value_copy = ALLOC (table->arena, value_len + 1);
-  if (value_copy == NULL)
-    return HPACK_ERROR;
-
-  /* Copy strings */
-  if (name_len > 0)
-    memcpy (name_copy, name, name_len);
-  name_copy[name_len] = '\0';
-
-  if (value_len > 0)
-    memcpy (value_copy, value, value_len);
-  value_copy[value_len] = '\0';
-
-  /* Add to tail */
+  /* Insert at tail of circular buffer */
   entry = &table->entries[table->tail];
   entry->name = name_copy;
   entry->name_len = name_len;

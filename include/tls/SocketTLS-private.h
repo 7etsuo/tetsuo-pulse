@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "core/Arena.h"
+#include "core/SocketUtil.h"
 #include "core/Except.h"
 #include "socket/Socket-private.h"
 #include "tls/SocketTLS.h"
@@ -39,21 +40,10 @@
  * Thread-local error buffer for detailed TLS error messages.
  * Shared across all TLS implementation files.
  */
-#ifdef _WIN32
-extern __declspec (thread) char tls_error_buf[];
-#else
-extern __thread char tls_error_buf[];
-#endif
-
 /**
  * Thread-local exception copy for detailed TLS error messages.
  * Prevents race conditions when multiple threads raise same exception.
  */
-#ifdef _WIN32
-extern __declspec (thread) Except_T SocketTLS_DetailedException;
-#else
-extern __thread Except_T SocketTLS_DetailedException;
-#endif
 
 /**
  * RAISE_TLS_ERROR - Raise TLS exception with detailed error message
@@ -61,27 +51,14 @@ extern __thread Except_T SocketTLS_DetailedException;
  *
  * Creates thread-local copy of exception with reason from tls_error_buf.
  */
-#define RAISE_TLS_ERROR(exception)                                            \
-  do                                                                          \
-    {                                                                         \
-      SocketTLS_DetailedException = (exception);                              \
-      SocketTLS_DetailedException.reason = tls_error_buf;                     \
-      RAISE (SocketTLS_DetailedException);                                    \
-    }                                                                         \
-  while (0)
+#define RAISE_TLS_ERROR(exception) SOCKET_RAISE_MODULE_ERROR(SocketTLS, exception)
 
 /**
  * RAISE_TLS_ERROR_MSG - Raise TLS exception with specific message
  * @exception: Exception type to raise
  * @msg: Error message string
  */
-#define RAISE_TLS_ERROR_MSG(exception, msg)                                   \
-  do                                                                          \
-    {                                                                         \
-      TLS_ERROR_MSG (msg);                                                    \
-      RAISE_TLS_ERROR (exception);                                            \
-    }                                                                         \
-  while (0)
+#define RAISE_TLS_ERROR_MSG(exception, fmt, ...) SOCKET_RAISE_MSG(SocketTLS, exception, fmt, ##__VA_ARGS__)
 
 /**
  * REQUIRE_TLS_ENABLED - Validate TLS is enabled on socket
@@ -100,16 +77,14 @@ extern __thread Except_T SocketTLS_DetailedException;
  * TLS_ERROR_MSG - Format simple error message
  * @msg: Message string
  */
-#define TLS_ERROR_MSG(msg)                                                    \
-  snprintf (tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "%s", (msg))
+#define TLS_ERROR_MSG(msg) SOCKET_ERROR_MSG("%s", msg)
 
 /**
  * TLS_ERROR_FMT - Format error message with arguments
  * @fmt: Format string
  * @...: Format arguments
  */
-#define TLS_ERROR_FMT(fmt, ...)                                               \
-  snprintf (tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, fmt, __VA_ARGS__)
+#define TLS_ERROR_FMT(fmt, ...) SOCKET_ERROR_MSG(fmt, __VA_ARGS__)
 
 /**
  * VALIDATE_TLS_IO_READY - Validate socket is ready for TLS I/O
@@ -247,13 +222,11 @@ tls_format_openssl_error (const char *context)
   if (err != 0)
     {
       ERR_error_string_n (err, err_str, sizeof (err_str));
-      snprintf (tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "%s: %s", context,
-                err_str);
+      SOCKET_ERROR_MSG("%s: %s", context, err_str);
     }
   else
     {
-      snprintf (tls_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "%s: Unknown error",
-                context);
+      SOCKET_ERROR_MSG("%s: Unknown error", context);
     }
 
   /* Clear remaining errors to prevent stale error information from
@@ -489,49 +462,21 @@ struct T
  * ============================================================================
  */
 
-#ifdef _WIN32
-extern __declspec (thread) char tls_context_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
-extern __declspec (thread) Except_T SocketTLSContext_DetailedException;
-#else
-extern __thread char tls_context_error_buf[SOCKET_TLS_ERROR_BUFSIZE];
-extern __thread Except_T SocketTLSContext_DetailedException;
-#endif
 
 /**
  * RAISE_CTX_ERROR - Raise context exception with current error buffer
  */
-#define RAISE_CTX_ERROR(exception)                                            \
-  do                                                                          \
-    {                                                                         \
-      SocketTLSContext_DetailedException = (exception);                       \
-      SocketTLSContext_DetailedException.reason = tls_context_error_buf;      \
-      RAISE (SocketTLSContext_DetailedException);                             \
-    }                                                                         \
-  while (0)
+
+
+
+#define RAISE_CTX_ERROR(exception) SOCKET_RAISE_MODULE_ERROR(SocketTLSContext, exception)
 
 /**
  * RAISE_CTX_ERROR_MSG - Raise context exception with specific message
  */
-#define RAISE_CTX_ERROR_MSG(exception, msg)                                   \
-  do                                                                          \
-    {                                                                         \
-      snprintf (tls_context_error_buf, SOCKET_TLS_ERROR_BUFSIZE, "%s", msg);  \
-      SocketTLSContext_DetailedException = (exception);                       \
-      SocketTLSContext_DetailedException.reason = tls_context_error_buf;      \
-      RAISE (SocketTLSContext_DetailedException);                             \
-    }                                                                         \
-  while (0)
+#define RAISE_CTX_ERROR_MSG(exception, fmt, ...) SOCKET_RAISE_MSG(SocketTLSContext, exception, fmt, ##__VA_ARGS__)
 
-#define RAISE_CTX_ERROR_FMT(exception, fmt, ...)                              \
-  do                                                                          \
-    {                                                                         \
-      snprintf (tls_context_error_buf, SOCKET_TLS_ERROR_BUFSIZE, fmt,         \
-                __VA_ARGS__);                                                 \
-      SocketTLSContext_DetailedException = (exception);                       \
-      SocketTLSContext_DetailedException.reason = tls_context_error_buf;      \
-      RAISE (SocketTLSContext_DetailedException);                             \
-    }                                                                         \
-  while (0)
+#define RAISE_CTX_ERROR_FMT(exception, fmt, ...) SOCKET_RAISE_MSG(SocketTLSContext, exception, fmt, __VA_ARGS__)
 
 /* ============================================================================
  * Utility Macros
@@ -664,7 +609,7 @@ tls_pinning_init (TLSContextPinning *pinning)
  * Computes SHA256 of the SubjectPublicKeyInfo (SPKI) DER encoding.
  * This is the OWASP-recommended pinning approach.
  */
-extern int tls_pinning_extract_spki_hash (X509 *cert, unsigned char *out_hash);
+extern int tls_pinning_extract_spki_hash (const X509 *cert, unsigned char *out_hash);
 
 /**
  * tls_pinning_check_chain - Check if any cert in chain matches a pin
@@ -674,7 +619,7 @@ extern int tls_pinning_extract_spki_hash (X509 *cert, unsigned char *out_hash);
  * Returns: 1 if match found, 0 if no match
  */
 extern int tls_pinning_check_chain (SocketTLSContext_T ctx,
-                                    STACK_OF (X509) * chain);
+                                    const STACK_OF (X509) * chain);
 
 /**
  * tls_pinning_find - Constant-time search for pin in array

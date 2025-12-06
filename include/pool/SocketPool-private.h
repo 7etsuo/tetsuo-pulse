@@ -264,7 +264,7 @@ extern void SocketPool_connections_reset_slot (Connection_T conn);
 
 extern void decrement_pool_count (SocketPool_T pool);
 
-extern void validate_saved_session (Connection_T conn);
+extern void validate_saved_session (Connection_T conn, time_t now);
 
 extern Socket_T *SocketPool_cleanup_allocate_buffer (Arena_T arena,
                                                      size_t maxconns);

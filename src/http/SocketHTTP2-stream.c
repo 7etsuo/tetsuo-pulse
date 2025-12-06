@@ -20,6 +20,8 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include "core/SocketConfig.h"
+
 
 /* ============================================================================
  * Module Log Component
@@ -32,27 +34,104 @@
  * Module Constants
  * ============================================================================ */
 
-/** Default stream receive buffer size (64KB) */
-#define HTTP2_STREAM_RECV_BUF_SIZE (64 * 1024)
+/** Default stream receive buffer size */
+#define HTTP2_STREAM_RECV_BUF_SIZE SOCKETHTTP2_DEFAULT_STREAM_RECV_BUF_SIZE
 
 /** Initial header block allocation size */
-#define HTTP2_INITIAL_HEADER_BLOCK_SIZE (16 * 1024)
+#define HTTP2_INITIAL_HEADER_BLOCK_SIZE SOCKETHTTP2_DEFAULT_INITIAL_HEADER_BLOCK_SIZE
 
 /** Maximum decoded headers per block */
-#define HTTP2_MAX_DECODED_HEADERS 128
+#define HTTP2_MAX_DECODED_HEADERS SOCKETHTTP2_MAX_DECODED_HEADERS
 
 /** Maximum stream ID (2^31 - 1) */
 #define HTTP2_MAX_STREAM_ID 0x7FFFFFFF
 
-/** Number of pseudo-headers in HTTP/2 requests */
-#define HTTP2_REQUEST_PSEUDO_HEADER_COUNT 4
+
+
+/* ============================================================================
+ * 31-bit serialization helpers (stream ID and window sizes)
+ * ============================================================================ */
+
+/**
+ * http2_serialize_31bit_uint - Serialize 31-bit unsigned integer
+ * @value: Value to serialize (high bit must be 0 for stream IDs)
+ * @payload: Output buffer (4 bytes)
+ *
+ * Thread-safe: Yes
+ */
+static void
+http2_serialize_31bit_uint (uint32_t value, unsigned char *payload)
+{
+  payload[0] = (unsigned char)((value >> 24) & 0x7F);
+  payload[1] = (unsigned char)((value >> 16) & 0xFF);
+  payload[2] = (unsigned char)((value >> 8) & 0xFF);
+  payload[3] = (unsigned char)(value & 0xFF);
+}
+
+/**
+ * http2_deserialize_31bit_uint - Deserialize 31-bit unsigned integer
+ * @payload: Input buffer
+ * @offset: Byte offset in payload
+ *
+ * Returns: Deserialized value
+ * Thread-safe: Yes
+ */
+static uint32_t
+http2_deserialize_31bit_uint (const unsigned char *payload, size_t offset)
+{
+  return ((uint32_t)(payload[offset] & 0x7F) << 24)
+         | ((uint32_t)payload[offset + 1] << 16)
+         | ((uint32_t)payload[offset + 2] << 8) | payload[offset + 3];
+}
+
+static inline int
+http2_is_end_stream (uint8_t flags)
+{
+  return (flags & HTTP2_FLAG_END_STREAM) != 0;
+}
+
+/**
+ * http2_extract_padded - Extract padding information from frame
+ * @header: Frame header
+ * @payload: Frame payload
+ * @extra_offset: Output - bytes consumed by padding field and optional fields
+ * @pad_len: Output - padding length
+ *
+ * Common logic for PADDED frames (DATA, HEADERS, PUSH_PROMISE).
+ * Handles validation of padding length and frame size.
+ *
+ * Returns: 0 on success, -1 on protocol error
+ */
+static int
+http2_extract_padded (const SocketHTTP2_FrameHeader *header,
+                      const unsigned char *payload,
+                      size_t *extra_offset, uint8_t *pad_len)
+{
+  *pad_len = 0;
+  *extra_offset = 0;
+
+  if (header->flags & HTTP2_FLAG_PADDED)
+    {
+      if (header->length == 0)
+        return -1;
+
+      *pad_len = payload[0];
+      if (*pad_len >= header->length)
+        return -1;
+
+      *extra_offset = 1;
+    }
+
+  return 0;
+}
+
 
 /* ============================================================================
  * Stream Lookup (O(1) using hash table)
  * ============================================================================ */
 
 SocketHTTP2_Stream_T
-http2_stream_lookup (SocketHTTP2_Conn_T conn, uint32_t stream_id)
+http2_stream_lookup (const SocketHTTP2_Conn_T conn, uint32_t stream_id)
 {
   unsigned idx;
   SocketHTTP2_Stream_T stream;
@@ -83,7 +162,7 @@ http2_stream_lookup (SocketHTTP2_Conn_T conn, uint32_t stream_id)
  * @stream_id: Stream identifier
  */
 static void
-init_stream_fields (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T conn,
+init_stream_fields (SocketHTTP2_Stream_T stream, const SocketHTTP2_Conn_T conn,
                     uint32_t stream_id)
 {
   stream->id = stream_id;
@@ -146,11 +225,9 @@ http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id)
       >= conn->local_settings[SETTINGS_IDX_MAX_CONCURRENT_STREAMS])
     return NULL;
 
-  stream = Arena_alloc (conn->arena, sizeof (*stream), __FILE__, __LINE__);
+  stream = (SocketHTTP2_Stream_T)memset (Arena_alloc (conn->arena, sizeof (*stream), __FILE__, __LINE__), 0, sizeof (*stream));
   if (!stream)
     return NULL;
-
-  memset (stream, 0, sizeof (*stream));
   init_stream_fields (stream, conn, stream_id);
 
   stream->recv_buf
@@ -189,12 +266,11 @@ http2_stream_destroy (SocketHTTP2_Stream_T stream)
  * Returns: HTTP2_NO_ERROR on success, error code otherwise
  */
 static SocketHTTP2_ErrorCode
-transition_from_idle (SocketHTTP2_Stream_T stream, uint8_t frame_type,
+transition_from_idle (uint8_t frame_type,
                       uint8_t flags, int is_send,
                       SocketHTTP2_StreamState *new_state)
 {
-  int end_stream = (flags & HTTP2_FLAG_END_STREAM) != 0;
-  (void)stream;
+  int end_stream = http2_is_end_stream (flags);
 
   if (frame_type == HTTP2_FRAME_HEADERS)
     {
@@ -286,7 +362,7 @@ static SocketHTTP2_ErrorCode
 transition_from_open (uint8_t frame_type, uint8_t flags, int is_send,
                       SocketHTTP2_StreamState *new_state)
 {
-  int end_stream = (flags & HTTP2_FLAG_END_STREAM) != 0;
+  int end_stream = http2_is_end_stream (flags);
 
   if (frame_type == HTTP2_FRAME_RST_STREAM)
     {
@@ -311,7 +387,7 @@ transition_from_half_closed_local (uint8_t frame_type, uint8_t flags,
                                    int is_send,
                                    SocketHTTP2_StreamState *new_state)
 {
-  int end_stream = (flags & HTTP2_FLAG_END_STREAM) != 0;
+  int end_stream = http2_is_end_stream (flags);
 
   if (!is_send)
     {
@@ -345,7 +421,7 @@ transition_from_half_closed_remote (uint8_t frame_type, uint8_t flags,
                                     int is_send,
                                     SocketHTTP2_StreamState *new_state)
 {
-  int end_stream = (flags & HTTP2_FLAG_END_STREAM) != 0;
+  int end_stream = http2_is_end_stream (flags);
 
   if (is_send)
     {
@@ -401,7 +477,7 @@ http2_stream_transition (SocketHTTP2_Stream_T stream, uint8_t frame_type,
   switch (stream->state)
     {
     case HTTP2_STREAM_STATE_IDLE:
-      error = transition_from_idle (stream, frame_type, flags, is_send,
+      error = transition_from_idle (frame_type, flags, is_send,
                                     &new_state);
       break;
 
@@ -519,10 +595,7 @@ SocketHTTP2_Stream_set_userdata (SocketHTTP2_Stream_T stream, void *userdata)
 static void
 serialize_window_update_payload (uint32_t increment, unsigned char *payload)
 {
-  payload[0] = (unsigned char)((increment >> 24) & 0x7F);
-  payload[1] = (unsigned char)((increment >> 16) & 0xFF);
-  payload[2] = (unsigned char)((increment >> 8) & 0xFF);
-  payload[3] = (unsigned char)(increment & 0xFF);
+  http2_serialize_31bit_uint (increment, payload);
 }
 
 int
@@ -530,19 +603,19 @@ SocketHTTP2_Stream_window_update (SocketHTTP2_Stream_T stream,
                                   uint32_t increment)
 {
   SocketHTTP2_FrameHeader header;
-  unsigned char payload[4];
+  unsigned char payload[HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE];
 
   assert (stream);
   assert (increment > 0 && increment <= HTTP2_MAX_STREAM_ID);
 
   serialize_window_update_payload (increment, payload);
 
-  header.length = 4;
+  header.length = HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE;
   header.type = HTTP2_FRAME_WINDOW_UPDATE;
   header.flags = 0;
   header.stream_id = stream->id;
 
-  return http2_frame_send (stream->conn, &header, payload, 4);
+  return http2_frame_send (stream->conn, &header, payload, HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE);
 }
 
 int32_t
@@ -1124,10 +1197,7 @@ SocketHTTP2_Stream_recv_trailers (SocketHTTP2_Stream_T stream,
 static void
 serialize_promised_stream_id (uint32_t promised_id, unsigned char *payload)
 {
-  payload[0] = (unsigned char)((promised_id >> 24) & 0x7F);
-  payload[1] = (unsigned char)((promised_id >> 16) & 0xFF);
-  payload[2] = (unsigned char)((promised_id >> 8) & 0xFF);
-  payload[3] = (unsigned char)(promised_id & 0xFF);
+  http2_serialize_31bit_uint (promised_id, payload);
 }
 
 /**
@@ -1140,9 +1210,7 @@ serialize_promised_stream_id (uint32_t promised_id, unsigned char *payload)
 static uint32_t
 parse_promised_stream_id (const unsigned char *payload, size_t offset)
 {
-  return ((uint32_t)(payload[offset] & 0x7F) << 24)
-         | ((uint32_t)payload[offset + 1] << 16)
-         | ((uint32_t)payload[offset + 2] << 8) | payload[offset + 3];
+  return http2_deserialize_31bit_uint (payload, offset);
 }
 
 SocketHTTP2_Stream_T
@@ -1177,7 +1245,7 @@ SocketHTTP2_Stream_push_promise (SocketHTTP2_Stream_T stream,
 
   pushed->state = HTTP2_STREAM_STATE_RESERVED_LOCAL;
 
-  payload = alloc_header_block (conn, HTTP2_INITIAL_HEADER_BLOCK_SIZE);
+  payload = alloc_header_block (conn, HTTP2_PUSH_PROMISE_ID_SIZE + HTTP2_INITIAL_HEADER_BLOCK_SIZE);
   if (!payload)
     {
       http2_stream_destroy (pushed);
@@ -1187,15 +1255,15 @@ SocketHTTP2_Stream_push_promise (SocketHTTP2_Stream_T stream,
   serialize_promised_stream_id (promised_id, payload);
 
   header_block_len = http2_encode_headers (conn, request_headers, header_count,
-                                           payload + 4,
-                                           HTTP2_INITIAL_HEADER_BLOCK_SIZE - 4);
+                                           payload + HTTP2_PUSH_PROMISE_ID_SIZE,
+                                           HTTP2_INITIAL_HEADER_BLOCK_SIZE);
   if (header_block_len < 0)
     {
       http2_stream_destroy (pushed);
       return NULL;
     }
 
-  payload_len = 4 + (size_t)header_block_len;
+  payload_len = HTTP2_PUSH_PROMISE_ID_SIZE + (size_t)header_block_len;
 
   frame_header.length = (uint32_t)payload_len;
   frame_header.type = HTTP2_FRAME_PUSH_PROMISE;
@@ -1236,23 +1304,14 @@ static int
 extract_padded_data (const SocketHTTP2_FrameHeader *header,
                      const unsigned char *payload, PaddedData *result)
 {
+  size_t extra = 0;
   uint8_t pad_len = 0;
 
-  result->data = payload;
-  result->len = header->length;
+  if (http2_extract_padded (header, payload, &extra, &pad_len) < 0)
+    return -1;
 
-  if (header->flags & HTTP2_FLAG_PADDED)
-    {
-      if (header->length == 0)
-        return -1;
-
-      pad_len = payload[0];
-      if (pad_len >= header->length)
-        return -1;
-
-      result->data = payload + 1;
-      result->len = header->length - 1 - pad_len;
-    }
+  result->data = payload + extra;
+  result->len = header->length - extra - pad_len;
 
   return 0;
 }
@@ -1306,6 +1365,51 @@ http2_process_data (SocketHTTP2_Conn_T conn,
 }
 
 /* ============================================================================
+ * Stream Creation for Incoming Frames
+ * ============================================================================ */
+
+/**
+ * http2_get_or_create_stream_for_headers - Get or create stream for HEADERS frame
+ * @conn: Connection
+ * @stream_id: Stream ID from frame
+ *
+ * Looks up existing stream or creates new one if valid new stream ID.
+ * Sends appropriate error frames on failure.
+ *
+ * Returns: Stream pointer or NULL on error (error frame already sent)
+ * Note: Caller must check return and handle connection/stream error accordingly.
+ */
+static int validate_new_stream_id (SocketHTTP2_Conn_T conn, uint32_t stream_id);
+
+static SocketHTTP2_Stream_T
+http2_get_or_create_stream_for_headers (SocketHTTP2_Conn_T conn, uint32_t stream_id)
+{
+  SocketHTTP2_Stream_T stream;
+
+  stream = http2_stream_lookup (conn, stream_id);
+  if (!stream)
+    {
+      if (validate_new_stream_id (conn, stream_id) < 0)
+        {
+          http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+          return NULL;
+        }
+
+      stream = http2_stream_create (conn, stream_id);
+      if (!stream)
+        {
+          http2_send_stream_error (conn, stream_id, HTTP2_REFUSED_STREAM);
+          return NULL;
+        }
+
+      if (stream_id > conn->last_peer_stream_id)
+        conn->last_peer_stream_id = stream_id;
+    }
+
+  return stream;
+}
+
+/* ============================================================================
  * Frame Processing - HEADERS
  * ============================================================================ */
 
@@ -1346,25 +1450,20 @@ extract_headers_payload (const SocketHTTP2_FrameHeader *header,
                          const unsigned char *payload,
                          const unsigned char **block, size_t *block_len)
 {
+  size_t extra = 0;
   uint8_t pad_len = 0;
-  size_t offset = 0;
 
-  if (header->flags & HTTP2_FLAG_PADDED)
-    {
-      if (header->length == 0)
-        return -1;
-      pad_len = payload[0];
-      offset = 1;
-    }
-
-  if (header->flags & HTTP2_FLAG_PRIORITY)
-    offset += 5;
-
-  if (offset + pad_len > header->length)
+  if (http2_extract_padded (header, payload, &extra, &pad_len) < 0)
     return -1;
 
-  *block = payload + offset;
-  *block_len = header->length - offset - pad_len;
+  if (header->flags & HTTP2_FLAG_PRIORITY)
+    extra += HTTP2_PRIORITY_PAYLOAD_SIZE;
+
+  if (extra + pad_len > header->length)
+    return -1;
+
+  *block = payload + extra;
+  *block_len = header->length - extra - pad_len;
   return 0;
 }
 
@@ -1430,24 +1529,11 @@ http2_process_headers (SocketHTTP2_Conn_T conn,
   size_t header_block_len, max_header_list;
   SocketHTTP2_ErrorCode error;
 
-  stream = http2_stream_lookup (conn, header->stream_id);
+  stream = http2_get_or_create_stream_for_headers (conn, header->stream_id);
   if (!stream)
     {
-      if (validate_new_stream_id (conn, header->stream_id) < 0)
-        {
-          http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
-          return -1;
-        }
-
-      stream = http2_stream_create (conn, header->stream_id);
-      if (!stream)
-        {
-          http2_send_stream_error (conn, header->stream_id, HTTP2_REFUSED_STREAM);
-          return 0;
-        }
-
-      if (header->stream_id > conn->last_peer_stream_id)
-        conn->last_peer_stream_id = header->stream_id;
+      /* Error frame sent by helper */
+      return -1;
     }
 
   error
@@ -1588,17 +1674,17 @@ extract_push_promise_payload (const SocketHTTP2_FrameHeader *header,
 
   if (header->flags & HTTP2_FLAG_PADDED)
     {
-      if (header->length < 5)
+      if (header->length < (1 + HTTP2_PUSH_PROMISE_ID_SIZE))
         return -1;
       pad_len = payload[0];
       offset = 1;
     }
 
-  if (header->length < offset + 4 + pad_len)
+  if (header->length < offset + HTTP2_PUSH_PROMISE_ID_SIZE + pad_len)
     return -1;
 
   *promised_id = parse_promised_stream_id (payload, offset);
-  offset += 4;
+  offset += HTTP2_PUSH_PROMISE_ID_SIZE;
 
   if ((*promised_id & 1) != 0)
     return -1;

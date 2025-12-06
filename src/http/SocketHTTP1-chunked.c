@@ -29,6 +29,53 @@
 #define HTTP1_HEX_RADIX 16
 
 /* ============================================================================
+ * CRLF Handling
+ * ============================================================================ */
+
+typedef enum {
+  CRLF_OK,
+  CRLF_INCOMPLETE,
+  CRLF_INVALID
+} crlf_result_t;
+
+/**
+ * skip_crlf - Skip CRLF or bare LF leniently
+ * @p: Input position (updated on success)
+ * @end: End of input
+ *
+ * Advances past \r?\n , handling both CRLF and bare LF.
+ * Returns CRLF_OK on success, INCOMPLETE if needs more data,
+ * INVALID if malformed.
+ */
+static crlf_result_t
+skip_crlf (const char **p, const char *end)
+{
+  if (*p >= end)
+    return CRLF_INCOMPLETE;
+
+  if (**p == '\r')
+    {
+      (*p)++;
+      if (*p >= end)
+        return CRLF_INCOMPLETE;
+      if (**p == '\n')
+        {
+          (*p)++;
+          return CRLF_OK;
+        }
+      else
+        return CRLF_INVALID;
+    }
+  else if (**p == '\n')
+    {
+      (*p)++;
+      return CRLF_OK;
+    }
+  else
+    return CRLF_INVALID;
+}
+
+/* ============================================================================
  * Internal Helper Functions
  * ============================================================================ */
 
@@ -45,6 +92,40 @@ mark_body_complete (SocketHTTP1_Parser_T parser)
   parser->body_complete = 1;
   parser->state = HTTP1_STATE_COMPLETE;
   parser->internal_state = HTTP1_PS_COMPLETE;
+}
+
+/**
+ * copy_data - Copy data up to limits, advancing positions
+ * @input_pos: Input position (updated)
+ * @input_end: End of input
+ * @output_pos: Output position (updated)
+ * @output_remaining: Remaining output space (updated)
+ * @max_bytes: Maximum bytes to copy from source
+ *
+ * Copies min(available input, output space, max_bytes).
+ * Returns bytes copied.
+ */
+static size_t
+copy_data (const char **input_pos, const char *input_end,
+           char **output_pos, size_t *output_remaining,
+           size_t max_bytes)
+{
+  size_t input_avail = (size_t)(input_end - *input_pos);
+  size_t to_copy = max_bytes;
+  if (to_copy > input_avail)
+    to_copy = input_avail;
+  if (to_copy > *output_remaining)
+    to_copy = *output_remaining;
+
+  if (to_copy > 0)
+    {
+      memcpy (*output_pos, *input_pos, to_copy);
+      *input_pos += to_copy;
+      *output_pos += to_copy;
+      *output_remaining -= to_copy;
+    }
+
+  return to_copy;
 }
 
 /**
@@ -204,8 +285,6 @@ read_body_content_length (SocketHTTP1_Parser_T parser, const char *input,
                           size_t input_len, size_t *consumed, char *output,
                           size_t output_len, size_t *written)
 {
-  size_t to_read;
-
   *consumed = 0;
   *written = 0;
 
@@ -215,21 +294,12 @@ read_body_content_length (SocketHTTP1_Parser_T parser, const char *input,
       return HTTP1_OK;
     }
 
-  /* Calculate how much to read (min of remaining, input, output) */
-  to_read = (size_t)parser->body_remaining;
-  if (to_read > input_len)
-    to_read = input_len;
-  if (to_read > output_len)
-    to_read = output_len;
-
-  /* Copy data */
-  if (to_read > 0)
-    {
-      memcpy (output, input, to_read);
-      *consumed = to_read;
-      *written = to_read;
-      parser->body_remaining -= (int64_t)to_read;
-    }
+  size_t max_copy = (size_t)parser->body_remaining;
+  const char *input_pos = input;
+  size_t copied = copy_data (&input_pos, input + input_len, &output, &output_len, max_copy);
+  *consumed = copied;
+  *written = copied;
+  parser->body_remaining -= (int64_t)copied;
 
   if (parser->body_remaining <= 0)
     {
@@ -260,25 +330,13 @@ read_body_until_close (SocketHTTP1_Parser_T parser, const char *input,
                        size_t input_len, size_t *consumed, char *output,
                        size_t output_len, size_t *written)
 {
-  size_t to_read;
-
   /* Parser unused - body mode determined, just copy data */
   (void)parser;
 
-  *consumed = 0;
-  *written = 0;
-
-  /* Read as much as possible */
-  to_read = input_len;
-  if (to_read > output_len)
-    to_read = output_len;
-
-  if (to_read > 0)
-    {
-      memcpy (output, input, to_read);
-      *consumed = to_read;
-      *written = to_read;
-    }
+  const char *input_pos = input;
+  size_t copied = copy_data (&input_pos, input + input_len, &output, &output_len, input_len);
+  *consumed = copied;
+  *written = copied;
 
   /* Never complete until connection closes */
   return HTTP1_INCOMPLETE;
@@ -333,28 +391,11 @@ parse_chunk_size (const char *input, size_t len, size_t *line_len)
         p++;
     }
 
-  /* Expect CRLF or bare LF */
-  if (p >= end)
-    return -2; /* Incomplete - need more data */
-
-  if (*p == '\r')
-    {
-      p++;
-      if (p >= end)
-        return -2; /* Incomplete */
-      if (*p != '\n')
-        return -1; /* Invalid - CR not followed by LF */
-      p++;
-    }
-  else if (*p == '\n')
-    {
-      /* Bare LF - lenient parsing */
-      p++;
-    }
-  else
-    {
-      return -1; /* Invalid character after size */
-    }
+  crlf_result_t res = skip_crlf (&p, end);
+  if (res == CRLF_INCOMPLETE)
+    return -2;
+  if (res != CRLF_OK)
+    return -1;
 
   *line_len = (size_t)(p - input);
 
@@ -434,21 +475,8 @@ static SocketHTTP1_Result
 handle_chunk_data_state (SocketHTTP1_Parser_T parser, const char **p,
                          const char *end, char **out, size_t *out_remaining)
 {
-  size_t to_read = parser->chunk_remaining;
-
-  if (to_read > (size_t)(end - *p))
-    to_read = (size_t)(end - *p);
-  if (to_read > *out_remaining)
-    to_read = *out_remaining;
-
-  if (to_read > 0)
-    {
-      memcpy (*out, *p, to_read);
-      *p += to_read;
-      *out += to_read;
-      *out_remaining -= to_read;
-      parser->chunk_remaining -= to_read;
-    }
+  size_t copied = copy_data (p, end, out, out_remaining, parser->chunk_remaining);
+  parser->chunk_remaining -= copied;
 
   if (parser->chunk_remaining == 0)
     {
@@ -456,7 +484,6 @@ handle_chunk_data_state (SocketHTTP1_Parser_T parser, const char **p,
       return HTTP1_OK;
     }
 
-  /* Need more data or output space */
   return HTTP1_INCOMPLETE;
 }
 
@@ -474,42 +501,14 @@ static SocketHTTP1_Result
 handle_chunk_crlf_states (SocketHTTP1_Parser_T parser, const char **p,
                           const char *end)
 {
-  if (*p >= end)
+  crlf_result_t res = skip_crlf (p, end);
+  if (res == CRLF_INCOMPLETE)
     return HTTP1_INCOMPLETE;
+  if (res != CRLF_OK)
+    return HTTP1_ERROR_INVALID_CHUNK_SIZE;
 
-  if (parser->internal_state == HTTP1_PS_CHUNK_DATA_CR)
-    {
-      if (**p == '\r')
-        {
-          (*p)++;
-          parser->internal_state = HTTP1_PS_CHUNK_DATA_LF;
-          if (*p >= end)
-            return HTTP1_INCOMPLETE;
-        }
-      else if (**p == '\n')
-        {
-          /* Bare LF - lenient */
-          (*p)++;
-          parser->internal_state = HTTP1_PS_CHUNK_SIZE;
-          parser->state = HTTP1_STATE_CHUNK_SIZE;
-          return HTTP1_OK;
-        }
-      else
-        {
-          return HTTP1_ERROR_INVALID_CHUNK_SIZE;
-        }
-    }
-
-  if (parser->internal_state == HTTP1_PS_CHUNK_DATA_LF)
-    {
-      if (**p != '\n')
-        return HTTP1_ERROR_INVALID_CHUNK_SIZE;
-
-      (*p)++;
-      parser->internal_state = HTTP1_PS_CHUNK_SIZE;
-      parser->state = HTTP1_STATE_CHUNK_SIZE;
-    }
-
+  parser->internal_state = HTTP1_PS_CHUNK_SIZE;
+  parser->state = HTTP1_STATE_CHUNK_SIZE;
   return HTTP1_OK;
 }
 
@@ -528,51 +527,35 @@ static SocketHTTP1_Result
 handle_trailer_states (SocketHTTP1_Parser_T parser, const char **p,
                        const char *end)
 {
-  if (*p >= end)
-    return HTTP1_INCOMPLETE;
-
-  if (parser->internal_state == HTTP1_PS_TRAILER_START)
+  crlf_result_t res = skip_crlf (p, end);
+  if (res == CRLF_OK)
     {
-      if (**p == '\r')
-        {
-          (*p)++;
-          parser->internal_state = HTTP1_PS_TRAILERS_END_LF;
-          if (*p >= end)
-            return HTTP1_INCOMPLETE;
-        }
-      else if (**p == '\n')
-        {
-          /* Bare LF - end of message */
-          (*p)++;
-          mark_body_complete (parser);
-          return HTTP1_OK;
-        }
-      else if (http1_is_tchar (**p))
-        {
-          /* Trailer header - skip for now (simplified) */
-          while (*p < end && **p != '\n')
-            (*p)++;
-          if (*p < end)
-            (*p)++; /* Skip LF */
-          return HTTP1_OK;
-        }
-      else
-        {
-          return HTTP1_ERROR_INVALID_TRAILER;
-        }
-    }
-
-  if (parser->internal_state == HTTP1_PS_TRAILERS_END_LF)
-    {
-      if (**p != '\n')
-        return HTTP1_ERROR_INVALID_TRAILER;
-
-      (*p)++;
       mark_body_complete (parser);
       return HTTP1_OK;
     }
+  if (res == CRLF_INCOMPLETE)
+    return HTTP1_INCOMPLETE;
 
-  return HTTP1_INCOMPLETE;
+  // Invalid CRLF start - must be trailer header or error
+  if (!http1_is_tchar (**p))
+    return HTTP1_ERROR_INVALID_TRAILER;
+
+  // Skip header line content until line ending
+  while (*p < end && **p != '\r' && **p != '\n')
+    (*p)++;
+
+  if (*p >= end)
+    return HTTP1_INCOMPLETE;
+
+  // Skip the line ending (CRLF or LF)
+  res = skip_crlf (p, end);
+  if (res == CRLF_INCOMPLETE)
+    return HTTP1_INCOMPLETE;
+  if (res != CRLF_OK)
+    return HTTP1_ERROR_INVALID_TRAILER;
+
+  // Successfully skipped one trailer header line
+  return HTTP1_OK;
 }
 
 /* ============================================================================
@@ -632,7 +615,6 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *input,
           break;
 
         case HTTP1_PS_CHUNK_DATA_CR:
-        case HTTP1_PS_CHUNK_DATA_LF:
           result = handle_chunk_crlf_states (parser, &p, end);
           if (result != HTTP1_OK)
             {
@@ -642,7 +624,6 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *input,
           break;
 
         case HTTP1_PS_TRAILER_START:
-        case HTTP1_PS_TRAILERS_END_LF:
           result = handle_trailer_states (parser, &p, end);
           update_progress (input, p, output, out, consumed, written);
           if (parser->body_complete)

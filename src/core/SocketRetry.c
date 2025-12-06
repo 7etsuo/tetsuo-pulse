@@ -15,13 +15,15 @@
 
 #include "core/SocketRetry.h"
 
-#include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketUtil.h"
+#include "core/SocketSecurity.h"
+#include "core/SocketCrypto.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <math.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -86,6 +88,29 @@ retry_random_seed (void)
 }
 
 /**
+ * better_random_seed - Generate improved seed using crypto random if available
+ *
+ * Returns: High-entropy seed value
+ * Thread-safe: Yes
+ */
+static unsigned int
+better_random_seed (void)
+{
+  unsigned int seed = retry_random_seed ();
+
+  uint8_t bytes[sizeof (unsigned int)];
+  if (SocketSecurity_has_tls () &&
+      SocketCrypto_random_bytes (bytes, sizeof (bytes)) == 0)
+    {
+      unsigned int crypto_seed;
+      memcpy (&crypto_seed, bytes, sizeof (crypto_seed));
+      seed ^= crypto_seed;
+    }
+
+  return seed;
+}
+
+/**
  * retry_random_double - Generate random double in [0, 1)
  * @state: Random state (modified)
  *
@@ -125,6 +150,39 @@ SocketRetry_policy_defaults (SocketRetry_Policy *policy)
   policy->jitter = SOCKET_RETRY_DEFAULT_JITTER;
 }
 
+/**
+ * validate_policy - Validate retry policy parameters
+ * @policy: Policy to validate
+ *
+ * Returns: 1 if valid, 0 if invalid
+ * Thread-safe: Yes
+ *
+ * Validates policy parameters are within safe ranges to prevent DoS.
+ */
+static int
+validate_policy (const SocketRetry_Policy *policy)
+{
+  if (policy == NULL)
+    return 0;
+
+  if (policy->max_attempts < 1 || policy->max_attempts > SOCKET_RETRY_MAX_ATTEMPTS)
+    return 0;
+
+  if (policy->initial_delay_ms < 1 || policy->initial_delay_ms > 3600000)
+    return 0;
+
+  if (policy->max_delay_ms < policy->initial_delay_ms || policy->max_delay_ms > 3600000)
+    return 0;
+
+  if (policy->multiplier < 1.0 || policy->multiplier > 16.0)
+    return 0;
+
+  if (policy->jitter < 0.0 || policy->jitter > 1.0)
+    return 0;
+
+  return 1;
+}
+
 /* ============================================================================
  * Backoff Calculation
  * ============================================================================ */
@@ -150,6 +208,10 @@ calculate_backoff_delay (const SocketRetry_Policy *policy, int attempt,
   delay = (double)policy->initial_delay_ms
           * pow (policy->multiplier, (double)(attempt - 1));
 
+  /* Handle FP overflow/NaN */
+  if (isinf(delay) || isnan(delay))
+    delay = (double)policy->max_delay_ms;
+
   /* Cap at max delay */
   if (delay > (double)policy->max_delay_ms)
     delay = (double)policy->max_delay_ms;
@@ -162,9 +224,17 @@ calculate_backoff_delay (const SocketRetry_Policy *policy, int attempt,
       delay += jitter_offset;
     }
 
+  /* Handle FP overflow/NaN after jitter */
+  if (isinf(delay) || isnan(delay) || delay < 0.0)
+    delay = (double)policy->max_delay_ms;
+
   /* Ensure positive delay after jitter */
   if (delay < RETRY_MIN_DELAY_MS)
     delay = RETRY_MIN_DELAY_MS;
+
+  /* Clamp to safe int range */
+  if (delay > INT_MAX)
+    delay = INT_MAX;
 
   return (int)delay;
 }
@@ -174,18 +244,24 @@ calculate_backoff_delay (const SocketRetry_Policy *policy, int attempt,
  * @policy: Policy to use
  * @attempt: Attempt number (1-based)
  *
- * Returns: Delay in milliseconds (with jitter)
+ * Returns: Delay in milliseconds (with jitter), or 0 if invalid parameters
  * Thread-safe: Yes (creates temporary random state)
+ *
+ * Logs warning if policy invalid or attempt <1.
  */
 int
 SocketRetry_calculate_delay (const SocketRetry_Policy *policy, int attempt)
 {
   unsigned int state;
 
-  assert (policy != NULL);
-  assert (attempt >= 1);
+  if (policy == NULL || attempt < 1 || !validate_policy (policy))
+    {
+      SOCKET_LOG_WARN_MSG ("Invalid parameters for calculate_delay (policy=%p, attempt=%d), returning 0",
+                           policy, attempt);
+      return 0;
+    }
 
-  state = retry_random_seed ();
+  state = better_random_seed ();
   return calculate_backoff_delay (policy, attempt, &state);
 }
 
@@ -246,11 +322,19 @@ SocketRetry_new (const SocketRetry_Policy *policy)
 
   /* Copy provided policy or use defaults */
   if (policy != NULL)
-    retry->policy = *policy;
+    {
+      if (!validate_policy (policy))
+        {
+          free (retry);
+          SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
+                            "Invalid retry policy parameters");
+        }
+      retry->policy = *policy;
+    }
   else
     SocketRetry_policy_defaults (&retry->policy);
 
-  retry->random_state = retry_random_seed ();
+  retry->random_state = better_random_seed ();
 
   return retry;
 }
@@ -445,12 +529,17 @@ SocketRetry_get_policy (T retry, SocketRetry_Policy *policy)
  * SocketRetry_set_policy - Update policy
  * @retry: Retry context
  * @policy: New policy settings
+ *
+ * Raises: SocketRetry_Failed on NULL arguments or invalid policy
  */
 void
 SocketRetry_set_policy (T retry, const SocketRetry_Policy *policy)
 {
-  assert (retry != NULL);
-  assert (policy != NULL);
+  if (retry == NULL || policy == NULL)
+    SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed, "Invalid arguments to set_policy");
+
+  if (!validate_policy (policy))
+    SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed, "Invalid retry policy parameters");
 
   retry->policy = *policy;
 }

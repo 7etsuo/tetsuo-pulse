@@ -26,6 +26,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define T SocketIPTracker_T
 
@@ -101,63 +102,25 @@ compute_bucket_index (const char *ip, size_t bucket_count)
  * ============================================================================ */
 
 /**
- * find_entry_with_prev - Find IP entry and previous pointer in one pass
- * @tracker: IP tracker instance (caller must hold mutex)
- * @ip: IP address string
- * @bucket_out: Output bucket index
- * @prev_out: Output previous entry pointer (NULL if entry is at head)
- *
- * Returns: Entry pointer or NULL if not found
- * Thread-safe: No (caller must hold mutex)
- *
- * This function combines lookup and prev tracking in a single O(n) pass,
- * enabling O(1) unlinking without a second search.
- */
-static IPEntry *
-find_entry_with_prev (const T tracker, const char *ip, unsigned *bucket_out,
-                      IPEntry **prev_out)
-{
-  unsigned idx;
-  IPEntry *prev = NULL;
-  IPEntry *entry;
-
-  assert (tracker != NULL);
-  assert (ip != NULL);
-  assert (bucket_out != NULL);
-  assert (prev_out != NULL);
-
-  idx = compute_bucket_index (ip, tracker->bucket_count);
-  *bucket_out = idx;
-
-  for (entry = tracker->buckets[idx]; entry != NULL; entry = entry->next)
-    {
-      if (strcmp (entry->ip, ip) == 0)
-        {
-          *prev_out = prev;
-          return entry;
-        }
-      prev = entry;
-    }
-
-  *prev_out = NULL;
-  return NULL;
-}
-
-/**
- * find_entry_simple - Find IP entry without prev tracking
+ * find_entry - Find IP entry with optional previous pointer tracking
  * @tracker: IP tracker instance (caller must hold mutex)
  * @ip: IP address string
  * @bucket_out: Output bucket index (optional, may be NULL)
+ * @prev_out: Output previous entry pointer (optional, NULL if not needed or entry at head; pass NULL to skip tracking)
  *
  * Returns: Entry pointer or NULL if not found
  * Thread-safe: No (caller must hold mutex)
  *
- * Simplified lookup for cases where we don't need to unlink.
+ * Combined lookup function supporting both simple lookup and prev tracking for O(1) unlinking.
+ * If @prev_out is provided (non-NULL), computes previous pointer; otherwise skips.
+ * Enables reuse for different use cases while eliminating code duplication.
  */
 static IPEntry *
-find_entry_simple (const T tracker, const char *ip, unsigned *bucket_out)
+find_entry (const T tracker, const char *ip, unsigned *bucket_out,
+            IPEntry **prev_out /* optional */)
 {
   unsigned idx;
+  IPEntry *prev = NULL;
   IPEntry *entry;
 
   assert (tracker != NULL);
@@ -171,10 +134,54 @@ find_entry_simple (const T tracker, const char *ip, unsigned *bucket_out)
   for (entry = tracker->buckets[idx]; entry != NULL; entry = entry->next)
     {
       if (strcmp (entry->ip, ip) == 0)
-        return entry;
+        {
+          if (prev_out != NULL)
+            *prev_out = prev;
+          return entry;
+        }
+      prev = entry;
     }
 
+  if (prev_out != NULL)
+    *prev_out = NULL;
   return NULL;
+}
+/* find_entry_simple removed - use find_entry(..., NULL) for prev_out */
+/* ============================================================================
+ * Internal Helper Functions - Generic Allocation/Free
+ * ============================================================================ */
+
+/**
+ * tracker_alloc_raw - Allocate memory from arena or heap
+ * @tracker: IP tracker instance
+ * @size: Number of bytes to allocate
+ *
+ * Returns: Pointer to allocated memory or NULL on failure
+ * Thread-safe: No (caller must hold mutex for arena consistency)
+ * Note: Uses __FILE__ and __LINE__ for Arena_alloc debug info
+ */
+static void *
+tracker_alloc_raw (const T tracker, size_t size)
+{
+  if (tracker->arena != NULL)
+    return Arena_alloc (tracker->arena, size, __FILE__, __LINE__);
+
+  return malloc (size);
+}
+
+/**
+ * tracker_free_raw - Free heap-allocated memory (ignores arena allocations)
+ * @tracker: IP tracker instance
+ * @ptr: Pointer to free (ignored if arena-based)
+ *
+ * Thread-safe: No (caller must hold mutex)
+ * Note: Arena memory is freed collectively; this only frees malloc'd ptrs
+ */
+static void
+tracker_free_raw (const T tracker, void *ptr)
+{
+  if (tracker->arena == NULL && ptr != NULL)
+    free (ptr);
 }
 
 /* ============================================================================
@@ -191,10 +198,7 @@ find_entry_simple (const T tracker, const char *ip, unsigned *bucket_out)
 static IPEntry *
 allocate_entry (const T tracker)
 {
-  if (tracker->arena != NULL)
-    return Arena_alloc (tracker->arena, sizeof (IPEntry), __FILE__, __LINE__);
-
-  return malloc (sizeof (IPEntry));
+  return tracker_alloc_raw (tracker, sizeof (IPEntry));
 }
 
 /**
@@ -264,8 +268,7 @@ unlink_entry (T tracker, IPEntry *entry, IPEntry *prev, unsigned bucket)
   tracker->unique_ips--;
 
   /* Free if heap-allocated */
-  if (tracker->arena == NULL)
-    free (entry);
+  tracker_free_raw (tracker, entry);
 }
 
 /* ============================================================================
@@ -303,25 +306,23 @@ calculate_buckets_size (size_t bucket_count, size_t *size_out)
 static IPEntry **
 allocate_buckets (const T tracker, size_t buckets_size)
 {
-  if (tracker->arena != NULL)
-    return Arena_alloc (tracker->arena, buckets_size, __FILE__, __LINE__);
-
-  return malloc (buckets_size);
+  return (IPEntry **) tracker_alloc_raw (tracker, buckets_size);
 }
 
 /**
  * free_bucket_chain - Free all entries in a bucket chain
+ * @tracker: IP tracker instance (for arena check)
  * @entry: Head of chain (may be NULL)
  *
  * Thread-safe: No (caller must hold mutex)
  */
 static void
-free_bucket_chain (IPEntry *entry)
+free_bucket_chain (T tracker, IPEntry *entry)
 {
   while (entry != NULL)
     {
       IPEntry *next = entry->next;
-      free (entry);
+      tracker_free_raw (tracker, entry);
       entry = next;
     }
 }
@@ -339,7 +340,7 @@ free_all_buckets (T tracker)
 
   for (i = 0; i < tracker->bucket_count; i++)
     {
-      free_bucket_chain (tracker->buckets[i]);
+      free_bucket_chain (tracker, tracker->buckets[i]);
       tracker->buckets[i] = NULL;
     }
 }
@@ -347,6 +348,23 @@ free_all_buckets (T tracker)
 /* ============================================================================
  * Internal Helper Functions - Tracker Initialization
  * ============================================================================ */
+
+/**
+ * arena_or_malloc - Allocate from arena or standard malloc
+ * @arena: Arena (NULL for malloc)
+ * @size: Bytes to allocate
+ *
+ * Returns: Allocated pointer or NULL
+ * Thread-safe: Yes
+ */
+static void *
+arena_or_malloc (Arena_T arena, size_t size)
+{
+  if (arena != NULL)
+    return Arena_alloc (arena, size, __FILE__, __LINE__);
+
+  return malloc (size);
+}
 
 /**
  * allocate_tracker - Allocate tracker structure
@@ -358,10 +376,7 @@ free_all_buckets (T tracker)
 static T
 allocate_tracker (Arena_T arena)
 {
-  if (arena != NULL)
-    return Arena_alloc (arena, sizeof (struct T), __FILE__, __LINE__);
-
-  return malloc (sizeof (struct T));
+  return (T) arena_or_malloc (arena, sizeof (struct T));
 }
 
 /**
@@ -444,8 +459,8 @@ cleanup_failed_tracker (T tracker)
   if (tracker->arena == NULL)
     {
       if (tracker->buckets != NULL)
-        free (tracker->buckets);
-      free (tracker);
+        tracker_free_raw (tracker, tracker->buckets);
+      tracker_free_raw (tracker, tracker);
     }
 }
 
@@ -454,72 +469,45 @@ cleanup_failed_tracker (T tracker)
  * ============================================================================ */
 
 /**
- * track_unlimited_mode - Track connection in unlimited mode
+ * track_internal - Internal track logic combining unlimited and limited modes
  * @tracker: IP tracker instance (caller must hold mutex)
  * @ip: IP address string
  *
- * Returns: Always 1 (allowed in unlimited mode)
+ * Returns: 1 if connection allowed, 0 if rejected (limited mode only)
  * Thread-safe: No (caller must hold mutex)
  *
- * BEHAVIOR: In unlimited mode (max_per_ip == 0), connections are ALWAYS
- * allowed, even if internal allocation fails. This is intentional:
- * - Unlimited mode is a "no enforcement" policy
- * - Allocation failure should not block legitimate traffic
- * - Counter tracking is best-effort only in this mode
- *
- * If allocation succeeds, connection count is tracked for statistics.
- * If allocation fails, the connection is still allowed but not tracked.
+ * Unified tracking logic:
+ * - If max_per_ip <= 0: Unlimited mode - always allow, best-effort tracking
+ * - If max_per_ip > 0: Limited mode - reject if limit reached or alloc fails
+ * - New IPs start with count=1
+ * - Allocation failure: allow in unlimited, deny in limited
  */
 static int
-track_unlimited_mode (T tracker, const char *ip)
+track_internal (T tracker, const char *ip)
 {
   unsigned bucket;
-  IPEntry *entry = find_entry_simple (tracker, ip, &bucket);
+  IPEntry *entry;
+  bool unlimited = (tracker->max_per_ip == 0);
 
-  if (entry == NULL)
-    entry = create_and_insert_entry (tracker, ip, bucket, 0);
-
-  if (entry != NULL)
-    {
-      entry->count++;
-      tracker->total_conns++;
-    }
-  /* Allocation failure: allow connection but skip tracking (intentional) */
-
-  return 1;
-}
-
-/**
- * track_limited_mode - Track connection with per-IP limit
- * @tracker: IP tracker instance (caller must hold mutex)
- * @ip: IP address string
- *
- * Returns: 1 if allowed, 0 if limit reached or allocation failed
- * Thread-safe: No (caller must hold mutex)
- *
- * BEHAVIOR: In limited mode, connections are rejected when:
- * - The IP has reached max_per_ip connections, OR
- * - Memory allocation fails for a new IP entry
- */
-static int
-track_limited_mode (T tracker, const char *ip)
-{
-  unsigned bucket;
-  IPEntry *entry = find_entry_simple (tracker, ip, &bucket);
+  entry = find_entry (tracker, ip, &bucket, NULL);
 
   if (entry == NULL)
     {
-      /* New IP - create entry with count 1 */
+      /* New IP - create with count=1 */
       entry = create_and_insert_entry (tracker, ip, bucket, 1);
       if (entry == NULL)
-        return 0;
-
+        {
+          /* Alloc fail: unlimited allows, limited denies */
+          return unlimited ? 1 : 0;
+        }
+      /* New entry created and inserted, total_conns already +1? No, create doesn't ++ total */
+      /* Wait, in old create doesn't touch total_conns, caller does */
       tracker->total_conns++;
       return 1;
     }
 
-  /* Existing IP - check limit */
-  if (entry->count < tracker->max_per_ip)
+  /* Existing IP */
+  if (unlimited || entry->count < tracker->max_per_ip)
     {
       entry->count++;
       tracker->total_conns++;
@@ -582,8 +570,8 @@ SocketIPTracker_free (T *tracker)
   if (t->arena == NULL)
     {
       free_all_buckets (t);
-      free (t->buckets);
-      free (t);
+      tracker_free_raw (t, t->buckets);
+      tracker_free_raw (t, t);
     }
 
   *tracker = NULL;
@@ -604,10 +592,7 @@ SocketIPTracker_track (T tracker, const char *ip)
 
   pthread_mutex_lock (&tracker->mutex);
 
-  if (tracker->max_per_ip == 0)
-    result = track_unlimited_mode (tracker, ip);
-  else
-    result = track_limited_mode (tracker, ip);
+  result = track_internal (tracker, ip);
 
   pthread_mutex_unlock (&tracker->mutex);
   return result;
@@ -632,7 +617,7 @@ SocketIPTracker_release (T tracker, const char *ip)
 
   pthread_mutex_lock (&tracker->mutex);
 
-  entry = find_entry_with_prev (tracker, ip, &bucket, &prev);
+  entry = find_entry (tracker, ip, &bucket, &prev);
 
   if (entry != NULL && entry->count > 0)
     {
@@ -663,7 +648,7 @@ SocketIPTracker_count (T tracker, const char *ip)
 
   pthread_mutex_lock (&tracker->mutex);
 
-  entry = find_entry_simple (tracker, ip, NULL);
+  entry = find_entry (tracker, ip, NULL, NULL);
   if (entry != NULL)
     count = entry->count;
 

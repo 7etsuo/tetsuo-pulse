@@ -86,6 +86,19 @@
  */
 #ifndef SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE
 #define SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE (16 * 1024)
+
+/** Default stream receive buffer size for DATA frames */
+#define SOCKETHTTP2_DEFAULT_STREAM_RECV_BUF_SIZE (64 * 1024)
+
+/** Default initial allocation for header blocks */
+#define SOCKETHTTP2_DEFAULT_INITIAL_HEADER_BLOCK_SIZE (16 * 1024)
+
+/** Maximum decoded headers per HPACK block */
+#define SOCKETHTTP2_MAX_DECODED_HEADERS 128
+
+/** Number of pseudo-headers in HTTP/2 requests (:method, :scheme, :authority, :path) */
+#define HTTP2_REQUEST_PSEUDO_HEADER_COUNT 4
+
 #endif
 
 /** Implementation limit: maximum streams per connection */
@@ -114,6 +127,16 @@
 
 /** Frame header size in bytes */
 #define HTTP2_FRAME_HEADER_SIZE 9
+
+/** WINDOW_UPDATE and RST_STREAM payload size */
+#define HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE 4
+
+/** PUSH_PROMISE promised stream ID size */
+#define HTTP2_PUSH_PROMISE_ID_SIZE 4
+
+/** PRIORITY payload size (deprecated) */
+#define HTTP2_PRIORITY_PAYLOAD_SIZE 5
+
 
 /** Connection preface magic string length */
 #define HTTP2_PREFACE_SIZE 24

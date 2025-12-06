@@ -163,7 +163,7 @@ TEST (socketpool_tls_session_validation)
   SSL_CTX_free (mock_ctx);
 
   /* Call validate directly (internal) */
-  validate_saved_session (conn);
+  validate_saved_session (conn, time (NULL));
   /* Expired session should be freed */
   ASSERT_NULL (conn->tls_session);
 

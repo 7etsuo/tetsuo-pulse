@@ -25,6 +25,9 @@
  * - All operations are thread-safe via internal mutex
  * - Safe to share a single limiter across threads
  *
+ * Debugging:
+ * - Live instance count tracking for leak detection
+ *   Use SocketRateLimit_debug_live_count() == 0 after cleanup
  * Usage:
  *   Arena_T arena = Arena_new();
  *   SocketRateLimit_T limiter = SocketRateLimit_new(arena, 100, 50);
@@ -148,7 +151,7 @@ extern void SocketRateLimit_configure (T limiter, size_t tokens_per_sec,
  * Returns: Tokens per second rate
  * Thread-safe: Yes - uses internal mutex
  */
-extern size_t SocketRateLimit_get_rate (T limiter);
+extern size_t SocketRateLimit_get_rate (const T limiter);
 
 /**
  * SocketRateLimit_get_bucket_size - Get current bucket size
@@ -157,7 +160,17 @@ extern size_t SocketRateLimit_get_rate (T limiter);
  * Returns: Maximum bucket capacity
  * Thread-safe: Yes - uses internal mutex
  */
-extern size_t SocketRateLimit_get_bucket_size (T limiter);
+extern size_t SocketRateLimit_get_bucket_size (const T limiter);
+
+/**
+ * SocketRateLimit_debug_live_count - Debug function to get live instance count
+ *
+ * Returns: Number of currently allocated rate limiter instances
+ * Thread-safe: Yes
+ *
+ * Use for leak detection and debugging. Should be 0 after all instances freed.
+ */
+extern int SocketRateLimit_debug_live_count (void);
 
 #undef T
 #endif /* SOCKETRATELIMIT_INCLUDED */

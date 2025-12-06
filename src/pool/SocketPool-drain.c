@@ -19,14 +19,31 @@
  */
 
 #include <assert.h>
-#include <stdatomic.h>
+
+#include <limits.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
+
+
+
 
 #include "pool/SocketPool-private.h"
 /* SocketUtil.h included via SocketPool-private.h */
+
+/* ============================================================================
+ * Drain Constants
+ * ============================================================================ */
+
+/** Minimum backoff for drain_wait polling (milliseconds) */
+#define SOCKET_POOL_SOCKET_POOL_DRAIN_BACKOFF_MIN_MS  1
+
+/** Maximum backoff for drain_wait polling (milliseconds) */
+#define SOCKET_POOL_SOCKET_POOL_DRAIN_BACKOFF_MAX_MS  100
+
+/** Backoff multiplier for drain_wait polling */
+#define SOCKET_POOL_SOCKET_POOL_DRAIN_BACKOFF_MULTIPLIER  2
+
+/** Infinite timeout sentinel for input */
+#define SOCKET_POOL_SOCKET_POOL_DRAIN_TIMEOUT_INFINITE  (-1)
 
 /* Override default log component (SocketUtil.h sets "Socket") */
 #undef SOCKET_LOG_COMPONENT
@@ -39,16 +56,16 @@
  * ============================================================================ */
 
 /** Minimum backoff for drain_wait polling (milliseconds) */
-#define DRAIN_BACKOFF_MIN_MS 1
+#define SOCKET_POOL_DRAIN_BACKOFF_MIN_MS 1
 
 /** Maximum backoff for drain_wait polling (milliseconds) */
-#define DRAIN_BACKOFF_MAX_MS 100
+#define SOCKET_POOL_DRAIN_BACKOFF_MAX_MS 100
 
 /** Backoff multiplier for drain_wait polling */
-#define DRAIN_BACKOFF_MULTIPLIER 2
+#define SOCKET_POOL_DRAIN_BACKOFF_MULTIPLIER 2
 
 /** Infinite timeout sentinel */
-#define DRAIN_TIMEOUT_INFINITE (-1)
+#define SOCKET_POOL_DRAIN_TIMEOUT_INFINITE (-1)
 
 /* ============================================================================
  * Internal Helpers
@@ -87,6 +104,111 @@ safe_add_ms (int64_t base, int64_t delta)
   return base + delta;
 }
 
+/**
+ * shutdown_socket_gracefully - Shutdown socket ignoring errors
+ * @sock: Socket to shutdown
+ *
+ * Helper to avoid TRY/EXCEPT in the loop which triggers clobbered warning.
+ */
+static void
+shutdown_socket_gracefully (Socket_T sock)
+{
+  TRY { Socket_shutdown (sock, SHUT_RDWR); }
+  ELSE { /* Ignore errors - socket may already be closed */ }
+  END_TRY;
+}
+
+/* ============================================================================
+ * Force Close Helpers
+ * ============================================================================ */
+
+/**
+ * allocate_closing_buffer - Allocate or get buffer for closing sockets
+ * @pool: Pool instance
+ * @allocated_out: Output: 1 if newly allocated (caller must free)
+ *
+ * Returns: Buffer for sockets, or NULL on failure
+ * Thread-safe: Call with mutex held
+ */
+static Socket_T *
+allocate_closing_buffer (T pool, int *allocated_out)
+{
+  Socket_T *buf = pool->cleanup_buffer;
+  *allocated_out = 0;
+
+  if (!buf)
+    {
+      if (pool->maxconns > SIZE_MAX / sizeof (Socket_T))
+        {
+          SocketLog_emitf (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,
+                           "Integer overflow in force close buffer size");
+          return NULL;
+        }
+      buf = malloc (pool->maxconns * sizeof (Socket_T));
+      if (!buf)
+        {
+          SocketLog_emitf (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,
+                           "Failed to allocate buffer for force close");
+          return NULL;
+        }
+      *allocated_out = 1;
+    }
+
+  return buf;
+}
+
+/**
+ * collect_active_connections - Collect active sockets under lock
+ * @pool: Pool instance
+ * @buffer: Pre-allocated buffer for sockets
+ * @max_slots: Maximum slots in buffer
+ *
+ * Returns: Number of active sockets collected
+ * Thread-safe: Call with mutex held
+ * Complexity: O(maxconns)
+ */
+static size_t
+collect_active_connections (T pool, Socket_T *buffer, size_t max_slots)
+{
+  size_t count = 0;
+  size_t i;
+
+  for (i = 0; i < pool->maxconns && count < max_slots && count < pool->count; i++)
+    {
+      struct Connection *conn = &pool->connections[i];
+      if (conn->active && conn->socket)
+        buffer[count++] = conn->socket;
+    }
+
+  return count;
+}
+
+/**
+ * close_collected_connections - Close and free collected sockets
+ * @pool: Pool instance
+ * @sockets: Array of sockets to close
+ * @count: Number of sockets
+ *
+ * Closes sockets, removes from pool, frees. Does not hold lock.
+ * Thread-safe: Yes (SocketPool_remove locks internally)
+ */
+static void
+close_collected_connections (T pool, Socket_T *sockets, size_t count)
+{
+  size_t i;
+
+  for (i = 0; i < count; i++)
+    {
+      Socket_T sock = sockets[i];
+      if (sock)
+        {
+          shutdown_socket_gracefully (sock);
+          SocketPool_remove (pool, sockets[i]);
+          Socket_free (&sockets[i]);
+        }
+    }
+}
+
 /* ============================================================================
  * State Query Functions (Lock-Free with C11 Atomics)
  * ============================================================================ */
@@ -103,7 +225,7 @@ safe_add_ms (int64_t base, int64_t delta)
  * before the state transition are visible to this thread.
  */
 SocketPool_State
-SocketPool_state (T pool)
+SocketPool_state (const T pool)
 {
   assert (pool);
   return load_pool_state (pool);
@@ -118,7 +240,7 @@ SocketPool_state (T pool)
  * Complexity: O(1)
  */
 SocketPool_Health
-SocketPool_health (T pool)
+SocketPool_health (const T pool)
 {
   assert (pool);
 
@@ -144,7 +266,7 @@ SocketPool_health (T pool)
  * Complexity: O(1)
  */
 int
-SocketPool_is_draining (T pool)
+SocketPool_is_draining (const T pool)
 {
   assert (pool);
   return load_pool_state (pool) == POOL_STATE_DRAINING;
@@ -159,7 +281,7 @@ SocketPool_is_draining (T pool)
  * Complexity: O(1)
  */
 int
-SocketPool_is_stopped (T pool)
+SocketPool_is_stopped (const T pool)
 {
   assert (pool);
   return load_pool_state (pool) == POOL_STATE_STOPPED;
@@ -209,20 +331,6 @@ transition_to_stopped (T pool, int timed_out)
 }
 
 /**
- * shutdown_socket_gracefully - Shutdown socket ignoring errors
- * @sock: Socket to shutdown
- *
- * Helper to avoid TRY/EXCEPT in the loop which triggers clobbered warning.
- */
-static void
-shutdown_socket_gracefully (Socket_T sock)
-{
-  TRY { Socket_shutdown (sock, SHUT_RDWR); }
-  ELSE { /* Ignore errors - socket may already be closed */ }
-  END_TRY;
-}
-
-/**
  * force_close_all_connections - Force close all active connections
  * @pool: Pool instance
  *
@@ -245,68 +353,28 @@ static void
 force_close_all_connections (T pool)
 {
   Socket_T *to_close;
-  int allocated_buffer = 0;
-  size_t close_count = 0;
-  size_t i;
+  int allocated = 0;
+  size_t close_count;
 
   if (pool->count == 0)
     return;
 
-  /* Allocate buffer for sockets to close (from pool's cleanup buffer) */
-  to_close = pool->cleanup_buffer;
+  to_close = allocate_closing_buffer (pool, &allocated);
   if (!to_close)
-    {
-      /* Fallback: allocate temporary buffer */
-      /* Security: Check for integer overflow before multiplication to prevent
-       * heap buffer overflow from undersized allocation */
-      if (pool->maxconns > SIZE_MAX / sizeof (Socket_T))
-        {
-          SocketLog_emitf (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,
-                           "Integer overflow in force close buffer size");
-          return;
-        }
-      to_close = malloc (pool->maxconns * sizeof (Socket_T));
-      if (!to_close)
-        {
-          SocketLog_emitf (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,
-                           "Failed to allocate buffer for force close");
-          return;
-        }
-      allocated_buffer = 1;
-    }
+    return;
 
-  /* Collect active sockets under lock */
-  for (i = 0; i < pool->maxconns && close_count < pool->count; i++)
-    {
-      struct Connection *conn = &pool->connections[i];
-      if (conn->active && conn->socket)
-        to_close[close_count++] = conn->socket;
-    }
+  close_count = collect_active_connections (pool, to_close, pool->maxconns);
 
   /* Release lock before closing sockets */
   pthread_mutex_unlock (&pool->mutex);
 
   /* Close all collected sockets */
-  for (i = 0; i < close_count; i++)
-    {
-      Socket_T sock = to_close[i];
-      if (sock)
-        {
-          /* Shutdown first to send FIN */
-          shutdown_socket_gracefully (sock);
-
-          /* Remove from pool - SocketPool_remove handles its own locking */
-          SocketPool_remove (pool, sock);
-
-          Socket_free (&sock);
-        }
-    }
+  close_collected_connections (pool, to_close, close_count);
 
   /* Re-acquire lock for caller */
   pthread_mutex_lock (&pool->mutex);
 
-  /* Free temporary buffer if we allocated one */
-  if (allocated_buffer)
+  if (allocated)
     free (to_close);
 
   SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
@@ -349,7 +417,7 @@ SocketPool_drain (T pool, int timeout_ms)
   current_count = pool->count;
 
   /* Set deadline using overflow-safe addition */
-  if (timeout_ms == DRAIN_TIMEOUT_INFINITE)
+  if (timeout_ms == SOCKET_POOL_DRAIN_TIMEOUT_INFINITE)
     pool->drain_deadline_ms = INT64_MAX;
   else if (timeout_ms <= 0)
     pool->drain_deadline_ms = now_ms;
@@ -455,7 +523,7 @@ SocketPool_drain_poll (T pool)
  * Complexity: O(1)
  */
 int64_t
-SocketPool_drain_remaining_ms (T pool)
+SocketPool_drain_remaining_ms (const T pool)
 {
   int64_t remaining;
 
@@ -523,7 +591,7 @@ SocketPool_drain_force (T pool)
 int
 SocketPool_drain_wait (T pool, int timeout_ms)
 {
-  int backoff_ms = DRAIN_BACKOFF_MIN_MS;
+  int backoff_ms = SOCKET_POOL_DRAIN_BACKOFF_MIN_MS;
   int result;
   struct timespec ts;
 
@@ -541,9 +609,9 @@ SocketPool_drain_wait (T pool, int timeout_ms)
       nanosleep (&ts, NULL);
 
       /* Increase backoff up to max */
-      backoff_ms *= DRAIN_BACKOFF_MULTIPLIER;
-      if (backoff_ms > DRAIN_BACKOFF_MAX_MS)
-        backoff_ms = DRAIN_BACKOFF_MAX_MS;
+      backoff_ms *= SOCKET_POOL_DRAIN_BACKOFF_MULTIPLIER;
+      if (backoff_ms > SOCKET_POOL_DRAIN_BACKOFF_MAX_MS)
+        backoff_ms = SOCKET_POOL_DRAIN_BACKOFF_MAX_MS;
     }
 
   /* result == 0 means graceful, -1 means forced */
@@ -598,7 +666,7 @@ SocketPool_set_idle_timeout (T pool, time_t timeout_sec)
  * Thread-safe: Yes
  */
 time_t
-SocketPool_get_idle_timeout (T pool)
+SocketPool_get_idle_timeout (const T pool)
 {
   time_t timeout;
 
@@ -619,7 +687,7 @@ SocketPool_get_idle_timeout (T pool)
  * Thread-safe: Yes
  */
 int64_t
-SocketPool_idle_cleanup_due_ms (T pool)
+SocketPool_idle_cleanup_due_ms (const T pool)
 {
   int64_t remaining;
 

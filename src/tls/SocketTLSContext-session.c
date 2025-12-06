@@ -26,6 +26,8 @@
 
 #define T SocketTLSContext_T
 
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLSContext);
+
 /* ============================================================================
  * Session Cache Callbacks (Internal)
  * ============================================================================

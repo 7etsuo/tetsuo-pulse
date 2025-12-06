@@ -689,7 +689,7 @@ extern void SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file);
  * Raises: SocketTLS_Failed if cert NULL, extraction fails, or max exceeded
  * Thread-safe: No - modifies shared context
  */
-extern void SocketTLSContext_add_pin_from_x509 (T ctx, X509 *cert);
+extern void SocketTLSContext_add_pin_from_x509 (T ctx, const X509 *cert);
 
 /**
  * SocketTLSContext_clear_pins - Remove all certificate pins
@@ -775,7 +775,7 @@ extern int SocketTLSContext_verify_pin (T ctx, const unsigned char *sha256_hash)
  * Raises: None
  * Thread-safe: Yes (read-only)
  */
-extern int SocketTLSContext_verify_cert_pin (T ctx, X509 *cert);
+extern int SocketTLSContext_verify_cert_pin (T ctx, const X509 *cert);
 
 /* Pinning exception type */
 extern const Except_T SocketTLS_PinVerifyFailed;
