@@ -43,6 +43,11 @@ safe_append (char **buf, size_t *remaining, const char *str, size_t len)
 
 /**
  * safe_append_str - Safely append null-terminated string
+ * @buf: Buffer pointer (updated)
+ * @remaining: Remaining space (updated)
+ * @str: String to append
+ *
+ * Returns: 0 on success, -1 if buffer too small
  */
 static int
 safe_append_str (char **buf, size_t *remaining, const char *str)
@@ -51,7 +56,11 @@ safe_append_str (char **buf, size_t *remaining, const char *str)
 }
 
 /**
- * safe_append_crlf - Append CRLF
+ * safe_append_crlf - Append CRLF line terminator
+ * @buf: Buffer pointer (updated)
+ * @remaining: Remaining space (updated)
+ *
+ * Returns: 0 on success, -1 if buffer too small
  */
 static int
 safe_append_crlf (char **buf, size_t *remaining)
@@ -60,12 +69,17 @@ safe_append_crlf (char **buf, size_t *remaining)
 }
 
 /**
- * safe_append_int - Append integer as decimal
+ * safe_append_int - Append integer as decimal string
+ * @buf: Buffer pointer (updated)
+ * @remaining: Remaining space (updated)
+ * @value: Integer to append
+ *
+ * Returns: 0 on success, -1 on error
  */
 static int
 safe_append_int (char **buf, size_t *remaining, int value)
 {
-  char num[16];
+  char num[SOCKETHTTP1_INT_STRING_BUFSIZE];
   int len;
 
   len = snprintf (num, sizeof (num), "%d", value);
@@ -73,6 +87,46 @@ safe_append_int (char **buf, size_t *remaining, int value)
     return -1;
 
   return safe_append (buf, remaining, num, (size_t)len);
+}
+
+/**
+ * append_content_length_header - Append Content-Length header if needed
+ * @buf: Buffer pointer (updated)
+ * @remaining: Remaining space (updated)
+ * @headers: Existing headers (may be NULL)
+ * @has_body: Whether message has body
+ * @content_length: Content length (-1 if unknown)
+ *
+ * Only appends if:
+ * - has_body is true AND content_length >= 0
+ * - No Content-Length or Transfer-Encoding already present
+ *
+ * Returns: 0 on success, -1 if buffer too small
+ */
+static int
+append_content_length_header (char **buf, size_t *remaining,
+                              SocketHTTP_Headers_T headers, int has_body,
+                              int64_t content_length)
+{
+  char cl_buf[SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE];
+  int cl_len;
+
+  if (!has_body || content_length < 0)
+    return 0;
+
+  if (headers && (SocketHTTP_Headers_has (headers, "Content-Length")
+                  || SocketHTTP_Headers_has (headers, "Transfer-Encoding")))
+    return 0;
+
+  cl_len = snprintf (cl_buf, sizeof (cl_buf), "Content-Length: %lld",
+                     (long long)content_length);
+  if (cl_len < 0 || (size_t)cl_len >= sizeof (cl_buf))
+    return -1;
+
+  if (safe_append (buf, remaining, cl_buf, (size_t)cl_len) < 0)
+    return -1;
+
+  return safe_append_crlf (buf, remaining);
 }
 
 /* ============================================================================
@@ -165,27 +219,10 @@ SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
     }
 
   /* Add Content-Length if body present and not chunked */
-  if (request->has_body && request->content_length >= 0)
-    {
-      if (!request->headers
-          || (!SocketHTTP_Headers_has (request->headers, "Content-Length")
-              && !SocketHTTP_Headers_has (request->headers,
-                                          "Transfer-Encoding")))
-        {
-          char cl_buf[32];
-          int cl_len;
-
-          cl_len = snprintf (cl_buf, sizeof (cl_buf), "Content-Length: %lld",
-                             (long long)request->content_length);
-          if (cl_len < 0 || (size_t)cl_len >= sizeof (cl_buf))
-            return -1;
-
-          if (safe_append (&p, &remaining, cl_buf, (size_t)cl_len) < 0)
-            return -1;
-          if (safe_append_crlf (&p, &remaining) < 0)
-            return -1;
-        }
-    }
+  if (append_content_length_header (&p, &remaining, request->headers,
+                                    request->has_body,
+                                    request->content_length) < 0)
+    return -1;
 
   /* Final CRLF */
   if (safe_append_crlf (&p, &remaining) < 0)
@@ -239,9 +276,8 @@ SocketHTTP1_serialize_response (const SocketHTTP_Response *response,
   /* Reason-Phrase */
   reason = response->reason_phrase;
   if (!reason || !reason[0])
-    {
-      reason = SocketHTTP_status_reason (response->status_code);
-    }
+    reason = SocketHTTP_status_reason (response->status_code);
+
   if (reason)
     {
       if (safe_append_str (&p, &remaining, reason) < 0)
@@ -267,27 +303,10 @@ SocketHTTP1_serialize_response (const SocketHTTP_Response *response,
     }
 
   /* Add Content-Length if body present */
-  if (response->has_body && response->content_length >= 0)
-    {
-      if (!response->headers
-          || (!SocketHTTP_Headers_has (response->headers, "Content-Length")
-              && !SocketHTTP_Headers_has (response->headers,
-                                          "Transfer-Encoding")))
-        {
-          char cl_buf[32];
-          int cl_len;
-
-          cl_len = snprintf (cl_buf, sizeof (cl_buf), "Content-Length: %lld",
-                             (long long)response->content_length);
-          if (cl_len < 0 || (size_t)cl_len >= sizeof (cl_buf))
-            return -1;
-
-          if (safe_append (&p, &remaining, cl_buf, (size_t)cl_len) < 0)
-            return -1;
-          if (safe_append_crlf (&p, &remaining) < 0)
-            return -1;
-        }
-    }
+  if (append_content_length_header (&p, &remaining, response->headers,
+                                    response->has_body,
+                                    response->content_length) < 0)
+    return -1;
 
   /* Final CRLF */
   if (safe_append_crlf (&p, &remaining) < 0)
@@ -304,7 +323,7 @@ SocketHTTP1_serialize_response (const SocketHTTP_Response *response,
  * ============================================================================ */
 
 /**
- * Header serialization callback
+ * serialize_ctx - Context for header serialization callback
  */
 struct serialize_ctx
 {
@@ -313,6 +332,16 @@ struct serialize_ctx
   int error;
 };
 
+/**
+ * serialize_header_cb - Callback for iterating headers during serialization
+ * @name: Header name
+ * @name_len: Header name length
+ * @value: Header value
+ * @value_len: Header value length
+ * @userdata: serialize_ctx pointer
+ *
+ * Returns: 0 to continue, 1 to stop
+ */
 static int
 serialize_header_cb (const char *name, size_t name_len, const char *value,
                      size_t value_len, void *userdata)
@@ -383,4 +412,3 @@ SocketHTTP1_serialize_headers (SocketHTTP_Headers_T headers, char *output,
 
   return (ssize_t)(ctx.buf - start);
 }
-

@@ -13,7 +13,7 @@
  * - Zero heap allocation in shutdown path
  *
  * Thread Safety:
- * - State reads are lock-free (volatile int)
+ * - State reads are lock-free (C11 atomics with acquire semantics)
  * - State transitions use mutex for atomicity
  * - Callback invocation outside lock to prevent deadlock
  */
@@ -51,6 +51,43 @@
 #define DRAIN_TIMEOUT_INFINITE (-1)
 
 /* ============================================================================
+ * Internal Helpers
+ * ============================================================================ */
+
+/**
+ * load_pool_state - Atomically load pool state with acquire semantics
+ * @pool: Pool instance
+ *
+ * Returns: Current SocketPool_State
+ * Thread-safe: Yes - C11 atomic read
+ */
+static inline SocketPool_State
+load_pool_state (const T pool)
+{
+  return (SocketPool_State)atomic_load_explicit (&pool->state,
+                                                  memory_order_acquire);
+}
+
+/**
+ * safe_add_ms - Overflow-safe millisecond addition with saturation
+ * @base: Base time in milliseconds
+ * @delta: Delta to add in milliseconds
+ *
+ * Returns: base + delta, or INT64_MAX if overflow would occur
+ * Thread-safe: Yes - pure function
+ *
+ * Used for deadline calculations where overflow must saturate to
+ * INT64_MAX rather than wrap around.
+ */
+static inline int64_t
+safe_add_ms (int64_t base, int64_t delta)
+{
+  if (delta > 0 && base > INT64_MAX - delta)
+    return INT64_MAX;
+  return base + delta;
+}
+
+/* ============================================================================
  * State Query Functions (Lock-Free with C11 Atomics)
  * ============================================================================ */
 
@@ -69,10 +106,7 @@ SocketPool_State
 SocketPool_state (T pool)
 {
   assert (pool);
-
-  /* C11 atomic read with acquire semantics for proper memory ordering */
-  return (SocketPool_State)atomic_load_explicit (&pool->state,
-                                                  memory_order_acquire);
+  return load_pool_state (pool);
 }
 
 /**
@@ -86,13 +120,9 @@ SocketPool_state (T pool)
 SocketPool_Health
 SocketPool_health (T pool)
 {
-  SocketPool_State state;
-
   assert (pool);
 
-  state = (SocketPool_State)atomic_load_explicit (&pool->state,
-                                                   memory_order_acquire);
-  switch (state)
+  switch (load_pool_state (pool))
     {
     case POOL_STATE_RUNNING:
       return POOL_HEALTH_HEALTHY;
@@ -101,7 +131,6 @@ SocketPool_health (T pool)
     case POOL_STATE_STOPPED:
       return POOL_HEALTH_STOPPED;
     default:
-      /* Defensive: treat unknown state as stopped */
       return POOL_HEALTH_STOPPED;
     }
 }
@@ -118,8 +147,7 @@ int
 SocketPool_is_draining (T pool)
 {
   assert (pool);
-  return atomic_load_explicit (&pool->state, memory_order_acquire)
-         == POOL_STATE_DRAINING;
+  return load_pool_state (pool) == POOL_STATE_DRAINING;
 }
 
 /**
@@ -134,8 +162,7 @@ int
 SocketPool_is_stopped (T pool)
 {
   assert (pool);
-  return atomic_load_explicit (&pool->state, memory_order_acquire)
-         == POOL_STATE_STOPPED;
+  return load_pool_state (pool) == POOL_STATE_STOPPED;
 }
 
 /* ============================================================================
@@ -158,12 +185,8 @@ SocketPool_is_stopped (T pool)
 static void
 transition_to_stopped (T pool, int timed_out)
 {
-  SocketPool_DrainCallback cb;
-  void *cb_data;
-
-  /* Capture callback info under lock */
-  cb = pool->drain_cb;
-  cb_data = pool->drain_cb_data;
+  SocketPool_DrainCallback cb = pool->drain_cb;
+  void *cb_data = pool->drain_cb_data;
 
   pool->drain_deadline_ms = 0;
 
@@ -171,17 +194,13 @@ transition_to_stopped (T pool, int timed_out)
   atomic_store_explicit (&pool->state, POOL_STATE_STOPPED,
                          memory_order_release);
 
-  /* Log transition */
   SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
                    "Pool drain complete (timed_out=%d)", timed_out);
-
-  /* Emit event */
   SocketMetrics_increment (SOCKET_METRIC_POOL_DRAIN_COMPLETED, 1);
 
   /* Release lock BEFORE callback to prevent deadlock */
   pthread_mutex_unlock (&pool->mutex);
 
-  /* Invoke callback outside lock */
   if (cb)
     cb (pool, timed_out, cb_data);
 
@@ -189,16 +208,6 @@ transition_to_stopped (T pool, int timed_out)
   pthread_mutex_lock (&pool->mutex);
 }
 
-/**
- * force_close_all_connections - Force close all active connections
- * @pool: Pool instance
- *
- * Thread-safe: Call with mutex held
- * Complexity: O(n) where n = active connections
- *
- * Collects all active sockets, releases lock, then closes them.
- * This prevents holding the lock during potentially slow close operations.
- */
 /**
  * shutdown_socket_gracefully - Shutdown socket ignoring errors
  * @sock: Socket to shutdown
@@ -224,23 +233,13 @@ shutdown_socket_gracefully (Socket_T sock)
  * This prevents holding the lock during potentially slow close operations.
  *
  * THREAD SAFETY NOTE:
- * This function is designed to be called only during drain when the pool is
- * in DRAINING state. During drain, SocketPool_add() rejects new connections,
- * but SocketPool_remove() may still be called by other threads.
- *
- * If another thread calls SocketPool_remove() + Socket_free() on a socket
- * that is in our collected list, there is a potential use-after-free when
- * we try to call SocketPool_remove() on the same socket. However:
- *
- * 1. The second SocketPool_remove() will return early (find_slot returns NULL)
- * 2. The Socket_free() will be on already-freed memory (undefined behavior)
+ * Called only during drain (DRAINING state). During drain, SocketPool_add()
+ * rejects new connections, but SocketPool_remove() may be called by other
+ * threads.
  *
  * MITIGATION: Applications should ensure that during drain, only the drain
  * mechanism itself calls Socket_free() on pool connections. Normal application
  * code should stop processing connections when drain is initiated.
- *
- * FUTURE IMPROVEMENT: Consider adding a "closing" flag to Connection to
- * prevent concurrent removal and double-free scenarios.
  */
 static void
 force_close_all_connections (T pool)
@@ -321,7 +320,7 @@ force_close_all_connections (T pool)
 /**
  * SocketPool_drain - Initiate graceful shutdown
  * @pool: Pool instance
- * @timeout_ms: Maximum time to wait for connections to close
+ * @timeout_ms: Maximum time to wait for connections to close (-1 for infinite)
  *
  * Thread-safe: Yes
  * Complexity: O(1)
@@ -337,40 +336,25 @@ SocketPool_drain (T pool, int timeout_ms)
   pthread_mutex_lock (&pool->mutex);
 
   /* Only transition from RUNNING */
-  if (atomic_load_explicit (&pool->state, memory_order_acquire)
-      != POOL_STATE_RUNNING)
+  if (load_pool_state (pool) != POOL_STATE_RUNNING)
     {
       SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                        "Pool drain called but state is %d (not RUNNING)",
-                       atomic_load_explicit (&pool->state, memory_order_relaxed));
+                       (int)load_pool_state (pool));
       pthread_mutex_unlock (&pool->mutex);
       return;
     }
 
-  /* Get current time and count */
   now_ms = Socket_get_monotonic_ms ();
   current_count = pool->count;
 
-  /* Set deadline */
+  /* Set deadline using overflow-safe addition */
   if (timeout_ms == DRAIN_TIMEOUT_INFINITE)
-    {
-      pool->drain_deadline_ms = INT64_MAX;
-    }
+    pool->drain_deadline_ms = INT64_MAX;
   else if (timeout_ms <= 0)
-    {
-      /* Immediate force close */
-      pool->drain_deadline_ms = now_ms;
-    }
+    pool->drain_deadline_ms = now_ms;
   else
-    {
-      /* Security: Overflow-safe deadline calculation with saturation.
-       * While practically impossible (requires ~292 million years uptime),
-       * defense-in-depth dictates protecting against INT64 overflow. */
-      if (now_ms > INT64_MAX - timeout_ms)
-        pool->drain_deadline_ms = INT64_MAX; /* Saturate on overflow */
-      else
-        pool->drain_deadline_ms = now_ms + timeout_ms;
-    }
+    pool->drain_deadline_ms = safe_add_ms (now_ms, timeout_ms);
 
   /* Transition to DRAINING with release semantics */
   atomic_store_explicit (&pool->state, POOL_STATE_DRAINING,
@@ -379,8 +363,6 @@ SocketPool_drain (T pool, int timeout_ms)
   SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
                    "Pool drain initiated: %zu connections, timeout=%d ms",
                    current_count, timeout_ms);
-
-  /* Emit metrics */
   SocketMetrics_increment (SOCKET_METRIC_POOL_DRAIN_INITIATED, 1);
 
   /* If no connections, transition immediately to STOPPED */
@@ -391,7 +373,7 @@ SocketPool_drain (T pool, int timeout_ms)
       return;
     }
 
-  /* If timeout is 0 or negative (except -1), force close now */
+  /* If timeout is 0 (immediate), force close now */
   if (timeout_ms == 0)
     {
       force_close_all_connections (pool);
@@ -414,35 +396,32 @@ SocketPool_drain (T pool, int timeout_ms)
 int
 SocketPool_drain_poll (T pool)
 {
-  int64_t now_ms;
+  SocketPool_State state;
   size_t current_count;
-  int result;
+  int64_t now_ms;
 
   assert (pool);
 
   pthread_mutex_lock (&pool->mutex);
 
-  /* Not draining - return current count or 0 */
-  if (atomic_load_explicit (&pool->state, memory_order_acquire)
-      == POOL_STATE_STOPPED)
+  state = load_pool_state (pool);
+  current_count = pool->count;
+
+  switch (state)
     {
+    case POOL_STATE_STOPPED:
       pthread_mutex_unlock (&pool->mutex);
       return 0;
-    }
 
-  if (atomic_load_explicit (&pool->state, memory_order_acquire)
-      == POOL_STATE_RUNNING)
-    {
-      result = (int)pool->count;
+    case POOL_STATE_RUNNING:
       pthread_mutex_unlock (&pool->mutex);
-      return result;
+      return (int)current_count;
+
+    case POOL_STATE_DRAINING:
+      break;
     }
 
-  /* State is DRAINING */
-  current_count = pool->count;
-  now_ms = Socket_get_monotonic_ms ();
-
-  /* Check if all connections closed naturally */
+  /* State is DRAINING - check completion conditions */
   if (current_count == 0)
     {
       transition_to_stopped (pool, 0);
@@ -450,7 +429,7 @@ SocketPool_drain_poll (T pool)
       return 0;
     }
 
-  /* Check if deadline expired */
+  now_ms = Socket_get_monotonic_ms ();
   if (pool->drain_deadline_ms != INT64_MAX && now_ms >= pool->drain_deadline_ms)
     {
       SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
@@ -463,7 +442,6 @@ SocketPool_drain_poll (T pool)
       return -1;
     }
 
-  /* Still draining */
   pthread_mutex_unlock (&pool->mutex);
   return (int)current_count;
 }
@@ -479,23 +457,17 @@ SocketPool_drain_poll (T pool)
 int64_t
 SocketPool_drain_remaining_ms (T pool)
 {
-  int64_t now_ms;
   int64_t remaining;
 
   assert (pool);
 
-  /* Not draining - atomic read for lock-free check */
-  if (atomic_load_explicit (&pool->state, memory_order_acquire)
-      != POOL_STATE_DRAINING)
+  if (load_pool_state (pool) != POOL_STATE_DRAINING)
     return -1;
 
-  /* Infinite timeout */
   if (pool->drain_deadline_ms == INT64_MAX)
     return INT64_MAX;
 
-  now_ms = Socket_get_monotonic_ms ();
-  remaining = pool->drain_deadline_ms - now_ms;
-
+  remaining = pool->drain_deadline_ms - Socket_get_monotonic_ms ();
   return remaining > 0 ? remaining : 0;
 }
 
@@ -509,39 +481,34 @@ SocketPool_drain_remaining_ms (T pool)
 void
 SocketPool_drain_force (T pool)
 {
-  int current_state;
+  SocketPool_State state;
 
   assert (pool);
 
   pthread_mutex_lock (&pool->mutex);
 
-  current_state = atomic_load_explicit (&pool->state, memory_order_acquire);
+  state = load_pool_state (pool);
 
-  /* Already stopped */
-  if (current_state == POOL_STATE_STOPPED)
+  if (state == POOL_STATE_STOPPED)
     {
       pthread_mutex_unlock (&pool->mutex);
       return;
     }
 
-  /* Force transition to DRAINING first if needed */
-  if (current_state == POOL_STATE_RUNNING)
+  if (state == POOL_STATE_RUNNING)
     {
       atomic_store_explicit (&pool->state, POOL_STATE_DRAINING,
                              memory_order_release);
-      pool->drain_deadline_ms = 0; /* Already expired */
+      pool->drain_deadline_ms = 0;
     }
 
   SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
                    "Pool drain forced: %zu connections to close", pool->count);
 
-  /* Force close all connections */
   if (pool->count > 0)
     force_close_all_connections (pool);
 
-  /* Transition to stopped */
   transition_to_stopped (pool, 1);
-
   pthread_mutex_unlock (&pool->mutex);
 }
 
@@ -654,30 +621,20 @@ SocketPool_get_idle_timeout (T pool)
 int64_t
 SocketPool_idle_cleanup_due_ms (T pool)
 {
-  int64_t now_ms;
-  int64_t next_cleanup_ms;
   int64_t remaining;
 
   assert (pool);
 
   pthread_mutex_lock (&pool->mutex);
 
-  /* Disabled if idle timeout is 0 */
   if (pool->idle_timeout_sec == 0)
     {
       pthread_mutex_unlock (&pool->mutex);
       return -1;
     }
 
-  now_ms = Socket_get_monotonic_ms ();
-
-  /* Security: Overflow-safe addition with saturation */
-  if (pool->last_cleanup_ms > INT64_MAX - pool->cleanup_interval_ms)
-    next_cleanup_ms = INT64_MAX;
-  else
-    next_cleanup_ms = pool->last_cleanup_ms + pool->cleanup_interval_ms;
-
-  remaining = next_cleanup_ms - now_ms;
+  remaining = safe_add_ms (pool->last_cleanup_ms, pool->cleanup_interval_ms)
+              - Socket_get_monotonic_ms ();
 
   pthread_mutex_unlock (&pool->mutex);
 
@@ -697,27 +654,20 @@ SocketPool_run_idle_cleanup (T pool)
   int64_t now_ms;
   int64_t next_cleanup_ms;
   time_t idle_timeout;
-  size_t cleaned_count = 0;
+  size_t count_before, count_after, cleaned_count;
 
   assert (pool);
 
   pthread_mutex_lock (&pool->mutex);
 
-  /* Check if idle cleanup is enabled */
   if (pool->idle_timeout_sec == 0)
     {
       pthread_mutex_unlock (&pool->mutex);
       return 0;
     }
 
-  /* Check if cleanup is due */
   now_ms = Socket_get_monotonic_ms ();
-
-  /* Security: Overflow-safe addition with saturation */
-  if (pool->last_cleanup_ms > INT64_MAX - pool->cleanup_interval_ms)
-    next_cleanup_ms = INT64_MAX;
-  else
-    next_cleanup_ms = pool->last_cleanup_ms + pool->cleanup_interval_ms;
+  next_cleanup_ms = safe_add_ms (pool->last_cleanup_ms, pool->cleanup_interval_ms);
 
   if (now_ms < next_cleanup_ms)
     {
@@ -725,21 +675,18 @@ SocketPool_run_idle_cleanup (T pool)
       return 0;
     }
 
-  /* Update last cleanup time and get timeout */
   pool->last_cleanup_ms = now_ms;
   idle_timeout = pool->idle_timeout_sec;
 
   pthread_mutex_unlock (&pool->mutex);
 
   /* Run cleanup - SocketPool_cleanup handles its own locking */
-  /* Get count before */
-  size_t count_before = SocketPool_count (pool);
+  count_before = SocketPool_count (pool);
   SocketPool_cleanup (pool, idle_timeout);
-  size_t count_after = SocketPool_count (pool);
+  count_after = SocketPool_count (pool);
 
   cleaned_count = count_before > count_after ? count_before - count_after : 0;
 
-  /* Update statistics if any connections were cleaned */
   if (cleaned_count > 0)
     {
       pthread_mutex_lock (&pool->mutex);

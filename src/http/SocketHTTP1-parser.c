@@ -373,14 +373,24 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP1);
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTP1, e)
 
 /* ============================================================================
- * Initial Buffer Sizes
+ * Constants
  * ============================================================================ */
 
-#define INITIAL_METHOD_BUF 16
-#define INITIAL_URI_BUF 256
-#define INITIAL_REASON_BUF 64
-#define INITIAL_NAME_BUF 64
-#define INITIAL_VALUE_BUF 256
+/* Initial token buffer sizes - internal implementation detail */
+#define HTTP1_INITIAL_METHOD_BUF 16
+#define HTTP1_INITIAL_URI_BUF 256
+#define HTTP1_INITIAL_REASON_BUF 64
+#define HTTP1_INITIAL_NAME_BUF 64
+#define HTTP1_INITIAL_VALUE_BUF 256
+
+/* HTTP version single-digit limit */
+#define HTTP1_MAX_VERSION_DIGIT 9
+
+/* Maximum 3-digit status code value */
+#define HTTP1_MAX_STATUS_CODE 999
+
+/* Header size calculation overhead (": \r\n") */
+#define HTTP1_HEADER_OVERHEAD 4
 
 /* ============================================================================
  * Result Strings
@@ -410,11 +420,11 @@ static const char *result_strings[] = {
 const char *
 SocketHTTP1_result_string (SocketHTTP1_Result result)
 {
-  if (result >= 0
-      && (size_t)result < sizeof (result_strings) / sizeof (result_strings[0]))
-    {
-      return result_strings[result] ? result_strings[result] : "Unknown error";
-    }
+  size_t max_result = sizeof (result_strings) / sizeof (result_strings[0]);
+
+  if (result >= 0 && (size_t)result < max_result && result_strings[result])
+    return result_strings[result];
+
   return "Unknown error";
 }
 
@@ -439,7 +449,70 @@ SocketHTTP1_config_defaults (SocketHTTP1_Config *config)
 }
 
 /* ============================================================================
- * Parser Lifecycle
+ * Parser Lifecycle - Static Helpers
+ * ============================================================================ */
+
+/**
+ * init_token_buffers - Initialize all token buffers for parser
+ * @parser: Parser instance to initialize
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int
+init_token_buffers (SocketHTTP1_Parser_T parser)
+{
+  if (http1_tokenbuf_init (&parser->method_buf, parser->arena,
+                           HTTP1_INITIAL_METHOD_BUF)
+          < 0
+      || http1_tokenbuf_init (&parser->uri_buf, parser->arena,
+                              HTTP1_INITIAL_URI_BUF)
+             < 0
+      || http1_tokenbuf_init (&parser->reason_buf, parser->arena,
+                              HTTP1_INITIAL_REASON_BUF)
+             < 0
+      || http1_tokenbuf_init (&parser->name_buf, parser->arena,
+                              HTTP1_INITIAL_NAME_BUF)
+             < 0
+      || http1_tokenbuf_init (&parser->value_buf, parser->arena,
+                              HTTP1_INITIAL_VALUE_BUF)
+             < 0)
+    {
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * reset_token_buffers - Reset all token buffers for reuse
+ * @parser: Parser instance
+ */
+static void
+reset_token_buffers (SocketHTTP1_Parser_T parser)
+{
+  http1_tokenbuf_reset (&parser->method_buf);
+  http1_tokenbuf_reset (&parser->uri_buf);
+  http1_tokenbuf_reset (&parser->reason_buf);
+  http1_tokenbuf_reset (&parser->name_buf);
+  http1_tokenbuf_reset (&parser->value_buf);
+}
+
+/**
+ * reset_body_tracking - Reset body-related fields
+ * @parser: Parser instance
+ */
+static void
+reset_body_tracking (SocketHTTP1_Parser_T parser)
+{
+  parser->body_mode = HTTP1_BODY_NONE;
+  parser->content_length = -1;
+  parser->body_remaining = -1;
+  parser->body_complete = 0;
+  parser->chunk_size = 0;
+  parser->chunk_remaining = 0;
+}
+
+/* ============================================================================
+ * Parser Lifecycle - Public API
  * ============================================================================ */
 
 SocketHTTP1_Parser_T
@@ -464,13 +537,9 @@ SocketHTTP1_Parser_new (SocketHTTP1_ParseMode mode,
 
   /* Apply configuration */
   if (config)
-    {
-      parser->config = *config;
-    }
+    parser->config = *config;
   else
-    {
-      SocketHTTP1_config_defaults (&parser->config);
-    }
+    SocketHTTP1_config_defaults (&parser->config);
 
   /* Initialize state */
   parser->state = HTTP1_STATE_START;
@@ -486,13 +555,7 @@ SocketHTTP1_Parser_new (SocketHTTP1_ParseMode mode,
     }
 
   /* Initialize token buffers */
-  if (http1_tokenbuf_init (&parser->method_buf, arena, INITIAL_METHOD_BUF) < 0
-      || http1_tokenbuf_init (&parser->uri_buf, arena, INITIAL_URI_BUF) < 0
-      || http1_tokenbuf_init (&parser->reason_buf, arena, INITIAL_REASON_BUF)
-             < 0
-      || http1_tokenbuf_init (&parser->name_buf, arena, INITIAL_NAME_BUF) < 0
-      || http1_tokenbuf_init (&parser->value_buf, arena, INITIAL_VALUE_BUF)
-             < 0)
+  if (init_token_buffers (parser) < 0)
     {
       SOCKET_ERROR_MSG ("Cannot allocate token buffers");
       RAISE_MODULE_ERROR (SocketHTTP1_ParseError);
@@ -529,16 +592,10 @@ SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser)
   /* Clear headers */
   SocketHTTP_Headers_clear (parser->headers);
   if (parser->trailers)
-    {
-      SocketHTTP_Headers_clear (parser->trailers);
-    }
+    SocketHTTP_Headers_clear (parser->trailers);
 
   /* Reset token buffers */
-  http1_tokenbuf_reset (&parser->method_buf);
-  http1_tokenbuf_reset (&parser->uri_buf);
-  http1_tokenbuf_reset (&parser->reason_buf);
-  http1_tokenbuf_reset (&parser->name_buf);
-  http1_tokenbuf_reset (&parser->value_buf);
+  reset_token_buffers (parser);
 
   /* Reset counters */
   parser->header_count = 0;
@@ -546,12 +603,7 @@ SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser)
   parser->line_length = 0;
 
   /* Reset body tracking */
-  parser->body_mode = HTTP1_BODY_NONE;
-  parser->content_length = -1;
-  parser->body_remaining = -1;
-  parser->body_complete = 0;
-  parser->chunk_size = 0;
-  parser->chunk_remaining = 0;
+  reset_body_tracking (parser);
 
   /* Reset version */
   parser->version_major = 0;
@@ -569,15 +621,17 @@ SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser)
 }
 
 /* ============================================================================
- * Body Mode Determination (RFC 9112 Section 6)
+ * Body Mode Determination (RFC 9112 Section 6) - Static Helpers
  * ============================================================================ */
 
 /**
- * Parse and validate Content-Length header
+ * parse_content_length - Parse and validate Content-Length header
+ * @headers: Headers collection to search
+ *
  * Returns: Value on success, -1 on error, -2 if not present
  */
 static int64_t
-parse_content_length (SocketHTTP_Headers_T headers)
+parse_content_length (const SocketHTTP_Headers_T headers)
 {
   const char *cl_values[2];
   size_t count;
@@ -585,22 +639,16 @@ parse_content_length (SocketHTTP_Headers_T headers)
   const char *cl;
   const char *p;
 
-  /* Get all Content-Length headers */
   count = SocketHTTP_Headers_get_all (headers, "Content-Length", cl_values, 2);
 
   if (count == 0)
     return -2; /* Not present */
 
   /* Multiple headers must have identical values (RFC 9112 Section 6.3) */
-  if (count > 1)
-    {
-      if (strcmp (cl_values[0], cl_values[1]) != 0)
-        return -1; /* Different values = smuggling attempt */
-    }
+  if (count > 1 && strcmp (cl_values[0], cl_values[1]) != 0)
+    return -1; /* Different values = smuggling attempt */
 
   cl = cl_values[0];
-
-  /* Parse decimal value */
   value = 0;
   p = cl;
 
@@ -638,108 +686,206 @@ parse_content_length (SocketHTTP_Headers_T headers)
 }
 
 /**
- * Check if Transfer-Encoding includes chunked
+ * has_chunked_encoding - Check if Transfer-Encoding includes chunked
+ * @headers: Headers collection
+ *
+ * Returns: 1 if chunked, 0 otherwise
  */
 static int
-has_chunked_encoding (SocketHTTP_Headers_T headers)
+has_chunked_encoding (const SocketHTTP_Headers_T headers)
 {
   return SocketHTTP_Headers_contains (headers, "Transfer-Encoding", "chunked");
 }
 
 /**
- * Determine body transfer mode from headers
+ * set_body_mode_chunked - Set parser to chunked body mode
+ * @parser: Parser instance
+ */
+static void
+set_body_mode_chunked (SocketHTTP1_Parser_T parser)
+{
+  parser->body_mode = HTTP1_BODY_CHUNKED;
+  parser->content_length = -1;
+  parser->body_remaining = -1;
+}
+
+/**
+ * set_body_mode_until_close - Set parser to read until close
+ * @parser: Parser instance
+ */
+static void
+set_body_mode_until_close (SocketHTTP1_Parser_T parser)
+{
+  parser->body_mode = HTTP1_BODY_UNTIL_CLOSE;
+  parser->content_length = -1;
+  parser->body_remaining = -1;
+}
+
+/**
+ * set_body_mode_content_length - Set parser to fixed content length
+ * @parser: Parser instance
+ * @length: Content length value
+ */
+static void
+set_body_mode_content_length (SocketHTTP1_Parser_T parser, int64_t length)
+{
+  parser->body_mode = HTTP1_BODY_CONTENT_LENGTH;
+  parser->content_length = length;
+  parser->body_remaining = length;
+
+  if (length == 0)
+    parser->body_complete = 1;
+}
+
+/**
+ * set_body_mode_none - Set parser to no body mode
+ * @parser: Parser instance
+ */
+static void
+set_body_mode_none (SocketHTTP1_Parser_T parser)
+{
+  parser->body_mode = HTTP1_BODY_NONE;
+  parser->content_length = -1;
+  parser->body_remaining = 0;
+  parser->body_complete = 1;
+}
+
+/**
+ * determine_body_mode - Determine body transfer mode from headers
+ * @parser: Parser instance
+ *
  * Returns: HTTP1_OK or error code (smuggling detected)
  */
 static SocketHTTP1_Result
 determine_body_mode (SocketHTTP1_Parser_T parser)
 {
-  int has_cl;
   int has_te;
   int64_t cl_value;
+  int has_cl;
 
   has_te = SocketHTTP_Headers_has (parser->headers, "Transfer-Encoding");
   cl_value = parse_content_length (parser->headers);
   has_cl = (cl_value >= -1); /* -1 = invalid, -2 = not present */
 
-  /* CRITICAL: Detect request smuggling attempts */
+  /* CRITICAL: Detect request smuggling attempts (RFC 9112 Section 6.3) */
   if (parser->config.strict_mode)
     {
-      /* RFC 9112 Section 6.3: Reject messages with both CL and TE */
       if (has_cl && cl_value >= 0 && has_te)
-        {
-          return HTTP1_ERROR_SMUGGLING_DETECTED;
-        }
+        return HTTP1_ERROR_SMUGGLING_DETECTED;
 
-      /* Invalid Content-Length format */
       if (has_cl && cl_value == -1)
-        {
-          return HTTP1_ERROR_INVALID_CONTENT_LENGTH;
-        }
+        return HTTP1_ERROR_INVALID_CONTENT_LENGTH;
     }
 
   /* Transfer-Encoding takes precedence over Content-Length */
   if (has_te)
     {
       if (has_chunked_encoding (parser->headers))
-        {
-          parser->body_mode = HTTP1_BODY_CHUNKED;
-          parser->content_length = -1;
-          parser->body_remaining = -1;
-          return HTTP1_OK;
-        }
-      /* Other transfer encodings not supported - treat as until-close */
-      parser->body_mode = HTTP1_BODY_UNTIL_CLOSE;
-      parser->content_length = -1;
-      parser->body_remaining = -1;
+        set_body_mode_chunked (parser);
+      else
+        set_body_mode_until_close (parser);
       return HTTP1_OK;
     }
 
   /* Content-Length present */
   if (cl_value >= 0)
     {
-      parser->body_mode = HTTP1_BODY_CONTENT_LENGTH;
-      parser->content_length = cl_value;
-      parser->body_remaining = cl_value;
-
-      if (cl_value == 0)
-        {
-          parser->body_complete = 1;
-        }
+      set_body_mode_content_length (parser, cl_value);
       return HTTP1_OK;
     }
 
-  /* No body indicator - depends on context */
-  parser->body_mode = HTTP1_BODY_NONE;
-  parser->content_length = -1;
-  parser->body_remaining = 0;
-  parser->body_complete = 1;
+  /* No body indicator */
+  set_body_mode_none (parser);
   return HTTP1_OK;
 }
 
+/* ============================================================================
+ * HTTP Version and Connection Helpers
+ * ============================================================================ */
+
 /**
- * Finalize request after headers are complete
+ * map_http_version - Map version major/minor to enum
+ * @major: HTTP major version
+ * @minor: HTTP minor version
+ *
+ * Returns: SocketHTTP_Version enum value
+ */
+static SocketHTTP_Version
+map_http_version (int major, int minor)
+{
+  if (major == 1 && minor == 1)
+    return HTTP_VERSION_1_1;
+  if (major == 1 && minor == 0)
+    return HTTP_VERSION_1_0;
+  if (major == 0 && minor == 9)
+    return HTTP_VERSION_0_9;
+  if (major == 2 && minor == 0)
+    return HTTP_VERSION_2;
+
+  return HTTP_VERSION_1_1; /* Default */
+}
+
+/**
+ * determine_keepalive - Determine connection persistence from version/headers
+ * @version: HTTP version enum
+ * @headers: Headers collection
+ *
+ * Returns: 1 if keep-alive, 0 if close
+ */
+static int
+determine_keepalive (SocketHTTP_Version version,
+                     const SocketHTTP_Headers_T headers)
+{
+  if (version == HTTP_VERSION_1_1)
+    {
+      /* HTTP/1.1: keep-alive by default unless "Connection: close" */
+      return !SocketHTTP_Headers_contains (headers, "Connection", "close");
+    }
+
+  /* HTTP/1.0: close by default unless "Connection: keep-alive" */
+  return SocketHTTP_Headers_contains (headers, "Connection", "keep-alive");
+}
+
+/**
+ * check_upgrade - Check and set upgrade protocol if present
+ * @parser: Parser instance
+ */
+static void
+check_upgrade (SocketHTTP1_Parser_T parser)
+{
+  if (SocketHTTP_Headers_has (parser->headers, "Upgrade"))
+    {
+      parser->is_upgrade = 1;
+      parser->upgrade_protocol
+          = SocketHTTP_Headers_get (parser->headers, "Upgrade");
+    }
+}
+
+/* ============================================================================
+ * Message Finalization
+ * ============================================================================ */
+
+/**
+ * finalize_request - Finalize request after headers are complete
+ * @parser: Parser instance
+ *
+ * Returns: HTTP1_OK or error code
  */
 static SocketHTTP1_Result
 finalize_request (SocketHTTP1_Parser_T parser)
 {
   SocketHTTP_Request *req = &parser->message.request;
   SocketHTTP1_Result result;
+  SocketHTTP_Version version;
 
   /* Set method */
   req->method = SocketHTTP_method_parse (parser->method_buf.data,
                                          parser->method_buf.len);
 
   /* Set version */
-  if (parser->version_major == 1 && parser->version_minor == 1)
-    req->version = HTTP_VERSION_1_1;
-  else if (parser->version_major == 1 && parser->version_minor == 0)
-    req->version = HTTP_VERSION_1_0;
-  else if (parser->version_major == 0 && parser->version_minor == 9)
-    req->version = HTTP_VERSION_0_9;
-  else if (parser->version_major == 2 && parser->version_minor == 0)
-    req->version = HTTP_VERSION_2;
-  else
-    req->version = HTTP_VERSION_1_1; /* Default */
+  version
+      = map_http_version (parser->version_major, parser->version_minor);
+  req->version = version;
 
   /* Set request target (path) - already null-terminated */
   req->path = parser->uri_buf.data;
@@ -755,21 +901,13 @@ finalize_request (SocketHTTP1_Parser_T parser)
   if (result != HTTP1_OK)
     return result;
 
-  /* Request body handling depends on method */
+  /* Determine if request has body based on method and body mode */
   if (req->method == HTTP_METHOD_GET || req->method == HTTP_METHOD_HEAD
       || req->method == HTTP_METHOD_DELETE
       || req->method == HTTP_METHOD_OPTIONS
       || req->method == HTTP_METHOD_TRACE)
     {
-      /* These typically don't have bodies unless Content-Length/TE present */
-      if (parser->body_mode == HTTP1_BODY_NONE)
-        {
-          req->has_body = 0;
-        }
-      else
-        {
-          req->has_body = 1;
-        }
+      req->has_body = (parser->body_mode != HTTP1_BODY_NONE);
     }
   else
     {
@@ -780,53 +918,34 @@ finalize_request (SocketHTTP1_Parser_T parser)
 
   /* Check for Expect: 100-continue */
   if (SocketHTTP_Headers_contains (parser->headers, "Expect", "100-continue"))
-    {
-      parser->expects_continue = 1;
-    }
+    parser->expects_continue = 1;
 
-  /* Check for Connection header */
-  if (req->version == HTTP_VERSION_1_1)
-    {
-      /* HTTP/1.1: keep-alive by default unless "Connection: close" */
-      parser->keepalive
-          = !SocketHTTP_Headers_contains (parser->headers, "Connection",
-                                          "close");
-    }
-  else
-    {
-      /* HTTP/1.0: close by default unless "Connection: keep-alive" */
-      parser->keepalive = SocketHTTP_Headers_contains (parser->headers,
-                                                       "Connection",
-                                                       "keep-alive");
-    }
+  /* Determine keep-alive */
+  parser->keepalive = determine_keepalive (version, parser->headers);
 
   /* Check for Upgrade */
-  if (SocketHTTP_Headers_has (parser->headers, "Upgrade"))
-    {
-      parser->is_upgrade = 1;
-      parser->upgrade_protocol
-          = SocketHTTP_Headers_get (parser->headers, "Upgrade");
-    }
+  check_upgrade (parser);
 
   return HTTP1_OK;
 }
 
 /**
- * Finalize response after headers are complete
+ * finalize_response - Finalize response after headers are complete
+ * @parser: Parser instance
+ *
+ * Returns: HTTP1_OK or error code
  */
 static SocketHTTP1_Result
 finalize_response (SocketHTTP1_Parser_T parser)
 {
   SocketHTTP_Response *resp = &parser->message.response;
   SocketHTTP1_Result result;
+  SocketHTTP_Version version;
 
   /* Set version */
-  if (parser->version_major == 1 && parser->version_minor == 1)
-    resp->version = HTTP_VERSION_1_1;
-  else if (parser->version_major == 1 && parser->version_minor == 0)
-    resp->version = HTTP_VERSION_1_0;
-  else
-    resp->version = HTTP_VERSION_1_1;
+  version
+      = map_http_version (parser->version_major, parser->version_minor);
+  resp->version = version;
 
   /* Set status code and reason */
   resp->status_code = parser->status_code;
@@ -836,16 +955,8 @@ finalize_response (SocketHTTP1_Parser_T parser)
   resp->headers = parser->headers;
 
   /* 1xx, 204, 304 responses have no body (RFC 9112 Section 6.3) */
-  if (parser->status_code >= 100 && parser->status_code < 200)
-    {
-      parser->body_mode = HTTP1_BODY_NONE;
-      parser->body_complete = 1;
-      resp->has_body = 0;
-      resp->content_length = 0;
-      return HTTP1_OK;
-    }
-
-  if (parser->status_code == 204 || parser->status_code == 304)
+  if ((parser->status_code >= 100 && parser->status_code < 200)
+      || parser->status_code == 204 || parser->status_code == 304)
     {
       parser->body_mode = HTTP1_BODY_NONE;
       parser->body_complete = 1;
@@ -862,29 +973,20 @@ finalize_response (SocketHTTP1_Parser_T parser)
   resp->has_body = (parser->body_mode != HTTP1_BODY_NONE);
   resp->content_length = parser->content_length;
 
-  /* Check for Connection header */
-  if (resp->version == HTTP_VERSION_1_1)
-    {
-      parser->keepalive
-          = !SocketHTTP_Headers_contains (parser->headers, "Connection",
-                                          "close");
-    }
-  else
-    {
-      parser->keepalive = SocketHTTP_Headers_contains (parser->headers,
-                                                       "Connection",
-                                                       "keep-alive");
-    }
+  /* Determine keep-alive */
+  parser->keepalive = determine_keepalive (version, parser->headers);
 
   return HTTP1_OK;
 }
 
 /* ============================================================================
- * DFA Parser Core (Table-Driven)
+ * DFA Parser Core - Error and State Helpers
  * ============================================================================ */
 
 /**
- * Set error state
+ * set_error - Set parser error state
+ * @parser: Parser instance
+ * @error: Error code to set
  */
 static void
 set_error (SocketHTTP1_Parser_T parser, SocketHTTP1_Result error)
@@ -895,7 +997,24 @@ set_error (SocketHTTP1_Parser_T parser, SocketHTTP1_Result error)
 }
 
 /**
- * Add accumulated header to collection
+ * Macro to set error and return from parse loop
+ *
+ * Eliminates repeated error return pattern throughout the parser.
+ */
+#define RETURN_PARSE_ERROR(parser, err, p, data, consumed)                     \
+  do                                                                           \
+    {                                                                          \
+      set_error ((parser), (err));                                             \
+      *(consumed) = (size_t)((p) - (data));                                    \
+      return (parser)->error;                                                  \
+    }                                                                          \
+  while (0)
+
+/**
+ * add_current_header - Add accumulated header to collection
+ * @parser: Parser instance
+ *
+ * Returns: HTTP1_OK or error code
  */
 static SocketHTTP1_Result
 add_current_header (SocketHTTP1_Parser_T parser)
@@ -903,7 +1022,6 @@ add_current_header (SocketHTTP1_Parser_T parser)
   char *name;
   char *value;
 
-  /* Null-terminate buffers */
   name = http1_tokenbuf_terminate (&parser->name_buf, parser->arena,
                                    parser->config.max_header_name);
   value = http1_tokenbuf_terminate (&parser->value_buf, parser->arena,
@@ -912,27 +1030,21 @@ add_current_header (SocketHTTP1_Parser_T parser)
   if (!name || !value)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
 
-  /* Check header count limit */
   if (parser->header_count >= parser->config.max_headers)
     return HTTP1_ERROR_TOO_MANY_HEADERS;
 
-  /* Check total header size limit */
   parser->total_header_size
-      += parser->name_buf.len + parser->value_buf.len + 4; /* ": \r\n" */
+      += parser->name_buf.len + parser->value_buf.len + HTTP1_HEADER_OVERHEAD;
   if (parser->total_header_size > parser->config.max_header_size)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
 
-  /* Add to collection */
   if (SocketHTTP_Headers_add_n (parser->headers, name, parser->name_buf.len,
                                 value, parser->value_buf.len)
       < 0)
-    {
-      return HTTP1_ERROR_INVALID_HEADER_VALUE;
-    }
+    return HTTP1_ERROR_INVALID_HEADER_VALUE;
 
   parser->header_count++;
 
-  /* Reset buffers for next header */
   http1_tokenbuf_reset (&parser->name_buf);
   http1_tokenbuf_reset (&parser->value_buf);
 
@@ -940,7 +1052,10 @@ add_current_header (SocketHTTP1_Parser_T parser)
 }
 
 /**
- * Map internal state to appropriate error code
+ * state_to_error - Map internal state to appropriate error code
+ * @state: Current internal parser state
+ *
+ * Returns: Appropriate SocketHTTP1_Result error code
  */
 static SocketHTTP1_Result
 state_to_error (HTTP1_InternalState state)
@@ -950,9 +1065,11 @@ state_to_error (HTTP1_InternalState state)
     case HTTP1_PS_START:
     case HTTP1_PS_METHOD:
       return HTTP1_ERROR_INVALID_METHOD;
+
     case HTTP1_PS_URI:
     case HTTP1_PS_SP_AFTER_METHOD:
       return HTTP1_ERROR_INVALID_URI;
+
     case HTTP1_PS_VERSION_H:
     case HTTP1_PS_VERSION_T1:
     case HTTP1_PS_VERSION_T2:
@@ -963,35 +1080,236 @@ state_to_error (HTTP1_InternalState state)
     case HTTP1_PS_VERSION_MINOR:
     case HTTP1_PS_SP_AFTER_URI:
       return HTTP1_ERROR_INVALID_VERSION;
+
     case HTTP1_PS_STATUS_CODE:
     case HTTP1_PS_SP_AFTER_STATUS:
     case HTTP1_PS_REASON:
       return HTTP1_ERROR_INVALID_STATUS;
+
     case HTTP1_PS_HEADER_START:
     case HTTP1_PS_HEADER_NAME:
       return HTTP1_ERROR_INVALID_HEADER_NAME;
+
     case HTTP1_PS_HEADER_COLON:
     case HTTP1_PS_HEADER_VALUE:
     case HTTP1_PS_HEADER_CR:
       return HTTP1_ERROR_INVALID_HEADER_VALUE;
+
     default:
       return HTTP1_ERROR;
     }
 }
 
+/* ============================================================================
+ * DFA Parser Core - Action Handlers
+ * ============================================================================ */
+
 /**
- * Main DFA parsing function - Table-Driven Hot Loop
+ * handle_store_action - Handle token buffer store actions
+ * @parser: Parser instance
+ * @action: Action type
+ * @c: Character to store
+ * @p: Current position
+ * @data: Data start
+ * @consumed: Consumed output
+ *
+ * Returns: HTTP1_OK or error code
+ */
+static SocketHTTP1_Result
+handle_store_action (SocketHTTP1_Parser_T parser, uint8_t action, char c,
+                     const char *p, const char *data, size_t *consumed)
+{
+  int ret;
+
+  switch (action)
+    {
+    case HTTP1_ACT_STORE_METHOD:
+      ret = http1_tokenbuf_append (&parser->method_buf, parser->arena, c,
+                                   SOCKETHTTP1_MAX_METHOD_LEN);
+      if (ret < 0)
+        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_INVALID_METHOD, p, data,
+                            consumed);
+      break;
+
+    case HTTP1_ACT_STORE_URI:
+      ret = http1_tokenbuf_append (&parser->uri_buf, parser->arena, c,
+                                   parser->config.max_request_line);
+      if (ret < 0)
+        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_LINE_TOO_LONG, p, data,
+                            consumed);
+      break;
+
+    case HTTP1_ACT_STORE_REASON:
+      ret = http1_tokenbuf_append (&parser->reason_buf, parser->arena, c,
+                                   parser->config.max_request_line);
+      if (ret < 0)
+        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_LINE_TOO_LONG, p, data,
+                            consumed);
+      break;
+
+    case HTTP1_ACT_STORE_NAME:
+      ret = http1_tokenbuf_append (&parser->name_buf, parser->arena, c,
+                                   parser->config.max_header_name);
+      if (ret < 0)
+        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_INVALID_HEADER_NAME, p, data,
+                            consumed);
+      break;
+
+    case HTTP1_ACT_STORE_VALUE:
+      ret = http1_tokenbuf_append (&parser->value_buf, parser->arena, c,
+                                   parser->config.max_header_value);
+      if (ret < 0)
+        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_HEADER_TOO_LARGE, p, data,
+                            consumed);
+      break;
+
+    default:
+      break;
+    }
+
+  return HTTP1_OK;
+}
+
+/**
+ * handle_method_end - Handle method completion action
+ * @parser: Parser instance
+ * @p: Current position
+ * @data: Data start
+ * @consumed: Consumed output
+ *
+ * Returns: HTTP1_OK or error code
+ */
+static SocketHTTP1_Result
+handle_method_end (SocketHTTP1_Parser_T parser, const char *p,
+                   const char *data, size_t *consumed)
+{
+  if (parser->method_buf.len == 0)
+    RETURN_PARSE_ERROR (parser, HTTP1_ERROR_INVALID_METHOD, p, data, consumed);
+
+  if (!http1_tokenbuf_terminate (&parser->method_buf, parser->arena,
+                                 parser->config.max_request_line))
+    RETURN_PARSE_ERROR (parser, HTTP1_ERROR_LINE_TOO_LONG, p, data, consumed);
+
+  return HTTP1_OK;
+}
+
+/**
+ * handle_uri_end - Handle URI completion action
+ * @parser: Parser instance
+ * @p: Current position
+ * @data: Data start
+ * @consumed: Consumed output
+ *
+ * Returns: HTTP1_OK or error code
+ */
+static SocketHTTP1_Result
+handle_uri_end (SocketHTTP1_Parser_T parser, const char *p, const char *data,
+                size_t *consumed)
+{
+  if (!http1_tokenbuf_terminate (&parser->uri_buf, parser->arena,
+                                 parser->config.max_request_line))
+    RETURN_PARSE_ERROR (parser, HTTP1_ERROR_LINE_TOO_LONG, p, data, consumed);
+
+  return HTTP1_OK;
+}
+
+/**
+ * handle_version_digit - Handle version digit action
+ * @parser: Parser instance
+ * @action: VERSION_MAJ or VERSION_MIN
+ * @c: Digit character
+ * @p: Current position
+ * @data: Data start
+ * @consumed: Consumed output
+ *
+ * Returns: HTTP1_OK or error code
+ */
+static SocketHTTP1_Result
+handle_version_digit (SocketHTTP1_Parser_T parser, uint8_t action, char c,
+                      const char *p, const char *data, size_t *consumed)
+{
+  if (action == HTTP1_ACT_VERSION_MAJ)
+    {
+      parser->version_major = parser->version_major * 10 + (c - '0');
+      if (parser->version_major > HTTP1_MAX_VERSION_DIGIT)
+        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_INVALID_VERSION, p, data,
+                            consumed);
+    }
+  else
+    {
+      parser->version_minor = parser->version_minor * 10 + (c - '0');
+      if (parser->version_minor > HTTP1_MAX_VERSION_DIGIT)
+        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_INVALID_VERSION, p, data,
+                            consumed);
+    }
+
+  return HTTP1_OK;
+}
+
+/**
+ * handle_status_digit - Handle status code digit action
+ * @parser: Parser instance
+ * @c: Digit character
+ * @p: Current position
+ * @data: Data start
+ * @consumed: Consumed output
+ *
+ * Returns: HTTP1_OK or error code
+ */
+static SocketHTTP1_Result
+handle_status_digit (SocketHTTP1_Parser_T parser, char c, const char *p,
+                     const char *data, size_t *consumed)
+{
+  parser->status_code = parser->status_code * 10 + (c - '0');
+
+  if (parser->status_code > HTTP1_MAX_STATUS_CODE)
+    RETURN_PARSE_ERROR (parser, HTTP1_ERROR_INVALID_STATUS, p, data, consumed);
+
+  return HTTP1_OK;
+}
+
+/**
+ * calculate_next_body_state - Calculate next state/internal_state after
+ * headers
+ * @parser: Parser instance
+ * @next_state: Output internal state
+ */
+static void
+calculate_next_body_state (SocketHTTP1_Parser_T parser,
+                           HTTP1_InternalState *next_state)
+{
+  if (parser->body_complete)
+    {
+      parser->state = HTTP1_STATE_COMPLETE;
+      *next_state = HTTP1_PS_COMPLETE;
+    }
+  else if (parser->body_mode == HTTP1_BODY_CHUNKED)
+    {
+      parser->state = HTTP1_STATE_CHUNK_SIZE;
+      *next_state = HTTP1_PS_CHUNK_SIZE;
+    }
+  else
+    {
+      parser->state = HTTP1_STATE_BODY;
+      *next_state = HTTP1_PS_BODY_IDENTITY;
+    }
+}
+
+/* ============================================================================
+ * DFA Parser Core - Main Loop
+ * ============================================================================ */
+
+/**
+ * SocketHTTP1_Parser_execute - Main DFA parsing function
+ * @parser: Parser instance
+ * @data: Input data buffer
+ * @len: Input data length
+ * @consumed: Output - bytes consumed
+ *
+ * Returns: Parse result (HTTP1_OK, HTTP1_INCOMPLETE, or error)
  *
  * Uses precomputed state transition and action tables for O(1) per-byte
- * processing with minimal branch misprediction. This is 2-5x faster than
- * the equivalent switch-based implementation.
- *
- * The hot loop performs:
- * 1. Character classification via lookup table (1 memory access)
- * 2. State transition via lookup table (1 memory access)
- * 3. Action execution via small switch (typically optimized to jump table)
- *
- * Total: ~3 memory accesses + 1 predictable branch per byte
+ * processing with minimal branch misprediction.
  */
 SocketHTTP1_Result
 SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
@@ -1059,7 +1377,7 @@ SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
       next_state = (HTTP1_InternalState)state_table[state][cc];
       action = action_table[state][cc];
 
-      /* Execute action - small switch optimized to jump table */
+      /* Execute action */
       switch (action)
         {
         case HTTP1_ACT_NONE:
@@ -1067,114 +1385,40 @@ SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
           break;
 
         case HTTP1_ACT_STORE_METHOD:
-          if (http1_tokenbuf_append (&parser->method_buf, parser->arena, (char)c,
-                                     SOCKETHTTP1_MAX_METHOD_LEN)
-              < 0)
-            {
-              set_error (parser, HTTP1_ERROR_INVALID_METHOD);
-              *consumed = (size_t)(p - data);
-              return parser->error;
-            }
-          break;
-
         case HTTP1_ACT_STORE_URI:
-          if (http1_tokenbuf_append (&parser->uri_buf, parser->arena, (char)c,
-                                     parser->config.max_request_line)
-              < 0)
-            {
-              set_error (parser, HTTP1_ERROR_LINE_TOO_LONG);
-              *consumed = (size_t)(p - data);
-              return parser->error;
-            }
-          break;
-
         case HTTP1_ACT_STORE_REASON:
-          if (http1_tokenbuf_append (&parser->reason_buf, parser->arena, (char)c,
-                                     parser->config.max_request_line)
-              < 0)
-            {
-              set_error (parser, HTTP1_ERROR_LINE_TOO_LONG);
-              *consumed = (size_t)(p - data);
-              return parser->error;
-            }
-          break;
-
         case HTTP1_ACT_STORE_NAME:
-          if (http1_tokenbuf_append (&parser->name_buf, parser->arena, (char)c,
-                                     parser->config.max_header_name)
-              < 0)
-            {
-              set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
-              *consumed = (size_t)(p - data);
-              return parser->error;
-            }
-          break;
-
         case HTTP1_ACT_STORE_VALUE:
-          if (http1_tokenbuf_append (&parser->value_buf, parser->arena, (char)c,
-                                     parser->config.max_header_value)
-              < 0)
-            {
-              set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
-              *consumed = (size_t)(p - data);
-              return parser->error;
-            }
+          result = handle_store_action (parser, action, (char)c, p, data,
+                                        consumed);
+          if (result != HTTP1_OK)
+            return result;
           break;
 
         case HTTP1_ACT_METHOD_END:
-          if (parser->method_buf.len == 0)
-            {
-              set_error (parser, HTTP1_ERROR_INVALID_METHOD);
-              *consumed = (size_t)(p - data);
-              return parser->error;
-            }
-          if (!http1_tokenbuf_terminate (&parser->method_buf, parser->arena,
-                                         parser->config.max_request_line))
-            {
-              set_error (parser, HTTP1_ERROR_LINE_TOO_LONG);
-              *consumed = (size_t)(p - data);
-              return parser->error;
-            }
+          result = handle_method_end (parser, p, data, consumed);
+          if (result != HTTP1_OK)
+            return result;
           break;
 
         case HTTP1_ACT_URI_END:
-          if (!http1_tokenbuf_terminate (&parser->uri_buf, parser->arena,
-                                         parser->config.max_request_line))
-            {
-              set_error (parser, HTTP1_ERROR_LINE_TOO_LONG);
-              *consumed = (size_t)(p - data);
-              return parser->error;
-            }
+          result = handle_uri_end (parser, p, data, consumed);
+          if (result != HTTP1_OK)
+            return result;
           break;
 
         case HTTP1_ACT_VERSION_MAJ:
-          parser->version_major = parser->version_major * 10 + (c - '0');
-          if (parser->version_major > 9)
-            {
-              set_error (parser, HTTP1_ERROR_INVALID_VERSION);
-              *consumed = (size_t)(p - data);
-              return parser->error;
-            }
-          break;
-
         case HTTP1_ACT_VERSION_MIN:
-          parser->version_minor = parser->version_minor * 10 + (c - '0');
-          if (parser->version_minor > 9)
-            {
-              set_error (parser, HTTP1_ERROR_INVALID_VERSION);
-              *consumed = (size_t)(p - data);
-              return parser->error;
-            }
+          result = handle_version_digit (parser, action, (char)c, p, data,
+                                         consumed);
+          if (result != HTTP1_OK)
+            return result;
           break;
 
         case HTTP1_ACT_STATUS_DIGIT:
-          parser->status_code = parser->status_code * 10 + (c - '0');
-          if (parser->status_code > 999)
-            {
-              set_error (parser, HTTP1_ERROR_INVALID_STATUS);
-              *consumed = (size_t)(p - data);
-              return parser->error;
-            }
+          result = handle_status_digit (parser, (char)c, p, data, consumed);
+          if (result != HTTP1_OK)
+            return result;
           break;
 
         case HTTP1_ACT_HEADER_END:
@@ -1190,49 +1434,27 @@ SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
         case HTTP1_ACT_HEADERS_DONE:
           /* Headers complete - finalize message */
           if (parser->mode == HTTP1_PARSE_REQUEST)
-            {
-              result = finalize_request (parser);
-            }
+            result = finalize_request (parser);
           else
-            {
-              result = finalize_response (parser);
-            }
+            result = finalize_response (parser);
+
           if (result != HTTP1_OK)
-            {
-              set_error (parser, result);
-              *consumed = (size_t)(p - data);
-              return result;
-            }
-          parser->state
-              = parser->body_complete
-                    ? HTTP1_STATE_COMPLETE
-                    : (parser->body_mode == HTTP1_BODY_CHUNKED)
-                          ? HTTP1_STATE_CHUNK_SIZE
-                          : HTTP1_STATE_BODY;
-          next_state
-              = parser->body_complete
-                    ? HTTP1_PS_COMPLETE
-                    : (parser->body_mode == HTTP1_BODY_CHUNKED)
-                          ? HTTP1_PS_CHUNK_SIZE
-                          : HTTP1_PS_BODY_IDENTITY;
+            RETURN_PARSE_ERROR (parser, result, p, data, consumed);
+
+          calculate_next_body_state (parser, &next_state);
           parser->internal_state = next_state;
           *consumed = (size_t)(p - data) + 1;
           return HTTP1_OK;
 
         case HTTP1_ACT_ERROR:
         default:
-          set_error (parser, state_to_error (state));
-          *consumed = (size_t)(p - data);
-          return parser->error;
+          RETURN_PARSE_ERROR (parser, state_to_error (state), p, data,
+                              consumed);
         }
 
       /* Check for error transition */
       if (next_state == HTTP1_PS_ERROR)
-        {
-          set_error (parser, state_to_error (state));
-          *consumed = (size_t)(p - data);
-          return parser->error;
-        }
+        RETURN_PARSE_ERROR (parser, state_to_error (state), p, data, consumed);
 
       /* Update state and counters */
       state = next_state;
@@ -1241,11 +1463,8 @@ SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
       /* Check line length limit */
       if (state <= HTTP1_PS_LINE_CR
           && parser->line_length > parser->config.max_request_line)
-        {
-          set_error (parser, HTTP1_ERROR_LINE_TOO_LONG);
-          *consumed = (size_t)(p - data);
-          return parser->error;
-        }
+        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_LINE_TOO_LONG, p, data,
+                            consumed);
 
       /* Reset line length on header start */
       if (state == HTTP1_PS_HEADER_START)
@@ -1261,6 +1480,9 @@ SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
   *consumed = len;
   return HTTP1_INCOMPLETE;
 }
+
+/* Undefine internal macro */
+#undef RETURN_PARSE_ERROR
 
 /* ============================================================================
  * State Accessors
@@ -1371,4 +1593,3 @@ SocketHTTP1_Parser_expects_continue (SocketHTTP1_Parser_T parser)
   assert (parser);
   return parser->expects_continue;
 }
-

@@ -100,8 +100,8 @@ proxy_socks5_recv_method (struct SocketProxy_Conn_T *conn)
 {
   unsigned char *buf = conn->recv_buf;
 
-  /* Need at least 2 bytes */
-  if (conn->recv_len < 2)
+  /* Need at least VER + METHOD bytes */
+  if (conn->recv_len < SOCKS5_METHOD_RESPONSE_SIZE)
     return PROXY_IN_PROGRESS;
 
   /* Validate version */
@@ -236,8 +236,8 @@ proxy_socks5_recv_auth (struct SocketProxy_Conn_T *conn)
 {
   unsigned char *buf = conn->recv_buf;
 
-  /* Need at least 2 bytes */
-  if (conn->recv_len < 2)
+  /* Need at least VER + STATUS bytes */
+  if (conn->recv_len < SOCKS5_AUTH_RESPONSE_SIZE)
     return PROXY_IN_PROGRESS;
 
   /* Validate version */
@@ -312,15 +312,15 @@ proxy_socks5_send_connect (struct SocketProxy_Conn_T *conn)
     {
       /* IPv4 address */
       buf[len++] = SOCKS5_ATYP_IPV4;
-      memcpy (buf + len, &ipv4, 4);
-      len += 4;
+      memcpy (buf + len, &ipv4, SOCKS5_IPV4_ADDR_SIZE);
+      len += SOCKS5_IPV4_ADDR_SIZE;
     }
   else if (inet_pton (AF_INET6, conn->target_host, &ipv6) == 1)
     {
       /* IPv6 address */
       buf[len++] = SOCKS5_ATYP_IPV6;
-      memcpy (buf + len, &ipv6, 16);
-      len += 16;
+      memcpy (buf + len, &ipv6, SOCKS5_IPV6_ADDR_SIZE);
+      len += SOCKS5_IPV6_ADDR_SIZE;
     }
   else
     {
@@ -382,8 +382,8 @@ proxy_socks5_recv_connect (struct SocketProxy_Conn_T *conn)
   size_t needed;
   size_t addr_len;
 
-  /* Need at least 4 bytes for header */
-  if (conn->recv_len < 4)
+  /* Need at least VER + REP + RSV + ATYP bytes for header */
+  if (conn->recv_len < SOCKS5_CONNECT_HEADER_SIZE)
     return PROXY_IN_PROGRESS;
 
   /* Validate version */
@@ -404,18 +404,22 @@ proxy_socks5_recv_connect (struct SocketProxy_Conn_T *conn)
   switch (buf[3])
     {
     case SOCKS5_ATYP_IPV4:
-      needed = 4 + 4 + 2; /* header + IPv4 + port */
+      /* header + IPv4 + port */
+      needed = SOCKS5_CONNECT_IPV4_RESPONSE_SIZE;
       break;
 
     case SOCKS5_ATYP_DOMAIN:
-      if (conn->recv_len < 5)
+      /* Need header + length byte to read domain length */
+      if (conn->recv_len < SOCKS5_CONNECT_HEADER_SIZE + 1)
         return PROXY_IN_PROGRESS;
       addr_len = buf[4];
-      needed = 4 + 1 + addr_len + 2; /* header + len + domain + port */
+      /* header + len byte + domain + port */
+      needed = SOCKS5_CONNECT_HEADER_SIZE + 1 + addr_len + SOCKS5_PORT_SIZE;
       break;
 
     case SOCKS5_ATYP_IPV6:
-      needed = 4 + 16 + 2; /* header + IPv6 + port */
+      /* header + IPv6 + port */
+      needed = SOCKS5_CONNECT_IPV6_RESPONSE_SIZE;
       break;
 
     default:

@@ -2,12 +2,20 @@
  * SocketHTTP2-flow.c - HTTP/2 Flow Control
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
- * Implements:
- * - Connection-level flow control (RFC 9113 Section 5.2)
- * - Stream-level flow control
- * - Window size management
- * - Overflow-safe arithmetic
+ * Implements RFC 9113 Section 5.2 flow control:
+ * - Connection-level flow control windows
+ * - Stream-level flow control windows
+ * - Window size management with overflow protection
+ * - Overflow-safe 64-bit arithmetic for window updates
+ *
+ * Flow control in HTTP/2 operates at two levels:
+ * 1. Connection level - shared across all streams
+ * 2. Stream level - per-stream windows
+ *
+ * Both windows must have capacity for data transmission.
+ * The effective window is the minimum of both levels.
  */
 
 #include "http/SocketHTTP2-private.h"
@@ -19,50 +27,109 @@
 #include <stdint.h>
 
 /* ============================================================================
- * Module Exception Setup
+ * Logging Component
  * ============================================================================ */
 
 #undef SOCKET_LOG_COMPONENT
-#define SOCKET_LOG_COMPONENT "HTTP2"
+#define SOCKET_LOG_COMPONENT "HTTP2-flow"
 
 /* ============================================================================
- * Constants
+ * Constants (RFC 9113 Section 5.2)
  * ============================================================================ */
 
-/* Maximum window size (2^31 - 1) per RFC 9113 */
+/* Maximum window size (2^31 - 1) per RFC 9113 Section 5.2.1 */
 #define HTTP2_MAX_WINDOW_SIZE 0x7FFFFFFF
 
 /* ============================================================================
- * Flow Control - Receive Window
+ * Static Helper Functions
  * ============================================================================ */
 
+/**
+ * flow_consume_window - Consume bytes from a flow control window
+ * @window: Pointer to window value (int32_t)
+ * @bytes: Number of bytes to consume
+ *
+ * Returns: 0 on success, -1 if window would go negative
+ *
+ * Checks if window has capacity and deducts bytes atomically.
+ * Window may become negative if peer violates flow control.
+ */
+static int
+flow_consume_window (int32_t *window, size_t bytes)
+{
+  int32_t consume = (int32_t)bytes;
+
+  if (consume > *window)
+    return -1;
+
+  *window -= consume;
+  return 0;
+}
+
+/**
+ * flow_update_window - Add increment to a flow control window
+ * @window: Pointer to window value (int32_t)
+ * @increment: Amount to add (from WINDOW_UPDATE frame)
+ *
+ * Returns: 0 on success, -1 if would overflow HTTP2_MAX_WINDOW_SIZE
+ *
+ * Uses 64-bit arithmetic to detect overflow before applying update.
+ * Per RFC 9113 Section 5.2.1, overflow is a flow control error.
+ */
+static int
+flow_update_window (int32_t *window, uint32_t increment)
+{
+  int64_t new_value = (int64_t)*window + (int64_t)increment;
+
+  if (new_value > HTTP2_MAX_WINDOW_SIZE)
+    return -1;
+
+  *window += (int32_t)increment;
+  return 0;
+}
+
+/* ============================================================================
+ * Flow Control - Receive Window (Inbound DATA)
+ * ============================================================================ */
+
+/**
+ * http2_flow_consume_recv - Consume receive window for inbound DATA
+ * @conn: HTTP/2 connection (required)
+ * @stream: Stream receiving data (NULL for connection-only)
+ * @bytes: Number of bytes received
+ *
+ * Returns: 0 on success, -1 on flow control violation
+ *
+ * Called when DATA frame is received. Both connection and stream
+ * windows (if stream provided) must have capacity. On violation,
+ * caller should send GOAWAY with FLOW_CONTROL_ERROR.
+ */
 int
 http2_flow_consume_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                          size_t bytes)
 {
   assert (conn);
 
-  /* Check connection-level window */
-  if ((int32_t)bytes > conn->recv_window)
-    {
-      return -1; /* Flow control error */
-    }
+  if (flow_consume_window (&conn->recv_window, bytes) < 0)
+    return -1;
 
-  conn->recv_window -= (int32_t)bytes;
-
-  /* Check stream-level window */
-  if (stream)
-    {
-      if ((int32_t)bytes > stream->recv_window)
-        {
-          return -1; /* Flow control error */
-        }
-      stream->recv_window -= (int32_t)bytes;
-    }
+  if (stream && flow_consume_window (&stream->recv_window, bytes) < 0)
+    return -1;
 
   return 0;
 }
 
+/**
+ * http2_flow_update_recv - Update receive window from WINDOW_UPDATE
+ * @conn: HTTP/2 connection (required)
+ * @stream: Stream to update (NULL for connection-level)
+ * @increment: Window increment from WINDOW_UPDATE frame
+ *
+ * Returns: 0 on success, -1 if update would cause overflow
+ *
+ * Applied when sending WINDOW_UPDATE to peer. Overflow beyond
+ * HTTP2_MAX_WINDOW_SIZE is a flow control error per RFC 9113.
+ */
 int
 http2_flow_update_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                         uint32_t increment)
@@ -70,58 +137,53 @@ http2_flow_update_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
   assert (conn);
 
   if (stream)
-    {
-      /* Check for overflow */
-      if ((int64_t)stream->recv_window + (int64_t)increment > HTTP2_MAX_WINDOW_SIZE)
-        {
-          return -1;
-        }
-      stream->recv_window += (int32_t)increment;
-    }
-  else
-    {
-      /* Connection-level update */
-      if ((int64_t)conn->recv_window + (int64_t)increment > HTTP2_MAX_WINDOW_SIZE)
-        {
-          return -1;
-        }
-      conn->recv_window += (int32_t)increment;
-    }
+    return flow_update_window (&stream->recv_window, increment);
 
-  return 0;
+  return flow_update_window (&conn->recv_window, increment);
 }
 
 /* ============================================================================
- * Flow Control - Send Window
+ * Flow Control - Send Window (Outbound DATA)
  * ============================================================================ */
 
+/**
+ * http2_flow_consume_send - Consume send window for outbound DATA
+ * @conn: HTTP/2 connection (required)
+ * @stream: Stream sending data (NULL for connection-only)
+ * @bytes: Number of bytes to send
+ *
+ * Returns: 0 on success, -1 if insufficient window
+ *
+ * Called before sending DATA frame. Both connection and stream
+ * windows (if stream provided) must have capacity. If insufficient,
+ * caller should buffer data until WINDOW_UPDATE received.
+ */
 int
 http2_flow_consume_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                          size_t bytes)
 {
   assert (conn);
 
-  /* Check connection-level window */
-  if ((int32_t)bytes > conn->send_window)
-    {
-      return -1; /* Flow control error */
-    }
+  if (flow_consume_window (&conn->send_window, bytes) < 0)
+    return -1;
 
-  conn->send_window -= (int32_t)bytes;
-
-  /* Check stream-level window */
-  if (stream)
-    {
-      if ((int32_t)bytes > stream->send_window)
-        {
-          return -1; /* Flow control error */
-        }
-      stream->send_window -= (int32_t)bytes;
-    }
+  if (stream && flow_consume_window (&stream->send_window, bytes) < 0)
+    return -1;
 
   return 0;
 }
 
+/**
+ * http2_flow_update_send - Update send window from WINDOW_UPDATE
+ * @conn: HTTP/2 connection (required)
+ * @stream: Stream to update (NULL for connection-level)
+ * @increment: Window increment from received WINDOW_UPDATE
+ *
+ * Returns: 0 on success, -1 if update would cause overflow
+ *
+ * Applied when WINDOW_UPDATE received from peer. Overflow beyond
+ * HTTP2_MAX_WINDOW_SIZE is a flow control error per RFC 9113.
+ */
 int
 http2_flow_update_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                         uint32_t increment)
@@ -129,31 +191,29 @@ http2_flow_update_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
   assert (conn);
 
   if (stream)
-    {
-      /* Check for overflow */
-      if ((int64_t)stream->send_window + (int64_t)increment > HTTP2_MAX_WINDOW_SIZE)
-        {
-          return -1;
-        }
-      stream->send_window += (int32_t)increment;
-    }
-  else
-    {
-      /* Connection-level update */
-      if ((int64_t)conn->send_window + (int64_t)increment > HTTP2_MAX_WINDOW_SIZE)
-        {
-          return -1;
-        }
-      conn->send_window += (int32_t)increment;
-    }
+    return flow_update_window (&stream->send_window, increment);
 
-  return 0;
+  return flow_update_window (&conn->send_window, increment);
 }
 
 /* ============================================================================
- * Flow Control - Available Window
+ * Flow Control - Window Query
  * ============================================================================ */
 
+/**
+ * http2_flow_available_send - Get available send window
+ * @conn: HTTP/2 connection (required)
+ * @stream: Stream to check (NULL for connection-only)
+ *
+ * Returns: Available bytes (minimum of connection and stream windows),
+ *          or 0 if either window is exhausted or negative
+ *
+ * The effective send window is the minimum of:
+ * - Connection-level send window
+ * - Stream-level send window (if stream provided)
+ *
+ * Use this to determine maximum DATA payload size.
+ */
 int32_t
 http2_flow_available_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
 {
@@ -163,21 +223,9 @@ http2_flow_available_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
 
   available = conn->send_window;
 
-  /* If stream specified, use minimum of connection and stream windows */
-  if (stream)
-    {
-      if (stream->send_window < available)
-        {
-          available = stream->send_window;
-        }
-    }
+  if (stream && stream->send_window < available)
+    available = stream->send_window;
 
-  /* Return 0 if window is negative or zero */
-  if (available <= 0)
-    {
-      return 0;
-    }
-
-  return available;
+  return (available > 0) ? available : 0;
 }
 

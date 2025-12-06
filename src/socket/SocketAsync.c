@@ -14,12 +14,8 @@
  * - Memory management using Arena allocation
  * - Automatic backend detection (io_uring, kqueue, fallback)
  *
- * Merged from:
- * - SocketAsync.c (core context management)
- * - SocketAsync-request.c (request lifecycle)
- * - SocketAsync-backend.c (backend detection)
- * - SocketAsync-iouring.c (Linux io_uring backend)
- * - SocketAsync-kqueue.c (BSD/macOS kqueue backend)
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  */
 
 #include <assert.h>
@@ -27,7 +23,6 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -47,15 +42,20 @@
 #include "core/SocketConfig.h"
 #include "socket/Socket.h"
 #include "socket/SocketAsync.h"
-#include "socket/SocketIO.h" /* For TLS-aware I/O functions */
+#include "socket/SocketIO.h"
 #define SOCKET_LOG_COMPONENT "SocketAsync"
 #include "core/SocketUtil.h"
 
 #ifdef SOCKET_HAS_TLS
-#include "tls/SocketTLS.h" /* For TLS exception types */
+#include "tls/SocketTLS.h"
 #endif
 
 #define T SocketAsync_T
+
+/* Test ring entries for io_uring availability check */
+#ifndef SOCKET_IO_URING_TEST_ENTRIES
+#define SOCKET_IO_URING_TEST_ENTRIES 32
+#endif
 
 /* Request type enumeration */
 enum AsyncRequestType
@@ -72,13 +72,13 @@ struct AsyncRequest
   SocketAsync_Callback cb;
   void *user_data;
   enum AsyncRequestType type;
-  const void *send_buf; /* For send: data to send */
-  void *recv_buf;       /* For recv: user's buffer (must remain valid) */
-  size_t len;           /* Original length */
-  size_t completed;     /* Bytes completed so far */
+  const void *send_buf;
+  void *recv_buf;
+  size_t len;
+  size_t completed;
   SocketAsync_Flags flags;
-  struct AsyncRequest *next; /* Hash table chain */
-  time_t submitted_at;       /* For timeout tracking */
+  struct AsyncRequest *next;
+  time_t submitted_at;
 };
 
 /* Async context structure */
@@ -93,16 +93,15 @@ struct T
 
   /* Platform-specific async context */
 #ifdef SOCKET_HAS_IO_URING
-  struct io_uring *ring; /* io_uring ring (if available) */
-  int io_uring_fd;       /* Eventfd for completion notifications */
+  struct io_uring *ring;
+  int io_uring_fd;
 #elif defined(__APPLE__) || defined(__FreeBSD__)
-  int kqueue_fd; /* kqueue fd for AIO */
+  int kqueue_fd;
 #else
-  /* Fallback: edge-triggered polling */
   int fallback_mode;
 #endif
 
-  int available; /* Non-zero if async available */
+  int available;
   const char *backend_name;
 };
 
@@ -111,18 +110,16 @@ const Except_T SocketAsync_Failed
     = { &SocketAsync_Failed, "SocketAsync operation failed" };
 
 /* Thread-local exception for detailed error messages */
-/* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketAsync);
 
-/* Macro to raise exception with detailed error message */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketAsync, e)
 
-/* ==================== Request Management ==================== */
-/* Merged from SocketAsync-request.c */
+/* ==================== Static Helper Functions ==================== */
 
 /**
  * request_hash - Hash function for request IDs
  * @request_id: Request ID to hash
+ *
  * Returns: Hash value in range [0, SOCKET_HASH_TABLE_SIZE)
  *
  * Uses socket_util_hash_uint() for golden ratio multiplicative hashing.
@@ -134,10 +131,14 @@ request_hash (unsigned request_id)
 }
 
 /**
- * generate_request_id_unlocked - Generate unique request ID (caller holds lock)
+ * generate_request_id_unlocked - Generate unique request ID
  * @async: Async context
+ *
  * Returns: Unique request ID (> 0)
  * Thread-safe: No - caller must hold async->mutex
+ *
+ * Note: Request ID 0 is reserved as invalid. When unsigned wraps from
+ * UINT_MAX to 0, we skip to 1.
  */
 static unsigned
 generate_request_id_unlocked (T async)
@@ -147,56 +148,78 @@ generate_request_id_unlocked (T async)
   assert (async);
 
   id = async->next_request_id++;
-  /* LCOV_EXCL_START - Only when request_id wraps from UINT_MAX to 0 */
+  /* LCOV_EXCL_START - Wrap from UINT_MAX to 0 is rare */
   if (id == 0)
-    id = async->next_request_id++; /* Skip 0 (invalid) */
+    id = async->next_request_id++;
   /* LCOV_EXCL_STOP */
 
   return id;
 }
 
 /**
+ * request_remove_from_hash - Remove request from hash table
+ * @async: Async context (caller holds mutex if needed)
+ * @req: Request to remove
+ * @hash: Pre-computed hash value for request_id
+ *
+ * Thread-safe: No - caller must hold async->mutex
+ */
+static void
+request_remove_from_hash (T async, struct AsyncRequest *req, unsigned hash)
+{
+  struct AsyncRequest **pp = &async->requests[hash];
+
+  while (*pp && *pp != req)
+    pp = &(*pp)->next;
+
+  if (*pp == req)
+    *pp = req->next;
+}
+
+/**
  * socket_async_allocate_request - Allocate async request structure
  * @async: Async context
- * Returns: Allocated request or NULL on allocation failure
+ *
+ * Returns: Allocated and zeroed request
  * Raises: SocketAsync_Failed on allocation failure
  */
 static struct AsyncRequest *
 socket_async_allocate_request (T async)
 {
-  struct AsyncRequest *volatile volatile_req = NULL;
+  struct AsyncRequest *volatile req = NULL;
 
   assert (async);
 
-  TRY { volatile_req = ALLOC (async->arena, sizeof (struct AsyncRequest)); }
+  TRY
+  {
+    req = CALLOC (async->arena, 1, sizeof (struct AsyncRequest));
+  }
   EXCEPT (Arena_Failed)
   {
-    /* LCOV_EXCL_START - Arena allocation failure hard to trigger in tests */
+    /* LCOV_EXCL_START */
     SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async request");
     RAISE_MODULE_ERROR (SocketAsync_Failed);
     /* LCOV_EXCL_STOP */
   }
   END_TRY;
 
-  memset ((struct AsyncRequest *)volatile_req, 0, sizeof (struct AsyncRequest));
-  return (struct AsyncRequest *)volatile_req;
+  return (struct AsyncRequest *)req;
 }
 
 /**
- * socket_async_free_request - Free async request structure
- * @async: Async context
- * @req: Request to free
- * Note: Request is allocated from arena, so no explicit free needed
- * but we clear it for safety
+ * socket_async_free_request - Clear async request structure
+ * @async: Async context (unused, arena manages memory)
+ * @req: Request to clear
+ *
+ * Note: Request is allocated from arena, so no explicit free needed.
+ * We clear it for safety to prevent use-after-free bugs.
  */
 static void
 socket_async_free_request (T async, struct AsyncRequest *req)
 {
   (void)async;
   if (req)
-    {
-      memset (req, 0, sizeof (*req));
-    }
+    memset (req, 0, sizeof (*req));
 }
 
 /**
@@ -205,6 +228,7 @@ socket_async_free_request (T async, struct AsyncRequest *req)
  * @request_id: Request ID that completed
  * @result: Result (bytes transferred, or negative on error)
  * @err: Error code (0 on success)
+ *
  * Thread-safe: Yes - uses mutex for request lookup
  */
 static void
@@ -212,17 +236,18 @@ handle_completion (T async, unsigned request_id, ssize_t result, int err)
 {
   struct AsyncRequest *req;
   unsigned hash = request_hash (request_id);
+  SocketAsync_Callback cb;
+  Socket_T socket;
+  void *user_data;
 
   assert (async);
 
   pthread_mutex_lock (&async->mutex);
 
-  /* Find request */
+  /* Find request in hash chain */
   req = async->requests[hash];
   while (req && req->request_id != request_id)
-    {
-      req = req->next;
-    }
+    req = req->next;
 
   if (!req)
     {
@@ -231,27 +256,19 @@ handle_completion (T async, unsigned request_id, ssize_t result, int err)
     }
 
   /* Remove from hash table */
-  struct AsyncRequest **pp = &async->requests[hash];
-  while (*pp != req)
-    {
-      pp = &(*pp)->next;
-    }
-  *pp = req->next;
+  request_remove_from_hash (async, req, hash);
 
-  /* Extract callback and user_data before unlocking */
-  SocketAsync_Callback cb = req->cb;
-  Socket_T socket = req->socket;
-  void *user_data = req->user_data;
+  /* Extract callback info before unlocking */
+  cb = req->cb;
+  socket = req->socket;
+  user_data = req->user_data;
 
   pthread_mutex_unlock (&async->mutex);
 
-  /* Invoke callback */
+  /* Invoke callback outside mutex */
   if (cb)
-    {
-      cb (socket, result, err, user_data);
-    }
+    cb (socket, result, err, user_data);
 
-  /* Free request */
   socket_async_free_request (async, req);
 }
 
@@ -266,8 +283,9 @@ handle_completion (T async, unsigned request_id, ssize_t result, int err)
  * @recv_buf: Buffer for recv operations (NULL for send)
  * @len: Buffer length
  * @flags: Operation flags
- * Returns: Initialized request or NULL on allocation failure
- * Thread-safe: No (caller handles allocation)
+ *
+ * Returns: Initialized request (never NULL - raises on failure)
+ * Raises: SocketAsync_Failed on allocation failure
  */
 static struct AsyncRequest *
 setup_async_request (T async, Socket_T socket, SocketAsync_Callback cb,
@@ -276,13 +294,6 @@ setup_async_request (T async, Socket_T socket, SocketAsync_Callback cb,
                      SocketAsync_Flags flags)
 {
   struct AsyncRequest *req = socket_async_allocate_request (async);
-  /* LCOV_EXCL_START - socket_async_allocate_request raises on failure */
-  if (!req)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async request");
-      return NULL;
-    }
-  /* LCOV_EXCL_STOP */
 
   req->socket = socket;
   req->cb = cb;
@@ -303,6 +314,7 @@ setup_async_request (T async, Socket_T socket, SocketAsync_Callback cb,
  * @async: Async context
  * @req: Request that failed
  * @hash: Hash value for request ID
+ *
  * Thread-safe: Yes (handles mutex locking)
  *
  * Note: Only reachable when submit_async_operation() returns < 0,
@@ -313,12 +325,7 @@ static void
 cleanup_failed_request (T async, struct AsyncRequest *req, unsigned hash)
 {
   pthread_mutex_lock (&async->mutex);
-  struct AsyncRequest **pp = &async->requests[hash];
-  while (*pp != req)
-    {
-      pp = &(*pp)->next;
-    }
-  *pp = req->next;
+  request_remove_from_hash (async, req, hash);
   pthread_mutex_unlock (&async->mutex);
 
   socket_async_free_request (async, req);
@@ -332,6 +339,7 @@ static int submit_async_operation (T async, struct AsyncRequest *req);
  * submit_and_track_request - Submit request and track in hash table
  * @async: Async context
  * @req: Request to submit and track
+ *
  * Returns: Request ID on success, 0 on failure
  * Thread-safe: Yes (handles mutex locking)
  */
@@ -343,23 +351,19 @@ submit_and_track_request (T async, struct AsyncRequest *req)
 
   pthread_mutex_lock (&async->mutex);
 
-  /* Generate request ID (we already hold the lock) */
   req->request_id = generate_request_id_unlocked (async);
 
-  /* Insert into hash table */
   hash = request_hash (req->request_id);
   req->next = async->requests[hash];
   async->requests[hash] = req;
 
   pthread_mutex_unlock (&async->mutex);
 
-  /* Submit to backend */
   result = async->available ? submit_async_operation (async, req) : 0;
 
   /* LCOV_EXCL_START - Only fails with io_uring/kqueue backend */
   if (result < 0)
     {
-      /* Remove from hash table on failure */
       cleanup_failed_request (async, req, hash);
       return 0;
     }
@@ -369,98 +373,52 @@ submit_and_track_request (T async, struct AsyncRequest *req)
 }
 
 /* ==================== io_uring Backend ==================== */
-/* Merged from SocketAsync-iouring.c */
 
 #ifdef SOCKET_HAS_IO_URING
 
 /**
- * submit_io_uring_send - Submit send operation via io_uring
+ * submit_io_uring_op - Submit operation via io_uring
  * @async: Async context
  * @req: Request structure
+ *
  * Returns: 0 on success, -1 on failure
+ *
+ * Unified submission for both send and recv operations.
  */
 static int
-submit_io_uring_send (T async, struct AsyncRequest *req)
+submit_io_uring_op (T async, struct AsyncRequest *req)
 {
   struct io_uring_sqe *sqe;
   int fd = Socket_fd (req->socket);
+  int submitted;
+  uint64_t val = 1;
 
-  assert (async);
-  assert (async->ring);
-  assert (req);
+  assert (async && async->ring && req);
 
   sqe = io_uring_get_sqe (async->ring);
   if (!sqe)
     {
-      errno = EAGAIN; /* Queue full */
+      errno = EAGAIN;
       return -1;
     }
 
-  /* Prepare send operation */
-  io_uring_prep_send (sqe, fd, req->send_buf, req->len, 0);
+  /* Prepare operation based on type */
+  if (req->type == REQ_SEND)
+    io_uring_prep_send (sqe, fd, req->send_buf, req->len, 0);
+  else
+    io_uring_prep_recv (sqe, fd, req->recv_buf, req->len, 0);
 
-  /* Store request ID in user_data */
   sqe->user_data = (uintptr_t)req->request_id;
 
-  /* Set flags */
   if (req->flags & ASYNC_FLAG_URGENT)
-    {
-      sqe->flags |= IOSQE_IO_LINK;
-    }
+    sqe->flags |= IOSQE_IO_LINK;
 
-  /* Submit */
-  int submitted = io_uring_submit (async->ring);
+  submitted = io_uring_submit (async->ring);
   if (submitted < 0)
-    {
-      return -1;
-    }
+    return -1;
 
   /* Notify via eventfd */
-  uint64_t val = 1;
-  write (async->io_uring_fd, &val, sizeof (val));
-
-  return 0;
-}
-
-/**
- * submit_io_uring_recv - Submit recv operation via io_uring
- * @async: Async context
- * @req: Request structure
- * Returns: 0 on success, -1 on failure
- */
-static int
-submit_io_uring_recv (T async, struct AsyncRequest *req)
-{
-  struct io_uring_sqe *sqe;
-  int fd = Socket_fd (req->socket);
-
-  assert (async);
-  assert (async->ring);
-  assert (req);
-
-  sqe = io_uring_get_sqe (async->ring);
-  if (!sqe)
-    {
-      errno = EAGAIN; /* Queue full */
-      return -1;
-    }
-
-  /* Prepare recv operation */
-  io_uring_prep_recv (sqe, fd, req->recv_buf, req->len, 0);
-
-  /* Store request ID in user_data */
-  sqe->user_data = (uintptr_t)req->request_id;
-
-  /* Submit */
-  int submitted = io_uring_submit (async->ring);
-  if (submitted < 0)
-    {
-      return -1;
-    }
-
-  /* Notify via eventfd */
-  uint64_t val = 1;
-  write (async->io_uring_fd, &val, sizeof (val));
+  (void)write (async->io_uring_fd, &val, sizeof (val));
 
   return 0;
 }
@@ -469,6 +427,7 @@ submit_io_uring_recv (T async, struct AsyncRequest *req)
  * process_io_uring_completions - Process io_uring completion queue
  * @async: Async context
  * @max_completions: Maximum completions to process
+ *
  * Returns: Number of completions processed
  */
 static int
@@ -478,10 +437,8 @@ process_io_uring_completions (T async, int max_completions)
   unsigned head;
   int count = 0;
 
-  assert (async);
-  assert (async->ring);
+  assert (async && async->ring);
 
-  /* Peek at completions without waiting */
   io_uring_for_each_cqe (async->ring, head, cqe)
   {
     if (count >= max_completions)
@@ -489,16 +446,13 @@ process_io_uring_completions (T async, int max_completions)
 
     unsigned request_id = (unsigned)(uintptr_t)cqe->user_data;
     ssize_t result = cqe->res;
-    int err = (result < 0) ? -result : 0;
+    int err = (result < 0) ? (int)-result : 0;
 
-    /* Handle completion */
     handle_completion (async, request_id, result, err);
-
     count++;
   }
 
-  /* Mark completions as seen */
-  io_uring_cq_advance (async->ring, count);
+  io_uring_cq_advance (async->ring, (unsigned)count);
 
   return count;
 }
@@ -506,7 +460,6 @@ process_io_uring_completions (T async, int max_completions)
 #endif /* SOCKET_HAS_IO_URING */
 
 /* ==================== kqueue Backend ==================== */
-/* Merged from SocketAsync-kqueue.c */
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
 
@@ -514,6 +467,7 @@ process_io_uring_completions (T async, int max_completions)
  * submit_kqueue_aio - Submit operation via kqueue (edge-triggered mode)
  * @async: Async context
  * @req: Request structure
+ *
  * Returns: 0 on success, -1 on failure
  *
  * Note: macOS/BSD don't have true AIO like io_uring. This implementation
@@ -525,45 +479,32 @@ submit_kqueue_aio (T async, struct AsyncRequest *req)
 {
   struct kevent kev;
   int fd = Socket_fd (req->socket);
+  int16_t filter;
 
-  assert (async);
-  assert (async->kqueue_fd >= 0);
-  assert (req);
+  assert (async && async->kqueue_fd >= 0 && req);
 
-  /* Use kqueue to monitor socket for readiness */
-  /* For send: monitor POLLOUT */
-  /* For recv: monitor POLLIN */
-  if (req->type == REQ_SEND)
-    {
-      EV_SET (&kev, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0,
-              (void *)(uintptr_t)req->request_id);
-    }
-  else
-    {
-      EV_SET (&kev, fd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0,
-              (void *)(uintptr_t)req->request_id);
-    }
+  filter = (req->type == REQ_SEND) ? EVFILT_WRITE : EVFILT_READ;
+  EV_SET (&kev, fd, filter, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0,
+          (void *)(uintptr_t)req->request_id);
 
   if (kevent (async->kqueue_fd, &kev, 1, NULL, 0, NULL) < 0)
-    {
-      return -1;
-    }
+    return -1;
 
   return 0;
 }
 
 /**
- * kqueue_find_request - Find and remove request from hash table
+ * kqueue_find_and_remove_request - Find and remove request from hash table
  * @async: Async context
  * @request_id: Request ID to find
  *
  * Returns: Request pointer or NULL if not found
- * Thread-safe: Yes - caller must not hold mutex
+ * Thread-safe: Yes - acquires and releases mutex
  *
- * Note: Removes request from hash table before returning
+ * Note: Removes request from hash table before returning.
  */
 static struct AsyncRequest *
-kqueue_find_request (T async, unsigned request_id)
+kqueue_find_and_remove_request (T async, unsigned request_id)
 {
   unsigned hash = request_hash (request_id);
   struct AsyncRequest *req;
@@ -574,19 +515,11 @@ kqueue_find_request (T async, unsigned request_id)
   while (req && req->request_id != request_id)
     req = req->next;
 
-  if (!req)
-    {
-      pthread_mutex_unlock (&async->mutex);
-      return NULL;
-    }
-
-  /* Remove from hash table */
-  struct AsyncRequest **pp = &async->requests[hash];
-  while (*pp != req)
-    pp = &(*pp)->next;
-  *pp = req->next;
+  if (req)
+    request_remove_from_hash (async, req, hash);
 
   pthread_mutex_unlock (&async->mutex);
+
   return req;
 }
 
@@ -688,8 +621,7 @@ process_kqueue_completions (T async, int timeout_ms, int max_completions)
   struct timespec timeout;
   int n, count = 0;
 
-  assert (async);
-  assert (async->kqueue_fd >= 0);
+  assert (async && async->kqueue_fd >= 0);
 
   if (max_completions > SOCKET_MAX_EVENT_BATCH)
     max_completions = SOCKET_MAX_EVENT_BATCH;
@@ -704,7 +636,7 @@ process_kqueue_completions (T async, int timeout_ms, int max_completions)
   for (int i = 0; i < n; i++)
     {
       unsigned request_id = (unsigned)(uintptr_t)events[i].udata;
-      struct AsyncRequest *req = kqueue_find_request (async, request_id);
+      struct AsyncRequest *req = kqueue_find_and_remove_request (async, request_id);
 
       if (req)
         {
@@ -719,11 +651,11 @@ process_kqueue_completions (T async, int timeout_ms, int max_completions)
 #endif /* __APPLE__ || __FreeBSD__ */
 
 /* ==================== Backend Detection ==================== */
-/* Merged from SocketAsync-backend.c */
 
 /**
  * detect_async_backend - Detect and initialize platform-specific async backend
  * @async: Async context to initialize
+ *
  * Returns: Non-zero if async available, 0 if fallback mode
  */
 static int
@@ -734,11 +666,10 @@ detect_async_backend (T async)
 #ifdef SOCKET_HAS_IO_URING
   /* Try io_uring */
   struct io_uring test_ring;
-  if (io_uring_queue_init (32, &test_ring, 0) == 0)
+  if (io_uring_queue_init (SOCKET_IO_URING_TEST_ENTRIES, &test_ring, 0) == 0)
     {
       io_uring_queue_exit (&test_ring);
 
-      /* Allocate ring for this instance */
       async->ring = calloc (1, sizeof (struct io_uring));
       if (!async->ring)
         {
@@ -750,7 +681,6 @@ detect_async_backend (T async)
       if (io_uring_queue_init (SOCKET_DEFAULT_IO_URING_ENTRIES, async->ring, 0)
           == 0)
         {
-          /* Create eventfd for completion notifications */
           async->io_uring_fd = eventfd (0, EFD_NONBLOCK | EFD_CLOEXEC);
           if (async->io_uring_fd >= 0)
             {
@@ -769,13 +699,11 @@ detect_async_backend (T async)
         }
     }
 
-  /* Fallback to edge-triggered */
   async->available = 0;
   async->backend_name = "edge-triggered (io_uring unavailable)";
   return 0;
 
 #elif defined(__APPLE__) || defined(__FreeBSD__)
-  /* Try kqueue (edge-triggered mode - not true AIO but better than poll) */
   async->kqueue_fd = kqueue ();
   if (async->kqueue_fd >= 0)
     {
@@ -789,7 +717,6 @@ detect_async_backend (T async)
   return 0;
 
 #else
-  /* No async support */
   async->available = 0;
   async->backend_name = "edge-triggered (platform not supported)";
   return 0;
@@ -800,6 +727,7 @@ detect_async_backend (T async)
  * submit_async_operation - Submit async operation to appropriate backend
  * @async: Async context
  * @req: Request to submit
+ *
  * Returns: 0 on success, -1 on failure
  *
  * Note: Only called when async->available = 1 (io_uring/kqueue backend).
@@ -808,25 +736,18 @@ detect_async_backend (T async)
 static int
 submit_async_operation (T async, struct AsyncRequest *req)
 {
-  assert (async);
-  assert (req);
+  assert (async && req);
 
 #ifdef SOCKET_HAS_IO_URING
   if (async->ring)
-    {
-      return (req->type == REQ_SEND) ? submit_io_uring_send (async, req)
-                                     : submit_io_uring_recv (async, req);
-    }
+    return submit_io_uring_op (async, req);
 #endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
   if (async->kqueue_fd >= 0)
-    {
-      return submit_kqueue_aio (async, req);
-    }
+    return submit_kqueue_aio (async, req);
 #endif
 
-  /* No backend available - suppress unused warnings */
   (void)async;
   (void)req;
   errno = ENOTSUP;
@@ -835,9 +756,10 @@ submit_async_operation (T async, struct AsyncRequest *req)
 /* LCOV_EXCL_STOP */
 
 /**
- * process_async_completions - Process completions from appropriate backend
+ * process_async_completions_internal - Process completions from backend
  * @async: Async context
  * @timeout_ms: Timeout in milliseconds
+ *
  * Returns: Number of completions processed
  */
 static int
@@ -852,39 +774,21 @@ process_async_completions_internal (T async,
 #ifdef SOCKET_HAS_IO_URING
   if (async->ring)
     {
-      /* Check eventfd for completions */
       uint64_t val;
       ssize_t n = read (async->io_uring_fd, &val, sizeof (val));
       if (n > 0)
-        {
-          /* Process completions */
-          return process_io_uring_completions (async, SOCKET_MAX_EVENT_BATCH);
-        }
+        return process_io_uring_completions (async, SOCKET_MAX_EVENT_BATCH);
       return 0;
     }
 #endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
   if (async->kqueue_fd >= 0)
-    {
-      /* Process kqueue AIO events */
-      return process_kqueue_completions (async, timeout_ms,
-                                         SOCKET_MAX_EVENT_BATCH);
-    }
+    return process_kqueue_completions (async, timeout_ms,
+                                       SOCKET_MAX_EVENT_BATCH);
 #endif
 
   return 0;
-}
-
-/**
- * SocketAsync_initialize_backend - Initialize async backend
- * @async: Async context
- */
-static void
-SocketAsync_initialize_backend (T async)
-{
-  assert (async);
-  detect_async_backend (async);
 }
 
 /* ==================== Public API ==================== */
@@ -892,38 +796,37 @@ SocketAsync_initialize_backend (T async)
 T
 SocketAsync_new (Arena_T arena)
 {
-  volatile T volatile_async = NULL;
+  volatile T async = NULL;
 
   assert (arena);
 
-  TRY { volatile_async = ALLOC (arena, sizeof (*volatile_async)); }
+  TRY
+  {
+    async = CALLOC (arena, 1, sizeof (*async));
+  }
   EXCEPT (Arena_Failed)
   {
-    /* LCOV_EXCL_START - Arena allocation failure hard to trigger in tests */
+    /* LCOV_EXCL_START */
     SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async context");
     RAISE_MODULE_ERROR (SocketAsync_Failed);
     /* LCOV_EXCL_STOP */
   }
   END_TRY;
 
-  T async = (T)volatile_async;
+  ((T)async)->arena = arena;
+  ((T)async)->next_request_id = 1; /* 0 = invalid */
 
-  memset (async, 0, sizeof (*async));
-  async->arena = arena;
-  async->next_request_id = 1; /* Start at 1, 0 = invalid */
-
-  if (pthread_mutex_init (&async->mutex, NULL) != 0)
+  if (pthread_mutex_init (&((T)async)->mutex, NULL) != 0)
     {
-      /* LCOV_EXCL_START - Mutex init failure hard to trigger in tests */
+      /* LCOV_EXCL_START */
       SOCKET_ERROR_MSG ("Failed to initialize async mutex");
       RAISE_MODULE_ERROR (SocketAsync_Failed);
       /* LCOV_EXCL_STOP */
     }
 
-  /* Detect and initialize backend */
-  SocketAsync_initialize_backend (async);
+  detect_async_backend ((T)async);
 
-  return async;
+  return (T)async;
 }
 
 void
@@ -983,10 +886,6 @@ SocketAsync_send (T async, Socket_T socket, const void *buf, size_t len,
 
   req = setup_async_request (async, socket, cb, user_data, REQ_SEND, buf, NULL,
                              len, flags);
-  /* LCOV_EXCL_START - setup_async_request raises on failure */
-  if (!req)
-    RAISE_MODULE_ERROR (SocketAsync_Failed);
-  /* LCOV_EXCL_STOP */
 
   request_id = submit_and_track_request (async, req);
   /* LCOV_EXCL_START - Only fails with io_uring/kqueue backend */
@@ -1016,10 +915,6 @@ SocketAsync_recv (T async, Socket_T socket, void *buf, size_t len,
 
   req = setup_async_request (async, socket, cb, user_data, REQ_RECV, NULL, buf,
                              len, flags);
-  /* LCOV_EXCL_START - setup_async_request raises on failure */
-  if (!req)
-    RAISE_MODULE_ERROR (SocketAsync_Failed);
-  /* LCOV_EXCL_STOP */
 
   request_id = submit_and_track_request (async, req);
   /* LCOV_EXCL_START - Only fails with io_uring/kqueue backend */
@@ -1055,16 +950,7 @@ SocketAsync_cancel (T async, unsigned request_id)
 
   if (req)
     {
-      /* Remove from hash table */
-      struct AsyncRequest **pp = &async->requests[hash];
-      while (*pp != req)
-        {
-          /* LCOV_EXCL_START - Chain traversal when not first in bucket */
-          pp = &(*pp)->next;
-          /* LCOV_EXCL_STOP */
-        }
-      *pp = req->next;
-
+      request_remove_from_hash (async, req, hash);
       cancelled = 1;
     }
 
@@ -1072,14 +958,11 @@ SocketAsync_cancel (T async, unsigned request_id)
 
   if (cancelled)
     {
-      /* Try to cancel in kernel (best effort) */
-      /* Cancellation logic will be in backend files */
-
       socket_async_free_request (async, req);
       return 0;
     }
 
-  return -1; /* Request not found or already completed */
+  return -1;
 }
 
 int

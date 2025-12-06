@@ -177,14 +177,54 @@ static const char *utf8_result_strings[] = {
  * ============================================================================ */
 
 /**
- * Classify error type based on DFA state and byte
+ * is_continuation_byte - Check if byte is valid UTF-8 continuation
+ * @byte: Byte to check
+ *
+ * Returns: 1 if valid continuation (10xxxxxx), 0 otherwise
+ */
+static inline int
+is_continuation_byte (unsigned char byte)
+{
+  return (byte & 0xC0) == 0x80;
+}
+
+/**
+ * validate_continuations - Validate a sequence of continuation bytes
+ * @data: Pointer to continuation bytes (starts at data[1])
+ * @count: Number of continuation bytes to validate
+ * @consumed: Output - set to index of first invalid byte on failure
+ *
+ * Returns: 1 if all valid, 0 if invalid (consumed set to failure index)
+ */
+static int
+validate_continuations (const unsigned char *data, int count, int *consumed)
+{
+  int i;
+
+  for (i = 1; i <= count; i++)
+    {
+      if (!is_continuation_byte (data[i]))
+        {
+          *consumed = i;
+          return 0;
+        }
+    }
+  return 1;
+}
+
+/**
+ * classify_error - Classify error type based on DFA state and byte
+ * @prev_state: DFA state before the error
+ * @byte: Byte that caused the error
+ *
+ * Returns: Specific error type for better diagnostics
  *
  * When we hit reject state, determine what kind of error occurred.
  */
 static SocketUTF8_Result
 classify_error (uint32_t prev_state, unsigned char byte)
 {
-  /* Check for overlong 2-byte encodings (C0-C1 starts) - only from accept state */
+  /* Check for overlong 2-byte encodings (C0-C1 starts) - only from accept */
   if (prev_state == UTF8_DFA_ACCEPT && byte >= 0xC0 && byte <= 0xC1)
     return UTF8_OVERLONG;
 
@@ -208,7 +248,20 @@ classify_error (uint32_t prev_state, unsigned char byte)
   if (prev_state == 8 && byte >= 0x90 && byte <= 0xBF)
     return UTF8_TOO_LARGE;
 
-  /* Generic invalid sequence */
+  return UTF8_INVALID;
+}
+
+/**
+ * classify_first_byte_error - Classify error for invalid first byte
+ * @byte: First byte that was invalid
+ *
+ * Returns: Specific error type
+ */
+static SocketUTF8_Result
+classify_first_byte_error (unsigned char byte)
+{
+  if (byte >= 0xC0 && byte <= 0xC1)
+    return UTF8_OVERLONG;
   return UTF8_INVALID;
 }
 
@@ -223,14 +276,9 @@ SocketUTF8_validate (const unsigned char *data, size_t len)
   uint32_t prev_state;
   size_t i;
 
-  /* Handle NULL/empty input */
-  if (len == 0)
+  if (len == 0 || !data)
     return UTF8_VALID;
 
-  if (!data)
-    return UTF8_VALID;
-
-  /* Process each byte through DFA */
   for (i = 0; i < len; i++)
     {
       uint8_t byte_class = utf8_class[data[i]];
@@ -241,11 +289,7 @@ SocketUTF8_validate (const unsigned char *data, size_t len)
         return classify_error (prev_state, data[i]);
     }
 
-  /* Check for incomplete sequence at end */
-  if (state != UTF8_DFA_ACCEPT)
-    return UTF8_INCOMPLETE;
-
-  return UTF8_VALID;
+  return (state == UTF8_DFA_ACCEPT) ? UTF8_VALID : UTF8_INCOMPLETE;
 }
 
 SocketUTF8_Result
@@ -272,6 +316,22 @@ SocketUTF8_init (SocketUTF8_State *state)
   state->bytes_seen = 0;
 }
 
+/**
+ * get_current_status - Get current validation status from DFA state
+ * @dfa_state: Current DFA state
+ *
+ * Returns: UTF8_VALID if accept, UTF8_INVALID if reject, UTF8_INCOMPLETE otherwise
+ */
+static inline SocketUTF8_Result
+get_current_status (uint32_t dfa_state)
+{
+  if (dfa_state == UTF8_DFA_ACCEPT)
+    return UTF8_VALID;
+  if (dfa_state == UTF8_DFA_REJECT)
+    return UTF8_INVALID;
+  return UTF8_INCOMPLETE;
+}
+
 SocketUTF8_Result
 SocketUTF8_update (SocketUTF8_State *state, const unsigned char *data,
                    size_t len)
@@ -282,24 +342,14 @@ SocketUTF8_update (SocketUTF8_State *state, const unsigned char *data,
 
   assert (state);
 
-  /* Handle NULL/empty chunk */
   if (len == 0 || !data)
-    {
-      /* Return current status */
-      if (state->state == UTF8_DFA_ACCEPT)
-        return UTF8_VALID;
-      if (state->state == UTF8_DFA_REJECT)
-        return UTF8_INVALID;
-      return UTF8_INCOMPLETE;
-    }
+    return get_current_status (state->state);
 
   dfa_state = state->state;
 
-  /* If already in reject state, stay rejected */
   if (dfa_state == UTF8_DFA_REJECT)
     return UTF8_INVALID;
 
-  /* Process each byte */
   for (i = 0; i < len; i++)
     {
       uint8_t byte_class = utf8_class[data[i]];
@@ -315,17 +365,14 @@ SocketUTF8_update (SocketUTF8_State *state, const unsigned char *data,
       /* Track bytes for multi-byte sequences */
       if (prev_state == UTF8_DFA_ACCEPT && dfa_state != UTF8_DFA_ACCEPT)
         {
-          /* Starting new multi-byte sequence */
           state->bytes_needed = utf8_state_bytes[dfa_state];
           state->bytes_seen = 1;
         }
       else if (prev_state != UTF8_DFA_ACCEPT)
         {
-          /* Continuing multi-byte sequence */
           state->bytes_seen++;
           if (dfa_state == UTF8_DFA_ACCEPT)
             {
-              /* Completed sequence */
               state->bytes_needed = 0;
               state->bytes_seen = 0;
             }
@@ -333,27 +380,14 @@ SocketUTF8_update (SocketUTF8_State *state, const unsigned char *data,
     }
 
   state->state = dfa_state;
-
-  /* Return appropriate status */
-  if (dfa_state == UTF8_DFA_ACCEPT)
-    return UTF8_VALID;
-
-  return UTF8_INCOMPLETE;
+  return get_current_status (dfa_state);
 }
 
 SocketUTF8_Result
 SocketUTF8_finish (const SocketUTF8_State *state)
 {
   assert (state);
-
-  if (state->state == UTF8_DFA_ACCEPT)
-    return UTF8_VALID;
-
-  if (state->state == UTF8_DFA_REJECT)
-    return UTF8_INVALID;
-
-  /* In intermediate state = incomplete sequence */
-  return UTF8_INCOMPLETE;
+  return get_current_status (state->state);
 }
 
 void
@@ -378,14 +412,12 @@ SocketUTF8_codepoint_len (uint32_t codepoint)
   if (codepoint > SOCKET_UTF8_MAX_CODEPOINT)
     return 0;
 
-  /* Determine byte length */
   if (codepoint <= 0x7F)
     return 1;
   if (codepoint <= 0x7FF)
     return 2;
   if (codepoint <= 0xFFFF)
     return 3;
-
   return 4;
 }
 
@@ -402,10 +434,7 @@ SocketUTF8_sequence_len (unsigned char first_byte)
 
   /* 2-byte: 110xxxxx (C2-DF valid, C0-C1 overlong) */
   if ((first_byte & 0xE0) == 0xC0)
-    {
-      /* C0-C1 are overlong, but still indicate 2-byte sequence */
-      return (first_byte >= 0xC2) ? 2 : 0;
-    }
+    return (first_byte >= 0xC2) ? 2 : 0;
 
   /* 3-byte: 1110xxxx (E0-EF) */
   if ((first_byte & 0xF0) == 0xE0)
@@ -459,13 +488,136 @@ SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
   return len;
 }
 
+/**
+ * decode_2byte - Decode a 2-byte UTF-8 sequence
+ * @data: Pointer to 2-byte sequence
+ * @codepoint: Output codepoint
+ * @consumed: Output bytes consumed
+ *
+ * Returns: UTF8_VALID on success, error code on failure
+ */
+static SocketUTF8_Result
+decode_2byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
+{
+  uint32_t cp;
+
+  if (!is_continuation_byte (data[1]))
+    {
+      if (consumed)
+        *consumed = 1;
+      return UTF8_INVALID;
+    }
+
+  cp = ((uint32_t)(data[0] & 0x1F) << 6) | (data[1] & 0x3F);
+
+  if (cp < 0x80)
+    {
+      if (consumed)
+        *consumed = 2;
+      return UTF8_OVERLONG;
+    }
+
+  *codepoint = cp;
+  if (consumed)
+    *consumed = 2;
+  return UTF8_VALID;
+}
+
+/**
+ * decode_3byte - Decode a 3-byte UTF-8 sequence
+ * @data: Pointer to 3-byte sequence
+ * @codepoint: Output codepoint
+ * @consumed: Output bytes consumed
+ *
+ * Returns: UTF8_VALID on success, error code on failure
+ */
+static SocketUTF8_Result
+decode_3byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
+{
+  uint32_t cp;
+  int fail_idx;
+
+  if (!validate_continuations (data, 2, &fail_idx))
+    {
+      if (consumed)
+        *consumed = (size_t)fail_idx;
+      return UTF8_INVALID;
+    }
+
+  cp = ((uint32_t)(data[0] & 0x0F) << 12) | ((uint32_t)(data[1] & 0x3F) << 6)
+       | (data[2] & 0x3F);
+
+  if (cp < 0x800)
+    {
+      if (consumed)
+        *consumed = 3;
+      return UTF8_OVERLONG;
+    }
+
+  if (cp >= SOCKET_UTF8_SURROGATE_MIN && cp <= SOCKET_UTF8_SURROGATE_MAX)
+    {
+      if (consumed)
+        *consumed = 3;
+      return UTF8_SURROGATE;
+    }
+
+  *codepoint = cp;
+  if (consumed)
+    *consumed = 3;
+  return UTF8_VALID;
+}
+
+/**
+ * decode_4byte - Decode a 4-byte UTF-8 sequence
+ * @data: Pointer to 4-byte sequence
+ * @codepoint: Output codepoint
+ * @consumed: Output bytes consumed
+ *
+ * Returns: UTF8_VALID on success, error code on failure
+ */
+static SocketUTF8_Result
+decode_4byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
+{
+  uint32_t cp;
+  int fail_idx;
+
+  if (!validate_continuations (data, 3, &fail_idx))
+    {
+      if (consumed)
+        *consumed = (size_t)fail_idx;
+      return UTF8_INVALID;
+    }
+
+  cp = ((uint32_t)(data[0] & 0x07) << 18) | ((uint32_t)(data[1] & 0x3F) << 12)
+       | ((uint32_t)(data[2] & 0x3F) << 6) | (data[3] & 0x3F);
+
+  if (cp < 0x10000)
+    {
+      if (consumed)
+        *consumed = 4;
+      return UTF8_OVERLONG;
+    }
+
+  if (cp > SOCKET_UTF8_MAX_CODEPOINT)
+    {
+      if (consumed)
+        *consumed = 4;
+      return UTF8_TOO_LARGE;
+    }
+
+  *codepoint = cp;
+  if (consumed)
+    *consumed = 4;
+  return UTF8_VALID;
+}
+
 SocketUTF8_Result
 SocketUTF8_decode (const unsigned char *data, size_t len, uint32_t *codepoint,
                    size_t *consumed)
 {
   uint32_t cp = 0;
   int seq_len;
-  int i;
+  SocketUTF8_Result result;
 
   if (!data || len == 0)
     {
@@ -474,21 +626,14 @@ SocketUTF8_decode (const unsigned char *data, size_t len, uint32_t *codepoint,
       return UTF8_INCOMPLETE;
     }
 
-  /* Get expected sequence length from first byte */
   seq_len = SocketUTF8_sequence_len (data[0]);
   if (seq_len == 0)
     {
       if (consumed)
         *consumed = 1;
-      /* Check for specific error types */
-      if (data[0] >= 0xC0 && data[0] <= 0xC1)
-        return UTF8_OVERLONG;
-      if (data[0] >= 0xF5)
-        return UTF8_INVALID;
-      return UTF8_INVALID;
+      return classify_first_byte_error (data[0]);
     }
 
-  /* Check if we have enough bytes */
   if ((size_t)seq_len > len)
     {
       if (consumed)
@@ -496,97 +641,37 @@ SocketUTF8_decode (const unsigned char *data, size_t len, uint32_t *codepoint,
       return UTF8_INCOMPLETE;
     }
 
-  /* Decode based on sequence length */
   switch (seq_len)
     {
     case 1:
       cp = data[0];
+      if (consumed)
+        *consumed = 1;
+      result = UTF8_VALID;
       break;
 
     case 2:
-      /* Validate continuation byte */
-      if ((data[1] & 0xC0) != 0x80)
-        {
-          if (consumed)
-            *consumed = 1;
-          return UTF8_INVALID;
-        }
-      cp = ((uint32_t)(data[0] & 0x1F) << 6) | (data[1] & 0x3F);
-      /* Check for overlong encoding */
-      if (cp < 0x80)
-        {
-          if (consumed)
-            *consumed = 2;
-          return UTF8_OVERLONG;
-        }
+      result = decode_2byte (data, &cp, consumed);
       break;
 
     case 3:
-      /* Validate continuation bytes */
-      for (i = 1; i < 3; i++)
-        {
-          if ((data[i] & 0xC0) != 0x80)
-            {
-              if (consumed)
-                *consumed = (size_t)i;
-              return UTF8_INVALID;
-            }
-        }
-      cp = ((uint32_t)(data[0] & 0x0F) << 12) | ((uint32_t)(data[1] & 0x3F) << 6)
-           | (data[2] & 0x3F);
-      /* Check for overlong encoding */
-      if (cp < 0x800)
-        {
-          if (consumed)
-            *consumed = 3;
-          return UTF8_OVERLONG;
-        }
-      /* Check for surrogate */
-      if (cp >= SOCKET_UTF8_SURROGATE_MIN && cp <= SOCKET_UTF8_SURROGATE_MAX)
-        {
-          if (consumed)
-            *consumed = 3;
-          return UTF8_SURROGATE;
-        }
+      result = decode_3byte (data, &cp, consumed);
       break;
 
     case 4:
-      /* Validate continuation bytes */
-      for (i = 1; i < 4; i++)
-        {
-          if ((data[i] & 0xC0) != 0x80)
-            {
-              if (consumed)
-                *consumed = (size_t)i;
-              return UTF8_INVALID;
-            }
-        }
-      cp = ((uint32_t)(data[0] & 0x07) << 18)
-           | ((uint32_t)(data[1] & 0x3F) << 12)
-           | ((uint32_t)(data[2] & 0x3F) << 6) | (data[3] & 0x3F);
-      /* Check for overlong encoding */
-      if (cp < 0x10000)
-        {
-          if (consumed)
-            *consumed = 4;
-          return UTF8_OVERLONG;
-        }
-      /* Check for out of range */
-      if (cp > SOCKET_UTF8_MAX_CODEPOINT)
-        {
-          if (consumed)
-            *consumed = 4;
-          return UTF8_TOO_LARGE;
-        }
+      result = decode_4byte (data, &cp, consumed);
       break;
+
+    default:
+      if (consumed)
+        *consumed = 1;
+      return UTF8_INVALID;
     }
 
-  if (codepoint)
+  if (result == UTF8_VALID && codepoint)
     *codepoint = cp;
-  if (consumed)
-    *consumed = (size_t)seq_len;
 
-  return UTF8_VALID;
+  return result;
 }
 
 SocketUTF8_Result
@@ -601,15 +686,8 @@ SocketUTF8_count_codepoints (const unsigned char *data, size_t len,
   assert (count);
   *count = 0;
 
-  if (len == 0)
-    {
-      return UTF8_VALID;
-    }
-
-  if (!data)
-    {
-      return UTF8_VALID;
-    }
+  if (len == 0 || !data)
+    return UTF8_VALID;
 
   while (pos < len)
     {
@@ -633,4 +711,3 @@ SocketUTF8_result_string (SocketUTF8_Result result)
 
   return utf8_result_strings[result];
 }
-

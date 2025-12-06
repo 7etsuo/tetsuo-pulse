@@ -264,6 +264,8 @@ setup_thread_attributes (pthread_attr_t *attr)
  * cleanup_partial_workers - Join already-created workers on failure
  * @dns: DNS resolver instance
  * @created_count: Number of threads successfully created
+ *
+ * Thread-safe: No - called during initialization before threads are fully up
  */
 static void
 cleanup_partial_workers (struct SocketDNS_T *dns, int created_count)
@@ -271,8 +273,8 @@ cleanup_partial_workers (struct SocketDNS_T *dns, int created_count)
   dns->shutdown = 1;
   pthread_cond_broadcast (&dns->queue_cond);
 
-  for (int j = 0; j < created_count; j++)
-    pthread_join (dns->workers[j], NULL);
+  for (int i = 0; i < created_count; i++)
+    pthread_join (dns->workers[i], NULL);
 }
 
 /**
@@ -430,22 +432,22 @@ cleanup_on_init_failure (struct SocketDNS_T *dns,
 /**
  * shutdown_workers - Signal and wait for worker threads
  * @d: DNS resolver instance
- * Signals shutdown and joins all worker threads.
+ *
+ * Thread-safe: Yes - uses mutex internally, safe to call from main thread
+ *
+ * Signals shutdown and joins all worker threads. Blocks until all workers
+ * have terminated.
  */
 void
 shutdown_workers (T d)
 {
-  int i;
-
   pthread_mutex_lock (&d->mutex);
   d->shutdown = 1;
   pthread_cond_broadcast (&d->queue_cond);
   pthread_mutex_unlock (&d->mutex);
 
-  for (i = 0; i < d->num_workers; i++)
-    {
-      pthread_join (d->workers[i], NULL);
-    }
+  for (int i = 0; i < d->num_workers; i++)
+    pthread_join (d->workers[i], NULL);
 }
 
 /**

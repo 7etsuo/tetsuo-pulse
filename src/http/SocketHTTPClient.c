@@ -533,6 +533,115 @@ read_http1_body_data (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
 }
 
 /**
+ * recv_http1_chunk - Receive data from socket with exception handling
+ * @conn: Pool connection entry
+ * @buf: Output buffer
+ * @buf_size: Buffer size
+ * @bytes_read: Output number of bytes read
+ *
+ * Returns: 0 on success, -1 on closed/error
+ */
+static int
+recv_http1_chunk (HTTPPoolEntry *conn, char *buf, size_t buf_size,
+                  ssize_t *bytes_read)
+{
+  volatile ssize_t n = -1;
+  volatile int closed = 0;
+
+  TRY
+    {
+      n = Socket_recv (conn->proto.h1.socket, buf, buf_size);
+    }
+  EXCEPT (Socket_Closed)
+    {
+      closed = 1;
+      n = 0;
+    }
+  END_TRY;
+
+  *bytes_read = n;
+  if (closed || n <= 0)
+    {
+      conn->closed = 1;
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * parse_http1_chunk - Parse received data and accumulate body
+ * @conn: Pool connection entry
+ * @buf: Input buffer with received data
+ * @buf_len: Buffer length
+ * @parsed_resp: Pointer to parsed response (updated when headers complete)
+ * @acc: Body accumulator
+ *
+ * Returns: 1 if complete, 0 if incomplete, -1 on parse error, -2 on size limit
+ */
+static int
+parse_http1_chunk (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
+                   const SocketHTTP_Response **parsed_resp,
+                   HTTP1BodyAccumulator *acc)
+{
+  size_t consumed;
+  SocketHTTP1_Result result;
+
+  result = SocketHTTP1_Parser_execute (conn->proto.h1.parser, buf, buf_len,
+                                       &consumed);
+
+  if (result == HTTP1_ERROR || result >= HTTP1_ERROR_LINE_TOO_LONG)
+    {
+      HTTPCLIENT_ERROR_MSG ("HTTP parse error: %s",
+                           SocketHTTP1_result_string (result));
+      return -1;
+    }
+
+  /* Get response once headers are complete */
+  if (*parsed_resp == NULL
+      && SocketHTTP1_Parser_state (conn->proto.h1.parser) >= HTTP1_STATE_BODY)
+    {
+      *parsed_resp = SocketHTTP1_Parser_get_response (conn->proto.h1.parser);
+    }
+
+  /* Read body if present */
+  if (*parsed_resp != NULL
+      && SocketHTTP1_Parser_body_mode (conn->proto.h1.parser)
+             != HTTP1_BODY_NONE)
+    {
+      int body_result
+          = read_http1_body_data (conn, buf, buf_len, &consumed, acc);
+      if (body_result < 0)
+        return body_result;
+    }
+
+  /* Check if complete */
+  if (SocketHTTP1_Parser_state (conn->proto.h1.parser) == HTTP1_STATE_COMPLETE)
+    return 1;
+
+  return 0;
+}
+
+/**
+ * fill_response_struct - Fill response structure from parsed data
+ * @response: Output response structure
+ * @parsed_resp: Parsed HTTP response
+ * @acc: Body accumulator
+ * @resp_arena: Arena for response ownership
+ */
+static void
+fill_response_struct (SocketHTTPClient_Response *response,
+                      const SocketHTTP_Response *parsed_resp,
+                      HTTP1BodyAccumulator *acc, Arena_T resp_arena)
+{
+  response->status_code = parsed_resp->status_code;
+  response->version = parsed_resp->version;
+  response->headers = parsed_resp->headers;
+  response->body = acc->body_buf;
+  response->body_len = acc->total_body;
+  response->arena = resp_arena;
+}
+
+/**
  * receive_http1_response - Receive and parse HTTP/1.1 response
  * @conn: Pool connection entry
  * @response: Output response structure
@@ -546,13 +655,11 @@ receive_http1_response (HTTPPoolEntry *conn,
                         size_t max_response_size)
 {
   char buf[HTTPCLIENT_REQUEST_BUFFER_SIZE];
-  volatile ssize_t n;
-  size_t consumed;
-  SocketHTTP1_Result result;
+  ssize_t n;
   Arena_T resp_arena;
-  const SocketHTTP_Response *volatile parsed_resp = NULL;
-  volatile int recv_closed = 0;
+  const SocketHTTP_Response *parsed_resp = NULL;
   HTTP1BodyAccumulator acc = { NULL, 0, 0, 0, NULL };
+  int parse_result;
 
   assert (conn != NULL);
   assert (response != NULL);
@@ -574,63 +681,18 @@ receive_http1_response (HTTPPoolEntry *conn,
   /* Receive and parse response loop */
   while (1)
     {
-      TRY
-        {
-          n = Socket_recv (conn->proto.h1.socket, buf, sizeof (buf));
-        }
-      EXCEPT (Socket_Closed)
-        {
-          recv_closed = 1;
-          n = 0;
-        }
-      END_TRY;
+      if (recv_http1_chunk (conn, buf, sizeof (buf), &n) < 0)
+        break;
 
-      if (recv_closed || n <= 0)
+      parse_result
+          = parse_http1_chunk (conn, buf, (size_t)n, &parsed_resp, &acc);
+      if (parse_result < 0)
         {
-          conn->closed = 1;
-          break;
-        }
-
-      result = SocketHTTP1_Parser_execute (conn->proto.h1.parser, buf,
-                                           (size_t)n, &consumed);
-
-      if (result == HTTP1_ERROR || result >= HTTP1_ERROR_LINE_TOO_LONG)
-        {
-          HTTPCLIENT_ERROR_MSG ("HTTP parse error: %s",
-                               SocketHTTP1_result_string (result));
           Arena_dispose (&resp_arena);
-          return -1;
+          return parse_result;
         }
-
-      /* Get response once headers are complete */
-      if (parsed_resp == NULL
-          && SocketHTTP1_Parser_state (conn->proto.h1.parser)
-                 >= HTTP1_STATE_BODY)
-        {
-          parsed_resp
-              = SocketHTTP1_Parser_get_response (conn->proto.h1.parser);
-        }
-
-      /* Read body if present */
-      if (parsed_resp != NULL
-          && SocketHTTP1_Parser_body_mode (conn->proto.h1.parser)
-                 != HTTP1_BODY_NONE)
-        {
-          int body_result
-              = read_http1_body_data (conn, buf, (size_t)n, &consumed, &acc);
-          if (body_result < 0)
-            {
-              Arena_dispose (&resp_arena);
-              return body_result; /* -1 = error, -2 = size limit exceeded */
-            }
-        }
-
-      /* Check if complete */
-      if (SocketHTTP1_Parser_state (conn->proto.h1.parser)
-          == HTTP1_STATE_COMPLETE)
-        {
-          break;
-        }
+      if (parse_result == 1)
+        break;
     }
 
   if (parsed_resp == NULL)
@@ -640,14 +702,7 @@ receive_http1_response (HTTPPoolEntry *conn,
       return -1;
     }
 
-  /* Fill response structure */
-  response->status_code = parsed_resp->status_code;
-  response->version = parsed_resp->version;
-  response->headers = parsed_resp->headers;
-  response->body = acc.body_buf;
-  response->body_len = acc.total_body;
-  response->arena = resp_arena;
-
+  fill_response_struct (response, parsed_resp, &acc, resp_arena);
   return 0;
 }
 
@@ -734,7 +789,8 @@ static void
 add_accept_encoding_header (SocketHTTPClient_T client,
                             SocketHTTPClient_Request_T req)
 {
-  char encoding[64] = "";
+  char encoding[HTTPCLIENT_ACCEPT_ENCODING_SIZE] = "";
+  size_t len = 0;
 
   if (!client->config.auto_decompress)
     return;
@@ -742,21 +798,17 @@ add_accept_encoding_header (SocketHTTPClient_T client,
     return;
 
   if (client->config.accept_encoding & HTTPCLIENT_ENCODING_GZIP)
-    {
-      snprintf (encoding, sizeof (encoding), "gzip");
-    }
+    len = (size_t)snprintf (encoding, sizeof (encoding), "gzip");
+
   if (client->config.accept_encoding & HTTPCLIENT_ENCODING_DEFLATE)
     {
-      if (encoding[0])
-        {
-          size_t len = strlen (encoding);
-          snprintf (encoding + len, sizeof (encoding) - len, ", deflate");
-        }
-      else
-        {
-          snprintf (encoding, sizeof (encoding), "deflate");
-        }
+      if (len > 0 && len < sizeof (encoding) - 1)
+        len += (size_t)snprintf (encoding + len, sizeof (encoding) - len,
+                                 ", deflate");
+      else if (len == 0)
+        len = (size_t)snprintf (encoding, sizeof (encoding), "deflate");
     }
+
   if (encoding[0])
     SocketHTTP_Headers_add (req->headers, "Accept-Encoding", encoding);
 }
@@ -845,7 +897,7 @@ add_initial_auth_header (SocketHTTPClient_T client,
 static void
 add_content_length_header (SocketHTTPClient_Request_T req)
 {
-  char cl_header[32];
+  char cl_header[HTTPCLIENT_CONTENT_LENGTH_SIZE];
 
   if (req->body == NULL || req->body_len == 0)
     return;
@@ -1195,6 +1247,92 @@ release_connection (SocketHTTPClient_T client, HTTPPoolEntry *conn, int success)
 }
 
 /* ============================================================================
+ * Internal: Execute Request Helpers
+ * ============================================================================ */
+
+/**
+ * check_request_limits - Check redirect and auth retry limits
+ * @client: HTTP client
+ * @redirect_count: Current redirect count
+ * @auth_retry_count: Current auth retry count
+ *
+ * Returns: 0 to continue, 1 to return success (auth limit reached)
+ * Raises: SocketHTTPClient_TooManyRedirects if redirect limit exceeded
+ */
+static int
+check_request_limits (SocketHTTPClient_T client, int redirect_count,
+                      int auth_retry_count)
+{
+  if (redirect_count > client->config.follow_redirects)
+    {
+      client->last_error = HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS;
+      HTTPCLIENT_ERROR_MSG ("Too many redirects (%d)", redirect_count);
+      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_TooManyRedirects);
+    }
+
+  /* Auth retry limit reached - return current response as-is */
+  if (auth_retry_count > HTTPCLIENT_MAX_AUTH_RETRIES)
+    return 1;
+
+  return 0;
+}
+
+/**
+ * prepare_request_headers - Add all required request headers
+ * @client: HTTP client
+ * @req: Request to prepare
+ */
+static void
+prepare_request_headers (SocketHTTPClient_T client,
+                         SocketHTTPClient_Request_T req)
+{
+  add_standard_headers (client, req);
+  add_cookie_header (client, req);
+  add_initial_auth_header (client, req);
+  add_content_length_header (req);
+}
+
+/**
+ * execute_protocol_request - Execute request based on HTTP version
+ * @conn: Pool connection entry
+ * @req: Request to execute
+ * @response: Output response
+ * @max_response_size: Maximum response body size
+ * @client: HTTP client (for error reporting)
+ *
+ * Returns: 0 on success, -1 on error, -2 on size limit exceeded
+ */
+static int
+execute_protocol_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
+                          SocketHTTPClient_Response *response,
+                          size_t max_response_size, SocketHTTPClient_T client)
+{
+  if (conn->version == HTTP_VERSION_1_1 || conn->version == HTTP_VERSION_1_0)
+    return execute_http1_request (conn, req, response, max_response_size);
+
+  /* HTTP/2 not yet implemented */
+  client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
+  HTTPCLIENT_ERROR_MSG ("HTTP/2 not yet implemented - use HTTP/1.1");
+  return -1;
+}
+
+/**
+ * handle_size_limit_error - Handle response size limit exceeded error
+ * @client: HTTP client
+ *
+ * Raises: SocketHTTPClient_ResponseTooLarge
+ */
+static void
+handle_size_limit_error (SocketHTTPClient_T client)
+{
+  SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED);
+  client->last_error = HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE;
+  HTTPCLIENT_ERROR_MSG ("Response body exceeds max_response_size (%zu)",
+                       client->config.max_response_size);
+  RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_ResponseTooLarge);
+}
+
+/* ============================================================================
  * Internal: Execute Request
  * ============================================================================ */
 
@@ -1225,16 +1363,8 @@ execute_request_internal (SocketHTTPClient_T client,
   assert (req != NULL);
   assert (response != NULL);
 
-  /* Check redirect limit */
-  if (redirect_count > client->config.follow_redirects)
-    {
-      client->last_error = HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS;
-      HTTPCLIENT_ERROR_MSG ("Too many redirects (%d)", redirect_count);
-      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_TooManyRedirects);
-    }
-
-  /* Check auth retry limit - return current response as-is */
-  if (auth_retry_count > HTTPCLIENT_MAX_AUTH_RETRIES)
+  /* Check limits */
+  if (check_request_limits (client, redirect_count, auth_retry_count) != 0)
     return 0;
 
   /* Get or create connection */
@@ -1245,49 +1375,19 @@ execute_request_internal (SocketHTTPClient_T client,
       return -1;
     }
 
-  /* Add all request headers */
-  add_standard_headers (client, req);
-  add_cookie_header (client, req);
-  add_initial_auth_header (client, req);
-  add_content_length_header (req);
+  /* Prepare headers */
+  prepare_request_headers (client, req);
 
   /* Execute based on protocol version */
-  if (conn->version == HTTP_VERSION_1_1 || conn->version == HTTP_VERSION_1_0)
-    {
-      result = execute_http1_request (conn, req, response,
-                                      client->config.max_response_size);
-    }
-  else
-    {
-      /* HTTP/2 is not yet supported in the HTTP client.
-       *
-       * Implementation requirements:
-       * - Connection pool would need to track H2 streams separately
-       * - Use SocketHTTP2_Conn_T instead of raw sockets for multiplexing
-       * - Handle SETTINGS, WINDOW_UPDATE, and stream lifecycle
-       * - Integrate HPACK encoder/decoder per connection
-       *
-       * Status: Planned for future release.
-       * Workaround: Configure client with max_version = HTTP_VERSION_1_1
-       *             or ensure server supports HTTP/1.1 fallback.
-       */
-      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
-      HTTPCLIENT_ERROR_MSG ("HTTP/2 not yet implemented - use HTTP/1.1");
-      result = -1;
-    }
+  result = execute_protocol_request (conn, req, response,
+                                     client->config.max_response_size, client);
 
   /* Release connection */
   release_connection (client, conn, result == 0);
 
+  /* Handle size limit error */
   if (result == -2)
-    {
-      /* Response size limit exceeded */
-      SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED);
-      client->last_error = HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE;
-      HTTPCLIENT_ERROR_MSG ("Response body exceeds max_response_size (%zu)",
-                           client->config.max_response_size);
-      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_ResponseTooLarge);
-    }
+    handle_size_limit_error (client);
 
   if (result != 0)
     return -1;
@@ -1303,10 +1403,7 @@ execute_request_internal (SocketHTTPClient_T client,
 
   /* Handle redirects */
   retry_result = handle_redirect (client, req, response, redirect_count);
-  if (retry_result <= 0)
-    return retry_result;
-
-  return 0;
+  return (retry_result <= 0) ? retry_result : 0;
 }
 
 /* ============================================================================
@@ -1615,12 +1712,23 @@ SocketHTTPClient_Request_auth (SocketHTTPClient_Request_T req,
  * Returns: Delay in milliseconds with jitter applied
  * Thread-safe: Yes
  */
+/**
+ * calculate_retry_delay - Calculate backoff delay for retry attempt
+ * @client: HTTP client with retry config
+ * @attempt: Current attempt number (1-based)
+ *
+ * Returns: Delay in milliseconds with jitter applied
+ * Thread-safe: Yes (uses rand() which may need seeding)
+ *
+ * Uses exponential backoff: initial * 2^(attempt-1), capped at max_delay.
+ * Applies +/- HTTPCLIENT_RETRY_JITTER_FACTOR jitter to prevent thundering herd.
+ */
 static int
 calculate_retry_delay (SocketHTTPClient_T client, int attempt)
 {
   double delay;
   double jitter_range;
-  double jitter_factor;
+  double random_factor;
 
   /* Exponential backoff: initial * 2^(attempt-1) */
   delay = (double)client->config.retry_initial_delay_ms
@@ -1630,10 +1738,10 @@ calculate_retry_delay (SocketHTTPClient_T client, int attempt)
   if (delay > (double)client->config.retry_max_delay_ms)
     delay = (double)client->config.retry_max_delay_ms;
 
-  /* Add 25% jitter: delay * (1 + 0.25 * (2*random - 1)) */
-  jitter_factor = (double)rand () / (double)RAND_MAX; /* 0 to 1 */
-  jitter_range = delay * 0.25;
-  delay += jitter_range * (2.0 * jitter_factor - 1.0);
+  /* Apply jitter: delay * (1 +/- jitter_factor * random) */
+  random_factor = (double)rand () / (double)RAND_MAX; /* 0 to 1 */
+  jitter_range = delay * HTTPCLIENT_RETRY_JITTER_FACTOR;
+  delay += jitter_range * (2.0 * random_factor - 1.0);
 
   /* Ensure positive delay */
   if (delay < 1.0)
@@ -1708,128 +1816,100 @@ should_retry_status (SocketHTTPClient_T client, int status)
   return 0;
 }
 
-int
-SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
-                                  SocketHTTPClient_Response *response)
+/**
+ * clear_response_for_retry - Clear response state for retry attempt
+ * @response: Response to clear
+ */
+static void
+clear_response_for_retry (SocketHTTPClient_Response *response)
 {
-  SocketHTTPClient_T client;
-  int attempt;
-  volatile int result;  /* volatile due to use across TRY/EXCEPT */
-  int delay_ms;
-
-  assert (req != NULL);
-  assert (response != NULL);
-
-  client = req->client;
-  memset (response, 0, sizeof (*response));
-
-  /* If retry is disabled, just execute once */
-  if (!client->config.enable_retry || client->config.max_retries <= 0)
-    return execute_request_internal (client, req, response, 0, 0);
-
-  /* Execute with retry logic */
-  for (attempt = 1; attempt <= client->config.max_retries + 1; attempt++)
+  if (response->arena != NULL)
     {
-      /* Clear response for fresh attempt */
-      if (attempt > 1)
-        {
-          /* Clean up previous response if any */
-          if (response->arena != NULL)
-            {
-              Arena_dispose (&response->arena);
-              response->arena = NULL;
-            }
-          memset (response, 0, sizeof (*response));
-        }
-
-      /* Attempt the request */
-      TRY
-        {
-          result = execute_request_internal (client, req, response, 0, 0);
-        }
-      EXCEPT (SocketHTTPClient_DNSFailed)
-        {
-          client->last_error = HTTPCLIENT_ERROR_DNS;
-          result = -1;
-        }
-      EXCEPT (SocketHTTPClient_ConnectFailed)
-        {
-          client->last_error = HTTPCLIENT_ERROR_CONNECT;
-          result = -1;
-        }
-      EXCEPT (SocketHTTPClient_Timeout)
-        {
-          client->last_error = HTTPCLIENT_ERROR_TIMEOUT;
-          result = -1;
-        }
-      EXCEPT (Socket_Failed)
-        {
-          /* Map socket errors to connect errors for retry purposes */
-          if (SocketError_is_retryable_errno (Socket_geterrno ()))
-            client->last_error = HTTPCLIENT_ERROR_CONNECT;
-          else
-            client->last_error = HTTPCLIENT_ERROR_CONNECT;
-          result = -1;
-        }
-      END_TRY;
-
-      /* Success - return immediately */
-      if (result == 0)
-        {
-          /* Check if we need to retry on 5xx */
-          if (response->status_code >= 500 && response->status_code < 600
-              && should_retry_status (client, response->status_code)
-              && attempt <= client->config.max_retries)
-            {
-              /* Log and retry on 5xx */
-              SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
-                               "Attempt %d: Server returned %d, retrying",
-                               attempt, response->status_code);
-            }
-          else
-            {
-              /* Success or non-retryable status */
-              return 0;
-            }
-        }
-      else
-        {
-          /* Error - check if retryable */
-          if (!should_retry_error (client, client->last_error))
-            {
-              /* Non-retryable error - propagate exception */
-              switch (client->last_error)
-                {
-                case HTTPCLIENT_ERROR_DNS:
-                  RAISE (SocketHTTPClient_DNSFailed);
-                  break;
-                case HTTPCLIENT_ERROR_CONNECT:
-                  RAISE (SocketHTTPClient_ConnectFailed);
-                  break;
-                case HTTPCLIENT_ERROR_TIMEOUT:
-                  RAISE (SocketHTTPClient_Timeout);
-                  break;
-                default:
-                  return -1;
-                }
-            }
-        }
-
-      /* Check if more attempts allowed */
-      if (attempt > client->config.max_retries)
-        break;
-
-      /* Calculate and apply backoff delay */
-      delay_ms = calculate_retry_delay (client, attempt);
-
-      SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
-                       "Attempt %d failed (error=%d), retrying in %d ms",
-                       attempt, client->last_error, delay_ms);
-
-      retry_sleep_ms (delay_ms);
+      Arena_dispose (&response->arena);
+      response->arena = NULL;
     }
+  memset (response, 0, sizeof (*response));
+}
 
-  /* All retries exhausted - raise the last error */
+/**
+ * execute_single_attempt - Execute one request attempt with exception handling
+ * @client: HTTP client
+ * @req: Request to execute
+ * @response: Output response
+ *
+ * Returns: 0 on success, -1 on error (last_error set)
+ */
+static int
+execute_single_attempt (SocketHTTPClient_T client,
+                        SocketHTTPClient_Request_T req,
+                        SocketHTTPClient_Response *response)
+{
+  volatile int result = -1;
+
+  TRY
+    {
+      result = execute_request_internal (client, req, response, 0, 0);
+    }
+  EXCEPT (SocketHTTPClient_DNSFailed)
+    {
+      client->last_error = HTTPCLIENT_ERROR_DNS;
+      result = -1;
+    }
+  EXCEPT (SocketHTTPClient_ConnectFailed)
+    {
+      client->last_error = HTTPCLIENT_ERROR_CONNECT;
+      result = -1;
+    }
+  EXCEPT (SocketHTTPClient_Timeout)
+    {
+      client->last_error = HTTPCLIENT_ERROR_TIMEOUT;
+      result = -1;
+    }
+  EXCEPT (Socket_Failed)
+    {
+      /* Map socket errors to connect errors for retry purposes */
+      client->last_error = HTTPCLIENT_ERROR_CONNECT;
+      result = -1;
+    }
+  END_TRY;
+
+  return result;
+}
+
+/**
+ * should_retry_5xx - Check if 5xx response should trigger retry
+ * @client: HTTP client
+ * @response: Response with 5xx status
+ * @attempt: Current attempt number
+ *
+ * Returns: 1 if should retry, 0 otherwise
+ */
+static int
+should_retry_5xx (SocketHTTPClient_T client,
+                  SocketHTTPClient_Response *response, int attempt)
+{
+  if (response->status_code < 500 || response->status_code >= 600)
+    return 0;
+
+  if (!should_retry_status (client, response->status_code))
+    return 0;
+
+  if (attempt > client->config.max_retries)
+    return 0;
+
+  SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
+                   "Attempt %d: Server returned %d, retrying", attempt,
+                   response->status_code);
+  return 1;
+}
+
+/**
+ * raise_last_error - Raise exception for last error code
+ * @client: HTTP client with last_error set
+ */
+static void
+raise_last_error (SocketHTTPClient_T client)
+{
   switch (client->last_error)
     {
     case HTTPCLIENT_ERROR_DNS:
@@ -1844,7 +1924,89 @@ SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
     default:
       break;
     }
+}
 
+/**
+ * handle_failed_attempt - Handle a failed request attempt
+ * @client: HTTP client
+ * @attempt: Current attempt number
+ *
+ * Returns: 1 to continue retry loop, 0 to stop (raises exception or returns)
+ */
+static int
+handle_failed_attempt (SocketHTTPClient_T client, int attempt)
+{
+  int delay_ms;
+
+  /* Non-retryable error - propagate exception */
+  if (!should_retry_error (client, client->last_error))
+    {
+      raise_last_error (client);
+      return 0;
+    }
+
+  /* No more attempts allowed */
+  if (attempt > client->config.max_retries)
+    return 0;
+
+  /* Calculate and apply backoff delay */
+  delay_ms = calculate_retry_delay (client, attempt);
+  SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
+                   "Attempt %d failed (error=%d), retrying in %d ms", attempt,
+                   client->last_error, delay_ms);
+  retry_sleep_ms (delay_ms);
+
+  return 1;
+}
+
+int
+SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
+                                  SocketHTTPClient_Response *response)
+{
+  SocketHTTPClient_T client;
+  int attempt;
+  int result;
+  int max_attempts;
+
+  assert (req != NULL);
+  assert (response != NULL);
+
+  client = req->client;
+  memset (response, 0, sizeof (*response));
+
+  /* If retry is disabled, just execute once */
+  if (!client->config.enable_retry || client->config.max_retries <= 0)
+    return execute_request_internal (client, req, response, 0, 0);
+
+  max_attempts = client->config.max_retries + 1;
+
+  /* Execute with retry logic */
+  for (attempt = 1; attempt <= max_attempts; attempt++)
+    {
+      /* Clear response for fresh attempt (except first) */
+      if (attempt > 1)
+        clear_response_for_retry (response);
+
+      /* Attempt the request */
+      result = execute_single_attempt (client, req, response);
+
+      /* Success */
+      if (result == 0)
+        {
+          /* Check if we need to retry on 5xx */
+          if (!should_retry_5xx (client, response, attempt))
+            return 0;
+        }
+      else
+        {
+          /* Error - handle failed attempt */
+          if (!handle_failed_attempt (client, attempt))
+            break;
+        }
+    }
+
+  /* All retries exhausted - raise the last error */
+  raise_last_error (client);
   return -1;
 }
 

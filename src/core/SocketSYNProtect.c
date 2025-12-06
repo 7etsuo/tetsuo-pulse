@@ -42,9 +42,8 @@ static const char *const action_names[] = { "ALLOW", "THROTTLE", "CHALLENGE",
 static const char *const reputation_names[]
     = { "TRUSTED", "NEUTRAL", "SUSPECT", "HOSTILE" };
 
-/* Array bounds for safe enum-to-string conversion */
 #define ACTION_NAMES_COUNT (sizeof (action_names) / sizeof (action_names[0]))
-#define REPUTATION_NAMES_COUNT                                                \
+#define REPUTATION_NAMES_COUNT                                                 \
   (sizeof (reputation_names) / sizeof (reputation_names[0]))
 
 /* ============================================================================
@@ -55,8 +54,6 @@ static const char *const reputation_names[]
  * safe_copy_ip - Safely copy IP string with null termination
  * @dest: Destination buffer (must be at least SOCKET_IP_MAX_LEN bytes)
  * @src: Source IP string
- *
- * Copies at most SOCKET_IP_MAX_LEN-1 characters and ensures null termination.
  */
 static void
 safe_copy_ip (char *dest, const char *src)
@@ -68,21 +65,6 @@ safe_copy_ip (char *dest, const char *src)
 /* ============================================================================
  * Internal Helper Functions - Memory Allocation
  * ============================================================================ */
-
-/**
- * alloc_memory - Allocate memory from arena or heap
- * @protect: Protection instance
- * @size: Number of bytes to allocate
- *
- * Returns: Pointer to allocated memory, or NULL on failure
- */
-static void *
-alloc_memory (T protect, size_t size)
-{
-  if (protect->arena != NULL)
-    return Arena_alloc (protect->arena, size, __FILE__, __LINE__);
-  return malloc (size);
-}
 
 /**
  * alloc_zeroed - Allocate zeroed memory from arena or heap
@@ -182,7 +164,6 @@ lru_touch (T protect, SocketSYN_IPEntry *entry)
  * @ip: IP address string
  *
  * Returns: Entry pointer or NULL if not found
- * Thread-safe: No (caller must hold mutex)
  */
 static SocketSYN_IPEntry *
 find_ip_entry (T protect, const char *ip)
@@ -473,19 +454,14 @@ reward_success (SocketSYN_IPState *state,
 /**
  * is_currently_blocked - Check if IP is currently blocked
  * @state: IP state
+ * @now_ms: Current timestamp
  *
  * Returns: 1 if blocked, 0 otherwise
  */
 static int
-is_currently_blocked (const SocketSYN_IPState *state)
+is_currently_blocked (const SocketSYN_IPState *state, int64_t now_ms)
 {
-  if (state->block_until_ms > 0)
-    {
-      int64_t now = Socket_get_monotonic_ms ();
-      if (now < state->block_until_ms)
-        return 1;
-    }
-  return 0;
+  return (state->block_until_ms > 0 && now_ms < state->block_until_ms);
 }
 
 /**
@@ -493,15 +469,16 @@ is_currently_blocked (const SocketSYN_IPState *state)
  * @state: IP state
  * @config: Configuration
  * @effective_attempts: Weighted attempt count
+ * @now_ms: Current timestamp
  *
  * Returns: Action to take
  */
 static SocketSYN_Action
 determine_action (const SocketSYN_IPState *state,
                   const SocketSYNProtect_Config *config,
-                  uint32_t effective_attempts)
+                  uint32_t effective_attempts, int64_t now_ms)
 {
-  if (is_currently_blocked (state))
+  if (is_currently_blocked (state, now_ms))
     return SYN_ACTION_BLOCK;
 
   if ((int)effective_attempts > config->max_attempts_per_window)
@@ -692,7 +669,6 @@ whitelist_check_bucket (const SocketSYN_WhitelistEntry *entry, const char *ip)
  * @skip_bucket: Bucket to skip (already checked)
  *
  * Returns: 1 if found, 0 otherwise
- * Thread-safe: No (caller must hold mutex)
  */
 static int
 whitelist_check_all_cidrs (T protect, const char *ip, unsigned skip_bucket)
@@ -719,7 +695,6 @@ whitelist_check_all_cidrs (T protect, const char *ip, unsigned skip_bucket)
  * @ip: IP address to check
  *
  * Returns: 1 if whitelisted, 0 otherwise
- * Thread-safe: No (caller must hold mutex)
  */
 static int
 whitelist_check (T protect, const char *ip)
@@ -748,7 +723,6 @@ whitelist_check (T protect, const char *ip)
  * @now_ms: Current timestamp
  *
  * Returns: 1 if blacklisted and not expired, 0 otherwise
- * Thread-safe: No (caller must hold mutex)
  */
 static int
 blacklist_check (T protect, const char *ip, int64_t now_ms)
@@ -785,8 +759,6 @@ blacklist_check (T protect, const char *ip, int64_t now_ms)
  * @ip: IP address string
  * @rep: Reputation to set
  * @score: Score to set
- *
- * Helper function to populate state_out for whitelisted/blacklisted IPs.
  */
 static void
 fill_ip_state_out (SocketSYN_IPState *state_out, const char *ip,
@@ -885,8 +857,8 @@ process_ip_attempt (T protect, SocketSYN_IPEntry *entry, int64_t now_ms)
   effective_attempts = calculate_effective_attempts (
       &entry->state, now_ms, protect->config.window_duration_ms);
 
-  action
-      = determine_action (&entry->state, &protect->config, effective_attempts);
+  action = determine_action (&entry->state, &protect->config,
+                             effective_attempts, now_ms);
 
   if (action == SYN_ACTION_BLOCK && entry->state.block_until_ms == 0)
     entry->state.block_until_ms = now_ms + protect->config.block_duration_ms;
@@ -932,7 +904,6 @@ check_whitelist_blacklist (T protect, const char *client_ip, int64_t now_ms,
 
 /**
  * Cleanup stages for SocketSYNProtect_new() error handling
- * Each stage includes cleanup of all previous stages
  */
 typedef enum
 {
@@ -947,10 +918,7 @@ typedef enum
 /**
  * cleanup_synprotect_init - Clean up partially initialized SYN protection
  * @protect: Protection instance to clean up
- * @stage: Stage reached before failure (cleanup from this point back)
- *
- * Handles cleanup in reverse order of initialization.
- * Thread-safe: No (called during construction only)
+ * @stage: Stage reached before failure
  */
 static void
 cleanup_synprotect_init (T protect, SYN_CleanupStage stage)
@@ -1164,6 +1132,178 @@ parse_cidr_notation (const char *cidr, char *ip_out, size_t ip_out_size,
 }
 
 /* ============================================================================
+ * Internal Helper Functions - Whitelist/Blacklist Common Operations
+ * ============================================================================ */
+
+/**
+ * find_whitelist_entry_exact - Find exact IP match in whitelist bucket
+ * @bucket_head: First entry in bucket
+ * @ip: IP address to find
+ *
+ * Returns: Entry if found (exact, non-CIDR match), NULL otherwise
+ */
+static SocketSYN_WhitelistEntry *
+find_whitelist_entry_exact (SocketSYN_WhitelistEntry *bucket_head,
+                            const char *ip)
+{
+  SocketSYN_WhitelistEntry *entry = bucket_head;
+  while (entry != NULL)
+    {
+      if (!entry->is_cidr && strcmp (entry->ip, ip) == 0)
+        return entry;
+      entry = entry->next;
+    }
+  return NULL;
+}
+
+/**
+ * find_blacklist_entry - Find IP in blacklist bucket
+ * @bucket_head: First entry in bucket
+ * @ip: IP address to find
+ *
+ * Returns: Entry if found, NULL otherwise
+ */
+static SocketSYN_BlacklistEntry *
+find_blacklist_entry (SocketSYN_BlacklistEntry *bucket_head, const char *ip)
+{
+  SocketSYN_BlacklistEntry *entry = bucket_head;
+  while (entry != NULL)
+    {
+      if (strcmp (entry->ip, ip) == 0)
+        return entry;
+      entry = entry->next;
+    }
+  return NULL;
+}
+
+/**
+ * insert_whitelist_entry - Insert entry at bucket head
+ * @protect: Protection instance
+ * @entry: Entry to insert
+ * @bucket: Bucket index
+ */
+static void
+insert_whitelist_entry (T protect, SocketSYN_WhitelistEntry *entry,
+                        unsigned bucket)
+{
+  entry->next = protect->whitelist_table[bucket];
+  protect->whitelist_table[bucket] = entry;
+  protect->whitelist_count++;
+}
+
+/**
+ * insert_blacklist_entry - Insert entry at bucket head
+ * @protect: Protection instance
+ * @entry: Entry to insert
+ * @bucket: Bucket index
+ */
+static void
+insert_blacklist_entry (T protect, SocketSYN_BlacklistEntry *entry,
+                        unsigned bucket)
+{
+  entry->next = protect->blacklist_table[bucket];
+  protect->blacklist_table[bucket] = entry;
+  protect->blacklist_count++;
+}
+
+/**
+ * create_whitelist_entry - Create new whitelist entry
+ * @protect: Protection instance
+ * @ip: IP or CIDR string
+ * @is_cidr: 1 if CIDR, 0 if single IP
+ *
+ * Returns: New entry or NULL on failure
+ */
+static SocketSYN_WhitelistEntry *
+create_whitelist_entry (T protect, const char *ip, int is_cidr)
+{
+  SocketSYN_WhitelistEntry *entry;
+
+  entry = alloc_zeroed (protect, 1, sizeof (*entry));
+  if (entry == NULL)
+    return NULL;
+
+  safe_copy_ip (entry->ip, ip);
+  entry->is_cidr = is_cidr;
+  return entry;
+}
+
+/**
+ * create_blacklist_entry - Create new blacklist entry
+ * @protect: Protection instance
+ * @ip: IP address string
+ * @expires_ms: Expiry timestamp (0 = permanent)
+ *
+ * Returns: New entry or NULL on failure
+ */
+static SocketSYN_BlacklistEntry *
+create_blacklist_entry (T protect, const char *ip, int64_t expires_ms)
+{
+  SocketSYN_BlacklistEntry *entry;
+
+  entry = alloc_zeroed (protect, 1, sizeof (*entry));
+  if (entry == NULL)
+    return NULL;
+
+  safe_copy_ip (entry->ip, ip);
+  entry->expires_ms = expires_ms;
+  return entry;
+}
+
+/* ============================================================================
+ * Internal Helper Functions - Check Core Logic
+ * ============================================================================ */
+
+/**
+ * check_global_rate_limit - Check global rate limit
+ * @protect: Protection instance
+ *
+ * Returns: 1 if allowed, 0 if blocked
+ */
+static int
+check_global_rate_limit (T protect)
+{
+  if (!SocketRateLimit_try_acquire (protect->global_limiter, 1))
+    {
+      atomic_fetch_add (&protect->stat_blocked, 1);
+      return 0;
+    }
+  return 1;
+}
+
+/**
+ * process_tracked_ip - Process check for a tracked/new IP
+ * @protect: Protection instance (must hold mutex)
+ * @client_ip: Client IP address
+ * @now_ms: Current timestamp
+ * @state_out: Output state (optional)
+ *
+ * Returns: Action to take
+ */
+static SocketSYN_Action
+process_tracked_ip (T protect, const char *client_ip, int64_t now_ms,
+                    SocketSYN_IPState *state_out)
+{
+  SocketSYN_IPEntry *entry;
+  SocketSYN_Action action;
+
+  entry = get_or_create_ip_entry (protect, client_ip, now_ms);
+  if (entry == NULL)
+    {
+      atomic_fetch_add (&protect->stat_allowed, 1);
+      return SYN_ACTION_ALLOW;
+    }
+
+  action = process_ip_attempt (protect, entry, now_ms);
+  update_action_stats (protect, action);
+
+  if (state_out != NULL)
+    memcpy (state_out, &entry->state, sizeof (*state_out));
+
+  return action;
+}
+
+/* ============================================================================
  * Public API Implementation - Lifecycle
  * ============================================================================ */
 
@@ -1276,12 +1416,38 @@ synprotect_finalize (T protect)
   init_atomic_stats (protect);
 }
 
+/**
+ * synprotect_init_tables - Initialize all hash tables
+ * @protect: Protection instance
+ * @config: Configuration
+ *
+ * Returns: Cleanup stage reached on failure, or -1 on success
+ */
+static int
+synprotect_init_tables (T protect, const SocketSYNProtect_Config *config)
+{
+  if (!init_ip_hash_table (protect))
+    return SYN_CLEANUP_MUTEX;
+
+  if (!init_whitelist_table (protect))
+    return SYN_CLEANUP_IP_TABLE;
+
+  if (!init_blacklist_table (protect))
+    return SYN_CLEANUP_WHITELIST;
+
+  if (!init_global_limiter (protect, config))
+    return SYN_CLEANUP_BLACKLIST;
+
+  return -1; /* Success */
+}
+
 T
 SocketSYNProtect_new (Arena_T arena, const SocketSYNProtect_Config *config)
 {
   T protect;
   SocketSYNProtect_Config local_config;
   const SocketSYNProtect_Config *cfg;
+  int init_result;
 
   cfg = synprotect_get_config (config, &local_config);
 
@@ -1299,32 +1465,12 @@ SocketSYNProtect_new (Arena_T arena, const SocketSYNProtect_Config *config)
                         "Failed to initialize mutex");
     }
 
-  if (!init_ip_hash_table (protect))
+  init_result = synprotect_init_tables (protect, cfg);
+  if (init_result >= 0)
     {
-      cleanup_synprotect_init (protect, SYN_CLEANUP_MUTEX);
+      cleanup_synprotect_init (protect, (SYN_CleanupStage)init_result);
       SOCKET_RAISE_MSG (SocketSYNProtect, SocketSYNProtect_Failed,
-                        "Failed to allocate IP hash table");
-    }
-
-  if (!init_whitelist_table (protect))
-    {
-      cleanup_synprotect_init (protect, SYN_CLEANUP_IP_TABLE);
-      SOCKET_RAISE_MSG (SocketSYNProtect, SocketSYNProtect_Failed,
-                        "Failed to allocate whitelist hash table");
-    }
-
-  if (!init_blacklist_table (protect))
-    {
-      cleanup_synprotect_init (protect, SYN_CLEANUP_WHITELIST);
-      SOCKET_RAISE_MSG (SocketSYNProtect, SocketSYNProtect_Failed,
-                        "Failed to allocate blacklist hash table");
-    }
-
-  if (!init_global_limiter (protect, cfg))
-    {
-      cleanup_synprotect_init (protect, SYN_CLEANUP_BLACKLIST);
-      SOCKET_RAISE_MSG (SocketSYNProtect, SocketSYNProtect_Failed,
-                        "Failed to create global rate limiter");
+                        "Failed to initialize hash tables");
     }
 
   synprotect_finalize (protect);
@@ -1389,7 +1535,6 @@ SocketSYNProtect_check (T protect, const char *client_ip,
                         SocketSYN_IPState *state_out)
 {
   SocketSYN_Action action;
-  SocketSYN_IPEntry *entry;
   int64_t now_ms;
 
   assert (protect != NULL);
@@ -1403,7 +1548,6 @@ SocketSYNProtect_check (T protect, const char *client_ip,
 
   atomic_fetch_add (&protect->stat_attempts, 1);
 
-  /* Check whitelist/blacklist first */
   if (check_whitelist_blacklist (protect, client_ip, now_ms, state_out,
                                  &action))
     {
@@ -1411,29 +1555,13 @@ SocketSYNProtect_check (T protect, const char *client_ip,
       return action;
     }
 
-  /* Check global rate limit */
-  if (!SocketRateLimit_try_acquire (protect->global_limiter, 1))
+  if (!check_global_rate_limit (protect))
     {
-      atomic_fetch_add (&protect->stat_blocked, 1);
       pthread_mutex_unlock (&protect->mutex);
       return SYN_ACTION_BLOCK;
     }
 
-  /* Get or create IP entry */
-  entry = get_or_create_ip_entry (protect, client_ip, now_ms);
-  if (entry == NULL)
-    {
-      atomic_fetch_add (&protect->stat_allowed, 1);
-      pthread_mutex_unlock (&protect->mutex);
-      return SYN_ACTION_ALLOW;
-    }
-
-  /* Process the attempt */
-  action = process_ip_attempt (protect, entry, now_ms);
-  update_action_stats (protect, action);
-
-  if (state_out != NULL)
-    memcpy (state_out, &entry->state, sizeof (*state_out));
+  action = process_tracked_ip (protect, client_ip, now_ms, state_out);
 
   pthread_mutex_unlock (&protect->mutex);
 
@@ -1470,7 +1598,7 @@ SocketSYNProtect_report_failure (T protect, const char *client_ip,
                                  int error_code)
 {
   SocketSYN_IPEntry *entry;
-  int64_t now_ms = Socket_get_monotonic_ms ();
+  int64_t now_ms;
 
   (void)error_code;
 
@@ -1478,6 +1606,8 @@ SocketSYNProtect_report_failure (T protect, const char *client_ip,
 
   if (!SOCKET_VALID_IP_STRING (client_ip))
     return;
+
+  now_ms = Socket_get_monotonic_ms ();
 
   pthread_mutex_lock (&protect->mutex);
 
@@ -1522,33 +1652,42 @@ SocketSYNProtect_whitelist_add (T protect, const char *ip)
     }
 
   bucket = synprotect_hash_ip (ip, SOCKET_SYN_LIST_HASH_SIZE);
-  entry = protect->whitelist_table[bucket];
-  while (entry != NULL)
+
+  if (find_whitelist_entry_exact (protect->whitelist_table[bucket], ip) != NULL)
     {
-      if (!entry->is_cidr && strcmp (entry->ip, ip) == 0)
-        {
-          pthread_mutex_unlock (&protect->mutex);
-          return 1;
-        }
-      entry = entry->next;
+      pthread_mutex_unlock (&protect->mutex);
+      return 1;
     }
 
-  entry = alloc_zeroed (protect, 1, sizeof (*entry));
+  entry = create_whitelist_entry (protect, ip, 0);
   if (entry == NULL)
     {
       pthread_mutex_unlock (&protect->mutex);
       return 0;
     }
 
-  safe_copy_ip (entry->ip, ip);
-  entry->is_cidr = 0;
-
-  entry->next = protect->whitelist_table[bucket];
-  protect->whitelist_table[bucket] = entry;
-  protect->whitelist_count++;
+  insert_whitelist_entry (protect, entry, bucket);
 
   pthread_mutex_unlock (&protect->mutex);
   return 1;
+}
+
+/**
+ * setup_cidr_entry - Setup CIDR fields on whitelist entry
+ * @entry: Whitelist entry to configure
+ * @ip_part: IP address part of CIDR
+ * @prefix_len: CIDR prefix length
+ *
+ * Returns: 1 on success, 0 on failure
+ */
+static int
+setup_cidr_entry (SocketSYN_WhitelistEntry *entry, const char *ip_part,
+                  int prefix_len)
+{
+  entry->prefix_len = (uint8_t)prefix_len;
+  entry->addr_family
+      = parse_ip_address (ip_part, entry->addr_bytes, sizeof (entry->addr_bytes));
+  return (entry->addr_family != 0);
 }
 
 int
@@ -1575,20 +1714,14 @@ SocketSYNProtect_whitelist_add_cidr (T protect, const char *cidr)
       return 0;
     }
 
-  entry = alloc_zeroed (protect, 1, sizeof (*entry));
+  entry = create_whitelist_entry (protect, cidr, 1);
   if (entry == NULL)
     {
       pthread_mutex_unlock (&protect->mutex);
       return 0;
     }
 
-  safe_copy_ip (entry->ip, cidr);
-  entry->is_cidr = 1;
-  entry->prefix_len = (uint8_t)prefix_len;
-
-  entry->addr_family
-      = parse_ip_address (ip_part, entry->addr_bytes, sizeof (entry->addr_bytes));
-  if (entry->addr_family == 0)
+  if (!setup_cidr_entry (entry, ip_part, prefix_len))
     {
       free_memory (protect, entry);
       pthread_mutex_unlock (&protect->mutex);
@@ -1596,9 +1729,7 @@ SocketSYNProtect_whitelist_add_cidr (T protect, const char *cidr)
     }
 
   bucket = synprotect_hash_ip (ip_part, SOCKET_SYN_LIST_HASH_SIZE);
-  entry->next = protect->whitelist_table[bucket];
-  protect->whitelist_table[bucket] = entry;
-  protect->whitelist_count++;
+  insert_whitelist_entry (protect, entry, bucket);
 
   pthread_mutex_unlock (&protect->mutex);
   return 1;
@@ -1681,12 +1812,25 @@ SocketSYNProtect_whitelist_clear (T protect)
  * Public API Implementation - Blacklist Management
  * ============================================================================ */
 
+/**
+ * calculate_expiry_time - Calculate blacklist expiry time
+ * @now_ms: Current timestamp
+ * @duration_ms: Duration in milliseconds (0 = permanent)
+ *
+ * Returns: Expiry timestamp (0 = permanent)
+ */
+static int64_t
+calculate_expiry_time (int64_t now_ms, int duration_ms)
+{
+  return (duration_ms > 0) ? (now_ms + duration_ms) : 0;
+}
+
 int
 SocketSYNProtect_blacklist_add (T protect, const char *ip, int duration_ms)
 {
   SocketSYN_BlacklistEntry *entry;
   unsigned bucket;
-  int64_t now_ms;
+  int64_t now_ms, expires_ms;
 
   assert (protect != NULL);
 
@@ -1694,6 +1838,7 @@ SocketSYNProtect_blacklist_add (T protect, const char *ip, int duration_ms)
     return 0;
 
   now_ms = Socket_get_monotonic_ms ();
+  expires_ms = calculate_expiry_time (now_ms, duration_ms);
 
   pthread_mutex_lock (&protect->mutex);
 
@@ -1704,31 +1849,23 @@ SocketSYNProtect_blacklist_add (T protect, const char *ip, int duration_ms)
     }
 
   bucket = synprotect_hash_ip (ip, SOCKET_SYN_LIST_HASH_SIZE);
-  entry = protect->blacklist_table[bucket];
-  while (entry != NULL)
+
+  entry = find_blacklist_entry (protect->blacklist_table[bucket], ip);
+  if (entry != NULL)
     {
-      if (strcmp (entry->ip, ip) == 0)
-        {
-          entry->expires_ms = (duration_ms > 0) ? (now_ms + duration_ms) : 0;
-          pthread_mutex_unlock (&protect->mutex);
-          return 1;
-        }
-      entry = entry->next;
+      entry->expires_ms = expires_ms;
+      pthread_mutex_unlock (&protect->mutex);
+      return 1;
     }
 
-  entry = alloc_zeroed (protect, 1, sizeof (*entry));
+  entry = create_blacklist_entry (protect, ip, expires_ms);
   if (entry == NULL)
     {
       pthread_mutex_unlock (&protect->mutex);
       return 0;
     }
 
-  safe_copy_ip (entry->ip, ip);
-  entry->expires_ms = (duration_ms > 0) ? (now_ms + duration_ms) : 0;
-
-  entry->next = protect->blacklist_table[bucket];
-  protect->blacklist_table[bucket] = entry;
-  protect->blacklist_count++;
+  insert_blacklist_entry (protect, entry, bucket);
 
   pthread_mutex_unlock (&protect->mutex);
   return 1;
@@ -1846,7 +1983,6 @@ SocketSYNProtect_get_ip_state (T protect, const char *ip,
  * @now_ms: Current timestamp
  *
  * Returns: Number of blocked IPs
- * Thread-safe: No (caller must hold mutex)
  */
 static size_t
 count_currently_blocked (T protect, int64_t now_ms)

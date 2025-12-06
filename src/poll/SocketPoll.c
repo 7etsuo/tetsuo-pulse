@@ -737,8 +737,7 @@ validate_socket_fd_for_add (const Socket_T socket)
 
   if (fd < 0)
     {
-      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                       "Adding invalid socket fd=%d to poll; ignoring", fd);
+      SOCKET_LOG_WARN_MSG ("Adding invalid socket fd=%d to poll; ignoring", fd);
       return -1;
     }
 

@@ -4,6 +4,9 @@
  * Consolidated module for UDP socket operations including core lifecycle,
  * options, bind/connect, and scatter/gather I/O.
  *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
+ *
  * Features:
  * - Socket lifecycle management (new/free)
  * - Basic send/recv operations
@@ -13,21 +16,13 @@
  * - Thread-safe live count tracking
  */
 
-#include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <limits.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
 
@@ -55,7 +50,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketDgram);
 
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketDgram, e)
 
-/* Shared live count tracker - see SocketLiveCount.h */
+/* Shared live count tracker - see SocketLiveCount in SocketCommon.h */
 static struct SocketLiveCount dgram_live_tracker = SOCKETLIVECOUNT_STATIC_INIT;
 
 #define dgram_live_increment() SocketLiveCount_increment (&dgram_live_tracker)
@@ -70,6 +65,26 @@ SocketDgram_debug_live_count (void)
 }
 
 /* ==================== Lifecycle Operations ==================== */
+
+/**
+ * dgram_alloc_structure - Allocate datagram socket structure from arena
+ * @base: Initialized socket base
+ *
+ * Returns: Allocated structure, or raises exception
+ */
+static T
+dgram_alloc_structure (SocketBase_T base)
+{
+  T sock = Arena_calloc (SocketBase_arena (base), 1, sizeof (struct T),
+                         __FILE__, __LINE__);
+  if (!sock)
+    {
+      SocketCommon_free_base (&base);
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate dgram structure");
+      RAISE_MODULE_ERROR (SocketDgram_Failed);
+    }
+  return sock;
+}
 
 T
 SocketDgram_new (int domain, int protocol)
@@ -90,15 +105,7 @@ SocketDgram_new (int domain, int protocol)
       RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
-  sock = Arena_calloc (SocketBase_arena (base), 1, sizeof (struct T), __FILE__,
-                       __LINE__);
-  if (!sock)
-    {
-      SocketCommon_free_base (&base);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate dgram structure");
-      RAISE_MODULE_ERROR (SocketDgram_Failed);
-    }
-
+  sock = dgram_alloc_structure (base);
   sock->base = base;
   dgram_live_increment ();
   return sock;
@@ -111,9 +118,8 @@ SocketDgram_free (T *socket)
   if (!s)
     return;
 
-  *socket = NULL; /* Invalidate caller pointer before cleanup to avoid UB */
+  *socket = NULL; /* Invalidate caller pointer before cleanup */
 
-  /* Datagram-specific cleanup (DTLS) before base free */
 #ifdef SOCKET_HAS_TLS
   if (s->dtls_ssl)
     {
@@ -124,7 +130,6 @@ SocketDgram_free (T *socket)
 
   /* Common base cleanup: closes fd, disposes arena (frees s too) */
   SocketCommon_free_base (&s->base);
-
   dgram_live_decrement ();
 }
 
@@ -149,7 +154,6 @@ resolve_sendto_address (const char *host, int port, struct addrinfo **res)
   result = snprintf (port_str, sizeof (port_str), "%d", port);
   assert (result > 0 && result < (int)sizeof (port_str));
 
-  /* Inline setup_sendto_hints - was just a wrapper */
   SocketCommon_setup_hints (&hints, SOCKET_DGRAM_TYPE, 0);
   result = getaddrinfo (host, port_str, &hints, res);
   if (result != 0)
@@ -171,12 +175,12 @@ resolve_sendto_address (const char *host, int port, struct addrinfo **res)
  *
  * Returns: Bytes sent, or 0 if would block
  * Raises: SocketDgram_Failed on error or if len > SAFE_UDP_SIZE
- *
- * Uses MSG_NOSIGNAL to suppress SIGPIPE on broken connections.
  */
 static ssize_t
 perform_sendto (T socket, const void *buf, size_t len, struct addrinfo *res)
 {
+  ssize_t sent;
+
   if (len > SAFE_UDP_SIZE)
     {
       SOCKET_ERROR_MSG (
@@ -185,8 +189,8 @@ perform_sendto (T socket, const void *buf, size_t len, struct addrinfo *res)
       RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
-  ssize_t sent = sendto (SocketBase_fd (socket->base), buf, len, MSG_NOSIGNAL,
-                         res->ai_addr, res->ai_addrlen);
+  sent = sendto (SocketBase_fd (socket->base), buf, len, MSG_NOSIGNAL,
+                 res->ai_addr, res->ai_addrlen);
   if (sent < 0)
     {
       if (socketio_is_wouldblock ())
@@ -231,27 +235,22 @@ perform_recvfrom (T socket, void *buf, size_t len,
  * @host: Output buffer for hostname/IP
  * @host_len: Size of host buffer
  * @port: Output for port number
- *
- * Thread-safe: Yes (operates on local data)
  */
 static void
 extract_sender_info (const struct sockaddr_storage *addr, socklen_t addrlen,
                      char *host, size_t host_len, int *port)
 {
   char serv[SOCKET_NI_MAXSERV];
-  int result;
-
-  result = getnameinfo ((struct sockaddr *)addr, addrlen, host, host_len, serv,
-                        SOCKET_NI_MAXSERV,
-                        SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
+  int result = getnameinfo ((struct sockaddr *)addr, addrlen, host, host_len,
+                            serv, SOCKET_NI_MAXSERV,
+                            SOCKET_NI_NUMERICHOST | SOCKET_NI_NUMERICSERV);
   if (result == 0)
     {
       char *endptr;
       long port_long = strtol (serv, &endptr, 10);
-      if (*endptr == '\0' && port_long > 0 && port_long <= SOCKET_MAX_PORT)
-        *port = (int)port_long;
-      else
-        *port = 0;
+      *port = (*endptr == '\0' && port_long > 0 && port_long <= SOCKET_MAX_PORT)
+                  ? (int)port_long
+                  : 0;
     }
   else
     {
@@ -268,7 +267,7 @@ SocketDgram_sendto (T socket, const void *buf, size_t len, const char *host,
                     int port)
 {
   struct addrinfo *res = NULL;
-  volatile ssize_t sent = 0;
+  ssize_t sent;
 
   assert (socket);
   assert (buf);
@@ -279,15 +278,11 @@ SocketDgram_sendto (T socket, const void *buf, size_t len, const char *host,
   SocketCommon_validate_hostname (host, SocketDgram_Failed);
   resolve_sendto_address (host, port, &res);
 
-  TRY
-    sent = perform_sendto (socket, buf, len, res);
-  EXCEPT (SocketDgram_Failed)
-    freeaddrinfo (res);
-    RERAISE;
+  TRY sent = perform_sendto (socket, buf, len, res);
+  FINALLY freeaddrinfo (res);
   END_TRY;
 
-  freeaddrinfo (res);
-  return (ssize_t)sent;
+  return sent;
 }
 
 ssize_t
@@ -302,12 +297,12 @@ SocketDgram_recvfrom (T socket, void *buf, size_t len, char *host,
   assert (buf);
   assert (len > 0);
 
-  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory */
   memset (&addr, 0, sizeof (addr));
-
   received = perform_recvfrom (socket, buf, len, &addr, &addrlen);
+
   if (host && host_len > 0 && port)
     extract_sender_info (&addr, addrlen, host, host_len, port);
+
   return received;
 }
 
@@ -320,7 +315,6 @@ SocketDgram_send (T socket, const void *buf, size_t len)
   assert (buf);
   assert (len > 0);
 
-  /* Use MSG_NOSIGNAL to suppress SIGPIPE on broken connections */
   sent = send (SocketBase_fd (socket->base), buf, len, MSG_NOSIGNAL);
   if (sent < 0)
     {
@@ -459,7 +453,7 @@ SocketDgram_getbroadcast (T socket)
       < 0)
     RAISE_MODULE_ERROR (SocketDgram_Failed);
 
-  return opt ? 1 : 0; /* Normalize to 0 or 1 */
+  return opt ? 1 : 0;
 }
 
 int
@@ -577,14 +571,12 @@ SocketDgram_isconnected (T socket)
   socklen_t len = sizeof (addr);
   assert (socket);
 
-  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory */
   memset (&addr, 0, sizeof (addr));
-
-  if (getpeername (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
-                   &len)
-      == 0)
-    return 1;
-  return 0;
+  return getpeername (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
+                      &len)
+             == 0
+             ? 1
+             : 0;
 }
 
 int
@@ -597,9 +589,7 @@ SocketDgram_isbound (T socket)
   if (socket->base->localaddr != NULL)
     return 1;
 
-  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory */
   memset (&addr, 0, sizeof (addr));
-
   if (getsockname (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
                    &len)
       == 0)
@@ -610,12 +600,46 @@ SocketDgram_isbound (T socket)
 
 /* ==================== Bind/Connect Operations ==================== */
 
-/* Operation type for dgram_try_addresses */
+/* Operation type for dgram_perform_address_operation */
 typedef enum
 {
   DGRAM_OP_BIND,
   DGRAM_OP_CONNECT
 } DgramOpType;
+
+/**
+ * dgram_try_single_address - Try operation on single address
+ * @fd: Socket file descriptor
+ * @rp: Address to try
+ * @op: Operation type
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int
+dgram_try_single_address (int fd, struct addrinfo *rp, DgramOpType op)
+{
+  return (op == DGRAM_OP_BIND) ? bind (fd, rp->ai_addr, rp->ai_addrlen)
+                               : connect (fd, rp->ai_addr, rp->ai_addrlen);
+}
+
+/**
+ * dgram_setup_dual_stack - Configure IPv6 dual-stack for bind operations
+ * @fd: Socket file descriptor
+ * @family: Address family
+ * @socket_family: Socket's configured family
+ * @op: Operation type
+ */
+static void
+dgram_setup_dual_stack (int fd, int family, int socket_family, DgramOpType op)
+{
+  if (op == DGRAM_OP_BIND && family == SOCKET_AF_INET6
+      && socket_family == SOCKET_AF_INET6)
+    {
+      int no = 0;
+      setsockopt (fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_V6ONLY, &no,
+                  sizeof (no));
+    }
+}
 
 /**
  * dgram_try_addresses - Try operation on resolved addresses
@@ -625,34 +649,22 @@ typedef enum
  * @op: Operation type (DGRAM_OP_BIND or DGRAM_OP_CONNECT)
  *
  * Returns: 0 on success, -1 if all addresses failed
- * Thread-safe: Yes (operates on single socket)
  */
 static int
 dgram_try_addresses (T socket, struct addrinfo *res, int socket_family,
                      DgramOpType op)
 {
-  struct addrinfo *rp;
   int fd = SocketBase_fd (socket->base);
+  struct addrinfo *rp;
 
   for (rp = res; rp != NULL; rp = rp->ai_next)
     {
       if (socket_family != SOCKET_AF_UNSPEC && rp->ai_family != socket_family)
         continue;
 
-      /* IPv6 dual-stack setup for bind only */
-      if (op == DGRAM_OP_BIND && rp->ai_family == SOCKET_AF_INET6
-          && socket_family == SOCKET_AF_INET6)
-        {
-          int no = 0;
-          setsockopt (fd, SOCKET_IPPROTO_IPV6, SOCKET_IPV6_V6ONLY, &no,
-                      sizeof (no));
-        }
+      dgram_setup_dual_stack (fd, rp->ai_family, socket_family, op);
 
-      int result = (op == DGRAM_OP_BIND)
-                       ? bind (fd, rp->ai_addr, rp->ai_addrlen)
-                       : connect (fd, rp->ai_addr, rp->ai_addrlen);
-
-      if (result == 0)
+      if (dgram_try_single_address (fd, rp, op) == 0)
         {
           memcpy (&socket->base->remote_addr, rp->ai_addr, rp->ai_addrlen);
           socket->base->remote_addrlen = rp->ai_addrlen;
@@ -662,67 +674,85 @@ dgram_try_addresses (T socket, struct addrinfo *res, int socket_family,
   return -1;
 }
 
-void
-SocketDgram_bind (T socket, const char *host, int port)
+/**
+ * dgram_perform_address_operation - Common bind/connect implementation
+ * @socket: Datagram socket
+ * @host: Host address (may be NULL for bind wildcard)
+ * @port: Port number
+ * @op: Operation type
+ *
+ * Raises: SocketDgram_Failed on failure
+ */
+static void
+dgram_perform_address_operation (T socket, const char *host, int port,
+                                 DgramOpType op)
 {
   struct addrinfo hints, *res = NULL;
   int socket_family;
+  int flags = (op == DGRAM_OP_BIND) ? SOCKET_AI_PASSIVE : 0;
 
+  SocketCommon_setup_hints (&hints, SOCKET_DGRAM_TYPE, flags);
+  SocketCommon_resolve_address (host, port, &hints, &res, SocketDgram_Failed,
+                                SOCKET_AF_UNSPEC, 1);
+
+  socket_family
+      = SocketCommon_get_family (socket->base, false, SocketDgram_Failed);
+
+  if (dgram_try_addresses (socket, res, socket_family, op) == 0)
+    {
+      SocketCommon_update_local_endpoint (socket->base);
+      SocketCommon_free_addrinfo (res);
+      return;
+    }
+
+  /* Format appropriate error message */
+  if (op == DGRAM_OP_BIND)
+    SocketCommon_format_bind_error (host, port);
+  else
+    SOCKET_ERROR_FMT ("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME,
+                      host, port);
+
+  SocketCommon_free_addrinfo (res);
+  RAISE_MODULE_ERROR (SocketDgram_Failed);
+}
+
+void
+SocketDgram_bind (T socket, const char *host, int port)
+{
   assert (socket);
   SocketCommon_validate_port (port, SocketDgram_Failed);
   host = SocketCommon_normalize_wildcard_host (host);
   if (host)
     SocketCommon_validate_hostname (host, SocketDgram_Failed);
 
-  SocketCommon_setup_hints (&hints, SOCKET_DGRAM_TYPE, SOCKET_AI_PASSIVE);
-  SocketCommon_resolve_address (host, port, &hints, &res, SocketDgram_Failed,
-                                SOCKET_AF_UNSPEC, 1);
-
-  socket_family
-      = SocketCommon_get_family (socket->base, false, SocketDgram_Failed);
-  if (dgram_try_addresses (socket, res, socket_family, DGRAM_OP_BIND) == 0)
-    {
-      SocketCommon_update_local_endpoint (socket->base);
-      SocketCommon_free_addrinfo (res);
-      return;
-    }
-
-  SocketCommon_format_bind_error (host, port);
-  SocketCommon_free_addrinfo (res);
-  RAISE_MODULE_ERROR (SocketDgram_Failed);
+  dgram_perform_address_operation (socket, host, port, DGRAM_OP_BIND);
 }
 
 void
 SocketDgram_connect (T socket, const char *host, int port)
 {
-  struct addrinfo hints, *res = NULL;
-  int socket_family;
-
   assert (socket);
   assert (host);
   SocketCommon_validate_port (port, SocketDgram_Failed);
   SocketCommon_validate_hostname (host, SocketDgram_Failed);
 
-  SocketCommon_setup_hints (&hints, SOCKET_DGRAM_TYPE, 0);
-  SocketCommon_resolve_address (host, port, &hints, &res, SocketDgram_Failed,
-                                SOCKET_AF_UNSPEC, 1);
-
-  socket_family
-      = SocketCommon_get_family (socket->base, false, SocketDgram_Failed);
-  if (dgram_try_addresses (socket, res, socket_family, DGRAM_OP_CONNECT) == 0)
-    {
-      SocketCommon_update_local_endpoint (socket->base);
-      SocketCommon_free_addrinfo (res);
-      return;
-    }
-
-  SOCKET_ERROR_FMT ("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME,
-                    host, port);
-  SocketCommon_free_addrinfo (res);
-  RAISE_MODULE_ERROR (SocketDgram_Failed);
+  dgram_perform_address_operation (socket, host, port, DGRAM_OP_CONNECT);
 }
 
 /* ==================== Scatter/Gather I/O ==================== */
+
+/**
+ * dgram_validate_iov - Validate iovec parameters
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ */
+static void
+dgram_validate_iov (const struct iovec *iov, int iovcnt)
+{
+  assert (iov);
+  assert (iovcnt > 0);
+  assert (iovcnt <= IOV_MAX);
+}
 
 ssize_t
 SocketDgram_sendv (T socket, const struct iovec *iov, int iovcnt)
@@ -732,9 +762,7 @@ SocketDgram_sendv (T socket, const struct iovec *iov, int iovcnt)
   size_t total_len;
 
   assert (socket);
-  assert (iov);
-  assert (iovcnt > 0);
-  assert (iovcnt <= IOV_MAX);
+  dgram_validate_iov (iov, iovcnt);
 
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
   if (total_len > SAFE_UDP_SIZE)
@@ -744,9 +772,8 @@ SocketDgram_sendv (T socket, const struct iovec *iov, int iovcnt)
       RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 
-  /* Use sendmsg() instead of writev() to support MSG_NOSIGNAL */
   memset (&msg, 0, sizeof (msg));
-  msg.msg_iov = (struct iovec *)iov; /* Cast away const for msghdr */
+  msg.msg_iov = (struct iovec *)iov;
   msg.msg_iovlen = (size_t)iovcnt;
 
   result = sendmsg (SocketBase_fd (socket->base), &msg, MSG_NOSIGNAL);
@@ -766,9 +793,7 @@ SocketDgram_recvv (T socket, struct iovec *iov, int iovcnt)
   ssize_t result;
 
   assert (socket);
-  assert (iov);
-  assert (iovcnt > 0);
-  assert (iovcnt <= IOV_MAX);
+  dgram_validate_iov (iov, iovcnt);
 
   result = readv (SocketBase_fd (socket->base), iov, iovcnt);
   if (result < 0)
@@ -785,24 +810,20 @@ ssize_t
 SocketDgram_sendall (T socket, const void *buf, size_t len)
 {
   const char *ptr = (const char *)buf;
-  volatile size_t total_sent = 0;
+  size_t total_sent = 0;
 
   assert (socket);
   assert (buf);
   assert (len > 0);
 
-  TRY while (total_sent < len)
-  {
-    ssize_t sent
-        = SocketDgram_send (socket, ptr + total_sent, len - total_sent);
-    if (sent == 0)
-      return (ssize_t)total_sent;
-    total_sent += (size_t)sent;
-  }
-  EXCEPT (SocketDgram_Failed)
-  RERAISE;
-  END_TRY;
-
+  while (total_sent < len)
+    {
+      ssize_t sent
+          = SocketDgram_send (socket, ptr + total_sent, len - total_sent);
+      if (sent == 0)
+        return (ssize_t)total_sent;
+      total_sent += (size_t)sent;
+    }
   return (ssize_t)total_sent;
 }
 
@@ -810,110 +831,126 @@ ssize_t
 SocketDgram_recvall (T socket, void *buf, size_t len)
 {
   char *ptr = (char *)buf;
-  volatile size_t total_received = 0;
+  size_t total_received = 0;
 
   assert (socket);
   assert (buf);
   assert (len > 0);
 
-  TRY while (total_received < len)
-  {
-    ssize_t received
-        = SocketDgram_recv (socket, ptr + total_received, len - total_received);
-    if (received == 0)
-      return (ssize_t)total_received;
-    total_received += (size_t)received;
-  }
-  EXCEPT (SocketDgram_Failed)
-  RERAISE;
-  END_TRY;
-
+  while (total_received < len)
+    {
+      ssize_t received
+          = SocketDgram_recv (socket, ptr + total_received, len - total_received);
+      if (received == 0)
+        return (ssize_t)total_received;
+      total_received += (size_t)received;
+    }
   return (ssize_t)total_received;
+}
+
+/**
+ * dgram_iov_loop_send - Common loop for scatter/gather send all
+ * @socket: Datagram socket
+ * @iov_copy: Working copy of iovec array
+ * @iovcnt: Number of iovec structures
+ * @total_len: Total bytes to send
+ *
+ * Returns: Total bytes sent
+ */
+static size_t
+dgram_iov_loop_send (T socket, struct iovec *iov_copy, int iovcnt,
+                     size_t total_len)
+{
+  size_t total_sent = 0;
+
+  while (total_sent < total_len)
+    {
+      int active_iovcnt = 0;
+      const struct iovec *active_iov
+          = SocketCommon_find_active_iov (iov_copy, iovcnt, &active_iovcnt);
+      if (active_iov == NULL)
+        break;
+
+      ssize_t sent = SocketDgram_sendv (socket, active_iov, active_iovcnt);
+      if (sent == 0)
+        break;
+
+      total_sent += (size_t)sent;
+      SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)sent);
+    }
+  return total_sent;
+}
+
+/**
+ * dgram_iov_loop_recv - Common loop for scatter/gather receive all
+ * @socket: Datagram socket
+ * @iov_copy: Working copy of iovec array
+ * @iovcnt: Number of iovec structures
+ * @total_len: Total bytes to receive
+ *
+ * Returns: Total bytes received
+ */
+static size_t
+dgram_iov_loop_recv (T socket, struct iovec *iov_copy, int iovcnt,
+                     size_t total_len)
+{
+  size_t total_received = 0;
+
+  while (total_received < total_len)
+    {
+      int active_iovcnt = 0;
+      struct iovec *active_iov
+          = SocketCommon_find_active_iov (iov_copy, iovcnt, &active_iovcnt);
+      if (active_iov == NULL)
+        break;
+
+      ssize_t received = SocketDgram_recvv (socket, active_iov, active_iovcnt);
+      if (received == 0)
+        break;
+
+      total_received += (size_t)received;
+      SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)received);
+    }
+  return total_received;
 }
 
 ssize_t
 SocketDgram_sendvall (T socket, const struct iovec *iov, int iovcnt)
 {
-  struct iovec *iov_copy = NULL;
-  volatile size_t total_sent = 0;
-  size_t total_len;
+  struct iovec *iov_copy;
+  size_t total_len, total_sent;
 
   assert (socket);
-  assert (iov);
-  assert (iovcnt > 0);
-  assert (iovcnt <= IOV_MAX);
+  dgram_validate_iov (iov, iovcnt);
 
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
   iov_copy = SocketCommon_alloc_iov_copy (iov, iovcnt, SocketDgram_Failed);
 
-  TRY while (total_sent < total_len)
-  {
-    int active_iovcnt = 0;
-    const struct iovec *active_iov
-        = SocketCommon_find_active_iov (iov_copy, iovcnt, &active_iovcnt);
-    if (active_iov == NULL)
-      break;
-
-    ssize_t sent = SocketDgram_sendv (socket, active_iov, active_iovcnt);
-    if (sent == 0)
-      {
-        free (iov_copy);
-        return (ssize_t)total_sent;
-      }
-    total_sent += (size_t)sent;
-    SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)sent);
-  }
-  EXCEPT (SocketDgram_Failed)
-  free (iov_copy);
-  RERAISE;
+  TRY total_sent = dgram_iov_loop_send (socket, iov_copy, iovcnt, total_len);
+  FINALLY free (iov_copy);
   END_TRY;
 
-  free (iov_copy);
   return (ssize_t)total_sent;
 }
 
 ssize_t
 SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
 {
-  struct iovec *iov_copy = NULL;
-  volatile size_t total_received = 0;
-  size_t total_len;
+  struct iovec *iov_copy;
+  size_t total_len, total_received;
 
   assert (socket);
-  assert (iov);
-  assert (iovcnt > 0);
-  assert (iovcnt <= IOV_MAX);
+  dgram_validate_iov (iov, iovcnt);
 
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
   iov_copy = SocketCommon_alloc_iov_copy (iov, iovcnt, SocketDgram_Failed);
 
-  TRY while (total_received < total_len)
-  {
-    int active_iovcnt = 0;
-    /* active_iov is non-const because recvv may update iov_base/iov_len */
-    struct iovec *active_iov
-        = SocketCommon_find_active_iov (iov_copy, iovcnt, &active_iovcnt);
-    if (active_iov == NULL)
-      break;
-
-    ssize_t received = SocketDgram_recvv (socket, active_iov, active_iovcnt);
-    if (received == 0)
-      {
-        SocketCommon_sync_iov_progress (iov, iov_copy, iovcnt);
-        free (iov_copy);
-        return (ssize_t)total_received;
-      }
-    total_received += (size_t)received;
-    SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)received);
-  }
-
+  TRY total_received
+      = dgram_iov_loop_recv (socket, iov_copy, iovcnt, total_len);
   SocketCommon_sync_iov_progress (iov, iov_copy, iovcnt);
-  EXCEPT (SocketDgram_Failed)
-  free (iov_copy);
-  RERAISE;
+  FINALLY free (iov_copy);
   END_TRY;
 
-  free (iov_copy);
   return (ssize_t)total_received;
 }
 

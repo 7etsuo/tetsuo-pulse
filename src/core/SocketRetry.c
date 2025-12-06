@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 /* ============================================================================
  * LCG Random Number Generator Constants (Numerical Recipes)
@@ -53,9 +52,6 @@ const Except_T SocketRetry_Failed
 
 /* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketRetry);
-
-/* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketRetry, e)
 
 /* ============================================================================
  * Internal Structure
@@ -242,15 +238,13 @@ SocketRetry_new (const SocketRetry_Policy *policy)
 {
   T retry;
 
-  retry = malloc (sizeof (*retry));
+  /* Use calloc for zero-initialization */
+  retry = calloc (1, sizeof (*retry));
   if (retry == NULL)
-    {
-      SOCKET_ERROR_MSG ("Failed to allocate retry context");
-      RAISE_MODULE_ERROR (SocketRetry_Failed);
-    }
+    SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
+                      "Failed to allocate retry context");
 
-  memset (retry, 0, sizeof (*retry));
-
+  /* Copy provided policy or use defaults */
   if (policy != NULL)
     retry->policy = *policy;
   else
@@ -276,6 +270,62 @@ SocketRetry_free (T *retry)
 }
 
 /* ============================================================================
+ * Retry Execution Helpers
+ * ============================================================================ */
+
+/**
+ * should_continue_retry - Check if retry should continue after failure
+ * @retry: Retry context
+ * @result: Operation result code
+ * @attempt: Current attempt number
+ * @should_retry: User callback (may be NULL)
+ * @context: User context
+ *
+ * Returns: 1 if should retry, 0 if should stop
+ */
+static int
+should_continue_retry (T retry, int result, int attempt,
+                       SocketRetry_ShouldRetry should_retry, void *context)
+{
+  /* Check user callback */
+  if (should_retry != NULL && !should_retry (result, attempt, context))
+    {
+      SOCKET_LOG_DEBUG_MSG ("Retry aborted by callback for error %d", result);
+      return 0;
+    }
+
+  /* Check if we've exhausted attempts */
+  if (attempt >= retry->policy.max_attempts)
+    {
+      SOCKET_LOG_DEBUG_MSG ("Max attempts (%d) reached",
+                            retry->policy.max_attempts);
+      return 0;
+    }
+
+  return 1;
+}
+
+/**
+ * apply_backoff_delay - Calculate and apply backoff delay
+ * @retry: Retry context (stats updated)
+ * @attempt: Current attempt number
+ */
+static void
+apply_backoff_delay (T retry, int attempt)
+{
+  int delay_ms;
+
+  delay_ms
+      = calculate_backoff_delay (&retry->policy, attempt, &retry->random_state);
+  retry->stats.total_delay_ms += delay_ms;
+
+  SOCKET_LOG_DEBUG_MSG ("Sleeping %d ms before attempt %d", delay_ms,
+                        attempt + 1);
+
+  retry_sleep_ms (delay_ms);
+}
+
+/* ============================================================================
  * Retry Execution
  * ============================================================================ */
 
@@ -295,7 +345,6 @@ SocketRetry_execute (T retry, SocketRetry_Operation operation,
   int64_t start_time;
   int attempt;
   int result;
-  int delay_ms;
 
   assert (retry != NULL);
   assert (operation != NULL);
@@ -307,50 +356,24 @@ SocketRetry_execute (T retry, SocketRetry_Operation operation,
   for (attempt = 1; attempt <= retry->policy.max_attempts; attempt++)
     {
       retry->stats.attempts = attempt;
-
-      /* Execute operation */
       result = operation (context, attempt);
 
       if (result == 0)
         {
-          /* Success */
           retry->stats.total_time_ms = SocketTimeout_now_ms () - start_time;
-          SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                           "Operation succeeded on attempt %d", attempt);
+          SOCKET_LOG_DEBUG_MSG ("Operation succeeded on attempt %d", attempt);
           return 0;
         }
 
       /* Operation failed */
       retry->stats.last_error = result;
+      SOCKET_LOG_DEBUG_MSG ("Attempt %d failed with error %d", attempt, result);
 
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "Attempt %d failed with error %d", attempt, result);
+      if (!should_continue_retry (retry, result, attempt, should_retry,
+                                  context))
+        break;
 
-      /* Check if we should retry */
-      if (should_retry != NULL && !should_retry (result, attempt, context))
-        {
-          SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                           "Retry aborted by callback for error %d", result);
-          break;
-        }
-
-      /* Check if we've exhausted attempts */
-      if (attempt >= retry->policy.max_attempts)
-        {
-          SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                           "Max attempts (%d) reached", retry->policy.max_attempts);
-          break;
-        }
-
-      /* Calculate and apply backoff delay */
-      delay_ms = calculate_backoff_delay (&retry->policy, attempt,
-                                          &retry->random_state);
-      retry->stats.total_delay_ms += delay_ms;
-
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "Sleeping %d ms before attempt %d", delay_ms, attempt + 1);
-
-      retry_sleep_ms (delay_ms);
+      apply_backoff_delay (retry, attempt);
     }
 
   retry->stats.total_time_ms = SocketTimeout_now_ms () - start_time;

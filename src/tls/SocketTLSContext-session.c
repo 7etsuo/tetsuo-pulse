@@ -2,12 +2,20 @@
  * SocketTLSContext-session.c - TLS Session Management
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * TLS session caching and session ticket support. Enables faster subsequent
  * connections via session resumption. Tracks cache statistics for monitoring.
  *
+ * Features:
+ * - Session cache enable/disable with configurable size
+ * - Session cache statistics (hits, misses, stores)
+ * - Session ticket support with 80-byte key rotation
+ * - Thread-safe statistics access via mutex
+ *
  * Thread safety: Session cache operations are thread-safe via internal mutex.
- * Statistics access is protected.
+ * Statistics access is protected. Configuration should be done before sharing
+ * context across threads.
  */
 
 #ifdef SOCKET_HAS_TLS
@@ -19,20 +27,24 @@
 #define T SocketTLSContext_T
 
 /* ============================================================================
- * Session Cache Callbacks
+ * Session Cache Callbacks (Internal)
  * ============================================================================
  */
 
 /**
- * new_session_cb - Called when new session is created
+ * new_session_cb - Called by OpenSSL when new session is created
  * @ssl: SSL connection
- * @sess: New session
+ * @sess: New session (ownership depends on return value)
  *
  * Returns: 0 to let OpenSSL handle session storage and cleanup.
- * We only use this callback for stats tracking, not custom storage.
  *
- * Note: If returning 1, callback takes ownership and must free the session.
- * Since we only track stats and use OpenSSL's internal cache, return 0.
+ * This callback is invoked after a successful TLS handshake creates a new
+ * session that can be reused. We only use it for statistics tracking, not
+ * custom storage, so we return 0 to let OpenSSL manage the session.
+ *
+ * Note: Return value semantics:
+ *   - 0: OpenSSL owns session (handles storage/free)
+ *   - 1: Callback takes ownership (must free session manually)
  */
 static int
 new_session_cb (SSL *ssl, SSL_SESSION *sess)
@@ -49,16 +61,22 @@ new_session_cb (SSL *ssl, SSL_SESSION *sess)
 }
 
 /**
- * info_callback - Called on TLS state changes
- * @ssl: SSL connection
- * @where: Event type flags
- * @ret: Return code (unused unless error)
+ * info_callback - Called by OpenSSL on TLS state changes
+ * @ssl: SSL connection (const per OpenSSL signature)
+ * @where: Event type bitmask (SSL_CB_* flags)
+ * @ret: Event-specific value; for errors indicates failure, otherwise unused
  *
- * Tracks session reuse on handshake completion.
+ * Tracks session reuse statistics on handshake completion. Called multiple
+ * times during handshake at various state transitions.
+ *
+ * Note on 'ret' parameter: In SSL_CB_HANDSHAKE_DONE context, ret is always 1
+ * (success) since the callback is only invoked on successful completion.
+ * We check ret != 0 defensively for any error callbacks that might sneak in.
  */
 static void
 info_callback (const SSL *ssl, int where, int ret)
 {
+  /* Skip callbacks with error indication (ret == 0 for some callback types) */
   if (ret == 0)
     return;
 
@@ -68,21 +86,20 @@ info_callback (const SSL *ssl, int where, int ret)
       if (ctx)
         {
           pthread_mutex_lock (&ctx->stats_mutex);
+          /* Note: SSL_session_reused() expects non-const SSL*, but the info
+           * callback signature provides const SSL*. This is an OpenSSL API
+           * inconsistency - the function doesn't modify the SSL object. */
           if (SSL_session_reused ((SSL *)ssl))
-            {
-              ctx->cache_hits++;
-            }
+            ctx->cache_hits++;
           else
-            {
-              ctx->cache_misses++;
-            }
+            ctx->cache_misses++;
           pthread_mutex_unlock (&ctx->stats_mutex);
         }
     }
 }
 
 /* ============================================================================
- * Cache Size Management
+ * Cache Size Management (Internal)
  * ============================================================================
  */
 
@@ -110,6 +127,23 @@ set_cache_size (T ctx, size_t size)
  * ============================================================================
  */
 
+/**
+ * SocketTLSContext_enable_session_cache - Enable TLS session caching
+ * @ctx: TLS context (must not be NULL)
+ * @max_sessions: Maximum cached sessions (0 = use OpenSSL default)
+ * @timeout_seconds: Session timeout (<=0 = use SOCKET_TLS_SESSION_TIMEOUT_DEFAULT)
+ *
+ * Raises: SocketTLS_Failed on configuration error
+ *
+ * Enables session caching for faster subsequent connections via TLS session
+ * resumption. For servers, stores sessions in internal cache. For clients,
+ * stores sessions for reuse when reconnecting to the same server.
+ *
+ * Installs callbacks to track cache statistics (hits, misses, stores).
+ * Statistics can be retrieved via SocketTLSContext_get_cache_stats().
+ *
+ * Thread-safe: No - call before sharing context across threads.
+ */
 void
 SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
                                        long timeout_seconds)
@@ -133,6 +167,18 @@ SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
   ctx->session_cache_enabled = 1;
 }
 
+/**
+ * SocketTLSContext_set_session_cache_size - Update session cache size
+ * @ctx: TLS context (must not be NULL)
+ * @size: New cache size (must be > 0)
+ *
+ * Raises: SocketTLS_Failed on invalid size or OpenSSL error
+ *
+ * Updates the maximum number of sessions stored in the cache. Existing
+ * sessions beyond the new limit may be evicted by OpenSSL.
+ *
+ * Thread-safe: No - call before sharing context across threads.
+ */
 void
 SocketTLSContext_set_session_cache_size (T ctx, size_t size)
 {
@@ -141,6 +187,18 @@ SocketTLSContext_set_session_cache_size (T ctx, size_t size)
   set_cache_size (ctx, size);
 }
 
+/**
+ * SocketTLSContext_get_cache_stats - Retrieve session cache statistics
+ * @ctx: TLS context (may be NULL)
+ * @hits: Output for cache hits (session reused) - may be NULL
+ * @misses: Output for cache misses (full handshake) - may be NULL
+ * @stores: Output for new sessions stored - may be NULL
+ *
+ * Returns statistics via output parameters. If ctx is NULL or session cache
+ * is not enabled, all outputs are set to 0.
+ *
+ * Thread-safe: Yes - protected by stats_mutex.
+ */
 void
 SocketTLSContext_get_cache_stats (T ctx, size_t *hits, size_t *misses,
                                   size_t *stores)
@@ -171,6 +229,26 @@ SocketTLSContext_get_cache_stats (T ctx, size_t *hits, size_t *misses,
  * ============================================================================
  */
 
+/**
+ * SocketTLSContext_enable_session_tickets - Enable TLS session tickets
+ * @ctx: TLS context (must not be NULL)
+ * @key: Session ticket encryption key (must be SOCKET_TLS_TICKET_KEY_LEN bytes)
+ * @key_len: Key length (must equal SOCKET_TLS_TICKET_KEY_LEN = 80)
+ *
+ * Raises: SocketTLS_Failed on invalid key length or OpenSSL error
+ *
+ * Enables stateless session resumption via encrypted session tickets.
+ * The key should be cryptographically random and rotated periodically.
+ * Key format (80 bytes total):
+ *   - 16 bytes: ticket name (identifies which key encrypted the ticket)
+ *   - 32 bytes: AES-256 key (encrypts ticket contents)
+ *   - 32 bytes: HMAC-SHA256 key (authenticates ticket)
+ *
+ * Security: The key is copied into the context structure and will be
+ * securely cleared when the context is freed.
+ *
+ * Thread-safe: No - call before sharing context across threads.
+ */
 void
 SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
                                          size_t key_len)
@@ -185,7 +263,7 @@ SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
                            SOCKET_TLS_TICKET_KEY_LEN);
     }
 
-  /* Copy key into structure's ticket_key field for secure clearing on free */
+  /* Copy key into structure for secure clearing on context free */
   memcpy (ctx->ticket_key, key, key_len);
   ctx->tickets_enabled = 1;
 
@@ -203,4 +281,3 @@ SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
 #undef T
 
 #endif /* SOCKET_HAS_TLS */
-

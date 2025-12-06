@@ -17,6 +17,10 @@
 
 #include "core/SocketConfig.h"
 
+/* Module component for logging (this module doesn't log, but define for consistency) */
+#undef SOCKET_LOG_COMPONENT
+#define SOCKET_LOG_COMPONENT "SocketSecurity"
+
 /* Conditional includes for optional modules */
 #ifdef SOCKET_HAS_HTTP
 #include "http/SocketHPACK.h"
@@ -135,9 +139,9 @@ const Except_T SocketSecurity_ValidationFailed
 static void
 populate_memory_limits (SocketSecurityLimits *limits)
 {
-  limits->max_allocation = SOCKET_SECURITY_MAX_ALLOCATION;
-  limits->max_buffer_size = SOCKET_MAX_BUFFER_SIZE;
-  limits->max_connections = SOCKET_MAX_CONNECTIONS;
+        limits->max_allocation = SOCKET_SECURITY_MAX_ALLOCATION;
+        limits->max_buffer_size = SOCKET_MAX_BUFFER_SIZE;
+        limits->max_connections = SOCKET_MAX_CONNECTIONS;
 }
 
 /**
@@ -149,12 +153,12 @@ populate_memory_limits (SocketSecurityLimits *limits)
 static void
 populate_http_limits (SocketSecurityLimits *limits)
 {
-  limits->http_max_uri_length = SOCKETHTTP_MAX_URI_LEN;
-  limits->http_max_header_name = SOCKETHTTP_MAX_HEADER_NAME;
-  limits->http_max_header_value = SOCKETHTTP_MAX_HEADER_VALUE;
-  limits->http_max_header_size = SOCKETHTTP_MAX_HEADER_SIZE;
-  limits->http_max_headers = SOCKETHTTP_MAX_HEADERS;
-  limits->http_max_body_size = SOCKET_SECURITY_MAX_BODY_SIZE;
+        limits->http_max_uri_length = SOCKETHTTP_MAX_URI_LEN;
+        limits->http_max_header_name = SOCKETHTTP_MAX_HEADER_NAME;
+        limits->http_max_header_value = SOCKETHTTP_MAX_HEADER_VALUE;
+        limits->http_max_header_size = SOCKETHTTP_MAX_HEADER_SIZE;
+        limits->http_max_headers = SOCKETHTTP_MAX_HEADERS;
+        limits->http_max_body_size = SOCKET_SECURITY_MAX_BODY_SIZE;
 }
 
 /**
@@ -166,8 +170,8 @@ populate_http_limits (SocketSecurityLimits *limits)
 static void
 populate_http1_limits (SocketSecurityLimits *limits)
 {
-  limits->http1_max_request_line = SOCKETHTTP1_MAX_REQUEST_LINE;
-  limits->http1_max_chunk_size = SOCKETHTTP1_MAX_CHUNK_SIZE;
+        limits->http1_max_request_line = SOCKETHTTP1_MAX_REQUEST_LINE;
+        limits->http1_max_chunk_size = SOCKETHTTP1_MAX_CHUNK_SIZE;
 }
 
 /**
@@ -179,11 +183,11 @@ populate_http1_limits (SocketSecurityLimits *limits)
 static void
 populate_http2_limits (SocketSecurityLimits *limits)
 {
-  limits->http2_max_concurrent_streams
-      = SOCKETHTTP2_DEFAULT_MAX_CONCURRENT_STREAMS;
-  limits->http2_max_frame_size = SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE;
-  limits->http2_max_header_list_size
-      = SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE;
+        limits->http2_max_concurrent_streams
+            = SOCKETHTTP2_DEFAULT_MAX_CONCURRENT_STREAMS;
+        limits->http2_max_frame_size = SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE;
+        limits->http2_max_header_list_size
+            = SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE;
 }
 
 /**
@@ -195,8 +199,8 @@ populate_http2_limits (SocketSecurityLimits *limits)
 static void
 populate_ws_limits (SocketSecurityLimits *limits)
 {
-  limits->ws_max_frame_size = SOCKETWS_MAX_FRAME_SIZE;
-  limits->ws_max_message_size = SOCKETWS_MAX_MESSAGE_SIZE;
+        limits->ws_max_frame_size = SOCKETWS_MAX_FRAME_SIZE;
+        limits->ws_max_message_size = SOCKETWS_MAX_MESSAGE_SIZE;
 }
 
 /**
@@ -208,8 +212,8 @@ populate_ws_limits (SocketSecurityLimits *limits)
 static void
 populate_tls_limits (SocketSecurityLimits *limits)
 {
-  limits->tls_max_cert_chain_depth = SOCKET_TLS_MAX_CERT_CHAIN_DEPTH;
-  limits->tls_session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
+        limits->tls_max_cert_chain_depth = SOCKET_TLS_MAX_CERT_CHAIN_DEPTH;
+        limits->tls_session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
 }
 
 /**
@@ -221,9 +225,9 @@ populate_tls_limits (SocketSecurityLimits *limits)
 static void
 populate_ratelimit_defaults (SocketSecurityLimits *limits)
 {
-  limits->ratelimit_conn_per_sec = SOCKET_RATELIMIT_DEFAULT_CONN_PER_SEC;
-  limits->ratelimit_burst = SOCKET_RATELIMIT_DEFAULT_BURST;
-  limits->ratelimit_max_per_ip = SOCKET_RATELIMIT_DEFAULT_MAX_PER_IP;
+        limits->ratelimit_conn_per_sec = SOCKET_RATELIMIT_DEFAULT_CONN_PER_SEC;
+        limits->ratelimit_burst = SOCKET_RATELIMIT_DEFAULT_BURST;
+        limits->ratelimit_max_per_ip = SOCKET_RATELIMIT_DEFAULT_MAX_PER_IP;
 }
 
 /**
@@ -235,11 +239,11 @@ populate_ratelimit_defaults (SocketSecurityLimits *limits)
 static void
 populate_timeout_defaults (SocketSecurityLimits *limits)
 {
-  limits->timeout_connect_ms = SOCKET_DEFAULT_CONNECT_TIMEOUT_MS;
-  limits->timeout_dns_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
-  limits->timeout_idle_ms
-      = SOCKET_DEFAULT_IDLE_TIMEOUT * SOCKET_MS_PER_SECOND;
-  limits->timeout_request_ms = SOCKET_SECURITY_MAX_REQUEST_TIMEOUT_MS;
+        limits->timeout_connect_ms = SOCKET_DEFAULT_CONNECT_TIMEOUT_MS;
+        limits->timeout_dns_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
+        limits->timeout_idle_ms
+            = SOCKET_DEFAULT_IDLE_TIMEOUT * SOCKET_MS_PER_SECOND;
+        limits->timeout_request_ms = SOCKET_SECURITY_MAX_REQUEST_TIMEOUT_MS;
 }
 
 /* ============================================================================
@@ -254,22 +258,21 @@ populate_timeout_defaults (SocketSecurityLimits *limits)
  * from across the socket library modules. This provides a single point
  * of reference for security configuration inspection.
  *
- * Returns: void
  * Thread-safe: Yes (reads compile-time constants only)
  */
 void
 SocketSecurity_get_limits (SocketSecurityLimits *limits)
 {
-  assert (limits != NULL);
+        assert (limits != NULL);
 
-  populate_memory_limits (limits);
-  populate_http_limits (limits);
-  populate_http1_limits (limits);
-  populate_http2_limits (limits);
-  populate_ws_limits (limits);
-  populate_tls_limits (limits);
-  populate_ratelimit_defaults (limits);
-  populate_timeout_defaults (limits);
+        populate_memory_limits (limits);
+        populate_http_limits (limits);
+        populate_http1_limits (limits);
+        populate_http2_limits (limits);
+        populate_ws_limits (limits);
+        populate_tls_limits (limits);
+        populate_ratelimit_defaults (limits);
+        populate_timeout_defaults (limits);
 }
 
 /**
@@ -281,7 +284,7 @@ SocketSecurity_get_limits (SocketSecurityLimits *limits)
 size_t
 SocketSecurity_get_max_allocation (void)
 {
-  return SOCKET_SECURITY_MAX_ALLOCATION;
+        return SOCKET_SECURITY_MAX_ALLOCATION;
 }
 
 /**
@@ -291,21 +294,20 @@ SocketSecurity_get_max_allocation (void)
  * @max_headers: Output for max header count (may be NULL to skip)
  * @max_body: Output for max body size (may be NULL to skip)
  *
- * Returns: void
  * Thread-safe: Yes
  */
 void
 SocketSecurity_get_http_limits (size_t *max_uri, size_t *max_header_size,
                                 size_t *max_headers, size_t *max_body)
 {
-  if (max_uri)
-    *max_uri = SOCKETHTTP_MAX_URI_LEN;
-  if (max_header_size)
-    *max_header_size = SOCKETHTTP_MAX_HEADER_SIZE;
-  if (max_headers)
-    *max_headers = SOCKETHTTP_MAX_HEADERS;
-  if (max_body)
-    *max_body = SOCKET_SECURITY_MAX_BODY_SIZE;
+        if (max_uri != NULL)
+                *max_uri = SOCKETHTTP_MAX_URI_LEN;
+        if (max_header_size != NULL)
+                *max_header_size = SOCKETHTTP_MAX_HEADER_SIZE;
+        if (max_headers != NULL)
+                *max_headers = SOCKETHTTP_MAX_HEADERS;
+        if (max_body != NULL)
+                *max_body = SOCKET_SECURITY_MAX_BODY_SIZE;
 }
 
 /**
@@ -313,16 +315,15 @@ SocketSecurity_get_http_limits (size_t *max_uri, size_t *max_header_size,
  * @max_frame: Output for max frame size (may be NULL to skip)
  * @max_message: Output for max message size (may be NULL to skip)
  *
- * Returns: void
  * Thread-safe: Yes
  */
 void
 SocketSecurity_get_ws_limits (size_t *max_frame, size_t *max_message)
 {
-  if (max_frame)
-    *max_frame = SOCKETWS_MAX_FRAME_SIZE;
-  if (max_message)
-    *max_message = SOCKETWS_MAX_MESSAGE_SIZE;
+        if (max_frame != NULL)
+                *max_frame = SOCKETWS_MAX_FRAME_SIZE;
+        if (max_message != NULL)
+                *max_message = SOCKETWS_MAX_MESSAGE_SIZE;
 }
 
 /* ============================================================================
@@ -348,17 +349,19 @@ SocketSecurity_get_ws_limits (size_t *max_frame, size_t *max_message)
 int
 SocketSecurity_check_size (size_t size)
 {
-  if (size == 0)
-    return 0;
+        /* Reject zero-size allocations as likely programmer error */
+        if (size == 0)
+                return 0;
 
-  if (size > SOCKET_SECURITY_MAX_ALLOCATION)
-    return 0;
+        /* Check against configured maximum */
+        if (size > SOCKET_SECURITY_MAX_ALLOCATION)
+                return 0;
 
-  /* Defense-in-depth: reject sizes > SIZE_MAX/2 as likely overflow */
-  if (size > SIZE_MAX / 2)
-    return 0;
+        /* Defense-in-depth: reject sizes > SIZE_MAX/2 as likely overflow */
+        if (size > SIZE_MAX / 2)
+                return 0;
 
-  return 1;
+        return 1;
 }
 
 /**
@@ -376,20 +379,23 @@ SocketSecurity_check_size (size_t size)
 int
 SocketSecurity_check_multiply (size_t a, size_t b, size_t *result)
 {
-  if (a == 0 || b == 0)
-    {
-      if (result)
-        *result = 0;
-      return 1;
-    }
+        /* Handle zero operands - result is always 0, never overflows */
+        if (a == 0 || b == 0)
+          {
+                if (result != NULL)
+                        *result = 0;
+                return 1;
+          }
 
-  if (a > SIZE_MAX / b)
-    return 0;
+        /* Check for overflow: a * b > SIZE_MAX iff a > SIZE_MAX / b */
+        if (a > SIZE_MAX / b)
+                return 0;
 
-  if (result)
-    *result = a * b;
+        /* Safe to multiply */
+        if (result != NULL)
+                *result = a * b;
 
-  return 1;
+        return 1;
 }
 
 /**
@@ -406,11 +412,13 @@ SocketSecurity_check_multiply (size_t a, size_t b, size_t *result)
 int
 SocketSecurity_check_add (size_t a, size_t b, size_t *result)
 {
-  if (a > SIZE_MAX - b)
-    return 0;
+        /* Check for overflow: a + b > SIZE_MAX iff a > SIZE_MAX - b */
+        if (a > SIZE_MAX - b)
+                return 0;
 
-  if (result)
-    *result = a + b;
+        /* Safe to add */
+        if (result != NULL)
+                *result = a + b;
 
-  return 1;
+        return 1;
 }

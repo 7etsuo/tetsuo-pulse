@@ -255,8 +255,8 @@ handle_shrink_excess (T pool, size_t new_maxconns)
   if (!excess_sockets)
     {
       pthread_mutex_unlock (&pool->mutex);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate excess buffer");
-      RAISE_POOL_ERROR (SocketPool_Failed);
+      RAISE_POOL_MSG (SocketPool_Failed,
+                      SOCKET_ENOMEM ": Cannot allocate excess buffer");
     }
 
   size_t collected
@@ -679,10 +679,8 @@ validate_prepare_params (T pool, SocketDNS_T dns, const char *host, int port,
 {
   if (!pool || !dns || !host || !SOCKET_VALID_PORT (port) || !out_socket
       || !out_req)
-    {
-      SOCKET_ERROR_MSG ("Invalid parameters for prepare_connection");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    "Invalid parameters for prepare_connection");
 }
 
 /**
@@ -700,10 +698,7 @@ create_pool_socket (void)
 {
   Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
   if (!socket)
-    {
-      SOCKET_ERROR_MSG ("Failed to create socket for pool");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed, "Failed to create socket for pool");
 
   Socket_setnonblocking (socket);
   Socket_setreuseaddr (socket);
@@ -739,10 +734,7 @@ start_async_connect (SocketDNS_T dns, Socket_T socket, const char *host,
 {
   SocketDNS_Request_T req = Socket_connect_async (dns, socket, host, port);
   if (!req)
-    {
-      SOCKET_ERROR_MSG ("Failed to start async connect");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed, "Failed to start async connect");
   return req;
 }
 
@@ -810,7 +802,7 @@ alloc_async_context (T pool)
 
 /**
  * check_async_limit - Check if async pending limit reached
- * @pool: Pool instance
+ * @pool: Pool instance (read-only access)
  *
  * Returns: 1 if under limit, 0 if limit reached
  * Thread-safe: Call with mutex held
@@ -819,7 +811,7 @@ alloc_async_context (T pool)
  * async connect operations.
  */
 static int
-check_async_limit (const T pool)
+check_async_limit (const SocketPool_T pool)
 {
   return pool->async_pending_count < SOCKET_POOL_MAX_ASYNC_PENDING;
 }
@@ -886,8 +878,8 @@ get_or_create_dns (T pool)
       TRY { pool->dns = SocketDNS_new (); }
       EXCEPT (SocketDNS_Failed)
       {
-        SOCKET_ERROR_MSG ("Failed to create DNS resolver for pool");
-        RAISE_POOL_ERROR (SocketPool_Failed);
+        RAISE_POOL_MSG (SocketPool_Failed,
+                        "Failed to create DNS resolver for pool");
       }
       END_TRY;
     }
@@ -966,10 +958,8 @@ validate_connect_async_params (T pool, const char *host, int port,
                                SocketPool_ConnectCallback callback)
 {
   if (!pool || !host || !SOCKET_VALID_PORT (port))
-    {
-      SOCKET_ERROR_MSG ("Invalid parameters for connect_async");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    "Invalid parameters for connect_async");
   (void)callback; /* Callback may be NULL for poll-mode */
 }
 
@@ -1007,10 +997,8 @@ SocketPool_connect_async (T pool, const char *host, int port,
     dns = get_or_create_dns (pool);
     ctx = alloc_async_context (pool);
     if (!ctx)
-      {
-        SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async context");
-        RAISE_POOL_ERROR (SocketPool_Failed);
-      }
+      RAISE_POOL_MSG (SocketPool_Failed,
+                      SOCKET_ENOMEM ": Cannot allocate async context");
 
     socket = create_pool_socket ();
     apply_pool_timeouts (socket);
@@ -1025,19 +1013,16 @@ SocketPool_connect_async (T pool, const char *host, int port,
 
     /* Security: Check async pending limit before starting DNS */
     if (!add_async_context (pool, ctx))
-      {
-        SOCKET_ERROR_MSG ("Async connect limit reached (%d pending)",
-                          SOCKET_POOL_MAX_ASYNC_PENDING);
-        RAISE_POOL_ERROR (SocketPool_Failed);
-      }
+      RAISE_POOL_MSG (SocketPool_Failed,
+                      "Async connect limit reached (%d pending)",
+                      SOCKET_POOL_MAX_ASYNC_PENDING);
 
     req = SocketDNS_resolve (dns, host, port, async_connect_dns_callback, ctx);
     if (!req)
       {
         /* Remove context from list since DNS resolve failed */
         remove_async_context (pool, ctx);
-        SOCKET_ERROR_MSG ("Failed to start DNS resolution");
-        RAISE_POOL_ERROR (SocketPool_Failed);
+        RAISE_POOL_MSG (SocketPool_Failed, "Failed to start DNS resolution");
       }
 
     /* Store request handle after successful DNS resolve */
@@ -1290,14 +1275,9 @@ SocketPool_accept_protected (T pool, Socket_T server,
       return SocketPool_accept_limited (pool, server);
     }
 
-  /* Now accept the connection - rate limits already checked */
-  TRY { client = Socket_accept (server); }
-  EXCEPT (Socket_Failed)
-  {
-    /* Actual error - propagate */
-    RERAISE;
-  }
-  END_TRY;
+  /* Now accept the connection - rate limits already checked.
+   * Any Socket_Failed exception will propagate naturally. */
+  client = Socket_accept (server);
 
   if (client == NULL)
     {

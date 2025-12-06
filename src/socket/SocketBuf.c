@@ -20,6 +20,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
+#include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
 #include "socket/SocketBuf.h"
 
@@ -32,8 +33,9 @@ const Except_T SocketBuf_Failed
 /* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketBuf);
 
-/* Macro to raise exception with detailed error message */
+/* Module-local convenience macros for error handling */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketBuf, e)
+#define RAISE_MSG(e, fmt, ...) SOCKET_RAISE_MSG (SocketBuf, e, fmt, ##__VA_ARGS__)
 
 #define T SocketBuf_T
 
@@ -87,11 +89,8 @@ static void
 new_validate_capacity (size_t capacity)
 {
   if (capacity > SOCKETBUF_MAX_CAPACITY)
-    {
-      SOCKET_ERROR_MSG (
-          "SocketBuf_new: capacity exceeds SOCKETBUF_MAX_CAPACITY");
-      RAISE_MODULE_ERROR (SocketBuf_Failed);
-    }
+    RAISE_MSG (SocketBuf_Failed,
+               "SocketBuf_new: capacity exceeds SOCKETBUF_MAX_CAPACITY");
 }
 
 /**
@@ -104,10 +103,8 @@ new_alloc_struct (Arena_T arena)
 {
   T buf = ALLOC (arena, sizeof (*buf));
   if (!buf)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Failed to ALLOC SocketBuf struct");
-      RAISE_MODULE_ERROR (SocketBuf_Failed);
-    }
+    RAISE_MSG (SocketBuf_Failed,
+               SOCKET_ENOMEM ": Failed to ALLOC SocketBuf struct");
   return buf;
 }
 
@@ -122,10 +119,8 @@ new_alloc_data (Arena_T arena, size_t capacity)
 {
   char *data = CALLOC (arena, capacity, 1);
   if (!data)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Failed to CALLOC SocketBuf data");
-      RAISE_MODULE_ERROR (SocketBuf_Failed);
-    }
+    RAISE_MSG (SocketBuf_Failed,
+               SOCKET_ENOMEM ": Failed to CALLOC SocketBuf data");
   return data;
 }
 
@@ -366,32 +361,19 @@ SocketBuf_clear (T buf)
 }
 
 /**
- * secure_zero_memory - Zero memory with volatile to prevent optimization
- * @data: Memory to zero
- * @len: Length to zero
- */
-static void
-secure_zero_memory (char *data, size_t len)
-{
-  volatile char *vdata = (volatile char *)data;
-  for (size_t i = 0; i < len; i++)
-    vdata[i] = 0;
-}
-
-/**
  * SocketBuf_secureclear - Securely clear buffer (for sensitive data)
  * @buf: Buffer to clear
  *
- * Zeros memory contents before resetting pointers. Uses volatile
- * to prevent compiler optimization removal. Use for sensitive data
- * (passwords, keys, tokens).
+ * Zeros memory contents before resetting pointers. Uses SocketCrypto
+ * secure clear to prevent compiler optimization removal. Use for
+ * sensitive data (passwords, keys, tokens).
  */
 void
 SocketBuf_secureclear (T buf)
 {
   assert (buf && buf->data);
 
-  secure_zero_memory (buf->data, buf->capacity);
+  SocketCrypto_secure_clear (buf->data, buf->capacity);
 
   buf->head = 0;
   buf->tail = 0;
@@ -494,19 +476,13 @@ SocketBuf_reserve (T buf, size_t min_space)
   size_t needed = buf->size + min_space;
   size_t new_cap = reserve_calc_new_capacity (buf->capacity, needed);
   if (new_cap == 0)
-    {
-      SOCKET_ERROR_MSG ("SocketBuf reserve overflow");
-      RAISE_MODULE_ERROR (SocketBuf_Failed);
-    }
+    RAISE_MSG (SocketBuf_Failed, "SocketBuf reserve overflow");
 
   /* Arena allocation - old buffer remains allocated until arena disposal.
    * See function doc for rationale on this acceptable memory behavior. */
   char *new_data = Arena_calloc (buf->arena, 1, new_cap, __FILE__, __LINE__);
   if (!new_data)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Failed to calloc SocketBuf");
-      RAISE_MODULE_ERROR (SocketBuf_Failed);
-    }
+    RAISE_MSG (SocketBuf_Failed, SOCKET_ENOMEM ": Failed to calloc SocketBuf");
 
   reserve_migrate_data (buf, new_data, new_cap);
   SOCKETBUF_INVARIANTS (buf);

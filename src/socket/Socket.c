@@ -142,10 +142,8 @@ validate_fd_is_socket (int fd)
   int optval;
   socklen_t optlen = sizeof (optval);
   if (getsockopt (fd, SOL_SOCKET, SO_TYPE, &optval, &optlen) < 0)
-    {
-      SOCKET_ERROR_FMT ("Invalid file descriptor (not a socket): fd=%d", fd);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_FMT (Socket, Socket_Failed,
+                      "Invalid file descriptor (not a socket): fd=%d", fd);
 }
 
 /**
@@ -164,8 +162,8 @@ allocate_socket_from_fd (Arena_T arena, int fd)
   if (!sock)
     {
       Arena_dispose (&arena);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate sock for new_from_fd");
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate sock for new_from_fd");
     }
 
   sock->base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T), __FILE__,
@@ -173,8 +171,8 @@ allocate_socket_from_fd (Arena_T arena, int fd)
   if (!sock->base)
     {
       Arena_dispose (&arena);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base for new_from_fd");
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate base for new_from_fd");
     }
 
   sock->base->arena = arena;
@@ -193,25 +191,20 @@ allocate_socket_from_fd (Arena_T arena, int fd)
 static void
 setup_socket_nonblocking (T socket)
 {
-  int flags = fcntl (SocketBase_fd (socket->base), F_GETFL, 0);
+  int fd = SocketBase_fd (socket->base);
+  int flags = fcntl (fd, F_GETFL, 0);
   if (flags < 0)
     {
-      int saved_errno = errno;
       Socket_free (&socket);
-      errno = saved_errno;
-      SOCKET_ERROR_FMT ("Failed to get socket flags for fd=%d",
-                        SocketBase_fd (socket->base));
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_FMT (Socket, Socket_Failed,
+                        "Failed to get socket flags for fd=%d", fd);
     }
 
-  if (fcntl (SocketBase_fd (socket->base), F_SETFL, flags | O_NONBLOCK) < 0)
+  if (fcntl (fd, F_SETFL, flags | O_NONBLOCK) < 0)
     {
-      int saved_errno = errno;
       Socket_free (&socket);
-      errno = saved_errno;
-      SOCKET_ERROR_FMT ("Failed to set non-blocking mode for fd=%d",
-                        SocketBase_fd (socket->base));
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_FMT (Socket, Socket_Failed,
+                        "Failed to set non-blocking mode for fd=%d", fd);
     }
 }
 
@@ -228,18 +221,16 @@ Socket_new (int domain, int type, int protocol)
   END_TRY;
 
   if (!base || !SocketBase_arena (base))
-    {
-      SOCKET_ERROR_MSG ("Invalid base from new_base (null arena)");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                      "Invalid base from new_base (null arena)");
 
   sock = Arena_calloc (SocketBase_arena (base), 1, sizeof (struct Socket_T),
                        __FILE__, __LINE__);
   if (!sock)
     {
       SocketCommon_free_base (&base);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket structure");
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate socket structure");
     }
 
   sock->base = base;
@@ -291,10 +282,8 @@ Socket_new_from_fd (int fd)
 
   arena = Arena_new ();
   if (!arena)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot create arena for new_from_fd");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                      SOCKET_ENOMEM ": Cannot create arena for new_from_fd");
 
   T sock = allocate_socket_from_fd (arena, fd);
 
@@ -324,18 +313,15 @@ void
 Socket_listen (Socket_T socket, int backlog)
 {
   if (backlog <= 0)
-    {
-      SOCKET_ERROR_MSG ("Invalid backlog value: %d (must be > 0)", backlog);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                      "Invalid backlog value: %d (must be > 0)", backlog);
+
   if (backlog > SOCKET_MAX_LISTEN_BACKLOG)
     backlog = SOCKET_MAX_LISTEN_BACKLOG;
 
   if (listen (SocketBase_fd (socket->base), backlog) < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to listen on socket (backlog=%d)", backlog);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_FMT (Socket, Socket_Failed,
+                      "Failed to listen on socket (backlog=%d)", backlog);
 }
 
 /**
@@ -406,17 +392,9 @@ static void
 unix_unlink_stale (const char *path)
 {
   struct stat st;
-  if (stat (path, &st) == 0)
-    {
-      if (S_ISSOCK (st.st_mode))
-        {
-          if (unlink (path) < 0)
-            {
-              SOCKET_ERROR_MSG ("Failed to unlink stale socket %s", path);
-              RAISE_MODULE_ERROR (Socket_Failed);
-            }
-        }
-    }
+  if (stat (path, &st) == 0 && S_ISSOCK (st.st_mode) && unlink (path) < 0)
+    SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                      "Failed to unlink stale socket %s", path);
 }
 
 /**
@@ -471,6 +449,7 @@ unix_setup_regular_socket (struct sockaddr_un *addr, const char *path,
  * @path: Unix socket path (@ prefix for abstract)
  *
  * Note: Path validation must be done separately via unix_validate_path()
+ * Note: memset is called by the abstract/regular helpers, not here
  */
 static void
 unix_setup_sockaddr (struct sockaddr_un *addr, const char *path)
@@ -480,10 +459,9 @@ unix_setup_sockaddr (struct sockaddr_un *addr, const char *path)
   assert (addr);
   assert (path);
 
-  memset (addr, 0, sizeof (*addr));
-  addr->sun_family = AF_UNIX;
   path_len = strlen (path);
 
+  /* Helper functions handle memset internally */
   if (path[0] == '@')
     unix_setup_abstract_socket (addr, path, path_len);
   else
@@ -513,10 +491,8 @@ Socket_bind_unix (Socket_T socket, const char *path)
   if (bind (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
             sizeof (addr))
       < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to bind Unix socket to %s", path);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_FMT (Socket, Socket_Failed,
+                      "Failed to bind Unix socket to %s", path);
 
   SocketCommon_update_local_endpoint (socket->base);
 }
@@ -543,12 +519,14 @@ Socket_connect_unix (Socket_T socket, const char *path)
       < 0)
     {
       if (errno == ENOENT)
-        SOCKET_ERROR_FMT ("Unix socket does not exist: %s", path);
+        SOCKET_RAISE_FMT (Socket, Socket_Failed,
+                          "Unix socket does not exist: %s", path);
       else if (errno == ECONNREFUSED)
-        SOCKET_ERROR_FMT (SOCKET_ECONNREFUSED ": %s", path);
+        SOCKET_RAISE_FMT (Socket, Socket_Failed, SOCKET_ECONNREFUSED ": %s",
+                          path);
       else
-        SOCKET_ERROR_FMT ("Failed to connect to Unix socket %s", path);
-      RAISE_MODULE_ERROR (Socket_Failed);
+        SOCKET_RAISE_FMT (Socket, Socket_Failed,
+                          "Failed to connect to Unix socket %s", path);
     }
 
   /* Update remote endpoint */
@@ -724,7 +702,6 @@ is_common_bind_error (int err)
 
 /**
  * bind_resolve_address - Resolve hostname for binding
- * @sock: Socket instance (volatile-safe)
  * @host: Hostname to resolve (NULL for wildcard)
  * @port: Port number
  * @socket_family: Socket address family
@@ -733,17 +710,13 @@ is_common_bind_error (int err)
  * Sets errno to EAI_FAIL on resolution failure without raising.
  */
 static void
-bind_resolve_address (T sock, const char *host, int port, int socket_family,
+bind_resolve_address (const char *host, int port, int socket_family,
                       struct addrinfo **res)
 {
-  (void)sock; /* Used for consistency, family passed in */
   if (SocketCommon_resolve_address (host, port, NULL, res, Socket_Failed,
                                     socket_family, 0)
       != 0)
-    {
-      errno = EAI_FAIL;
-      return;
-    }
+    errno = EAI_FAIL;
 }
 
 /**
@@ -792,7 +765,7 @@ Socket_bind (T socket, const char *host, int port)
 
   TRY
   {
-    bind_resolve_address ((T)vsock, host, port, socket_family, &res);
+    bind_resolve_address (host, port, socket_family, &res);
     if (!res)
       RETURN;
 
@@ -829,9 +802,7 @@ Socket_bind_with_addrinfo (T socket, struct addrinfo *res)
   if (SocketCommon_try_bind_resolved_addresses (socket->base, res,
                                                 socket_family, Socket_Failed)
       == 0)
-    {
-      return;
-    }
+    return;
 
   SocketCommon_format_bind_error (NULL, 0);
   RAISE_MODULE_ERROR (Socket_Failed);
@@ -907,16 +878,13 @@ static Arena_T
 accept_create_arena (int newfd)
 {
   volatile Arena_T arena = NULL;
-  int saved_errno;
 
   TRY arena = Arena_new ();
   EXCEPT (Arena_Failed)
   {
-    saved_errno = errno;
     SAFE_CLOSE (newfd);
-    errno = saved_errno;
-    SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate arena");
-    RAISE_MODULE_ERROR (Socket_Failed);
+    SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                      SOCKET_ENOMEM ": Cannot allocate arena");
   }
   END_TRY;
 
@@ -938,8 +906,8 @@ accept_alloc_socket (Arena_T arena)
   if (!newsocket)
     {
       Arena_dispose (&arena);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket structure");
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate socket structure");
     }
   return newsocket;
 }
@@ -959,8 +927,8 @@ accept_alloc_base (Arena_T arena)
   if (!base)
     {
       Arena_dispose (&arena);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base structure");
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate base structure");
     }
   return base;
 }
@@ -981,12 +949,9 @@ accept_infer_socket_type (int newfd, Arena_T arena)
 
   if (getsockopt (newfd, SOL_SOCKET, SO_TYPE, &type_opt, &opt_len) < 0)
     {
-      int saved_errno = errno;
       Arena_dispose (&arena);
       SAFE_CLOSE (newfd);
-      errno = saved_errno;
-      SOCKET_ERROR_MSG ("Failed to get SO_TYPE: %s", strerror (saved_errno));
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_FMT (Socket, Socket_Failed, "Failed to get SO_TYPE");
     }
   return type_opt;
 }
@@ -1060,18 +1025,15 @@ accept_connection (T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
     {
       if (socketio_is_wouldblock ())
         return -1;
-      SOCKET_ERROR_FMT ("Failed to accept connection");
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_FMT (Socket, Socket_Failed, "Failed to accept connection");
     }
 
 #if !SOCKET_HAS_ACCEPT4
   if (SocketCommon_setcloexec (newfd, 1) < 0)
     {
-      int saved_errno = errno;
       SAFE_CLOSE (newfd);
-      errno = saved_errno;
-      SOCKET_ERROR_FMT ("Failed to set close-on-exec flag");
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_FMT (Socket, Socket_Failed,
+                        "Failed to set close-on-exec flag");
     }
 #endif
 
@@ -1179,12 +1141,10 @@ socketpair_validate_type (int type)
 {
   /* Only SOCK_STREAM and SOCK_DGRAM supported - see doc for SOCK_SEQPACKET */
   if (type != SOCK_STREAM && type != SOCK_DGRAM)
-    {
-      SOCKET_ERROR_MSG ("Invalid socket type for socketpair: %d (must be "
-                        "SOCK_STREAM or SOCK_DGRAM)",
-                        type);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                      "Invalid socket type for socketpair: %d (must be "
+                      "SOCK_STREAM or SOCK_DGRAM)",
+                      type);
 }
 
 /**
@@ -1202,10 +1162,8 @@ socketpair_create_fds (int type, int sv[2])
 #else
   if (socketpair (AF_UNIX, type, 0, sv) < 0)
 #endif
-    {
-      SOCKET_ERROR_FMT ("Failed to create socket pair (type=%d)", type);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_FMT (Socket, Socket_Failed,
+                      "Failed to create socket pair (type=%d)", type);
 
 #if !SOCKET_HAS_SOCK_CLOEXEC
   /* Fallback: Set CLOEXEC on both fds */
@@ -1227,28 +1185,28 @@ static Arena_T
 socketpair_allocate_socket (int fd, int type, Socket_T *out_socket)
 {
   Arena_T arena = Arena_new ();
-  if (!arena)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+  Socket_T sock;
 
-  Socket_T sock = Arena_calloc (arena, 1, sizeof (struct Socket_T),
-                                __FILE__, __LINE__);
+  if (!arena)
+    SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                      SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
+
+  sock = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
   if (!sock)
     {
       Arena_dispose (&arena);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket structure for pair");
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                        SOCKET_ENOMEM
+                        ": Cannot allocate socket structure for pair");
     }
 
-  sock->base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T),
-                             __FILE__, __LINE__);
+  sock->base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T), __FILE__,
+                             __LINE__);
   if (!sock->base)
     {
       Arena_dispose (&arena);
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate base for socket");
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_MSG (Socket, Socket_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate base for socket");
     }
 
   sock->base->arena = arena;

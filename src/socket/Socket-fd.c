@@ -17,6 +17,9 @@
  * - NOT available on Windows
  *
  * Reference: POSIX.1-2008, sendmsg/recvmsg with SCM_RIGHTS
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  */
 
 #include <assert.h>
@@ -38,11 +41,9 @@
 
 #define T Socket_T
 
-/* Declare module-specific exception using centralized macros */
+/* Declare module-specific exception for FD passing errors.
+ * Uses SocketFD prefix to distinguish from general Socket errors. */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketFD);
-
-/* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketFD, e)
 
 /* Dummy byte for data payload - SCM_RIGHTS requires at least 1 byte of data */
 static const char FD_PASS_DUMMY_BYTE = '\x00';
@@ -65,19 +66,15 @@ validate_unix_socket (T socket)
   int domain;
 
   if (!socket || !socket->base)
-    {
-      SOCKET_ERROR_MSG ("NULL socket passed to FD passing function");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_MSG (SocketFD, Socket_Failed,
+                      "NULL socket passed to FD passing function");
 
   domain = SocketBase_domain (socket->base);
   if (domain != AF_UNIX)
-    {
-      SOCKET_ERROR_FMT (
-          "FD passing requires Unix domain socket (AF_UNIX), got domain=%d",
-          domain);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
+                      "FD passing requires Unix domain socket (AF_UNIX), got "
+                      "domain=%d",
+                      domain);
 
   return 1;
 }
@@ -96,17 +93,13 @@ static int
 validate_fd_to_pass (int fd)
 {
   if (fd < 0)
-    {
-      SOCKET_ERROR_FMT ("Invalid file descriptor to pass: fd=%d", fd);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
+                      "Invalid file descriptor to pass: fd=%d", fd);
 
   /* Verify fd is valid using fcntl */
   if (fcntl (fd, F_GETFD) < 0)
-    {
-      SOCKET_ERROR_FMT ("File descriptor is not open: fd=%d", fd);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
+                      "File descriptor is not open: fd=%d", fd);
 
   return 1;
 }
@@ -125,32 +118,23 @@ validate_fds_array (const int *fds, size_t count)
   size_t i;
 
   if (!fds)
-    {
-      SOCKET_ERROR_MSG ("NULL fds array passed to FD passing function");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_MSG (SocketFD, Socket_Failed,
+                      "NULL fds array passed to FD passing function");
 
   if (count == 0)
-    {
-      SOCKET_ERROR_MSG ("FD count must be at least 1");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_MSG (SocketFD, Socket_Failed, "FD count must be at least 1");
 
   if (count > SOCKET_MAX_FDS_PER_MSG)
-    {
-      SOCKET_ERROR_FMT ("FD count %zu exceeds maximum %d", count,
-                        SOCKET_MAX_FDS_PER_MSG);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
+                      "FD count %zu exceeds maximum %d", count,
+                      SOCKET_MAX_FDS_PER_MSG);
 
   for (i = 0; i < count; i++)
     {
       if (fds[i] < 0)
-        {
-          SOCKET_ERROR_FMT ("Invalid file descriptor at index %zu: fd=%d", i,
-                            fds[i]);
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
+        SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
+                          "Invalid file descriptor at index %zu: fd=%d", i,
+                          fds[i]);
     }
 
   return 1;
@@ -262,8 +246,8 @@ socket_sendfds_internal (T socket, const int *fds, size_t count)
         return 0;
       if (is_connection_error ())
         RAISE (Socket_Closed);
-      SOCKET_ERROR_FMT ("sendmsg with SCM_RIGHTS failed (count=%zu)", count);
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
+                        "sendmsg with SCM_RIGHTS failed (count=%zu)", count);
     }
 
   return 1;
@@ -328,8 +312,8 @@ socket_recvfds_internal (T socket, int *fds, size_t max_count,
         return 0;
       if (is_connection_error ())
         RAISE (Socket_Closed);
-      SOCKET_ERROR_FMT ("recvmsg for SCM_RIGHTS failed");
-      RAISE_MODULE_ERROR (Socket_Failed);
+      SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
+                        "recvmsg for SCM_RIGHTS failed");
     }
   else if (result == 0)
     {
@@ -339,11 +323,8 @@ socket_recvfds_internal (T socket, int *fds, size_t max_count,
 
   /* Check for truncated control message */
   if (msg.msg_flags & MSG_CTRUNC)
-    {
-      SOCKET_ERROR_MSG (
-          "Control message truncated - FD array may be incomplete");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_MSG (SocketFD, Socket_Failed,
+                      "Control message truncated - FD array may be incomplete");
 
   /* Extract file descriptors from control message */
   cmsg = CMSG_FIRSTHDR (&msg);
@@ -359,15 +340,14 @@ socket_recvfds_internal (T socket, int *fds, size_t max_count,
               /* More FDs than we can handle - close extras to prevent leak */
               int *cmsg_fds = (int *)CMSG_DATA (cmsg);
               for (i = max_count; i < num_fds; i++)
-                {
-                  SAFE_CLOSE (cmsg_fds[i]);
-                }
-              SOCKET_ERROR_FMT (
-                  "Received more FDs (%zu) than buffer can hold (%zu)", num_fds,
-                  max_count);
+                SAFE_CLOSE (cmsg_fds[i]);
+
               /* Close any FDs we already copied before raising */
               close_received_fds (fds, max_count);
-              RAISE_MODULE_ERROR (Socket_Failed);
+              SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
+                                "Received more FDs (%zu) than buffer can hold "
+                                "(%zu)",
+                                num_fds, max_count);
             }
 
           /* Copy received FDs to output array */
@@ -379,10 +359,10 @@ socket_recvfds_internal (T socket, int *fds, size_t max_count,
             {
               if (fcntl (fds[i], F_GETFD) < 0)
                 {
-                  SOCKET_ERROR_FMT ("Received invalid FD at index %zu", i);
                   close_received_fds (fds, num_fds);
                   *received_count = 0;
-                  RAISE_MODULE_ERROR (Socket_Failed);
+                  SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
+                                    "Received invalid FD at index %zu", i);
                 }
             }
 
@@ -398,89 +378,106 @@ socket_recvfds_internal (T socket, int *fds, size_t max_count,
 
 /* ==================== Public API ==================== */
 
+/**
+ * Socket_sendfd - Send single file descriptor over Unix socket
+ * @socket: Connected Unix domain socket
+ * @fd_to_pass: File descriptor to send
+ *
+ * Returns: 1 on success, 0 on would-block
+ * Raises: Socket_Failed on error, Socket_Closed on disconnect
+ *
+ * Thread-safe: Yes (uses thread-local error buffers)
+ */
 int
 Socket_sendfd (T socket, int fd_to_pass)
 {
-  assert (socket);
-
   validate_unix_socket (socket);
   validate_fd_to_pass (fd_to_pass);
 
   return socket_sendfds_internal (socket, &fd_to_pass, 1);
 }
 
+/**
+ * Socket_recvfd - Receive single file descriptor from Unix socket
+ * @socket: Connected Unix domain socket
+ * @fd_received: Output pointer for received FD (set to -1 if no FD attached)
+ *
+ * Returns: 1 on success, 0 on would-block
+ * Raises: Socket_Failed on error, Socket_Closed on disconnect
+ *
+ * Caller takes ownership of received FD and must close it.
+ * Thread-safe: Yes (uses thread-local error buffers)
+ */
 int
 Socket_recvfd (T socket, int *fd_received)
 {
   size_t received_count = 0;
   int result;
 
-  assert (socket);
-  assert (fd_received);
-
   if (!fd_received)
-    {
-      SOCKET_ERROR_MSG ("NULL fd_received pointer");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_MSG (SocketFD, Socket_Failed, "NULL fd_received pointer");
 
   *fd_received = -1;
   validate_unix_socket (socket);
 
   result = socket_recvfds_internal (socket, fd_received, 1, &received_count);
 
+  /* Message received but no FD was attached - this is valid */
   if (result == 1 && received_count == 0)
-    {
-      /* Message received but no FD was attached */
-      *fd_received = -1;
-    }
+    *fd_received = -1;
 
   return result;
 }
 
+/**
+ * Socket_sendfds - Send multiple file descriptors over Unix socket
+ * @socket: Connected Unix domain socket
+ * @fds: Array of file descriptors to send
+ * @count: Number of file descriptors (1 to SOCKET_MAX_FDS_PER_MSG)
+ *
+ * Returns: 1 on success, 0 on would-block
+ * Raises: Socket_Failed on error, Socket_Closed on disconnect
+ *
+ * Thread-safe: Yes (uses thread-local error buffers)
+ */
 int
 Socket_sendfds (T socket, const int *fds, size_t count)
 {
-  assert (socket);
-  /* Note: fds and count validated by validate_fds_array which raises exception */
-
   validate_unix_socket (socket);
   validate_fds_array (fds, count);
 
   return socket_sendfds_internal (socket, fds, count);
 }
 
+/**
+ * Socket_recvfds - Receive multiple file descriptors from Unix socket
+ * @socket: Connected Unix domain socket
+ * @fds: Output array for received file descriptors
+ * @max_count: Maximum FDs to receive (1 to SOCKET_MAX_FDS_PER_MSG)
+ * @received_count: Output for actual number of FDs received
+ *
+ * Returns: 1 on success, 0 on would-block
+ * Raises: Socket_Failed on error, Socket_Closed on disconnect
+ *
+ * Caller takes ownership of all received FDs and must close them.
+ * Thread-safe: Yes (uses thread-local error buffers)
+ */
 int
 Socket_recvfds (T socket, int *fds, size_t max_count, size_t *received_count)
 {
-  assert (socket);
-  assert (fds);
-  assert (received_count);
-
   if (!fds)
-    {
-      SOCKET_ERROR_MSG ("NULL fds array pointer");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_MSG (SocketFD, Socket_Failed, "NULL fds array pointer");
 
   if (!received_count)
-    {
-      SOCKET_ERROR_MSG ("NULL received_count pointer");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_MSG (SocketFD, Socket_Failed, "NULL received_count pointer");
 
   if (max_count == 0)
-    {
-      SOCKET_ERROR_MSG ("max_count must be at least 1");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_MSG (SocketFD, Socket_Failed, "max_count must be at least 1");
 
   if (max_count > SOCKET_MAX_FDS_PER_MSG)
-    {
-      SOCKET_ERROR_FMT ("max_count %zu exceeds maximum %d", max_count,
-                        SOCKET_MAX_FDS_PER_MSG);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
+                      "max_count %zu exceeds maximum %d", max_count,
+                      SOCKET_MAX_FDS_PER_MSG);
 
   validate_unix_socket (socket);
 

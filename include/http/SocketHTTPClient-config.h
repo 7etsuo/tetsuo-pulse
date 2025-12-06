@@ -215,6 +215,21 @@
 #define HTTPCLIENT_COOKIE_MAX_PATH_LEN 1024
 #endif
 
+/** Cookie file line buffer size (Netscape format parsing) */
+#ifndef HTTPCLIENT_COOKIE_FILE_LINE_SIZE
+#define HTTPCLIENT_COOKIE_FILE_LINE_SIZE 4096
+#endif
+
+/** Maximum Max-Age attribute string length */
+#ifndef HTTPCLIENT_COOKIE_MAX_AGE_SIZE
+#define HTTPCLIENT_COOKIE_MAX_AGE_SIZE 32
+#endif
+
+/** Maximum SameSite attribute value length ("Strict" = 6 + NUL) */
+#ifndef HTTPCLIENT_COOKIE_SAMESITE_SIZE
+#define HTTPCLIENT_COOKIE_SAMESITE_SIZE 16
+#endif
+
 /* ============================================================================
  * Authentication Buffer Sizes
  *
@@ -294,6 +309,21 @@
 /** Maximum number of Set-Cookie headers to process per response */
 #ifndef HTTPCLIENT_MAX_SET_COOKIES
 #define HTTPCLIENT_MAX_SET_COOKIES 16
+#endif
+
+/** Accept-Encoding header buffer size */
+#ifndef HTTPCLIENT_ACCEPT_ENCODING_SIZE
+#define HTTPCLIENT_ACCEPT_ENCODING_SIZE 64
+#endif
+
+/** Content-Length header buffer size */
+#ifndef HTTPCLIENT_CONTENT_LENGTH_SIZE
+#define HTTPCLIENT_CONTENT_LENGTH_SIZE 32
+#endif
+
+/** Retry jitter factor (0.0 to 1.0, applied as +/- percentage) */
+#ifndef HTTPCLIENT_RETRY_JITTER_FACTOR
+#define HTTPCLIENT_RETRY_JITTER_FACTOR 0.25
 #endif
 
 /* ============================================================================

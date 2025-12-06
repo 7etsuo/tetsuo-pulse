@@ -1,17 +1,21 @@
 /**
  * SocketPoll_epoll.c - epoll backend for Linux
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
+ *
  * PLATFORM: Linux (requires epoll)
  * - Linux kernel 2.6.8+ for full epoll support
- * - Edge-triggered mode via EPOLLET
- * - Best performance on Linux
+ * - Edge-triggered mode via EPOLLET for optimal performance
+ * - Best performance on Linux systems
+ *
+ * Thread-safe: No (caller must synchronize access)
  */
 
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/epoll.h>
-#include <unistd.h>
 
 #include "core/SocketConfig.h"
 #include "poll/SocketPoll_backend.h"
@@ -24,6 +28,91 @@ struct PollBackend_T
   int maxevents;              /* Maximum events per wait */
 };
 
+/**
+ * translate_to_epoll - Convert abstract poll events to epoll events
+ * @events: Abstract poll event flags (POLL_READ, POLL_WRITE)
+ *
+ * Returns: epoll event flags with edge-triggered mode (EPOLLET) enabled.
+ *
+ * Edge-triggered mode requires the application to drain all available
+ * data on each event notification to avoid starvation.
+ */
+static unsigned
+translate_to_epoll (unsigned events)
+{
+  unsigned epoll_events = 0;
+
+  if (events & POLL_READ)
+    epoll_events |= EPOLLIN;
+
+  if (events & POLL_WRITE)
+    epoll_events |= EPOLLOUT;
+
+  return epoll_events | EPOLLET;
+}
+
+/**
+ * translate_from_epoll - Convert epoll events to abstract poll events
+ * @epoll_events: epoll event flags from epoll_wait
+ *
+ * Returns: Abstract poll event flags.
+ *
+ * Maps EPOLLIN->POLL_READ, EPOLLOUT->POLL_WRITE, EPOLLERR->POLL_ERROR,
+ * EPOLLHUP->POLL_HANGUP for portable event handling.
+ */
+static unsigned
+translate_from_epoll (unsigned epoll_events)
+{
+  unsigned events = 0;
+
+  if (epoll_events & EPOLLIN)
+    events |= POLL_READ;
+
+  if (epoll_events & EPOLLOUT)
+    events |= POLL_WRITE;
+
+  if (epoll_events & EPOLLERR)
+    events |= POLL_ERROR;
+
+  if (epoll_events & EPOLLHUP)
+    events |= POLL_HANGUP;
+
+  return events;
+}
+
+/**
+ * epoll_ctl_helper - Common helper for epoll_ctl add/mod operations
+ * @backend: Poll backend instance
+ * @fd: File descriptor to add or modify
+ * @events: Abstract poll event flags
+ * @op: epoll operation (EPOLL_CTL_ADD or EPOLL_CTL_MOD)
+ *
+ * Returns: 0 on success, -1 on failure (errno set by epoll_ctl).
+ *
+ * Consolidates common setup logic for backend_add and backend_mod
+ * to eliminate code duplication.
+ */
+static int
+epoll_ctl_helper (PollBackend_T backend, int fd, unsigned events, int op)
+{
+  struct epoll_event ev = { 0 };
+
+  ev.events = translate_to_epoll (events);
+  ev.data.fd = fd;
+
+  return epoll_ctl (backend->epfd, op, fd, &ev) < 0 ? -1 : 0;
+}
+
+/**
+ * backend_new - Create new epoll backend instance
+ * @maxevents: Maximum events to return per wait (must be > 0)
+ *
+ * Returns: New backend instance, or NULL on failure (errno set).
+ *
+ * Creates an epoll instance and allocates the event array for
+ * storing results from epoll_wait. Uses epoll_create1(0) for
+ * close-on-exec behavior.
+ */
 PollBackend_T
 backend_new (int maxevents)
 {
@@ -62,101 +151,81 @@ backend_new (int maxevents)
   return backend;
 }
 
+/**
+ * backend_free - Free epoll backend instance
+ * @backend: Backend instance to free (must not be NULL)
+ *
+ * Closes the epoll file descriptor and frees all allocated memory.
+ */
 void
 backend_free (PollBackend_T backend)
 {
   assert (backend);
 
   SAFE_CLOSE (backend->epfd);
-
-  if (backend->events)
-    free (backend->events);
-
+  free (backend->events);
   free (backend);
 }
 
-/* Helper: Translate poll events to epoll events
- * Returns epoll events with edge-triggered mode (EPOLLET) */
-static unsigned
-translate_to_epoll (unsigned events)
-{
-  unsigned epoll_events = 0;
-
-  if (events & POLL_READ)
-    epoll_events |= EPOLLIN;
-
-  if (events & POLL_WRITE)
-    epoll_events |= EPOLLOUT;
-
-  return epoll_events | EPOLLET; /* Edge-triggered mode */
-}
-
-/* Helper: Translate epoll events to our event flags */
-static unsigned
-translate_from_epoll (unsigned epoll_events)
-{
-  unsigned events = 0;
-
-  if (epoll_events & EPOLLIN)
-    events |= POLL_READ;
-
-  if (epoll_events & EPOLLOUT)
-    events |= POLL_WRITE;
-
-  if (epoll_events & EPOLLERR)
-    events |= POLL_ERROR;
-
-  if (epoll_events & EPOLLHUP)
-    events |= POLL_HANGUP;
-
-  return events;
-}
-
+/**
+ * backend_add - Add file descriptor to epoll interest set
+ * @backend: Poll backend instance
+ * @fd: File descriptor to add
+ * @events: Abstract poll event flags (POLL_READ, POLL_WRITE)
+ *
+ * Returns: 0 on success, -1 on failure (errno set).
+ *
+ * Adds fd with edge-triggered monitoring. Fails if fd is already
+ * in the interest set (use backend_mod to change events).
+ */
 int
 backend_add (PollBackend_T backend, int fd, unsigned events)
 {
-  struct epoll_event ev = { 0 };
-
   assert (backend);
   VALIDATE_FD (fd);
 
-  ev.events = translate_to_epoll (events);
-  ev.data.fd = fd;
-
-  if (epoll_ctl (backend->epfd, EPOLL_CTL_ADD, fd, &ev) < 0)
-    return -1;
-
-  return 0;
+  return epoll_ctl_helper (backend, fd, events, EPOLL_CTL_ADD);
 }
 
+/**
+ * backend_mod - Modify file descriptor events in epoll interest set
+ * @backend: Poll backend instance
+ * @fd: File descriptor to modify
+ * @events: New abstract poll event flags
+ *
+ * Returns: 0 on success, -1 on failure (errno set).
+ *
+ * Changes the monitored events for an fd already in the interest set.
+ * Fails if fd is not in the interest set (use backend_add first).
+ */
 int
 backend_mod (PollBackend_T backend, int fd, unsigned events)
 {
-  struct epoll_event ev = { 0 };
-
   assert (backend);
   VALIDATE_FD (fd);
 
-  ev.events = translate_to_epoll (events);
-  ev.data.fd = fd;
-
-  if (epoll_ctl (backend->epfd, EPOLL_CTL_MOD, fd, &ev) < 0)
-    return -1;
-
-  return 0;
+  return epoll_ctl_helper (backend, fd, events, EPOLL_CTL_MOD);
 }
 
+/**
+ * backend_del - Remove file descriptor from epoll interest set
+ * @backend: Poll backend instance
+ * @fd: File descriptor to remove
+ *
+ * Returns: 0 on success (including if fd not in set), -1 on error.
+ *
+ * Silently succeeds if fd is not in the interest set (ENOENT) or
+ * is already closed (EBADF) for idempotent removal semantics.
+ */
 int
 backend_del (PollBackend_T backend, int fd)
 {
   assert (backend);
   VALIDATE_FD (fd);
 
-  /* Note: event parameter is ignored in Linux 2.6.9+, but we pass NULL
-   * for older kernels compatibility */
   if (epoll_ctl (backend->epfd, EPOLL_CTL_DEL, fd, NULL) < 0)
     {
-      /* Silently succeed if fd not in set */
+      /* Silently succeed if fd not in set or already closed */
       if (errno == ENOENT || errno == EBADF)
         return 0;
       return -1;
@@ -165,6 +234,16 @@ backend_del (PollBackend_T backend, int fd)
   return 0;
 }
 
+/**
+ * backend_wait - Wait for events on the epoll interest set
+ * @backend: Poll backend instance
+ * @timeout_ms: Timeout in milliseconds (-1 for infinite, 0 for non-blocking)
+ *
+ * Returns: Number of ready events (0 on timeout/interrupt), -1 on error.
+ *
+ * Blocks until events are ready or timeout expires. Returns 0 if
+ * interrupted by signal (EINTR) for seamless signal handling.
+ */
 int
 backend_wait (PollBackend_T backend, int timeout_ms)
 {
@@ -177,7 +256,6 @@ backend_wait (PollBackend_T backend, int timeout_ms)
 
   if (nev < 0)
     {
-      /* epoll_wait was interrupted by signal */
       if (errno == EINTR)
         return 0;
       return -1;
@@ -186,6 +264,18 @@ backend_wait (PollBackend_T backend, int timeout_ms)
   return nev;
 }
 
+/**
+ * backend_get_event - Retrieve event at specified index
+ * @backend: Poll backend instance
+ * @index: Event index (0 to nev-1 from backend_wait)
+ * @fd_out: Output for file descriptor
+ * @events_out: Output for abstract poll event flags
+ *
+ * Returns: 0 on success, -1 if index out of bounds.
+ *
+ * Retrieves the fd and translated events for a ready event.
+ * Must be called after backend_wait returns > 0.
+ */
 int
 backend_get_event (PollBackend_T backend, int index, int *fd_out,
                    unsigned *events_out)
@@ -200,13 +290,17 @@ backend_get_event (PollBackend_T backend, int index, int *fd_out,
     return -1;
 
   ev = &backend->events[index];
-
   *fd_out = ev->data.fd;
   *events_out = translate_from_epoll (ev->events);
 
   return 0;
 }
 
+/**
+ * backend_name - Get backend name string
+ *
+ * Returns: Static string "epoll" identifying this backend.
+ */
 const char *
 backend_name (void)
 {

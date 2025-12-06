@@ -168,6 +168,16 @@ typedef struct SocketWS *SocketWS_T;
 #define HTTPSERVER_IO_BUFFER_SIZE 8192
 #endif
 
+/** Receive buffer size for reading from sockets (bytes) */
+#ifndef HTTPSERVER_RECV_BUFFER_SIZE
+#define HTTPSERVER_RECV_BUFFER_SIZE 4096
+#endif
+
+/** Response header serialization buffer size (bytes) */
+#ifndef HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE
+#define HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE 8192
+#endif
+
 /** Max clients to accept per event loop iteration */
 #ifndef HTTPSERVER_MAX_CLIENTS_PER_ACCEPT
 #define HTTPSERVER_MAX_CLIENTS_PER_ACCEPT 10

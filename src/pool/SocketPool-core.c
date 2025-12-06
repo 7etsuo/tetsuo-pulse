@@ -62,10 +62,7 @@ safe_time (void)
 {
   time_t t = time (NULL);
   if (t == (time_t)-1)
-    {
-      SOCKET_ERROR_MSG ("System time() call failed");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed, "System time() call failed");
   return t;
 }
 
@@ -184,10 +181,8 @@ SocketPool_connections_allocate_array (size_t maxconns)
 {
   struct Connection *conns = calloc (maxconns, sizeof (struct Connection));
   if (!conns)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate connections array");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    SOCKET_ENOMEM ": Cannot allocate connections array");
   return conns;
 }
 
@@ -203,10 +198,8 @@ SocketPool_connections_allocate_hash_table (Arena_T arena)
 {
   Connection_T *table = CALLOC (arena, SOCKET_HASH_SIZE, sizeof (Connection_T));
   if (!table)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate hash table");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    SOCKET_ENOMEM ": Cannot allocate hash table");
   return table;
 }
 
@@ -223,10 +216,8 @@ SocketPool_cleanup_allocate_buffer (Arena_T arena, size_t maxconns)
 {
   Socket_T *buf = CALLOC (arena, maxconns, sizeof (Socket_T));
   if (!buf)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate cleanup buffer");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    SOCKET_ENOMEM ": Cannot allocate cleanup buffer");
   return buf;
 }
 
@@ -304,10 +295,8 @@ allocate_pool_structure (Arena_T arena)
 {
   T pool = ALLOC (arena, sizeof (*pool));
   if (!pool)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate pool structure");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    SOCKET_ENOMEM ": Cannot allocate pool structure");
   return pool;
 }
 
@@ -321,10 +310,7 @@ static void
 initialize_pool_mutex (T pool)
 {
   if (pthread_mutex_init (&pool->mutex, NULL) != 0)
-    {
-      SOCKET_ERROR_MSG ("Failed to initialize pool mutex");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed, "Failed to initialize pool mutex");
 }
 
 /**
@@ -480,22 +466,16 @@ static void
 validate_pool_params (Arena_T arena, size_t maxconns, size_t bufsize)
 {
   if (!arena)
-    {
-      SOCKET_ERROR_MSG ("Invalid NULL arena for SocketPool_new");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed, "Invalid NULL arena for SocketPool_new");
+
   if (!SOCKET_VALID_CONNECTION_COUNT (maxconns))
-    {
-      SOCKET_ERROR_MSG (
-          "Invalid maxconns %zu for SocketPool_new (must be 1-%zu)", maxconns,
-          SOCKET_MAX_CONNECTIONS);
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    "Invalid maxconns %zu for SocketPool_new (must be 1-%zu)",
+                    maxconns, SOCKET_MAX_CONNECTIONS);
+
   if (!SOCKET_VALID_BUFFER_SIZE (bufsize))
-    {
-      SOCKET_ERROR_MSG ("Invalid bufsize %zu for SocketPool_new", bufsize);
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    "Invalid bufsize %zu for SocketPool_new", bufsize);
 }
 
 /**

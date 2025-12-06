@@ -18,6 +18,7 @@
 
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketTLSContext.h"
+#include "core/SocketCrypto.h"
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
@@ -118,19 +119,16 @@ free_tls_resources (Socket_T socket)
 
   /* Securely clear TLS buffers that may contain sensitive decrypted data */
   if (socket->tls_read_buf)
-    {
-      OPENSSL_cleanse (socket->tls_read_buf, SOCKET_TLS_BUFFER_SIZE);
-    }
+    SocketCrypto_secure_clear (socket->tls_read_buf, SOCKET_TLS_BUFFER_SIZE);
+
   if (socket->tls_write_buf)
-    {
-      OPENSSL_cleanse (socket->tls_write_buf, SOCKET_TLS_BUFFER_SIZE);
-    }
+    SocketCrypto_secure_clear (socket->tls_write_buf, SOCKET_TLS_BUFFER_SIZE);
 
   /* Clear SNI hostname (may contain sensitive connection info) */
   if (socket->tls_sni_hostname)
     {
       size_t hostname_len = strlen (socket->tls_sni_hostname);
-      OPENSSL_cleanse ((void *)socket->tls_sni_hostname, hostname_len);
+      SocketCrypto_secure_clear ((void *)socket->tls_sni_hostname, hostname_len);
     }
 
   socket->tls_enabled = 0;
@@ -365,66 +363,104 @@ SocketTLS_handshake (Socket_T socket)
   return state;
 }
 
+/**
+ * state_to_poll_events - Map TLS handshake state to poll events
+ * @state: Current handshake state
+ *
+ * Returns: Poll event flags (POLLIN, POLLOUT, or both)
+ */
+static short
+state_to_poll_events (TLSHandshakeState state)
+{
+  switch (state)
+    {
+    case TLS_HANDSHAKE_WANT_READ:
+      return POLLIN;
+    case TLS_HANDSHAKE_WANT_WRITE:
+      return POLLOUT;
+    default:
+      return POLLIN | POLLOUT;
+    }
+}
+
+/**
+ * do_handshake_poll - Perform poll wait for handshake I/O
+ * @fd: Socket file descriptor
+ * @events: Poll events to wait for
+ * @timeout_ms: Poll timeout in milliseconds
+ *
+ * Returns: 1 on success, 0 on EINTR (retry), raises exception on error
+ */
+static int
+do_handshake_poll (int fd, short events, int timeout_ms)
+{
+  struct pollfd pfd;
+  int rc;
+
+  pfd.fd = fd;
+  pfd.events = events;
+  pfd.revents = 0;
+
+  rc = poll (&pfd, 1, timeout_ms);
+  if (rc < 0)
+    {
+      if (errno == EINTR)
+        return 0; /* Caller should retry */
+      TLS_ERROR_FMT ("poll failed: %s", strerror (errno));
+      RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
+    }
+
+  return 1;
+}
+
+/**
+ * validate_handshake_preconditions - Check socket is ready for handshake loop
+ * @socket: Socket to validate
+ *
+ * Returns: File descriptor if valid
+ * Raises: SocketTLS_HandshakeFailed on error
+ */
+static int
+validate_handshake_preconditions (Socket_T socket)
+{
+  int fd;
+
+  REQUIRE_TLS_ENABLED (socket, SocketTLS_HandshakeFailed);
+
+  fd = SocketBase_fd (socket->base);
+  if (fd < 0)
+    RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed, "Invalid socket fd");
+
+  return fd;
+}
+
 TLSHandshakeState
 SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
 {
-  assert (socket);
+  int fd, elapsed_ms;
 
-  REQUIRE_TLS_ENABLED (socket, SocketTLS_HandshakeFailed);
+  assert (socket);
 
   if (socket->tls_handshake_done)
     return TLS_HANDSHAKE_COMPLETE;
 
-  int fd = SocketBase_fd (socket->base);
-  if (fd < 0)
-    RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed, "Invalid socket fd");
-
-  struct pollfd pfd;
-  pfd.fd = fd;
-  pfd.events = POLLIN | POLLOUT;
-
-  int elapsed_ms = 0;
-  int poll_interval = SOCKET_TLS_POLL_INTERVAL_MS;
+  fd = validate_handshake_preconditions (socket);
+  elapsed_ms = 0;
 
   while (elapsed_ms < timeout_ms || timeout_ms == 0)
     {
       TLSHandshakeState state = SocketTLS_handshake (socket);
 
-      switch (state)
-        {
-        case TLS_HANDSHAKE_COMPLETE:
-          return TLS_HANDSHAKE_COMPLETE;
-
-        case TLS_HANDSHAKE_ERROR:
-          return TLS_HANDSHAKE_ERROR;
-
-        case TLS_HANDSHAKE_WANT_READ:
-          pfd.events = POLLIN;
-          break;
-
-        case TLS_HANDSHAKE_WANT_WRITE:
-          pfd.events = POLLOUT;
-          break;
-
-        default:
-          pfd.events = POLLIN | POLLOUT;
-          break;
-        }
+      if (state == TLS_HANDSHAKE_COMPLETE || state == TLS_HANDSHAKE_ERROR)
+        return state;
 
       /* Non-blocking mode: return current state immediately */
       if (timeout_ms == 0)
         return state;
 
-      int rc = poll (&pfd, 1, poll_interval);
-      if (rc < 0)
-        {
-          if (errno == EINTR)
-            continue;
-          TLS_ERROR_FMT ("poll failed: %s", strerror (errno));
-          RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
-        }
-
-      elapsed_ms += poll_interval;
+      if (do_handshake_poll (fd, state_to_poll_events (state),
+                             SOCKET_TLS_POLL_INTERVAL_MS))
+        elapsed_ms += SOCKET_TLS_POLL_INTERVAL_MS;
     }
 
   /* Timeout reached */

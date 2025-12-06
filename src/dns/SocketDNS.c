@@ -208,6 +208,23 @@ validate_resolve_params (const char *host, int port)
  */
 
 /**
+ * validate_request_ownership_locked - Validate request belongs to resolver
+ * @dns: DNS resolver instance
+ * @req: Request to validate
+ *
+ * Returns: 1 if valid, 0 if invalid (caller should unlock and return)
+ * Thread-safe: Must be called with mutex locked
+ *
+ * Security check to prevent cross-resolver request handle corruption.
+ */
+static int
+validate_request_ownership_locked (const struct SocketDNS_T *dns,
+                                   const struct SocketDNS_Request_T *req)
+{
+  return req->dns_resolver == dns;
+}
+
+/**
  * cancel_pending_state - Handle cancellation of pending (queued) request
  * @dns: DNS resolver instance
  * @req: Request to cancel
@@ -539,9 +556,7 @@ SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 
   pthread_mutex_lock (&dns->mutex);
 
-  /* Security: Validate request belongs to this resolver to prevent
-   * corruption of state from cross-resolver request handles */
-  if (req->dns_resolver != dns)
+  if (!validate_request_ownership_locked (dns, req))
     {
       pthread_mutex_unlock (&dns->mutex);
       return;
@@ -706,9 +721,7 @@ SocketDNS_getresult (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 
   pthread_mutex_lock (&dns->mutex);
 
-  /* Validate request belongs to this resolver to prevent use of
-   * dangling pointers or requests from different resolvers */
-  if (req->dns_resolver != dns)
+  if (!validate_request_ownership_locked (dns, req))
     {
       pthread_mutex_unlock (&dns->mutex);
       return NULL;
@@ -731,9 +744,7 @@ SocketDNS_geterror (struct SocketDNS_T *dns,
 
   pthread_mutex_lock (&dns->mutex);
 
-  /* Validate request belongs to this resolver to prevent use of
-   * dangling pointers or requests from different resolvers */
-  if (req->dns_resolver != dns)
+  if (!validate_request_ownership_locked (dns, req))
     {
       pthread_mutex_unlock (&dns->mutex);
       return 0;
@@ -777,9 +788,7 @@ SocketDNS_request_settimeout (struct SocketDNS_T *dns,
 
   pthread_mutex_lock (&dns->mutex);
 
-  /* Security: Validate request belongs to this resolver to prevent
-   * modifying requests from different resolvers */
-  if (req->dns_resolver != dns)
+  if (!validate_request_ownership_locked (dns, req))
     {
       pthread_mutex_unlock (&dns->mutex);
       return;

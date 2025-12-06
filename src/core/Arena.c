@@ -257,18 +257,19 @@ chunk_cache_return (struct ChunkHeader *chunk)
  * arena_calculate_aligned_size - Calculate properly aligned allocation size
  * @nbytes: Requested allocation size
  *
- * Returns: Aligned size, or 0 on overflow/invalid size
+ * Returns: Aligned size, or 0 on overflow/invalid size/zero input
  * Thread-safe: Yes
  *
  * Performs all alignment and overflow checks in a single function:
  * 1. Validates nbytes is positive and within limits
  * 2. Calculates aligned size with overflow protection
  * 3. Validates final size is within limits
+ *
+ * Note: ARENA_ALIGNMENT_SIZE is sizeof(union align), guaranteed non-zero.
  */
 static size_t
 arena_calculate_aligned_size (size_t nbytes)
 {
-  size_t alignment;
   size_t sum;
   size_t aligned_units;
   size_t final_size;
@@ -277,29 +278,51 @@ arena_calculate_aligned_size (size_t nbytes)
   if (nbytes == 0 || nbytes > ARENA_MAX_ALLOC_SIZE)
     return 0;
 
-  /* Get alignment (guaranteed non-zero) */
-  alignment = ARENA_ALIGNMENT_SIZE;
-  if (alignment == 0)
-    alignment = 1;
-
-  /* Check for overflow: nbytes + (alignment - 1) */
-  if (ARENA_CHECK_OVERFLOW_ADD (nbytes, alignment - 1))
+  /* Check for overflow: nbytes + (ARENA_ALIGNMENT_SIZE - 1) */
+  if (ARENA_CHECK_OVERFLOW_ADD (nbytes, ARENA_ALIGNMENT_SIZE - 1))
     return 0;
 
-  sum = nbytes + alignment - 1;
-  aligned_units = sum / alignment;
+  sum = nbytes + ARENA_ALIGNMENT_SIZE - 1;
+  aligned_units = sum / ARENA_ALIGNMENT_SIZE;
 
-  /* Check for overflow: aligned_units * alignment */
-  if (ARENA_CHECK_OVERFLOW_MUL (aligned_units, alignment))
+  /* Check for overflow: aligned_units * ARENA_ALIGNMENT_SIZE */
+  if (ARENA_CHECK_OVERFLOW_MUL (aligned_units, ARENA_ALIGNMENT_SIZE))
     return 0;
 
-  final_size = aligned_units * alignment;
+  final_size = aligned_units * ARENA_ALIGNMENT_SIZE;
 
   /* Final validation */
   if (final_size == 0 || final_size > ARENA_MAX_ALLOC_SIZE)
     return 0;
 
   return final_size;
+}
+
+/* ==================== Chunk Linking ==================== */
+
+/**
+ * arena_link_chunk - Link a chunk into the arena's chunk list
+ * @arena: Arena to link chunk into
+ * @chunk: Chunk header to link
+ * @limit: End of chunk's usable space
+ *
+ * Thread-safe: No (must be called with arena->mutex held)
+ *
+ * Saves arena's current state into chunk header and updates arena
+ * to use the new chunk for subsequent allocations.
+ */
+static void
+arena_link_chunk (T arena, struct ChunkHeader *chunk, char *limit)
+{
+  /* Save current arena state into chunk header */
+  chunk->prev = arena->prev;
+  chunk->avail = arena->avail;
+  chunk->limit = arena->limit;
+
+  /* Update arena to use new chunk */
+  arena->avail = (char *)((union header *)chunk + 1);
+  arena->limit = limit;
+  arena->prev = chunk;
 }
 
 /* ==================== Chunk Allocation ==================== */
@@ -388,15 +411,7 @@ arena_get_chunk (T arena, size_t min_size)
   /* Try to reuse a cached chunk */
   if (chunk_cache_get (&ptr, &limit) == ARENA_CHUNK_REUSED)
     {
-      /* Link reused chunk into arena */
-      ptr->prev = arena->prev;
-      ptr->avail = arena->avail;
-      ptr->limit = arena->limit;
-
-      arena->avail = (char *)((union header *)ptr + 1);
-      arena->limit = limit;
-      arena->prev = ptr;
-
+      arena_link_chunk (arena, ptr, limit);
       return ARENA_SUCCESS;
     }
 
@@ -406,15 +421,7 @@ arena_get_chunk (T arena, size_t min_size)
   if (arena_allocate_new_chunk (chunk_size, &ptr, &limit) != ARENA_SUCCESS)
     return ARENA_FAILURE;
 
-  /* Link new chunk into arena */
-  ptr->prev = arena->prev;
-  ptr->avail = arena->avail;
-  ptr->limit = arena->limit;
-
-  arena->avail = (char *)((union header *)ptr + 1);
-  arena->limit = limit;
-  arena->prev = ptr;
-
+  arena_link_chunk (arena, ptr, limit);
   return ARENA_SUCCESS;
 }
 
@@ -445,6 +452,30 @@ arena_release_all_chunks (T arena)
   assert (arena->prev == NULL);
   assert (arena->avail == NULL);
   assert (arena->limit == NULL);
+}
+
+/* ==================== Space Allocation ==================== */
+
+/**
+ * arena_ensure_space - Ensure arena has enough space for allocation
+ * @arena: Arena to check/expand
+ * @aligned_size: Required aligned allocation size
+ *
+ * Returns: ARENA_SUCCESS if space available, ARENA_FAILURE otherwise
+ * Thread-safe: No (must be called with arena->mutex held)
+ *
+ * Acquires new chunks as needed until arena has sufficient space.
+ */
+static int
+arena_ensure_space (T arena, size_t aligned_size)
+{
+  while (arena->avail == NULL || arena->limit == NULL
+         || (size_t) (arena->limit - arena->avail) < aligned_size)
+    {
+      if (arena_get_chunk (arena, aligned_size) != ARENA_SUCCESS)
+        return ARENA_FAILURE;
+    }
+  return ARENA_SUCCESS;
 }
 
 /* ==================== Public API ==================== */
@@ -547,16 +578,11 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
   /* Allocate under mutex protection */
   pthread_mutex_lock (&arena->mutex);
 
-  /* Ensure we have enough space */
-  while (arena->avail == NULL || arena->limit == NULL
-         || (size_t) (arena->limit - arena->avail) < aligned_size)
+  if (arena_ensure_space (arena, aligned_size) != ARENA_SUCCESS)
     {
-      if (arena_get_chunk (arena, aligned_size) != ARENA_SUCCESS)
-        {
-          pthread_mutex_unlock (&arena->mutex);
-          SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                            "Failed to allocate chunk for %zu bytes", nbytes);
-        }
+      pthread_mutex_unlock (&arena->mutex);
+      SOCKET_RAISE_MSG (Arena, Arena_Failed,
+                        "Failed to allocate chunk for %zu bytes", nbytes);
     }
 
   result = arena->avail;

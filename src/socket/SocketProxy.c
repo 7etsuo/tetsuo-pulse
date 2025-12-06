@@ -1324,36 +1324,24 @@ SocketProxy_Conn_process (SocketProxy_Conn_T conn)
 }
 
 /* ============================================================================
- * Synchronous API
+ * Synchronous API - Helpers
  * ============================================================================ */
 
-SocketProxy_Result
-SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
-                    const char *target_host, int target_port)
+/**
+ * proxy_tunnel_init_context - Initialize tunnel context on stack
+ * @conn: Connection context (caller-allocated)
+ * @socket: Connected socket
+ * @proxy: Proxy configuration
+ * @target_host: Target hostname
+ * @target_port: Target port
+ *
+ * Initializes a stack-allocated connection context without arena.
+ */
+static void
+proxy_tunnel_init_context (struct SocketProxy_Conn_T *conn, Socket_T socket,
+                           const SocketProxy_Config *proxy,
+                           const char *target_host, int target_port)
 {
-  struct SocketProxy_Conn_T conn_struct;
-  struct SocketProxy_Conn_T *conn = &conn_struct;
-  size_t target_len;
-  int fd;
-  int was_nonblocking;
-  int flags;
-  struct pollfd pfd;
-  int timeout;
-  SocketProxy_Result result;
-
-  assert (socket != NULL);
-  assert (proxy != NULL);
-  assert (target_host != NULL);
-  assert (target_port > 0 && target_port <= 65535);
-
-  if (proxy->type == SOCKET_PROXY_NONE)
-    return PROXY_ERROR_UNSUPPORTED;
-
-  target_len = strlen (target_host);
-  if (target_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
-    return PROXY_ERROR_PROTOCOL;
-
-  /* Initialize context on stack (no arena allocation) */
   memset (conn, 0, sizeof (*conn));
   conn->type = proxy->type;
   conn->proxy_host = (char *)proxy->host;
@@ -1375,26 +1363,23 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
   conn->result = PROXY_IN_PROGRESS;
   conn->start_time_ms = socketproxy_get_time_ms ();
   conn->handshake_start_time_ms = conn->start_time_ms;
+}
 
-  /* Check and set non-blocking mode */
-  fd = Socket_fd (socket);
-  flags = fcntl (fd, F_GETFL);
-  was_nonblocking = (flags >= 0 && (flags & O_NONBLOCK));
+/**
+ * proxy_run_poll_loop - Execute poll loop until complete
+ * @conn: Connection context
+ * @fd: File descriptor to poll
+ *
+ * Returns: 0 on success, -1 on poll error
+ *
+ * Runs the poll loop until the connection completes (success, fail, or cancel).
+ */
+static int
+proxy_run_poll_loop (struct SocketProxy_Conn_T *conn, int fd)
+{
+  struct pollfd pfd;
+  int timeout;
 
-  if (!was_nonblocking)
-    {
-      Socket_setnonblocking (socket);
-    }
-
-  /* Build initial protocol request */
-  if (proxy_build_initial_request (conn) < 0)
-    {
-      if (!was_nonblocking)
-        proxy_clear_nonblocking (fd);
-      return conn->result;
-    }
-
-  /* Poll loop for handshake */
   while (!SocketProxy_Conn_poll (conn))
     {
       pfd.fd = fd;
@@ -1414,27 +1399,113 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
           if (errno == EINTR)
             continue;
           socketproxy_set_error (conn, PROXY_ERROR, "poll failed");
-          break;
+          return -1;
         }
 
       SocketProxy_Conn_process (conn);
     }
 
-  result = conn->result;
+  return 0;
+}
 
-  /* Restore blocking mode if it was originally blocking */
+/* ============================================================================
+ * Synchronous API
+ * ============================================================================ */
+
+SocketProxy_Result
+SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
+                    const char *target_host, int target_port)
+{
+  struct SocketProxy_Conn_T conn_struct;
+  struct SocketProxy_Conn_T *conn = &conn_struct;
+  int fd;
+  int was_nonblocking;
+  int flags;
+
+  assert (socket != NULL);
+  assert (proxy != NULL);
+  assert (target_host != NULL);
+  assert (target_port > 0 && target_port <= 65535);
+
+  if (proxy->type == SOCKET_PROXY_NONE)
+    return PROXY_ERROR_UNSUPPORTED;
+
+  if (strlen (target_host) > SOCKET_PROXY_MAX_HOSTNAME_LEN)
+    return PROXY_ERROR_PROTOCOL;
+
+  /* Initialize context on stack */
+  proxy_tunnel_init_context (conn, socket, proxy, target_host, target_port);
+
+  /* Check and set non-blocking mode */
+  fd = Socket_fd (socket);
+  flags = fcntl (fd, F_GETFL);
+  was_nonblocking = (flags >= 0 && (flags & O_NONBLOCK));
+
+  if (!was_nonblocking)
+    Socket_setnonblocking (socket);
+
+  /* Build initial protocol request */
+  if (proxy_build_initial_request (conn) < 0)
+    {
+      if (!was_nonblocking)
+        proxy_clear_nonblocking (fd);
+      return conn->result;
+    }
+
+  /* Run poll loop */
+  proxy_run_poll_loop (conn, fd);
+
+  /* Restore blocking mode if originally blocking */
   if (!was_nonblocking)
     proxy_clear_nonblocking (fd);
 
-  /* Clear password from stack buffer */
-  if (conn->password != NULL)
+  return conn->result;
+}
+
+/**
+ * proxy_connect_poll_loop - Execute poll loop for async connection
+ * @conn: Connection context
+ *
+ * Returns: 0 on success, -1 on poll error or invalid fd
+ *
+ * Similar to proxy_run_poll_loop but handles the Conn API for async cases.
+ */
+static int
+proxy_connect_poll_loop (SocketProxy_Conn_T conn)
+{
+  struct pollfd pfd;
+  int timeout;
+  int fd;
+
+  while (!SocketProxy_Conn_poll (conn))
     {
-      /* Note: We don't clear here because conn->password points to
-       * the caller's proxy->password string which we shouldn't modify.
-       * The caller is responsible for clearing their credentials. */
+      fd = SocketProxy_Conn_fd (conn);
+      if (fd < 0)
+        return -1;
+
+      pfd.fd = fd;
+      pfd.events = 0;
+      if (SocketProxy_Conn_events (conn) & POLL_READ)
+        pfd.events |= POLLIN;
+      if (SocketProxy_Conn_events (conn) & POLL_WRITE)
+        pfd.events |= POLLOUT;
+      pfd.revents = 0;
+
+      timeout = SocketProxy_Conn_next_timeout_ms (conn);
+      if (timeout < 0)
+        timeout = SOCKET_PROXY_DEFAULT_POLL_TIMEOUT_MS;
+
+      if (poll (&pfd, 1, timeout) < 0)
+        {
+          if (errno == EINTR)
+            continue;
+          return -1;
+        }
+
+      SocketProxy_Conn_process (conn);
     }
 
-  return result;
+  return 0;
 }
 
 Socket_T
@@ -1443,47 +1514,15 @@ SocketProxy_connect (const SocketProxy_Config *proxy, const char *target_host,
 {
   SocketProxy_Conn_T conn;
   volatile Socket_T result = NULL;
-  int fd;
-  struct pollfd pfd;
-  int timeout;
 
   assert (proxy != NULL);
   assert (target_host != NULL);
 
   TRY
-    /* Create async connection */
     conn = SocketProxy_Conn_new (proxy, target_host, target_port);
 
-    /* Poll loop until complete */
-    while (!SocketProxy_Conn_poll (conn))
-      {
-        fd = SocketProxy_Conn_fd (conn);
-        if (fd < 0)
-          break;
+    proxy_connect_poll_loop (conn);
 
-        pfd.fd = fd;
-        pfd.events = 0;
-        if (SocketProxy_Conn_events (conn) & POLL_READ)
-          pfd.events |= POLLIN;
-        if (SocketProxy_Conn_events (conn) & POLL_WRITE)
-          pfd.events |= POLLOUT;
-        pfd.revents = 0;
-
-        timeout = SocketProxy_Conn_next_timeout_ms (conn);
-        if (timeout < 0)
-          timeout = SOCKET_PROXY_DEFAULT_POLL_TIMEOUT_MS;
-
-        if (poll (&pfd, 1, timeout) < 0)
-          {
-            if (errno == EINTR)
-              continue;
-            break;
-          }
-
-        SocketProxy_Conn_process (conn);
-      }
-
-    /* Get result */
     if (SocketProxy_Conn_result (conn) == PROXY_OK)
       {
         result = SocketProxy_Conn_socket (conn);
@@ -1497,9 +1536,7 @@ SocketProxy_connect (const SocketProxy_Config *proxy, const char *target_host,
     SocketProxy_Conn_free (&conn);
 
     if (result == NULL)
-      {
-        RAISE_PROXY_ERROR (SocketProxy_Failed);
-      }
+      RAISE_PROXY_ERROR (SocketProxy_Failed);
   END_TRY;
 
   return result;

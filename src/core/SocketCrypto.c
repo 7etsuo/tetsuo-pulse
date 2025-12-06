@@ -61,12 +61,7 @@ const Except_T SocketCrypto_Failed
 /* Thread-local exception for detailed error messages */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketCrypto);
 
-/**
- * Convenience macros for raising exceptions with formatted messages.
- * RAISE_CRYPTO_MSG: Raises with message (no errno)
- */
-#define RAISE_CRYPTO_MSG(fmt, ...)                                             \
-  SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, fmt, ##__VA_ARGS__)
+/* Use SOCKET_RAISE_MSG directly for clarity - no wrapper needed */
 
 /* ============================================================================
  * Static Constants
@@ -120,13 +115,13 @@ SocketCrypto_sha1 (const void *input, size_t input_len,
   assert (output);
 
   if (!input && input_len > 0)
-    RAISE_CRYPTO_MSG ("SHA-1: NULL input with non-zero length");
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "SHA-1: NULL input with non-zero length");
 
 #ifdef SOCKET_HAS_TLS
   if (!SHA1 ((const unsigned char *)input, input_len, output))
-    RAISE_CRYPTO_MSG ("SHA-1 computation failed");
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "SHA-1 computation failed");
 #else
-  RAISE_CRYPTO_MSG ("SHA-1 requires TLS support (SOCKET_HAS_TLS)");
+  SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "SHA-1 requires TLS support (SOCKET_HAS_TLS)");
 #endif
 }
 
@@ -137,13 +132,13 @@ SocketCrypto_sha256 (const void *input, size_t input_len,
   assert (output);
 
   if (!input && input_len > 0)
-    RAISE_CRYPTO_MSG ("SHA-256: NULL input with non-zero length");
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "SHA-256: NULL input with non-zero length");
 
 #ifdef SOCKET_HAS_TLS
   if (!SHA256 ((const unsigned char *)input, input_len, output))
-    RAISE_CRYPTO_MSG ("SHA-256 computation failed");
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "SHA-256 computation failed");
 #else
-  RAISE_CRYPTO_MSG ("SHA-256 requires TLS support (SOCKET_HAS_TLS)");
+  SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "SHA-256 requires TLS support (SOCKET_HAS_TLS)");
 #endif
 }
 
@@ -154,24 +149,24 @@ SocketCrypto_md5 (const void *input, size_t input_len,
   assert (output);
 
   if (!input && input_len > 0)
-    RAISE_CRYPTO_MSG ("MD5: NULL input with non-zero length");
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "MD5: NULL input with non-zero length");
 
 #ifdef SOCKET_HAS_TLS
   EVP_MD_CTX *ctx = EVP_MD_CTX_new ();
   if (!ctx)
-    RAISE_CRYPTO_MSG ("MD5: Failed to create context");
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "MD5: Failed to create context");
 
   if (EVP_DigestInit_ex (ctx, EVP_md5 (), NULL) != 1
       || EVP_DigestUpdate (ctx, input, input_len) != 1
       || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
     {
       EVP_MD_CTX_free (ctx);
-      RAISE_CRYPTO_MSG ("MD5 computation failed");
+      SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "MD5 computation failed");
     }
 
   EVP_MD_CTX_free (ctx);
 #else
-  RAISE_CRYPTO_MSG ("MD5 requires TLS support (SOCKET_HAS_TLS)");
+  SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "MD5 requires TLS support (SOCKET_HAS_TLS)");
 #endif
 }
 
@@ -187,10 +182,10 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
   assert (output);
 
   if (!key && key_len > 0)
-    RAISE_CRYPTO_MSG ("HMAC-SHA256: NULL key with non-zero length");
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "HMAC-SHA256: NULL key with non-zero length");
 
   if (!data && data_len > 0)
-    RAISE_CRYPTO_MSG ("HMAC-SHA256: NULL data with non-zero length");
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "HMAC-SHA256: NULL data with non-zero length");
 
 #ifdef SOCKET_HAS_TLS
   /*
@@ -200,7 +195,7 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
    * longer keys are internally hashed anyway.
    */
   if (key_len > (size_t)INT_MAX)
-    RAISE_CRYPTO_MSG ("HMAC-SHA256: Key length %zu exceeds INT_MAX", key_len);
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "HMAC-SHA256: Key length %zu exceeds INT_MAX", key_len);
 
   unsigned int hmac_len = 0;
   unsigned char *result
@@ -208,9 +203,9 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
               data_len, output, &hmac_len);
 
   if (!result || hmac_len != SOCKET_CRYPTO_SHA256_SIZE)
-    RAISE_CRYPTO_MSG ("HMAC-SHA256 computation failed");
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "HMAC-SHA256 computation failed");
 #else
-  RAISE_CRYPTO_MSG ("HMAC-SHA256 requires TLS support (SOCKET_HAS_TLS)");
+  SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "HMAC-SHA256 requires TLS support (SOCKET_HAS_TLS)");
 #endif
 }
 
@@ -394,6 +389,111 @@ base64_decode_block (const unsigned char *buffer, int padding_count,
   return 0;
 }
 
+/**
+ * base64_decode_partial_block - Handle remaining bytes without padding
+ * @buffer: Partial block buffer (will be zero-padded)
+ * @buffer_pos: Number of valid bytes in buffer
+ * @output: Output buffer
+ * @out_pos: Current output position (updated on success)
+ * @output_size: Maximum output size
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+base64_decode_partial_block (unsigned char *buffer, int buffer_pos,
+                             unsigned char *output, size_t *out_pos,
+                             size_t output_size)
+{
+  int real_chars = buffer_pos;
+
+  /* Must have at least 2 characters */
+  if (buffer_pos < 2)
+    return -1;
+
+  /* Pad with zeros */
+  while (buffer_pos < 4)
+    buffer[buffer_pos++] = 0;
+
+  /* Output first byte */
+  if (*out_pos >= output_size)
+    return -1;
+  output[(*out_pos)++] = (buffer[0] << 2) | (buffer[1] >> 4);
+
+  /* Output second byte if we had 3+ characters */
+  if (real_chars >= 3)
+    {
+      if (*out_pos >= output_size)
+        return -1;
+      output[(*out_pos)++] = (buffer[1] << 4) | (buffer[2] >> 2);
+    }
+
+  return 0;
+}
+
+/**
+ * base64_decode_char - Process a single character in base64 decoding
+ * @c: Input character
+ * @buffer: 4-byte decode buffer
+ * @buffer_pos: Current position in buffer (updated)
+ * @padding_count: Count of padding chars seen (updated)
+ * @output: Output buffer
+ * @out_pos: Current output position (updated)
+ * @output_size: Maximum output size
+ *
+ * Returns: 0 on success, -1 on error, 1 to skip (whitespace)
+ */
+static int
+base64_decode_char (unsigned char c, unsigned char *buffer, int *buffer_pos,
+                    int *padding_count, unsigned char *output, size_t *out_pos,
+                    size_t output_size)
+{
+  /* Skip whitespace (RFC 4648 Section 3.3) */
+  if (base64_is_whitespace (c))
+    return 1;
+
+  /* Handle padding */
+  if (c == '=')
+    {
+      (*padding_count)++;
+      if (*padding_count > 2)
+        return -1; /* Too much padding */
+      buffer[(*buffer_pos)++] = 0;
+
+      /* Process complete 4-character block with padding */
+      if (*buffer_pos == 4)
+        {
+          if (base64_decode_block (buffer, *padding_count, output, out_pos,
+                                   output_size)
+              < 0)
+            return -1;
+          *buffer_pos = 0;
+        }
+      return 0;
+    }
+
+  /* No more data after padding */
+  if (*padding_count > 0)
+    return -1;
+
+  /* Decode character */
+  unsigned char val = base64_decode_table[c];
+  if (val == 255)
+    return -1; /* Invalid character */
+
+  buffer[(*buffer_pos)++] = val;
+
+  /* Process complete 4-character block (no padding) */
+  if (*buffer_pos == 4)
+    {
+      if (base64_decode_block (buffer, 0, output, out_pos, output_size) < 0)
+        return -1;
+      *buffer_pos = 0;
+      *padding_count = 0;
+    }
+
+  return 0;
+}
+
 ssize_t
 SocketCrypto_base64_decode (const char *input, size_t input_len,
                             unsigned char *output, size_t output_size)
@@ -417,81 +517,23 @@ SocketCrypto_base64_decode (const char *input, size_t input_len,
   if (input_len == 0)
     return 0;
 
+  /* Process each character */
   for (i = 0; i < input_len; i++)
     {
-      unsigned char c = (unsigned char)input[i];
-      unsigned char val;
-
-      /* Skip whitespace (RFC 4648 Section 3.3) */
-      if (base64_is_whitespace (c))
-        continue;
-
-      /* Handle padding */
-      if (c == '=')
-        {
-          padding_count++;
-          if (padding_count > 2)
-            return -1; /* Too much padding */
-          buffer[buffer_pos++] = 0;
-
-          /* Process complete 4-character block with padding */
-          if (buffer_pos == 4)
-            {
-              if (base64_decode_block (buffer, padding_count, output, &out_pos,
-                                       output_size)
-                  < 0)
-                return -1;
-              buffer_pos = 0;
-            }
-          continue;
-        }
-
-      /* No more data after padding */
-      if (padding_count > 0)
+      int result = base64_decode_char ((unsigned char)input[i], buffer,
+                                       &buffer_pos, &padding_count, output,
+                                       &out_pos, output_size);
+      if (result < 0)
         return -1;
-
-      /* Decode character */
-      val = base64_decode_table[c];
-      if (val == 255)
-        return -1; /* Invalid character */
-
-      buffer[buffer_pos++] = val;
-
-      /* Process complete 4-character block (no padding) */
-      if (buffer_pos == 4)
-        {
-          if (base64_decode_block (buffer, 0, output, &out_pos, output_size)
-              < 0)
-            return -1;
-          buffer_pos = 0;
-          padding_count = 0;
-        }
     }
 
   /* Handle remaining partial block (no padding at end) */
   if (buffer_pos > 0)
     {
-      /* Must have at least 2 characters */
-      if (buffer_pos < 2)
+      if (base64_decode_partial_block (buffer, buffer_pos, output, &out_pos,
+                                       output_size)
+          < 0)
         return -1;
-
-      int real_chars = buffer_pos;
-
-      /* Pad with zeros */
-      while (buffer_pos < 4)
-        buffer[buffer_pos++] = 0;
-
-      /* Output based on how many real chars we had */
-      if (out_pos >= output_size)
-        return -1;
-      output[out_pos++] = (buffer[0] << 2) | (buffer[1] >> 4);
-
-      if (real_chars >= 3)
-        {
-          if (out_pos >= output_size)
-            return -1;
-          output[out_pos++] = (buffer[1] << 4) | (buffer[2] >> 2);
-        }
     }
 
   return (ssize_t)out_pos;
@@ -625,7 +667,7 @@ SocketCrypto_random_uint32 (void)
   uint32_t value;
 
   if (SocketCrypto_random_bytes (&value, sizeof (value)) != 0)
-    RAISE_CRYPTO_MSG ("Random number generation failed");
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "Random number generation failed");
 
   return value;
 }

@@ -2,6 +2,7 @@
  * SocketWS-handshake.c - WebSocket Handshake (RFC 6455 Section 4)
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * HTTP upgrade handshake for WebSocket connections.
  *
@@ -24,7 +25,6 @@
  */
 
 #include <assert.h>
-#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -194,7 +194,6 @@ ws_write_subprotocol_header (char *buf, size_t size, size_t *offset,
                              const char *const *subprotocols)
 {
   const char *const *proto;
-  int first = 1;
 
   if (!subprotocols || !subprotocols[0])
     return 0;
@@ -204,14 +203,14 @@ ws_write_subprotocol_header (char *buf, size_t size, size_t *offset,
 
   for (proto = subprotocols; *proto; proto++)
     {
-      if (!first)
+      /* Add comma separator after first element */
+      if (proto != subprotocols)
         {
           if (ws_snprintf_checked (buf, size, offset, ", ") < 0)
             return -1;
         }
       if (ws_snprintf_checked (buf, size, offset, "%s", *proto) < 0)
         return -1;
-      first = 0;
     }
 
   return ws_snprintf_checked (buf, size, offset, "\r\n");

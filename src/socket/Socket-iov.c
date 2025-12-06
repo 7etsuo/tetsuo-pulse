@@ -27,24 +27,22 @@
 #include <sys/sendfile.h>
 #endif
 
-/* Note: <sys/uio.h> already included unconditionally above */
-
 #include <assert.h>
 
 #include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
-#include "socket/Socket.h"
-#include "socket/SocketIO.h" /* TLS-aware I/O functions */
 #include "socket/Socket-private.h"
+#include "socket/Socket.h"
 #include "socket/SocketCommon.h"
+#include "socket/SocketIO.h"
 
 #define T Socket_T
 
 /* Declare module-specific exception using centralized macros */
-SOCKET_DECLARE_MODULE_EXCEPTION(SocketIOV);
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketIOV);
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(SocketIOV, e)
+#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketIOV, e)
 
 /* ==================== Scatter/Gather I/O ==================== */
 
@@ -59,8 +57,6 @@ Socket_recvv (T socket, struct iovec *iov, int iovcnt)
 {
   return socket_recvv_internal (socket, iov, iovcnt, 0);
 }
-
-
 
 /* ==================== Sendfile Operations ==================== */
 
@@ -151,6 +147,7 @@ sendfile_transfer_loop (T socket, int file_fd, off_t *offset, size_t count)
   volatile size_t total_sent = 0;
 
   TRY
+  {
     while (total_sent < count)
       {
         size_t to_read = (count - total_sent < sizeof (buffer))
@@ -170,27 +167,25 @@ sendfile_transfer_loop (T socket, int file_fd, off_t *offset, size_t count)
         if (sent_bytes == 0)
           {
             /* Would block - return partial progress */
-            if (offset)
-              *offset += (off_t)total_sent;
-            return total_sent;
+            break;
           }
         total_sent += (size_t)sent_bytes;
 
         if ((size_t)read_bytes < to_read)
           break; /* EOF reached */
       }
+  }
   EXCEPT (Socket_Closed)
-    if (offset)
-      *offset += (off_t)total_sent;
-    RERAISE;
+  RERAISE;
   EXCEPT (Socket_Failed)
+  RERAISE;
+  FINALLY
+  {
     if (offset)
       *offset += (off_t)total_sent;
-    RERAISE;
+  }
   END_TRY;
 
-  if (offset)
-    *offset += (off_t)total_sent;
   return total_sent;
 }
 
@@ -276,6 +271,7 @@ Socket_sendfileall (T socket, int file_fd, off_t *offset, size_t count)
   assert (count > 0);
 
   TRY
+  {
     while (total_sent < count)
       {
         off_t *current_offset_ptr = offset ? &current_offset : NULL;
@@ -286,26 +282,24 @@ Socket_sendfileall (T socket, int file_fd, off_t *offset, size_t count)
         if (sent == 0)
           {
             /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
-            if (offset)
-              *offset = current_offset;
-            return (ssize_t)total_sent;
+            break;
           }
         total_sent += (size_t)sent;
         if (offset)
           current_offset += (off_t)sent;
       }
+  }
   EXCEPT (Socket_Closed)
-    if (offset)
-      *offset = current_offset;
-    RERAISE;
+  RERAISE;
   EXCEPT (Socket_Failed)
+  RERAISE;
+  FINALLY
+  {
     if (offset)
       *offset = current_offset;
-    RERAISE;
+  }
   END_TRY;
 
-  if (offset)
-    *offset = current_offset;
   return (ssize_t)total_sent;
 }
 
@@ -367,34 +361,30 @@ Socket_recvmsg (T socket, struct msghdr *msg, int flags)
  * @socket: Connected socket
  * @buf: Data to send
  * @len: Length of data (> 0)
- * Returns: Total bytes sent (always equals len on success)
+ *
+ * Returns: Total bytes sent (equals len on success, partial on would-block)
  * Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on error
  */
 ssize_t
 Socket_sendall (T socket, const void *buf, size_t len)
 {
-  volatile size_t total_sent = 0;
+  size_t total_sent = 0;
   const char *data = buf;
 
   assert (socket);
   assert (buf);
   assert (len > 0);
 
-  TRY while (total_sent < len)
-  {
-    ssize_t sent = Socket_send (socket, data + total_sent, len - total_sent);
-    if (sent == 0)
-      {
-        /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
-        return (ssize_t)total_sent;
-      }
-    total_sent += (size_t)sent;
-  }
-  EXCEPT (Socket_Closed)
-  RERAISE;
-  EXCEPT (Socket_Failed)
-  RERAISE;
-  END_TRY;
+  while (total_sent < len)
+    {
+      ssize_t sent = Socket_send (socket, data + total_sent, len - total_sent);
+      if (sent == 0)
+        {
+          /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+          return (ssize_t)total_sent;
+        }
+      total_sent += (size_t)sent;
+    }
 
   return (ssize_t)total_sent;
 }
@@ -404,35 +394,31 @@ Socket_sendall (T socket, const void *buf, size_t len)
  * @socket: Connected socket
  * @buf: Buffer for received data
  * @len: Buffer size (> 0)
- * Returns: Total bytes received (always equals len on success)
+ *
+ * Returns: Total bytes received (equals len on success, partial on would-block)
  * Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on error
  */
 ssize_t
 Socket_recvall (T socket, void *buf, size_t len)
 {
-  volatile size_t total_received = 0;
+  size_t total_received = 0;
   char *data = buf;
 
   assert (socket);
   assert (buf);
   assert (len > 0);
 
-  TRY while (total_received < len)
-  {
-    ssize_t received
-        = Socket_recv (socket, data + total_received, len - total_received);
-    if (received == 0)
-      {
-        /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
-        return (ssize_t)total_received;
-      }
-    total_received += (size_t)received;
-  }
-  EXCEPT (Socket_Closed)
-  RERAISE;
-  EXCEPT (Socket_Failed)
-  RERAISE;
-  END_TRY;
+  while (total_received < len)
+    {
+      ssize_t received
+          = Socket_recv (socket, data + total_received, len - total_received);
+      if (received == 0)
+        {
+          /* Would block (EAGAIN/EWOULDBLOCK) - return partial progress */
+          return (ssize_t)total_received;
+        }
+      total_received += (size_t)received;
+    }
 
   return (ssize_t)total_received;
 }
@@ -481,18 +467,22 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
   iov_copy = SocketCommon_alloc_iov_copy (iov, iovcnt, Socket_Failed);
 
-  TRY while (total_sent < total_len
-             && sendvall_iteration (socket, iov_copy, iovcnt, &sent))
-    total_sent += (size_t)sent;
+  TRY
+  {
+    while (total_sent < total_len
+           && sendvall_iteration (socket, iov_copy, iovcnt, &sent))
+      total_sent += (size_t)sent;
+  }
   EXCEPT (Socket_Closed)
-  free (iov_copy);
   RERAISE;
   EXCEPT (Socket_Failed)
-  free (iov_copy);
   RERAISE;
+  FINALLY
+  {
+    free (iov_copy);
+  }
   END_TRY;
 
-  free (iov_copy);
   return (ssize_t)total_sent;
 }
 
@@ -540,18 +530,22 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
   iov_copy = SocketCommon_alloc_iov_copy (iov, iovcnt, Socket_Failed);
 
-  TRY while (total_received < total_len
-             && recvvall_iteration (socket, iov_copy, iovcnt, &received))
-    total_received += (size_t)received;
+  TRY
+  {
+    while (total_received < total_len
+           && recvvall_iteration (socket, iov_copy, iovcnt, &received))
+      total_received += (size_t)received;
+  }
   EXCEPT (Socket_Closed)
-  free (iov_copy);
   RERAISE;
   EXCEPT (Socket_Failed)
-  free (iov_copy);
   RERAISE;
+  FINALLY
+  {
+    free (iov_copy);
+  }
   END_TRY;
 
-  free (iov_copy);
   return (ssize_t)total_received;
 }
 

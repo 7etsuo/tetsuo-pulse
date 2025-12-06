@@ -107,6 +107,57 @@ const Except_T SocketHTTPServer_ProtocolError
 #define RAISE_HTTPSERVER_ERROR(e) SOCKET_RAISE_MODULE_ERROR (HTTPServer, e)
 
 /* ============================================================================
+ * Statistics Helper Macros
+ * ============================================================================
+ *
+ * REFACTOR: Extracted repeated mutex lock/unlock pattern for statistics.
+ * Reduces code duplication and ensures consistent locking.
+ */
+
+/**
+ * STATS_INC - Increment a stats counter under mutex lock
+ * @server: Server instance
+ * @field: Statistics field name
+ */
+#define STATS_INC(server, field)                                               \
+  do                                                                           \
+    {                                                                          \
+      pthread_mutex_lock (&(server)->stats_mutex);                             \
+      (server)->field++;                                                       \
+      pthread_mutex_unlock (&(server)->stats_mutex);                           \
+    }                                                                          \
+  while (0)
+
+/**
+ * STATS_ADD - Add a value to a stats counter under mutex lock
+ * @server: Server instance
+ * @field: Statistics field name
+ * @value: Value to add
+ */
+#define STATS_ADD(server, field, value)                                        \
+  do                                                                           \
+    {                                                                          \
+      pthread_mutex_lock (&(server)->stats_mutex);                             \
+      (server)->field += (value);                                              \
+      pthread_mutex_unlock (&(server)->stats_mutex);                           \
+    }                                                                          \
+  while (0)
+
+/**
+ * STATS_DEC - Decrement a stats counter under mutex lock
+ * @server: Server instance
+ * @field: Statistics field name
+ */
+#define STATS_DEC(server, field)                                               \
+  do                                                                           \
+    {                                                                          \
+      pthread_mutex_lock (&(server)->stats_mutex);                             \
+      (server)->field--;                                                       \
+      pthread_mutex_unlock (&(server)->stats_mutex);                           \
+    }                                                                          \
+  while (0)
+
+/* ============================================================================
  * Rate Limit Endpoint Entry
  * ============================================================================ */
 
@@ -333,6 +384,24 @@ latency_avg (LatencyTracker *lt)
   return lt->sum / (int64_t)lt->count;
 }
 
+/**
+ * record_request_latency - Record request latency if timing available
+ * @server: HTTP server
+ * @request_start_ms: Request start timestamp (0 if not set)
+ *
+ * REFACTOR: Extracted from connection_send_response and
+ * SocketHTTPServer_Request_end_stream to eliminate duplication.
+ */
+static void
+record_request_latency (SocketHTTPServer_T server, int64_t request_start_ms)
+{
+  if (request_start_ms > 0)
+    {
+      int64_t latency_us = (server_time_ms () - request_start_ms) * 1000;
+      latency_record (&server->latency, latency_us);
+    }
+}
+
 /* ============================================================================
  * Internal Helper Functions - Rate Limiting
  * ============================================================================ */
@@ -369,10 +438,13 @@ find_rate_limiter (SocketHTTPServer_T server, const char *path)
  * Internal Helper Functions - Connection
  * ============================================================================ */
 
-/* Forward declaration - used by connection_parse_request */
+/* Forward declarations - used by helper functions */
 static void connection_send_error (SocketHTTPServer_T server,
                                    ServerConnection *conn, int status,
                                    const char *body);
+static void connection_reset_for_keepalive (ServerConnection *conn);
+static void connection_finish_request (SocketHTTPServer_T server,
+                                       ServerConnection *conn);
 
 static ServerConnection *
 connection_new (SocketHTTPServer_T server, Socket_T socket)
@@ -451,9 +523,7 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
           /* Connection limit reached for this IP */
           Arena_dispose (&arena);
           free (conn);
-          pthread_mutex_lock (&server->stats_mutex);
-          server->connections_rejected++;
-          pthread_mutex_unlock (&server->stats_mutex);
+          STATS_INC (server, connections_rejected);
           return NULL;
         }
     }
@@ -463,6 +533,7 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
   if (server->connections != NULL)
     server->connections->prev = conn;
   server->connections = conn;
+
   pthread_mutex_lock (&server->stats_mutex);
   server->connection_count++;
   server->total_connections++;
@@ -504,9 +575,7 @@ connection_close (SocketHTTPServer_T server, ServerConnection *conn)
   if (conn->next != NULL)
     conn->next->prev = conn->prev;
 
-  pthread_mutex_lock (&server->stats_mutex);
-  server->connection_count--;
-  pthread_mutex_unlock (&server->stats_mutex);
+  STATS_DEC (server, connection_count);
 
   /* Free arena */
   if (conn->arena != NULL)
@@ -520,7 +589,7 @@ connection_close (SocketHTTPServer_T server, ServerConnection *conn)
 static int
 connection_read (SocketHTTPServer_T server, ServerConnection *conn)
 {
-  char buf[4096];
+  char buf[HTTPSERVER_RECV_BUFFER_SIZE];
   volatile ssize_t n = 0;
   volatile int closed = 0;
 
@@ -543,10 +612,7 @@ connection_read (SocketHTTPServer_T server, ServerConnection *conn)
     }
 
   conn->last_activity_ms = server_time_ms ();
-  pthread_mutex_lock (&server->stats_mutex);
-  server->total_bytes_received += (size_t)n;
-  pthread_mutex_unlock (&server->stats_mutex);
-
+  STATS_ADD (server, total_bytes_received, (size_t)n);
   SocketBuf_write (conn->inbuf, buf, (size_t)n);
 
   return (int)n;
@@ -574,10 +640,7 @@ connection_send_data (SocketHTTPServer_T server, ServerConnection *conn,
     }
 
   conn->last_activity_ms = server_time_ms ();
-  pthread_mutex_lock (&server->stats_mutex);
-  server->total_bytes_sent += (size_t)sent;
-  pthread_mutex_unlock (&server->stats_mutex);
-
+  STATS_ADD (server, total_bytes_sent, (size_t)sent);
   return 0;
 }
 
@@ -608,6 +671,26 @@ connection_reset_for_keepalive (ServerConnection *conn)
   conn->response_start_ms = 0;
 
   conn->state = CONN_STATE_READING_REQUEST;
+}
+
+/**
+ * connection_finish_request - Complete request processing
+ * @server: HTTP server
+ * @conn: Connection
+ *
+ * Records latency and either resets for keep-alive or closes connection.
+ * REFACTOR: Extracted from connection_send_response and
+ * SocketHTTPServer_Request_end_stream to eliminate duplication.
+ */
+static void
+connection_finish_request (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  record_request_latency (server, conn->request_start_ms);
+
+  if (SocketHTTP1_Parser_should_keepalive (conn->parser))
+    connection_reset_for_keepalive (conn);
+  else
+    conn->state = CONN_STATE_CLOSED;
 }
 
 static int
@@ -697,7 +780,7 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
 static void
 connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
 {
-  char buf[8192];
+  char buf[HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE];
   ssize_t len;
 
   SocketHTTP_Response response;
@@ -708,17 +791,9 @@ connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
 
   /* Track errors */
   if (conn->response_status >= 400 && conn->response_status < 500)
-    {
-      pthread_mutex_lock (&server->stats_mutex);
-      server->errors_4xx++;
-      pthread_mutex_unlock (&server->stats_mutex);
-    }
+    STATS_INC (server, errors_4xx);
   else if (conn->response_status >= 500)
-    {
-      pthread_mutex_lock (&server->stats_mutex);
-      server->errors_5xx++;
-      pthread_mutex_unlock (&server->stats_mutex);
-    }
+    STATS_INC (server, errors_5xx);
 
   if (conn->response_body_len > 0 && !conn->response_streaming)
     {
@@ -751,21 +826,7 @@ connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
         }
     }
 
-  /* Record latency */
-  if (conn->request_start_ms > 0)
-    {
-      int64_t latency_us = (server_time_ms () - conn->request_start_ms) * 1000;
-      latency_record (&server->latency, latency_us);
-    }
-
-  if (SocketHTTP1_Parser_should_keepalive (conn->parser))
-    {
-      connection_reset_for_keepalive (conn);
-    }
-  else
-    {
-      conn->state = CONN_STATE_CLOSED;
-    }
+  connection_finish_request (server, conn);
 }
 
 static void
@@ -1111,9 +1172,7 @@ server_check_rate_limit (SocketHTTPServer_T server, ServerConnection *conn)
       = find_rate_limiter (server, conn->request ? conn->request->path : NULL);
   if (limiter != NULL && !SocketRateLimit_try_acquire (limiter, 1))
     {
-      pthread_mutex_lock (&server->stats_mutex);
-      server->rate_limited++;
-      pthread_mutex_unlock (&server->stats_mutex);
+      STATS_INC (server, rate_limited);
       connection_send_error (server, conn, 429, "Too Many Requests");
       return 0;
     }
@@ -1304,9 +1363,7 @@ server_check_connection_timeout (SocketHTTPServer_T server,
   if (conn->state == CONN_STATE_READING_REQUEST
       && idle_ms > server->config.keepalive_timeout_ms)
     {
-      pthread_mutex_lock (&server->stats_mutex);
-      server->timeouts++;
-      pthread_mutex_unlock (&server->stats_mutex);
+      STATS_INC (server, timeouts);
       connection_close (server, conn);
       return 1;
     }
@@ -1315,9 +1372,7 @@ server_check_connection_timeout (SocketHTTPServer_T server,
   if (conn->state == CONN_STATE_READING_BODY && conn->request_start_ms > 0
       && (now - conn->request_start_ms) > server->config.request_read_timeout_ms)
     {
-      pthread_mutex_lock (&server->stats_mutex);
-      server->timeouts++;
-      pthread_mutex_unlock (&server->stats_mutex);
+      STATS_INC (server, timeouts);
       connection_close (server, conn);
       return 1;
     }
@@ -1328,9 +1383,7 @@ server_check_connection_timeout (SocketHTTPServer_T server,
       && (now - conn->response_start_ms)
              > server->config.response_write_timeout_ms)
     {
-      pthread_mutex_lock (&server->stats_mutex);
-      server->timeouts++;
-      pthread_mutex_unlock (&server->stats_mutex);
+      STATS_INC (server, timeouts);
       connection_close (server, conn);
       return 1;
     }
@@ -1635,7 +1688,7 @@ SocketHTTPServer_Request_begin_stream (SocketHTTPServer_Request_T req)
                           "chunked");
 
   /* Build and send headers */
-  char buf[8192];
+  char buf[HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE];
   SocketHTTP_Response response;
   memset (&response, 0, sizeof (response));
   response.version = HTTP_VERSION_1_1;
@@ -1698,23 +1751,7 @@ SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req)
       < 0)
     return -1;
 
-  /* Record latency */
-  if (req->conn->request_start_ms > 0)
-    {
-      int64_t latency_us
-          = (server_time_ms () - req->conn->request_start_ms) * 1000;
-      latency_record (&req->server->latency, latency_us);
-    }
-
-  if (SocketHTTP1_Parser_should_keepalive (req->conn->parser))
-    {
-      connection_reset_for_keepalive (req->conn);
-    }
-  else
-    {
-      req->conn->state = CONN_STATE_CLOSED;
-    }
-
+  connection_finish_request (req->server, req->conn);
   return 0;
 }
 

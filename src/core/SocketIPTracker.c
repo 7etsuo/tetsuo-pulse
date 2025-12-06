@@ -75,6 +75,28 @@ struct T
 };
 
 /* ============================================================================
+ * Internal Helper Functions - Hash Computation
+ * ============================================================================ */
+
+/**
+ * compute_bucket_index - Compute bucket index for IP address
+ * @ip: IP address string
+ * @bucket_count: Number of buckets in hash table
+ *
+ * Returns: Bucket index (0 to bucket_count-1)
+ * Thread-safe: Yes (no shared state)
+ *
+ * Uses DJB2 hash algorithm via socket_util_hash_djb2.
+ */
+static unsigned
+compute_bucket_index (const char *ip, size_t bucket_count)
+{
+  assert (ip != NULL);
+  assert (bucket_count > 0);
+  return socket_util_hash_djb2 (ip, (unsigned)bucket_count);
+}
+
+/* ============================================================================
  * Internal Helper Functions - Entry Lookup
  * ============================================================================ */
 
@@ -104,7 +126,7 @@ find_entry_with_prev (const T tracker, const char *ip, unsigned *bucket_out,
   assert (bucket_out != NULL);
   assert (prev_out != NULL);
 
-  idx = socket_util_hash_djb2 (ip, (unsigned)tracker->bucket_count);
+  idx = compute_bucket_index (ip, tracker->bucket_count);
   *bucket_out = idx;
 
   for (entry = tracker->buckets[idx]; entry != NULL; entry = entry->next)
@@ -141,7 +163,7 @@ find_entry_simple (const T tracker, const char *ip, unsigned *bucket_out)
   assert (tracker != NULL);
   assert (ip != NULL);
 
-  idx = socket_util_hash_djb2 (ip, (unsigned)tracker->bucket_count);
+  idx = compute_bucket_index (ip, tracker->bucket_count);
 
   if (bucket_out != NULL)
     *bucket_out = idx;
@@ -180,6 +202,7 @@ allocate_entry (const T tracker)
  * @tracker: IP tracker instance (caller must hold mutex)
  * @ip: IP address string to copy
  * @bucket: Bucket index
+ * @initial_count: Initial connection count for entry
  *
  * Returns: New entry or NULL on allocation failure
  * Thread-safe: No (caller must hold mutex)
@@ -187,7 +210,8 @@ allocate_entry (const T tracker)
  * Combines allocation, initialization, and insertion in one function.
  */
 static IPEntry *
-create_and_insert_entry (T tracker, const char *ip, unsigned bucket)
+create_and_insert_entry (T tracker, const char *ip, unsigned bucket,
+                         int initial_count)
 {
   IPEntry *entry;
 
@@ -202,7 +226,7 @@ create_and_insert_entry (T tracker, const char *ip, unsigned bucket)
   /* Initialize entry */
   strncpy (entry->ip, ip, SOCKET_IP_MAX_LEN - 1);
   entry->ip[SOCKET_IP_MAX_LEN - 1] = '\0';
-  entry->count = 0;
+  entry->count = initial_count;
   entry->next = tracker->buckets[bucket];
 
   /* Insert at head */
@@ -437,7 +461,14 @@ cleanup_failed_tracker (T tracker)
  * Returns: Always 1 (allowed in unlimited mode)
  * Thread-safe: No (caller must hold mutex)
  *
- * In unlimited mode (max_per_ip == 0), connections are always allowed.
+ * BEHAVIOR: In unlimited mode (max_per_ip == 0), connections are ALWAYS
+ * allowed, even if internal allocation fails. This is intentional:
+ * - Unlimited mode is a "no enforcement" policy
+ * - Allocation failure should not block legitimate traffic
+ * - Counter tracking is best-effort only in this mode
+ *
+ * If allocation succeeds, connection count is tracked for statistics.
+ * If allocation fails, the connection is still allowed but not tracked.
  */
 static int
 track_unlimited_mode (T tracker, const char *ip)
@@ -446,13 +477,14 @@ track_unlimited_mode (T tracker, const char *ip)
   IPEntry *entry = find_entry_simple (tracker, ip, &bucket);
 
   if (entry == NULL)
-    entry = create_and_insert_entry (tracker, ip, bucket);
+    entry = create_and_insert_entry (tracker, ip, bucket, 0);
 
   if (entry != NULL)
     {
       entry->count++;
       tracker->total_conns++;
     }
+  /* Allocation failure: allow connection but skip tracking (intentional) */
 
   return 1;
 }
@@ -464,6 +496,10 @@ track_unlimited_mode (T tracker, const char *ip)
  *
  * Returns: 1 if allowed, 0 if limit reached or allocation failed
  * Thread-safe: No (caller must hold mutex)
+ *
+ * BEHAVIOR: In limited mode, connections are rejected when:
+ * - The IP has reached max_per_ip connections, OR
+ * - Memory allocation fails for a new IP entry
  */
 static int
 track_limited_mode (T tracker, const char *ip)
@@ -474,11 +510,10 @@ track_limited_mode (T tracker, const char *ip)
   if (entry == NULL)
     {
       /* New IP - create entry with count 1 */
-      entry = create_and_insert_entry (tracker, ip, bucket);
+      entry = create_and_insert_entry (tracker, ip, bucket, 1);
       if (entry == NULL)
         return 0;
 
-      entry->count = 1;
       tracker->total_conns++;
       return 1;
     }
@@ -581,9 +616,7 @@ SocketIPTracker_track (T tracker, const char *ip)
 /**
  * SocketIPTracker_release - Release a connection from IP
  *
- * REFACTORED: Uses find_entry_with_prev for O(1) unlinking.
- * Previously used find_and_unlink_zero_entry which did a redundant
- * O(n) search through the bucket chain.
+ * Uses find_entry_with_prev for O(1) unlinking.
  */
 void
 SocketIPTracker_release (T tracker, const char *ip)

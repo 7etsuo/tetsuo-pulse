@@ -342,7 +342,7 @@ validate_saved_session (Connection_T conn)
   if (!conn->tls_session)
     return;
 
-  time_t now = time (NULL);
+  time_t now = safe_time ();
   if (session_is_expired (conn->tls_session, now))
     free_expired_session (conn);
 #else
@@ -1128,7 +1128,7 @@ SocketPool_check_connection (T pool, Connection_T conn)
   pool->stats_health_checks++;
   pthread_mutex_unlock (&pool->mutex);
 
-  now = time (NULL);
+  now = safe_time ();
   if (check_connection_stale (conn, idle_timeout, now))
     {
       pthread_mutex_lock (&pool->mutex);

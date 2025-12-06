@@ -1,11 +1,20 @@
 /**
  * SocketPoll_kqueue.c - kqueue backend for BSD/macOS
+ *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
+ *
  * PLATFORM: BSD/macOS (requires kqueue)
  * - FreeBSD: Full support (kqueue/kevent)
  * - OpenBSD: Full support
  * - NetBSD: Full support
  * - macOS: Full support
  * - Linux: Not supported (use epoll backend instead)
+ *
+ * This backend implements the SocketPoll_backend interface using BSD kqueue.
+ * It uses EV_CLEAR for edge-triggered mode, matching epoll's EPOLLET behavior.
+ *
+ * Thread-safe: No (backend instances should not be shared across threads)
  */
 
 /* Platform guard: kqueue is only available on BSD/macOS.
@@ -26,14 +35,27 @@
 #include "core/SocketConfig.h"
 #include "poll/SocketPoll_backend.h"
 
-/* Backend instance structure */
+/**
+ * Backend instance structure
+ *
+ * Encapsulates kqueue state for event polling operations.
+ */
 struct PollBackend_T
 {
   int kq;                /* kqueue file descriptor */
-  struct kevent *events; /* Event array for results */
-  int maxevents;         /* Maximum events per wait */
+  struct kevent *events; /* Event array for kevent() results */
+  int maxevents;         /* Maximum events per wait call */
 };
 
+/**
+ * backend_new - Create a new kqueue backend instance
+ * @maxevents: Maximum number of events to return per wait call
+ *
+ * Returns: New backend instance, or NULL on failure (errno set)
+ *
+ * Allocates the backend structure, creates the kqueue fd, and allocates
+ * the event array. Cleanup is handled automatically on partial failure.
+ */
 PollBackend_T
 backend_new (int maxevents)
 {
@@ -72,6 +94,13 @@ backend_new (int maxevents)
   return backend;
 }
 
+/**
+ * backend_free - Free a kqueue backend instance
+ * @backend: Backend instance to free (must not be NULL)
+ *
+ * Closes the kqueue fd, frees the event array, and frees the backend
+ * structure. Resources are released in reverse order of creation.
+ */
 void
 backend_free (PollBackend_T backend)
 {
@@ -87,14 +116,20 @@ backend_free (PollBackend_T backend)
 
 /**
  * setup_event_filters - Setup kqueue event filters for read/write
- * @backend: Backend instance
- * @fd: File descriptor
- * @events: Events to monitor (POLL_READ | POLL_WRITE)
- * @action: EV_ADD or EV_DELETE
- * Returns: 0 on success, -1 on failure
+ * @backend: Backend instance (must not be NULL)
+ * @fd: File descriptor to configure
+ * @events: Events to monitor (POLL_READ | POLL_WRITE bitmask)
+ * @action: EV_ADD to add filters, EV_DELETE to remove filters
  *
- * Common helper for add/mod operations to eliminate duplicate code.
- * EV_CLEAR enables edge-triggered mode matching epoll's EPOLLET.
+ * Returns: 0 on success, -1 on failure (errno set by kevent)
+ *
+ * Common helper for add/mod/del operations to eliminate duplicate code.
+ * When action is EV_ADD, EV_CLEAR is also set to enable edge-triggered
+ * mode, which matches epoll's EPOLLET behavior. This means the caller
+ * must drain the socket until EAGAIN before waiting for more events.
+ *
+ * Up to 2 kevent changes are batched in a single kevent() call for
+ * efficiency when both read and write events are requested.
  */
 static int
 setup_event_filters (PollBackend_T backend, int fd, unsigned events,
@@ -117,7 +152,7 @@ setup_event_filters (PollBackend_T backend, int fd, unsigned events,
     }
 
   if (nev == 0)
-    return 0; /* No events - success */
+    return 0; /* No events requested - success */
 
   if (kevent (backend->kq, ev, nev, NULL, 0, NULL) < 0)
     return -1;
@@ -125,6 +160,17 @@ setup_event_filters (PollBackend_T backend, int fd, unsigned events,
   return 0;
 }
 
+/**
+ * backend_add - Add a file descriptor to kqueue monitoring
+ * @backend: Backend instance (must not be NULL)
+ * @fd: File descriptor to add (must be valid)
+ * @events: Events to monitor (POLL_READ | POLL_WRITE bitmask)
+ *
+ * Returns: 0 on success, -1 on failure (errno set)
+ *
+ * Registers the fd with kqueue for the specified events. Uses EV_CLEAR
+ * for edge-triggered mode.
+ */
 int
 backend_add (PollBackend_T backend, int fd, unsigned events)
 {
@@ -134,6 +180,19 @@ backend_add (PollBackend_T backend, int fd, unsigned events)
   return setup_event_filters (backend, fd, events, EV_ADD);
 }
 
+/**
+ * backend_mod - Modify events monitored for a file descriptor
+ * @backend: Backend instance (must not be NULL)
+ * @fd: File descriptor to modify (must be valid)
+ * @events: New events to monitor (POLL_READ | POLL_WRITE bitmask)
+ *
+ * Returns: 0 on success, -1 on failure (errno set)
+ *
+ * Unlike epoll which has EPOLL_CTL_MOD, kqueue requires deleting existing
+ * filters and adding new ones. This function deletes both read and write
+ * filters first (silently succeeding if not present), then adds the
+ * requested filters.
+ */
 int
 backend_mod (PollBackend_T backend, int fd, unsigned events)
 {
@@ -147,6 +206,17 @@ backend_mod (PollBackend_T backend, int fd, unsigned events)
   return setup_event_filters (backend, fd, events, EV_ADD);
 }
 
+/**
+ * backend_del - Remove a file descriptor from kqueue monitoring
+ * @backend: Backend instance (must not be NULL)
+ * @fd: File descriptor to remove (must be valid)
+ *
+ * Returns: 0 (always succeeds)
+ *
+ * Removes both read and write filters for the fd. Errors from kevent()
+ * are ignored since the filters may not have been registered (e.g., if
+ * only POLL_READ was registered, deleting POLL_WRITE is harmless).
+ */
 int
 backend_del (PollBackend_T backend, int fd)
 {
@@ -159,6 +229,18 @@ backend_del (PollBackend_T backend, int fd)
   return 0;
 }
 
+/**
+ * backend_wait - Wait for events on monitored file descriptors
+ * @backend: Backend instance (must not be NULL)
+ * @timeout_ms: Timeout in milliseconds (-1 for infinite wait)
+ *
+ * Returns: Number of events ready (0 on timeout or EINTR), -1 on error
+ *
+ * Blocks until events are available or timeout expires. Results are
+ * stored in the backend's internal event array and can be retrieved
+ * via backend_get_event(). EINTR is handled by returning 0, allowing
+ * the caller to retry or handle signals.
+ */
 int
 backend_wait (PollBackend_T backend, int timeout_ms)
 {
@@ -182,7 +264,7 @@ backend_wait (PollBackend_T backend, int timeout_ms)
 
   if (nev < 0)
     {
-      /* kevent was interrupted by signal */
+      /* kevent was interrupted by signal - return 0 to allow retry */
       if (errno == EINTR)
         return 0;
       return -1;
@@ -191,6 +273,20 @@ backend_wait (PollBackend_T backend, int timeout_ms)
   return nev;
 }
 
+/**
+ * backend_get_event - Retrieve event details from wait results
+ * @backend: Backend instance (must not be NULL)
+ * @index: Event index (0 to nev-1 from backend_wait return value)
+ * @fd_out: Output: file descriptor that triggered the event
+ * @events_out: Output: event flags (POLL_READ | POLL_WRITE | POLL_ERROR | POLL_HANGUP)
+ *
+ * Returns: 0 on success, -1 if index is out of bounds
+ *
+ * Translates kqueue's kevent structure to the portable POLL_* event flags.
+ * kqueue reports each filter (read/write) as a separate event, unlike
+ * epoll which can combine them. EV_EOF is mapped to POLL_HANGUP,
+ * indicating the peer has closed the connection.
+ */
 int
 backend_get_event (PollBackend_T backend, int index, int *fd_out,
                    unsigned *events_out)
@@ -207,10 +303,10 @@ backend_get_event (PollBackend_T backend, int index, int *fd_out,
 
   kev = &backend->events[index];
 
-  /* Extract file descriptor */
+  /* Extract file descriptor from kevent ident field */
   *fd_out = (int)kev->ident;
 
-  /* Translate kqueue events to our event flags */
+  /* Translate kqueue filter to portable event flags */
   if (kev->filter == EVFILT_READ)
     events |= POLL_READ;
 
@@ -223,7 +319,7 @@ backend_get_event (PollBackend_T backend, int index, int *fd_out,
 
   if (kev->flags & EV_EOF)
     {
-      /* EOF on read or write means hangup */
+      /* EOF indicates peer closed connection or write-side shutdown */
       events |= POLL_HANGUP;
     }
 
@@ -231,6 +327,13 @@ backend_get_event (PollBackend_T backend, int index, int *fd_out,
   return 0;
 }
 
+/**
+ * backend_name - Get the backend implementation name
+ *
+ * Returns: Static string "kqueue"
+ *
+ * Used for logging and debugging to identify which event backend is in use.
+ */
 const char *
 backend_name (void)
 {

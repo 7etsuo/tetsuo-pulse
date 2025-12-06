@@ -10,9 +10,14 @@
  * Features:
  * - Binary and hex-encoded hash input
  * - Certificate file SPKI extraction
- * - Sorted array with O(log n) lookup
+ * - Constant-time lookup (prevents timing attacks on pin verification)
  * - Chain verification (matches any cert in chain)
  * - Enforcement mode control (strict/warn)
+ *
+ * Security: Pin lookup uses constant-time comparison via SocketCrypto_secure_compare()
+ * to prevent timing side-channel attacks that could leak information about configured
+ * pins. With typical pin counts (1-5), O(n) scan is effectively O(1) and preferred
+ * over binary search for security reasons.
  *
  * Thread safety: Configuration is NOT thread-safe - perform before sharing.
  * Verification is read-only post-setup (thread-safe).
@@ -53,7 +58,7 @@ const Except_T SocketTLS_PinVerifyFailed
 /**
  * parse_hex_hash - Parse hex string to binary hash
  * @hex: Hex string (64 chars for SHA256)
- * @out: Output buffer (32 bytes)
+ * @out: Output buffer (SOCKET_TLS_PIN_HASH_LEN bytes)
  *
  * Returns: 0 on success, -1 on invalid input
  *
@@ -66,7 +71,7 @@ parse_hex_hash (const char *hex, unsigned char *out)
   if (!hex || !out)
     return -1;
 
-  /* Skip optional "sha256//" prefix */
+  /* Skip optional "sha256//" prefix (HPKP compatibility) */
   if (strncmp (hex, "sha256//", 8) == 0)
     hex += 8;
 
@@ -75,7 +80,8 @@ parse_hex_hash (const char *hex, unsigned char *out)
     return -1;
 
   /* Use SocketCrypto for hex decoding */
-  return SocketCrypto_hex_decode (hex, len, out) == (ssize_t)SOCKET_TLS_PIN_HASH_LEN ? 0 : -1;
+  ssize_t decoded = SocketCrypto_hex_decode (hex, len, out);
+  return (decoded == (ssize_t)SOCKET_TLS_PIN_HASH_LEN) ? 0 : -1;
 }
 
 /**
@@ -124,12 +130,12 @@ ensure_pin_capacity (T ctx)
 }
 
 /**
- * insert_pin - Insert pin at end of array
+ * insert_pin - Insert pin into array (with duplicate detection)
  * @ctx: TLS context
- * @hash: Hash to insert
+ * @hash: SHA256 hash to insert (SOCKET_TLS_PIN_HASH_LEN bytes)
  *
- * Inserts pin at the end of the array. Order doesn't matter since
- * tls_pinning_find() uses constant-time linear scan.
+ * Appends pin to the array. Order is irrelevant since tls_pinning_find()
+ * uses constant-time linear scan for security (prevents timing attacks).
  * Duplicates are detected using constant-time comparison and silently ignored.
  */
 static void
@@ -141,7 +147,7 @@ insert_pin (T ctx, const unsigned char *hash)
 
   ensure_pin_capacity (ctx);
 
-  /* Append at end - order doesn't matter for constant-time scan */
+  /* Append - order irrelevant for constant-time scan */
   memcpy (ctx->pinning.pins[ctx->pinning.count].hash, hash,
           SOCKET_TLS_PIN_HASH_LEN);
   ctx->pinning.count++;

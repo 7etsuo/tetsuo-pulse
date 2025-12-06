@@ -2,6 +2,7 @@
  * SocketHPACK-table.c - HPACK Static and Dynamic Table Implementation
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements RFC 7541 Section 2.3 (Static Table) and Section 2.3.2 (Dynamic Table):
  * - Static table with 61 pre-defined header entries
@@ -19,6 +20,27 @@
 
 #include <assert.h>
 #include <string.h>
+
+/* ============================================================================
+ * Internal Constants
+ * ============================================================================ */
+
+/**
+ * HPACK_AVERAGE_ENTRY_SIZE_ESTIMATE - Estimated average entry size in bytes
+ *
+ * Used to calculate initial capacity for the dynamic table circular buffer.
+ * Includes name, value, and 32-byte overhead per RFC 7541 Section 4.1.
+ * Typical headers average 40-60 bytes; we use 50 as a conservative estimate.
+ */
+#define HPACK_AVERAGE_ENTRY_SIZE_ESTIMATE 50
+
+/**
+ * HPACK_MIN_TABLE_CAPACITY - Minimum entries in dynamic table
+ *
+ * Ensures circular buffer has reasonable capacity even for small max_size.
+ * Power-of-2 for efficient modulo via bitmask.
+ */
+#define HPACK_MIN_TABLE_CAPACITY 16
 
 /* ============================================================================
  * Static Table (RFC 7541 Appendix A)
@@ -156,6 +178,92 @@ const HPACK_StaticEntry hpack_static_table[SOCKETHPACK_STATIC_TABLE_SIZE] = {
 /* clang-format on */
 
 /* ============================================================================
+ * Internal Helper Functions
+ * ============================================================================ */
+
+/**
+ * hpack_strcasecmp - Case-insensitive string comparison with explicit lengths
+ * @a: First string
+ * @a_len: Length of first string
+ * @b: Second string
+ * @b_len: Length of second string
+ *
+ * Compares two strings case-insensitively (ASCII only, suitable for HTTP
+ * headers which are restricted to ASCII). Does not require null-termination.
+ *
+ * Returns: <0 if a<b, 0 if a==b, >0 if a>b
+ * Thread-safe: Yes (no global state)
+ */
+static int
+hpack_strcasecmp (const char *a, size_t a_len, const char *b, size_t b_len)
+{
+  size_t min_len = a_len < b_len ? a_len : b_len;
+
+  for (size_t i = 0; i < min_len; i++)
+    {
+      unsigned char ca = (unsigned char)a[i];
+      unsigned char cb = (unsigned char)b[i];
+
+      /* Convert to lowercase (ASCII only) */
+      if (ca >= 'A' && ca <= 'Z')
+        ca += 32;
+      if (cb >= 'A' && cb <= 'Z')
+        cb += 32;
+
+      if (ca != cb)
+        return (int)ca - (int)cb;
+    }
+
+  /* Equal up to min_len, shorter string is "less" */
+  if (a_len < b_len)
+    return -1;
+  if (a_len > b_len)
+    return 1;
+  return 0;
+}
+
+/**
+ * hpack_match_entry - Check if entry matches name and optionally value
+ * @entry_name: Entry header name
+ * @entry_name_len: Entry name length
+ * @entry_value: Entry header value
+ * @entry_value_len: Entry value length
+ * @name: Search name
+ * @name_len: Search name length
+ * @value: Search value (NULL to match name only)
+ * @value_len: Search value length
+ * @first_name_match: Output - set to 1 if name matches (for tracking first match)
+ *
+ * Checks if an entry matches the given name (case-insensitive) and optionally
+ * the value (case-sensitive). Used by both static and dynamic table find.
+ *
+ * Returns: 1 for exact match (name+value), 0 for name-only match, -1 for no match
+ * Thread-safe: Yes
+ */
+static int
+hpack_match_entry (const char *entry_name, size_t entry_name_len,
+                   const char *entry_value, size_t entry_value_len,
+                   const char *name, size_t name_len, const char *value,
+                   size_t value_len)
+{
+  /* Check name match (case-insensitive for HTTP headers) */
+  if (entry_name_len != name_len)
+    return -1;
+
+  if (hpack_strcasecmp (entry_name, entry_name_len, name, name_len) != 0)
+    return -1;
+
+  /* Name matches - check value if provided */
+  if (value != NULL && entry_value_len == value_len
+      && (value_len == 0 || memcmp (entry_value, value, value_len) == 0))
+    {
+      return 1; /* Exact match */
+    }
+
+  return 0; /* Name-only match */
+}
+
+/* ============================================================================
  * Static Table Lookup Functions
  * ============================================================================ */
 
@@ -178,76 +286,31 @@ SocketHPACK_static_get (size_t index, SocketHPACK_Header *header)
   return HPACK_OK;
 }
 
-/**
- * Compare two strings case-insensitively
- * Returns: <0 if a<b, 0 if a==b, >0 if a>b
- */
-static int
-hpack_strcasecmp (const char *a, size_t a_len, const char *b, size_t b_len)
-{
-  size_t min_len = a_len < b_len ? a_len : b_len;
-  size_t i;
-
-  for (i = 0; i < min_len; i++)
-    {
-      unsigned char ca = (unsigned char)a[i];
-      unsigned char cb = (unsigned char)b[i];
-
-      /* Convert to lowercase */
-      if (ca >= 'A' && ca <= 'Z')
-        ca += 32;
-      if (cb >= 'A' && cb <= 'Z')
-        cb += 32;
-
-      if (ca != cb)
-        return (int)ca - (int)cb;
-    }
-
-  /* Equal up to min_len, shorter string is "less" */
-  if (a_len < b_len)
-    return -1;
-  if (a_len > b_len)
-    return 1;
-  return 0;
-}
-
 int
 SocketHPACK_static_find (const char *name, size_t name_len, const char *value,
                          size_t value_len)
 {
   int name_match = 0;
-  size_t i;
 
   if (name == NULL || name_len == 0)
     return 0;
 
-  /* Linear search through static table */
-  /* Could be optimized with hash table or binary search on sorted names */
-  for (i = 0; i < SOCKETHPACK_STATIC_TABLE_SIZE; i++)
+  /* Linear search through static table (sufficient for 61 entries) */
+  for (size_t i = 0; i < SOCKETHPACK_STATIC_TABLE_SIZE; i++)
     {
       const HPACK_StaticEntry *entry = &hpack_static_table[i];
 
-      /* Check name match (case-insensitive for HTTP headers) */
-      if (entry->name_len == name_len
-          && hpack_strcasecmp (entry->name, entry->name_len, name, name_len)
-                 == 0)
-        {
-          /* Name matches */
-          if (name_match == 0)
-            name_match = -(int)(i + 1); /* First name match (negative) */
+      int match = hpack_match_entry (entry->name, entry->name_len, entry->value,
+                                     entry->value_len, name, name_len, value,
+                                     value_len);
 
-          /* Check value match (case-sensitive) */
-          if (value != NULL && entry->value_len == value_len
-              && (value_len == 0
-                  || memcmp (entry->value, value, value_len) == 0))
-            {
-              /* Exact match */
-              return (int)(i + 1);
-            }
-        }
+      if (match == 1)
+        return (int)(i + 1); /* Exact match - return positive index */
+
+      if (match == 0 && name_match == 0)
+        name_match = -(int)(i + 1); /* First name match - negative index */
     }
 
-  /* Return negative of first name match, or 0 if not found */
   return name_match;
 }
 
@@ -255,10 +318,9 @@ SocketHPACK_static_find (const char *name, size_t name_len, const char *value,
  * Dynamic Table Implementation
  *
  * Uses circular buffer for O(1) FIFO operations.
- * Index 1 = most recently added entry
+ * Index 1 = most recently added entry (tail-1)
+ * Higher indices = older entries toward head
  * ============================================================================ */
-
-/* Power-of-2 rounding uses socket_util_round_up_pow2() from SocketUtil.h */
 
 SocketHPACK_Table_T
 SocketHPACK_Table_new (size_t max_size, Arena_T arena)
@@ -272,14 +334,14 @@ SocketHPACK_Table_new (size_t max_size, Arena_T arena)
   if (table == NULL)
     return NULL;
 
-  /* Estimate initial capacity based on max_size */
-  /* Average entry size ~50 bytes (including overhead) */
-  initial_capacity = max_size / 50;
-  if (initial_capacity < 16)
-    initial_capacity = 16;
+  /* Estimate initial capacity based on max_size and average entry size */
+  initial_capacity = max_size / HPACK_AVERAGE_ENTRY_SIZE_ESTIMATE;
+  if (initial_capacity < HPACK_MIN_TABLE_CAPACITY)
+    initial_capacity = HPACK_MIN_TABLE_CAPACITY;
   initial_capacity = socket_util_round_up_pow2 (initial_capacity);
 
-  table->entries = CALLOC (arena, initial_capacity, sizeof (HPACK_DynamicEntry));
+  table->entries
+      = CALLOC (arena, initial_capacity, sizeof (HPACK_DynamicEntry));
   if (table->entries == NULL)
     return NULL;
 
@@ -326,7 +388,19 @@ SocketHPACK_Table_max_size (SocketHPACK_Table_T table)
 }
 
 /**
- * Evict oldest entries to make room
+ * hpack_table_evict - Evict oldest entries to make room for new entry
+ * @table: Dynamic table
+ * @required_space: Space needed for new entry (bytes, including overhead)
+ *
+ * Evicts entries from the head (oldest) of the circular buffer until there
+ * is sufficient space for a new entry. Per RFC 7541 Section 4.4, entries
+ * are evicted in FIFO order.
+ *
+ * Returns: Number of entries evicted
+ * Thread-safe: No (caller must synchronize if needed)
+ *
+ * Note: This function is declared extern in SocketHPACK-private.h for use
+ * by other HPACK implementation files.
  */
 size_t
 hpack_table_evict (SocketHPACK_Table_T table, size_t required_space)
@@ -335,7 +409,7 @@ hpack_table_evict (SocketHPACK_Table_T table, size_t required_space)
 
   while (table->count > 0 && table->size + required_space > table->max_size)
     {
-      /* Evict from head (oldest) */
+      /* Evict from head (oldest entry) */
       HPACK_DynamicEntry *entry = &table->entries[table->head];
       size_t entry_size = hpack_entry_size (entry->name_len, entry->value_len);
 
@@ -463,43 +537,43 @@ SocketHPACK_Table_add (SocketHPACK_Table_T table, const char *name,
 }
 
 /**
- * Find entry in dynamic table
+ * SocketHPACK_Table_find - Find entry in dynamic table
+ * @table: Dynamic table
+ * @name: Header name to search for
+ * @name_len: Name length
+ * @value: Header value (NULL to match name only)
+ * @value_len: Value length
  *
- * Returns: Index (1-based) for exact match, negative index for name match, 0 if
- * not found
+ * Searches for an entry in the dynamic table. The search starts from the
+ * most recently added entry (index 1) to older entries.
+ *
+ * Returns: Positive index (1-based) for exact match, negative index if only
+ *          name matches, 0 if not found
+ * Thread-safe: No
  */
 int
 SocketHPACK_Table_find (SocketHPACK_Table_T table, const char *name,
                         size_t name_len, const char *value, size_t value_len)
 {
   int name_match = 0;
-  size_t i;
 
   if (table == NULL || name == NULL || name_len == 0)
     return 0;
 
-  for (i = 0; i < table->count; i++)
+  for (size_t i = 0; i < table->count; i++)
     {
       size_t actual_index = (table->tail - 1 - i) & (table->capacity - 1);
       HPACK_DynamicEntry *entry = &table->entries[actual_index];
 
-      /* Check name match (case-insensitive) */
-      if (entry->name_len == name_len
-          && hpack_strcasecmp (entry->name, entry->name_len, name, name_len)
-                 == 0)
-        {
-          /* Name matches */
-          if (name_match == 0)
-            name_match = -(int)(i + 1);
+      int match
+          = hpack_match_entry (entry->name, entry->name_len, entry->value,
+                               entry->value_len, name, name_len, value, value_len);
 
-          /* Check value match (case-sensitive) */
-          if (value != NULL && entry->value_len == value_len
-              && (value_len == 0
-                  || memcmp (entry->value, value, value_len) == 0))
-            {
-              return (int)(i + 1);
-            }
-        }
+      if (match == 1)
+        return (int)(i + 1); /* Exact match - return positive index */
+
+      if (match == 0 && name_match == 0)
+        name_match = -(int)(i + 1); /* First name match - negative index */
     }
 
   return name_match;

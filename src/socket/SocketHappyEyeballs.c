@@ -727,25 +727,11 @@ he_get_next_address (T he)
  * ============================================================================ */
 
 /**
- * he_set_nonblocking - Set socket to non-blocking mode
- * @fd: File descriptor
- *
- * Returns: 0 on success, -1 on failure
- */
-static int
-he_set_nonblocking (int fd)
-{
-  int flags = fcntl (fd, F_GETFL);
-
-  if (flags < 0)
-    return -1;
-
-  return fcntl (fd, F_SETFL, flags | O_NONBLOCK);
-}
-
-/**
  * he_clear_nonblocking - Clear non-blocking mode from socket
  * @fd: File descriptor
+ *
+ * Note: No public API exists for clearing non-blocking mode on Socket_T,
+ * so we use direct fcntl here. Socket_setnonblocking() only enables it.
  */
 static void
 he_clear_nonblocking (int fd)
@@ -757,44 +743,30 @@ he_clear_nonblocking (int fd)
 }
 
 /**
- * he_create_raw_socket - Create raw socket for address
+ * he_create_socket_for_address - Create non-blocking socket for address
  * @addr: Address to create socket for
  *
- * Returns: New socket or NULL on failure
- */
-static Socket_T
-he_create_raw_socket (const struct addrinfo *addr)
-{
-  volatile Socket_T sock = NULL;
-
-  TRY
-  {
-    sock = Socket_new (addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-  }
-  EXCEPT (Socket_Failed) { return NULL; }
-  END_TRY;
-
-  return sock;
-}
-
-/**
- * he_create_socket_for_address - Create socket for address family
- * @addr: Address to create socket for
+ * Creates a socket matching the address family and sets it to non-blocking
+ * mode for async connection attempts.
  *
- * Returns: New socket or NULL on failure
+ * Returns: New non-blocking socket or NULL on failure
  */
 static Socket_T
 he_create_socket_for_address (const struct addrinfo *addr)
 {
-  Socket_T sock = he_create_raw_socket (addr);
-  if (!sock)
-    return NULL;
+  Socket_T sock = NULL;
 
-  if (he_set_nonblocking (Socket_fd (sock)) < 0)
-    {
-      Socket_free (&sock);
-      return NULL;
-    }
+  TRY { sock = Socket_new (addr->ai_family, addr->ai_socktype, addr->ai_protocol); }
+  EXCEPT (Socket_Failed) { return NULL; }
+  END_TRY;
+
+  TRY { Socket_setnonblocking (sock); }
+  EXCEPT (Socket_Failed)
+  {
+    Socket_free (&sock);
+    return NULL;
+  }
+  END_TRY;
 
   return sock;
 }

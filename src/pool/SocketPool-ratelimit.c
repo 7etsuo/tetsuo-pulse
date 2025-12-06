@@ -356,10 +356,7 @@ SocketPool_setconnrate (T pool, int conns_per_sec, int burst)
   pthread_mutex_unlock (&pool->mutex);
 
   if (!config_ok)
-    {
-      SOCKET_ERROR_MSG ("Failed to create connection rate limiter");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed, "Failed to create connection rate limiter");
 }
 
 /**
@@ -417,10 +414,7 @@ SocketPool_setmaxperip (T pool, int max_conns)
   pthread_mutex_unlock (&pool->mutex);
 
   if (!config_ok)
-    {
-      SOCKET_ERROR_MSG ("Failed to create IP tracker");
-      RAISE_POOL_ERROR (SocketPool_Failed);
-    }
+    RAISE_POOL_MSG (SocketPool_Failed, "Failed to create IP tracker");
 }
 
 /**

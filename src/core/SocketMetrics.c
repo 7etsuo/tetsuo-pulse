@@ -2,6 +2,7 @@
  * SocketMetrics.c - Production-Grade Metrics Implementation
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * This file implements the comprehensive metrics collection and export system
  * for production monitoring and observability.
@@ -52,6 +53,34 @@
 #else
 #define METRICS_LOG_DEBUG(msg) ((void)0)
 #endif
+
+/* ============================================================================
+ * Validation Macros
+ * ============================================================================ */
+
+/**
+ * COUNTER_VALID - Check if counter metric index is valid
+ * @m: Counter metric index
+ *
+ * Returns: 1 if valid, 0 otherwise
+ */
+#define COUNTER_VALID(m) ((m) >= 0 && (m) < SOCKET_COUNTER_METRIC_COUNT)
+
+/**
+ * GAUGE_VALID - Check if gauge metric index is valid
+ * @m: Gauge metric index
+ *
+ * Returns: 1 if valid, 0 otherwise
+ */
+#define GAUGE_VALID(m) ((m) >= 0 && (m) < SOCKET_GAUGE_METRIC_COUNT)
+
+/**
+ * HISTOGRAM_VALID - Check if histogram metric index is valid
+ * @m: Histogram metric index
+ *
+ * Returns: 1 if valid, 0 otherwise
+ */
+#define HISTOGRAM_VALID(m) ((m) >= 0 && (m) < SOCKET_HISTOGRAM_METRIC_COUNT)
 
 /* ============================================================================
  * Internal Structures
@@ -319,16 +348,16 @@ static const char *const category_names[SOCKET_METRIC_CAT_COUNT] = {
  * ============================================================================ */
 
 /**
- * histogram_valid - Check if histogram metric is valid and initialized
+ * histogram_is_valid - Check if histogram metric is valid and initialized
  * @metric: Histogram metric to check
  *
- * Returns: 1 if valid, 0 otherwise
+ * Returns: 1 if valid and initialized, 0 otherwise
  * Thread-safe: Yes (reads atomic/static data only)
  */
 static inline int
-histogram_valid (SocketHistogramMetric metric)
+histogram_is_valid (SocketHistogramMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_HISTOGRAM_METRIC_COUNT)
+  if (!HISTOGRAM_VALID (metric))
     return 0;
   return histogram_values[metric].initialized;
 }
@@ -343,12 +372,13 @@ histogram_valid (SocketHistogramMetric metric)
  * @b: Second double pointer
  *
  * Returns: -1, 0, or 1 for ordering
+ * Thread-safe: Yes (pure function)
  */
 static int
 compare_double (const void *a, const void *b)
 {
-  double da = *(const double *)a;
-  double db = *(const double *)b;
+  const double da = *(const double *)a;
+  const double db = *(const double *)b;
 
   if (da < db)
     return -1;
@@ -481,6 +511,44 @@ histogram_copy_values (Histogram *h, double *dest, uint64_t count)
 }
 
 /**
+ * histogram_get_sorted_copy - Get sorted copy of histogram values
+ * @h: Histogram to query
+ * @out_count: Output - number of values in sorted array
+ *
+ * Returns: Malloc'd sorted array, or NULL if empty/error. Caller must free.
+ * Thread-safe: Yes (uses internal locking)
+ *
+ * Consolidates malloc + copy + qsort pattern used by multiple functions.
+ */
+static double *
+histogram_get_sorted_copy (Histogram *h, size_t *out_count)
+{
+  uint64_t count;
+  size_t n;
+  double *sorted;
+
+  count = atomic_load (&h->count);
+  if (count == 0)
+    {
+      *out_count = 0;
+      return NULL;
+    }
+
+  sorted = malloc (SOCKET_METRICS_HISTOGRAM_BUCKETS * sizeof (double));
+  if (!sorted)
+    {
+      *out_count = 0;
+      return NULL;
+    }
+
+  n = histogram_copy_values (h, sorted, count);
+  qsort (sorted, n, sizeof (double), compare_double);
+
+  *out_count = n;
+  return sorted;
+}
+
+/**
  * histogram_percentile - Calculate percentile from histogram
  * @h: Histogram to query
  * @percentile: Percentile (0.0 to 100.0)
@@ -491,24 +559,17 @@ histogram_copy_values (Histogram *h, double *dest, uint64_t count)
 static double
 histogram_percentile (Histogram *h, double percentile)
 {
-  uint64_t count;
   size_t n;
   double *sorted;
   double result;
 
-  count = atomic_load (&h->count);
-  if (count == 0)
-    return 0.0;
-
-  sorted = malloc (SOCKET_METRICS_HISTOGRAM_BUCKETS * sizeof (double));
+  sorted = histogram_get_sorted_copy (h, &n);
   if (!sorted)
     return 0.0;
 
-  n = histogram_copy_values (h, sorted, count);
-  qsort (sorted, n, sizeof (double), compare_double);
   result = percentile_from_sorted (sorted, n, percentile);
-
   free (sorted);
+
   return result;
 }
 
@@ -543,13 +604,10 @@ histogram_fill_snapshot (Histogram *h, SocketMetrics_HistogramSnapshot *snap)
 
   snap->mean = snap->sum / (double)count;
 
-  /* Allocate and sort values for percentile calculation */
-  sorted = malloc (SOCKET_METRICS_HISTOGRAM_BUCKETS * sizeof (double));
+  /* Get sorted values for percentile calculation */
+  sorted = histogram_get_sorted_copy (h, &n);
   if (!sorted)
     return;
-
-  n = histogram_copy_values (h, sorted, count);
-  qsort (sorted, n, sizeof (double), compare_double);
 
   /* Calculate all standard percentiles */
   snap->p50 = percentile_from_sorted (sorted, n, PERCENTILE_P50);
@@ -636,7 +694,7 @@ SocketMetrics_shutdown (void)
 void
 SocketMetrics_counter_inc (SocketCounterMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_COUNTER_METRIC_COUNT)
+  if (!COUNTER_VALID (metric))
     return;
   atomic_fetch_add (&counter_values[metric], 1);
 }
@@ -644,7 +702,7 @@ SocketMetrics_counter_inc (SocketCounterMetric metric)
 void
 SocketMetrics_counter_add (SocketCounterMetric metric, uint64_t value)
 {
-  if (metric < 0 || metric >= SOCKET_COUNTER_METRIC_COUNT)
+  if (!COUNTER_VALID (metric))
     return;
   atomic_fetch_add (&counter_values[metric], value);
 }
@@ -652,7 +710,7 @@ SocketMetrics_counter_add (SocketCounterMetric metric, uint64_t value)
 uint64_t
 SocketMetrics_counter_get (SocketCounterMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_COUNTER_METRIC_COUNT)
+  if (!COUNTER_VALID (metric))
     return 0;
   return atomic_load (&counter_values[metric]);
 }
@@ -664,7 +722,7 @@ SocketMetrics_counter_get (SocketCounterMetric metric)
 void
 SocketMetrics_gauge_set (SocketGaugeMetric metric, int64_t value)
 {
-  if (metric < 0 || metric >= SOCKET_GAUGE_METRIC_COUNT)
+  if (!GAUGE_VALID (metric))
     return;
   atomic_store (&gauge_values[metric], value);
 }
@@ -672,7 +730,7 @@ SocketMetrics_gauge_set (SocketGaugeMetric metric, int64_t value)
 void
 SocketMetrics_gauge_inc (SocketGaugeMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_GAUGE_METRIC_COUNT)
+  if (!GAUGE_VALID (metric))
     return;
   atomic_fetch_add (&gauge_values[metric], 1);
 }
@@ -680,7 +738,7 @@ SocketMetrics_gauge_inc (SocketGaugeMetric metric)
 void
 SocketMetrics_gauge_dec (SocketGaugeMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_GAUGE_METRIC_COUNT)
+  if (!GAUGE_VALID (metric))
     return;
   atomic_fetch_sub (&gauge_values[metric], 1);
 }
@@ -688,7 +746,7 @@ SocketMetrics_gauge_dec (SocketGaugeMetric metric)
 void
 SocketMetrics_gauge_add (SocketGaugeMetric metric, int64_t value)
 {
-  if (metric < 0 || metric >= SOCKET_GAUGE_METRIC_COUNT)
+  if (!GAUGE_VALID (metric))
     return;
   atomic_fetch_add (&gauge_values[metric], value);
 }
@@ -696,7 +754,7 @@ SocketMetrics_gauge_add (SocketGaugeMetric metric, int64_t value)
 int64_t
 SocketMetrics_gauge_get (SocketGaugeMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_GAUGE_METRIC_COUNT)
+  if (!GAUGE_VALID (metric))
     return 0;
   return atomic_load (&gauge_values[metric]);
 }
@@ -708,7 +766,7 @@ SocketMetrics_gauge_get (SocketGaugeMetric metric)
 void
 SocketMetrics_histogram_observe (SocketHistogramMetric metric, double value)
 {
-  if (!histogram_valid (metric))
+  if (!histogram_is_valid (metric))
     return;
   histogram_observe (&histogram_values[metric], value);
 }
@@ -717,7 +775,7 @@ double
 SocketMetrics_histogram_percentile (SocketHistogramMetric metric,
                                     double percentile)
 {
-  if (!histogram_valid (metric))
+  if (!histogram_is_valid (metric))
     return 0.0;
 
   if (percentile < 0.0)
@@ -731,7 +789,7 @@ SocketMetrics_histogram_percentile (SocketHistogramMetric metric,
 uint64_t
 SocketMetrics_histogram_count (SocketHistogramMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_HISTOGRAM_METRIC_COUNT)
+  if (!HISTOGRAM_VALID (metric))
     return 0;
   return atomic_load (&histogram_values[metric].count);
 }
@@ -741,7 +799,7 @@ SocketMetrics_histogram_sum (SocketHistogramMetric metric)
 {
   double sum;
 
-  if (!histogram_valid (metric))
+  if (!histogram_is_valid (metric))
     return 0.0;
 
   pthread_mutex_lock (&histogram_values[metric].mutex);
@@ -758,7 +816,7 @@ SocketMetrics_histogram_snapshot (SocketHistogramMetric metric,
   if (!snapshot)
     return;
 
-  if (!histogram_valid (metric))
+  if (!histogram_is_valid (metric))
     {
       memset (snapshot, 0, sizeof (*snapshot));
       return;
@@ -848,6 +906,7 @@ SocketMetrics_reset_histograms (void)
  * @fmt: Printf format string
  *
  * Returns: Number of characters written, or 0 if buffer full
+ * Thread-safe: No (operates on caller's buffer)
  */
 static size_t
 export_append (char *buffer, size_t buffer_size, size_t *pos, const char *fmt,
@@ -880,6 +939,13 @@ export_append (char *buffer, size_t buffer_size, size_t *pos, const char *fmt,
 
 /**
  * export_counter_prometheus - Export single counter in Prometheus format
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Current position pointer
+ * @idx: Counter index
+ * @value: Counter value
+ *
+ * Thread-safe: No (operates on caller's buffer)
  */
 static void
 export_counter_prometheus (char *buffer, size_t buffer_size, size_t *pos,
@@ -895,6 +961,13 @@ export_counter_prometheus (char *buffer, size_t buffer_size, size_t *pos,
 
 /**
  * export_gauge_prometheus - Export single gauge in Prometheus format
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Current position pointer
+ * @idx: Gauge index
+ * @value: Gauge value
+ *
+ * Thread-safe: No (operates on caller's buffer)
  */
 static void
 export_gauge_prometheus (char *buffer, size_t buffer_size, size_t *pos,
@@ -910,6 +983,13 @@ export_gauge_prometheus (char *buffer, size_t buffer_size, size_t *pos,
 
 /**
  * export_histogram_prometheus - Export single histogram in Prometheus format
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Current position pointer
+ * @idx: Histogram index
+ * @h: Histogram snapshot
+ *
+ * Thread-safe: No (operates on caller's buffer)
  */
 static void
 export_histogram_prometheus (char *buffer, size_t buffer_size, size_t *pos,
@@ -1120,7 +1200,7 @@ SocketMetrics_export_json (char *buffer, size_t buffer_size)
 const char *
 SocketMetrics_counter_name (SocketCounterMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_COUNTER_METRIC_COUNT)
+  if (!COUNTER_VALID (metric))
     return "unknown";
   return counter_names[metric];
 }
@@ -1128,7 +1208,7 @@ SocketMetrics_counter_name (SocketCounterMetric metric)
 const char *
 SocketMetrics_gauge_name (SocketGaugeMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_GAUGE_METRIC_COUNT)
+  if (!GAUGE_VALID (metric))
     return "unknown";
   return gauge_names[metric];
 }
@@ -1136,7 +1216,7 @@ SocketMetrics_gauge_name (SocketGaugeMetric metric)
 const char *
 SocketMetrics_histogram_name (SocketHistogramMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_HISTOGRAM_METRIC_COUNT)
+  if (!HISTOGRAM_VALID (metric))
     return "unknown";
   return histogram_names[metric];
 }
@@ -1144,7 +1224,7 @@ SocketMetrics_histogram_name (SocketHistogramMetric metric)
 const char *
 SocketMetrics_counter_help (SocketCounterMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_COUNTER_METRIC_COUNT)
+  if (!COUNTER_VALID (metric))
     return "";
   return counter_help[metric];
 }
@@ -1152,7 +1232,7 @@ SocketMetrics_counter_help (SocketCounterMetric metric)
 const char *
 SocketMetrics_gauge_help (SocketGaugeMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_GAUGE_METRIC_COUNT)
+  if (!GAUGE_VALID (metric))
     return "";
   return gauge_help[metric];
 }
@@ -1160,7 +1240,7 @@ SocketMetrics_gauge_help (SocketGaugeMetric metric)
 const char *
 SocketMetrics_histogram_help (SocketHistogramMetric metric)
 {
-  if (metric < 0 || metric >= SOCKET_HISTOGRAM_METRIC_COUNT)
+  if (!HISTOGRAM_VALID (metric))
     return "";
   return histogram_help[metric];
 }

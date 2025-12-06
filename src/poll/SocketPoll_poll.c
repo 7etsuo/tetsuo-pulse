@@ -1,6 +1,9 @@
 /**
  * SocketPoll_poll.c - poll(2) fallback backend
  *
+ * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
+ *
  * PLATFORM: Any POSIX system (poll is standardized in POSIX.1-2001)
  * - Portable to all POSIX-compliant systems
  * - Performance: O(n) where n = number of file descriptors
@@ -8,9 +11,13 @@
  * - Best suited for < 100 connections or testing/portability
  *
  * IMPLEMENTATION NOTES:
- * - Uses fd_to_index mapping table for O(1) FD lookup
- * - Dynamically expands capacity as needed
- * - backend_get_event requires O(n) scan due to poll(2) design
+ * - Uses fd_to_index mapping table for O(1) FD lookup via find_fd_index()
+ * - Dynamically expands capacity as needed with overflow protection
+ * - backend_get_event requires O(n) scan due to poll(2) design limitation
+ * - All constants from SocketConfig.h: POLL_INITIAL_FDS, POLL_INITIAL_FD_MAP_SIZE
+ *
+ * THREAD SAFETY: Individual backend instances are NOT thread-safe.
+ * Each thread should use its own SocketPoll instance.
  */
 
 #include <assert.h>
@@ -43,14 +50,15 @@ struct PollBackend_T
 
 /**
  * init_fd_mapping_range - Initialize fd_to_index entries to invalid
- * @mapping: FD to index mapping array
+ * @mapping: FD to index mapping array (modified in place)
  * @start: Starting index (inclusive)
  * @end: Ending index (exclusive)
  *
  * Sets all entries in [start, end) to FD_INDEX_INVALID.
+ * Used during initial allocation and when expanding the mapping table.
  */
 static void
-init_fd_mapping_range (int *mapping, int start, int end)
+init_fd_mapping_range (int *mapping, const int start, const int end)
 {
   int i;
 
@@ -61,10 +69,13 @@ init_fd_mapping_range (int *mapping, int start, int end)
 /**
  * allocate_fd_mapping - Allocate and initialize fd_to_index mapping
  * @size: Number of entries to allocate
- * Returns: Allocated mapping or NULL on failure
+ *
+ * Returns: Allocated mapping or NULL on failure (errno set)
+ *
+ * Initializes all entries to FD_INDEX_INVALID via init_fd_mapping_range().
  */
 static int *
-allocate_fd_mapping (int size)
+allocate_fd_mapping (const int size)
 {
   int *mapping;
 
@@ -76,7 +87,7 @@ allocate_fd_mapping (int size)
 }
 
 PollBackend_T
-backend_new (int maxevents)
+backend_new (const int maxevents)
 {
   PollBackend_T backend;
 
@@ -129,14 +140,16 @@ backend_free (PollBackend_T backend)
 
 /**
  * find_fd_index - Find index of fd in pollfd array
- * @backend: Backend instance
+ * @backend: Backend instance (read-only access)
  * @fd: File descriptor to find
+ *
  * Returns: Index in fds array, or FD_INDEX_INVALID if not found
  *
- * O(1) lookup using fd_to_index mapping table.
+ * O(1) lookup using fd_to_index mapping table. This is the key optimization
+ * that makes add/mod/del operations efficient despite poll(2)'s O(n) wait.
  */
 static int
-find_fd_index (PollBackend_T backend, int fd)
+find_fd_index (const PollBackend_T backend, const int fd)
 {
   if (fd < 0 || fd >= backend->max_fd)
     return FD_INDEX_INVALID;
@@ -148,16 +161,18 @@ find_fd_index (PollBackend_T backend, int fd)
  * ensure_fd_mapping - Ensure fd mapping table is large enough for fd
  * @backend: Backend instance
  * @fd: File descriptor that needs to fit
- * Returns: 0 on success, -1 on failure (sets errno)
+ *
+ * Returns: 0 on success, -1 on failure (sets errno to EOVERFLOW or ENOMEM)
  *
  * Expands the fd_to_index mapping table if needed to accommodate fd.
- * Uses POLL_FD_MAP_EXPAND_INCREMENT to avoid frequent reallocations.
+ * Uses POLL_FD_MAP_EXPAND_INCREMENT from SocketConfig.h to avoid frequent
+ * reallocations.
  *
  * Security: Includes overflow checks for both int and size_t calculations
  * to prevent heap corruption from integer overflow.
  */
 static int
-ensure_fd_mapping (PollBackend_T backend, int fd)
+ensure_fd_mapping (PollBackend_T backend, const int fd)
 {
   int new_max;
   int *new_mapping;
@@ -258,12 +273,14 @@ ensure_capacity (PollBackend_T backend)
 /**
  * translate_to_poll_events - Convert SocketPoll events to poll(2) events
  * @events: SocketPoll event flags (POLL_READ | POLL_WRITE)
+ *
  * Returns: poll(2) event mask (POLLIN | POLLOUT)
  *
  * Note: poll(2) is level-triggered only, unlike epoll's edge-triggered mode.
+ * POLL_ERROR and POLL_HANGUP are always monitored implicitly by poll(2).
  */
 static unsigned
-translate_to_poll_events (unsigned events)
+translate_to_poll_events (const unsigned events)
 {
   unsigned poll_events = 0;
 
@@ -279,12 +296,13 @@ translate_to_poll_events (unsigned events)
 /**
  * translate_from_poll_events - Convert poll(2) revents to SocketPoll events
  * @revents: poll(2) returned event mask
- * Returns: SocketPoll event flags
+ *
+ * Returns: SocketPoll event flags (POLL_READ | POLL_WRITE | POLL_ERROR | POLL_HANGUP)
  *
  * Maps POLLIN/POLLOUT/POLLERR/POLLHUP to POLL_READ/WRITE/ERROR/HANGUP.
  */
 static unsigned
-translate_from_poll_events (short revents)
+translate_from_poll_events (const short revents)
 {
   unsigned events = 0;
 
@@ -306,7 +324,7 @@ translate_from_poll_events (short revents)
 /* ==================== Backend Interface Implementation ==================== */
 
 int
-backend_add (PollBackend_T backend, int fd, unsigned events)
+backend_add (PollBackend_T backend, const int fd, const unsigned events)
 {
   int index;
 
@@ -343,7 +361,7 @@ backend_add (PollBackend_T backend, int fd, unsigned events)
 }
 
 int
-backend_mod (PollBackend_T backend, int fd, unsigned events)
+backend_mod (PollBackend_T backend, const int fd, const unsigned events)
 {
   int index;
 
@@ -365,7 +383,7 @@ backend_mod (PollBackend_T backend, int fd, unsigned events)
 }
 
 int
-backend_del (PollBackend_T backend, int fd)
+backend_del (PollBackend_T backend, const int fd)
 {
   int index;
   int last_index;
@@ -408,7 +426,7 @@ backend_del (PollBackend_T backend, int fd)
 }
 
 int
-backend_wait (PollBackend_T backend, int timeout_ms)
+backend_wait (PollBackend_T backend, const int timeout_ms)
 {
   int result;
 
@@ -420,8 +438,8 @@ backend_wait (PollBackend_T backend, int timeout_ms)
       if (timeout_ms > 0)
         {
           struct timespec ts;
-          ts.tv_sec = timeout_ms / 1000;
-          ts.tv_nsec = (timeout_ms % 1000) * 1000000L;
+          ts.tv_sec = timeout_ms / SOCKET_MS_PER_SECOND;
+          ts.tv_nsec = (timeout_ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
           nanosleep (&ts, NULL);
         }
       return 0;
@@ -443,6 +461,12 @@ backend_wait (PollBackend_T backend, int timeout_ms)
 
 /**
  * backend_get_event - Get event details for index
+ * @backend: Backend instance
+ * @index: Event index (0 to count-1 from backend_wait)
+ * @fd_out: Output - file descriptor with events
+ * @events_out: Output - events that occurred (POLL_READ | POLL_WRITE | etc.)
+ *
+ * Returns: 0 on success, -1 on invalid index
  *
  * NOTE: This function is O(n) where n = nfds because poll(2) returns
  * a count of ready FDs but doesn't provide direct indexing like epoll.
@@ -451,7 +475,7 @@ backend_wait (PollBackend_T backend, int timeout_ms)
  * For high-performance applications, prefer epoll or kqueue backends.
  */
 int
-backend_get_event (PollBackend_T backend, int index, int *fd_out,
+backend_get_event (PollBackend_T backend, const int index, int *fd_out,
                    unsigned *events_out)
 {
   int i;

@@ -82,6 +82,34 @@ extern __thread Except_T SocketPool_DetailedException;
     }                                                                         \
   while (0)
 
+/**
+ * RAISE_POOL_MSG - Format error message (without errno) and raise in one step
+ *
+ * Combines SOCKET_ERROR_MSG + RAISE_POOL_ERROR for cleaner code.
+ * Thread-safe: Yes (uses thread-local buffers)
+ */
+#define RAISE_POOL_MSG(exception, fmt, ...)                                   \
+  do                                                                          \
+    {                                                                         \
+      SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__);                                  \
+      RAISE_POOL_ERROR (exception);                                           \
+    }                                                                         \
+  while (0)
+
+/**
+ * RAISE_POOL_FMT - Format error message (with errno) and raise in one step
+ *
+ * Combines SOCKET_ERROR_FMT + RAISE_POOL_ERROR for cleaner code.
+ * Thread-safe: Yes (uses thread-local buffers)
+ */
+#define RAISE_POOL_FMT(exception, fmt, ...)                                   \
+  do                                                                          \
+    {                                                                         \
+      SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__);                                  \
+      RAISE_POOL_ERROR (exception);                                           \
+    }                                                                         \
+  while (0)
+
 /* ============================================================================
  * Connection Structure
  * ============================================================================ */

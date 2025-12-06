@@ -224,7 +224,7 @@ cidr_parse_prefix (const char *prefix_str, long *prefix_out)
  * cidr_parse_ipv4 - Try to parse address as IPv4 and validate prefix
  * @addr_str: IP address string
  * @prefix: Prefix length to validate
- * @network: Output buffer for network address (at least 4 bytes)
+ * @network: Output buffer for network address (at least SOCKET_IPV4_ADDR_BYTES)
  * @prefix_len: Output for validated prefix length
  * @family: Output for address family
  *
@@ -239,10 +239,10 @@ cidr_parse_ipv4 (const char *addr_str, long prefix, unsigned char *network,
   if (inet_pton (SOCKET_AF_INET, addr_str, &addr4) != 1)
     return -1;
 
-  if (prefix > 32)
+  if (prefix > SOCKET_IPV4_MAX_PREFIX)
     return -1;
 
-  memcpy (network, &addr4, 4);
+  memcpy (network, &addr4, SOCKET_IPV4_ADDR_BYTES);
   *prefix_len = (int)prefix;
   *family = SOCKET_AF_INET;
   return 0;
@@ -252,7 +252,7 @@ cidr_parse_ipv4 (const char *addr_str, long prefix, unsigned char *network,
  * cidr_parse_ipv6 - Try to parse address as IPv6 and validate prefix
  * @addr_str: IP address string
  * @prefix: Prefix length to validate
- * @network: Output buffer for network address (at least 16 bytes)
+ * @network: Output buffer for network address (at least SOCKET_IPV6_ADDR_BYTES)
  * @prefix_len: Output for validated prefix length
  * @family: Output for address family
  *
@@ -267,10 +267,10 @@ cidr_parse_ipv6 (const char *addr_str, long prefix, unsigned char *network,
   if (inet_pton (SOCKET_AF_INET6, addr_str, &addr6) != 1)
     return -1;
 
-  if (prefix > 128)
+  if (prefix > SOCKET_IPV6_MAX_PREFIX)
     return -1;
 
-  memcpy (network, &addr6, 16);
+  memcpy (network, &addr6, SOCKET_IPV6_ADDR_BYTES);
   *prefix_len = (int)prefix;
   *family = SOCKET_AF_INET6;
   return 0;
@@ -332,22 +332,48 @@ socketcommon_parse_cidr (const char *cidr_str, unsigned char *network,
 static void
 socketcommon_apply_mask (unsigned char *ip, int prefix_len, int family)
 {
-  int addr_bytes = (family == SOCKET_AF_INET) ? 4 : 16;
-  int bytes_to_mask = prefix_len / 8;
-  int bits_to_mask = prefix_len % 8;
+  int addr_bytes = (family == SOCKET_AF_INET) ? SOCKET_IPV4_ADDR_BYTES
+                                              : SOCKET_IPV6_ADDR_BYTES;
+  int bytes_to_mask = prefix_len / SOCKET_BITS_PER_BYTE;
+  int bits_to_mask = prefix_len % SOCKET_BITS_PER_BYTE;
 
   for (int i = bytes_to_mask; i < addr_bytes; i++)
     ip[i] = 0;
 
   if (bits_to_mask > 0 && bytes_to_mask < addr_bytes)
-    ip[bytes_to_mask] &= (unsigned char)(0xFF << (8 - bits_to_mask));
+    ip[bytes_to_mask]
+        &= (unsigned char)(0xFF << (SOCKET_BITS_PER_BYTE - bits_to_mask));
+}
+
+/**
+ * socketcommon_compare_masked_addresses - Compare masked addresses byte-by-byte
+ * @masked_ip: IP address with mask applied
+ * @network: Network address from CIDR
+ * @family: Address family (SOCKET_AF_INET or SOCKET_AF_INET6)
+ *
+ * Returns: 1 if addresses match, 0 if they differ
+ */
+static int
+socketcommon_compare_masked_addresses (const unsigned char *masked_ip,
+                                       const unsigned char *network,
+                                       int family)
+{
+  int addr_bytes = (family == SOCKET_AF_INET) ? SOCKET_IPV4_ADDR_BYTES
+                                              : SOCKET_IPV6_ADDR_BYTES;
+
+  for (int i = 0; i < addr_bytes; i++)
+    {
+      if (masked_ip[i] != network[i])
+        return 0;
+    }
+  return 1;
 }
 
 int
 SocketCommon_cidr_match (const char *ip_str, const char *cidr_str)
 {
-  unsigned char network[16] = { 0 };
-  unsigned char ip[16] = { 0 };
+  unsigned char network[SOCKET_IPV6_ADDR_BYTES] = { 0 };
+  unsigned char ip[SOCKET_IPV6_ADDR_BYTES] = { 0 };
   int prefix_len;
   int cidr_family;
   int ip_family;
@@ -370,14 +396,14 @@ SocketCommon_cidr_match (const char *ip_str, const char *cidr_str)
       struct in_addr addr4;
       if (inet_pton (SOCKET_AF_INET, ip_str, &addr4) != 1)
         return -1;
-      memcpy (ip, &addr4, 4);
+      memcpy (ip, &addr4, SOCKET_IPV4_ADDR_BYTES);
     }
   else if (ip_family == SOCKET_AF_INET6)
     {
       struct in6_addr addr6;
       if (inet_pton (SOCKET_AF_INET6, ip_str, &addr6) != 1)
         return -1;
-      memcpy (ip, &addr6, 16);
+      memcpy (ip, &addr6, SOCKET_IPV6_ADDR_BYTES);
     }
   else
     {
@@ -386,16 +412,7 @@ SocketCommon_cidr_match (const char *ip_str, const char *cidr_str)
 
   socketcommon_apply_mask (ip, prefix_len, ip_family);
 
-  {
-    int addr_bytes = (ip_family == SOCKET_AF_INET) ? 4 : 16;
-    for (int i = 0; i < addr_bytes; i++)
-      {
-        if (ip[i] != network[i])
-          return 0;
-      }
-  }
-
-  return 1;
+  return socketcommon_compare_masked_addresses (ip, network, ip_family);
 }
 
 /* ==================== RFC 1123 Hostname Validation ==================== */
@@ -425,15 +442,15 @@ socketcommon_is_valid_label_char (char c, bool at_start)
  * bounds
  * @label_len: Current label length
  *
- * Returns: true if within bounds (1 to 63)
+ * Returns: true if within bounds (1 to SOCKET_DNS_MAX_LABEL_LENGTH)
  *
- * Labels must be 1-63 characters. Empty labels (from consecutive dots "..")
- * are invalid per RFC 1035.
+ * Labels must be 1-63 characters per RFC 1035. Empty labels (from consecutive
+ * dots "..") are invalid.
  */
 static bool
 socketcommon_is_valid_label_length (int label_len)
 {
-  return label_len > 0 && label_len <= 63;
+  return label_len > 0 && label_len <= SOCKET_DNS_MAX_LABEL_LENGTH;
 }
 
 /**
@@ -496,9 +513,9 @@ socketcommon_is_ip_address (const char *host)
   struct in_addr addr4;
   struct in6_addr addr6;
 
-  if (inet_pton (AF_INET, host, &addr4) == 1)
+  if (inet_pton (SOCKET_AF_INET, host, &addr4) == 1)
     return 1;
-  if (inet_pton (AF_INET6, host, &addr6) == 1)
+  if (inet_pton (SOCKET_AF_INET6, host, &addr6) == 1)
     return 1;
   return 0;
 }

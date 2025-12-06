@@ -391,18 +391,20 @@ connect_wait_completion (T socket, const struct sockaddr *addr,
  * @timeout_ms: Timeout in milliseconds
  *
  * Returns: 0 on success, -1 on failure
+ * Thread-safe: Yes (operates on single socket)
  */
 static int
-try_connect_address (T socket, const struct sockaddr *addr, socklen_t addrlen,
-                     int timeout_ms)
+try_connect_address (const T socket, const struct sockaddr *addr,
+                     socklen_t addrlen, int timeout_ms)
 {
+  int original_flags;
+
   assert (socket);
   assert (addr);
 
   if (timeout_ms <= 0)
     return connect_attempt_immediate (socket, addr, addrlen);
 
-  int original_flags;
   if (connect_setup_nonblock (socket, &original_flags) < 0)
     return -1;
 
@@ -418,9 +420,10 @@ try_connect_address (T socket, const struct sockaddr *addr, socklen_t addrlen,
  * @timeout_ms: Connection timeout in milliseconds
  *
  * Returns: 0 on success, -1 on failure (sets errno)
+ * Thread-safe: Yes (operates on single socket)
  */
 static int
-try_connect_resolved_addresses (T socket, struct addrinfo *res,
+try_connect_resolved_addresses (const T socket, struct addrinfo *res,
                                 int socket_family, int timeout_ms)
 {
   struct addrinfo *rp;
@@ -436,6 +439,7 @@ try_connect_resolved_addresses (T socket, struct addrinfo *res,
         return 0;
       saved_errno = errno;
     }
+
   errno = saved_errno;
   return -1;
 }
@@ -444,19 +448,18 @@ try_connect_resolved_addresses (T socket, struct addrinfo *res,
 
 /**
  * connect_resolve_address - Resolve hostname for connection
- * @sock: Socket instance
  * @host: Hostname to resolve
  * @port: Port number
  * @socket_family: Socket address family
  * @res: Output for resolved addresses
  *
  * Sets errno to EAI_FAIL on resolution failure without raising.
+ * Thread-safe: Yes (DNS resolution is thread-safe)
  */
 static void
-connect_resolve_address (T sock, const char *host, int port, int socket_family,
+connect_resolve_address (const char *host, int port, int socket_family,
                          struct addrinfo **res)
 {
-  (void)sock; /* Used for consistency, family passed in */
   if (SocketCommon_resolve_address (host, port, NULL, res, Socket_Failed,
                                     socket_family, 0)
       != 0)
@@ -471,11 +474,14 @@ connect_resolve_address (T sock, const char *host, int port, int socket_family,
  * @timeout_ms: Connection timeout in milliseconds
  *
  * Raises: Socket_Failed on non-retriable errors
+ * Thread-safe: Yes (operates on single socket)
  */
 static void
-connect_try_addresses (T sock, struct addrinfo *res, int socket_family,
+connect_try_addresses (const T sock, struct addrinfo *res, int socket_family,
                        int timeout_ms)
 {
+  int saved_errno;
+
   if (try_connect_resolved_addresses (sock, res, socket_family, timeout_ms)
       == 0)
     {
@@ -483,7 +489,7 @@ connect_try_addresses (T sock, struct addrinfo *res, int socket_family,
       return;
     }
 
-  int saved_errno = errno;
+  saved_errno = errno;
   if (socket_is_retriable_connect_error (saved_errno))
     {
       errno = saved_errno;
@@ -515,9 +521,11 @@ connect_validate_params (T socket, const char *host, int port)
  * @sock: Socket instance
  * @res: Resolved address info
  * @socket_family: Socket address family
+ *
+ * Thread-safe: Yes (operates on single socket)
  */
 static void
-connect_execute (T sock, struct addrinfo *res, int socket_family)
+connect_execute (const T sock, struct addrinfo *res, int socket_family)
 {
   int timeout_ms = sock->base->timeouts.connect_timeout_ms;
   connect_try_addresses (sock, res, socket_family, timeout_ms);
@@ -531,6 +539,7 @@ connect_execute (T sock, struct addrinfo *res, int socket_family)
  * @host: Host string to check
  *
  * Returns: 1 if hostname, 0 if IP address
+ * Thread-safe: Yes (stateless)
  */
 static int
 socket_is_hostname (const char *host)
@@ -538,15 +547,76 @@ socket_is_hostname (const char *host)
   struct in_addr addr4;
   struct in6_addr addr6;
 
-  /* Check IPv4 */
   if (inet_pton (AF_INET, host, &addr4) == 1)
     return 0;
-
-  /* Check IPv6 */
   if (inet_pton (AF_INET6, host, &addr6) == 1)
     return 0;
-
   return 1;
+}
+
+/**
+ * he_configure - Configure Happy Eyeballs with socket's timeout
+ * @socket: Socket instance with timeout configuration
+ * @config: Config structure to populate
+ *
+ * Thread-safe: Yes (reads only)
+ */
+static void
+he_configure (T socket, SocketHE_Config_T *config)
+{
+  SocketHappyEyeballs_config_defaults (config);
+  if (socket->base->timeouts.connect_timeout_ms > 0)
+    config->total_timeout_ms = socket->base->timeouts.connect_timeout_ms;
+}
+
+/**
+ * he_attempt_connect - Attempt Happy Eyeballs connection
+ * @host: Hostname to connect to
+ * @port: Port number
+ * @config: Happy Eyeballs configuration
+ *
+ * Returns: Connected socket, or NULL on failure
+ * Raises: Socket_Failed if Happy Eyeballs fails
+ */
+static Socket_T
+he_attempt_connect (const char *host, int port, SocketHE_Config_T *config)
+{
+  Socket_T he_socket = NULL;
+
+  TRY { he_socket = SocketHappyEyeballs_connect (host, port, config); }
+  EXCEPT (SocketHE_Failed)
+  {
+    SOCKET_RAISE_MSG (SocketConnect, Socket_Failed,
+                      "Happy Eyeballs connection failed to %s:%d", host, port);
+  }
+  END_TRY;
+
+  return he_socket;
+}
+
+/**
+ * he_transfer_fd - Transfer winning fd from Happy Eyeballs socket
+ * @socket: Target socket to receive the fd
+ * @he_socket: Winning Happy Eyeballs socket (will be invalidated)
+ *
+ * Closes original socket fd and transfers winning connection.
+ * Thread-safe: No (modifies both sockets)
+ */
+static void
+he_transfer_fd (T socket, Socket_T he_socket)
+{
+  int fd_old = socket->base->fd;
+  if (fd_old >= 0)
+    close (fd_old);
+
+  socket->base->fd = he_socket->base->fd;
+  store_remote_addr (socket,
+                     (const struct sockaddr *)&he_socket->base->remote_addr,
+                     he_socket->base->remote_addrlen);
+
+  /* Prevent he_socket from closing the fd we just took */
+  he_socket->base->fd = -1;
+  Socket_free (&he_socket);
 }
 
 /**
@@ -569,51 +639,19 @@ socket_is_hostname (const char *host)
 static int
 socket_connect_happy_eyeballs (T socket, const char *host, int port)
 {
-  Socket_T he_socket;
   SocketHE_Config_T config;
-  int fd_new, fd_old;
+  Socket_T he_socket;
 
-  /* Only use Happy Eyeballs for hostnames, not IP addresses */
   if (!socket_is_hostname (host))
     return 0;
 
-  /* Configure Happy Eyeballs with socket's timeout */
-  SocketHappyEyeballs_config_defaults (&config);
-  if (socket->base->timeouts.connect_timeout_ms > 0)
-    config.total_timeout_ms = socket->base->timeouts.connect_timeout_ms;
-
-  TRY { he_socket = SocketHappyEyeballs_connect (host, port, &config); }
-  EXCEPT (SocketHE_Failed)
-  {
-    /* Happy Eyeballs failed - propagate as Socket_Failed */
-    SOCKET_ERROR_MSG ("Happy Eyeballs connection failed to %s:%d", host, port);
-    RAISE_MODULE_ERROR (Socket_Failed);
-  }
-  END_TRY;
+  he_configure (socket, &config);
+  he_socket = he_attempt_connect (host, port, &config);
 
   if (!he_socket)
     return 0;
 
-  /* Close the original socket's fd */
-  fd_old = socket->base->fd;
-  if (fd_old >= 0)
-    {
-      close (fd_old);
-    }
-
-  /* Transfer the winning fd to our socket */
-  fd_new = he_socket->base->fd;
-  socket->base->fd = fd_new;
-
-  /* Copy remote address info */
-  memcpy (&socket->base->remote_addr, &he_socket->base->remote_addr,
-          sizeof (socket->base->remote_addr));
-  socket->base->remote_addrlen = he_socket->base->remote_addrlen;
-
-  /* Prevent he_socket from closing the fd we just took */
-  he_socket->base->fd = -1;
-  Socket_free (&he_socket);
-
+  he_transfer_fd (socket, he_socket);
   socket_handle_successful_connect (socket);
   return 1;
 }
@@ -640,7 +678,7 @@ Socket_connect (T socket, const char *host, int port)
 
   TRY
   {
-    connect_resolve_address ((T)vsock, host, port, socket_family, &res);
+    connect_resolve_address (host, port, socket_family, &res);
     if (!res)
       {
         errno = EAI_FAIL;

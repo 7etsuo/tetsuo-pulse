@@ -2,6 +2,7 @@
  * SocketHTTPClient-cookie.c - HTTP Cookie Implementation (RFC 6265)
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements cookie storage and management:
  * - Cookie parsing from Set-Cookie headers
@@ -14,6 +15,7 @@
  * Leverages:
  * - SocketHTTP_date_parse() for Expires parsing
  * - Arena for memory management
+ * - socket_util_arena_strdup() for string duplication
  */
 
 #include "http/SocketHTTPClient.h"
@@ -29,6 +31,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+/* Override log component for this module */
+#undef SOCKET_LOG_COMPONENT
+#define SOCKET_LOG_COMPONENT "HTTPClient-Cookie"
 
 /* ============================================================================
  * Cookie Jar Configuration
@@ -54,8 +60,9 @@
  *
  * Returns: Hash bucket index
  *
- * Uses DJB2 algorithm. Domain is hashed case-insensitively per RFC 6265,
- * while path and name are case-sensitive.
+ * Uses DJB2 algorithm with additive variant for consistency with
+ * socket_util_hash_djb2* functions. Domain is hashed case-insensitively
+ * per RFC 6265, while path and name are case-sensitive.
  * Uses SOCKET_UTIL_DJB2_SEED from SocketUtil.h for consistency.
  */
 static unsigned
@@ -64,38 +71,45 @@ cookie_hash (const char *domain, const char *path, const char *name,
 {
   unsigned hash = SOCKET_UTIL_DJB2_SEED;
 
-  /* Hash domain (case-insensitive) */
+  /* Hash domain (case-insensitive per RFC 6265) */
   while (*domain)
     {
       unsigned char c = (unsigned char)*domain++;
       if (c >= 'A' && c <= 'Z')
         c = c + ('a' - 'A');
-      hash = ((hash << 5) + hash) ^ c;
+      hash = ((hash << 5) + hash) + c; /* Additive DJB2 for consistency */
     }
 
   /* Hash path (case-sensitive) */
   while (*path)
     {
-      hash = ((hash << 5) + hash) ^ (unsigned char)*path++;
+      hash = ((hash << 5) + hash) + (unsigned char)*path++;
     }
 
   /* Hash name (case-sensitive for cookies) */
   while (*name)
     {
-      hash = ((hash << 5) + hash) ^ (unsigned char)*name++;
+      hash = ((hash << 5) + hash) + (unsigned char)*name++;
     }
 
   return hash % table_size;
 }
 
 /**
- * Check if domain matches cookie domain
- * RFC 6265 Section 5.1.3
+ * domain_matches - Check if domain matches cookie domain
+ * @request_domain: Domain from request URL
+ * @cookie_domain: Domain from cookie
+ *
+ * Returns: 1 if matches, 0 otherwise
+ *
+ * Implements RFC 6265 Section 5.1.3 domain matching.
+ * Handles leading dot in cookie domain for subdomain matching.
  */
 static int
 domain_matches (const char *request_domain, const char *cookie_domain)
 {
   size_t req_len, cookie_len;
+  const char *suffix;
 
   if (request_domain == NULL || cookie_domain == NULL)
     return 0;
@@ -104,21 +118,22 @@ domain_matches (const char *request_domain, const char *cookie_domain)
   if (cookie_domain[0] == '.')
     cookie_domain++;
 
+  /* Cache strlen results to avoid redundant calls */
   req_len = strlen (request_domain);
   cookie_len = strlen (cookie_domain);
 
-  /* Exact match */
-  if (strcasecmp (request_domain, cookie_domain) == 0)
+  /* Exact match (case-insensitive) */
+  if (req_len == cookie_len && strcasecmp (request_domain, cookie_domain) == 0)
     return 1;
 
-  /* Domain suffix match */
+  /* Domain suffix match - cookie domain must be suffix of request domain */
   if (req_len > cookie_len)
     {
-      const char *suffix = request_domain + (req_len - cookie_len);
+      suffix = request_domain + (req_len - cookie_len);
       if (strcasecmp (suffix, cookie_domain) == 0)
         {
-          /* Must be preceded by a dot */
-          if (suffix > request_domain && *(suffix - 1) == '.')
+          /* Must be preceded by a dot for valid subdomain match */
+          if (*(suffix - 1) == '.')
             return 1;
         }
     }
@@ -127,19 +142,27 @@ domain_matches (const char *request_domain, const char *cookie_domain)
 }
 
 /**
- * Check if path matches cookie path
- * RFC 6265 Section 5.1.4
+ * path_matches - Check if path matches cookie path
+ * @request_path: Path from request URL
+ * @cookie_path: Path from cookie
+ *
+ * Returns: 1 if matches, 0 otherwise
+ *
+ * Implements RFC 6265 Section 5.1.4 path matching.
+ * Cookie path must be a prefix of request path.
  */
 static int
 path_matches (const char *request_path, const char *cookie_path)
 {
   size_t req_len, cookie_len;
 
+  /* Apply defaults for NULL/empty paths */
   if (request_path == NULL)
     request_path = "/";
   if (cookie_path == NULL || cookie_path[0] == '\0')
     cookie_path = "/";
 
+  /* Cache strlen results */
   req_len = strlen (request_path);
   cookie_len = strlen (cookie_path);
 
@@ -147,10 +170,13 @@ path_matches (const char *request_path, const char *cookie_path)
   if (strncmp (request_path, cookie_path, cookie_len) != 0)
     return 0;
 
-  /* Either exact match or cookie path ends with / or next char is / */
+  /* Match conditions per RFC 6265:
+   * - Exact match (same length)
+   * - Cookie path ends with '/'
+   * - Request path has '/' after cookie path prefix */
   if (req_len == cookie_len)
     return 1;
-  if (cookie_path[cookie_len - 1] == '/')
+  if (cookie_len > 0 && cookie_path[cookie_len - 1] == '/')
     return 1;
   if (request_path[cookie_len] == '/')
     return 1;
@@ -202,24 +228,33 @@ parse_same_site (const char *value)
 }
 
 /**
- * Get default path from request URI
- * RFC 6265 Section 5.1.4
+ * get_default_path - Get default path from request URI
+ * @request_path: Request URI path
+ * @output: Output buffer for default path
+ * @output_size: Size of output buffer
+ *
+ * Implements RFC 6265 Section 5.1.4 default-path algorithm.
+ * Returns path up to (not including) the rightmost '/'.
  */
 static void
 get_default_path (const char *request_path, char *output, size_t output_size)
 {
   const char *last_slash;
+  size_t len;
 
+  assert (output != NULL);
+  assert (output_size > 0);
+
+  /* Default to "/" for invalid/empty paths */
   if (request_path == NULL || request_path[0] != '/'
       || (last_slash = strrchr (request_path, '/')) == request_path)
     {
-      /* Default to "/" */
-      strncpy (output, "/", output_size);
+      snprintf (output, output_size, "/");
       return;
     }
 
   /* Copy path up to (not including) the last slash */
-  size_t len = (size_t)(last_slash - request_path);
+  len = (size_t)(last_slash - request_path);
   if (len >= output_size)
     len = output_size - 1;
 
@@ -227,8 +262,9 @@ get_default_path (const char *request_path, char *output, size_t output_size)
   output[len] = '\0';
 }
 
-/* REFACTOR: Removed local socket_util_arena_strdup - use socket_util_socket_util_arena_strdup() 
- * from SocketUtil.h instead. Avoids code duplication. */
+/* NOTE: Uses socket_util_arena_strdup() from SocketUtil.h for string
+ * duplication. This avoids code duplication and ensures consistent
+ * allocation patterns across the codebase. */
 
 /* ============================================================================
  * Cookie Jar Lifecycle
@@ -468,7 +504,7 @@ SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
                                  const char *filename)
 {
   FILE *f;
-  char line[4096];
+  char line[HTTPCLIENT_COOKIE_FILE_LINE_SIZE];
 
   assert (jar != NULL);
   assert (filename != NULL);
@@ -825,7 +861,7 @@ parse_cookie_attribute (const char *attr_start, size_t attr_len,
     }
   else if (attr_len == 7 && strncasecmp (attr_start, "Max-Age", 7) == 0)
     {
-      char max_age_str[32];
+      char max_age_str[HTTPCLIENT_COOKIE_MAX_AGE_SIZE];
       if (attr_val_len < sizeof (max_age_str))
         {
           memcpy (max_age_str, attr_value_start, attr_val_len);
@@ -865,7 +901,7 @@ parse_cookie_attribute (const char *attr_start, size_t attr_len,
     }
   else if (attr_len == 8 && strncasecmp (attr_start, "SameSite", 8) == 0)
     {
-      char ss[16];
+      char ss[HTTPCLIENT_COOKIE_SAMESITE_SIZE];
       if (attr_val_len < sizeof (ss))
         {
           memcpy (ss, attr_value_start, attr_val_len);

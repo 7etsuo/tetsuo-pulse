@@ -2,17 +2,41 @@
  * SocketHTTP-core.c - HTTP Core Utilities
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements HTTP methods, status codes, versions, and character tables.
  */
 
-#include "http/SocketHTTP.h"
-#include "http/SocketHTTP-private.h"
-#include "core/SocketUtil.h"
-
 #include <assert.h>
 #include <ctype.h>
 #include <string.h>
+#include <strings.h>
+
+#include "core/SocketUtil.h"
+#include "http/SocketHTTP-private.h"
+#include "http/SocketHTTP.h"
+
+/* ============================================================================
+ * Status Code Boundary Constants
+ * ============================================================================ */
+
+/** Minimum valid HTTP status code */
+#define HTTP_STATUS_CODE_MIN 100
+
+/** Maximum valid HTTP status code */
+#define HTTP_STATUS_CODE_MAX 599
+
+/** Boundary values for status code categories */
+#define HTTP_STATUS_1XX_MIN 100
+#define HTTP_STATUS_1XX_MAX 199
+#define HTTP_STATUS_2XX_MIN 200
+#define HTTP_STATUS_2XX_MAX 299
+#define HTTP_STATUS_3XX_MIN 300
+#define HTTP_STATUS_3XX_MAX 399
+#define HTTP_STATUS_4XX_MIN 400
+#define HTTP_STATUS_4XX_MAX 499
+#define HTTP_STATUS_5XX_MIN 500
+#define HTTP_STATUS_5XX_MAX 599
 
 /* ============================================================================
  * Exception Definitions
@@ -363,15 +387,15 @@ SocketHTTP_status_reason (int code)
 SocketHTTP_StatusCategory
 SocketHTTP_status_category (int code)
 {
-  if (code >= 100 && code < 200)
+  if (code >= HTTP_STATUS_1XX_MIN && code <= HTTP_STATUS_1XX_MAX)
     return HTTP_STATUS_INFORMATIONAL;
-  if (code >= 200 && code < 300)
+  if (code >= HTTP_STATUS_2XX_MIN && code <= HTTP_STATUS_2XX_MAX)
     return HTTP_STATUS_SUCCESSFUL;
-  if (code >= 300 && code < 400)
+  if (code >= HTTP_STATUS_3XX_MIN && code <= HTTP_STATUS_3XX_MAX)
     return HTTP_STATUS_REDIRECTION;
-  if (code >= 400 && code < 500)
+  if (code >= HTTP_STATUS_4XX_MIN && code <= HTTP_STATUS_4XX_MAX)
     return HTTP_STATUS_CLIENT_ERROR;
-  if (code >= 500 && code < 600)
+  if (code >= HTTP_STATUS_5XX_MIN && code <= HTTP_STATUS_5XX_MAX)
     return HTTP_STATUS_SERVER_ERROR;
   return 0;
 }
@@ -379,7 +403,7 @@ SocketHTTP_status_category (int code)
 int
 SocketHTTP_status_valid (int code)
 {
-  return code >= 100 && code <= 599;
+  return code >= HTTP_STATUS_CODE_MIN && code <= HTTP_STATUS_CODE_MAX;
 }
 
 /* ============================================================================
@@ -477,25 +501,9 @@ SocketHTTP_coding_parse (const char *name, size_t len)
 
   for (int i = 0; coding_table[i].name != NULL; i++)
     {
-      if (len == coding_table[i].len)
-        {
-          /* Case-insensitive comparison */
-          int match = 1;
-          for (size_t j = 0; j < len; j++)
-            {
-              char a = name[j];
-              char b = coding_table[i].name[j];
-              if (a >= 'A' && a <= 'Z')
-                a = a + ('a' - 'A');
-              if (a != b)
-                {
-                  match = 0;
-                  break;
-                }
-            }
-          if (match)
-            return coding_table[i].coding;
-        }
+      if (len == coding_table[i].len
+          && strncasecmp (name, coding_table[i].name, len) == 0)
+        return coding_table[i].coding;
     }
 
   return HTTP_CODING_UNKNOWN;

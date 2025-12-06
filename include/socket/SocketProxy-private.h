@@ -107,6 +107,22 @@
 #define SOCKS5_REPLY_COMMAND_NOT_SUPPORTED 0x07
 #define SOCKS5_REPLY_ADDRESS_TYPE_NOT_SUPPORTED 0x08
 
+/** SOCKS5 address sizes (RFC 1928 Section 4) */
+#define SOCKS5_IPV4_ADDR_SIZE 4   /**< IPv4 address bytes */
+#define SOCKS5_IPV6_ADDR_SIZE 16  /**< IPv6 address bytes */
+#define SOCKS5_PORT_SIZE 2        /**< Port bytes (network order) */
+
+/** SOCKS5 response sizes */
+#define SOCKS5_METHOD_RESPONSE_SIZE 2  /**< VER + METHOD */
+#define SOCKS5_AUTH_RESPONSE_SIZE 2    /**< VER + STATUS */
+#define SOCKS5_CONNECT_HEADER_SIZE 4   /**< VER + REP + RSV + ATYP */
+
+/** SOCKS5 greeting response sizes */
+#define SOCKS5_CONNECT_IPV4_RESPONSE_SIZE                                      \
+  (SOCKS5_CONNECT_HEADER_SIZE + SOCKS5_IPV4_ADDR_SIZE + SOCKS5_PORT_SIZE)
+#define SOCKS5_CONNECT_IPV6_RESPONSE_SIZE                                      \
+  (SOCKS5_CONNECT_HEADER_SIZE + SOCKS5_IPV6_ADDR_SIZE + SOCKS5_PORT_SIZE)
+
 /* ============================================================================
  * Internal Protocol State
  * ============================================================================ */

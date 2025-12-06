@@ -31,6 +31,69 @@
 #include <string.h>
 
 /* ============================================================================
+ * Internal Constants
+ * ============================================================================ */
+
+/** SOCKS4 response size in bytes */
+#define SOCKS4_RESPONSE_SIZE 8
+
+/** SOCKS4a marker IP: 0.0.0.1 signals hostname follows */
+#define SOCKS4A_MARKER_IP_BYTE 0x01
+
+/* ============================================================================
+ * Static Helper Functions
+ * ============================================================================ */
+
+/**
+ * socks4_write_header - Write SOCKS4 request header (version + command + port)
+ * @buf: Output buffer
+ * @port: Destination port (1-65535)
+ *
+ * Returns: Number of bytes written (always 4)
+ *
+ * Writes the common header for both SOCKS4 and SOCKS4a requests:
+ * VN(4), CD(1=CONNECT), DSTPORT(2 bytes, network order)
+ */
+static size_t
+socks4_write_header (unsigned char *buf, int port)
+{
+  buf[0] = SOCKS4_VERSION;
+  buf[1] = SOCKS4_CMD_CONNECT;
+  buf[2] = (unsigned char)((port >> 8) & 0xFF);
+  buf[3] = (unsigned char)(port & 0xFF);
+  return 4;
+}
+
+/**
+ * socks4_write_userid - Write userid string with null terminator
+ * @buf: Output buffer
+ * @buf_remaining: Remaining buffer space
+ * @username: Username or NULL (empty string if NULL)
+ * @bytes_written: Output - bytes written including null terminator
+ *
+ * Returns: 0 on success, -1 if buffer overflow
+ */
+static int
+socks4_write_userid (unsigned char *buf, size_t buf_remaining,
+                     const char *username, size_t *bytes_written)
+{
+  const char *userid;
+  size_t userid_len;
+
+  userid = (username != NULL) ? username : "";
+  userid_len = strlen (userid);
+
+  /* Need space for userid + null terminator */
+  if (userid_len + 1 > buf_remaining)
+    return -1;
+
+  memcpy (buf, userid, userid_len);
+  buf[userid_len] = 0x00;
+  *bytes_written = userid_len + 1;
+  return 0;
+}
+
+/* ============================================================================
  * SOCKS4 Connect Request
  * ============================================================================
  *
@@ -54,43 +117,34 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
   unsigned char *buf = conn->send_buf;
   size_t len = 0;
   struct in_addr ipv4;
-  const char *userid;
-  size_t userid_len;
+  size_t userid_written;
+
+  assert (conn != NULL);
 
   /* Parse target as IPv4 address */
   if (inet_pton (AF_INET, conn->target_host, &ipv4) != 1)
     {
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "SOCKS4 requires IPv4 address (use SOCKS4A for hostnames)");
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL,
+          "SOCKS4 requires IPv4 address (use SOCKS4A for hostnames)");
       return -1;
     }
 
-  /* Build request */
-  buf[len++] = SOCKS4_VERSION;        /* VN = 0x04 */
-  buf[len++] = SOCKS4_CMD_CONNECT;    /* CD = CONNECT */
+  /* Write header: version + command + port */
+  len += socks4_write_header (buf + len, conn->target_port);
 
-  /* DSTPORT (network byte order) */
-  buf[len++] = (unsigned char)((conn->target_port >> 8) & 0xFF);
-  buf[len++] = (unsigned char)(conn->target_port & 0xFF);
-
-  /* DSTIP (network byte order) */
+  /* Write destination IP (network byte order) */
   memcpy (buf + len, &ipv4, 4);
   len += 4;
 
-  /* USERID (use username if provided, otherwise empty) */
-  userid = conn->username != NULL ? conn->username : "";
-  userid_len = strlen (userid);
-
-  if (len + userid_len + 1 > sizeof (conn->send_buf))
+  /* Write userid with null terminator */
+  if (socks4_write_userid (buf + len, sizeof (conn->send_buf) - len,
+                           conn->username, &userid_written) < 0)
     {
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "Request too large");
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "Request too large");
       return -1;
     }
-
-  memcpy (buf + len, userid, userid_len);
-  len += userid_len;
-  buf[len++] = 0x00; /* NULL terminator */
+  len += userid_written;
 
   conn->send_len = len;
   conn->send_offset = 0;
@@ -122,59 +176,54 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
   unsigned char *buf = conn->send_buf;
   size_t len = 0;
   struct in_addr ipv4;
-  const char *userid;
-  size_t userid_len;
+  size_t userid_written;
   size_t host_len;
+
+  assert (conn != NULL);
 
   /* Check if target is already an IPv4 address */
   if (inet_pton (AF_INET, conn->target_host, &ipv4) == 1)
-    {
-      /* Use regular SOCKS4 for IPv4 addresses */
-      return proxy_socks4_send_connect (conn);
-    }
+    return proxy_socks4_send_connect (conn);
 
-  /* Get hostname length */
+  /* Validate hostname length */
   host_len = strlen (conn->target_host);
   if (host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
     {
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "Hostname too long: %zu bytes", host_len);
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "Hostname too long: %zu bytes", host_len);
       return -1;
     }
 
-  /* Build SOCKS4a request */
-  buf[len++] = SOCKS4_VERSION;        /* VN = 0x04 */
-  buf[len++] = SOCKS4_CMD_CONNECT;    /* CD = CONNECT */
+  /* Write header: version + command + port */
+  len += socks4_write_header (buf + len, conn->target_port);
 
-  /* DSTPORT (network byte order) */
-  buf[len++] = (unsigned char)((conn->target_port >> 8) & 0xFF);
-  buf[len++] = (unsigned char)(conn->target_port & 0xFF);
-
-  /* DSTIP: 0.0.0.x where x != 0 signals SOCKS4a */
+  /* Write SOCKS4a marker IP: 0.0.0.x where x != 0 */
   buf[len++] = 0x00;
   buf[len++] = 0x00;
   buf[len++] = 0x00;
-  buf[len++] = 0x01; /* Any non-zero value works */
+  buf[len++] = SOCKS4A_MARKER_IP_BYTE;
 
-  /* USERID (use username if provided, otherwise empty) */
-  userid = conn->username != NULL ? conn->username : "";
-  userid_len = strlen (userid);
-
-  if (len + userid_len + 1 + host_len + 1 > sizeof (conn->send_buf))
+  /* Check total buffer capacity before writing variable-length fields */
+  if (len + SOCKET_PROXY_MAX_USERNAME_LEN + 1 + host_len + 1
+      > sizeof (conn->send_buf))
     {
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "Request too large");
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "Request too large");
       return -1;
     }
 
-  memcpy (buf + len, userid, userid_len);
-  len += userid_len;
-  buf[len++] = 0x00; /* NULL terminator for USERID */
+  /* Write userid with null terminator */
+  if (socks4_write_userid (buf + len, sizeof (conn->send_buf) - len,
+                           conn->username, &userid_written) < 0)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "Request too large");
+      return -1;
+    }
+  len += userid_written;
 
-  /* HOSTNAME followed by NULL */
+  /* Write hostname with null terminator */
   memcpy (buf + len, conn->target_host, host_len);
   len += host_len;
-  buf[len++] = 0x00; /* NULL terminator for HOSTNAME */
+  buf[len++] = 0x00;
 
   conn->send_len = len;
   conn->send_offset = 0;
@@ -210,23 +259,24 @@ proxy_socks4_recv_response (struct SocketProxy_Conn_T *conn)
 {
   unsigned char *buf = conn->recv_buf;
 
+  assert (conn != NULL);
+
   /* Need exactly 8 bytes */
-  if (conn->recv_len < 8)
+  if (conn->recv_len < SOCKS4_RESPONSE_SIZE)
     return PROXY_IN_PROGRESS;
 
-  /* Note: Reply VN should be 0, not 4 */
+  /* Reply VN must be 0, not 4 (per SOCKS4 spec) */
   if (buf[0] != 0)
     {
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "Invalid SOCKS4 reply version: 0x%02X (expected 0x00)", buf[0]);
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL,
+          "Invalid SOCKS4 reply version: 0x%02X (expected 0x00)", buf[0]);
       return PROXY_ERROR_PROTOCOL;
     }
 
   /* Check result code */
   if (buf[1] != SOCKS4_REPLY_GRANTED)
-    {
-      return proxy_socks4_reply_to_result (buf[1]);
-    }
+    return proxy_socks4_reply_to_result (buf[1]);
 
   /* Success - tunnel established */
   conn->proto_state = PROTO_STATE_SOCKS4_CONNECT_RECEIVED;
@@ -249,7 +299,6 @@ proxy_socks4_reply_to_result (int reply)
       return PROXY_ERROR_FORBIDDEN;
 
     case SOCKS4_REPLY_NO_IDENTD:
-      /* REFACTOR: Now uses centralized socket_error_buf from SocketUtil.h */
       PROXY_ERROR_MSG ("SOCKS4 rejected: no identd service on client");
       return PROXY_ERROR_AUTH_REQUIRED;
 
@@ -262,4 +311,3 @@ proxy_socks4_reply_to_result (int reply)
       return PROXY_ERROR_PROTOCOL;
     }
 }
-

@@ -22,12 +22,31 @@
 #define T SocketTLSContext_T
 
 /* ============================================================================
- * Verification Mode Configuration
+ * Configuration Constants
  * ============================================================================
  */
 
-/* Forward declaration for OpenSSL callback */
+/**
+ * Default cipher list for legacy TLS (< 1.3) when user doesn't specify.
+ * Excludes weak ciphers while maintaining compatibility.
+ * For TLS 1.3+, use SOCKET_TLS13_CIPHERSUITES from SocketTLSConfig.h.
+ */
+#ifndef SOCKET_TLS_LEGACY_CIPHER_LIST
+#define SOCKET_TLS_LEGACY_CIPHER_LIST                                         \
+  "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA"
+#endif
+
+/* ============================================================================
+ * Forward Declarations
+ * ============================================================================
+ */
+
 static int internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx);
+
+/* ============================================================================
+ * Verification Mode Helpers
+ * ============================================================================
+ */
 
 /**
  * verify_mode_to_openssl - Convert TLSVerifyMode to OpenSSL flags
@@ -54,36 +73,98 @@ verify_mode_to_openssl (TLSVerifyMode mode)
 }
 
 /**
+ * needs_internal_callback - Check if internal callback should be installed
+ * @ctx: TLS context
+ *
+ * Returns: 1 if callback needed, 0 otherwise
+ */
+static int
+needs_internal_callback (T ctx)
+{
+  return ctx->verify_callback != NULL || ctx->pinning.count > 0;
+}
+
+/**
  * apply_verify_settings - Apply verification mode and callback to context
  * @ctx: TLS context
  *
- * Consolidates the SSL_CTX_set_verify call used by both set_verify_mode
- * and set_verify_callback.
- *
- * Installs internal callback if:
- * - User verification callback is set, OR
- * - Certificate pins are configured
+ * Consolidates SSL_CTX_set_verify call.
  */
 static void
 apply_verify_settings (T ctx)
 {
   int openssl_mode = verify_mode_to_openssl (ctx->verify_mode);
-
-  /* Install callback if user callback set OR pins configured */
-  SSL_verify_cb cb = NULL;
-  if (ctx->verify_callback || ctx->pinning.count > 0)
-    {
-      cb = (SSL_verify_cb)internal_verify_callback;
-    }
+  SSL_verify_cb cb = needs_internal_callback (ctx)
+                         ? (SSL_verify_cb)internal_verify_callback
+                         : NULL;
 
   SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, cb);
 }
 
-/* Suppress -Wclobbered warning for setjmp/longjmp usage (GCC only, Clang doesn't have this) */
+/* ============================================================================
+ * Certificate Pinning Helpers
+ * ============================================================================
+ */
+
+/* Suppress -Wclobbered warning for setjmp/longjmp usage (GCC only) */
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
+
+/**
+ * check_single_cert_pin - Check if a single certificate matches any pin
+ * @ctx: TLS context with pins
+ * @cert: Certificate to check
+ *
+ * Returns: 1 if match found, 0 if no match
+ */
+static int
+check_single_cert_pin (T ctx, X509 *cert)
+{
+  unsigned char hash[SOCKET_TLS_PIN_HASH_LEN];
+
+  if (tls_pinning_extract_spki_hash (cert, hash) != 0)
+    return 0;
+
+  return tls_pinning_find (ctx->pinning.pins, ctx->pinning.count, hash);
+}
+
+/**
+ * handle_pin_mismatch - Handle pin verification failure
+ * @ctx: TLS context
+ * @x509_ctx: Certificate store context
+ *
+ * Returns: 0 if enforce mode (fail), 1 if warn-only mode (continue)
+ */
+static int
+handle_pin_mismatch (T ctx, X509_STORE_CTX *x509_ctx)
+{
+  if (ctx->pinning.enforce)
+    {
+      X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
+      return 0;
+    }
+  return 1; /* Warn only - verification continues */
+}
+
+/**
+ * check_current_cert_pin - Fallback when chain unavailable
+ * @ctx: TLS context with pins
+ * @x509_ctx: Certificate store context
+ *
+ * Returns: 1 if match or warn-only, 0 if enforce and no match
+ */
+static int
+check_current_cert_pin (T ctx, X509_STORE_CTX *x509_ctx)
+{
+  X509 *cert = X509_STORE_CTX_get_current_cert (x509_ctx);
+
+  if (cert && check_single_cert_pin (ctx, cert))
+    return 1;
+
+  return handle_pin_mismatch (ctx, x509_ctx);
+}
 
 /**
  * check_certificate_pins - Verify certificate chain against pins
@@ -91,58 +172,103 @@ apply_verify_settings (T ctx)
  * @x509_ctx: Certificate store context
  *
  * Returns: 1 if match found or no pins configured, 0 if no match
- *
- * Checks each certificate in the chain against configured pins.
- * On mismatch with enforcement enabled, sets X509_V_ERR_APPLICATION_VERIFICATION.
  */
 static int
 check_certificate_pins (T ctx, X509_STORE_CTX *x509_ctx)
 {
-  if (!ctx || ctx->pinning.count == 0)
+  STACK_OF (X509) *chain;
+
+  assert (ctx);
+
+  if (ctx->pinning.count == 0)
     return 1; /* No pins configured - pass */
 
-  STACK_OF (X509) *chain = X509_STORE_CTX_get0_chain (x509_ctx);
+  chain = X509_STORE_CTX_get0_chain (x509_ctx);
   if (!chain)
     {
-      /* Try getting the full chain including untrusted */
       chain = X509_STORE_CTX_get1_chain (x509_ctx);
       if (!chain)
-        {
-          /* No chain available yet - check current cert only */
-          X509 *cert = X509_STORE_CTX_get_current_cert (x509_ctx);
-          if (cert)
-            {
-              unsigned char hash[SOCKET_TLS_PIN_HASH_LEN];
-              if (tls_pinning_extract_spki_hash (cert, hash) == 0)
-                {
-                  if (tls_pinning_find (ctx->pinning.pins, ctx->pinning.count,
-                                        hash))
-                    return 1;
-                }
-            }
-          /* No match on current cert */
-          if (ctx->pinning.enforce)
-            {
-              X509_STORE_CTX_set_error (x509_ctx,
-                                        X509_V_ERR_APPLICATION_VERIFICATION);
-              return 0;
-            }
-          return 1; /* Warn only mode */
-        }
+        return check_current_cert_pin (ctx, x509_ctx);
     }
 
-  /* Check each cert in chain */
   if (tls_pinning_check_chain (ctx, chain))
     return 1;
 
-  /* No match found */
-  if (ctx->pinning.enforce)
-    {
-      X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
-      return 0;
-    }
+  return handle_pin_mismatch (ctx, x509_ctx);
+}
 
-  return 1; /* Warn only mode - verification continues */
+/* ============================================================================
+ * User Callback Invocation
+ * ============================================================================
+ */
+
+/**
+ * invoke_user_callback - Call user verification callback with exception safety
+ * @ctx: TLS context
+ * @pre_ok: OpenSSL pre-verification result
+ * @x509_ctx: Certificate store context
+ * @sock: Socket being verified
+ *
+ * Returns: User callback result, or 0 on any exception
+ *
+ * Catches ALL exceptions to prevent undefined behavior from uncaught
+ * exceptions propagating through OpenSSL's callback mechanism.
+ */
+static int
+invoke_user_callback (T ctx, int pre_ok, X509_STORE_CTX *x509_ctx,
+                      Socket_T sock)
+{
+  volatile int result = pre_ok;
+
+  TRY
+  {
+    result = ctx->verify_callback (pre_ok, x509_ctx, ctx, sock,
+                                   ctx->verify_user_data);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    result = 0;
+    X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
+  }
+  ELSE
+  {
+    /* Catch all to prevent undefined behavior */
+    result = 0;
+    X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
+  }
+  END_TRY;
+
+  return result;
+}
+
+/* ============================================================================
+ * Internal Verification Callback
+ * ============================================================================
+ */
+
+/**
+ * get_verify_context - Extract verification context from OpenSSL callback
+ * @x509_ctx: Certificate store context
+ * @out_sock: Output socket pointer
+ * @out_ctx: Output TLS context pointer
+ *
+ * Returns: 1 if context valid, 0 if missing (use pre_ok result)
+ */
+static int
+get_verify_context (X509_STORE_CTX *x509_ctx, Socket_T *out_sock, T *out_ctx)
+{
+  SSL *ssl = X509_STORE_CTX_get_ex_data (
+      x509_ctx, SSL_get_ex_data_X509_STORE_CTX_idx ());
+
+  if (!ssl)
+    return 0;
+
+  *out_sock = (Socket_T)SSL_get_app_data (ssl);
+  if (!*out_sock)
+    return 0;
+
+  *out_ctx = (T) (*out_sock)->tls_ctx;
+  return *out_ctx != NULL;
 }
 
 /**
@@ -151,84 +277,44 @@ check_certificate_pins (T ctx, X509_STORE_CTX *x509_ctx)
  * @x509_ctx: Certificate store context
  *
  * Returns: 1 to continue verification, 0 to fail
- *
- * Performs verification in order:
- * 1. User callback (if set)
- * 2. Certificate pinning check (if pins configured)
- *
- * Security note: Catches ALL exceptions from user callbacks to prevent
- * uncaught exceptions from propagating through OpenSSL's callback mechanism,
- * which could cause undefined behavior. Any exception results in verification
- * failure with X509_V_ERR_APPLICATION_VERIFICATION error code.
  */
 static int
 internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx)
 {
-  SSL *ssl = X509_STORE_CTX_get_ex_data (
-      x509_ctx, SSL_get_ex_data_X509_STORE_CTX_idx ());
-  if (!ssl)
-    return pre_ok;
+  Socket_T sock;
+  T ctx;
 
-  Socket_T sock = (Socket_T)SSL_get_app_data (ssl);
-  if (!sock)
+  if (!get_verify_context (x509_ctx, &sock, &ctx))
     return pre_ok;
-
-  T ctx = (T)sock->tls_ctx;
-  if (!ctx)
-    return pre_ok;
-
-  volatile int result = pre_ok;
 
   /* Step 1: Call user callback if set */
   if (ctx->verify_callback)
     {
-      TRY
-      {
-        result = ctx->verify_callback (pre_ok, x509_ctx, ctx, sock,
-                                       ctx->verify_user_data);
-      }
-      EXCEPT (SocketTLS_Failed)
-      {
-        /* TLS-specific exception - verification failed */
-        result = 0;
-        X509_STORE_CTX_set_error (x509_ctx,
-                                  X509_V_ERR_APPLICATION_VERIFICATION);
-      }
-      ELSE
-      {
-        /* Catch all other exceptions to prevent undefined behavior from
-         * uncaught exceptions propagating through OpenSSL callback mechanism
-         */
-        result = 0;
-        X509_STORE_CTX_set_error (x509_ctx,
-                                  X509_V_ERR_APPLICATION_VERIFICATION);
-      }
-      END_TRY;
-
+      int result = invoke_user_callback (ctx, pre_ok, x509_ctx, sock);
       if (!result)
-        return 0; /* User callback failed - stop here */
+        return 0;
+      pre_ok = result;
     }
 
-  /* Step 2: Check certificate pins (if configured) */
+  /* Step 2: Check certificate pins at chain end (depth 0) */
   if (ctx->pinning.count > 0)
     {
-      /* Only check pins at the end of chain (depth 0) to avoid redundant
-       * checks. OpenSSL calls callback for each cert in chain from root to
-       * leaf. */
       int depth = X509_STORE_CTX_get_error_depth (x509_ctx);
-      if (depth == 0)
-        {
-          if (!check_certificate_pins (ctx, x509_ctx))
-            return 0;
-        }
+      if (depth == 0 && !check_certificate_pins (ctx, x509_ctx))
+        return 0;
     }
 
-  return result;
+  return pre_ok;
 }
 
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
+
+/* ============================================================================
+ * Public Verification API
+ * ============================================================================
+ */
 
 void
 SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
@@ -261,39 +347,37 @@ SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback,
 void
 SocketTLSContext_load_crl (T ctx, const char *crl_path)
 {
+  X509_STORE *store;
+  struct stat st;
+  int ret;
+
   assert (ctx);
   assert (ctx->ssl_ctx);
 
   if (!crl_path || !*crl_path)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL path cannot be NULL or empty");
 
-  X509_STORE *store = SSL_CTX_get_cert_store (ctx->ssl_ctx);
+  store = SSL_CTX_get_cert_store (ctx->ssl_ctx);
   if (!store)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Failed to get certificate store");
 
-  struct stat st;
   if (stat (crl_path, &st) != 0)
     RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Invalid CRL path '%s': %s",
                          crl_path, strerror (errno));
 
-  int ret = S_ISDIR (st.st_mode)
-                ? X509_STORE_load_locations (store, NULL, crl_path)
-                : X509_STORE_load_locations (store, crl_path, NULL);
+  ret = S_ISDIR (st.st_mode)
+            ? X509_STORE_load_locations (store, NULL, crl_path)
+            : X509_STORE_load_locations (store, crl_path, NULL);
 
   if (ret != 1)
     ctx_raise_openssl_error ("Failed to load CRL");
 
-  X509_STORE_set_flags (store, X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+  X509_STORE_set_flags (store,
+                        X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
 }
 
 void
 SocketTLSContext_refresh_crl (T ctx, const char *crl_path)
-{
-  SocketTLSContext_load_crl (ctx, crl_path);
-}
-
-void
-SocketTLSContext_reload_crl (T ctx, const char *crl_path)
 {
   SocketTLSContext_load_crl (ctx, crl_path);
 }
@@ -303,6 +387,35 @@ SocketTLSContext_reload_crl (T ctx, const char *crl_path)
  * ============================================================================
  */
 
+/**
+ * apply_min_proto_fallback - Fallback for older OpenSSL versions
+ * @ctx: TLS context
+ * @version: Target minimum version
+ */
+static void
+apply_min_proto_fallback (T ctx, int version)
+{
+#if defined(SSL_OP_NO_SSLv2) && defined(SSL_OP_NO_SSLv3)
+  long options = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
+
+  if (version > TLS1_VERSION)
+    options |= SSL_OP_NO_TLSv1;
+  if (version > TLS1_1_VERSION)
+    options |= SSL_OP_NO_TLSv1_1;
+  if (version > TLS1_2_VERSION)
+    options |= SSL_OP_NO_TLSv1_2;
+
+  long current = SSL_CTX_set_options (ctx->ssl_ctx, options);
+  if (!(current & options))
+    ctx_raise_openssl_error ("Failed to set minimum TLS protocol version");
+#else
+  TLS_UNUSED (ctx);
+  TLS_UNUSED (version);
+  ctx_raise_openssl_error (
+      "Failed to set minimum TLS protocol version (fallback unavailable)");
+#endif
+}
+
 void
 SocketTLSContext_set_min_protocol (T ctx, int version)
 {
@@ -310,27 +423,7 @@ SocketTLSContext_set_min_protocol (T ctx, int version)
   assert (ctx->ssl_ctx);
 
   if (SSL_CTX_set_min_proto_version (ctx->ssl_ctx, version) != 1)
-    {
-#if defined(SSL_OP_NO_SSLv2) && defined(SSL_OP_NO_SSLv3)
-      long options = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
-
-      if (version > TLS1_VERSION)
-        options |= SSL_OP_NO_TLSv1;
-      if (version > TLS1_1_VERSION)
-        options |= SSL_OP_NO_TLSv1_1;
-      if (version > TLS1_2_VERSION)
-        options |= SSL_OP_NO_TLSv1_2;
-
-      long current = SSL_CTX_set_options (ctx->ssl_ctx, options);
-      if (!(current & options))
-        {
-          ctx_raise_openssl_error ("Failed to set minimum TLS protocol version");
-        }
-#else
-      ctx_raise_openssl_error (
-          "Failed to set minimum TLS protocol version (fallback unavailable)");
-#endif
-    }
+    apply_min_proto_fallback (ctx, version);
 }
 
 void
@@ -340,82 +433,120 @@ SocketTLSContext_set_max_protocol (T ctx, int version)
   assert (ctx->ssl_ctx);
 
   if (SSL_CTX_set_max_proto_version (ctx->ssl_ctx, version) != 1)
-    {
-      ctx_raise_openssl_error ("Failed to set maximum TLS protocol version");
-    }
+    ctx_raise_openssl_error ("Failed to set maximum TLS protocol version");
 }
 
 void
 SocketTLSContext_set_cipher_list (T ctx, const char *ciphers)
 {
+  const char *list;
+
   assert (ctx);
   assert (ctx->ssl_ctx);
 
-  const char *list = ciphers
-      ? ciphers
-      : "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA";
+  list = ciphers ? ciphers : SOCKET_TLS_LEGACY_CIPHER_LIST;
 
   if (SSL_CTX_set_cipher_list (ctx->ssl_ctx, list) != 1)
-    {
-      ctx_raise_openssl_error ("Failed to set cipher list");
-    }
+    ctx_raise_openssl_error ("Failed to set cipher list");
 }
 
 /* ============================================================================
- * OCSP Stapling
+ * OCSP Stapling Server-Side
  * ============================================================================
  */
 
 /**
+ * encode_ocsp_response - Encode OCSP response to DER format
+ * @resp: OCSP response to encode
+ * @out_der: Output DER buffer (OPENSSL_malloc'd)
+ *
+ * Returns: DER length on success, 0 on failure (out_der set to NULL)
+ */
+static int
+encode_ocsp_response (OCSP_RESPONSE *resp, unsigned char **out_der)
+{
+  *out_der = NULL;
+  int len = i2d_OCSP_RESPONSE (resp, out_der);
+  return (len > 0 && *out_der) ? len : 0;
+}
+
+/**
  * status_cb_wrapper - OpenSSL OCSP status callback wrapper
  * @ssl: SSL connection
- * @arg: User argument (unused, we get context from SSL)
+ * @arg: User argument (unused)
  *
  * Returns: SSL_TLSEXT_ERR_OK or SSL_TLSEXT_ERR_NOACK
  *
- * Note: SSL_set_tlsext_status_ocsp_resp takes ownership of the DER buffer
- * (allocated by i2d_OCSP_RESPONSE via OPENSSL_malloc). We must NOT free
- * the buffer after a successful call - OpenSSL will free it in SSL_free().
- * Only free the buffer if we don't pass it to OpenSSL.
+ * Note: SSL_set_tlsext_status_ocsp_resp takes ownership of DER buffer.
  */
 static int
 status_cb_wrapper (SSL *ssl, void *arg)
 {
+  unsigned char *der = NULL;
+  OCSP_RESPONSE *resp;
+  int len;
+
   TLS_UNUSED (arg);
+
   T ctx = tls_context_get_from_ssl (ssl);
   if (!ctx || !ctx->ocsp_gen_cb)
     return SSL_TLSEXT_ERR_NOACK;
 
-  OCSP_RESPONSE *resp = ctx->ocsp_gen_cb (ssl, ctx->ocsp_gen_arg);
+  resp = ctx->ocsp_gen_cb (ssl, ctx->ocsp_gen_arg);
   if (!resp)
     return SSL_TLSEXT_ERR_NOACK;
 
-  unsigned char *der = NULL;
-  int len = i2d_OCSP_RESPONSE (resp, &der);
-  int success = 0;
-
-  if (len > 0 && der)
-    {
-      /* SSL_set_tlsext_status_ocsp_resp takes ownership of der buffer */
-      SSL_set_tlsext_status_ocsp_resp (ssl, der, len);
-      success = 1;
-      /* Do NOT free der - OpenSSL owns it now */
-    }
-  else if (der)
-    {
-      /* Only free der if we didn't give it to OpenSSL */
-      OPENSSL_free (der);
-    }
-
+  len = encode_ocsp_response (resp, &der);
   OCSP_RESPONSE_free (resp);
 
-  return success ? SSL_TLSEXT_ERR_OK : SSL_TLSEXT_ERR_NOACK;
+  if (len == 0)
+    {
+      if (der)
+        OPENSSL_free (der);
+      return SSL_TLSEXT_ERR_NOACK;
+    }
+
+  /* OpenSSL takes ownership of der buffer */
+  SSL_set_tlsext_status_ocsp_resp (ssl, der, len);
+  return SSL_TLSEXT_ERR_OK;
+}
+
+/**
+ * validate_ocsp_response_size - Check response doesn't exceed limits
+ * @len: Response length
+ */
+static void
+validate_ocsp_response_size (size_t len)
+{
+  if (len > SOCKET_TLS_MAX_OCSP_RESPONSE_LEN)
+    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                         "OCSP response too large (%zu bytes, max %d)", len,
+                         SOCKET_TLS_MAX_OCSP_RESPONSE_LEN);
+}
+
+/**
+ * validate_ocsp_response_format - Validate response DER format
+ * @response: Response bytes
+ * @len: Response length
+ */
+static void
+validate_ocsp_response_format (const unsigned char *response, size_t len)
+{
+  const unsigned char *p = response;
+  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &p, len);
+
+  if (!resp)
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid OCSP response format");
+
+  OCSP_RESPONSE_free (resp);
 }
 
 void
 SocketTLSContext_set_ocsp_response (T ctx, const unsigned char *response,
                                     size_t len)
 {
+  unsigned char *copy;
+
   assert (ctx);
   assert (ctx->ssl_ctx);
 
@@ -423,23 +554,10 @@ SocketTLSContext_set_ocsp_response (T ctx, const unsigned char *response,
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                          "Invalid OCSP response (null or zero length)");
 
-  /* Validate response size to prevent memory exhaustion attacks */
-  if (len > SOCKET_TLS_MAX_OCSP_RESPONSE_LEN)
-    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                         "OCSP response too large (%zu bytes, max %d)",
-                         len, SOCKET_TLS_MAX_OCSP_RESPONSE_LEN);
+  validate_ocsp_response_size (len);
+  validate_ocsp_response_format (response, len);
 
-  /* Save original pointer - d2i_OCSP_RESPONSE advances the pointer */
-  const unsigned char *p = response;
-  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &p, len);
-  if (!resp)
-    {
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid OCSP response format");
-    }
-  OCSP_RESPONSE_free (resp);
-
-  unsigned char *copy = ctx_arena_alloc (ctx, len,
-                                         "Failed to allocate OCSP response buffer");
+  copy = ctx_arena_alloc (ctx, len, "Failed to allocate OCSP response buffer");
   memcpy (copy, response, len);
   ctx->ocsp_response = copy;
   ctx->ocsp_len = len;
@@ -455,16 +573,8 @@ SocketTLSContext_set_ocsp_gen_callback (T ctx, SocketTLSOcspGenCallback cb,
   ctx->ocsp_gen_cb = cb;
   ctx->ocsp_gen_arg = arg;
 
-  /* Clear any stale errors before setting callback.
-   * SSL_CTX_set_tlsext_status_cb returns void and doesn't set errors,
-   * but previous operations might have left errors in the queue. */
   ERR_clear_error ();
-
   SSL_CTX_set_tlsext_status_cb (ctx->ssl_ctx, status_cb_wrapper);
-
-  /* SSL_CTX_set_tlsext_status_cb doesn't return errors directly,
-   * so we don't check ERR_get_error here - any errors from callback
-   * execution will be reported when the callback is invoked. */
 }
 
 /* ============================================================================
@@ -473,10 +583,10 @@ SocketTLSContext_set_ocsp_gen_callback (T ctx, SocketTLSOcspGenCallback cb,
  */
 
 /**
- * validate_socket_for_ocsp - Check socket is ready for OCSP status query
- * @socket: Socket to validate (read-only check)
+ * validate_socket_for_ocsp - Check socket is ready for OCSP query
+ * @socket: Socket to validate
  *
- * Returns: 1 if valid (TLS enabled, handshake done, SSL available), 0 otherwise
+ * Returns: 1 if valid, 0 otherwise
  */
 static int
 validate_socket_for_ocsp (const Socket_T socket)
@@ -488,9 +598,9 @@ validate_socket_for_ocsp (const Socket_T socket)
 /**
  * get_ocsp_response_bytes - Get raw OCSP response from SSL
  * @ssl: SSL connection
- * @resp_bytes: Output pointer to response bytes (OpenSSL-owned, do not free)
+ * @resp_bytes: Output pointer (OpenSSL-owned, do not free)
  *
- * Returns: Length of response, or 0 if no response or invalid
+ * Returns: Length of response, or 0 if none
  */
 static int
 get_ocsp_response_bytes (SSL *ssl, const unsigned char **resp_bytes)
@@ -503,16 +613,16 @@ get_ocsp_response_bytes (SSL *ssl, const unsigned char **resp_bytes)
  * validate_ocsp_basic_response - Validate OCSP basic response structure
  * @resp: OCSP response to validate
  *
- * Returns: 1 if valid basic response present, OCSP error status otherwise
- *
- * Note: Extracts and immediately frees basic response; only checks structure.
+ * Returns: 1 if valid, OCSP error status otherwise
  */
 static int
 validate_ocsp_basic_response (OCSP_RESPONSE *resp)
 {
   OCSP_BASICRESP *basic = OCSP_response_get1_basic (resp);
+
   if (!basic)
     return OCSP_RESPONSE_STATUS_INTERNALERROR;
+
   OCSP_BASICRESP_free (basic);
   return 1;
 }
@@ -520,28 +630,33 @@ validate_ocsp_basic_response (OCSP_RESPONSE *resp)
 int
 SocketTLS_get_ocsp_status (Socket_T socket)
 {
+  const unsigned char *resp_bytes;
+  const unsigned char *p;
+  OCSP_RESPONSE *resp;
+  int resp_len, status, result;
+  SSL *ssl;
+
   if (!validate_socket_for_ocsp (socket))
     return 0;
 
-  SSL *ssl = (SSL *)socket->tls_ssl;
-  const unsigned char *resp_bytes;
-  int resp_len = get_ocsp_response_bytes (ssl, &resp_bytes);
+  ssl = (SSL *)socket->tls_ssl;
+  resp_len = get_ocsp_response_bytes (ssl, &resp_bytes);
   if (resp_len == 0)
     return 0;
 
-  const unsigned char *p = resp_bytes;
-  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &p, resp_len);
+  p = resp_bytes;
+  resp = d2i_OCSP_RESPONSE (NULL, &p, resp_len);
   if (!resp)
     return OCSP_RESPONSE_STATUS_MALFORMEDREQUEST;
 
-  int status = OCSP_response_status (resp);
+  status = OCSP_response_status (resp);
   if (status != OCSP_RESPONSE_STATUS_SUCCESSFUL)
     {
       OCSP_RESPONSE_free (resp);
       return status;
     }
 
-  int result = validate_ocsp_basic_response (resp);
+  result = validate_ocsp_basic_response (resp);
   OCSP_RESPONSE_free (resp);
   return result;
 }
@@ -561,11 +676,9 @@ SocketTLSContext_enable_ocsp_stapling (T ctx)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                          "OCSP stapling request is for client contexts only");
 
-  /* Enable the TLS status_request extension (OCSP stapling) */
-  if (SSL_CTX_set_tlsext_status_type (ctx->ssl_ctx, TLSEXT_STATUSTYPE_ocsp) != 1)
-    {
-      ctx_raise_openssl_error ("Failed to enable OCSP stapling request");
-    }
+  if (SSL_CTX_set_tlsext_status_type (ctx->ssl_ctx, TLSEXT_STATUSTYPE_ocsp)
+      != 1)
+    ctx_raise_openssl_error ("Failed to enable OCSP stapling request");
 
   ctx->ocsp_stapling_enabled = 1;
 }
@@ -580,16 +693,6 @@ SocketTLSContext_ocsp_stapling_enabled (T ctx)
 /* ============================================================================
  * Custom Certificate Store Callback
  * ============================================================================
- *
- * Note: OpenSSL doesn't provide a simple X509_STORE_set_lookup_certs_cb.
- * Instead, we store the callback and user_data for use during verification.
- * The callback can be invoked from a custom verify callback set via
- * SocketTLSContext_set_verify_callback().
- *
- * For advanced use cases, consider:
- * 1. Pre-populating the store with X509_STORE_add_cert()
- * 2. Using a custom X509_LOOKUP_METHOD via X509_STORE_add_lookup()
- * 3. Using the verify callback to dynamically add certificates
  */
 
 void
@@ -603,21 +706,11 @@ SocketTLSContext_set_cert_lookup_callback (T ctx,
   ctx->cert_lookup_callback = (void *)callback;
   ctx->cert_lookup_user_data = user_data;
 
-  /* Note: The callback will be available for use in custom verify callbacks.
-   * OpenSSL doesn't have a built-in hook for certificate lookup during
-   * chain building. To use this callback:
-   *
-   * 1. Set a custom verify callback via SocketTLSContext_set_verify_callback()
-   * 2. In your callback, when verification fails due to missing issuer:
-   *    - Get the cert being verified from X509_STORE_CTX_get_current_cert()
-   *    - Get issuer name from X509_get_issuer_name()
-   *    - Call your lookup callback to find the issuer
-   *    - Add found cert via X509_STORE_add_cert() and retry
-   *
-   * For simpler use cases, pre-populate the store before verification. */
+  /* Note: Callback available for use in custom verify callbacks.
+   * OpenSSL doesn't have built-in hook for certificate lookup.
+   * See header documentation for usage pattern. */
 }
 
 #undef T
 
 #endif /* SOCKET_HAS_TLS */
-

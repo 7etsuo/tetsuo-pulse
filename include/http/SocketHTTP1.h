@@ -120,6 +120,20 @@
 #endif
 
 /* ============================================================================
+ * Serialization Buffer Sizes
+ * ============================================================================ */
+
+/** Buffer size for integer-to-string conversion (covers int64_t) */
+#ifndef SOCKETHTTP1_INT_STRING_BUFSIZE
+#define SOCKETHTTP1_INT_STRING_BUFSIZE 24
+#endif
+
+/** Buffer size for Content-Length header line ("Content-Length: " + value) */
+#ifndef SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE
+#define SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE 48
+#endif
+
+/* ============================================================================
  * Exception Types
  * ============================================================================ */
 

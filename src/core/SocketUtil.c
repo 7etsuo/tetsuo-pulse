@@ -27,7 +27,6 @@
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
@@ -506,7 +505,7 @@ static const char *const default_level_names[] = {
 
 /* Truncation indicator for log messages */
 #define SOCKETLOG_TRUNCATION_SUFFIX "..."
-#define SOCKETLOG_TRUNCATION_SUFFIX_LEN 4 /* 3 dots + NUL terminator */
+#define SOCKETLOG_TRUNCATION_SUFFIX_LEN (sizeof (SOCKETLOG_TRUNCATION_SUFFIX)) /* 3 dots + NUL */
 
 /**
  * socketlog_format_timestamp - Format current time as timestamp string

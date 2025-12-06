@@ -13,6 +13,15 @@
  * - Thread-safe operation
  */
 
+/* System headers first (GNU C style) */
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/uio.h>
+
+/* Project headers */
 #include "core/Arena.h"
 #include "core/SocketUtil.h"
 #include "socket/Socket-private.h"
@@ -20,24 +29,19 @@
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 #include "socket/SocketIO.h"
+
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketIO"
 
-#include <assert.h>
-#include <errno.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/uio.h>
-#include <unistd.h>
-
 /* Thread-local exception for detailed error messages */
 /* Declare module-specific exception using centralized macros */
-SOCKET_DECLARE_MODULE_EXCEPTION(SocketIO);
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketIO);
 
-/* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(SocketIO, e)
+/* Convenience macros for unified error+raise pattern */
+#define RAISE_FMT(e, fmt, ...)                                                 \
+  SOCKET_RAISE_FMT (SocketIO, e, fmt, ##__VA_ARGS__)
+#define RAISE_MSG(e, fmt, ...)                                                 \
+  SOCKET_RAISE_MSG (SocketIO, e, fmt, ##__VA_ARGS__)
 
 #ifdef SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
@@ -86,8 +90,7 @@ socket_send_raw (T socket, const void *buf, size_t len, int flags)
         return 0;
       if (socketio_is_connection_closed_send ())
         RAISE (Socket_Closed);
-      SOCKET_ERROR_FMT ("Send failed (len=%zu)", len);
-      RAISE_MODULE_ERROR (Socket_Failed);
+      RAISE_FMT (Socket_Failed, "Send failed (len=%zu)", len);
     }
 
   return result;
@@ -114,8 +117,7 @@ socket_recv_raw (T socket, void *buf, size_t len, int flags)
         return 0;
       if (socketio_is_connection_closed_recv ())
         RAISE (Socket_Closed);
-      SOCKET_ERROR_FMT ("Receive failed (len=%zu)", len);
-      RAISE_MODULE_ERROR (Socket_Failed);
+      RAISE_FMT (Socket_Failed, "Receive failed (len=%zu)", len);
     }
   else if (result == 0)
     {
@@ -173,8 +175,6 @@ socket_recv_internal (T socket, void *buf, size_t len, int flags)
   return socket_recv_raw (socket, buf, len, flags);
 }
 
-
-
 /**
  * socket_sendv_raw - Raw scatter/gather send implementation
  * @socket: Socket instance
@@ -204,13 +204,12 @@ socket_sendv_raw (T socket, const struct iovec *iov, int iovcnt, int flags)
         return 0;
       if (socketio_is_connection_closed_send ())
         RAISE (Socket_Closed);
-      SOCKET_ERROR_FMT ("Scatter/gather send failed (iovcnt=%d)", iovcnt);
-      RAISE_MODULE_ERROR (Socket_Failed);
+      RAISE_FMT (Socket_Failed, "Scatter/gather send failed (iovcnt=%d)",
+                 iovcnt);
     }
 
   return result;
 }
-
 
 /**
  * socket_recvv_raw - Raw scatter/gather receive implementation
@@ -232,8 +231,8 @@ socket_recvv_raw (T socket, struct iovec *iov, int iovcnt, int flags)
         return 0;
       if (socketio_is_connection_closed_recv ())
         RAISE (Socket_Closed);
-      SOCKET_ERROR_FMT ("Scatter/gather receive failed (iovcnt=%d)", iovcnt);
-      RAISE_MODULE_ERROR (Socket_Failed);
+      RAISE_FMT (Socket_Failed, "Scatter/gather receive failed (iovcnt=%d)",
+                 iovcnt);
     }
   else if (result == 0)
     {
@@ -500,15 +499,9 @@ socket_validate_tls_ready (T socket)
 {
   SSL *ssl = socket_get_ssl (socket);
   if (!ssl)
-    {
-      SOCKET_ERROR_MSG ("TLS enabled but SSL context is NULL");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    RAISE_MSG (Socket_Failed, "TLS enabled but SSL context is NULL");
   if (!socket->tls_handshake_done)
-    {
-      SOCKET_ERROR_MSG ("TLS handshake not complete");
-      RAISE_MODULE_ERROR (SocketTLS_HandshakeFailed);
-    }
+    RAISE_MSG (SocketTLS_HandshakeFailed, "TLS handshake not complete");
   return ssl;
 }
 
@@ -529,10 +522,8 @@ socket_send_tls (T socket, const void *buf, size_t len)
 
   /* Validate size fits in int to prevent truncation (SSL_write takes int) */
   if (len > INT_MAX)
-    {
-      SOCKET_ERROR_FMT ("TLS send size exceeds INT_MAX (len=%zu)", len);
-      RAISE_MODULE_ERROR (SocketTLS_Failed);
-    }
+    RAISE_FMT (SocketTLS_Failed, "TLS send size exceeds INT_MAX (len=%zu)",
+               len);
 
   int ssl_result = SSL_write (ssl, buf, (int)len);
 
@@ -541,8 +532,7 @@ socket_send_tls (T socket, const void *buf, size_t len)
       socket_handle_ssl_error (socket, ssl, ssl_result);
       if (socketio_is_wouldblock ())
         return 0;
-      SOCKET_ERROR_FMT ("TLS send failed (len=%zu)", len);
-      RAISE_MODULE_ERROR (SocketTLS_Failed);
+      RAISE_FMT (SocketTLS_Failed, "TLS send failed (len=%zu)", len);
     }
   return (ssize_t)ssl_result;
 }
@@ -564,10 +554,8 @@ socket_recv_tls (T socket, void *buf, size_t len)
 
   /* Validate size fits in int to prevent truncation (SSL_read takes int) */
   if (len > INT_MAX)
-    {
-      SOCKET_ERROR_FMT ("TLS recv size exceeds INT_MAX (len=%zu)", len);
-      RAISE_MODULE_ERROR (SocketTLS_Failed);
-    }
+    RAISE_FMT (SocketTLS_Failed, "TLS recv size exceeds INT_MAX (len=%zu)",
+               len);
 
   int ssl_result = SSL_read (ssl, buf, (int)len);
 
@@ -578,8 +566,7 @@ socket_recv_tls (T socket, void *buf, size_t len)
         return 0;
       if (ssl_result == 0 || errno == ECONNRESET)
         RAISE (Socket_Closed);
-      SOCKET_ERROR_FMT ("TLS receive failed (len=%zu)", len);
-      RAISE_MODULE_ERROR (SocketTLS_Failed);
+      RAISE_FMT (SocketTLS_Failed, "TLS receive failed (len=%zu)", len);
     }
   return (ssize_t)ssl_result;
 }
@@ -611,16 +598,10 @@ copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer,
   /* Pre-validate total size with overflow protection */
   size_t total = SocketCommon_calculate_total_iov_len (iov, iovcnt);
   if (total == 0 && iovcnt > 0)
-    {
-      SOCKET_ERROR_MSG ("iovec total size overflow or invalid");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    RAISE_MSG (Socket_Failed, "iovec total size overflow or invalid");
   if (total > buffer_size)
-    {
-      SOCKET_ERROR_FMT ("Buffer too small for iovec (need %zu, have %zu)",
-                        total, buffer_size);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    RAISE_FMT (Socket_Failed, "Buffer too small for iovec (need %zu, have %zu)",
+               total, buffer_size);
 
   for (int i = 0; i < iovcnt; i++)
     {
@@ -678,19 +659,13 @@ socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
 
   /* Validate total size fits in int to prevent truncation (SSL_write takes int) */
   if (total_len > INT_MAX)
-    {
-      SOCKET_ERROR_FMT ("TLS sendv size exceeds INT_MAX (total_len=%zu)",
-                        total_len);
-      RAISE_MODULE_ERROR (SocketTLS_Failed);
-    }
+    RAISE_FMT (SocketTLS_Failed,
+               "TLS sendv size exceeds INT_MAX (total_len=%zu)", total_len);
 
   Arena_T arena = SocketBase_arena (socket->base);
   void *temp_buf = Arena_calloc (arena, total_len, 1, __FILE__, __LINE__);
   if (!temp_buf)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate TLS sendv buffer");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    RAISE_MSG (Socket_Failed, SOCKET_ENOMEM ": Cannot allocate TLS sendv buffer");
 
   copy_iov_to_buffer (iov, iovcnt, temp_buf, total_len);
 
@@ -701,8 +676,7 @@ socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
       socket_handle_ssl_error (socket, ssl, ssl_result);
       if (socketio_is_wouldblock ())
         return 0;
-      SOCKET_ERROR_FMT ("TLS sendv failed (iovcnt=%d)", iovcnt);
-      RAISE_MODULE_ERROR (SocketTLS_Failed);
+      RAISE_FMT (SocketTLS_Failed, "TLS sendv failed (iovcnt=%d)", iovcnt);
     }
 
   return (ssize_t)ssl_result;
@@ -726,19 +700,14 @@ socket_recvv_tls (T socket, struct iovec *iov, int iovcnt)
 
   /* Validate total size fits in int to prevent truncation (SSL_read takes int) */
   if (total_capacity > INT_MAX)
-    {
-      SOCKET_ERROR_FMT ("TLS recvv size exceeds INT_MAX (total_capacity=%zu)",
-                        total_capacity);
-      RAISE_MODULE_ERROR (SocketTLS_Failed);
-    }
+    RAISE_FMT (SocketTLS_Failed,
+               "TLS recvv size exceeds INT_MAX (total_capacity=%zu)",
+               total_capacity);
 
   Arena_T arena = SocketBase_arena (socket->base);
   void *temp_buf = Arena_calloc (arena, total_capacity, 1, __FILE__, __LINE__);
   if (!temp_buf)
-    {
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate TLS recvv buffer");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    RAISE_MSG (Socket_Failed, SOCKET_ENOMEM ": Cannot allocate TLS recvv buffer");
 
   int ssl_result = SSL_read (ssl, temp_buf, (int)total_capacity);
 
@@ -749,8 +718,7 @@ socket_recvv_tls (T socket, struct iovec *iov, int iovcnt)
         return 0;
       if (ssl_result == 0 || errno == ECONNRESET)
         RAISE (Socket_Closed);
-      SOCKET_ERROR_FMT ("TLS recvv failed (iovcnt=%d)", iovcnt);
-      RAISE_MODULE_ERROR (SocketTLS_Failed);
+      RAISE_FMT (SocketTLS_Failed, "TLS recvv failed (iovcnt=%d)", iovcnt);
     }
 
   return (ssize_t)distribute_buffer_to_iov (temp_buf, (size_t)ssl_result, iov,
