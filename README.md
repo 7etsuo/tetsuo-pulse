@@ -53,7 +53,7 @@ High-performance, exception-driven socket toolkit for POSIX systems. Provides a 
 - **Arena Memory Management** - Efficient allocation with overflow protection
 - **Asynchronous DNS** - Non-blocking resolution with thread pool and timeouts
 - **Zero-Copy I/O** - Platform-optimized `sendfile()` and scatter/gather I/O
-- **Observability** - Pluggable logging, metrics collection, event dispatching
+- **Observability** - Pluggable logging, Prometheus/StatsD/JSON metrics export, event dispatching
 - **Cryptographic Utilities** - SHA-1/256, HMAC, Base64, secure random
 
 ## Platform Requirements
@@ -132,7 +132,7 @@ int main(void)
             }
         }
     EXCEPT(Socket_Failed)
-        fprintf(stderr, "Error: %s\n", Socket_GetLastError());
+        fprintf(stderr, "Error: %s\n", Socket_Failed.reason);
     END_TRY;
     
     Socket_free(&server);
@@ -163,7 +163,7 @@ int main(void)
         buf[n] = '\0';
         printf("Received: %s\n", buf);
     EXCEPT(Socket_Failed)
-        fprintf(stderr, "Error: %s\n", Socket_GetLastError());
+        fprintf(stderr, "Error: %s\n", Socket_Failed.reason);
     EXCEPT(Socket_Closed)
         fprintf(stderr, "Connection closed\n");
     END_TRY;
@@ -184,7 +184,10 @@ TRY
     Socket_connect(socket, "example.com", 80);
     Socket_sendall(socket, data, len);
 EXCEPT(Socket_Failed)
-    fprintf(stderr, "Socket error: %s\n", Socket_GetLastError());
+    if (Socket_error_is_retryable(Socket_geterrno()))
+        /* Schedule retry with backoff */
+    else
+        fprintf(stderr, "Fatal error: %s\n", Socket_Failed.reason);
 EXCEPT(Socket_Closed)
     fprintf(stderr, "Connection closed\n");
 FINALLY
@@ -339,45 +342,11 @@ TRY
     /* Graceful close */
     SocketWS_close(ws, WS_CLOSE_NORMAL, "Goodbye", 7);
 EXCEPT(SocketWS_Failed)
-    fprintf(stderr, "WebSocket error: %s\n", Socket_GetLastError());
+    fprintf(stderr, "WebSocket error: %s\n", Socket_Failed.reason);
 END_TRY;
 
 SocketWS_free(&ws);
 Socket_free(&sock);
-```
-
-### WebSocket Server
-
-```c
-#include "socket/SocketWS.h"
-#include "http/SocketHTTP1.h"
-
-/* Check if request is WebSocket upgrade */
-if (SocketWS_is_upgrade(headers)) {
-    SocketWS_Config ws_config = SOCKETWS_CONFIG_DEFAULTS;
-    SocketWS_T ws = SocketWS_server_accept(client_socket, headers, &ws_config);
-    
-    if (ws) {
-        /* WebSocket connection established */
-        while (SocketWS_state(ws) == WS_STATE_OPEN) {
-            SocketWS_Message msg;
-            int result = SocketWS_recv_message(ws, &msg);
-            
-            if (result == WS_OK) {
-                /* Echo back */
-                if (msg.opcode == WS_OPCODE_TEXT) {
-                    SocketWS_send_text(ws, msg.data, msg.len);
-                } else if (msg.opcode == WS_OPCODE_BINARY) {
-                    SocketWS_send_binary(ws, msg.data, msg.len);
-                }
-                SocketWS_Message_free(&msg);
-            }
-        }
-        SocketWS_free(&ws);
-    }
-} else {
-    SocketWS_server_reject(client_socket, 400, "Bad Request");
-}
 ```
 
 ### Proxy Tunneling
@@ -663,6 +632,43 @@ while (running) {
 SocketReconnect_free(&conn);
 ```
 
+### Generic Retry Framework
+
+```c
+#include "core/SocketRetry.h"
+
+/* Configure retry policy */
+SocketRetry_Policy policy;
+SocketRetry_policy_defaults(&policy);
+policy.max_attempts = 5;
+policy.initial_delay_ms = 100;
+policy.max_delay_ms = 30000;
+policy.multiplier = 2.0;
+policy.jitter = 0.25;
+
+/* Define operation to retry */
+int connect_op(void *ctx, int attempt) {
+    ConnectionCtx *c = ctx;
+    return connect(c->fd, c->addr, c->addrlen) < 0 ? errno : 0;
+}
+
+/* Define retry decision callback */
+int should_retry(int err, int attempt, void *ctx) {
+    return SocketError_is_retryable_errno(err);
+}
+
+/* Execute with retries */
+SocketRetry_T retry = SocketRetry_new(&policy);
+int result = SocketRetry_execute(retry, connect_op, should_retry, &ctx);
+
+/* Get statistics */
+SocketRetry_Stats stats;
+SocketRetry_get_stats(retry, &stats);
+printf("Attempts: %d, Total delay: %lld ms\n", stats.attempts, stats.total_delay_ms);
+
+SocketRetry_free(&retry);
+```
+
 ### Asynchronous DNS Resolution
 
 ```c
@@ -831,7 +837,7 @@ Socket_free(&socket);
 SocketTLSContext_free(&ctx);
 ```
 
-### TLS Server with SNI
+### TLS Server with SNI and Certificate Pinning
 
 ```c
 #include "tls/SocketTLSContext.h"
@@ -861,6 +867,12 @@ SocketTLSContext_set_ocsp_response(ctx, ocsp_response, ocsp_len);
 unsigned char ticket_key[80];
 generate_ticket_key(ticket_key, sizeof(ticket_key));
 SocketTLSContext_enable_session_tickets(ctx, ticket_key, sizeof(ticket_key));
+
+/* Certificate pinning (client context) */
+SocketTLSContext_T client_ctx = SocketTLSContext_new_client("ca-bundle.pem");
+SocketTLSContext_add_pin_hex(client_ctx, 
+    "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c");
+SocketTLSContext_set_pin_enforcement(client_ctx, 1);  /* Strict mode */
 ```
 
 ### Zero-Copy File Transfer
@@ -918,23 +930,22 @@ Socket_bind_unix(server, "@abstract-socket");
 
 /* File descriptor passing (SCM_RIGHTS) */
 int fd_to_pass = open("/etc/passwd", O_RDONLY);
-Socket_sendfd(sock1, fd_to_pass, "hello", 5);
+Socket_sendfd(sock1, fd_to_pass);
 close(fd_to_pass);
 
 /* Receive passed FD */
 int received_fd;
-char buf[256];
-ssize_t n = Socket_recvfd(sock2, &received_fd, buf, sizeof(buf));
+Socket_recvfd(sock2, &received_fd);
 /* received_fd is now a valid FD in this process */
 close(received_fd);
 
 /* Multiple FD passing */
 int fds[3] = {fd1, fd2, fd3};
-Socket_sendfds(sock1, fds, 3, "data", 4);
+Socket_sendfds(sock1, fds, 3);
 
 int received_fds[3];
-int num_fds;
-Socket_recvfds(sock2, received_fds, 3, &num_fds, buf, sizeof(buf));
+size_t num_fds;
+Socket_recvfds(sock2, received_fds, 3, &num_fds);
 ```
 
 ### Cryptographic Utilities
@@ -968,7 +979,7 @@ if (SocketCrypto_secure_compare(expected, actual, len)) {
 SocketCrypto_secure_clear(password, password_len);
 ```
 
-### Observability
+### Observability - Logging
 
 ```c
 #include "core/SocketUtil.h"
@@ -980,34 +991,44 @@ void my_logger(void *userdata, SocketLogLevel level,
 }
 SocketLog_setcallback(my_logger, NULL);
 
-/* Metrics collection */
-SocketMetricsSnapshot snapshot;
-SocketMetrics_getsnapshot(&snapshot);
+/* Set minimum log level */
+SocketLog_setlevel(SOCKET_LOG_DEBUG);
 
-printf("Connect successes: %llu\n", 
-       SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_SOCKET_CONNECT_SUCCESS));
-printf("DNS requests: %llu\n",
-       SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_DNS_REQUEST_SUBMITTED));
-printf("Pool connections: %llu\n",
-       SocketMetrics_snapshot_value(&snapshot, SOCKET_METRIC_POOL_CONNECTIONS_ADDED));
+/* Use convenience macros */
+#define SOCKET_LOG_COMPONENT "MyApp"
+SOCKET_LOG_INFO_MSG("Server started on port %d", port);
+SOCKET_LOG_ERROR_MSG("Connection failed: %s", strerror(errno));
+```
+
+### Observability - Metrics
+
+```c
+#include "core/SocketMetrics.h"
+
+/* Record metrics */
+SocketMetrics_counter_inc(SOCKET_CTR_SOCKET_CREATED);
+SocketMetrics_gauge_set(SOCKET_GAU_POOL_ACTIVE_CONNECTIONS, 42);
+SocketMetrics_histogram_observe(SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS, 125.0);
+
+/* Get percentiles */
+double p99 = SocketMetrics_histogram_percentile(SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS, 99.0);
+
+/* Export to Prometheus */
+char buffer[65536];
+size_t len = SocketMetrics_export_prometheus(buffer, sizeof(buffer));
+
+/* Export to StatsD */
+SocketMetrics_export_statsd(buffer, sizeof(buffer), "myapp.socket");
+
+/* Export to JSON */
+SocketMetrics_export_json(buffer, sizeof(buffer));
+
+/* Get complete snapshot */
+SocketMetrics_Snapshot snapshot;
+SocketMetrics_get(&snapshot);
 
 /* Reset metrics */
 SocketMetrics_reset();
-
-/* Event callbacks */
-void on_event(void *userdata, const SocketEventRecord *event) {
-    switch (event->type) {
-    case SOCKET_EVENT_CONNECTED:
-        printf("Connected to %s:%d\n", 
-               event->data.connection.peer_addr,
-               event->data.connection.peer_port);
-        break;
-    case SOCKET_EVENT_DNS_TIMEOUT:
-        printf("DNS timeout for %s\n", event->data.dns.host);
-        break;
-    }
-}
-SocketEvent_register(on_event, NULL);
 ```
 
 ### Advanced TCP Options
@@ -1033,530 +1054,76 @@ Socket_setnodelay(socket, 1);
 /* Buffer sizes */
 Socket_setrcvbuf(socket, 262144);
 Socket_setsndbuf(socket, 262144);
+
+/* SYN flood protection */
+Socket_setdeferaccept(socket, 10);  /* Wait 10s for data before accept() */
 ```
 
-## API Reference
-
-### Core Modules
-
-#### Arena (Memory Management)
-- `Arena_new()` - Create new memory arena
-- `Arena_dispose()` - Free arena and all allocations
-- `Arena_alloc()` - Allocate from arena
-- `Arena_calloc()` - Allocate zeroed memory
-
-#### Except (Exception Handling)
-- `TRY/EXCEPT/FINALLY/END_TRY` - Exception handling macros
-- `RAISE()` - Raise an exception
-- `RERAISE` - Re-raise current exception
-
-#### SocketTimer (Timers)
-- `SocketTimer_add()` - Add one-shot timer
-- `SocketTimer_add_repeating()` - Add repeating timer
-- `SocketTimer_cancel()` - Cancel pending timer
-- `SocketTimer_remaining()` - Get time until expiry
-
-#### SocketRateLimit (Rate Limiting)
-- `SocketRateLimit_new()` - Create token bucket limiter
-- `SocketRateLimit_free()` - Free limiter
-- `SocketRateLimit_try_acquire()` - Try to consume tokens
-- `SocketRateLimit_wait_time_ms()` - Calculate wait time
-- `SocketRateLimit_available()` - Get available tokens
-- `SocketRateLimit_configure()` - Reconfigure at runtime
-
-#### SocketCrypto (Cryptographic Utilities)
-- `SocketCrypto_sha1()` / `SocketCrypto_sha256()` / `SocketCrypto_md5()` - Hash functions
-- `SocketCrypto_hmac_sha256()` - HMAC message authentication
-- `SocketCrypto_base64_encode()` / `SocketCrypto_base64_decode()` - Base64 encoding
-- `SocketCrypto_hex_encode()` / `SocketCrypto_hex_decode()` - Hexadecimal encoding
-- `SocketCrypto_random_bytes()` - Cryptographically secure random
-- `SocketCrypto_secure_compare()` - Constant-time comparison
-- `SocketCrypto_secure_clear()` - Secure memory clearing
-- `SocketCrypto_websocket_key()` / `SocketCrypto_websocket_accept()` - WebSocket handshake
-
-#### SocketUTF8 (UTF-8 Validation)
-- `SocketUTF8_validate()` - One-shot validation
-- `SocketUTF8_init()` / `_update()` / `_finish()` - Incremental validation
-- `SocketUTF8_encode()` / `SocketUTF8_decode()` - Codepoint conversion
-
-### Socket Module (TCP Stream Sockets)
-
-#### Creation and Lifecycle
-- `Socket_new()` - Create new socket
-- `Socket_new_from_fd()` - Create from existing file descriptor
-- `SocketPair_new()` - Create connected Unix domain socket pair
-- `Socket_free()` - Free socket and close connection
-- `Socket_fd()` - Get underlying file descriptor
-
-#### Connection Management
-- `Socket_bind()` - Bind socket to address/port
-- `Socket_listen()` - Start listening for connections
-- `Socket_accept()` - Accept incoming connection
-- `Socket_connect()` - Connect to remote host
-- `Socket_shutdown()` - Shutdown connection
-- `Socket_isconnected()` / `Socket_isbound()` / `Socket_islistening()` - State queries
-
-#### I/O Operations
-- `Socket_send()` / `Socket_recv()` - Basic send/receive
-- `Socket_sendall()` / `Socket_recvall()` - Complete send/receive
-- `Socket_sendv()` / `Socket_recvv()` - Scatter/gather I/O
-- `Socket_sendvall()` / `Socket_recvvall()` - Complete scatter/gather
-- `Socket_sendfile()` / `Socket_sendfileall()` - Zero-copy file transfer
-- `Socket_sendmsg()` / `Socket_recvmsg()` - Advanced message I/O
-
-#### File Descriptor Passing (Unix Domain)
-- `Socket_sendfd()` / `Socket_recvfd()` - Single FD passing
-- `Socket_sendfds()` / `Socket_recvfds()` - Multiple FD passing
-
-#### Bandwidth Limiting
-- `Socket_setbandwidth()` - Set bandwidth limit (bytes/sec)
-- `Socket_getbandwidth()` - Get bandwidth limit
-- `Socket_send_limited()` - Rate-limited send
-- `Socket_recv_limited()` - Rate-limited receive
-- `Socket_bandwidth_wait_ms()` - Get wait time for bandwidth
-
-#### Socket Options
-- `Socket_setnonblocking()` - Enable non-blocking mode
-- `Socket_setreuseaddr()` / `Socket_setreuseport()` - Address/port reuse
-- `Socket_settimeout()` / `Socket_gettimeout()` - Socket timeout
-- `Socket_setkeepalive()` / `Socket_getkeepalive()` - TCP keepalive
-- `Socket_setnodelay()` / `Socket_getnodelay()` - Nagle's algorithm
-- `Socket_setrcvbuf()` / `Socket_setsndbuf()` - Buffer sizes
-- `Socket_setcongestion()` / `Socket_getcongestion()` - Congestion control (Linux)
-- `Socket_setfastopen()` / `Socket_getfastopen()` - TCP Fast Open
-- `Socket_setusertimeout()` / `Socket_getusertimeout()` - TCP user timeout (Linux)
-- `Socket_setcloexec()` - Close-on-exec flag
-
-#### Unix Domain Sockets
-- `Socket_bind_unix()` - Bind to Unix socket path
-- `Socket_connect_unix()` - Connect to Unix socket path
-- `Socket_getpeerpid()` / `Socket_getpeeruid()` / `Socket_getpeergid()` - Peer credentials
-
-#### Address Information
-- `Socket_getpeeraddr()` / `Socket_getpeerport()` - Peer address
-- `Socket_getlocaladdr()` / `Socket_getlocalport()` - Local address
-
-### SocketDgram Module (UDP Datagram Sockets)
-
-#### Creation
-- `SocketDgram_new()` - Create UDP socket
-- `SocketDgram_free()` - Free socket
-
-#### Connection Management
-- `SocketDgram_bind()` - Bind socket
-- `SocketDgram_connect()` - Set default destination
-- `SocketDgram_isconnected()` / `SocketDgram_isbound()` - State queries
-
-#### I/O Operations
-- `SocketDgram_sendto()` / `SocketDgram_recvfrom()` - Connectionless I/O
-- `SocketDgram_send()` / `SocketDgram_recv()` - Connected I/O
-- `SocketDgram_sendall()` / `SocketDgram_recvall()` - Complete I/O
-- `SocketDgram_sendv()` / `SocketDgram_recvv()` - Scatter/gather I/O
-
-#### Multicast/Broadcast
-- `SocketDgram_setbroadcast()` - Enable broadcast
-- `SocketDgram_joinmulticast()` / `SocketDgram_leavemulticast()` - Multicast groups
-- `SocketDgram_setttl()` / `SocketDgram_getttl()` - TTL/hop limit
-
-### SocketPoll Module (Event Polling)
-
-- `SocketPoll_new()` - Create poll instance
-- `SocketPoll_free()` - Free poll instance
-- `SocketPoll_add()` - Add socket to poll set
-- `SocketPoll_mod()` - Modify socket events
-- `SocketPoll_del()` - Remove socket from poll set
-- `SocketPoll_wait()` - Wait for events
-- `SocketPoll_setdefaulttimeout()` / `SocketPoll_getdefaulttimeout()` - Default timeout
-- `SocketPoll_get_async()` - Get async I/O context
-
-### SocketPool Module (Connection Pooling)
-
-#### Pool Management
-- `SocketPool_new()` - Create pool
-- `SocketPool_free()` - Free pool
-- `SocketPool_add()` - Add socket to pool
-- `SocketPool_remove()` - Remove socket from pool
-- `SocketPool_get()` - Look up connection
-- `SocketPool_count()` - Get active connection count
-- `SocketPool_cleanup()` - Remove idle connections
-- `SocketPool_resize()` - Resize pool capacity
-- `SocketPool_prewarm()` - Pre-allocate buffers
-
-#### Rate Limiting
-- `SocketPool_setconnrate()` / `SocketPool_getconnrate()` - Connection rate limit
-- `SocketPool_setmaxperip()` / `SocketPool_getmaxperip()` - Per-IP limit
-- `SocketPool_accept_allowed()` - Check if accepting allowed
-- `SocketPool_accept_limited()` - Rate-limited accept
-- `SocketPool_accept_batch()` - Batch accept
-- `SocketPool_track_ip()` / `SocketPool_release_ip()` - IP tracking
-
-#### Graceful Shutdown
-- `SocketPool_drain()` - Start non-blocking drain
-- `SocketPool_drain_poll()` - Poll drain progress
-- `SocketPool_drain_wait()` - Blocking drain
-- `SocketPool_drain_force()` - Force-close all connections
-- `SocketPool_drain_remaining_ms()` - Time until forced shutdown
-- `SocketPool_state()` / `SocketPool_health()` - State queries
-- `SocketPool_set_drain_callback()` - Completion callback
-
-#### Reconnection
-- `SocketPool_set_reconnect_policy()` - Set default reconnection policy
-- `SocketPool_enable_reconnect()` / `SocketPool_disable_reconnect()` - Per-connection
-- `SocketPool_process_reconnects()` - Process reconnection state machines
-- `SocketPool_reconnect_timeout_ms()` - Get next timeout
-
-#### Connection Accessors
-- `Connection_socket()` - Get connection's socket
-- `Connection_inbuf()` / `Connection_outbuf()` - Get I/O buffers
-- `Connection_data()` / `Connection_setdata()` - User data
-- `Connection_lastactivity()` - Last activity time
-- `Connection_isactive()` - Check if active
-
-### SocketDNS Module (Asynchronous DNS)
-
-- `SocketDNS_new()` - Create DNS resolver
-- `SocketDNS_free()` - Free resolver
-- `SocketDNS_resolve()` - Start async resolution
-- `SocketDNS_getresult()` - Get resolution result
-- `SocketDNS_geterror()` - Get error code
-- `SocketDNS_cancel()` - Cancel resolution
-- `SocketDNS_pollfd()` - Get poll file descriptor
-- `SocketDNS_check()` - Process completed requests
-- `SocketDNS_settimeout()` / `SocketDNS_gettimeout()` - Resolver timeout
-- `SocketDNS_request_settimeout()` - Per-request timeout
-- `SocketDNS_setmaxpending()` / `SocketDNS_getmaxpending()` - Queue capacity
-
-### SocketHappyEyeballs Module (RFC 8305)
-
-- `SocketHappyEyeballs_connect()` - Blocking Happy Eyeballs connect
-- `SocketHappyEyeballs_start()` - Start async Happy Eyeballs
-- `SocketHappyEyeballs_poll()` - Check if operation complete
-- `SocketHappyEyeballs_process()` - Process events
-- `SocketHappyEyeballs_result()` - Get winning socket
-- `SocketHappyEyeballs_cancel()` - Cancel operation
-- `SocketHappyEyeballs_free()` - Free context
-- `SocketHappyEyeballs_state()` - Get current state
-- `SocketHappyEyeballs_error()` - Get error message
-- `SocketHappyEyeballs_config_defaults()` - Initialize config
-- `SocketHappyEyeballs_next_timeout_ms()` - Get next timeout
-
-### SocketReconnect Module (Automatic Reconnection)
-
-- `SocketReconnect_new()` - Create reconnecting connection
-- `SocketReconnect_free()` - Free context
-- `SocketReconnect_connect()` - Start connecting
-- `SocketReconnect_disconnect()` - Graceful disconnect
-- `SocketReconnect_reset()` - Reset backoff/circuit breaker
-- `SocketReconnect_socket()` - Get underlying socket
-- `SocketReconnect_state()` - Get current state
-- `SocketReconnect_isconnected()` - Check connection status
-- `SocketReconnect_attempts()` / `SocketReconnect_failures()` - Statistics
-- `SocketReconnect_pollfd()` - Get poll file descriptor
-- `SocketReconnect_process()` - Process poll events
-- `SocketReconnect_tick()` - Process timers
-- `SocketReconnect_next_timeout_ms()` - Get next timeout
-- `SocketReconnect_send()` / `SocketReconnect_recv()` - I/O with auto-reconnect
-- `SocketReconnect_set_health_check()` - Custom health check
-- `SocketReconnect_policy_defaults()` - Initialize policy
-- `SocketReconnect_state_name()` - Get state name string
-
-### SocketAsync Module (Asynchronous I/O)
-
-- `SocketAsync_new()` - Create async context
-- `SocketAsync_free()` - Free context
-- `SocketAsync_send()` - Submit async send
-- `SocketAsync_recv()` - Submit async receive
-- `SocketAsync_cancel()` - Cancel pending operation
-- `SocketAsync_process_completions()` - Process completions
-- `SocketAsync_is_available()` - Check platform support
-- `SocketAsync_backend_name()` - Get backend name
-
-### SocketProxy Module (Proxy Tunneling)
-
-#### Configuration
-- `SocketProxy_parse_url()` - Parse proxy URL (socks5://user:pass@host:port)
-
-#### Synchronous API
-- `SocketProxy_connect()` - Connect through proxy
-- `SocketProxy_connect_tls()` - Connect through proxy with TLS to target
-
-#### Asynchronous API
-- `SocketProxy_Conn_new()` - Create async proxy connection
-- `SocketProxy_Conn_free()` - Free connection
-- `SocketProxy_Conn_poll()` - Check if complete
-- `SocketProxy_Conn_process()` - Process events
-- `SocketProxy_Conn_result()` - Get result
-- `SocketProxy_Conn_next_timeout_ms()` - Get next timeout
-- `SocketProxy_Conn_poll_events()` - Get poll events
-
-### HTTP Modules
-
-#### SocketHTTP (HTTP Core - RFC 9110)
-- `SocketHTTP_method_*()` - Method utilities (safe, idempotent, cacheable)
-- `SocketHTTP_status_*()` - Status code utilities
-- `SocketHTTP_Headers_new()` / `_free()` - Header collection lifecycle
-- `SocketHTTP_Headers_add()` / `_get()` / `_remove()` - Header management
-- `SocketHTTP_URI_parse()` - RFC 3986 URI parsing
-- `SocketHTTP_date_parse()` - HTTP-date parsing
-
-#### SocketHTTP1 (HTTP/1.1 - RFC 9112)
-- `SocketHTTP1_Parser_new()` / `_free()` - Parser lifecycle
-- `SocketHTTP1_Parser_execute()` - Incremental parsing
-- `SocketHTTP1_Parser_reset()` - Reset parser state
-- `SocketHTTP1_serialize_request()` / `_response()` - Serialization
-- `SocketHTTP1_chunk_encode()` / `_final()` - Chunked encoding
-
-#### SocketHPACK (Header Compression - RFC 7541)
-- `SocketHPACK_Encoder_new()` / `_free()` - Encoder lifecycle
-- `SocketHPACK_Encoder_encode()` - Encode headers
-- `SocketHPACK_Decoder_new()` / `_free()` - Decoder lifecycle
-- `SocketHPACK_Decoder_decode()` - Decode headers
-- `SocketHPACK_huffman_encode()` / `_decode()` - Huffman coding
-
-#### SocketHTTP2 (HTTP/2 - RFC 9113)
-- `SocketHTTP2_Conn_new()` / `_free()` - Connection lifecycle
-- `SocketHTTP2_Conn_handshake()` - Connection preface exchange
-- `SocketHTTP2_Conn_process()` - Frame processing
-- `SocketHTTP2_Conn_settings()` / `_ping()` / `_goaway()` - Control frames
-- `SocketHTTP2_Stream_new()` - Create stream
-- `SocketHTTP2_Stream_send_headers()` / `_send_data()` - Send data
-- `SocketHTTP2_Stream_recv_headers()` / `_recv_data()` - Receive data
-
-#### SocketHTTPClient (HTTP Client API)
-- `SocketHTTPClient_new()` / `_free()` - Client lifecycle
-- `SocketHTTPClient_get()` / `_post()` / `_put()` / `_delete()` / `_head()` - Simple API
-- `SocketHTTPClient_Request_new()` / `_execute()` - Request builder
-- `SocketHTTPClient_Request_header()` / `_body()` / `_timeout()` - Request configuration
-- `SocketHTTPClient_setauth()` - Authentication
-- `SocketHTTPClient_CookieJar_*()` - Cookie management
-
-#### SocketHTTPServer (HTTP Server API)
-- `SocketHTTPServer_new()` / `_free()` - Server lifecycle
-- `SocketHTTPServer_start()` / `_stop()` - Server control
-- `SocketHTTPServer_set_handler()` - Set request handler
-- `SocketHTTPServer_poll()` / `_process()` - Event loop
-- `SocketHTTPServer_Request_*()` - Request accessors
-- `SocketHTTPServer_Response_*()` - Response building
-
-### SocketWS Module (WebSocket - RFC 6455)
-
-#### Client API
-- `SocketWS_client_new()` - Create WebSocket client
-- `SocketWS_handshake()` - Perform handshake
-
-#### Server API
-- `SocketWS_is_upgrade()` - Check for WebSocket upgrade
-- `SocketWS_server_accept()` - Accept WebSocket connection
-- `SocketWS_server_reject()` - Reject upgrade request
-
-#### Message I/O
-- `SocketWS_send_text()` / `SocketWS_send_binary()` - Send messages
-- `SocketWS_recv_message()` - Receive message
-- `SocketWS_Message_free()` - Free message
-
-#### Control Frames
-- `SocketWS_ping()` / `SocketWS_pong()` - Ping/pong
-- `SocketWS_close()` - Initiate close
-
-#### Event Loop
-- `SocketWS_pollfd()` - Get poll file descriptor
-- `SocketWS_poll_events()` - Get poll events
-- `SocketWS_process()` - Process events
-- `SocketWS_state()` - Get connection state
-- `SocketWS_free()` - Free connection
-
-### TLS Modules
-
-#### SocketTLS (TLS Operations)
-- `SocketTLS_enable()` - Enable TLS on socket
-- `SocketTLS_set_hostname()` - Set SNI hostname
-- `SocketTLS_handshake()` - Perform handshake step
-- `SocketTLS_handshake_loop()` - Complete handshake with timeout
-- `SocketTLS_shutdown()` - Graceful TLS shutdown
-- `SocketTLS_send()` / `SocketTLS_recv()` - Encrypted I/O
-- `SocketTLS_get_cipher()` - Get negotiated cipher
-- `SocketTLS_get_version()` - Get TLS version
-- `SocketTLS_get_verify_result()` - Get verification result
-- `SocketTLS_is_session_reused()` - Check session resumption
-- `SocketTLS_get_alpn_selected()` - Get negotiated ALPN protocol
-
-#### SocketTLSContext (TLS Context)
-- `SocketTLSContext_new_server()` / `_new_client()` - Create context
-- `SocketTLSContext_free()` - Free context
-- `SocketTLSContext_load_certificate()` - Load cert/key pair
-- `SocketTLSContext_add_certificate()` - Add SNI certificate
-- `SocketTLSContext_load_ca()` - Load CA certificates
-- `SocketTLSContext_set_verify_mode()` - Set verification policy
-- `SocketTLSContext_load_crl()` / `_refresh_crl()` - CRL management
-- `SocketTLSContext_set_ocsp_response()` - OCSP stapling
-- `SocketTLSContext_set_alpn_protos()` - ALPN protocols
-- `SocketTLSContext_enable_session_cache()` - Session caching
-- `SocketTLSContext_enable_session_tickets()` - Session tickets
-
-#### SocketDTLS (DTLS Operations)
-- `SocketDTLS_enable()` - Enable DTLS on UDP socket
-- `SocketDTLS_set_hostname()` - Set SNI hostname
-- `SocketDTLS_handshake()` / `SocketDTLS_handshake_loop()` - Handshake
-- `SocketDTLS_send()` / `SocketDTLS_recv()` - Encrypted I/O
-- `SocketDTLS_shutdown()` - Graceful shutdown
-
-#### SocketDTLSContext (DTLS Context)
-- `SocketDTLSContext_new_server()` / `_new_client()` - Create context
-- `SocketDTLSContext_free()` - Free context
-- `SocketDTLSContext_enable_cookie_exchange()` - DoS protection
-
-### Security Modules
-
-#### SocketSYNProtect (SYN Flood Protection)
-- `SocketSYNProtect_new()` / `_free()` - Lifecycle
-- `SocketSYNProtect_check()` - Check connection (returns action)
-- `SocketSYNProtect_report()` - Report connection result
-- `SocketSYNProtect_stats()` - Get statistics
-- `SocketSYNProtect_reset()` - Reset all state
-
-#### SocketIPTracker (Per-IP Tracking)
-- `SocketIPTracker_new()` / `_free()` - Lifecycle
-- `SocketIPTracker_track()` - Track connection from IP
-- `SocketIPTracker_release()` - Release connection
-- `SocketIPTracker_count()` - Get connection count for IP
-- `SocketIPTracker_allowed()` - Check if connection allowed
-- `SocketIPTracker_cleanup()` - Remove stale entries
-
-### Observability
-
-#### Logging
-- `SocketLog_setcallback()` - Set custom log callback
-- `SocketLog_getcallback()` - Get current callback
-- `SocketLog_emit()` / `SocketLog_emitf()` - Emit log messages
-- `SocketLog_levelname()` - Get level name string
-
-#### Metrics
-- `SocketMetrics_increment()` - Increment counter
-- `SocketMetrics_getsnapshot()` - Get atomic snapshot
-- `SocketMetrics_reset()` - Reset all metrics
-- `SocketMetrics_name()` - Get metric name
-- `SocketMetrics_count()` - Get total metric count
-
-#### Events
-- `SocketEvent_register()` / `SocketEvent_unregister()` - Event callbacks
-- `SocketEvent_emit_accept()` / `SocketEvent_emit_connect()` - Emit events
-- `SocketEvent_emit_dns_timeout()` / `SocketEvent_emit_poll_wakeup()`
-
-### Error Reporting
-
-- `Socket_GetLastError()` - Get last error message (thread-local)
-- `Socket_geterrno()` - Get last errno value
-- `Socket_geterrorcode()` - Get structured error code
-- `Socket_get_monotonic_ms()` - Get monotonic time
-
-### Exception Types
-
-#### Core Exceptions
-- `Socket_Failed` - General socket operation failure
-- `Socket_Closed` - Connection closed by peer
-- `SocketUnix_Failed` - Unix socket operation failure
-- `SocketDgram_Failed` - UDP socket operation failure
-- `SocketPoll_Failed` - Event polling failure
-- `SocketPool_Failed` - Connection pool operation failure
-- `SocketDNS_Failed` - DNS resolution failure
-- `SocketTimer_Failed` - Timer operation failure
-- `SocketRateLimit_Failed` - Rate limiter failure
-- `SocketAsync_Failed` - Async I/O failure
-- `SocketCrypto_Failed` - Cryptographic operation failure
-
-#### Connection Exceptions
-- `SocketHE_Failed` - Happy Eyeballs connection failure
-- `SocketReconnect_Failed` - Reconnection operation failure
-- `SocketProxy_Failed` - Proxy connection failure
-
-#### TLS/DTLS Exceptions
-- `SocketTLS_Failed` - General TLS operation failure
-- `SocketTLS_HandshakeFailed` - TLS handshake failure
-- `SocketTLS_VerifyFailed` - Certificate verification failure
-- `SocketTLS_ProtocolError` - TLS protocol error
-- `SocketTLS_ShutdownFailed` - TLS shutdown failure
-- `SocketDTLS_Failed` - General DTLS operation failure
-- `SocketDTLS_HandshakeFailed` - DTLS handshake failure
-- `SocketDTLS_VerifyFailed` - DTLS certificate verification failure
-- `SocketDTLS_CookieFailed` - DTLS cookie exchange failure
-- `SocketDTLS_TimeoutExpired` - DTLS handshake timeout
-
-#### HTTP Exceptions
-- `SocketHTTP_ParseError` - HTTP parsing error
-- `SocketHTTP_InvalidURI` - Invalid URI
-- `SocketHTTP_InvalidHeader` - Invalid header
-- `SocketHTTP1_ParseError` - HTTP/1.1 parsing error
-- `SocketHPACK_Failed` - HPACK compression error
-- `SocketHTTP2_ProtocolError` - HTTP/2 protocol error
-- `SocketHTTP2_StreamError` - HTTP/2 stream error
-- `SocketHTTP2_FlowControlError` - HTTP/2 flow control error
-- `SocketHTTPClient_Failed` - HTTP client failure
-- `SocketHTTPClient_Timeout` - HTTP client timeout
-- `SocketHTTPClient_TLSError` - HTTP client TLS error
-- `SocketHTTPServer_Failed` - HTTP server failure
-
-#### WebSocket Exceptions
-- `SocketWS_Failed` - WebSocket operation failure
-- `SocketWS_ProtocolError` - WebSocket protocol error
-- `SocketWS_Closed` - WebSocket connection closed
-
-#### Security Exceptions
-- `SocketSYNProtect_Failed` - SYN protection failure
-
-## Building
-
-### Requirements
-
-- CMake 3.10+
-- C11 compiler with GNU extensions and pthread support
-- POSIX-compliant system
-- OpenSSL 1.1.1+ or LibreSSL (optional, for TLS/DTLS support)
-- zlib (optional, for HTTP compression and WebSocket permessage-deflate)
-
-### Build Commands
-
-```bash
-# Configure
-cmake -S . -B build
-
-# Build
-cmake --build build -j
-
-# Run tests
-cd build && ctest --output-on-failure
-
-# Generate API documentation (requires Doxygen)
-cmake --build build --target doc
-
-# Install (optional)
-cmake --install build --prefix /usr/local
+## Architecture
+
+### Module Organization
+
+```
+include/
+├── core/          # Foundation layer
+│   ├── Arena.h          # Arena memory management
+│   ├── Except.h         # Exception handling
+│   ├── SocketConfig.h   # Configuration constants
+│   ├── SocketCrypto.h   # Cryptographic utilities
+│   ├── SocketIPTracker.h # Per-IP connection tracking
+│   ├── SocketMetrics.h  # Production metrics (counters, gauges, histograms)
+│   ├── SocketRateLimit.h # Token bucket rate limiting
+│   ├── SocketRetry.h    # Generic retry with exponential backoff
+│   ├── SocketSecurity.h # Security utilities
+│   ├── SocketSYNProtect.h # SYN flood protection
+│   ├── SocketTimer.h    # Timer management
+│   ├── SocketUTF8.h     # UTF-8 validation
+│   └── SocketUtil.h     # Logging, error handling, utilities
+├── socket/        # Core I/O layer
+│   ├── Socket.h         # TCP/Unix domain sockets
+│   ├── SocketAsync.h    # Async I/O (io_uring/kqueue)
+│   ├── SocketBuf.h      # Circular buffer
+│   ├── SocketCommon.h   # Shared socket base
+│   ├── SocketDgram.h    # UDP sockets
+│   ├── SocketHappyEyeballs.h # RFC 8305 connection racing
+│   ├── SocketIO.h       # I/O helpers
+│   ├── SocketProxy.h    # HTTP CONNECT/SOCKS proxy
+│   ├── SocketReconnect.h # Auto-reconnection
+│   └── SocketWS.h       # WebSocket (RFC 6455)
+├── dns/           # DNS layer
+│   └── SocketDNS.h      # Async DNS resolution
+├── poll/          # Event system
+│   └── SocketPoll.h     # Cross-platform polling
+├── pool/          # Connection management
+│   └── SocketPool.h     # Connection pooling
+├── tls/           # Security layer
+│   ├── SocketTLS.h      # TLS operations
+│   ├── SocketTLSContext.h # TLS context management
+│   ├── SocketDTLS.h     # DTLS operations
+│   └── SocketDTLSContext.h # DTLS context management
+└── http/          # HTTP protocol stack
+    ├── SocketHTTP.h     # HTTP core (RFC 9110)
+    ├── SocketHTTP1.h    # HTTP/1.1 (RFC 9112)
+    ├── SocketHPACK.h    # HPACK (RFC 7541)
+    ├── SocketHTTP2.h    # HTTP/2 (RFC 9113)
+    ├── SocketHTTPClient.h # HTTP client API
+    └── SocketHTTPServer.h # HTTP server API
 ```
 
-### Build Options
+### Layered Architecture
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `CMAKE_BUILD_TYPE` | Debug or Release | Debug |
-| `ENABLE_TLS` | Enable TLS/DTLS support | ON (auto-detect) |
-| `ENABLE_HTTP_COMPRESSION` | Enable gzip/deflate/brotli | OFF |
-| `ENABLE_SANITIZERS` | Enable ASan + UBSan | OFF |
-| `ENABLE_ASAN` | Enable AddressSanitizer only | OFF |
-| `ENABLE_UBSAN` | Enable UndefinedBehaviorSanitizer only | OFF |
-| `ENABLE_COVERAGE` | Enable gcov coverage | OFF |
-| `ENABLE_FUZZING` | Enable fuzz testing (requires Clang) | OFF |
-
-### Poll Backend Selection
-
-The poll backend is automatically selected based on platform:
-- **Linux** - epoll (fastest for Linux)
-- **BSD/macOS** - kqueue
-- **Other POSIX** - poll(2) fallback
-
-### Async I/O Backend Selection
-
-- **Linux 5.1+** - io_uring (true async)
-- **BSD/macOS** - kqueue AIO
-- **Fallback** - Edge-triggered polling
+1. **Foundation**: `Arena` (Memory), `Except` (Errors), `SocketCrypto` (Cryptographic primitives)
+2. **Utilities**: `SocketUtil` (Logging, Metrics, Events, Error Handling), `SocketTimer`, `SocketRateLimit`, `SocketUTF8`, `SocketRetry`
+3. **Base Abstraction**: `SocketCommon` (Shared base `SocketBase_T` for Socket/SocketDgram)
+4. **Core I/O**: `Socket` (TCP/Unix), `SocketDgram` (UDP), `SocketBuf` (Buffers), `SocketIO` (I/O helpers)
+5. **DNS**: `SocketDNS` (Async DNS with worker threads)
+6. **Event System**: `SocketPoll` (epoll/kqueue/poll abstraction), `SocketAsync` (Async I/O integration)
+7. **Connection Helpers**: `SocketHappyEyeballs` (RFC 8305), `SocketReconnect` (Auto-reconnection), `SocketProxy` (HTTP CONNECT, SOCKS4/5)
+8. **Security**: `SocketSYNProtect` (SYN flood protection), `SocketIPTracker` (Per-IP limits)
+9. **Application**: `SocketPool` (Connection management)
+10. **TLS**: `SocketTLS` (TLS I/O), `SocketTLSContext` (Context management), `SocketDTLS`, `SocketDTLSContext`
+11. **HTTP**: `SocketHTTP`, `SocketHTTP1`, `SocketHPACK`, `SocketHTTP2`, `SocketHTTPClient`, `SocketHTTPServer`
+12. **WebSocket**: `SocketWS` (RFC 6455 with permessage-deflate)
 
 ## Thread Safety
 
@@ -1569,6 +1136,7 @@ The poll backend is automatically selected based on platform:
 | SocketDNS | Thread-safe | Uses thread pool |
 | SocketTimer | Thread-safe | Integrated with poll |
 | SocketRateLimit | Thread-safe | Internal mutex |
+| SocketRetry | NOT thread-safe | One instance per thread |
 | Metrics/Logging | Thread-safe | Atomic operations |
 | SocketCrypto | Thread-safe | No global state |
 | SocketUTF8 | Thread-safe | No global state |
@@ -1637,61 +1205,60 @@ int main(void) {
 }
 ```
 
-See `examples/graceful_shutdown.c` and `docs/SIGNALS.md` for complete examples.
+## Building
 
-### Key Points
+### Requirements
 
-- Library does NOT install any signal handlers
-- Library handles `EINTR` internally (automatic retry where appropriate)
-- Do NOT call library functions from signal handlers
-- Use self-pipe or eventfd for async-safe signal notification
+- CMake 3.10+
+- C11 compiler with GNU extensions and pthread support
+- POSIX-compliant system
+- OpenSSL 1.1.1+ or LibreSSL (optional, for TLS/DTLS support)
+- zlib (optional, for HTTP compression and WebSocket permessage-deflate)
 
-## Memory Management
+### Build Commands
 
-The library uses **arena allocation** for related objects. Sockets and their associated resources are managed through arenas, ensuring efficient memory usage and automatic cleanup.
+```bash
+# Configure
+cmake -S . -B build
 
-```c
-Arena_T arena = Arena_new();
-Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
-/* Socket uses arena internally */
-Socket_free(&socket);  /* Frees socket and internal arena */
-Arena_dispose(&arena); /* Free external arena if used */
+# Build
+cmake --build build -j
+
+# Run tests
+cd build && ctest --output-on-failure
+
+# Generate API documentation (requires Doxygen)
+cmake --build build --target doc
+
+# Install (optional)
+cmake --install build --prefix /usr/local
 ```
 
-Key patterns:
-- Use `Arena_alloc()` / `Arena_calloc()` for object lifecycle management
-- Use `Arena_dispose()` to free entire contexts at once
-- All arithmetic checked for integer overflow
-- Use `SocketCrypto_secure_clear()` for sensitive data
+### Build Options
 
-## Performance Considerations
+| Option | Description | Default |
+|--------|-------------|---------|
+| `CMAKE_BUILD_TYPE` | Debug or Release | Debug |
+| `ENABLE_TLS` | Enable TLS/DTLS support | ON (auto-detect) |
+| `ENABLE_HTTP_COMPRESSION` | Enable gzip/deflate/brotli | OFF |
+| `ENABLE_SANITIZERS` | Enable ASan + UBSan | OFF |
+| `ENABLE_ASAN` | Enable AddressSanitizer only | OFF |
+| `ENABLE_UBSAN` | Enable UndefinedBehaviorSanitizer only | OFF |
+| `ENABLE_COVERAGE` | Enable gcov coverage | OFF |
+| `ENABLE_FUZZING` | Enable fuzz testing (requires Clang) | OFF |
 
-### I/O Performance
-- **Zero-copy I/O** - Uses platform-specific `sendfile()` when available
-- **Scatter/gather I/O** - Efficient multi-buffer operations via `writev()`/`readv()`
-- **Event polling** - O(1) event delivery with epoll/kqueue
-- **Edge-triggered mode** - Minimal syscall overhead
+### Poll Backend Selection
 
-### Data Structures
-- **Connection pooling** - O(1) lookup with hash tables
-- **Timers** - O(log n) insert/cancel with min-heap
-- **HPACK** - O(1) FIFO dynamic table with circular buffer
+The poll backend is automatically selected based on platform:
+- **Linux** - epoll (fastest for Linux)
+- **BSD/macOS** - kqueue
+- **Other POSIX** - poll(2) fallback
 
-### Parsing
-- **DFA-based parsing** - O(n) HTTP/1.1 and UTF-8 validation
-- **Table-driven** - Minimal branch misprediction
-- **Incremental** - Stream-friendly, no full buffering required
+### Async I/O Backend Selection
 
-### Protocol Efficiency
-- **HTTP/2 multiplexing** - Single connection for concurrent requests
-- **HPACK compression** - Reduces header overhead by 85-90%
-- **WebSocket framing** - 8-byte aligned XOR masking
-- **Session resumption** - TLS/DTLS session caching reduces handshake overhead
-
-### Async Operations
-- **io_uring** - True async I/O on Linux 5.1+
-- **Non-blocking DNS** - Thread pool prevents blocking
-- **Happy Eyeballs** - Parallel connection attempts for minimal latency
+- **Linux 5.1+** - io_uring (true async)
+- **BSD/macOS** - kqueue AIO
+- **Fallback** - Edge-triggered polling
 
 ## Testing and Quality
 
@@ -1701,15 +1268,15 @@ The library includes comprehensive tests in `src/test/`:
 
 | Category | Test Files |
 |----------|------------|
-| Core | `test_arena.c`, `test_except.c`, `test_crypto.c`, `test_utf8.c` |
+| Core | `test_arena.c`, `test_except.c`, `test_crypto.c`, `test_utf8.c`, `test_ratelimit.c` |
 | Socket | `test_socket.c`, `test_socketdgram.c`, `test_socketbuf.c` |
-| Networking | `test_socketpoll.c`, `test_socketpool.c`, `test_socketdns.c` |
-| Connection | `test_happy_eyeballs.c`, `test_reconnect.c`, `test_proxy.c` |
-| HTTP | `test_http_core.c`, `test_http1_parser.c`, `test_hpack.c`, `test_http2.c` |
+| Networking | `test_socketpoll.c`, `test_socketpool.c`, `test_socketdns.c`, `test_socketerror.c` |
+| Connection | `test_happy_eyeballs.c`, `test_reconnect.c`, `test_proxy.c`, `test_proxy_integration.c` |
+| HTTP | `test_http_core.c`, `test_http1_parser.c`, `test_hpack.c`, `test_http2.c`, `test_http_client.c`, `test_http_integration.c`, `test_http2_integration.c` |
 | WebSocket | `test_websocket.c`, `test_ws_integration.c` |
-| TLS/DTLS | `test_tls_integration.c`, `test_dtls_integration.c` |
-| Security | `test_synprotect.c`, `test_ratelimit.c`, `test_security.c` |
-| Integration | `test_integration.c`, `test_http_integration.c`, `test_proxy_integration.c` |
+| TLS/DTLS | `test_tls_integration.c`, `test_tls_phase4.c`, `test_tls_pinning.c`, `test_dtls_integration.c` |
+| Security | `test_synprotect.c`, `test_security.c`, `test_signals.c` |
+| Integration | `test_integration.c`, `test_async.c`, `test_threadsafety.c`, `test_coverage.c` |
 
 ### Fuzz Testing
 
@@ -1763,34 +1330,66 @@ GitHub Actions pipeline (`.github/workflows/ci.yml`):
 | `coverage` | Ubuntu | Code coverage with lcov |
 | `static-analysis` | Ubuntu | cppcheck + clang-tidy |
 
-## Documentation
+## Exception Types
 
-### Generating API Reference
+### Core Exceptions
+- `Socket_Failed` - General socket operation failure
+- `Socket_Closed` - Connection closed by peer
+- `SocketUnix_Failed` - Unix socket operation failure
+- `SocketDgram_Failed` - UDP socket operation failure
+- `SocketPoll_Failed` - Event polling failure
+- `SocketPool_Failed` - Connection pool operation failure
+- `SocketDNS_Failed` - DNS resolution failure
+- `SocketTimer_Failed` - Timer operation failure
+- `SocketRateLimit_Failed` - Rate limiter failure
+- `SocketRetry_Failed` - Retry operation failure
+- `SocketAsync_Failed` - Async I/O failure
+- `SocketCrypto_Failed` - Cryptographic operation failure
 
-```bash
-# Install Doxygen
-# Ubuntu/Debian: sudo apt-get install doxygen
-# macOS: brew install doxygen
+### Connection Exceptions
+- `SocketHE_Failed` - Happy Eyeballs connection failure
+- `SocketReconnect_Failed` - Reconnection operation failure
+- `SocketProxy_Failed` - Proxy connection failure
 
-# Generate documentation
-cmake --build build --target doc
+### TLS/DTLS Exceptions
+- `SocketTLS_Failed` - General TLS operation failure
+- `SocketTLS_HandshakeFailed` - TLS handshake failure
+- `SocketTLS_VerifyFailed` - Certificate verification failure
+- `SocketTLS_ProtocolError` - TLS protocol error
+- `SocketTLS_ShutdownFailed` - TLS shutdown failure
+- `SocketTLS_PinVerifyFailed` - Certificate pinning failure
+- `SocketDTLS_Failed` - General DTLS operation failure
+- `SocketDTLS_HandshakeFailed` - DTLS handshake failure
+- `SocketDTLS_VerifyFailed` - DTLS certificate verification failure
+- `SocketDTLS_CookieFailed` - DTLS cookie exchange failure
+- `SocketDTLS_TimeoutExpired` - DTLS handshake timeout
 
-# View documentation
-xdg-open docs/html/index.html  # Linux
-open docs/html/index.html      # macOS
-```
+### HTTP Exceptions
+- `SocketHTTP_ParseError` - HTTP parsing error
+- `SocketHTTP_InvalidURI` - Invalid URI
+- `SocketHTTP_InvalidHeader` - Invalid header
+- `SocketHTTP1_ParseError` - HTTP/1.1 parsing error
+- `SocketHPACK_Failed` - HPACK compression error
+- `SocketHTTP2_ProtocolError` - HTTP/2 protocol error
+- `SocketHTTP2_StreamError` - HTTP/2 stream error
+- `SocketHTTP2_FlowControlError` - HTTP/2 flow control error
+- `SocketHTTPClient_Failed` - HTTP client failure
+- `SocketHTTPClient_Timeout` - HTTP client timeout
+- `SocketHTTPClient_TLSFailed` - HTTP client TLS error
+- `SocketHTTPClient_DNSFailed` - HTTP client DNS failure
+- `SocketHTTPClient_ConnectFailed` - HTTP client connection failure
+- `SocketHTTPClient_ProtocolError` - HTTP client protocol error
+- `SocketHTTPClient_TooManyRedirects` - Too many redirects
+- `SocketHTTPClient_ResponseTooLarge` - Response size limit exceeded
+- `SocketHTTPServer_Failed` - HTTP server failure
 
-### Additional Documentation
+### WebSocket Exceptions
+- `SocketWS_Failed` - WebSocket operation failure
+- `SocketWS_ProtocolError` - WebSocket protocol error
+- `SocketWS_Closed` - WebSocket connection closed
 
-- **[RELEASE_NOTES.md](RELEASE_NOTES.md)** - Release history and changelog
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
-- **[docs/](docs/)** - Detailed feature documentation
-  - `HTTP.md` - HTTP stack documentation
-  - `WEBSOCKET.md` - WebSocket implementation details
-  - `ASYNC_IO.md` - Async I/O patterns
-  - `PROXY.md` - Proxy tunneling guide
-  - `SECURITY.md` - Security features and hardening
-  - `MIGRATION.md` - API migration guide
+### Security Exceptions
+- `SocketSYNProtect_Failed` - SYN protection failure
 
 ## License
 
