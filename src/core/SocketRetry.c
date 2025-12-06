@@ -2,14 +2,15 @@
  * SocketRetry.c - Generic Retry Framework Implementation
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements exponential backoff retry logic with jitter.
  * Algorithm matches SocketReconnect for consistency.
  *
  * Backoff Formula:
- *   base_delay = initial_delay * multiplier^(attempt-1)
+ *   base_delay = initial_delay * multiplier^(attempt - 1)
  *   capped_delay = min(base_delay, max_delay)
- *   jittered_delay = capped_delay * (1 + jitter * (2*random - 1))
+ *   jittered_delay = capped_delay * (1 + jitter * (2 * random - 1))
  */
 
 #include "core/SocketRetry.h"
@@ -19,11 +20,27 @@
 #include "core/SocketUtil.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+
+/* ============================================================================
+ * LCG Random Number Generator Constants (Numerical Recipes)
+ * ============================================================================ */
+
+/* Linear Congruential Generator parameters from Numerical Recipes
+ * Formula: next = (state * MULTIPLIER + INCREMENT) mod MODULUS
+ * These are well-tested constants providing good statistical properties */
+#define RETRY_LCG_MULTIPLIER 1103515245u
+#define RETRY_LCG_INCREMENT 12345u
+#define RETRY_LCG_MODULUS_MASK 0x7fffffffu /* 2^31 - 1 for 31-bit result */
+#define RETRY_LCG_DIVISOR 0x80000000u      /* 2^31 for normalization */
+
+/* Minimum delay to avoid zero/negative delays after jitter */
+#define RETRY_MIN_DELAY_MS 1.0
 
 #define T SocketRetry_T
 
@@ -79,14 +96,15 @@ retry_random_seed (void)
  * Returns: Random value in [0, 1)
  * Thread-safe: No (modifies state)
  *
- * Uses simple LCG for reproducibility and speed.
+ * Uses Linear Congruential Generator for reproducibility and speed.
+ * Parameters from Numerical Recipes provide good statistical properties.
  */
 static double
 retry_random_double (unsigned int *state)
 {
-  /* LCG parameters from Numerical Recipes */
-  *state = (*state * 1103515245u + 12345u) & 0x7fffffffu;
-  return (double)*state / (double)0x80000000u;
+  *state = (*state * RETRY_LCG_MULTIPLIER + RETRY_LCG_INCREMENT)
+           & RETRY_LCG_MODULUS_MASK;
+  return (double)*state / (double)RETRY_LCG_DIVISOR;
 }
 
 /* ============================================================================
@@ -148,9 +166,9 @@ calculate_backoff_delay (const SocketRetry_Policy *policy, int attempt,
       delay += jitter_offset;
     }
 
-  /* Ensure positive delay */
-  if (delay < 1.0)
-    delay = 1.0;
+  /* Ensure positive delay after jitter */
+  if (delay < RETRY_MIN_DELAY_MS)
+    delay = RETRY_MIN_DELAY_MS;
 
   return (int)delay;
 }

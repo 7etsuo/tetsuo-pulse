@@ -29,10 +29,8 @@
 #include <inttypes.h>
 #include <pthread.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 
 #include "core/Arena.h"
 #include "core/Except.h"
@@ -92,7 +90,7 @@ sockettimer_validate_heap (SocketPoll_T poll)
 }
 
 /**
- * sockettimer_validate_delay - Validate delay parameter
+ * sockettimer_validate_delay - Validate delay parameter for one-shot timers
  * @delay_ms: Delay in milliseconds
  *
  * Raises: SocketTimer_Failed if delay is invalid
@@ -107,7 +105,7 @@ sockettimer_validate_delay (int64_t delay_ms)
 }
 
 /**
- * sockettimer_validate_interval - Validate interval parameter
+ * sockettimer_validate_interval - Validate interval for repeating timers
  * @interval_ms: Interval in milliseconds
  *
  * Raises: SocketTimer_Failed if interval is invalid
@@ -145,39 +143,23 @@ sockettimer_allocate_timer (Arena_T arena)
 }
 
 /**
- * sockettimer_init_oneshot - Initialize a one-shot timer
+ * sockettimer_init_timer - Initialize a timer with given parameters
  * @timer: Timer to initialize
- * @delay_ms: Delay in milliseconds
+ * @delay_ms: Initial delay in milliseconds
+ * @interval_ms: Repeat interval (0 for one-shot timers)
  * @callback: Callback function
  * @userdata: User data for callback
+ *
+ * Unified initialization for both one-shot and repeating timers.
  */
 static void
-sockettimer_init_oneshot (struct SocketTimer_T *timer, int64_t delay_ms,
-                          SocketTimerCallback callback, void *userdata)
+sockettimer_init_timer (struct SocketTimer_T *timer, int64_t delay_ms,
+                        int64_t interval_ms, SocketTimerCallback callback,
+                        void *userdata)
 {
   int64_t now_ms = Socket_get_monotonic_ms ();
 
   timer->expiry_ms = now_ms + delay_ms;
-  timer->interval_ms = 0;
-  timer->callback = callback;
-  timer->userdata = userdata;
-  timer->cancelled = 0;
-}
-
-/**
- * sockettimer_init_repeating - Initialize a repeating timer
- * @timer: Timer to initialize
- * @interval_ms: Interval in milliseconds
- * @callback: Callback function
- * @userdata: User data for callback
- */
-static void
-sockettimer_init_repeating (struct SocketTimer_T *timer, int64_t interval_ms,
-                            SocketTimerCallback callback, void *userdata)
-{
-  int64_t now_ms = Socket_get_monotonic_ms ();
-
-  timer->expiry_ms = now_ms + interval_ms;
   timer->interval_ms = interval_ms;
   timer->callback = callback;
   timer->userdata = userdata;
@@ -599,6 +581,66 @@ sockettimer_peek_unlocked (SocketTimer_heap_T *heap)
 }
 
 /* ===========================================================================
+ * Internal Helpers for Public API
+ * ===========================================================================*/
+
+/**
+ * sockettimer_get_heap_from_poll - Get timer heap from poll, return NULL if unavailable
+ * @poll: Poll instance
+ *
+ * Returns: Heap pointer or NULL
+ * Thread-safe: Yes
+ *
+ * Unlike sockettimer_validate_heap(), this does not raise on failure.
+ * Used by cancel/remaining which return -1 on error instead of raising.
+ */
+static SocketTimer_heap_T *
+sockettimer_get_heap_from_poll (SocketPoll_T poll)
+{
+  return socketpoll_get_timer_heap (poll);
+}
+
+/**
+ * sockettimer_add_timer_internal - Internal implementation for adding timers
+ * @poll: Event poll instance
+ * @delay_ms: Initial delay in milliseconds
+ * @interval_ms: Repeat interval (0 for one-shot)
+ * @callback: Callback function
+ * @userdata: User data for callback
+ * @is_repeating: Whether this is a repeating timer (for validation)
+ *
+ * Returns: Timer handle for cancellation
+ * Raises: SocketTimer_Failed on error
+ * Thread-safe: Yes
+ */
+static SocketTimer_T
+sockettimer_add_timer_internal (SocketPoll_T poll, int64_t delay_ms,
+                                int64_t interval_ms,
+                                SocketTimerCallback callback, void *userdata,
+                                int is_repeating)
+{
+  SocketTimer_heap_T *heap;
+  struct SocketTimer_T *timer;
+
+  assert (poll);
+  assert (callback);
+
+  heap = sockettimer_validate_heap (poll);
+
+  if (is_repeating)
+    sockettimer_validate_interval (interval_ms);
+  else
+    sockettimer_validate_delay (delay_ms);
+
+  timer = sockettimer_allocate_timer (heap->arena);
+  sockettimer_init_timer (timer, delay_ms, interval_ms, callback, userdata);
+
+  SocketTimer_heap_push (heap, timer);
+
+  return timer;
+}
+
+/* ===========================================================================
  * Heap Public API
  * ===========================================================================*/
 
@@ -733,20 +775,23 @@ SocketTimer_heap_peek (SocketTimer_heap_T *heap)
  *
  * Returns: Milliseconds until next timer (>= 0), or -1 if no timers
  * Thread-safe: Yes - uses heap mutex
+ *
+ * Note: Despite const qualifier on heap parameter, this function must
+ * acquire the mutex for thread-safe access to heap state.
  */
 int64_t
 SocketTimer_heap_peek_delay (const SocketTimer_heap_T *heap)
 {
+  SocketTimer_heap_T *mutable_heap = (SocketTimer_heap_T *)heap;
   const struct SocketTimer_T *timer;
   int64_t now_ms;
   int64_t delay_ms;
 
   assert (heap);
 
-  /* Safe cast: we need mutex access but don't modify state */
-  pthread_mutex_lock (&((SocketTimer_heap_T *)heap)->mutex);
-  timer = sockettimer_peek_unlocked ((SocketTimer_heap_T *)heap);
-  pthread_mutex_unlock (&((SocketTimer_heap_T *)heap)->mutex);
+  pthread_mutex_lock (&mutable_heap->mutex);
+  timer = sockettimer_peek_unlocked (mutable_heap);
+  pthread_mutex_unlock (&mutable_heap->mutex);
 
   if (!timer)
     return -1;
@@ -855,7 +900,7 @@ SocketTimer_process_expired (SocketTimer_heap_T *heap)
 }
 
 /* ===========================================================================
- * Public Timer API - One-Shot
+ * Public Timer API - One-Shot and Repeating
  * ===========================================================================*/
 
 /**
@@ -876,26 +921,9 @@ SocketTimer_T
 SocketTimer_add (SocketPoll_T poll, int64_t delay_ms,
                  SocketTimerCallback callback, void *userdata)
 {
-  SocketTimer_heap_T *heap;
-  struct SocketTimer_T *timer;
-
-  assert (poll);
-  assert (callback);
-
-  heap = sockettimer_validate_heap (poll);
-  sockettimer_validate_delay (delay_ms);
-
-  timer = sockettimer_allocate_timer (heap->arena);
-  sockettimer_init_oneshot (timer, delay_ms, callback, userdata);
-
-  SocketTimer_heap_push (heap, timer);
-
-  return timer;
+  return sockettimer_add_timer_internal (poll, delay_ms, 0, callback, userdata,
+                                         0);
 }
-
-/* ===========================================================================
- * Public Timer API - Repeating
- * ===========================================================================*/
 
 /**
  * SocketTimer_add_repeating - Add a repeating timer
@@ -915,21 +943,8 @@ SocketTimer_T
 SocketTimer_add_repeating (SocketPoll_T poll, int64_t interval_ms,
                            SocketTimerCallback callback, void *userdata)
 {
-  SocketTimer_heap_T *heap;
-  struct SocketTimer_T *timer;
-
-  assert (poll);
-  assert (callback);
-
-  heap = sockettimer_validate_heap (poll);
-  sockettimer_validate_interval (interval_ms);
-
-  timer = sockettimer_allocate_timer (heap->arena);
-  sockettimer_init_repeating (timer, interval_ms, callback, userdata);
-
-  SocketTimer_heap_push (heap, timer);
-
-  return timer;
+  return sockettimer_add_timer_internal (poll, interval_ms, interval_ms,
+                                         callback, userdata, 1);
 }
 
 /* ===========================================================================
@@ -955,7 +970,7 @@ SocketTimer_cancel (SocketPoll_T poll, SocketTimer_T timer)
   assert (poll);
   assert (timer);
 
-  heap = socketpoll_get_timer_heap (poll);
+  heap = sockettimer_get_heap_from_poll (poll);
   if (!heap)
     return -1;
 
@@ -981,7 +996,7 @@ SocketTimer_remaining (SocketPoll_T poll, SocketTimer_T timer)
   assert (poll);
   assert (timer);
 
-  heap = socketpoll_get_timer_heap (poll);
+  heap = sockettimer_get_heap_from_poll (poll);
   if (!heap)
     return -1;
 

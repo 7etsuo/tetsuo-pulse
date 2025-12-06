@@ -293,7 +293,7 @@ Socket_safe_strerror (int errnum)
  * ERROR CATEGORIZATION SUBSYSTEM
  * ===========================================================================*/
 
-/* Category names for display */
+/* Category names for display (indexed by SocketErrorCategory) */
 static const char *const socket_error_category_names[] = {
   "NETWORK",
   "PROTOCOL",
@@ -302,6 +302,10 @@ static const char *const socket_error_category_names[] = {
   "RESOURCE",
   "UNKNOWN"
 };
+
+/* Number of error categories for bounds checking */
+#define SOCKET_ERROR_CATEGORY_COUNT                                            \
+  (sizeof (socket_error_category_names) / sizeof (socket_error_category_names[0]))
 
 /**
  * SocketError_categorize_errno - Categorize an errno value
@@ -397,8 +401,7 @@ SocketError_categorize_errno (int err)
 const char *
 SocketError_category_name (SocketErrorCategory category)
 {
-  if (category < SOCKET_ERROR_CATEGORY_NETWORK
-      || category > SOCKET_ERROR_CATEGORY_UNKNOWN)
+  if (category < 0 || (size_t)category >= SOCKET_ERROR_CATEGORY_COUNT)
     return "UNKNOWN";
   return socket_error_category_names[category];
 }
@@ -487,10 +490,14 @@ static SocketLogCallback socketlog_callback = NULL;
 static void *socketlog_userdata = NULL;
 static SocketLogLevel socketlog_min_level = SOCKET_LOG_INFO;
 
-/* Level names for display */
+/* Level names for display (indexed by SocketLogLevel) */
 static const char *const default_level_names[] = {
   "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
 };
+
+/* Number of log levels for bounds checking */
+#define SOCKETLOG_LEVEL_COUNT                                                  \
+  (sizeof (default_level_names) / sizeof (default_level_names[0]))
 
 /* Timestamp formatting constants - use SocketConfig.h naming */
 #define SOCKETLOG_TIMESTAMP_BUFSIZE 32
@@ -622,7 +629,7 @@ SocketLog_getcallback (void **userdata)
 const char *
 SocketLog_levelname (SocketLogLevel level)
 {
-  if (level < SOCKET_LOG_TRACE || level > SOCKET_LOG_FATAL)
+  if (level < 0 || (size_t)level >= SOCKETLOG_LEVEL_COUNT)
     return "UNKNOWN";
   return default_level_names[level];
 }
@@ -642,6 +649,43 @@ SocketLog_setlevel (SocketLogLevel min_level)
   pthread_mutex_lock (&socketlog_mutex);
   socketlog_min_level = min_level;
   pthread_mutex_unlock (&socketlog_mutex);
+}
+
+/**
+ * SocketLogCallbackInfo - Internal structure for callback acquisition
+ *
+ * Used by socketlog_acquire_callback to return all necessary callback info
+ * in a single structure, reducing mutex acquisition overhead.
+ */
+typedef struct SocketLogCallbackInfo
+{
+  SocketLogCallback callback;
+  void *userdata;
+  int should_log; /* 1 if level >= min_level, 0 otherwise */
+} SocketLogCallbackInfo;
+
+/**
+ * socketlog_acquire_callback - Acquire callback info under mutex
+ * @level: Log level to check against minimum
+ *
+ * Returns: Callback info structure with should_log flag
+ * Thread-safe: Yes (mutex protected)
+ *
+ * Consolidates the common pattern of: lock, read min_level, read callback,
+ * unlock, check level. Returns all info needed to invoke callback.
+ */
+static SocketLogCallbackInfo
+socketlog_acquire_callback (SocketLogLevel level)
+{
+  SocketLogCallbackInfo info;
+
+  pthread_mutex_lock (&socketlog_mutex);
+  info.should_log = (level >= socketlog_min_level);
+  info.callback = socketlog_callback ? socketlog_callback : default_logger;
+  info.userdata = socketlog_userdata;
+  pthread_mutex_unlock (&socketlog_mutex);
+
+  return info;
 }
 
 /**
@@ -677,24 +721,12 @@ void
 SocketLog_emit (SocketLogLevel level, const char *component,
                 const char *message)
 {
-  void *userdata = NULL;
-  SocketLogCallback callback;
-  SocketLogLevel min_level;
+  SocketLogCallbackInfo info = socketlog_acquire_callback (level);
 
-  /* Read level and callback under single lock to avoid:
-   * 1. Double mutex acquisition overhead
-   * 2. Race condition between level check and callback retrieval */
-  pthread_mutex_lock (&socketlog_mutex);
-  min_level = socketlog_min_level;
-  callback = socketlog_callback ? socketlog_callback : default_logger;
-  userdata = socketlog_userdata;
-  pthread_mutex_unlock (&socketlog_mutex);
-
-  /* Early exit if level is below minimum */
-  if (level < min_level)
+  if (!info.should_log)
     return;
 
-  callback (userdata, level, component, message);
+  info.callback (info.userdata, level, component, message);
 }
 
 /**
@@ -859,6 +891,46 @@ static SocketLogStructuredCallback socketlog_structured_callback = NULL;
 static void *socketlog_structured_userdata = NULL;
 
 /**
+ * SocketLogStructuredInfo - Internal structure for structured callback
+ *
+ * Used by socketlog_acquire_structured_callback to return all callback info.
+ */
+typedef struct SocketLogStructuredInfo
+{
+  SocketLogStructuredCallback structured_callback;
+  void *structured_userdata;
+  SocketLogCallback fallback_callback;
+  void *fallback_userdata;
+  int should_log;
+} SocketLogStructuredInfo;
+
+/**
+ * socketlog_acquire_structured_callback - Acquire structured callback info
+ * @level: Log level to check against minimum
+ *
+ * Returns: Structured callback info with fallback and should_log flag
+ * Thread-safe: Yes (mutex protected)
+ *
+ * Acquires both structured callback and fallback callback in single lock.
+ */
+static SocketLogStructuredInfo
+socketlog_acquire_structured_callback (SocketLogLevel level)
+{
+  SocketLogStructuredInfo info;
+
+  pthread_mutex_lock (&socketlog_mutex);
+  info.should_log = (level >= socketlog_min_level);
+  info.structured_callback = socketlog_structured_callback;
+  info.structured_userdata = socketlog_structured_userdata;
+  info.fallback_callback
+      = socketlog_callback ? socketlog_callback : default_logger;
+  info.fallback_userdata = socketlog_userdata;
+  pthread_mutex_unlock (&socketlog_mutex);
+
+  return info;
+}
+
+/**
  * SocketLog_setstructuredcallback - Set structured logging callback
  * @callback: Callback function or NULL to disable structured logging
  * @userdata: User data passed to callback
@@ -921,6 +993,63 @@ socketlog_format_fields (char *buffer, size_t bufsize,
 }
 
 /**
+ * socketlog_emit_structured_with_callback - Emit structured log with callback
+ * @info: Callback info from socketlog_acquire_structured_callback
+ * @level: Log level
+ * @component: Component name
+ * @message: Log message
+ * @fields: Array of key-value pairs
+ * @field_count: Number of fields
+ *
+ * Thread-safe: Yes
+ *
+ * Internal helper that handles the actual emission after callback acquisition.
+ */
+static void
+socketlog_emit_structured_with_callback (const SocketLogStructuredInfo *info,
+                                         SocketLogLevel level,
+                                         const char *component,
+                                         const char *message,
+                                         const SocketLogField *fields,
+                                         size_t field_count)
+{
+  if (info->structured_callback != NULL)
+    {
+      /* Use structured callback - provides direct field access */
+      info->structured_callback (info->structured_userdata, level, component,
+                                 message, fields, field_count,
+                                 SocketLog_getcontext ());
+    }
+  else if (fields != NULL && field_count > 0)
+    {
+      /* Fallback: format fields as string and use regular logging */
+      char buffer[SOCKET_LOG_BUFFER_SIZE];
+      size_t msg_len = message ? strlen (message) : 0;
+      size_t remaining;
+
+      if (msg_len >= sizeof (buffer))
+        msg_len = sizeof (buffer) - 1;
+
+      if (message)
+        memcpy (buffer, message, msg_len);
+
+      remaining = sizeof (buffer) - msg_len;
+      socketlog_format_fields (buffer + msg_len, remaining, fields,
+                               field_count);
+
+      buffer[sizeof (buffer) - 1] = '\0';
+      info->fallback_callback (info->fallback_userdata, level, component,
+                               buffer);
+    }
+  else
+    {
+      /* No fields - use fallback callback directly */
+      info->fallback_callback (info->fallback_userdata, level, component,
+                               message);
+    }
+}
+
+/**
  * SocketLog_emit_structured - Emit log message with structured fields
  * @level: Log level
  * @component: Component name
@@ -939,56 +1068,13 @@ SocketLog_emit_structured (SocketLogLevel level, const char *component,
                            const char *message, const SocketLogField *fields,
                            size_t field_count)
 {
-  SocketLogStructuredCallback structured_cb;
-  void *structured_userdata;
-  SocketLogLevel min_level;
+  SocketLogStructuredInfo info = socketlog_acquire_structured_callback (level);
 
-  /* Read level and structured callback under single lock to avoid:
-   * 1. Double mutex acquisition overhead
-   * 2. Race condition between level check and callback retrieval */
-  pthread_mutex_lock (&socketlog_mutex);
-  min_level = socketlog_min_level;
-  structured_cb = socketlog_structured_callback;
-  structured_userdata = socketlog_structured_userdata;
-  pthread_mutex_unlock (&socketlog_mutex);
-
-  /* Early exit if level is below minimum */
-  if (level < min_level)
+  if (!info.should_log)
     return;
 
-  if (structured_cb != NULL)
-    {
-      /* Use structured callback - provides direct field access */
-      structured_cb (structured_userdata, level, component, message, fields,
-                     field_count, SocketLog_getcontext ());
-    }
-  else if (fields != NULL && field_count > 0)
-    {
-      /* Fallback: format fields as string and use regular logging */
-      char buffer[SOCKET_LOG_BUFFER_SIZE];
-      size_t msg_len;
-      size_t remaining;
-
-      msg_len = message ? strlen (message) : 0;
-
-      if (msg_len >= sizeof (buffer))
-        msg_len = sizeof (buffer) - 1;
-
-      if (message)
-        memcpy (buffer, message, msg_len);
-
-      remaining = sizeof (buffer) - msg_len;
-      socketlog_format_fields (buffer + msg_len, remaining, fields,
-                               field_count);
-
-      buffer[sizeof (buffer) - 1] = '\0';
-      SocketLog_emit (level, component, buffer);
-    }
-  else
-    {
-      /* No fields - use regular emit */
-      SocketLog_emit (level, component, message);
-    }
+  socketlog_emit_structured_with_callback (&info, level, component, message,
+                                           fields, field_count);
 }
 
 /* ===========================================================================
@@ -1041,9 +1127,9 @@ static const char *const socketmetrics_legacy_names[SOCKET_METRIC_COUNT] = {
  * Thread-safe: Yes (pure function)
  */
 static int
-socketmetrics_legacy_is_valid (SocketMetric metric)
+socketmetrics_legacy_is_valid (const SocketMetric metric)
 {
-  return metric >= 0 && metric < (SocketMetric)SOCKET_METRIC_COUNT;
+  return metric >= 0 && metric < SOCKET_METRIC_COUNT;
 }
 
 /**
@@ -1175,22 +1261,22 @@ socketevent_copy_handlers_unlocked (SocketEventHandler *local_handlers)
 
 /**
  * socketevent_invoke_handlers - Invoke all handler callbacks
- * @local_handlers: Array of handlers to invoke
+ * @handlers: Array of handlers to invoke (const - not modified)
  * @count: Number of handlers
  * @event: Event to pass to callbacks
  *
  * Thread-safe: Yes (no mutex needed - operates on local copy)
  */
 static void
-socketevent_invoke_handlers (const SocketEventHandler *local_handlers,
-                             size_t count, const SocketEventRecord *event)
+socketevent_invoke_handlers (const SocketEventHandler *handlers, size_t count,
+                             const SocketEventRecord *event)
 {
   size_t i;
 
   for (i = 0; i < count; i++)
     {
-      if (local_handlers[i].callback)
-        local_handlers[i].callback (local_handlers[i].userdata, event);
+      if (handlers[i].callback != NULL)
+        handlers[i].callback (handlers[i].userdata, event);
     }
 }
 

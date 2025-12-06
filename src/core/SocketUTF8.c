@@ -33,22 +33,20 @@ const Except_T SocketUTF8_Failed
 /* Thread-local exception for detailed error messages */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketUTF8);
 
-#define RAISE_UTF8_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketUTF8, e)
-
 /* ============================================================================
  * Hoehrmann DFA Tables
  * ============================================================================
  *
  * The DFA uses two tables:
  * 1. utf8_class[256]: Maps each byte to a character class (0-11)
- * 2. utf8_state[108]: State transitions (12 states x 9 classes)
+ * 2. utf8_state[UTF8_NUM_DFA_STATES * UTF8_NUM_CHAR_CLASSES]: State transitions
  *
- * States:
+ * States (UTF8_NUM_DFA_STATES = 9):
  *   0 = UTF8_DFA_ACCEPT (valid complete sequence)
  *   1 = UTF8_DFA_REJECT (invalid sequence)
- *   2-11 = intermediate states (expecting continuation bytes)
+ *   2-8 = intermediate states (expecting continuation bytes)
  *
- * Character classes:
+ * Character classes (UTF8_NUM_CHAR_CLASSES = 12):
  *   0: 00..7F (ASCII)
  *   1: 80..8F (continuation byte, lower)
  *   2: 90..9F (continuation byte, middle-low)
@@ -63,8 +61,17 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketUTF8);
  *  11: F4     (4-byte start, special: next must be 80..8F)
  */
 
+/** DFA accept state (valid complete sequence) */
 #define UTF8_DFA_ACCEPT 0
+
+/** DFA reject state (invalid sequence) */
 #define UTF8_DFA_REJECT 1
+
+/** Number of character classes in the DFA (byte classification) */
+#define UTF8_NUM_CHAR_CLASSES 12
+
+/** Number of states in the DFA */
+#define UTF8_NUM_DFA_STATES 9
 
 /* clang-format off */
 
@@ -98,10 +105,11 @@ static const uint8_t utf8_class[256] = {
  * UTF-8 state transition table
  *
  * Given current state and character class, returns next state.
- * Indexed as: state_table[state * 12 + class]
+ * Indexed as: utf8_state[state * UTF8_NUM_CHAR_CLASSES + class]
  *
- * The table is organized with 12 columns per row (one per character class),
- * and rows represent states 0 through 8.
+ * The table is organized with UTF8_NUM_CHAR_CLASSES (12) columns per row
+ * (one per character class), and rows represent states 0 through 8
+ * (UTF8_NUM_DFA_STATES = 9 total states).
  */
 static const uint8_t utf8_state[] = {
   /* State 0: Accept (initial/complete sequence) */
@@ -227,7 +235,7 @@ SocketUTF8_validate (const unsigned char *data, size_t len)
     {
       uint8_t byte_class = utf8_class[data[i]];
       prev_state = state;
-      state = utf8_state[state * 12 + byte_class];
+      state = utf8_state[state * UTF8_NUM_CHAR_CLASSES + byte_class];
 
       if (state == UTF8_DFA_REJECT)
         return classify_error (prev_state, data[i]);
@@ -296,7 +304,7 @@ SocketUTF8_update (SocketUTF8_State *state, const unsigned char *data,
     {
       uint8_t byte_class = utf8_class[data[i]];
       prev_state = dfa_state;
-      dfa_state = utf8_state[dfa_state * 12 + byte_class];
+      dfa_state = utf8_state[dfa_state * UTF8_NUM_CHAR_CLASSES + byte_class];
 
       if (dfa_state == UTF8_DFA_REJECT)
         {

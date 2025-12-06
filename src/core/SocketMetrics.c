@@ -9,8 +9,7 @@
  * IMPLEMENTATION NOTES:
  * - Counters and gauges use atomic operations for lock-free performance
  * - Histograms use a circular buffer with mutex protection
- * - Percentiles calculated using quickselect algorithm
- * - Export functions use snapshot for consistency
+ * - Percentiles calculated using sort + linear interpolation
  *
  * THREAD SAFETY:
  * - All counter/gauge operations are atomic
@@ -20,6 +19,7 @@
 
 #include "core/SocketMetrics.h"
 #include "core/SocketConfig.h"
+#include "core/SocketUtil.h"
 
 #include <assert.h>
 #include <math.h>
@@ -29,10 +29,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 /* ============================================================================
- * Internal Logging (avoid circular dependency with SocketUtil.h)
+ * Configuration Constants
+ * ============================================================================ */
+
+/** Standard percentiles for histogram snapshots */
+#define PERCENTILE_P50 50.0
+#define PERCENTILE_P75 75.0
+#define PERCENTILE_P90 90.0
+#define PERCENTILE_P95 95.0
+#define PERCENTILE_P99 99.0
+#define PERCENTILE_P999 99.9
+
+/* ============================================================================
+ * Internal Logging
  * ============================================================================ */
 
 #ifdef SOCKET_METRICS_DEBUG
@@ -42,21 +53,6 @@
 #define METRICS_LOG_DEBUG(msg) ((void)0)
 #endif
 
-/* Time utility - implemented locally to avoid SocketUtil.h dependency */
-static int64_t
-metrics_get_monotonic_ms (void)
-{
-  struct timespec ts;
-
-  if (clock_gettime (CLOCK_MONOTONIC, &ts) == 0)
-    return (int64_t)ts.tv_sec * 1000 + (int64_t)ts.tv_nsec / 1000000;
-
-  if (clock_gettime (CLOCK_REALTIME, &ts) == 0)
-    return (int64_t)ts.tv_sec * 1000 + (int64_t)ts.tv_nsec / 1000000;
-
-  return 0;
-}
-
 /* ============================================================================
  * Internal Structures
  * ============================================================================ */
@@ -65,7 +61,7 @@ metrics_get_monotonic_ms (void)
  * Histogram - Internal histogram data structure
  *
  * Uses circular buffer reservoir sampling for O(1) insertion.
- * Percentile calculation is O(n) using quickselect.
+ * Percentile calculation is O(n log n) using qsort.
  */
 typedef struct Histogram
 {
@@ -83,19 +79,10 @@ typedef struct Histogram
  * Static Data
  * ============================================================================ */
 
-/* Initialization state */
 static _Atomic int metrics_initialized = 0;
-
-/* Counter storage (atomic) */
 static _Atomic uint64_t counter_values[SOCKET_COUNTER_METRIC_COUNT];
-
-/* Gauge storage (atomic) */
 static _Atomic int64_t gauge_values[SOCKET_GAUGE_METRIC_COUNT];
-
-/* Histogram storage */
 static Histogram histogram_values[SOCKET_HISTOGRAM_METRIC_COUNT];
-
-/* Global mutex for shutdown coordination */
 static pthread_mutex_t metrics_global_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* ============================================================================
@@ -323,14 +310,85 @@ static const char *const histogram_help[SOCKET_HISTOGRAM_METRIC_COUNT] = {
 };
 
 static const char *const category_names[SOCKET_METRIC_CAT_COUNT] = {
-  "pool",
-  "http_client",
-  "http_server",
-  "tls",
-  "dns",
-  "socket",
-  "poll"
+  "pool",       "http_client", "http_server", "tls",
+  "dns",        "socket",      "poll"
 };
+
+/* ============================================================================
+ * Histogram Validation Helper
+ * ============================================================================ */
+
+/**
+ * histogram_valid - Check if histogram metric is valid and initialized
+ * @metric: Histogram metric to check
+ *
+ * Returns: 1 if valid, 0 otherwise
+ * Thread-safe: Yes (reads atomic/static data only)
+ */
+static inline int
+histogram_valid (SocketHistogramMetric metric)
+{
+  if (metric < 0 || metric >= SOCKET_HISTOGRAM_METRIC_COUNT)
+    return 0;
+  return histogram_values[metric].initialized;
+}
+
+/* ============================================================================
+ * Percentile Calculation Helpers
+ * ============================================================================ */
+
+/**
+ * compare_double - Comparison function for qsort
+ * @a: First double pointer
+ * @b: Second double pointer
+ *
+ * Returns: -1, 0, or 1 for ordering
+ */
+static int
+compare_double (const void *a, const void *b)
+{
+  double da = *(const double *)a;
+  double db = *(const double *)b;
+
+  if (da < db)
+    return -1;
+  if (da > db)
+    return 1;
+  return 0;
+}
+
+/**
+ * percentile_from_sorted - Calculate percentile from sorted array
+ * @sorted: Sorted array of values
+ * @n: Number of elements in array
+ * @percentile: Percentile to calculate (0.0 to 100.0)
+ *
+ * Returns: Interpolated percentile value
+ * Thread-safe: Yes (pure function)
+ *
+ * Uses linear interpolation for accurate percentile calculation.
+ */
+static double
+percentile_from_sorted (const double *sorted, size_t n, double percentile)
+{
+  double index;
+  size_t lower;
+  size_t upper;
+  double frac;
+
+  assert (sorted != NULL);
+  assert (n > 0);
+
+  index = (percentile / 100.0) * (double)(n - 1);
+  lower = (size_t)floor (index);
+  upper = (size_t)ceil (index);
+  frac = index - (double)lower;
+
+  if (lower == upper || upper >= n)
+    return sorted[lower];
+
+  return sorted[lower] * (1.0 - frac) + sorted[upper] * frac;
+}
 
 /* ============================================================================
  * Histogram Implementation
@@ -385,8 +443,8 @@ histogram_observe (Histogram *h, double value)
 
   h->values[h->write_index] = value;
   h->write_index = (h->write_index + 1) % SOCKET_METRICS_HISTOGRAM_BUCKETS;
-
   h->sum += value;
+
   if (value < h->min)
     h->min = value;
   if (value > h->max)
@@ -398,18 +456,28 @@ histogram_observe (Histogram *h, double value)
 }
 
 /**
- * compare_double - Comparison function for qsort
+ * histogram_copy_values - Copy histogram values to buffer
+ * @h: Histogram to copy from
+ * @dest: Destination buffer (must be SOCKET_METRICS_HISTOGRAM_BUCKETS size)
+ * @count: Total observation count
+ *
+ * Returns: Number of values copied (min of count and bucket size)
+ * Thread-safe: Yes (mutex protected)
  */
-static int
-compare_double (const void *a, const void *b)
+static size_t
+histogram_copy_values (Histogram *h, double *dest, uint64_t count)
 {
-  double da = *(const double *)a;
-  double db = *(const double *)b;
-  if (da < db)
-    return -1;
-  if (da > db)
-    return 1;
-  return 0;
+  size_t n;
+
+  n = count < SOCKET_METRICS_HISTOGRAM_BUCKETS
+          ? (size_t)count
+          : SOCKET_METRICS_HISTOGRAM_BUCKETS;
+
+  pthread_mutex_lock (&h->mutex);
+  memcpy (dest, h->values, n * sizeof (double));
+  pthread_mutex_unlock (&h->mutex);
+
+  return n;
 }
 
 /**
@@ -418,9 +486,7 @@ compare_double (const void *a, const void *b)
  * @percentile: Percentile (0.0 to 100.0)
  *
  * Returns: Percentile value, or 0.0 if no data
- * Thread-safe: Yes (mutex protected)
- *
- * Uses sorting + linear interpolation for accurate percentiles.
+ * Thread-safe: Yes (uses internal locking)
  */
 static double
 histogram_percentile (Histogram *h, double percentile)
@@ -429,58 +495,36 @@ histogram_percentile (Histogram *h, double percentile)
   size_t n;
   double *sorted;
   double result;
-  double index;
-  size_t lower;
-  size_t upper;
-  double frac;
 
   count = atomic_load (&h->count);
   if (count == 0)
     return 0.0;
 
-  n = count < SOCKET_METRICS_HISTOGRAM_BUCKETS
-          ? (size_t)count
-          : SOCKET_METRICS_HISTOGRAM_BUCKETS;
-
-  sorted = malloc (n * sizeof (double));
+  sorted = malloc (SOCKET_METRICS_HISTOGRAM_BUCKETS * sizeof (double));
   if (!sorted)
     return 0.0;
 
-  pthread_mutex_lock (&h->mutex);
-  memcpy (sorted, h->values, n * sizeof (double));
-  pthread_mutex_unlock (&h->mutex);
-
+  n = histogram_copy_values (h, sorted, count);
   qsort (sorted, n, sizeof (double), compare_double);
-
-  /* Calculate percentile with linear interpolation */
-  index = (percentile / 100.0) * (double)(n - 1);
-  lower = (size_t)floor (index);
-  upper = (size_t)ceil (index);
-  frac = index - (double)lower;
-
-  if (lower == upper || upper >= n)
-    result = sorted[lower];
-  else
-    result = sorted[lower] * (1.0 - frac) + sorted[upper] * frac;
+  result = percentile_from_sorted (sorted, n, percentile);
 
   free (sorted);
   return result;
 }
 
 /**
- * histogram_snapshot - Get snapshot of histogram
+ * histogram_fill_snapshot - Fill snapshot with histogram statistics
  * @h: Histogram to snapshot
  * @snap: Output snapshot structure
  *
- * Thread-safe: Yes (mutex protected)
+ * Thread-safe: Yes (uses internal locking)
  */
 static void
-histogram_snapshot (Histogram *h, SocketMetrics_HistogramSnapshot *snap)
+histogram_fill_snapshot (Histogram *h, SocketMetrics_HistogramSnapshot *snap)
 {
   uint64_t count;
   size_t n;
   double *sorted;
-  size_t i;
 
   memset (snap, 0, sizeof (*snap));
 
@@ -490,6 +534,7 @@ histogram_snapshot (Histogram *h, SocketMetrics_HistogramSnapshot *snap)
   if (count == 0)
     return;
 
+  /* Copy basic stats under lock */
   pthread_mutex_lock (&h->mutex);
   snap->sum = h->sum;
   snap->min = h->min;
@@ -498,93 +543,21 @@ histogram_snapshot (Histogram *h, SocketMetrics_HistogramSnapshot *snap)
 
   snap->mean = snap->sum / (double)count;
 
-  /* Calculate percentiles */
-  n = count < SOCKET_METRICS_HISTOGRAM_BUCKETS
-          ? (size_t)count
-          : SOCKET_METRICS_HISTOGRAM_BUCKETS;
-
-  sorted = malloc (n * sizeof (double));
+  /* Allocate and sort values for percentile calculation */
+  sorted = malloc (SOCKET_METRICS_HISTOGRAM_BUCKETS * sizeof (double));
   if (!sorted)
     return;
 
-  pthread_mutex_lock (&h->mutex);
-  memcpy (sorted, h->values, n * sizeof (double));
-  pthread_mutex_unlock (&h->mutex);
-
+  n = histogram_copy_values (h, sorted, count);
   qsort (sorted, n, sizeof (double), compare_double);
 
-  /* Helper macro for percentile calculation */
-#define CALC_PERCENTILE(pct)                                                  \
-  do                                                                          \
-    {                                                                         \
-      double idx = ((pct) / 100.0) * (double)(n - 1);                         \
-      size_t lo = (size_t)floor (idx);                                        \
-      size_t hi = (size_t)ceil (idx);                                         \
-      double fr = idx - (double)lo;                                           \
-      if (lo == hi || hi >= n)                                                \
-        snap->p##pct = sorted[lo];                                            \
-      else                                                                    \
-        snap->p##pct = sorted[lo] * (1.0 - fr) + sorted[hi] * fr;             \
-    }                                                                         \
-  while (0)
-
-  /* Calculate standard percentiles using array indices */
-  {
-    double idx;
-    size_t lo, hi;
-    double fr;
-
-    /* p50 */
-    idx = 0.50 * (double)(n - 1);
-    lo = (size_t)floor (idx);
-    hi = (size_t)ceil (idx);
-    fr = idx - (double)lo;
-    snap->p50 = (lo == hi || hi >= n) ? sorted[lo]
-                                      : sorted[lo] * (1.0 - fr) + sorted[hi] * fr;
-
-    /* p75 */
-    idx = 0.75 * (double)(n - 1);
-    lo = (size_t)floor (idx);
-    hi = (size_t)ceil (idx);
-    fr = idx - (double)lo;
-    snap->p75 = (lo == hi || hi >= n) ? sorted[lo]
-                                      : sorted[lo] * (1.0 - fr) + sorted[hi] * fr;
-
-    /* p90 */
-    idx = 0.90 * (double)(n - 1);
-    lo = (size_t)floor (idx);
-    hi = (size_t)ceil (idx);
-    fr = idx - (double)lo;
-    snap->p90 = (lo == hi || hi >= n) ? sorted[lo]
-                                      : sorted[lo] * (1.0 - fr) + sorted[hi] * fr;
-
-    /* p95 */
-    idx = 0.95 * (double)(n - 1);
-    lo = (size_t)floor (idx);
-    hi = (size_t)ceil (idx);
-    fr = idx - (double)lo;
-    snap->p95 = (lo == hi || hi >= n) ? sorted[lo]
-                                      : sorted[lo] * (1.0 - fr) + sorted[hi] * fr;
-
-    /* p99 */
-    idx = 0.99 * (double)(n - 1);
-    lo = (size_t)floor (idx);
-    hi = (size_t)ceil (idx);
-    fr = idx - (double)lo;
-    snap->p99 = (lo == hi || hi >= n) ? sorted[lo]
-                                      : sorted[lo] * (1.0 - fr) + sorted[hi] * fr;
-
-    /* p999 */
-    idx = 0.999 * (double)(n - 1);
-    lo = (size_t)floor (idx);
-    hi = (size_t)ceil (idx);
-    fr = idx - (double)lo;
-    snap->p999 = (lo == hi || hi >= n)
-                     ? sorted[lo]
-                     : sorted[lo] * (1.0 - fr) + sorted[hi] * fr;
-  }
-
-#undef CALC_PERCENTILE
+  /* Calculate all standard percentiles */
+  snap->p50 = percentile_from_sorted (sorted, n, PERCENTILE_P50);
+  snap->p75 = percentile_from_sorted (sorted, n, PERCENTILE_P75);
+  snap->p90 = percentile_from_sorted (sorted, n, PERCENTILE_P90);
+  snap->p95 = percentile_from_sorted (sorted, n, PERCENTILE_P95);
+  snap->p99 = percentile_from_sorted (sorted, n, PERCENTILE_P99);
+  snap->p999 = percentile_from_sorted (sorted, n, PERCENTILE_P999);
 
   free (sorted);
 }
@@ -623,15 +596,12 @@ SocketMetrics_init (void)
   if (!atomic_compare_exchange_strong (&metrics_initialized, &expected, 1))
     return 0; /* Already initialized */
 
-  /* Initialize counters */
   for (i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
     atomic_store (&counter_values[i], 0);
 
-  /* Initialize gauges */
   for (i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
     atomic_store (&gauge_values[i], 0);
 
-  /* Initialize histograms */
   for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
     histogram_init (&histogram_values[i]);
 
@@ -647,11 +617,10 @@ SocketMetrics_shutdown (void)
 
   expected = 1;
   if (!atomic_compare_exchange_strong (&metrics_initialized, &expected, 0))
-    return; /* Not initialized or already shutdown */
+    return;
 
   pthread_mutex_lock (&metrics_global_mutex);
 
-  /* Destroy histograms */
   for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
     histogram_destroy (&histogram_values[i]);
 
@@ -739,9 +708,7 @@ SocketMetrics_gauge_get (SocketGaugeMetric metric)
 void
 SocketMetrics_histogram_observe (SocketHistogramMetric metric, double value)
 {
-  if (metric < 0 || metric >= SOCKET_HISTOGRAM_METRIC_COUNT)
-    return;
-  if (!histogram_values[metric].initialized)
+  if (!histogram_valid (metric))
     return;
   histogram_observe (&histogram_values[metric], value);
 }
@@ -750,14 +717,14 @@ double
 SocketMetrics_histogram_percentile (SocketHistogramMetric metric,
                                     double percentile)
 {
-  if (metric < 0 || metric >= SOCKET_HISTOGRAM_METRIC_COUNT)
+  if (!histogram_valid (metric))
     return 0.0;
-  if (!histogram_values[metric].initialized)
-    return 0.0;
+
   if (percentile < 0.0)
     percentile = 0.0;
   if (percentile > 100.0)
     percentile = 100.0;
+
   return histogram_percentile (&histogram_values[metric], percentile);
 }
 
@@ -774,9 +741,7 @@ SocketMetrics_histogram_sum (SocketHistogramMetric metric)
 {
   double sum;
 
-  if (metric < 0 || metric >= SOCKET_HISTOGRAM_METRIC_COUNT)
-    return 0.0;
-  if (!histogram_values[metric].initialized)
+  if (!histogram_valid (metric))
     return 0.0;
 
   pthread_mutex_lock (&histogram_values[metric].mutex);
@@ -792,17 +757,14 @@ SocketMetrics_histogram_snapshot (SocketHistogramMetric metric,
 {
   if (!snapshot)
     return;
-  if (metric < 0 || metric >= SOCKET_HISTOGRAM_METRIC_COUNT)
+
+  if (!histogram_valid (metric))
     {
       memset (snapshot, 0, sizeof (*snapshot));
       return;
     }
-  if (!histogram_values[metric].initialized)
-    {
-      memset (snapshot, 0, sizeof (*snapshot));
-      return;
-    }
-  histogram_snapshot (&histogram_values[metric], snapshot);
+
+  histogram_fill_snapshot (&histogram_values[metric], snapshot);
 }
 
 /* ============================================================================
@@ -818,21 +780,18 @@ SocketMetrics_get (SocketMetrics_Snapshot *snapshot)
     return;
 
   memset (snapshot, 0, sizeof (*snapshot));
-  snapshot->timestamp_ms = (uint64_t)metrics_get_monotonic_ms ();
+  snapshot->timestamp_ms = (uint64_t)Socket_get_monotonic_ms ();
 
-  /* Copy counters */
   for (i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
     snapshot->counters[i] = atomic_load (&counter_values[i]);
 
-  /* Copy gauges */
   for (i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
     snapshot->gauges[i] = atomic_load (&gauge_values[i]);
 
-  /* Snapshot histograms */
   for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
     {
       if (histogram_values[i].initialized)
-        histogram_snapshot (&histogram_values[i], &snapshot->histograms[i]);
+        histogram_fill_snapshot (&histogram_values[i], &snapshot->histograms[i]);
     }
 }
 
@@ -841,15 +800,12 @@ SocketMetrics_reset (void)
 {
   int i;
 
-  /* Reset counters */
   for (i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
     atomic_store (&counter_values[i], 0);
 
-  /* Reset gauges */
   for (i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
     atomic_store (&gauge_values[i], 0);
 
-  /* Reset histograms */
   for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
     {
       if (histogram_values[i].initialized)
@@ -881,11 +837,11 @@ SocketMetrics_reset_histograms (void)
 }
 
 /* ============================================================================
- * Export Functions
+ * Export Helpers
  * ============================================================================ */
 
 /**
- * export_append - Safely append to export buffer
+ * export_append - Safely append formatted string to export buffer
  * @buffer: Buffer to write to
  * @buffer_size: Total buffer size
  * @pos: Current position (updated on success)
@@ -922,6 +878,78 @@ export_append (char *buffer, size_t buffer_size, size_t *pos, const char *fmt,
   return (size_t)written;
 }
 
+/**
+ * export_counter_prometheus - Export single counter in Prometheus format
+ */
+static void
+export_counter_prometheus (char *buffer, size_t buffer_size, size_t *pos,
+                           int idx, uint64_t value)
+{
+  export_append (buffer, buffer_size, pos, "# HELP socket_%s %s\n",
+                 counter_names[idx], counter_help[idx]);
+  export_append (buffer, buffer_size, pos, "# TYPE socket_%s counter\n",
+                 counter_names[idx]);
+  export_append (buffer, buffer_size, pos, "socket_%s %llu\n",
+                 counter_names[idx], (unsigned long long)value);
+}
+
+/**
+ * export_gauge_prometheus - Export single gauge in Prometheus format
+ */
+static void
+export_gauge_prometheus (char *buffer, size_t buffer_size, size_t *pos,
+                         int idx, int64_t value)
+{
+  export_append (buffer, buffer_size, pos, "# HELP socket_%s %s\n",
+                 gauge_names[idx], gauge_help[idx]);
+  export_append (buffer, buffer_size, pos, "# TYPE socket_%s gauge\n",
+                 gauge_names[idx]);
+  export_append (buffer, buffer_size, pos, "socket_%s %lld\n", gauge_names[idx],
+                 (long long)value);
+}
+
+/**
+ * export_histogram_prometheus - Export single histogram in Prometheus format
+ */
+static void
+export_histogram_prometheus (char *buffer, size_t buffer_size, size_t *pos,
+                             int idx,
+                             const SocketMetrics_HistogramSnapshot *h)
+{
+  export_append (buffer, buffer_size, pos, "# HELP socket_%s %s\n",
+                 histogram_names[idx], histogram_help[idx]);
+  export_append (buffer, buffer_size, pos, "# TYPE socket_%s summary\n",
+                 histogram_names[idx]);
+
+  if (h->count > 0)
+    {
+      export_append (buffer, buffer_size, pos,
+                     "socket_%s{quantile=\"0.5\"} %.3f\n", histogram_names[idx],
+                     h->p50);
+      export_append (buffer, buffer_size, pos,
+                     "socket_%s{quantile=\"0.9\"} %.3f\n", histogram_names[idx],
+                     h->p90);
+      export_append (buffer, buffer_size, pos,
+                     "socket_%s{quantile=\"0.95\"} %.3f\n", histogram_names[idx],
+                     h->p95);
+      export_append (buffer, buffer_size, pos,
+                     "socket_%s{quantile=\"0.99\"} %.3f\n", histogram_names[idx],
+                     h->p99);
+      export_append (buffer, buffer_size, pos,
+                     "socket_%s{quantile=\"0.999\"} %.3f\n",
+                     histogram_names[idx], h->p999);
+    }
+
+  export_append (buffer, buffer_size, pos, "socket_%s_sum %.3f\n",
+                 histogram_names[idx], h->sum);
+  export_append (buffer, buffer_size, pos, "socket_%s_count %llu\n",
+                 histogram_names[idx], (unsigned long long)h->count);
+}
+
+/* ============================================================================
+ * Export Functions
+ * ============================================================================ */
+
 size_t
 SocketMetrics_export_prometheus (char *buffer, size_t buffer_size)
 {
@@ -935,62 +963,16 @@ SocketMetrics_export_prometheus (char *buffer, size_t buffer_size)
   buffer[0] = '\0';
   SocketMetrics_get (&snapshot);
 
-  /* Export counters */
   for (i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
-    {
-      export_append (buffer, buffer_size, &pos, "# HELP socket_%s %s\n",
-                     counter_names[i], counter_help[i]);
-      export_append (buffer, buffer_size, &pos, "# TYPE socket_%s counter\n",
-                     counter_names[i]);
-      export_append (buffer, buffer_size, &pos, "socket_%s %llu\n",
-                     counter_names[i],
-                     (unsigned long long)snapshot.counters[i]);
-    }
+    export_counter_prometheus (buffer, buffer_size, &pos, i,
+                               snapshot.counters[i]);
 
-  /* Export gauges */
   for (i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
-    {
-      export_append (buffer, buffer_size, &pos, "# HELP socket_%s %s\n",
-                     gauge_names[i], gauge_help[i]);
-      export_append (buffer, buffer_size, &pos, "# TYPE socket_%s gauge\n",
-                     gauge_names[i]);
-      export_append (buffer, buffer_size, &pos, "socket_%s %lld\n",
-                     gauge_names[i], (long long)snapshot.gauges[i]);
-    }
+    export_gauge_prometheus (buffer, buffer_size, &pos, i, snapshot.gauges[i]);
 
-  /* Export histograms */
   for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
-    {
-      SocketMetrics_HistogramSnapshot *h = &snapshot.histograms[i];
-
-      export_append (buffer, buffer_size, &pos, "# HELP socket_%s %s\n",
-                     histogram_names[i], histogram_help[i]);
-      export_append (buffer, buffer_size, &pos, "# TYPE socket_%s summary\n",
-                     histogram_names[i]);
-
-      if (h->count > 0)
-        {
-          export_append (buffer, buffer_size, &pos,
-                         "socket_%s{quantile=\"0.5\"} %.3f\n",
-                         histogram_names[i], h->p50);
-          export_append (buffer, buffer_size, &pos,
-                         "socket_%s{quantile=\"0.9\"} %.3f\n",
-                         histogram_names[i], h->p90);
-          export_append (buffer, buffer_size, &pos,
-                         "socket_%s{quantile=\"0.95\"} %.3f\n",
-                         histogram_names[i], h->p95);
-          export_append (buffer, buffer_size, &pos,
-                         "socket_%s{quantile=\"0.99\"} %.3f\n",
-                         histogram_names[i], h->p99);
-          export_append (buffer, buffer_size, &pos,
-                         "socket_%s{quantile=\"0.999\"} %.3f\n",
-                         histogram_names[i], h->p999);
-        }
-      export_append (buffer, buffer_size, &pos, "socket_%s_sum %.3f\n",
-                     histogram_names[i], h->sum);
-      export_append (buffer, buffer_size, &pos, "socket_%s_count %llu\n",
-                     histogram_names[i], (unsigned long long)h->count);
-    }
+    export_histogram_prometheus (buffer, buffer_size, &pos, i,
+                                 &snapshot.histograms[i]);
 
   return pos;
 }
@@ -1011,24 +993,21 @@ SocketMetrics_export_statsd (char *buffer, size_t buffer_size,
   pfx = prefix ? prefix : "socket";
   SocketMetrics_get (&snapshot);
 
-  /* Export counters */
   for (i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
     {
       export_append (buffer, buffer_size, &pos, "%s.%s:%llu|c\n", pfx,
                      counter_names[i], (unsigned long long)snapshot.counters[i]);
     }
 
-  /* Export gauges */
   for (i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
     {
       export_append (buffer, buffer_size, &pos, "%s.%s:%lld|g\n", pfx,
                      gauge_names[i], (long long)snapshot.gauges[i]);
     }
 
-  /* Export histogram summaries as gauges/timers */
   for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
     {
-      SocketMetrics_HistogramSnapshot *h = &snapshot.histograms[i];
+      const SocketMetrics_HistogramSnapshot *h = &snapshot.histograms[i];
 
       if (h->count > 0)
         {
@@ -1095,7 +1074,7 @@ SocketMetrics_export_json (char *buffer, size_t buffer_size)
   first = 1;
   for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
     {
-      SocketMetrics_HistogramSnapshot *h = &snapshot.histograms[i];
+      const SocketMetrics_HistogramSnapshot *h = &snapshot.histograms[i];
 
       if (!first)
         export_append (buffer, buffer_size, &pos, ",\n");
