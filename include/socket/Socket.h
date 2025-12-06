@@ -954,5 +954,34 @@ extern void Socket_bind_with_addrinfo (T socket, struct addrinfo *res);
  */
 extern void Socket_connect_with_addrinfo (T socket, struct addrinfo *res);
 
+/* ============================================================================
+ * Signal Handling Utilities
+ * ============================================================================ */
+
+/**
+ * Socket_ignore_sigpipe - Globally ignore SIGPIPE signal
+ *
+ * NOTE: This function is NOT required when using this library. The library
+ * handles SIGPIPE internally via:
+ * - MSG_NOSIGNAL flag on send operations (Linux/FreeBSD)
+ * - SO_NOSIGPIPE socket option at creation (BSD/macOS)
+ *
+ * This convenience function is provided for:
+ * - Legacy code migration (applications that previously handled SIGPIPE)
+ * - Applications mixing this library with raw socket code
+ * - Defense-in-depth preference
+ *
+ * Returns: 0 on success, -1 on error (sets errno)
+ * Thread-safe: Yes (can be called from any thread, idempotent)
+ *
+ * Usage:
+ *   // Optional - call once at program startup if desired
+ *   Socket_ignore_sigpipe();
+ *
+ * IMPORTANT: Do not call this if your application needs to handle SIGPIPE
+ * for other purposes (e.g., detecting broken pipes in shell pipelines).
+ */
+extern int Socket_ignore_sigpipe (void);
+
 #undef T
 #endif /* SOCKET_INCLUDED */

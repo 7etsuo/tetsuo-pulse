@@ -527,6 +527,7 @@ set(TEST_SOURCES
     test_http2_integration
     test_proxy_integration
     test_httpserver_load
+    test_signals
 )
 
 # Create test executables (link against object files to preserve constructor attributes)

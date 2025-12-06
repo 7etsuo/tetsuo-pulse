@@ -1581,6 +1581,71 @@ The poll backend is automatically selected based on platform:
 | HTTP server | NOT thread-safe | One instance per thread |
 | TLS/DTLS contexts | Thread-safe | Read-only after setup |
 
+## Signal Handling
+
+### SIGPIPE (Automatic)
+
+**No application action required.** The library handles SIGPIPE internally:
+
+| Platform | Mechanism | When Applied |
+|----------|-----------|--------------|
+| Linux/FreeBSD | `MSG_NOSIGNAL` flag | Every send operation |
+| BSD/macOS | `SO_NOSIGPIPE` option | Socket creation time |
+
+Applications do **NOT** need to call `signal(SIGPIPE, SIG_IGN)`.
+
+For legacy code or defense-in-depth, an optional convenience function is provided:
+
+```c
+// Optional - not required
+Socket_ignore_sigpipe();
+```
+
+### Graceful Shutdown
+
+The library does **NOT** install signal handlers. Applications must handle shutdown signals themselves. Recommended pattern using the self-pipe trick:
+
+```c
+#include <signal.h>
+#include <unistd.h>
+
+static int signal_pipe[2];
+
+/* Async-signal-safe handler - only writes to pipe */
+static void shutdown_handler(int signo) {
+    (void)signo;
+    char byte = 1;
+    (void)write(signal_pipe[1], &byte, 1);  /* write() is async-signal-safe */
+}
+
+int main(void) {
+    pipe(signal_pipe);
+    fcntl(signal_pipe[0], F_SETFL, O_NONBLOCK);
+    fcntl(signal_pipe[1], F_SETFL, O_NONBLOCK);
+    
+    struct sigaction sa = {0};
+    sa.sa_handler = shutdown_handler;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+    
+    /* Add signal pipe to poll set */
+    SocketPoll_add_fd(poll, signal_pipe[0], POLL_READ, NULL);
+    
+    /* In event loop, check for signal pipe readability */
+    /* Then use SocketPool_drain() for graceful connection draining */
+}
+```
+
+See `examples/graceful_shutdown.c` and `docs/SIGNALS.md` for complete examples.
+
+### Key Points
+
+- Library does NOT install any signal handlers
+- Library handles `EINTR` internally (automatic retry where appropriate)
+- Do NOT call library functions from signal handlers
+- Use self-pipe or eventfd for async-safe signal notification
+
 ## Memory Management
 
 The library uses **arena allocation** for related objects. Sockets and their associated resources are managed through arenas, ensuring efficient memory usage and automatic cleanup.

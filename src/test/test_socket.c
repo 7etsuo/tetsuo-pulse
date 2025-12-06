@@ -38,11 +38,19 @@
 #define TEST_UNIX_SOCKET_PATH "/tmp/test_socket_unix"
 #define TEST_BUFFER_SIZE 4096
 
-/* Setup signal handling for SIGPIPE */
+/**
+ * setup_signals - Legacy signal setup (no longer needed)
+ *
+ * NOTE: The socket library now handles SIGPIPE internally via MSG_NOSIGNAL
+ * (Linux) and SO_NOSIGPIPE (BSD/macOS). This function is kept as a no-op
+ * for compatibility with existing test code. New tests should NOT call this.
+ *
+ * SIGPIPE is now ignored once in main() via Socket_ignore_sigpipe().
+ */
 static void
 setup_signals (void)
 {
-  signal (SIGPIPE, SIG_IGN);
+  /* No-op - SIGPIPE handled by Socket_ignore_sigpipe() in main() */
 }
 
 /* Cleanup Unix socket files */
@@ -7441,6 +7449,10 @@ TEST (socket_connect_timeout_enforcement)
 int
 main (void)
 {
+  /* Ignore SIGPIPE once at startup - library handles this internally,
+   * but we call it explicitly for defense-in-depth in tests. */
+  Socket_ignore_sigpipe ();
+
   Test_run_all ();
   return Test_get_failures () > 0 ? 1 : 0;
 }

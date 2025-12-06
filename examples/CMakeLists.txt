@@ -59,6 +59,13 @@ add_executable(example_proxy_connect proxy_connect.c)
 target_link_libraries(example_proxy_connect ${EXAMPLE_LIBS})
 
 # =============================================================================
+# Signal Handling Example
+# =============================================================================
+
+add_executable(example_graceful_shutdown graceful_shutdown.c)
+target_link_libraries(example_graceful_shutdown ${EXAMPLE_LIBS})
+
+# =============================================================================
 # Installation (optional)
 # =============================================================================
 

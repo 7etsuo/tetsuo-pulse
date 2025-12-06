@@ -33,10 +33,17 @@
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
+/**
+ * setup_signals - Legacy signal setup (no longer needed)
+ *
+ * NOTE: The socket library handles SIGPIPE internally. This function is
+ * kept as a no-op for compatibility. Socket_ignore_sigpipe() is called
+ * once in main().
+ */
 static void
 setup_signals (void)
 {
-  signal (SIGPIPE, SIG_IGN);
+  /* No-op - SIGPIPE handled by Socket_ignore_sigpipe() in main() */
 }
 
 /* ==================== Basic Pool Tests ==================== */
@@ -3118,6 +3125,9 @@ TEST (socketpool_health_status_mapping)
 int
 main (void)
 {
+  /* Ignore SIGPIPE once at startup */
+  Socket_ignore_sigpipe ();
+
   Test_run_all ();
   return Test_get_failures () > 0 ? 1 : 0;
 }

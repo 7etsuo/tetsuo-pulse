@@ -55,10 +55,17 @@ static atomic_int requests_handled = 0;
 static atomic_int connections_made = 0;
 static atomic_int connections_failed = 0;
 
+/**
+ * setup_signals - Legacy signal setup (no longer needed)
+ *
+ * NOTE: The socket library handles SIGPIPE internally. This function is
+ * kept as a no-op for compatibility. Socket_ignore_sigpipe() is called
+ * once in main().
+ */
 static void
 setup_signals (void)
 {
-  signal (SIGPIPE, SIG_IGN);
+  /* No-op - SIGPIPE handled by Socket_ignore_sigpipe() in main() */
 }
 
 static int
@@ -835,6 +842,9 @@ TEST (httpserver_per_client_limit)
 int
 main (void)
 {
+  /* Ignore SIGPIPE once at startup */
+  Socket_ignore_sigpipe ();
+
   printf ("HTTP Server Load Tests\n");
   printf ("======================\n\n");
 

@@ -1088,8 +1088,8 @@ TEST (proxy_tunnel_invalid_type)
 int
 main (void)
 {
-  /* Ignore SIGPIPE for socket tests */
-  signal (SIGPIPE, SIG_IGN);
+  /* Ignore SIGPIPE - library handles this internally, but explicit for tests */
+  Socket_ignore_sigpipe ();
 
   Test_run_all ();
   return Test_get_failures () > 0 ? 1 : 0;

@@ -1181,8 +1181,8 @@ test_timeout_configuration (void)
 int
 main (void)
 {
-  /* Ignore SIGPIPE */
-  signal (SIGPIPE, SIG_IGN);
+  /* Ignore SIGPIPE - library handles this internally, but explicit for tests */
+  Socket_ignore_sigpipe ();
 
   printf ("\n");
   printf ("============================================================\n");

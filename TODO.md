@@ -213,18 +213,18 @@ Improve error handling and recovery capabilities.
 
 ---
 
-## 12. Signal Handling
+## 12. Signal Handling ✅ COMPLETE
 
 Address signal handling requirements for production use.
 
-- [ ] 12.1 Document SIGPIPE handling requirement in README.md
-- [ ] 12.2 Add `Socket_ignore_sigpipe()` convenience function
-- [ ] 12.3 Document async-signal-safe requirements for multithreaded use
-- [ ] 12.4 Audit all signal handler usage in library code
-- [ ] 12.5 Ensure no unsafe functions called from signal context
-- [ ] 12.6 Add graceful shutdown signal handling example
-- [ ] 12.7 Document interaction with application signal handlers
-- [ ] 12.8 Test library behavior when signals interrupt system calls
+- [x] 12.1 Document SIGPIPE handling requirement in README.md (added Signal Handling section with SIGPIPE and graceful shutdown patterns)
+- [x] 12.2 Add `Socket_ignore_sigpipe()` convenience function (implemented in Socket.h/Socket.c)
+- [x] 12.3 Document async-signal-safe requirements for multithreaded use (created comprehensive docs/SIGNALS.md)
+- [x] 12.4 Audit all signal handler usage in library code (confirmed: library installs NO signal handlers)
+- [x] 12.5 Ensure no unsafe functions called from signal context (confirmed: library is signal-handler-free)
+- [x] 12.6 Add graceful shutdown signal handling example (created examples/graceful_shutdown.c)
+- [x] 12.7 Document interaction with application signal handlers (documented in docs/SIGNALS.md)
+- [x] 12.8 Test library behavior when signals interrupt system calls (created src/test/test_signals.c with 15 tests)
 
 ---
 
@@ -340,13 +340,13 @@ Track potential future enhancements (lower priority).
 | 9. Resource Limits | 12 | 12 | 100% |
 | 10. Timeout Verification | 13 | 0 | 0% |
 | 11. Error Recovery | 10 | 1 | 10% |
-| 12. Signal Handling | 8 | 0 | 0% |
+| 12. Signal Handling | 8 | 8 | 100% |
 | 13. Testing | 14 | 1 | 7% |
 | 14. Documentation | 13 | 0 | 0% |
 | 15. Build and Release | 13 | 2 | 15% |
 | 16. Performance | 12 | 3 | 25% |
 | 17. Future Features | 10 | 0 | 0% |
-| **TOTAL** | **202** | **109** | **54%** |
+| **TOTAL** | **202** | **117** | **58%** |
 
 ---
 

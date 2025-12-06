@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <signal.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -76,6 +77,29 @@ int
 Socket_error_is_retryable (int err)
 {
   return SocketError_is_retryable_errno (err);
+}
+
+/**
+ * Socket_ignore_sigpipe - Globally ignore SIGPIPE signal
+ *
+ * NOTE: This function is NOT required when using this library.
+ * See Socket.h for full documentation.
+ *
+ * Implementation uses sigaction() for reliable signal handling.
+ * SA_RESTART is NOT set because SIGPIPE should not interrupt syscalls
+ * when ignored (the signal is simply discarded).
+ */
+int
+Socket_ignore_sigpipe (void)
+{
+  struct sigaction sa;
+
+  memset (&sa, 0, sizeof (sa));
+  sa.sa_handler = SIG_IGN;
+  sigemptyset (&sa.sa_mask);
+  sa.sa_flags = 0;
+
+  return sigaction (SIGPIPE, &sa, NULL);
 }
 
 /* Static helper functions */
