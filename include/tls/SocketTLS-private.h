@@ -174,6 +174,12 @@ tls_socket_get_ssl (Socket_T socket)
  * Returns: TLSHandshakeState based on error type
  *
  * Sets errno to EAGAIN for WANT_READ/WRITE cases.
+ * Preserves errno from SSL_ERROR_SYSCALL for diagnostics.
+ *
+ * Error type handling:
+ * - SSL_ERROR_SYSCALL: System call error (check errno for details)
+ * - SSL_ERROR_SSL: Protocol error (check ERR_get_error() for details)
+ * - SSL_ERROR_ZERO_RETURN: Clean shutdown by peer
  */
 static inline TLSHandshakeState
 tls_handle_ssl_error (Socket_T socket, SSL *ssl, int ssl_result)
@@ -196,8 +202,31 @@ tls_handle_ssl_error (Socket_T socket, SSL *ssl, int ssl_result)
       errno = EAGAIN;
       return TLS_HANDSHAKE_WANT_WRITE;
 
-    default:
+    case SSL_ERROR_ZERO_RETURN:
+      /* Clean shutdown by peer - not an error per se, but connection is done */
       socket->tls_handshake_done = 0;
+      return TLS_HANDSHAKE_ERROR;
+
+    case SSL_ERROR_SYSCALL:
+      /* System call error - errno contains the actual error.
+       * If errno is 0, it typically means unexpected EOF (connection reset).
+       * Do NOT overwrite errno here - preserve it for caller diagnostics. */
+      socket->tls_handshake_done = 0;
+      if (errno == 0)
+        errno = ECONNRESET; /* Unexpected EOF treated as connection reset */
+      return TLS_HANDSHAKE_ERROR;
+
+    case SSL_ERROR_SSL:
+      /* Protocol error - use ERR_get_error() for details.
+       * Set errno to indicate protocol-level failure. */
+      socket->tls_handshake_done = 0;
+      errno = EPROTO;
+      return TLS_HANDSHAKE_ERROR;
+
+    default:
+      /* Unknown error type - should not happen with current OpenSSL versions */
+      socket->tls_handshake_done = 0;
+      errno = EIO;
       return TLS_HANDSHAKE_ERROR;
     }
 }
@@ -275,8 +304,11 @@ tls_validate_file_path (const char *path)
  * tls_validate_hostname - Validate SNI hostname format
  * @hostname: Hostname string to validate
  *
- * Validates hostname according to DNS rules: labels with alphanum/-,
- * length limits per RFC 6066.
+ * Validates hostname according to DNS rules (RFC 952, RFC 1123):
+ * - Labels contain only alphanumeric characters and hyphens
+ * - Labels cannot start or end with a hyphen
+ * - Labels are 1-63 characters
+ * - Total length within RFC 6066 SNI limits
  *
  * Returns: 1 if valid, 0 if invalid
  */
@@ -292,21 +324,26 @@ tls_validate_hostname (const char *hostname)
 
   const char *p = hostname;
   int label_len = 0;
+  int prev_hyphen = 0; /* Track if previous char was hyphen (for end-of-label check) */
 
   while (*p)
     {
       if (*p == '.')
         {
-          if (label_len == 0 || label_len > 63)
+          /* RFC 952/1123: Labels cannot be empty, exceed 63 chars, or end with hyphen */
+          if (label_len == 0 || label_len > 63 || prev_hyphen)
             return 0;
           label_len = 0;
+          prev_hyphen = 0;
         }
       else
         {
           if (!(isalnum ((unsigned char)*p) || *p == '-'))
             return 0;
+          /* RFC 952/1123: Labels cannot start with hyphen */
           if (*p == '-' && label_len == 0)
             return 0;
+          prev_hyphen = (*p == '-');
           label_len++;
           if (label_len > 63)
             return 0;
@@ -314,7 +351,8 @@ tls_validate_hostname (const char *hostname)
       p++;
     }
 
-  return (label_len > 0 && label_len <= 63);
+  /* Final label: must exist, not exceed 63 chars, and not end with hyphen */
+  return (label_len > 0 && label_len <= 63 && !prev_hyphen);
 }
 
 /* ============================================================================

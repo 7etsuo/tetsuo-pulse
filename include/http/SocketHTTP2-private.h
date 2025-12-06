@@ -152,6 +152,10 @@ struct SocketHTTP2_Conn
   int settings_timeout_ms;
   int ping_timeout_ms;
   int idle_timeout_ms;
+
+  /* RST_STREAM rate limiting (CVE-2023-44487 protection) */
+  uint32_t rst_count_in_window; /**< RST_STREAM count in current window */
+  int64_t rst_window_start_ms;  /**< Window start timestamp (monotonic) */
 };
 
 /* ============================================================================

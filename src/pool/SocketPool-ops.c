@@ -1159,6 +1159,88 @@ apply_syn_challenge (Socket_T socket, SocketSYN_Action action,
 }
 
 /**
+ * check_pre_accept_limits - Check rate and pool limits BEFORE accepting
+ * @pool: Pool instance
+ * @protect_out: Output - SYN protection instance
+ *
+ * Returns: 1 if accepting is allowed, 0 if rate limited or draining
+ * Thread-safe: Yes - acquires pool mutex
+ *
+ * Security: Checks limits BEFORE accepting to prevent TOCTOU race where
+ * connections are accepted then immediately closed, wasting resources.
+ */
+static int
+check_pre_accept_limits (T pool, SocketSYNProtect_T *protect_out)
+{
+  int accepting;
+  int rate_ok;
+
+  pthread_mutex_lock (&pool->mutex);
+
+  /* Capture SYN protect instance */
+  if (protect_out)
+    *protect_out = pool->syn_protect;
+
+  /* Check pool state first */
+  accepting = (atomic_load_explicit (&pool->state, memory_order_acquire)
+               == POOL_STATE_RUNNING);
+  if (!accepting)
+    {
+      pthread_mutex_unlock (&pool->mutex);
+      return 0;
+    }
+
+  /* Check rate limit (does NOT consume token - just checks availability) */
+  rate_ok = (!pool->conn_limiter
+             || SocketRateLimit_available (pool->conn_limiter) > 0);
+
+  pthread_mutex_unlock (&pool->mutex);
+
+  return rate_ok;
+}
+
+/**
+ * consume_rate_and_track_ip - Consume rate token and track IP after accept
+ * @pool: Pool instance
+ * @client_ip: Client IP address
+ *
+ * Returns: 1 if successful, 0 if rate/IP limit exceeded
+ * Thread-safe: Yes - acquires pool mutex
+ */
+static int
+consume_rate_and_track_ip (T pool, const char *client_ip)
+{
+  int rate_ok;
+  int ip_ok;
+
+  pthread_mutex_lock (&pool->mutex);
+
+  /* Consume rate token */
+  rate_ok = (!pool->conn_limiter
+             || SocketRateLimit_try_acquire (pool->conn_limiter, 1));
+
+  if (!rate_ok)
+    {
+      pthread_mutex_unlock (&pool->mutex);
+      return 0;
+    }
+
+  /* Check and track IP */
+  if (pool->ip_tracker && client_ip && client_ip[0] != '\0')
+    {
+      ip_ok = SocketIPTracker_track (pool->ip_tracker, client_ip);
+      if (!ip_ok)
+        {
+          pthread_mutex_unlock (&pool->mutex);
+          return 0;
+        }
+    }
+
+  pthread_mutex_unlock (&pool->mutex);
+  return 1;
+}
+
+/**
  * SocketPool_accept_protected - Accept with full SYN flood protection
  * @pool: Pool instance
  * @server: Server socket (listening, non-blocking)
@@ -1167,23 +1249,39 @@ apply_syn_challenge (Socket_T socket, SocketSYN_Action action,
  * Returns: New socket if allowed, NULL if blocked/would block
  * Raises: SocketPool_Failed on actual errors
  * Thread-safe: Yes
+ *
+ * Security: Checks rate limits BEFORE accepting to prevent resource exhaustion
+ * from accepting connections that will be immediately rejected. This prevents
+ * TOCTOU race conditions where attackers could exhaust server resources.
+ *
+ * Flow:
+ * 1. Check rate limits and pool state (pre-accept check)
+ * 2. Accept connection
+ * 3. Check SYN protection for the specific client IP
+ * 4. Consume rate token and track IP (post-accept confirmation)
+ * 5. Apply throttle/challenge actions as needed
  */
 Socket_T
 SocketPool_accept_protected (T pool, Socket_T server,
                              SocketSYN_Action *action_out)
 {
   Socket_T client = NULL;
-  SocketSYNProtect_T protect;
+  SocketSYNProtect_T protect = NULL;
   SocketSYN_Action action = SYN_ACTION_ALLOW;
   const char *client_ip = NULL;
 
   assert (pool);
   assert (server);
 
-  /* Get current protection instance */
-  pthread_mutex_lock (&pool->mutex);
-  protect = pool->syn_protect;
-  pthread_mutex_unlock (&pool->mutex);
+  /* Security: Check rate limits BEFORE accepting to prevent TOCTOU race.
+   * This ensures we don't accept connections that will be immediately
+   * rejected, preventing resource exhaustion attacks. */
+  if (!check_pre_accept_limits (pool, &protect))
+    {
+      if (action_out)
+        *action_out = SYN_ACTION_THROTTLE;
+      return NULL;
+    }
 
   /* If no SYN protection, fall back to rate-limited accept */
   if (protect == NULL)
@@ -1193,7 +1291,7 @@ SocketPool_accept_protected (T pool, Socket_T server,
       return SocketPool_accept_limited (pool, server);
     }
 
-  /* Accept the connection first to get client IP */
+  /* Now accept the connection - rate limits already checked */
   TRY { client = Socket_accept (server); }
   EXCEPT (Socket_Failed)
   {
@@ -1223,41 +1321,37 @@ SocketPool_accept_protected (T pool, Socket_T server,
   switch (action)
     {
     case SYN_ACTION_ALLOW:
-      /* Normal accept - check rate limits still */
-      if (!SocketPool_accept_allowed (pool, client_ip))
+      /* Consume rate token and track IP (atomic check) */
+      if (!consume_rate_and_track_ip (pool, client_ip))
         {
           SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
           Socket_free (&client);
           return NULL;
         }
-      /* Track IP for per-IP limiting */
-      SocketPool_track_ip (pool, client_ip);
       SocketSYNProtect_report_success (protect, client_ip);
       break;
 
     case SYN_ACTION_THROTTLE:
       /* Apply throttle delay, then allow */
       apply_syn_throttle (action, protect);
-      if (!SocketPool_accept_allowed (pool, client_ip))
+      if (!consume_rate_and_track_ip (pool, client_ip))
         {
           SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
           Socket_free (&client);
           return NULL;
         }
-      SocketPool_track_ip (pool, client_ip);
       SocketSYNProtect_report_success (protect, client_ip);
       break;
 
     case SYN_ACTION_CHALLENGE:
       /* Apply TCP_DEFER_ACCEPT challenge */
       apply_syn_challenge (client, action, protect);
-      if (!SocketPool_accept_allowed (pool, client_ip))
+      if (!consume_rate_and_track_ip (pool, client_ip))
         {
           SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
           Socket_free (&client);
           return NULL;
         }
-      SocketPool_track_ip (pool, client_ip);
       /* Report success only after challenge - caller should verify data received */
       break;
 

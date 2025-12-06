@@ -379,7 +379,7 @@ parse_digest_challenge (const char *header, DigestChallenge *ch)
 
   /* Default algorithm is MD5 */
   if (ch->algorithm[0] == '\0')
-    strcpy (ch->algorithm, "MD5");
+    safe_strcpy (ch->algorithm, sizeof (ch->algorithm), "MD5");
 
   return 0;
 }

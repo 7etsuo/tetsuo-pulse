@@ -99,6 +99,20 @@
 #define SOCKETHTTP2_CONNECTION_WINDOW_SIZE (1 << 20) /* 1MB */
 #endif
 
+/**
+ * RST_STREAM rate limiting (CVE-2023-44487 Rapid Reset protection)
+ *
+ * These limits prevent attackers from exhausting server resources by rapidly
+ * opening and resetting streams. When exceeded, ENHANCE_YOUR_CALM is sent.
+ */
+#ifndef SOCKETHTTP2_RST_RATE_LIMIT
+#define SOCKETHTTP2_RST_RATE_LIMIT 100 /* Max RST_STREAM frames per window */
+#endif
+
+#ifndef SOCKETHTTP2_RST_RATE_WINDOW_MS
+#define SOCKETHTTP2_RST_RATE_WINDOW_MS 1000 /* Rate window in milliseconds */
+#endif
+
 /** Frame header size in bytes */
 #define HTTP2_FRAME_HEADER_SIZE 9
 

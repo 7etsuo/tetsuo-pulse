@@ -59,6 +59,8 @@ struct T
   PollBackend_T backend;                             /**< Platform-specific backend */
   int maxevents;                                     /**< Maximum events per wait */
   int default_timeout_ms;                            /**< Default timeout for wait */
+  int registered_count;                              /**< Current registered socket count */
+  int max_registered;                                /**< Max registered (0=unlimited) */
   SocketEvent_T *socketevents;                       /**< Translated event array */
   Arena_T arena;                                     /**< Memory arena */
   SocketData *socket_data_map[SOCKET_DATA_HASH_SIZE];     /**< Socket->data hash table */

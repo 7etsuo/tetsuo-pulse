@@ -185,12 +185,27 @@ extern Connection_T SocketPool_add (T pool, Socket_T socket);
  * @pool: Pool instance
  * @server: Server socket (listening, non-blocking)
  * @max_accepts: Max to accept (1-SOCKET_POOL_MAX_BATCH_ACCEPTS)
- * @accepted: Output array of accepted sockets (pre-allocated)
+ * @accepted: Output array of accepted sockets (pre-allocated, see below)
+ *
  * Returns: Number accepted (0 to max_accepts)
  * Raises: SocketPool_Failed on error
  * Thread-safe: Yes
+ *
  * Efficient batch accept using accept4() where available.
  * Automatically adds accepted sockets to pool.
+ *
+ * CALLER RESPONSIBILITY - Array Size:
+ * The @accepted array MUST be pre-allocated by the caller with at least
+ * @max_accepts elements. No bounds checking is performed on the array -
+ * providing an undersized array will cause buffer overflow.
+ *
+ * Example safe usage:
+ *   Socket_T accepted[100];  // Array of at least max_accepts size
+ *   int count = SocketPool_accept_batch(pool, server, 100, accepted);
+ *
+ * Example UNSAFE usage (DO NOT DO THIS):
+ *   Socket_T accepted[10];   // Array too small!
+ *   int count = SocketPool_accept_batch(pool, server, 100, accepted); // OVERFLOW!
  */
 extern int SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
                                     Socket_T *accepted);
@@ -878,7 +893,23 @@ extern SocketPool_ConnHealth SocketPool_check_connection (T pool,
  *
  * Called during SocketPool_get() before returning a connection.
  * If callback returns 0, connection is removed from pool and NULL is returned.
- * Thread-safe: Callback is invoked with pool mutex held - keep it short!
+ *
+ * CRITICAL THREAD SAFETY REQUIREMENTS:
+ *
+ * The callback is invoked with the pool mutex HELD. The callback:
+ *
+ * - MUST NOT call any SocketPool_* functions (DEADLOCK will occur)
+ * - MUST NOT call functions that may acquire the pool mutex
+ * - MUST NOT block for extended periods (degrades pool performance)
+ * - SHOULD complete execution in < 1ms
+ * - MAY read connection data via Connection_* accessors (thread-safe reads)
+ * - MAY perform quick socket health checks (e.g., poll with 0 timeout)
+ *
+ * Violating these requirements will cause deadlock or severe performance
+ * degradation. For complex validation logic, consider:
+ * - Using a separate validation thread with async notification
+ * - Performing validation after SocketPool_get() returns
+ * - Using SocketPool_check_connection() instead of custom callback
  */
 
 /**

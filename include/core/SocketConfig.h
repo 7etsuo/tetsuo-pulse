@@ -252,6 +252,20 @@ extern const char *Socket_safe_strerror (int errnum);
 #define POLL_FD_MAP_EXPAND_INCREMENT 1024
 #endif
 
+/**
+ * SOCKET_POLL_MAX_REGISTERED - Maximum sockets registered per poll instance
+ *
+ * Defense-in-depth limit to prevent resource exhaustion attacks.
+ * Set to 0 to disable the limit (unlimited registrations).
+ * Default: 0 (disabled) for backwards compatibility.
+ *
+ * Security note: In high-security deployments, consider setting this
+ * to a reasonable limit based on expected workload to prevent DoS.
+ */
+#ifndef SOCKET_POLL_MAX_REGISTERED
+#define SOCKET_POLL_MAX_REGISTERED 0
+#endif
+
 /* ============================================================================
  * Timer Subsystem Configuration
  * ============================================================================ */

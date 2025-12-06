@@ -77,10 +77,26 @@ extern const Except_T SocketDNS_Failed;
  * @result: Completed addrinfo result (NULL on error)
  * @error: Error code from getaddrinfo() (0 on success)
  * @data: User data passed to SocketDNS_resolve()
+ *
  * Called when DNS resolution completes. If result is NULL, error contains
- * the getaddrinfo() error code. The caller owns the result addrinfo structure
- * and must call freeaddrinfo() when done.
- * Thread-safe: Called from DNS worker thread, not application thread
+ * the getaddrinfo() error code.
+ *
+ * OWNERSHIP: The callback receives ownership of the result addrinfo structure
+ * and MUST call freeaddrinfo() when done with it.
+ *
+ * THREAD SAFETY WARNING: Callbacks are invoked from DNS WORKER THREADS,
+ * NOT from the application thread. The callback implementation MUST:
+ *
+ * - Be thread-safe if accessing shared application data structures
+ * - Use proper synchronization (mutexes) when modifying shared state
+ * - NOT store the @req pointer (it becomes invalid after callback returns)
+ * - NOT call SocketDNS_free() from within the callback (deadlock)
+ * - NOT perform long-running or blocking operations (blocks DNS workers)
+ * - Take ownership of @result immediately (copy if needed for later use)
+ *
+ * For applications that cannot safely handle worker-thread callbacks,
+ * use the SocketPoll integration pattern instead (pass NULL callback to
+ * SocketDNS_resolve and use SocketDNS_check/SocketDNS_getresult).
  */
 typedef void (*SocketDNS_Callback) (Request_T req, struct addrinfo *result,
                                     int error, void *data);
@@ -108,22 +124,29 @@ extern void SocketDNS_free (T *dns);
  * SocketDNS_resolve - Start async DNS resolution
  * @dns: DNS resolver instance
  * @host: Hostname or IP address to resolve (NULL for wildcard bind with
- * AI_PASSIVE)
- * @port: Port number (0 if not needed)
+ *        AI_PASSIVE)
+ * @port: Port number (0 = no service/port in resolution, 1-65535 for specific
+ *        port). When port is 0, getaddrinfo() is called with NULL service,
+ *        which is valid for address-only lookups.
  * @callback: Completion callback (NULL for SocketPoll integration)
  * @data: User data passed to callback
+ *
  * Returns: Request handle (never NULL)
  * Raises: SocketDNS_Failed on queue full or invalid parameters
  * Thread-safe: Yes - protected by internal mutex
+ *
  * Starts asynchronous DNS resolution. If callback is NULL, use SocketPoll
  * integration: add SocketDNS_pollfd() to SocketPoll and call SocketDNS_check()
  * on events. If callback is provided, it will be called from a worker thread
- * when resolution completes.
+ * when resolution completes (see SocketDNS_Callback documentation for safety).
+ *
  * When host is NULL, AI_PASSIVE flag is automatically set for wildcard bind
  * operations. The request handle remains valid until:
- * - Result retrieved via SocketDNS_getresult() (callback mode)
+ * - Result retrieved via SocketDNS_getresult() (poll mode)
+ * - Callback invoked (callback mode - req invalid after callback returns)
  * - Request cancelled via SocketDNS_cancel()
  * - Resolver freed via SocketDNS_free()
+ *
  * Performance: O(1) queue insertion
  */
 extern Request_T SocketDNS_resolve (T dns, const char *host, int port,
@@ -200,16 +223,27 @@ extern int SocketDNS_check (T dns);
 /**
  * SocketDNS_getresult - Get result of completed request
  * @dns: DNS resolver instance
- * @req: Request handle
- * Returns: Completed addrinfo result or NULL if pending/error/cancelled
+ * @req: Request handle (must have been returned by SocketDNS_resolve() on
+ *       this same resolver instance)
+ *
+ * Returns: Completed addrinfo result or NULL if pending/error/cancelled/invalid
  * Thread-safe: Yes - protected by internal mutex
+ *
  * Retrieves the result of a completed DNS resolution. Returns NULL if:
  * - Request is still pending
  * - Request was cancelled
  * - Resolution failed (check error via SocketDNS_geterror())
+ * - Request does not belong to this resolver (invalid handle)
+ * - Callback was provided (callback already consumed the result)
+ *
  * The caller owns the returned addrinfo structure and must call
  * freeaddrinfo() when done. The request handle becomes invalid after
  * the result is retrieved.
+ *
+ * IMPORTANT: Only use request handles returned by SocketDNS_resolve() or
+ * SocketDNS_create_completed_request() on the SAME resolver instance.
+ * Passing request handles from a different resolver is undefined behavior.
+ *
  * Performance: O(1) hash table lookup
  */
 extern struct addrinfo *SocketDNS_getresult (T dns, Request_T req);
@@ -217,9 +251,15 @@ extern struct addrinfo *SocketDNS_getresult (T dns, Request_T req);
 /**
  * SocketDNS_geterror - Get error code for completed request
  * @dns: DNS resolver instance
- * @req: Request handle
- * Returns: getaddrinfo() error code or 0 on success
- * Thread-safe: Yes
+ * @req: Request handle (must have been returned by SocketDNS_resolve() on
+ *       this same resolver instance)
+ *
+ * Returns: getaddrinfo() error code, or 0 on success, or 0 if request
+ *          does not belong to this resolver (invalid handle)
+ * Thread-safe: Yes - protected by internal mutex
+ *
+ * IMPORTANT: Only use request handles returned by SocketDNS_resolve() or
+ * SocketDNS_create_completed_request() on the SAME resolver instance.
  */
 extern int SocketDNS_geterror (T dns, const struct SocketDNS_Request_T *req);
 

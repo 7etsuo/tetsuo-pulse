@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -101,19 +102,19 @@ static _Atomic size_t global_memory_limit = 0; /* 0 = unlimited */
 void
 SocketConfig_set_max_memory (size_t max_bytes)
 {
-  global_memory_limit = max_bytes;
+  atomic_store_explicit (&global_memory_limit, max_bytes, memory_order_release);
 }
 
 size_t
 SocketConfig_get_max_memory (void)
 {
-  return global_memory_limit;
+  return atomic_load_explicit (&global_memory_limit, memory_order_acquire);
 }
 
 size_t
 SocketConfig_get_memory_used (void)
 {
-  return global_memory_used;
+  return atomic_load_explicit (&global_memory_used, memory_order_acquire);
 }
 
 /**
@@ -121,27 +122,45 @@ SocketConfig_get_memory_used (void)
  * @nbytes: Number of bytes to allocate
  *
  * Returns: 1 if allocation allowed, 0 if would exceed limit
- * Thread-safe: Yes (atomic compare-exchange)
+ * Thread-safe: Yes (atomic compare-exchange loop for strict enforcement)
+ *
+ * Security: Uses atomic CAS loop to prevent TOCTOU race conditions where
+ * multiple threads could simultaneously pass the limit check and exceed
+ * the configured memory limit.
  */
 static int
 global_memory_try_alloc (size_t nbytes)
 {
-  size_t limit = global_memory_limit;
+  size_t limit = atomic_load_explicit (&global_memory_limit, memory_order_acquire);
 
   /* No limit set - always allow */
   if (limit == 0)
     {
-      global_memory_used += nbytes;
+      atomic_fetch_add_explicit (&global_memory_used, nbytes,
+                                 memory_order_relaxed);
       return 1;
     }
 
-  /* Check if allocation would exceed limit */
-  size_t current = global_memory_used;
-  if (current + nbytes > limit)
-    return 0;
+  /* Atomic compare-exchange loop for strict limit enforcement */
+  size_t current = atomic_load_explicit (&global_memory_used, memory_order_acquire);
+  size_t desired;
 
-  /* Atomically update */
-  global_memory_used += nbytes;
+  do
+    {
+      /* Check for overflow in addition */
+      if (current > SIZE_MAX - nbytes)
+        return 0;
+
+      /* Check if allocation would exceed limit */
+      if (current + nbytes > limit)
+        return 0;
+
+      desired = current + nbytes;
+    }
+  while (!atomic_compare_exchange_weak_explicit (
+      &global_memory_used, &current, desired, memory_order_acq_rel,
+      memory_order_acquire));
+
   return 1;
 }
 
@@ -154,7 +173,7 @@ global_memory_try_alloc (size_t nbytes)
 static void
 global_memory_release (size_t nbytes)
 {
-  global_memory_used -= nbytes;
+  atomic_fetch_sub_explicit (&global_memory_used, nbytes, memory_order_relaxed);
 }
 
 /* ==================== Validation Macros ==================== */

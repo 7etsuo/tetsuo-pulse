@@ -273,12 +273,20 @@ socket_data_add_unlocked (T poll, Socket_T socket, void *data)
  * @socket: Socket
  *
  * Uses fd directly for hashing to avoid redundant Socket_fd calls.
+ * Decrements registered_count to maintain accurate tracking.
  */
 static void
 socket_data_remove_unlocked (T poll, Socket_T socket)
 {
   int fd = Socket_fd (socket);
   unsigned hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
+
+  /* Only decrement if socket was actually in the map */
+  if (find_socket_data_entry (poll, hash, socket) != NULL)
+    {
+      if (poll->registered_count > 0)
+        poll->registered_count--;
+    }
 
   remove_socket_data_entry (poll, hash, socket);
   remove_fd_socket_entry (poll, hash, fd);
@@ -668,6 +676,8 @@ SocketPoll_new (int maxevents)
     initialize_poll_backend ((T)poll, maxevents);
     ((T)poll)->maxevents = maxevents;
     ((T)poll)->default_timeout_ms = SOCKET_DEFAULT_POLL_TIMEOUT;
+    ((T)poll)->registered_count = 0;
+    ((T)poll)->max_registered = SOCKET_POLL_MAX_REGISTERED;
     initialize_poll_arena ((T)poll);
     allocate_poll_event_arrays ((T)poll, maxevents);
     /* Note: Hash tables already zeroed by calloc in allocate_poll_structure */
@@ -732,6 +742,26 @@ validate_socket_fd_for_add (const Socket_T socket)
     }
 
   return fd;
+}
+
+/**
+ * check_registration_limit - Check if registration limit would be exceeded
+ * @poll: Poll instance
+ * Raises: SocketPoll_Failed if limit would be exceeded
+ * Thread-safe: No (caller must hold mutex)
+ *
+ * Defense-in-depth: Prevents resource exhaustion by limiting registrations.
+ * Set SOCKET_POLL_MAX_REGISTERED at compile time to enable (0 = disabled).
+ */
+static void
+check_registration_limit (T poll)
+{
+  if (poll->max_registered > 0 && poll->registered_count >= poll->max_registered)
+    {
+      SOCKET_ERROR_FMT ("Registration limit exceeded (%d/%d)",
+                        poll->registered_count, poll->max_registered);
+      RAISE_POLL_ERROR (SocketPoll_Failed);
+    }
 }
 
 /**
@@ -822,9 +852,11 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
   pthread_mutex_lock (&poll->mutex);
   TRY
   {
+    check_registration_limit (poll);
     check_socket_not_duplicate (poll, hash, socket);
     add_socket_to_backend (poll, fd, events);
     add_socket_to_data_map_with_rollback (poll, socket, data, fd);
+    poll->registered_count++;
   }
   FINALLY
   pthread_mutex_unlock (&poll->mutex);
@@ -1115,6 +1147,59 @@ socketpoll_get_timer_heap (T poll)
 {
   assert (poll);
   return poll->timer_heap;
+}
+
+/* ==================== Registration Limit Accessors ==================== */
+
+int
+SocketPoll_getmaxregistered (T poll)
+{
+  int max;
+
+  assert (poll);
+
+  pthread_mutex_lock (&poll->mutex);
+  max = poll->max_registered;
+  pthread_mutex_unlock (&poll->mutex);
+
+  return max;
+}
+
+void
+SocketPoll_setmaxregistered (T poll, int max)
+{
+  assert (poll);
+
+  if (max < 0)
+    max = 0;
+
+  pthread_mutex_lock (&poll->mutex);
+
+  /* Cannot set limit below current count (unless disabling) */
+  if (max > 0 && poll->registered_count > max)
+    {
+      pthread_mutex_unlock (&poll->mutex);
+      SOCKET_ERROR_FMT ("Cannot set max_registered (%d) below current count (%d)",
+                        max, poll->registered_count);
+      RAISE_POLL_ERROR (SocketPoll_Failed);
+    }
+
+  poll->max_registered = max;
+  pthread_mutex_unlock (&poll->mutex);
+}
+
+int
+SocketPoll_getregisteredcount (T poll)
+{
+  int count;
+
+  assert (poll);
+
+  pthread_mutex_lock (&poll->mutex);
+  count = poll->registered_count;
+  pthread_mutex_unlock (&poll->mutex);
+
+  return count;
 }
 
 #undef T

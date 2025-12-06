@@ -19,6 +19,7 @@
 #include "socket/SocketBuf.h"
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -1058,6 +1059,19 @@ http2_process_window_update (SocketHTTP2_Conn_T conn,
  * RST_STREAM Processing
  * ============================================================================ */
 
+/**
+ * http2_process_rst_stream - Process RST_STREAM frame with rate limiting
+ * @conn: HTTP/2 connection
+ * @header: Frame header
+ * @payload: Frame payload (4 bytes error code)
+ *
+ * Returns: 0 on success, -1 on error (connection closed)
+ *
+ * Security: Implements rate limiting to protect against CVE-2023-44487
+ * (HTTP/2 Rapid Reset Attack). If a client sends RST_STREAM frames
+ * faster than SOCKETHTTP2_RST_RATE_LIMIT per SOCKETHTTP2_RST_RATE_WINDOW_MS,
+ * the connection is terminated with ENHANCE_YOUR_CALM.
+ */
 int
 http2_process_rst_stream (SocketHTTP2_Conn_T conn,
                           const SocketHTTP2_FrameHeader *header,
@@ -1066,7 +1080,33 @@ http2_process_rst_stream (SocketHTTP2_Conn_T conn,
   uint32_t error_code = ((uint32_t)payload[0] << 24)
                         | ((uint32_t)payload[1] << 16)
                         | ((uint32_t)payload[2] << 8) | payload[3];
+  int64_t now_ms;
 
+  /* CVE-2023-44487: Rate limit RST_STREAM frames to prevent Rapid Reset DoS */
+  now_ms = Socket_get_monotonic_ms ();
+
+  /* Reset window if expired */
+  if (now_ms - conn->rst_window_start_ms > SOCKETHTTP2_RST_RATE_WINDOW_MS)
+    {
+      conn->rst_window_start_ms = now_ms;
+      conn->rst_count_in_window = 0;
+    }
+
+  /* Increment count and check limit */
+  conn->rst_count_in_window++;
+  if (conn->rst_count_in_window > SOCKETHTTP2_RST_RATE_LIMIT)
+    {
+      /* Rate limit exceeded - send GOAWAY with ENHANCE_YOUR_CALM */
+      SOCKET_LOG_WARN_MSG ("HTTP/2 RST_STREAM rate limit exceeded "
+                           "(%" PRIu32 " in %" PRId64 "ms), "
+                           "closing connection (CVE-2023-44487 protection)",
+                           conn->rst_count_in_window,
+                           now_ms - conn->rst_window_start_ms);
+      http2_send_connection_error (conn, HTTP2_ENHANCE_YOUR_CALM);
+      return -1;
+    }
+
+  /* Normal RST_STREAM processing */
   SocketHTTP2_Stream_T stream = http2_stream_lookup (conn, header->stream_id);
   if (stream)
     {

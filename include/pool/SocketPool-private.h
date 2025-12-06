@@ -12,6 +12,7 @@
  */
 
 #include <pthread.h>
+#include <stdatomic.h>
 #include <stdint.h>
 #include <time.h>
 
@@ -161,7 +162,7 @@ struct T
   SocketSYNProtect_T syn_protect;   /**< SYN flood protection (NULL if disabled) */
   
   /* Graceful shutdown (drain) state */
-  volatile int state;               /**< SocketPool_State (atomic for lock-free reads) */
+  _Atomic int state;                /**< SocketPool_State (C11 atomic for lock-free reads) */
   int64_t drain_deadline_ms;        /**< Monotonic deadline for forced shutdown */
   SocketPool_DrainCallback drain_cb; /**< Drain completion callback */
   void *drain_cb_data;              /**< User data for drain callback */

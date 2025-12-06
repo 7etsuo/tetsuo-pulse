@@ -52,7 +52,7 @@
 #define DRAIN_TIMEOUT_INFINITE (-1)
 
 /* ============================================================================
- * State Query Functions (Lock-Free)
+ * State Query Functions (Lock-Free with C11 Atomics)
  * ============================================================================ */
 
 /**
@@ -60,16 +60,20 @@
  * @pool: Pool instance
  *
  * Returns: Current SocketPool_State
- * Thread-safe: Yes - atomic read of volatile int
+ * Thread-safe: Yes - C11 atomic read with acquire semantics
  * Complexity: O(1)
+ *
+ * Uses memory_order_acquire to ensure all memory writes that happened
+ * before the state transition are visible to this thread.
  */
 SocketPool_State
 SocketPool_state (T pool)
 {
   assert (pool);
 
-  /* Volatile read ensures visibility across threads */
-  return (SocketPool_State)pool->state;
+  /* C11 atomic read with acquire semantics for proper memory ordering */
+  return (SocketPool_State)atomic_load_explicit (&pool->state,
+                                                  memory_order_acquire);
 }
 
 /**
@@ -77,15 +81,19 @@ SocketPool_state (T pool)
  * @pool: Pool instance
  *
  * Returns: Current SocketPool_Health
- * Thread-safe: Yes - atomic read
+ * Thread-safe: Yes - C11 atomic read
  * Complexity: O(1)
  */
 SocketPool_Health
 SocketPool_health (T pool)
 {
+  SocketPool_State state;
+
   assert (pool);
 
-  switch ((SocketPool_State)pool->state)
+  state = (SocketPool_State)atomic_load_explicit (&pool->state,
+                                                   memory_order_acquire);
+  switch (state)
     {
     case POOL_STATE_RUNNING:
       return POOL_HEALTH_HEALTHY;
@@ -104,14 +112,15 @@ SocketPool_health (T pool)
  * @pool: Pool instance
  *
  * Returns: Non-zero if state is DRAINING
- * Thread-safe: Yes - atomic read
+ * Thread-safe: Yes - C11 atomic read
  * Complexity: O(1)
  */
 int
 SocketPool_is_draining (T pool)
 {
   assert (pool);
-  return pool->state == POOL_STATE_DRAINING;
+  return atomic_load_explicit (&pool->state, memory_order_acquire)
+         == POOL_STATE_DRAINING;
 }
 
 /**
@@ -119,14 +128,15 @@ SocketPool_is_draining (T pool)
  * @pool: Pool instance
  *
  * Returns: Non-zero if state is STOPPED
- * Thread-safe: Yes - atomic read
+ * Thread-safe: Yes - C11 atomic read
  * Complexity: O(1)
  */
 int
 SocketPool_is_stopped (T pool)
 {
   assert (pool);
-  return pool->state == POOL_STATE_STOPPED;
+  return atomic_load_explicit (&pool->state, memory_order_acquire)
+         == POOL_STATE_STOPPED;
 }
 
 /* ============================================================================
@@ -142,6 +152,9 @@ SocketPool_is_stopped (T pool)
  *
  * Sets state to STOPPED, then invokes drain callback outside lock
  * to prevent deadlock if callback calls pool functions.
+ *
+ * Uses memory_order_release on state write to ensure all memory writes
+ * (cleanup operations) are visible before the state change is observed.
  */
 static void
 transition_to_stopped (T pool, int timed_out)
@@ -153,9 +166,11 @@ transition_to_stopped (T pool, int timed_out)
   cb = pool->drain_cb;
   cb_data = pool->drain_cb_data;
 
-  /* Set state before releasing lock */
-  pool->state = POOL_STATE_STOPPED;
   pool->drain_deadline_ms = 0;
+
+  /* Set state with release semantics to ensure all prior writes are visible */
+  atomic_store_explicit (&pool->state, POOL_STATE_STOPPED,
+                         memory_order_release);
 
   /* Log transition */
   SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
@@ -286,11 +301,12 @@ SocketPool_drain (T pool, int timeout_ms)
   pthread_mutex_lock (&pool->mutex);
 
   /* Only transition from RUNNING */
-  if (pool->state != POOL_STATE_RUNNING)
+  if (atomic_load_explicit (&pool->state, memory_order_acquire)
+      != POOL_STATE_RUNNING)
     {
       SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                        "Pool drain called but state is %d (not RUNNING)",
-                       pool->state);
+                       atomic_load_explicit (&pool->state, memory_order_relaxed));
       pthread_mutex_unlock (&pool->mutex);
       return;
     }
@@ -314,8 +330,9 @@ SocketPool_drain (T pool, int timeout_ms)
       pool->drain_deadline_ms = now_ms + timeout_ms;
     }
 
-  /* Transition to DRAINING */
-  pool->state = POOL_STATE_DRAINING;
+  /* Transition to DRAINING with release semantics */
+  atomic_store_explicit (&pool->state, POOL_STATE_DRAINING,
+                         memory_order_release);
 
   SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
                    "Pool drain initiated: %zu connections, timeout=%d ms",
@@ -364,13 +381,15 @@ SocketPool_drain_poll (T pool)
   pthread_mutex_lock (&pool->mutex);
 
   /* Not draining - return current count or 0 */
-  if (pool->state == POOL_STATE_STOPPED)
+  if (atomic_load_explicit (&pool->state, memory_order_acquire)
+      == POOL_STATE_STOPPED)
     {
       pthread_mutex_unlock (&pool->mutex);
       return 0;
     }
 
-  if (pool->state == POOL_STATE_RUNNING)
+  if (atomic_load_explicit (&pool->state, memory_order_acquire)
+      == POOL_STATE_RUNNING)
     {
       result = (int)pool->count;
       pthread_mutex_unlock (&pool->mutex);
@@ -412,7 +431,7 @@ SocketPool_drain_poll (T pool)
  * @pool: Pool instance
  *
  * Returns: Milliseconds remaining, 0 if expired, -1 if not draining
- * Thread-safe: Yes
+ * Thread-safe: Yes (C11 atomic read)
  * Complexity: O(1)
  */
 int64_t
@@ -423,8 +442,9 @@ SocketPool_drain_remaining_ms (T pool)
 
   assert (pool);
 
-  /* Not draining */
-  if (pool->state != POOL_STATE_DRAINING)
+  /* Not draining - atomic read for lock-free check */
+  if (atomic_load_explicit (&pool->state, memory_order_acquire)
+      != POOL_STATE_DRAINING)
     return -1;
 
   /* Infinite timeout */
@@ -441,27 +461,32 @@ SocketPool_drain_remaining_ms (T pool)
  * SocketPool_drain_force - Force immediate shutdown
  * @pool: Pool instance
  *
- * Thread-safe: Yes
+ * Thread-safe: Yes (C11 atomic operations)
  * Complexity: O(n)
  */
 void
 SocketPool_drain_force (T pool)
 {
+  int current_state;
+
   assert (pool);
 
   pthread_mutex_lock (&pool->mutex);
 
+  current_state = atomic_load_explicit (&pool->state, memory_order_acquire);
+
   /* Already stopped */
-  if (pool->state == POOL_STATE_STOPPED)
+  if (current_state == POOL_STATE_STOPPED)
     {
       pthread_mutex_unlock (&pool->mutex);
       return;
     }
 
   /* Force transition to DRAINING first if needed */
-  if (pool->state == POOL_STATE_RUNNING)
+  if (current_state == POOL_STATE_RUNNING)
     {
-      pool->state = POOL_STATE_DRAINING;
+      atomic_store_explicit (&pool->state, POOL_STATE_DRAINING,
+                             memory_order_release);
       pool->drain_deadline_ms = 0; /* Already expired */
     }
 

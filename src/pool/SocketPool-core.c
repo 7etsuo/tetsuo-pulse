@@ -402,7 +402,7 @@ initialize_pool_rate_limiting (T pool)
 static void
 initialize_pool_drain (T pool)
 {
-  pool->state = POOL_STATE_RUNNING;
+  atomic_init (&pool->state, POOL_STATE_RUNNING);
   pool->drain_deadline_ms = 0;
   pool->drain_cb = NULL;
   pool->drain_cb_data = NULL;
@@ -597,11 +597,21 @@ free_tls_sessions (T pool)
  *
  * The callback sets ctx->socket = NULL via Socket_free(), so we only free
  * sockets that weren't already freed by completed callbacks.
+ *
+ * Security: Enforces ordering invariant - DNS resolver must be freed first
+ * to ensure no callbacks are executing concurrently.
  */
 static void
 free_pending_async_contexts (T pool)
 {
-  struct AsyncConnectContext *ctx = (struct AsyncConnectContext *)pool->async_ctx;
+  struct AsyncConnectContext *ctx;
+
+  /* Security: Assert ordering invariant - DNS resolver must be freed first.
+   * This ensures no callbacks are currently executing or will execute,
+   * preventing race conditions with concurrent callback execution. */
+  assert (pool->dns == NULL);
+
+  ctx = (struct AsyncConnectContext *)pool->async_ctx;
   while (ctx)
     {
       if (ctx->socket)
@@ -1059,10 +1069,20 @@ SocketPool_set_resize_callback (T pool, SocketPool_ResizeCallback cb,
  * @reused: Total connections reused
  *
  * Returns: Reuse rate (0.0 to 1.0)
+ *
+ * Security: Uses overflow-safe addition to prevent incorrect stats
+ * on long-running servers with extremely high connection churn.
  */
 static double
 calculate_reuse_rate (uint64_t added, uint64_t reused)
 {
+  /* Security: Check for overflow before addition */
+  if (added > UINT64_MAX - reused)
+    {
+      /* Overflow would occur - use saturated addition for best-effort result */
+      return (double)reused / (double)UINT64_MAX;
+    }
+
   uint64_t total = added + reused;
   if (total == 0)
     return 0.0;
@@ -1105,13 +1125,24 @@ calculate_avg_connection_age (T pool, time_t now)
  * @window_sec: Time window in seconds
  *
  * Returns: Churn rate per second
+ *
+ * Security: Uses overflow-safe addition to prevent incorrect stats.
  */
 static double
 calculate_churn_rate (uint64_t added, uint64_t removed, double window_sec)
 {
+  uint64_t total;
+
   if (window_sec <= 0.0)
     return 0.0;
-  return (double)(added + removed) / window_sec;
+
+  /* Security: Check for overflow before addition */
+  if (added > UINT64_MAX - removed)
+    total = UINT64_MAX; /* Saturate on overflow */
+  else
+    total = added + removed;
+
+  return (double)total / window_sec;
 }
 
 /**

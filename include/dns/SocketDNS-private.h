@@ -87,6 +87,14 @@ struct SocketDNS_Request_T {
  *
  * Thread pool-based DNS resolver with queue management, hash table lookup,
  * and pipe-based completion signaling for integration with SocketPoll.
+ *
+ * SECURITY NOTE: The request hash table uses deterministic pointer-based
+ * hashing via socket_util_hash_ptr(). While attackers cannot typically control
+ * memory allocation addresses, a large number of concurrent requests could
+ * theoretically cause hash collisions. This is mitigated by:
+ * - max_pending limit (default SOCKET_DNS_MAX_PENDING = 1000)
+ * - Hash table size is prime (SOCKET_DNS_REQUEST_HASH_SIZE = 1021)
+ * - Worst case is O(n) lookup per bucket, not a security vulnerability
  */
 struct SocketDNS_T {
   Arena_T arena;                /**< Arena for request/hostname allocation */

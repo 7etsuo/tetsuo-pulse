@@ -522,7 +522,8 @@ find_or_create_slot (T pool, Socket_T socket, time_t now)
 static int
 check_pool_accepting (const T pool)
 {
-  return pool->state == POOL_STATE_RUNNING;
+  return atomic_load_explicit (&pool->state, memory_order_acquire)
+         == POOL_STATE_RUNNING;
 }
 
 /**

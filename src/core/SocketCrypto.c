@@ -16,6 +16,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <string.h>
 
 #ifdef SOCKET_HAS_TLS
@@ -195,6 +196,18 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
     }
 
 #ifdef SOCKET_HAS_TLS
+  /*
+   * Security: Validate key_len fits in int for OpenSSL HMAC API.
+   * Keys exceeding INT_MAX would be truncated on cast, potentially
+   * weakening the MAC. In practice, HMAC keys should be 32-64 bytes;
+   * longer keys are internally hashed anyway.
+   */
+  if (key_len > (size_t)INT_MAX)
+    {
+      SOCKET_ERROR_MSG ("HMAC-SHA256: Key length %zu exceeds INT_MAX", key_len);
+      RAISE_CRYPTO_ERROR (SocketCrypto_Failed);
+    }
+
   unsigned int hmac_len = 0;
   unsigned char *result
       = HMAC (EVP_sha256 (), key, (int)key_len, (const unsigned char *)data,
@@ -218,15 +231,53 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
 size_t
 SocketCrypto_base64_encoded_size (size_t input_len)
 {
-  /* Formula: ceil(input_len / 3) * 4 + 1 (for null terminator) */
-  return ((input_len + 2) / 3) * 4 + 1;
+  /*
+   * Formula: ceil(input_len / 3) * 4 + 1 (for null terminator)
+   *
+   * Security: Check for overflow at each step to handle pathologically
+   * large input_len values (near SIZE_MAX). Returns 0 on overflow.
+   */
+
+  /* Check for overflow in (input_len + 2) */
+  if (input_len > SIZE_MAX - 2)
+    return 0;
+
+  size_t padded_groups = (input_len + 2) / 3;
+
+  /* Check for overflow in padded_groups * 4 */
+  if (padded_groups > SIZE_MAX / 4)
+    return 0;
+
+  size_t encoded_len = padded_groups * 4;
+
+  /* Check for overflow in encoded_len + 1 (null terminator) */
+  if (encoded_len > SIZE_MAX - 1)
+    return 0;
+
+  return encoded_len + 1;
 }
 
 size_t
 SocketCrypto_base64_decoded_size (size_t input_len)
 {
-  /* Maximum decoded size: ceil(input_len / 4) * 3 */
-  return ((input_len + 3) / 4) * 3;
+  /*
+   * Maximum decoded size: ceil(input_len / 4) * 3
+   *
+   * Security: Check for overflow to handle large input_len values.
+   * Returns 0 on overflow.
+   */
+
+  /* Check for overflow in (input_len + 3) */
+  if (input_len > SIZE_MAX - 3)
+    return 0;
+
+  size_t groups = (input_len + 3) / 4;
+
+  /* Check for overflow in groups * 3 */
+  if (groups > SIZE_MAX / 3)
+    return 0;
+
+  return groups * 3;
 }
 
 ssize_t
@@ -254,6 +305,10 @@ SocketCrypto_base64_encode (const void *input, size_t input_len, char *output,
     }
 
   required_size = SocketCrypto_base64_encoded_size (input_len);
+  /* Check for overflow in size calculation */
+  if (required_size == 0)
+    return -1;
+
   if (output_size < required_size)
     return -1;
 

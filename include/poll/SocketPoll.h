@@ -163,5 +163,38 @@ extern int SocketPoll_wait (T poll, SocketEvent_T **events, int timeout);
  */
 extern SocketAsync_T SocketPoll_get_async (T poll);
 
+/**
+ * SocketPoll_getmaxregistered - Get maximum registered sockets limit
+ * @poll: Poll instance
+ * Returns: Maximum limit (0 = unlimited)
+ * Thread-safe: Yes
+ *
+ * Defense-in-depth: Returns the configured limit on socket registrations.
+ * Compile-time default is SOCKET_POLL_MAX_REGISTERED (0 = disabled).
+ */
+extern int SocketPoll_getmaxregistered (T poll);
+
+/**
+ * SocketPoll_setmaxregistered - Set maximum registered sockets limit
+ * @poll: Poll instance
+ * @max: Maximum limit (0 = unlimited)
+ * Thread-safe: Yes
+ *
+ * Defense-in-depth: Limits the number of sockets that can be registered
+ * to prevent resource exhaustion attacks. Set to 0 to disable.
+ *
+ * Note: Cannot set limit below current registered_count.
+ * Raises: SocketPoll_Failed if max < registered_count and max > 0
+ */
+extern void SocketPoll_setmaxregistered (T poll, int max);
+
+/**
+ * SocketPoll_getregisteredcount - Get current registered socket count
+ * @poll: Poll instance
+ * Returns: Number of currently registered sockets
+ * Thread-safe: Yes
+ */
+extern int SocketPoll_getregisteredcount (T poll);
+
 #undef T
 #endif

@@ -743,12 +743,20 @@ add_accept_encoding_header (SocketHTTPClient_T client,
     return;
 
   if (client->config.accept_encoding & HTTPCLIENT_ENCODING_GZIP)
-    strcat (encoding, "gzip");
+    {
+      snprintf (encoding, sizeof (encoding), "gzip");
+    }
   if (client->config.accept_encoding & HTTPCLIENT_ENCODING_DEFLATE)
     {
       if (encoding[0])
-        strcat (encoding, ", ");
-      strcat (encoding, "deflate");
+        {
+          size_t len = strlen (encoding);
+          snprintf (encoding + len, sizeof (encoding) - len, ", deflate");
+        }
+      else
+        {
+          snprintf (encoding, sizeof (encoding), "deflate");
+        }
     }
   if (encoding[0])
     SocketHTTP_Headers_add (req->headers, "Accept-Encoding", encoding);

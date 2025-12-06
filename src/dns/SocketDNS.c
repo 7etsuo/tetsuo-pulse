@@ -668,6 +668,15 @@ SocketDNS_getresult (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
     return NULL;
 
   pthread_mutex_lock (&dns->mutex);
+
+  /* Validate request belongs to this resolver to prevent use of
+   * dangling pointers or requests from different resolvers */
+  if (req->dns_resolver != dns)
+    {
+      pthread_mutex_unlock (&dns->mutex);
+      return NULL;
+    }
+
   result = transfer_result_ownership (req);
   pthread_mutex_unlock (&dns->mutex);
 
@@ -684,6 +693,15 @@ SocketDNS_geterror (struct SocketDNS_T *dns,
     return 0;
 
   pthread_mutex_lock (&dns->mutex);
+
+  /* Validate request belongs to this resolver to prevent use of
+   * dangling pointers or requests from different resolvers */
+  if (req->dns_resolver != dns)
+    {
+      pthread_mutex_unlock (&dns->mutex);
+      return 0;
+    }
+
   if (req->state == REQ_COMPLETE || req->state == REQ_CANCELLED)
     error = req->error;
   pthread_mutex_unlock (&dns->mutex);

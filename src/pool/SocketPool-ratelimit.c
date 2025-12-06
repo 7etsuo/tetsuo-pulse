@@ -194,7 +194,8 @@ configure_ip_tracker (T pool, int max_conns)
 static int
 check_pool_accepting_unlocked (const T pool)
 {
-  return pool->state == POOL_STATE_RUNNING;
+  return atomic_load_explicit (&pool->state, memory_order_acquire)
+         == POOL_STATE_RUNNING;
 }
 
 /**
