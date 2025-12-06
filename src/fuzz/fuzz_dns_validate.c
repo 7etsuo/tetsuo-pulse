@@ -4,11 +4,9 @@
  * Part of the Socket Library Fuzzing Suite
  *
  * Targets:
- * - Hostname label validation (RFC 1123 compliance)
+ * - Hostname validation via public API
  * - IP address detection (IPv4/IPv6)
- * - Hostname length checks
- * - Label length and character validation
- * - Edge cases: empty labels, consecutive dots, invalid characters
+ * - DNS parameter validation
  *
  * Build: CC=clang cmake .. -DENABLE_FUZZING=ON && make fuzz_dns_validate
  * Run:   ./fuzz_dns_validate corpus/dns/ -fork=16 -max_len=512
@@ -21,6 +19,8 @@
 #include "core/Except.h"
 #include "dns/SocketDNS.h"
 #include "dns/SocketDNS-private.h"
+#include "socket/SocketCommon.h"
+#include "socket/SocketCommon-private.h"
 
 /* Maximum hostname length per RFC 1035 */
 #define MAX_HOSTNAME_LEN 253
@@ -49,27 +49,24 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   memcpy (hostname, data, str_len);
   hostname[str_len] = '\0';
 
-  /* Test is_ip_address - should never crash */
-  bool is_ip = is_ip_address (hostname);
+  /* Test socketcommon_is_ip_address - should never crash */
+  bool is_ip = socketcommon_is_ip_address (hostname);
   (void)is_ip;
 
   /* Test with NULL - should handle gracefully */
-  is_ip = is_ip_address (NULL);
+  is_ip = socketcommon_is_ip_address (NULL);
   (void)is_ip;
 
-  /* Test validate_hostname_label with length output */
-  size_t label_len = 0;
-  int valid = validate_hostname_label (hostname, &label_len);
-  (void)valid;
-  (void)label_len;
-
-  /* Test with NULL length output */
-  valid = validate_hostname_label (hostname, NULL);
-  (void)valid;
-
-  /* Test validate_hostname */
-  valid = validate_hostname (hostname);
-  (void)valid;
+  /* Test SocketCommon_validate_hostname via exception handling */
+  TRY
+  {
+    SocketCommon_validate_hostname (hostname, SocketDNS_Failed);
+  }
+  EXCEPT (SocketDNS_Failed)
+  {
+    /* Expected for invalid hostnames */
+  }
+  END_TRY;
 
   /* Test validate_resolve_params with various combinations */
   TRY
@@ -102,61 +99,19 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   }
   END_TRY;
 
-  /* Test edge cases with specific patterns */
+  /* Test SocketCommon_parse_ip - should not crash on arbitrary input */
+  int family = 0;
+  int result = SocketCommon_parse_ip (hostname, &family);
+  (void)result;
+  (void)family;
 
-  /* Empty string */
-  valid = validate_hostname ("");
-  (void)valid;
+  /* Test with NULL */
+  result = SocketCommon_parse_ip (NULL, &family);
+  (void)result;
 
-  /* Single dot */
-  valid = validate_hostname (".");
-  (void)valid;
-
-  /* Multiple consecutive dots */
-  valid = validate_hostname ("..");
-  (void)valid;
-  valid = validate_hostname ("...");
-  (void)valid;
-
-  /* Leading/trailing dots */
-  if (str_len > 2)
-    {
-      char test[MAX_HOSTNAME_LEN + 16];
-
-      /* Leading dot */
-      test[0] = '.';
-      memcpy (test + 1, hostname, str_len - 1);
-      test[str_len] = '\0';
-      valid = validate_hostname (test);
-      (void)valid;
-
-      /* Trailing dot */
-      memcpy (test, hostname, str_len - 1);
-      test[str_len - 1] = '.';
-      test[str_len] = '\0';
-      valid = validate_hostname (test);
-      (void)valid;
-    }
-
-  /* Test with very long label (should be rejected) */
-  char long_label[128];
-  memset (long_label, 'a', 100);
-  long_label[100] = '\0';
-  valid = validate_hostname (long_label);
-  (void)valid;
-
-  /* Test with exactly max label length (63 chars) */
-  memset (long_label, 'a', 63);
-  long_label[63] = '\0';
-  valid = validate_hostname (long_label);
-  (void)valid;
-
-  /* Test with max+1 label length (64 chars - should fail) */
-  memset (long_label, 'a', 64);
-  long_label[64] = '\0';
-  valid = validate_hostname (long_label);
-  (void)valid;
+  /* Test with NULL family output */
+  result = SocketCommon_parse_ip (hostname, NULL);
+  (void)result;
 
   return 0;
 }
-

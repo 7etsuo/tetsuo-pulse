@@ -313,7 +313,7 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
 static ssize_t
 safe_socket_send (HTTPPoolEntry *conn, const void *data, size_t len, const char *op_desc)
 {
-  volatile ssize_t sent;
+  volatile ssize_t sent = 0;
 
   TRY
     {

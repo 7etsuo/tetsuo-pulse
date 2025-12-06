@@ -456,7 +456,7 @@ SocketRateLimit_free (T *limiter)
 int
 SocketRateLimit_try_acquire (T limiter, size_t tokens)
 {
-  volatile int result;
+  volatile int result = 0;
 
   assert (limiter);
 
@@ -525,7 +525,7 @@ SocketRateLimit_wait_time_ms (T limiter, size_t tokens)
 size_t
 SocketRateLimit_available (T limiter)
 {
-  volatile size_t available;
+  volatile size_t available = 0;
 
   assert (limiter);
 
@@ -666,7 +666,7 @@ SocketRateLimit_configure (T limiter, size_t tokens_per_sec, size_t bucket_size)
 size_t
 SocketRateLimit_get_rate (T limiter)
 {
-  volatile size_t rate;
+  volatile size_t rate = 0;
 
   assert (limiter);
 
@@ -688,7 +688,7 @@ SocketRateLimit_get_rate (T limiter)
 size_t
 SocketRateLimit_get_bucket_size (T limiter)
 {
-  volatile size_t size;
+  volatile size_t size = 0;
 
   assert (limiter);
 
