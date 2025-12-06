@@ -259,6 +259,9 @@ connection_create_parser (Arena_T arena, const SocketHTTPServer_Config *config)
     RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
   }
   END_TRY;
+
+  /* Unreachable - EXCEPT always raises, but needed for compiler */
+  return NULL;
 }
 
 
