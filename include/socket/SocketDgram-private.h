@@ -14,7 +14,7 @@ struct SocketDgram_T
   SocketBase_T base; /**< Embedded common base with fd, arena, endpoints,
                           timeouts, metrics */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /* DTLS-specific fields (enabled when TLS support compiled in) */
   void *dtls_ctx;          /**< SocketDTLSContext_T* - opaque */
   void *dtls_ssl;          /**< SSL* - opaque DTLS SSL object */

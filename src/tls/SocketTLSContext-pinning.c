@@ -82,7 +82,7 @@ parse_hex_hash (const char *hex, unsigned char *out)
     return -1;
 
   /* Use SocketCrypto for hex decoding */
-  ssize_t decoded = SocketCrypto_hex_decode (hex, len, out);
+  ssize_t decoded = SocketCrypto_hex_decode (hex, len, out, SOCKET_TLS_PIN_HASH_LEN);
   return (decoded == (ssize_t)SOCKET_TLS_PIN_HASH_LEN) ? 0 : -1;
 }
 

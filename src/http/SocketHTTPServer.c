@@ -26,6 +26,7 @@
  */
 
 #include "http/SocketHTTPServer.h"
+#include "http/SocketHTTPServer-private.h"
 #include "core/Arena.h"
 #include "core/SocketIPTracker.h"
 #include "core/SocketMetrics.h"
@@ -106,217 +107,17 @@ const Except_T SocketHTTPServer_ProtocolError
  */
 #define RAISE_HTTPSERVER_ERROR(e) SOCKET_RAISE_MODULE_ERROR (HTTPServer, e)
 
-/* ============================================================================
- * Statistics Helper Macros
- * ============================================================================
- *
- * REFACTOR: Extracted repeated mutex lock/unlock pattern for statistics.
- * Reduces code duplication and ensures consistent locking.
- */
+/* STATS macros moved to SocketHTTPServer-private.h for shared use in split files */
 
-/**
- * STATS_INC - Increment a stats counter under mutex lock
- * @server: Server instance
- * @field: Statistics field name
- */
-#define STATS_INC(server, field)                                               \
-  do                                                                           \
-    {                                                                          \
-      pthread_mutex_lock (&(server)->stats_mutex);                             \
-      (server)->field++;                                                       \
-      pthread_mutex_unlock (&(server)->stats_mutex);                           \
-    }                                                                          \
-  while (0)
+/* RateLimitEntry defined in SocketHTTPServer-private.h */
 
-/**
- * STATS_ADD - Add a value to a stats counter under mutex lock
- * @server: Server instance
- * @field: Statistics field name
- * @value: Value to add
- */
-#define STATS_ADD(server, field, value)                                        \
-  do                                                                           \
-    {                                                                          \
-      pthread_mutex_lock (&(server)->stats_mutex);                             \
-      (server)->field += (value);                                              \
-      pthread_mutex_unlock (&(server)->stats_mutex);                           \
-    }                                                                          \
-  while (0)
+/* ServerConnState and ServerConnection defined in SocketHTTPServer-private.h */
 
-/**
- * STATS_DEC - Decrement a stats counter under mutex lock
- * @server: Server instance
- * @field: Statistics field name
- */
-#define STATS_DEC(server, field)                                               \
-  do                                                                           \
-    {                                                                          \
-      pthread_mutex_lock (&(server)->stats_mutex);                             \
-      (server)->field--;                                                       \
-      pthread_mutex_unlock (&(server)->stats_mutex);                           \
-    }                                                                          \
-  while (0)
+/* SocketHTTPServer_Request internal struct defined in SocketHTTPServer-private.h */
 
-/* ============================================================================
- * Rate Limit Endpoint Entry
- * ============================================================================ */
+/* LatencyTracker defined in SocketHTTPServer-private.h */
 
-typedef struct RateLimitEntry
-{
-  char *path_prefix;
-  SocketRateLimit_T limiter;
-  struct RateLimitEntry *next;
-} RateLimitEntry;
-
-/* ============================================================================
- * Connection State
- * ============================================================================ */
-
-typedef enum
-{
-  CONN_STATE_READING_REQUEST,
-  CONN_STATE_READING_BODY,
-  CONN_STATE_HANDLING,
-  CONN_STATE_STREAMING_RESPONSE,
-  CONN_STATE_SENDING_RESPONSE,
-  CONN_STATE_CLOSED
-} ServerConnState;
-
-typedef struct ServerConnection
-{
-  Socket_T socket;
-  char client_addr[64];
-
-  ServerConnState state;
-  SocketHTTP1_Parser_T parser;
-  SocketBuf_T inbuf;
-  SocketBuf_T outbuf;
-
-  /* Request data */
-  const SocketHTTP_Request *request;
-  void *body;
-  size_t body_len;
-  size_t body_capacity;
-  size_t body_received;
-
-  /* Request body streaming */
-  SocketHTTPServer_BodyCallback body_callback;
-  void *body_callback_userdata;
-  int body_streaming;
-
-  /* Response data */
-  int response_status;
-  SocketHTTP_Headers_T response_headers;
-  void *response_body;
-  size_t response_body_len;
-  int response_finished;
-
-  /* Response streaming */
-  int response_streaming;
-  int response_headers_sent;
-
-  /* Connection metadata */
-  int64_t created_at_ms;
-  int64_t last_activity_ms;
-  int64_t request_start_ms;
-  int64_t response_start_ms;
-  size_t request_count;
-  size_t active_requests; /* For HTTP/2 multiplexing */
-
-  /* Memory tracking */
-  size_t memory_used; /* Total bytes allocated for this connection */
-
-  Arena_T arena;
-
-  struct ServerConnection *next;
-  struct ServerConnection *prev;
-} ServerConnection;
-
-/* ============================================================================
- * Request Context
- * ============================================================================ */
-
-struct SocketHTTPServer_Request
-{
-  SocketHTTPServer_T server;
-  ServerConnection *conn;
-  Arena_T arena;
-  int64_t start_time_ms;
-};
-
-/* ============================================================================
- * Latency Tracking (Circular Buffer)
- * ============================================================================ */
-
-typedef struct
-{
-  int64_t samples[HTTPSERVER_LATENCY_SAMPLES];
-  size_t count;
-  size_t index;
-  int64_t sum;
-  int64_t max;
-} LatencyTracker;
-
-/* ============================================================================
- * Server Structure
- * ============================================================================ */
-
-struct SocketHTTPServer
-{
-  SocketHTTPServer_Config config;
-
-  Socket_T listen_socket;
-  SocketPoll_T poll;
-
-  /* Callbacks */
-  SocketHTTPServer_Handler handler;
-  void *handler_userdata;
-  SocketHTTPServer_Validator validator;
-  void *validator_userdata;
-  SocketHTTPServer_DrainCallback drain_callback;
-  void *drain_callback_userdata;
-
-  /* Connections */
-  ServerConnection *connections;
-  size_t connection_count;
-
-  /* Rate limiting */
-  RateLimitEntry *rate_limiters;
-  SocketRateLimit_T global_rate_limiter;
-
-  /* Per-client limiting */
-  SocketIPTracker_T ip_tracker;
-
-  /* Graceful shutdown */
-  volatile int state; /* SocketHTTPServer_State */
-  int64_t drain_start_ms;
-  int drain_timeout_ms;
-
-  /* Statistics */
-  size_t total_connections;
-  size_t total_requests;
-  size_t total_bytes_sent;
-  size_t total_bytes_received;
-  size_t errors_4xx;
-  size_t errors_5xx;
-  size_t timeouts;
-  size_t rate_limited;
-  size_t connections_rejected;
-
-  /* Request rate tracking */
-  size_t request_counts[HTTPSERVER_RPS_WINDOW_SECONDS];
-  size_t rps_index;
-  int64_t rps_last_update_ms;
-
-  /* Latency tracking */
-  LatencyTracker latency;
-
-  /* Thread safety for statistics */
-  pthread_mutex_t stats_mutex;
-
-  int running;
-  Arena_T arena;
-};
+/* SocketHTTPServer internal struct defined in SocketHTTPServer-private.h */
 
 /* ============================================================================
  * Internal Helper Functions - Time
@@ -326,7 +127,7 @@ struct SocketHTTPServer
  * REFACTOR: Uses Socket_get_monotonic_ms() from SocketUtil.h instead of
  * direct clock_gettime() call. Centralizes monotonic time access.
  */
-static int64_t
+int64_t
 server_time_ms (void)
 {
   return Socket_get_monotonic_ms ();
@@ -336,13 +137,13 @@ server_time_ms (void)
  * Internal Helper Functions - Latency
  * ============================================================================ */
 
-static void
+void
 latency_init (LatencyTracker *lt)
 {
   memset (lt, 0, sizeof (*lt));
 }
 
-static void
+void
 latency_record (LatencyTracker *lt, int64_t latency_us)
 {
   lt->samples[lt->index] = latency_us;
@@ -354,7 +155,7 @@ latency_record (LatencyTracker *lt, int64_t latency_us)
     lt->max = latency_us;
 }
 
-static int
+int
 latency_compare (const void *a, const void *b)
 {
   int64_t va = *(const int64_t *)a;
@@ -362,7 +163,7 @@ latency_compare (const void *a, const void *b)
   return (va > vb) - (va < vb);
 }
 
-static int64_t
+int64_t
 latency_percentile (LatencyTracker *lt, int percentile)
 {
   if (lt->count == 0)
@@ -372,11 +173,11 @@ latency_percentile (LatencyTracker *lt, int percentile)
   memcpy (sorted, lt->samples, lt->count * sizeof (int64_t));
   qsort (sorted, lt->count, sizeof (int64_t), latency_compare);
 
-  size_t idx = (size_t)((percentile / 100.0) * (lt->count - 1));
+  size_t idx = (percentile * (lt->count - 1)) / 100;
   return sorted[idx];
 }
 
-static int64_t
+int64_t
 latency_avg (LatencyTracker *lt)
 {
   if (lt->count == 0)
@@ -385,22 +186,14 @@ latency_avg (LatencyTracker *lt)
 }
 
 /**
- * record_request_latency - Record request latency if timing available
+ *  - Record request latency if timing available
  * @server: HTTP server
  * @request_start_ms: Request start timestamp (0 if not set)
  *
  * REFACTOR: Extracted from connection_send_response and
  * SocketHTTPServer_Request_end_stream to eliminate duplication.
  */
-static void
-record_request_latency (SocketHTTPServer_T server, int64_t request_start_ms)
-{
-  if (request_start_ms > 0)
-    {
-      int64_t latency_us = (server_time_ms () - request_start_ms) * 1000;
-      latency_record (&server->latency, latency_us);
-    }
-}
+
 
 /* ============================================================================
  * Internal Helper Functions - Rate Limiting
@@ -438,240 +231,45 @@ find_rate_limiter (SocketHTTPServer_T server, const char *path)
  * Internal Helper Functions - Connection
  * ============================================================================ */
 
-/* Forward declarations - used by helper functions */
-static void connection_send_error (SocketHTTPServer_T server,
-                                   ServerConnection *conn, int status,
-                                   const char *body);
-static void connection_reset_for_keepalive (ServerConnection *conn);
-static void connection_finish_request (SocketHTTPServer_T server,
-                                       ServerConnection *conn);
+/* Connection functions moved to SocketHTTPServer-connections.c */
 
-static ServerConnection *
-connection_new (SocketHTTPServer_T server, Socket_T socket)
+static void
+connection_set_client_addr (ServerConnection *conn)
 {
-  ServerConnection *conn;
-  Arena_T arena;
-
-  conn = malloc (sizeof (*conn));
-  if (conn == NULL)
-    return NULL;
-
-  memset (conn, 0, sizeof (*conn));
-
-  arena = Arena_new ();
-  if (arena == NULL)
-    {
-      free (conn);
-      return NULL;
-    }
-
-  conn->arena = arena;
-  conn->socket = socket;
-  conn->state = CONN_STATE_READING_REQUEST;
-  conn->created_at_ms = server_time_ms ();
-  conn->last_activity_ms = conn->created_at_ms;
-
-  /* Get client address */
-  const char *addr = Socket_getpeeraddr (socket);
+  const char *addr = Socket_getpeeraddr (conn->socket);
   if (addr != NULL)
     {
       strncpy (conn->client_addr, addr, sizeof (conn->client_addr) - 1);
       conn->client_addr[sizeof (conn->client_addr) - 1] = '\0';
     }
-
-  /* Create parser with server's configured limits */
-  SocketHTTP1_Config parser_config;
-  SocketHTTP1_config_defaults (&parser_config);
-  parser_config.max_header_size = server->config.max_header_size;
-  conn->parser
-      = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &parser_config, arena);
-  if (conn->parser == NULL)
-    {
-      Arena_dispose (&arena);
-      free (conn);
-      return NULL;
-    }
-
-  /* Create I/O buffers */
-  conn->inbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
-  conn->outbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
-
-  if (conn->inbuf == NULL || conn->outbuf == NULL)
-    {
-      Arena_dispose (&arena);
-      free (conn);
-      return NULL;
-    }
-
-  /* Create response headers */
-  conn->response_headers = SocketHTTP_Headers_new (arena);
-  if (conn->response_headers == NULL)
-    {
-      Arena_dispose (&arena);
-      free (conn);
-      return NULL;
-    }
-
-  /* Initialize memory tracking (base allocation: conn struct + I/O buffers) */
-  conn->memory_used = sizeof (*conn) + (2 * HTTPSERVER_IO_BUFFER_SIZE);
-
-  /* Track per-IP connections */
-  if (server->ip_tracker != NULL && conn->client_addr[0] != '\0')
-    {
-      if (!SocketIPTracker_track (server->ip_tracker, conn->client_addr))
-        {
-          /* Connection limit reached for this IP */
-          Arena_dispose (&arena);
-          free (conn);
-          STATS_INC (server, connections_rejected);
-          return NULL;
-        }
-    }
-
-  /* Add to server's connection list */
-  conn->next = server->connections;
-  if (server->connections != NULL)
-    server->connections->prev = conn;
-  server->connections = conn;
-
-  pthread_mutex_lock (&server->stats_mutex);
-  server->connection_count++;
-  server->total_connections++;
-  pthread_mutex_unlock (&server->stats_mutex);
-
-  return conn;
 }
 
-static void
-connection_close (SocketHTTPServer_T server, ServerConnection *conn)
+static SocketHTTP1_Parser_T
+connection_create_parser (Arena_T arena, const SocketHTTPServer_Config *config)
 {
-  if (conn == NULL)
-    return;
-
-  /* Release IP tracking */
-  if (server->ip_tracker != NULL && conn->client_addr[0] != '\0')
-    {
-      SocketIPTracker_release (server->ip_tracker, conn->client_addr);
-    }
-
-  /* Remove from poll */
-  if (server->poll != NULL && conn->socket != NULL)
-    {
-      SocketPoll_del (server->poll, conn->socket);
-    }
-
-  /* Close socket */
-  if (conn->socket != NULL)
-    {
-      Socket_free (&conn->socket);
-    }
-
-  /* Remove from connection list */
-  if (conn->prev != NULL)
-    conn->prev->next = conn->next;
-  else
-    server->connections = conn->next;
-
-  if (conn->next != NULL)
-    conn->next->prev = conn->prev;
-
-  STATS_DEC (server, connection_count);
-
-  /* Free arena */
-  if (conn->arena != NULL)
-    {
-      Arena_dispose (&conn->arena);
-    }
-
-  free (conn);
-}
-
-static int
-connection_read (SocketHTTPServer_T server, ServerConnection *conn)
-{
-  char buf[HTTPSERVER_RECV_BUFFER_SIZE];
-  volatile ssize_t n = 0;
-  volatile int closed = 0;
-
-  TRY { n = Socket_recv (conn->socket, buf, sizeof (buf)); }
-  EXCEPT (Socket_Closed)
+  SocketHTTP1_Config pcfg;
+  SocketHTTP1_config_defaults (&pcfg);
+  pcfg.max_header_size = config->max_header_size;
+  TRY
   {
-    closed = 1;
-    n = 0;
+    return SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &pcfg, arena);
+  }
+  EXCEPT (SocketHTTP1_ParseError)
+  {
+    RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
   }
   END_TRY;
-
-  if (closed || n <= 0)
-    {
-      if (closed || n == 0 || (errno != EAGAIN && errno != EWOULDBLOCK))
-        {
-          conn->state = CONN_STATE_CLOSED;
-          return -1;
-        }
-      return 0;
-    }
-
-  conn->last_activity_ms = server_time_ms ();
-  STATS_ADD (server, total_bytes_received, (size_t)n);
-  SocketBuf_write (conn->inbuf, buf, (size_t)n);
-
-  return (int)n;
 }
 
-static int
-connection_send_data (SocketHTTPServer_T server, ServerConnection *conn,
-                      const void *data, size_t len)
-{
-  volatile int closed = 0;
-  volatile ssize_t sent = 0;
 
-  TRY { sent = Socket_sendall (conn->socket, data, len); }
-  EXCEPT (Socket_Closed)
-  {
-    closed = 1;
-    sent = 0;
-  }
-  END_TRY;
 
-  if (closed)
-    {
-      conn->state = CONN_STATE_CLOSED;
-      return -1;
-    }
 
-  conn->last_activity_ms = server_time_ms ();
-  STATS_ADD (server, total_bytes_sent, (size_t)sent);
-  return 0;
-}
 
-static void
-connection_reset_for_keepalive (ServerConnection *conn)
-{
-  conn->request_count++;
-  SocketHTTP1_Parser_reset (conn->parser);
-  SocketBuf_clear (conn->inbuf);
-  SocketBuf_clear (conn->outbuf);
 
-  SocketHTTP_Headers_clear (conn->response_headers);
-  conn->response_status = 0;
-  conn->response_body = NULL;
-  conn->response_body_len = 0;
-  conn->response_finished = 0;
-  conn->response_streaming = 0;
-  conn->response_headers_sent = 0;
-  conn->request = NULL;
-  conn->body = NULL;
-  conn->body_len = 0;
-  conn->body_capacity = 0;
-  conn->body_received = 0;
-  conn->body_callback = NULL;
-  conn->body_callback_userdata = NULL;
-  conn->body_streaming = 0;
-  conn->request_start_ms = 0;
-  conn->response_start_ms = 0;
 
-  conn->state = CONN_STATE_READING_REQUEST;
-}
+
+
+
 
 /**
  * connection_finish_request - Complete request processing
@@ -682,173 +280,13 @@ connection_reset_for_keepalive (ServerConnection *conn)
  * REFACTOR: Extracted from connection_send_response and
  * SocketHTTPServer_Request_end_stream to eliminate duplication.
  */
-static void
-connection_finish_request (SocketHTTPServer_T server, ServerConnection *conn)
-{
-  record_request_latency (server, conn->request_start_ms);
 
-  if (SocketHTTP1_Parser_should_keepalive (conn->parser))
-    connection_reset_for_keepalive (conn);
-  else
-    conn->state = CONN_STATE_CLOSED;
-}
 
-static int
-connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
-{
-  const void *data;
-  size_t len;
-  size_t consumed;
-  SocketHTTP1_Result result;
 
-  data = SocketBuf_readptr (conn->inbuf, &len);
-  if (len == 0)
-    return 0;
 
-  result = SocketHTTP1_Parser_execute (conn->parser, data, len, &consumed);
 
-  if (consumed > 0)
-    SocketBuf_consume (conn->inbuf, consumed);
 
-  if (result == HTTP1_ERROR || result >= HTTP1_ERROR_LINE_TOO_LONG)
-    {
-      conn->state = CONN_STATE_CLOSED;
-      return -1;
-    }
 
-  if (SocketHTTP1_Parser_state (conn->parser) >= HTTP1_STATE_BODY)
-    {
-      conn->request = SocketHTTP1_Parser_get_request (conn->parser);
-      conn->request_start_ms = server_time_ms ();
-
-      if (conn->request->has_body && !conn->body_streaming)
-        {
-          int64_t content_len
-              = SocketHTTP1_Parser_content_length (conn->parser);
-          if (content_len > 0)
-            {
-              /* Enforce max body size limit */
-              if ((size_t)content_len > server->config.max_body_size)
-                {
-                  SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
-                  connection_send_error (server, conn, 413,
-                                         "Payload Too Large");
-                  conn->state = CONN_STATE_CLOSED;
-                  return -1;
-                }
-
-              conn->body_capacity = (size_t)content_len;
-              conn->body
-                  = Arena_alloc (conn->arena, conn->body_capacity, __FILE__,
-                                 __LINE__);
-              if (conn->body == NULL)
-                {
-                  conn->state = CONN_STATE_CLOSED;
-                  return -1;
-                }
-
-              /* Track body buffer in connection memory */
-              conn->memory_used += conn->body_capacity;
-
-              data = SocketBuf_readptr (conn->inbuf, &len);
-              if (len > 0)
-                {
-                  size_t to_copy = len;
-                  if (to_copy > conn->body_capacity)
-                    to_copy = conn->body_capacity;
-                  memcpy (conn->body, data, to_copy);
-                  conn->body_len = to_copy;
-                  SocketBuf_consume (conn->inbuf, to_copy);
-                }
-
-              /* Check if we need to read more body data */
-              if (conn->body_len < conn->body_capacity)
-                {
-                  conn->state = CONN_STATE_READING_BODY;
-                  return 0; /* Need more data */
-                }
-            }
-        }
-
-      conn->state = CONN_STATE_HANDLING;
-      return 1;
-    }
-
-  return 0;
-}
-
-static void
-connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
-{
-  char buf[HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE];
-  ssize_t len;
-
-  SocketHTTP_Response response;
-  memset (&response, 0, sizeof (response));
-  response.version = HTTP_VERSION_1_1;
-  response.status_code = conn->response_status;
-  response.headers = conn->response_headers;
-
-  /* Track errors */
-  if (conn->response_status >= 400 && conn->response_status < 500)
-    STATS_INC (server, errors_4xx);
-  else if (conn->response_status >= 500)
-    STATS_INC (server, errors_5xx);
-
-  if (conn->response_body_len > 0 && !conn->response_streaming)
-    {
-      char cl[32];
-      snprintf (cl, sizeof (cl), "%zu", conn->response_body_len);
-      SocketHTTP_Headers_set (conn->response_headers, "Content-Length", cl);
-    }
-
-  len = SocketHTTP1_serialize_response (&response, buf, sizeof (buf));
-  if (len < 0)
-    {
-      conn->state = CONN_STATE_CLOSED;
-      return;
-    }
-
-  if (connection_send_data (server, conn, buf, (size_t)len) < 0)
-    {
-      conn->state = CONN_STATE_CLOSED;
-      return;
-    }
-
-  if (conn->response_body != NULL && conn->response_body_len > 0)
-    {
-      if (connection_send_data (server, conn, conn->response_body,
-                                conn->response_body_len)
-          < 0)
-        {
-          conn->state = CONN_STATE_CLOSED;
-          return;
-        }
-    }
-
-  connection_finish_request (server, conn);
-}
-
-static void
-connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
-                       int status, const char *body)
-{
-  conn->response_status = status;
-  if (body != NULL)
-    {
-      size_t len = strlen (body);
-      void *copy = Arena_alloc (conn->arena, len, __FILE__, __LINE__);
-      if (copy != NULL)
-        {
-          memcpy (copy, body, len);
-          conn->response_body = copy;
-          conn->response_body_len = len;
-        }
-      SocketHTTP_Headers_set (conn->response_headers, "Content-Type",
-                              "text/plain");
-    }
-  connection_send_response (server, conn);
-}
 
 /* ============================================================================
  * Configuration Defaults
@@ -861,14 +299,14 @@ SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config)
 
   memset (config, 0, sizeof (*config));
 
-  config->port = 8080;
-  config->bind_address = "0.0.0.0";
+  config->port = HTTPSERVER_DEFAULT_PORT;
+  config->bind_address = HTTPSERVER_DEFAULT_BIND_ADDR;
   config->backlog = HTTPSERVER_DEFAULT_BACKLOG;
 
   config->tls_context = NULL;
 
   config->max_version = HTTP_VERSION_1_1;
-  config->enable_h2c_upgrade = 0;
+  config->enable_h2c_upgrade = HTTPSERVER_DEFAULT_ENABLE_H2C_UPGRADE;
 
   config->max_header_size = HTTPSERVER_DEFAULT_MAX_HEADER_SIZE;
   config->max_body_size = HTTPSERVER_DEFAULT_MAX_BODY_SIZE;
@@ -1753,7 +1191,7 @@ SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req)
   if (!req->conn->response_streaming)
     return -1;
 
-  char final_buf[64];
+  char final_buf[HTTPSERVER_CHUNK_FINAL_BUF_SIZE];
   ssize_t final_len = SocketHTTP1_chunk_final (final_buf, sizeof (final_buf),
                                                NULL);
   if (final_len < 0)
@@ -1999,7 +1437,7 @@ SocketHTTPServer_drain_wait (SocketHTTPServer_T server, int timeout_ms)
   while (server->state == HTTPSERVER_STATE_DRAINING)
     {
       /* Process any remaining I/O */
-      SocketHTTPServer_process (server, 100);
+      SocketHTTPServer_process (server, HTTPSERVER_DRAIN_POLL_MS);
 
       int result = SocketHTTPServer_drain_poll (server);
       if (result <= 0)

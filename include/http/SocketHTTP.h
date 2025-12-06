@@ -294,6 +294,32 @@ typedef enum
   HTTP_STATUS_NETWORK_AUTH_REQUIRED = 511    /**< RFC 6585 */
 } SocketHTTP_StatusCode;
 
+
+/**
+ * Status code boundary constants
+ *
+ * Used for validation and categorization.
+ * Note: Not all codes in range are defined in SocketHTTP_StatusCode enum;
+ * enum only includes standard/common codes.
+ */
+#define HTTP_STATUS_CODE_MIN              100
+#define HTTP_STATUS_CODE_MAX              599
+
+#define HTTP_STATUS_1XX_MIN  HTTP_STATUS_CONTINUE
+#define HTTP_STATUS_1XX_MAX               199
+
+#define HTTP_STATUS_2XX_MIN  HTTP_STATUS_OK
+#define HTTP_STATUS_2XX_MAX               299
+
+#define HTTP_STATUS_3XX_MIN  HTTP_STATUS_MULTIPLE_CHOICES
+#define HTTP_STATUS_3XX_MAX               399
+
+#define HTTP_STATUS_4XX_MIN  HTTP_STATUS_BAD_REQUEST
+#define HTTP_STATUS_4XX_MAX               499
+
+#define HTTP_STATUS_5XX_MIN  HTTP_STATUS_INTERNAL_ERROR
+#define HTTP_STATUS_5XX_MAX               599
+
 /**
  * Status code categories
  */

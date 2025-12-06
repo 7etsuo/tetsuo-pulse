@@ -40,19 +40,6 @@
 #include "core/SocketUtil.h"
 
 /* ===========================================================================
- * Timer-Specific Constants
- * ===========================================================================*/
-
-/** Initial timer ID value (wraps at unsigned max) */
-#define SOCKET_TIMER_INITIAL_ID 1u
-
-/** Minimum interval for repeating timers (ms) */
-#define SOCKET_TIMER_MIN_INTERVAL_MS 1
-
-/** Minimum delay for one-shot timers (ms) */
-#define SOCKET_TIMER_MIN_DELAY_MS 0
-
-/* ===========================================================================
  * Thread-Local Error Handling
  * ===========================================================================*/
 
@@ -111,9 +98,33 @@ sockettimer_validate_time (int64_t time_ms, int64_t min_time, int64_t max_time, 
                       time_name, time_ms, max_time);
 }
 
-/* validate_delay removed - use validate_time */
+/**
+ * sockettimer_validate_timer_params - Validate delay and interval parameters
+ * @delay_ms: Initial delay in ms
+ * @interval_ms: Repeat interval in ms (0 for one-shot)
+ * @is_repeating: Non-zero if repeating timer
+ *
+ * Raises: SocketTimer_Failed on invalid parameters
+ * Thread-safe: Yes
+ */
+static void
+sockettimer_validate_timer_params (int64_t delay_ms, int64_t interval_ms,
+                                   int is_repeating)
+{
+  int64_t max_delay_ms = SOCKET_MAX_TIMER_DELAY_MS;
 
-/* validate_interval removed - use validate_time */
+  if (is_repeating) {
+    sockettimer_validate_time (interval_ms, SOCKET_TIMER_MIN_INTERVAL_MS,
+                               max_delay_ms, "interval");
+    sockettimer_validate_time (delay_ms, SOCKET_TIMER_MIN_INTERVAL_MS,
+                               max_delay_ms, "initial delay");
+  } else {
+    sockettimer_validate_time (delay_ms, SOCKET_TIMER_MIN_DELAY_MS,
+                               max_delay_ms, "delay");
+  }
+}
+
+
 
 /* ===========================================================================
  * Timer Allocation and Initialization (Static)
@@ -178,6 +189,29 @@ sockettimer_init_timer (struct SocketTimer_T *timer, int64_t delay_ms,
   timer->callback = callback;
   timer->userdata = userdata;
   timer->cancelled = 0;
+  timer->heap_index = SOCKET_TIMER_INVALID_HEAP_INDEX;
+}
+
+/**
+ * sockettimer_create_timer - Allocate and initialize timer structure
+ * @arena: Arena for allocation
+ * @delay_ms: Initial delay
+ * @interval_ms: Repeat interval (0 for one-shot)
+ * @callback: Callback function
+ * @userdata: User data
+ *
+ * Returns: Initialized timer
+ * Raises: SocketTimer_Failed on allocation failure
+ * Thread-safe: No
+ */
+static struct SocketTimer_T *
+sockettimer_create_timer (Arena_T arena,
+                          int64_t delay_ms, int64_t interval_ms,
+                          SocketTimerCallback callback, void *userdata)
+{
+  struct SocketTimer_T *timer = sockettimer_allocate_timer (arena);
+  sockettimer_init_timer (timer, delay_ms, interval_ms, callback, userdata);
+  return timer;
 }
 
 /* ===========================================================================
@@ -232,6 +266,10 @@ sockettimer_heap_swap (struct SocketTimer_T **timers, size_t i, size_t j)
   struct SocketTimer_T *temp = timers[i];
   timers[i] = timers[j];
   timers[j] = temp;
+
+  /* Update heap indices after swap */
+  timers[i]->heap_index = i;
+  timers[j]->heap_index = j;
 }
 
 /* ===========================================================================
@@ -322,6 +360,7 @@ sockettimer_heap_move_last_to_root (struct SocketTimer_T **timers, size_t *count
   assert(*count > 0);
 
   timers[0] = timers[*count - 1];
+  timers[0]->heap_index = 0;
   (*count)--;
 
   if (*count > 0)
@@ -381,16 +420,18 @@ sockettimer_skip_cancelled (SocketTimer_heap_T *heap)
  *
  * Returns: Index of timer if found and not cancelled, -1 otherwise
  * Thread-safe: No (caller must hold heap->mutex)
+ * Note: O(1) time using maintained heap_index field
  */
 static ssize_t
 sockettimer_find_in_heap (const SocketTimer_heap_T *heap,
                           const struct SocketTimer_T *timer)
 {
-  for (size_t i = 0; i < heap->count; i++)
-    {
-      if (heap->timers[i] == timer && !heap->timers[i]->cancelled)
-        return (ssize_t)i;
-    }
+  size_t idx = timer->heap_index;
+  if (idx != SOCKET_TIMER_INVALID_HEAP_INDEX &&
+      idx < heap->count &&
+      heap->timers[idx] == timer &&
+      !timer->cancelled)
+    return (ssize_t)idx;
 
   return -1;
 }
@@ -458,7 +499,9 @@ static void
 sockettimer_insert_into_heap (SocketTimer_heap_T *heap,
                               struct SocketTimer_T *timer)
 {
-  heap->timers[heap->count] = timer;
+  size_t pos = heap->count;
+  heap->timers[pos] = timer;
+  timer->heap_index = pos;
   heap->count++;
   sockettimer_heap_sift_up (heap->timers, heap->count - 1);
 }
@@ -676,16 +719,10 @@ sockettimer_add_timer_internal (SocketPoll_T poll, int64_t delay_ms,
 
   heap = sockettimer_validate_heap (poll);
 
-  int64_t max_delay_ms = SOCKET_MAX_TIMER_DELAY_MS;
-  if (is_repeating) {
-    sockettimer_validate_time (interval_ms, SOCKET_TIMER_MIN_INTERVAL_MS, max_delay_ms, "interval");
-    sockettimer_validate_time (delay_ms, SOCKET_TIMER_MIN_INTERVAL_MS, max_delay_ms, "delay");  // initial delay same as interval for repeating
-  } else {
-    sockettimer_validate_time (delay_ms, SOCKET_TIMER_MIN_DELAY_MS, max_delay_ms, "delay");
-  }
+  sockettimer_validate_timer_params (delay_ms, interval_ms, is_repeating);
 
-  timer = sockettimer_allocate_timer (heap->arena);
-  sockettimer_init_timer (timer, delay_ms, interval_ms, callback, userdata);
+  timer = sockettimer_create_timer (heap->arena, delay_ms, interval_ms,
+                                    callback, userdata);
 
   SocketTimer_heap_push (heap, timer);
 

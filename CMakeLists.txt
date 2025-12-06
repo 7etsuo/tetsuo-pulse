@@ -139,6 +139,7 @@ if(ENABLE_TLS)
         endif()
     endif()
 else()
+    add_definitions(-DSOCKET_HAS_TLS=0)
     message(STATUS "TLS support disabled (use -DENABLE_TLS=ON to enable)")
 endif()
 
@@ -268,6 +269,7 @@ set(LIB_SOURCES
     src/http/SocketHTTPClient-cookie.c
     src/http/SocketHTTPClient-retry.c
     src/http/SocketHTTPServer.c
+    src/http/SocketHTTPServer-connections.c
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -329,7 +331,7 @@ endif()
 add_library(socket_static STATIC $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_static PROPERTIES OUTPUT_NAME socket)
 if(SOCKET_HAS_TLS)
-    target_link_libraries(socket_static pthread m ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
+    target_link_libraries(socket_static pthread m dl ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
 else()
     target_link_libraries(socket_static pthread m ${LIBURING_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
 endif()
@@ -338,7 +340,7 @@ endif()
 add_library(socket_shared SHARED $<TARGET_OBJECTS:socket_objects>)
 set_target_properties(socket_shared PROPERTIES OUTPUT_NAME socket)
 if(SOCKET_HAS_TLS)
-    target_link_libraries(socket_shared pthread m ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
+    target_link_libraries(socket_shared pthread m dl ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
 else()
     target_link_libraries(socket_shared pthread m ${LIBURING_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
 endif()
@@ -489,7 +491,7 @@ enable_testing()
 add_library(test_framework OBJECT src/test/Test.c)
 target_include_directories(test_framework PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-# Test source files
+# Test source files (core - always built)
 set(TEST_SOURCES
     test_arena
     test_except
@@ -501,12 +503,7 @@ set(TEST_SOURCES
     test_socketpool
     test_socketdns
     test_integration
-    test_tls_integration
-    test_tls_phase4
-    test_tls_pinning
-    test_dtls_integration
     test_threadsafety
-    test_socketpool_tls
     test_happy_eyeballs
     test_reconnect
     test_ratelimit
@@ -530,6 +527,17 @@ set(TEST_SOURCES
     test_httpserver_load
     test_signals
 )
+
+# TLS tests (only built when TLS is enabled)
+if(SOCKET_HAS_TLS)
+    list(APPEND TEST_SOURCES
+        test_tls_integration
+        test_tls_phase4
+        test_tls_pinning
+        test_dtls_integration
+        test_socketpool_tls
+    )
+endif()
 
 # Create test executables (link against object files to preserve constructor attributes)
 foreach(test_name ${TEST_SOURCES})

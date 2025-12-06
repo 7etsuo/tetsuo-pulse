@@ -25,7 +25,7 @@
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "tls/SocketTLSContext.h"
 #include <openssl/ssl.h>
 #endif
@@ -127,7 +127,7 @@ struct Connection
   struct Connection *free_next;
   SocketReconnect_T reconnect;      /**< Auto-reconnection context (NULL if disabled) */
   char *tracked_ip;                 /**< Tracked IP for per-IP limiting (NULL if not tracked) */
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketTLSContext_T tls_ctx;       /**< TLS context for this connection */
   int tls_handshake_complete;       /**< TLS handshake state */
   SSL_SESSION *tls_session;         /**< Saved session for potential reuse */

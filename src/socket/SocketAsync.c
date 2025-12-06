@@ -46,7 +46,7 @@
 #define SOCKET_LOG_COMPONENT "SocketAsync"
 #include "core/SocketUtil.h"
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
 #endif
 
@@ -591,7 +591,7 @@ kqueue_perform_io (struct AsyncRequest *req, ssize_t *result, int *err)
     *err = errno ? errno : EPROTO;
     *result = -1;
   }
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   EXCEPT (SocketTLS_HandshakeFailed)
   {
     *err = EAGAIN;

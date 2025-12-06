@@ -36,7 +36,7 @@
 /* Include timer private header after struct definition */
 #include "core/SocketTimer-private.h"
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "socket/Socket-private.h"
 #include "socket/SocketIO.h"
 #include "tls/SocketTLS.h"
@@ -582,7 +582,7 @@ translate_backend_events_to_socket_events (T poll, int nfds)
 
 /* ==================== TLS Event Handling ==================== */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 /**
  * socketpoll_update_tls_events - Update poll events based on TLS state
@@ -1146,7 +1146,7 @@ SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
   nfds = translate_backend_events_to_socket_events (poll, nfds);
   emit_event_metrics (nfds, timeout);
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   socketpoll_process_tls_handshakes (poll, nfds);
 #endif
 

@@ -28,7 +28,7 @@
 #include "socket/SocketIO.h"
 #include "test/Test.h"
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"
@@ -279,7 +279,7 @@ TEST (tls_handshake_and_io)
 
 TEST (socketpool_tls_integration_structure)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketPool_T pool = SocketPool_new (arena, 10, 1024);
   Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
@@ -305,7 +305,7 @@ TEST (socketpool_tls_integration_structure)
 
 TEST (socket_sendfile_tls_fallback_check)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
   int file_fd = open ("/dev/zero", O_RDONLY);
   if (file_fd < 0)
@@ -355,7 +355,7 @@ dummy_fail_verify_cb (int pre_ok, X509_STORE_CTX *ctx,
 
 TEST (tls_verify_callback_integration)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_cb.crt";
   const char *key_file = "test_cb.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -450,7 +450,7 @@ TEST (tls_verify_callback_integration)
 
 TEST (tls_send_recv_large_data)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_large.crt";
   const char *key_file = "test_large.key";
   Socket_T client = NULL, server = NULL;
@@ -537,7 +537,7 @@ TEST (tls_send_recv_large_data)
 
 TEST (tls_bidirectional_io)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_bidir.crt";
   const char *key_file = "test_bidir.key";
   Socket_T client = NULL, server = NULL;
@@ -655,7 +655,7 @@ TEST (tls_bidirectional_io)
 
 TEST (tls_session_reuse_check)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_sess.crt";
   const char *key_file = "test_sess.key";
   Socket_T client = NULL, server = NULL;
@@ -735,7 +735,7 @@ TEST (tls_session_reuse_check)
 
 TEST (tls_alpn_negotiation_full)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_alpn_full.crt";
   const char *key_file = "test_alpn_full.key";
   Socket_T client = NULL, server = NULL;
@@ -815,7 +815,7 @@ TEST (tls_alpn_negotiation_full)
 
 TEST (tls_graceful_shutdown)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_shutdown.crt";
   const char *key_file = "test_shutdown.key";
   Socket_T client = NULL, server = NULL;
@@ -892,7 +892,7 @@ TEST (tls_graceful_shutdown)
 
 TEST (tls_sni_server_selection)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *default_cert = "test_sni_srv_default.crt";
   const char *default_key = "test_sni_srv_default.key";
 
@@ -962,7 +962,7 @@ TEST (tls_sni_server_selection)
 
 TEST (tls_connection_info_complete)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_info.crt";
   const char *key_file = "test_info.key";
   Socket_T client = NULL, server = NULL;
@@ -1053,7 +1053,7 @@ TEST (tls_connection_info_complete)
 
 TEST (tls_context_free_null_safe)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /* Test that free with NULL pointer doesn't crash */
   SocketTLSContext_T ctx = NULL;
   SocketTLSContext_free (&ctx); /* Should be safe */
@@ -1075,7 +1075,7 @@ TEST (tls_context_free_null_safe)
 
 TEST (socketio_tls_enabled_check)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Socket_T socket = NULL;
 
   TRY
@@ -1103,7 +1103,7 @@ TEST (socketio_tls_enabled_check)
 
 TEST (socketio_tls_scatter_gather_io)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_iov.crt";
   const char *key_file = "test_iov.key";
   Socket_T client = NULL, server = NULL;
@@ -1228,7 +1228,7 @@ TEST (socketio_tls_scatter_gather_io)
 
 TEST (socketio_tls_want_states)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_want.crt";
   const char *key_file = "test_want.key";
   Socket_T client = NULL, server = NULL;
@@ -1384,7 +1384,7 @@ TEST (socketio_raw_scatter_gather)
  */
 TEST (socketio_tls_send_recv_via_socket_api)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_socketio_api.crt";
   const char *key_file = "test_socketio_api.key";
   Socket_T client = NULL, server = NULL;
@@ -1604,7 +1604,7 @@ TEST (socketio_raw_error_paths)
  */
 TEST (socketio_tls_closed_connection)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_tls_closed.crt";
   const char *key_file = "test_tls_closed.key";
   Socket_T client = NULL, server = NULL;
@@ -1702,7 +1702,7 @@ TEST (socketio_tls_closed_connection)
  */
 TEST (socketio_tls_want_write_during_handshake)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_want_write.crt";
   const char *key_file = "test_want_write.key";
   Socket_T client = NULL, server = NULL;
@@ -1790,7 +1790,7 @@ TEST (socketio_tls_want_write_during_handshake)
  */
 TEST (socketio_tls_validate_not_ready)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_validate.crt";
   const char *key_file = "test_validate.key";
   Socket_T client = NULL, server = NULL;
@@ -1880,7 +1880,7 @@ TEST (socketio_tls_validate_not_ready)
  */
 TEST (socketio_tls_want_write_incomplete_handshake)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_want_write2.crt";
   const char *key_file = "test_want_write2.key";
   Socket_T client = NULL, server = NULL;
@@ -1950,7 +1950,7 @@ TEST (socketio_tls_want_write_incomplete_handshake)
  */
 TEST (socketio_tls_io_after_shutdown)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_after_shutdown.crt";
   const char *key_file = "test_after_shutdown.key";
   Socket_T client = NULL, server = NULL;
@@ -2049,7 +2049,7 @@ TEST (socketio_tls_io_after_shutdown)
 
 TEST (tls_session_resumption_verification)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_sess_verify.crt";
   const char *key_file = "test_sess_verify.key";
   Socket_T client = NULL, server = NULL;
@@ -2121,7 +2121,7 @@ TEST (tls_session_resumption_verification)
 
 TEST (tls_cipher_suite_negotiation)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_cipher_neg.crt";
   const char *key_file = "test_cipher_neg.key";
   Socket_T client = NULL, server = NULL;
@@ -2255,7 +2255,7 @@ generate_client_cert (const char *client_cert, const char *client_key,
 
 TEST (tls_mutual_tls_client_cert)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *server_cert = "test_mtls_server.crt";
   const char *server_key = "test_mtls_server.key";
   const char *client_cert = "test_mtls_client.crt";

@@ -148,19 +148,19 @@ extern void SocketRateLimit_configure (T limiter, size_t tokens_per_sec,
  * SocketRateLimit_get_rate - Get current tokens per second rate
  * @limiter: Rate limiter instance
  *
- * Returns: Tokens per second rate
+ * Returns: Tokens per second rate (0 if invalid/shutdown)
  * Thread-safe: Yes - uses internal mutex
  */
-extern size_t SocketRateLimit_get_rate (const T limiter);
+extern size_t SocketRateLimit_get_rate (T limiter);
 
 /**
  * SocketRateLimit_get_bucket_size - Get current bucket size
  * @limiter: Rate limiter instance
  *
- * Returns: Maximum bucket capacity
+ * Returns: Maximum bucket capacity (0 if invalid/shutdown)
  * Thread-safe: Yes - uses internal mutex
  */
-extern size_t SocketRateLimit_get_bucket_size (const T limiter);
+extern size_t SocketRateLimit_get_bucket_size (T limiter);
 
 /**
  * SocketRateLimit_debug_live_count - Debug function to get live instance count

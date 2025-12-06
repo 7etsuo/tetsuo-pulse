@@ -13,12 +13,19 @@
 #include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
 
+#if SOCKET_HAS_TLS
+#include <openssl/evp.h>
+#include <openssl/hmac.h>
+#include <openssl/rand.h>
+#include <openssl/ssl.h>
+#endif
+
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -153,9 +160,14 @@ SocketCrypto_sha1 (const void *input, size_t input_len,
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-1");
 
-#ifdef SOCKET_HAS_TLS
-  if (!SHA1 ((const unsigned char *)input, input_len, output))
-    SOCKET_CRYPTO_RAISE_COMPUTE_FAILED("SHA-1");
+#if SOCKET_HAS_TLS
+  EVP_MD_CTX *ctx = EVP_MD_CTX_new ();
+  if (!ctx || EVP_DigestInit_ex (ctx, EVP_sha1 (), NULL) != 1 || EVP_DigestUpdate (ctx, input, input_len) != 1 || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
+    {
+      if (ctx) EVP_MD_CTX_free (ctx);
+      SOCKET_CRYPTO_RAISE_COMPUTE_FAILED("SHA-1");
+    }
+  EVP_MD_CTX_free (ctx);
 #else
   SOCKET_CRYPTO_REQUIRE_TLS;
 #endif
@@ -169,9 +181,14 @@ SocketCrypto_sha256 (const void *input, size_t input_len,
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-256");
 
-#ifdef SOCKET_HAS_TLS
-  if (!SHA256 ((const unsigned char *)input, input_len, output))
-    SOCKET_CRYPTO_RAISE_COMPUTE_FAILED("SHA-256");
+#if SOCKET_HAS_TLS
+  EVP_MD_CTX *ctx = EVP_MD_CTX_new ();
+  if (!ctx || EVP_DigestInit_ex (ctx, EVP_sha256 (), NULL) != 1 || EVP_DigestUpdate (ctx, input, input_len) != 1 || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
+    {
+      if (ctx) EVP_MD_CTX_free (ctx);
+      SOCKET_CRYPTO_RAISE_COMPUTE_FAILED("SHA-256");
+    }
+  EVP_MD_CTX_free (ctx);
 #else
   SOCKET_CRYPTO_REQUIRE_TLS;
 #endif
@@ -185,7 +202,7 @@ SocketCrypto_md5 (const void *input, size_t input_len,
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "MD5");
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   EVP_MD_CTX *ctx = NULL;
   TRY
     {
@@ -223,7 +240,7 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
   SOCKET_CRYPTO_CHECK_INPUT (key, key_len, "HMAC-SHA256 key");
   SOCKET_CRYPTO_CHECK_INPUT (data, data_len, "HMAC-SHA256 data");
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /*
    * Security: Validate key_len fits in int for OpenSSL HMAC API.
    * Keys exceeding INT_MAX would be truncated on cast, potentially
@@ -648,11 +665,14 @@ hex_char_to_nibble (char c)
 
 ssize_t
 SocketCrypto_hex_decode (const char *input, size_t input_len,
-                         unsigned char *output)
+                         unsigned char *output, size_t output_size)
 {
   size_t i;
 
   if (!input || !output)
+    return -1;
+
+  if (output_size < input_len / 2)
     return -1;
 
   /* Length must be even */
@@ -686,7 +706,7 @@ SocketCrypto_random_bytes (void *output, size_t len)
   if (len == 0)
     return 0;
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   if (RAND_bytes ((unsigned char *)output, (int)len) != 1)
     return -1;
   return 0;
@@ -765,7 +785,7 @@ SocketCrypto_websocket_accept (const char *client_key,
   memcpy (concat_buffer, client_key, key_len);
   memcpy (concat_buffer + key_len, SOCKET_CRYPTO_WEBSOCKET_GUID, guid_len + 1);
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /* Compute SHA-1 hash */
   if (!SHA1 ((const unsigned char *)concat_buffer, concat_len, sha1_hash))
     return -1;
@@ -825,7 +845,7 @@ SocketCrypto_secure_compare (const void *a, const void *b, size_t len)
   if (len == 0)
     return 0; /* Equal for zero-length comparison */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   return CRYPTO_memcmp (a, b, len);
 #else
   /* Manual constant-time comparison fallback */
@@ -847,7 +867,7 @@ SocketCrypto_secure_clear (void *ptr, size_t len)
   if (!ptr || len == 0)
     return;
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   OPENSSL_cleanse (ptr, len);
 #else
   /* Manual secure clear fallback - use volatile to prevent optimization */

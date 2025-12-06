@@ -23,7 +23,7 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketPool"
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "socket/Socket-private.h"
 #include "socket/SocketIO.h"
 #include "tls/SocketTLS.h"
@@ -249,7 +249,7 @@ reset_slot_base_fields (Connection_T conn)
 static void
 reset_slot_tls_fields (Connection_T conn)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   conn->tls_ctx = NULL;
   conn->tls_handshake_complete = 0;
 #else
@@ -274,7 +274,7 @@ SocketPool_connections_reset_slot (Connection_T conn)
  * TLS Session Management
  * ============================================================================ */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 /**
  * session_is_expired - Check if TLS session has expired
  * @sess: Session to check
@@ -339,7 +339,7 @@ free_expired_session (Connection_T conn)
 void
 validate_saved_session (Connection_T conn, time_t now)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   if (!conn->tls_session)
     return;
 
@@ -351,7 +351,7 @@ validate_saved_session (Connection_T conn, time_t now)
 #endif
 }
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 /**
  * try_set_session - Attempt to set TLS session on SSL object
  * @conn: Connection with saved session
@@ -552,7 +552,7 @@ add_unlocked (T pool, Socket_T socket, time_t now)
 
   conn = find_or_create_slot (pool, socket, now);
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   if (conn)
     setup_tls_session_resumption (conn, socket);
 #endif
@@ -721,7 +721,7 @@ release_ip_tracking (T pool, Connection_T conn)
 static void
 release_connection_resources (T pool, Connection_T conn, Socket_T socket)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   cleanup_tls_and_save_session (conn, socket);
 #else
   (void)socket;

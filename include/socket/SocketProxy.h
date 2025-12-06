@@ -84,7 +84,7 @@
 #include "socket/Socket.h"
 
 /* Forward declarations for optional TLS */
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "tls/SocketTLSContext.h"
 #else
 typedef struct SocketTLSContext_T *SocketTLSContext_T;

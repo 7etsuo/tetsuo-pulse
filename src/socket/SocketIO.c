@@ -43,7 +43,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketIO);
 #define RAISE_MSG(e, fmt, ...)                                                 \
   SOCKET_RAISE_MSG (SocketIO, e, fmt, ##__VA_ARGS__)
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
 #include <openssl/err.h>
 #include <openssl/ssl.h>
@@ -54,7 +54,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketIO);
 /* Forward declaration */
 extern int Socket_fd (const T socket);
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 /* TLS helper functions - defined later in this file */
 /* Note: Some functions are extern (declared in header), some are static */
 static ssize_t socket_send_tls (T socket, const void *buf, size_t len);
@@ -143,7 +143,7 @@ socket_send_internal (T socket, const void *buf, size_t len, int flags)
   assert (buf);
   assert (len > 0);
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   if (socket->tls_enabled && socket->tls_ssl)
     return socket_send_tls (socket, buf, len);
 #endif
@@ -167,7 +167,7 @@ socket_recv_internal (T socket, void *buf, size_t len, int flags)
   assert (buf);
   assert (len > 0);
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   if (socket->tls_enabled && socket->tls_ssl)
     return socket_recv_tls (socket, buf, len);
 #endif
@@ -260,7 +260,7 @@ socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
   assert (iovcnt > 0);
   assert (iovcnt <= IOV_MAX);
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   if (socket->tls_enabled && socket->tls_ssl)
     return socket_sendv_tls (socket, iov, iovcnt);
 #endif
@@ -286,7 +286,7 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
   assert (iovcnt > 0);
   assert (iovcnt <= IOV_MAX);
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   if (socket->tls_enabled && socket->tls_ssl)
     return socket_recvv_tls (socket, iov, iovcnt);
 #endif
@@ -305,7 +305,7 @@ int
 socket_is_tls_enabled (const T socket)
 {
   assert (socket);
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   return socket->tls_enabled ? 1 : 0;
 #else
   return 0;
@@ -321,7 +321,7 @@ int
 socket_tls_want_read (const T socket)
 {
   assert (socket);
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SSL *ssl = socket_get_ssl (socket);
   if (!ssl)
     return 0;
@@ -342,7 +342,7 @@ int
 socket_tls_want_write (const T socket)
 {
   assert (socket);
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   if (!socket_get_ssl (socket))
     return 0;
   if (!socket->tls_handshake_done)
@@ -356,7 +356,7 @@ socket_tls_want_write (const T socket)
 /* ==================== TLS I/O Operations ==================== */
 /* Merged from SocketIO-tls.c and SocketIO-tls-iov.c */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 /**
  * socket_get_ssl - Helper to get SSL object from socket

@@ -125,6 +125,22 @@
 #define SOCKETHTTP2_RST_RATE_WINDOW_MS 1000 /* Rate window in milliseconds */
 #endif
 
+#ifndef SOCKETHTTP2_DEFAULT_SETTINGS_TIMEOUT_MS
+#define SOCKETHTTP2_DEFAULT_SETTINGS_TIMEOUT_MS 30000 /* 30 seconds */
+#endif
+
+#ifndef SOCKETHTTP2_DEFAULT_PING_TIMEOUT_MS
+#define SOCKETHTTP2_DEFAULT_PING_TIMEOUT_MS 30000 /* 30 seconds */
+#endif
+
+#ifndef SOCKETHTTP2_MAX_WINDOW_SIZE
+#define SOCKETHTTP2_MAX_WINDOW_SIZE 0x7FFFFFFF /* 2^31 - 1 */
+#endif
+
+#ifndef SOCKETHTTP2_IO_BUFFER_SIZE
+#define SOCKETHTTP2_IO_BUFFER_SIZE SOCKETHTTP2_DEFAULT_STREAM_RECV_BUF_SIZE
+#endif
+
 /** Frame header size in bytes */
 #define HTTP2_FRAME_HEADER_SIZE 9
 
@@ -356,7 +372,7 @@ extern void SocketHTTP2_config_defaults (SocketHTTP2_Config *config,
  * Thread-safe: Yes (arena must be thread-safe or thread-local)
  */
 extern SocketHTTP2_Conn_T SocketHTTP2_Conn_new (Socket_T socket,
-                                                const SocketHTTP2_Config *config,
+                                                volatile const SocketHTTP2_Config *config,
                                                 Arena_T arena);
 
 /**

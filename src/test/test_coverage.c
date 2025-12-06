@@ -36,7 +36,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSContext.h"
 #endif
@@ -1176,7 +1176,7 @@ TEST (cov_dns_resolve_invalid)
  * TLS Tests (if available)
  * ============================================================================ */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 /* Size constant for oversized OCSP response tests */
 #define LARGE_OCSP_RESPONSE_SIZE 100000

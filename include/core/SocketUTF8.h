@@ -49,6 +49,30 @@
 #define SOCKET_UTF8_SURROGATE_MAX 0xDFFF
 
 /* ============================================================================
+ * Byte Length Boundaries
+ * ============================================================================ */
+
+/**
+ * Maximum code point encodable in 1 byte (ASCII range)
+ */
+#define SOCKET_UTF8_1BYTE_MAX      0x7F
+
+/**
+ * Maximum code point encodable in 2 bytes
+ */
+#define SOCKET_UTF8_2BYTE_MAX      0x7FF
+
+/**
+ * Maximum code point encodable in 3 bytes
+ */
+#define SOCKET_UTF8_3BYTE_MAX      0xFFFF
+
+/**
+ * Minimum code point requiring 4 bytes
+ */
+#define SOCKET_UTF8_4BYTE_MIN      0x10000
+
+/* ============================================================================
  * Exception Types
  * ============================================================================ */
 

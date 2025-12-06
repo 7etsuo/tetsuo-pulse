@@ -303,6 +303,21 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_MAX_TIMERS_PER_HEAP 100000
 #endif
 
+/* Minimum delay for one-shot timers (ms) */
+#ifndef SOCKET_TIMER_MIN_DELAY_MS
+#define SOCKET_TIMER_MIN_DELAY_MS 0
+#endif
+
+/* Minimum interval for repeating timers (ms) */
+#ifndef SOCKET_TIMER_MIN_INTERVAL_MS
+#define SOCKET_TIMER_MIN_INTERVAL_MS 1
+#endif
+
+/* Initial timer ID value (wraps at UINT_MAX) */
+#ifndef SOCKET_TIMER_INITIAL_ID
+#define SOCKET_TIMER_INITIAL_ID 1u
+#endif
+
 /* ============================================================================
  * Event Subsystem Configuration
  * ============================================================================ */
@@ -464,6 +479,27 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_LOG_BUFFER_SIZE 1024
 #endif
 
+/* Timestamp formatting constants */
+#ifndef SOCKET_LOG_TIMESTAMP_BUFSIZE
+#define SOCKET_LOG_TIMESTAMP_BUFSIZE 64
+#endif
+
+#ifndef SOCKET_LOG_TIMESTAMP_FORMAT
+#define SOCKET_LOG_TIMESTAMP_FORMAT "%Y-%m-%d %H:%M:%S"
+#endif
+
+#ifndef SOCKET_LOG_DEFAULT_TIMESTAMP
+#define SOCKET_LOG_DEFAULT_TIMESTAMP "1970-01-01 00:00:00"
+#endif
+
+#ifndef SOCKET_LOG_TRUNCATION_SUFFIX
+#define SOCKET_LOG_TRUNCATION_SUFFIX "..."
+#endif
+
+#ifndef SOCKET_LOG_TRUNCATION_SUFFIX_LEN
+#define SOCKET_LOG_TRUNCATION_SUFFIX_LEN (sizeof(SOCKET_LOG_TRUNCATION_SUFFIX) - 1)
+#endif
+
 /* ============================================================================
  * Error Handling Configuration
  * ============================================================================ */
@@ -509,6 +545,26 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_PLATFORM_MACOS 1
 #else
 #define SOCKET_PLATFORM_MACOS 0
+#endif
+
+/* ============================================================================
+ * Feature Flags
+ * ============================================================================
+ *
+ * Compile-time flags for optional features. Set to 0 to disable.
+ * Can be overridden via CMake or compiler defines.
+ */
+
+#ifndef SOCKET_HAS_HTTP
+#define SOCKET_HAS_HTTP 1  /**< HTTP/1.1, HTTP/2, HPACK, client/server support */
+#endif
+
+#ifndef SOCKET_HAS_WEBSOCKET
+#define SOCKET_HAS_WEBSOCKET 1  /**< WebSocket RFC 6455 + permessage-deflate */
+#endif
+
+#ifndef SOCKET_HAS_TLS
+#define SOCKET_HAS_TLS 0  /**< TLS 1.3 only (OpenSSL/LibreSSL) + DTLS - set by cmake */
 #endif
 
 /* IOV_MAX fallback if not defined */

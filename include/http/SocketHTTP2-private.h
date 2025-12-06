@@ -31,6 +31,12 @@ static const unsigned char HTTP2_CLIENT_PREFACE[HTTP2_PREFACE_SIZE]
 #define SETTINGS_IDX_MAX_FRAME_SIZE 4
 #define SETTINGS_IDX_MAX_HEADER_LIST_SIZE 5
 
+/* Frame payload sizes */
+#define HTTP2_SETTING_ENTRY_SIZE 6
+#define HTTP2_PING_PAYLOAD_SIZE 8
+#define HTTP2_GOAWAY_HEADER_SIZE 8
+#define HTTP2_WINDOW_UPDATE_SIZE 4
+
 /* ============================================================================
  * Connection State
  * ============================================================================ */
@@ -76,6 +82,15 @@ struct SocketHTTP2_Stream
   int end_stream_received;        /**< END_STREAM flag received */
   int end_stream_sent;            /**< END_STREAM flag sent */
   int trailers_received;          /**< Trailers received */
+
+  /* Decoded headers storage */
+  SocketHPACK_Header headers[SOCKETHTTP2_MAX_DECODED_HEADERS]; /**< Decoded initial headers */
+  size_t header_count;                                        /**< Number of initial headers */
+  int headers_consumed;                                       /**< Headers already consumed by user */
+
+  SocketHPACK_Header trailers[SOCKETHTTP2_MAX_DECODED_HEADERS]; /**< Decoded trailers */
+  size_t trailer_count;                                        /**< Number of trailers */
+  int trailers_consumed;                                       /**< Trailers already consumed by user */
 
   /* Pending headers (accumulated from CONTINUATION) */
   unsigned char *header_block;    /**< Accumulated header block */
@@ -283,13 +298,16 @@ extern int http2_flow_update_send (SocketHTTP2_Conn_T conn,
 
 /**
  * http2_flow_available_send - Get available send window
- * @conn: Connection
- * @stream: Stream (may be NULL for connection-only)
+ * @conn: Connection (const)
+ * @stream: Stream (may be NULL for connection-only, const)
  *
- * Returns: Minimum of connection and stream windows
+ * Returns: Minimum of connection and stream windows, clamped to >=0
+ * Thread-safe: Yes - read-only
+ *
+ * Validates stream belongs to conn if provided.
  */
-extern int32_t http2_flow_available_send (SocketHTTP2_Conn_T conn,
-                                          SocketHTTP2_Stream_T stream);
+extern int32_t http2_flow_available_send (const SocketHTTP2_Conn_T conn,
+                                          const SocketHTTP2_Stream_T stream);
 
 /* ============================================================================
  * Internal Functions - Frame Processing

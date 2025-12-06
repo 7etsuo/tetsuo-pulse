@@ -21,6 +21,8 @@ struct SocketTimer_T
     void *userdata;             /* User data for callback */
     int cancelled;              /* Lazy deletion flag */
     unsigned id;                /* Unique timer ID */
+
+    size_t heap_index;          /* Heap position for fast lookup/cancel, SOCKET_TIMER_INVALID_HEAP_INDEX if not in heap */
 };
 
 /* Heap structure - internal definition */
@@ -38,6 +40,11 @@ struct SocketTimer_heap_T
 typedef struct SocketTimer_heap_T SocketTimer_heap_T;
 
 /**
+ * Invalid heap index value - indicates timer not in heap
+ */
+#define SOCKET_TIMER_INVALID_HEAP_INDEX ((size_t)-1)
+
+/**
  * SocketTimer_heap_new - Create a new timer heap
  * @arena: Arena to allocate from
  * Returns: New heap instance or NULL on error
@@ -46,8 +53,11 @@ typedef struct SocketTimer_heap_T SocketTimer_heap_T;
 SocketTimer_heap_T *SocketTimer_heap_new (Arena_T arena);
 
 /**
- * SocketTimer_heap_free - Free timer heap and all timers
+ * SocketTimer_heap_free - Free timer heap structure and destroy mutex
  * @heap: Heap to free (may be NULL)
+ *
+ * Frees the heap control structure and destroys the mutex. Timers and timers
+ * array must be freed via Arena_dispose(arena). Arena lifetime managed by caller.
  * Thread-safe: No (caller must ensure no concurrent access)
  */
 void SocketTimer_heap_free (SocketTimer_heap_T **heap);
@@ -101,6 +111,7 @@ int SocketTimer_process_expired (SocketTimer_heap_T *heap);
  * @timer: Timer to cancel
  * Returns: 0 on success, -1 if timer not found
  * Thread-safe: Yes - uses heap mutex
+ * Note: O(1) time complexity using maintained heap_index field
  */
 int SocketTimer_heap_cancel (SocketTimer_heap_T *heap, struct SocketTimer_T *timer);
 
@@ -110,6 +121,7 @@ int SocketTimer_heap_cancel (SocketTimer_heap_T *heap, struct SocketTimer_T *tim
  * @timer: Timer to query
  * Returns: Milliseconds until expiry (>= 0), or -1 if timer not found/cancelled
  * Thread-safe: Yes - uses heap mutex
+ * Note: O(1) time complexity using maintained heap_index field
  */
 int64_t SocketTimer_heap_remaining (SocketTimer_heap_T *heap,
                                    const struct SocketTimer_T *timer);

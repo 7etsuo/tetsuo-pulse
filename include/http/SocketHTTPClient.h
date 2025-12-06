@@ -42,7 +42,7 @@
 #include "http/SocketHTTPClient-config.h"
 
 /* Forward declarations for optional TLS */
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "tls/SocketTLSContext.h"
 #else
 typedef struct SocketTLSContext_T *SocketTLSContext_T;
@@ -192,6 +192,7 @@ extern const Except_T SocketHTTPClient_ResponseTooLarge;
  * - HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE: NO - Size limit
  * - HTTPCLIENT_ERROR_CANCELLED: NO - User cancelled
  * - HTTPCLIENT_ERROR_OUT_OF_MEMORY: NO - Resource exhaustion
+ * - HTTPCLIENT_ERROR_LIMIT_EXCEEDED: NO - Pool limits reached
  */
 typedef enum
 {
@@ -204,7 +205,8 @@ typedef enum
   HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS,
   HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE,
   HTTPCLIENT_ERROR_CANCELLED,
-  HTTPCLIENT_ERROR_OUT_OF_MEMORY
+  HTTPCLIENT_ERROR_OUT_OF_MEMORY,
+  HTTPCLIENT_ERROR_LIMIT_EXCEEDED
 } SocketHTTPClient_Error;
 
 /**

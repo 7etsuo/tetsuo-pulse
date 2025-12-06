@@ -30,7 +30,7 @@
 #include "socket/Socket.h"
 #include "test/Test.h"
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"

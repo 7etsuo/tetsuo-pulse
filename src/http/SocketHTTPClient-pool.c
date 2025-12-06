@@ -24,7 +24,7 @@
 #include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"
@@ -35,6 +35,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#ifndef HTTP_DEFAULT_PORT
+#define HTTP_DEFAULT_PORT 80
+#endif
+
+#ifndef HTTPS_DEFAULT_PORT
+#define HTTPS_DEFAULT_PORT 443
+#endif
 
 /* ============================================================================
  * Pool Configuration
@@ -232,6 +240,26 @@ pool_entry_close (HTTPPoolEntry *entry)
 }
 
 /**
+ * host_port_secure_match - Check if entry matches host/port/secure
+ * @entry: Pool entry
+ * @host: Target hostname
+ * @port: Target port
+ * @is_secure: TLS flag
+ *
+ * Returns: 1 if matches, 0 otherwise
+ *
+ * Performs case-insensitive host comparison.
+ * Thread-safe: Yes (read-only)
+ */
+static int
+host_port_secure_match (const HTTPPoolEntry *entry, const char *host, int port, int is_secure)
+{
+  if (entry->port != port || entry->is_secure != is_secure)
+    return 0;
+  return strcasecmp (entry->host, host) == 0;
+}
+
+/**
  * pool_count_for_host - Count connections to a specific host:port
  * @pool: Connection pool
  * @host: Target hostname
@@ -251,8 +279,7 @@ pool_count_for_host (HTTPPool *pool, const char *host, int port, int is_secure)
   HTTPPoolEntry *entry = pool->hash_table[hash];
   while (entry != NULL)
     {
-      if (entry->port == port && entry->is_secure == is_secure
-          && strcasecmp (entry->host, host) == 0)
+      if (host_port_secure_match (entry, host, port, is_secure))
         count++;
       entry = entry->hash_next;
     }
@@ -274,8 +301,6 @@ httpclient_pool_new (Arena_T arena, const SocketHTTPClient_Config *config)
   assert (config != NULL);
 
   pool = Arena_calloc (arena, 1, sizeof (*pool), __FILE__, __LINE__);
-  if (pool == NULL)
-    return NULL;
 
   pool->arena = arena;
 
@@ -287,15 +312,14 @@ httpclient_pool_new (Arena_T arena, const SocketHTTPClient_Config *config)
   pool->hash_size = hash_size;
   pool->hash_table = Arena_calloc (arena, hash_size, sizeof (HTTPPoolEntry *),
                                    __FILE__, __LINE__);
-  if (pool->hash_table == NULL)
-    return NULL;
 
   pool->max_per_host = config->max_connections_per_host;
   pool->max_total = config->max_total_connections;
   pool->idle_timeout_ms = config->idle_timeout_ms;
 
   if (pthread_mutex_init (&pool->mutex, NULL) != 0)
-    return NULL;
+    SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                      "Failed to initialize HTTP client pool mutex");
 
   return pool;
 }
@@ -346,8 +370,8 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
   entry = pool->hash_table[hash];
   while (entry != NULL)
     {
-      if (entry->port == port && entry->is_secure == is_secure && !entry->in_use
-          && !entry->closed && strcasecmp (entry->host, host) == 0)
+      if (host_port_secure_match (entry, host, port, is_secure) && !entry->in_use
+          && !entry->closed)
         {
           entry->in_use = 1;
           entry->last_used = pool_time ();
@@ -359,7 +383,7 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
     }
 
   pthread_mutex_unlock (&pool->mutex);
-  return NULL;
+  return 0;
 }
 
 void
@@ -453,33 +477,22 @@ httpclient_pool_cleanup_idle (HTTPPool *pool)
  * create_http1_entry_resources - Allocate HTTP/1.1 parser and buffers
  * @entry: Pool entry to initialize
  *
- * Returns: 0 on success, -1 on failure
+ * Raises: Arena_Failed, SocketHTTP1_ParseError, SocketBuf_Failed on allocation failure
  *
  * Creates a connection arena, parser, and I/O buffers for the entry.
+ * Thread-safe: No (caller must synchronize access to entry)
  */
-static int
+static void
 create_http1_entry_resources (HTTPPoolEntry *entry)
 {
-  Arena_T conn_arena;
-
-  conn_arena = Arena_new ();
-  if (conn_arena == NULL)
-    return -1;
+  entry->proto.h1.conn_arena = Arena_new ();
 
   entry->proto.h1.parser
-      = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, conn_arena);
-  if (entry->proto.h1.parser == NULL)
-    {
-      Arena_dispose (&conn_arena);
-      return -1;
-    }
+      = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, entry->proto.h1.conn_arena);
 
-  entry->proto.h1.inbuf = SocketBuf_new (conn_arena, HTTPCLIENT_IO_BUFFER_SIZE);
+  entry->proto.h1.inbuf = SocketBuf_new (entry->proto.h1.conn_arena, HTTPCLIENT_IO_BUFFER_SIZE);
   entry->proto.h1.outbuf
-      = SocketBuf_new (conn_arena, HTTPCLIENT_IO_BUFFER_SIZE);
-  entry->proto.h1.conn_arena = conn_arena;
-
-  return 0;
+      = SocketBuf_new (entry->proto.h1.conn_arena, HTTPCLIENT_IO_BUFFER_SIZE);
 }
 
 /**
@@ -491,9 +504,10 @@ create_http1_entry_resources (HTTPPoolEntry *entry)
  * @is_secure: TLS flag
  * @pool: Pool for hostname allocation
  *
- * Returns: 0 on success, -1 on allocation failure
+ * Raises: Arena_Failed on host string allocation failure
+ * Thread-safe: No (modifies entry under caller lock)
  */
-static int
+static void
 init_http1_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
                          const char *host, int port, int is_secure,
                          HTTPPool *pool)
@@ -501,8 +515,6 @@ init_http1_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
   size_t host_len = strlen (host);
 
   entry->host = Arena_alloc (pool->arena, host_len + 1, __FILE__, __LINE__);
-  if (entry->host == NULL)
-    return -1;
 
   memcpy (entry->host, host, host_len + 1);
   entry->port = port;
@@ -513,8 +525,6 @@ init_http1_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
   entry->in_use = 1;
   entry->closed = 0;
   entry->proto.h1.socket = socket;
-
-  return 0;
 }
 
 /**
@@ -533,33 +543,87 @@ static HTTPPoolEntry *
 create_http1_connection (HTTPPool *pool, Socket_T socket, const char *host,
                          int port, int is_secure)
 {
-  HTTPPoolEntry *entry;
+  HTTPPoolEntry *volatile entry = NULL;
 
-  entry = pool_entry_alloc (pool);
-  if (entry == NULL)
+  TRY
+  {
+    entry = pool_entry_alloc (pool);
+  }
+  EXCEPT (Arena_Failed)
+  {
     return NULL;
+  }
+  END_TRY;
 
-  if (init_http1_entry_fields (entry, socket, host, port, is_secure, pool) != 0)
-    {
-      entry->next = pool->free_entries;
-      pool->free_entries = entry;
-      return NULL;
-    }
+  TRY
+  {
+    init_http1_entry_fields ((HTTPPoolEntry *)entry, socket, host, port, is_secure, pool);
+  }
+  EXCEPT (Arena_Failed)
+  {
+    ((HTTPPoolEntry *)entry)->next = pool->free_entries;
+    pool->free_entries = (HTTPPoolEntry *)entry;
+    return NULL;
+  }
+  END_TRY;
 
-  if (create_http1_entry_resources (entry) != 0)
-    {
-      entry->proto.h1.socket = NULL;
-      entry->next = pool->free_entries;
-      pool->free_entries = entry;
-      return NULL;
-    }
+  TRY
+  {
+    create_http1_entry_resources ((HTTPPoolEntry *)entry);
+  }
+  EXCEPT (Arena_Failed)
+  {
+    Socket_free (&((HTTPPoolEntry *)entry)->proto.h1.socket);
+    ((HTTPPoolEntry *)entry)->next = pool->free_entries;
+    pool->free_entries = (HTTPPoolEntry *)entry;
+    return NULL;
+  }
+  END_TRY;
 
-  pool_hash_add (pool, entry);
-  pool_list_add (pool, entry);
+  pool_hash_add (pool, (HTTPPoolEntry *)entry);
+  pool_list_add (pool, (HTTPPoolEntry *)entry);
   pool->current_count++;
   pool->total_requests++;
 
-  return entry;
+  return (HTTPPoolEntry *)entry;
+}
+
+/**
+ * check_connection_limits - Check if new connection can be created
+ * @client: HTTP client
+ * @host: Target hostname
+ * @port: Target port
+ * @is_secure: TLS flag
+ *
+ * Checks per-host and total connection limits under lock.
+ * Sets last_error to LIMIT_EXCEEDED if limits hit.
+ *
+ * Returns: 1 if can create (limits allow), 0 if limits exceeded
+ * Thread-safe: Yes (uses mutex)
+ */
+static int
+check_connection_limits (SocketHTTPClient_T client, const char *host, int port, int is_secure)
+{
+  assert (client != NULL);
+  assert (client->pool != NULL);
+  assert (host != NULL);
+
+  pthread_mutex_lock (&client->pool->mutex);
+  size_t host_count = pool_count_for_host (client->pool, host, port, is_secure);
+  int can_create = (host_count < (size_t)client->pool->max_per_host &&
+                    client->pool->current_count < (size_t)client->pool->max_total);
+  pthread_mutex_unlock (&client->pool->mutex);
+
+  if (!can_create) {
+    HTTPCLIENT_ERROR_MSG ("Connection limit exceeded for %s:%d "
+                          "(host: %zu/%zu, total: %zu/%zu)",
+                          host, port,
+                          host_count, (size_t)client->pool->max_per_host,
+                          client->pool->current_count, client->pool->max_total);
+    client->last_error = HTTPCLIENT_ERROR_LIMIT_EXCEEDED;
+  }
+
+  return can_create;
 }
 
 /**
@@ -583,25 +647,25 @@ pool_try_get_connection (SocketHTTPClient_T client, const char *host, int port,
   int at_total_limit;
 
   if (client->pool == NULL)
-    return NULL;
+    return 0;
 
   /* Try direct lookup first */
   entry = httpclient_pool_get (client->pool, host, port, is_secure);
   if (entry != NULL)
     return entry;
 
-  /* Check connection limits */
-  pthread_mutex_lock (&client->pool->mutex);
-  host_count = pool_count_for_host (client->pool, host, port, is_secure);
-  at_host_limit = (host_count >= client->pool->max_per_host);
-  at_total_limit = (client->pool->current_count >= client->pool->max_total);
-  pthread_mutex_unlock (&client->pool->mutex);
+  /* Check if can create new connection */
+  if (check_connection_limits (client, host, port, is_secure))
+    return 0; /* Limits allow, proceed to create */
 
-  if (!at_host_limit && !at_total_limit)
-    return NULL; /* No limits hit, proceed to create new connection */
-
-  /* Clean up idle connections and retry */
+  /* Limits hit, clean idle and recheck */
   httpclient_pool_cleanup_idle (client->pool);
+
+  /* After cleanup, recheck limits */
+  if (!check_connection_limits (client, host, port, is_secure))
+    return 0; /* Still hit limits after cleanup, fail */
+
+  /* Limits now allow, try get again (unlikely but possible) */
   return httpclient_pool_get (client->pool, host, port, is_secure);
 }
 
@@ -650,7 +714,7 @@ establish_tcp_connection (SocketHTTPClient_T client, const char *host, int port)
   return socket;
 }
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 /**
  * ensure_tls_context - Get or create TLS context
  * @client: HTTP client
@@ -672,9 +736,11 @@ ensure_tls_context (SocketHTTPClient_T client)
   }
   EXCEPT (SocketTLS_Failed)
   {
-    return NULL;
+    return 0;
   }
   END_TRY;
+
+  return 0;
 
   return client->default_tls_ctx;
 }
@@ -698,6 +764,8 @@ enable_socket_tls (Socket_T socket, SocketTLSContext_T tls_ctx)
     return -1;
   }
   END_TRY;
+
+  return 0;
 
   return 0;
 }
@@ -727,6 +795,8 @@ perform_tls_handshake (Socket_T socket, int timeout_ms)
     return -1;
   }
   END_TRY;
+
+  return 0;
 
   return 0;
 }
@@ -817,16 +887,13 @@ create_temp_entry (Socket_T socket, const char *host, int port, int is_secure)
   temp_entry.port = port;
   temp_entry.is_secure = is_secure;
   temp_entry.version = HTTP_VERSION_1_1;
-  temp_entry.proto.h1.socket = socket;
   temp_entry.in_use = 1;
 
   /* Create parser in thread-local arena */
   temp_arena = Arena_new ();
-  if (temp_arena != NULL)
-    {
-      temp_entry.proto.h1.parser
-          = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, temp_arena);
-    }
+  temp_entry.proto.h1.parser
+      = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, temp_arena);
+  temp_entry.proto.h1.socket = socket;
 
   return &temp_entry;
 }
@@ -891,24 +958,29 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
 
   /* Determine port and security */
   is_secure = SocketHTTP_URI_is_secure (uri);
-  port = SocketHTTP_URI_get_port (uri, is_secure ? 443 : 80);
+  port = SocketHTTP_URI_get_port (uri, is_secure ? HTTPS_DEFAULT_PORT : HTTP_DEFAULT_PORT);
 
   /* Try to get existing connection from pool */
   entry = pool_try_get_connection (client, uri->host, port, is_secure);
   if (entry != NULL)
     return entry;
 
+  /* Check connection limits before creating new connection */
+  if (client->pool != NULL && !check_connection_limits (client, uri->host, port, is_secure)) {
+    return 0;
+  }
+
   /* Establish new TCP connection */
   socket = establish_tcp_connection (client, uri->host, port);
   if (socket == NULL)
-    return NULL;
+    return 0;
 
   /* Handle TLS if needed */
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   if (is_secure)
     {
       if (setup_tls_connection (client, &socket, uri->host) != 0)
-        return NULL;
+        return 0;
     }
 #else
   if (is_secure)
@@ -916,7 +988,7 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
       Socket_free (&socket);
       client->last_error = HTTPCLIENT_ERROR_TLS;
       HTTPCLIENT_ERROR_MSG ("TLS not available (SOCKET_HAS_TLS not defined)");
-      return NULL;
+      return 0;
     }
 #endif
 
@@ -924,5 +996,17 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
   if (client->pool != NULL)
     return create_pooled_entry (client, socket, uri->host, port, is_secure);
 
-  return create_temp_entry (socket, uri->host, port, is_secure);
+  TRY
+  {
+    return create_temp_entry (socket, uri->host, port, is_secure);
+  }
+  EXCEPT (Arena_Failed)
+  {
+    Socket_free (&socket);
+    client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
+    return 0;
+  }
+  END_TRY;
+
+  return 0;
 }

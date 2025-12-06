@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <sys/uio.h>
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include <openssl/ssl.h>
 #endif
 
@@ -101,7 +101,7 @@ extern int socket_tls_want_read (const T socket);
  */
 extern int socket_tls_want_write (const T socket);
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 /**
  * socket_handle_ssl_error - Helper to handle SSL error codes
  * @socket: Socket instance

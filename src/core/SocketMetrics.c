@@ -18,10 +18,6 @@
  * - Snapshot operations acquire all locks atomically
  */
 
-#include "core/SocketMetrics.h"
-#include "core/SocketConfig.h"
-#include "core/SocketUtil.h"
-
 #include <assert.h>
 #include <math.h>
 #include <pthread.h>
@@ -30,6 +26,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "core/SocketConfig.h"
+#include "core/SocketMetrics.h"
+#include "core/SocketUtil.h"
 
 /* ============================================================================
  * Configuration Constants
@@ -43,13 +43,28 @@
 #define PERCENTILE_P99 99.0
 #define PERCENTILE_P999 99.9
 
+/* Quantile string constants to eliminate magic strings in exports */
+static const char *const QUANTILE_STR_P50  = "0.5";
+
+static const char *const QUANTILE_STR_P90  = "0.9";
+static const char *const QUANTILE_STR_P95  = "0.95";
+static const char *const QUANTILE_STR_P99  = "0.99";
+static const char *const QUANTILE_STR_P999 = "0.999";
+
+/* StatsD percentile labels */
+static const char *const STATSD_PCT_P50 = "p50";
+static const char *const STATSD_PCT_P95 = "p95";
+static const char *const STATSD_PCT_P99 = "p99";
+
 /* ============================================================================
  * Internal Logging
  * ============================================================================ */
 
+#define METRICS_LOG_DEBUG_MSG(fmt, ...) \
+  SocketLog_emitf(SOCKET_LOG_DEBUG, "metrics", fmt, ##__VA_ARGS__)
+
 #ifdef SOCKET_METRICS_DEBUG
-#define METRICS_LOG_DEBUG(msg)                                                 \
-  fprintf (stderr, "[SocketMetrics] DEBUG: %s\n", (msg))
+#define METRICS_LOG_DEBUG(msg) METRICS_LOG_DEBUG_MSG("%s", msg)
 #else
 #define METRICS_LOG_DEBUG(msg) ((void)0)
 #endif
@@ -574,6 +589,59 @@ histogram_percentile (Histogram *h, double percentile)
 }
 
 /**
+ * histogram_copy_basic_stats - Copy basic statistics from histogram (sum, min, max)
+ * @h: Histogram source
+ * @snap: Snapshot to update
+ *
+ * Thread-safe: Yes (mutex protected)
+ */
+static void
+histogram_copy_basic_stats (Histogram *h, SocketMetrics_HistogramSnapshot *snap)
+{
+  pthread_mutex_lock (&h->mutex);
+  snap->sum = h->sum;
+  snap->min = h->min;
+  snap->max = h->max;
+  pthread_mutex_unlock (&h->mutex);
+}
+
+/**
+ * histogram_compute_derived_stats - Compute mean from sum and count
+ * @snap: Snapshot to update
+ *
+ * Thread-safe: Yes (pure function)
+ */
+static void
+histogram_compute_derived_stats (SocketMetrics_HistogramSnapshot *snap)
+{
+  if (snap->count > 0) {
+    snap->mean = snap->sum / (double)snap->count;
+  } else {
+    snap->mean = 0.0;
+  }
+}
+
+/**
+ * histogram_calculate_percentiles - Calculate all standard percentiles from sorted data
+ * @sorted: Sorted array of values
+ * @n: Number of values
+ * @snap: Snapshot to update with percentiles
+ *
+ * Thread-safe: Yes (pure function)
+ */
+static void
+histogram_calculate_percentiles (const double *sorted, size_t n,
+                                 SocketMetrics_HistogramSnapshot *snap)
+{
+  snap->p50  = percentile_from_sorted (sorted, n, PERCENTILE_P50);
+  snap->p75  = percentile_from_sorted (sorted, n, PERCENTILE_P75);
+  snap->p90  = percentile_from_sorted (sorted, n, PERCENTILE_P90);
+  snap->p95  = percentile_from_sorted (sorted, n, PERCENTILE_P95);
+  snap->p99  = percentile_from_sorted (sorted, n, PERCENTILE_P99);
+  snap->p999 = percentile_from_sorted (sorted, n, PERCENTILE_P999);
+}
+
+/**
  * histogram_fill_snapshot - Fill snapshot with histogram statistics
  * @h: Histogram to snapshot
  * @snap: Output snapshot structure
@@ -595,28 +663,15 @@ histogram_fill_snapshot (Histogram *h, SocketMetrics_HistogramSnapshot *snap)
   if (count == 0)
     return;
 
-  /* Copy basic stats under lock */
-  pthread_mutex_lock (&h->mutex);
-  snap->sum = h->sum;
-  snap->min = h->min;
-  snap->max = h->max;
-  pthread_mutex_unlock (&h->mutex);
-
-  snap->mean = snap->sum / (double)count;
+  histogram_copy_basic_stats (h, snap);
+  histogram_compute_derived_stats (snap);
 
   /* Get sorted values for percentile calculation */
   sorted = histogram_get_sorted_copy (h, &n);
   if (!sorted)
     return;
 
-  /* Calculate all standard percentiles */
-  snap->p50 = percentile_from_sorted (sorted, n, PERCENTILE_P50);
-  snap->p75 = percentile_from_sorted (sorted, n, PERCENTILE_P75);
-  snap->p90 = percentile_from_sorted (sorted, n, PERCENTILE_P90);
-  snap->p95 = percentile_from_sorted (sorted, n, PERCENTILE_P95);
-  snap->p99 = percentile_from_sorted (sorted, n, PERCENTILE_P99);
-  snap->p999 = percentile_from_sorted (sorted, n, PERCENTILE_P999);
-
+  histogram_calculate_percentiles (sorted, n, snap);
   free (sorted);
 }
 
@@ -991,39 +1046,74 @@ export_gauge_prometheus (char *buffer, size_t buffer_size, size_t *pos,
  *
  * Thread-safe: No (operates on caller's buffer)
  */
+/**
+ * export_prometheus_quantiles - Export histogram quantiles in Prometheus format
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Position (updated)
+ * @name: Metric name
+ * @h: Histogram snapshot
+ *
+ * Thread-safe: No
+ */
+static void
+export_prometheus_quantiles (char *buffer, size_t buffer_size, size_t *pos,
+                             const char *name, const SocketMetrics_HistogramSnapshot *h)
+{
+  if (h->count > 0)
+    {
+      export_append (buffer, buffer_size, pos,
+                     "socket_%s{quantile=\"%s\"} %.3f\n", name,
+                     QUANTILE_STR_P50, h->p50);
+      export_append (buffer, buffer_size, pos,
+                     "socket_%s{quantile=\"%s\"} %.3f\n", name,
+                     QUANTILE_STR_P90, h->p90);
+      export_append (buffer, buffer_size, pos,
+                     "socket_%s{quantile=\"%s\"} %.3f\n", name,
+                     QUANTILE_STR_P95, h->p95);
+      export_append (buffer, buffer_size, pos,
+                     "socket_%s{quantile=\"%s\"} %.3f\n", name,
+                     QUANTILE_STR_P99, h->p99);
+      export_append (buffer, buffer_size, pos,
+                     "socket_%s{quantile=\"%s\"} %.3f\n",
+                     name, QUANTILE_STR_P999, h->p999);
+    }
+}
+
+/**
+ * export_prometheus_histogram_summary - Export histogram sum and count
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Position (updated)
+ * @name: Metric name
+ * @h: Histogram snapshot
+ *
+ * Thread-safe: No
+ */
+static void
+export_prometheus_histogram_summary (char *buffer, size_t buffer_size, size_t *pos,
+                                     const char *name,
+                                     const SocketMetrics_HistogramSnapshot *h)
+{
+  export_append (buffer, buffer_size, pos, "socket_%s_sum %.3f\n", name, h->sum);
+  export_append (buffer, buffer_size, pos, "socket_%s_count %llu\n",
+                 name, (unsigned long long)h->count);
+}
+
 static void
 export_histogram_prometheus (char *buffer, size_t buffer_size, size_t *pos,
                              int idx,
                              const SocketMetrics_HistogramSnapshot *h)
 {
+  const char *name = histogram_names[idx];
+
   export_append (buffer, buffer_size, pos, "# HELP socket_%s %s\n",
-                 histogram_names[idx], histogram_help[idx]);
+                 name, histogram_help[idx]);
   export_append (buffer, buffer_size, pos, "# TYPE socket_%s summary\n",
-                 histogram_names[idx]);
+                 name);
 
-  if (h->count > 0)
-    {
-      export_append (buffer, buffer_size, pos,
-                     "socket_%s{quantile=\"0.5\"} %.3f\n", histogram_names[idx],
-                     h->p50);
-      export_append (buffer, buffer_size, pos,
-                     "socket_%s{quantile=\"0.9\"} %.3f\n", histogram_names[idx],
-                     h->p90);
-      export_append (buffer, buffer_size, pos,
-                     "socket_%s{quantile=\"0.95\"} %.3f\n", histogram_names[idx],
-                     h->p95);
-      export_append (buffer, buffer_size, pos,
-                     "socket_%s{quantile=\"0.99\"} %.3f\n", histogram_names[idx],
-                     h->p99);
-      export_append (buffer, buffer_size, pos,
-                     "socket_%s{quantile=\"0.999\"} %.3f\n",
-                     histogram_names[idx], h->p999);
-    }
-
-  export_append (buffer, buffer_size, pos, "socket_%s_sum %.3f\n",
-                 histogram_names[idx], h->sum);
-  export_append (buffer, buffer_size, pos, "socket_%s_count %llu\n",
-                 histogram_names[idx], (unsigned long long)h->count);
+  export_prometheus_quantiles (buffer, buffer_size, pos, name, h);
+  export_prometheus_histogram_summary (buffer, buffer_size, pos, name, h);
 }
 
 /* ============================================================================
@@ -1057,12 +1147,107 @@ SocketMetrics_export_prometheus (char *buffer, size_t buffer_size)
   return pos;
 }
 
+/**
+ * export_statsd_counters - Export counters in StatsD format
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Position (updated)
+ * @pfx: Prefix
+ * @snapshot: Snapshot
+ *
+ * Thread-safe: No (caller must hold snapshot consistency)
+ */
+static void
+export_statsd_counters (char *buffer, size_t buffer_size, size_t *pos,
+                        const char *pfx, const SocketMetrics_Snapshot *snapshot)
+{
+  int i;
+  for (i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
+    {
+      export_append (buffer, buffer_size, pos, "%s.%s:%llu|c\n", pfx,
+                     counter_names[i], (unsigned long long)snapshot->counters[i]);
+    }
+}
+
+/**
+ * export_statsd_gauges - Export gauges in StatsD format
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Position (updated)
+ * @pfx: Prefix
+ * @snapshot: Snapshot
+ *
+ * Thread-safe: No
+ */
+static void
+export_statsd_gauges (char *buffer, size_t buffer_size, size_t *pos,
+                      const char *pfx, const SocketMetrics_Snapshot *snapshot)
+{
+  int i;
+  for (i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
+    {
+      export_append (buffer, buffer_size, pos, "%s.%s:%lld|g\n", pfx,
+                     gauge_names[i], (long long)snapshot->gauges[i]);
+    }
+}
+
+/**
+ * export_statsd_single_histogram - Export single histogram percentiles in StatsD format
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Position (updated)
+ * @pfx: Prefix
+ * @name: Histogram name
+ * @h: Histogram snapshot
+ *
+ * Thread-safe: No
+ */
+static void
+export_statsd_single_histogram (char *buffer, size_t buffer_size, size_t *pos,
+                                const char *pfx, const char *name,
+                                const SocketMetrics_HistogramSnapshot *h)
+{
+  if (h->count > 0)
+    {
+      export_append (buffer, buffer_size, pos, "%s.%s.%s:%.3f|g\n", pfx, name,
+                     STATSD_PCT_P50, h->p50);
+      export_append (buffer, buffer_size, pos, "%s.%s.%s:%.3f|g\n", pfx, name,
+                     STATSD_PCT_P95, h->p95);
+      export_append (buffer, buffer_size, pos, "%s.%s.%s:%.3f|g\n", pfx, name,
+                     STATSD_PCT_P99, h->p99);
+      export_append (buffer, buffer_size, pos, "%s.%s.count:%llu|c\n", pfx, name,
+                     (unsigned long long)h->count);
+    }
+}
+
+/**
+ * export_statsd_histograms - Export all histograms in StatsD format
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Position (updated)
+ * @pfx: Prefix
+ * @snapshot: Snapshot
+ *
+ * Thread-safe: No
+ */
+static void
+export_statsd_histograms (char *buffer, size_t buffer_size, size_t *pos,
+                          const char *pfx, const SocketMetrics_Snapshot *snapshot)
+{
+  int i;
+  for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
+    {
+      export_statsd_single_histogram (buffer, buffer_size, pos, pfx,
+                                      histogram_names[i],
+                                      &snapshot->histograms[i]);
+    }
+}
+
 size_t
 SocketMetrics_export_statsd (char *buffer, size_t buffer_size,
                              const char *prefix)
 {
   size_t pos = 0;
-  int i;
   const char *pfx;
   SocketMetrics_Snapshot snapshot;
 
@@ -1073,44 +1258,135 @@ SocketMetrics_export_statsd (char *buffer, size_t buffer_size,
   pfx = prefix ? prefix : "socket";
   SocketMetrics_get (&snapshot);
 
-  for (i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
-    {
-      export_append (buffer, buffer_size, &pos, "%s.%s:%llu|c\n", pfx,
-                     counter_names[i], (unsigned long long)snapshot.counters[i]);
-    }
-
-  for (i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
-    {
-      export_append (buffer, buffer_size, &pos, "%s.%s:%lld|g\n", pfx,
-                     gauge_names[i], (long long)snapshot.gauges[i]);
-    }
-
-  for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
-    {
-      const SocketMetrics_HistogramSnapshot *h = &snapshot.histograms[i];
-
-      if (h->count > 0)
-        {
-          export_append (buffer, buffer_size, &pos, "%s.%s.p50:%.3f|g\n", pfx,
-                         histogram_names[i], h->p50);
-          export_append (buffer, buffer_size, &pos, "%s.%s.p95:%.3f|g\n", pfx,
-                         histogram_names[i], h->p95);
-          export_append (buffer, buffer_size, &pos, "%s.%s.p99:%.3f|g\n", pfx,
-                         histogram_names[i], h->p99);
-          export_append (buffer, buffer_size, &pos, "%s.%s.count:%llu|c\n", pfx,
-                         histogram_names[i], (unsigned long long)h->count);
-        }
-    }
+  export_statsd_counters (buffer, buffer_size, &pos, pfx, &snapshot);
+  export_statsd_gauges (buffer, buffer_size, &pos, pfx, &snapshot);
+  export_statsd_histograms (buffer, buffer_size, &pos, pfx, &snapshot);
 
   return pos;
+}
+
+/**
+ * export_json_counters - Export counters section in JSON format
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Current position (updated)
+ * @snapshot: Metrics snapshot
+ *
+ * Thread-safe: No (caller ensures consistency via snapshot)
+ */
+static void
+export_json_counters (char *buffer, size_t buffer_size, size_t *pos,
+                      const SocketMetrics_Snapshot *snapshot)
+{
+  int i;
+  int first = 1;
+
+  export_append (buffer, buffer_size, pos, "  \"counters\": {\n");
+  for (i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
+    {
+      if (!first)
+        export_append (buffer, buffer_size, pos, ",\n");
+      first = 0;
+      export_append (buffer, buffer_size, pos, "    \"%s\": %llu",
+                     counter_names[i], (unsigned long long)snapshot->counters[i]);
+    }
+  export_append (buffer, buffer_size, pos, "\n  },");
+}
+
+/**
+ * export_json_gauges - Export gauges section in JSON format
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Current position (updated)
+ * @snapshot: Metrics snapshot
+ *
+ * Thread-safe: No (caller ensures consistency via snapshot)
+ */
+static void
+export_json_gauges (char *buffer, size_t buffer_size, size_t *pos,
+                    const SocketMetrics_Snapshot *snapshot)
+{
+  int i;
+  int first = 1;
+
+  export_append (buffer, buffer_size, pos, "  \"gauges\": {\n");
+  for (i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
+    {
+      if (!first)
+        export_append (buffer, buffer_size, pos, ",\n");
+      first = 0;
+      export_append (buffer, buffer_size, pos, "    \"%s\": %lld",
+                     gauge_names[i], (long long)snapshot->gauges[i]);
+    }
+  export_append (buffer, buffer_size, pos, "\n  },");
+}
+
+/**
+ * export_json_single_histogram - Export single histogram object in JSON
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Current position (updated)
+ * @name: Histogram name
+ * @h: Histogram snapshot
+ *
+ * Thread-safe: No (caller ensures consistency)
+ */
+static void
+export_json_single_histogram (char *buffer, size_t buffer_size, size_t *pos,
+                              const char *name,
+                              const SocketMetrics_HistogramSnapshot *h)
+{
+  export_append (buffer, buffer_size, pos, "    \"%s\": {\n", name);
+  export_append (buffer, buffer_size, pos, "      \"count\": %llu,\n",
+                 (unsigned long long)h->count);
+  export_append (buffer, buffer_size, pos, "      \"sum\": %.3f,\n", h->sum);
+  export_append (buffer, buffer_size, pos, "      \"min\": %.3f,\n",
+                 h->count > 0 ? h->min : 0.0);
+  export_append (buffer, buffer_size, pos, "      \"max\": %.3f,\n",
+                 h->count > 0 ? h->max : 0.0);
+  export_append (buffer, buffer_size, pos, "      \"mean\": %.3f,\n", h->mean);
+  export_append (buffer, buffer_size, pos, "      \"p50\": %.3f,\n", h->p50);
+  export_append (buffer, buffer_size, pos, "      \"p75\": %.3f,\n", h->p75);
+  export_append (buffer, buffer_size, pos, "      \"p90\": %.3f,\n", h->p90);
+  export_append (buffer, buffer_size, pos, "      \"p95\": %.3f,\n", h->p95);
+  export_append (buffer, buffer_size, pos, "      \"p99\": %.3f,\n", h->p99);
+  export_append (buffer, buffer_size, pos, "      \"p999\": %.3f\n", h->p999);
+  export_append (buffer, buffer_size, pos, "    }");
+}
+
+/**
+ * export_json_histograms - Export histograms section in JSON format
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Current position (updated)
+ * @snapshot: Metrics snapshot
+ *
+ * Thread-safe: No (caller ensures consistency via snapshot)
+ */
+static void
+export_json_histograms (char *buffer, size_t buffer_size, size_t *pos,
+                        const SocketMetrics_Snapshot *snapshot)
+{
+  int i;
+  int first = 1;
+
+  export_append (buffer, buffer_size, pos, "  \"histograms\": {\n");
+  for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
+    {
+      if (!first)
+        export_append (buffer, buffer_size, pos, ",\n");
+      first = 0;
+      export_json_single_histogram (buffer, buffer_size, pos,
+                                    histogram_names[i],
+                                    &snapshot->histograms[i]);
+    }
+  export_append (buffer, buffer_size, pos, "\n  }\n");
 }
 
 size_t
 SocketMetrics_export_json (char *buffer, size_t buffer_size)
 {
   size_t pos = 0;
-  int i;
-  int first;
   SocketMetrics_Snapshot snapshot;
 
   if (!buffer || buffer_size == 0)
@@ -1123,70 +1399,9 @@ SocketMetrics_export_json (char *buffer, size_t buffer_size)
   export_append (buffer, buffer_size, &pos, "  \"timestamp_ms\": %llu,\n",
                  (unsigned long long)snapshot.timestamp_ms);
 
-  /* Counters */
-  export_append (buffer, buffer_size, &pos, "  \"counters\": {\n");
-  first = 1;
-  for (i = 0; i < SOCKET_COUNTER_METRIC_COUNT; i++)
-    {
-      if (!first)
-        export_append (buffer, buffer_size, &pos, ",\n");
-      first = 0;
-      export_append (buffer, buffer_size, &pos, "    \"%s\": %llu",
-                     counter_names[i], (unsigned long long)snapshot.counters[i]);
-    }
-  export_append (buffer, buffer_size, &pos, "\n  },\n");
-
-  /* Gauges */
-  export_append (buffer, buffer_size, &pos, "  \"gauges\": {\n");
-  first = 1;
-  for (i = 0; i < SOCKET_GAUGE_METRIC_COUNT; i++)
-    {
-      if (!first)
-        export_append (buffer, buffer_size, &pos, ",\n");
-      first = 0;
-      export_append (buffer, buffer_size, &pos, "    \"%s\": %lld",
-                     gauge_names[i], (long long)snapshot.gauges[i]);
-    }
-  export_append (buffer, buffer_size, &pos, "\n  },\n");
-
-  /* Histograms */
-  export_append (buffer, buffer_size, &pos, "  \"histograms\": {\n");
-  first = 1;
-  for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
-    {
-      const SocketMetrics_HistogramSnapshot *h = &snapshot.histograms[i];
-
-      if (!first)
-        export_append (buffer, buffer_size, &pos, ",\n");
-      first = 0;
-
-      export_append (buffer, buffer_size, &pos, "    \"%s\": {\n",
-                     histogram_names[i]);
-      export_append (buffer, buffer_size, &pos, "      \"count\": %llu,\n",
-                     (unsigned long long)h->count);
-      export_append (buffer, buffer_size, &pos, "      \"sum\": %.3f,\n",
-                     h->sum);
-      export_append (buffer, buffer_size, &pos, "      \"min\": %.3f,\n",
-                     h->count > 0 ? h->min : 0.0);
-      export_append (buffer, buffer_size, &pos, "      \"max\": %.3f,\n",
-                     h->count > 0 ? h->max : 0.0);
-      export_append (buffer, buffer_size, &pos, "      \"mean\": %.3f,\n",
-                     h->mean);
-      export_append (buffer, buffer_size, &pos, "      \"p50\": %.3f,\n",
-                     h->p50);
-      export_append (buffer, buffer_size, &pos, "      \"p75\": %.3f,\n",
-                     h->p75);
-      export_append (buffer, buffer_size, &pos, "      \"p90\": %.3f,\n",
-                     h->p90);
-      export_append (buffer, buffer_size, &pos, "      \"p95\": %.3f,\n",
-                     h->p95);
-      export_append (buffer, buffer_size, &pos, "      \"p99\": %.3f,\n",
-                     h->p99);
-      export_append (buffer, buffer_size, &pos, "      \"p999\": %.3f\n",
-                     h->p999);
-      export_append (buffer, buffer_size, &pos, "    }");
-    }
-  export_append (buffer, buffer_size, &pos, "\n  }\n");
+  export_json_counters (buffer, buffer_size, &pos, &snapshot);
+  export_json_gauges (buffer, buffer_size, &pos, &snapshot);
+  export_json_histograms (buffer, buffer_size, &pos, &snapshot);
 
   export_append (buffer, buffer_size, &pos, "}\n");
 

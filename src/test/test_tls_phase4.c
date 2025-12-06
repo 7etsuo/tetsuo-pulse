@@ -15,7 +15,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 /* Include private headers for direct SSL access in coverage tests */
 #include "socket/Socket-private.h"
@@ -150,7 +150,7 @@ TEST (verify_callback_api)
 
 TEST (verify_integration_basic)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_cb.crt";
   const char *key_file = "test_cb.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -241,7 +241,7 @@ TEST (verify_integration_basic)
 }
 TEST (crl_load_api)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -285,7 +285,7 @@ TEST (crl_load_api)
 
 TEST (crl_refresh_api)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -326,7 +326,7 @@ TEST (verify_integration_cert)
 
 TEST (session_cache_api)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -370,7 +370,7 @@ TEST (session_cache_api)
 
 TEST (session_tickets_api)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   const char *cert_file = "test.crt";
   const char *key_file = "test.key";
@@ -410,7 +410,7 @@ TEST (session_tickets_api)
 
 TEST (ocsp_gen_callback_api)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   const char *cert_file = "test.crt";
   const char *key_file = "test.key";
@@ -435,7 +435,7 @@ TEST (ocsp_gen_callback_api)
 
 TEST (ocsp_status_full)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /* Test API with mock - full parse requires real response bytes */
   Socket_T mock_sock = NULL; /* Stub - returns 0 */
   ASSERT_EQ (SocketTLS_get_ocsp_status (mock_sock), 0);
@@ -452,7 +452,7 @@ TEST (ocsp_status_full)
 
 TEST (tls_load_certificate_basic)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_load.crt";
   const char *key_file = "test_load.key";
 
@@ -485,7 +485,7 @@ TEST (tls_load_certificate_basic)
 
 TEST (tls_load_certificate_invalid_path)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   volatile int raised = 0;
 
   TRY
@@ -508,7 +508,7 @@ TEST (tls_load_certificate_invalid_path)
 
 TEST (tls_load_ca_basic)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *ca_file = "test_ca.crt";
   const char *ca_key = "test_ca.key";
 
@@ -542,7 +542,7 @@ TEST (tls_load_ca_basic)
 
 TEST (tls_load_ca_invalid_path)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
   volatile int raised = 0;
@@ -581,7 +581,7 @@ generate_sni_cert (const char *hostname, const char *cert_file,
 
 TEST (tls_sni_add_certificate_basic)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *default_cert = "test_sni_default.crt";
   const char *default_key = "test_sni_default.key";
   const char *sni_cert = "test_sni_host.crt";
@@ -627,7 +627,7 @@ TEST (tls_sni_add_certificate_basic)
 
 TEST (tls_sni_add_multiple_certificates)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *default_cert = "test_sni_multi_default.crt";
   const char *default_key = "test_sni_multi_default.key";
   const char *sni1_cert = "test_sni1.crt";
@@ -687,7 +687,7 @@ TEST (tls_sni_add_multiple_certificates)
 
 TEST (tls_sni_add_certificate_invalid_path)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_sni_invalid.crt";
   const char *key_file = "test_sni_invalid.key";
 
@@ -726,7 +726,7 @@ TEST (tls_sni_add_certificate_invalid_path)
 
 TEST (tls_sni_add_default_certificate)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_sni_def.crt";
   const char *key_file = "test_sni_def.key";
   const char *new_default_cert = "test_sni_newdef.crt";
@@ -774,7 +774,7 @@ TEST (tls_sni_add_default_certificate)
 
 TEST (tls_set_min_protocol)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -801,7 +801,7 @@ TEST (tls_set_min_protocol)
 
 TEST (tls_set_max_protocol)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -825,7 +825,7 @@ TEST (tls_set_max_protocol)
 
 TEST (tls_set_cipher_list_valid)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -856,7 +856,7 @@ TEST (tls_set_cipher_list_valid)
 
 TEST (tls_set_cipher_list_invalid)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
   volatile int raised = 0;
@@ -883,7 +883,7 @@ TEST (tls_set_cipher_list_invalid)
 
 TEST (tls_ocsp_response_set_valid)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_ocsp.crt";
   const char *key_file = "test_ocsp.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -960,7 +960,7 @@ custom_alpn_callback (const char **client_protos, size_t client_count,
 
 TEST (tls_alpn_callback_registration)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_alpn_cb.crt";
   const char *key_file = "test_alpn_cb.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -1000,7 +1000,7 @@ TEST (tls_alpn_callback_registration)
 
 TEST (tls_alpn_callback_null)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -1018,7 +1018,7 @@ TEST (tls_alpn_callback_null)
 
 TEST (tls_hostname_edge_cases)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_hostname.crt";
   const char *key_file = "test_hostname.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -1090,7 +1090,7 @@ TEST (tls_hostname_edge_cases)
 
 TEST (tls_verify_error_string_api)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_verify_str.crt";
   const char *key_file = "test_verify_str.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -1184,7 +1184,7 @@ TEST (tls_verify_error_string_api)
 
 TEST (tls_context_accessors)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_accessor.crt";
   const char *key_file = "test_accessor.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -1229,7 +1229,7 @@ TEST (tls_context_accessors)
 
 TEST (tls_alpn_protos_validation)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -1263,7 +1263,7 @@ TEST (tls_alpn_protos_validation)
 
 TEST (tls_session_tickets_key_length)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_ticket_key.crt";
   const char *key_file = "test_ticket_key.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -1330,7 +1330,7 @@ TEST (tls_session_tickets_key_length)
 
 TEST (tls_enable_without_fd)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
   Socket_T sock = Socket_new (AF_INET, SOCK_STREAM, 0);
@@ -1354,7 +1354,7 @@ TEST (tls_enable_without_fd)
 
 TEST (tls_double_enable)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_double.crt";
   const char *key_file = "test_double.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -1411,7 +1411,7 @@ TEST (tls_double_enable)
 
 TEST (tls_verify_callback_exception)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_verify_exc.crt";
   const char *key_file = "test_verify_exc.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -1495,7 +1495,7 @@ TEST (tls_verify_callback_exception)
 
 TEST (tls_session_cache_zero_size)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
   volatile int raised = 0;
@@ -1522,7 +1522,7 @@ TEST (tls_session_cache_zero_size)
 
 TEST (session_cache_stats_null_context)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   size_t hits = 99, misses = 99, stores = 99;
 
   /* Test with NULL context - should set all outputs to 0 */
@@ -1539,7 +1539,7 @@ TEST (session_cache_stats_null_context)
 
 TEST (session_cache_stats_disabled)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
   size_t hits = 99, misses = 99, stores = 99;
@@ -1561,7 +1561,7 @@ TEST (session_cache_stats_disabled)
 
 TEST (session_cache_stats_partial_null)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
   size_t hits = 99, misses = 99, stores = 99;
@@ -1594,7 +1594,7 @@ TEST (session_cache_stats_partial_null)
 
 TEST (session_cache_server_mode)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_cache_srv.crt";
   const char *key_file = "test_cache_srv.key";
 
@@ -1637,7 +1637,7 @@ TEST (session_cache_server_mode)
 
 TEST (session_cache_timeout_defaults)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -1667,7 +1667,7 @@ TEST (session_cache_timeout_defaults)
 
 TEST (session_cache_zero_max_sessions)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -1693,7 +1693,7 @@ TEST (session_cache_zero_max_sessions)
 
 TEST (session_resumption_stats)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /* NOTE: This test exercises the session cache callback code paths
    * (new_session_cb and info_callback) without performing a full handshake.
    * Full handshake with session caching causes OpenSSL TLS 1.3 session ticket
@@ -1779,7 +1779,7 @@ TEST (session_resumption_stats)
 
 TEST (tls_verify_mode_all_cases)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -1829,7 +1829,7 @@ generic_exception_verify_cb (int pre_ok, X509_STORE_CTX *ctx,
 
 TEST (tls_verify_callback_generic_exception)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_verify_gen_exc.crt";
   const char *key_file = "test_verify_gen_exc.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -1912,7 +1912,7 @@ TEST (tls_verify_callback_generic_exception)
 
 TEST (tls_crl_load_null_path)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
   volatile int raised = 0;
@@ -1955,7 +1955,7 @@ generate_test_crl (const char *ca_cert, const char *ca_key, const char *crl_file
 
 TEST (tls_crl_load_file)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /* This test attempts to load a CRL file (not directory).
    * Since creating a valid CRL requires CA setup, we test with
    * the certificate file itself which will fail at X509_STORE_load_locations
@@ -1990,7 +1990,7 @@ TEST (tls_crl_load_file)
 
 TEST (tls_min_protocol_fallback)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -2025,7 +2025,7 @@ TEST (tls_min_protocol_fallback)
 
 TEST (tls_ocsp_response_too_large)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_ocsp_large.crt";
   const char *key_file = "test_ocsp_large.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -2073,7 +2073,7 @@ TEST (tls_ocsp_response_too_large)
 
 TEST (tls_ocsp_set_valid_response)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_ocsp_set_valid.crt";
   const char *key_file = "test_ocsp_set_valid.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -2126,7 +2126,7 @@ TEST (tls_ocsp_set_valid_response)
 
 TEST (tls_ocsp_status_socket_states)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_ocsp_states.crt";
   const char *key_file = "test_ocsp_states.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -2178,7 +2178,7 @@ TEST (tls_ocsp_status_socket_states)
 
 TEST (tls_ocsp_status_no_response)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_ocsp_no_resp.crt";
   const char *key_file = "test_ocsp_no_resp.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -2270,7 +2270,7 @@ tracking_ocsp_gen_cb (SSL *ssl, void *arg)
 
 TEST (tls_ocsp_gen_callback_integration)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_ocsp_cb_int.crt";
   const char *key_file = "test_ocsp_cb_int.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -2427,7 +2427,7 @@ successful_ocsp_gen_cb (SSL *ssl, void *arg)
 
 TEST (tls_ocsp_with_valid_response)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_ocsp_valid.crt";
   const char *key_file = "test_ocsp_valid.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -2518,7 +2518,7 @@ TEST (tls_ocsp_with_valid_response)
 
 TEST (tls_ocsp_with_successful_response)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_ocsp_succ.crt";
   const char *key_file = "test_ocsp_succ.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -2609,7 +2609,7 @@ TEST (tls_ocsp_with_successful_response)
 
 TEST (tls_ocsp_with_full_basic_response)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_ocsp_full.crt";
   const char *key_file = "test_ocsp_full.key";
   if (generate_test_certs (cert_file, key_file) != 0)
@@ -2746,7 +2746,7 @@ generate_two_cert_pairs (const char *cert1, const char *key1, const char *cert2,
 
 TEST (tls_load_certificate_errors)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *valid_cert = "test_certerr.crt";
   const char *valid_key = "test_certerr.key";
   const char *invalid_pem = "test_invalid.pem";
@@ -2849,7 +2849,7 @@ TEST (tls_load_certificate_errors)
 /* Test cert/key mismatch in load_certificate */
 TEST (tls_load_certificate_mismatch)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert1 = "test_mismatch1.crt";
   const char *key1 = "test_mismatch1.key";
   const char *cert2 = "test_mismatch2.crt";
@@ -2903,7 +2903,7 @@ TEST (tls_load_certificate_mismatch)
 
 TEST (tls_load_ca_directory_fallback)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
@@ -2948,7 +2948,7 @@ TEST (tls_load_ca_directory_fallback)
 
 TEST (tls_sni_client_context_rejection)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_sni_client.crt";
   const char *key_file = "test_sni_client.key";
   Arena_T arena = Arena_new ();
@@ -2999,7 +2999,7 @@ TEST (tls_sni_client_context_rejection)
  * which is slow. Instead we verify the limit check path works. */
 TEST (tls_sni_max_certificates_check)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /* This test verifies that the max limit check is in place.
    * Full 100-cert test is impractical for unit tests. */
   const char *cert_file = "test_sni_max.crt";
@@ -3039,7 +3039,7 @@ TEST (tls_sni_max_certificates_check)
 
 TEST (tls_sni_capacity_expansion)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *default_cert = "test_sni_exp_def.crt";
   const char *default_key = "test_sni_exp_def.key";
   Arena_T arena = Arena_new ();
@@ -3124,7 +3124,7 @@ TEST (tls_sni_capacity_expansion)
 
 TEST (tls_sni_invalid_hostname)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_sni_hostname.crt";
   const char *key_file = "test_sni_hostname.key";
   Arena_T arena = Arena_new ();
@@ -3224,7 +3224,7 @@ TEST (tls_sni_invalid_hostname)
 
 TEST (tls_sni_cert_key_mismatch)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *default_cert = "test_sni_mm_def.crt";
   const char *default_key = "test_sni_mm_def.key";
   const char *cert1 = "test_sni_mm1.crt";
@@ -3298,7 +3298,7 @@ TEST (tls_sni_cert_key_mismatch)
 
 TEST (tls_sni_callback_selection)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *default_cert = "test_sni_cb_def.crt";
   const char *default_key = "test_sni_cb_def.key";
   const char *host1_cert = "test_sni_cb_h1.crt";
@@ -3421,7 +3421,7 @@ TEST (tls_sni_callback_selection)
 
 TEST (tls_sni_callback_no_match)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *default_cert = "test_sni_nm_def.crt";
   const char *default_key = "test_sni_nm_def.key";
   const char *known_cert = "test_sni_nm_known.crt";
@@ -3539,7 +3539,7 @@ TEST (tls_sni_callback_no_match)
 
 TEST (tls_load_invalid_pem_files)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *valid_cert = "test_invpem.crt";
   const char *valid_key = "test_invpem.key";
   const char *invalid_cert = "test_invpem_bad.crt";
@@ -3615,7 +3615,7 @@ TEST (tls_load_invalid_pem_files)
 
 TEST (tls_sni_add_certificate_path_traversal)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_sni_path.crt";
   const char *key_file = "test_sni_path.key";
   Arena_T arena = Arena_new ();

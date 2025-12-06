@@ -47,7 +47,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     }
 
   /* Test decode */
-  ssize_t result = SocketCrypto_hex_decode (input, size, output);
+  ssize_t result = SocketCrypto_hex_decode (input, size, output, max_decoded);
 
   /* Validate result is within expected bounds */
   if (result >= 0)
@@ -80,7 +80,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (redecoded)
             {
               ssize_t result2
-                  = SocketCrypto_hex_decode (reencoded, (size_t)result * 2, redecoded);
+                  = SocketCrypto_hex_decode (reencoded, (size_t)result * 2, redecoded, (size_t)result);
               if (result2 != result)
                 __builtin_trap (); /* Roundtrip should produce same length */
 
@@ -94,12 +94,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     }
 
   /* Test edge cases: NULL input should return error */
-  result = SocketCrypto_hex_decode (NULL, size, output);
+  result = SocketCrypto_hex_decode (NULL, size, output, max_decoded);
   if (result >= 0)
     __builtin_trap (); /* NULL input should fail */
 
   /* Test edge case: NULL output should return error */
-  result = SocketCrypto_hex_decode (input, size, NULL);
+  result = SocketCrypto_hex_decode (input, size, NULL, 0);
   if (result >= 0)
     __builtin_trap (); /* NULL output should fail */
 

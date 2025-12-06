@@ -37,7 +37,7 @@
 #include <sys/stat.h>
 #include <sys/un.h>
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include <openssl/ssl.h>
 #endif
 
@@ -104,7 +104,7 @@ Socket_ignore_sigpipe (void)
 
 /* Static helper functions */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 /**
  * socket_init_tls_fields - Initialize TLS fields to defaults
  * @sock: Socket instance to initialize
@@ -235,7 +235,7 @@ Socket_new (int domain, int type, int protocol)
 
   sock->base = base;
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   socket_init_tls_fields (sock);
 #endif
 
@@ -254,7 +254,7 @@ Socket_free (T *socket)
   *socket = NULL; /* Invalidate caller pointer before cleanup to avoid UB */
 
   /* Stream-specific cleanup (TLS) before base free */
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   if (s->tls_ssl)
     {
       SSL_free ((SSL *)s->tls_ssl);
@@ -988,7 +988,7 @@ accept_init_socket (T newsocket, SocketBase_T base, Arena_T arena, int newfd,
   base->localaddr = NULL;
   base->localport = 0;
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   socket_init_tls_fields (newsocket);
 #endif
 
@@ -1227,7 +1227,7 @@ socketpair_cleanup_socket (Socket_T sock, int fd)
 {
   if (sock)
     {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
       if (sock->tls_ssl)
         {
           SSL_free ((SSL *)sock->tls_ssl);

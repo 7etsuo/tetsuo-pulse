@@ -541,7 +541,7 @@ TEST (security_secure_clear)
     }
 }
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 TEST (security_random_bytes)
 {
   unsigned char buf1[32];
@@ -637,7 +637,7 @@ TEST (security_feature_detection)
 {
   /* TLS detection */
   int has_tls = SocketSecurity_has_tls ();
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   ASSERT_EQ (1, has_tls);
 #else
   ASSERT_EQ (0, has_tls);

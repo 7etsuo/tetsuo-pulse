@@ -324,6 +324,7 @@
 /** Retry jitter factor (0.0 to 1.0, applied as +/- percentage) */
 #ifndef HTTPCLIENT_RETRY_JITTER_FACTOR
 #define HTTPCLIENT_RETRY_JITTER_FACTOR 0.25
+#define HTTPCLIENT_RETRY_MULTIPLIER 2.0
 #endif
 
 /* ============================================================================

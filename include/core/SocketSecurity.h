@@ -377,7 +377,7 @@ SocketSecurity_safe_add (size_t a, size_t b)
 static inline int
 SocketSecurity_has_tls (void)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   return 1;
 #else
   return 0;

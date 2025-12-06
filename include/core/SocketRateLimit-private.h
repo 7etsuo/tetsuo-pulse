@@ -43,14 +43,19 @@
 #endif
 
 /**
- * SOCKET_RATELIMIT_MUTEX_INITIALIZED - Flag indicating mutex is ready
+ * SOCKET_RATELIMIT_SHUTDOWN - Flag indicating instance is shutdown (being freed)
  */
-#define SOCKET_RATELIMIT_MUTEX_INITIALIZED 1
+#define SOCKET_RATELIMIT_SHUTDOWN (-1)
 
 /**
- * SOCKET_RATELIMIT_MUTEX_UNINITIALIZED - Flag indicating mutex not ready
+ * SOCKET_RATELIMIT_MUTEX_UNINITIALIZED - Flag indicating mutex not initialized
  */
 #define SOCKET_RATELIMIT_MUTEX_UNINITIALIZED 0
+
+/**
+ * SOCKET_RATELIMIT_MUTEX_INITIALIZED - Flag indicating mutex is initialized and ready
+ */
+#define SOCKET_RATELIMIT_MUTEX_INITIALIZED 1
 
 /* ============================================================================
  * Rate Limiter Structure
@@ -72,7 +77,7 @@ struct T
   int64_t last_refill_ms;  /**< Last refill timestamp (monotonic milliseconds) */
   pthread_mutex_t mutex;   /**< Thread safety mutex for all operations */
   Arena_T arena;           /**< Arena used for allocation (NULL if malloc) */
-  int initialized;         /**< 1 if mutex initialized, 0 otherwise */
+  int initialized;         /**< -1 shutdown (being freed), 0 uninitialized, 1 mutex initialized and ready */
 };
 
 #undef T

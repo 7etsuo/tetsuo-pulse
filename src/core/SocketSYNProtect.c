@@ -15,6 +15,7 @@
 #include "core/SocketSYNProtect-private.h"
 #include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
+#include "core/SocketMetrics.h"
 #include <arpa/inet.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -220,7 +221,9 @@ evict_lru_entry (T protect)
   free_memory (protect, victim);
 
   protect->ip_entry_count--;
+  SocketMetrics_gauge_set(SOCKET_GAU_SYNPROTECT_TRACKED_IPS, protect->ip_entry_count);
   atomic_fetch_add (&protect->stat_lru_evictions, 1);
+  SocketMetrics_counter_inc(SOCKET_CTR_SYNPROTECT_LRU_EVICTIONS);
 }
 
 /**
@@ -269,6 +272,7 @@ create_ip_entry (T protect, const char *ip, int64_t now_ms)
 
   lru_push_front (protect, entry);
   protect->ip_entry_count++;
+  SocketMetrics_gauge_set(SOCKET_GAU_SYNPROTECT_TRACKED_IPS, protect->ip_entry_count);
 
   return entry;
 }
@@ -784,7 +788,9 @@ handle_whitelisted_ip (T protect, const char *client_ip,
                        SocketSYN_IPState *state_out)
 {
   atomic_fetch_add (&protect->stat_whitelisted, 1);
+  SocketMetrics_counter_inc(SOCKET_CTR_SYNPROTECT_WHITELISTED);
   atomic_fetch_add (&protect->stat_allowed, 1);
+  SocketMetrics_counter_inc(SOCKET_CTR_SYNPROTECT_ALLOWED);
   fill_ip_state_out (state_out, client_ip, SYN_REP_TRUSTED,
                      SOCKET_SYN_TRUSTED_SCORE);
 }
@@ -800,7 +806,9 @@ handle_blacklisted_ip (T protect, const char *client_ip,
                        SocketSYN_IPState *state_out)
 {
   atomic_fetch_add (&protect->stat_blacklisted, 1);
+  SocketMetrics_counter_inc(SOCKET_CTR_SYNPROTECT_BLACKLISTED);
   atomic_fetch_add (&protect->stat_blocked, 1);
+  SocketMetrics_counter_inc(SOCKET_CTR_SYNPROTECT_BLOCKED);
   fill_ip_state_out (state_out, client_ip, SYN_REP_HOSTILE, 0.0f);
 }
 
@@ -816,15 +824,19 @@ update_action_stats (T protect, SocketSYN_Action action)
     {
     case SYN_ACTION_ALLOW:
       atomic_fetch_add (&protect->stat_allowed, 1);
+      SocketMetrics_counter_inc(SOCKET_CTR_SYNPROTECT_ALLOWED);
       break;
     case SYN_ACTION_THROTTLE:
       atomic_fetch_add (&protect->stat_throttled, 1);
+      SocketMetrics_counter_inc(SOCKET_CTR_SYNPROTECT_THROTTLED);
       break;
     case SYN_ACTION_CHALLENGE:
       atomic_fetch_add (&protect->stat_challenged, 1);
+      SocketMetrics_counter_inc(SOCKET_CTR_SYNPROTECT_CHALLENGED);
       break;
     case SYN_ACTION_BLOCK:
       atomic_fetch_add (&protect->stat_blocked, 1);
+      SocketMetrics_counter_inc(SOCKET_CTR_SYNPROTECT_BLOCKED);
       break;
     }
 }
@@ -861,7 +873,10 @@ process_ip_attempt (T protect, SocketSYN_IPEntry *entry, int64_t now_ms)
                              effective_attempts, now_ms);
 
   if (action == SYN_ACTION_BLOCK && entry->state.block_until_ms == 0)
-    entry->state.block_until_ms = now_ms + protect->config.block_duration_ms;
+    {
+      entry->state.block_until_ms = now_ms + protect->config.block_duration_ms;
+      SocketMetrics_gauge_inc(SOCKET_GAU_SYNPROTECT_BLOCKED_IPS);
+    }
 
   return action;
 }
@@ -1204,6 +1219,7 @@ insert_blacklist_entry (T protect, SocketSYN_BlacklistEntry *entry,
   entry->next = protect->blacklist_table[bucket];
   protect->blacklist_table[bucket] = entry;
   protect->blacklist_count++;
+  SocketMetrics_gauge_inc(SOCKET_GAU_SYNPROTECT_BLOCKED_IPS);
 }
 
 /**
@@ -1414,6 +1430,8 @@ synprotect_finalize (T protect)
 {
   protect->start_time_ms = Socket_get_monotonic_ms ();
   init_atomic_stats (protect);
+  SocketMetrics_gauge_set(SOCKET_GAU_SYNPROTECT_TRACKED_IPS, 0);
+  SocketMetrics_gauge_set(SOCKET_GAU_SYNPROTECT_BLOCKED_IPS, 0);
 }
 
 /**
@@ -1498,6 +1516,8 @@ SocketSYNProtect_free (T *protect)
       free_ip_entries (p);
       free_whitelist_entries (p);
       free_blacklist_entries (p);
+      SocketMetrics_gauge_set(SOCKET_GAU_SYNPROTECT_TRACKED_IPS, 0);
+      SocketMetrics_gauge_set(SOCKET_GAU_SYNPROTECT_BLOCKED_IPS, 0);
       free (p->ip_table);
       free (p->whitelist_table);
       free (p->blacklist_table);
@@ -1547,6 +1567,7 @@ SocketSYNProtect_check (T protect, const char *client_ip,
   pthread_mutex_lock (&protect->mutex);
 
   atomic_fetch_add (&protect->stat_attempts, 1);
+  SocketMetrics_counter_inc(SOCKET_CTR_SYNPROTECT_ATTEMPTS_TOTAL);
 
   if (check_whitelist_blacklist (protect, client_ip, now_ms, state_out,
                                  &action))
@@ -1812,6 +1833,8 @@ SocketSYNProtect_whitelist_clear (T protect)
  * Public API Implementation - Blacklist Management
  * ============================================================================ */
 
+
+
 /**
  * calculate_expiry_time - Calculate blacklist expiry time
  * @now_ms: Current timestamp
@@ -1895,6 +1918,7 @@ SocketSYNProtect_blacklist_remove (T protect, const char *ip)
           *pp = to_remove->next;
           free_memory (protect, to_remove);
           protect->blacklist_count--;
+  SocketMetrics_gauge_dec(SOCKET_GAU_SYNPROTECT_BLOCKED_IPS);
           break;
         }
       pp = &(*pp)->next;
@@ -1923,6 +1947,8 @@ SocketSYNProtect_blacklist_contains (T protect, const char *ip)
   return result;
 }
 
+/* count_currently_blocked moved earlier for forward reference */
+
 void
 SocketSYNProtect_blacklist_clear (T protect)
 {
@@ -1944,12 +1970,53 @@ SocketSYNProtect_blacklist_clear (T protect)
 
   protect->blacklist_count = 0;
 
+  size_t timed_blocked = 0;
+  int64_t now_ms = Socket_get_monotonic_ms ();
+  for (size_t i = 0; i < protect->ip_table_size; i++)
+    {
+      const SocketSYN_IPEntry *entry = protect->ip_table[i];
+      while (entry != NULL)
+        {
+          if (entry->state.block_until_ms > now_ms)
+            timed_blocked++;
+          entry = entry->hash_next;
+        }
+    }
+  SocketMetrics_gauge_set (SOCKET_GAU_SYNPROTECT_BLOCKED_IPS, timed_blocked);
+
   pthread_mutex_unlock (&protect->mutex);
 }
 
 /* ============================================================================
  * Public API Implementation - Query and Statistics
  * ============================================================================ */
+
+/**
+ * count_currently_blocked - Count IPs with active blocks
+ * @protect: Protection instance (must hold mutex)
+ * @now_ms: Current timestamp
+ *
+ * Returns: Number of blocked IPs
+ * Thread-safe: No (caller must hold mutex)
+ */
+static size_t
+count_currently_blocked (T protect, int64_t now_ms)
+{
+  size_t blocked_count = 0;
+
+  for (size_t i = 0; i < protect->ip_table_size; i++)
+    {
+      const SocketSYN_IPEntry *entry = protect->ip_table[i];
+      while (entry != NULL)
+        {
+          if (entry->state.block_until_ms > now_ms)
+            blocked_count++;
+          entry = entry->hash_next;
+        }
+    }
+
+  return blocked_count;
+}
 
 int
 SocketSYNProtect_get_ip_state (T protect, const char *ip,
@@ -1984,24 +2051,7 @@ SocketSYNProtect_get_ip_state (T protect, const char *ip,
  *
  * Returns: Number of blocked IPs
  */
-static size_t
-count_currently_blocked (T protect, int64_t now_ms)
-{
-  size_t blocked_count = 0;
-
-  for (size_t i = 0; i < protect->ip_table_size; i++)
-    {
-      const SocketSYN_IPEntry *entry = protect->ip_table[i];
-      while (entry != NULL)
-        {
-          if (entry->state.block_until_ms > now_ms)
-            blocked_count++;
-          entry = entry->hash_next;
-        }
-    }
-
-  return blocked_count;
-}
+/* count_currently_blocked moved earlier for forward reference */
 
 void
 SocketSYNProtect_stats (T protect, SocketSYNProtect_Stats *stats)
@@ -2090,6 +2140,8 @@ cleanup_expired_blacklist (T protect, int64_t now_ms)
               *pp = expired->next;
               free_memory (protect, expired);
               protect->blacklist_count--;
+  SocketMetrics_gauge_dec(SOCKET_GAU_SYNPROTECT_BLOCKED_IPS);
+  SocketMetrics_gauge_dec(SOCKET_GAU_SYNPROTECT_BLOCKED_IPS);
               removed++;
             }
           else
@@ -2119,6 +2171,7 @@ cleanup_expired_ip_blocks (T protect, int64_t now_ms)
               && entry->state.block_until_ms <= now_ms)
             {
               entry->state.block_until_ms = 0;
+              SocketMetrics_gauge_dec(SOCKET_GAU_SYNPROTECT_BLOCKED_IPS);
             }
           entry = entry->hash_next;
         }
@@ -2165,6 +2218,7 @@ SocketSYNProtect_clear_all (T protect)
     }
 
   protect->ip_entry_count = 0;
+  SocketMetrics_gauge_set(SOCKET_GAU_SYNPROTECT_TRACKED_IPS, 0);
   protect->lru_head = NULL;
   protect->lru_tail = NULL;
 

@@ -2,63 +2,64 @@
  * SocketHTTPClient-retry.c - HTTP Client Retry Logic
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
- * Implements automatic retry with exponential backoff for transient failures.
- * Separated for modularity - retry policy is independent of core client logic.
+ * Centralized retry helpers for HTTP client: delay calculation, sleeping, retry decisions.
+ * Integrates SocketRetry module for validated exponential backoff with jitter and improved RNG.
+ * Handles config-based retry decisions for errors and 5xx status codes.
+ *
+ * Exported via SocketHTTPClient-private.h for use in core client implementation.
  */
 
+#include <errno.h>
+#include <time.h>
+
+#include "core/SocketRetry.h"
 #include "http/SocketHTTPClient-private.h"
 #include "core/SocketUtil.h"
 
-#include <math.h>
-#include <stdlib.h>
-
 /**
  * calculate_retry_delay - Calculate backoff delay for retry attempt
- * @client: HTTP client with retry config
- * @attempt: Current attempt number (1-based)
+ * @client: HTTP client with retry config (read-only)
+ * @attempt: Current attempt number (1-based, must be >=1)
  *
- * Returns: Delay in milliseconds with jitter applied
- * Thread-safe: Yes (uses rand() - seed externally if needed)
+ * Returns: Delay in milliseconds with jitter applied, or 1 if invalid input
+ * Thread-safe: Yes
  *
- * Uses exponential backoff: initial * 2^(attempt-1), capped at max_delay.
- * Applies +/- HTTPCLIENT_RETRY_JITTER_FACTOR jitter to prevent thundering herd.
+ * Uses SocketRetry_calculate_delay for consistent exponential backoff with jitter.
+ * Backoff formula: initial * multiplier^(attempt-1), capped at max_delay.
+ * multiplier = HTTPCLIENT_RETRY_MULTIPLIER (2.0)
+ * Applies +/- HTTPCLIENT_RETRY_JITTER_FACTOR jitter using improved RNG.
+ * Handles FP overflow/NaN by clamping to max_delay.
  */
 int
-httpclient_calculate_retry_delay (SocketHTTPClient_T client, int attempt)
+httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt)
 {
-  double delay;
-  double jitter_range;
-  double random_factor;
+  if (client == NULL || attempt < 1)
+    return 1;
 
-  /* Exponential backoff: initial * 2^(attempt-1) */
-  delay = (double)client->config.retry_initial_delay_ms
-          * pow (2.0, (double)(attempt - 1));
+  SocketRetry_Policy policy;
+  SocketRetry_policy_defaults(&policy);
+  policy.initial_delay_ms = client->config.retry_initial_delay_ms;
+  policy.max_delay_ms = client->config.retry_max_delay_ms;
+  policy.multiplier = HTTPCLIENT_RETRY_MULTIPLIER;
+  policy.jitter = HTTPCLIENT_RETRY_JITTER_FACTOR;
 
-  /* Cap at max delay */
-  if (delay > (double)client->config.retry_max_delay_ms)
-    delay = (double)client->config.retry_max_delay_ms;
-
-  /* Apply jitter: delay * (1 +/- jitter_factor * random) */
-  random_factor = (double)rand () / (double)RAND_MAX; /* 0 to 1 */
-  jitter_range = delay * HTTPCLIENT_RETRY_JITTER_FACTOR;
-  delay += jitter_range * (2.0 * random_factor - 1.0);
-
-  /* Ensure positive delay */
-  if (delay < 1.0)
-    delay = 1.0;
-
-  return (int)delay;
+  return SocketRetry_calculate_delay(&policy, attempt);
 }
 
 /**
- * retry_sleep_ms - Sleep for specified milliseconds
- * @ms: Milliseconds to sleep
+ * retry_sleep_ms - Sleep for specified milliseconds using nanosleep
+ * @ms: Milliseconds to sleep (0 or negative = no sleep)
  *
  * Thread-safe: Yes
+ *
+ * Implements precise sleep with EINTR retry loop per POSIX.1-2008.
+ * Uses CLOCK_REALTIME via nanosleep (not monotonic, but suitable for backoff delays).
+ * Converts ms to timespec: tv_sec = ms/1000, tv_nsec = (ms%1000)*1e6.
  */
-static void
-retry_sleep_ms (int ms)
+void
+httpclient_retry_sleep_ms (int ms)
 {
   struct timespec req;
   struct timespec rem;
@@ -66,8 +67,11 @@ retry_sleep_ms (int ms)
   if (ms <= 0)
     return;
 
-  req.tv_sec = ms / 1000;
-  req.tv_nsec = (ms % 1000) * 1000000L;
+  static const int MS_PER_SEC = 1000;
+  static const long NS_PER_MS = 1000000L;
+
+  req.tv_sec = ms / MS_PER_SEC;
+  req.tv_nsec = (ms % MS_PER_SEC) * NS_PER_MS;
 
   while (nanosleep (&req, &rem) == -1)
     {
@@ -77,15 +81,23 @@ retry_sleep_ms (int ms)
     }
 }
 
+
+
 /**
- * should_retry_error - Check if error code should trigger retry
- * @client: HTTP client with retry config
+ * httpclient_should_retry_error - Check if error code should trigger retry
+ * @client: HTTP client with retry config (read-only)
  * @error: Error code to check
  *
- * Returns: 1 if should retry, 0 otherwise
+ * Returns: 1 if should retry based on config, 0 otherwise
+ * Thread-safe: Yes
+ *
+ * Checks config flags:
+ * - retry_on_connection_error for DNS/CONNECT errors
+ * - retry_on_timeout for TIMEOUT errors
+ * Other errors always non-retryable.
  */
-static int
-should_retry_error (SocketHTTPClient_T client, SocketHTTPClient_Error error)
+int
+httpclient_should_retry_error (const SocketHTTPClient_T client, SocketHTTPClient_Error error)
 {
   switch (error)
     {
@@ -103,15 +115,21 @@ should_retry_error (SocketHTTPClient_T client, SocketHTTPClient_Error error)
 
 /**
  * should_retry_status - Check if HTTP status should trigger retry
- * @client: HTTP client with retry config
+ * @client: HTTP client with retry config (read-only)
  * @status: HTTP status code
  *
  * Returns: 1 if should retry, 0 otherwise
+ * Thread-safe: Yes
+ *
+ * Retries 5xx server errors only if config.retry_on_5xx is enabled.
+ * IMPORTANT: Enable only for idempotent requests (GET, HEAD, etc.) to avoid
+ * duplicate side effects on retry.
+ * Non-5xx status codes (including 4xx client errors) are never retried.
  */
-static int
-should_retry_status (SocketHTTPClient_T client, int status)
+int
+httpclient_should_retry_status (const SocketHTTPClient_T client, int status)
 {
-  if (status >= 500 && status < 600)
+  if (status >= HTTP_STATUS_5XX_MIN && status <= HTTP_STATUS_5XX_MAX)
     return client->config.retry_on_5xx;
 
   return 0;
@@ -119,22 +137,36 @@ should_retry_status (SocketHTTPClient_T client, int status)
 
 /**
  * clear_response_for_retry - Clear response state for retry attempt
- * @response: Response to clear
+ * @response: Response to clear (modified)
+ *
+ * Disposes response arena (frees headers, body) and zeros structure.
+ * Prepares response for reuse in next retry attempt.
+ * Thread-safe: No (modifies response)
+ *
+ * clear_response_for_retry - Clear response for retry
+ * @response: Response to clear (modified)
+ *
+ * Disposes response arena (frees headers, body) and zeros structure.
+ * Prepares response for reuse in next retry attempt.
+ * Thread-safe: No (modifies response)
+ *
+ * Note: Caller must ensure no concurrent access to response.
  */
-static void
-clear_response_for_retry (SocketHTTPClient_Response *response)
+void
+clear_response_for_retry (SocketHTTP_Response *response)
 {
-  if (response->arena != NULL)
-    {
-      Arena_dispose (&response->arena);
-      response->arena = NULL;
-    }
+  SocketHTTP_Headers_clear (response->headers);
   memset (response, 0, sizeof (*response));
 }
 
-/* Export for main .c file */
-extern int httpclient_should_retry_error (SocketHTTPClient_T client, SocketHTTPClient_Error error);
-extern int httpclient_should_retry_status (SocketHTTPClient_T client, int status);
-extern int httpclient_calculate_retry_delay (SocketHTTPClient_T client, int attempt);
-extern void httpclient_retry_sleep_ms (int ms);
-extern void httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
+void
+httpclient_clear_response_for_retry (SocketHTTPClient_Response *response)
+{
+  if (response)
+    {
+      SocketHTTP_Headers_clear (response->headers);
+      memset (response, 0, sizeof (*response));
+    }
+}
+
+/* Functions exported via SocketHTTPClient-private.h */

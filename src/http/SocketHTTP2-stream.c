@@ -31,6 +31,12 @@
 #define SOCKET_LOG_COMPONENT "HTTP2"
 
 /* ============================================================================
+ * Module Exception
+ * ============================================================================ */
+
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
+
+/* ============================================================================
  * Module Constants
  * ============================================================================ */
 
@@ -225,15 +231,21 @@ http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id)
       >= conn->local_settings[SETTINGS_IDX_MAX_CONCURRENT_STREAMS])
     return NULL;
 
-  stream = (SocketHTTP2_Stream_T)memset (Arena_alloc (conn->arena, sizeof (*stream), __FILE__, __LINE__), 0, sizeof (*stream));
+  stream = Arena_calloc (conn->arena, 1, sizeof (struct SocketHTTP2_Stream), __FILE__, __LINE__);
   if (!stream)
-    return NULL;
+    {
+      SOCKET_LOG_ERROR_MSG ("failed to allocate HTTP/2 stream");
+      return NULL;
+    }
   init_stream_fields (stream, conn, stream_id);
 
-  stream->recv_buf
-      = SocketBuf_new (conn->arena, HTTP2_STREAM_RECV_BUF_SIZE);
+  stream->recv_buf = SocketBuf_new (conn->arena, HTTP2_STREAM_RECV_BUF_SIZE);
   if (!stream->recv_buf)
-    return NULL;
+    {
+      SOCKET_LOG_ERROR_MSG ("failed to allocate recv buffer for HTTP/2 stream");
+      http2_stream_destroy (stream);  /* partial, clean */
+      return NULL;
+    }
 
   add_stream_to_hash (conn, stream);
   return stream;
@@ -645,6 +657,39 @@ http2_encode_headers (SocketHTTP2_Conn_T conn,
                                      output_size);
 }
 
+/**
+ * http2_encode_and_alloc_block - Encode headers and allocate block
+ * @conn: Connection
+ * @headers: Headers to encode
+ * @count: Number of headers
+ * @block_out: Output - allocated block
+ *
+ * Allocates block using arena, encodes, returns length or -1 on error
+ * Caller must not free block (arena managed)
+ *
+ * Returns: Encoded length or -1 on error
+ * Thread-safe: No
+ */
+static unsigned char *
+alloc_header_block (SocketHTTP2_Conn_T conn, size_t initial_size);
+
+static ssize_t
+http2_encode_and_alloc_block (SocketHTTP2_Conn_T conn,
+                              const SocketHPACK_Header *headers, size_t count,
+                              unsigned char **block_out)
+{
+  size_t initial_size = HTTP2_INITIAL_HEADER_BLOCK_SIZE;
+  *block_out = alloc_header_block (conn, initial_size);
+  if (!*block_out)
+    return -1;
+
+  ssize_t len = http2_encode_headers (conn, headers, count, *block_out, initial_size);
+  if (len < 0)
+    return -1;
+
+  return len;
+}
+
 int
 http2_decode_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                       const unsigned char *block, size_t len)
@@ -652,8 +697,6 @@ http2_decode_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
   SocketHPACK_Header decoded_headers[HTTP2_MAX_DECODED_HEADERS];
   size_t header_count = 0;
   SocketHPACK_Result result;
-
-  (void)stream;
 
   result = SocketHPACK_Decoder_decode (conn->decoder, block, len,
                                        decoded_headers, HTTP2_MAX_DECODED_HEADERS,
@@ -663,6 +706,31 @@ http2_decode_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
     {
       http2_send_connection_error (conn, HTTP2_COMPRESSION_ERROR);
       return -1;
+    }
+
+  /* Store decoded headers based on whether this is initial headers or trailers */
+  if (!stream->headers_received)
+    {
+      if (header_count > HTTP2_MAX_DECODED_HEADERS)
+        {
+          http2_send_connection_error (conn, HTTP2_COMPRESSION_ERROR);
+          return -1;
+        }
+      memcpy (stream->headers, decoded_headers, header_count * sizeof (SocketHPACK_Header));
+      stream->header_count = header_count;
+      stream->headers_consumed = 0;
+    }
+  else
+    {
+      if (header_count > HTTP2_MAX_DECODED_HEADERS)
+        {
+          http2_send_connection_error (conn, HTTP2_COMPRESSION_ERROR);
+          return -1;
+        }
+      memcpy (stream->trailers, decoded_headers, header_count * sizeof (SocketHPACK_Header));
+      stream->trailer_count = header_count;
+      stream->trailers_consumed = 0;
+      stream->trailers_received = 1;
     }
 
   return 0;
@@ -779,6 +847,38 @@ send_single_headers_frame (SocketHTTP2_Conn_T conn,
 }
 
 /**
+ * send_headers_chunk - Send single chunk of headers/CONTINUATION frame
+ * @conn: Connection
+ * @stream: Stream
+ * @data: Data to send
+ * @chunk_len: Chunk length
+ * @first: 1 if first chunk (HEADERS frame)
+ * @last: 1 if last chunk (END_HEADERS flag)
+ * @end_stream: Set END_STREAM if first chunk
+ *
+ * Returns: 0 on success, -1 on error
+ * Thread-safe: No
+ */
+static int
+send_headers_chunk (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
+                    const unsigned char *data, size_t chunk_len,
+                    int first, int last, int end_stream)
+{
+  SocketHTTP2_FrameHeader frame_header;
+
+  frame_header.length = (uint32_t)chunk_len;
+  frame_header.type = first ? HTTP2_FRAME_HEADERS : HTTP2_FRAME_CONTINUATION;
+  frame_header.flags = 0;
+  if (first && end_stream)
+    frame_header.flags |= HTTP2_FLAG_END_STREAM;
+  if (last)
+    frame_header.flags |= HTTP2_FLAG_END_HEADERS;
+  frame_header.stream_id = stream->id;
+
+  return http2_frame_send (conn, &frame_header, data, chunk_len);
+}
+
+/**
  * send_fragmented_headers - Send headers with CONTINUATION frames
  * @conn: Connection
  * @stream: Stream
@@ -788,39 +888,28 @@ send_single_headers_frame (SocketHTTP2_Conn_T conn,
  * @end_stream: END_STREAM flag
  *
  * Returns: 0 on success, -1 on error
+ * Thread-safe: No
  */
 static int
 send_fragmented_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                          const unsigned char *header_block, size_t block_len,
                          uint32_t max_frame_size, int end_stream)
 {
-  SocketHTTP2_FrameHeader frame_header;
   size_t offset = 0;
   int first = 1;
 
   while (offset < block_len)
     {
-      size_t chunk = block_len - offset;
-      if (chunk > max_frame_size)
-        chunk = max_frame_size;
+      size_t chunk_len = block_len - offset;
+      if (chunk_len > max_frame_size)
+        chunk_len = max_frame_size;
+      int is_last = (offset + chunk_len >= block_len);
 
-      frame_header.length = (uint32_t)chunk;
-      frame_header.type = first ? HTTP2_FRAME_HEADERS : HTTP2_FRAME_CONTINUATION;
-      frame_header.flags = 0;
-
-      if (first && end_stream)
-        frame_header.flags |= HTTP2_FLAG_END_STREAM;
-
-      if (offset + chunk >= block_len)
-        frame_header.flags |= HTTP2_FLAG_END_HEADERS;
-
-      frame_header.stream_id = stream->id;
-
-      if (http2_frame_send (conn, &frame_header, header_block + offset, chunk)
-          < 0)
+      if (send_headers_chunk (conn, stream, header_block + offset, chunk_len,
+                              first, is_last, end_stream) < 0)
         return -1;
 
-      offset += chunk;
+      offset += chunk_len;
       first = 0;
     }
 
@@ -837,9 +926,6 @@ SocketHTTP2_Stream_send_headers (SocketHTTP2_Stream_T stream,
                                  size_t header_count, int end_stream)
 {
   SocketHTTP2_Conn_T conn;
-  unsigned char *header_block;
-  ssize_t block_len;
-  uint32_t max_frame_size;
   SocketHTTP2_ErrorCode error;
 
   assert (stream);
@@ -852,16 +938,13 @@ SocketHTTP2_Stream_send_headers (SocketHTTP2_Stream_T stream,
   if (error != HTTP2_NO_ERROR)
     return -1;
 
-  header_block = alloc_header_block (conn, HTTP2_INITIAL_HEADER_BLOCK_SIZE);
-  if (!header_block)
+  unsigned char *header_block;
+  ssize_t block_len_ssize = http2_encode_and_alloc_block (conn, headers, header_count, &header_block);
+  if (block_len_ssize < 0)
     return -1;
+  size_t block_len = (size_t)block_len_ssize;
 
-  block_len = http2_encode_headers (conn, headers, header_count, header_block,
-                                    HTTP2_INITIAL_HEADER_BLOCK_SIZE);
-  if (block_len < 0)
-    return -1;
-
-  max_frame_size = conn->peer_settings[SETTINGS_IDX_MAX_FRAME_SIZE];
+  uint32_t max_frame_size = conn->peer_settings[SETTINGS_IDX_MAX_FRAME_SIZE];
 
   if ((size_t)block_len <= max_frame_size)
     {
@@ -1122,18 +1205,21 @@ SocketHTTP2_Stream_recv_headers (SocketHTTP2_Stream_T stream,
   assert (header_count);
   assert (end_stream);
 
-  (void)headers;
-  (void)max_headers;
-
-  if (!stream->headers_received)
+  if (!stream->headers_received || stream->headers_consumed)
     {
       *header_count = 0;
       *end_stream = 0;
       return 0;
     }
 
-  *header_count = 0;
+  size_t copy_count = (stream->header_count > max_headers) ? max_headers : stream->header_count;
+  if (copy_count > 0 && headers != NULL)
+    {
+      memcpy (headers, stream->headers, copy_count * sizeof (SocketHPACK_Header));
+    }
+  *header_count = copy_count;
   *end_stream = stream->end_stream_received;
+  stream->headers_consumed = 1;
   return 1;
 }
 
@@ -1158,7 +1244,8 @@ SocketHTTP2_Stream_recv_data (SocketHTTP2_Stream_T stream, void *buf,
   SocketBuf_read (stream->recv_buf, buf, read_len);
 
   *end_stream = (stream->end_stream_received
-                 && SocketBuf_available (stream->recv_buf) == 0);
+                 && SocketBuf_available (stream->recv_buf) == 0
+                 && (!stream->trailers_received || stream->trailers_consumed));
 
   return (ssize_t)read_len;
 }
@@ -1172,16 +1259,19 @@ SocketHTTP2_Stream_recv_trailers (SocketHTTP2_Stream_T stream,
   assert (trailers || max_trailers == 0);
   assert (trailer_count);
 
-  (void)trailers;
-  (void)max_trailers;
-
-  if (!stream->trailers_received)
+  if (!stream->trailers_received || stream->trailers_consumed)
     {
       *trailer_count = 0;
       return 0;
     }
 
-  *trailer_count = 0;
+  size_t copy_count = (stream->trailer_count > max_trailers) ? max_trailers : stream->trailer_count;
+  if (copy_count > 0 && trailers != NULL)
+    {
+      memcpy (trailers, stream->trailers, copy_count * sizeof (SocketHPACK_Header));
+    }
+  *trailer_count = copy_count;
+  stream->trailers_consumed = 1;
   return 1;
 }
 
@@ -1423,15 +1513,16 @@ http2_get_or_create_stream_for_headers (SocketHTTP2_Conn_T conn, uint32_t stream
 static int
 validate_new_stream_id (SocketHTTP2_Conn_T conn, uint32_t stream_id)
 {
-  if (conn->role == HTTP2_ROLE_SERVER)
-    {
-      if ((stream_id & 1) == 0)
-        return -1;
-    }
-  else
-    {
-      return -1;
-    }
+  int expected_parity = (conn->role == HTTP2_ROLE_SERVER) ? 1 : 0;
+
+  if ((stream_id & 1U) != (unsigned int)expected_parity)
+    return -1;
+
+  if (stream_id == 0 || stream_id > HTTP2_MAX_STREAM_ID)
+    return -1;
+
+  if (stream_id <= conn->last_peer_stream_id)
+    return -1;
 
   return 0;
 }
@@ -1486,12 +1577,19 @@ process_complete_header_block (SocketHTTP2_Conn_T conn,
   if (http2_decode_headers (conn, stream, block, len) < 0)
     return -1;
 
-  stream->headers_received = 1;
+  if (!stream->headers_received)
+    {
+      stream->headers_received = 1;
+      http2_emit_stream_event (conn, stream, HTTP2_EVENT_HEADERS_RECEIVED);
+    }
+  else
+    {
+      http2_emit_stream_event (conn, stream, HTTP2_EVENT_TRAILERS_RECEIVED);
+    }
 
   if (end_stream)
     stream->end_stream_received = 1;
 
-  http2_emit_stream_event (conn, stream, HTTP2_EVENT_HEADERS_RECEIVED);
   return 0;
 }
 
@@ -1618,9 +1716,16 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
         return -1;
 
       clear_pending_header_block (stream);
-      stream->headers_received = 1;
 
-      http2_emit_stream_event (conn, stream, HTTP2_EVENT_HEADERS_RECEIVED);
+      if (!stream->headers_received)
+        {
+          stream->headers_received = 1;
+          http2_emit_stream_event (conn, stream, HTTP2_EVENT_HEADERS_RECEIVED);
+        }
+      else
+        {
+          http2_emit_stream_event (conn, stream, HTTP2_EVENT_TRAILERS_RECEIVED);
+        }
     }
 
   return 0;
@@ -1739,6 +1844,8 @@ http2_process_push_promise (SocketHTTP2_Conn_T conn,
       if (http2_decode_headers (conn, promised, header_block, header_block_len)
           < 0)
         return -1;
+
+      promised->headers_received = 1;
 
       http2_emit_stream_event (conn, promised, HTTP2_EVENT_PUSH_PROMISE);
     }

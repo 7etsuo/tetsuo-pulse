@@ -401,17 +401,10 @@ static const char *const default_level_names[] = {
 };
 
 /* Number of log levels for bounds checking */
-#define SOCKETLOG_LEVEL_COUNT                                                  \
+#define SOCKET_LOG_LEVEL_COUNT                                                  \
   (sizeof (default_level_names) / sizeof (default_level_names[0]))
 
-/* Timestamp formatting constants - use SocketConfig.h naming */
-#define SOCKETLOG_TIMESTAMP_BUFSIZE 64
-#define SOCKETLOG_TIMESTAMP_FORMAT "%Y-%m-%d %H:%M:%S"
-#define SOCKETLOG_DEFAULT_TIMESTAMP "1970-01-01 00:00:00"
-
-/* Truncation indicator for log messages */
-#define SOCKETLOG_TRUNCATION_SUFFIX "..."
-#define SOCKETLOG_TRUNCATION_SUFFIX_LEN (sizeof (SOCKETLOG_TRUNCATION_SUFFIX)) /* 3 dots + NUL */
+/* Timestamp formatting constants - defined in SocketConfig.h */
 
 /**
  * socketlog_format_timestamp - Format current time as timestamp string
@@ -437,9 +430,9 @@ socketlog_format_timestamp (char *buf, size_t bufsize)
 #endif
 
   if (!time_ok
-      || strftime (buf, bufsize, SOCKETLOG_TIMESTAMP_FORMAT, &tm_buf) == 0)
+      || strftime (buf, bufsize, SOCKET_LOG_TIMESTAMP_FORMAT, &tm_buf) == 0)
     {
-      strncpy (buf, SOCKETLOG_DEFAULT_TIMESTAMP, bufsize);
+      strncpy (buf, SOCKET_LOG_DEFAULT_TIMESTAMP, bufsize);
       buf[bufsize - 1] = '\0';
     }
 
@@ -475,7 +468,7 @@ static void
 default_logger (void *userdata, SocketLogLevel level, const char *component,
                 const char *message)
 {
-  char ts[SOCKETLOG_TIMESTAMP_BUFSIZE];
+  char ts[SOCKET_LOG_TIMESTAMP_BUFSIZE];
 
   (void)userdata;
 
@@ -534,7 +527,7 @@ SocketLog_getcallback (void **userdata)
 const char *
 SocketLog_levelname (SocketLogLevel level)
 {
-  if (level < 0 || (size_t)level >= SOCKETLOG_LEVEL_COUNT)
+  if (level < 0 || (size_t)level >= SOCKET_LOG_LEVEL_COUNT)
     return "UNKNOWN";
   return default_level_names[level];
 }
@@ -571,18 +564,7 @@ typedef struct SocketLogAllInfo
   int should_log;
 } SocketLogAllInfo;
 
-/**
- * SocketLogCallbackInfo - Internal structure for callback acquisition
- *
- * Used by socketlog_acquire_callback to return all necessary callback info
- * in a single structure, reducing mutex acquisition overhead.
- */
-typedef struct SocketLogCallbackInfo
-{
-  SocketLogCallback callback;
-  void *userdata;
-  int should_log; /* 1 if level >= min_level, 0 otherwise */
-} SocketLogCallbackInfo;
+/* SocketLogCallbackInfo removed - use SocketLogAllInfo instead for consolidated callback acquisition */
 
 /**
  * socketlog_acquire_all_info - Acquire all logging configuration under mutex
@@ -611,17 +593,7 @@ socketlog_acquire_all_info (SocketLogLevel level)
   return info;
 }
 
-/**
- * socketlog_acquire_callback - Acquire non-structured log callback info
- * @level: Log level to check against minimum
- *
- * Returns: Callback info structure with should_log flag
- * Thread-safe: Yes (delegates to socketlog_acquire_all_info)
- *
- * Acquires logging state via socketlog_acquire_all_info and extracts
- * non-structured fields. Minimizes lock contention by reusing consolidated
- * acquisition.
- */
+
 
 
 /**
@@ -699,9 +671,9 @@ SocketLog_emitf (SocketLogLevel level, const char *component, const char *fmt,
 static void
 socketlog_apply_truncation (char *buffer, size_t bufsize)
 {
-  if (bufsize >= SOCKETLOG_TRUNCATION_SUFFIX_LEN)
+  if (bufsize >= SOCKET_LOG_TRUNCATION_SUFFIX_LEN)
     {
-      size_t start = bufsize - SOCKETLOG_TRUNCATION_SUFFIX_LEN;
+      size_t start = bufsize - SOCKET_LOG_TRUNCATION_SUFFIX_LEN;
       buffer[start] = '.';
       buffer[start + 1] = '.';
       buffer[start + 2] = '.';
@@ -823,30 +795,9 @@ SocketLog_clearcontext (void)
 
 
 
-/**
- * SocketLogStructuredInfo - Internal structure for structured callback
- *
- * Used by socketlog_acquire_structured_callback to return all callback info.
- */
-typedef struct SocketLogStructuredInfo
-{
-  SocketLogStructuredCallback structured_callback;
-  void *structured_userdata;
-  SocketLogCallback fallback_callback;
-  void *fallback_userdata;
-  int should_log;
-} SocketLogStructuredInfo;
+/* SocketLogStructuredInfo removed - use SocketLogAllInfo which includes structured fields */
 
-/**
- * socketlog_acquire_structured_callback - Acquire structured and fallback log info
- * @level: Log level to check against minimum
- *
- * Returns: Structured info with fallback fields and should_log flag
- * Thread-safe: Yes (delegates to socketlog_acquire_all_info)
- *
- * Acquires all logging state via socketlog_acquire_all_info. Provides both
- * structured and fallback callbacks/userdata under single lock acquisition.
- */
+
 
 
 /**
@@ -933,19 +884,7 @@ socketlog_format_fields (char *buffer, size_t bufsize,
   return pos;
 }
 
-/**
- * socketlog_emit_structured_with_callback - Emit structured log with callback
- * @info: Callback info from socketlog_acquire_structured_callback
- * @level: Log level
- * @component: Component name
- * @message: Log message
- * @fields: Array of key-value pairs
- * @field_count: Number of fields
- *
- * Thread-safe: Yes
- *
- * Internal helper that handles the actual emission after callback acquisition.
- */
+
 /**
  * socketlog_call_structured - Invoke structured logging callback
  * @all: All info structure

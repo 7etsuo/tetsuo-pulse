@@ -217,7 +217,7 @@ extern int SocketRetry_execute_simple (T retry, SocketRetry_Operation operation,
  *
  * Returns statistics from the most recent SocketRetry_execute() call.
  */
-extern void SocketRetry_get_stats (T retry, SocketRetry_Stats *stats);
+extern void SocketRetry_get_stats (const T retry, SocketRetry_Stats *stats);
 
 /**
  * SocketRetry_reset - Reset retry context for reuse
@@ -237,7 +237,7 @@ extern void SocketRetry_reset (T retry);
  *
  * Thread-safe: No
  */
-extern void SocketRetry_get_policy (T retry, SocketRetry_Policy *policy);
+extern void SocketRetry_get_policy (const T retry, SocketRetry_Policy *policy);
 
 /**
  * SocketRetry_set_policy - Update policy

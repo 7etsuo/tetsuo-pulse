@@ -246,7 +246,7 @@ SocketPool_connections_initialize_slot (struct Connection *conn)
   conn->free_next = NULL;
   conn->reconnect = NULL;
   conn->tracked_ip = NULL;
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   conn->tls_ctx = NULL;
   conn->tls_handshake_complete = 0;
   conn->tls_session = NULL;
@@ -551,7 +551,7 @@ SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
 static void
 free_tls_sessions (T pool)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   for (size_t i = 0; i < pool->maxconns; i++)
     {
       Connection_T conn = &pool->connections[i];

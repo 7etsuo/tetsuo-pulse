@@ -28,7 +28,7 @@
 #include "socket/SocketDgram.h"
 #include "test/Test.h"
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "tls/SocketDTLS.h"
 #include "tls/SocketDTLSConfig.h"
 #include "tls/SocketDTLSContext.h"
@@ -68,7 +68,7 @@ remove_dtls_test_certs (const char *cert_file, const char *key_file)
 
 TEST (dtls_context_creation_client)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketDTLSContext_T ctx = NULL;
 
   TRY
@@ -99,7 +99,7 @@ TEST (dtls_context_creation_client)
 
 TEST (dtls_context_creation_server)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_dtls_server.crt";
   const char *key_file = "test_dtls_server.key";
   SocketDTLSContext_T ctx = NULL;
@@ -131,7 +131,7 @@ TEST (dtls_context_creation_server)
 
 TEST (dtls_context_mtu_configuration)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketDTLSContext_T ctx = NULL;
 
   TRY
@@ -164,7 +164,7 @@ TEST (dtls_context_mtu_configuration)
 
 TEST (dtls_context_cookie_exchange)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_dtls_cookie.crt";
   const char *key_file = "test_dtls_cookie.key";
   SocketDTLSContext_T ctx = NULL;
@@ -204,7 +204,7 @@ TEST (dtls_context_cookie_exchange)
 
 TEST (dtls_context_alpn_configuration)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketDTLSContext_T ctx = NULL;
 
   TRY
@@ -232,7 +232,7 @@ TEST (dtls_context_alpn_configuration)
 
 TEST (dtls_context_session_cache)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   const char *cert_file = "test_dtls_cache.crt";
   const char *key_file = "test_dtls_cache.key";
   SocketDTLSContext_T ctx = NULL;
@@ -271,7 +271,7 @@ TEST (dtls_context_session_cache)
 
 TEST (dtls_context_free_null_safe)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /* Test that free with NULL pointer doesn't crash */
   SocketDTLSContext_T ctx = NULL;
   SocketDTLSContext_free (&ctx);
@@ -293,7 +293,7 @@ TEST (dtls_context_free_null_safe)
 
 TEST (dtls_enable_on_dgram_socket)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketDgram_T socket = NULL;
   SocketDTLSContext_T ctx = NULL;
 
@@ -325,7 +325,7 @@ TEST (dtls_enable_on_dgram_socket)
 
 TEST (dtls_state_queries)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketDgram_T socket = NULL;
   SocketDTLSContext_T ctx = NULL;
 
@@ -361,7 +361,7 @@ TEST (dtls_state_queries)
 
 TEST (dtls_mtu_configuration)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketDgram_T socket = NULL;
   SocketDTLSContext_T ctx = NULL;
 
@@ -395,7 +395,7 @@ TEST (dtls_mtu_configuration)
 
 TEST (dtls_connection_info_before_handshake)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketDgram_T socket = NULL;
   SocketDTLSContext_T ctx = NULL;
 
@@ -433,7 +433,7 @@ TEST (dtls_connection_info_before_handshake)
 
 TEST (dtls_double_enable_error)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketDgram_T socket = NULL;
   SocketDTLSContext_T ctx = NULL;
   volatile int caught_error = 0;
@@ -469,7 +469,7 @@ TEST (dtls_double_enable_error)
 
 TEST (dtls_io_before_handshake_error)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketDgram_T socket = NULL;
   SocketDTLSContext_T ctx = NULL;
   volatile int caught_error = 0;
@@ -511,7 +511,7 @@ TEST (dtls_io_before_handshake_error)
 
 TEST (dtls_cookie_exchange_client_error)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketDTLSContext_T ctx = NULL;
   volatile int caught_error = 0;
 
@@ -540,7 +540,7 @@ TEST (dtls_cookie_exchange_client_error)
 
 TEST (dtls_invalid_mtu_error)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketDTLSContext_T ctx = NULL;
   volatile int caught_error = 0;
 
@@ -578,7 +578,7 @@ TEST (dtls_invalid_mtu_error)
 
 TEST (dtls_shutdown_before_handshake)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketDgram_T socket = NULL;
   SocketDTLSContext_T ctx = NULL;
 
@@ -613,7 +613,7 @@ TEST (dtls_shutdown_before_handshake)
 
 TEST (dtls_config_constants)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /* Verify config constants are sensible */
   ASSERT (SOCKET_DTLS_MIN_MTU > 0);
   ASSERT (SOCKET_DTLS_MAX_MTU > SOCKET_DTLS_MIN_MTU);
@@ -636,7 +636,7 @@ TEST (dtls_config_constants)
 
 TEST (dtls_validation_macros)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /* Test SOCKET_DTLS_VALID_MTU macro */
   ASSERT_EQ (SOCKET_DTLS_VALID_MTU (SOCKET_DTLS_MIN_MTU), 1);
   ASSERT_EQ (SOCKET_DTLS_VALID_MTU (SOCKET_DTLS_MAX_MTU), 1);

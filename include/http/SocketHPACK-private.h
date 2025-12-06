@@ -16,6 +16,12 @@
  * Internal Constants
  * ============================================================================ */
 
+/** Estimated average dynamic entry size for initial capacity calculation (bytes) */
+#define HPACK_AVERAGE_DYNAMIC_ENTRY_SIZE 50
+
+/** Minimum dynamic table capacity (power-of-2 for efficient modulo) */
+#define HPACK_MIN_DYNAMIC_TABLE_CAPACITY 16
+
 /** Number of symbols in Huffman table (0-255 + EOS) */
 #define HPACK_HUFFMAN_SYMBOLS 257
 

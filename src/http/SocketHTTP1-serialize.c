@@ -9,12 +9,31 @@
  * - Headers: Field-Name ":" OWS Field-Value OWS CRLF
  */
 
-#include "http/SocketHTTP1.h"
-#include "http/SocketHTTP1-private.h"
-
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "http/SocketHTTP1.h"
+#include "http/SocketHTTP1-private.h"
+#include "core/SocketUtil.h"
+
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketHTTP1);
+
+const Except_T SocketHTTP1_SerializeError
+    = { &SocketHTTP1_SerializeError, "HTTP/1.1 serialize error" };
+
+/* HTTP serialization constants */
+#define HTTP_SP " "
+#define HTTP_SP_LEN 1
+#define HTTP_CRLF "\r\n"
+#define HTTP_CRLF_LEN 2
+#define HTTP_HOST_PREFIX "Host: "
+#define HTTP_HOST_PREFIX_LEN 6
+#define HTTP_CONTENT_LENGTH_PREFIX "Content-Length: "
+#define HTTP_CONTENT_LENGTH_PREFIX_LEN 16
+
+#define HTTP_HEADER_SEP ": "
+#define HTTP_HEADER_SEP_LEN 2
 
 /* ============================================================================
  * Helper Functions
@@ -28,6 +47,7 @@
  * @len: String length
  *
  * Returns: 0 on success, -1 if buffer too small
+ * Thread-safe: Yes
  */
 static int
 safe_append (char **buf, size_t *remaining, const char *str, size_t len)
@@ -48,6 +68,7 @@ safe_append (char **buf, size_t *remaining, const char *str, size_t len)
  * @str: String to append
  *
  * Returns: 0 on success, -1 if buffer too small
+ * Thread-safe: Yes
  */
 static int
 safe_append_str (char **buf, size_t *remaining, const char *str)
@@ -61,11 +82,12 @@ safe_append_str (char **buf, size_t *remaining, const char *str)
  * @remaining: Remaining space (updated)
  *
  * Returns: 0 on success, -1 if buffer too small
+ * Thread-safe: Yes
  */
 static int
 safe_append_crlf (char **buf, size_t *remaining)
 {
-  return safe_append (buf, remaining, "\r\n", 2);
+  return safe_append (buf, remaining, HTTP_CRLF, HTTP_CRLF_LEN);
 }
 
 /**
@@ -75,6 +97,7 @@ safe_append_crlf (char **buf, size_t *remaining)
  * @value: Integer to append
  *
  * Returns: 0 on success, -1 on error
+ * Thread-safe: Yes
  */
 static int
 safe_append_int (char **buf, size_t *remaining, int value)
@@ -102,14 +125,15 @@ safe_append_int (char **buf, size_t *remaining, int value)
  * - No Content-Length or Transfer-Encoding already present
  *
  * Returns: 0 on success, -1 if buffer too small
+ * Thread-safe: Yes
  */
 static int
 append_content_length_header (char **buf, size_t *remaining,
                               SocketHTTP_Headers_T headers, int has_body,
                               int64_t content_length)
 {
-  char cl_buf[SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE];
-  int cl_len;
+  char num_buf[SOCKETHTTP1_INT_STRING_BUFSIZE];
+  int num_len;
 
   if (!has_body || content_length < 0)
     return 0;
@@ -118,12 +142,14 @@ append_content_length_header (char **buf, size_t *remaining,
                   || SocketHTTP_Headers_has (headers, "Transfer-Encoding")))
     return 0;
 
-  cl_len = snprintf (cl_buf, sizeof (cl_buf), "Content-Length: %lld",
-                     (long long)content_length);
-  if (cl_len < 0 || (size_t)cl_len >= sizeof (cl_buf))
+  if (safe_append (buf, remaining, HTTP_CONTENT_LENGTH_PREFIX, HTTP_CONTENT_LENGTH_PREFIX_LEN) < 0)
     return -1;
 
-  if (safe_append (buf, remaining, cl_buf, (size_t)cl_len) < 0)
+  num_len = snprintf (num_buf, sizeof (num_buf), "%lld", (long long)content_length);
+  if (num_len < 0 || (size_t)num_len >= sizeof (num_buf))
+    return -1;
+
+  if (safe_append (buf, remaining, num_buf, (size_t)num_len) < 0)
     return -1;
 
   return safe_append_crlf (buf, remaining);
@@ -133,14 +159,135 @@ append_content_length_header (char **buf, size_t *remaining,
  * Request Serialization
  * ============================================================================ */
 
+/**
+ * add_optional_host_header - Add Host header if missing
+ * @request: Request structure
+ * @buf: Buffer pointer (updated)
+ * @remaining: Remaining space (updated)
+ *
+ * Adds "Host: authority\r\n" if authority present and no existing Host header.
+ *
+ * Returns: 0 on success, -1 if buffer too small
+ * Thread-safe: Yes
+ */
+static int
+add_optional_host_header (const SocketHTTP_Request *request, char **buf, size_t *remaining)
+{
+  if (!request->authority || request->authority[0] == '\0')
+    return 0;
+
+  if (request->headers && SocketHTTP_Headers_has (request->headers, "Host"))
+    return 0;
+
+  if (safe_append (buf, remaining, HTTP_HOST_PREFIX, HTTP_HOST_PREFIX_LEN) < 0)
+    return -1;
+
+  if (safe_append_str (buf, remaining, request->authority) < 0)
+    return -1;
+
+  return safe_append_crlf (buf, remaining);
+}
+
+/**
+ * add_response_extras - Add post-headers for response (Content-Length, final CRLF)
+ * @response: Response structure
+ * @buf: Buffer pointer (updated)
+ * @remaining: Remaining space (updated)
+ *
+ * Returns: 0 on success, -1 if buffer too small
+ * Thread-safe: Yes
+ */
+static int
+add_response_extras (const SocketHTTP_Response *response, char **buf, size_t *remaining)
+{
+  if (append_content_length_header (buf, remaining, response->headers,
+                                    response->has_body, response->content_length) < 0)
+    return -1;
+
+  return safe_append_crlf (buf, remaining);
+}
+
+/**
+ * add_request_extras - Add post-headers for request (Host, Content-Length, final CRLF)
+ * @request: Request structure
+ * @buf: Buffer pointer (updated)
+ * @remaining: Remaining space (updated)
+ *
+ * Returns: 0 on success, -1 if buffer too small
+ * Thread-safe: Yes
+ */
+static int
+add_request_extras (const SocketHTTP_Request *request, char **buf, size_t *remaining)
+{
+  if (add_optional_host_header (request, buf, remaining) < 0)
+    return -1;
+
+  if (append_content_length_header (buf, remaining, request->headers,
+                                    request->has_body, request->content_length) < 0)
+    return -1;
+
+  return safe_append_crlf (buf, remaining);
+}
+
+/**
+ * serialize_request_line - Serialize request line
+ * @request: Request structure
+ * @buf: Buffer pointer (updated)
+ * @remaining: Remaining space (updated)
+ *
+ * Serializes: METHOD SP Request-Target SP HTTP-Version CRLF
+ *
+ * Returns: 0 on success, -1 if buffer too small
+ * Raises: SocketHTTP1_SerializeError on invalid input
+ * Thread-safe: Yes
+ */
+static int
+serialize_request_line (const SocketHTTP_Request *request, char **buf, size_t *remaining)
+{
+  const char *method_name;
+  const char *version_str;
+  const char *target;
+
+  method_name = SocketHTTP_method_name (request->method);
+  if (!method_name) {
+    SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
+                      "Unknown HTTP method: %d", (int)request->method);
+  }
+
+  if (safe_append_str (buf, remaining, method_name) < 0)
+    return -1;
+
+  if (safe_append (buf, remaining, HTTP_SP, HTTP_SP_LEN) < 0)
+    return -1;
+
+  target = request->path && request->path[0] ? request->path : "/";
+  if (safe_append_str (buf, remaining, target) < 0)
+    return -1;
+
+  if (safe_append (buf, remaining, HTTP_SP, HTTP_SP_LEN) < 0)
+    return -1;
+
+  version_str = SocketHTTP_version_string (request->version);
+  if (!version_str) {
+    SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
+                      "Unknown HTTP version: %d", (int)request->version);
+  }
+
+  if (safe_append_str (buf, remaining, version_str) < 0)
+    return -1;
+
+  return safe_append_crlf (buf, remaining);
+}
+
+static int
+serialize_headers_section (const SocketHTTP_Headers_T headers, char **buf, size_t *remaining);
+
 ssize_t
 SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
                                size_t output_size)
 {
   char *p;
   size_t remaining;
-  const char *method_name;
-  const char *version_str;
 
   assert (request);
   assert (output || output_size == 0);
@@ -151,81 +298,16 @@ SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
   p = output;
   remaining = output_size - 1; /* Reserve space for null terminator */
 
-  /* Method */
-  method_name = SocketHTTP_method_name (request->method);
-  if (!method_name)
-    method_name = "GET"; /* Default */
-
-  if (safe_append_str (&p, &remaining, method_name) < 0)
-    return -1;
-
-  /* SP */
-  if (safe_append (&p, &remaining, " ", 1) < 0)
-    return -1;
-
-  /* Request-Target */
-  if (request->path && request->path[0])
-    {
-      if (safe_append_str (&p, &remaining, request->path) < 0)
-        return -1;
-    }
-  else
-    {
-      /* Default to "/" */
-      if (safe_append (&p, &remaining, "/", 1) < 0)
-        return -1;
-    }
-
-  /* SP */
-  if (safe_append (&p, &remaining, " ", 1) < 0)
-    return -1;
-
-  /* HTTP-Version */
-  version_str = SocketHTTP_version_string (request->version);
-  if (safe_append_str (&p, &remaining, version_str) < 0)
-    return -1;
-
-  /* CRLF */
-  if (safe_append_crlf (&p, &remaining) < 0)
+  /* Request line */
+  if (serialize_request_line (request, &p, &remaining) < 0)
     return -1;
 
   /* Headers */
-  if (request->headers)
-    {
-      ssize_t headers_len;
-
-      headers_len = SocketHTTP1_serialize_headers (request->headers, p,
-                                                   remaining + 1);
-      if (headers_len < 0)
-        return -1;
-
-      p += headers_len;
-      remaining -= (size_t)headers_len;
-    }
-
-  /* Add Host header if not present and authority is available */
-  if (request->authority && request->authority[0])
-    {
-      if (!request->headers
-          || !SocketHTTP_Headers_has (request->headers, "Host"))
-        {
-          if (safe_append_str (&p, &remaining, "Host: ") < 0)
-            return -1;
-          if (safe_append_str (&p, &remaining, request->authority) < 0)
-            return -1;
-          if (safe_append_crlf (&p, &remaining) < 0)
-            return -1;
-        }
-    }
-
-  /* Add Content-Length if body present and not chunked */
-  if (append_content_length_header (&p, &remaining, request->headers,
-                                    request->has_body,
-                                    request->content_length) < 0)
+  if (serialize_headers_section (request->headers, &p, &remaining) < 0)
     return -1;
 
-  /* Final CRLF */
-  if (safe_append_crlf (&p, &remaining) < 0)
+  /* Post-headers extras (Host, Content-Length, final CRLF) */
+  if (add_request_extras (request, &p, &remaining) < 0)
     return -1;
 
   /* Null terminate */
@@ -234,9 +316,63 @@ SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
   return (ssize_t)(p - output);
 }
 
+
+
 /* ============================================================================
  * Response Serialization
  * ============================================================================ */
+
+/**
+ * serialize_response_line - Serialize response line
+ * @response: Response structure
+ * @buf: Buffer pointer (updated)
+ * @remaining: Remaining space (updated)
+ *
+ * Serializes: HTTP-Version SP Status-Code SP Reason-Phrase CRLF
+ *
+ * Returns: 0 on success, -1 if buffer too small
+ * Raises: SocketHTTP1_SerializeError on invalid input
+ * Thread-safe: Yes
+ */
+static int
+serialize_response_line (const SocketHTTP_Response *response, char **buf, size_t *remaining)
+{
+  const char *version_str;
+  const char *reason;
+
+  if (!SocketHTTP_status_valid (response->status_code)) {
+    SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
+                      "Invalid status code: %d", response->status_code);
+  }
+
+  version_str = SocketHTTP_version_string (response->version);
+  if (!version_str) {
+    SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
+                      "Unknown HTTP version: %d", (int)response->version);
+  }
+
+  if (safe_append_str (buf, remaining, version_str) < 0)
+    return -1;
+
+  if (safe_append (buf, remaining, HTTP_SP, HTTP_SP_LEN) < 0)
+    return -1;
+
+  if (safe_append_int (buf, remaining, response->status_code) < 0)
+    return -1;
+
+  if (safe_append (buf, remaining, HTTP_SP, HTTP_SP_LEN) < 0)
+    return -1;
+
+  reason = response->reason_phrase && response->reason_phrase[0] ?
+    response->reason_phrase : SocketHTTP_status_reason (response->status_code);
+
+  if (reason) {
+    if (safe_append_str (buf, remaining, reason) < 0)
+      return -1;
+  }
+
+  return safe_append_crlf (buf, remaining);
+}
 
 ssize_t
 SocketHTTP1_serialize_response (const SocketHTTP_Response *response,
@@ -244,8 +380,6 @@ SocketHTTP1_serialize_response (const SocketHTTP_Response *response,
 {
   char *p;
   size_t remaining;
-  const char *version_str;
-  const char *reason;
 
   assert (response);
   assert (output || output_size == 0);
@@ -256,60 +390,16 @@ SocketHTTP1_serialize_response (const SocketHTTP_Response *response,
   p = output;
   remaining = output_size - 1;
 
-  /* HTTP-Version */
-  version_str = SocketHTTP_version_string (response->version);
-  if (safe_append_str (&p, &remaining, version_str) < 0)
-    return -1;
-
-  /* SP */
-  if (safe_append (&p, &remaining, " ", 1) < 0)
-    return -1;
-
-  /* Status-Code */
-  if (safe_append_int (&p, &remaining, response->status_code) < 0)
-    return -1;
-
-  /* SP */
-  if (safe_append (&p, &remaining, " ", 1) < 0)
-    return -1;
-
-  /* Reason-Phrase */
-  reason = response->reason_phrase;
-  if (!reason || !reason[0])
-    reason = SocketHTTP_status_reason (response->status_code);
-
-  if (reason)
-    {
-      if (safe_append_str (&p, &remaining, reason) < 0)
-        return -1;
-    }
-
-  /* CRLF */
-  if (safe_append_crlf (&p, &remaining) < 0)
+  /* Response line */
+  if (serialize_response_line (response, &p, &remaining) < 0)
     return -1;
 
   /* Headers */
-  if (response->headers)
-    {
-      ssize_t headers_len;
-
-      headers_len = SocketHTTP1_serialize_headers (response->headers, p,
-                                                   remaining + 1);
-      if (headers_len < 0)
-        return -1;
-
-      p += headers_len;
-      remaining -= (size_t)headers_len;
-    }
-
-  /* Add Content-Length if body present */
-  if (append_content_length_header (&p, &remaining, response->headers,
-                                    response->has_body,
-                                    response->content_length) < 0)
+  if (serialize_headers_section (response->headers, &p, &remaining) < 0)
     return -1;
 
-  /* Final CRLF */
-  if (safe_append_crlf (&p, &remaining) < 0)
+  /* Post-headers extras (Content-Length, final CRLF) */
+  if (add_response_extras (response, &p, &remaining) < 0)
     return -1;
 
   /* Null terminate */
@@ -348,6 +438,12 @@ serialize_header_cb (const char *name, size_t name_len, const char *value,
 {
   struct serialize_ctx *ctx = userdata;
 
+  if (!SocketHTTP_header_name_valid (name, name_len)
+      || !SocketHTTP_header_value_valid (value, value_len)) {
+    SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
+                      "Invalid header name or value");
+  }
+
   /* Name */
   if (safe_append (&ctx->buf, &ctx->remaining, name, name_len) < 0)
     {
@@ -356,7 +452,7 @@ serialize_header_cb (const char *name, size_t name_len, const char *value,
     }
 
   /* ": " */
-  if (safe_append (&ctx->buf, &ctx->remaining, ": ", 2) < 0)
+  if (safe_append (&ctx->buf, &ctx->remaining, HTTP_HEADER_SEP, HTTP_HEADER_SEP_LEN) < 0)
     {
       ctx->error = 1;
       return 1;
@@ -377,6 +473,20 @@ serialize_header_cb (const char *name, size_t name_len, const char *value,
     }
 
   return 0; /* Continue */
+}
+
+static int
+serialize_headers_section (const SocketHTTP_Headers_T headers, char **buf, size_t *remaining)
+{
+  struct serialize_ctx ctx = {0};
+  ctx.buf = *buf;
+  ctx.remaining = *remaining;
+  ctx.error = 0;
+  SocketHTTP_Headers_iterate (headers, serialize_header_cb, &ctx);
+  if (ctx.error) return -1;
+  *buf = ctx.buf;
+  *remaining = ctx.remaining;
+  return 0;
 }
 
 ssize_t

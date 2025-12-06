@@ -49,7 +49,7 @@
 #include "socket/Socket.h"
 
 /* Forward declarations for optional TLS */
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "tls/SocketTLSContext.h"
 #else
 typedef struct SocketTLSContext_T *SocketTLSContext_T;
@@ -96,6 +96,39 @@ typedef struct SocketWS *SocketWS_T;
 #ifndef HTTPSERVER_DEFAULT_BACKLOG
 #define HTTPSERVER_DEFAULT_BACKLOG 128
 #endif
+
+/** Default listen port */
+#ifndef HTTPSERVER_DEFAULT_PORT
+#define HTTPSERVER_DEFAULT_PORT 8080
+#endif
+
+/** Default bind address */
+#ifndef HTTPSERVER_DEFAULT_BIND_ADDR
+#define HTTPSERVER_DEFAULT_BIND_ADDR "0.0.0.0"
+#endif
+
+/** Default enable H2C upgrade */
+#ifndef HTTPSERVER_DEFAULT_ENABLE_H2C_UPGRADE
+#define HTTPSERVER_DEFAULT_ENABLE_H2C_UPGRADE 0
+#endif
+
+/** Buffer sizes for strings and chunks */
+#ifndef HTTPSERVER_CONTENT_LENGTH_BUF_SIZE
+#define HTTPSERVER_CONTENT_LENGTH_BUF_SIZE 32
+#endif
+
+#ifndef HTTPSERVER_CHUNK_FINAL_BUF_SIZE
+#define HTTPSERVER_CHUNK_FINAL_BUF_SIZE 64
+#endif
+
+#ifndef HTTPSERVER_CLIENT_ADDR_MAX
+#define HTTPSERVER_CLIENT_ADDR_MAX 64
+#endif
+
+#ifndef HTTPSERVER_DRAIN_POLL_MS
+#define HTTPSERVER_DRAIN_POLL_MS 100
+#endif /* temporarily without #endif ? No, keep but to balance, wait */
+
 
 /** Default maximum connections */
 #ifndef HTTPSERVER_DEFAULT_MAX_CONNECTIONS

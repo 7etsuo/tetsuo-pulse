@@ -148,6 +148,15 @@
  */
 extern const Except_T SocketHTTP1_ParseError;
 
+/**
+ * SocketHTTP1_SerializeError - HTTP/1.1 message serialization failure
+ *
+ * Raised when:
+ * - Invalid input data (unknown method, invalid version, etc.)
+ * - Required fields missing or malformed
+ */
+extern const Except_T SocketHTTP1_SerializeError;
+
 /* ============================================================================
  * Parser Types
  * ============================================================================ */
@@ -482,7 +491,8 @@ extern int SocketHTTP1_Parser_expects_continue (SocketHTTP1_Parser_T parser);
  * Automatically adds Host header if missing (from authority).
  * Terminates with CRLF CRLF.
  *
- * Returns: Bytes written (excluding null), or -1 on error
+ * Returns: Bytes written (excluding null), or -1 on error (buffer too small)
+ * Raises: SocketHTTP1_SerializeError on invalid input (unknown method/version)
  * Thread-safe: Yes
  */
 extern ssize_t SocketHTTP1_serialize_request (const SocketHTTP_Request *request,
@@ -496,7 +506,8 @@ extern ssize_t SocketHTTP1_serialize_request (const SocketHTTP_Request *request,
  *
  * Serializes status line and headers. Does NOT serialize body.
  *
- * Returns: Bytes written, or -1 on error
+ * Returns: Bytes written (excluding null), or -1 on error (buffer too small)
+ * Raises: SocketHTTP1_SerializeError on invalid input (invalid status/version)
  * Thread-safe: Yes
  */
 extern ssize_t
@@ -512,7 +523,8 @@ SocketHTTP1_serialize_response (const SocketHTTP_Response *response,
  * Each header formatted as "Name: Value\r\n".
  * Does NOT add final CRLF.
  *
- * Returns: Bytes written, or -1 on error
+ * Returns: Bytes written (excluding null), or -1 on error (buffer too small)
+ * Raises: SocketHTTP1_SerializeError on invalid headers
  * Thread-safe: Yes
  */
 extern ssize_t SocketHTTP1_serialize_headers (SocketHTTP_Headers_T headers,

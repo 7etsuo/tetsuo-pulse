@@ -12,7 +12,7 @@ extern void socket_live_increment(void);
 extern void socket_live_decrement(void);
 extern int socket_debug_live_count(void);
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 /* TLS field initialization - shared between Socket.c and Socket-accept.c */
 extern void socket_init_tls_fields(Socket_T sock);
 #endif
@@ -25,7 +25,7 @@ struct Socket_T
   /* Bandwidth limiting */
   SocketRateLimit_T bandwidth_limiter;  /**< Rate limiter for bandwidth (NULL if unlimited) */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /* TLS-specific fields (retained as stream-only) */
   void *tls_ctx;          /* SSL_CTX* - opaque */
   void *tls_ssl;          /* SSL* - opaque */

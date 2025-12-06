@@ -189,6 +189,16 @@ typedef enum SocketCounterMetric
   SOCKET_CTR_LIMIT_STREAMS_EXCEEDED,           /**< HTTP/2 max streams exceeded */
   SOCKET_CTR_LIMIT_HEADER_LIST_EXCEEDED,       /**< HTTP/2 header list size exceeded */
 
+  /* SYN Flood Protection Counters */
+  SOCKET_CTR_SYNPROTECT_ATTEMPTS_TOTAL,        /**< Total SYN/check attempts */
+  SOCKET_CTR_SYNPROTECT_ALLOWED,               /**< Allowed connections */
+  SOCKET_CTR_SYNPROTECT_THROTTLED,             /**< Throttled connections */
+  SOCKET_CTR_SYNPROTECT_CHALLENGED,            /**< Challenged connections */
+  SOCKET_CTR_SYNPROTECT_BLOCKED,               /**< Blocked connections */
+  SOCKET_CTR_SYNPROTECT_WHITELISTED,           /**< Whitelisted IPs */
+  SOCKET_CTR_SYNPROTECT_BLACKLISTED,           /**< Blacklisted IPs */
+  SOCKET_CTR_SYNPROTECT_LRU_EVICTIONS,         /**< LRU evictions from IP table */
+
   SOCKET_COUNTER_METRIC_COUNT                  /**< Number of counter metrics */
 } SocketCounterMetric;
 
@@ -234,6 +244,10 @@ typedef enum SocketGaugeMetric
   /* Poll Gauges */
   SOCKET_GAU_POLL_REGISTERED_FDS,              /**< FDs registered with poll */
   SOCKET_GAU_POLL_ACTIVE_TIMERS,               /**< Active timers */
+
+  /* SYN Flood Protection Gauges */
+  SOCKET_GAU_SYNPROTECT_TRACKED_IPS,           /**< Currently tracked IP entries */
+  SOCKET_GAU_SYNPROTECT_BLOCKED_IPS,           /**< Currently blocked IPs */
 
   SOCKET_GAUGE_METRIC_COUNT                    /**< Number of gauge metrics */
 } SocketGaugeMetric;

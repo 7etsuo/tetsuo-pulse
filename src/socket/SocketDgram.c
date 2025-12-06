@@ -37,7 +37,7 @@
 #include "socket/SocketDgram.h"
 #include "socket/SocketIO.h"
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include <openssl/ssl.h>
 #endif
 
@@ -123,7 +123,7 @@ SocketDgram_free (T *socket)
 
   *socket = NULL; /* Invalidate caller pointer before cleanup */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   if (s->dtls_ssl)
     {
       SSL_free ((SSL *)s->dtls_ssl);

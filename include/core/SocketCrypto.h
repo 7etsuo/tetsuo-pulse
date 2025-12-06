@@ -231,16 +231,17 @@ extern void SocketCrypto_hex_encode (const void *input, size_t input_len,
  * SocketCrypto_hex_decode - Decode hexadecimal string
  * @input: Hex string
  * @input_len: Length of string (must be even)
- * @output: Output buffer (must be at least input_len / 2 bytes)
+ * @output: Output buffer
+ * @output_capacity: Capacity of output buffer in bytes (must be at least input_len / 2)
  *
  * Decodes hexadecimal string to binary data.
  * Accepts both uppercase and lowercase hex digits.
  *
- * Returns: Decoded length (input_len / 2), or -1 on error
+ * Returns: Decoded length (min(input_len / 2, output_capacity)), or -1 on error (invalid input, odd length, insufficient capacity)
  * Thread-safe: Yes
  */
 extern ssize_t SocketCrypto_hex_decode (const char *input, size_t input_len,
-                                        unsigned char *output);
+                                        unsigned char *output, size_t output_capacity);
 
 /* ============================================================================
  * Random Number Generation

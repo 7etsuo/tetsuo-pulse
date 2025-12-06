@@ -215,17 +215,6 @@ global_memory_try_alloc (size_t nbytes)
   return global_memory_try_limited (limit, nbytes);
 }
 
-/**
- * global_memory_try_alloc - Try to allocate bytes from global limit
- * @nbytes: Number of bytes to allocate
- *
- * Returns: 1 if allocation allowed, 0 if would exceed limit
- * Thread-safe: Yes (atomic compare-exchange loop for strict enforcement)
- *
- * Security: Uses atomic CAS loop to prevent TOCTOU race conditions where
- * multiple threads could simultaneously pass the limit check and exceed
- * the configured memory limit.
- */
 
 /**
  * global_memory_release - Release bytes back to global pool
@@ -392,12 +381,6 @@ chunk_cache_get (struct ChunkHeader **ptr_out, char **limit_out)
   return result;
 }
 
-/**
- * chunk_cache_return - Return chunk to free cache or free it
- * @chunk: Chunk to return
- *
- * Thread-safe: Yes (uses global arena_mutex)
- */
 /**
  * chunk_cache_return - Return chunk to free cache or free it
  * @chunk: Chunk to return
@@ -840,21 +823,6 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
   return result;
 }
 
-/**
- * Arena_alloc - Allocate memory from arena
- * @arena: Arena to allocate from
- * @nbytes: Number of bytes to allocate
- * @file: Source file name (for debugging)
- * @line: Source line number (for debugging)
- *
- * Returns: Pointer to allocated memory
- * Raises: Arena_Failed if allocation fails due to insufficient space or overflow
- * Thread-safe: Yes
- * Pre-conditions: arena != NULL, nbytes > 0
- *
- * Allocates memory from the arena with proper alignment and overflow
- * protection. Memory remains valid until the arena is cleared or disposed.
- */
 
 /**
  * Arena_calloc - Allocate and zero memory from arena
@@ -914,22 +882,6 @@ Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line)
   return ptr;
 }
 
-/**
- * Arena_calloc - Allocate and zero memory from arena
- * @arena: Arena to allocate from
- * @count: Number of elements
- * @nbytes: Size of each element
- * @file: Source file (for debugging)
- * @line: Source line (for debugging)
- *
- * Returns: Pointer to zeroed memory
- * Raises: Arena_Failed if allocation fails or overflow occurs
- * Thread-safe: Yes
- * Pre-conditions: arena != NULL, count > 0, nbytes > 0
- *
- * Allocates count * nbytes bytes from the arena and initializes to zero.
- * Uses Arena_alloc internally with overflow protection for multiplication.
- */
 
 /**
  * Arena_clear - Clear all allocations from arena

@@ -59,7 +59,9 @@
  *
  * Requires: SOCKET_DECLARE_MODULE_EXCEPTION(HTTPClient) in .c file.
  */
-#define RAISE_HTTPCLIENT_ERROR(e) SOCKET_RAISE_MODULE_ERROR (HTTPClient, e)
+#define RAISE_HTTPCLIENT_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTPClient, e)
+
+extern __thread Except_T SocketHTTPClient_DetailedException;
 
 /* ============================================================================
  * Connection Pool Entry
@@ -290,6 +292,45 @@ extern int httpclient_receive_response (HTTPPoolEntry *conn,
                                         SocketHTTPClient_Response *response,
                                         Arena_T arena);
 
+/* ============================================================================
+ * Authentication Constants
+ * ============================================================================ */
+
+/* Buffer sizes for Digest authentication fields */
+#define HTTPCLIENT_DIGEST_REALM_MAX_LEN       128
+#define HTTPCLIENT_DIGEST_NONCE_MAX_LEN       128
+#define HTTPCLIENT_DIGEST_OPAQUE_MAX_LEN      128
+#define HTTPCLIENT_DIGEST_QOP_MAX_LEN         64
+#define HTTPCLIENT_DIGEST_ALGORITHM_MAX_LEN   32
+#define HTTPCLIENT_DIGEST_PARAM_NAME_MAX_LEN  32
+#define HTTPCLIENT_DIGEST_VALUE_MAX_LEN       256
+
+/* Digest token constants */
+#define HTTPCLIENT_DIGEST_TOKEN_AUTH          "auth"
+#define HTTPCLIENT_DIGEST_TOKEN_AUTH_LEN      4
+#define HTTPCLIENT_DIGEST_TOKEN_TRUE          "true"
+#define HTTPCLIENT_DIGEST_TOKEN_TRUE_LEN      4
+#define HTTPCLIENT_DIGEST_TOKEN_STALE         "stale"
+#define HTTPCLIENT_DIGEST_TOKEN_STALE_LEN     5
+
+/* Digest prefixes and lengths */
+#define HTTPCLIENT_DIGEST_PREFIX              "Digest "
+#define HTTPCLIENT_DIGEST_PREFIX_LEN          7
+#define HTTPCLIENT_DIGEST_BASIC_PREFIX        "Basic "
+#define HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN    6
+
+/* Hex digest size (max of MD5/SHA256) */
+#define HTTPCLIENT_DIGEST_HEX_SIZE            (SOCKET_CRYPTO_SHA256_SIZE * 2 + 1)
+
+/* Basic auth credentials buffer size defined in SocketHTTPClient-config.h */
+
+/* Client nonce sizes */
+#define HTTPCLIENT_DIGEST_CNONCE_SIZE         16
+
+
+/* Temporary buffers for hash computations */
+#define HTTPCLIENT_DIGEST_A_BUFFER_SIZE       512
+
 /* Authentication helpers (uses SocketCrypto) */
 extern int httpclient_auth_basic_header (const char *username,
                                          const char *password, char *output,
@@ -334,6 +375,22 @@ extern int httpclient_auth_digest_challenge (const char *www_authenticate,
                                              size_t output_size);
 
 /**
+ * httpclient_auth_bearer_header - Generate Bearer token Authorization header
+ * @token: Bearer token string
+ * @output: Output buffer for "Bearer <token>"
+ * @output_size: Size of output buffer
+ *
+ * Returns: 0 on success, -1 if buffer too small
+ * Thread-safe: Yes
+ *
+ * Format per RFC 6750: Authorization: Bearer <token>
+ * Token is copied as-is, no validation or encoding.
+ * Token length limited by output_size - 7.
+ */
+
+extern int httpclient_auth_bearer_header (const char *token, char *output, size_t output_size);
+
+/**
  * httpclient_auth_is_stale_nonce - Check if WWW-Authenticate contains stale=true
  * @www_authenticate: WWW-Authenticate header value
  *
@@ -376,10 +433,12 @@ httpclient_host_hash (const char *host, int port, size_t table_size)
 }
 
 /* Retry helpers (from SocketHTTPClient-retry.c) */
-extern int httpclient_should_retry_error (SocketHTTPClient_T client, SocketHTTPClient_Error error);
-extern int httpclient_should_retry_status (SocketHTTPClient_T client, int status);
-extern int httpclient_calculate_retry_delay (SocketHTTPClient_T client, int attempt);
+extern int httpclient_should_retry_error (const SocketHTTPClient_T client, SocketHTTPClient_Error error);
+extern int httpclient_should_retry_status (const SocketHTTPClient_T client, int status);
+extern int httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt);
 extern void httpclient_retry_sleep_ms (int ms);
+
+extern void clear_response_for_retry (SocketHTTP_Response *response);
 extern void httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
 
 #endif /* SOCKETHTTPCLIENT_PRIVATE_INCLUDED */

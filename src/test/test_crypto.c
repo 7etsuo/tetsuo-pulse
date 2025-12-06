@@ -67,7 +67,7 @@ hex_to_bytes (const char *hex, unsigned char *out, size_t max_len)
  * SHA-1 Tests (RFC 3174)
  * ============================================================================ */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 TEST (sha1_empty)
 {
@@ -526,11 +526,11 @@ TEST (hex_decode_valid)
   unsigned char output[16];
   unsigned char expected[] = { 0xde, 0xad, 0xbe, 0xef };
 
-  ssize_t len = SocketCrypto_hex_decode ("deadbeef", 8, output);
+  ssize_t len = SocketCrypto_hex_decode ("deadbeef", 8, output, sizeof(output));
   ASSERT (len == 4);
   ASSERT (memcmp (output, expected, 4) == 0);
 
-  len = SocketCrypto_hex_decode ("DEADBEEF", 8, output);
+  len = SocketCrypto_hex_decode ("DEADBEEF", 8, output, sizeof(output));
   ASSERT (len == 4);
   ASSERT (memcmp (output, expected, 4) == 0);
 }
@@ -540,11 +540,11 @@ TEST (hex_decode_invalid)
   unsigned char output[16];
 
   /* Odd length */
-  ssize_t len = SocketCrypto_hex_decode ("abc", 3, output);
+  ssize_t len = SocketCrypto_hex_decode ("abc", 3, output, sizeof(output));
   ASSERT (len == -1);
 
   /* Invalid character */
-  len = SocketCrypto_hex_decode ("ghij", 4, output);
+  len = SocketCrypto_hex_decode ("ghij", 4, output, sizeof(output));
   ASSERT (len == -1);
 }
 
@@ -556,7 +556,7 @@ TEST (hex_roundtrip)
   unsigned char decoded[16];
 
   SocketCrypto_hex_encode (original, 16, encoded, 1);
-  ssize_t len = SocketCrypto_hex_decode (encoded, 32, decoded);
+  ssize_t len = SocketCrypto_hex_decode (encoded, 32, decoded, sizeof(decoded));
   ASSERT (len == 16);
   ASSERT (memcmp (decoded, original, 16) == 0);
 }

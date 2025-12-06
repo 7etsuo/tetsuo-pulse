@@ -33,11 +33,11 @@
  * Centralized Exception Infrastructure
  * ============================================================================
  *
- * REFACTOR: Uses centralized exception handling from SocketUtil.h.
+ * Uses centralized exception handling from SocketUtil.h.
  * The thread-local exception is declared here; error messages use the
  * shared socket_error_buf from SocketUtil.h.
  */
-SOCKET_DECLARE_MODULE_EXCEPTION (HTTPClient);
+__thread Except_T SocketHTTPClient_DetailedException;
 
 /* ============================================================================
  * Exception Definitions
@@ -109,6 +109,7 @@ SocketHTTPClient_error_is_retryable (SocketHTTPClient_Error error)
     case HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE: /* Size limit */
     case HTTPCLIENT_ERROR_CANCELLED:         /* User cancelled */
     case HTTPCLIENT_ERROR_OUT_OF_MEMORY:     /* Resource exhaustion */
+    case HTTPCLIENT_ERROR_LIMIT_EXCEEDED:     /* Pool limits reached */
       return 0;
 
     default:
@@ -1342,9 +1343,8 @@ execute_protocol_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
   if (conn->version == HTTP_VERSION_1_1 || conn->version == HTTP_VERSION_1_0)
     return execute_http1_request (conn, req, response, max_response_size);
 
-  /* HTTP/2 not yet implemented */
   client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
-  HTTPCLIENT_ERROR_MSG ("HTTP/2 not yet implemented - use HTTP/1.1");
+  HTTPCLIENT_ERROR_FMT ("HTTP version %d not supported", conn->version);
   return -1;
 }
 
@@ -1745,88 +1745,19 @@ SocketHTTPClient_Request_auth (SocketHTTPClient_Request_T req,
  * Thread-safe: Yes
  */
 /* calculate_retry_delay moved to SocketHTTPClient-retry.c */
-extern int httpclient_calculate_retry_delay (SocketHTTPClient_T client, int attempt);
+extern int httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt);
 
-/**
- * retry_sleep_ms - Sleep for specified milliseconds
- * @ms: Milliseconds to sleep
- *
- * Thread-safe: Yes
- */
-static void
-retry_sleep_ms (int ms)
-{
-  struct timespec req;
-  struct timespec rem;
+/* retry_sleep_ms moved to SocketHTTPClient-retry.c */
+extern void httpclient_retry_sleep_ms (int ms);
 
-  if (ms <= 0)
-    return;
+/* httpclient_should_retry_error moved to SocketHTTPClient-retry.c */
+extern int httpclient_should_retry_error (const SocketHTTPClient_T client, SocketHTTPClient_Error error);
 
-  req.tv_sec = ms / 1000;
-  req.tv_nsec = (ms % 1000) * 1000000L;
+/* should_retry_status moved to SocketHTTPClient-retry.c */
+extern int httpclient_should_retry_status (const SocketHTTPClient_T client, int status);
 
-  while (nanosleep (&req, &rem) == -1)
-    {
-      if (errno != EINTR)
-        break;
-      req = rem;
-    }
-}
-
-/**
- * httpclient_should_retry_error - Check if error code should trigger retry
- * @client: HTTP client with retry config
- * @error: Error code to check
- *
- * Returns: 1 if should retry, 0 otherwise
- */
-int
-httpclient_should_retry_error (SocketHTTPClient_T client, SocketHTTPClient_Error error)
-{
-  switch (error)
-    {
-    case HTTPCLIENT_ERROR_DNS:
-    case HTTPCLIENT_ERROR_CONNECT:
-      return client->config.retry_on_connection_error;
-
-    case HTTPCLIENT_ERROR_TIMEOUT:
-      return client->config.retry_on_timeout;
-
-    default:
-      return 0;
-    }
-}
-
-/**
- * should_retry_status - Check if HTTP status should trigger retry
- * @client: HTTP client with retry config
- * @status: HTTP status code
- *
- * Returns: 1 if should retry, 0 otherwise
- */
-static int
-should_retry_status (SocketHTTPClient_T client, int status)
-{
-  if (status >= 500 && status < 600)
-    return client->config.retry_on_5xx;
-
-  return 0;
-}
-
-/**
- * clear_response_for_retry - Clear response state for retry attempt
- * @response: Response to clear
- */
-static void
-clear_response_for_retry (SocketHTTPClient_Response *response)
-{
-  if (response->arena != NULL)
-    {
-      Arena_dispose (&response->arena);
-      response->arena = NULL;
-    }
-  memset (response, 0, sizeof (*response));
-}
+/* clear_response_for_retry moved to SocketHTTPClient-retry.c */
+extern void httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
 
 /**
  * execute_single_attempt - Execute one request attempt with exception handling
@@ -1888,7 +1819,7 @@ should_retry_5xx (SocketHTTPClient_T client,
   if (response->status_code < 500 || response->status_code >= 600)
     return 0;
 
-  if (!should_retry_status (client, response->status_code))
+  if (!httpclient_should_retry_status (client, response->status_code))
     return 0;
 
   if (attempt > client->config.max_retries)
@@ -1951,7 +1882,7 @@ handle_failed_attempt (SocketHTTPClient_T client, int attempt)
   SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
                    "Attempt %d failed (error=%d), retrying in %d ms", attempt,
                    client->last_error, delay_ms);
-  retry_sleep_ms (delay_ms);
+  httpclient_retry_sleep_ms (delay_ms);
 
   return 1;
 }
@@ -1982,7 +1913,7 @@ SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
     {
       /* Clear response for fresh attempt (except first) */
       if (attempt > 1)
-        clear_response_for_retry (response);
+        httpclient_clear_response_for_retry (response);
 
       /* Attempt the request */
       result = execute_single_attempt (client, req, response);

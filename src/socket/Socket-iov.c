@@ -220,7 +220,7 @@ Socket_sendfile (T socket, int file_fd, off_t *offset, size_t count)
   assert (file_fd >= 0);
   assert (count > 0);
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   /* TLS cannot use kernel sendfile() - must use fallback */
   if (socket_is_tls_enabled (socket))
     {

@@ -12,13 +12,13 @@
 #include "socket/Socket.h"
 #include <time.h>
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include <openssl/ssl.h>
 #endif
 
 TEST (socketpool_tls_fields_initialization)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketPool_T pool = SocketPool_new (arena, 10, 1024);
   Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);
@@ -62,7 +62,7 @@ TEST (socketpool_tls_fields_initialization)
 
 TEST (socketpool_tls_session_persistence)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketPool_T pool
       = SocketPool_new (arena, 1, 1024); /* Small to reuse slot */
@@ -135,7 +135,7 @@ TEST (socketpool_tls_session_persistence)
 
 TEST (socketpool_tls_session_validation)
 {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
   SocketPool_T pool = SocketPool_new (arena, 1, 1024);
   Socket_T socket = Socket_new (AF_INET, SOCK_STREAM, 0);

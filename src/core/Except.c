@@ -150,8 +150,25 @@ except_emit_location (const char *file, int line)
         }
 }
 
+/**
+ * except_finish_abort - Final steps for exception abort paths
+ *
+ * Emits "aborting..." message, flushes stderr, and aborts the program.
+ * Used by multiple fatal error handlers to avoid code duplication.
+ *
+ * This function does not return.
+ *
+ * Thread-safe: Yes
+ *
+ * Security: Ensures diagnostic messages are visible before termination.
+ */
 static void
-except_finish_abort (void);
+except_finish_abort (void)
+{
+        except_emit_fatal (EXCEPT_ABORTING_FMT);
+        except_flush_stderr ();
+        abort ();
+}
 
 /* ============================================================================
  * Static Helper Functions - Validation
@@ -202,25 +219,6 @@ except_abort_uncaught (const Except_T *e, const char *file, int line)
         except_finish_abort ();
 }
 
-/**
- * except_finish_abort - Final steps for exception abort paths
- *
- * Emits "aborting..." message, flushes stderr, and aborts the program.
- * Used by multiple fatal error handlers to avoid code duplication.
- *
- * This function does not return.
- *
- * Thread-safe: Yes
- *
- * Security: Ensures diagnostic messages are visible before termination.
- */
-static void
-except_finish_abort (void)
-{
-        except_emit_fatal (EXCEPT_ABORTING_FMT);
-        except_flush_stderr ();
-        abort ();
-}
 
 /* ============================================================================
  * Static Helper Functions - Frame Management
@@ -256,6 +254,16 @@ except_store_exception (Except_Frame *frame, const Except_T *e,
  *
  * Thread-safe: Yes (thread-local storage)
  */
+/**
+ * except_pop_frame - Unwind exception stack by popping current frame
+ * @frame: Current exception frame to pop (must not be NULL)
+ *
+ * Updates the thread-local exception stack to point to the previous frame.
+ * Called during exception unwinding before jumping to handler.
+ *
+ * Returns: void
+ * Thread-safe: Yes (thread-local storage)
+ */
 static void
 except_pop_frame (Except_Frame *frame)
 {
@@ -270,6 +278,20 @@ except_pop_frame (Except_Frame *frame)
  * This function does not return - it performs a longjmp to the TRY block.
  *
  * Thread-safe: Yes (operates on caller's frame)
+ */
+/**
+ * except_jump_to_handler - Perform non-local jump to exception handler
+ * @frame: Exception frame containing jump buffer (must not be NULL)
+ *
+ * This function does not return - it performs a longjmp to the TRY block
+ * with value Except_raised (1) to indicate exception was raised.
+ *
+ * Returns: Does not return
+ * Raises: longjmp(Except_raised) to nearest TRY handler
+ * Thread-safe: Yes (operates on caller's frame and thread-local stack)
+ *
+ * Note: Casting away volatile is safe because setjmp already saved the
+ * environment contents non-volatily in the frame.
  */
 static void
 except_jump_to_handler (Except_Frame *frame)

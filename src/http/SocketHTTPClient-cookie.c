@@ -18,23 +18,29 @@
  * - socket_util_arena_strdup() for string duplication
  */
 
-#include "http/SocketHTTPClient.h"
-#include "http/SocketHTTPClient-private.h"
-#include "http/SocketHTTP.h"
-#include "core/Arena.h"
-#include "core/SocketUtil.h"
-
 #include <assert.h>
-
 #include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
+#include "core/Except.h"
+
+#include "core/Arena.h"
+#include "core/SocketUtil.h"
+#include "http/SocketHTTP.h"
+#include "http/SocketHTTPClient.h"
+#include "http/SocketHTTPClient-private.h"
+
 /* Override log component for this module */
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTPClient-Cookie"
+
+SOCKET_DECLARE_MODULE_EXCEPTION(HTTPClient);
+
+
 
 /* ============================================================================
  * Cookie Jar Configuration
@@ -201,9 +207,11 @@ parse_max_age (const char *value)
   return time (NULL) + age;
 }
 
-/**
- * Parse SameSite attribute value
- */
+/* SameSite constants */
+static const char COOKIE_SAMESITE_STRICT_STR[] = "Strict";
+static const char COOKIE_SAMESITE_LAX_STR[] = "Lax";
+static const char COOKIE_SAMESITE_NONE_STR[] = "None";
+
 /**
  * parse_same_site - Parse SameSite attribute value
  * @value: String value ("Strict", "Lax", "None", case-insensitive)
@@ -216,11 +224,11 @@ parse_same_site (const char *value)
   if (value == NULL)
     return COOKIE_SAMESITE_LAX; /* Default per RFC 6265bis */
 
-  if (strcasecmp (value, "Strict") == 0)
+  if (strcasecmp (value, COOKIE_SAMESITE_STRICT_STR) == 0)
     return COOKIE_SAMESITE_STRICT;
-  if (strcasecmp (value, "Lax") == 0)
+  if (strcasecmp (value, COOKIE_SAMESITE_LAX_STR) == 0)
     return COOKIE_SAMESITE_LAX;
-  if (strcasecmp (value, "None") == 0)
+  if (strcasecmp (value, COOKIE_SAMESITE_NONE_STR) == 0)
     return COOKIE_SAMESITE_NONE;
 
   return COOKIE_SAMESITE_LAX;
@@ -272,42 +280,37 @@ get_default_path (const char *request_path, char *output, size_t output_size)
 SocketHTTPClient_CookieJar_T
 SocketHTTPClient_CookieJar_new (void)
 {
-  SocketHTTPClient_CookieJar_T jar;
-  Arena_T arena;
+  SocketHTTPClient_CookieJar_T jar = NULL;
+  Arena_T arena = NULL;
 
-  arena = Arena_new ();
-  if (arena == NULL) {
-    SOCKET_ERROR_MSG("Arena_new failed");
-    return NULL;
-  }
+  TRY
+    arena = Arena_new ();
+    if (arena == NULL)
+      RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
 
-  jar = Arena_alloc (arena, sizeof (*jar), __FILE__, __LINE__);
-  if (jar == NULL) {
-    SOCKET_ERROR_MSG("Arena_alloc failed for jar struct");
-    Arena_dispose (&arena);
-    return NULL;
-  }
+    jar = Arena_alloc (arena, sizeof (*jar), __FILE__, __LINE__);
+    if (jar == NULL)
+      RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
 
-  memset (jar, 0, sizeof (*jar));
-  jar->arena = arena;
-  jar->hash_size = HTTPCLIENT_COOKIE_HASH_SIZE;
+    memset (jar, 0, sizeof (*jar));
+    jar->arena = arena;
+    jar->hash_size = HTTPCLIENT_COOKIE_HASH_SIZE;
 
-  jar->hash_table
-      = Arena_calloc (arena, HTTPCLIENT_COOKIE_HASH_SIZE, sizeof (CookieEntry *), __FILE__,
-                      __LINE__);
-  if (jar->hash_table == NULL) {
-    SOCKET_ERROR_MSG("Arena_calloc failed for hash table");
-    Arena_dispose (&jar->arena);
-    return NULL;
-  }
+    jar->hash_table = Arena_calloc (arena, HTTPCLIENT_COOKIE_HASH_SIZE, sizeof (CookieEntry *), __FILE__, __LINE__);
+    if (jar->hash_table == NULL)
+      RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
 
-  if (pthread_mutex_init (&jar->mutex, NULL) != 0) {
-    SOCKET_ERROR_FMT("pthread_mutex_init failed for cookie jar");
-    Arena_dispose (&jar->arena);
-    return NULL;
-  }
+    if (pthread_mutex_init (&jar->mutex, NULL) != 0)
+      RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
 
-  return jar;
+    return jar;
+  EXCEPT (SocketHTTPClient_Failed)
+    HTTPCLIENT_ERROR_MSG("Failed to create cookie jar");
+    if (arena != NULL)
+      Arena_dispose (&arena);
+  END_TRY;
+
+  return NULL;
 }
 
 void
@@ -334,24 +337,21 @@ SocketHTTPClient_CookieJar_free (SocketHTTPClient_CookieJar_T *jar)
  * @cookie: New cookie data for value and flags
  * @arena: Arena for strdup value
  *
- * Returns: 0 on success, -1 on alloc fail
  * Thread-safe: No (caller must hold mutex)
+ * Raises: SocketHTTPClient_Failed on allocation failure
  */
-static int
+static void
 cookie_entry_update_value_flags (CookieEntry *entry,
                                  const SocketHTTPClient_Cookie *cookie,
                                  Arena_T arena)
 {
   entry->cookie.value = socket_util_arena_strdup (arena, cookie->value);
-  if (entry->cookie.value == NULL) {
-    SOCKET_ERROR_MSG("socket_util_arena_strdup failed for cookie value update");
-    return -1;
-  }
+  if (entry->cookie.value == NULL)
+    RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
   entry->cookie.expires = cookie->expires;
   entry->cookie.secure = cookie->secure;
   entry->cookie.http_only = cookie->http_only;
   entry->cookie.same_site = cookie->same_site;
-  return 0;
 }
 
 /**
@@ -361,10 +361,10 @@ cookie_entry_update_value_flags (CookieEntry *entry,
  * @effective_path: Path to store (already resolved NULL to "/")
  * @arena: Arena for allocations
  *
- * Returns: 0 on success, -1 on alloc fail
  * Thread-safe: No (caller must hold mutex)
+ * Raises: SocketHTTPClient_Failed on allocation failure
  */
-static int
+static void
 cookie_entry_init_full (CookieEntry *entry,
                         const SocketHTTPClient_Cookie *cookie,
                         const char *effective_path,
@@ -373,20 +373,25 @@ cookie_entry_init_full (CookieEntry *entry,
   memset (entry, 0, sizeof (*entry));
 
   entry->cookie.name = socket_util_arena_strdup (arena, cookie->name);
+  if (entry->cookie.name == NULL)
+    RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
+
   entry->cookie.value = socket_util_arena_strdup (arena, cookie->value);
+  if (entry->cookie.value == NULL)
+    RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
+
   entry->cookie.domain = socket_util_arena_strdup (arena, cookie->domain);
+  if (entry->cookie.domain == NULL)
+    RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
+
   entry->cookie.path = socket_util_arena_strdup (arena, effective_path);
+  if (entry->cookie.path == NULL)
+    RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
+
   entry->cookie.expires = cookie->expires;
   entry->cookie.secure = cookie->secure;
   entry->cookie.http_only = cookie->http_only;
   entry->cookie.same_site = cookie->same_site;
-
-  if (entry->cookie.name == NULL || entry->cookie.value == NULL ||
-      entry->cookie.domain == NULL || entry->cookie.path == NULL) {
-    SOCKET_ERROR_MSG("socket_util_arena_strdup failed for new cookie fields");
-    return -1;
-  }
-  return 0;
 }
 
 /**
@@ -437,41 +442,39 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
 
   pthread_mutex_lock (&jar->mutex);
 
-  const char *effective_path = cookie->path ? cookie->path : "/";
-  unsigned hash = cookie_hash (cookie->domain, effective_path, cookie->name, jar->hash_size);
+  int result = 0;
 
-  CookieEntry *entry = cookie_jar_find_entry (jar, cookie->domain, effective_path, cookie->name);
+  TRY
+    const char *effective_path = cookie->path ? cookie->path : "/";
+    unsigned hash = cookie_hash (cookie->domain, effective_path, cookie->name, jar->hash_size);
 
-  if (entry != NULL) {
-    /* Replace existing cookie */
-    if (cookie_entry_update_value_flags (entry, cookie, jar->arena) != 0) {
-      pthread_mutex_unlock (&jar->mutex);
-      return -1;
+    CookieEntry *entry = cookie_jar_find_entry (jar, cookie->domain, effective_path, cookie->name);
+
+    if (entry != NULL) {
+      /* Replace existing cookie */
+      cookie_entry_update_value_flags (entry, cookie, jar->arena);
+    } else {
+      /* Create new entry */
+      entry = Arena_alloc (jar->arena, sizeof (*entry), __FILE__, __LINE__);
+      if (entry == NULL)
+        RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
+
+      cookie_entry_init_full (entry, cookie, effective_path, jar->arena);
+
+      /* Add to hash table */
+      entry->next = jar->hash_table[hash];
+      jar->hash_table[hash] = entry;
+      jar->count++;
     }
-    pthread_mutex_unlock (&jar->mutex);
-    return 0;
-  }
-
-  /* Create new entry */
-  entry = Arena_alloc (jar->arena, sizeof (*entry), __FILE__, __LINE__);
-  if (entry == NULL) {
-    SOCKET_ERROR_MSG("Arena_alloc failed for new cookie entry");
-    pthread_mutex_unlock (&jar->mutex);
-    return -1;
-  }
-
-  if (cookie_entry_init_full (entry, cookie, effective_path, jar->arena) != 0) {
-    pthread_mutex_unlock (&jar->mutex);
-    return -1;
-  }
-
-  /* Add to hash table */
-  entry->next = jar->hash_table[hash];
-  jar->hash_table[hash] = entry;
-  jar->count++;
+  EXCEPT (SocketHTTPClient_Failed)
+    result = -1;
+    HTTPCLIENT_ERROR_MSG("Failed to set cookie");
+  FINALLY
+    /* No additional cleanup needed - arena retains memory on failure */
+  END_TRY;;
 
   pthread_mutex_unlock (&jar->mutex);
-  return 0;
+  return result;
 }
 
 const SocketHTTPClient_Cookie *
@@ -559,7 +562,7 @@ SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
 
   f = fopen (filename, "r");
   if (f == NULL) {
-    SOCKET_ERROR_FMT("fopen(\"%s\", \"r\") failed", filename);
+    HTTPCLIENT_ERROR_FMT("fopen(\"%s\", \"r\") failed", filename);
     return -1;
   }
 
@@ -607,7 +610,7 @@ SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
     }
 
   if (ferror (f)) {
-    SOCKET_ERROR_MSG("Error reading cookie file %s", filename);
+    HTTPCLIENT_ERROR_MSG("Error reading cookie file %s", filename);
     fclose (f);
     return -1;
   }
@@ -628,7 +631,7 @@ SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
 
   f = fopen (filename, "w");
   if (f == NULL) {
-    SOCKET_ERROR_FMT("fopen(\"%s\", \"w\") failed", filename);
+    HTTPCLIENT_ERROR_FMT("fopen(\"%s\", \"w\") failed", filename);
     return -1;
   }
 
@@ -663,7 +666,7 @@ SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
   pthread_mutex_unlock (&jar->mutex);
 
   if (ferror (f)) {
-    SOCKET_ERROR_MSG("Error writing to cookie file %s", filename);
+    HTTPCLIENT_ERROR_MSG("Error writing to cookie file %s", filename);
     fclose (f);
     return -1;
   }
@@ -884,7 +887,7 @@ parse_value (const char **p, const char *end,
       (*p)++;
     const char *e = *p;
     if (*p >= end || **p != '"') {
-      SOCKET_ERROR_MSG("Unclosed quoted cookie value in Set-Cookie header");
+      HTTPCLIENT_ERROR_MSG("Unclosed quoted cookie value in Set-Cookie header");
       return -1;
     }
     (*p)++; /* Skip closing quote */
@@ -913,65 +916,38 @@ static int
 parse_cookie_name_value (const char **p, const char *end,
                          SocketHTTPClient_Cookie *cookie, Arena_T arena)
 {
+  const char *ptr = *p;
   const char *name_start, *name_end;
   const char *value_start, *value_end;
-  const char *ptr;
   size_t name_len, val_len;
   char *n, *v;
 
-  ptr = *p;
-
-  /* Skip leading whitespace */
-  ptr = skip_whitespace (ptr, end);
-
-  /* Parse name */
-  name_start = ptr;
-  while (ptr < end && *ptr != '=' && *ptr != ';')
-    ptr++;
-  name_end = trim_trailing_whitespace (name_start, ptr);
-
-  if (name_end == name_start || ptr >= end || *ptr != '=') {
-    SOCKET_ERROR_MSG("Invalid cookie name in Set-Cookie header");
+  /* Parse name token (stops at '=' or ';') */
+  if (parse_token(&ptr, end, &name_start, &name_end) != 0) {
+    HTTPCLIENT_ERROR_MSG("Invalid cookie name in Set-Cookie header");
     return -1;
   }
+  name_len = name_end - name_start;
 
+  if (ptr >= end || *ptr != '=') {
+    HTTPCLIENT_ERROR_MSG("Missing '=' after cookie name in Set-Cookie header");
+    return -1;
+  }
   ptr++; /* Skip '=' */
 
-  /* Parse value */
-  value_start = ptr;
+  /* Parse value (handles quoted or unquoted) */
+  if (parse_value(&ptr, end, &value_start, &value_end) != 0) {
+    HTTPCLIENT_ERROR_MSG("Invalid cookie value in Set-Cookie header");
+    return -1;
+  }
+  val_len = value_end - value_start;
 
-  /* Handle quoted value */
-  if (ptr < end && *ptr == '"')
-    {
-      value_start = ++ptr;
-      while (ptr < end && *ptr != '"')
-        ptr++;
-      value_end = ptr;
-      if (ptr < end && *ptr == '"') {
-        ptr++; /* Skip closing quote */
-      } else {
-        SOCKET_ERROR_MSG("Unclosed quoted cookie value in Set-Cookie header");
-        return -1;
-      }
-    }
-  else
-    {
-      while (ptr < end && *ptr != ';')
-        ptr++;
-      value_end = ptr;
-    }
-
-  value_end = trim_trailing_whitespace (value_start, value_end);
-
-  /* Allocate name and value */
-  name_len = (size_t)(name_end - name_start);
-  val_len = (size_t)(value_end - value_start);
-
+  /* Allocate and copy */
   n = Arena_alloc (arena, name_len + 1, __FILE__, __LINE__);
   v = Arena_alloc (arena, val_len + 1, __FILE__, __LINE__);
 
   if (n == NULL || v == NULL) {
-    SOCKET_ERROR_MSG("Arena_alloc failed for cookie name or value strings");
+    HTTPCLIENT_ERROR_MSG("Arena_alloc failed for cookie name or value strings");
     return -1;
   }
 
@@ -986,6 +962,22 @@ parse_cookie_name_value (const char **p, const char *end,
 
   return 0;
 }
+
+/* Cookie attribute constants for avoiding magic numbers */
+static const char COOKIE_ATTR_SECURE_STR[] = "Secure";
+#define COOKIE_ATTR_SECURE_LEN (sizeof(COOKIE_ATTR_SECURE_STR) - 1)
+static const char COOKIE_ATTR_HTTPONLY_STR[] = "HttpOnly";
+#define COOKIE_ATTR_HTTPONLY_LEN (sizeof(COOKIE_ATTR_HTTPONLY_STR) - 1)
+static const char COOKIE_ATTR_EXPIRES_STR[] = "Expires";
+#define COOKIE_ATTR_EXPIRES_LEN (sizeof(COOKIE_ATTR_EXPIRES_STR) - 1)
+static const char COOKIE_ATTR_MAXAGE_STR[] = "Max-Age";
+#define COOKIE_ATTR_MAXAGE_LEN (sizeof(COOKIE_ATTR_MAXAGE_STR) - 1)
+static const char COOKIE_ATTR_DOMAIN_STR[] = "Domain";
+#define COOKIE_ATTR_DOMAIN_LEN (sizeof(COOKIE_ATTR_DOMAIN_STR) - 1)
+static const char COOKIE_ATTR_PATH_STR[] = "Path";
+#define COOKIE_ATTR_PATH_LEN (sizeof(COOKIE_ATTR_PATH_STR) - 1)
+static const char COOKIE_ATTR_SAMESITE_STR[] = "SameSite";
+#define COOKIE_ATTR_SAMESITE_LEN (sizeof(COOKIE_ATTR_SAMESITE_STR) - 1)
 
 /**
  * parse_cookie_attribute - Parse and apply a single cookie attribute
@@ -1002,13 +994,15 @@ parse_cookie_attribute (const char *attr_start, size_t attr_len,
                         SocketHTTPClient_Cookie *cookie, Arena_T arena)
 {
   /* Boolean attributes */
-  if (attr_len == 6 && strncasecmp (attr_start, "Secure", 6) == 0)
+  if (attr_len == COOKIE_ATTR_SECURE_LEN && 
+      strncasecmp (attr_start, COOKIE_ATTR_SECURE_STR, attr_len) == 0)
     {
       cookie->secure = 1;
       return;
     }
 
-  if (attr_len == 8 && strncasecmp (attr_start, "HttpOnly", 8) == 0)
+  if (attr_len == COOKIE_ATTR_HTTPONLY_LEN && 
+      strncasecmp (attr_start, COOKIE_ATTR_HTTPONLY_STR, attr_len) == 0)
     {
       cookie->http_only = 1;
       return;
@@ -1018,13 +1012,13 @@ parse_cookie_attribute (const char *attr_start, size_t attr_len,
   if (attr_value_start == NULL)
     return;
 
-  if (attr_len == 7 && strncasecmp (attr_start, "Expires", 7) == 0)
+  if (attr_len == COOKIE_ATTR_EXPIRES_LEN && strncasecmp (attr_start, COOKIE_ATTR_EXPIRES_STR, attr_len) == 0)
     {
       time_t expires;
       if (SocketHTTP_date_parse (attr_value_start, attr_val_len, &expires) == 0)
         cookie->expires = expires;
     }
-  else if (attr_len == 7 && strncasecmp (attr_start, "Max-Age", 7) == 0)
+  else if (attr_len == COOKIE_ATTR_MAXAGE_LEN && strncasecmp (attr_start, COOKIE_ATTR_MAXAGE_STR, attr_len) == 0)
     {
       char max_age_str[HTTPCLIENT_COOKIE_MAX_AGE_SIZE];
       if (attr_val_len < sizeof (max_age_str))
@@ -1034,28 +1028,24 @@ parse_cookie_attribute (const char *attr_start, size_t attr_len,
           cookie->expires = parse_max_age (max_age_str);
         }
     }
-  else if (attr_len == 6 && strncasecmp (attr_start, "Domain", 6) == 0)
+  else if (attr_len == COOKIE_ATTR_DOMAIN_LEN && strncasecmp (attr_start, COOKIE_ATTR_DOMAIN_STR, attr_len) == 0)
     {
-      char *d = Arena_alloc (arena, attr_val_len + 2, __FILE__, __LINE__);
+      if (attr_val_len == 0) {
+        return; /* Ignore empty Domain per RFC 6265 Section 5.2.3 */
+      }
+      char *d = Arena_alloc (arena, attr_val_len + 1, __FILE__, __LINE__);
       if (d != NULL)
         {
-          /* Ensure leading dot for domain matching */
-          if (attr_value_start[0] != '.')
-            {
-              d[0] = '.';
-              memcpy (d + 1, attr_value_start, attr_val_len);
-              d[attr_val_len + 1] = '\0';
-            }
-          else
-            {
-              memcpy (d, attr_value_start, attr_val_len);
-              d[attr_val_len] = '\0';
-            }
+          memcpy (d, attr_value_start, attr_val_len);
+          d[attr_val_len] = '\0';
           cookie->domain = d;
         }
     }
-  else if (attr_len == 4 && strncasecmp (attr_start, "Path", 4) == 0)
+  else if (attr_len == COOKIE_ATTR_PATH_LEN && strncasecmp (attr_start, COOKIE_ATTR_PATH_STR, attr_len) == 0)
     {
+      if (attr_val_len == 0 || attr_value_start[0] != '/') {
+        return; /* Ignore invalid Path per RFC 6265 Section 5.2.4 */
+      }
       char *pt = Arena_alloc (arena, attr_val_len + 1, __FILE__, __LINE__);
       if (pt != NULL)
         {
@@ -1064,7 +1054,7 @@ parse_cookie_attribute (const char *attr_start, size_t attr_len,
           cookie->path = pt;
         }
     }
-  else if (attr_len == 8 && strncasecmp (attr_start, "SameSite", 8) == 0)
+  else if (attr_len == COOKIE_ATTR_SAMESITE_LEN && strncasecmp (attr_start, COOKIE_ATTR_SAMESITE_STR, attr_len) == 0)
     {
       char ss[HTTPCLIENT_COOKIE_SAMESITE_SIZE];
       if (attr_val_len < sizeof (ss))
@@ -1101,21 +1091,45 @@ parse_cookie_attributes (const char **p, const char *end,
       if (ptr >= end)
         break;
 
-      /* Parse attribute name */
-      attr_start = ptr;
-      while (ptr < end && *ptr != '=' && *ptr != ';')
-        ptr++;
-      attr_end = trim_trailing_whitespace (attr_start, ptr);
+      /* Parse attribute name token (stops at '=' or ';') */
+      if (parse_token (&ptr, end, &attr_start, &attr_end) != 0)
+        {
+          break; /* Invalid attribute name */
+        }
 
-      /* Parse attribute value if present */
+      /* Parse attribute value if present (handles quoted strings) */
       if (ptr < end && *ptr == '=')
         {
           ptr++;
           ptr = skip_whitespace (ptr, end);
           attr_value_start = ptr;
-          while (ptr < end && *ptr != ';')
-            ptr++;
-          attr_value_end = trim_trailing_whitespace (attr_value_start, ptr);
+
+          /* Handle quoted value */
+          if (ptr < end && *ptr == '"')
+            {
+              attr_value_start = ++ptr;
+              while (ptr < end && *ptr != '"')
+                ptr++;
+              attr_value_end = ptr;
+              if (ptr < end && *ptr == '"')
+                {
+                  ptr++; /* Skip closing quote */
+                }
+              else
+                {
+                  /* Unclosed quote, ignore value */
+                  attr_value_start = NULL;
+                }
+            }
+          else
+            {
+              while (ptr < end && *ptr != ';')
+                ptr++;
+              attr_value_end = ptr;
+            }
+
+          if (attr_value_start != NULL)
+            attr_value_end = trim_trailing_whitespace (attr_value_start, attr_value_end);
         }
 
       /* Process this attribute */
@@ -1195,7 +1209,7 @@ httpclient_parse_set_cookie (const char *value, size_t len,
 
   /* Parse name=value */
   if (parse_cookie_name_value (&p, end, cookie, arena) != 0) {
-    SOCKET_ERROR_MSG("Invalid Set-Cookie: missing or malformed name=value");
+    HTTPCLIENT_ERROR_MSG("Invalid Set-Cookie: missing or malformed name=value");
     return -1;
   }
 
@@ -1205,9 +1219,33 @@ httpclient_parse_set_cookie (const char *value, size_t len,
   /* Apply defaults from request URI */
   apply_cookie_defaults (cookie, request_uri, arena);
 
-  /* Validate required fields */
-  if (cookie->domain == NULL || cookie->name == NULL) {
-    SOCKET_ERROR_MSG("Invalid Set-Cookie: missing required domain or name field after parsing");
+  /* Validate required fields and attributes per RFC 6265 Sections 5.2.3 and 5.2 */
+  if (cookie->name == NULL || cookie->value == NULL) {
+    HTTPCLIENT_ERROR_MSG("Invalid Set-Cookie: missing required name or value");
+    return -1;
+  }
+  if (cookie->domain == NULL) {
+    HTTPCLIENT_ERROR_MSG("Invalid Set-Cookie: missing required domain after applying defaults");
+    return -1;
+  }
+
+  /* Length validation */
+  size_t name_len = strlen(cookie->name);
+  size_t value_len = strlen(cookie->value);
+  size_t domain_len = strlen(cookie->domain);
+  if (name_len > HTTPCLIENT_COOKIE_MAX_NAME_LEN ||
+      value_len > HTTPCLIENT_COOKIE_MAX_VALUE_LEN ||
+      domain_len > HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN) {
+    HTTPCLIENT_ERROR_MSG("Set-Cookie rejected: field length exceeds limits (name:%zu, value:%zu, domain:%zu)",
+                     name_len, value_len, domain_len);
+    return -1;
+  }
+
+  /* Validate Domain matches request host if provided (RFC 6265 Section 5.2.3) */
+  if (request_uri != NULL && request_uri->host != NULL &&
+      !domain_matches(request_uri->host, cookie->domain)) {
+    HTTPCLIENT_ERROR_MSG("Set-Cookie rejected: Domain '%s' does not domain-match request host '%s'",
+                     cookie->domain, request_uri->host);
     return -1;
   }
 
