@@ -752,6 +752,8 @@ SocketDgram_connect (T socket, const char *host, int port)
 static void
 dgram_validate_iov (const struct iovec *iov, int iovcnt)
 {
+  (void)iov;    /* Used only in assertions */
+  (void)iovcnt; /* Used only in assertions */
   assert (iov);
   assert (iovcnt > 0);
   assert (iovcnt <= IOV_MAX);
