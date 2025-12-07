@@ -204,6 +204,16 @@ create_ssl_object (SocketTLSContext_T ctx)
   else
     SSL_set_connect_state (ssl);
 
+  /* Enable non-blocking modes for proper partial write handling */
+  long mode = SSL_get_mode (ssl);
+  SSL_set_mode (ssl, mode | 
+      SSL_MODE_ENABLE_PARTIAL_WRITE | 
+      SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER |
+#ifdef SSL_MODE_AUTO_RETRY
+      SSL_MODE_AUTO_RETRY
+#endif
+  );
+
   return ssl;
 }
 

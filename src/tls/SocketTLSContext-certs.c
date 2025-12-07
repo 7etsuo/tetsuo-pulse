@@ -476,15 +476,15 @@ load_chain_from_file (const char *cert_file)
   if (num_certs == 0)
     {
       sk_X509_free (chain);
+      /* No certificates read - this is a real error */
       ctx_raise_openssl_error ("No certificates found in certificate file");
     }
 
-  /* Check for OpenSSL errors from read */
-  if (ERR_peek_error ())
-    {
-      sk_X509_pop_free (chain, X509_free);
-      ctx_raise_openssl_error ("Error reading certificate chain from file");
-    }
+  /* Clear the OpenSSL error queue after successful reading.
+   * PEM_read_X509 returns NULL and sets PEM_R_NO_START_LINE error
+   * when reaching EOF, which is expected behavior, not an error.
+   * Only treat as error if we failed to read any certificates. */
+  ERR_clear_error ();
 
   return chain;
 }
