@@ -1,5 +1,11 @@
 var NAVTREEINDEX5 =
 {
+"SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8fafaba39836e3963977f2d329394f8df31":[14,0,2,2,1,19,9],
+"SocketHTTP_8h.html#afd6a702248ad5bce0c0d6f1825795f1e":[14,0,2,2,1,28],
+"SocketHTTP_8h.html#structSocketHTTP__MethodProperties":[14,0,2,2,1,0],
+"SocketHTTP_8h_source.html":[14,0,2,2,1],
+"SocketHappyEyeballs_8h.html":[14,0,2,5,5],
+"SocketHappyEyeballs_8h.html#a015f1e24903699e20cea8af2bd44b781":[14,0,2,5,5,3],
 "SocketHappyEyeballs_8h.html#a07e470dce144233028bfd6d2193e8c03":[14,0,2,5,5,6],
 "SocketHappyEyeballs_8h.html#a0a9452621088791eecef4112e36e4176":[14,0,2,5,5,17],
 "SocketHappyEyeballs_8h.html#a0acb682b8260ab1c60b918599864e2e5":[14,0,2,5,5,8],
@@ -243,11 +249,5 @@ var NAVTREEINDEX5 =
 "SocketMetrics_8h.html#structSocketMetrics__Snapshot":[14,0,2,0,5,1],
 "SocketMetrics_8h_source.html":[14,0,2,0,5],
 "SocketPoll_8h.html":[14,0,2,3,0],
-"SocketPoll_8h.html#a0acb682b8260ab1c60b918599864e2e5":[14,0,2,3,0,2],
-"SocketPoll_8h.html#a0fc8aa94a3e9bb10cb26d85c6474d04e":[14,0,2,3,0,1],
-"SocketPoll_8h.html#a16688a9e444183863bab8051f57fe688":[14,0,2,3,0,11],
-"SocketPoll_8h.html#a1bb5e288308c3de5a479b27366bba257":[14,0,2,3,0,10],
-"SocketPoll_8h.html#a3074c5a225a7c49880951ecfb984498f":[14,0,2,3,0,7],
-"SocketPoll_8h.html#a35d4052d444bcab4cae26f41cf5729eb":[14,0,2,3,0,16],
-"SocketPoll_8h.html#a3755cc4d5ed8838ce2261f0efd1d5d85":[14,0,2,3,0,13]
+"SocketPoll_8h.html#a0acb682b8260ab1c60b918599864e2e5":[14,0,2,3,0,2]
 };

@@ -115,10 +115,10 @@ $(document).ready(function(){initNavTree('migration_guide.html',''); initResizab
 <div class="contents">
 <div class="textblock"><p>Guide for migrating to the Socket Library from other networking libraries.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md313"></a>
+<h1><a class="anchor" id="autotoc_md314"></a>
 Migration from BSD Sockets</h1>
 <p>The Socket Library provides a higher-level abstraction over BSD sockets.</p>
-<h2><a class="anchor" id="autotoc_md314"></a>
+<h2><a class="anchor" id="autotoc_md315"></a>
 Socket Creation</h2>
 <p><b>BSD Sockets:</b> </p><div class="fragment"><div class="line"><span class="keywordtype">int</span> fd = socket(AF_INET, SOCK_STREAM, 0);</div>
 <div class="line"><span class="keywordflow">if</span> (fd &lt; 0) {</div>
@@ -138,7 +138,7 @@ Socket Creation</h2>
 <div class="ttc" id="aSocket_8h_html_a1bcdb0c6d5827c2493bd622fa7751f14"><div class="ttname"><a href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></div><div class="ttdeci">struct Socket_T * Socket_T</div><div class="ttdef"><b>Definition</b> <a href="Socket_8h_source.html#l00045">Socket.h:45</a></div></div>
 <div class="ttc" id="aSocket_8h_html_a225f4a8fd657fd52a05146c6fc4f58b0"><div class="ttname"><a href="Socket_8h.html#a225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a></div><div class="ttdeci">const Except_T Socket_Failed</div><div class="ttdoc">Socket_Failed - General socket operation failure.</div></div>
 <div class="ttc" id="aSocket_8h_html_a6212fb2b6eefa567592a59f55c25a6f1"><div class="ttname"><a href="Socket_8h.html#a6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a></div><div class="ttdeci">Socket_T Socket_new(int domain, int type, int protocol)</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md315"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md316"></a>
 Connecting</h2>
 <p><b>BSD Sockets:</b> </p><div class="fragment"><div class="line"><span class="keyword">struct </span>sockaddr_in addr;</div>
 <div class="line">memset(&amp;addr, 0, <span class="keyword">sizeof</span>(addr));</div>
@@ -151,7 +151,7 @@ Connecting</h2>
 <div class="line">}</div>
 </div><!-- fragment --><p><b>Socket Library:</b> </p><div class="fragment"><div class="line"><a class="code hl_function" href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e">Socket_connect</a>(sock, host, port);  <span class="comment">/* Handles DNS too */</span></div>
 <div class="ttc" id="aSocket_8h_html_ac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Socket_connect - Connect to remote host @socket: Socket to connect @host: Remote IP address or hostna...</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md316"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md317"></a>
 Sending Data</h2>
 <p><b>BSD Sockets:</b> </p><div class="fragment"><div class="line">ssize_t total = 0;</div>
 <div class="line"><span class="keywordflow">while</span> (total &lt; len) {</div>
@@ -165,7 +165,7 @@ Sending Data</h2>
 <div class="line">}</div>
 </div><!-- fragment --><p><b>Socket Library:</b> </p><div class="fragment"><div class="line"><a class="code hl_function" href="Socket_8h.html#a6ea9ad33d78c50d327c9677b52849bcb">Socket_sendall</a>(sock, buf, len);  <span class="comment">/* Handles partial sends and EINTR */</span></div>
 <div class="ttc" id="aSocket_8h_html_a6ea9ad33d78c50d327c9677b52849bcb"><div class="ttname"><a href="Socket_8h.html#a6ea9ad33d78c50d327c9677b52849bcb">Socket_sendall</a></div><div class="ttdeci">ssize_t Socket_sendall(Socket_T socket, const void *buf, size_t len)</div><div class="ttdoc">Socket_sendall - Send all data (handles partial sends) @socket: Connected socket @buf: Data to send @...</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md317"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md318"></a>
 Socket Options</h2>
 <p><b>BSD Sockets:</b> </p><div class="fragment"><div class="line"><span class="keywordtype">int</span> optval = 1;</div>
 <div class="line">setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &amp;optval, <span class="keyword">sizeof</span>(optval));</div>
@@ -175,7 +175,7 @@ Socket Options</h2>
 </div><!-- fragment --><p><b>Socket Library:</b> </p><div class="fragment"><div class="line"><a class="code hl_function" href="Socket_8h.html#a2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr</a>(sock);</div>
 <div class="line">Socket_setlinger(sock, 1, 0);</div>
 <div class="ttc" id="aSocket_8h_html_a2c6f352cec920859c71206898ed135fc"><div class="ttname"><a href="Socket_8h.html#a2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr</a></div><div class="ttdeci">void Socket_setreuseaddr(Socket_T socket)</div><div class="ttdoc">Socket_setreuseaddr - Enable address reuse @socket: Socket to modify Raises: Socket_Failed on error.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md318"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md319"></a>
 API Mapping (BSD -&gt; Socket Library)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -218,9 +218,9 @@ API Mapping (BSD -&gt; Socket Library)</h2>
 <td class="markdownTableBodyNone"><code>writev()</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="Socket_8h.html#af6d033a04d5041249950fa2f54a8d9fd" title="Socket_sendvall - Scatter/gather send all (handles partial sends) @socket: Connected socket @iov: Arr...">Socket_sendvall()</a></code>   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md320"></a>
+<h1><a class="anchor" id="autotoc_md321"></a>
 Migration from libcurl</h1>
-<h2><a class="anchor" id="autotoc_md321"></a>
+<h2><a class="anchor" id="autotoc_md322"></a>
 Simple GET Request</h2>
 <p><b>libcurl:</b> </p><div class="fragment"><div class="line">CURL *curl = curl_easy_init();</div>
 <div class="line">curl_easy_setopt(curl, CURLOPT_URL, <span class="stringliteral">&quot;https://example.com&quot;</span>);</div>
@@ -240,14 +240,14 @@ Simple GET Request</h2>
 <div class="ttc" id="aSocketHTTPClient_8h_html_aba14ae9994f5645e5aa8488f905aad54"><div class="ttname"><a href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a></div><div class="ttdeci">struct SocketHTTPClient * SocketHTTPClient_T</div><div class="ttdoc">HTTP client instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00374">SocketHTTPClient.h:374</a></div></div>
 <div class="ttc" id="aSocketHTTPClient_8h_html_afef425814e66932f7cf1f36e9356b70e"><div class="ttname"><a href="SocketHTTPClient_8h.html#afef425814e66932f7cf1f36e9356b70e">SocketHTTPClient_get</a></div><div class="ttdeci">int SocketHTTPClient_get(SocketHTTPClient_T client, const char *url, SocketHTTPClient_Response *response)</div><div class="ttdoc">SocketHTTPClient_get - Perform GET request @client: Client instance @url: Full URL (http:// or https:...</div></div>
 <div class="ttc" id="aSocketHTTPClient_8h_html_structSocketHTTPClient__Response"><div class="ttname"><a href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a></div><div class="ttdoc">HTTP response (owned by caller)</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00392">SocketHTTPClient.h:393</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md322"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md323"></a>
 POST Request</h2>
 <p><b>libcurl:</b> </p><div class="fragment"><div class="line">curl_easy_setopt(curl, CURLOPT_POST, 1L);</div>
 <div class="line">curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json);</div>
 <div class="line">curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);</div>
 </div><!-- fragment --><p><b>Socket Library:</b> </p><div class="fragment"><div class="line"><a class="code hl_function" href="SocketHTTPClient_8h.html#a9b47bc2dd38d4a6700af79ced0acecb2">SocketHTTPClient_post</a>(client, url, <span class="stringliteral">&quot;application/json&quot;</span>, json, strlen(json), &amp;response);</div>
 <div class="ttc" id="aSocketHTTPClient_8h_html_a9b47bc2dd38d4a6700af79ced0acecb2"><div class="ttname"><a href="SocketHTTPClient_8h.html#a9b47bc2dd38d4a6700af79ced0acecb2">SocketHTTPClient_post</a></div><div class="ttdeci">int SocketHTTPClient_post(SocketHTTPClient_T client, const char *url, const char *content_type, const void *body, size_t body_len, SocketHTTPClient_Response *response)</div><div class="ttdoc">SocketHTTPClient_post - Perform POST request @client: Client @url: Full URL @content_type: Content-Ty...</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md323"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md324"></a>
 Custom Headers</h2>
 <p><b>libcurl:</b> </p><div class="fragment"><div class="line"><span class="keyword">struct </span>curl_slist *headers = NULL;</div>
 <div class="line">headers = curl_slist_append(headers, <span class="stringliteral">&quot;Content-Type: application/json&quot;</span>);</div>
@@ -262,7 +262,7 @@ Custom Headers</h2>
 <div class="ttc" id="aSocketHTTPClient_8h_html_a4ba09b6d59cc2aee465749978f62ad76"><div class="ttname"><a href="SocketHTTPClient_8h.html#a4ba09b6d59cc2aee465749978f62ad76">SocketHTTPClient_Request_execute</a></div><div class="ttdeci">int SocketHTTPClient_Request_execute(SocketHTTPClient_Request_T req, SocketHTTPClient_Response *response)</div><div class="ttdoc">SocketHTTPClient_Request_execute - Execute request @req: Request @response: Output response.</div></div>
 <div class="ttc" id="aSocketHTTPClient_8h_html_a8a7c54a81dc916af60f9747162e844a2"><div class="ttname"><a href="SocketHTTPClient_8h.html#a8a7c54a81dc916af60f9747162e844a2">SocketHTTPClient_Request_header</a></div><div class="ttdeci">int SocketHTTPClient_Request_header(SocketHTTPClient_Request_T req, const char *name, const char *value)</div><div class="ttdoc">Cookie SameSite attribute values.</div></div>
 <div class="ttc" id="aSocketHTTP_8h_html_af6f90bb536a5cd085f4327bda4d3ee8fa90754abc55dbb76862fa50abee5af659"><div class="ttname"><a href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8fa90754abc55dbb76862fa50abee5af659">HTTP_METHOD_GET</a></div><div class="ttdeci">@ HTTP_METHOD_GET</div><div class="ttdoc">RFC 9110 Section 9.3.1.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP_8h_source.html#l00134">SocketHTTP.h:134</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md324"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md325"></a>
 Proxy Configuration</h2>
 <p><b>libcurl:</b> </p><div class="fragment"><div class="line">curl_easy_setopt(curl, CURLOPT_PROXY, <span class="stringliteral">&quot;socks5://localhost:1080&quot;</span>);</div>
 <div class="line">curl_easy_setopt(curl, CURLOPT_PROXYUSERPWD, <span class="stringliteral">&quot;user:pass&quot;</span>);</div>
@@ -271,8 +271,8 @@ Proxy Configuration</h2>
 <div class="line">config.proxy = &amp;proxy;</div>
 <div class="line">client = <a class="code hl_function" href="SocketHTTPClient_8h.html#a2d57db3a9a6388315f253caa099e4205">SocketHTTPClient_new</a>(&amp;config);</div>
 <div class="ttc" id="aSocketProxy_8h_html_ae16c20e1d43f38171ccaad8408598490"><div class="ttname"><a href="SocketProxy_8h.html#ae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a></div><div class="ttdeci">int SocketProxy_parse_url(const char *url, SocketProxy_Config *config, Arena_T arena)</div><div class="ttdoc">SocketProxy_parse_url - Parse proxy URL into config @url: Proxy URL (e.g., &quot;socks5://user:pass@proxy:...</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_structSocketProxy__Config"><div class="ttname"><a href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a></div><div class="ttdoc">SocketProxy_Config - Proxy configuration.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00242">SocketProxy.h:243</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md325"></a>
+<div class="ttc" id="aSocketProxy_8h_html_structSocketProxy__Config"><div class="ttname"><a href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a></div><div class="ttdoc">SocketProxy_Config - Proxy configuration.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00247">SocketProxy.h:248</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md326"></a>
 Error Handling</h2>
 <p><b>libcurl:</b> </p><div class="fragment"><div class="line">CURLcode res = curl_easy_perform(curl);</div>
 <div class="line"><span class="keywordflow">if</span> (res != CURLE_OK) {</div>
@@ -290,7 +290,7 @@ Error Handling</h2>
 <div class="line"><a class="code hl_define" href="Except_8h.html#ae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
 <div class="ttc" id="aSocketHTTPClient_8h_html_a50039c8c595271d7d51b28ed5a4e7196"><div class="ttname"><a href="SocketHTTPClient_8h.html#a50039c8c595271d7d51b28ed5a4e7196">SocketHTTPClient_DNSFailed</a></div><div class="ttdeci">const Except_T SocketHTTPClient_DNSFailed</div><div class="ttdoc">SocketHTTPClient_DNSFailed - DNS resolution failure.</div></div>
 <div class="ttc" id="aSocketHTTPClient_8h_html_aa0847dd6efa2f627e07173f29b29c8ae"><div class="ttname"><a href="SocketHTTPClient_8h.html#aa0847dd6efa2f627e07173f29b29c8ae">SocketHTTPClient_Timeout</a></div><div class="ttdeci">const Except_T SocketHTTPClient_Timeout</div><div class="ttdoc">SocketHTTPClient_Timeout - Request timeout exceeded.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md326"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md327"></a>
 API Mapping (libcurl -&gt; Socket Library)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -319,9 +319,9 @@ API Mapping (libcurl -&gt; Socket Library)</h2>
 <td class="markdownTableBodyNone"><code>CURLOPT_HTTPHEADER</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="SocketHTTPClient_8h.html#a8a7c54a81dc916af60f9747162e844a2" title="Cookie SameSite attribute values.">SocketHTTPClient_Request_header()</a></code>   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md328"></a>
+<h1><a class="anchor" id="autotoc_md329"></a>
 Migration from libevent</h1>
-<h2><a class="anchor" id="autotoc_md329"></a>
+<h2><a class="anchor" id="autotoc_md330"></a>
 Event Loop</h2>
 <p><b>libevent:</b> </p><div class="fragment"><div class="line"><span class="keyword">struct </span>event_base *base = event_base_new();</div>
 <div class="line"><span class="keyword">struct </span>event *ev = event_new(base, fd, EV_READ | EV_PERSIST, callback, arg);</div>
@@ -344,7 +344,7 @@ Event Loop</h2>
 <div class="ttc" id="aSocketPoll_8h_html_structSocketEvent__T"><div class="ttname"><a href="SocketPoll_8h.html#structSocketEvent__T">SocketEvent_T</a></div><div class="ttdoc">Event structure returned by SocketPoll_wait.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00069">SocketPoll.h:70</a></div></div>
 <div class="ttc" id="aSocketTimer_8h_html_af9e4be8bc025aedb61cc0b77e8926312"><div class="ttname"><a href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a></div><div class="ttdeci">struct SocketPoll_T * SocketPoll_T</div><div class="ttdef"><b>Definition</b> <a href="SocketTimer_8h_source.html#l00041">SocketTimer.h:41</a></div></div>
 <div class="ttc" id="ahttp__server_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdoc">http_server.c - Basic HTTP Server Example</div><div class="ttdef"><b>Definition</b> <a href="http__server_8c_source.html#l00032">http_server.c:32</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md330"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md331"></a>
 Callback Style</h2>
 <p><b>libevent:</b> </p><div class="fragment"><div class="line"><span class="keywordtype">void</span> read_cb(evutil_socket_t fd, <span class="keywordtype">short</span> events, <span class="keywordtype">void</span> *arg) {</div>
 <div class="line">    <span class="keywordtype">char</span> buf[1024];</div>
@@ -358,7 +358,7 @@ Callback Style</h2>
 <div class="line">    }</div>
 <div class="line">}</div>
 <div class="ttc" id="aSocket_8h_html_a95db343f47445925cecd6b20054518e9"><div class="ttname"><a href="Socket_8h.html#a95db343f47445925cecd6b20054518e9">Socket_recv</a></div><div class="ttdeci">ssize_t Socket_recv(Socket_T socket, void *buf, size_t len)</div><div class="ttdoc">Socket_recv - Receive data @socket: Connected socket @buf: Buffer for received data @len: Buffer size...</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md331"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md332"></a>
 Timers</h2>
 <p><b>libevent:</b> </p><div class="fragment"><div class="line"><span class="keyword">struct </span>event *timer = evtimer_new(base, timer_cb, arg);</div>
 <div class="line"><span class="keyword">struct </span>timeval tv = {5, 0};</div>
@@ -367,7 +367,7 @@ Timers</h2>
 <div class="line">SocketTimer_schedule(timer, 5000, timer_callback, userdata);</div>
 <div class="line"><span class="comment">/* Process in poll loop */</span></div>
 <div class="ttc" id="aSocketTimer_8h_html_a89e39166f8e24595119733321f2a313e"><div class="ttname"><a href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a></div><div class="ttdeci">struct SocketTimer_T * SocketTimer_T</div><div class="ttdef"><b>Definition</b> <a href="SocketTimer_8h_source.html#l00037">SocketTimer.h:37</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md332"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md333"></a>
 API Mapping (libevent -&gt; Socket Library)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -394,9 +394,9 @@ API Mapping (libevent -&gt; Socket Library)</h2>
 <td class="markdownTableBodyNone"><code>bufferevent_*</code>   </td><td class="markdownTableBodyNone"><code>SocketBuf_T</code>   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md334"></a>
+<h1><a class="anchor" id="autotoc_md335"></a>
 Migration from libev</h1>
-<h2><a class="anchor" id="autotoc_md335"></a>
+<h2><a class="anchor" id="autotoc_md336"></a>
 Event Loop</h2>
 <p><b>libev:</b> </p><div class="fragment"><div class="line"><span class="keyword">struct </span>ev_loop *loop = ev_default_loop(0);</div>
 <div class="line">ev_io watcher;</div>
@@ -412,9 +412,9 @@ Event Loop</h2>
 <div class="line">    <span class="comment">/* Process events */</span></div>
 <div class="line">}</div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md337"></a>
+<h1><a class="anchor" id="autotoc_md338"></a>
 Migration from OpenSSL Direct</h1>
-<h2><a class="anchor" id="autotoc_md338"></a>
+<h2><a class="anchor" id="autotoc_md339"></a>
 TLS Client</h2>
 <p><b>OpenSSL:</b> </p><div class="fragment"><div class="line">SSL_CTX *ctx = SSL_CTX_new(TLS_client_method());</div>
 <div class="line">SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);</div>
@@ -446,7 +446,7 @@ TLS Client</h2>
 <div class="ttc" id="aSocketTLS_8h_html_ac46f2ab9dacbb1af2d590f2974e21577"><div class="ttname"><a href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a></div><div class="ttdeci">struct SocketTLSContext_T * SocketTLSContext_T</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00110">SocketTLS.h:110</a></div></div>
 <div class="ttc" id="aSocketTLS_8h_html_aeaa77dd7852b535baf17b53ee2518454"><div class="ttname"><a href="SocketTLS_8h.html#aeaa77dd7852b535baf17b53ee2518454">SocketTLS_handshake</a></div><div class="ttdeci">TLSHandshakeState SocketTLS_handshake(Socket_T socket)</div><div class="ttdoc">SocketTLS_handshake - Perform non-blocking TLS handshake @socket: The socket instance with TLS enable...</div></div>
 <div class="ttc" id="aSocket_8h_html_a74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div><div class="ttdoc">Socket_free - Free a socket and close the connection @socket: Pointer to socket (will be set to NULL)</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md339"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md340"></a>
 API Mapping (OpenSSL -&gt; Socket Library)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -477,9 +477,9 @@ API Mapping (OpenSSL -&gt; Socket Library)</h2>
 <td class="markdownTableBodyNone"><code>SSL_get_cipher()</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="SocketTLS_8h.html#a0859f0a6e05840bdc037c3765e22b7b1" title="SocketTLS_get_cipher - Get negotiated cipher suite name @socket: The socket instance with completed h...">SocketTLS_get_cipher()</a></code>   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md341"></a>
+<h1><a class="anchor" id="autotoc_md342"></a>
 Common Patterns</h1>
-<h2><a class="anchor" id="autotoc_md342"></a>
+<h2><a class="anchor" id="autotoc_md343"></a>
 Error Handling Pattern</h2>
 <p><b>Other Libraries (error codes):</b> </p><div class="fragment"><div class="line"><span class="keywordtype">int</span> result = some_function();</div>
 <div class="line"><span class="keywordflow">if</span> (result &lt; 0) {</div>
@@ -499,7 +499,7 @@ Error Handling Pattern</h2>
 <div class="line">    <span class="comment">/* error - Socket_error() for details */</span></div>
 <div class="line">}</div>
 <div class="line"><a class="code hl_define" href="Except_8h.html#ae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md343"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md344"></a>
 Resource Cleanup Pattern</h2>
 <p><b>Other Libraries:</b> </p><div class="fragment"><div class="line">Socket *sock = create_socket();</div>
 <div class="line"><span class="keywordflow">if</span> (!sock) <span class="keywordflow">goto</span> cleanup;</div>
@@ -521,23 +521,23 @@ Resource Cleanup Pattern</h2>
 <div class="line"><a class="code hl_define" href="Except_8h.html#ae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
 <div class="ttc" id="aExcept_8h_html_a0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="Except_8h.html#a0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00132">Except.h:132</a></div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md345"></a>
+<h1><a class="anchor" id="autotoc_md346"></a>
 Key Differences</h1>
-<h2><a class="anchor" id="autotoc_md346"></a>
+<h2><a class="anchor" id="autotoc_md347"></a>
 Memory Management</h2>
 <ul>
 <li><b>Arena allocation</b> - Related objects allocated together</li>
 <li><b>Automatic cleanup</b> - <a class="el" href="Arena_8h.html#a6842e66018614df08139e67826cf3e0d" title="Arena_dispose - Dispose of an arena and all its allocations @ap: Pointer to arena pointer (will be se...">Arena_dispose()</a> frees everything</li>
 <li><b>No manual free</b> for individual objects in arena</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md347"></a>
+<h2><a class="anchor" id="autotoc_md348"></a>
 Error Handling</h2>
 <ul>
 <li><b>Exceptions</b> instead of error codes</li>
 <li><b>Thread-local</b> error messages</li>
 <li><b>Detailed context</b> in exceptions</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md348"></a>
+<h2><a class="anchor" id="autotoc_md349"></a>
 Thread Safety</h2>
 <ul>
 <li><b>Instance-based</b> - One instance per thread</li>
@@ -545,7 +545,7 @@ Thread Safety</h2>
 <li><b>No global state</b></li>
 </ul>
 <hr  />
-<h1><a class="anchor" id="autotoc_md350"></a>
+<h1><a class="anchor" id="autotoc_md351"></a>
 Getting Started</h1>
 <ol type="1">
 <li><b>Replace socket creation</b> with <code><a class="el" href="Socket_8h.html#a6212fb2b6eefa567592a59f55c25a6f1">Socket_new()</a></code></li>
@@ -556,7 +556,7 @@ Getting Started</h1>
 <li><b>Enable TLS</b> with <code><a class="el" href="SocketTLS_8h.html#ab9a8fb788aa1f0d21b5773bc43a48d6f" title="SocketTLS_enable - Enable TLS on a socket using the provided context @socket: The socket instance to ...">SocketTLS_enable()</a></code> for HTTPS</li>
 </ol>
 <hr  />
-<h1><a class="anchor" id="autotoc_md352"></a>
+<h1><a class="anchor" id="autotoc_md353"></a>
 See Also</h1>
 <ul>
 <li><a class="el" href="http_guide.html">HTTP Guide</a></li>

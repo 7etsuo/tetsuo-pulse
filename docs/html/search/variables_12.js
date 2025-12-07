@@ -8,7 +8,7 @@ var searchData=
   ['timeout_5frequest_5fms_5',['timeout_request_ms',['../SocketSecurity_8h.html#ac1311a4929ead36e3ce915720008e206',1,'SocketSecurityLimits']]],
   ['timestamp_5fms_6',['timestamp_ms',['../SocketMetrics_8h.html#af00d4802f4ec042ec70c2b6cca0ef439',1,'SocketMetrics_Snapshot']]],
   ['tls_5fcontext_7',['tls_context',['../SocketHTTPClient_8h.html#a30f979d083088bc46c8c7de3bc37a3db',1,'SocketHTTPClient_Config::tls_context'],['../SocketHTTPServer_8h.html#a2bbd51b98734877f1e4dd9e0176b82b7',1,'SocketHTTPServer_Config::tls_context']]],
-  ['tls_5fctx_8',['tls_ctx',['../SocketProxy_8h.html#a7bd4b0058fd2a869d2ccb2f2d1fd740c',1,'SocketProxy_Config']]],
+  ['tls_5fctx_8',['tls_ctx',['../SocketProxy_8h.html#a8939bbe96f2f2f866cab11f6a2713949',1,'SocketProxy_Config']]],
   ['tls_5ferror_5fbuf_9',['tls_error_buf',['../SocketTLS_8h.html#ae74b3921236213de2e979bbd2039e452',1,'SocketTLS.h']]],
   ['tls_5fmax_5falpn_5flen_10',['tls_max_alpn_len',['../SocketSecurity_8h.html#a8192f6e1eaf496898449c75854882f6d',1,'SocketSecurityLimits']]],
   ['tls_5fmax_5falpn_5fprotocols_11',['tls_max_alpn_protocols',['../SocketSecurity_8h.html#aa7bc20fce590c4e1ee35ec373c3c680e',1,'SocketSecurityLimits']]],

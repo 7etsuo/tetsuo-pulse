@@ -43,6 +43,7 @@ var annotated_dup =
     [ "SocketSYNProtect_Stats", "SocketSYNProtect_8h.html#structSocketSYNProtect__Stats", "SocketSYNProtect_8h_structSocketSYNProtect__Stats" ],
     [ "SocketTimeouts_Extended_T", "SocketConfig_8h.html#structSocketTimeouts__Extended__T", "SocketConfig_8h_structSocketTimeouts__Extended__T" ],
     [ "SocketTimeouts_T", "SocketConfig_8h.html#structSocketTimeouts__T", "SocketConfig_8h_structSocketTimeouts__T" ],
+    [ "SocketTLSConfig_T", "SocketTLSConfig_8h.html#structSocketTLSConfig__T", "SocketTLSConfig_8h_structSocketTLSConfig__T" ],
     [ "SocketUTF8_State", "SocketUTF8_8h.html#structSocketUTF8__State", "SocketUTF8_8h_structSocketUTF8__State" ],
     [ "SocketWS_Config", "SocketWS_8h.html#structSocketWS__Config", "SocketWS_8h_structSocketWS__Config" ],
     [ "SocketWS_Frame", "SocketWS_8h.html#structSocketWS__Frame", "SocketWS_8h_structSocketWS__Frame" ],

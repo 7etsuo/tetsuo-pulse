@@ -7,7 +7,7 @@ var SocketProxy_8h =
       [ "host", "SocketProxy_8h.html#a507287d832417162da30794693e16a6e", null ],
       [ "password", "SocketProxy_8h.html#ae619303ab820c36c920c509d735748f2", null ],
       [ "port", "SocketProxy_8h.html#aff28145ee5466be9d0e12fba3e07dc97", null ],
-      [ "tls_ctx", "SocketProxy_8h.html#a7bd4b0058fd2a869d2ccb2f2d1fd740c", null ],
+      [ "tls_ctx", "SocketProxy_8h.html#a8939bbe96f2f2f866cab11f6a2713949", null ],
       [ "type", "SocketProxy_8h.html#aa04cfa88d52d6c1f889f9f936a141141", null ],
       [ "username", "SocketProxy_8h.html#a579714517d79e28bb9b03190d67158d5", null ]
     ] ],
@@ -18,6 +18,7 @@ var SocketProxy_8h =
     [ "SOCKET_PROXY_DEFAULT_SOCKS_PORT", "SocketProxy_8h.html#ac5d2dd3c09cef803b630431503f55972", null ],
     [ "SOCKET_PROXY_MAX_HOSTNAME_LEN", "SocketProxy_8h.html#a8eab241f263ed3b03ed6071c87c0b3e2", null ],
     [ "SOCKET_PROXY_MAX_PASSWORD_LEN", "SocketProxy_8h.html#a3e1be1cb4883cf9ffb8740802a13e80d", null ],
+    [ "SOCKET_PROXY_MAX_USERINFO_LEN", "SocketProxy_8h.html#a171e300c127615c82898fcdb6c79eb22", null ],
     [ "SOCKET_PROXY_MAX_USERNAME_LEN", "SocketProxy_8h.html#a42ca2ffbfb0de8352e90cf75fc40fc65", null ],
     [ "T", "SocketProxy_8h.html#a0acb682b8260ab1c60b918599864e2e5", null ],
     [ "SocketHTTP_Headers_T", "SocketProxy_8h.html#af1f6772bf122ad6e2e90639b2877754f", null ],
@@ -78,7 +79,7 @@ var SocketProxy_8h =
     [ "SocketProxy_parse_url", "SocketProxy_8h.html#ae16c20e1d43f38171ccaad8408598490", null ],
     [ "SocketProxy_result_string", "SocketProxy_8h.html#a2a0ac262c4e03ed00c5eeb2aa8d210bd", null ],
     [ "SocketProxy_state_string", "SocketProxy_8h.html#a6340dd7fd6f41c692c0a2f770dbd5877", null ],
-    [ "SocketProxy_tunnel", "SocketProxy_8h.html#a42d87dba201e99194eec8df1a9522516", null ],
+    [ "SocketProxy_tunnel", "SocketProxy_8h.html#a58fac7f1a89c5921c7152e393dd8ad36", null ],
     [ "SocketProxy_type_string", "SocketProxy_8h.html#a50b7d727085605b2f6bc620118462b13", null ],
     [ "SocketProxy_Failed", "SocketProxy_8h.html#a8c1385083c8f3a50e20e1ce11faec7b1", null ]
 ];

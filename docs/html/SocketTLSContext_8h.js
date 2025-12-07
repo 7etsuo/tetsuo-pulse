@@ -37,6 +37,7 @@ var SocketTLSContext_8h =
     [ "SocketTLSContext_load_ca", "SocketTLSContext_8h.html#ac4de1881e05f041a3d5016cba7d5a045", null ],
     [ "SocketTLSContext_load_certificate", "SocketTLSContext_8h.html#a1e2af3e4421c3c20c7dbc4b99cfb4211", null ],
     [ "SocketTLSContext_load_crl", "SocketTLSContext_8h.html#a8bf03223d7c3b3cd28f8d03fe082d15e", null ],
+    [ "SocketTLSContext_new", "SocketTLSContext_8h.html#a69b7880fa99df9a39b4db5259a9e1234", null ],
     [ "SocketTLSContext_new_client", "SocketTLSContext_8h.html#a7fe51da14439d768bdf72f4ed8fbb022", null ],
     [ "SocketTLSContext_new_server", "SocketTLSContext_8h.html#a79a403f2f54f21c90a92e9cb73e24cbc", null ],
     [ "SocketTLSContext_ocsp_stapling_enabled", "SocketTLSContext_8h.html#a7f214a19238ce8cd567d6ad6efa806c9", null ],

@@ -1,5 +1,17 @@
 var NAVTREEINDEX9 =
 {
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a00acb29ee302472a59b7e01718965ad3":[14,0,2,0,12,38,6],
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a06cc3f5f024f0e7fdee572949b186b4d":[14,0,2,0,12,38,19],
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a08206822505583f83a334ade68139a75":[14,0,2,0,12,38,3],
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a0fd072c863033aa60d6d07aac9ac0fd8":[14,0,2,0,12,38,23],
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a14dbd2cfb803fb498d9fe739b064ba46":[14,0,2,0,12,38,14],
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a32950d5582e28113e55151572acb71c8":[14,0,2,0,12,38,12],
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a36af864cb84c9e3b8e39a881ca5922bb":[14,0,2,0,12,38,18],
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a3f9e0c3e6d07ffa0c67cf253fb70b543":[14,0,2,0,12,38,24],
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a41de97b600a4478d3a512694d7c133e6":[14,0,2,0,12,38,8],
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a475f39fb23ebd0bec24b2e3c223e7a16":[14,0,2,0,12,38,10],
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a480e61645ca011af9282df6dacc4c2b3":[14,0,2,0,12,38,5],
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a4eea48e149cc5a90c78e7c73e0993840":[14,0,2,0,12,38,17],
 "SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a4f7a06893610177371a7c901f5f7cbae":[14,0,2,0,12,38,21],
 "SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a5e48f23169549a7d8bcbf436e4c69ad9":[14,0,2,0,12,38,16],
 "SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a6cbb58736db2c84e95ffd6ab98c8c8cc":[14,0,2,0,12,38,22],
@@ -237,17 +249,5 @@ var NAVTREEINDEX9 =
 "async_io_guide.html#autotoc_md55":[7,3,1],
 "async_io_guide.html#autotoc_md56":[7,3,2],
 "async_io_guide.html#autotoc_md57":[7,3,3],
-"async_io_guide.html#autotoc_md58":[7,3,4],
-"async_io_guide.html#autotoc_md59":[7,4],
-"async_io_guide.html#autotoc_md60":[7,5],
-"async_io_guide.html#autotoc_md61":[7,5,0],
-"async_io_guide.html#autotoc_md62":[7,5,1],
-"async_io_guide.html#autotoc_md63":[7,6],
-"async_io_guide.html#autotoc_md64":[7,7],
-"async_io_guide.html#autotoc_md65":[7,8],
-"async_io_guide.html#autotoc_md66":[7,9],
-"async_io_guide.html#autotoc_md67":[7,9,0],
-"async_io_guide.html#autotoc_md68":[7,10],
-"async_io_guide.html#autotoc_md69":[7,11],
-"async_io_guide.html#autotoc_md70":[7,12]
+"async_io_guide.html#autotoc_md58":[7,3,4]
 };

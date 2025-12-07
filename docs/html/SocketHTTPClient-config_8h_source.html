@@ -233,145 +233,157 @@ $(document).ready(function(){initNavTree('SocketHTTPClient-config_8h_source.html
 <div class="line"><a id="l00177" name="l00177"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#ab32a3ecd078fc6919d2f5e0a06d12388">  177</a></span><span class="preprocessor">#define HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE 1</span></div>
 <div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span> </div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span><span class="preprocessor">#ifndef HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE</span></div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a4a61970445f2f7a4a8d23da8680fc09b">  191</a></span><span class="preprocessor">#define HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE (10ULL * 1024 * 1024)  </span><span class="comment">/* 10MB default to prevent DoS */</span><span class="preprocessor"></span></div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span> </div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span><span class="comment">/* ============================================================================</span></div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span><span class="comment"> * Cookie Configuration</span></div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span><span class="comment"> * ============================================================================ */</span></div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span> </div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_HASH_SIZE</span></div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a2fc6723b3285e4aefbfe964932dca82c">  200</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_HASH_SIZE 127</span></div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span><span class="preprocessor">#ifndef HTTPCLIENT_MAX_COOKIES</span></div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#acaa7d0af3789f8dd4dd0b0ada62ea8fb">  182</a></span><span class="preprocessor">#define HTTPCLIENT_MAX_COOKIES 10000</span></div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span> </div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span><span class="preprocessor">#ifndef HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE</span></div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a4a61970445f2f7a4a8d23da8680fc09b">  196</a></span><span class="preprocessor">#define HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE (10ULL * 1024 * 1024)  </span><span class="comment">/* 10MB default to prevent DoS */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span> </div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span><span class="comment">/* ============================================================================</span></div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span><span class="comment"> * Cookie Configuration</span></div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span><span class="comment"> * ============================================================================ */</span></div>
 <div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span> </div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_MAX_NAME_LEN</span></div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#ae4c2b4b036298405fa4df86655f40da0">  205</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_MAX_NAME_LEN 256</span></div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_HASH_SIZE</span></div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a2fc6723b3285e4aefbfe964932dca82c">  205</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_HASH_SIZE 127</span></div>
 <div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span> </div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_MAX_VALUE_LEN</span></div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a865ebc94fbbecd210790ee6724f25ad0">  210</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_MAX_VALUE_LEN 4096</span></div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_MAX_NAME_LEN</span></div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#ae4c2b4b036298405fa4df86655f40da0">  210</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_MAX_NAME_LEN 256</span></div>
 <div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span> </div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN</span></div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a6232822d5354e8e3a454b9aac0ab3405">  215</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN 256</span></div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_MAX_VALUE_LEN</span></div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a865ebc94fbbecd210790ee6724f25ad0">  215</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_MAX_VALUE_LEN 4096</span></div>
 <div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span> </div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_MAX_PATH_LEN</span></div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a9d065c123fe18985ed947ed344bfabe8">  220</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_MAX_PATH_LEN 1024</span></div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN</span></div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a6232822d5354e8e3a454b9aac0ab3405">  220</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN 256</span></div>
 <div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span> </div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_FILE_LINE_SIZE</span></div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a93971a79c1854b341367aa92f1dfe657">  225</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_FILE_LINE_SIZE 4096</span></div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_MAX_PATH_LEN</span></div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a9d065c123fe18985ed947ed344bfabe8">  225</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_MAX_PATH_LEN 1024</span></div>
 <div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span> </div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_MAX_AGE_SIZE</span></div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#ab56546d633bcdabb80f6fa61ad4f3c3f">  230</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_MAX_AGE_SIZE 32</span></div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_FILE_LINE_SIZE</span></div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a93971a79c1854b341367aa92f1dfe657">  230</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_FILE_LINE_SIZE 4096</span></div>
 <div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span> </div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_SAMESITE_SIZE</span></div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a1f5201287c752c90005b22c9a07c8011">  235</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_SAMESITE_SIZE 16</span></div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_MAX_AGE_SIZE</span></div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#ab56546d633bcdabb80f6fa61ad4f3c3f">  235</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_MAX_AGE_SIZE 32</span></div>
 <div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span> </div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span><span class="comment">/* ============================================================================</span></div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span><span class="comment"> * Authentication Buffer Sizes</span></div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span><span class="comment"> * These are internal buffer sizes for authentication header generation.</span></div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span><span class="comment"> * They are sized to handle typical use cases with some margin.</span></div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span><span class="comment"> * ============================================================================ */</span></div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span> </div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span><span class="preprocessor">#ifndef HTTPCLIENT_AUTH_CREDENTIALS_SIZE</span></div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#aba4e506b5b48afa5c9e19f692619db35">  247</a></span><span class="preprocessor">#define HTTPCLIENT_AUTH_CREDENTIALS_SIZE 512</span></div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span> </div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span><span class="preprocessor">#ifndef HTTPCLIENT_DIGEST_A_BUFFER_SIZE</span></div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a3db68e362a4cd23917b2e2b6dc05ef22">  252</a></span><span class="preprocessor">#define HTTPCLIENT_DIGEST_A_BUFFER_SIZE 512</span></div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span> </div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span><span class="preprocessor">#ifndef HTTPCLIENT_DIGEST_RESPONSE_SIZE</span></div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a19c913be80fdc2a1778a5cf592fa5a32">  257</a></span><span class="preprocessor">#define HTTPCLIENT_DIGEST_RESPONSE_SIZE 256</span></div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_SAMESITE_SIZE</span></div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a1f5201287c752c90005b22c9a07c8011">  240</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_SAMESITE_SIZE 16</span></div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span> </div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span><span class="preprocessor">#ifndef HTTPCLIENT_MAX_COOKIE_AGE_SEC</span></div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a560da3bb4151944df985b9975287edfe">  245</a></span><span class="preprocessor">#define HTTPCLIENT_MAX_COOKIE_AGE_SEC (365LL * 24 * 3600 * 10)</span></div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span> </div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_MAX_CHAIN_LEN</span></div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a03d6fecf7157434b85280da192866051">  250</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_MAX_CHAIN_LEN 100</span></div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span> </div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span><span class="comment">/* ============================================================================</span></div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span><span class="comment"> * Authentication Buffer Sizes</span></div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span><span class="comment"> * These are internal buffer sizes for authentication header generation.</span></div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span><span class="comment"> * They are sized to handle typical use cases with some margin.</span></div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span><span class="comment"> * ============================================================================ */</span></div>
 <div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span> </div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span><span class="preprocessor">#ifndef HTTPCLIENT_DIGEST_CNONCE_SIZE</span></div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a3e4e900df8359ef28d95b0ead64dbcf5">  262</a></span><span class="preprocessor">#define HTTPCLIENT_DIGEST_CNONCE_SIZE 16</span></div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span><span class="preprocessor">#ifndef HTTPCLIENT_AUTH_CREDENTIALS_SIZE</span></div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#aba4e506b5b48afa5c9e19f692619db35">  262</a></span><span class="preprocessor">#define HTTPCLIENT_AUTH_CREDENTIALS_SIZE 512</span></div>
 <div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span> </div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span><span class="preprocessor">#ifndef HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE</span></div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a1fbe044368878287464a35d2887c23cf">  267</a></span><span class="preprocessor">#define HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE 33</span></div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span><span class="preprocessor">#ifndef HTTPCLIENT_DIGEST_A_BUFFER_SIZE</span></div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a3db68e362a4cd23917b2e2b6dc05ef22">  267</a></span><span class="preprocessor">#define HTTPCLIENT_DIGEST_A_BUFFER_SIZE 512</span></div>
 <div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span> </div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span><span class="preprocessor">#ifndef HTTPCLIENT_DIGEST_NC_SIZE</span></div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a78e4b4357664a978b08470dc5110b5e9">  272</a></span><span class="preprocessor">#define HTTPCLIENT_DIGEST_NC_SIZE 16</span></div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span><span class="preprocessor">#ifndef HTTPCLIENT_DIGEST_RESPONSE_SIZE</span></div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a19c913be80fdc2a1778a5cf592fa5a32">  272</a></span><span class="preprocessor">#define HTTPCLIENT_DIGEST_RESPONSE_SIZE 256</span></div>
 <div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span> </div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span><span class="comment">/* ============================================================================</span></div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span><span class="comment"> * Request/Response Buffer Limits</span></div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span><span class="comment"> * ============================================================================ */</span></div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span><span class="preprocessor">#ifndef HTTPCLIENT_REQUEST_BUFFER_SIZE</span></div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a3de25c3d345626920f73bd6ceb4faefe">  281</a></span><span class="preprocessor">#define HTTPCLIENT_REQUEST_BUFFER_SIZE 8192</span></div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span> </div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span><span class="preprocessor">#ifndef HTTPCLIENT_BODY_CHUNK_SIZE</span></div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a9252df768faf5ccb5438f1e0e9d68b33">  286</a></span><span class="preprocessor">#define HTTPCLIENT_BODY_CHUNK_SIZE 4096</span></div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span> </div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span><span class="preprocessor">#ifndef HTTPCLIENT_HOST_HEADER_SIZE</span></div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a14236d3d25877900fe49a8c2b7c90e25">  291</a></span><span class="preprocessor">#define HTTPCLIENT_HOST_HEADER_SIZE 256</span></div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span><span class="preprocessor">#ifndef HTTPCLIENT_DIGEST_CNONCE_SIZE</span></div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a3e4e900df8359ef28d95b0ead64dbcf5">  277</a></span><span class="preprocessor">#define HTTPCLIENT_DIGEST_CNONCE_SIZE 16</span></div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span> </div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span><span class="preprocessor">#ifndef HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE</span></div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a1fbe044368878287464a35d2887c23cf">  282</a></span><span class="preprocessor">#define HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE 33</span></div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span> </div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span><span class="preprocessor">#ifndef HTTPCLIENT_DIGEST_NC_SIZE</span></div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a78e4b4357664a978b08470dc5110b5e9">  287</a></span><span class="preprocessor">#define HTTPCLIENT_DIGEST_NC_SIZE 16</span></div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span> </div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span><span class="comment">/* ============================================================================</span></div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span><span class="comment"> * Request/Response Buffer Limits</span></div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span><span class="comment"> * ============================================================================ */</span></div>
 <div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span> </div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_HEADER_SIZE</span></div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a2bf0debe9f0685663a1f5b1fcaf56510">  296</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_HEADER_SIZE 4096</span></div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span><span class="preprocessor">#ifndef HTTPCLIENT_REQUEST_BUFFER_SIZE</span></div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a3de25c3d345626920f73bd6ceb4faefe">  296</a></span><span class="preprocessor">#define HTTPCLIENT_REQUEST_BUFFER_SIZE 8192</span></div>
 <div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span> </div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span><span class="preprocessor">#ifndef HTTPCLIENT_AUTH_HEADER_SIZE</span></div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#ae0d219a3146b29914fb7f7169c6aa566">  301</a></span><span class="preprocessor">#define HTTPCLIENT_AUTH_HEADER_SIZE 512</span></div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span><span class="preprocessor">#ifndef HTTPCLIENT_BODY_CHUNK_SIZE</span></div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a9252df768faf5ccb5438f1e0e9d68b33">  301</a></span><span class="preprocessor">#define HTTPCLIENT_BODY_CHUNK_SIZE 4096</span></div>
 <div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span> </div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span><span class="preprocessor">#ifndef HTTPCLIENT_AUTH_HEADER_LARGE_SIZE</span></div>
-<div class="line"><a id="l00306" name="l00306"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a81ac4eefb96b3c919042f5fdd1ea361d">  306</a></span><span class="preprocessor">#define HTTPCLIENT_AUTH_HEADER_LARGE_SIZE 1024</span></div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span><span class="preprocessor">#ifndef HTTPCLIENT_HOST_HEADER_SIZE</span></div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a14236d3d25877900fe49a8c2b7c90e25">  306</a></span><span class="preprocessor">#define HTTPCLIENT_HOST_HEADER_SIZE 256</span></div>
 <div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span> </div>
-<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span><span class="preprocessor">#ifndef HTTPCLIENT_URI_BUFFER_SIZE</span></div>
-<div class="line"><a id="l00311" name="l00311"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a1421459188743de98f5eb1d489d70ec0">  311</a></span><span class="preprocessor">#define HTTPCLIENT_URI_BUFFER_SIZE 512</span></div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span><span class="preprocessor">#ifndef HTTPCLIENT_COOKIE_HEADER_SIZE</span></div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a2bf0debe9f0685663a1f5b1fcaf56510">  311</a></span><span class="preprocessor">#define HTTPCLIENT_COOKIE_HEADER_SIZE 4096</span></div>
 <div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span> </div>
-<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span><span class="preprocessor">#ifndef HTTPCLIENT_MAX_SET_COOKIES</span></div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a134a20a8c6c468864bb0d94e9d9abb91">  316</a></span><span class="preprocessor">#define HTTPCLIENT_MAX_SET_COOKIES 16</span></div>
+<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span><span class="preprocessor">#ifndef HTTPCLIENT_AUTH_HEADER_SIZE</span></div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#ae0d219a3146b29914fb7f7169c6aa566">  316</a></span><span class="preprocessor">#define HTTPCLIENT_AUTH_HEADER_SIZE 512</span></div>
 <div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span> </div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span><span class="preprocessor">#ifndef HTTPCLIENT_ACCEPT_ENCODING_SIZE</span></div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a846e1eb9e4ecd57dc03a065776981e0b">  321</a></span><span class="preprocessor">#define HTTPCLIENT_ACCEPT_ENCODING_SIZE 64</span></div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span><span class="preprocessor">#ifndef HTTPCLIENT_AUTH_HEADER_LARGE_SIZE</span></div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a81ac4eefb96b3c919042f5fdd1ea361d">  321</a></span><span class="preprocessor">#define HTTPCLIENT_AUTH_HEADER_LARGE_SIZE 1024</span></div>
 <div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span> </div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span><span class="preprocessor">#ifndef HTTPCLIENT_CONTENT_LENGTH_SIZE</span></div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a4063c6077aa71b96a83dbe475a59e5a9">  326</a></span><span class="preprocessor">#define HTTPCLIENT_CONTENT_LENGTH_SIZE 32</span></div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span><span class="preprocessor">#ifndef HTTPCLIENT_URI_BUFFER_SIZE</span></div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a1421459188743de98f5eb1d489d70ec0">  326</a></span><span class="preprocessor">#define HTTPCLIENT_URI_BUFFER_SIZE 512</span></div>
 <div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span> </div>
-<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span><span class="preprocessor">#ifndef HTTPCLIENT_RETRY_JITTER_FACTOR</span></div>
-<div class="line"><a id="l00331" name="l00331"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a441f1405cd4774e167f08b83b3b1e117">  331</a></span><span class="preprocessor">#define HTTPCLIENT_RETRY_JITTER_FACTOR 0.25</span></div>
-<div class="line"><a id="l00332" name="l00332"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a5f5f7ee22b430f5cb019b8b0a6803348">  332</a></span><span class="preprocessor">#define HTTPCLIENT_RETRY_MULTIPLIER 2.0</span></div>
-<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span> </div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span><span class="comment">/* ============================================================================</span></div>
-<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span><span class="comment"> * Default User-Agent</span></div>
-<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span><span class="comment"> * ============================================================================ */</span></div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span><span class="preprocessor">#ifndef HTTPCLIENT_MAX_SET_COOKIES</span></div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a134a20a8c6c468864bb0d94e9d9abb91">  331</a></span><span class="preprocessor">#define HTTPCLIENT_MAX_SET_COOKIES 16</span></div>
+<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span> </div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span><span class="preprocessor">#ifndef HTTPCLIENT_ACCEPT_ENCODING_SIZE</span></div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a846e1eb9e4ecd57dc03a065776981e0b">  336</a></span><span class="preprocessor">#define HTTPCLIENT_ACCEPT_ENCODING_SIZE 64</span></div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span> </div>
-<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span><span class="preprocessor">#ifndef HTTPCLIENT_DEFAULT_USER_AGENT</span></div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#ad23bab3060a93bc022b891a925e34f94">  341</a></span><span class="preprocessor">#define HTTPCLIENT_DEFAULT_USER_AGENT &quot;SocketHTTPClient/1.0&quot;</span></div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span><span class="preprocessor">#ifndef HTTPCLIENT_CONTENT_LENGTH_SIZE</span></div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a4063c6077aa71b96a83dbe475a59e5a9">  341</a></span><span class="preprocessor">#define HTTPCLIENT_CONTENT_LENGTH_SIZE 32</span></div>
 <div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span> </div>
-<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span><span class="comment">/* ============================================================================</span></div>
-<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span><span class="comment"> * Encoding Constants (Content-Encoding support flags)</span></div>
-<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span><span class="comment"> * ============================================================================ */</span></div>
-<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span> </div>
-<div class="line"><a id="l00348" name="l00348"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a1a94747fcfaf987c84d4a91bc3bd7513">  348</a></span><span class="preprocessor">#define HTTPCLIENT_ENCODING_IDENTITY 0x00</span></div>
-<div class="line"><a id="l00349" name="l00349"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#aca301afd15b5701276655faf5cdf3104">  349</a></span><span class="preprocessor">#define HTTPCLIENT_ENCODING_GZIP     0x01</span></div>
-<div class="line"><a id="l00350" name="l00350"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#ae68f134e13b2a94d9f4f5973fc02bf3c">  350</a></span><span class="preprocessor">#define HTTPCLIENT_ENCODING_DEFLATE  0x02</span></div>
-<div class="line"><a id="l00351" name="l00351"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#acf069f17c344d63494b465eb5dcec7b8">  351</a></span><span class="preprocessor">#define HTTPCLIENT_ENCODING_BR       0x04</span></div>
-<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span> </div>
-<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span><span class="preprocessor">#endif </span><span class="comment">/* SOCKETHTTPCLIENT_CONFIG_INCLUDED */</span><span class="preprocessor"></span></div>
-<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span> </div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span><span class="preprocessor">#ifndef HTTPCLIENT_RETRY_JITTER_FACTOR</span></div>
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a441f1405cd4774e167f08b83b3b1e117">  346</a></span><span class="preprocessor">#define HTTPCLIENT_RETRY_JITTER_FACTOR 0.25</span></div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a5f5f7ee22b430f5cb019b8b0a6803348">  347</a></span><span class="preprocessor">#define HTTPCLIENT_RETRY_MULTIPLIER 2.0</span></div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span> </div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span><span class="comment">/* ============================================================================</span></div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span><span class="comment"> * Default User-Agent</span></div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span><span class="comment"> * ============================================================================ */</span></div>
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span> </div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span><span class="preprocessor">#ifndef HTTPCLIENT_DEFAULT_USER_AGENT</span></div>
+<div class="line"><a id="l00356" name="l00356"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#ad23bab3060a93bc022b891a925e34f94">  356</a></span><span class="preprocessor">#define HTTPCLIENT_DEFAULT_USER_AGENT &quot;SocketHTTPClient/1.0&quot;</span></div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span> </div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span><span class="comment">/* ============================================================================</span></div>
+<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span><span class="comment"> * Encoding Constants (Content-Encoding support flags)</span></div>
+<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span><span class="comment"> * ============================================================================ */</span></div>
+<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span> </div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#a1a94747fcfaf987c84d4a91bc3bd7513">  363</a></span><span class="preprocessor">#define HTTPCLIENT_ENCODING_IDENTITY 0x00</span></div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#aca301afd15b5701276655faf5cdf3104">  364</a></span><span class="preprocessor">#define HTTPCLIENT_ENCODING_GZIP     0x01</span></div>
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#ae68f134e13b2a94d9f4f5973fc02bf3c">  365</a></span><span class="preprocessor">#define HTTPCLIENT_ENCODING_DEFLATE  0x02</span></div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno"><a class="line" href="SocketHTTPClient-config_8h.html#acf069f17c344d63494b465eb5dcec7b8">  366</a></span><span class="preprocessor">#define HTTPCLIENT_ENCODING_BR       0x04</span></div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span> </div>
+<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span><span class="preprocessor">#endif </span><span class="comment">/* SOCKETHTTPCLIENT_CONFIG_INCLUDED */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span> </div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>

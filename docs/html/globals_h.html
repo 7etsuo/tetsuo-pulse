@@ -154,6 +154,7 @@ $(document).ready(function(){initNavTree('globals_h.html',''); initResizable(); 
 <li>HTTP1_ERROR_SMUGGLING_DETECTED&#160;:&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea459fb16283ed5b28f9cb7b1dd988e229">SocketHTTP1.h</a></li>
 <li>HTTP1_ERROR_TOO_MANY_HEADERS&#160;:&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78eac7d0ef00c011c53c0481d49d054c14dc">SocketHTTP1.h</a></li>
 <li>HTTP1_ERROR_UNEXPECTED_EOF&#160;:&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea45da2dd8b558188c3c25ec3ca678187f">SocketHTTP1.h</a></li>
+<li>HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING&#160;:&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea4c72953d4ab4b2e2c33eab3bd945bd56">SocketHTTP1.h</a></li>
 <li>HTTP1_INCOMPLETE&#160;:&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea8f11d915cd16f4b89b5b3d97059ed82f">SocketHTTP1.h</a></li>
 <li>HTTP1_OK&#160;:&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78eac4f4eafbbea56118c44708aa5591107d">SocketHTTP1.h</a></li>
 <li>HTTP1_PARSE_REQUEST&#160;:&#160;<a class="el" href="SocketHTTP1_8h.html#ae0c5248b52a9b32c1def93401bbabe96a1f628e563408ccbc0f6f93973845e0f1">SocketHTTP1.h</a></li>
@@ -340,6 +341,7 @@ $(document).ready(function(){initNavTree('globals_h.html',''); initResizable(); 
 <li>HTTPCLIENT_COOKIE_HASH_SIZE&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#a2fc6723b3285e4aefbfe964932dca82c">SocketHTTPClient-config.h</a></li>
 <li>HTTPCLIENT_COOKIE_HEADER_SIZE&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#a2bf0debe9f0685663a1f5b1fcaf56510">SocketHTTPClient-config.h</a></li>
 <li>HTTPCLIENT_COOKIE_MAX_AGE_SIZE&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#ab56546d633bcdabb80f6fa61ad4f3c3f">SocketHTTPClient-config.h</a></li>
+<li>HTTPCLIENT_COOKIE_MAX_CHAIN_LEN&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#a03d6fecf7157434b85280da192866051">SocketHTTPClient-config.h</a></li>
 <li>HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#a6232822d5354e8e3a454b9aac0ab3405">SocketHTTPClient-config.h</a></li>
 <li>HTTPCLIENT_COOKIE_MAX_NAME_LEN&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#ae4c2b4b036298405fa4df86655f40da0">SocketHTTPClient-config.h</a></li>
 <li>HTTPCLIENT_COOKIE_MAX_PATH_LEN&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#a9d065c123fe18985ed947ed344bfabe8">SocketHTTPClient-config.h</a></li>
@@ -385,6 +387,8 @@ $(document).ready(function(){initNavTree('globals_h.html',''); initResizable(); 
 <li>HTTPCLIENT_HOST_HEADER_SIZE&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#a14236d3d25877900fe49a8c2b7c90e25">SocketHTTPClient-config.h</a></li>
 <li>HTTPCLIENT_IO_BUFFER_SIZE&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#a51703354cc9bc0603b78726aefab346f">SocketHTTPClient-config.h</a></li>
 <li>HTTPCLIENT_MAX_AUTH_RETRIES&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#a447d54118ee03f42f7f2877718afae7f">SocketHTTPClient-config.h</a></li>
+<li>HTTPCLIENT_MAX_COOKIE_AGE_SEC&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#a560da3bb4151944df985b9975287edfe">SocketHTTPClient-config.h</a></li>
+<li>HTTPCLIENT_MAX_COOKIES&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#acaa7d0af3789f8dd4dd0b0ada62ea8fb">SocketHTTPClient-config.h</a></li>
 <li>HTTPCLIENT_MAX_SET_COOKIES&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#a134a20a8c6c468864bb0d94e9d9abb91">SocketHTTPClient-config.h</a></li>
 <li>HTTPCLIENT_OK&#160;:&#160;<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75a0d7b07825c19819fb9d1adbe3f28fd7d">SocketHTTPClient.h</a></li>
 <li>HTTPCLIENT_POOL_HASH_SIZE&#160;:&#160;<a class="el" href="SocketHTTPClient-config_8h.html#a2a80107d7741ba2a46baf779f7928730">SocketHTTPClient-config.h</a></li>
@@ -424,8 +428,8 @@ $(document).ready(function(){initNavTree('globals_h.html',''); initResizable(); 
 <li>HTTPSERVER_STATE_DRAINING&#160;:&#160;<a class="el" href="SocketHTTPServer_8h.html#a0ac9162aaf92d18d40cf0443909e3e97ab9ea109b294256f80f9c605af4ee33da">SocketHTTPServer.h</a></li>
 <li>HTTPSERVER_STATE_RUNNING&#160;:&#160;<a class="el" href="SocketHTTPServer_8h.html#a0ac9162aaf92d18d40cf0443909e3e97a71eb63ea64bc63130077055f5def4470">SocketHTTPServer.h</a></li>
 <li>HTTPSERVER_STATE_STOPPED&#160;:&#160;<a class="el" href="SocketHTTPServer_8h.html#a0ac9162aaf92d18d40cf0443909e3e97a40470a42c264e62630500ec3e55f5570">SocketHTTPServer.h</a></li>
-<li>SocketPool_health()&#160;:&#160;<a class="el" href="SocketPool_8h.html#ac801c2d9c4fd944334de2a551993bd89">SocketPool.h</a></li>
 <li>SocketPool_Health&#160;:&#160;<a class="el" href="SocketPool_8h.html#a97c30d41df98c69bb394f0a91c3759ae">SocketPool.h</a></li>
+<li>SocketPool_health()&#160;:&#160;<a class="el" href="SocketPool_8h.html#ac801c2d9c4fd944334de2a551993bd89">SocketPool.h</a></li>
 <li>SocketReconnect_HealthCheck&#160;:&#160;<a class="el" href="SocketReconnect_8h.html#ae24b576ed367f734f434ef30ad8386c3">SocketReconnect.h</a></li>
 <li>SocketTLS_handshake()&#160;:&#160;<a class="el" href="SocketTLS_8h.html#aeaa77dd7852b535baf17b53ee2518454">SocketTLS.h</a></li>
 <li>SocketTLS_handshake_auto()&#160;:&#160;<a class="el" href="SocketTLS_8h.html#a54a01327e253586278c0f740c2764010">SocketTLS.h</a></li>

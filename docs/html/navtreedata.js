@@ -134,226 +134,228 @@ var NAVTREE =
       ] ],
       [ "Thread Safety", "http_guide.html#autotoc_md121", null ],
       [ "Performance Tips", "http_guide.html#autotoc_md123", null ],
-      [ "See Also", "http_guide.html#autotoc_md125", null ]
+      [ "See Also", "http_guide.html#autotoc_md125", [
+        [ "HTTP/1.1 Parser Security Enhancements (Recent Fixes)", "http_guide.html#autotoc_md126", null ]
+      ] ]
     ] ],
     [ "WebSocket Guide", "websocket_guide.html", [
-      [ "Overview", "websocket_guide.html#autotoc_md127", null ],
-      [ "Security Considerations", "websocket_guide.html#autotoc_md129", [
-        [ "Key Security Features", "websocket_guide.html#autotoc_md130", null ],
-        [ "Best Practices", "websocket_guide.html#autotoc_md131", null ],
-        [ "Potential Risks & Mitigations", "websocket_guide.html#autotoc_md132", null ]
+      [ "Overview", "websocket_guide.html#autotoc_md128", null ],
+      [ "Security Considerations", "websocket_guide.html#autotoc_md130", [
+        [ "Key Security Features", "websocket_guide.html#autotoc_md131", null ],
+        [ "Best Practices", "websocket_guide.html#autotoc_md132", null ],
+        [ "Potential Risks & Mitigations", "websocket_guide.html#autotoc_md133", null ]
       ] ],
-      [ "Quick Start", "websocket_guide.html#autotoc_md133", [
-        [ "WebSocket Client", "websocket_guide.html#autotoc_md134", null ]
+      [ "Quick Start", "websocket_guide.html#autotoc_md134", [
+        [ "WebSocket Client", "websocket_guide.html#autotoc_md135", null ]
       ] ],
-      [ "Client API", "websocket_guide.html#autotoc_md136", [
-        [ "Creating a Client Connection", "websocket_guide.html#autotoc_md137", null ],
-        [ "Configuration Options", "websocket_guide.html#autotoc_md138", null ],
-        [ "Performing the Handshake", "websocket_guide.html#autotoc_md139", null ]
+      [ "Client API", "websocket_guide.html#autotoc_md137", [
+        [ "Creating a Client Connection", "websocket_guide.html#autotoc_md138", null ],
+        [ "Configuration Options", "websocket_guide.html#autotoc_md139", null ],
+        [ "Performing the Handshake", "websocket_guide.html#autotoc_md140", null ]
       ] ],
-      [ "Server API", "websocket_guide.html#autotoc_md141", [
-        [ "Accepting WebSocket Connections", "websocket_guide.html#autotoc_md142", null ],
-        [ "Manual Server Setup", "websocket_guide.html#autotoc_md143", null ]
+      [ "Server API", "websocket_guide.html#autotoc_md142", [
+        [ "Accepting WebSocket Connections", "websocket_guide.html#autotoc_md143", null ],
+        [ "Manual Server Setup", "websocket_guide.html#autotoc_md144", null ]
       ] ],
-      [ "Sending Messages", "websocket_guide.html#autotoc_md145", [
-        [ "Text Messages", "websocket_guide.html#autotoc_md146", null ],
-        [ "Binary Messages", "websocket_guide.html#autotoc_md147", null ],
-        [ "Control Frames", "websocket_guide.html#autotoc_md148", null ]
+      [ "Sending Messages", "websocket_guide.html#autotoc_md146", [
+        [ "Text Messages", "websocket_guide.html#autotoc_md147", null ],
+        [ "Binary Messages", "websocket_guide.html#autotoc_md148", null ],
+        [ "Control Frames", "websocket_guide.html#autotoc_md149", null ]
       ] ],
-      [ "Receiving Messages", "websocket_guide.html#autotoc_md150", [
-        [ "Complete Messages", "websocket_guide.html#autotoc_md151", null ],
-        [ "Message Structure", "websocket_guide.html#autotoc_md152", null ]
+      [ "Receiving Messages", "websocket_guide.html#autotoc_md151", [
+        [ "Complete Messages", "websocket_guide.html#autotoc_md152", null ],
+        [ "Message Structure", "websocket_guide.html#autotoc_md153", null ]
       ] ],
-      [ "Connection States", "websocket_guide.html#autotoc_md154", null ],
-      [ "Close Codes", "websocket_guide.html#autotoc_md156", [
-        [ "Closing a Connection", "websocket_guide.html#autotoc_md157", null ]
+      [ "Connection States", "websocket_guide.html#autotoc_md155", null ],
+      [ "Close Codes", "websocket_guide.html#autotoc_md157", [
+        [ "Closing a Connection", "websocket_guide.html#autotoc_md158", null ]
       ] ],
-      [ "Event Loop Integration", "websocket_guide.html#autotoc_md159", [
-        [ "Non-Blocking Operation", "websocket_guide.html#autotoc_md160", null ],
-        [ "Auto-Ping", "websocket_guide.html#autotoc_md161", null ]
+      [ "Event Loop Integration", "websocket_guide.html#autotoc_md160", [
+        [ "Non-Blocking Operation", "websocket_guide.html#autotoc_md161", null ],
+        [ "Auto-Ping", "websocket_guide.html#autotoc_md162", null ]
       ] ],
-      [ "Compression (permessage-deflate)", "websocket_guide.html#autotoc_md163", null ],
-      [ "Subprotocols", "websocket_guide.html#autotoc_md165", null ],
-      [ "Error Handling", "websocket_guide.html#autotoc_md167", [
-        [ "Error Codes", "websocket_guide.html#autotoc_md168", null ],
-        [ "Exceptions", "websocket_guide.html#autotoc_md169", null ]
+      [ "Compression (permessage-deflate)", "websocket_guide.html#autotoc_md164", null ],
+      [ "Subprotocols", "websocket_guide.html#autotoc_md166", null ],
+      [ "Error Handling", "websocket_guide.html#autotoc_md168", [
+        [ "Error Codes", "websocket_guide.html#autotoc_md169", null ],
+        [ "Exceptions", "websocket_guide.html#autotoc_md170", null ]
       ] ],
-      [ "Best Practices", "websocket_guide.html#autotoc_md171", [
-        [ "Security", "websocket_guide.html#autotoc_md172", null ],
-        [ "Performance", "websocket_guide.html#autotoc_md173", null ],
-        [ "Connection Management", "websocket_guide.html#autotoc_md174", null ]
+      [ "Best Practices", "websocket_guide.html#autotoc_md172", [
+        [ "Security", "websocket_guide.html#autotoc_md173", null ],
+        [ "Performance", "websocket_guide.html#autotoc_md174", null ],
+        [ "Connection Management", "websocket_guide.html#autotoc_md175", null ]
       ] ],
-      [ "Thread Safety", "websocket_guide.html#autotoc_md176", null ],
-      [ "See Also", "websocket_guide.html#autotoc_md178", null ]
+      [ "Thread Safety", "websocket_guide.html#autotoc_md177", null ],
+      [ "See Also", "websocket_guide.html#autotoc_md179", null ]
     ] ],
     [ "Proxy Guide", "proxy_guide.html", [
-      [ "Overview", "proxy_guide.html#autotoc_md180", null ],
-      [ "Quick Start", "proxy_guide.html#autotoc_md182", [
-        [ "SOCKS5 Proxy", "proxy_guide.html#autotoc_md183", null ],
-        [ "With Authentication", "proxy_guide.html#autotoc_md184", null ],
-        [ "Using URL Parser", "proxy_guide.html#autotoc_md185", null ]
+      [ "Overview", "proxy_guide.html#autotoc_md181", null ],
+      [ "Quick Start", "proxy_guide.html#autotoc_md183", [
+        [ "SOCKS5 Proxy", "proxy_guide.html#autotoc_md184", null ],
+        [ "With Authentication", "proxy_guide.html#autotoc_md185", null ],
+        [ "Using URL Parser", "proxy_guide.html#autotoc_md186", null ]
       ] ],
-      [ "Proxy Types", "proxy_guide.html#autotoc_md187", [
-        [ "HTTP CONNECT", "proxy_guide.html#autotoc_md188", null ],
-        [ "HTTPS CONNECT", "proxy_guide.html#autotoc_md189", null ],
-        [ "SOCKS4", "proxy_guide.html#autotoc_md190", null ],
-        [ "SOCKS4a", "proxy_guide.html#autotoc_md191", null ],
-        [ "SOCKS5 (RFC 1928)", "proxy_guide.html#autotoc_md192", null ],
-        [ "SOCKS5H", "proxy_guide.html#autotoc_md193", null ]
+      [ "Proxy Types", "proxy_guide.html#autotoc_md188", [
+        [ "HTTP CONNECT", "proxy_guide.html#autotoc_md189", null ],
+        [ "HTTPS CONNECT", "proxy_guide.html#autotoc_md190", null ],
+        [ "SOCKS4", "proxy_guide.html#autotoc_md191", null ],
+        [ "SOCKS4a", "proxy_guide.html#autotoc_md192", null ],
+        [ "SOCKS5 (RFC 1928)", "proxy_guide.html#autotoc_md193", null ],
+        [ "SOCKS5H", "proxy_guide.html#autotoc_md194", null ]
       ] ],
-      [ "Configuration", "proxy_guide.html#autotoc_md195", [
-        [ "Full Configuration Structure", "proxy_guide.html#autotoc_md196", null ],
-        [ "Default Ports", "proxy_guide.html#autotoc_md197", null ],
-        [ "URL Parser", "proxy_guide.html#autotoc_md198", null ]
+      [ "Configuration", "proxy_guide.html#autotoc_md196", [
+        [ "Full Configuration Structure", "proxy_guide.html#autotoc_md197", null ],
+        [ "Default Ports", "proxy_guide.html#autotoc_md198", null ],
+        [ "URL Parser", "proxy_guide.html#autotoc_md199", null ]
       ] ],
-      [ "Synchronous API", "proxy_guide.html#autotoc_md200", [
-        [ "Simple Connection", "proxy_guide.html#autotoc_md201", null ],
-        [ "Using Existing Socket", "proxy_guide.html#autotoc_md202", null ]
+      [ "Synchronous API", "proxy_guide.html#autotoc_md201", [
+        [ "Simple Connection", "proxy_guide.html#autotoc_md202", null ],
+        [ "Using Existing Socket", "proxy_guide.html#autotoc_md203", null ]
       ] ],
-      [ "Asynchronous API", "proxy_guide.html#autotoc_md204", [
-        [ "Fully Async API (Recommended)", "proxy_guide.html#autotoc_md205", null ],
-        [ "Blocking Connect API", "proxy_guide.html#autotoc_md206", null ],
-        [ "Polling for Handshake", "proxy_guide.html#autotoc_md207", null ],
-        [ "Processing Events", "proxy_guide.html#autotoc_md208", null ],
-        [ "Getting Result", "proxy_guide.html#autotoc_md209", null ],
-        [ "Cancellation", "proxy_guide.html#autotoc_md210", null ],
-        [ "API Comparison", "proxy_guide.html#autotoc_md211", null ]
+      [ "Asynchronous API", "proxy_guide.html#autotoc_md205", [
+        [ "Fully Async API (Recommended)", "proxy_guide.html#autotoc_md206", null ],
+        [ "Blocking Connect API", "proxy_guide.html#autotoc_md207", null ],
+        [ "Polling for Handshake", "proxy_guide.html#autotoc_md208", null ],
+        [ "Processing Events", "proxy_guide.html#autotoc_md209", null ],
+        [ "Getting Result", "proxy_guide.html#autotoc_md210", null ],
+        [ "Cancellation", "proxy_guide.html#autotoc_md211", null ],
+        [ "API Comparison", "proxy_guide.html#autotoc_md212", null ]
       ] ],
-      [ "Result Codes", "proxy_guide.html#autotoc_md213", null ],
-      [ "TLS Over Proxy", "proxy_guide.html#autotoc_md215", null ],
-      [ "HTTP Client Integration", "proxy_guide.html#autotoc_md217", null ],
-      [ "Security Considerations", "proxy_guide.html#autotoc_md219", [
-        [ "Credential Handling", "proxy_guide.html#autotoc_md220", null ],
-        [ "DNS Privacy", "proxy_guide.html#autotoc_md221", null ],
-        [ "Response Validation", "proxy_guide.html#autotoc_md222", null ]
+      [ "Result Codes", "proxy_guide.html#autotoc_md214", null ],
+      [ "TLS Over Proxy", "proxy_guide.html#autotoc_md216", null ],
+      [ "HTTP Client Integration", "proxy_guide.html#autotoc_md218", null ],
+      [ "Security Considerations", "proxy_guide.html#autotoc_md220", [
+        [ "Credential Handling", "proxy_guide.html#autotoc_md221", null ],
+        [ "DNS Privacy", "proxy_guide.html#autotoc_md222", null ],
+        [ "Response Validation", "proxy_guide.html#autotoc_md223", null ]
       ] ],
-      [ "Error Handling", "proxy_guide.html#autotoc_md224", null ],
-      [ "Connection State Machine", "proxy_guide.html#autotoc_md226", null ],
-      [ "Best Practices", "proxy_guide.html#autotoc_md228", null ],
-      [ "Thread Safety", "proxy_guide.html#autotoc_md230", null ],
-      [ "See Also", "proxy_guide.html#autotoc_md232", null ]
+      [ "Error Handling", "proxy_guide.html#autotoc_md225", null ],
+      [ "Connection State Machine", "proxy_guide.html#autotoc_md227", null ],
+      [ "Best Practices", "proxy_guide.html#autotoc_md229", null ],
+      [ "Thread Safety", "proxy_guide.html#autotoc_md231", null ],
+      [ "See Also", "proxy_guide.html#autotoc_md233", null ]
     ] ],
     [ "Security Guide", "security_guide.html", [
-      [ "TLS 1.3 Configuration", "security_guide.html#autotoc_md234", [
-        [ "Default Configuration", "security_guide.html#autotoc_md235", null ],
-        [ "TLS Settings (SocketTLSConfig.h)", "security_guide.html#autotoc_md236", null ],
-        [ "Why TLS 1.3?", "security_guide.html#autotoc_md237", null ]
+      [ "TLS 1.3 Configuration", "security_guide.html#autotoc_md235", [
+        [ "Default Configuration", "security_guide.html#autotoc_md236", null ],
+        [ "TLS Settings (SocketTLSConfig.h)", "security_guide.html#autotoc_md237", null ],
+        [ "Why TLS 1.3?", "security_guide.html#autotoc_md238", null ]
       ] ],
-      [ "Certificate Transparency (CT)", "security_guide.html#autotoc_md239", [
-        [ "Usage", "security_guide.html#autotoc_md240", null ],
-        [ "Security Benefits", "security_guide.html#autotoc_md241", null ],
-        [ "Requirements", "security_guide.html#autotoc_md242", null ],
-        [ "Custom Logs", "security_guide.html#autotoc_md243", null ],
-        [ "Verification", "security_guide.html#autotoc_md244", null ],
-        [ "Limits", "security_guide.html#autotoc_md245", null ]
+      [ "Certificate Transparency (CT)", "security_guide.html#autotoc_md240", [
+        [ "Usage", "security_guide.html#autotoc_md241", null ],
+        [ "Security Benefits", "security_guide.html#autotoc_md242", null ],
+        [ "Requirements", "security_guide.html#autotoc_md243", null ],
+        [ "Custom Logs", "security_guide.html#autotoc_md244", null ],
+        [ "Verification", "security_guide.html#autotoc_md245", null ],
+        [ "Limits", "security_guide.html#autotoc_md246", null ]
       ] ],
-      [ "Certificate Pinning", "security_guide.html#autotoc_md246", [
-        [ "SPKI SHA256 Pinning", "security_guide.html#autotoc_md247", null ],
-        [ "When to Use Pinning", "security_guide.html#autotoc_md248", null ],
-        [ "Pin Rotation", "security_guide.html#autotoc_md249", null ]
+      [ "Certificate Pinning", "security_guide.html#autotoc_md247", [
+        [ "SPKI SHA256 Pinning", "security_guide.html#autotoc_md248", null ],
+        [ "When to Use Pinning", "security_guide.html#autotoc_md249", null ],
+        [ "Pin Rotation", "security_guide.html#autotoc_md250", null ]
       ] ],
-      [ "Input Validation", "security_guide.html#autotoc_md251", [
-        [ "Hostname Validation", "security_guide.html#autotoc_md252", null ],
-        [ "Port Validation", "security_guide.html#autotoc_md253", null ],
-        [ "Buffer Size Validation", "security_guide.html#autotoc_md254", null ]
+      [ "Input Validation", "security_guide.html#autotoc_md252", [
+        [ "Hostname Validation", "security_guide.html#autotoc_md253", null ],
+        [ "Port Validation", "security_guide.html#autotoc_md254", null ],
+        [ "Buffer Size Validation", "security_guide.html#autotoc_md255", null ]
       ] ],
-      [ "DNS Security", "security_guide.html#autotoc_md256", [
-        [ "Blocking DNS Warning", "security_guide.html#autotoc_md257", null ],
-        [ "DNS DoS Prevention", "security_guide.html#autotoc_md258", null ]
+      [ "DNS Security", "security_guide.html#autotoc_md257", [
+        [ "Blocking DNS Warning", "security_guide.html#autotoc_md258", null ],
+        [ "DNS DoS Prevention", "security_guide.html#autotoc_md259", null ]
       ] ],
-      [ "Credential Handling", "security_guide.html#autotoc_md260", [
-        [ "Secure Memory Clearing", "security_guide.html#autotoc_md261", null ],
-        [ "The Library Does This Internally", "security_guide.html#autotoc_md262", null ],
-        [ "Constant-Time Comparison", "security_guide.html#autotoc_md263", null ]
+      [ "Credential Handling", "security_guide.html#autotoc_md261", [
+        [ "Secure Memory Clearing", "security_guide.html#autotoc_md262", null ],
+        [ "The Library Does This Internally", "security_guide.html#autotoc_md263", null ],
+        [ "Constant-Time Comparison", "security_guide.html#autotoc_md264", null ]
       ] ],
-      [ "DoS Protection", "security_guide.html#autotoc_md265", [
-        [ "SYN Flood Protection", "security_guide.html#autotoc_md266", null ],
-        [ "Rate Limiting", "security_guide.html#autotoc_md267", null ],
-        [ "Per-IP Connection Limits", "security_guide.html#autotoc_md268", null ]
+      [ "DoS Protection", "security_guide.html#autotoc_md266", [
+        [ "SYN Flood Protection", "security_guide.html#autotoc_md267", null ],
+        [ "Rate Limiting", "security_guide.html#autotoc_md268", null ],
+        [ "Per-IP Connection Limits", "security_guide.html#autotoc_md269", null ]
       ] ],
-      [ "Thread Safety", "security_guide.html#autotoc_md270", [
-        [ "Thread-Local Error Buffers", "security_guide.html#autotoc_md271", null ],
-        [ "Exception Thread Safety", "security_guide.html#autotoc_md272", null ],
-        [ "What's NOT Thread-Safe", "security_guide.html#autotoc_md273", null ]
+      [ "Thread Safety", "security_guide.html#autotoc_md271", [
+        [ "Thread-Local Error Buffers", "security_guide.html#autotoc_md272", null ],
+        [ "Exception Thread Safety", "security_guide.html#autotoc_md273", null ],
+        [ "What's NOT Thread-Safe", "security_guide.html#autotoc_md274", null ]
       ] ],
-      [ "Exception Handling", "security_guide.html#autotoc_md275", [
-        [ "Always Handle Security Exceptions", "security_guide.html#autotoc_md276", null ],
-        [ "Don't Ignore Verification Failures", "security_guide.html#autotoc_md277", null ]
+      [ "Exception Handling", "security_guide.html#autotoc_md276", [
+        [ "Always Handle Security Exceptions", "security_guide.html#autotoc_md277", null ],
+        [ "Don't Ignore Verification Failures", "security_guide.html#autotoc_md278", null ]
       ] ],
-      [ "HTTP Security", "security_guide.html#autotoc_md279", [
-        [ "Request Smuggling Prevention", "security_guide.html#autotoc_md280", null ],
-        [ "WebSocket Security", "security_guide.html#autotoc_md281", null ],
-        [ "Cookie Security", "security_guide.html#autotoc_md282", null ],
-        [ "HTTP/2 Flow Control Hardening", "security_guide.html#autotoc_md283", null ]
+      [ "HTTP Security", "security_guide.html#autotoc_md280", [
+        [ "Request Smuggling Prevention", "security_guide.html#autotoc_md281", null ],
+        [ "WebSocket Security", "security_guide.html#autotoc_md282", null ],
+        [ "Cookie Security", "security_guide.html#autotoc_md283", null ],
+        [ "HTTP/2 Flow Control Hardening", "security_guide.html#autotoc_md284", null ]
       ] ],
-      [ "File Descriptor Hygiene", "security_guide.html#autotoc_md285", [
-        [ "Safe Close", "security_guide.html#autotoc_md286", null ],
-        [ "Prevent FD Leaks", "security_guide.html#autotoc_md287", null ]
+      [ "File Descriptor Hygiene", "security_guide.html#autotoc_md286", [
+        [ "Safe Close", "security_guide.html#autotoc_md287", null ],
+        [ "Prevent FD Leaks", "security_guide.html#autotoc_md288", null ]
       ] ],
-      [ "Audit Logging", "security_guide.html#autotoc_md289", [
-        [ "What to Log", "security_guide.html#autotoc_md290", null ],
-        [ "How to Log Safely", "security_guide.html#autotoc_md291", null ]
+      [ "Audit Logging", "security_guide.html#autotoc_md290", [
+        [ "What to Log", "security_guide.html#autotoc_md291", null ],
+        [ "How to Log Safely", "security_guide.html#autotoc_md292", null ]
       ] ],
-      [ "Security Checklist", "security_guide.html#autotoc_md293", [
-        [ "Server Applications", "security_guide.html#autotoc_md294", null ],
-        [ "Client Applications", "security_guide.html#autotoc_md295", null ],
-        [ "General", "security_guide.html#autotoc_md296", null ]
+      [ "Security Checklist", "security_guide.html#autotoc_md294", [
+        [ "Server Applications", "security_guide.html#autotoc_md295", null ],
+        [ "Client Applications", "security_guide.html#autotoc_md296", null ],
+        [ "General", "security_guide.html#autotoc_md297", null ]
       ] ],
-      [ "TLS Configuration Best Practices", "security_guide.html#autotoc_md298", [
-        [ "Protocol Version", "security_guide.html#autotoc_md299", null ],
-        [ "Cipher Suite Configuration", "security_guide.html#autotoc_md300", null ],
-        [ "Certificate Verification", "security_guide.html#autotoc_md301", null ],
-        [ "Mutual TLS (mTLS)", "security_guide.html#autotoc_md302", null ],
-        [ "OCSP Stapling", "security_guide.html#autotoc_md303", null ],
-        [ "Certificate Transparency", "security_guide.html#autotoc_md304", null ],
-        [ "Certificate Revocation Lists (CRL)", "security_guide.html#autotoc_md305", null ],
-        [ "Session Resumption Security", "security_guide.html#autotoc_md306", null ],
-        [ "Renegotiation Protection", "security_guide.html#autotoc_md307", null ],
-        [ "Private Key Protection", "security_guide.html#autotoc_md308", null ],
-        [ "TLS Security Checklist", "security_guide.html#autotoc_md309", null ]
+      [ "TLS Configuration Best Practices", "security_guide.html#autotoc_md299", [
+        [ "Protocol Version", "security_guide.html#autotoc_md300", null ],
+        [ "Cipher Suite Configuration", "security_guide.html#autotoc_md301", null ],
+        [ "Certificate Verification", "security_guide.html#autotoc_md302", null ],
+        [ "Mutual TLS (mTLS)", "security_guide.html#autotoc_md303", null ],
+        [ "OCSP Stapling", "security_guide.html#autotoc_md304", null ],
+        [ "Certificate Transparency", "security_guide.html#autotoc_md305", null ],
+        [ "Certificate Revocation Lists (CRL)", "security_guide.html#autotoc_md306", null ],
+        [ "Session Resumption Security", "security_guide.html#autotoc_md307", null ],
+        [ "Renegotiation Protection", "security_guide.html#autotoc_md308", null ],
+        [ "Private Key Protection", "security_guide.html#autotoc_md309", null ],
+        [ "TLS Security Checklist", "security_guide.html#autotoc_md310", null ]
       ] ],
-      [ "See Also", "security_guide.html#autotoc_md311", null ]
+      [ "See Also", "security_guide.html#autotoc_md312", null ]
     ] ],
     [ "Migration Guide", "migration_guide.html", [
-      [ "Migration from BSD Sockets", "migration_guide.html#autotoc_md313", [
-        [ "Socket Creation", "migration_guide.html#autotoc_md314", null ],
-        [ "Connecting", "migration_guide.html#autotoc_md315", null ],
-        [ "Sending Data", "migration_guide.html#autotoc_md316", null ],
-        [ "Socket Options", "migration_guide.html#autotoc_md317", null ],
-        [ "API Mapping (BSD -> Socket Library)", "migration_guide.html#autotoc_md318", null ]
+      [ "Migration from BSD Sockets", "migration_guide.html#autotoc_md314", [
+        [ "Socket Creation", "migration_guide.html#autotoc_md315", null ],
+        [ "Connecting", "migration_guide.html#autotoc_md316", null ],
+        [ "Sending Data", "migration_guide.html#autotoc_md317", null ],
+        [ "Socket Options", "migration_guide.html#autotoc_md318", null ],
+        [ "API Mapping (BSD -> Socket Library)", "migration_guide.html#autotoc_md319", null ]
       ] ],
-      [ "Migration from libcurl", "migration_guide.html#autotoc_md320", [
-        [ "Simple GET Request", "migration_guide.html#autotoc_md321", null ],
-        [ "POST Request", "migration_guide.html#autotoc_md322", null ],
-        [ "Custom Headers", "migration_guide.html#autotoc_md323", null ],
-        [ "Proxy Configuration", "migration_guide.html#autotoc_md324", null ],
-        [ "Error Handling", "migration_guide.html#autotoc_md325", null ],
-        [ "API Mapping (libcurl -> Socket Library)", "migration_guide.html#autotoc_md326", null ]
+      [ "Migration from libcurl", "migration_guide.html#autotoc_md321", [
+        [ "Simple GET Request", "migration_guide.html#autotoc_md322", null ],
+        [ "POST Request", "migration_guide.html#autotoc_md323", null ],
+        [ "Custom Headers", "migration_guide.html#autotoc_md324", null ],
+        [ "Proxy Configuration", "migration_guide.html#autotoc_md325", null ],
+        [ "Error Handling", "migration_guide.html#autotoc_md326", null ],
+        [ "API Mapping (libcurl -> Socket Library)", "migration_guide.html#autotoc_md327", null ]
       ] ],
-      [ "Migration from libevent", "migration_guide.html#autotoc_md328", [
-        [ "Event Loop", "migration_guide.html#autotoc_md329", null ],
-        [ "Callback Style", "migration_guide.html#autotoc_md330", null ],
-        [ "Timers", "migration_guide.html#autotoc_md331", null ],
-        [ "API Mapping (libevent -> Socket Library)", "migration_guide.html#autotoc_md332", null ]
+      [ "Migration from libevent", "migration_guide.html#autotoc_md329", [
+        [ "Event Loop", "migration_guide.html#autotoc_md330", null ],
+        [ "Callback Style", "migration_guide.html#autotoc_md331", null ],
+        [ "Timers", "migration_guide.html#autotoc_md332", null ],
+        [ "API Mapping (libevent -> Socket Library)", "migration_guide.html#autotoc_md333", null ]
       ] ],
-      [ "Migration from libev", "migration_guide.html#autotoc_md334", [
-        [ "Event Loop", "migration_guide.html#autotoc_md335", null ]
+      [ "Migration from libev", "migration_guide.html#autotoc_md335", [
+        [ "Event Loop", "migration_guide.html#autotoc_md336", null ]
       ] ],
-      [ "Migration from OpenSSL Direct", "migration_guide.html#autotoc_md337", [
-        [ "TLS Client", "migration_guide.html#autotoc_md338", null ],
-        [ "API Mapping (OpenSSL -> Socket Library)", "migration_guide.html#autotoc_md339", null ]
+      [ "Migration from OpenSSL Direct", "migration_guide.html#autotoc_md338", [
+        [ "TLS Client", "migration_guide.html#autotoc_md339", null ],
+        [ "API Mapping (OpenSSL -> Socket Library)", "migration_guide.html#autotoc_md340", null ]
       ] ],
-      [ "Common Patterns", "migration_guide.html#autotoc_md341", [
-        [ "Error Handling Pattern", "migration_guide.html#autotoc_md342", null ],
-        [ "Resource Cleanup Pattern", "migration_guide.html#autotoc_md343", null ]
+      [ "Common Patterns", "migration_guide.html#autotoc_md342", [
+        [ "Error Handling Pattern", "migration_guide.html#autotoc_md343", null ],
+        [ "Resource Cleanup Pattern", "migration_guide.html#autotoc_md344", null ]
       ] ],
-      [ "Key Differences", "migration_guide.html#autotoc_md345", [
-        [ "Memory Management", "migration_guide.html#autotoc_md346", null ],
-        [ "Error Handling", "migration_guide.html#autotoc_md347", null ],
-        [ "Thread Safety", "migration_guide.html#autotoc_md348", null ]
+      [ "Key Differences", "migration_guide.html#autotoc_md346", [
+        [ "Memory Management", "migration_guide.html#autotoc_md347", null ],
+        [ "Error Handling", "migration_guide.html#autotoc_md348", null ],
+        [ "Thread Safety", "migration_guide.html#autotoc_md349", null ]
       ] ],
-      [ "Getting Started", "migration_guide.html#autotoc_md350", null ],
-      [ "See Also", "migration_guide.html#autotoc_md352", null ]
+      [ "Getting Started", "migration_guide.html#autotoc_md351", null ],
+      [ "See Also", "migration_guide.html#autotoc_md353", null ]
     ] ],
     [ "Data Structures", "annotated.html", [
       [ "Data Structures", "annotated.html", "annotated_dup" ],
@@ -383,15 +385,15 @@ var NAVTREEINDEX =
 "Arena_8h.html",
 "SocketConfig_8h.html#a8c43db9a86f5f49f85c535b7e01a9cd2",
 "SocketDgram_8h.html#a08371cbf32cb15528b42e189f8267923",
-"SocketHTTP2_8h.html#a553a90f9d384e7ac9667e03d146a873b",
-"SocketHTTPClient_8h.html#a9a5d4cac43fdb9d880edef1dc778273a",
-"SocketHappyEyeballs_8h.html#a07e470dce144233028bfd6d2193e8c03",
-"SocketPoll_8h.html#a665b3363d16ab859ec60e69a792d1ff0",
-"SocketReconnect_8h.html#aaa80956d1e58e84adfab7063e1936f95",
-"SocketTLSContext_8h.html#a71084c00bec22f65b90301188868b759",
-"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a4f7a06893610177371a7c901f5f7cbae",
-"async_io_guide.html#autotoc_md71",
-"migration_guide.html#autotoc_md326"
+"SocketHTTP2_8h.html#a4f948d55c4fc6947b5da693aad073731",
+"SocketHTTPClient_8h.html#a86ed34fbe021d156e6ee5ac2bc8e9b6e",
+"SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8fafaba39836e3963977f2d329394f8df31",
+"SocketPoll_8h.html#a0fc8aa94a3e9bb10cb26d85c6474d04e",
+"SocketReconnect_8h.html#a8dd2c1fe7147188da2be29f7623d2822",
+"SocketTLSContext_8h.html#a445003fff70029dd096df971801be0e4",
+"SocketUtil_8h.html#acf807f3c720486767d282324cacd4908a00acb29ee302472a59b7e01718965ad3",
+"async_io_guide.html#autotoc_md59",
+"migration_guide.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

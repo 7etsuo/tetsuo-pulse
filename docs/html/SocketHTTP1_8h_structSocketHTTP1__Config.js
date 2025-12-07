@@ -1,6 +1,7 @@
 var SocketHTTP1_8h_structSocketHTTP1__Config =
 [
     [ "allow_obs_fold", "SocketHTTP1_8h.html#acf3abe5c5f8346ef4dc94771023f0c65", null ],
+    [ "max_chunk_ext", "SocketHTTP1_8h.html#ad923d4eab20cacfa9e43a265dc456c7b", null ],
     [ "max_chunk_size", "SocketHTTP1_8h.html#a210e4001f9c4495e5e59ec63992fafcf", null ],
     [ "max_decompressed_size", "SocketHTTP1_8h.html#aeda690045f7731461b2a5f29d9c3cc03", null ],
     [ "max_header_line", "SocketHTTP1_8h.html#ad52814be2bcde961f89fd28531af8471", null ],

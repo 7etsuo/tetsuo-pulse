@@ -120,6 +120,7 @@ $(document).ready(function(){initNavTree('SocketTLSContext_8h.html',''); initRes
 <div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketTLS_8h_source.html">tls/SocketTLS.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="SocketTLSConfig_8h_source.html">tls/SocketTLSConfig.h</a>&quot;</code><br />
 <code>#include &lt;openssl/ssl.h&gt;</code><br />
 <code>#include &lt;openssl/x509_vfy.h&gt;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -165,6 +166,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a7fe51da14439d768bdf72f4ed8fbb022" id="r_a7fe51da14439d768bdf72f4ed8fbb022"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a7fe51da14439d768bdf72f4ed8fbb022">SocketTLSContext_new_client</a> (const char *ca_file)</td></tr>
 <tr class="memdesc:a7fe51da14439d768bdf72f4ed8fbb022"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_new_client - Create client TLS context @ca_file: Optional path to CA file/directory for server verification (NULL to disable)  <br /></td></tr>
 <tr class="separator:a7fe51da14439d768bdf72f4ed8fbb022"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69b7880fa99df9a39b4db5259a9e1234" id="r_a69b7880fa99df9a39b4db5259a9e1234"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a69b7880fa99df9a39b4db5259a9e1234">SocketTLSContext_new</a> (const <a class="el" href="SocketTLSConfig_8h.html#structSocketTLSConfig__T">SocketTLSConfig_T</a> *config)</td></tr>
+<tr class="memdesc:a69b7880fa99df9a39b4db5259a9e1234"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_new - Create client TLS context with custom config @config: Custom TLS configuration (or NULL for defaults)  <br /></td></tr>
+<tr class="separator:a69b7880fa99df9a39b4db5259a9e1234"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e2af3e4421c3c20c7dbc4b99cfb4211" id="r_a1e2af3e4421c3c20c7dbc4b99cfb4211"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a1e2af3e4421c3c20c7dbc4b99cfb4211">SocketTLSContext_load_certificate</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *cert_file, const char *key_file)</td></tr>
 <tr class="memdesc:a1e2af3e4421c3c20c7dbc4b99cfb4211"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_load_certificate - Load server certificate and private key @ctx: The TLS context instance @cert_file: Path to certificate file (PEM) @key_file: Path to private key file (PEM)  <br /></td></tr>
 <tr class="separator:a1e2af3e4421c3c20c7dbc4b99cfb4211"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -336,7 +340,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00013">13</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00014">14</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
 
 </div>
 </div>
@@ -355,7 +359,7 @@ Functions</h2></td></tr>
 
 <p>CTValidationMode - Certificate Transparency validation mode. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00522">522</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00536">536</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
 
 </div>
 </div>
@@ -373,7 +377,7 @@ Functions</h2></td></tr>
 
 <p>CTValidationMode - Certificate Transparency validation mode. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00436">436</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00450">450</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
 
 </div>
 </div>
@@ -389,7 +393,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00014">14</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00015">15</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
 
 </div>
 </div>
@@ -408,7 +412,7 @@ Functions</h2></td></tr>
 <p>SocketTLSCrlCallback - CRL refresh notification callback @ctx: TLS context that was refreshed @path: Path to CRL file @success: 1 if refresh succeeded, 0 if failed @user_data: User data from set_crl_auto_refresh. </p>
 <p>Called after each refresh attempt. On failure, the old CRL remains in effect. Application should log failures and potentially alert. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00275">275</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00289">289</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
 
 </div>
 </div>
@@ -424,7 +428,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00356">356</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00370">370</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
 
 </div>
 </div>
@@ -443,7 +447,7 @@ Functions</h2></td></tr>
 <p>SocketTLSVerifyCallback - User-defined certificate verification callback @preverify_ok: OpenSSL pre-verification result (1=OK, 0=fail) @x509_ctx: OpenSSL certificate store context (access cert chain via X509_STORE_CTX_get_current_cert()) @tls_ctx: TLS context for shared configuration/data @socket: Associated socket for connection-specific info (e.g., hostname) @user_data: Opaque user data from SocketTLSContext_set_verify_callback. </p>
 <p>Called during TLS verification to allow custom logic (e.g., pinning, policy checks). Return 1 to accept/continue verification, 0 to fail (aborts handshake). Can raise exceptions for detailed errors. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00169">169</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00183">183</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
 
 </div>
 </div>
@@ -468,7 +472,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00814">814</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00828">828</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
 
 </div>
 </div>
@@ -1412,6 +1416,36 @@ Functions</h2></td></tr>
 <p>SocketTLSContext_load_crl - Load CRL file or directory into verification store @ctx: TLS context instance @crl_path: Path to CRL file (PEM/DER) or directory of CRL files (hashed names) </p>
 <p>Loads CRL data into the context's X509_STORE for revocation checking during peer verification. Supports single file or directory (auto-detect via stat). Multiple calls append additional CRLs. Enables CRL_CHECK flags automatically. CRL refresh not implemented (manual reload via re-call).</p>
 <p>Returns: void Raises: SocketTLS_Failed if load/path invalid or OpenSSL error Thread-safe: Yes (mutex protected) - modifies shared store; call during setup Note: Effective only if verify_mode requires peer cert check (PEER/FAIL_IF_NO_PEER) </p>
+
+</div>
+</div>
+<a id="a69b7880fa99df9a39b4db5259a9e1234" name="a69b7880fa99df9a39b4db5259a9e1234"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69b7880fa99df9a39b4db5259a9e1234">&#9670;&#160;</a></span>SocketTLSContext_new()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> SocketTLSContext_new </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="SocketTLSConfig_8h.html#structSocketTLSConfig__T">SocketTLSConfig_T</a> *&#160;</td>
+          <td class="paramname"><em>config</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLSContext_new - Create client TLS context with custom config @config: Custom TLS configuration (or NULL for defaults) </p>
+<p>Creates a client-side TLS context with provided configuration. If config NULL, uses secure defaults.</p>
+<p>Returns: New opaque SocketTLSContext_T instance Raises: SocketTLS_Failed on OpenSSL errors Thread-safe: Yes </p>
 
 </div>
 </div>

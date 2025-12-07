@@ -190,6 +190,9 @@ Macros</h2></td></tr>
 <tr class="memitem:ab32a3ecd078fc6919d2f5e0a06d12388" id="r_ab32a3ecd078fc6919d2f5e0a06d12388"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#ab32a3ecd078fc6919d2f5e0a06d12388">HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE</a>&#160;&#160;&#160;1</td></tr>
 <tr class="memdesc:ab32a3ecd078fc6919d2f5e0a06d12388"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enforce SameSite attribute for cookie matching (default: 1)  <br /></td></tr>
 <tr class="separator:ab32a3ecd078fc6919d2f5e0a06d12388"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acaa7d0af3789f8dd4dd0b0ada62ea8fb" id="r_acaa7d0af3789f8dd4dd0b0ada62ea8fb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#acaa7d0af3789f8dd4dd0b0ada62ea8fb">HTTPCLIENT_MAX_COOKIES</a>&#160;&#160;&#160;10000</td></tr>
+<tr class="memdesc:acaa7d0af3789f8dd4dd0b0ada62ea8fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum number of cookies per jar (default: 10000)  <br /></td></tr>
+<tr class="separator:acaa7d0af3789f8dd4dd0b0ada62ea8fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a61970445f2f7a4a8d23da8680fc09b" id="r_a4a61970445f2f7a4a8d23da8680fc09b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a4a61970445f2f7a4a8d23da8680fc09b">HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE</a>&#160;&#160;&#160;(10ULL * 1024 * 1024)  /* 10MB default to prevent DoS */</td></tr>
 <tr class="memdesc:a4a61970445f2f7a4a8d23da8680fc09b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default maximum response body size (0 = unlimited)  <br /></td></tr>
 <tr class="separator:a4a61970445f2f7a4a8d23da8680fc09b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -217,6 +220,12 @@ Macros</h2></td></tr>
 <tr class="memitem:a1f5201287c752c90005b22c9a07c8011" id="r_a1f5201287c752c90005b22c9a07c8011"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a1f5201287c752c90005b22c9a07c8011">HTTPCLIENT_COOKIE_SAMESITE_SIZE</a>&#160;&#160;&#160;16</td></tr>
 <tr class="memdesc:a1f5201287c752c90005b22c9a07c8011"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum SameSite attribute value length ("Strict" = 6 + NUL)  <br /></td></tr>
 <tr class="separator:a1f5201287c752c90005b22c9a07c8011"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a560da3bb4151944df985b9975287edfe" id="r_a560da3bb4151944df985b9975287edfe"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a560da3bb4151944df985b9975287edfe">HTTPCLIENT_MAX_COOKIE_AGE_SEC</a>&#160;&#160;&#160;(365LL * 24 * 3600 * 10)</td></tr>
+<tr class="memdesc:a560da3bb4151944df985b9975287edfe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum cookie age in seconds (10 years)  <br /></td></tr>
+<tr class="separator:a560da3bb4151944df985b9975287edfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03d6fecf7157434b85280da192866051" id="r_a03d6fecf7157434b85280da192866051"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a03d6fecf7157434b85280da192866051">HTTPCLIENT_COOKIE_MAX_CHAIN_LEN</a>&#160;&#160;&#160;100</td></tr>
+<tr class="memdesc:a03d6fecf7157434b85280da192866051"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum hash chain length before eviction (DoS protection)  <br /></td></tr>
+<tr class="separator:a03d6fecf7157434b85280da192866051"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba4e506b5b48afa5c9e19f692619db35" id="r_aba4e506b5b48afa5c9e19f692619db35"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#aba4e506b5b48afa5c9e19f692619db35">HTTPCLIENT_AUTH_CREDENTIALS_SIZE</a>&#160;&#160;&#160;512</td></tr>
 <tr class="memdesc:aba4e506b5b48afa5c9e19f692619db35"><td class="mdescLeft">&#160;</td><td class="mdescRight">Credentials buffer size (username:password before base64)  <br /></td></tr>
 <tr class="separator:aba4e506b5b48afa5c9e19f692619db35"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -297,7 +306,7 @@ Macros</h2></td></tr>
 
 <p>Accept-Encoding header buffer size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00321">321</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00336">336</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -315,7 +324,7 @@ Macros</h2></td></tr>
 
 <p>Credentials buffer size (username:password before base64) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00247">247</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00262">262</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -333,7 +342,7 @@ Macros</h2></td></tr>
 
 <p>Large authorization header size (for Digest with long params) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00306">306</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00321">321</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -351,7 +360,7 @@ Macros</h2></td></tr>
 
 <p>Authorization header buffer size (Basic/Digest/Bearer) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00301">301</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00316">316</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -369,7 +378,7 @@ Macros</h2></td></tr>
 
 <p>Response body read chunk size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00286">286</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00301">301</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -387,7 +396,7 @@ Macros</h2></td></tr>
 
 <p>Content-Length header buffer size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00326">326</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00341">341</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -405,7 +414,7 @@ Macros</h2></td></tr>
 
 <p>Cookie file line buffer size (Netscape format parsing) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00225">225</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00230">230</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -423,7 +432,7 @@ Macros</h2></td></tr>
 
 <p>Cookie jar hash table size (prime for better distribution) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00200">200</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00205">205</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -441,7 +450,7 @@ Macros</h2></td></tr>
 
 <p>Cookie header buffer size (for outgoing requests) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00296">296</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00311">311</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -459,7 +468,25 @@ Macros</h2></td></tr>
 
 <p>Maximum Max-Age attribute string length. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00230">230</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00235">235</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+
+</div>
+</div>
+<a id="a03d6fecf7157434b85280da192866051" name="a03d6fecf7157434b85280da192866051"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03d6fecf7157434b85280da192866051">&#9670;&#160;</a></span>HTTPCLIENT_COOKIE_MAX_CHAIN_LEN</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HTTPCLIENT_COOKIE_MAX_CHAIN_LEN&#160;&#160;&#160;100</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum hash chain length before eviction (DoS protection) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00250">250</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -477,7 +504,7 @@ Macros</h2></td></tr>
 
 <p>Maximum cookie domain length (bytes) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00215">215</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00220">220</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -495,7 +522,7 @@ Macros</h2></td></tr>
 
 <p>Maximum cookie name length (bytes) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00205">205</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00210">210</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -513,7 +540,7 @@ Macros</h2></td></tr>
 
 <p>Maximum cookie path length (bytes) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00220">220</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00225">225</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -531,7 +558,7 @@ Macros</h2></td></tr>
 
 <p>Maximum cookie value length (bytes) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00210">210</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00215">215</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -549,7 +576,7 @@ Macros</h2></td></tr>
 
 <p>Maximum SameSite attribute value length ("Strict" = 6 + NUL) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00235">235</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00240">240</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -695,7 +722,7 @@ Macros</h2></td></tr>
 <p>ENFORCEMENT: Checked during body accumulation in receive_http1_response(). Raises SocketHTTPClient_ResponseTooLarge exception when exceeded. Increments SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED metric.</p>
 <p>Recommendation: Set to non-zero value in production to prevent memory exhaustion attacks (e.g., 10MB for typical API responses). </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00191">191</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00196">196</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -857,7 +884,7 @@ Macros</h2></td></tr>
 
 <p>Default User-Agent string. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00341">341</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00356">356</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -875,7 +902,7 @@ Macros</h2></td></tr>
 
 <p>Maximum Digest auth A1/A2 buffer size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00252">252</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00267">267</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -893,7 +920,7 @@ Macros</h2></td></tr>
 
 <p>Digest auth cnonce hex string size (2 chars per byte + null) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00267">267</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00282">282</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -911,7 +938,7 @@ Macros</h2></td></tr>
 
 <p>Digest auth cnonce size (bytes of random data) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00262">262</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00277">277</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -929,7 +956,7 @@ Macros</h2></td></tr>
 
 <p>Nonce count buffer size (e.g., "00000001") </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00272">272</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00287">287</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -947,7 +974,7 @@ Macros</h2></td></tr>
 
 <p>Maximum Digest auth response buffer size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00257">257</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00272">272</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -963,7 +990,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00351">351</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00366">366</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -979,7 +1006,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00350">350</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00365">365</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -995,7 +1022,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00349">349</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00364">364</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1011,7 +1038,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00348">348</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00363">363</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1070,7 +1097,7 @@ Macros</h2></td></tr>
 
 <p>Host header buffer size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00291">291</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00306">306</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1110,6 +1137,42 @@ Macros</h2></td></tr>
 
 </div>
 </div>
+<a id="a560da3bb4151944df985b9975287edfe" name="a560da3bb4151944df985b9975287edfe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a560da3bb4151944df985b9975287edfe">&#9670;&#160;</a></span>HTTPCLIENT_MAX_COOKIE_AGE_SEC</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HTTPCLIENT_MAX_COOKIE_AGE_SEC&#160;&#160;&#160;(365LL * 24 * 3600 * 10)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum cookie age in seconds (10 years) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00245">245</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+
+</div>
+</div>
+<a id="acaa7d0af3789f8dd4dd0b0ada62ea8fb" name="acaa7d0af3789f8dd4dd0b0ada62ea8fb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acaa7d0af3789f8dd4dd0b0ada62ea8fb">&#9670;&#160;</a></span>HTTPCLIENT_MAX_COOKIES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HTTPCLIENT_MAX_COOKIES&#160;&#160;&#160;10000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum number of cookies per jar (default: 10000) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00182">182</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+
+</div>
+</div>
 <a id="a134a20a8c6c468864bb0d94e9d9abb91" name="a134a20a8c6c468864bb0d94e9d9abb91"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a134a20a8c6c468864bb0d94e9d9abb91">&#9670;&#160;</a></span>HTTPCLIENT_MAX_SET_COOKIES</h2>
 
@@ -1124,7 +1187,7 @@ Macros</h2></td></tr>
 
 <p>Maximum number of Set-Cookie headers to process per response. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00316">316</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00331">331</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1196,7 +1259,7 @@ Macros</h2></td></tr>
 
 <p>Request line/header serialization buffer size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00281">281</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00296">296</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1214,7 +1277,7 @@ Macros</h2></td></tr>
 
 <p>Retry jitter factor (0.0 to 1.0, applied as +/- percentage) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00331">331</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00346">346</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1230,7 +1293,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00332">332</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00347">347</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1248,7 +1311,7 @@ Macros</h2></td></tr>
 
 <p>URI string buffer size for Digest auth. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00311">311</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00326">326</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>

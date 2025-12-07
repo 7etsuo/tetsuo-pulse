@@ -38,8 +38,9 @@ var searchData=
   ['socketsynprotect_5fstats_35',['SocketSYNProtect_Stats',['../SocketSYNProtect_8h.html#structSocketSYNProtect__Stats',1,'']]],
   ['sockettimeouts_5fextended_5ft_36',['SocketTimeouts_Extended_T',['../SocketConfig_8h.html#structSocketTimeouts__Extended__T',1,'']]],
   ['sockettimeouts_5ft_37',['SocketTimeouts_T',['../SocketConfig_8h.html#structSocketTimeouts__T',1,'']]],
-  ['socketutf8_5fstate_38',['SocketUTF8_State',['../SocketUTF8_8h.html#structSocketUTF8__State',1,'']]],
-  ['socketws_5fconfig_39',['SocketWS_Config',['../SocketWS_8h.html#structSocketWS__Config',1,'']]],
-  ['socketws_5fframe_40',['SocketWS_Frame',['../SocketWS_8h.html#structSocketWS__Frame',1,'']]],
-  ['socketws_5fmessage_41',['SocketWS_Message',['../SocketWS_8h.html#structSocketWS__Message',1,'']]]
+  ['sockettlsconfig_5ft_38',['SocketTLSConfig_T',['../SocketTLSConfig_8h.html#structSocketTLSConfig__T',1,'']]],
+  ['socketutf8_5fstate_39',['SocketUTF8_State',['../SocketUTF8_8h.html#structSocketUTF8__State',1,'']]],
+  ['socketws_5fconfig_40',['SocketWS_Config',['../SocketWS_8h.html#structSocketWS__Config',1,'']]],
+  ['socketws_5fframe_41',['SocketWS_Frame',['../SocketWS_8h.html#structSocketWS__Frame',1,'']]],
+  ['socketws_5fmessage_42',['SocketWS_Message',['../SocketWS_8h.html#structSocketWS__Message',1,'']]]
 ];

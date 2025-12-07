@@ -45,6 +45,7 @@ always_fail_health_check (SocketReconnect_T conn, Socket_T socket, int timeout_m
 {
   (void)conn;
   (void)socket;
+  (void)timeout_ms;
   (void)userdata;
   health_fail_calls++;
   /* Fail only up to the limit, then succeed to break infinite loops */
@@ -56,10 +57,11 @@ static volatile int health_check_fail_count = 0;
 static volatile int health_check_should_fail = 1;
 
 static int
-controlled_health_check (SocketReconnect_T conn, Socket_T socket, void *userdata)
+controlled_health_check (SocketReconnect_T conn, Socket_T socket, int timeout_ms, void *userdata)
 {
   (void)conn;
   (void)socket;
+  (void)timeout_ms;
   (void)userdata;
   health_check_fail_count++;
   /* Automatically switch to success after enough failures */
@@ -756,10 +758,11 @@ static int health_check_call_count = 0;
 static int health_check_return_value = 1;
 
 static int
-test_health_check (SocketReconnect_T conn, Socket_T socket, void *userdata)
+test_health_check (SocketReconnect_T conn, Socket_T socket, int timeout_ms, void *userdata)
 {
   (void)conn;
   (void)socket;
+  (void)timeout_ms;
   (void)userdata;
   health_check_call_count++;
   return health_check_return_value;

@@ -258,6 +258,8 @@ Enumerations</h2></td></tr>
 , <br />
 &#160;&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea9ad0d4f3b9cb3164139491d0f22f296c">HTTP1_ERROR_INVALID_TRAILER</a>
 , <br />
+&#160;&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea4c72953d4ab4b2e2c33eab3bd945bd56">HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING</a>
+, <br />
 &#160;&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea45da2dd8b558188c3c25ec3ca678187f">HTTP1_ERROR_UNEXPECTED_EOF</a>
 , <br />
 &#160;&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea459fb16283ed5b28f9cb7b1dd988e229">HTTP1_ERROR_SMUGGLING_DETECTED</a>
@@ -379,7 +381,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <div class="textblock"><p>Parser runtime configuration. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00236">236</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00237">237</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -388,6 +390,12 @@ Variables</h2></td></tr>
 allow_obs_fold</td>
 <td class="fielddoc">
 Allow obsolete header folding (default: 0) </td></tr>
+<tr><td class="fieldtype">
+<a id="ad923d4eab20cacfa9e43a265dc456c7b" name="ad923d4eab20cacfa9e43a265dc456c7b"></a>size_t</td>
+<td class="fieldname">
+max_chunk_ext</td>
+<td class="fielddoc">
+Maximum chunk extension length (default: 1024) </td></tr>
 <tr><td class="fieldtype">
 <a id="a210e4001f9c4495e5e59ec63992fafcf" name="a210e4001f9c4495e5e59ec63992fafcf"></a>size_t</td>
 <td class="fieldname">
@@ -722,7 +730,7 @@ Reject ambiguous input (default: 1) </td></tr>
 
 <p>Parser instance (opaque type) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00254">254</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00256">256</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -751,7 +759,7 @@ Reject ambiguous input (default: 1) </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00225">225</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00226">226</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -814,6 +822,8 @@ Reject ambiguous input (default: 1) </td></tr>
 <tr><td class="fieldname"><a id="a2ece68fcfe3c3e99a855f93f6a46f78eaeb698ed6d2d4a79eb41d9b69346e6743" name="a2ece68fcfe3c3e99a855f93f6a46f78eaeb698ed6d2d4a79eb41d9b69346e6743"></a>HTTP1_ERROR_BODY_TOO_LARGE&#160;</td><td class="fielddoc"><p>Decompressed body exceeds limit. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a2ece68fcfe3c3e99a855f93f6a46f78ea9ad0d4f3b9cb3164139491d0f22f296c" name="a2ece68fcfe3c3e99a855f93f6a46f78ea9ad0d4f3b9cb3164139491d0f22f296c"></a>HTTP1_ERROR_INVALID_TRAILER&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a2ece68fcfe3c3e99a855f93f6a46f78ea4c72953d4ab4b2e2c33eab3bd945bd56" name="a2ece68fcfe3c3e99a855f93f6a46f78ea4c72953d4ab4b2e2c33eab3bd945bd56"></a>HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING&#160;</td><td class="fielddoc"><p>Unsupported Transfer-Encoding coding. </p>
+</td></tr>
 <tr><td class="fieldname"><a id="a2ece68fcfe3c3e99a855f93f6a46f78ea45da2dd8b558188c3c25ec3ca678187f" name="a2ece68fcfe3c3e99a855f93f6a46f78ea45da2dd8b558188c3c25ec3ca678187f"></a>HTTP1_ERROR_UNEXPECTED_EOF&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a2ece68fcfe3c3e99a855f93f6a46f78ea459fb16283ed5b28f9cb7b1dd988e229" name="a2ece68fcfe3c3e99a855f93f6a46f78ea459fb16283ed5b28f9cb7b1dd988e229"></a>HTTP1_ERROR_SMUGGLING_DETECTED&#160;</td><td class="fielddoc"><p>Request smuggling attempt. </p>
 </td></tr>

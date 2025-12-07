@@ -6700,6 +6700,12 @@
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
+      <name>HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING</name>
+      <anchorfile>SocketHTTP1_8h.html</anchorfile>
+      <anchor>a2ece68fcfe3c3e99a855f93f6a46f78ea4c72953d4ab4b2e2c33eab3bd945bd56</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
       <name>HTTP1_ERROR_UNEXPECTED_EOF</name>
       <anchorfile>SocketHTTP1_8h.html</anchorfile>
       <anchor>a2ece68fcfe3c3e99a855f93f6a46f78ea45da2dd8b558188c3c25ec3ca678187f</anchor>
@@ -8032,6 +8038,13 @@
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>HTTPCLIENT_MAX_COOKIES</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>acaa7d0af3789f8dd4dd0b0ada62ea8fb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE</name>
       <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>a4a61970445f2f7a4a8d23da8680fc09b</anchor>
@@ -8091,6 +8104,20 @@
       <name>HTTPCLIENT_COOKIE_SAMESITE_SIZE</name>
       <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>a1f5201287c752c90005b22c9a07c8011</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_MAX_COOKIE_AGE_SEC</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a560da3bb4151944df985b9975287edfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_COOKIE_MAX_CHAIN_LEN</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a03d6fecf7157434b85280da192866051</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -11985,6 +12012,13 @@
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>SOCKET_PROXY_MAX_USERINFO_LEN</name>
+      <anchorfile>SocketProxy_8h.html</anchorfile>
+      <anchor>a171e300c127615c82898fcdb6c79eb22</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>SOCKET_PROXY_DEFAULT_SOCKS_PORT</name>
       <anchorfile>SocketProxy_8h.html</anchorfile>
       <anchor>ac5d2dd3c09cef803b630431503f55972</anchor>
@@ -12256,8 +12290,8 @@
       <type>SocketProxy_Result</type>
       <name>SocketProxy_tunnel</name>
       <anchorfile>SocketProxy_8h.html</anchorfile>
-      <anchor>a42d87dba201e99194eec8df1a9522516</anchor>
-      <arglist>(Socket_T socket, const SocketProxy_Config *proxy, const char *target_host, int target_port)</arglist>
+      <anchor>a58fac7f1a89c5921c7152e393dd8ad36</anchor>
+      <arglist>(Socket_T socket, const SocketProxy_Config *proxy, const char *target_host, int target_port, Arena_T arena)</arglist>
     </member>
     <member kind="function">
       <type>SocketProxy_Conn_T</type>
@@ -13972,6 +14006,7 @@
     <name>SocketTLSConfig.h</name>
     <path>include/tls/</path>
     <filename>SocketTLSConfig_8h.html</filename>
+    <class kind="struct">SocketTLSConfig_T</class>
     <member kind="define">
       <type>#define</type>
       <name>SOCKET_TLS_MIN_VERSION</name>
@@ -14182,6 +14217,13 @@
       <anchor>a362c108e58b5204fa5141920db407ed0</anchor>
       <arglist></arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLS_config_defaults</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>a122ad62f86b4477f7be54d55b769d58b</anchor>
+      <arglist>(SocketTLSConfig_T *config)</arglist>
+    </member>
   </compound>
   <compound kind="file">
     <name>SocketTLSContext.h</name>
@@ -14190,6 +14232,7 @@
     <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
     <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
     <includes id="SocketTLS_8h" name="SocketTLS.h" local="yes" import="no" module="no" objc="no">tls/SocketTLS.h</includes>
+    <includes id="SocketTLSConfig_8h" name="SocketTLSConfig.h" local="yes" import="no" module="no" objc="no">tls/SocketTLSConfig.h</includes>
     <member kind="define">
       <type>#define</type>
       <name>T</name>
@@ -14238,6 +14281,13 @@
       <anchorfile>SocketTLSContext_8h.html</anchorfile>
       <anchor>a7fe51da14439d768bdf72f4ed8fbb022</anchor>
       <arglist>(const char *ca_file)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketTLSContext_T</type>
+      <name>SocketTLSContext_new</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>a69b7880fa99df9a39b4db5259a9e1234</anchor>
+      <arglist>(const SocketTLSConfig_T *config)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -14952,6 +15002,13 @@
       <anchor>a1acbffb311a85436e98b0d2e0a723d1d</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>max_expansion_ratio</name>
+      <anchorfile>SocketHPACK_8h.html</anchorfile>
+      <anchor>ae99d9de2b1051470c65d2d8c893eef42</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>SocketHPACK_EncoderConfig</name>
@@ -15063,6 +15120,13 @@
       <name>max_chunk_size</name>
       <anchorfile>SocketHTTP1_8h.html</anchorfile>
       <anchor>a210e4001f9c4495e5e59ec63992fafcf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>max_chunk_ext</name>
+      <anchorfile>SocketHTTP1_8h.html</anchorfile>
+      <anchor>ad923d4eab20cacfa9e43a265dc456c7b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -16171,10 +16235,10 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>SocketTLSContext_T *</type>
+      <type>SocketTLSContext_T</type>
       <name>tls_ctx</name>
       <anchorfile>SocketProxy_8h.html</anchorfile>
-      <anchor>a7bd4b0058fd2a869d2ccb2f2d1fd740c</anchor>
+      <anchor>a8939bbe96f2f2f866cab11f6a2713949</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -16899,6 +16963,25 @@
       <name>operation_timeout_ms</name>
       <anchorfile>SocketConfig_8h.html</anchorfile>
       <anchor>a410363ec6b5e6156686edf7c442d8441</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>SocketTLSConfig_T</name>
+    <filename>SocketTLSConfig_8h.html</filename>
+    <anchor>structSocketTLSConfig__T</anchor>
+    <member kind="variable">
+      <type>int</type>
+      <name>min_version</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>a670bdce01faa6f2ff73dc3ce67b14db5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>max_version</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>a5d3105c29493e11690b519dce33267a1</anchor>
       <arglist></arglist>
     </member>
   </compound>

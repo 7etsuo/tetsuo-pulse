@@ -232,7 +232,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:ac7720c7b7d679624fa95bdefe9a38494"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_add - Add socket to pool @pool: Pool instance @socket: Socket to add Returns: New connection or NULL if pool is full Thread-safe: Yes Allocates I/O buffers and initializes connection metadata.  <br /></td></tr>
 <tr class="separator:ac7720c7b7d679624fa95bdefe9a38494"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a283d343a8192530c349dc9a02b987c26" id="r_a283d343a8192530c349dc9a02b987c26"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#a283d343a8192530c349dc9a02b987c26">SocketPool_accept_batch</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> server, int max_accepts, size_t accepted_capacity, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> *accepted)</td></tr>
-<tr class="memdesc:a283d343a8192530c349dc9a02b987c26"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_accept_batch - Accept multiple connections from server socket @pool: Pool instance @server: Server socket (listening, non-blocking) @max_accepts: Max to accept (1-SOCKET_POOL_MAX_BATCH_ACCEPTS) @accepted_capacity: Capacity of accepted array (must be &gt;= max_accepts) @accepted: Output array of accepted sockets (pre-allocated with capacity &gt;= max_accepts)  <br /></td></tr>
+<tr class="memdesc:a283d343a8192530c349dc9a02b987c26"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_accept_batch - Accept multiple connections from server socket @pool: Pool instance @server: Server socket (listening, non-blocking) @max_accepts: Max to accept (1-SOCKET_POOL_MAX_BATCH_ACCEPTS) @max_accepts: Maximum number to accept (1 to SOCKET_POOL_MAX_BATCH_ACCEPTS) @accepted_capacity: Size of accepted array provided by caller (must be &gt;= max_accepts to avoid overflow) @accepted: Output array for accepted Socket_T pointers (caller-allocated, filled up to count returned)  <br /></td></tr>
 <tr class="separator:a283d343a8192530c349dc9a02b987c26"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acdffcf1802367df60db15c649fc7072d" id="r_acdffcf1802367df60db15c649fc7072d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPool_8h.html#acdffcf1802367df60db15c649fc7072d">SocketPool_remove</a> (<a class="el" href="SocketPool_8h.html#a9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> pool, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
 <tr class="memdesc:acdffcf1802367df60db15c649fc7072d"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPool_remove - Remove socket from pool @pool: Pool instance @socket: Socket to remove Clears buffers but does not close socket Thread-safe: Yes.  <br /></td></tr>
@@ -415,7 +415,7 @@ Variables</h2></td></tr>
 <div class="textblock"><p><a class="el" href="SocketPool_8h.html#structSocketPool__Stats" title="SocketPool_Stats - Pool statistics snapshot.">SocketPool_Stats</a> - Pool statistics snapshot. </p>
 <p>All counters are cumulative since pool creation or last reset. Rates are calculated over the configured statistics window. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00970">970</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00974">974</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -593,7 +593,7 @@ Total validation callback failures. </td></tr>
 <p>SocketPool_DrainCallback - Callback invoked when drain completes @pool: Pool instance that completed draining @timed_out: 1 if drain timed out and forced, 0 if graceful @data: User data from SocketPool_set_drain_callback. </p>
 <p>Called exactly once when pool transitions to STOPPED state. Safe to call <a class="el" href="SocketPool_8h.html#afb57544a14c977302953fd36634bd004" title="SocketPool_free - Free a connection pool @pool: Pointer to pool (will be set to NULL) Note: Does not ...">SocketPool_free()</a> from within this callback. Thread-safe: Invoked from the thread calling drain_poll/drain_wait. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00654">654</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00658">658</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -670,7 +670,7 @@ Total validation callback failures. </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00860">860</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00864">864</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -696,7 +696,7 @@ Total validation callback failures. </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00637">637</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00641">641</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -722,7 +722,7 @@ Total validation callback failures. </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00627">627</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00631">631</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -1119,7 +1119,8 @@ Total validation callback failures. </td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>SocketPool_accept_batch - Accept multiple connections from server socket @pool: Pool instance @server: Server socket (listening, non-blocking) @max_accepts: Max to accept (1-SOCKET_POOL_MAX_BATCH_ACCEPTS) @accepted_capacity: Capacity of accepted array (must be &gt;= max_accepts) @accepted: Output array of accepted sockets (pre-allocated with capacity &gt;= max_accepts) </p>
+<p>SocketPool_accept_batch - Accept multiple connections from server socket @pool: Pool instance @server: Server socket (listening, non-blocking) @max_accepts: Max to accept (1-SOCKET_POOL_MAX_BATCH_ACCEPTS) @max_accepts: Maximum number to accept (1 to SOCKET_POOL_MAX_BATCH_ACCEPTS) @accepted_capacity: Size of accepted array provided by caller (must be &gt;= max_accepts to avoid overflow) @accepted: Output array for accepted Socket_T pointers (caller-allocated, filled up to count returned) </p>
+<p>Returns: Number of sockets accepted and added to pool (0 to min(max_accepts, accepted_capacity, available_slots)) Note: Validates accepted_capacity &gt;= max_accepts; raises SocketPool_Failed if not.</p>
 <p>Returns: Number accepted (0 to max_accepts) Raises: SocketPool_Failed on error Thread-safe: Yes</p>
 <p>Efficient batch accept using accept4() where available. Automatically adds accepted sockets to pool.</p>
 <p>CALLER RESPONSIBILITY - Array Size: The @accepted array MUST be pre-allocated by the caller with at least @max_accepts elements. No bounds checking is performed on the array - providing an undersized array will cause buffer overflow.</p>

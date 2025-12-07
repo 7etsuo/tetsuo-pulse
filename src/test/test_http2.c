@@ -177,7 +177,7 @@ test_frame_header_roundtrip (void)
                                : (uint32_t)(i + 1);
 
       SocketHTTP2_frame_header_serialize (&original, data);
-      SocketHTTP2_frame_header_parse (data, &parsed);
+      SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9, &parsed);
 
       TEST_ASSERT (parsed.length == original.length, "Length roundtrip");
       TEST_ASSERT (parsed.type == original.type, "Type roundtrip");

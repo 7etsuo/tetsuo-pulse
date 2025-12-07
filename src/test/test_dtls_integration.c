@@ -457,11 +457,7 @@ TEST (dtls_double_enable_error)
     uint64_t failed_after = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
     ASSERT_EQ (failed_after, before_failed);
 
-    /* Verify metrics incremented for successful enable */
-    uint64_t total_after = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
-    ASSERT_EQ (total_after, before_total + 1);
-    uint64_t failed_after = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
-    ASSERT_EQ (failed_after, before_failed);
+
 
     /* Second enable should fail */
     TRY { SocketDTLS_enable (socket, ctx); }

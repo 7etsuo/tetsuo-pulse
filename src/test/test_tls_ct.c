@@ -17,11 +17,18 @@
 #if SOCKET_HAS_TLS
 #include "tls/SocketTLSContext.h"
 
-TEST_CASE ("CT Context Basic Operations")
+TEST(ct_context_basic_operations)
 {
   volatile SocketTLSContext_T ctx = NULL;
   volatile int success = 0;
+  volatile SocketTLSContext_T ctx2 = NULL;
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclobbered"
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+#endif
   TRY
     {
       ctx = SocketTLSContext_new_client (NULL); /* Minimal client context */
@@ -36,7 +43,7 @@ TEST_CASE ("CT Context Basic Operations")
       ASSERT_EQ (SocketTLSContext_get_ct_mode (ctx), CT_VALIDATION_STRICT);
 
       /* Test enable permissive */
-      SocketTLSContext_T ctx2 = SocketTLSContext_new_client (NULL);
+      ctx2 = SocketTLSContext_new_client (NULL);
       SocketTLSContext_enable_ct (ctx2, CT_VALIDATION_PERMISSIVE);
       ASSERT_EQ (SocketTLSContext_ct_enabled (ctx2), 1);
       ASSERT_EQ (SocketTLSContext_get_ct_mode (ctx2), CT_VALIDATION_PERMISSIVE);
@@ -45,25 +52,31 @@ TEST_CASE ("CT Context Basic Operations")
       TRY
         {
           SocketTLSContext_set_ctlog_list_file (ctx, NULL);
-          FAIL ("Expected failure on NULL log file");
+          Test_fail ("Expected failure on NULL log file", __FILE__, __LINE__);
         }
       EXCEPT (SocketTLS_Failed)
         {
           /* Expected */
-          PASS ();
+
         }
       END_TRY;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
       TRY
         {
           SocketTLSContext_set_ctlog_list_file (ctx, "");
-          FAIL ("Expected failure on empty log file");
+          Test_fail ("Expected failure on empty log file", __FILE__, __LINE__);
         }
       EXCEPT (SocketTLS_Failed)
         {
-          PASS ();
+
         }
       END_TRY;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
       /* Test valid path (use temp or /dev/null placeholder) */
 #if SOCKET_HAS_CT_SUPPORT
@@ -80,39 +93,55 @@ TEST_CASE ("CT Context Basic Operations")
           success = 1; /* API call tested */
         }
       END_TRY;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
       ASSERT (success == 1);
 #endif
 
       success = 1;
     }
-  EXCEPT (SocketTLS_Failed | Arena_Failed)
+  EXCEPT (SocketTLS_Failed)
     {
       /* Handle unsupported or config errors */
-      if (Except_id () == SocketTLS_Failed.id && strstr (Except_get_reason (), "CT not supported") != NULL)
+      if (Except_stack->exception->type == &SocketTLS_Failed && strstr (Except_stack->exception->reason, "CT not supported") != NULL)
         {
           /* Expected without OpenSSL CT */
           success = 1;
         }
       else
         {
-          FAIL_MSG ("Unexpected TLS failure: %s", Except_get_reason ());
+          {
+  char buf[512];
+  snprintf (buf, sizeof (buf), "Unexpected TLS failure: %s", Except_stack->exception->reason);
+  Test_fail (buf, __FILE__, __LINE__);
+}
         }
     }
   FINALLY
     {
-      SocketTLSContext_free (&ctx);
-      SocketTLSContext_free (&ctx2);
+      SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
+      SocketTLSContext_free ((SocketTLSContext_T *)&ctx2);
     }
   END_TRY;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
   ASSERT (success == 1);
 }
 
-TEST_CASE ("CT Server Context Rejection")
+TEST(ct_server_context_rejection)
 {
   volatile SocketTLSContext_T server = NULL;
   volatile int exception_raised = 0;
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclobbered"
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+#endif
   TRY
     {
       /* Create server context (requires cert/key; use placeholders or skip load) */
@@ -121,28 +150,34 @@ TEST_CASE ("CT Server Context Rejection")
       TRY
         {
           SocketTLSContext_enable_ct (server, CT_VALIDATION_STRICT);
-          FAIL ("Expected SocketTLS_Failed on server CT enable");
+          Test_fail ("Expected SocketTLS_Failed on server CT enable", __FILE__, __LINE__);
         }
       EXCEPT (SocketTLS_Failed)
         {
-          ASSERT_STREQ_MSG (Except_get_reason (), "CT verification is for clients only", "Wrong error message");
+          ASSERT (strcmp (Except_stack->exception->reason, "CT verification is for clients only") == 0);
           exception_raised = 1;
         }
       END_TRY;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
       ASSERT (exception_raised == 1);
 
       TRY
         {
           SocketTLSContext_set_ctlog_list_file (server, "/dev/null");
-          FAIL ("Expected failure on server custom log");
+          Test_fail ("Expected failure on server custom log", __FILE__, __LINE__);
         }
       EXCEPT (SocketTLS_Failed)
         {
-          ASSERT (strstr (Except_get_reason (), "clients only") != NULL || strstr (Except_get_reason (), "not supported") != NULL);
+          ASSERT (strstr (Except_stack->exception->reason, "clients only") != NULL || strstr (Except_stack->exception->reason, "not supported") != NULL);
           exception_raised++;
         }
       END_TRY;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
     }
   EXCEPT (SocketTLS_Failed)
     {
@@ -150,9 +185,12 @@ TEST_CASE ("CT Server Context Rejection")
     }
   FINALLY
     {
-      SocketTLSContext_free (&server);
+      SocketTLSContext_free ((SocketTLSContext_T *)&server);
     }
   END_TRY;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 }
 
 #else /* !SOCKET_HAS_TLS */
@@ -164,4 +202,8 @@ TEST_CASE ("CT Tests Skipped Without TLS")
 
 #endif /* SOCKET_HAS_TLS */
 
-TEST_MAIN ("test_tls_ct", "Certificate Transparency Tests")
+int main(void)
+{
+  Test_run_all();
+  return Test_get_failures() > 0 ? 1 : 0;
+}

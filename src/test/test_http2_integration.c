@@ -481,7 +481,7 @@ TEST (http2_integration_frame_parsing)
   data[7] = 0x00;
   data[8] = 0x00; /* Stream ID: 0 */
 
-  int result = SocketHTTP2_frame_header_parse (data, &header);
+  int result = SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9, &header);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (header.length, 18);
   ASSERT_EQ (header.type, HTTP2_FRAME_SETTINGS);
@@ -499,7 +499,7 @@ TEST (http2_integration_frame_parsing)
   data[7] = 0x00;
   data[8] = 0x00; /* Stream ID: 0 */
 
-  result = SocketHTTP2_frame_header_parse (data, &header);
+  result = SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9, &header);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (header.length, 8);
   ASSERT_EQ (header.type, HTTP2_FRAME_PING);
@@ -515,7 +515,7 @@ TEST (http2_integration_frame_parsing)
   data[7] = 0x00;
   data[8] = 0x01; /* Stream ID: 1 */
 
-  result = SocketHTTP2_frame_header_parse (data, &header);
+  result = SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9, &header);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (header.length, 256);
   ASSERT_EQ (header.type, HTTP2_FRAME_DATA);

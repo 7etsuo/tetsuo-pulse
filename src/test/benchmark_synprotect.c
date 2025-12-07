@@ -27,7 +27,7 @@ static int64_t get_time_ms(void) {
   return Socket_get_monotonic_ms();
 }
 
-static void benchmark_check(T protect, int iterations, const char *ip) {
+static void benchmark_check(SocketSYNProtect_T protect, int iterations, const char *ip) {
   int64_t start = get_time_ms();
   for (int i = 0; i < iterations; i++) {
     SocketSYNProtect_check(protect, ip, NULL);
@@ -36,7 +36,7 @@ static void benchmark_check(T protect, int iterations, const char *ip) {
   printf("Check %s: %ld ms for %d calls (%.2f us/call)\n", ip, end - start, iterations, (double)(end - start) * 1000 / iterations);
 }
 
-static void populate_whitelist(T protect, int num_cidrs) {
+static void populate_whitelist(SocketSYNProtect_T protect, int num_cidrs) {
   char cidr[64];
   for (int i = 0; i < num_cidrs; i++) {
     snprintf(cidr, sizeof(cidr), "10.%d.0.0/16", i % 256);
@@ -44,7 +44,7 @@ static void populate_whitelist(T protect, int num_cidrs) {
   }
 }
 
-static void benchmark_whitelist_overhead(T protect, int iterations, int num_cidrs) {
+static void benchmark_whitelist_overhead(SocketSYNProtect_T protect, int iterations, int num_cidrs) {
   populate_whitelist(protect, num_cidrs);
   int64_t start = get_time_ms();
   for (int i = 0; i < iterations; i++) {

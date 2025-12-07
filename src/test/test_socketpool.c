@@ -3135,19 +3135,21 @@ TEST (socketpool_health_status_mapping)
   Arena_dispose (&arena);
 }
 
-TEST (socketpool_validation_callback)
-{
-  Arena_T arena = Arena_new ();
-  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
-
   /* Validation cb that always returns invalid */
   static int always_invalid_cb (Connection_T conn, void *data) {
     (void)conn; (void)data;
     return 0; /* Invalid */
   }
 
+TEST (socketpool_validation_callback)
+{
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
+
+
+
   /* Set cb */
-  SocketPool_set_validation_cb (pool, always_invalid_cb, NULL);
+  SocketPool_set_validation_callback (pool, always_invalid_cb, NULL);
 
   /* Create socket and add to pool */
   Socket_T sock = Socket_new (AF_INET, SOCK_STREAM, 0);

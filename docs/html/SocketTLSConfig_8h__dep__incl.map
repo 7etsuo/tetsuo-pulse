@@ -1,0 +1,24 @@
+<map id="SocketTLSConfig.h" name="SocketTLSConfig.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="454,5,590,31"/>
+<area shape="rect" id="Node000002" href="$SocketTLSContext_8h.html" title=" " alt="" coords="450,79,594,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="525,44,525,79,519,79,519,44"/>
+<area shape="rect" id="Node000003" href="$SocketHTTPClient_8h.html" title=" " alt="" coords="152,152,295,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="461,110,272,154,271,149,460,105"/>
+<area shape="rect" id="Node000007" href="$SocketHTTPServer_8h.html" title=" " alt="" coords="374,152,521,177"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="502,115,461,154,458,150,498,111"/>
+<area shape="rect" id="Node000010" href="$SocketProxy_8h.html" title=" " alt="" coords="545,152,651,177"/>
+<area shape="poly" id="edge9_Node000002_Node000010" title=" " alt="" coords="546,111,587,150,584,154,542,115"/>
+<area shape="rect" id="Node000011" href="$proxy__connect_8c.html" title=" " alt="" coords="629,225,748,251"/>
+<area shape="poly" id="edge11_Node000002_Node000011" title=" " alt="" coords="592,106,631,123,665,150,677,169,685,189,691,225,686,226,680,191,673,171,661,154,628,128,590,111"/>
+<area shape="rect" id="Node000004" href="$http2__client_8c.html" title=" " alt="" coords="5,225,105,251"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="185,185,84,228,82,223,183,180"/>
+<area shape="rect" id="Node000005" href="$http__get_8c.html" title=" " alt="" coords="129,225,209,251"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="208,190,180,227,175,224,204,187"/>
+<area shape="rect" id="Node000006" href="$http__post_8c.html" title=" " alt="" coords="233,225,320,251"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="242,187,270,224,266,227,238,190"/>
+<area shape="rect" id="Node000008" href="$http__server_8c.html" title=" " alt="" coords="344,225,441,251"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="432,190,404,227,399,224,428,187"/>
+<area shape="rect" id="Node000009" href="$websocket__server_8c.html" title=" " alt="" coords="466,225,605,251"/>
+<area shape="poly" id="edge8_Node000007_Node000009" title=" " alt="" coords="474,184,523,223,519,227,470,188"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="625,184,675,223,672,227,622,188"/>
+</map>

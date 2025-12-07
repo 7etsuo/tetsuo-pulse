@@ -1,5 +1,9 @@
 var SocketTLSConfig_8h =
 [
+    [ "SocketTLSConfig_T", "SocketTLSConfig_8h.html#structSocketTLSConfig__T", [
+      [ "max_version", "SocketTLSConfig_8h.html#a5d3105c29493e11690b519dce33267a1", null ],
+      [ "min_version", "SocketTLSConfig_8h.html#a670bdce01faa6f2ff73dc3ce67b14db5", null ]
+    ] ],
     [ "SOCKET_TLS13_CIPHERSUITES", "SocketTLSConfig_8h.html#a8c3a6a178964eee6129e588f6f18861b", null ],
     [ "SOCKET_TLS_BUFFER_SIZE", "SocketTLSConfig_8h.html#a21c94d7068bbee12788fb1af5b90a393", null ],
     [ "SOCKET_TLS_CRL_MAX_PATH_LEN", "SocketTLSConfig_8h.html#a362c108e58b5204fa5141920db407ed0", null ],
@@ -29,5 +33,6 @@ var SocketTLSConfig_8h =
     [ "SOCKET_TLS_SESSION_CACHE_SIZE", "SocketTLSConfig_8h.html#addb5f5a6224c2d4c50908c19baab9a2d", null ],
     [ "SOCKET_TLS_SESSION_TIMEOUT_DEFAULT", "SocketTLSConfig_8h.html#a5554586ea5eb4bf0a81c54963d0cbb2f", null ],
     [ "SOCKET_TLS_SNI_INITIAL_CAPACITY", "SocketTLSConfig_8h.html#aed59df6881f4fbedd888f060a563eca0", null ],
-    [ "SOCKET_TLS_TICKET_KEY_LEN", "SocketTLSConfig_8h.html#ac328cd9a67a36754bdeb92361fb9526b", null ]
+    [ "SOCKET_TLS_TICKET_KEY_LEN", "SocketTLSConfig_8h.html#ac328cd9a67a36754bdeb92361fb9526b", null ],
+    [ "SocketTLS_config_defaults", "SocketTLSConfig_8h.html#a122ad62f86b4477f7be54d55b769d58b", null ]
 ];

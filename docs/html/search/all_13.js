@@ -6,7 +6,7 @@ var searchData=
   ['never_5findex_3',['never_index',['../SocketHPACK_8h.html#aa6aaa27657ef2d2ea3f24e629b1af16b',1,'SocketHPACK_Header']]],
   ['nfds_4',['nfds',['../SocketUtil_8h.html#a1a0729dccd2773490730cb1118488677',1,'SocketEventRecord.data.poll']]],
   ['non_20blocking_5',['Event-Driven Server (Non-Blocking)',['../index.html#autotoc_md15',1,'']]],
-  ['non_20blocking_20operation_6',['Non-Blocking Operation',['../websocket_guide.html#autotoc_md160',1,'']]],
+  ['non_20blocking_20operation_6',['Non-Blocking Operation',['../websocket_guide.html#autotoc_md161',1,'']]],
   ['not_20available_7',['Async Not Available',['../async_io_guide.html#autotoc_md71',1,'']]],
-  ['not_20thread_20safe_8',['What&apos;s NOT Thread-Safe',['../security_guide.html#autotoc_md273',1,'']]]
+  ['not_20thread_20safe_8',['What&apos;s NOT Thread-Safe',['../security_guide.html#autotoc_md274',1,'']]]
 ];

@@ -115,7 +115,7 @@ $(document).ready(function(){initNavTree('websocket_guide.html',''); initResizab
 <div class="contents">
 <div class="textblock"><p>Complete guide to WebSocket protocol (RFC 6455) support in the Socket Library.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md127"></a>
+<h1><a class="anchor" id="autotoc_md128"></a>
 Overview</h1>
 <p>The <code>SocketWS_T</code> module provides full RFC 6455 WebSocket support with:</p><ul>
 <li>Client and server modes</li>
@@ -127,9 +127,9 @@ Overview</h1>
 <li>Non-blocking I/O support</li>
 </ul>
 <hr  />
-<h1><a class="anchor" id="autotoc_md129"></a>
+<h1><a class="anchor" id="autotoc_md130"></a>
 Security Considerations</h1>
-<h2><a class="anchor" id="autotoc_md130"></a>
+<h2><a class="anchor" id="autotoc_md131"></a>
 Key Security Features</h2>
 <ul>
 <li><b>Masking Enforcement</b>: Clients MUST mask all outgoing frames; servers MUST NOT mask incoming frames from clients (RFC 6455 §5.3). Violations trigger protocol error and connection close.</li>
@@ -140,7 +140,7 @@ Key Security Features</h2>
 <li><b>Constant-Time Ops</b>: Handshake key validation uses <code>SocketCrypto_secure_compare</code>; random mask keys from CSPRNG.</li>
 <li><b>Control Frames</b>: Limited to 125 bytes; PING/PONG validated (optional payload matching to prevent spoofing).</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md131"></a>
+<h2><a class="anchor" id="autotoc_md132"></a>
 Best Practices</h2>
 <ul>
 <li>Always set <code>config.validate_utf8 = 1</code>.</li>
@@ -149,7 +149,7 @@ Best Practices</h2>
 <li>For production: Disable compression if not needed (<code>enable_permessage_deflate=0</code>) to avoid BREACH-like attacks.</li>
 <li>Test with sanitizers (<code>-DENABLE_SANITIZERS=ON</code>) and fuzzing (<code>src/fuzz/fuzz_ws_*</code>).</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md132"></a>
+<h2><a class="anchor" id="autotoc_md133"></a>
 Potential Risks &amp; Mitigations</h2>
 <ul>
 <li><b>Fragmentation DoS</b>: Mitigated by <code>max_fragments</code>.</li>
@@ -158,9 +158,9 @@ Potential Risks &amp; Mitigations</h2>
 <li><b>Injection</b>: UTF-8/headers validated; no unsafe string funcs (all bounded).</li>
 </ul>
 <p>Ref: RFC 6455, RFC 7692, project security.md.</p>
-<h1><a class="anchor" id="autotoc_md133"></a>
+<h1><a class="anchor" id="autotoc_md134"></a>
 Quick Start</h1>
-<h2><a class="anchor" id="autotoc_md134"></a>
+<h2><a class="anchor" id="autotoc_md135"></a>
 WebSocket Client</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketWS_8h.html">socket/SocketWS.h</a>&quot;</span></div>
@@ -209,9 +209,9 @@ WebSocket Client</h2>
 <div class="ttc" id="aSocket_8h_html_a74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div><div class="ttdoc">Socket_free - Free a socket and close the connection @socket: Pointer to socket (will be set to NULL)</div></div>
 <div class="ttc" id="aSocket_8h_html_ac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Socket_connect - Connect to remote host @socket: Socket to connect @host: Remote IP address or hostna...</div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md136"></a>
+<h1><a class="anchor" id="autotoc_md137"></a>
 Client API</h1>
-<h2><a class="anchor" id="autotoc_md137"></a>
+<h2><a class="anchor" id="autotoc_md138"></a>
 Creating a Client Connection</h2>
 <div class="fragment"><div class="line"><span class="comment">/* Create TCP socket and connect */</span></div>
 <div class="line"><a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="Socket_8h.html#a6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a>(AF_INET, SOCK_STREAM, 0);</div>
@@ -243,7 +243,7 @@ Creating a Client Connection</h2>
 <div class="ttc" id="aSocketWS_8h_html_a376fe666ac3f3654087792edae1ce054"><div class="ttname"><a href="SocketWS_8h.html#a376fe666ac3f3654087792edae1ce054">SocketWS_Config::ping_interval_ms</a></div><div class="ttdeci">int ping_interval_ms</div><div class="ttdoc">Auto-ping interval (0 = disabled)</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00204">SocketWS.h:204</a></div></div>
 <div class="ttc" id="aSocketWS_8h_html_a9d14d3d0f1b05e44fcd74782107cbd94adb564f62107e65c4ba508183929404d1"><div class="ttname"><a href="SocketWS_8h.html#a9d14d3d0f1b05e44fcd74782107cbd94adb564f62107e65c4ba508183929404d1">WS_ROLE_CLIENT</a></div><div class="ttdeci">@ WS_ROLE_CLIENT</div><div class="ttdoc">Client role (masks frames)</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00156">SocketWS.h:156</a></div></div>
 <div class="ttc" id="aSocketWS_8h_html_aa895fa89617603768d89d043b41b3bc9"><div class="ttname"><a href="SocketWS_8h.html#aa895fa89617603768d89d043b41b3bc9">SocketWS_Config::role</a></div><div class="ttdeci">SocketWS_Role role</div><div class="ttdoc">Client or server role.</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00185">SocketWS.h:185</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md138"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md139"></a>
 Configuration Options</h2>
 <div class="fragment"><div class="line"><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
 <div class="line">    <a class="code hl_enumeration" href="SocketWS_8h.html#a9d14d3d0f1b05e44fcd74782107cbd94">SocketWS_Role</a> role;              <span class="comment">/* WS_ROLE_CLIENT or WS_ROLE_SERVER */</span></div>
@@ -269,7 +269,7 @@ Configuration Options</h2>
 <div class="line">    <span class="keywordtype">int</span> ping_timeout_ms;             <span class="comment">/* Pong timeout */</span></div>
 <div class="line">} <a class="code hl_struct" href="SocketWS_8h.html#structSocketWS__Config">SocketWS_Config</a>;</div>
 <div class="ttc" id="aSocketWS_8h_html_a9d14d3d0f1b05e44fcd74782107cbd94"><div class="ttname"><a href="SocketWS_8h.html#a9d14d3d0f1b05e44fcd74782107cbd94">SocketWS_Role</a></div><div class="ttdeci">SocketWS_Role</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00154">SocketWS.h:155</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md139"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md140"></a>
 Performing the Handshake</h2>
 <p>The handshake sends the HTTP upgrade request (client) or response (server):</p>
 <div class="fragment"><div class="line"><span class="comment">/* Blocking socket - completes immediately */</span></div>
@@ -284,9 +284,9 @@ Performing the Handshake</h2>
 <div class="ttc" id="aSocketWS_8h_html_aa40def588d31ab50126603fa720f83b0"><div class="ttname"><a href="SocketWS_8h.html#aa40def588d31ab50126603fa720f83b0">SocketWS_state</a></div><div class="ttdeci">SocketWS_State SocketWS_state(SocketWS_T ws)</div><div class="ttdoc">SocketWS_state - Get current state @ws: WebSocket instance.</div></div>
 <div class="ttc" id="aSocketWS_8h_html_ab8b49607a661224d66bb264b1e597e2dab0325195f22aca5be7491a425f84808c"><div class="ttname"><a href="SocketWS_8h.html#ab8b49607a661224d66bb264b1e597e2dab0325195f22aca5be7491a425f84808c">WS_STATE_OPEN</a></div><div class="ttdeci">@ WS_STATE_OPEN</div><div class="ttdoc">Ready for messages.</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00149">SocketWS.h:149</a></div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md141"></a>
+<h1><a class="anchor" id="autotoc_md142"></a>
 Server API</h1>
-<h2><a class="anchor" id="autotoc_md142"></a>
+<h2><a class="anchor" id="autotoc_md143"></a>
 Accepting WebSocket Connections</h2>
 <p>When integrated with HTTP server:</p>
 <div class="fragment"><div class="line"><span class="comment">/* In HTTP request handler */</span></div>
@@ -307,7 +307,7 @@ Accepting WebSocket Connections</h2>
 <div class="line">    }</div>
 <div class="line">}</div>
 <div class="ttc" id="aSocketHTTPServer_8h_html_a071a3760545fbd5fca4c2df224af0fad"><div class="ttname"><a href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a></div><div class="ttdeci">struct SocketHTTPServer_Request * SocketHTTPServer_Request_T</div><div class="ttdoc">Server request context.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer_8h_source.html#l00307">SocketHTTPServer.h:307</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md143"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md144"></a>
 Manual Server Setup</h2>
 <p>For custom server implementations:</p>
 <div class="fragment"><div class="line"><span class="comment">/* After receiving HTTP upgrade request */</span></div>
@@ -326,9 +326,9 @@ Manual Server Setup</h2>
 <div class="ttc" id="aSocketWS_8h_html_a9d14d3d0f1b05e44fcd74782107cbd94afa4a0c78e19b98cca7f556560ca4061b"><div class="ttname"><a href="SocketWS_8h.html#a9d14d3d0f1b05e44fcd74782107cbd94afa4a0c78e19b98cca7f556560ca4061b">WS_ROLE_SERVER</a></div><div class="ttdeci">@ WS_ROLE_SERVER</div><div class="ttdoc">Server role (doesn't mask)</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00158">SocketWS.h:157</a></div></div>
 <div class="ttc" id="aSocketWS_8h_html_abd34fccaadaee0c043bbb1368c3d0673"><div class="ttname"><a href="SocketWS_8h.html#abd34fccaadaee0c043bbb1368c3d0673">SocketWS_is_upgrade</a></div><div class="ttdeci">int SocketWS_is_upgrade(const SocketHTTP_Request *request)</div><div class="ttdoc">SocketWS_is_upgrade - Check if HTTP request is WebSocket upgrade @request: Parsed HTTP request.</div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md145"></a>
+<h1><a class="anchor" id="autotoc_md146"></a>
 Sending Messages</h1>
-<h2><a class="anchor" id="autotoc_md146"></a>
+<h2><a class="anchor" id="autotoc_md147"></a>
 Text Messages</h2>
 <p>Text messages are UTF-8 encoded:</p>
 <div class="fragment"><div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *message = <span class="stringliteral">&quot;Hello, World!&quot;</span>;</div>
@@ -338,13 +338,13 @@ Text Messages</h2>
 <div class="line">    printf(<span class="stringliteral">&quot;Error: %s\n&quot;</span>, SocketWS_error_string(err));</div>
 <div class="line">}</div>
 <div class="ttc" id="aSocketWS_8h_html_abd79199a60ad91cf785166f24f41101f"><div class="ttname"><a href="SocketWS_8h.html#abd79199a60ad91cf785166f24f41101f">SocketWS_Error</a></div><div class="ttdeci">SocketWS_Error</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00164">SocketWS.h:165</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md147"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md148"></a>
 Binary Messages</h2>
 <p>Binary messages can contain any data:</p>
 <div class="fragment"><div class="line"><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> data[] = {0x01, 0x02, 0x03, 0x04};</div>
 <div class="line"><a class="code hl_function" href="SocketWS_8h.html#a1a8aff35f7c69172e0c2f9c0ec53abcb">SocketWS_send_binary</a>(ws, data, <span class="keyword">sizeof</span>(data));</div>
 <div class="ttc" id="aSocketWS_8h_html_a1a8aff35f7c69172e0c2f9c0ec53abcb"><div class="ttname"><a href="SocketWS_8h.html#a1a8aff35f7c69172e0c2f9c0ec53abcb">SocketWS_send_binary</a></div><div class="ttdeci">int SocketWS_send_binary(SocketWS_T ws, const void *data, size_t len)</div><div class="ttdoc">SocketWS_send_binary - Send binary message @ws: WebSocket instance @data: Binary data @len: Length in...</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md148"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md149"></a>
 Control Frames</h2>
 <div class="fragment"><div class="line"><span class="comment">/* Ping with optional payload (max 125 bytes) */</span></div>
 <div class="line"><a class="code hl_function" href="SocketWS_8h.html#a2be521a2fe8aa5eb5d30869905371a71">SocketWS_ping</a>(ws, <span class="stringliteral">&quot;heartbeat&quot;</span>, 9);</div>
@@ -357,9 +357,9 @@ Control Frames</h2>
 <div class="ttc" id="aSocketWS_8h_html_a2be521a2fe8aa5eb5d30869905371a71"><div class="ttname"><a href="SocketWS_8h.html#a2be521a2fe8aa5eb5d30869905371a71">SocketWS_ping</a></div><div class="ttdeci">int SocketWS_ping(SocketWS_T ws, const void *data, size_t len)</div><div class="ttdoc">SocketWS_ping - Send PING control frame @ws: WebSocket instance @data: Optional payload (max 125 byte...</div></div>
 <div class="ttc" id="aSocketWS_8h_html_a3e17279abcb92810c8066f1813287334"><div class="ttname"><a href="SocketWS_8h.html#a3e17279abcb92810c8066f1813287334">SocketWS_pong</a></div><div class="ttdeci">int SocketWS_pong(SocketWS_T ws, const void *data, size_t len)</div><div class="ttdoc">SocketWS_pong - Send unsolicited PONG @ws: WebSocket instance @data: Payload (max 125 bytes,...</div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md150"></a>
+<h1><a class="anchor" id="autotoc_md151"></a>
 Receiving Messages</h1>
-<h2><a class="anchor" id="autotoc_md151"></a>
+<h2><a class="anchor" id="autotoc_md152"></a>
 Complete Messages</h2>
 <p>The simplest way to receive complete, reassembled messages:</p>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="SocketWS_8h.html#structSocketWS__Message">SocketWS_Message</a> msg;</div>
@@ -390,7 +390,7 @@ Complete Messages</h2>
 <div class="line">}</div>
 <div class="ttc" id="aSocketWS_8h_html_a174740343c7f920060f8640f23600c7bab290478c848bb099a2fefe6c7b633558"><div class="ttname"><a href="SocketWS_8h.html#a174740343c7f920060f8640f23600c7bab290478c848bb099a2fefe6c7b633558">WS_OPCODE_TEXT</a></div><div class="ttdeci">@ WS_OPCODE_TEXT</div><div class="ttdoc">Text frame (UTF-8)</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00112">SocketWS.h:112</a></div></div>
 <div class="ttc" id="aSocketWS_8h_html_acb9416eb06a0a6e95260acebee3544b2"><div class="ttname"><a href="SocketWS_8h.html#acb9416eb06a0a6e95260acebee3544b2">SocketWS_Message::type</a></div><div class="ttdeci">SocketWS_Opcode type</div><div class="ttdoc">TEXT or BINARY.</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00227">SocketWS.h:227</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md152"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md153"></a>
 Message Structure</h2>
 <div class="fragment"><div class="line"><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
 <div class="line">    <a class="code hl_enumeration" href="SocketWS_8h.html#a174740343c7f920060f8640f23600c7b">SocketWS_Opcode</a> type;    <span class="comment">/* WS_OPCODE_TEXT or WS_OPCODE_BINARY */</span></div>
@@ -399,7 +399,7 @@ Message Structure</h2>
 <div class="line">} <a class="code hl_struct" href="SocketWS_8h.html#structSocketWS__Message">SocketWS_Message</a>;</div>
 <div class="ttc" id="aSocketWS_8h_html_a174740343c7f920060f8640f23600c7b"><div class="ttname"><a href="SocketWS_8h.html#a174740343c7f920060f8640f23600c7b">SocketWS_Opcode</a></div><div class="ttdeci">SocketWS_Opcode</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00109">SocketWS.h:110</a></div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md154"></a>
+<h1><a class="anchor" id="autotoc_md155"></a>
 Connection States</h1>
 <div class="fragment"><div class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> {</div>
 <div class="line">    <a class="code hl_enumvalue" href="SocketWS_8h.html#ab8b49607a661224d66bb264b1e597e2da782bbde9b515882abdd6b712c127af31">WS_STATE_CONNECTING</a>,  <span class="comment">/* Handshake in progress */</span></div>
@@ -415,7 +415,7 @@ Connection States</h1>
 <div class="ttc" id="aSocketWS_8h_html_ab8b49607a661224d66bb264b1e597e2da782bbde9b515882abdd6b712c127af31"><div class="ttname"><a href="SocketWS_8h.html#ab8b49607a661224d66bb264b1e597e2da782bbde9b515882abdd6b712c127af31">WS_STATE_CONNECTING</a></div><div class="ttdeci">@ WS_STATE_CONNECTING</div><div class="ttdoc">Handshake in progress.</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00148">SocketWS.h:148</a></div></div>
 <div class="ttc" id="aSocketWS_8h_html_ab8b49607a661224d66bb264b1e597e2daa3bafc31c6e8514011174ffeb2dd1eac"><div class="ttname"><a href="SocketWS_8h.html#ab8b49607a661224d66bb264b1e597e2daa3bafc31c6e8514011174ffeb2dd1eac">WS_STATE_CLOSING</a></div><div class="ttdeci">@ WS_STATE_CLOSING</div><div class="ttdoc">Close handshake in progress.</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00150">SocketWS.h:150</a></div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md156"></a>
+<h1><a class="anchor" id="autotoc_md157"></a>
 Close Codes</h1>
 <p>RFC 6455 defines status codes for close frames:</p>
 <table class="markdownTable">
@@ -440,7 +440,7 @@ Close Codes</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">1011   </td><td class="markdownTableBodyNone"><code>WS_CLOSE_INTERNAL_ERROR</code>   </td><td class="markdownTableBodyNone">Internal error   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md157"></a>
+<h2><a class="anchor" id="autotoc_md158"></a>
 Closing a Connection</h2>
 <div class="fragment"><div class="line"><span class="comment">/* Initiate close handshake */</span></div>
 <div class="line">SocketWS_close(ws, <a class="code hl_enumvalue" href="SocketWS_8h.html#a386c437e966aeaeb091d1d81c0e77b13a297d5e27c1ad4b7c6660b005308a5f30">WS_CLOSE_NORMAL</a>, <span class="stringliteral">&quot;Goodbye&quot;</span>);</div>
@@ -458,9 +458,9 @@ Closing a Connection</h2>
 <div class="line"><span class="keywordtype">int</span> code = SocketWS_close_code(ws);</div>
 <div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *reason = SocketWS_close_reason(ws);</div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md159"></a>
+<h1><a class="anchor" id="autotoc_md160"></a>
 Event Loop Integration</h1>
-<h2><a class="anchor" id="autotoc_md160"></a>
+<h2><a class="anchor" id="autotoc_md161"></a>
 Non-Blocking Operation</h2>
 <div class="fragment"><div class="line"><span class="comment">/* Set socket non-blocking */</span></div>
 <div class="line"><a class="code hl_function" href="Socket_8h.html#a35309677a1760480783d5f0c294d0db4">Socket_setnonblocking</a>(sock);</div>
@@ -501,7 +501,7 @@ Non-Blocking Operation</h2>
 <div class="ttc" id="aSocketWS_8h_html_a00e6f2953f92843874cd7b6c3e363288"><div class="ttname"><a href="SocketWS_8h.html#a00e6f2953f92843874cd7b6c3e363288">SocketWS_socket</a></div><div class="ttdeci">Socket_T SocketWS_socket(SocketWS_T ws)</div><div class="ttdoc">SocketWS_socket - Get underlying socket @ws: WebSocket instance.</div></div>
 <div class="ttc" id="aSocket_8h_html_a35309677a1760480783d5f0c294d0db4"><div class="ttname"><a href="Socket_8h.html#a35309677a1760480783d5f0c294d0db4">Socket_setnonblocking</a></div><div class="ttdeci">void Socket_setnonblocking(Socket_T socket)</div><div class="ttdoc">Socket_setnonblocking - Enable non-blocking mode @socket: Socket to modify Raises: Socket_Failed on e...</div></div>
 <div class="ttc" id="ahttp__server_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdoc">http_server.c - Basic HTTP Server Example</div><div class="ttdef"><b>Definition</b> <a href="http__server_8c_source.html#l00032">http_server.c:32</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md161"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md162"></a>
 Auto-Ping</h2>
 <p>Automatic keepalive can be enabled with SocketPoll integration:</p>
 <div class="fragment"><div class="line"><span class="comment">/* Configure ping interval */</span></div>
@@ -515,7 +515,7 @@ Auto-Ping</h2>
 <div class="line">SocketWS_disable_auto_ping(ws);</div>
 <div class="ttc" id="aSocketWS_8h_html_a4ca65b7722835ec62374763fa625596f"><div class="ttname"><a href="SocketWS_8h.html#a4ca65b7722835ec62374763fa625596f">SocketWS_Config::ping_timeout_ms</a></div><div class="ttdeci">int ping_timeout_ms</div><div class="ttdoc">Pong timeout.</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00205">SocketWS.h:205</a></div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md163"></a>
+<h1><a class="anchor" id="autotoc_md164"></a>
 Compression (permessage-deflate)</h1>
 <p>Enable RFC 7692 compression:</p>
 <div class="fragment"><div class="line">config.<a class="code hl_variable" href="SocketWS_8h.html#a5b4cb5b34e0960b4964eec24547ebe29">enable_permessage_deflate</a> = 1;</div>
@@ -531,7 +531,7 @@ Compression (permessage-deflate)</h1>
 <div class="ttc" id="aSocketWS_8h_html_a02790d0b994d613324052794269b0e22"><div class="ttname"><a href="SocketWS_8h.html#a02790d0b994d613324052794269b0e22">SocketWS_compression_enabled</a></div><div class="ttdeci">int SocketWS_compression_enabled(SocketWS_T ws)</div><div class="ttdoc">SocketWS_compression_enabled - Check if compression active @ws: WebSocket instance.</div></div>
 </div><!-- fragment --><p><b>Note</b>: Requires zlib at compile time (<code>SOCKETWS_HAS_DEFLATE</code>).</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md165"></a>
+<h1><a class="anchor" id="autotoc_md166"></a>
 Subprotocols</h1>
 <p>Negotiate application-specific protocols:</p>
 <div class="fragment"><div class="line"><span class="comment">/* Client offers subprotocols */</span></div>
@@ -546,9 +546,9 @@ Subprotocols</h1>
 <div class="ttc" id="aSocketWS_8h_html_a2a1ce264ad5e6d3cf25ce2442504aa20"><div class="ttname"><a href="SocketWS_8h.html#a2a1ce264ad5e6d3cf25ce2442504aa20">SocketWS_selected_subprotocol</a></div><div class="ttdeci">const char * SocketWS_selected_subprotocol(SocketWS_T ws)</div><div class="ttdoc">SocketWS_selected_subprotocol - Get negotiated subprotocol @ws: WebSocket instance.</div></div>
 <div class="ttc" id="aSocketWS_8h_html_a72bb5bfa2a49c7bdd770303635e0e49d"><div class="ttname"><a href="SocketWS_8h.html#a72bb5bfa2a49c7bdd770303635e0e49d">SocketWS_Config::subprotocols</a></div><div class="ttdeci">const char ** subprotocols</div><div class="ttdoc">NULL-terminated list of subprotocols.</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00201">SocketWS.h:201</a></div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md167"></a>
+<h1><a class="anchor" id="autotoc_md168"></a>
 Error Handling</h1>
-<h2><a class="anchor" id="autotoc_md168"></a>
+<h2><a class="anchor" id="autotoc_md169"></a>
 Error Codes</h2>
 <div class="fragment"><div class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> {</div>
 <div class="line">    <a class="code hl_enumvalue" href="SocketWS_8h.html#abd79199a60ad91cf785166f24f41101fa8d6c24a81bab48a188c7f458bf6ecddb">WS_OK</a> = 0,</div>
@@ -578,7 +578,7 @@ Error Codes</h2>
 <div class="ttc" id="aSocketWS_8h_html_abd79199a60ad91cf785166f24f41101fac3b45ed8d1cffbe97ae99ad9368edfec"><div class="ttname"><a href="SocketWS_8h.html#abd79199a60ad91cf785166f24f41101fac3b45ed8d1cffbe97ae99ad9368edfec">WS_ERROR_PROTOCOL</a></div><div class="ttdeci">@ WS_ERROR_PROTOCOL</div><div class="ttdoc">Protocol violation.</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00169">SocketWS.h:169</a></div></div>
 <div class="ttc" id="aSocketWS_8h_html_abd79199a60ad91cf785166f24f41101fad67cba0f02674ecdb494d3c897945304"><div class="ttname"><a href="SocketWS_8h.html#abd79199a60ad91cf785166f24f41101fad67cba0f02674ecdb494d3c897945304">WS_ERROR_FRAME_TOO_LARGE</a></div><div class="ttdeci">@ WS_ERROR_FRAME_TOO_LARGE</div><div class="ttdoc">Frame exceeds limit.</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00170">SocketWS.h:170</a></div></div>
 <div class="ttc" id="aSocketWS_8h_html_abd79199a60ad91cf785166f24f41101fad8bea1e89b1464f633c15cc454699761"><div class="ttname"><a href="SocketWS_8h.html#abd79199a60ad91cf785166f24f41101fad8bea1e89b1464f633c15cc454699761">WS_ERROR_WOULD_BLOCK</a></div><div class="ttdeci">@ WS_ERROR_WOULD_BLOCK</div><div class="ttdoc">Would block (non-blocking)</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00175">SocketWS.h:175</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md169"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md170"></a>
 Exceptions</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="Except_8h.html#ad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    ws = <a class="code hl_function" href="SocketWS_8h.html#acad45d5dbc4f2191ba5f732a1b648842">SocketWS_client_new</a>(sock, host, path, &amp;config);</div>
@@ -607,9 +607,9 @@ Exceptions</h2>
 <div class="ttc" id="aSocketWS_8h_html_a51caf3b6f8086dc6535fd843593dcbde"><div class="ttname"><a href="SocketWS_8h.html#a51caf3b6f8086dc6535fd843593dcbde">SocketWS_Closed</a></div><div class="ttdeci">const Except_T SocketWS_Closed</div><div class="ttdoc">SocketWS_Closed - WebSocket connection closed.</div></div>
 <div class="ttc" id="aSocketWS_8h_html_a8400199bb1b785111015ff06d16de370"><div class="ttname"><a href="SocketWS_8h.html#a8400199bb1b785111015ff06d16de370">SocketWS_ProtocolError</a></div><div class="ttdeci">const Except_T SocketWS_ProtocolError</div><div class="ttdoc">SocketWS_ProtocolError - WebSocket protocol violation.</div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md171"></a>
+<h1><a class="anchor" id="autotoc_md172"></a>
 Best Practices</h1>
-<h2><a class="anchor" id="autotoc_md172"></a>
+<h2><a class="anchor" id="autotoc_md173"></a>
 Security</h2>
 <ol type="1">
 <li><b>Always validate origin</b> on server side</li>
@@ -617,7 +617,7 @@ Security</h2>
 <li><b>Set reasonable limits</b> for frame/message size</li>
 <li><b>Enable UTF-8 validation</b> for text frames</li>
 </ol>
-<h2><a class="anchor" id="autotoc_md173"></a>
+<h2><a class="anchor" id="autotoc_md174"></a>
 Performance</h2>
 <ol type="1">
 <li><b>Use binary</b> for non-text data (no UTF-8 overhead)</li>
@@ -625,7 +625,7 @@ Performance</h2>
 <li><b>Use non-blocking I/O</b> for multiple connections</li>
 <li><b>Set appropriate keepalive</b> intervals</li>
 </ol>
-<h2><a class="anchor" id="autotoc_md174"></a>
+<h2><a class="anchor" id="autotoc_md175"></a>
 Connection Management</h2>
 <ol type="1">
 <li><b>Handle close properly</b> - Always perform close handshake</li>
@@ -634,7 +634,7 @@ Connection Management</h2>
 <li><b>Monitor state</b> - Check <code><a class="el" href="SocketWS_8h.html#aa40def588d31ab50126603fa720f83b0" title="SocketWS_state - Get current state @ws: WebSocket instance.">SocketWS_state()</a></code> before operations</li>
 </ol>
 <hr  />
-<h1><a class="anchor" id="autotoc_md176"></a>
+<h1><a class="anchor" id="autotoc_md177"></a>
 Thread Safety</h1>
 <ul>
 <li><code>SocketWS_T</code> instances are <b>NOT</b> thread-safe</li>
@@ -643,7 +643,7 @@ Thread Safety</h1>
 <li>Multiple instances can be used from different threads</li>
 </ul>
 <hr  />
-<h1><a class="anchor" id="autotoc_md178"></a>
+<h1><a class="anchor" id="autotoc_md179"></a>
 See Also</h1>
 <ul>
 <li><a class="el" href="http_guide.html">HTTP Guide</a> - HTTP server integration</li>

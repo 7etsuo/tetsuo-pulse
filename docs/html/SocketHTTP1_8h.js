@@ -2,6 +2,7 @@ var SocketHTTP1_8h =
 [
     [ "SocketHTTP1_Config", "SocketHTTP1_8h.html#structSocketHTTP1__Config", [
       [ "allow_obs_fold", "SocketHTTP1_8h.html#acf3abe5c5f8346ef4dc94771023f0c65", null ],
+      [ "max_chunk_ext", "SocketHTTP1_8h.html#ad923d4eab20cacfa9e43a265dc456c7b", null ],
       [ "max_chunk_size", "SocketHTTP1_8h.html#a210e4001f9c4495e5e59ec63992fafcf", null ],
       [ "max_decompressed_size", "SocketHTTP1_8h.html#aeda690045f7731461b2a5f29d9c3cc03", null ],
       [ "max_header_line", "SocketHTTP1_8h.html#ad52814be2bcde961f89fd28531af8471", null ],
@@ -55,6 +56,7 @@ var SocketHTTP1_8h =
       [ "HTTP1_ERROR_CHUNK_TOO_LARGE", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea6b628f58fac38dbc2fb615ae075f053d", null ],
       [ "HTTP1_ERROR_BODY_TOO_LARGE", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78eaeb698ed6d2d4a79eb41d9b69346e6743", null ],
       [ "HTTP1_ERROR_INVALID_TRAILER", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea9ad0d4f3b9cb3164139491d0f22f296c", null ],
+      [ "HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea4c72953d4ab4b2e2c33eab3bd945bd56", null ],
       [ "HTTP1_ERROR_UNEXPECTED_EOF", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea45da2dd8b558188c3c25ec3ca678187f", null ],
       [ "HTTP1_ERROR_SMUGGLING_DETECTED", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea459fb16283ed5b28f9cb7b1dd988e229", null ]
     ] ],

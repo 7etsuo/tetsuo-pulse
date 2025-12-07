@@ -1279,9 +1279,9 @@ TEST (tls_alpn_protos_validation)
   END_TRY;
 
   /* Test too many protocols (exceeds max) */
+    const char *many_protos[17];
   TRY
   {
-    const char *many_protos[17];
     for (int i = 0; i < 17; i++)
       {
         char buf[10];

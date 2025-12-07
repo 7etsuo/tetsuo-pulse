@@ -695,9 +695,9 @@ TEST (security_cookie_set_invalid_name_chars_rejected)
     "name=value; name=invalid\rchar",  /* CRLF injection */
     "name=value; name=invalid\nchar",  /* LF injection */
     "name=value; name=invalid\x00char", /* NUL byte */
-    "name=value; name=invalid\x1fchar", /* Control char */
-    "name=value; name=invalid\x7fchar", /* DEL */
-    "name=value; name=invalid\x80char", /* High control */
+    "name=value; name=invalid char", /* Control char */
+    "name=value; name=invalid char", /* DEL */
+    "name=value; name=invalid char", /* High control */
     "name=value; name=invalid;name",    /* Semicolon in name */
     "name=value; name=invalid=value",   /* Equals in name */
     "name=value; name=invalid,value",   /* Comma in name */
@@ -797,7 +797,7 @@ TEST (security_cookie_set_huge_max_age_clamped)
   result = httpclient_parse_set_cookie (huge_max_age, strlen (huge_max_age),
                                       &uri, &cookie, arena);
   ASSERT_EQ (0, result);
-  ASSERT_LT (cookie.expires, time (NULL) + HTTPCLIENT_MAX_COOKIE_AGE_SEC + 10); /* Should be clamped */
+  ASSERT (cookie.expires < time (NULL) + HTTPCLIENT_MAX_COOKIE_AGE_SEC + 10); /* Should be clamped */
 
   Arena_dispose (&arena);
 }
@@ -949,7 +949,9 @@ TEST (security_cookie_file_load_malformed_rejected)
   fprintf (f, "example.com\tTRUE\tinvalid_path\tFALSE\t1234567890\tname\tvalue\n");
   fprintf (f, "example.com\tINVALID\t/\tFALSE\t1234567890\tname\tvalue\n");
   fprintf (f, "example.com\tTRUE\t/\tFALSE\t999999999999999999999\tname\tvalue\n");
-  fprintf (f, "example.com\tTRUE\t/\tFALSE\t1234567890\tinvalid\x00name\tvalue\n");
+  fputs ("example.com\tTRUE\t/\tFALSE\t1234567890\tinvalid", f);
+  fputc (0, f);
+  fputs ("name\tvalue\n", f);
   fclose (f);
 
   SocketHTTPClient_CookieJar_T jar = SocketHTTPClient_CookieJar_new ();
@@ -963,7 +965,7 @@ TEST (security_cookie_file_load_malformed_rejected)
   const SocketHTTPClient_Cookie *cookie =
     SocketHTTPClient_CookieJar_get (jar, "example.com", "/", "name");
   ASSERT_NOT_NULL (cookie);
-  ASSERT_STREQ ("value", cookie->value);
+  ASSERT (strcmp ("value", cookie->value) == 0);
 
   /* Invalid cookies should not be loaded */
   cookie = SocketHTTPClient_CookieJar_get (jar, "too.long.domain.name.that.exceeds.maximum.length", "/", "name");
