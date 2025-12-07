@@ -250,6 +250,7 @@ SocketPool_connections_initialize_slot (struct Connection *conn)
   conn->tls_ctx = NULL;
   conn->tls_handshake_complete = 0;
   conn->tls_session = NULL;
+  conn->last_socket_fd = -1;
 #endif
 }
 

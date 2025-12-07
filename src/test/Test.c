@@ -127,10 +127,10 @@ Test_fail_ne (const char *expected_str, const char *actual_str,
 /**
  * Test_run_all - Run all registered tests
  * Executes each registered test function in registration order.
- * Checks test failure flags set by assertion macros and records assertion
- * failures. Tests are expected to handle their own exceptions; uncaught
- * exceptions will terminate the runner. Prints summary of test results. Thread
- * Safety: Not thread-safe (intended for single-threaded test execution).
+ * Uses TRY/EXCEPT to catch Test_Failed exceptions raised by ASSERT macros,
+ * allowing FINALLY blocks in tests to execute for proper cleanup.
+ * Prints summary of test results.
+ * Thread Safety: Not thread-safe (intended for single-threaded test execution).
  */
 void
 Test_run_all (void)
@@ -166,8 +166,20 @@ Test_run_all (void)
       /* Clear failure flag before test */
       test_failure_flag = 0;
 
-      /* Run test function */
-      current_test->func ();
+      /* Run test function with exception handling.
+       * Test_Failed is caught to allow FINALLY blocks to execute in tests,
+       * ensuring proper cleanup of resources even when assertions fail. */
+      TRY
+      {
+        current_test->func ();
+      }
+      EXCEPT (Test_Failed)
+      {
+        /* Test_Failed was raised by ASSERT macro - failure already recorded
+         * via test_failure_flag. This catch allows FINALLY blocks in the
+         * test to execute before we get here. */
+      }
+      END_TRY;
 
       /* Check if test failed via assertion flag */
       if (test_failure_flag)

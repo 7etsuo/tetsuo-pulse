@@ -69,6 +69,9 @@ extern void Test_register (const char *name, void (*func) (void));
  * ASSERT - Basic assertion macro
  * @condition: Condition that must be true
  * Raises Test_Failed if condition is false and aborts the current test.
+ *
+ * Uses RAISE(Test_Failed) instead of return to ensure FINALLY blocks
+ * execute for proper resource cleanup when used inside TRY blocks.
  */
 #define ASSERT(condition)                                                     \
   do                                                                          \
@@ -76,7 +79,7 @@ extern void Test_register (const char *name, void (*func) (void));
       if (!(condition))                                                       \
         {                                                                     \
           Test_fail ("Assertion failed: " #condition, __FILE__, __LINE__);    \
-          return;                                                             \
+          RAISE (Test_Failed);                                                \
         }                                                                     \
     }                                                                         \
   while (0)
@@ -87,6 +90,8 @@ extern void Test_register (const char *name, void (*func) (void));
  * @actual: Actual value
  * Raises Test_Failed if values are not equal and aborts the current test.
  * Works with any comparable types.
+ *
+ * Uses RAISE(Test_Failed) to ensure FINALLY blocks execute.
  */
 #define ASSERT_EQ(expected, actual)                                           \
   do                                                                          \
@@ -94,7 +99,7 @@ extern void Test_register (const char *name, void (*func) (void));
       if ((expected) != (actual))                                             \
         {                                                                     \
           Test_fail_eq (#expected, #actual, __FILE__, __LINE__);              \
-          return;                                                             \
+          RAISE (Test_Failed);                                                \
         }                                                                     \
     }                                                                         \
   while (0)
@@ -104,6 +109,8 @@ extern void Test_register (const char *name, void (*func) (void));
  * @expected: Value that should not equal actual
  * @actual: Actual value
  * Raises Test_Failed if values are equal and aborts the current test.
+ *
+ * Uses RAISE(Test_Failed) to ensure FINALLY blocks execute.
  */
 #define ASSERT_NE(expected, actual)                                           \
   do                                                                          \
@@ -111,7 +118,7 @@ extern void Test_register (const char *name, void (*func) (void));
       if ((expected) == (actual))                                             \
         {                                                                     \
           Test_fail_ne (#expected, #actual, __FILE__, __LINE__);              \
-          return;                                                             \
+          RAISE (Test_Failed);                                                \
         }                                                                     \
     }                                                                         \
   while (0)
@@ -120,6 +127,8 @@ extern void Test_register (const char *name, void (*func) (void));
  * ASSERT_NULL - NULL pointer assertion macro
  * @ptr: Pointer that must be NULL
  * Raises Test_Failed if pointer is not NULL and aborts the current test.
+ *
+ * Uses RAISE(Test_Failed) to ensure FINALLY blocks execute.
  */
 #define ASSERT_NULL(ptr)                                                      \
   do                                                                          \
@@ -128,7 +137,7 @@ extern void Test_register (const char *name, void (*func) (void));
         {                                                                     \
           Test_fail ("Assertion failed: " #ptr " is not NULL", __FILE__,      \
                      __LINE__);                                               \
-          return;                                                             \
+          RAISE (Test_Failed);                                                \
         }                                                                     \
     }                                                                         \
   while (0)
@@ -137,6 +146,8 @@ extern void Test_register (const char *name, void (*func) (void));
  * ASSERT_NOT_NULL - Non-NULL pointer assertion macro
  * @ptr: Pointer that must not be NULL
  * Raises Test_Failed if pointer is NULL and aborts the current test.
+ *
+ * Uses RAISE(Test_Failed) to ensure FINALLY blocks execute.
  */
 #define ASSERT_NOT_NULL(ptr)                                                  \
   do                                                                          \
@@ -145,7 +156,7 @@ extern void Test_register (const char *name, void (*func) (void));
         {                                                                     \
           Test_fail ("Assertion failed: " #ptr " is NULL", __FILE__,          \
                      __LINE__);                                               \
-          return;                                                             \
+          RAISE (Test_Failed);                                                \
         }                                                                     \
     }                                                                         \
   while (0)

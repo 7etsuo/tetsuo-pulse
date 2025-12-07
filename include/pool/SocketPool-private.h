@@ -131,6 +131,7 @@ struct Connection
   SocketTLSContext_T tls_ctx;       /**< TLS context for this connection */
   int tls_handshake_complete;       /**< TLS handshake state */
   SSL_SESSION *tls_session;         /**< Saved session for potential reuse */
+  int last_socket_fd;               /**< FD of last socket (for session persistence) */
 #endif
 };
 

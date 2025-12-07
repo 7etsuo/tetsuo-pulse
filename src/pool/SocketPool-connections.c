@@ -207,7 +207,20 @@ initialize_connection (Connection_T conn, Socket_T socket, time_t now)
   conn->created_at = now;
   conn->active = 1;
 #if SOCKET_HAS_TLS
-  conn->tls_session = NULL;
+  {
+    int new_fd = socket ? Socket_fd (socket) : -1;
+    /* Clear TLS session only if this is a different socket (security).
+     * Same socket re-added: preserve session for resumption. */
+    if (conn->last_socket_fd != new_fd || conn->last_socket_fd < 0)
+      {
+        if (conn->tls_session)
+          {
+            SSL_SESSION_free (conn->tls_session);
+            conn->tls_session = NULL;
+          }
+      }
+    conn->last_socket_fd = new_fd;
+  }
   conn->tls_ctx = NULL;
   conn->tls_handshake_complete = 0;
 #endif
@@ -257,7 +270,9 @@ reset_slot_tls_fields (Connection_T conn)
 #if SOCKET_HAS_TLS
   conn->tls_ctx = NULL;
   conn->tls_handshake_complete = 0;
-  conn->tls_session = NULL;
+  /* NOTE: tls_session is intentionally NOT cleared here to allow
+   * session resumption. It is cleared in initialize_connection when
+   * a new/different socket is assigned to the slot. */
 #else
   (void)conn;
 #endif
