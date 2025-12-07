@@ -144,7 +144,9 @@ sockethttp_effective_length(const char *str, size_t len)
 {
     if (!str) return 0;
     if (len == 0) return strlen(str);
-    return strnlen(str, len);
+    /* When explicit length is provided, return it as-is to allow
+     * detection of embedded NUL bytes in validation functions */
+    return len;
 }
 
 /**

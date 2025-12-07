@@ -556,8 +556,8 @@ test_uri_security_invalid (void)
   SocketHTTP_URI uri;
   SocketHTTP_URIResult result;
 
-  // Control char in path
-  result = SocketHTTP_URI_parse ("http://example.com/pat\0h", strlen ("http://example.com/pat\0h"), &uri, arena);
+  // Control char in path (use sizeof-1 to get full length including embedded NUL)
+  result = SocketHTTP_URI_parse ("http://example.com/pat\0h", sizeof("http://example.com/pat\0h") - 1, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_ERROR, "Reject control char (NUL) in path");
 
   // Invalid host char (space)

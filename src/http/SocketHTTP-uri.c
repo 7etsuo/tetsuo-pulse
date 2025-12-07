@@ -39,6 +39,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 /* Forward declarations for validation functions */
 static SocketHTTP_URIResult validate_reg_name (const char *host, size_t len);
 
+static SocketHTTP_URIResult validate_userinfo (const char *userinfo, size_t len);
+
 static SocketHTTP_URIResult validate_host (const char *host, size_t len, int *out_is_ipv6);
 
 static SocketHTTP_URIResult validate_path_query (const char *s, size_t len, int is_path);
@@ -632,7 +634,7 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
   /* Validate userinfo syntax (RFC 3986 3.2.1) */
   if (result->userinfo && result->userinfo_len > 0)
     {
-      r = validate_reg_name (result->userinfo, result->userinfo_len);
+      r = validate_userinfo (result->userinfo, result->userinfo_len);
       if (r != URI_PARSE_OK)
         return r;
     }
@@ -1122,6 +1124,19 @@ is_reg_name_raw (unsigned char c)
 }
 
 /**
+ * is_userinfo_raw - Check if raw char valid in userinfo (RFC 3986)
+ * @c: Character to check
+ *
+ * Valid: unreserved / sub-delims / ":" / % (pct will be validated separately)
+ * Note: userinfo allows ':' unlike reg-name (for user:password format)
+ */
+static inline int
+is_userinfo_raw (unsigned char c)
+{
+  return is_unreserved (c) || is_sub_delims (c) || c == ':' || c == '%';
+}
+
+/**
  * validate_reg_name - Validate reg-name component
  * @host: Host string
  * @len: Length
@@ -1135,6 +1150,22 @@ static SocketHTTP_URIResult validate_reg_name (const char *host, size_t len)
   if (r != URI_PARSE_OK)
     return r;
   return validate_pct_encoded (host, len);
+}
+
+/**
+ * validate_userinfo - Validate userinfo component (RFC 3986 3.2.1)
+ * @userinfo: Userinfo string
+ * @len: Length
+ *
+ * Returns: URI_PARSE_OK or URI_PARSE_ERROR
+ */
+static SocketHTTP_URIResult
+validate_userinfo (const char *userinfo, size_t len)
+{
+  SocketHTTP_URIResult r = validate_string_chars (userinfo, len, is_userinfo_raw, URI_PARSE_ERROR);
+  if (r != URI_PARSE_OK)
+    return r;
+  return validate_pct_encoded (userinfo, len);
 }
 
 /**
@@ -1427,15 +1458,18 @@ mediatype_parse_parameter (const char *p, const char *end,
   p = find_token_end (p, end, "=; \t");
 
   if (p >= end || *p != '=')
-    return p;
+    return NULL;  /* Missing '=' - invalid parameter */
 
   size_t param_len = (size_t)(p - param_start);
+
+  if (param_len == 0)
+    return NULL;  /* Empty parameter name */
 
   // Validate parameter name is valid token characters (RFC 7230)
   for (const char *pp = param_start; pp < param_start + param_len; pp++)
     {
       if (!is_token_char ((unsigned char)*pp))
-        return p;
+        return NULL;  /* Invalid character in parameter name */
     }
 
   p++;
@@ -1447,6 +1481,9 @@ mediatype_parse_parameter (const char *p, const char *end,
     {
       p++;
       p = parse_quoted_value (p, end, &value_start, &value_len);
+      /* Check for error from parse_quoted_value (incomplete escape) */
+      if (value_start == NULL)
+        return NULL;
     }
   else
     {
@@ -1454,11 +1491,14 @@ mediatype_parse_parameter (const char *p, const char *end,
       p = find_token_end (p, end, "; \t");
       value_len = (size_t)(p - value_start);
 
+      if (value_len == 0)
+        return NULL;  /* Empty unquoted value */
+
       // Validate unquoted parameter value is valid token characters (RFC 7230)
       for (const char *vp = value_start; vp < value_start + value_len; vp++)
         {
           if (!is_token_char ((unsigned char)*vp))
-            return p;
+            return NULL;  /* Invalid character in parameter value */
         }
     }
 
@@ -1516,7 +1556,11 @@ SocketHTTP_MediaType_parse (const char *value, size_t len,
     return -1;
 
   while (p < end)
-    p = mediatype_parse_parameter (p, end, result, arena);
+    {
+      p = mediatype_parse_parameter (p, end, result, arena);
+      if (p == NULL)
+        return -1;  /* Parameter parsing error */
+    }
 
   return 0;
 }

@@ -973,7 +973,7 @@ validate_header (SocketHPACK_Decoder_T decoder, const SocketHPACK_Header *header
    */
   size_t header_size = hpack_entry_size (header->name_len, header->value_len);
   if (header_size == SIZE_MAX || header_size > decoder->max_header_size)
-    return HPACK_ERROR_BOMB;
+    return HPACK_ERROR_HEADER_SIZE;
 
   size_t new_total;
   if (!SocketSecurity_check_add(*total_size, header_size, &new_total))

@@ -568,7 +568,8 @@ TEST (http1_read_body_chunked)
   SocketHTTP1_Parser_execute (sec_parser, request, strlen (request), &consumed);
 
   /* Oversized trailer - parser is incremental, need to call until complete or error */
-  const char *oversized = "0\r\nTrailer: this is a long value exceeding small limit\r\n\r\n";
+  /* Note: "Trailer" is a forbidden name, use X-Custom instead */
+  const char *oversized = "0\r\nX-Custom: this is a long value exceeding small limit\r\n\r\n";
   size_t total_consumed = 0;
   result = HTTP1_OK;
   while (result == HTTP1_OK && !SocketHTTP1_Parser_body_complete (sec_parser) && total_consumed < strlen (oversized))
