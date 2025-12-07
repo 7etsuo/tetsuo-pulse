@@ -567,23 +567,47 @@ TEST (http1_read_body_chunked)
   SocketHTTP1_Parser_T sec_parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &small_config, arena);
   SocketHTTP1_Parser_execute (sec_parser, request, strlen (request), &consumed);
 
-  /* Oversized trailer */
+  /* Oversized trailer - parser is incremental, need to call until complete or error */
   const char *oversized = "0\r\nTrailer: this is a long value exceeding small limit\r\n\r\n";
-  result = SocketHTTP1_Parser_read_body (sec_parser, oversized, strlen (oversized), &consumed, output, sizeof (output), &written);
+  size_t total_consumed = 0;
+  result = HTTP1_OK;
+  while (result == HTTP1_OK && !SocketHTTP1_Parser_body_complete (sec_parser) && total_consumed < strlen (oversized))
+    {
+      result = SocketHTTP1_Parser_read_body (sec_parser, oversized + total_consumed, 
+                                             strlen (oversized) - total_consumed, &consumed, 
+                                             output, sizeof (output), &written);
+      total_consumed += consumed;
+    }
   ASSERT (result == HTTP1_ERROR_HEADER_TOO_LARGE);
 
-  /* Forbidden trailer */
+  /* Forbidden trailer - incremental processing */
   const char *forbidden = "0\r\nTransfer-Encoding: chunked\r\n\r\n";
   SocketHTTP1_Parser_reset (sec_parser);
   SocketHTTP1_Parser_execute (sec_parser, request, strlen (request), &consumed);
-  result = SocketHTTP1_Parser_read_body (sec_parser, forbidden, strlen (forbidden), &consumed, output, sizeof (output), &written);
+  total_consumed = 0;
+  result = HTTP1_OK;
+  while (result == HTTP1_OK && !SocketHTTP1_Parser_body_complete (sec_parser) && total_consumed < strlen (forbidden))
+    {
+      result = SocketHTTP1_Parser_read_body (sec_parser, forbidden + total_consumed, 
+                                             strlen (forbidden) - total_consumed, &consumed, 
+                                             output, sizeof (output), &written);
+      total_consumed += consumed;
+    }
   ASSERT_EQ (HTTP1_ERROR_INVALID_TRAILER, result);
 
   /* Long chunk extension - note: requires long string, but for demo */
   const char *long_ext = "1;ext=" "1234567890123456789012345678901234567890" /* >1024 in full test */ "\r\na\r\n0\r\n\r\n";
   SocketHTTP1_Parser_reset (sec_parser);
   SocketHTTP1_Parser_execute (sec_parser, request, strlen (request), &consumed);
-  result = SocketHTTP1_Parser_read_body (sec_parser, long_ext, strlen (long_ext), &consumed, output, sizeof (output), &written);
+  total_consumed = 0;
+  result = HTTP1_OK;
+  while (result == HTTP1_OK && !SocketHTTP1_Parser_body_complete (sec_parser) && total_consumed < strlen (long_ext))
+    {
+      result = SocketHTTP1_Parser_read_body (sec_parser, long_ext + total_consumed, 
+                                             strlen (long_ext) - total_consumed, &consumed, 
+                                             output, sizeof (output), &written);
+      total_consumed += consumed;
+    }
   ASSERT_EQ (HTTP1_ERROR_INVALID_CHUNK_SIZE, result);  /* If ext too long */
 
   SocketHTTP1_Parser_free (&sec_parser);
@@ -784,11 +808,16 @@ TEST (http1_multi_te_chunked_hidden)
                         "\r\n";
   size_t consumed;
   SocketHTTP1_Result result;
+  SocketHTTP1_Config config;
   Arena_T arena;
   SocketHTTP1_Parser_T parser;
 
+  /* Use non-strict mode to allow multiple TE headers for smuggling detection test */
+  SocketHTTP1_config_defaults (&config);
+  config.strict_mode = 0;
+
   arena = Arena_new ();
-  parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
+  parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &config, arena);
   result = SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
   ASSERT_EQ (HTTP1_OK, result);
   ASSERT_EQ (HTTP1_BODY_CHUNKED, SocketHTTP1_Parser_body_mode (parser)); // detects in second TE

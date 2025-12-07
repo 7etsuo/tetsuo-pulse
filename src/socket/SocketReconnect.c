@@ -289,10 +289,10 @@ start_connect (T conn)
   /* Clean up any existing socket */
   close_socket (conn);
 
-  /* Create new socket */
+  /* Create new socket - use AF_INET for IPv4, resolve actual address family later */
   TRY
   {
-    conn->socket = Socket_new (AF_UNSPEC, SOCK_STREAM, 0);  /* Dual stack support */
+    conn->socket = Socket_new (AF_INET, SOCK_STREAM, 0);
   }
   EXCEPT (Socket_Failed)
   {

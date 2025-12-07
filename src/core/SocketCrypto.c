@@ -160,7 +160,8 @@ SocketCrypto_sha1 (const void *input, size_t input_len,
   assert (output);
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-1");
-  if (!SOCKET_SECURITY_VALID_SIZE (input_len)) {
+  /* Empty input is valid for hashing - check only if size exceeds max */
+  if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len)) {
     SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
         "SHA-1: input too large: %zu > %zu", (size_t)input_len, (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
   }
@@ -185,7 +186,8 @@ SocketCrypto_sha256 (const void *input, size_t input_len,
   assert (output);
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-256");
-  if (!SOCKET_SECURITY_VALID_SIZE (input_len)) {
+  /* Empty input is valid for hashing - check only if size exceeds max */
+  if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len)) {
     SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
         "SHA-256: input too large: %zu > %zu", (size_t)input_len, (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
   }
@@ -210,7 +212,8 @@ SocketCrypto_md5 (const void *input, size_t input_len,
   assert (output);
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "MD5");
-  if (!SOCKET_SECURITY_VALID_SIZE (input_len)) {
+  /* Empty input is valid for hashing - check only if size exceeds max */
+  if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len)) {
     SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
         "MD5: input too large: %zu > %zu", (size_t)input_len, (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
   }
@@ -614,12 +617,13 @@ SocketCrypto_base64_decode (const char *input, size_t input_len,
   if (input_len == 0)
     input_len = strlen (input);
 
+  /* Empty input is valid - return 0 bytes decoded */
+  if (input_len == 0)
+    return 0;
+
   if (!SOCKET_SECURITY_VALID_SIZE (input_len)) {
     return -1;  /* Input string too large */
   }
-
-  if (input_len == 0)
-    return 0;
 
   /* Process each character */
   for (i = 0; i < input_len; i++)

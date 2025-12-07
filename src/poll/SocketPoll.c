@@ -276,7 +276,7 @@ static void
 socket_data_add_unlocked (T poll, Socket_T socket, void *data)
 {
   int fd = Socket_fd (socket);
-  unsigned hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
+  unsigned hash = poll_fd_hash (poll, fd);  /* Use seeded hash consistently */
   SocketData *data_entry = allocate_socket_data_entry (poll);
   FdSocketEntry *fd_entry = allocate_fd_socket_entry (poll);
 
@@ -301,7 +301,7 @@ static void
 socket_data_remove_unlocked (T poll, Socket_T socket)
 {
   int fd = Socket_fd (socket);
-  unsigned hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
+  unsigned hash = poll_fd_hash (poll, fd);  /* Use seeded hash consistently */
 
   /* Only decrement if socket was actually in the map */
   if (find_socket_data_entry (poll, hash, socket) != NULL)

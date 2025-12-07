@@ -1803,8 +1803,20 @@ SocketHappyEyeballs_result (T he)
   result = he->winner;
   he->winner = NULL;
 
+  /* Clear the socket pointer in the winning attempt to prevent double-free
+   * when he_cleanup_attempts is called during SocketHappyEyeballs_free */
   if (result)
-    he_clear_nonblocking (Socket_fd (result));
+    {
+      HE_FOREACH_ATTEMPT (he, attempt)
+        {
+          if (attempt->socket == result)
+            {
+              attempt->socket = NULL;
+              break;
+            }
+        }
+      he_clear_nonblocking (Socket_fd (result));
+    }
 
   return result;
 }

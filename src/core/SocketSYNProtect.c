@@ -1780,10 +1780,15 @@ SocketSYNProtect_whitelist_add (T protect, const char *ip)
 {
   SocketSYN_WhitelistEntry *entry;
   unsigned bucket;
+  uint8_t addr_bytes[SOCKET_IPV6_ADDR_BYTES];
 
   assert (protect != NULL);
 
   if (!SOCKET_VALID_IP_STRING (ip))
+    return 0;
+
+  /* Validate IP address format before adding */
+  if (parse_ip_address (ip, addr_bytes, sizeof (addr_bytes)) == 0)
     return 0;
 
   pthread_mutex_lock (&protect->mutex);

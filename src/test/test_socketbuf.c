@@ -320,7 +320,7 @@ TEST (socketbuf_release)
 TEST (socketbuf_write_read_cycle)
 {
   Arena_T arena = Arena_new ();
-  SocketBuf_T buf = SocketBuf_new (arena, 100);
+  SocketBuf_T buf = SocketBuf_new (arena, 1024);  /* Min buffer is 512 */
 
   for (int i = 0; i < 10; i++)
     {

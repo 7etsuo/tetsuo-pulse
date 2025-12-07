@@ -733,11 +733,11 @@ thread_track_ip (void *arg)
 
   for (i = 0; i < 50; i++)
     {
-      if (SocketIPTracker_track (thread_test_tracker, "shared.ip"))
+      if (SocketIPTracker_track (thread_test_tracker, "192.168.1.100"))
         {
           local_success++;
           usleep (500);
-          SocketIPTracker_release (thread_test_tracker, "shared.ip");
+          SocketIPTracker_release (thread_test_tracker, "192.168.1.100");
         }
       else
         {
@@ -784,7 +784,7 @@ TEST (iptracker_thread_safety)
     ASSERT (thread_track_fail > 0);
 
     /* Final count should be 0 (all released) */
-    ASSERT_EQ (0, SocketIPTracker_count (thread_test_tracker, "shared.ip"));
+    ASSERT_EQ (0, SocketIPTracker_count (thread_test_tracker, "192.168.1.100"));
   EXCEPT (SocketIPTracker_Failed)
     Arena_dispose (&arena);
     ASSERT (0);
