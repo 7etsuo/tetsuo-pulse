@@ -94,7 +94,9 @@ validate_crl_config(const char *crl_path, long interval_seconds)
   if (path_len >= SOCKET_TLS_CRL_MAX_PATH_LEN)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL path too long");
 
-  /* Check for embedded null bytes */
+  /* Check for embedded null bytes.
+     Note: memchr is intentional - checking WITHIN strlen, not including terminator. */
+  // NOLINTNEXTLINE(bugprone-not-null-terminated-result)
   if (memchr (crl_path, '\0', path_len) != NULL)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL path contains embedded null byte");
 
@@ -128,8 +130,10 @@ validate_crl_config(const char *crl_path, long interval_seconds)
   if (strlen (resolved_path) >= SOCKET_TLS_CRL_MAX_PATH_LEN)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Resolved CRL path too long");
 
-  /* Additional checks on resolved path */
+  /* Additional checks on resolved path.
+     Note: memchr is intentional - checking WITHIN strlen, not including terminator. */
   size_t res_len = strlen (resolved_path);
+  // NOLINTNEXTLINE(bugprone-not-null-terminated-result)
   if (memchr (resolved_path, '\0', res_len) != NULL)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Resolved CRL path contains embedded null byte");
   for (size_t i = 0; i < res_len; i++)

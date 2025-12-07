@@ -120,7 +120,9 @@ apply_dtls_defaults (SSL_CTX *ssl_ctx, int is_server)
   /* Disable session tickets by default (enable explicitly if needed) */
   SSL_CTX_set_options (ssl_ctx, SSL_OP_NO_TICKET);
 
-  /* Set explicitly secure options (avoid deprecated SSL_OP_ALL) */
+  /* Set explicitly secure options (avoid deprecated SSL_OP_ALL).
+     Note: SINGLE_DH_USE and SINGLE_ECDH_USE may be deprecated/redundant in
+     newer OpenSSL, but kept for older version compatibility. */
   SSL_CTX_set_options (ssl_ctx,
     SSL_OP_CIPHER_SERVER_PREFERENCE |
     SSL_OP_NO_COMPRESSION |
@@ -128,7 +130,7 @@ apply_dtls_defaults (SSL_CTX *ssl_ctx, int is_server)
     SSL_OP_SINGLE_DH_USE |
     SSL_OP_NO_RENEGOTIATION
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
-    | SSL_OP_PRIORITIZE_CHACHA
+    | SSL_OP_PRIORITIZE_CHACHA  // NOLINT(misc-redundant-expression)
 #endif
     );
 

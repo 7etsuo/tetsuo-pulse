@@ -26,14 +26,16 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketUTF8.h"
 #include "socket/SocketWS.h" /* Assume WS parser exposed or private for fuzz */
 
 int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
   if (size < 2) return 0; /* Min frame header */
 
-  volatile Arena_T arena = Arena_new ();
-  if (!arena) return 0;
+  Arena_T arena_instance = Arena_new ();
+  if (!arena_instance) return 0;
+  volatile Arena_T arena = arena_instance;
 
   TRY
     {
@@ -70,11 +72,13 @@ int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       if (opcode == 1) { /* Text */
         SocketUTF8_State utf_state;
         SocketUTF8_init (&utf_state);
-        for (size_t i = 0; i < payload_len && i < size; i++) {
-          SocketUTF8_Result res = SocketUTF8_update (&utf_state, data[i + 6]); /* Stub offset */
-          if (res != UTF8_ACCEPT) {
+        size_t payload_start = 6;  /* After mask key */
+        size_t avail = (size > payload_start) ? size - payload_start : 0;
+        if (avail > 0 && payload_len > 0) {
+          size_t to_validate = (avail < payload_len) ? avail : (size_t)payload_len;
+          SocketUTF8_Result res = SocketUTF8_update (&utf_state, data + payload_start, to_validate);
+          if (res != UTF8_VALID && res != UTF8_INCOMPLETE) {
             /* Invalid UTF8 - would close conn with 1007 */
-            break;
           }
         }
         SocketUTF8_finish (&utf_state); /* Check incomplete */
@@ -84,15 +88,24 @@ int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       /* Simulate multi-frame reassembly limits */
 
       /* Cleanup */
-      Arena_clear (arena);
+      Arena_clear (arena_instance);
     }
-  EXCEPT (SocketWS_Failed | Arena_Failed | SocketUTF8_Invalid)
+  EXCEPT (SocketWS_Failed)
+    {
+      /* Expected; good coverage */
+    }
+  EXCEPT (Arena_Failed)
+    {
+      /* Expected; good coverage */
+    }
+  EXCEPT (SocketUTF8_Failed)
     {
       /* Expected; good coverage */
     }
   END_TRY;
 
-  Arena_dispose (&arena);
+  arena_instance = arena;
+  Arena_dispose (&arena_instance);
 
   return 0;
 }

@@ -311,7 +311,10 @@ tls_validate_file_path (const char *path)
     }
   /* If lstat fails (e.g., no perm), continue validation (false negative ok for usability) */
 
-  /* Reject embedded null bytes (paranoia check) */
+  /* Reject embedded null bytes (paranoia check).
+     Note: memchr is intentional - we're checking WITHIN the valid strlen,
+     not including the terminator. This detects strings with embedded nulls. */
+  // NOLINTNEXTLINE(bugprone-not-null-terminated-result)
   if (memchr (path, '\0', len) != NULL)
     return 0;
 

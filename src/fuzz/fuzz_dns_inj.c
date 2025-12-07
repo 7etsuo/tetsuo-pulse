@@ -26,8 +26,10 @@ int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
   if (size < 4) return 0;
 
-  volatile Arena_T arena = Arena_new ();
-  if (!arena) return 0;
+  Arena_T arena_instance = Arena_new ();
+  if (!arena_instance) return 0;
+  volatile Arena_T arena = arena_instance;
+  (void)arena;  /* Used only for exception safety */
 
   TRY
     {
@@ -52,13 +54,17 @@ int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       freeaddrinfo (res);
       SocketDNS_free (&dns);
     }
-  EXCEPT (SocketDNS_Failed | Arena_Failed)
+  EXCEPT (SocketDNS_Failed)
+    {
+      /* Expected on invalid hosts */
+    }
+  EXCEPT (Arena_Failed)
     {
       /* Expected on invalid hosts */
     }
   END_TRY;
 
-  Arena_dispose (&arena);
+  Arena_dispose (&arena_instance);
 
   return 0;
 }

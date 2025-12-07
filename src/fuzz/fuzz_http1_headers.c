@@ -5,6 +5,7 @@
  */
 
 #include "core/Arena.h"
+#include "core/SocketSecurity.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
 

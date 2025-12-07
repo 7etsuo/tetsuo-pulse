@@ -25,12 +25,14 @@
 
 int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
-  volatile Arena_T arena = Arena_new ();
-  if (!arena) return 0;
+  Arena_T arena_instance = Arena_new ();
+  if (!arena_instance) return 0;
+  volatile Arena_T arena = arena_instance;
+  (void)arena;  /* Used only for exception safety */
 
   TRY
     {
-      SocketPool_T pool = SocketPool_new (arena, 10, 1024); /* Small for fuzz exhaustion */
+      SocketPool_T pool = SocketPool_new (arena_instance, 10, 1024); /* Small for fuzz exhaustion */
       if (!pool) return 0;
 
       uint32_t seed = 0;
@@ -60,13 +62,17 @@ int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       SocketPool_free (&pool);
     }
-  EXCEPT (SocketPool_Failed | Arena_Failed)
+  EXCEPT (SocketPool_Failed)
+    {
+      /* Expected on limits/exhaust */
+    }
+  EXCEPT (Arena_Failed)
     {
       /* Expected on limits/exhaust */
     }
   END_TRY;
 
-  Arena_dispose (&arena);
+  Arena_dispose (&arena_instance);
 
   return 0;
 }

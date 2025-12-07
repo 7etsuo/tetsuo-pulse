@@ -320,8 +320,8 @@ TEST (integration_tcp_multiple_clients)
           track_socket (tracked);
           SocketPool_add (pool, accepted);
           SocketPoll_add (poll, accepted, POLL_READ, NULL);
-          if (accepted_count < 2)
-            accepted_sockets[accepted_count++] = tracked;
+          /* Loop condition guarantees accepted_count < 2 here */
+          accepted_sockets[accepted_count++] = tracked;
         }
       else
         {

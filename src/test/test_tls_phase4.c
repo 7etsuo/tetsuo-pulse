@@ -1266,17 +1266,11 @@ TEST (tls_alpn_protos_validation)
   EXCEPT (SocketTLS_Failed) { /* Expected: validation failure */ }
   END_TRY;
 
-  /* Test embedded NUL or control char */
-  TRY
-  {
-    char nul_proto[10] = "http/1.1";
-    nul_proto[6] = '\0'; // embed null
-    const char *protos_nul[] = { "h2", nul_proto, "spdy" };
-    SocketTLSContext_set_alpn_protos (ctx, protos_nul, 3);
-    ASSERT (0); /* Should raise on NUL char */
-  }
-  EXCEPT (SocketTLS_Failed) { /* Expected */ }
-  END_TRY;
+  /* Note: Embedded NUL detection is impossible with C strings since strlen()
+   * stops at the first NUL. The API uses const char* so there's no way to
+   * detect "intended" length vs actual length. A truncated string like
+   * "http/1" (from "http/1.1" with NUL at position 6) is valid by itself.
+   * For true embedded NUL detection, the API would need length parameters. */
 
   /* Test too long protocol */
   TRY
@@ -3109,32 +3103,38 @@ TEST (tls_sni_max_certificates_check)
 TEST (tls_sni_capacity_expansion)
 {
 #if SOCKET_HAS_TLS
-  const char *default_cert = "test_sni_exp_def.crt";
-  const char *default_key = "test_sni_exp_def.key";
+  /* Use /tmp for reliable file access across different working directories */
+  const char *default_cert = "/tmp/test_sni_exp_def.crt";
+  const char *default_key = "/tmp/test_sni_exp_def.key";
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = NULL;
+  char cmd[1024];
 
   /* Generate 6 certificate pairs to force capacity expansion (initial=4) */
   const char *certs[6]
-      = { "test_exp1.crt", "test_exp2.crt", "test_exp3.crt",
-          "test_exp4.crt", "test_exp5.crt", "test_exp6.crt" };
-  const char *keys[6] = { "test_exp1.key", "test_exp2.key", "test_exp3.key",
-                          "test_exp4.key", "test_exp5.key", "test_exp6.key" };
+      = { "/tmp/test_exp1.crt", "/tmp/test_exp2.crt", "/tmp/test_exp3.crt",
+          "/tmp/test_exp4.crt", "/tmp/test_exp5.crt", "/tmp/test_exp6.crt" };
+  const char *keys[6] = { "/tmp/test_exp1.key", "/tmp/test_exp2.key", "/tmp/test_exp3.key",
+                          "/tmp/test_exp4.key", "/tmp/test_exp5.key", "/tmp/test_exp6.key" };
   const char *hosts[6]
       = { "host1.example.com", "host2.example.com", "host3.example.com",
           "host4.example.com", "host5.example.com", "host6.example.com" };
 
-  if (generate_test_certs (default_cert, default_key) != 0)
+  /* Generate default certificate with CN=localhost */
+  snprintf (cmd, sizeof (cmd),
+            "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
+            "-nodes -subj '/CN=localhost' 2>/dev/null",
+            default_key, default_cert);
+  if (system (cmd) != 0)
     {
       Arena_dispose (&arena);
       return;
     }
 
-  /* Generate all 6 cert pairs */
+  /* Generate all 6 cert pairs with matching CN */
   volatile int i;
   for (i = 0; i < 6; i++)
     {
-      char cmd[512];
       snprintf (cmd, sizeof (cmd),
                 "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
                 "-nodes -subj '/CN=%s' 2>/dev/null",
@@ -3147,7 +3147,8 @@ TEST (tls_sni_capacity_expansion)
               unlink (certs[j]);
               unlink (keys[j]);
             }
-          remove_test_certs (default_cert, default_key);
+          unlink (default_cert);
+          unlink (default_key);
           Arena_dispose (&arena);
           return;
         }
@@ -3180,7 +3181,8 @@ TEST (tls_sni_capacity_expansion)
         unlink (certs[i]);
         unlink (keys[i]);
       }
-    remove_test_certs (default_cert, default_key);
+    unlink (default_cert);
+    unlink (default_key);
     Arena_dispose (&arena);
   }
   END_TRY;
@@ -3194,17 +3196,62 @@ TEST (tls_sni_capacity_expansion)
 TEST (tls_sni_invalid_hostname)
 {
 #if SOCKET_HAS_TLS
-  const char *cert_file = "test_sni_hostname.crt";
-  const char *key_file = "test_sni_hostname.key";
+  /* Use /tmp for reliable file access across different working directories */
+  const char *cert_file = "/tmp/test_sni_hostname.crt";
+  const char *key_file = "/tmp/test_sni_hostname.key";
+  const char *valid_cert = "/tmp/test_sni_valid.crt";
+  const char *valid_key = "/tmp/test_sni_valid.key";
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = NULL;
   volatile int raised = 0;
+  char cmd[1024];
+  FILE *fp;
 
-  if (generate_test_certs (cert_file, key_file) != 0)
+  /* Generate default certificate with CN=localhost */
+  snprintf (cmd, sizeof (cmd),
+            "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
+            "-nodes -subj '/CN=localhost' 2>/dev/null",
+            key_file, cert_file);
+  if (system (cmd) != 0)
     {
       Arena_dispose (&arena);
       return;
     }
+
+  /* Generate a certificate with CN matching the valid hostname for Test 6 */
+  snprintf (cmd, sizeof (cmd),
+            "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
+            "-nodes -subj '/CN=valid-host.example.com' 2>/dev/null",
+            valid_key, valid_cert);
+  if (system (cmd) != 0)
+    {
+      unlink (cert_file);
+      unlink (key_file);
+      Arena_dispose (&arena);
+      return; /* Skip if openssl not available */
+    }
+
+  /* Verify certificate files were actually created */
+  fp = fopen (valid_cert, "r");
+  if (!fp)
+    {
+      unlink (cert_file);
+      unlink (key_file);
+      Arena_dispose (&arena);
+      return; /* Skip - cert generation failed */
+    }
+  fseek (fp, 0, SEEK_END);
+  if (ftell (fp) < 100)
+    {
+      fclose (fp);
+      unlink (valid_cert);
+      unlink (valid_key);
+      unlink (cert_file);
+      unlink (key_file);
+      Arena_dispose (&arena);
+      return; /* Skip - cert file empty or too small */
+    }
+  fclose (fp);
 
   TRY
   {
@@ -3265,12 +3312,12 @@ TEST (tls_sni_invalid_hostname)
     END_TRY;
     ASSERT_EQ (raised, 1);
 
-    /* Test 6: Valid hostname should succeed */
+    /* Test 6: Valid hostname should succeed - uses cert with matching CN */
     raised = 0;
     TRY
     {
       SocketTLSContext_add_certificate (ctx, "valid-host.example.com",
-                                        cert_file, key_file);
+                                        valid_cert, valid_key);
     }
     EXCEPT (SocketTLS_Failed) { raised = 1; }
     END_TRY;
@@ -3280,7 +3327,10 @@ TEST (tls_sni_invalid_hostname)
   {
     if (ctx)
       SocketTLSContext_free (&ctx);
-    remove_test_certs (cert_file, key_file);
+    unlink (cert_file);
+    unlink (key_file);
+    unlink (valid_cert);
+    unlink (valid_key);
     Arena_dispose (&arena);
   }
   END_TRY;

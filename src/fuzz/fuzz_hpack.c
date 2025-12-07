@@ -24,48 +24,56 @@
 #include "core/Except.h"
 #include "http/SocketHPACK.h"
 
+#define MAX_HEADERS 64
+
 int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
   if (size < 1) return 0;
 
-  volatile Arena_T arena = Arena_new ();
-  if (!arena) return 0;
+  Arena_T arena_instance = Arena_new ();
+  if (!arena_instance) return 0;
+  volatile Arena_T arena = arena_instance;
+  (void)arena;  /* Used only for exception safety */
 
   TRY
     {
-      SocketHPACK_Decoder_T decoder;
-      SocketHPACK_Decoder_init (&decoder, arena, SOCKETHPACK_DEFAULT_MAX_TABLE_SIZE);
+      /* Create decoder with default config */
+      SocketHPACK_DecoderConfig cfg;
+      SocketHPACK_decoder_config_defaults (&cfg);
+      SocketHPACK_Decoder_T decoder = SocketHPACK_Decoder_new (&cfg, arena_instance);
 
-      /* Incremental decode fuzzed HPACK data */
-      size_t consumed = 0;
-      SocketHPACK_Result res = SocketHPACK_Decoder_decode (&decoder, data, size, &consumed);
-
-      /* Loop for multi-block */
-      while (res == HPACK_CONTINUE && consumed < size)
-        {
-          res = SocketHPACK_Decoder_decode (&decoder, data + consumed, size - consumed, &consumed);
-        }
+      /* Decode fuzzed HPACK data */
+      SocketHPACK_Header headers[MAX_HEADERS];
+      size_t header_count = 0;
+      SocketHPACK_Result res = SocketHPACK_Decoder_decode (
+          decoder, data, size, headers, MAX_HEADERS, &header_count, arena_instance);
 
       /* Access decoded headers to trigger full processing */
-      size_t num_headers;
-      const SocketHPACK_Header *headers = SocketHPACK_Decoder_get_headers (&decoder, &num_headers);
-      (void)headers; (void)num_headers; /* Fuzz coverage */
+      (void)res;
+      for (size_t i = 0; i < header_count; i++) {
+        (void)headers[i].name;
+        (void)headers[i].value;
+      }
 
       /* Fuzz table size change */
       if (size > 4) {
         uint32_t new_size = *(uint32_t*)data % SOCKETHPACK_MAX_TABLE_SIZE;
-        SocketHPACK_Decoder_set_max_table_size (&decoder, new_size);
+        SocketHPACK_Decoder_set_table_size (decoder, new_size);
       }
 
-      SocketHPACK_Decoder_reset (&decoder);
+      SocketHPACK_Decoder_free (&decoder);
     }
-  EXCEPT (SocketHPACK_Failed | Arena_Failed)
+  EXCEPT (SocketHPACK_Error)
+    {
+      /* Expected on malformed; good for crash detection */
+    }
+  EXCEPT (Arena_Failed)
     {
       /* Expected on malformed; good for crash detection */
     }
   END_TRY;
 
-  Arena_dispose (&arena);
+  Arena_dispose (&arena_instance);
 
   return 0;
 }

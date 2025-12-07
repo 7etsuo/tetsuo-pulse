@@ -33,8 +33,9 @@ int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
   if (size < 20) return 0; /* Min request size */
 
-  volatile Arena_T arena = Arena_new ();
-  if (!arena) return 0;
+  Arena_T arena_instance = Arena_new ();
+  if (!arena_instance) return 0;
+  volatile Arena_T arena = arena_instance;
 
   TRY
     {
@@ -46,17 +47,19 @@ int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       if (!parser) return 0;
 
       /* Incremental parse fuzzed data to trigger state issues */
-      size_t consumed;
+      size_t consumed = 0;
       SocketHTTP1_Result res = SocketHTTP1_Parser_execute (parser, (const char *)data, size, &consumed);
 
       /* Continue parsing if partial */
-      while (res == HTTP1_RESULT_CONTINUE && consumed < size)
+      while (res == HTTP1_INCOMPLETE && consumed < size)
         {
-          res = SocketHTTP1_Parser_execute (parser, (const char *)data + consumed, size - consumed, &consumed);
+          size_t more = 0;
+          res = SocketHTTP1_Parser_execute (parser, (const char *)data + consumed, size - consumed, &more);
+          consumed += more;
         }
 
       /* Check for smuggling indicators: invalid body mode, bad lengths */
-      if (res == HTTP1_RESULT_COMPLETE)
+      if (res == HTTP1_OK)
         {
           /* Validate parsed request for anomalies */
           const SocketHTTP_Request *req = SocketHTTP1_Parser_get_request (parser);
@@ -64,19 +67,24 @@ int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             {
               /* Fuzz would trigger exceptions on bad CL/TE */
               (void)req->method;
-              (void)req->uri_len;
+              (void)req->path;
             }
         }
 
       SocketHTTP1_Parser_free (&parser);
     }
-  EXCEPT (SocketHTTP1_ParseError | Arena_Failed)
+  EXCEPT (SocketHTTP1_ParseError)
+    {
+      /* Expected on malformed; coverage good */
+    }
+  EXCEPT (Arena_Failed)
     {
       /* Expected on malformed; coverage good */
     }
   END_TRY;
 
-  Arena_dispose (&arena);
+  arena_instance = arena;
+  Arena_dispose (&arena_instance);
 
   return 0;
 }

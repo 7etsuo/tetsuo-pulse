@@ -16,7 +16,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   unsigned char output[HTTP2_FRAME_HEADER_SIZE];
 
   /* Test frame header parsing with new input_len param */
-  SocketHTTP2_FrameHeader header;
   /* Test short input */
   if (size < HTTP2_FRAME_HEADER_SIZE) {
     SocketHTTP2_frame_header_parse (data, size, &header);  /* Should return -1 */

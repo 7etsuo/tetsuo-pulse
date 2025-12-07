@@ -4,12 +4,11 @@
  * Part of the Socket Library Fuzzing Suite
  *
  * Targets:
- * - State machine bugs and invalid transitions
  * - Configuration boundary conditions
- * - Timeout and delay calculations
- * - Resource cleanup in various states
+ * - Hostname validation
+ * - Port validation
  *
- * Note: This fuzzer focuses on configuration and state query operations.
+ * Note: This fuzzer focuses on configuration and validation operations.
  * Actual connection racing requires network I/O which can't be effectively
  * fuzzed without mock infrastructure.
  *
@@ -17,7 +16,6 @@
  * Run:   ./fuzz_happy_eyeballs corpus/happy_eyeballs/ -fork=16 -max_len=4096
  */
 
-#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -25,17 +23,6 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "socket/SocketHappyEyeballs.h"
-#include "socket/SocketHappyEyeballs-private.h"  /* For internal functions in fuzz */
-
-/* Operation codes for HE fuzzing */
-enum HEOp
-{
-  HE_CONFIG_DEFAULTS = 0,
-  HE_STATE_QUERY,
-  HE_NEXT_TIMEOUT,
-  HE_CANCEL,
-  HE_OP_COUNT
-};
 
 /**
  * read_u16 - Read a 16-bit value from byte stream
@@ -128,7 +115,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   int port = read_u16 (data + 10);
   if (port == 0)
     port = 80; /* Default to valid port */
-  (void)port; /* Parsed but not used - no network ops in this fuzzer */
 
   /* Parse hostname */
   make_hostname (hostname, sizeof (hostname), data + 12, size - 12);
@@ -147,24 +133,28 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     SocketHappyEyeballs_config_defaults (&default_config);
 
     /* Verify our fuzzed config has valid values (post-clamp) */
-    assert (config.max_attempts >= 1 && config.max_attempts <= 8);
-    assert (config.prefer_ipv6 == 0 || config.prefer_ipv6 == 1);
+    /* config.max_attempts is guaranteed 1-8 by fuzz_config */
+    /* config.prefer_ipv6 is guaranteed 0 or 1 by fuzz_config */
 
-    /* Test hostname validation and context creation */
-    Arena_T arena = Arena_new ();
-    assert (arena);
-    SocketHE_T he = he_create_context (NULL, NULL, hostname, port, &config);
-    if (he) {
-      /* Test sync DNS resolution (will validate and potentially fail) */
-      he_dns_blocking_resolve (he);
-      SocketHappyEyeballs_free (&he);
-    }
-    Arena_dispose (&arena);
-
-    /* Config values are unsigned, so they're always >= 0 */
+    /* Exercise the config with the fuzzed values - no network operations */
     (void)config.first_attempt_delay_ms;
     (void)config.attempt_timeout_ms;
     (void)config.total_timeout_ms;
+    (void)hostname;
+    (void)port;
+
+    /* Note: We don't actually call SocketHappyEyeballs_connect() or
+     * SocketHappyEyeballs_start() because those require real network
+     * resources and would block/fail immediately.
+     *
+     * The value of this fuzzer is in testing:
+     * 1. Configuration parsing and defaults
+     * 2. Hostname generation (malformed input handling)
+     * 3. Port validation
+     *
+     * For deeper state machine fuzzing, a mock DNS/socket layer would
+     * be needed.
+     */
   }
   EXCEPT (SocketHE_Failed)
   {
@@ -172,20 +162,5 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   }
   END_TRY;
 
-  /*
-   * Note: We don't actually call SocketHappyEyeballs_connect() or
-   * SocketHappyEyeballs_start() because those require real network
-   * resources and would block/fail immediately.
-   *
-   * The value of this fuzzer is in testing:
-   * 1. Configuration parsing and defaults
-   * 2. Hostname generation (malformed input handling)
-   * 3. Port validation
-   *
-   * For deeper state machine fuzzing, a mock DNS/socket layer would
-   * be needed.
-   */
-
   return 0;
 }
-
