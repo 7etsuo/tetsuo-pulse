@@ -651,6 +651,14 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
 {
   int requests_processed = 0;
 
+  /* Handle disconnect/error events first */
+  if (events & (POLL_HANGUP | POLL_ERROR))
+    {
+      conn->state = CONN_STATE_CLOSED;
+      connection_close (server, conn);
+      return 0;
+    }
+
   if (events & POLL_READ)
     {
       connection_read (server, conn);
