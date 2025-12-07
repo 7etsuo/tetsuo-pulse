@@ -12,11 +12,7 @@
  */
 
 #include <assert.h>
-#include <errno.h>
-#include <math.h>
-#include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "core/Arena.h"
 #include "core/SocketCrypto.h"
@@ -27,7 +23,7 @@
 #include "http/SocketHTTPClient.h"
 #include "http/SocketHTTPClient-private.h"
 #include "socket/Socket.h"
-#include "socket/SocketHappyEyeballs.h"
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketHTTPClient);
 
 /* ============================================================================
  * Centralized Exception Infrastructure
@@ -37,7 +33,7 @@
  * The thread-local exception is declared here; error messages use the
  * shared socket_error_buf from SocketUtil.h.
  */
-__thread Except_T SocketHTTPClient_DetailedException;
+
 
 /* ============================================================================
  * Exception Definitions
@@ -208,20 +204,17 @@ SocketHTTPClient_new (const SocketHTTPClient_Config *config)
   arena = Arena_new ();
   if (arena == NULL)
     {
-      HTTPCLIENT_ERROR_MSG ("Failed to create client arena");
-      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed, "Failed to create client arena");
     }
 
   /* Allocate client structure */
-  client = Arena_alloc (arena, sizeof (*client), __FILE__, __LINE__);
+  client = CALLOC (arena, 1, sizeof (*client));
   if (client == NULL)
     {
       Arena_dispose (&arena);
-      HTTPCLIENT_ERROR_MSG ("Failed to allocate client structure");
-      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed, "Failed to allocate client structure");
     }
 
-  memset (client, 0, sizeof (*client));
   client->arena = arena;
 
   /* Copy configuration */
@@ -241,8 +234,7 @@ SocketHTTPClient_new (const SocketHTTPClient_Config *config)
       if (client->pool == NULL)
         {
           Arena_dispose (&arena);
-          HTTPCLIENT_ERROR_MSG ("Failed to create connection pool");
-          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+          SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed, "Failed to create connection pool");
         }
     }
 
@@ -1299,8 +1291,7 @@ check_request_limits (SocketHTTPClient_T client, int redirect_count,
   if (redirect_count > client->config.follow_redirects)
     {
       client->last_error = HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS;
-      HTTPCLIENT_ERROR_MSG ("Too many redirects (%d)", redirect_count);
-      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_TooManyRedirects);
+      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_TooManyRedirects, "Too many redirects (%d)", redirect_count);
     }
 
   /* Auth retry limit reached - return current response as-is */
@@ -1359,9 +1350,7 @@ handle_size_limit_error (SocketHTTPClient_T client)
 {
   SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED);
   client->last_error = HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE;
-  HTTPCLIENT_ERROR_MSG ("Response body exceeds max_response_size (%zu)",
-                       client->config.max_response_size);
-  RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_ResponseTooLarge);
+  SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_ResponseTooLarge, "Response body exceeds max_response_size (%zu)", client->config.max_response_size);
 }
 
 /* ============================================================================
@@ -1597,7 +1586,7 @@ SocketHTTPClient_Request_new (SocketHTTPClient_T client,
       return NULL;
     }
 
-  req = Arena_alloc (arena, sizeof (*req), __FILE__, __LINE__);
+  req = CALLOC (arena, 1, sizeof (*req));
   if (req == NULL)
     {
       Arena_dispose (&arena);
@@ -1605,7 +1594,6 @@ SocketHTTPClient_Request_new (SocketHTTPClient_T client,
       return NULL;
     }
 
-  memset (req, 0, sizeof (*req));
   req->arena = arena;
   req->client = client;
   req->method = method;
@@ -2200,14 +2188,13 @@ SocketHTTPClient_Request_async (SocketHTTPClient_Request_T req,
   client = req->client;
 
   /* Allocate async request */
-  async_req = Arena_alloc (req->arena, sizeof (*async_req), __FILE__, __LINE__);
+  async_req = CALLOC (req->arena, 1, sizeof (*async_req));
   if (async_req == NULL)
     {
       client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
       return NULL;
     }
 
-  memset (async_req, 0, sizeof (*async_req));
   async_req->client = client;
   async_req->request = req;
   async_req->state = ASYNC_STATE_IDLE;

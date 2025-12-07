@@ -349,7 +349,7 @@ ratelimit_validate_params (size_t tokens_per_sec, size_t *bucket_size)
     int lock_err = pthread_mutex_lock (&_l->mutex); \
     if (lock_err != 0) \
       SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed, \
-                        "pthread_mutex_lock failed: %s", strerror(lock_err)); \
+                        "pthread_mutex_lock failed: %s", Socket_safe_strerror(lock_err)); \
     TRY { \
       code \
     } FINALLY { \
@@ -427,6 +427,18 @@ SocketRateLimit_free (T *limiter)
     {
       /* Set shutdown flag while holding lock to synchronize and prevent new operations */
       WITH_LOCK (l, l->initialized = SOCKET_RATELIMIT_SHUTDOWN; );
+
+      /* Wait for concurrent operations to complete before destroying mutex */
+      int retries = 1000; /* max ~1s wait */
+      while (retries-- > 0) {
+        if (pthread_mutex_trylock(&l->mutex) == 0) {
+          pthread_mutex_unlock(&l->mutex);
+          break; /* No holder, safe to destroy */
+        }
+        struct timespec ts = {0, 1000000}; /* 1ms */
+        nanosleep(&ts, NULL);
+      }
+
       pthread_mutex_destroy (&l->mutex);
       ratelimit_live_dec ();
     }
@@ -460,16 +472,17 @@ SocketRateLimit_try_acquire (T limiter, size_t tokens)
 
   assert (limiter);
 
-  if (limiter->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-    return 0;
-
   if (tokens == 0)
     return 1;
 
   WITH_LOCK (limiter,
   {
-    ratelimit_refill_bucket (_l);
-    result = ratelimit_try_consume (_l, tokens);
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED) {
+      result = 0;
+    } else {
+      ratelimit_refill_bucket (_l);
+      result = ratelimit_try_consume (_l, tokens);
+    }
   });
   return result;
 }
@@ -489,25 +502,23 @@ SocketRateLimit_try_acquire (T limiter, size_t tokens)
 int64_t
 SocketRateLimit_wait_time_ms (T limiter, size_t tokens)
 {
-  volatile int64_t wait_ms = 0;
+  volatile int64_t wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
 
   assert (limiter);
-
-  if (limiter->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-    return SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
 
   if (tokens == 0)
     return 0;
 
   WITH_LOCK (limiter,
   {
-    if (tokens > _l->bucket_size)
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED) {
       wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
-    else
-      {
-        ratelimit_refill_bucket (_l);
-        wait_ms = ratelimit_compute_wait_time (_l, tokens);
-      }
+    } else if (tokens > _l->bucket_size) {
+      wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
+    } else {
+      ratelimit_refill_bucket (_l);
+      wait_ms = ratelimit_compute_wait_time (_l, tokens);
+    }
   });
 
   return wait_ms;
@@ -529,13 +540,14 @@ SocketRateLimit_available (T limiter)
 
   assert (limiter);
 
-  if (limiter->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-    return 0;
-
   WITH_LOCK (limiter,
   {
-    ratelimit_refill_bucket (_l);
-    available = _l->tokens;
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED) {
+      available = 0;
+    } else {
+      ratelimit_refill_bucket (_l);
+      available = _l->tokens;
+    }
   });
 
   return available;
@@ -620,12 +632,12 @@ SocketRateLimit_reset (T limiter)
 {
   assert (limiter);
 
-  if (limiter->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-    SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
-                      "Cannot reset shutdown or uninitialized rate limiter");
-
   WITH_LOCK (limiter,
   {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+      SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
+                        "Cannot reset shutdown or uninitialized rate limiter");
+
     ratelimit_reset_locked (_l);
   });
 }
@@ -645,12 +657,12 @@ SocketRateLimit_configure (T limiter, size_t tokens_per_sec, size_t bucket_size)
 {
   assert (limiter);
 
-  if (limiter->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-    SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
-                      "Cannot configure shutdown or uninitialized rate limiter");
-
   WITH_LOCK (limiter,
   {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+      SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
+                        "Cannot configure shutdown or uninitialized rate limiter");
+
     ratelimit_update_rate_locked (_l, tokens_per_sec);
     ratelimit_update_bucket_locked (_l, bucket_size);
   });
@@ -670,10 +682,14 @@ SocketRateLimit_get_rate (T limiter)
 
   assert (limiter);
 
-  if (limiter->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-    return 0;
-
-  WITH_LOCK (limiter, rate = _l->tokens_per_sec; );
+  WITH_LOCK (limiter,
+  {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED) {
+      rate = 0;
+    } else {
+      rate = _l->tokens_per_sec;
+    }
+  });
 
   return rate;
 }
@@ -692,10 +708,14 @@ SocketRateLimit_get_bucket_size (T limiter)
 
   assert (limiter);
 
-  if (limiter->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-    return 0;
-
-  WITH_LOCK (limiter, size = _l->bucket_size; );
+  WITH_LOCK (limiter,
+  {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED) {
+      size = 0;
+    } else {
+      size = _l->bucket_size;
+    }
+  });
 
   return size;
 }

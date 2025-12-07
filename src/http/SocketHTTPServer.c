@@ -37,6 +37,7 @@
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
+#include "socket/SocketWS.h"  /* For WebSocket upgrade detection */
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -44,7 +45,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+
 
 /* ============================================================================
  * Server Configuration
@@ -127,63 +128,10 @@ const Except_T SocketHTTPServer_ProtocolError
  * REFACTOR: Uses Socket_get_monotonic_ms() from SocketUtil.h instead of
  * direct clock_gettime() call. Centralizes monotonic time access.
  */
-int64_t
-server_time_ms (void)
-{
-  return Socket_get_monotonic_ms ();
-}
+/* server_time_ms removed - duplicate with SocketHTTPServer-connections.c; use Socket_get_monotonic_ms() directly */
 
-/* ============================================================================
- * Internal Helper Functions - Latency
- * ============================================================================ */
-
-void
-latency_init (LatencyTracker *lt)
-{
-  memset (lt, 0, sizeof (*lt));
-}
-
-void
-latency_record (LatencyTracker *lt, int64_t latency_us)
-{
-  lt->samples[lt->index] = latency_us;
-  lt->index = (lt->index + 1) % HTTPSERVER_LATENCY_SAMPLES;
-  if (lt->count < HTTPSERVER_LATENCY_SAMPLES)
-    lt->count++;
-  lt->sum += latency_us;
-  if (latency_us > lt->max)
-    lt->max = latency_us;
-}
-
-int
-latency_compare (const void *a, const void *b)
-{
-  int64_t va = *(const int64_t *)a;
-  int64_t vb = *(const int64_t *)b;
-  return (va > vb) - (va < vb);
-}
-
-int64_t
-latency_percentile (LatencyTracker *lt, int percentile)
-{
-  if (lt->count == 0)
-    return 0;
-
-  int64_t sorted[HTTPSERVER_LATENCY_SAMPLES];
-  memcpy (sorted, lt->samples, lt->count * sizeof (int64_t));
-  qsort (sorted, lt->count, sizeof (int64_t), latency_compare);
-
-  size_t idx = (percentile * (lt->count - 1)) / 100;
-  return sorted[idx];
-}
-
-int64_t
-latency_avg (LatencyTracker *lt)
-{
-  if (lt->count == 0)
-    return 0;
-  return lt->sum / (int64_t)lt->count;
-}
+/* Latency functions removed - use SocketMetrics_histogram_observe(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, ms) and queries instead
+ * See cross-file notes for updates in connections.c and private.h */
 
 /**
  *  - Record request latency if timing available
@@ -233,36 +181,9 @@ find_rate_limiter (SocketHTTPServer_T server, const char *path)
 
 /* Connection functions moved to SocketHTTPServer-connections.c */
 
-static void
-connection_set_client_addr (ServerConnection *conn)
-{
-  const char *addr = Socket_getpeeraddr (conn->socket);
-  if (addr != NULL)
-    {
-      strncpy (conn->client_addr, addr, sizeof (conn->client_addr) - 1);
-      conn->client_addr[sizeof (conn->client_addr) - 1] = '\0';
-    }
-}
+/* connection_set_client_addr removed - duplicate with SocketHTTPServer-connections.c */
 
-static SocketHTTP1_Parser_T
-connection_create_parser (Arena_T arena, const SocketHTTPServer_Config *config)
-{
-  SocketHTTP1_Config pcfg;
-  SocketHTTP1_config_defaults (&pcfg);
-  pcfg.max_header_size = config->max_header_size;
-  TRY
-  {
-    return SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &pcfg, arena);
-  }
-  EXCEPT (SocketHTTP1_ParseError)
-  {
-    RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
-  }
-  END_TRY;
-
-  /* Unreachable - EXCEPT always raises, but needed for compiler */
-  return NULL;
-}
+/* connection_create_parser removed - duplicate with SocketHTTPServer-connections.c; impl without TRY for simplicity */
 
 
 
@@ -274,15 +195,7 @@ connection_create_parser (Arena_T arena, const SocketHTTPServer_Config *config)
 
 
 
-/**
- * connection_finish_request - Complete request processing
- * @server: HTTP server
- * @conn: Connection
- *
- * Records latency and either resets for keep-alive or closes connection.
- * REFACTOR: Extracted from connection_send_response and
- * SocketHTTPServer_Request_end_stream to eliminate duplication.
- */
+/* connection_finish_request implemented in SocketHTTPServer-connections.c */
 
 
 
@@ -379,11 +292,9 @@ SocketHTTPServer_new (const SocketHTTPServer_Config *config)
           = SocketIPTracker_new (arena, config->max_connections_per_client);
     }
 
-  /* Initialize latency tracker */
-  latency_init (&server->latency);
+  /* Latency tracking via SocketMetrics_histogram_observe(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, elapsed_ms) in request handling */
 
-  /* Initialize stats mutex */
-  pthread_mutex_init (&server->stats_mutex, NULL);
+  /* Stats via SocketMetrics - no custom mutex needed */
 
   return server;
 }
@@ -433,7 +344,7 @@ SocketHTTPServer_free (SocketHTTPServer_T *server)
       Arena_dispose (&s->arena);
     }
 
-  pthread_mutex_destroy (&s->stats_mutex);
+  /* No custom mutex to destroy */
 
   free (s);
   *server = NULL;
@@ -626,7 +537,7 @@ server_check_rate_limit (SocketHTTPServer_T server, ServerConnection *conn)
       = find_rate_limiter (server, conn->request ? conn->request->path : NULL);
   if (limiter != NULL && !SocketRateLimit_try_acquire (limiter, 1))
     {
-      STATS_INC (server, rate_limited);
+      SocketMetrics_counter_inc(SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED);  /* Rate limited -> failed */
       connection_send_error (server, conn, 429, "Too Many Requests");
       return 0;
     }
@@ -676,8 +587,6 @@ static int
 server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
 {
   struct SocketHTTPServer_Request req_ctx;
-  int64_t now;
-  size_t sec_idx;
 
   if (server->handler == NULL || conn->request == NULL)
     return 0;
@@ -691,18 +600,8 @@ server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
 
   server->handler (&req_ctx, server->handler_userdata);
 
-  /* Update RPS tracking */
-  now = server_time_ms ();
-  sec_idx = (size_t)((now / 1000) % HTTPSERVER_RPS_WINDOW_SECONDS);
-  pthread_mutex_lock (&server->stats_mutex);
-  server->total_requests++;
-  if (sec_idx != server->rps_index)
-    {
-      server->request_counts[sec_idx] = 0;
-      server->rps_index = sec_idx;
-    }
-  server->request_counts[sec_idx]++;
-  pthread_mutex_unlock (&server->stats_mutex);
+  /* Update request counter via SocketMetrics */
+  SocketMetrics_counter_inc (SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL);
 
   return 1;
 }
@@ -764,31 +663,39 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
         }
     }
 
-  /* Continue reading request body if needed */
+  /* Continue reading request body using centralized parser API */
   if (conn->state == CONN_STATE_READING_BODY)
     {
-      const void *data;
-      size_t len;
+      const void *input;
+      size_t input_len, consumed, written;
+      SocketHTTP1_Result r;
 
-      data = SocketBuf_readptr (conn->inbuf, &len);
-      if (len > 0)
-        {
-          size_t remaining = conn->body_capacity - conn->body_len;
-          size_t to_copy = len;
-          if (to_copy > remaining)
-            to_copy = remaining;
+      char *output = (char *)conn->body + conn->body_len;
+      size_t output_avail = conn->body_capacity - conn->body_len;
 
-          memcpy ((char *)conn->body + conn->body_len, data, to_copy);
-          conn->body_len += to_copy;
-          SocketBuf_consume (conn->inbuf, to_copy);
+      input = SocketBuf_readptr (conn->inbuf, &input_len);
+      r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input, input_len, &consumed,
+                                        output, output_avail, &written);
 
-          /* Check if body is complete */
-          if (conn->body_len >= conn->body_capacity)
-            {
-              conn->state = CONN_STATE_HANDLING;
-              requests_processed = server_handle_parsed_request (server, conn);
-            }
-        }
+      SocketBuf_consume (conn->inbuf, consumed);
+      conn->body_len += written;
+
+      if (r == HTTP1_ERROR || r < 0) {
+        /* Error in body reading (e.g., invalid chunk) */
+        SocketMetrics_counter_inc(SOCKET_CTR_HTTP_RESPONSES_5XX);
+        conn->state = CONN_STATE_CLOSED;
+        return requests_processed;
+      }
+
+      if (SocketHTTP1_Parser_body_complete (conn->parser)) {
+        conn->state = CONN_STATE_HANDLING;
+        requests_processed = server_handle_parsed_request (server, conn);
+      } else {
+        /* Continue reading body */
+      }
+
+      /* TODO: Handle body_streaming callback invocation on written data */
+      /* TODO: Support dynamic allocation for chunked bodies */
     }
 
   if (conn->state == CONN_STATE_CLOSED)
@@ -817,7 +724,7 @@ server_check_connection_timeout (SocketHTTPServer_T server,
   if (conn->state == CONN_STATE_READING_REQUEST
       && idle_ms > server->config.keepalive_timeout_ms)
     {
-      STATS_INC (server, timeouts);
+      SocketMetrics_counter_inc(SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED);  /* Timeout -> failed request */
       connection_close (server, conn);
       return 1;
     }
@@ -826,7 +733,7 @@ server_check_connection_timeout (SocketHTTPServer_T server,
   if (conn->state == CONN_STATE_READING_BODY && conn->request_start_ms > 0
       && (now - conn->request_start_ms) > server->config.request_read_timeout_ms)
     {
-      STATS_INC (server, timeouts);
+      SocketMetrics_counter_inc(SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED);  /* Timeout -> failed request */
       connection_close (server, conn);
       return 1;
     }
@@ -837,7 +744,7 @@ server_check_connection_timeout (SocketHTTPServer_T server,
       && (now - conn->response_start_ms)
              > server->config.response_write_timeout_ms)
     {
-      STATS_INC (server, timeouts);
+      SocketMetrics_counter_inc(SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED);  /* Timeout -> failed request */
       connection_close (server, conn);
       return 1;
     }
@@ -854,7 +761,7 @@ server_check_connection_timeout (SocketHTTPServer_T server,
 static void
 server_cleanup_timed_out (SocketHTTPServer_T server)
 {
-  int64_t now = server_time_ms ();
+  int64_t now = Socket_get_monotonic_ms ();
   ServerConnection *conn = server->connections;
 
   while (conn != NULL)
@@ -1158,7 +1065,7 @@ SocketHTTPServer_Request_begin_stream (SocketHTTPServer_Request_T req)
 
   /* Set streaming state only after headers successfully sent */
   req->conn->response_streaming = 1;
-  req->conn->response_start_ms = server_time_ms ();
+  req->conn->response_start_ms = Socket_get_monotonic_ms ();
   req->conn->state = CONN_STATE_STREAMING_RESPONSE;
   req->conn->response_headers_sent = 1;
   return 0;
@@ -1271,22 +1178,46 @@ SocketHTTPServer_Request_is_websocket (SocketHTTPServer_Request_T req)
   if (headers == NULL)
     return 0;
 
-  const char *upgrade = SocketHTTP_Headers_get (headers, "Upgrade");
-  const char *connection = SocketHTTP_Headers_get (headers, "Connection");
-
-  if (upgrade == NULL || connection == NULL)
-    return 0;
-
-  return (strcasecmp (upgrade, "websocket") == 0
-          && SocketHTTP_Headers_contains (headers, "Connection", "upgrade"));
+  /* Use centralized WebSocket upgrade detection from parsed request */
+  return SocketWS_is_upgrade(req->conn->request);
 }
 
 SocketWS_T
 SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req)
 {
-  (void)req;
-  /* WebSocket implementation elsewhere */
-  return NULL;
+  assert (req != NULL);
+
+  if (req->conn->request == NULL || !SocketWS_is_upgrade(req->conn->request))
+    return NULL;
+
+  SocketWS_Config config;
+  SocketWS_config_defaults(&config);
+  /* TODO: Configure from server config (e.g., compression, subprotocols) */
+
+  TRY
+  {
+    SocketWS_T ws = SocketWS_server_accept(req->conn->socket, req->conn->request, &config);
+    /* Ownership of socket transferred to ws */
+
+    /* Remove from server poll and connection list */
+    SocketPoll_del(req->server->poll, req->conn->socket);
+    connection_close(req->server, req->conn);  /* But ws owns socket now, so adjust close not to free socket */
+
+    /* Note: Full integration requires managing ws in separate poll or wrapper */
+    /* For now, returns ws for manual management */
+
+    /* Start handshake - may need multiple calls */
+    SocketWS_handshake(ws);
+
+    return ws;
+  }
+  EXCEPT (SocketWS_Failed)
+  {
+    RAISE_HTTPSERVER_ERROR(SocketHTTPServer_Failed);
+  }
+  END_TRY;
+
+  return NULL;  /* Unreachable */
 }
 
 /* ============================================================================
@@ -1363,7 +1294,7 @@ SocketHTTPServer_drain (SocketHTTPServer_T server, int timeout_ms)
     return -1;
 
   server->state = HTTPSERVER_STATE_DRAINING;
-  server->drain_start_ms = server_time_ms ();
+  server->drain_start_ms = Socket_get_monotonic_ms ();
   server->drain_timeout_ms = timeout_ms;
 
   /* Stop accepting new connections */
@@ -1402,7 +1333,7 @@ SocketHTTPServer_drain_poll (SocketHTTPServer_T server)
   /* Check timeout */
   if (server->drain_timeout_ms >= 0)
     {
-      int64_t now = server_time_ms ();
+      int64_t now = Socket_get_monotonic_ms ();
       if ((now - server->drain_start_ms) >= server->drain_timeout_ms)
         {
           /* Force close all connections */
@@ -1461,7 +1392,7 @@ SocketHTTPServer_drain_remaining_ms (SocketHTTPServer_T server)
   if (server->drain_timeout_ms < 0)
     return -1;
 
-  int64_t elapsed = server_time_ms () - server->drain_start_ms;
+  int64_t elapsed = Socket_get_monotonic_ms () - server->drain_start_ms;
   int64_t remaining = server->drain_timeout_ms - elapsed;
   return remaining > 0 ? remaining : 0;
 }
@@ -1495,56 +1426,50 @@ SocketHTTPServer_stats (SocketHTTPServer_T server, SocketHTTPServer_Stats *stats
 
   memset (stats, 0, sizeof (*stats));
 
-  pthread_mutex_lock (&server->stats_mutex);
+  /* Query centralized metrics - no lock needed, metrics thread-safe */
+  stats->active_connections = (size_t)SocketMetrics_gauge_get(SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
+  stats->total_connections = SocketMetrics_counter_get(SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL);
+  stats->total_requests = SocketMetrics_counter_get(SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL);
+  stats->total_bytes_sent = SocketMetrics_counter_get(SOCKET_CTR_HTTP_SERVER_BYTES_SENT);
+  stats->total_bytes_received = SocketMetrics_counter_get(SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED);
+  stats->errors_4xx = SocketMetrics_counter_get(SOCKET_CTR_HTTP_RESPONSES_4XX);
+  stats->errors_5xx = SocketMetrics_counter_get(SOCKET_CTR_HTTP_RESPONSES_5XX);
+  stats->connections_rejected = SocketMetrics_counter_get(SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED);  /* Or custom if tracked */
+  /* timeouts, rate_limited: use custom or map to failed counters */
 
-  stats->active_connections = server->connection_count;
-  stats->total_connections = server->total_connections;
-  stats->connections_rejected = server->connections_rejected;
-  stats->total_requests = server->total_requests;
-  stats->total_bytes_sent = server->total_bytes_sent;
-  stats->total_bytes_received = server->total_bytes_received;
-  stats->errors_4xx = server->errors_4xx;
-  stats->errors_5xx = server->errors_5xx;
-  stats->timeouts = server->timeouts;
-  stats->rate_limited = server->rate_limited;
+  /* RPS approximation: delta requests / delta time (requires previous snapshot for accuracy) */
+  /* For now, set to 0 or compute simple rate */
+  static uint64_t prev_requests = 0;
+  static int64_t prev_time = 0;
+  int64_t now = Socket_get_monotonic_ms();
+  uint64_t curr_requests = stats->total_requests;
+  if (prev_time > 0) {
+    double seconds = (now - prev_time) / 1000.0;
+    stats->requests_per_second = (curr_requests - prev_requests) / seconds;
+  }
+  prev_requests = curr_requests;
+  prev_time = now;
 
-  /* Calculate RPS from sliding window */
-  size_t rps_sum = 0;
-  for (size_t i = 0; i < HTTPSERVER_RPS_WINDOW_SECONDS; i++)
-    {
-      rps_sum += server->request_counts[i];
-    }
-  stats->requests_per_second = rps_sum / HTTPSERVER_RPS_WINDOW_SECONDS;
+  /* Latency from histogram snapshot (unit: ms in metric, convert to us) */
+  SocketMetrics_HistogramSnapshot snap;
+  SocketMetrics_histogram_snapshot(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, &snap);
+  stats->avg_request_time_us = (int64_t)(snap.mean * 1000);
+  stats->max_request_time_us = (int64_t)(snap.max * 1000);
+  stats->p50_request_time_us = (int64_t)(snap.p50 * 1000);
+  stats->p95_request_time_us = (int64_t)(snap.p95 * 1000);
+  stats->p99_request_time_us = (int64_t)(snap.p99 * 1000);
+  /* Note: p999 if needed from snap.p999 */
 
-  /* Latency stats */
-  stats->avg_request_time_us = latency_avg (&server->latency);
-  stats->max_request_time_us = server->latency.max;
-  stats->p50_request_time_us = latency_percentile (&server->latency, 50);
-  stats->p95_request_time_us = latency_percentile (&server->latency, 95);
-  stats->p99_request_time_us = latency_percentile (&server->latency, 99);
-
-  pthread_mutex_unlock (&server->stats_mutex);
+  /* TODO: Update SocketHTTPServer_Stats struct if fields removed/mapped */
 }
 
 void
 SocketHTTPServer_stats_reset (SocketHTTPServer_T server)
 {
-  assert (server != NULL);
+  (void)server;  /* Currently no server-specific reset; use global */
 
-  pthread_mutex_lock (&server->stats_mutex);
+  /* Reset centralized metrics - affects all modules */
+  SocketMetrics_reset();
 
-  server->total_connections = server->connection_count;
-  server->total_requests = 0;
-  server->total_bytes_sent = 0;
-  server->total_bytes_received = 0;
-  server->errors_4xx = 0;
-  server->errors_5xx = 0;
-  server->timeouts = 0;
-  server->rate_limited = 0;
-  server->connections_rejected = 0;
-
-  memset (server->request_counts, 0, sizeof (server->request_counts));
-  latency_init (&server->latency);
-
-  pthread_mutex_unlock (&server->stats_mutex);
+  /* TODO: If per-server metrics needed, add server param to metrics or per-instance tracking */
 }

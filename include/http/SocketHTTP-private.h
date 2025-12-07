@@ -11,6 +11,8 @@
 #define SOCKETHTTP_PRIVATE_INCLUDED
 
 #include "http/SocketHTTP.h"
+#include "core/SocketUtil.h"
+#include <string.h>  /* for strncasecmp */
 
 /* ============================================================================
  * Header Collection Internals
@@ -66,20 +68,7 @@ struct SocketHTTP_Headers
  *
  * Returns: Hash value in range [0, SOCKETHTTP_HEADER_BUCKETS)
  */
-static inline unsigned
-sockethttp_hash_name (const char *name, size_t len)
-{
-  unsigned hash = 5381; /* djb2 initial value */
-  for (size_t i = 0; i < len; i++)
-    {
-      unsigned char c = (unsigned char)name[i];
-      /* Convert to lowercase for case-insensitive hashing */
-      if (c >= 'A' && c <= 'Z')
-        c = c + ('a' - 'A');
-      hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-    }
-  return hash % SOCKETHTTP_HEADER_BUCKETS;
-}
+
 
 /**
  * sockethttp_name_equal - Compare header names (case-insensitive)
@@ -95,19 +84,7 @@ sockethttp_name_equal (const char *a, size_t a_len, const char *b, size_t b_len)
 {
   if (a_len != b_len)
     return 0;
-  for (size_t i = 0; i < a_len; i++)
-    {
-      unsigned char ca = (unsigned char)a[i];
-      unsigned char cb = (unsigned char)b[i];
-      /* Convert to lowercase */
-      if (ca >= 'A' && ca <= 'Z')
-        ca = ca + ('a' - 'A');
-      if (cb >= 'A' && cb <= 'Z')
-        cb = cb + ('a' - 'A');
-      if (ca != cb)
-        return 0;
-    }
-  return 1;
+  return strncasecmp (a, b, a_len) == 0;
 }
 
 /* ============================================================================

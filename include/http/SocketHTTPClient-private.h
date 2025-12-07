@@ -61,7 +61,7 @@
  */
 #define RAISE_HTTPCLIENT_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTPClient, e)
 
-extern __thread Except_T SocketHTTPClient_DetailedException;
+
 
 /* ============================================================================
  * Connection Pool Entry

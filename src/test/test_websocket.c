@@ -12,6 +12,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketConfig.h"  /* For SOCKET_HAS_TLS */
 #include "core/SocketCrypto.h"
 #include "core/SocketUTF8.h"
 #include "socket/SocketWS.h"
@@ -597,6 +598,7 @@ test_websocket_key_generation (void)
  * Test: WebSocket Accept Computation (using SocketCrypto)
  * ============================================================================ */
 
+#if SOCKET_HAS_TLS
 static void
 test_websocket_accept_computation (void)
 {
@@ -615,6 +617,7 @@ test_websocket_accept_computation (void)
 
   TEST_PASS ();
 }
+#endif /* SOCKET_HAS_TLS */
 
 /* ============================================================================
  * Main Test Runner
@@ -659,7 +662,11 @@ main (void)
 
   printf ("\nCryptographic Helpers:\n");
   test_websocket_key_generation ();
+#if SOCKET_HAS_TLS
   test_websocket_accept_computation ();
+#else
+  printf ("  [SKIPPED] websocket_accept_computation (requires TLS)\n");
+#endif
 
   printf ("\n=== Results: %d/%d tests passed ===\n", tests_passed, tests_run);
 

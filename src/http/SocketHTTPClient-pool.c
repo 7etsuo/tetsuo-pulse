@@ -24,16 +24,21 @@
 #include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
 
+#include <assert.h>
+
+/* Module exception - required for RAISE_HTTPCLIENT_ERROR macro */
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
+
 #if SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"
 #endif
 
-#include <assert.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
+
+
+
+/* #include <string.h> - provided by SocketUtil.h or others */
 #include <time.h>
 
 #ifndef HTTP_DEFAULT_PORT
@@ -642,10 +647,6 @@ pool_try_get_connection (SocketHTTPClient_T client, const char *host, int port,
                          int is_secure)
 {
   HTTPPoolEntry *entry;
-  size_t host_count;
-  int at_host_limit;
-  int at_total_limit;
-
   if (client->pool == NULL)
     return 0;
 
@@ -740,8 +741,6 @@ ensure_tls_context (SocketHTTPClient_T client)
   }
   END_TRY;
 
-  return 0;
-
   return client->default_tls_ctx;
 }
 
@@ -764,8 +763,6 @@ enable_socket_tls (Socket_T socket, SocketTLSContext_T tls_ctx)
     return -1;
   }
   END_TRY;
-
-  return 0;
 
   return 0;
 }
@@ -795,8 +792,6 @@ perform_tls_handshake (Socket_T socket, int timeout_ms)
     return -1;
   }
   END_TRY;
-
-  return 0;
 
   return 0;
 }
@@ -1008,5 +1003,5 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
   }
   END_TRY;
 
-  return 0;
+  return NULL; /* Unreachable, silences compiler */
 }

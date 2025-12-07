@@ -189,29 +189,15 @@ const HPACK_StaticEntry hpack_static_table[SOCKETHPACK_STATIC_TABLE_SIZE] = {
 static int
 hpack_strcasecmp (const char *a, size_t a_len, const char *b, size_t b_len)
 {
-  size_t min_len = a_len < b_len ? a_len : b_len;
+  size_t min_len = (a_len < b_len ? a_len : b_len);
 
-  for (size_t i = 0; i < min_len; i++)
-    {
-      unsigned char ca = (unsigned char)a[i];
-      unsigned char cb = (unsigned char)b[i];
+  int cmp = strncasecmp (a, b, min_len);
+  if (cmp != 0)
+    return cmp;
 
-      /* Convert to lowercase (ASCII only) */
-      if (ca >= 'A' && ca <= 'Z')
-        ca += 32;
-      if (cb >= 'A' && cb <= 'Z')
-        cb += 32;
-
-      if (ca != cb)
-        return (int)ca - (int)cb;
-    }
-
-  /* Equal up to min_len, shorter string is "less" */
-  if (a_len < b_len)
-    return -1;
-  if (a_len > b_len)
-    return 1;
-  return 0;
+  /* Prefixes match up to min_len; compare full lengths for lexicographical order */
+  return (a_len < b_len) ? -1 :
+         (a_len > b_len ? 1 : 0);
 }
 
 /**
@@ -256,6 +242,75 @@ hpack_match_entry (const char *entry_name, size_t entry_name_len,
 }
 
 /* ============================================================================
+ * Common Validation Helpers
+ * ============================================================================ */
+
+/**
+ * hpack_validate_search_params - Validate name parameters for search functions
+ * @name: Header name
+ * @name_len: Name length
+ *
+ * Logs debug message and returns 0 if invalid.
+ * Returns: 1 if valid, 0 if invalid
+ * Thread-safe: Yes
+ */
+static int
+hpack_validate_search_params (const char *name, size_t name_len)
+{
+  if (name == NULL)
+    {
+      SOCKET_LOG_DEBUG_MSG ("SocketHPACK find: NULL name pointer");
+      return 0;
+    }
+  if (name_len == 0)
+    {
+      SOCKET_LOG_DEBUG_MSG ("SocketHPACK find: zero name length");
+      return 0;
+    }
+  return 1;
+}
+
+/**
+ * hpack_validate_index - Validate index for table get functions
+ * @index: Requested index (1-based)
+ * @max_idx: Maximum valid index
+ * @func: Function name for logging
+ *
+ * Returns: HPACK_OK if valid, appropriate error otherwise
+ * Thread-safe: Yes
+ */
+static SocketHPACK_Result
+hpack_validate_index (size_t index, size_t max_idx, const char *func)
+{
+  if (index < 1 || index > max_idx)
+    {
+      SOCKET_LOG_WARN_MSG ("SocketHPACK %s: invalid index %zu (valid range 1-%zu)",
+                           func, index, max_idx);
+      return HPACK_ERROR_INVALID_INDEX;
+    }
+  return HPACK_OK;
+}
+
+/**
+ * hpack_validate_header_ptr - Validate output header pointer
+ * @header: Output header structure
+ * @func: Function name for logging
+ *
+ * Returns: HPACK_OK if valid, HPACK_ERROR otherwise
+ * Thread-safe: Yes
+ */
+static SocketHPACK_Result
+hpack_validate_header_ptr (SocketHPACK_Header *header, const char *func)
+{
+  if (header == NULL)
+    {
+      SOCKET_LOG_ERROR_MSG ("SocketHPACK %s: NULL output header pointer", func);
+      return HPACK_ERROR;
+    }
+  return HPACK_OK;
+}
+
+/* ============================================================================
  * Dynamic Table Helper Functions
  * ============================================================================ */
 
@@ -293,8 +348,7 @@ hpack_dynamic_initial_capacity (size_t max_size)
   return socket_util_round_up_pow2 (est_entries);
 }
 
-/* Forward declarations for static functions used in helpers */
-static void hpack_table_clear (SocketHPACK_Table_T table);
+
 
 /**
  * hpack_table_prepare_insertion - Prepare dynamic table for new entry insertion
@@ -362,12 +416,7 @@ hpack_dynamic_entry_init (Arena_T arena,
   return HPACK_OK;
 }
 
-/* Forward declaration - definition follows later in dynamic implementation section */
-static SocketHPACK_Result
-hpack_duplicate_header_strings (Arena_T arena,
-                                const char *name, size_t name_len,
-                                const char *value, size_t value_len,
-                                char **name_out, char **value_out);
+
 
 /* ============================================================================
  * Static Table Lookup Functions
@@ -376,18 +425,13 @@ hpack_duplicate_header_strings (Arena_T arena,
 SocketHPACK_Result
 SocketHPACK_static_get (size_t index, SocketHPACK_Header *header)
 {
-  if (index < 1 || index > SOCKETHPACK_STATIC_TABLE_SIZE)
-    {
-      SOCKET_LOG_WARN_MSG ("SocketHPACK static_get: invalid index %zu (valid range 1-%zu)",
-                           index, SOCKETHPACK_STATIC_TABLE_SIZE);
-      return HPACK_ERROR_INVALID_INDEX;
-    }
+  SocketHPACK_Result res = hpack_validate_index (index, SOCKETHPACK_STATIC_TABLE_SIZE, "static_get");
+  if (res != HPACK_OK)
+    return res;
 
-  if (header == NULL)
-    {
-      SOCKET_LOG_ERROR_MSG ("SocketHPACK static_get: NULL output header pointer");
-      return HPACK_ERROR;
-    }
+  res = hpack_validate_header_ptr (header, "static_get");
+  if (res != HPACK_OK)
+    return res;
 
   const HPACK_StaticEntry *entry = &hpack_static_table[index - 1];
   header->name = entry->name;
@@ -405,14 +449,8 @@ SocketHPACK_static_find (const char *name, size_t name_len, const char *value,
 {
   int name_match = 0;
 
-  if (name == NULL || name_len == 0)
-    {
-      if (name == NULL)
-        SOCKET_LOG_DEBUG_MSG ("SocketHPACK static_find: NULL name pointer");
-      else
-        SOCKET_LOG_DEBUG_MSG ("SocketHPACK static_find: zero name length");
-      return 0;
-    }
+  if (!hpack_validate_search_params (name, name_len))
+    return 0;
 
   /* Linear search through static table (sufficient for 61 entries) */
   for (size_t i = 0; i < SOCKETHPACK_STATIC_TABLE_SIZE; i++)
@@ -615,18 +653,13 @@ SocketHPACK_Table_get (SocketHPACK_Table_T table, size_t index,
       return HPACK_ERROR;
     }
 
-  if (index < 1 || index > table->count)
-    {
-      SOCKET_LOG_WARN_MSG ("SocketHPACK Table_get: invalid index %zu (valid range 1-%zu)",
-                           index, table->count);
-      return HPACK_ERROR_INVALID_INDEX;
-    }
+  SocketHPACK_Result res = hpack_validate_index (index, table->count, "Table_get");
+  if (res != HPACK_OK)
+    return res;
 
-  if (header == NULL)
-    {
-      SOCKET_LOG_ERROR_MSG ("SocketHPACK Table_get: NULL output header pointer");
-      return HPACK_ERROR;
-    }
+  res = hpack_validate_header_ptr (header, "Table_get");
+  if (res != HPACK_OK)
+    return res;
 
   /* Index 1 = most recent (tail - 1) */
   /* Index n = oldest (head) */
@@ -659,6 +692,21 @@ SocketHPACK_Table_get (SocketHPACK_Table_T table, size_t index,
  * Thread-safe: Yes (if arena is)
  * Note: Strings owned by caller? No, arena lifetime.
  */
+static char *
+hpack_arena_alloc_dup (Arena_T arena, const char *src, size_t len, const char *what)
+{
+  char *dup = ALLOC (arena, len + 1);
+  if (dup == NULL)
+    {
+      SOCKET_LOG_ERROR_MSG ("SocketHPACK: failed to allocate header %s copy (length=%zu)", what, len);
+      return NULL;
+    }
+  if (len > 0)
+    memcpy (dup, src, len);
+  dup[len] = '\0';
+  return dup;
+}
+
 static SocketHPACK_Result
 hpack_duplicate_header_strings (Arena_T arena,
                                 const char *name, size_t name_len,
@@ -669,29 +717,13 @@ hpack_duplicate_header_strings (Arena_T arena,
   assert (name_out != NULL);
   assert (value_out != NULL);
 
-  *name_out = ALLOC (arena, name_len + 1);
+  *name_out = hpack_arena_alloc_dup (arena, name, name_len, "name");
   if (*name_out == NULL)
-    {
-      SOCKET_LOG_ERROR_MSG ("SocketHPACK: failed to allocate header name copy (length=%zu)",
-                            name_len);
-      return HPACK_ERROR;
-    }
+    return HPACK_ERROR;
 
-  if (name_len > 0)
-    memcpy (*name_out, name, name_len);
-  (*name_out)[name_len] = '\0';
-
-  *value_out = ALLOC (arena, value_len + 1);
+  *value_out = hpack_arena_alloc_dup (arena, value, value_len, "value");
   if (*value_out == NULL)
-    {
-      SOCKET_LOG_ERROR_MSG ("SocketHPACK: failed to allocate header value copy (length=%zu)",
-                            value_len);
-      return HPACK_ERROR;
-    }
-
-  if (value_len > 0)
-    memcpy (*value_out, value, value_len);
-  (*value_out)[value_len] = '\0';
+    return HPACK_ERROR;
 
   return HPACK_OK;
 }
@@ -762,14 +794,8 @@ SocketHPACK_Table_find (SocketHPACK_Table_T table, const char *name,
       return 0;
     }
 
-  if (name == NULL || name_len == 0)
-    {
-      if (name == NULL)
-        SOCKET_LOG_DEBUG_MSG ("SocketHPACK Table_find: NULL name pointer");
-      else
-        SOCKET_LOG_DEBUG_MSG ("SocketHPACK Table_find: zero name length");
-      return 0;
-    }
+  if (!hpack_validate_search_params (name, name_len))
+    return 0;
 
   for (size_t i = 0; i < table->count; i++)
     {

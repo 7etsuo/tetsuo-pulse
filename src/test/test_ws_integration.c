@@ -32,6 +32,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketConfig.h"  /* For SOCKET_HAS_TLS */
 #include "core/SocketCrypto.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
@@ -661,7 +662,12 @@ main (void)
 {
   printf ("=== WebSocket Integration Tests ===\n");
 
+#if SOCKET_HAS_TLS
   Test_run_all ();
+#else
+  printf ("\n[SKIPPED] WebSocket integration tests require TLS support\n");
+  printf ("WebSocket handshake uses SHA-1 for Sec-WebSocket-Accept computation\n");
+#endif
 
   printf ("\n");
   return Test_get_failures () > 0 ? 1 : 0;

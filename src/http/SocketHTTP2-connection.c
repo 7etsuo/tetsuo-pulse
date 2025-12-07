@@ -193,6 +193,15 @@ init_local_settings (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
       = config->max_header_list_size;
 }
 
+static const uint32_t peer_setting_defaults[HTTP2_SETTINGS_COUNT] = {
+    SOCKETHTTP2_DEFAULT_HEADER_TABLE_SIZE,
+    SOCKETHTTP2_DEFAULT_ENABLE_PUSH,
+    UINT32_MAX,  /* SETTINGS_MAX_CONCURRENT_STREAMS: unbounded initially */
+    SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE,
+    SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE,
+    UINT32_MAX   /* SETTINGS_MAX_HEADER_LIST_SIZE: unbounded initially */
+};
+
 /**
  * init_peer_settings - Set peer settings to RFC 9113 default values
  * @conn: Connection structure containing peer_settings array
@@ -206,15 +215,7 @@ init_local_settings (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
 static void
 init_peer_settings (SocketHTTP2_Conn_T conn)
 {
-  conn->peer_settings[SETTINGS_IDX_HEADER_TABLE_SIZE]
-      = SOCKETHTTP2_DEFAULT_HEADER_TABLE_SIZE;
-  conn->peer_settings[SETTINGS_IDX_ENABLE_PUSH] = SOCKETHTTP2_DEFAULT_ENABLE_PUSH;
-  conn->peer_settings[SETTINGS_IDX_MAX_CONCURRENT_STREAMS] = UINT32_MAX;
-  conn->peer_settings[SETTINGS_IDX_INITIAL_WINDOW_SIZE]
-      = SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE;
-  conn->peer_settings[SETTINGS_IDX_MAX_FRAME_SIZE]
-      = SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE;
-  conn->peer_settings[SETTINGS_IDX_MAX_HEADER_LIST_SIZE] = UINT32_MAX;
+  memcpy (conn->peer_settings, peer_setting_defaults, sizeof (peer_setting_defaults));
 }
 
 /**
@@ -240,17 +241,23 @@ init_flow_control (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
 static void
 create_io_buffers (SocketHTTP2_Conn_T conn)
 {
-  conn->recv_buf = SocketBuf_new (conn->arena, SOCKETHTTP2_IO_BUFFER_SIZE);
-  if (!conn->recv_buf) {
+  size_t buf_size = SOCKETHTTP2_IO_BUFFER_SIZE;
+
+  SocketBuf_T recv_temp = SocketBuf_new (conn->arena, buf_size);
+  if (!recv_temp) {
     SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
-                      "Failed to allocate HTTP/2 I/O buffers");
+                      "Failed to allocate HTTP/2 recv I/O buffer");
   }
 
-  conn->send_buf = SocketBuf_new (conn->arena, SOCKETHTTP2_IO_BUFFER_SIZE);
-  if (!conn->send_buf) {
+  SocketBuf_T send_temp = SocketBuf_new (conn->arena, buf_size);
+  if (!send_temp) {
+    SocketBuf_release (&recv_temp);
     SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
-                      "Failed to allocate HTTP/2 I/O buffers");
+                      "Failed to allocate HTTP/2 send I/O buffer");
   }
+
+  conn->recv_buf = recv_temp;
+  conn->send_buf = send_temp;
 }
 
 /**
@@ -334,13 +341,12 @@ alloc_conn (Arena_T arena)
 {
   SocketHTTP2_Conn_T conn;
 
-  conn = Arena_alloc (arena, sizeof (*conn), __FILE__, __LINE__);
+  conn = Arena_calloc (arena, 1, sizeof (*conn), __FILE__, __LINE__);
   if (!conn)
     {
       SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
                         "Failed to allocate HTTP/2 connection");
     }
-  memset (conn, 0, sizeof (*conn));
 
   return conn;
 }
@@ -482,14 +488,20 @@ SocketHTTP2_Conn_arena (SocketHTTP2_Conn_T conn)
   return conn->arena;
 }
 
+static inline uint32_t
+get_setting_array (const uint32_t *settings_array, SocketHTTP2_SettingsId id)
+{
+  if (id >= 1 && id <= HTTP2_SETTINGS_COUNT)
+    return settings_array[id - 1];
+  return 0;
+}
+
 uint32_t
 SocketHTTP2_Conn_get_setting (SocketHTTP2_Conn_T conn,
                               SocketHTTP2_SettingsId id)
 {
   assert (conn);
-  if (id >= 1 && id <= HTTP2_SETTINGS_COUNT)
-    return conn->peer_settings[id - 1];
-  return 0;
+  return get_setting_array (conn->peer_settings, id);
 }
 
 uint32_t
@@ -497,9 +509,7 @@ SocketHTTP2_Conn_get_local_setting (SocketHTTP2_Conn_T conn,
                                     SocketHTTP2_SettingsId id)
 {
   assert (conn);
-  if (id >= 1 && id <= HTTP2_SETTINGS_COUNT)
-    return conn->local_settings[id - 1];
-  return 0;
+  return get_setting_array (conn->local_settings, id);
 }
 
 uint32_t
@@ -857,78 +867,7 @@ SocketHTTP2_Conn_window_update (SocketHTTP2_Conn_T conn, uint32_t increment)
  * Frame Processing Helpers
  * ============================================================================ */
 
-/**
- * read_frame_header - Read and parse frame header from receive buffer
- * @conn: Connection
- * @header: Parsed header output
- * @data_ptr: Pointer to header data in buffer (for payload access)
- *
- * Attempts to read the 9-byte frame header from the receive buffer.
- * Parses it into the header structure.
- *
- * Returns: 1 if header read and parsed, 0 if insufficient data, -1 on error
- * Thread-safe: No
- */
-static int
-read_frame_header (SocketHTTP2_Conn_T conn, SocketHTTP2_FrameHeader *header, unsigned char **data_ptr)
-{
-  size_t read_len;
-  size_t available = SocketBuf_available (conn->recv_buf);
-  if (available < HTTP2_FRAME_HEADER_SIZE)
-    return 0;
-
-  *data_ptr = (unsigned char *) SocketBuf_readptr (conn->recv_buf, &read_len);
-  if (!*data_ptr || read_len < HTTP2_FRAME_HEADER_SIZE)
-    return 0;
-
-  SocketHTTP2_frame_header_parse (*data_ptr, header);
-  return 1;
-}
-
-/**
- * has_complete_frame - Check if complete frame is available in buffer
- * @conn: Connection
- * @header: Frame header
- *
- * Returns: 1 if complete frame available, 0 if more data needed
- * Thread-safe: No
- */
-static int
-has_complete_frame (const SocketHTTP2_Conn_T conn, const SocketHTTP2_FrameHeader *header)
-{
-  return SocketBuf_available (conn->recv_buf) >= HTTP2_FRAME_HEADER_SIZE + header->length;
-}
-
-/**
- * validate_and_respond_to_invalid_frame - Validate frame and send error if invalid
- * @conn: Connection
- * @header: Frame header
- * @error: Validation error code
- *
- * If error != HTTP2_NO_ERROR, sends appropriate error frame (connection or stream)
- * and consumes the invalid frame from buffer.
- *
- * Returns: 1 if invalid (error sent and consumed), 0 if valid
- * Raises: None - errors handled internally
- * Thread-safe: No
- */
-static int
-validate_and_respond_to_invalid_frame (SocketHTTP2_Conn_T conn, const SocketHTTP2_FrameHeader *header, SocketHTTP2_ErrorCode error)
-{
-  if (error != HTTP2_NO_ERROR)
-    {
-      if (header->stream_id == 0)
-        {
-          http2_send_connection_error (conn, error);
-          return -1;  /* Fatal for connection */
-        }
-      http2_send_stream_error (conn, header->stream_id, error);
-      SocketBuf_consume (conn->recv_buf, HTTP2_FRAME_HEADER_SIZE + header->length);
-      return 1; /* Continue processing other frames */
-    }
-  return 0;
-}
-
+/* Removed unused frame processing helpers: read_frame_header, has_complete_frame, validate_and_respond_to_invalid_frame */
 /**
  * read_socket_to_buffer - Read data from socket into receive buffer
  * @conn: Connection

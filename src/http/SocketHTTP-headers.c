@@ -11,9 +11,9 @@
 #include "http/SocketHTTP-private.h"
 #include "core/SocketUtil.h"
 
-#include <assert.h>
-#include <ctype.h>
-#include <stdlib.h>
+
+
+
 #include <string.h>
 
 /* ============================================================================
@@ -35,24 +35,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
  * Internal Helper Functions - String Operations
  * ============================================================================ */
 
-/**
- * arena_strdup_n - Allocate and copy string into arena
- * @arena: Memory arena
- * @str: Source string
- * @len: Length to copy
- *
- * Returns: Arena-allocated null-terminated copy, or NULL on failure
- */
-static char *
-arena_strdup_n (Arena_T arena, const char *str, size_t len)
-{
-  char *copy = ALLOC (arena, len + 1);
-  if (!copy)
-    return NULL;
-  memcpy (copy, str, len);
-  copy[len] = '\0';
-  return copy;
-}
+
+
 
 /* ============================================================================
  * Internal Helper Functions - Hash Table Operations
@@ -69,7 +53,7 @@ arena_strdup_n (Arena_T arena, const char *str, size_t len)
 static HeaderEntry *
 find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
 {
-  unsigned bucket = sockethttp_hash_name (name, name_len);
+  unsigned bucket = socket_util_hash_djb2_ci_len (name, name_len, SOCKETHTTP_HEADER_BUCKETS);
   HeaderEntry *entry = headers->buckets[bucket];
 
   while (entry)
@@ -89,7 +73,7 @@ find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
 static void
 add_to_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 {
-  unsigned bucket = sockethttp_hash_name (entry->name, entry->name_len);
+  unsigned bucket = socket_util_hash_djb2_ci_len (entry->name, entry->name_len, SOCKETHTTP_HEADER_BUCKETS);
   entry->hash_next = headers->buckets[bucket];
   headers->buckets[bucket] = entry;
 }
@@ -102,7 +86,7 @@ add_to_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 static void
 remove_from_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 {
-  unsigned bucket = sockethttp_hash_name (entry->name, entry->name_len);
+  unsigned bucket = socket_util_hash_djb2_ci_len (entry->name, entry->name_len, SOCKETHTTP_HEADER_BUCKETS);
   HeaderEntry **pp = &headers->buckets[bucket];
 
   while (*pp)
@@ -158,66 +142,20 @@ remove_from_list (SocketHTTP_Headers_T headers, HeaderEntry *entry)
     headers->last = entry->list_prev;
 }
 
-/* ============================================================================
- * Internal Helper Functions - Integer Parsing
- * ============================================================================ */
-
-/**
- * skip_leading_whitespace - Skip leading whitespace characters
- * @p: Pointer to current position (updated on return)
- *
- * Returns: Pointer to first non-whitespace character
- */
-static const char *
-skip_leading_whitespace (const char *p)
-{
-  while (*p == ' ' || *p == '\t')
-    p++;
-  return p;
-}
-
-/**
- * parse_sign - Parse optional sign character
- * @p: Pointer to current position (updated)
- *
- * Returns: 1 if negative sign found, 0 otherwise
- */
 static int
-parse_sign (const char **p)
+remove_one_n (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
 {
-  if (**p == '-')
-    {
-      (*p)++;
-      return 1;
-    }
-  if (**p == '+')
-    (*p)++;
-  return 0;
-}
+  HeaderEntry *entry = find_entry (headers, name, name_len);
+  if (!entry)
+    return 0;
 
-/**
- * parse_digits - Parse digits into int64_t with overflow protection
- * @p: Pointer to current position (updated)
- * @result: Output value
- *
- * Returns: 0 on success, -1 if no digits or overflow
- */
-static int
-parse_digits (const char **p, int64_t *result)
-{
-  if (!isdigit ((unsigned char)**p))
-    return -1;
+  headers->total_size -= (entry->name_len + entry->value_len + HEADER_ENTRY_NULL_OVERHEAD);
 
-  *result = 0;
-  while (isdigit ((unsigned char)**p))
-    {
-      int digit = **p - '0';
-      if (*result > (INT64_MAX - digit) / 10)
-        return -1; /* Overflow */
-      *result = *result * 10 + digit;
-      (*p)++;
-    }
-  return 0;
+  remove_from_bucket (headers, entry);
+  remove_from_list (headers, entry);
+  headers->count--;
+
+  return 1;
 }
 
 /* ============================================================================
@@ -305,9 +243,12 @@ static int
 allocate_entry_name (Arena_T arena, HeaderEntry *entry, const char *name,
                      size_t name_len)
 {
-  entry->name = arena_strdup_n (arena, name, name_len);
-  if (!entry->name)
+  char *name_copy = ALLOC (arena, name_len + 1);
+  if (!name_copy)
     return -1;
+  memcpy (name_copy, name, name_len);
+  name_copy[name_len] = '\0';
+  entry->name = name_copy;
   entry->name_len = name_len;
   return 0;
 }
@@ -325,14 +266,21 @@ static int
 allocate_entry_value (Arena_T arena, HeaderEntry *entry, const char *value,
                       size_t value_len)
 {
-  if (value && value_len > 0)
-    entry->value = arena_strdup_n (arena, value, value_len);
-  else
-    entry->value = arena_strdup_n (arena, "", 0);
-
-  if (!entry->value)
-    return -1;
-  entry->value_len = value_len;
+  char *value_copy;
+  if (value && value_len > 0) {
+    value_copy = ALLOC (arena, value_len + 1);
+    if (!value_copy)
+      return -1;
+    memcpy (value_copy, value, value_len);
+    value_copy[value_len] = '\0';
+  } else {
+    value_copy = ALLOC (arena, 1);
+    if (!value_copy)
+      return -1;
+    *value_copy = '\0';
+  }
+  entry->value = value_copy;
+  entry->value_len = value_len ? value_len : 0;
   return 0;
 }
 
@@ -463,17 +411,37 @@ SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers, const char *name,
   if (!str)
     return -1;
 
-  const char *p = skip_leading_whitespace (str);
+  const char *p = str;
+  /* Skip leading whitespace */
+  while (*p == ' ' || *p == '\t')
+    p++;
   if (*p == '\0')
     return -1;
 
-  int negative = parse_sign (&p);
+  /* Parse optional sign */
+  int negative = 0;
+  if (*p == '-') {
+    negative = 1;
+    p++;
+  } else if (*p == '+') {
+    p++;
+  }
 
-  int64_t result;
-  if (parse_digits (&p, &result) < 0)
+  /* Parse digits with overflow protection */
+  if (!(*p >= '0' && *p <= '9'))
     return -1;
+  int64_t result = 0;
+  while (*p >= '0' && *p <= '9') {
+    int digit = *p - '0';
+    if (result > (INT64_MAX - digit) / 10)
+      return -1; /* Overflow */
+    result = result * 10 + digit;
+    p++;
+  }
 
-  p = skip_leading_whitespace (p);
+  /* Skip trailing whitespace */
+  while (*p == ' ' || *p == '\t')
+    p++;
   if (*p != '\0')
     return -1;
 
@@ -561,21 +529,7 @@ SocketHTTP_Headers_remove (SocketHTTP_Headers_T headers, const char *name)
     return 0;
 
   size_t name_len = strlen (name);
-  HeaderEntry *entry = find_entry (headers, name, name_len);
-
-  if (!entry)
-    return 0;
-
-  headers->total_size
-      -= (entry->name_len + entry->value_len + HEADER_ENTRY_NULL_OVERHEAD);
-
-  remove_from_bucket (headers, entry);
-  remove_from_list (headers, entry);
-  headers->count--;
-
-  /* Note: Entry memory is arena-allocated, not individually freed */
-
-  return 1;
+  return remove_one_n (headers, name, name_len);
 }
 
 int
@@ -584,8 +538,9 @@ SocketHTTP_Headers_remove_all (SocketHTTP_Headers_T headers, const char *name)
   if (!headers || !name)
     return 0;
 
+  size_t name_len = strlen (name);
   int removed = 0;
-  while (SocketHTTP_Headers_remove (headers, name))
+  while (remove_one_n (headers, name, name_len))
     removed++;
 
   return removed;

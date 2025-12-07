@@ -769,7 +769,8 @@ ws_is_valid_close_code (int code)
   /* RFC 6455 Section 7.4.1 */
   if (code < 1000)
     return 0;
-  if (code >= 1000 && code <= 1003)
+  /* code >= 1000 is implied here since we didn't return above */
+  if (code <= 1003)
     return 1;
   if (code >= 1007 && code <= 1014)
     return 1;

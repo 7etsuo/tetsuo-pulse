@@ -14,7 +14,7 @@
 #include <string.h>
 
 #include "http/SocketHTTP1.h"
-#include "http/SocketHTTP1-private.h"
+
 #include "core/SocketUtil.h"
 
 SOCKET_DECLARE_MODULE_EXCEPTION(SocketHTTP1);
@@ -422,6 +422,8 @@ struct serialize_ctx
   int error;
 };
 
+
+
 /**
  * serialize_header_cb - Callback for iterating headers during serialization
  * @name: Header name
@@ -475,6 +477,28 @@ serialize_header_cb (const char *name, size_t name_len, const char *value,
   return 0; /* Continue */
 }
 
+/**
+ * do_serialize_headers - Common headers iteration logic
+ * @headers: Headers to iterate
+ * @ctx: Serialization context
+ *
+ * Performs iteration and checks error. Handles NULL headers safely.
+ *
+ * Returns: 0 on success, -1 on error
+ * Thread-safe: Yes
+ */
+static int
+do_serialize_headers (const SocketHTTP_Headers_T headers, struct serialize_ctx *ctx)
+{
+  if (!headers)
+    return 0;
+
+  SocketHTTP_Headers_iterate (headers, serialize_header_cb, ctx);
+  return ctx->error ? -1 : 0;
+}
+
+
+
 static int
 serialize_headers_section (const SocketHTTP_Headers_T headers, char **buf, size_t *remaining)
 {
@@ -482,8 +506,8 @@ serialize_headers_section (const SocketHTTP_Headers_T headers, char **buf, size_
   ctx.buf = *buf;
   ctx.remaining = *remaining;
   ctx.error = 0;
-  SocketHTTP_Headers_iterate (headers, serialize_header_cb, &ctx);
-  if (ctx.error) return -1;
+  if (do_serialize_headers (headers, &ctx) < 0)
+    return -1;
   *buf = ctx.buf;
   *remaining = ctx.remaining;
   return 0;
@@ -501,20 +525,14 @@ SocketHTTP1_serialize_headers (SocketHTTP_Headers_T headers, char *output,
   if (output_size == 0)
     return -1;
 
-  if (!headers || SocketHTTP_Headers_count (headers) == 0)
-    {
-      output[0] = '\0';
-      return 0;
-    }
+
 
   start = output;
   ctx.buf = output;
-  ctx.remaining = output_size - 1;
+  ctx.remaining = output_size > 0 ? output_size - 1 : 0;
   ctx.error = 0;
 
-  SocketHTTP_Headers_iterate (headers, serialize_header_cb, &ctx);
-
-  if (ctx.error)
+  if (do_serialize_headers (headers, &ctx) < 0)
     return -1;
 
   /* Null terminate */

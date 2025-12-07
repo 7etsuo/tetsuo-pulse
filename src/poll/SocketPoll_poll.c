@@ -107,11 +107,22 @@ safe_calloc_array (size_t num, size_t elem_size)
  * Returns: Reallocated array or NULL on failure (errno set)
  * Thread-safe: Yes
  * Note: Preserves content up to min(old_size, new_size); new area undefined
+ * Note: Returns NULL with EINVAL if num is 0 (avoids realloc(ptr, 0) UB)
  */
 static void *
 safe_realloc_array (void *ptr, size_t num, size_t elem_size)
 {
   size_t total;
+
+  /* Reject zero-size allocation to avoid implementation-defined realloc(ptr, 0)
+   * behavior. Per POSIX, realloc(ptr, 0) may return NULL or a non-NULL pointer
+   * that cannot be dereferenced. We treat this as an error. */
+  if (num == 0)
+    {
+      errno = EINVAL;
+      return NULL;
+    }
+
   if (safe_calc_size (num, elem_size, &total) < 0)
     return NULL;
   return realloc (ptr, total);

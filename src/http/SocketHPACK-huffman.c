@@ -16,8 +16,8 @@
 #include "http/SocketHPACK-private.h"
 #include "http/SocketHPACK.h"
 
-#include <assert.h>
-#include <string.h>
+
+
 
 /* ============================================================================
  * Constants for Huffman Decoding
@@ -26,33 +26,10 @@
  * See RFC 7541 Appendix B for the complete Huffman code table.
  * ============================================================================ */
 
-/* Bit masks for extracting codes of each length */
-#define HUFFMAN_MASK_5BIT  0x1Fu  /* 5-bit code mask */
-#define HUFFMAN_MASK_6BIT  0x3Fu  /* 6-bit code mask */
-#define HUFFMAN_MASK_7BIT  0x7Fu  /* 7-bit code mask */
-#define HUFFMAN_MASK_8BIT  0xFFu  /* 8-bit code mask */
-
-/* Code ranges for each bit length (first and last codes) */
-#define HUFFMAN_5BIT_FIRST     0x00u  /* First 5-bit code (symbol '0') */
-#define HUFFMAN_5BIT_LAST      0x09u  /* Last 5-bit code (symbol 't') */
-#define HUFFMAN_6BIT_FIRST     0x14u  /* First 6-bit code (symbol ' ') */
-#define HUFFMAN_6BIT_LAST      0x2Du  /* Last 6-bit code (symbol 'u') */
-#define HUFFMAN_7BIT_FIRST     0x5Cu  /* First 7-bit code (symbol ':') */
-#define HUFFMAN_7BIT_LAST      0x7Bu  /* Last 7-bit code (symbol 'z') */
-#define HUFFMAN_8BIT_FIRST     0xF8u  /* First 8-bit code (symbol '&') */
-#define HUFFMAN_8BIT_LAST      0xFDu  /* Last 8-bit code (symbol 'Z') */
-
-/* Symbol table offsets for each bit length */
-#define HUFFMAN_5BIT_OFFSET    0    /* Index in decode_symbols for 5-bit codes */
-#define HUFFMAN_6BIT_OFFSET    10   /* Index in decode_symbols for 6-bit codes */
-#define HUFFMAN_7BIT_OFFSET    36   /* Index in decode_symbols for 7-bit codes */
-#define HUFFMAN_8BIT_OFFSET    68   /* Index in decode_symbols for 8-bit codes */
-
-/* Number of symbols at each bit length */
-#define HUFFMAN_5BIT_COUNT     10   /* 10 symbols with 5-bit codes */
-#define HUFFMAN_6BIT_COUNT     26   /* 26 symbols with 6-bit codes */
-#define HUFFMAN_7BIT_COUNT     32   /* 32 symbols with 7-bit codes */
-#define HUFFMAN_8BIT_COUNT     7    /* 7 symbols with 8-bit codes (partial) */
+/* Code length configurations embedded in hpack_decode_configs array above.
+ * Masks computed as (1U << bitlen) - 1.
+ * Note: 8-bit codes cover only 6 symbols (F8-FD), table has 7 entries with unused '\0' at index 74.
+ */
 
 /* Minimum bits to attempt decode and bit buffer threshold */
 #define HUFFMAN_MIN_CODE_BITS  5    /* Minimum code length */
@@ -371,6 +348,19 @@ static const uint16_t hpack_decode_symbols[] = {
  * ============================================================================ */
 
 /**
+ * validate_buffer - Validate buffer pointer and length
+ * @buf: Buffer pointer (may be NULL if len is 0)
+ * @len: Buffer length
+ *
+ * Returns: 1 if valid (buf non-NULL or len==0), 0 otherwise
+ */
+static inline int
+validate_buffer (const void *buf, size_t len)
+{
+  return !(buf == NULL && len > 0);
+}
+
+/**
  * validate_encode_params - Validate encoding function parameters
  * @input: Input buffer (may be NULL if input_len is 0)
  * @input_len: Length of input buffer
@@ -380,7 +370,7 @@ static const uint16_t hpack_decode_symbols[] = {
 static int
 validate_encode_params (const unsigned char *input, size_t input_len)
 {
-  return !(input == NULL && input_len > 0);
+  return validate_buffer (input, input_len);
 }
 
 /**
@@ -396,11 +386,8 @@ static int
 validate_decode_params (const unsigned char *input, size_t input_len,
                         unsigned char *output, size_t output_size)
 {
-  if (input == NULL && input_len > 0)
-    return 0;
-  if (output == NULL && output_size > 0)
-    return 0;
-  return 1;
+  return validate_buffer (input, input_len) &&
+         validate_buffer (output, output_size);
 }
 
 /* ============================================================================
@@ -436,131 +423,55 @@ is_valid_eos_padding (uint64_t bits, int bits_avail)
  * ============================================================================ */
 
 /**
- * try_decode_5bit - Try to decode a 5-bit Huffman code
- * @bits: Current bit accumulator
- * @bits_avail: Number of valid bits available
- * @output: Output buffer
- * @out_pos: Current output position (updated on success)
- * @output_size: Total output buffer size
- *
- * Returns: 1 if decoded, 0 if not a 5-bit code, -1 on buffer overflow
+ * Huffman decode configuration for each code length
  */
-static int
-try_decode_5bit (uint64_t bits, int bits_avail, unsigned char *output,
-                 size_t *out_pos, size_t output_size)
-{
-  uint32_t code;
+typedef struct {
+  int bitlen;
+  uint32_t mask;
+  uint32_t first_code;
+  uint32_t last_code;
+  size_t symbol_offset;
+} HuffmanDecodeConfig;
 
-  if (bits_avail < HUFFMAN_MIN_CODE_BITS)
-    return 0;
+/* Configurations for decoding, ordered by increasing bit length for prefix matching */
+static const HuffmanDecodeConfig hpack_decode_configs[] = {
+  {5, 0x1Fu, 0x00u, 0x09u, 0u},     /* 5-bit: offset 0 */
+  {6, 0x3Fu, 0x14u, 0x2Du, 10u},    /* 6-bit: offset 10 */
+  {7, 0x7Fu, 0x5Cu, 0x7Bu, 36u},    /* 7-bit: offset 36 */
+  {8, 0xFFu, 0xF8u, 0xFDu, 68u}     /* 8-bit: offset 68 (6 codes: F8-FD map to 68-73) */
+};
 
-  code = (uint32_t) (bits >> (bits_avail - 5)) & HUFFMAN_MASK_5BIT;
-
-  if (code <= HUFFMAN_5BIT_LAST)
-    {
-      if (*out_pos >= output_size)
-        return -1;
-      output[(*out_pos)++]
-          = (unsigned char) hpack_decode_symbols[HUFFMAN_5BIT_OFFSET + code];
-      return 1;
-    }
-
-  return 0;
-}
+static const size_t NUM_DECODE_CONFIGS =
+  sizeof(hpack_decode_configs) / sizeof(hpack_decode_configs[0]);
 
 /**
- * try_decode_6bit - Try to decode a 6-bit Huffman code
+ * try_decode_nbit - Generic decoder for n-bit Huffman codes
+ * @cfg: Decode configuration
  * @bits: Current bit accumulator
  * @bits_avail: Number of valid bits available
  * @output: Output buffer
  * @out_pos: Current output position (updated on success)
  * @output_size: Total output buffer size
  *
- * Returns: 1 if decoded, 0 if not a 6-bit code, -1 on buffer overflow
+ * Returns: 1 if decoded, 0 if not an n-bit code, -1 on buffer overflow
  */
 static int
-try_decode_6bit (uint64_t bits, int bits_avail, unsigned char *output,
-                 size_t *out_pos, size_t output_size)
+try_decode_nbit (const HuffmanDecodeConfig *cfg, uint64_t bits, int bits_avail,
+                 unsigned char *output, size_t *out_pos, size_t output_size)
 {
   uint32_t code;
 
-  if (bits_avail < 6)
+  if (bits_avail < cfg->bitlen)
     return 0;
 
-  code = (uint32_t) (bits >> (bits_avail - 6)) & HUFFMAN_MASK_6BIT;
+  code = ((uint32_t) (bits >> (bits_avail - cfg->bitlen))) & cfg->mask;
 
-  if (code >= HUFFMAN_6BIT_FIRST && code <= HUFFMAN_6BIT_LAST)
+  if (code >= cfg->first_code && code <= cfg->last_code)
     {
+      size_t idx = cfg->symbol_offset + (code - cfg->first_code);
       if (*out_pos >= output_size)
         return -1;
-      output[(*out_pos)++] = (unsigned char) hpack_decode_symbols
-          [HUFFMAN_6BIT_OFFSET + (code - HUFFMAN_6BIT_FIRST)];
-      return 1;
-    }
-
-  return 0;
-}
-
-/**
- * try_decode_7bit - Try to decode a 7-bit Huffman code
- * @bits: Current bit accumulator
- * @bits_avail: Number of valid bits available
- * @output: Output buffer
- * @out_pos: Current output position (updated on success)
- * @output_size: Total output buffer size
- *
- * Returns: 1 if decoded, 0 if not a 7-bit code, -1 on buffer overflow
- */
-static int
-try_decode_7bit (uint64_t bits, int bits_avail, unsigned char *output,
-                 size_t *out_pos, size_t output_size)
-{
-  uint32_t code;
-
-  if (bits_avail < 7)
-    return 0;
-
-  code = (uint32_t) (bits >> (bits_avail - 7)) & HUFFMAN_MASK_7BIT;
-
-  if (code >= HUFFMAN_7BIT_FIRST && code <= HUFFMAN_7BIT_LAST)
-    {
-      if (*out_pos >= output_size)
-        return -1;
-      output[(*out_pos)++] = (unsigned char) hpack_decode_symbols
-          [HUFFMAN_7BIT_OFFSET + (code - HUFFMAN_7BIT_FIRST)];
-      return 1;
-    }
-
-  return 0;
-}
-
-/**
- * try_decode_8bit - Try to decode an 8-bit Huffman code
- * @bits: Current bit accumulator
- * @bits_avail: Number of valid bits available
- * @output: Output buffer
- * @out_pos: Current output position (updated on success)
- * @output_size: Total output buffer size
- *
- * Returns: 1 if decoded, 0 if not an 8-bit code, -1 on buffer overflow
- */
-static int
-try_decode_8bit (uint64_t bits, int bits_avail, unsigned char *output,
-                 size_t *out_pos, size_t output_size)
-{
-  uint32_t code;
-
-  if (bits_avail < 8)
-    return 0;
-
-  code = (uint32_t) (bits >> (bits_avail - 8)) & HUFFMAN_MASK_8BIT;
-
-  if (code >= HUFFMAN_8BIT_FIRST && code <= HUFFMAN_8BIT_LAST)
-    {
-      if (*out_pos >= output_size)
-        return -1;
-      output[(*out_pos)++] = (unsigned char) hpack_decode_symbols
-          [HUFFMAN_8BIT_OFFSET + (code - HUFFMAN_8BIT_FIRST)];
+      output[(*out_pos)++] = (unsigned char) hpack_decode_symbols[idx];
       return 1;
     }
 
@@ -584,44 +495,17 @@ static int
 try_decode_symbol (uint64_t bits, int *bits_avail, unsigned char *output,
                    size_t *out_pos, size_t output_size)
 {
-  int result;
-
-  /* Try 5-bit codes first (most common) */
-  result = try_decode_5bit (bits, *bits_avail, output, out_pos, output_size);
-  if (result != 0)
+  for (size_t i = 0; i < NUM_DECODE_CONFIGS; i++)
     {
-      if (result > 0)
-        *bits_avail -= 5;
-      return result;
+      const HuffmanDecodeConfig *cfg = &hpack_decode_configs[i];
+      int result = try_decode_nbit (cfg, bits, *bits_avail, output, out_pos, output_size);
+      if (result != 0)
+        {
+          if (result > 0)
+            *bits_avail -= cfg->bitlen;
+          return result;
+        }
     }
-
-  /* Try 6-bit codes */
-  result = try_decode_6bit (bits, *bits_avail, output, out_pos, output_size);
-  if (result != 0)
-    {
-      if (result > 0)
-        *bits_avail -= 6;
-      return result;
-    }
-
-  /* Try 7-bit codes */
-  result = try_decode_7bit (bits, *bits_avail, output, out_pos, output_size);
-  if (result != 0)
-    {
-      if (result > 0)
-        *bits_avail -= 7;
-      return result;
-    }
-
-  /* Try 8-bit codes */
-  result = try_decode_8bit (bits, *bits_avail, output, out_pos, output_size);
-  if (result != 0)
-    {
-      if (result > 0)
-        *bits_avail -= 8;
-      return result;
-    }
-
   return 0; /* No match found */
 }
 

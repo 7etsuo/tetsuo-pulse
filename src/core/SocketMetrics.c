@@ -191,7 +191,16 @@ static const char *const counter_names[SOCKET_COUNTER_METRIC_COUNT] = {
   "limit_memory_exceeded",
   "limit_connections_exceeded",
   "limit_streams_exceeded",
-  "limit_header_list_exceeded"
+  "limit_header_list_exceeded",
+  /* SYN Flood Protection Counters */
+  "synprotect_attempts_total",
+  "synprotect_allowed",
+  "synprotect_throttled",
+  "synprotect_challenged",
+  "synprotect_blocked",
+  "synprotect_whitelisted",
+  "synprotect_blacklisted",
+  "synprotect_lru_evictions"
 };
 
 static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
@@ -252,7 +261,16 @@ static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
   "Global memory limit exceeded",
   "Maximum connections limit exceeded",
   "HTTP/2 max streams limit exceeded",
-  "HTTP/2 header list size limit exceeded"
+  "HTTP/2 header list size limit exceeded",
+  /* SYN Flood Protection */
+  "Total SYN connection attempts tracked",
+  "SYN connections immediately allowed",
+  "SYN connections throttled (delayed)",
+  "SYN connections challenged (proof-of-work)",
+  "SYN connections blocked",
+  "IPs added to whitelist",
+  "IPs added to blacklist",
+  "IP table entries evicted due to LRU"
 };
 
 static const char *const gauge_names[SOCKET_GAUGE_METRIC_COUNT] = {
@@ -279,7 +297,10 @@ static const char *const gauge_names[SOCKET_GAUGE_METRIC_COUNT] = {
   "socket_open_fds",
   /* Poll */
   "poll_registered_fds",
-  "poll_active_timers"
+  "poll_active_timers",
+  /* SYN Flood Protection */
+  "synprotect_tracked_ips",
+  "synprotect_blocked_ips"
 };
 
 static const char *const gauge_help[SOCKET_GAUGE_METRIC_COUNT] = {
@@ -306,7 +327,10 @@ static const char *const gauge_help[SOCKET_GAUGE_METRIC_COUNT] = {
   "Open file descriptors",
   /* Poll */
   "File descriptors registered with poll",
-  "Active timers"
+  "Active timers",
+  /* SYN Flood Protection */
+  "Number of IP addresses currently tracked for SYN protection",
+  "Number of currently blocked IP addresses"
 };
 
 static const char *const histogram_names[SOCKET_HISTOGRAM_METRIC_COUNT] = {

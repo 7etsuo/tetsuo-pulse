@@ -18,7 +18,7 @@
 #include "socket/SocketBuf.h"
 
 #include <assert.h>
-#include <stdlib.h>
+
 #include <string.h>
 #include "core/SocketConfig.h"
 
@@ -176,6 +176,8 @@ init_stream_fields (SocketHTTP2_Stream_T stream, const SocketHTTP2_Conn_T conn,
   stream->conn = conn;
   stream->send_window = conn->initial_send_window;
   stream->recv_window = conn->initial_recv_window;
+  stream->pending_end_stream = 0;
+  stream->is_push_stream = 0;
 }
 
 /**
@@ -525,6 +527,77 @@ http2_stream_transition (SocketHTTP2_Stream_T stream, uint8_t frame_type,
     stream->state = new_state;
 
   return error;
+}
+
+/* ============================================================================
+ * Header Event Emission
+ * ============================================================================ */
+
+/**
+ * emit_header_event - Emit appropriate header or trailer event
+ * @conn: Connection
+ * @stream: Stream
+ *
+ * Emits PUSH_PROMISE for initial push headers, HEADERS_RECEIVED for initial
+ * regular headers, or TRAILERS_RECEIVED for trailers. Sets headers_received=1.
+ * Thread-safe: No
+ */
+static void
+emit_header_event (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
+{
+  assert (conn && stream);
+
+  if (!stream->headers_received)
+    {
+      stream->headers_received = 1;
+      if (stream->is_push_stream)
+        {
+          http2_emit_stream_event (conn, stream, HTTP2_EVENT_PUSH_PROMISE);
+        }
+      else
+        {
+          http2_emit_stream_event (conn, stream, HTTP2_EVENT_HEADERS_RECEIVED);
+        }
+    }
+  else
+    {
+      http2_emit_stream_event (conn, stream, HTTP2_EVENT_TRAILERS_RECEIVED);
+    }
+}
+
+/* ============================================================================
+ * Header Copy Helper
+ * ============================================================================ */
+
+/**
+ * copy_and_consume - Copy headers from stream storage and mark consumed
+ * @dest: Destination buffer (or NULL to just count)
+ * @max_count: Maximum number to copy
+ * @src: Source headers array
+ * @src_count: Number of source headers
+ * @consumed: Output - set to 1 if consumed
+ *
+ * Returns: Number of headers copied (min(src_count, max_count))
+ * Thread-safe: Yes
+ */
+static size_t
+copy_and_consume (SocketHPACK_Header *dest, size_t max_count,
+                  const SocketHPACK_Header *src, size_t src_count,
+                  int *consumed)
+{
+  size_t copy_count = (src_count > max_count) ? max_count : src_count;
+
+  if (copy_count > 0 && dest != NULL)
+    {
+      memcpy (dest, src, copy_count * sizeof (SocketHPACK_Header));
+    }
+
+  if (consumed != NULL)
+    {
+      *consumed = 1;
+    }
+
+  return copy_count;
 }
 
 /* ============================================================================
@@ -1212,14 +1285,8 @@ SocketHTTP2_Stream_recv_headers (SocketHTTP2_Stream_T stream,
       return 0;
     }
 
-  size_t copy_count = (stream->header_count > max_headers) ? max_headers : stream->header_count;
-  if (copy_count > 0 && headers != NULL)
-    {
-      memcpy (headers, stream->headers, copy_count * sizeof (SocketHPACK_Header));
-    }
-  *header_count = copy_count;
+  *header_count = copy_and_consume (headers, max_headers, stream->headers, stream->header_count, &stream->headers_consumed);
   *end_stream = stream->end_stream_received;
-  stream->headers_consumed = 1;
   return 1;
 }
 
@@ -1265,13 +1332,7 @@ SocketHTTP2_Stream_recv_trailers (SocketHTTP2_Stream_T stream,
       return 0;
     }
 
-  size_t copy_count = (stream->trailer_count > max_trailers) ? max_trailers : stream->trailer_count;
-  if (copy_count > 0 && trailers != NULL)
-    {
-      memcpy (trailers, stream->trailers, copy_count * sizeof (SocketHPACK_Header));
-    }
-  *trailer_count = copy_count;
-  stream->trailers_consumed = 1;
+  *trailer_count = copy_and_consume (trailers, max_trailers, stream->trailers, stream->trailer_count, &stream->trailers_consumed);
   return 1;
 }
 
@@ -1332,6 +1393,7 @@ SocketHTTP2_Stream_push_promise (SocketHTTP2_Stream_T stream,
   pushed = http2_stream_create (conn, promised_id);
   if (!pushed)
     return NULL;
+  pushed->is_push_stream = 1;
 
   pushed->state = HTTP2_STREAM_STATE_RESERVED_LOCAL;
 
@@ -1491,6 +1553,7 @@ http2_get_or_create_stream_for_headers (SocketHTTP2_Conn_T conn, uint32_t stream
           http2_send_stream_error (conn, stream_id, HTTP2_REFUSED_STREAM);
           return NULL;
         }
+      stream->is_push_stream = 0;
 
       if (stream_id > conn->last_peer_stream_id)
         conn->last_peer_stream_id = stream_id;
@@ -1571,24 +1634,18 @@ extract_headers_payload (const SocketHTTP2_FrameHeader *header,
 static int
 process_complete_header_block (SocketHTTP2_Conn_T conn,
                                SocketHTTP2_Stream_T stream,
-                               const unsigned char *block, size_t len,
-                               int end_stream)
+                               const unsigned char *block, size_t len)
 {
   if (http2_decode_headers (conn, stream, block, len) < 0)
     return -1;
 
-  if (!stream->headers_received)
-    {
-      stream->headers_received = 1;
-      http2_emit_stream_event (conn, stream, HTTP2_EVENT_HEADERS_RECEIVED);
-    }
-  else
-    {
-      http2_emit_stream_event (conn, stream, HTTP2_EVENT_TRAILERS_RECEIVED);
-    }
+  emit_header_event (conn, stream);
 
-  if (end_stream)
-    stream->end_stream_received = 1;
+  if (stream->pending_end_stream)
+    {
+      stream->end_stream_received = 1;
+      stream->pending_end_stream = 0;
+    }
 
   return 0;
 }
@@ -1659,8 +1716,7 @@ http2_process_headers (SocketHTTP2_Conn_T conn,
   if (header->flags & HTTP2_FLAG_END_HEADERS)
     {
       return process_complete_header_block (
-          conn, stream, header_block, header_block_len,
-          (header->flags & HTTP2_FLAG_END_STREAM) != 0);
+          conn, stream, header_block, header_block_len);
     }
 
   return setup_continuation_state (conn, stream, header_block, header_block_len);
@@ -1677,6 +1733,14 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
 {
   SocketHTTP2_Stream_T stream;
   size_t max_header_list;
+
+  if (!conn->expecting_continuation || header->stream_id != conn->continuation_stream_id)
+    {
+      SOCKET_LOG_ERROR_MSG ("unexpected CONTINUATION frame for stream %u (expecting %u)",
+                            header->stream_id, conn->continuation_stream_id);
+      http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+      return -1;
+    }
 
   stream = http2_stream_lookup (conn, header->stream_id);
   if (!stream || !stream->header_block)
@@ -1717,14 +1781,12 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
 
       clear_pending_header_block (stream);
 
-      if (!stream->headers_received)
+      emit_header_event (conn, stream);
+
+      if (stream->pending_end_stream)
         {
-          stream->headers_received = 1;
-          http2_emit_stream_event (conn, stream, HTTP2_EVENT_HEADERS_RECEIVED);
-        }
-      else
-        {
-          http2_emit_stream_event (conn, stream, HTTP2_EVENT_TRAILERS_RECEIVED);
+          stream->end_stream_received = 1;
+          stream->pending_end_stream = 0;
         }
     }
 
@@ -1829,6 +1891,7 @@ http2_process_push_promise (SocketHTTP2_Conn_T conn,
       http2_send_stream_error (conn, promised_id, HTTP2_REFUSED_STREAM);
       return 0;
     }
+  promised->is_push_stream = 1;
 
   promised->state = HTTP2_STREAM_STATE_RESERVED_REMOTE;
 
@@ -1841,13 +1904,16 @@ http2_process_push_promise (SocketHTTP2_Conn_T conn,
 
   if (header->flags & HTTP2_FLAG_END_HEADERS)
     {
-      if (http2_decode_headers (conn, promised, header_block, header_block_len)
-          < 0)
+      if (http2_decode_headers (conn, promised, header_block, header_block_len) < 0)
         return -1;
 
-      promised->headers_received = 1;
+      emit_header_event (conn, promised);
 
-      http2_emit_stream_event (conn, promised, HTTP2_EVENT_PUSH_PROMISE);
+      if (promised->pending_end_stream)
+        {
+          promised->end_stream_received = 1;
+          promised->pending_end_stream = 0;
+        }
     }
   else
     {

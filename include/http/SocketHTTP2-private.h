@@ -81,6 +81,8 @@ struct SocketHTTP2_Stream
   int headers_received;           /**< Headers have been received */
   int end_stream_received;        /**< END_STREAM flag received */
   int end_stream_sent;            /**< END_STREAM flag sent */
+  int pending_end_stream;          /**< Pending END_STREAM flag from initial frame in split headers */
+  int is_push_stream;              /**< 1 if this is a server push stream, 0 otherwise */
   int trailers_received;          /**< Trailers received */
 
   /* Decoded headers storage */

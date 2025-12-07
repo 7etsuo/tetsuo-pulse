@@ -13,10 +13,36 @@
 #include "core/SocketSecurity.h"
 #include "core/SocketConfig.h"
 
+/* Fallback definitions for disabled optional modules */
+/* These ensure SocketSecurity functions compile and return safe (disabled) values when modules are excluded */
+
+#ifndef SOCKET_HAS_HTTP
+#define SOCKETHTTP_MAX_URI_LEN                      0
+#define SOCKETHTTP_MAX_HEADER_NAME                  0
+#define SOCKETHTTP_MAX_HEADER_VALUE                 0
+#define SOCKETHTTP_MAX_HEADER_SIZE                  0
+#define SOCKETHTTP_MAX_HEADERS                      0
+#define SOCKETHTTP1_MAX_REQUEST_LINE                0
+#define SOCKETHTTP1_MAX_CHUNK_SIZE                  0
+#define SOCKETHTTP2_DEFAULT_MAX_CONCURRENT_STREAMS  0
+#define SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE          0
+#define SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE    0
+#endif
+
+#ifndef SOCKET_HAS_WEBSOCKET
+#define SOCKETWS_MAX_FRAME_SIZE                     0
+#define SOCKETWS_MAX_MESSAGE_SIZE                   0
+#endif
+
+#if !SOCKET_HAS_TLS
+#define SOCKET_TLS_MAX_CERT_CHAIN_DEPTH             0
+#define SOCKET_TLS_SESSION_CACHE_SIZE               0
+#endif /* SOCKET_HAS_TLS */
+
 /* Conditional includes for optional modules */
 
 
-#ifdef SOCKET_HAS_HTTP
+#if SOCKET_HAS_HTTP
 
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
@@ -25,7 +51,7 @@
 
 
 
-#ifdef SOCKET_HAS_WEBSOCKET
+#if SOCKET_HAS_WEBSOCKET
 #include "socket/SocketWS-private.h"
 #endif
 
@@ -91,13 +117,14 @@ const Except_T SocketSecurity_ValidationFailed
 
 /**
  * populate_memory_limits - Set memory-related security limits
- * @limits: Limits structure to populate
+ * @limits: Limits structure to populate (must not be NULL)
  *
  * Thread-safe: Yes
  */
 static void
 populate_memory_limits (SocketSecurityLimits *limits)
 {
+        assert (limits != NULL);
         limits->max_allocation = SOCKET_SECURITY_MAX_ALLOCATION;
         limits->max_buffer_size = SOCKET_MAX_BUFFER_SIZE;
         limits->max_connections = SOCKET_MAX_CONNECTIONS;
@@ -105,13 +132,14 @@ populate_memory_limits (SocketSecurityLimits *limits)
 
 /**
  * populate_http_limits - Set HTTP core limits
- * @limits: Limits structure to populate
+ * @limits: Limits structure to populate (must not be NULL)
  *
  * Thread-safe: Yes
  */
 static void
 populate_http_limits (SocketSecurityLimits *limits)
 {
+        assert (limits != NULL);
         limits->http_max_uri_length = SOCKETHTTP_MAX_URI_LEN;
         limits->http_max_header_name = SOCKETHTTP_MAX_HEADER_NAME;
         limits->http_max_header_value = SOCKETHTTP_MAX_HEADER_VALUE;
@@ -122,26 +150,28 @@ populate_http_limits (SocketSecurityLimits *limits)
 
 /**
  * populate_http1_limits - Set HTTP/1.1 specific limits
- * @limits: Limits structure to populate
+ * @limits: Limits structure to populate (must not be NULL)
  *
  * Thread-safe: Yes
  */
 static void
 populate_http1_limits (SocketSecurityLimits *limits)
 {
+        assert (limits != NULL);
         limits->http1_max_request_line = SOCKETHTTP1_MAX_REQUEST_LINE;
         limits->http1_max_chunk_size = SOCKETHTTP1_MAX_CHUNK_SIZE;
 }
 
 /**
  * populate_http2_limits - Set HTTP/2 specific limits
- * @limits: Limits structure to populate
+ * @limits: Limits structure to populate (must not be NULL)
  *
  * Thread-safe: Yes
  */
 static void
 populate_http2_limits (SocketSecurityLimits *limits)
 {
+        assert (limits != NULL);
         limits->http2_max_concurrent_streams = SOCKETHTTP2_DEFAULT_MAX_CONCURRENT_STREAMS;
         limits->http2_max_frame_size = SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE;
         limits->http2_max_header_list_size = SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE;
@@ -149,13 +179,14 @@ populate_http2_limits (SocketSecurityLimits *limits)
 
 /**
  * populate_ws_limits - Set WebSocket limits
- * @limits: Limits structure to populate
+ * @limits: Limits structure to populate (must not be NULL)
  *
  * Thread-safe: Yes
  */
 static void
 populate_ws_limits (SocketSecurityLimits *limits)
 {
+        assert (limits != NULL);
         limits->ws_max_frame_size = SOCKETWS_MAX_FRAME_SIZE;
         limits->ws_max_message_size = SOCKETWS_MAX_MESSAGE_SIZE;
 }
@@ -163,13 +194,14 @@ populate_ws_limits (SocketSecurityLimits *limits)
 #if SOCKET_HAS_TLS
 /**
  * populate_tls_limits - Set TLS limits
- * @limits: Limits structure to populate
+ * @limits: Limits structure to populate (must not be NULL)
  *
  * Thread-safe: Yes
  */
 static void
 populate_tls_limits (SocketSecurityLimits *limits)
 {
+        assert (limits != NULL);
         limits->tls_max_cert_chain_depth = SOCKET_TLS_MAX_CERT_CHAIN_DEPTH;
         limits->tls_session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
 }
@@ -177,13 +209,14 @@ populate_tls_limits (SocketSecurityLimits *limits)
 
 /**
  * populate_ratelimit_limits - Set rate limiting defaults
- * @limits: Limits structure to populate
+ * @limits: Limits structure to populate (must not be NULL)
  *
  * Thread-safe: Yes
  */
 static void
 populate_ratelimit_limits (SocketSecurityLimits *limits)
 {
+        assert (limits != NULL);
         limits->ratelimit_conn_per_sec = SOCKET_RATELIMIT_DEFAULT_CONN_PER_SEC;
         limits->ratelimit_burst = SOCKET_RATELIMIT_DEFAULT_BURST;
         limits->ratelimit_max_per_ip = SOCKET_RATELIMIT_DEFAULT_MAX_PER_IP;
@@ -191,13 +224,14 @@ populate_ratelimit_limits (SocketSecurityLimits *limits)
 
 /**
  * populate_timeout_limits - Set timeout defaults
- * @limits: Limits structure to populate
+ * @limits: Limits structure to populate (must not be NULL)
  *
  * Thread-safe: Yes
  */
 static void
 populate_timeout_limits (SocketSecurityLimits *limits)
 {
+        assert (limits != NULL);
         limits->timeout_connect_ms = SOCKET_DEFAULT_CONNECT_TIMEOUT_MS;
         limits->timeout_dns_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
         limits->timeout_idle_ms = SOCKET_DEFAULT_IDLE_TIMEOUT * SOCKET_MS_PER_SECOND;
@@ -238,10 +272,14 @@ SocketSecurity_get_limits (SocketSecurityLimits *limits)
         }
 
         populate_memory_limits(limits);
+#if SOCKET_HAS_HTTP
         populate_http_limits(limits);
         populate_http1_limits(limits);
         populate_http2_limits(limits);
+#endif
+#if SOCKET_HAS_WEBSOCKET
         populate_ws_limits(limits);
+#endif
 #if SOCKET_HAS_TLS
         populate_tls_limits(limits);
 #endif

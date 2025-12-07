@@ -14,7 +14,7 @@
  * single-threaded. Uses thread-local error buffers for exception details.
  */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketTLSContext.h"

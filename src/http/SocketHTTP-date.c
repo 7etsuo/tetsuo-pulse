@@ -36,7 +36,7 @@
  * Allocates: No (except internal mutex init)
  */
 
-#include <assert.h>
+
 #include <ctype.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -90,19 +90,7 @@
 /** Maximum length for long day names in RFC 850 */
 #define LONG_DAY_MAX_LEN 9
 
-/** Days per month (non-leap year; February index 1) */
-#define DAYS_PER_MONTH_JAN 31
-#define DAYS_PER_MONTH_FEB 28
-#define DAYS_PER_MONTH_MAR 31
-#define DAYS_PER_MONTH_APR 30
-#define DAYS_PER_MONTH_MAY 31
-#define DAYS_PER_MONTH_JUN 30
-#define DAYS_PER_MONTH_JUL 31
-#define DAYS_PER_MONTH_AUG 31
-#define DAYS_PER_MONTH_SEP 30
-#define DAYS_PER_MONTH_OCT 31
-#define DAYS_PER_MONTH_NOV 30
-#define DAYS_PER_MONTH_DEC 31
+
 
 /* ============================================================================
  * Lookup Tables
@@ -964,10 +952,9 @@ SocketHTTP_date_parse (const char *date_str, size_t len, time_t *time_out)
         len = strlen (date_str);
 
     /* Skip leading whitespace (SP / HTAB) */
-    while (len > 0 && (*date_str == ' ' || *date_str == '\t')) {
-        ++date_str;
-        --len;
-    }
+    int skipped = skip_whitespace(date_str, len);
+    date_str += skipped;
+    len -= skipped;
 
     /* Reject empty string after trim */
     if (len == 0) {

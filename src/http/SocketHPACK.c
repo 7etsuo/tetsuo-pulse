@@ -17,6 +17,7 @@
 #include "core/SocketUtil.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include <string.h>
 
 /* ============================================================================
@@ -52,6 +53,12 @@
 #define HPACK_HUFFMAN_RATIO        2     /* Estimated decode expansion ratio (Huffman can expand slightly with padding) */
 
 #define HPACK_UINT64_SHIFT_LIMIT   63    /* Maximum shift before uint64_t overflow */
+
+static inline bool
+valid_prefix_bits (int prefix_bits)
+{
+  return prefix_bits >= 1 && prefix_bits <= 8;
+}
 
 /* Literal encoding mode flags */
 #define HPACK_LITERAL_WITH_INDEXING 0x40
@@ -140,7 +147,7 @@ SocketHPACK_int_encode (uint64_t value, int prefix_bits, unsigned char *output,
   if (output == NULL || output_size == 0)
     return 0;
 
-  if (prefix_bits < 1 || prefix_bits > 8)
+  if (!valid_prefix_bits (prefix_bits))
     return 0;
 
   max_prefix = ((uint64_t)1 << prefix_bits) - 1;
@@ -218,7 +225,7 @@ SocketHPACK_int_decode (const unsigned char *input, size_t input_len,
   if (input_len == 0)
     return HPACK_INCOMPLETE;
 
-  if (prefix_bits < 1 || prefix_bits > 8)
+  if (!valid_prefix_bits (prefix_bits))
     return HPACK_ERROR;
 
   max_prefix = ((uint64_t)1 << prefix_bits) - 1;
@@ -557,14 +564,8 @@ SocketHPACK_Encoder_new (const SocketHPACK_EncoderConfig *config, Arena_T arena)
     }
 
   encoder = ALLOC (arena, sizeof (*encoder));
-  if (encoder == NULL)
-    SOCKET_RAISE_MSG (SocketHPACK, SocketHPACK_Error,
-                      "Failed to allocate HPACK encoder");
 
   encoder->table = SocketHPACK_Table_new (config->max_table_size, arena);
-  if (encoder->table == NULL)
-    SOCKET_RAISE_MSG (SocketHPACK, SocketHPACK_Error,
-                      "Failed to allocate HPACK encoder dynamic table");
 
   encoder->pending_table_size = 0;
   encoder->pending_table_size_update = 0;
@@ -894,14 +895,8 @@ SocketHPACK_Decoder_new (const SocketHPACK_DecoderConfig *config, Arena_T arena)
     }
 
   decoder = ALLOC (arena, sizeof (*decoder));
-  if (decoder == NULL)
-    SOCKET_RAISE_MSG (SocketHPACK, SocketHPACK_Error,
-                      "Failed to allocate HPACK decoder");
 
   decoder->table = SocketHPACK_Table_new (config->max_table_size, arena);
-  if (decoder->table == NULL)
-    SOCKET_RAISE_MSG (SocketHPACK, SocketHPACK_Error,
-                      "Failed to allocate HPACK decoder dynamic table");
 
   decoder->max_header_size = config->max_header_size;
   decoder->max_header_list_size = config->max_header_list_size;

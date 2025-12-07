@@ -16,7 +16,7 @@
 #include "core/SocketUtil.h"
 
 #include <assert.h>
-#include <string.h>
+
 
 /* ============================================================================
  * Module Exception Setup
@@ -25,9 +25,7 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTP2"
 
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 
-#define RAISE_HTTP2_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTP2, e)
 
 /* ============================================================================
  * Frame Payload Size Constants (RFC 9113)
@@ -103,6 +101,54 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 /* ============================================================================
  * Frame Validator Dispatch Table
  * ============================================================================ */
+
+/* ============================================================================
+ * Common Frame Validators
+ * ============================================================================ */
+
+static SocketHTTP2_ErrorCode
+validate_simple_stream_frame(const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn)
+{
+  (void)conn;
+  REQUIRE_STREAM(header);
+  return HTTP2_NO_ERROR;
+}
+
+static SocketHTTP2_ErrorCode
+validate_stream_exact_length_frame(const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn, uint32_t expected_len)
+{
+  (void)conn;
+  REQUIRE_STREAM(header);
+  REQUIRE_EXACT_LENGTH(header, expected_len);
+  return HTTP2_NO_ERROR;
+}
+
+static SocketHTTP2_ErrorCode
+validate_connection_exact_length_frame(const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn, uint32_t expected_len)
+{
+  (void)conn;
+  REQUIRE_CONNECTION_ONLY(header);
+  REQUIRE_EXACT_LENGTH(header, expected_len);
+  return HTTP2_NO_ERROR;
+}
+
+static SocketHTTP2_ErrorCode
+validate_exact_length_frame(const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn, uint32_t expected_len)
+{
+  (void)conn;
+  REQUIRE_EXACT_LENGTH(header, expected_len);
+  return HTTP2_NO_ERROR;
+}
+
+static SocketHTTP2_ErrorCode
+validate_connection_min_length_frame(const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn, uint32_t min_len)
+{
+  (void)conn;
+  REQUIRE_CONNECTION_ONLY(header);
+  if (header->length < min_len)
+    return HTTP2_FRAME_SIZE_ERROR;
+  return HTTP2_NO_ERROR;
+}
 
 typedef SocketHTTP2_ErrorCode (*FrameValidator)(const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn);
 
@@ -194,6 +240,49 @@ static const char *stream_state_names[] = {
   (sizeof (stream_state_names) / sizeof (stream_state_names[0]))
 
 /* ============================================================================
+ * Big-Endian Packing Helpers
+ * ============================================================================ */
+
+static inline uint32_t
+http2_unpack_be24(const unsigned char *data)
+{
+  return ((uint32_t)data[0] << 16) | ((uint32_t)data[1] << 8) | (uint32_t)data[2];
+}
+
+static inline void
+http2_pack_be24(unsigned char *data, uint32_t value)
+{
+  data[0] = (unsigned char)((value >> 16) & 0xFF);
+  data[1] = (unsigned char)((value >> 8) & 0xFF);
+  data[2] = (unsigned char)(value & 0xFF);
+}
+
+static inline uint32_t
+http2_unpack_stream_id(const unsigned char *data)
+{
+  return ((uint32_t)(data[0] & 0x7F) << 24)
+    | ((uint32_t)data[1] << 16) | ((uint32_t)data[2] << 8) | (uint32_t)data[3];
+}
+
+static inline void
+http2_pack_stream_id(unsigned char *data, uint32_t stream_id)
+{
+  data[0] = (unsigned char)((stream_id >> 24) & 0x7F);
+  data[1] = (unsigned char)((stream_id >> 16) & 0xFF);
+  data[2] = (unsigned char)((stream_id >> 8) & 0xFF);
+  data[3] = (unsigned char)(stream_id & 0xFF);
+}
+
+static inline void
+http2_pack_uint32_be(unsigned char *data, uint32_t value)
+{
+  data[0] = (unsigned char)((value >> 24) & 0xFF);
+  data[1] = (unsigned char)((value >> 16) & 0xFF);
+  data[2] = (unsigned char)((value >> 8) & 0xFF);
+  data[3] = (unsigned char)(value & 0xFF);
+}
+
+/* ============================================================================
  * Frame Header Parsing/Serialization
  * ============================================================================ */
 
@@ -216,16 +305,13 @@ SocketHTTP2_frame_header_parse (const unsigned char *data,
   assert (header);
 
   /* Length: 24-bit big-endian */
-  header->length = ((uint32_t)data[0] << 16) | ((uint32_t)data[1] << 8)
-                   | (uint32_t)data[2];
+  header->length = http2_unpack_be24(data + 0);
 
   header->type = data[3];
   header->flags = data[4];
 
   /* Stream ID: 31-bit big-endian (R bit is reserved, must be masked) */
-  header->stream_id = ((uint32_t)(data[5] & 0x7F) << 24)
-                      | ((uint32_t)data[6] << 16) | ((uint32_t)data[7] << 8)
-                      | (uint32_t)data[8];
+  header->stream_id = http2_unpack_stream_id(data + 5);
 
   return 0;
 }
@@ -248,18 +334,13 @@ SocketHTTP2_frame_header_serialize (const SocketHTTP2_FrameHeader *header,
   assert (data);
 
   /* Length: 24-bit big-endian */
-  data[0] = (unsigned char)((header->length >> 16) & 0xFF);
-  data[1] = (unsigned char)((header->length >> 8) & 0xFF);
-  data[2] = (unsigned char)(header->length & 0xFF);
+  http2_pack_be24(data + 0, header->length);
 
   data[3] = header->type;
   data[4] = header->flags;
 
   /* Stream ID: 31-bit big-endian (R bit always 0) */
-  data[5] = (unsigned char)((header->stream_id >> 24) & 0x7F);
-  data[6] = (unsigned char)((header->stream_id >> 16) & 0xFF);
-  data[7] = (unsigned char)((header->stream_id >> 8) & 0xFF);
-  data[8] = (unsigned char)(header->stream_id & 0xFF);
+  http2_pack_stream_id(data + 5, header->stream_id);
 }
 
 /* ============================================================================
@@ -272,9 +353,7 @@ SocketHTTP2_frame_header_serialize (const SocketHTTP2_FrameHeader *header,
 static SocketHTTP2_ErrorCode
 validate_data_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn)
 {
-  (void)conn;
-  REQUIRE_STREAM (header);
-  return HTTP2_NO_ERROR;
+  return validate_simple_stream_frame(header, conn);
 }
 
 /**
@@ -283,9 +362,7 @@ validate_data_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T c
 static SocketHTTP2_ErrorCode
 validate_headers_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn)
 {
-  (void)conn;
-  REQUIRE_STREAM (header);
-  return HTTP2_NO_ERROR;
+  return validate_simple_stream_frame(header, conn);
 }
 
 /**
@@ -294,10 +371,7 @@ validate_headers_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_
 static SocketHTTP2_ErrorCode
 validate_priority_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn)
 {
-  (void)conn;
-  REQUIRE_STREAM (header);
-  REQUIRE_EXACT_LENGTH (header, HTTP2_PRIORITY_PAYLOAD_SIZE);
-  return HTTP2_NO_ERROR;
+  return validate_stream_exact_length_frame(header, conn, HTTP2_PRIORITY_PAYLOAD_SIZE);
 }
 
 /**
@@ -306,10 +380,7 @@ validate_priority_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn
 static SocketHTTP2_ErrorCode
 validate_rst_stream_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn)
 {
-  (void)conn;
-  REQUIRE_STREAM (header);
-  REQUIRE_EXACT_LENGTH (header, HTTP2_RST_STREAM_PAYLOAD_SIZE);
-  return HTTP2_NO_ERROR;
+  return validate_stream_exact_length_frame(header, conn, HTTP2_RST_STREAM_PAYLOAD_SIZE);
 }
 
 /**
@@ -325,14 +396,10 @@ validate_settings_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn
   (void)conn;
   REQUIRE_CONNECTION_ONLY (header);
 
-  if (header->flags & HTTP2_FLAG_ACK)
-    {
-      REQUIRE_EXACT_LENGTH (header, 0);
-    }
-  else if (header->length % HTTP2_SETTINGS_ENTRY_SIZE != 0)
-    {
-      return HTTP2_FRAME_SIZE_ERROR;
-    }
+  if ((header->flags & HTTP2_FLAG_ACK) ?
+      (header->length != 0) :
+      (header->length % HTTP2_SETTINGS_ENTRY_SIZE != 0))
+    return HTTP2_FRAME_SIZE_ERROR;
 
   return HTTP2_NO_ERROR;
 }
@@ -351,13 +418,9 @@ validate_push_promise_frame (const SocketHTTP2_FrameHeader *header,
 {
   REQUIRE_STREAM (header);
 
-  /* Client must have push enabled to receive PUSH_PROMISE */
-  if (conn->role == HTTP2_ROLE_CLIENT
-      && conn->local_settings[SETTINGS_IDX_ENABLE_PUSH] == 0)
-    return HTTP2_PROTOCOL_ERROR;
-
-  /* Servers should never receive PUSH_PROMISE */
-  if (conn->role == HTTP2_ROLE_SERVER)
+  /* Servers never receive PUSH_PROMISE (clients don't push); clients error if disabled push */
+  if (conn->role == HTTP2_ROLE_SERVER ||
+      (conn->role == HTTP2_ROLE_CLIENT && conn->local_settings[SETTINGS_IDX_ENABLE_PUSH] == 0))
     return HTTP2_PROTOCOL_ERROR;
 
   return HTTP2_NO_ERROR;
@@ -369,10 +432,7 @@ validate_push_promise_frame (const SocketHTTP2_FrameHeader *header,
 static SocketHTTP2_ErrorCode
 validate_ping_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn)
 {
-  (void)conn;
-  REQUIRE_CONNECTION_ONLY (header);
-  REQUIRE_EXACT_LENGTH (header, HTTP2_PING_PAYLOAD_SIZE);
-  return HTTP2_NO_ERROR;
+  return validate_connection_exact_length_frame(header, conn, HTTP2_PING_PAYLOAD_SIZE);
 }
 
 /**
@@ -381,13 +441,7 @@ validate_ping_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T c
 static SocketHTTP2_ErrorCode
 validate_goaway_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn)
 {
-  (void)conn;
-  REQUIRE_CONNECTION_ONLY (header);
-
-  if (header->length < HTTP2_GOAWAY_MIN_PAYLOAD_SIZE)
-    return HTTP2_FRAME_SIZE_ERROR;
-
-  return HTTP2_NO_ERROR;
+  return validate_connection_min_length_frame(header, conn, HTTP2_GOAWAY_MIN_PAYLOAD_SIZE);
 }
 
 /**
@@ -396,9 +450,7 @@ validate_goaway_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T
 static SocketHTTP2_ErrorCode
 validate_window_update_frame (const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn)
 {
-  (void)conn;
-  REQUIRE_EXACT_LENGTH (header, HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE);
-  return HTTP2_NO_ERROR;
+  return validate_exact_length_frame(header, conn, HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE);
 }
 
 /**
@@ -606,10 +658,7 @@ http2_send_stream_error (SocketHTTP2_Conn_T conn, uint32_t stream_id,
   header.stream_id = stream_id;
 
   /* Error code: 32-bit big-endian */
-  payload[0] = (unsigned char)((error_code >> 24) & 0xFF);
-  payload[1] = (unsigned char)((error_code >> 16) & 0xFF);
-  payload[2] = (unsigned char)((error_code >> 8) & 0xFF);
-  payload[3] = (unsigned char)(error_code & 0xFF);
+  http2_pack_uint32_be(payload, error_code);
 
   if (http2_frame_send (conn, &header, payload, sizeof (payload)) != 0)
     {

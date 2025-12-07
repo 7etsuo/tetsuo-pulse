@@ -543,13 +543,18 @@ ws_fill_recv_buffer (SocketWS_T ws)
  * ws_store_close_reason - Store close reason in context
  * @ws: WebSocket context
  * @reason: Reason string (may be NULL)
- * @reason_len: Reason length (already bounded)
+ * @reason_len: Reason length
+ *
+ * Truncates reason to SOCKETWS_MAX_CLOSE_REASON if needed.
  */
 static void
 ws_store_close_reason (SocketWS_T ws, const char *reason, size_t reason_len)
 {
   if (reason && reason_len > 0)
     {
+      /* Bound reason_len to prevent buffer overflow */
+      if (reason_len > SOCKETWS_MAX_CLOSE_REASON)
+        reason_len = SOCKETWS_MAX_CLOSE_REASON;
       memcpy (ws->close_reason, reason, reason_len);
       ws->close_reason[reason_len] = '\0';
     }

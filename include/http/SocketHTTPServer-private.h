@@ -50,6 +50,7 @@ typedef struct ServerConnection
   void *body;
   size_t body_len;
   size_t body_capacity;
+  SocketHTTP1_BodyMode body_mode;  /* Body transfer mode for processing */
   size_t body_received;
 
   /* Request body streaming */
@@ -94,14 +95,7 @@ struct SocketHTTPServer_Request
   int64_t start_time_ms;
 };
 
-typedef struct
-{
-  int64_t samples[HTTPSERVER_LATENCY_SAMPLES];
-  size_t count;
-  size_t index;
-  int64_t sum;
-  int64_t max;
-} LatencyTracker;
+/* LatencyTracker removed - use SocketMetrics histograms */
 
 struct SocketHTTPServer
 {
@@ -134,82 +128,23 @@ struct SocketHTTPServer
   int64_t drain_start_ms;
   int drain_timeout_ms;
 
-  /* Statistics */
-  size_t total_connections;
-  size_t total_requests;
-  size_t total_bytes_sent;
-  size_t total_bytes_received;
-  size_t errors_4xx;
-  size_t errors_5xx;
-  size_t timeouts;
-  size_t rate_limited;
-  size_t connections_rejected;
+  /* Statistics moved to SocketMetrics_* (counters, gauges, histograms) 
+   * Query via SocketMetrics_get() or specific functions in stats API */
 
-  /* Request rate tracking */
-  size_t request_counts[HTTPSERVER_RPS_WINDOW_SECONDS];
-  size_t rps_index;
-  int64_t rps_last_update_ms;
+  /* Latency tracking moved to SocketMetrics (SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS) */
 
-  /* Latency tracking */
-  LatencyTracker latency;
-
-  /* Thread safety for statistics */
-  pthread_mutex_t stats_mutex;
+  /* No custom mutex - SocketMetrics handles thread safety internally */
 
   int running;
   Arena_T arena;
 };
 
-/* ============================================================================
- * Statistics Helper Macros
- * ============================================================================
- *
- * Thread-safe increment/add/decrement for server statistics.
- * Protects stats_mutex to ensure consistency in multi-threaded environments.
+/* STATS macros removed - replace with SocketMetrics_counter_inc/gauge_inc etc. calls
+ * Examples:
+ *   SocketMetrics_counter_inc(SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL);
+ *   SocketMetrics_gauge_inc(SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
+ *   SocketMetrics_counter_add(SOCKET_CTR_HTTP_SERVER_BYTES_SENT, bytes); 
  */
-
-/**
- * STATS_INC - Increment a stats counter under mutex lock
- * @server: Server instance
- * @field: Statistics field name
- */
-#define STATS_INC(server, field)                                               \
-  do                                                                           \
-    {                                                                          \
-      pthread_mutex_lock (&(server)->stats_mutex);                             \
-      (server)->field++;                                                       \
-      pthread_mutex_unlock (&(server)->stats_mutex);                           \
-    }                                                                          \
-  while (0)
-
-/**
- * STATS_ADD - Add a value to a stats counter under mutex lock
- * @server: Server instance
- * @field: Statistics field name
- * @value: Value to add
- */
-#define STATS_ADD(server, field, value)                                        \
-  do                                                                           \
-    {                                                                          \
-      pthread_mutex_lock (&(server)->stats_mutex);                             \
-      (server)->field += (value);                                              \
-      pthread_mutex_unlock (&(server)->stats_mutex);                           \
-    }                                                                          \
-  while (0)
-
-/**
- * STATS_DEC - Decrement a stats counter under mutex lock
- * @server: Server instance
- * @field: Statistics field name
- */
-#define STATS_DEC(server, field)                                               \
-  do                                                                           \
-    {                                                                          \
-      pthread_mutex_lock (&(server)->stats_mutex);                             \
-      (server)->field--;                                                       \
-      pthread_mutex_unlock (&(server)->stats_mutex);                           \
-    }                                                                          \
-  while (0)
 
 /* ============================================================================
  * Error Handling Macros
@@ -238,12 +173,9 @@ void connection_send_response (SocketHTTPServer_T server, ServerConnection *conn
 void connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
                             int status, const char *body);
 
-/* Latency tracking helpers */
-void latency_init (LatencyTracker *lt);
-void latency_record (LatencyTracker *lt, int64_t latency_us);
-int64_t latency_percentile (LatencyTracker *lt, int percentile);
-int64_t latency_avg (LatencyTracker *lt);
-int latency_compare (const void *a, const void *b);
+/* Latency tracking removed - use SocketMetrics histograms instead:
+ *   SocketMetrics_histogram_observe(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, latency);
+ */
 
 
 #endif /* SOCKETHTTPSERVER_PRIVATE_INCLUDED */

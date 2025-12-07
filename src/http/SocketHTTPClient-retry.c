@@ -12,11 +12,19 @@
  */
 
 #include <errno.h>
-#include <time.h>
+
 
 #include "core/SocketRetry.h"
 #include "http/SocketHTTPClient-private.h"
-#include "core/SocketUtil.h"
+
+#define CLEAR_RESPONSE(r) \
+  do { \
+    if ((r)) { \
+      SocketHTTP_Headers_clear ((r)->headers); \
+      memset ((r), 0, sizeof (*(r))); \
+    } \
+  } while (0)
+
 
 /**
  * calculate_retry_delay - Calculate backoff delay for retry attempt
@@ -67,11 +75,8 @@ httpclient_retry_sleep_ms (int ms)
   if (ms <= 0)
     return;
 
-  static const int MS_PER_SEC = 1000;
-  static const long NS_PER_MS = 1000000L;
-
-  req.tv_sec = ms / MS_PER_SEC;
-  req.tv_nsec = (ms % MS_PER_SEC) * NS_PER_MS;
+  req.tv_sec = ms / 1000;
+  req.tv_nsec = (ms % 1000) * 1000000L;
 
   while (nanosleep (&req, &rem) == -1)
     {
@@ -114,22 +119,23 @@ httpclient_should_retry_error (const SocketHTTPClient_T client, SocketHTTPClient
 }
 
 /**
- * should_retry_status - Check if HTTP status should trigger retry
+ * httpclient_should_retry_status - Check if HTTP status should trigger retry
  * @client: HTTP client with retry config (read-only)
  * @status: HTTP status code
  *
  * Returns: 1 if should retry, 0 otherwise
  * Thread-safe: Yes
  *
- * Retries 5xx server errors only if config.retry_on_5xx is enabled.
+ * Retries server errors (HTTP status category 5) only if config.retry_on_5xx is enabled.
+ * Uses SocketHTTP_status_category for accurate classification.
  * IMPORTANT: Enable only for idempotent requests (GET, HEAD, etc.) to avoid
  * duplicate side effects on retry.
- * Non-5xx status codes (including 4xx client errors) are never retried.
+ * Non-server-error status codes (including 4xx client errors) are never retried.
  */
 int
 httpclient_should_retry_status (const SocketHTTPClient_T client, int status)
 {
-  if (status >= HTTP_STATUS_5XX_MIN && status <= HTTP_STATUS_5XX_MAX)
+  if (SocketHTTP_status_category (status) == HTTP_STATUS_SERVER_ERROR)
     return client->config.retry_on_5xx;
 
   return 0;
@@ -139,34 +145,23 @@ httpclient_should_retry_status (const SocketHTTPClient_T client, int status)
  * clear_response_for_retry - Clear response state for retry attempt
  * @response: Response to clear (modified)
  *
- * Disposes response arena (frees headers, body) and zeros structure.
- * Prepares response for reuse in next retry attempt.
- * Thread-safe: No (modifies response)
- *
- * clear_response_for_retry - Clear response for retry
- * @response: Response to clear (modified)
- *
- * Disposes response arena (frees headers, body) and zeros structure.
- * Prepares response for reuse in next retry attempt.
+ * Clears headers and zeros the structure for reuse in retry attempts.
+ * Caller responsible for freeing body if separately allocated.
  * Thread-safe: No (modifies response)
  *
  * Note: Caller must ensure no concurrent access to response.
+ * Handles NULL response gracefully (no-op).
  */
 void
 clear_response_for_retry (SocketHTTP_Response *response)
 {
-  SocketHTTP_Headers_clear (response->headers);
-  memset (response, 0, sizeof (*response));
+  CLEAR_RESPONSE (response);
 }
 
 void
 httpclient_clear_response_for_retry (SocketHTTPClient_Response *response)
 {
-  if (response)
-    {
-      SocketHTTP_Headers_clear (response->headers);
-      memset (response, 0, sizeof (*response));
-    }
+  CLEAR_RESPONSE (response);
 }
 
 /* Functions exported via SocketHTTPClient-private.h */

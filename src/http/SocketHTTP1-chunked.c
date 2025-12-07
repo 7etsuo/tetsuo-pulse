@@ -22,12 +22,12 @@
  * Constants
  * ============================================================================ */
 
-/** Length of CRLF sequence */
-#define HTTP1_CRLF "\r\n"
+/** CRLF sequence as byte array (not null-terminated - wire format) */
+static const unsigned char HTTP1_CRLF_BYTES[2] = { '\r', '\n' };
 #define HTTP1_CRLF_LEN 2
 
-/** Length of zero chunk size line "0\r\n" */
-#define HTTP1_ZERO_CHUNK_SIZE_LINE "0\r\n"
+/** Zero chunk size line "0\r\n" as byte array (not null-terminated - wire format) */
+static const unsigned char HTTP1_ZERO_CHUNK_BYTES[3] = { '0', '\r', '\n' };
 #define HTTP1_ZERO_CHUNK_SIZE_LINE_LEN 3
 
 /** Minimum buffer size for final zero chunk + final CRLF (no trailers) */
@@ -209,7 +209,7 @@ SocketHTTP1_chunk_encode (const void *data, size_t len, char *output,
   p += hex_len;
 
   /* CRLF after size */
-  memcpy(p, HTTP1_CRLF, HTTP1_CRLF_LEN);
+  memcpy (p, HTTP1_CRLF_BYTES, HTTP1_CRLF_LEN);
   p += HTTP1_CRLF_LEN;
 
   /* Chunk data */
@@ -220,7 +220,7 @@ SocketHTTP1_chunk_encode (const void *data, size_t len, char *output,
     }
 
   /* CRLF after data */
-  memcpy(p, HTTP1_CRLF, HTTP1_CRLF_LEN);
+  memcpy (p, HTTP1_CRLF_BYTES, HTTP1_CRLF_LEN);
   p += HTTP1_CRLF_LEN;
 
   return (ssize_t)(p - output);
@@ -242,7 +242,7 @@ SocketHTTP1_chunk_final (char *output, size_t output_size,
   remaining = output_size;
 
   /* Zero-length chunk */
-  memcpy(p, HTTP1_ZERO_CHUNK_SIZE_LINE, HTTP1_ZERO_CHUNK_SIZE_LINE_LEN);
+  memcpy (p, HTTP1_ZERO_CHUNK_BYTES, HTTP1_ZERO_CHUNK_SIZE_LINE_LEN);
   p += HTTP1_ZERO_CHUNK_SIZE_LINE_LEN;
   remaining -= HTTP1_ZERO_CHUNK_SIZE_LINE_LEN;
 
@@ -263,7 +263,7 @@ SocketHTTP1_chunk_final (char *output, size_t output_size,
   if (remaining < HTTP1_CRLF_LEN)
     return -1;
 
-  memcpy(p, HTTP1_CRLF, HTTP1_CRLF_LEN);
+  memcpy (p, HTTP1_CRLF_BYTES, HTTP1_CRLF_LEN);
   p += HTTP1_CRLF_LEN;
 
   return (ssize_t)(p - output);

@@ -15,6 +15,7 @@
 #include "http/SocketHTTP.h"
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketConfig.h"  /* For SOCKET_HAS_TLS */
 
 #include <assert.h>
 #include <pthread.h>
@@ -476,8 +477,10 @@ test_auth_basic_header (void)
   TEST_PASS ();
 }
 
+#if SOCKET_HAS_TLS
 /**
  * Test Digest auth response generation (MD5, no qop)
+ * NOTE: Requires TLS for MD5 hashing
  */
 static void
 test_auth_digest_md5_no_qop (void)
@@ -514,9 +517,12 @@ test_auth_digest_md5_no_qop (void)
 
   TEST_PASS ();
 }
+#endif /* SOCKET_HAS_TLS */
 
+#if SOCKET_HAS_TLS
 /**
  * Test Digest auth response generation (MD5, qop=auth)
+ * NOTE: Requires TLS for MD5 hashing
  */
 static void
 test_auth_digest_md5_qop_auth (void)
@@ -549,6 +555,7 @@ test_auth_digest_md5_qop_auth (void)
 
 /**
  * Test Digest auth response generation (SHA-256)
+ * NOTE: Requires TLS for SHA-256 hashing
  */
 static void
 test_auth_digest_sha256 (void)
@@ -576,9 +583,12 @@ test_auth_digest_sha256 (void)
 
   TEST_PASS ();
 }
+#endif /* SOCKET_HAS_TLS */
 
+#if SOCKET_HAS_TLS
 /**
  * Test Digest challenge parsing with full WWW-Authenticate header
+ * NOTE: Requires TLS for MD5 hashing
  */
 static void
 test_auth_digest_challenge (void)
@@ -620,6 +630,7 @@ test_auth_digest_challenge (void)
 
   TEST_PASS ();
 }
+#endif /* SOCKET_HAS_TLS */
 
 /**
  * Test stale nonce detection
@@ -728,11 +739,15 @@ test_auth_buffer_overflow_protection (void)
                                          sizeof (small_buf));
   ASSERT_EQ (result, -1, "should fail with small buffer");
 
-  /* Digest response with small buffer should fail */
+#if SOCKET_HAS_TLS
+  /* Digest response with small buffer should fail (requires TLS for MD5) */
   result = httpclient_auth_digest_response ("user", "pass", "realm", "nonce",
                                             "/", "GET", NULL, NULL, NULL, 0,
                                             small_buf, sizeof (small_buf));
   ASSERT_EQ (result, -1, "should fail with small buffer for digest");
+#else
+  (void)result; /* Suppress unused warning when TLS disabled */
+#endif
 
   TEST_PASS ();
 }
@@ -1216,10 +1231,14 @@ main (void)
 
   printf ("\nDigest Authentication Tests:\n");
   test_auth_basic_header ();
+#if SOCKET_HAS_TLS
   test_auth_digest_md5_no_qop ();
   test_auth_digest_md5_qop_auth ();
   test_auth_digest_sha256 ();
   test_auth_digest_challenge ();
+#else
+  printf ("  [SKIPPED] digest auth tests (require TLS)\n");
+#endif
   test_auth_stale_nonce_detection ();
   test_auth_digest_client_config ();
   test_auth_buffer_overflow_protection ();

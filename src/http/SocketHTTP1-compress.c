@@ -21,7 +21,6 @@
 #ifdef SOCKETHTTP1_HAS_COMPRESSION
 
 #include <assert.h>
-#include <string.h>
 #include <limits.h>
 
 
@@ -225,7 +224,6 @@ init_zlib_decoder (SocketHTTP1_Decoder_T decoder)
   int window_bits;
 
   window_bits = get_zlib_window_bits (decoder->coding);
-  memset (&decoder->state.zlib, 0, sizeof (decoder->state.zlib));
 
   if (inflateInit2 (&decoder->state.zlib, window_bits) != Z_OK)
     return 0;
@@ -248,7 +246,6 @@ init_zlib_encoder (SocketHTTP1_Encoder_T encoder)
 
   zlib_level = map_compress_level_to_zlib (encoder->level);
   window_bits = get_zlib_window_bits (encoder->coding);
-  memset (&encoder->state.zlib, 0, sizeof (encoder->state.zlib));
 
   if (deflateInit2 (&encoder->state.zlib, zlib_level, Z_DEFLATED, window_bits,
                     ZLIB_MEM_LEVEL_DEFAULT, Z_DEFAULT_STRATEGY)
@@ -298,12 +295,6 @@ decode_zlib (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
 {
   int ret;
 
-  if (input_len > UINT_MAX || output_len > UINT_MAX) {
-    *consumed = 0;
-    *written = 0;
-    return HTTP1_ERROR;
-  }
-
   zlib_set_input (&decoder->state.zlib, (Bytef *)input, (uInt)input_len);
   zlib_set_output (&decoder->state.zlib, output, (uInt)output_len);
 
@@ -338,11 +329,6 @@ finish_zlib_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
                     size_t output_len, size_t *written)
 {
   int ret;
-
-  if (output_len > UINT_MAX) {
-    *written = 0;
-    return HTTP1_ERROR;
-  }
 
   decoder->state.zlib.next_in = NULL;
   decoder->state.zlib.avail_in = 0;
@@ -383,9 +369,6 @@ encode_zlib (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
   int ret;
   int zlib_flush;
 
-  if (input_len > UINT_MAX || output_len > UINT_MAX)
-    return -1;
-
   zlib_flush = flush ? Z_SYNC_FLUSH : Z_NO_FLUSH;
 
   zlib_set_input (&encoder->state.zlib, (Bytef *)input, (uInt)input_len);
@@ -413,9 +396,6 @@ finish_zlib_encode (SocketHTTP1_Encoder_T encoder, unsigned char *output,
 {
   int ret;
   size_t produced;
-
-  if (output_len > UINT_MAX)
-    return -1;
 
   encoder->state.zlib.next_in = NULL;
   encoder->state.zlib.avail_in = 0;
@@ -588,11 +568,6 @@ finish_brotli_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
                       size_t output_len, size_t *written)
 {
   BrotliDecoderResult ret;
-  *written = 0;
-  if (decoder->finished)
-    {
-      return HTTP1_OK;
-    }
   size_t avail_in = 0;
   size_t avail_out = output_len;
   const uint8_t *next_in = NULL;
@@ -782,7 +757,6 @@ SocketHTTP1_Decoder_decode (SocketHTTP1_Decoder_T decoder,
 
   if (input_len > UINT_MAX || output_len > UINT_MAX)
     {
-      *consumed = 0;
       return HTTP1_ERROR;
     }
 

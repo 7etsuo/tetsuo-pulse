@@ -24,6 +24,9 @@
 
 /* Constants moved to SocketHTTPClient-private.h */
 
+/** "Basic " prefix as byte array (not null-terminated - for wire format) */
+static const unsigned char BASIC_PREFIX_BYTES[6] = { 'B', 'a', 's', 'i', 'c', ' ' };
+
 /* ============================================================================
  * Digest Challenge Structure
  * ============================================================================ */
@@ -152,51 +155,56 @@ parse_param_value (const char *p, char *out, size_t out_size)
 }
 
 /**
- * skip_to_next_param - Skip to next parameter after processing current
- * @p: Pointer after current parameter value
+ * advance_quoted_content - Shared logic to advance past the content of a quoted string
+ * @p: Pointer to the start of the quoted content (after opening ")
+ * @out: Output buffer for unescaped content (NULL to skip copying)
+ * @out_size: Size of output buffer (ignored if @out is NULL)
+ * @copy_count: If non-NULL, stores the number of characters copied (unescaped)
  *
- * Skips until ',' or end, handling quoted strings.
- * Does not skip delimiters after ','.
+ * Advances @p past quoted content, handling \" escapes. For copy mode (@out != NULL),
+ * copies unescaped characters to @out up to @out_size-1 bytes, always null-terminates.
+ * Stops early if buffer full. For skip mode (@out == NULL), advances @p fully.
  *
+ * Returns: Pointer to position after content (at closing " or end-of-input)
  * Thread-safe: Yes
  */
-static void
-skip_to_next_param (const char **p)
+static const char *
+advance_quoted_content (const char *p, char *out, size_t out_size, size_t *copy_count)
 {
-  while (**p && **p != ',')
+  size_t i = 0;
+  size_t max_copy = out ? (out_size - 1) : SIZE_MAX;
+
+  while (*p && *p != '"' && i < max_copy)
     {
-      if (**p == '"')
-        *p = skip_quoted_value (*p);
+      char ch;
+      if (*p == '\\' && *(p + 1) != '\0')
+        {
+          p++;  /* skip backslash */
+          ch = *p++;
+        }
       else
-        (*p)++;
+        {
+          ch = *p++;
+        }
+
+      if (out && i < max_copy)
+        {
+          out[i++] = ch;
+        }
     }
-}
 
-/**
- * is_stale_param - Check if current parameter is stale=true
- * @p: Pointer at start of parameter name
- *
- * Parses name and value using shared helpers. Handles quoted/unquoted values.
- *
- * Returns: 1 if parameter is "stale=true" (case-insensitive), 0 otherwise
- * Thread-safe: Yes
- */
-static int
-is_stale_param (const char *p)
-{
-  char name[HTTPCLIENT_DIGEST_PARAM_NAME_MAX_LEN];
-  char value[HTTPCLIENT_DIGEST_VALUE_MAX_LEN];
+  if (out)
+    {
+      out[i] = '\0';
+      if (copy_count)
+        *copy_count = i;
+    }
+  else if (copy_count)
+    {
+      *copy_count = 0;
+    }
 
-  const char *eq_pos = parse_parameter_name (p, name, sizeof (name));
-  if (eq_pos == NULL || strcasecmp (name, HTTPCLIENT_DIGEST_TOKEN_STALE) != 0)
-    return 0;
-
-  const char *val_start = eq_pos + 1;
-  const char *after_val = parse_param_value (val_start, value, sizeof (value));
-  if (after_val == NULL)
-    return 0;
-
-  return (strcasecmp (value, HTTPCLIENT_DIGEST_TOKEN_TRUE) == 0);
+  return p;
 }
 
 /**
@@ -210,31 +218,17 @@ is_stale_param (const char *p)
 static const char *
 parse_quoted_string (const char *p, char *out, size_t out_size)
 {
-  size_t i = 0;
-
   if (*p != '"')
     return NULL;
-  p++;
 
-  while (*p && *p != '"' && i < out_size - 1)
-    {
-      if (*p == '\\' && *(p + 1))
-        {
-          p++;
-          out[i++] = *p++;
-        }
-      else
-        {
-          out[i++] = *p++;
-        }
-    }
+  p++;  /* Skip opening quote */
 
-  out[i] = '\0';
+  p = advance_quoted_content (p, out, out_size, NULL);
 
-  if (*p == '"')
-    return p + 1;
+  if (*p != '"')
+    return NULL;  /* Unterminated quote */
 
-  return NULL;
+  return p + 1;
 }
 
 /**
@@ -250,7 +244,7 @@ parse_token_value (const char *p, char *out, size_t out_size)
 {
   size_t i = 0;
 
-  while (*p && *p != ',' && *p != ' ' && i < out_size - 1)
+  while (*p && *p != ',' && *p != ' ' && *p != '\t' && i < out_size - 1)
     out[i++] = *p++;
 
   out[i] = '\0';
@@ -269,13 +263,9 @@ skip_quoted_value (const char *p)
   if (*p != '"')
     return p;
 
-  p++;
-  while (*p && *p != '"')
-    {
-      if (*p == '\\' && *(p + 1))
-        p++;
-      p++;
-    }
+  p++;  /* Skip opening quote */
+
+  p = advance_quoted_content (p, NULL, 0, NULL);
 
   if (*p == '"')
     p++;
@@ -290,16 +280,22 @@ skip_quoted_value (const char *p)
  * @name_size: Name buffer size
  *
  * Returns: Pointer at '=', or NULL on error
+ *
+ * Handles optional whitespace between name and '=' per RFC 7235:
+ *   name = value  and  name=value  are both valid
  */
 static const char *
 parse_parameter_name (const char *p, char *name, size_t name_size)
 {
   size_t i = 0;
 
-  while (*p && *p != '=' && i < name_size - 1)
+  while (*p && *p != '=' && *p != ',' && *p != ' ' && *p != '\t' && i < name_size - 1)
     name[i++] = *p++;
 
   name[i] = '\0';
+
+  /* Skip optional whitespace before '=' */
+  p = skip_whitespace (p);
 
   if (*p != '=')
     return NULL;
@@ -493,8 +489,8 @@ httpclient_auth_basic_header (const char *username, const char *password,
   if (HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN + base64_size > output_size)
     return -1;
 
-  /* Write prefix */
-  memcpy (output, "Basic ", HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN);
+  /* Write prefix (use byte array to avoid clang-tidy not-null-terminated warning) */
+  memcpy (output, BASIC_PREFIX_BYTES, HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN);
 
   /* Encode credentials using SocketCrypto */
   encoded_len = SocketCrypto_base64_encode (credentials, cred_len,
@@ -628,6 +624,27 @@ httpclient_auth_digest_response (const char *username, const char *password,
  * ============================================================================ */
 
 /**
+ * skip_digest_prefix_optional - Skip optional "Digest " prefix
+ * @header: Header value
+ * @strict: If true, require prefix and return NULL if missing
+ *
+ * Returns: Pointer after prefix if present (or @header if not strict),
+ *          NULL if strict and prefix missing
+ * Thread-safe: Yes
+ */
+static const char *
+skip_digest_prefix_optional (const char *header, int strict)
+{
+  if (strncasecmp (header, HTTPCLIENT_DIGEST_PREFIX, HTTPCLIENT_DIGEST_PREFIX_LEN) == 0)
+    return header + HTTPCLIENT_DIGEST_PREFIX_LEN;
+
+  if (strict)
+    return NULL;
+
+  return header;
+}
+
+/**
  * parse_digest_challenge - Parse Digest WWW-Authenticate header
  * @header: WWW-Authenticate header value
  * @ch: Output challenge structure
@@ -643,11 +660,10 @@ parse_digest_challenge (const char *header, DigestChallenge *ch)
 
   memset (ch, 0, sizeof (*ch));
 
-  /* Skip "Digest " prefix */
-  if (strncasecmp (header, HTTPCLIENT_DIGEST_PREFIX, HTTPCLIENT_DIGEST_PREFIX_LEN) != 0)
+  /* Skip "Digest " prefix (required) */
+  p = skip_digest_prefix_optional (header, 1);
+  if (p == NULL)
     return -1;
-
-  p = header + HTTPCLIENT_DIGEST_PREFIX_LEN;
 
   while (*p)
     {
@@ -815,44 +831,50 @@ httpclient_auth_digest_challenge (const char *www_authenticate,
 static int
 find_stale_parameter (const char *p)
 {
+  char name[HTTPCLIENT_DIGEST_PARAM_NAME_MAX_LEN];
+  char value[HTTPCLIENT_DIGEST_VALUE_MAX_LEN];
+
   while (*p)
     {
       p = skip_delimiters (p);
       if (*p == '\0')
         break;
 
-      /* Check for "stale" parameter */
-      if (strncasecmp (p, HTTPCLIENT_DIGEST_TOKEN_STALE, HTTPCLIENT_DIGEST_TOKEN_STALE_LEN) == 0
-          && (p[HTTPCLIENT_DIGEST_TOKEN_STALE_LEN] == '=' || p[HTTPCLIENT_DIGEST_TOKEN_STALE_LEN] == ' '
-              || p[HTTPCLIENT_DIGEST_TOKEN_STALE_LEN] == '\t'))
+      const char *eq_pos = parse_parameter_name (p, name, sizeof (name));
+      if (eq_pos == NULL)
         {
-          p += HTTPCLIENT_DIGEST_TOKEN_STALE_LEN;
-          p = skip_whitespace (p);
-
-          if (*p != '=')
-            goto next_param;
-
-          p++;
-          p = skip_whitespace (p);
-
-          /* Check for true (unquoted or quoted) */
-          if (strncasecmp (p, HTTPCLIENT_DIGEST_TOKEN_TRUE, HTTPCLIENT_DIGEST_TOKEN_TRUE_LEN) == 0
-              && is_token_boundary (p[HTTPCLIENT_DIGEST_TOKEN_TRUE_LEN]))
-            return 1;
-
-          if (*p == '"' && strncasecmp (p + 1, HTTPCLIENT_DIGEST_TOKEN_TRUE, HTTPCLIENT_DIGEST_TOKEN_TRUE_LEN) == 0
-              && p[1 + HTTPCLIENT_DIGEST_TOKEN_TRUE_LEN] == '"')
-            return 1;
+          /* Invalid param name, skip until , or end */
+          while (*p && *p != ',')
+            {
+              if (*p == '"')
+                p = skip_quoted_value (p);
+              else
+                p++;
+            }
+          continue;
         }
 
-    next_param:
-      /* Skip to next parameter */
-      while (*p && *p != ',')
+      /* eq_pos points to '=' character */
+      p = eq_pos + 1;  /* Skip past '=' to start of value */
+
+      if (strcasecmp (name, HTTPCLIENT_DIGEST_TOKEN_STALE) == 0)
         {
-          if (*p == '"')
-            p = skip_quoted_value (p);
-          else
-            p++;
+          /* Found stale param, parse value */
+          const char *val_start = skip_whitespace (p);
+          const char *after_val = parse_param_value (val_start, value, sizeof (value));
+          if (after_val != NULL && strcasecmp (value, HTTPCLIENT_DIGEST_TOKEN_TRUE) == 0)
+            return 1;
+          /* Update p for continue */
+          p = after_val ? after_val : val_start;
+          /* If not true or error, continue scanning */
+        }
+      else
+        {
+          /* Skip value for other params */
+          const char *val_start = skip_whitespace (p);
+          p = parse_param_value (val_start, value, sizeof (value));
+          if (p == NULL)
+            p = val_start;  /* On error, try to continue */
         }
     }
 
@@ -867,11 +889,8 @@ httpclient_auth_is_stale_nonce (const char *www_authenticate)
   if (www_authenticate == NULL)
     return 0;
 
-  /* Skip "Digest " prefix if present */
-  if (strncasecmp (www_authenticate, HTTPCLIENT_DIGEST_PREFIX, HTTPCLIENT_DIGEST_PREFIX_LEN) == 0)
-    p = www_authenticate + HTTPCLIENT_DIGEST_PREFIX_LEN;
-  else
-    p = www_authenticate;
+  /* Skip "Digest " prefix if present (optional) */
+  p = skip_digest_prefix_optional (www_authenticate, 0);
 
   return find_stale_parameter (p);
 }

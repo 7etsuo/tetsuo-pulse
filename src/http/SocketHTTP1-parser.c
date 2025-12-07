@@ -16,7 +16,9 @@
 #include "core/SocketUtil.h"
 
 #include <assert.h>
-#include <string.h>
+
+
+
 
 /* ============================================================================
  * Table-Driven DFA Tables (Hoehrmann-style)
@@ -518,14 +520,14 @@ SocketHTTP1_Parser_new (SocketHTTP1_ParseMode mode,
 
   assert (arena);
 
-  parser = Arena_alloc (arena, sizeof (*parser), __FILE__, __LINE__);
+  parser = CALLOC (arena, 1, sizeof (*parser));
   if (!parser)
     {
       SOCKET_ERROR_MSG ("Cannot allocate HTTP/1.1 parser");
       RAISE_MODULE_ERROR (SocketHTTP1_ParseError);
     }
 
-  memset (parser, 0, sizeof (*parser));
+
 
   parser->mode = mode;
   parser->arena = arena;
@@ -556,10 +558,7 @@ SocketHTTP1_Parser_new (SocketHTTP1_ParseMode mode,
       RAISE_MODULE_ERROR (SocketHTTP1_ParseError);
     }
 
-  /* Initialize body tracking */
-  parser->content_length = -1;
-  parser->body_remaining = -1;
-  parser->body_mode = HTTP1_BODY_NONE;
+  reset_body_tracking (parser);
 
   return parser;
 }
@@ -1327,7 +1326,7 @@ calculate_next_body_state (SocketHTTP1_Parser_T parser,
  */
 static SocketHTTP1_Result
 handle_dfa_action (SocketHTTP1_Parser_T parser, uint8_t action, uint8_t c,
-                   const char *p, const char *loop_data, const char *data,
+                   const char *p, const char *data,
                    size_t *consumed, HTTP1_InternalState current_state,
                    HTTP1_InternalState *next_state)
 {
@@ -1344,24 +1343,24 @@ handle_dfa_action (SocketHTTP1_Parser_T parser, uint8_t action, uint8_t c,
     case HTTP1_ACT_STORE_REASON:
     case HTTP1_ACT_STORE_NAME:
     case HTTP1_ACT_STORE_VALUE:
-      result = handle_store_action (parser, action, (char)c, p, loop_data, consumed);
+      result = handle_store_action (parser, action, (char)c, p, data, consumed);
       return result;
 
     case HTTP1_ACT_METHOD_END:
-      result = handle_method_end (parser, p, loop_data, consumed);
+      result = handle_method_end (parser, p, data, consumed);
       return result;
 
     case HTTP1_ACT_URI_END:
-      result = handle_uri_end (parser, p, loop_data, consumed);
+      result = handle_uri_end (parser, p, data, consumed);
       return result;
 
     case HTTP1_ACT_VERSION_MAJ:
     case HTTP1_ACT_VERSION_MIN:
-      result = handle_version_digit (parser, action, (char)c, p, loop_data, consumed);
+      result = handle_version_digit (parser, action, (char)c, p, data, consumed);
       return result;
 
     case HTTP1_ACT_STATUS_DIGIT:
-      result = handle_status_digit (parser, (char)c, p, loop_data, consumed);
+      result = handle_status_digit (parser, (char)c, p, data, consumed);
       return result;
 
     case HTTP1_ACT_HEADER_END:
@@ -1411,7 +1410,7 @@ parse_headers_loop (SocketHTTP1_Parser_T parser,
   const char *end;
   HTTP1_InternalState state;
   SocketHTTP1_Result result;
-  const char *loop_data = data;  /* For error consumed calc */
+
 
   *consumed = 0;
 
@@ -1443,7 +1442,7 @@ parse_headers_loop (SocketHTTP1_Parser_T parser,
       next_state = (HTTP1_InternalState)state_table[state][cc];
       action = action_table[state][cc];
 
-      result = handle_dfa_action (parser, action, c, p, loop_data, data, consumed, state, &next_state);
+      result = handle_dfa_action (parser, action, c, p, data, consumed, state, &next_state);
       if (result != HTTP1_OK)
         return result;
 
@@ -1516,12 +1515,8 @@ SocketHTTP1_Result
 SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
                             size_t len, size_t *consumed)
 {
-  const char *p;
-  const char *end;
   const uint8_t (*state_table)[HTTP1_NUM_CLASSES];
   const uint8_t (*action_table)[HTTP1_NUM_CLASSES];
-  HTTP1_InternalState state;
-  SocketHTTP1_Result result;
 
   assert (parser);
   assert (data || len == 0);

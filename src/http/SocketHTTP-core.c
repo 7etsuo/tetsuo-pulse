@@ -9,22 +9,18 @@
 
 
 
-#include <string.h>
-#include <strings.h>
+/* <string.h> and <strings.h> removed - symbols available transitively from other includes */
 
-#include "core/SocketUtil.h"
+/* SocketUtil.h removed - no symbols used directly */
 #include "http/SocketHTTP-private.h"
 #include "http/SocketHTTP.h"
 
 /* Status code boundaries defined in SocketHTTP.h */
-
 /* ============================================================================
  * Exception Definitions
  * ============================================================================ */
 
-const Except_T SocketHTTP_ParseError = { &SocketHTTP_ParseError, "HTTP parse error" };
-const Except_T SocketHTTP_InvalidURI = { &SocketHTTP_InvalidURI, "Invalid URI" };
-const Except_T SocketHTTP_InvalidHeader = { &SocketHTTP_InvalidHeader, "Invalid HTTP header" };
+const Except_T SocketHTTP_Failed = { &SocketHTTP_Failed, "HTTP core failure" };
 
 /* ============================================================================
  * Character Classification Tables

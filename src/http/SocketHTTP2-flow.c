@@ -102,6 +102,102 @@ flow_update_window (int32_t *window, uint32_t increment)
 }
 
 /* ============================================================================
+ * Validation Helper
+ * ============================================================================ */
+
+ /**
+  * http2_flow_validate - Validate stream belongs to connection
+  * @conn: HTTP/2 connection (required, const compatible)
+  * @stream: Stream to validate (may be NULL, const compatible)
+  *
+  * Returns: 0 if valid, -1 if mismatch
+  * Thread-safe: Yes - read-only
+  *
+  * Common validation extracted from all flow functions to eliminate duplication.
+  * Logs error on stream-connection mismatch.
+  */
+static inline int
+http2_flow_validate (const SocketHTTP2_Conn_T conn, const SocketHTTP2_Stream_T stream)
+{
+  assert (conn);
+
+  if (stream && stream->conn != conn)
+    {
+      SOCKET_LOG_ERROR_MSG("Invalid stream %u for conn - mismatch", stream->id);
+      return -1;
+    }
+
+  return 0;
+}
+
+/* ============================================================================
+ * Generic Flow Level Helpers
+ * ============================================================================ */
+
+/**
+ * http2_flow_consume_level - Consume windows at connection and stream level
+ * @conn: HTTP/2 connection
+ * @stream: Stream (NULL for connection-only)
+ * @is_recv: 1 for recv_window, 0 for send_window
+ * @bytes: Bytes to consume
+ *
+ * Returns: 0 on success, -1 if insufficient capacity
+ * Thread-safe: No - modifies windows; caller must synchronize
+ *
+ * Internal helper consolidating recv/send consumption logic.
+ * Validates params and consumes both levels if stream provided.
+ */
+static int
+http2_flow_consume_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
+                          int is_recv, size_t bytes)
+{
+  if (http2_flow_validate(conn, stream) < 0)
+    return -1;
+
+  int32_t *cwindow = is_recv ? &conn->recv_window : &conn->send_window;
+  if (flow_consume_window(cwindow, bytes) < 0)
+    return -1;
+
+  if (stream)
+    {
+      int32_t *swindow = is_recv ? &stream->recv_window : &stream->send_window;
+      if (flow_consume_window(swindow, bytes) < 0)
+        return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * http2_flow_update_level - Update window at connection or stream level
+ * @conn: HTTP/2 connection
+ * @stream: Stream (NULL for connection-level)
+ * @is_recv: 1 for recv_window, 0 for send_window
+ * @increment: Window increment
+ *
+ * Returns: 0 on success, -1 on overflow
+ * Thread-safe: No - modifies windows; caller must synchronize
+ *
+ * Internal helper consolidating recv/send update logic.
+ * Updates either stream or connection window based on param.
+ */
+static int
+http2_flow_update_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
+                         int is_recv, uint32_t increment)
+{
+  if (http2_flow_validate(conn, stream) < 0)
+    return -1;
+
+  int32_t *window;
+  if (stream)
+    window = is_recv ? &stream->recv_window : &stream->send_window;
+  else
+    window = is_recv ? &conn->recv_window : &conn->send_window;
+
+  return flow_update_window(window, increment);
+}
+
+/* ============================================================================
  * Flow Control - Receive Window (Inbound DATA)
  * ============================================================================ */
 
@@ -122,21 +218,7 @@ int
 http2_flow_consume_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                          size_t bytes)
 {
-  assert (conn);
-
-  if (stream && stream->conn != conn)
-    {
-      SOCKET_LOG_ERROR_MSG("Invalid stream %u for conn - mismatch", stream->id);
-      return -1;
-    }
-
-  if (flow_consume_window (&conn->recv_window, bytes) < 0)
-    return -1;
-
-  if (stream && flow_consume_window (&stream->recv_window, bytes) < 0)
-    return -1;
-
-  return 0;
+  return http2_flow_consume_level(conn, stream, 1, bytes);
 }
 
 /**
@@ -156,18 +238,7 @@ int
 http2_flow_update_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                         uint32_t increment)
 {
-  assert (conn);
-
-  if (stream && stream->conn != conn)
-    {
-      SOCKET_LOG_ERROR_MSG("Invalid stream %u for conn - mismatch", stream->id);
-      return -1;
-    }
-
-  if (stream)
-    return flow_update_window (&stream->recv_window, increment);
-
-  return flow_update_window (&conn->recv_window, increment);
+  return http2_flow_update_level(conn, stream, 1, increment);
 }
 
 /* ============================================================================
@@ -191,21 +262,7 @@ int
 http2_flow_consume_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                          size_t bytes)
 {
-  assert (conn);
-
-  if (stream && stream->conn != conn)
-    {
-      SOCKET_LOG_ERROR_MSG("Invalid stream %u for conn - mismatch", stream->id);
-      return -1;
-    }
-
-  if (flow_consume_window (&conn->send_window, bytes) < 0)
-    return -1;
-
-  if (stream && flow_consume_window (&stream->send_window, bytes) < 0)
-    return -1;
-
-  return 0;
+  return http2_flow_consume_level(conn, stream, 0, bytes);
 }
 
 /**
@@ -225,18 +282,7 @@ int
 http2_flow_update_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                         uint32_t increment)
 {
-  assert (conn);
-
-  if (stream && stream->conn != conn)
-    {
-      SOCKET_LOG_ERROR_MSG("Invalid stream %u for conn - mismatch", stream->id);
-      return -1;
-    }
-
-  if (stream)
-    return flow_update_window (&stream->send_window, increment);
-
-  return flow_update_window (&conn->send_window, increment);
+  return http2_flow_update_level(conn, stream, 0, increment);
 }
 
 /* ============================================================================
@@ -260,17 +306,10 @@ http2_flow_update_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
 int32_t
 http2_flow_available_send (const SocketHTTP2_Conn_T conn, const SocketHTTP2_Stream_T stream)
 {
-  int32_t available;
+  if (http2_flow_validate(conn, stream) < 0)
+    return 0;
 
-  assert (conn);
-
-  if (stream && stream->conn != conn)
-    {
-      SOCKET_LOG_ERROR_MSG("Invalid stream %u for conn - mismatch", stream->id);
-      return 0;
-    }
-
-  available = conn->send_window;
+  int32_t available = conn->send_window;
 
   if (stream && stream->send_window < available)
     available = stream->send_window;

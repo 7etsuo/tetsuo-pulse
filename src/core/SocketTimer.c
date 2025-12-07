@@ -532,10 +532,12 @@ static void
 sockettimer_reschedule_repeating (SocketTimer_heap_T *heap,
                                   struct SocketTimer_T *timer)
 {
-  int64_t new_expiry = timer->expiry_ms + timer->interval_ms;
-  if (timer->interval_ms > 0 && new_expiry < timer->expiry_ms) { // overflow
+  int64_t new_expiry;
+  if (timer->interval_ms > 0 && timer->expiry_ms > INT64_MAX - timer->interval_ms) {
     new_expiry = INT64_MAX;
     SOCKET_LOG_WARN_MSG("Repeating timer expiry clamped to INT64_MAX due to repeated additions overflowing");
+  } else {
+    new_expiry = timer->expiry_ms + timer->interval_ms;
   }
   timer->expiry_ms = new_expiry;
   SocketTimer_heap_push (heap, timer);

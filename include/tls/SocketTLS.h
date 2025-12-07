@@ -15,7 +15,7 @@
 #include "core/Except.h"
 #include "socket/Socket.h"
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 /* TLS error buffer for cross-module error reporting */
 #ifdef _WIN32

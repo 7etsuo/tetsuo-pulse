@@ -19,7 +19,7 @@
  */
 
 #include <assert.h>
-#include <errno.h>
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,7 +38,7 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTPClient-Cookie"
 
-SOCKET_DECLARE_MODULE_EXCEPTION(HTTPClient);
+SOCKET_DECLARE_MODULE_EXCEPTION(SocketHTTPClient);
 
 
 
@@ -187,20 +187,48 @@ path_matches (const char *request_path, const char *cookie_path)
  * Note: Negative Max-Age treated as immediate expiration (time_t 1)
  */
 static time_t
-parse_max_age (const char *value)
+parse_max_age (const char *value, size_t len)
 {
-  long age;
-  char *endptr;
-
-  if (value == NULL || *value == '\0')
+  if (value == NULL || len == 0)
     return 0;
 
-  errno = 0;
-  age = strtol (value, &endptr, 10);
-
-  if (errno != 0 || endptr == value || *endptr != '\0')
+  /* Skip leading whitespace (trimmed input, but for robustness) */
+  const char *start = value;
+  size_t remaining = len;
+  while (remaining > 0 && (*start == ' ' || *start == '\t')) {
+    start++;
+    remaining--;
+  }
+  if (remaining == 0)
     return 0;
 
+  /* Parse optional sign */
+  int sign = 1;
+  if (*start == '-') {
+    sign = -1;
+    start++;
+    remaining--;
+    if (remaining == 0)
+      return 0;
+  }
+
+  /* Parse digits */
+  long age = 0;
+  int has_digit = 0;
+  while (remaining > 0 && *start >= '0' && *start <= '9') {
+    has_digit = 1;
+    long new_age = age * 10 + (*start - '0');
+    if (new_age < age)  /* Overflow */
+      return 0;
+    age = new_age;
+    start++;
+    remaining--;
+  }
+
+  if (!has_digit || remaining > 0)
+    return 0;  /* No digits or trailing non-digits */
+
+  age *= sign;
   if (age <= 0)
     return 1; /* Expire immediately */
 
@@ -219,16 +247,19 @@ static const char COOKIE_SAMESITE_NONE_STR[] = "None";
  * Returns: Parsed SameSite enum, defaults to LAX if unknown
  */
 static SocketHTTPClient_SameSite
-parse_same_site (const char *value)
+parse_same_site (const char *value, size_t len)
 {
-  if (value == NULL)
+  if (value == NULL || len == 0)
     return COOKIE_SAMESITE_LAX; /* Default per RFC 6265bis */
 
-  if (strcasecmp (value, COOKIE_SAMESITE_STRICT_STR) == 0)
+  size_t strict_len = sizeof(COOKIE_SAMESITE_STRICT_STR) - 1;
+  if (len == strict_len && strncasecmp(value, COOKIE_SAMESITE_STRICT_STR, strict_len) == 0)
     return COOKIE_SAMESITE_STRICT;
-  if (strcasecmp (value, COOKIE_SAMESITE_LAX_STR) == 0)
+  size_t lax_len = sizeof(COOKIE_SAMESITE_LAX_STR) - 1;
+  if (len == lax_len && strncasecmp(value, COOKIE_SAMESITE_LAX_STR, lax_len) == 0)
     return COOKIE_SAMESITE_LAX;
-  if (strcasecmp (value, COOKIE_SAMESITE_NONE_STR) == 0)
+  size_t none_len = sizeof(COOKIE_SAMESITE_NONE_STR) - 1;
+  if (len == none_len && strncasecmp(value, COOKIE_SAMESITE_NONE_STR, none_len) == 0)
     return COOKIE_SAMESITE_NONE;
 
   return COOKIE_SAMESITE_LAX;
@@ -288,11 +319,10 @@ SocketHTTPClient_CookieJar_new (void)
     if (arena == NULL)
       RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
 
-    jar = Arena_alloc (arena, sizeof (*jar), __FILE__, __LINE__);
+    jar = Arena_calloc (arena, 1, sizeof (*jar), __FILE__, __LINE__);
     if (jar == NULL)
       RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
 
-    memset (jar, 0, sizeof (*jar));
     jar->arena = arena;
     jar->hash_size = HTTPCLIENT_COOKIE_HASH_SIZE;
 
@@ -370,7 +400,7 @@ cookie_entry_init_full (CookieEntry *entry,
                         const char *effective_path,
                         Arena_T arena)
 {
-  memset (entry, 0, sizeof (*entry));
+  /* entry zero-initialized by caller Arena_calloc */
 
   entry->cookie.name = socket_util_arena_strdup (arena, cookie->name);
   if (entry->cookie.name == NULL)
@@ -454,8 +484,8 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
       /* Replace existing cookie */
       cookie_entry_update_value_flags (entry, cookie, jar->arena);
     } else {
-      /* Create new entry */
-      entry = Arena_alloc (jar->arena, sizeof (*entry), __FILE__, __LINE__);
+      /* Create new entry (calloc to zero-initialize) */
+      entry = Arena_calloc (jar->arena, 1, sizeof (*entry), __FILE__, __LINE__);
       if (entry == NULL)
         RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
 
@@ -942,22 +972,19 @@ parse_cookie_name_value (const char **p, const char *end,
   }
   val_len = value_end - value_start;
 
-  /* Allocate and copy */
-  n = Arena_alloc (arena, name_len + 1, __FILE__, __LINE__);
-  v = Arena_alloc (arena, val_len + 1, __FILE__, __LINE__);
-
-  if (n == NULL || v == NULL) {
-    HTTPCLIENT_ERROR_MSG("Arena_alloc failed for cookie name or value strings");
+  /* Allocate using utility function for consistency with codebase */
+  cookie->name = socket_util_arena_strndup (arena, name_start, name_len);
+  if (cookie->name == NULL) {
+    HTTPCLIENT_ERROR_MSG("socket_util_arena_strndup failed for cookie name");
     return -1;
   }
 
-  memcpy (n, name_start, name_len);
-  n[name_len] = '\0';
-  memcpy (v, value_start, val_len);
-  v[val_len] = '\0';
+  cookie->value = socket_util_arena_strndup (arena, value_start, val_len);
+  if (cookie->value == NULL) {
+    HTTPCLIENT_ERROR_MSG("socket_util_arena_strndup failed for cookie value");
+    return -1;
+  }
 
-  cookie->name = n;
-  cookie->value = v;
   *p = ptr;
 
   return 0;
@@ -1020,49 +1047,25 @@ parse_cookie_attribute (const char *attr_start, size_t attr_len,
     }
   else if (attr_len == COOKIE_ATTR_MAXAGE_LEN && strncasecmp (attr_start, COOKIE_ATTR_MAXAGE_STR, attr_len) == 0)
     {
-      char max_age_str[HTTPCLIENT_COOKIE_MAX_AGE_SIZE];
-      if (attr_val_len < sizeof (max_age_str))
-        {
-          memcpy (max_age_str, attr_value_start, attr_val_len);
-          max_age_str[attr_val_len] = '\0';
-          cookie->expires = parse_max_age (max_age_str);
-        }
+      cookie->expires = parse_max_age (attr_value_start, attr_val_len);
     }
   else if (attr_len == COOKIE_ATTR_DOMAIN_LEN && strncasecmp (attr_start, COOKIE_ATTR_DOMAIN_STR, attr_len) == 0)
     {
       if (attr_val_len == 0) {
         return; /* Ignore empty Domain per RFC 6265 Section 5.2.3 */
       }
-      char *d = Arena_alloc (arena, attr_val_len + 1, __FILE__, __LINE__);
-      if (d != NULL)
-        {
-          memcpy (d, attr_value_start, attr_val_len);
-          d[attr_val_len] = '\0';
-          cookie->domain = d;
-        }
+      cookie->domain = socket_util_arena_strndup (arena, attr_value_start, attr_val_len);
     }
   else if (attr_len == COOKIE_ATTR_PATH_LEN && strncasecmp (attr_start, COOKIE_ATTR_PATH_STR, attr_len) == 0)
     {
       if (attr_val_len == 0 || attr_value_start[0] != '/') {
         return; /* Ignore invalid Path per RFC 6265 Section 5.2.4 */
       }
-      char *pt = Arena_alloc (arena, attr_val_len + 1, __FILE__, __LINE__);
-      if (pt != NULL)
-        {
-          memcpy (pt, attr_value_start, attr_val_len);
-          pt[attr_val_len] = '\0';
-          cookie->path = pt;
-        }
+      cookie->path = socket_util_arena_strndup (arena, attr_value_start, attr_val_len);
     }
   else if (attr_len == COOKIE_ATTR_SAMESITE_LEN && strncasecmp (attr_start, COOKIE_ATTR_SAMESITE_STR, attr_len) == 0)
     {
-      char ss[HTTPCLIENT_COOKIE_SAMESITE_SIZE];
-      if (attr_val_len < sizeof (ss))
-        {
-          memcpy (ss, attr_value_start, attr_val_len);
-          ss[attr_val_len] = '\0';
-          cookie->same_site = parse_same_site (ss);
-        }
+      cookie->same_site = parse_same_site (attr_value_start, attr_val_len);
     }
 }
 
@@ -1097,40 +1100,19 @@ parse_cookie_attributes (const char **p, const char *end,
           break; /* Invalid attribute name */
         }
 
-      /* Parse attribute value if present (handles quoted strings) */
-      if (ptr < end && *ptr == '=')
-        {
-          ptr++;
-          ptr = skip_whitespace (ptr, end);
-          attr_value_start = ptr;
-
-          /* Handle quoted value */
-          if (ptr < end && *ptr == '"')
-            {
-              attr_value_start = ++ptr;
-              while (ptr < end && *ptr != '"')
-                ptr++;
-              attr_value_end = ptr;
-              if (ptr < end && *ptr == '"')
-                {
-                  ptr++; /* Skip closing quote */
-                }
-              else
-                {
-                  /* Unclosed quote, ignore value */
-                  attr_value_start = NULL;
-                }
-            }
-          else
-            {
-              while (ptr < end && *ptr != ';')
-                ptr++;
-              attr_value_end = ptr;
-            }
-
-          if (attr_value_start != NULL)
-            attr_value_end = trim_trailing_whitespace (attr_value_start, attr_value_end);
+      /* Parse attribute value if present, reusing parse_value logic for consistency and bug fixes */
+      attr_value_start = NULL;
+      attr_value_end = NULL;
+      if (ptr < end && *ptr == '=') {
+        ptr++; /* Skip '=' */
+        const char *val_start_temp, *val_end_temp;
+        if (parse_value(&ptr, end, &val_start_temp, &val_end_temp) == 0) {
+          attr_value_start = val_start_temp;
+          attr_value_end = val_end_temp; /* Already trimmed by parse_value */
+        } else {
+          /* Invalid value (e.g., unclosed quote), ignore this attribute value */
         }
+      }
 
       /* Process this attribute */
       parse_cookie_attribute (

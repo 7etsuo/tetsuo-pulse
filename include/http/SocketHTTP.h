@@ -73,34 +73,13 @@
  * ============================================================================ */
 
 /**
- * SocketHTTP_ParseError - General HTTP parsing failure
+ * SocketHTTP_Failed - Generic HTTP module failure
  *
- * Raised when:
- * - Invalid HTTP method or version
- * - Malformed header syntax
- * - Invalid status code
+ * Use for general errors in HTTP core utilities. Specific errors should use
+ * module exceptions like SocketHTTP1_ParseError for parsers.
  */
-extern const Except_T SocketHTTP_ParseError;
+extern const Except_T SocketHTTP_Failed;
 
-/**
- * SocketHTTP_InvalidURI - URI parsing or validation failure
- *
- * Raised when:
- * - Malformed URI syntax
- * - Invalid percent-encoding
- * - URI exceeds length limit
- */
-extern const Except_T SocketHTTP_InvalidURI;
-
-/**
- * SocketHTTP_InvalidHeader - Header validation failure
- *
- * Raised when:
- * - Invalid characters in header name
- * - Invalid characters in header value (CR, LF, NUL)
- * - Header exceeds size limits
- */
-extern const Except_T SocketHTTP_InvalidHeader;
 
 /* ============================================================================
  * HTTP Version
