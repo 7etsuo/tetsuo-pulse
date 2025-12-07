@@ -1423,6 +1423,7 @@ SocketHTTPServer_stats (SocketHTTPServer_T server, SocketHTTPServer_Stats *stats
 {
   assert (server != NULL);
   assert (stats != NULL);
+  (void)server;  /* Used only in assert; silence unused parameter warning */
 
   memset (stats, 0, sizeof (*stats));
 
