@@ -381,9 +381,11 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
       {
         if (!SocketIPTracker_track (server->ip_tracker, conn->client_addr))
           {
-            /* Connection limit reached for this IP */
+            /* Connection limit reached for this IP - trigger cleanup via FINALLY
+             * Note: DO NOT use RETURN here as it skips FINALLY cleanup
+             * Leave transferred at 4 so FINALLY cleans up arena, socket, and conn */
             SocketMetrics_counter_inc(SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED);
-            RETURN NULL;
+            goto cleanup_and_return_null;
           }
       }
 
@@ -399,6 +401,11 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
 
     transferred = 5; /* fully transferred */
     RETURN conn;
+
+cleanup_and_return_null:
+    /* Explicit cleanup path for rejected connections (e.g., IP limit exceeded)
+     * This label is jumped to from validation failures above */
+    ;  /* Empty statement needed after label before block end */
   }
   FINALLY
   {
@@ -413,7 +420,7 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
   }
   END_TRY;
 
-  return NULL; /* unreachable */
+  return NULL; /* Reached when cleanup_and_return_null is used */
 }
 
 void
