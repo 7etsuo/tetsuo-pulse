@@ -72,6 +72,7 @@ extern int socketcommon_sanitize_timeout (int timeout_ms);
 void
 Socket_setnonblocking (T socket)
 {
+  assert (socket);
   SocketCommon_set_nonblock (socket->base, true, Socket_Failed);
 }
 

@@ -427,7 +427,7 @@ job_static_analysis() {
         --suppress=missingIncludeSystem \
         --suppress=unmatchedSuppression \
         --suppress=toomanyconfigs \
-        --suppress=nullPointerRedundantCheck:*test*.c \
+        '--suppress=nullPointerRedundantCheck:*test*.c' \
         --std=c11 \
         -I "$PROJECT_ROOT/include" \
         --inline-suppr \

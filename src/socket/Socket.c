@@ -324,6 +324,7 @@ Socket_recv (T socket, void *buf, size_t len)
 void
 Socket_listen (Socket_T socket, int backlog)
 {
+  assert (socket);
   if (backlog <= 0)
     SOCKET_RAISE_MSG (Socket, Socket_Failed,
                       "Invalid backlog value: %d (must be > 0)", backlog);
