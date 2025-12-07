@@ -551,6 +551,8 @@ foreach(test_name ${TEST_SOURCES})
     endif()
     target_include_directories(${test_name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
     add_test(NAME ${test_name} COMMAND ${test_name})
+    # Set 60 second timeout to prevent test hangs (TLS tests may need more time)
+    set_tests_properties(${test_name} PROPERTIES TIMEOUT 60)
 endforeach()
 
 # Custom target to build all tests

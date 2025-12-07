@@ -374,6 +374,7 @@ TEST (httpserver_single_request)
 
   /* Stop server */
   atomic_store (&stop_flag, 1);
+  SocketHTTPServer_stop (server);
   pthread_join (server_tid, NULL);
 
   SocketHTTPServer_free (&server);
@@ -446,6 +447,7 @@ TEST (httpserver_streaming_response)
   close (fd);
 
   atomic_store (&stop_flag, 1);
+  SocketHTTPServer_stop (server);
   pthread_join (server_tid, NULL);
 
   SocketHTTPServer_free (&server);
@@ -508,6 +510,7 @@ TEST (httpserver_validation_reject)
   close (fd);
 
   atomic_store (&stop_flag, 1);
+  SocketHTTPServer_stop (server);
   pthread_join (server_tid, NULL);
 
   SocketHTTPServer_free (&server);
@@ -585,6 +588,7 @@ TEST (httpserver_rate_limiting)
   ASSERT (rate_limited > 0);
 
   atomic_store (&stop_flag, 1);
+  SocketHTTPServer_stop (server);
   pthread_join (server_tid, NULL);
 
   SocketRateLimit_free (&limiter);
@@ -696,6 +700,7 @@ TEST (httpserver_statistics)
   ASSERT_EQ (0, stats.total_requests);
 
   atomic_store (&stop_flag, 1);
+  SocketHTTPServer_stop (server);
   pthread_join (server_tid, NULL);
 
   SocketHTTPServer_free (&server);
@@ -755,6 +760,7 @@ TEST (httpserver_concurrent_connections)
   usleep (100000);
 
   atomic_store (&stop_flag, 1);
+  SocketHTTPServer_stop (server);
   pthread_join (server_tid, NULL);
 
   /* Verify test results */
@@ -825,6 +831,7 @@ TEST (httpserver_per_client_limit)
     }
 
   atomic_store (&stop_flag, 1);
+  SocketHTTPServer_stop (server);
   pthread_join (server_tid, NULL);
 
   /* Should have been limited (some may still connect due to timing) */

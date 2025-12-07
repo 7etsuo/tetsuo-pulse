@@ -108,26 +108,34 @@ test_server_start (TestServer *ts, SocketHTTPServer_Handler handler,
       config.keepalive_timeout_ms = 10000;
 
       TRY
-      ts->server = SocketHTTPServer_new (&config);
-      if (ts->server != NULL)
-        {
-          SocketHTTPServer_set_handler (ts->server, handler, handler_data);
-          if (SocketHTTPServer_start (ts->server) >= 0)
-            {
-              server_started = 1;
-            }
-          else
-            {
-              SocketHTTPServer_free (&ts->server);
-              ts->server = NULL;
-            }
-        }
+      {
+        ts->server = SocketHTTPServer_new (&config);
+        if (ts->server != NULL)
+          {
+            SocketHTTPServer_set_handler (ts->server, handler, handler_data);
+            if (SocketHTTPServer_start (ts->server) >= 0)
+              {
+                server_started = 1;
+              }
+            else
+              {
+                SocketHTTPServer_free (&ts->server);
+                ts->server = NULL;
+              }
+          }
+      }
       EXCEPT (SocketHTTPServer_Failed)
-      /* Port might be in use, try next port */
-      ts->server = NULL;
-      EXCEPT (SocketHTTPServer_BindFailed)
-      /* Port might be in use, try next port */
-      ts->server = NULL;
+      {
+        /* Port might be in use, try next port */
+        if (ts->server) SocketHTTPServer_free (&ts->server);
+        ts->server = NULL;
+      }
+      EXCEPT (Socket_Failed)
+      {
+        /* Bind failed - port might be in use, try next port */
+        if (ts->server) SocketHTTPServer_free (&ts->server);
+        ts->server = NULL;
+      }
       END_TRY;
 
       if (!server_started && retries < 9)
@@ -167,9 +175,9 @@ test_server_stop (TestServer *ts)
     return;
 
   ts->running = 0;
+  SocketHTTPServer_stop (ts->server);  /* Stop server BEFORE joining thread */
   pthread_join (ts->thread, NULL);
 
-  SocketHTTPServer_stop (ts->server);
   SocketHTTPServer_free (&ts->server);
 }
 

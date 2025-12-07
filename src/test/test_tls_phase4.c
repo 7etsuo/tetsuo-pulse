@@ -164,8 +164,8 @@ TEST (verify_callback_api)
 TEST (verify_integration_basic)
 {
 #if SOCKET_HAS_TLS
-  const char *cert_file = "test_cb.crt";
-  const char *key_file = "test_cb.key";
+  const char *cert_file = "test_phase4_cb.crt";
+  const char *key_file = "test_phase4_cb.key";
   if (generate_test_certs (cert_file, key_file) != 0)
     {
       return; // Skip if openssl not available
@@ -385,8 +385,8 @@ TEST (session_tickets_api)
 {
 #if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
-  const char *cert_file = "test.crt";
-  const char *key_file = "test.key";
+  const char *cert_file = "test_phase4_tickets.crt";
+  const char *key_file = "test_phase4_tickets.key";
   ASSERT_EQ (generate_test_certs (cert_file, key_file), 0);
   SocketTLSContext_T ctx
       = SocketTLSContext_new_server (cert_file, key_file, NULL);
@@ -425,8 +425,8 @@ TEST (ocsp_gen_callback_api)
 {
 #if SOCKET_HAS_TLS
   Arena_T arena = Arena_new ();
-  const char *cert_file = "test.crt";
-  const char *key_file = "test.key";
+  const char *cert_file = "test_phase4_ocsp.crt";
+  const char *key_file = "test_phase4_ocsp.key";
   ASSERT_EQ (generate_test_certs (cert_file, key_file), 0);
   SocketTLSContext_T ctx
       = SocketTLSContext_new_server (cert_file, key_file, NULL);

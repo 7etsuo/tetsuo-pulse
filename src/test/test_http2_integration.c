@@ -139,9 +139,16 @@ h2_server_thread_func (void *arg)
   SocketTLS_enable (client, server->tls_ctx);
 
   TLSHandshakeState hs_state;
+  int hs_loops = 0;
   do
     {
       hs_state = SocketTLS_handshake (client);
+      if (++hs_loops > 1000)
+        {
+          hs_state = TLS_HANDSHAKE_ERROR;
+          break;
+        }
+      usleep (1000);
     }
   while (hs_state == TLS_HANDSHAKE_WANT_READ
          || hs_state == TLS_HANDSHAKE_WANT_WRITE);
@@ -342,9 +349,16 @@ TEST (http2_integration_tls_alpn)
   SocketTLS_enable (client, client_ctx);
 
   TLSHandshakeState hs_state;
+  int hs_loops = 0;
   do
     {
       hs_state = SocketTLS_handshake (client);
+      if (++hs_loops > 1000)
+        {
+          hs_state = TLS_HANDSHAKE_ERROR;
+          break;
+        }
+      usleep (1000);
     }
   while (hs_state == TLS_HANDSHAKE_WANT_READ
          || hs_state == TLS_HANDSHAKE_WANT_WRITE);
@@ -408,9 +422,16 @@ TEST (http2_integration_connection_preface)
   SocketTLS_enable (client, client_ctx);
 
   TLSHandshakeState hs_state;
+  int hs_loops = 0;
   do
     {
       hs_state = SocketTLS_handshake (client);
+      if (++hs_loops > 1000)
+        {
+          hs_state = TLS_HANDSHAKE_ERROR;
+          break;
+        }
+      usleep (1000);
     }
   while (hs_state == TLS_HANDSHAKE_WANT_READ
          || hs_state == TLS_HANDSHAKE_WANT_WRITE);
