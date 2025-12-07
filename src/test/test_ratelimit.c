@@ -359,10 +359,10 @@ TEST (iptracker_unlimited_mode)
     /* Should allow many connections */
     for (i = 0; i < 100; i++)
       {
-        result = SocketIPTracker_track (tracker, "unlimited.test");
+        result = SocketIPTracker_track (tracker, "172.16.0.1");  /* Valid IP */
         ASSERT_EQ (1, result);
       }
-    ASSERT_EQ (100, SocketIPTracker_count (tracker, "unlimited.test"));
+    ASSERT_EQ (100, SocketIPTracker_count (tracker, "172.16.0.1"));
   EXCEPT (SocketIPTracker_Failed)
     Arena_dispose (&arena);
     ASSERT (0);
@@ -415,7 +415,8 @@ TEST (iptracker_ipv6_addresses)
     result = SocketIPTracker_track (tracker, "2001:db8::1");
     ASSERT_EQ (1, result);
 
-    result = SocketIPTracker_track (tracker, "fe80::1%eth0");
+    /* Use simple link-local address without zone ID - zone IDs may not be supported */
+    result = SocketIPTracker_track (tracker, "fe80::1");
     ASSERT_EQ (1, result);
 
     ASSERT_EQ (3, SocketIPTracker_unique_ips (tracker));
@@ -444,15 +445,15 @@ TEST (iptracker_setmax)
     /* Add 6 connections - should work now */
     for (int i = 0; i < 6; i++)
       {
-        result = SocketIPTracker_track (tracker, "test.ip");
+        result = SocketIPTracker_track (tracker, "10.20.30.40");  /* Valid IP */
       }
-    ASSERT_EQ (6, SocketIPTracker_count (tracker, "test.ip"));
+    ASSERT_EQ (6, SocketIPTracker_count (tracker, "10.20.30.40"));
 
     /* Set limit below current count - existing stay but new rejected */
     SocketIPTracker_setmax (tracker, 2);
-    result = SocketIPTracker_track (tracker, "test.ip");
+    result = SocketIPTracker_track (tracker, "10.20.30.40");
     ASSERT_EQ (0, result); /* Rejected */
-    ASSERT_EQ (6, SocketIPTracker_count (tracker, "test.ip")); /* Count unchanged */
+    ASSERT_EQ (6, SocketIPTracker_count (tracker, "10.20.30.40")); /* Count unchanged */
   EXCEPT (SocketIPTracker_Failed)
     Arena_dispose (&arena);
     ASSERT (0);

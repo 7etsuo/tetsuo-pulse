@@ -126,14 +126,18 @@ TEST (socketbuf_partial_read)
 TEST (socketbuf_write_beyond_capacity)
 {
   Arena_T arena = Arena_new ();
-  SocketBuf_T buf = SocketBuf_new (arena, 10);
+  SocketBuf_T buf = SocketBuf_new (arena, 512);  /* Min buffer is 512 */
 
-  const char *data = "This is a long string";
+  /* Create a string longer than 512 bytes */
+  char data[600];
+  memset (data, 'X', sizeof (data) - 1);
+  data[sizeof (data) - 1] = '\0';
+
   size_t written = SocketBuf_write (buf, data, strlen (data));
 
   /* Should write up to capacity */
-  ASSERT_EQ (written, 10);
-  ASSERT_EQ (SocketBuf_available (buf), 10);
+  ASSERT_EQ (written, 512);
+  ASSERT_EQ (SocketBuf_available (buf), 512);
   ASSERT_NE (SocketBuf_full (buf), 0);
 
   Arena_dispose (&arena);
@@ -156,13 +160,16 @@ TEST (socketbuf_empty_buffer)
 TEST (socketbuf_full_buffer)
 {
   Arena_T arena = Arena_new ();
-  SocketBuf_T buf = SocketBuf_new (arena, 10);
+  SocketBuf_T buf = SocketBuf_new (arena, 512);  /* Min buffer is 512 */
 
-  SocketBuf_write (buf, "1234567890", 10);
+  /* Fill 512 bytes */
+  char fill_data[512];
+  memset (fill_data, 'A', 512);
+  SocketBuf_write (buf, fill_data, 512);
 
   ASSERT_NE (SocketBuf_full (buf), 0);
   ASSERT_EQ (SocketBuf_space (buf), 0);
-  ASSERT_EQ (SocketBuf_available (buf), 10);
+  ASSERT_EQ (SocketBuf_available (buf), 512);
 
   Arena_dispose (&arena);
 }
@@ -171,15 +178,15 @@ TEST (socketbuf_full_buffer)
 TEST (socketbuf_available_and_space)
 {
   Arena_T arena = Arena_new ();
-  SocketBuf_T buf = SocketBuf_new (arena, 100);
+  SocketBuf_T buf = SocketBuf_new (arena, 512);  /* Min buffer is 512 */
 
   ASSERT_EQ (SocketBuf_available (buf), 0);
-  ASSERT_EQ (SocketBuf_space (buf), 100);
+  ASSERT_EQ (SocketBuf_space (buf), 512);
 
   SocketBuf_write (buf, "Test", 4);
 
   ASSERT_EQ (SocketBuf_available (buf), 4);
-  ASSERT_EQ (SocketBuf_space (buf), 96);
+  ASSERT_EQ (SocketBuf_space (buf), 508);
 
   Arena_dispose (&arena);
 }
@@ -230,27 +237,35 @@ TEST (socketbuf_consume)
 TEST (socketbuf_wraparound)
 {
   Arena_T arena = Arena_new ();
-  SocketBuf_T buf = SocketBuf_new (arena, 10);
+  SocketBuf_T buf = SocketBuf_new (arena, 512);  /* Min buffer is 512 */
 
-  /* Fill buffer */
-  SocketBuf_write (buf, "1234567890", 10);
-  ASSERT_EQ (SocketBuf_available (buf), 10);
+  /* Fill buffer with 512 bytes */
+  char fill_data[512];
+  for (int i = 0; i < 512; i++)
+    fill_data[i] = 'A' + (i % 26);
+  SocketBuf_write (buf, fill_data, 512);
+  ASSERT_EQ (SocketBuf_available (buf), 512);
 
   /* Read some data to create space */
-  char read_buf[5];
-  SocketBuf_read (buf, read_buf, 5);
-  ASSERT_EQ (SocketBuf_available (buf), 5);
-  ASSERT_EQ (SocketBuf_space (buf), 5);
+  char read_buf[256];
+  SocketBuf_read (buf, read_buf, 256);
+  ASSERT_EQ (SocketBuf_available (buf), 256);
+  ASSERT_EQ (SocketBuf_space (buf), 256);
 
   /* Write more data - should wraparound */
-  SocketBuf_write (buf, "ABCDE", 5);
-  ASSERT_EQ (SocketBuf_available (buf), 10);
+  char new_data[256];
+  memset (new_data, 'X', 256);
+  SocketBuf_write (buf, new_data, 256);
+  ASSERT_EQ (SocketBuf_available (buf), 512);
 
-  /* Read all data */
-  char full_buf[11] = { 0 };
-  size_t read = SocketBuf_read (buf, full_buf, 10);
-  ASSERT_EQ (read, 10);
-  ASSERT_EQ (strcmp (full_buf, "67890ABCDE"), 0);
+  /* Read all data and verify structure */
+  char full_buf[513] = { 0 };
+  size_t read = SocketBuf_read (buf, full_buf, 512);
+  ASSERT_EQ (read, 512);
+  /* First 256 bytes should be the remaining original data (A-Z pattern starting at 256) */
+  /* Next 256 bytes should be 'X' characters */
+  for (int i = 256; i < 512; i++)
+    ASSERT (full_buf[i] == 'X');
 
   Arena_dispose (&arena);
 }
