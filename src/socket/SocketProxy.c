@@ -360,6 +360,7 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
   const char *host_start;
   const char *host_end;
   const char *port_start;
+  const char *authority_end;  /* Tracks actual end of authority component */
   size_t host_len;
 
   /* Handle IPv6 address in brackets */
@@ -374,14 +375,24 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
       host_start = start + 1;
       host_end = bracket_close;
       port_start = bracket_close + 1;
+      authority_end = bracket_close + 1;  /* Default to after ] */
 
       if (*port_start == ':')
         {
           {
             char *endptr;
             long p = strtol (port_start + 1, &endptr, 10);
-            if (endptr > port_start + 1 && *endptr == '\0' && p >= 1 && p <= 65535) {
+            if (endptr > port_start + 1 && p >= 1 && p <= 65535) {
               config->port = (int)p;
+              authority_end = endptr;  /* Update to end of port */
+            } else if (*endptr == '\0' || *endptr == '/' || *endptr == '?' || *endptr == '#') {
+              /* Valid end character, parse what we have */
+              if (endptr > port_start + 1 && p >= 1 && p <= 65535) {
+                config->port = (int)p;
+                authority_end = endptr;
+              } else {
+                return -1;  /* Invalid port */
+              }
             } else {
               return -1;  /* Invalid port */
             }
@@ -395,15 +406,17 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
       /* host:port or just host */
       host_start = start;
 
-      /* Find end of host (path, query, or end) */
-      host_end = start;
-      while (*host_end && *host_end != '/' && *host_end != '?'
-             && *host_end != '#')
-        host_end++;
+      /* Find end of authority (path, query, fragment, or end) */
+      authority_end = start;
+      while (*authority_end && *authority_end != '/' && *authority_end != '?'
+             && *authority_end != '#')
+        authority_end++;
 
-      /* Look for port */
+      host_end = authority_end;  /* Default if no port */
+
+      /* Look for port (last colon before authority_end) */
       colon = NULL;
-      for (const char *p = start; p < host_end; p++)
+      for (const char *p = start; p < authority_end; p++)
         {
           if (*p == ':')
             colon = p;
@@ -411,15 +424,17 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
 
       if (colon != NULL)
         {
-          host_end = colon;
+          host_end = colon;  /* Host ends at colon */
           {
             char *endptr;
             long p = strtol (colon + 1, &endptr, 10);
-            if (endptr > colon + 1 && *endptr == '\0' && p >= 1 && p <= 65535) {
-              config->port = (int)p;
-            } else {
+            if (endptr <= colon + 1 || p < 1 || p > 65535) {
               return -1;  /* Invalid port */
             }
+            config->port = (int)p;
+            /* authority_end should include the port we just parsed */
+            if (endptr > authority_end)
+              authority_end = endptr;
           }
           if (config->port <= 0 || config->port > 65535)
             return -1;
@@ -438,7 +453,7 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
     return -1;
 
   if (consumed_out != NULL)
-    *consumed_out = host_end - start;
+    *consumed_out = (size_t)(authority_end - start);
 
   return 0;
 }
