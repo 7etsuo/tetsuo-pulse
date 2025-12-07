@@ -515,7 +515,8 @@ server_accept_clients (SocketHTTPServer_T server)
       ServerConnection *conn = connection_new (server, client);
       if (conn == NULL)
         {
-          Socket_free (&client);
+          /* connection_new takes ownership of the socket and frees it
+           * in its FINALLY block on failure - do NOT double-free here */
           continue;
         }
 
@@ -1444,9 +1445,11 @@ SocketHTTPServer_stats (SocketHTTPServer_T server, SocketHTTPServer_Stats *stats
   static int64_t prev_time = 0;
   int64_t now = Socket_get_monotonic_ms();
   uint64_t curr_requests = stats->total_requests;
-  if (prev_time > 0) {
-    double seconds = (now - prev_time) / 1000.0;
-    stats->requests_per_second = (curr_requests - prev_requests) / seconds;
+  if (prev_time > 0 && now > prev_time) {
+    double seconds = (double)(now - prev_time) / 1000.0;
+    if (seconds > 0.0) {
+      stats->requests_per_second = (size_t)((curr_requests - prev_requests) / seconds);
+    }
   }
   prev_requests = curr_requests;
   prev_time = now;
