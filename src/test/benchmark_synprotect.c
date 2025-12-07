@@ -14,6 +14,7 @@
 #include "core/Arena.h"
 #include "core/SocketSYNProtect.h"
 #include "core/SocketUtil.h"
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

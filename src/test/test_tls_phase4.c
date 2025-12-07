@@ -1284,7 +1284,7 @@ TEST (tls_alpn_protos_validation)
   {
     for (int i = 0; i < 17; i++)
       {
-        char buf[10];
+        char buf[20]; /* "proto" + int digits + null */
         snprintf (buf, sizeof (buf), "proto%d", i);
         many_protos[i] = strdup (buf); /* Leak ok for test */
       }
