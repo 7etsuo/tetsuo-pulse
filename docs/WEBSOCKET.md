@@ -17,6 +17,32 @@ The `SocketWS_T` module provides full RFC 6455 WebSocket support with:
 
 ---
 
+## Security Considerations
+
+### Key Security Features
+- **Masking Enforcement**: Clients MUST mask all outgoing frames; servers MUST NOT mask incoming frames from clients (RFC 6455 §5.3). Violations trigger protocol error and connection close.
+- **UTF-8 Validation**: All text frames and close reasons are validated incrementally (rejects overlong encodings, surrogates, invalid sequences per SocketUTF8).
+- **Size Limits**: Configurable `max_frame_size` (default 16MB), `max_message_size` (64MB), `max_fragments` prevent DoS via large/fragmented messages or decompression bombs.
+- **Overflow Protection**: Uses `SocketSecurity_check_add/multiply` for all buffer/message size calculations to prevent integer overflows.
+- **Compression Safety** (if enabled): Bounded expansion (4x input initial, capped at `max_message_size`), RFC 7692 trailer handling, configurable window bits (8-15).
+- **Constant-Time Ops**: Handshake key validation uses `SocketCrypto_secure_compare`; random mask keys from CSPRNG.
+- **Control Frames**: Limited to 125 bytes; PING/PONG validated (optional payload matching to prevent spoofing).
+
+### Best Practices
+- Always set `config.validate_utf8 = 1`.
+- Use `config.max_*` limits tuned to application (e.g., lower for high-load servers).
+- Enable `config.ping_interval_ms` for keepalive; monitor timeouts.
+- For production: Disable compression if not needed (`enable_permessage_deflate=0`) to avoid BREACH-like attacks.
+- Test with sanitizers (`-DENABLE_SANITIZERS=ON`) and fuzzing (`src/fuzz/fuzz_ws_*`).
+
+### Potential Risks & Mitigations
+- **Fragmentation DoS**: Mitigated by `max_fragments`.
+- **Decompression Bombs**: Capped output size; incremental checks.
+- **Protocol Downgrade**: Strict header validation rejects invalid handshakes.
+- **Injection**: UTF-8/headers validated; no unsafe string funcs (all bounded).
+
+Ref: RFC 6455, RFC 7692, project security.md.
+
 ## Quick Start
 
 ### WebSocket Client

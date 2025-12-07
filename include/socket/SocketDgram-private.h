@@ -25,6 +25,12 @@ struct SocketDgram_T
   size_t dtls_mtu;         /**< Configured MTU for this connection */
   char *dtls_sni_hostname; /**< SNI hostname (arena-allocated) */
 
+  /* Cached peer resolution for efficient repeated sendto to same host/port (30s TTL) */
+  char *dtls_peer_host;     /**< Cached hostname (arena-allocated) */
+  int dtls_peer_port;       /**< Cached port number */
+  struct addrinfo *dtls_peer_res; /**< Cached resolved addrinfo (freeaddrinfo on invalidate) */
+  int64_t dtls_peer_cache_ts; /**< Monotonic timestamp of cache (invalidate after 30s) */
+
   /* BIO memory buffers for non-blocking I/O
    * DTLS uses memory BIOs to decouple SSL read/write from actual socket I/O,
    * allowing integration with our event polling system */

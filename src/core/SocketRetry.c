@@ -174,6 +174,11 @@ validate_policy (const SocketRetry_Policy *policy)
   if (policy == NULL)
     return 0;
 
+  /* Check for NaN/Inf in floating point fields */
+  if (isnan(policy->multiplier) || isinf(policy->multiplier) ||
+      isnan(policy->jitter) || isinf(policy->jitter))
+    return 0;
+
   if (policy->max_attempts < 1 || policy->max_attempts > SOCKET_RETRY_MAX_ATTEMPTS)
     return 0;
 
@@ -211,6 +216,13 @@ power_double (double base, int exp)
 
   if (exp <= 0) return 1.0;
   if (base == 0.0) return 0.0;
+
+  /* Cap exponent to prevent CPU DoS from excessive loop iterations */
+  if (exp > 1000) {
+    if (base > 1.0) return INFINITY;
+    if (base < 1.0) return 0.0;
+    return 1.0;
+  }
 
   for (int i = 0; i < exp; ++i)
     {

@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "core/Arena.h"
+#include "core/SocketSecurity.h"
 #include "dns/SocketDNS.h"
 #include "dns/SocketDNS-private.h"
 
@@ -909,17 +910,40 @@ request_timed_out (const struct SocketDNS_T *dns,
 {
   int timeout_ms = request_effective_timeout_ms (dns, req);
   struct timespec now;
-  long long elapsed_ms;
+  long long elapsed_ms = 0;
+  long long sec_delta;
+  long long nsec_delta;
 
   if (timeout_ms <= 0)
     return 0;
 
   clock_gettime (CLOCK_MONOTONIC, &now);
 
-  elapsed_ms = (now.tv_sec - req->submit_time.tv_sec) * SOCKET_MS_PER_SECOND;
-  elapsed_ms += (now.tv_nsec - req->submit_time.tv_nsec) / SOCKET_NS_PER_MS;
+  sec_delta = (long long)now.tv_sec - (long long)req->submit_time.tv_sec;
+  nsec_delta = (long long)now.tv_nsec - (long long)req->submit_time.tv_nsec;
 
-  return elapsed_ms >= timeout_ms;
+  if (sec_delta < 0) {
+    // Monotonic clock should not go backward
+    return 0;
+  }
+
+  if (nsec_delta < 0) {
+    sec_delta--;
+    nsec_delta += 1000000000LL;
+  }
+
+  size_t sec_delta_u = (size_t)sec_delta;
+  size_t sec_ms_u;
+  if (!SocketSecurity_check_multiply(sec_delta_u, (size_t)SOCKET_MS_PER_SECOND, &sec_ms_u)) {
+    // Overflow: treat as very long elapsed time (timeout)
+    return 1;
+  }
+  long long sec_ms = (long long)sec_ms_u;
+
+  long long nsec_ms = nsec_delta / (long long)SOCKET_NS_PER_MS;
+  elapsed_ms = sec_ms + nsec_ms;
+
+  return elapsed_ms >= (long long)timeout_ms;
 }
 
 /**

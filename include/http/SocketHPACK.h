@@ -350,6 +350,8 @@ typedef struct
   size_t max_table_size;       /**< Maximum dynamic table size */
   size_t max_header_size;      /**< Maximum individual header size */
   size_t max_header_list_size; /**< Maximum total decoded size */
+  double max_expansion_ratio;  /**< Max decoded/encoded ratio to prevent decompression bombs (default: 10.0) */
+
 } SocketHPACK_DecoderConfig;
 
 /**

@@ -620,6 +620,105 @@ test_websocket_accept_computation (void)
 #endif /* SOCKET_HAS_TLS */
 
 /* ============================================================================
+ * Tests: WebSocket Compression (permessage-deflate)
+ * ============================================================================ */
+
+#ifdef SOCKETWS_HAS_DEFLATE
+
+static void
+test_ws_compression_roundtrip (void)
+{
+  (void)SocketWS_DetailedException; /* Suppress unused module exception warning */
+  TEST_START ("ws_compression_roundtrip");
+
+  Arena_T arena = Arena_new ();
+
+  // Minimal ws setup for test
+  SocketWS_T ws = CALLOC (arena, 1, sizeof (struct SocketWS));
+  ws->arena = arena;
+  ws->role = WS_ROLE_CLIENT;
+  ws->config.max_message_size = 1 << 20; // 1MB limit
+  ws->handshake.client_max_window_bits = 10;
+  ws->handshake.server_max_window_bits = 10;
+  ws->config.enable_permessage_deflate = 1;
+
+  // Init compression
+  int init_ret = ws_compression_init (ws);
+  assert (init_ret == 0);
+
+  // Test data
+  const char *test_str = "Hello, WebSocket compression test!";
+  size_t test_len = strlen (test_str);
+  unsigned char *compressed = NULL;
+  size_t comp_len = 0;
+  unsigned char *decompressed = NULL;
+  size_t decomp_len = 0;
+
+  // Compress
+  int comp_ret = ws_compress_message (ws, (const unsigned char *)test_str, test_len, &compressed, &comp_len);
+  assert (comp_ret == 0);
+  assert (comp_len > 0);
+  assert (comp_len < test_len * 2); // Reasonable compression or slight expansion
+
+  // Decompress
+  int decomp_ret = ws_decompress_message (ws, compressed, comp_len, &decompressed, &decomp_len);
+  assert (decomp_ret == 0);
+  assert (decomp_len == test_len);
+  assert (memcmp (decompressed, test_str, test_len) == 0);
+
+  // Cleanup
+  ws_compression_free (ws);
+
+  Arena_dispose (&arena);
+
+  TEST_PASS ();
+}
+
+static void
+test_ws_compression_errors (void)
+{
+  TEST_START ("ws_compression_errors");
+
+  Arena_T arena = Arena_new ();
+
+  SocketWS_T ws = CALLOC (arena, 1, sizeof (struct SocketWS));
+  ws->arena = arena;
+  ws->role = WS_ROLE_CLIENT;
+  ws->config.max_message_size = 1024; // Small limit for test
+  ws->config.enable_permessage_deflate = 1;
+
+  // Invalid window bits
+  ws->handshake.client_max_window_bits = 20; // Invalid >15
+  int init_ret = ws_compression_init (ws);
+  assert (init_ret == -1); // Should error on validation
+
+  // Reset for other test
+  ws_compression_free (ws);
+  memset (ws, 0, sizeof (struct SocketWS)); // Reset
+  ws->arena = arena;
+  ws->role = WS_ROLE_CLIENT;
+  ws->handshake.client_max_window_bits = 10; // Valid
+  ws->handshake.server_max_window_bits = 10;
+  init_ret = ws_compression_init (ws);
+  assert (init_ret == 0);
+
+  // Test size exceed (mock large input)
+  size_t large_input = ws->config.max_message_size * 10;
+  unsigned char *large_comp = NULL;
+  size_t large_comp_len = 0;
+  int large_ret = ws_compress_message (ws, (const unsigned char *)"", large_input, &large_comp, &large_comp_len); // Large avail_in
+  assert (large_ret == -1); // Expect failure due to size checks during growth
+  // Note: Verifies overflow/ size limit enforcement
+  ws_compression_free (ws);
+
+  Arena_dispose (&arena);
+
+  TEST_PASS ();
+}
+
+#endif /* SOCKETWS_HAS_DEFLATE */
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================ */
 
@@ -666,6 +765,14 @@ main (void)
   test_websocket_accept_computation ();
 #else
   printf ("  [SKIPPED] websocket_accept_computation (requires TLS)\n");
+#endif
+
+#ifdef SOCKETWS_HAS_DEFLATE
+  printf ("\nCompression (permessage-deflate):\n");
+  test_ws_compression_roundtrip ();
+  test_ws_compression_errors ();
+#else
+  printf ("  [SKIPPED] Compression tests (requires zlib/SOCKETWS_HAS_DEFLATE)\n");
 #endif
 
   printf ("\n=== Results: %d/%d tests passed ===\n", tests_passed, tests_run);

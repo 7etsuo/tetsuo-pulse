@@ -539,13 +539,83 @@ test_uri_relative (void)
 
   result = SocketHTTP_URI_parse ("/path/to/resource?query=1", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_OK, "Parse relative URI");
-  TEST_ASSERT (uri.scheme == NULL, "No scheme");
-  TEST_ASSERT (uri.host == NULL, "No host");
-  TEST_ASSERT (uri.path && strcmp (uri.path, "/path/to/resource") == 0, "Path");
-  TEST_ASSERT (uri.query && strcmp (uri.query, "query=1") == 0, "Query");
+  TEST_ASSERT (uri.path && strcmp (uri.path, "/path/to/resource") == 0, "Relative path");
+  TEST_ASSERT (uri.query && strcmp (uri.query, "query=1") == 0, "Relative query");
+  TEST_ASSERT (uri.scheme == NULL, "No scheme in relative");
+  TEST_ASSERT (uri.host == NULL, "No host in relative");
 
   Arena_dispose (&arena);
 }
+
+static void
+test_uri_security_invalid (void)
+{
+  printf ("Testing URI security validation...\n");
+
+  Arena_T arena = Arena_new ();
+  SocketHTTP_URI uri;
+  SocketHTTP_URIResult result;
+
+  // Control char in path
+  result = SocketHTTP_URI_parse ("http://example.com/pat\0h", strlen ("http://example.com/pat\0h"), &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_ERROR, "Reject control char (NUL) in path");
+
+  // Invalid host char (space)
+  result = SocketHTTP_URI_parse ("http://example com/path", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_HOST, "Reject space in host");
+
+  // Invalid reg-name char in host
+  result = SocketHTTP_URI_parse ("http://exa<mple.com/path", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_HOST, "Reject < in host (reg-name)");
+
+  // Malformed IPv6 literal
+  result = SocketHTTP_URI_parse ("http://[::g]:80/path", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_HOST, "Reject invalid char in IPv6");
+
+  // Unmatched IPv6 bracket
+  result = SocketHTTP_URI_parse ("http://[::1/path", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_HOST, "Reject unmatched IPv6 bracket");
+
+  // Oversized host
+  char long_host[310] = "http://";
+  memset (long_host + 7, 'a', 290);
+  strncpy (long_host + 297, "/path", 12);  /* Safe copy with room for null */
+  long_host[308] = '\0';  /* Ensure null termination */
+  result = SocketHTTP_URI_parse (long_host, 300, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_TOO_LONG, "Reject oversized host >255");
+
+  // Invalid pct encoding
+  result = SocketHTTP_URI_parse ("http://example.com/pat%G1h", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject invalid %XX in path");
+
+  Arena_dispose (&arena);
+}
+
+static void
+test_mediatype_security (void)
+{
+  printf ("Testing media type security validation...\n");
+
+  Arena_T arena = Arena_new ();
+  SocketHTTP_MediaType mt;
+  int res;
+
+  // Invalid token char in type
+  res = SocketHTTP_MediaType_parse ("text[<]/plain", 0, &mt, arena);
+  TEST_ASSERT (res == -1, "Reject invalid char in type");
+
+  // Invalid param name
+  res = SocketHTTP_MediaType_parse ("text/plain; inval= id", 0, &mt, arena);
+  TEST_ASSERT (res == -1, "Reject invalid param name char");
+
+  // Incomplete escape in quoted
+  res = SocketHTTP_MediaType_parse ("text/plain; boundary=\\\"abc\\", 0, &mt, arena);
+  TEST_ASSERT (res == -1, "Reject incomplete escape in quoted value");
+
+  Arena_dispose (&arena);
+}
+
+
 
 static void
 test_uri_userinfo (void)
@@ -875,6 +945,7 @@ main (void)
   test_uri_helpers ();
   test_uri_encode_decode ();
   test_uri_build ();
+  test_uri_security_invalid ();
 
   /* Date tests */
   test_date_imf_fixdate ();
@@ -887,6 +958,7 @@ main (void)
   test_media_type_basic ();
   test_media_type_params ();
   test_media_type_matches ();
+  test_mediatype_security ();
 
   /* Accept header tests */
   test_accept_parsing ();

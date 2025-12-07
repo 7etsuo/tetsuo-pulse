@@ -142,7 +142,9 @@ const unsigned char sockethttp_hex_value[256] = {
 static size_t
 sockethttp_effective_length(const char *str, size_t len)
 {
-    return len == 0 ? strlen(str) : len;
+    if (!str) return 0;
+    if (len == 0) return strlen(str);
+    return strnlen(str, len);
 }
 
 /**

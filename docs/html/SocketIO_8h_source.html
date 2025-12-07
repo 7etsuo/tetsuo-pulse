@@ -126,7 +126,7 @@ $(document).ready(function(){initNavTree('SocketIO_8h_source.html',''); initResi
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="preprocessor">#include &lt;stddef.h&gt;</span></div>
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="preprocessor">#include &lt;sys/uio.h&gt;</span></div>
 <div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span> </div>
-<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="preprocessor">#ifdef SOCKET_HAS_TLS</span></div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="preprocessor">#if SOCKET_HAS_TLS</span></div>
 <div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="preprocessor">#include &lt;openssl/ssl.h&gt;</span></div>
 <div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span> </div>
@@ -152,7 +152,7 @@ $(document).ready(function(){initNavTree('SocketIO_8h_source.html',''); initResi
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span> </div>
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno"><a class="line" href="SocketIO_8h.html#ae7a7fe487c65b17fdea95a118bc98a97">  102</a></span><span class="keyword">extern</span> <span class="keywordtype">int</span> <a class="code hl_function" href="SocketIO_8h.html#ae7a7fe487c65b17fdea95a118bc98a97">socket_tls_want_write</a> (<span class="keyword">const</span> <a class="code hl_define" href="SocketIO_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a> socket);</div>
 <div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span> </div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span><span class="preprocessor">#ifdef SOCKET_HAS_TLS</span></div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span><span class="preprocessor">#if SOCKET_HAS_TLS</span></div>
 <div class="line"><a id="l00115" name="l00115"></a><span class="lineno"><a class="line" href="SocketIO_8h.html#a92f7b61974c6adb4ac454b4fb671c6b8">  115</a></span><span class="keyword">extern</span> <span class="keywordtype">int</span> <a class="code hl_function" href="SocketIO_8h.html#a92f7b61974c6adb4ac454b4fb671c6b8">socket_handle_ssl_error</a> (<a class="code hl_define" href="SocketIO_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a> socket, SSL *ssl, <span class="keywordtype">int</span> ssl_result);</div>
 <div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span> </div>
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno"><a class="line" href="SocketIO_8h.html#a326db6a48e839e56bd1599fc3a651723">  123</a></span><span class="keyword">extern</span> SSL *<a class="code hl_function" href="SocketIO_8h.html#a326db6a48e839e56bd1599fc3a651723">socket_get_ssl</a> (<a class="code hl_define" href="SocketIO_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a> socket);</div>

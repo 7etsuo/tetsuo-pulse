@@ -12,7 +12,10 @@
 #include "socket/Socket.h"
 #include "socket/SocketReconnect.h"
 #include <stdint.h>
-#include <sys/time.h>
+#include "core/SocketUtil.h"
+#include "core/SocketCrypto.h"
+
+
 
 /* ============================================================================
  * Internal Constants
@@ -100,26 +103,29 @@ struct SocketReconnect_T
  * ============================================================================ */
 
 /**
- * socketreconnect_get_time_ms - Get current time in milliseconds
- * Returns: Current time in milliseconds since epoch
+ * socketreconnect_get_time_ms - Get current monotonic time in milliseconds
+ * Returns: Current monotonic time in milliseconds
+ *
+ * Uses Socket_get_monotonic_ms() for security against clock manipulation.
  */
 static inline int64_t
 socketreconnect_get_time_ms (void)
 {
-  struct timeval tv;
-  gettimeofday (&tv, NULL);
-  return (int64_t)tv.tv_sec * 1000 + (int64_t)tv.tv_usec / 1000;
+  return Socket_get_monotonic_ms ();
 }
 
 /**
  * socketreconnect_elapsed_ms - Calculate elapsed time in milliseconds
  * @start_ms: Start time from socketreconnect_get_time_ms()
  * Returns: Elapsed milliseconds
+ *
+ * Uses monotonic time, guaranteed non-negative and non-decreasing.
  */
 static inline int64_t
 socketreconnect_elapsed_ms (int64_t start_ms)
 {
-  return socketreconnect_get_time_ms () - start_ms;
+  int64_t now = socketreconnect_get_time_ms ();
+  return (now > start_ms) ? (now - start_ms) : 0;
 }
 
 /**
@@ -133,20 +139,29 @@ socketreconnect_elapsed_ms (int64_t start_ms)
 static inline double
 socketreconnect_random_double (void)
 {
-#ifdef _WIN32
-  static __declspec (thread) unsigned int seed = 0;
-#else
-  static __thread unsigned int seed = 0;
-#endif
-  if (seed == 0)
+  unsigned int value;
+  if (SocketCrypto_random_bytes (&value, sizeof (value)) == 0)
     {
-      seed = (unsigned int)socketreconnect_get_time_ms ();
+      return (double)value / (double)0xFFFFFFFFU;
     }
-  /* xorshift32 */
-  seed ^= seed << 13;
-  seed ^= seed >> 17;
-  seed ^= seed << 5;
-  return (double)seed / (double)0xFFFFFFFFU;
+  else
+    {
+      /* Fallback to time-based PRNG */
+#ifdef _WIN32
+      static __declspec (thread) unsigned int seed = 0;
+#else
+      static __thread unsigned int seed = 0;
+#endif
+      if (seed == 0)
+        {
+          seed = (unsigned int)Socket_get_monotonic_ms ();
+        }
+      /* xorshift32 */
+      seed ^= seed << 13;
+      seed ^= seed >> 17;
+      seed ^= seed << 5;
+      return (double)seed / (double)0xFFFFFFFFU;
+    }
 }
 
 #endif /* SOCKETRECONNECT_PRIVATE_INCLUDED */

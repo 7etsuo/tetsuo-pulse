@@ -10,7 +10,7 @@
  * Uses embedded test certificates for maximum fuzzing speed.
  */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include <signal.h>
 #include <stdint.h>

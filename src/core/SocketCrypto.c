@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
+#include "core/SocketSecurity.h"
 
 #if SOCKET_HAS_TLS
 #include <openssl/crypto.h>
@@ -159,6 +160,10 @@ SocketCrypto_sha1 (const void *input, size_t input_len,
   assert (output);
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-1");
+  if (!SOCKET_SECURITY_VALID_SIZE (input_len)) {
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+        "SHA-1: input too large: %zu > %zu", (size_t)input_len, (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
+  }
 
 #if SOCKET_HAS_TLS
   EVP_MD_CTX *ctx = EVP_MD_CTX_new ();
@@ -180,6 +185,10 @@ SocketCrypto_sha256 (const void *input, size_t input_len,
   assert (output);
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-256");
+  if (!SOCKET_SECURITY_VALID_SIZE (input_len)) {
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+        "SHA-256: input too large: %zu > %zu", (size_t)input_len, (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
+  }
 
 #if SOCKET_HAS_TLS
   EVP_MD_CTX *ctx = EVP_MD_CTX_new ();
@@ -201,6 +210,10 @@ SocketCrypto_md5 (const void *input, size_t input_len,
   assert (output);
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "MD5");
+  if (!SOCKET_SECURITY_VALID_SIZE (input_len)) {
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+        "MD5: input too large: %zu > %zu", (size_t)input_len, (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
+  }
 
 #if SOCKET_HAS_TLS
   EVP_MD_CTX *ctx = NULL;
@@ -239,6 +252,10 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
 
   SOCKET_CRYPTO_CHECK_INPUT (key, key_len, "HMAC-SHA256 key");
   SOCKET_CRYPTO_CHECK_INPUT (data, data_len, "HMAC-SHA256 data");
+  if (!SOCKET_SECURITY_VALID_SIZE (data_len)) {
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+        "HMAC-SHA256: data too large: %zu > %zu", (size_t)data_len, (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
+  }
 
 #if SOCKET_HAS_TLS
   /*
@@ -247,6 +264,10 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
    * weakening the MAC. In practice, HMAC keys should be 32-64 bytes;
    * longer keys are internally hashed anyway.
    */
+  if (!SOCKET_SECURITY_VALID_SIZE (key_len)) {
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+        "HMAC-SHA256: key too large: %zu > %zu", (size_t)key_len, (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
+  }
   if (key_len > (size_t)INT_MAX)
     SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed, "HMAC-SHA256: Key length %zu exceeds INT_MAX", key_len);
 
@@ -387,6 +408,10 @@ SocketCrypto_base64_encode (const void *input, size_t input_len, char *output,
       output[0] = '\0';
       return 0;
     }
+
+  if (!SOCKET_SECURITY_VALID_SIZE (input_len)) {
+    return -1;  /* Buffer too large for security limits */
+  }
 
   required_size = SocketCrypto_base64_encoded_size (input_len);
   if (required_size == 0 || output_size < required_size)
@@ -589,6 +614,10 @@ SocketCrypto_base64_decode (const char *input, size_t input_len,
   if (input_len == 0)
     input_len = strlen (input);
 
+  if (!SOCKET_SECURITY_VALID_SIZE (input_len)) {
+    return -1;  /* Input string too large */
+  }
+
   if (input_len == 0)
     return 0;
 
@@ -634,6 +663,16 @@ SocketCrypto_hex_encode (const void *input, size_t input_len, char *output,
       return;
     }
 
+  if (!SOCKET_SECURITY_VALID_SIZE (input_len)) {
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+        "hex_encode: input too large: %zu > %zu", (size_t)input_len, (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
+  }
+
+  if (input_len > SIZE_MAX / 2) {
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+        "hex_encode: input_len %zu causes index overflow", input_len);
+  }
+
   for (i = 0; i < input_len; i++)
     {
       output[i * 2] = alphabet[(in[i] >> 4) & 0x0F];
@@ -672,6 +711,11 @@ SocketCrypto_hex_decode (const char *input, size_t input_len,
   if (!input || !output)
     return -1;
 
+  /* No auto strlen; caller must provide accurate input_len */
+  if (!SOCKET_SECURITY_VALID_SIZE (input_len)) {
+    return -1;  /* Input string too large */
+  }
+
   if (output_size < input_len / 2)
     return -1;
 
@@ -697,6 +741,13 @@ SocketCrypto_hex_decode (const char *input, size_t input_len,
  * Random Number Generation
  * ============================================================================ */
 
+#if !SOCKET_HAS_TLS
+#include <pthread.h>
+
+static pthread_mutex_t urand_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int urand_fd = -1;
+#endif
+
 int
 SocketCrypto_random_bytes (void *output, size_t len)
 {
@@ -706,15 +757,26 @@ SocketCrypto_random_bytes (void *output, size_t len)
   if (len == 0)
     return 0;
 
+  if (!SOCKET_SECURITY_VALID_SIZE (len)) {
+    return -1;  /* Too large for security limits */
+  }
+
 #if SOCKET_HAS_TLS
   if (RAND_bytes ((unsigned char *)output, (int)len) != 1)
     return -1;
   return 0;
 #else
-  /* Fallback to /dev/urandom when TLS not available */
-  int fd = open ("/dev/urandom", O_RDONLY);
-  if (fd < 0)
-    return -1;
+  /* Fallback to /dev/urandom when TLS not available - cached fd for efficiency */
+  pthread_mutex_lock (&urand_mutex);
+  int fd = urand_fd;
+  if (fd < 0) {
+    fd = open ("/dev/urandom", O_RDONLY);
+    if (fd < 0) {
+      pthread_mutex_unlock (&urand_mutex);
+      return -1;
+    }
+    urand_fd = fd;
+  }
 
   ssize_t bytes_read = 0;
   unsigned char *buf = (unsigned char *)output;
@@ -726,18 +788,18 @@ SocketCrypto_random_bytes (void *output, size_t len)
         {
           if (errno == EINTR)
             continue;
-          close (fd);
+          pthread_mutex_unlock (&urand_mutex);
           return -1;
         }
       if (n == 0)
         {
-          close (fd);
+          pthread_mutex_unlock (&urand_mutex);
           return -1;
         }
       bytes_read += n;
     }
 
-  close (fd);
+  pthread_mutex_unlock (&urand_mutex);
   return 0;
 #endif
 }

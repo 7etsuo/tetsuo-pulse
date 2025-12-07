@@ -221,7 +221,7 @@ if (!SocketAsync_is_available(async)) {
 ## Thread Safety
 
 - **Request Tracking**: Thread-safe via internal mutex
-- **Completion Processing**: Thread-safe, but callbacks are invoked from `SocketPoll_wait()` context
+- **Completion Processing**: Thread-safe, but callbacks are invoked from `SocketPoll_wait()` context. Socket library assumes single-threaded access per socket (e.g., no concurrent TLS I/O on same socket without external locking).
 - **Callback Execution**: Keep callbacks fast - they run in the event loop thread
 
 ## Error Handling

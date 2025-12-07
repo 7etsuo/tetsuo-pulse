@@ -161,11 +161,16 @@ struct SocketHTTPClient
   /* Cookies */
   SocketHTTPClient_CookieJar_T cookie_jar; /**< Associated cookie jar */
 
+#if SOCKET_HAS_TLS
   /* TLS */
   SocketTLSContext_T default_tls_ctx; /**< Default TLS context (owned) */
+#endif
 
   /* Last error */
   SocketHTTPClient_Error last_error;
+
+  /* Thread safety */
+  pthread_mutex_t mutex; /**< Protects shared client state (auth, cookies, pool access) */
 
   /* Memory */
   Arena_T arena;
@@ -254,6 +259,7 @@ struct SocketHTTPClient_AsyncRequest
 typedef struct CookieEntry
 {
   SocketHTTPClient_Cookie cookie; /**< Cookie data (strings owned) */
+  time_t created;                 /**< Creation timestamp for eviction */
   struct CookieEntry *next;       /**< Hash chain */
 } CookieEntry;
 
@@ -265,6 +271,8 @@ struct SocketHTTPClient_CookieJar
   CookieEntry **hash_table;
   size_t hash_size;
   size_t count;
+  size_t max_cookies;
+  unsigned hash_seed; /**< Random seed for hash collision resistance */
   Arena_T arena;
   pthread_mutex_t mutex;
 };
@@ -404,7 +412,8 @@ extern int httpclient_auth_is_stale_nonce (const char *www_authenticate);
 /* Cookie helpers */
 extern int httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
                                            const SocketHTTP_URI *uri,
-                                           char *output, size_t output_size);
+                                           char *output, size_t output_size,
+                                           int enforce_samesite);  /* 1 to enforce SameSite cookie policy */
 extern int httpclient_parse_set_cookie (const char *value, size_t len,
                                         const SocketHTTP_URI *request_uri,
                                         SocketHTTPClient_Cookie *cookie,

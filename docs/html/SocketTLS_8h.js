@@ -24,6 +24,7 @@ var SocketTLS_8h =
     [ "SocketTLS_get_verify_result", "SocketTLS_8h.html#a4fd56e743762151aa449744a8d574164", null ],
     [ "SocketTLS_get_version", "SocketTLS_8h.html#aef0f67021658d05419f1da479be2957e", null ],
     [ "SocketTLS_handshake", "SocketTLS_8h.html#aeaa77dd7852b535baf17b53ee2518454", null ],
+    [ "SocketTLS_handshake_auto", "SocketTLS_8h.html#a54a01327e253586278c0f740c2764010", null ],
     [ "SocketTLS_handshake_loop", "SocketTLS_8h.html#a439248f2ff7b87470520de0607569d06", null ],
     [ "SocketTLS_is_session_reused", "SocketTLS_8h.html#a315ccceb9cb5b74d8b90f1439ce57344", null ],
     [ "SocketTLS_recv", "SocketTLS_8h.html#a1c71fc02141cd9e6da4fdf1c88dbbaf3", null ],

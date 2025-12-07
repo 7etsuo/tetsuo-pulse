@@ -12,6 +12,8 @@
 #include "http/SocketHPACK.h"
 #include <stdint.h>
 
+#include "core/SocketSecurity.h"
+
 /* ============================================================================
  * Internal Constants
  * ============================================================================ */
@@ -111,6 +113,11 @@ struct SocketHPACK_Decoder
   size_t max_header_list_size;     /**< Max total decoded size */
   size_t settings_max_table_size;  /**< Max size from SETTINGS */
   Arena_T arena;                   /**< Memory arena */
+
+  /* Decompression bomb protection */
+  uint64_t decode_input_bytes;     /**< Cumulative input bytes in current decode session */
+  uint64_t decode_output_bytes;    /**< Cumulative output bytes in current decode session */
+  double max_expansion_ratio;      /**< Max allowed output/input ratio (default 10.0) */
 };
 
 /* ============================================================================
@@ -192,7 +199,12 @@ extern size_t hpack_table_evict (SocketHPACK_Table_T table,
 static inline size_t
 hpack_entry_size (size_t name_len, size_t value_len)
 {
-  return name_len + value_len + SOCKETHPACK_ENTRY_OVERHEAD;
+  size_t temp;
+  if (SocketSecurity_check_add(name_len, value_len, &temp) &&
+      SocketSecurity_check_add(temp, SOCKETHPACK_ENTRY_OVERHEAD, &temp)) {
+    return temp;
+  }
+  return SIZE_MAX; /* Overflow or invalid - caller should check */
 }
 
 #endif /* SOCKETHPACK_PRIVATE_INCLUDED */

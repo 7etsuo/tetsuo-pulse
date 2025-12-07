@@ -182,6 +182,14 @@ add_optional_host_header (const SocketHTTP_Request *request, char **buf, size_t 
   if (safe_append (buf, remaining, HTTP_HOST_PREFIX, HTTP_HOST_PREFIX_LEN) < 0)
     return -1;
 
+  {
+    size_t auth_len = strlen(request->authority);
+    if (!SocketHTTP_header_value_valid(request->authority, auth_len)) {
+      SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
+                        "Invalid authority contains forbidden characters (CR/LF/NUL)");
+    }
+  }
+
   if (safe_append_str (buf, remaining, request->authority) < 0)
     return -1;
 
@@ -261,6 +269,15 @@ serialize_request_line (const SocketHTTP_Request *request, char **buf, size_t *r
     return -1;
 
   target = request->path && request->path[0] ? request->path : "/";
+
+  {
+    size_t target_len = strlen(target);
+    if (!SocketHTTP_header_value_valid(target, target_len)) {
+      SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
+                        "Invalid request target contains forbidden characters (CR/LF/NUL)");
+    }
+  }
+
   if (safe_append_str (buf, remaining, target) < 0)
     return -1;
 
@@ -367,6 +384,11 @@ serialize_response_line (const SocketHTTP_Response *response, char **buf, size_t
     response->reason_phrase : SocketHTTP_status_reason (response->status_code);
 
   if (reason) {
+    size_t reason_len = strlen(reason);
+    if (!SocketHTTP_header_value_valid(reason, reason_len)) {
+      SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
+                        "Invalid reason phrase contains forbidden characters (CR/LF/NUL)");
+    }
     if (safe_append_str (buf, remaining, reason) < 0)
       return -1;
   }

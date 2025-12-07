@@ -8,6 +8,10 @@ var SocketHTTP2_8h_structSocketHTTP2__Config =
     [ "max_concurrent_streams", "SocketHTTP2_8h.html#a4f948d55c4fc6947b5da693aad073731", null ],
     [ "max_frame_size", "SocketHTTP2_8h.html#ae782ebee629c89a54830be6dbe1b9dc0", null ],
     [ "max_header_list_size", "SocketHTTP2_8h.html#ae41f20c6701d09c2282323da601db1dc", null ],
+    [ "max_stream_close_burst", "SocketHTTP2_8h.html#a4572833d76ee10a1bddd1470cc789d4f", null ],
+    [ "max_stream_close_rate", "SocketHTTP2_8h.html#a938e74eab04a08111335da2fcec3f2d0", null ],
+    [ "max_stream_open_burst", "SocketHTTP2_8h.html#aa7d444c755f09f5ebca1a996c71b5120", null ],
+    [ "max_stream_open_rate", "SocketHTTP2_8h.html#a47341b7c9c96d8de9fbbd75debe89d0e", null ],
     [ "ping_timeout_ms", "SocketHTTP2_8h.html#a50c501438f1e35ef6260bb4de12719fa", null ],
     [ "role", "SocketHTTP2_8h.html#a8baa42ce5d63ef1d1269bfc2e3ae83ee", null ],
     [ "settings_timeout_ms", "SocketHTTP2_8h.html#affa0492a72097f3972ca3aa8ba5ea651", null ]

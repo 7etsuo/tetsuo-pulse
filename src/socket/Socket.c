@@ -39,6 +39,7 @@
 
 #if SOCKET_HAS_TLS
 #include <openssl/ssl.h>
+#include "tls/SocketTLS-private.h"  /* For tls_cleanup_alpn_temp etc. */
 #endif
 
 #define T Socket_T
@@ -159,6 +160,7 @@ allocate_socket_from_fd (Arena_T arena, int fd)
   T sock;
 
   sock = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
+  atomic_store_explicit(&sock->freed, 0, memory_order_relaxed);
   if (!sock)
     {
       Arena_dispose (&arena);
@@ -226,6 +228,7 @@ Socket_new (int domain, int type, int protocol)
 
   sock = Arena_calloc (SocketBase_arena (base), 1, sizeof (struct Socket_T),
                        __FILE__, __LINE__);
+  atomic_store_explicit(&sock->freed, 0, memory_order_relaxed);
   if (!sock)
     {
       SocketCommon_free_base (&base);
@@ -251,13 +254,22 @@ Socket_free (T *socket)
   if (!s)
     return;
 
+  int was_first = (atomic_exchange_explicit(&s->freed, 1, memory_order_acq_rel) == 0);
   *socket = NULL; /* Invalidate caller pointer before cleanup to avoid UB */
+
+  if (!was_first)
+    {
+      /* Already freed by concurrent thread - skip to prevent double-free */
+      return;
+    }
 
   /* Stream-specific cleanup (TLS) before base free */
 #if SOCKET_HAS_TLS
   if (s->tls_ssl)
     {
-      SSL_free ((SSL *)s->tls_ssl);
+      SSL *tls_ssl = (SSL *)s->tls_ssl;
+      tls_cleanup_alpn_temp (tls_ssl);  /* Free ALPN temp if stored */
+      SSL_free (tls_ssl);
       s->tls_ssl = NULL;
     }
     /* Add other TLS cleanup if necessary (e.g., ctx if owned per socket) */
@@ -266,7 +278,7 @@ Socket_free (T *socket)
   /* Common base cleanup: closes fd, disposes arena (frees s too) */
   SocketCommon_free_base (&s->base);
 
-  /* Type-specific decrement */
+  /* Type-specific decrement - only by the thread that actually frees */
   socket_live_decrement ();
   /* Caller pointer already invalidated earlier */
 }
@@ -903,6 +915,7 @@ accept_alloc_socket (Arena_T arena)
 {
   T newsocket = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__,
                               __LINE__);
+  atomic_store_explicit(&newsocket->freed, 0, memory_order_relaxed);
   if (!newsocket)
     {
       Arena_dispose (&arena);
@@ -1192,6 +1205,7 @@ socketpair_allocate_socket (int fd, int type, Socket_T *out_socket)
                       SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
 
   sock = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
+  atomic_store_explicit(&sock->freed, 0, memory_order_relaxed);
   if (!sock)
     {
       Arena_dispose (&arena);
@@ -1230,6 +1244,7 @@ socketpair_cleanup_socket (Socket_T sock, int fd)
 #if SOCKET_HAS_TLS
       if (sock->tls_ssl)
         {
+          tls_cleanup_alpn_temp ((SSL *)sock->tls_ssl);  /* Free ALPN temp if stored */
           SSL_free ((SSL *)sock->tls_ssl);
           sock->tls_ssl = NULL;
         }

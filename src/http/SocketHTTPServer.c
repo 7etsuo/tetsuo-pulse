@@ -275,6 +275,12 @@ SocketHTTPServer_new (const SocketHTTPServer_Config *config)
   server->config = *config;
   server->state = HTTPSERVER_STATE_RUNNING;
 
+  /* Initialize per-server stats mutex */
+  if (pthread_mutex_init(&server->stats_mutex, NULL) != 0) {
+    /* Log error but continue - fallback to no RPS calc */
+    SOCKET_LOG_WARN_MSG("Failed to init HTTPServer stats mutex");
+  }
+
   /* Create poll instance */
   server->poll = SocketPoll_new ((int)config->max_connections + 1);
   if (server->poll == NULL)
@@ -344,7 +350,8 @@ SocketHTTPServer_free (SocketHTTPServer_T *server)
       Arena_dispose (&s->arena);
     }
 
-  /* No custom mutex to destroy */
+  /* Destroy stats mutex */
+  pthread_mutex_destroy(&s->stats_mutex);
 
   free (s);
   *server = NULL;
@@ -619,6 +626,16 @@ server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
 static int
 server_handle_parsed_request (SocketHTTPServer_T server, ServerConnection *conn)
 {
+  const SocketHTTP_Request *req = conn->request;
+  if (req == NULL) return 0;
+
+  const char *path = req->path;
+  /* Validate path to prevent malformed input in rate limit/validator */
+  if (path == NULL || strlen(path) > SOCKETHTTP_MAX_URI_LEN || path[0] != '/') {
+    connection_send_error (server, conn, 400, "Bad Request");
+    return 0;
+  }
+
   if (!server_check_rate_limit (server, conn))
     return 0;
 
@@ -689,6 +706,15 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
       SocketBuf_consume (conn->inbuf, consumed);
       conn->body_len += written;
 
+      /* Reject oversized bodies early to prevent DoS */
+      if (conn->body_len > server->config.max_body_size &&
+          !SocketHTTP1_Parser_body_complete (conn->parser)) {
+        SocketMetrics_counter_inc(SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+        connection_send_error (server, conn, 413, "Payload Too Large");
+        conn->state = CONN_STATE_CLOSED;
+        return requests_processed;
+      }
+
       if (r == HTTP1_ERROR || r < 0) {
         /* Error in body reading (e.g., invalid chunk) */
         SocketMetrics_counter_inc(SOCKET_CTR_HTTP_RESPONSES_5XX);
@@ -704,7 +730,7 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
       }
 
       /* TODO: Handle body_streaming callback invocation on written data */
-      /* TODO: Support dynamic allocation for chunked bodies */
+      /* TODO: Support dynamic allocation for chunked bodies - but enforce max_size strictly */
     }
 
   if (conn->state == CONN_STATE_CLOSED)
@@ -1203,30 +1229,40 @@ SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req)
   SocketWS_config_defaults(&config);
   /* TODO: Configure from server config (e.g., compression, subprotocols) */
 
+  SocketWS_T ws = NULL;
   TRY
   {
-    SocketWS_T ws = SocketWS_server_accept(req->conn->socket, req->conn->request, &config);
-    /* Ownership of socket transferred to ws */
+    ws = SocketWS_server_accept(req->conn->socket, req->conn->request, &config);
+    if (ws == NULL) {
+      RAISE_HTTPSERVER_ERROR(SocketHTTPServer_Failed);
+    }
+    /* Ownership of socket transferred to ws - prevent double-free */
 
-    /* Remove from server poll and connection list */
+    /* Remove from server poll before nulling socket */
     SocketPoll_del(req->server->poll, req->conn->socket);
-    connection_close(req->server, req->conn);  /* But ws owns socket now, so adjust close not to free socket */
+    req->conn->socket = NULL;  /* Transfer ownership, skip free in connection_close */
+
+    /* Close connection resources but skip socket free (now owned by ws) */
+    connection_close(req->server, req->conn);
 
     /* Note: Full integration requires managing ws in separate poll or wrapper */
-    /* For now, returns ws for manual management */
+    /* For now, returns ws for manual management - user must poll/process ws events */
 
-    /* Start handshake - may need multiple calls */
+    /* Start handshake - may require multiple calls in non-blocking mode */
     SocketWS_handshake(ws);
 
     return ws;
   }
   EXCEPT (SocketWS_Failed)
   {
+    if (ws != NULL) {
+      SocketWS_free(&ws);
+    }
     RAISE_HTTPSERVER_ERROR(SocketHTTPServer_Failed);
   }
   END_TRY;
 
-  return NULL;  /* Unreachable */
+  return NULL;  /* Only reached on alloc failures before accept */
 }
 
 /* ============================================================================
@@ -1447,20 +1483,23 @@ SocketHTTPServer_stats (SocketHTTPServer_T server, SocketHTTPServer_Stats *stats
   stats->connections_rejected = SocketMetrics_counter_get(SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED);  /* Or custom if tracked */
   /* timeouts, rate_limited: use custom or map to failed counters */
 
-  /* RPS approximation: delta requests / delta time (requires previous snapshot for accuracy) */
-  /* For now, set to 0 or compute simple rate */
-  static uint64_t prev_requests = 0;
-  static int64_t prev_time = 0;
+  /* RPS approximation: delta requests / delta time using per-server tracking */
+  /* Thread-safe via mutex */
+  uint64_t prev_requests = server->stats_prev_requests;
+  int64_t prev_time = server->stats_prev_time_ms;
   int64_t now = Socket_get_monotonic_ms();
   uint64_t curr_requests = stats->total_requests;
+
+  pthread_mutex_lock(&server->stats_mutex);
   if (prev_time > 0 && now > prev_time) {
     double seconds = (double)(now - prev_time) / 1000.0;
     if (seconds > 0.0) {
       stats->requests_per_second = (size_t)((curr_requests - prev_requests) / seconds);
     }
   }
-  prev_requests = curr_requests;
-  prev_time = now;
+  server->stats_prev_requests = curr_requests;
+  server->stats_prev_time_ms = now;
+  pthread_mutex_unlock(&server->stats_mutex);
 
   /* Latency from histogram snapshot (unit: ms in metric, convert to us) */
   SocketMetrics_HistogramSnapshot snap;

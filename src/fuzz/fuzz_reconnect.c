@@ -103,7 +103,8 @@ make_hostname (char *buf, size_t bufsize, const uint8_t *data, size_t size)
 {
   if (size == 0 || bufsize < 2)
     {
-      strcpy (buf, "localhost");
+      strncpy (buf, "localhost", bufsize - 1);
+    buf[bufsize - 1] = '\0';
       return;
     }
 
@@ -130,7 +131,8 @@ make_hostname (char *buf, size_t bufsize, const uint8_t *data, size_t size)
 
   /* Ensure non-empty */
   if (buf[0] == '\0')
-    strcpy (buf, "localhost");
+    strncpy (buf, "localhost", bufsize - 1);
+    buf[bufsize - 1] = '\0';
 }
 
 /**

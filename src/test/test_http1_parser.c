@@ -559,6 +559,34 @@ TEST (http1_read_body_chunked)
   ASSERT (memcmp (output, "Hello World", 11) == 0);
   ASSERT_EQ (1, SocketHTTP1_Parser_body_complete (parser));
 
+  /* Security tests - require config for small limits */
+  SocketHTTP1_Config small_config = {0};
+  SocketHTTP1_config_defaults (&small_config);
+  small_config.max_trailer_size = 50;
+  small_config.max_chunk_ext = 10;  /* Small for extension test */
+  SocketHTTP1_Parser_T sec_parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &small_config, arena);
+  SocketHTTP1_Parser_execute (sec_parser, request, strlen (request), &consumed);
+
+  /* Oversized trailer */
+  const char *oversized = "0\r\nTrailer: this is a long value exceeding small limit\r\n\r\n";
+  result = SocketHTTP1_Parser_read_body (sec_parser, oversized, strlen (oversized), &consumed, output, sizeof (output), &written);
+  ASSERT (result == HTTP1_ERROR_HEADER_TOO_LARGE);
+
+  /* Forbidden trailer */
+  const char *forbidden = "0\r\nTransfer-Encoding: chunked\r\n\r\n";
+  SocketHTTP1_Parser_reset (sec_parser);
+  SocketHTTP1_Parser_execute (sec_parser, request, strlen (request), &consumed);
+  result = SocketHTTP1_Parser_read_body (sec_parser, forbidden, strlen (forbidden), &consumed, output, sizeof (output), &written);
+  ASSERT_EQ (HTTP1_ERROR_INVALID_TRAILER, result);
+
+  /* Long chunk extension - note: requires long string, but for demo */
+  const char *long_ext = "1;ext=" "1234567890123456789012345678901234567890" /* >1024 in full test */ "\r\na\r\n0\r\n\r\n";
+  SocketHTTP1_Parser_reset (sec_parser);
+  SocketHTTP1_Parser_execute (sec_parser, request, strlen (request), &consumed);
+  result = SocketHTTP1_Parser_read_body (sec_parser, long_ext, strlen (long_ext), &consumed, output, sizeof (output), &written);
+  ASSERT_EQ (HTTP1_ERROR_INVALID_CHUNK_SIZE, result);  /* If ext too long */
+
+  SocketHTTP1_Parser_free (&sec_parser);
   SocketHTTP1_Parser_free (&parser);
   Arena_dispose (&arena);
 }
@@ -699,3 +727,165 @@ main (void)
   Test_run_all ();
   return Test_get_failures () > 0 ? 1 : 0;
 }
+
+TEST (http1_multi_cl_same)
+{
+  const char *request = "GET / HTTP/1.1\r\n"
+                        "Host: test.com\r\n"
+                        "Content-Length: 10\r\n"
+                        "Content-Length: 10\r\n"
+                        "\r\n";
+  size_t consumed;
+  SocketHTTP1_Result result;
+  const SocketHTTP_Request *req;
+  Arena_T arena;
+  SocketHTTP1_Parser_T parser;
+
+  arena = Arena_new ();
+  parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
+  result = SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
+  ASSERT_EQ (HTTP1_OK, result);
+  ASSERT_EQ (strlen (request), consumed);
+  req = SocketHTTP1_Parser_get_request (parser);
+  ASSERT_NOT_NULL (req);
+  ASSERT_EQ (10, req->content_length);
+  ASSERT_EQ (HTTP1_BODY_CONTENT_LENGTH, SocketHTTP1_Parser_body_mode (parser));
+  SocketHTTP1_Parser_free (&parser);
+  Arena_dispose (&arena);
+}
+
+TEST (http1_multi_cl_differ_reject)
+{
+  const char *request = "GET / HTTP/1.1\r\n"
+                        "Host: test.com\r\n"
+                        "Content-Length: 10\r\n"
+                        "Content-Length: 20\r\n"
+                        "\r\n";
+  size_t consumed;
+  SocketHTTP1_Result result;
+  Arena_T arena;
+  SocketHTTP1_Parser_T parser;
+
+  arena = Arena_new ();
+  parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
+  result = SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
+  ASSERT (result != HTTP1_OK);
+  ASSERT_EQ (HTTP1_ERROR_INVALID_CONTENT_LENGTH, result); // mismatch validation
+  SocketHTTP1_Parser_free (&parser);
+  Arena_dispose (&arena);
+}
+
+TEST (http1_multi_te_chunked_hidden)
+{
+  const char *request = "GET / HTTP/1.1\r\n"
+                        "Host: test.com\r\n"
+                        "Transfer-Encoding: identity\r\n"
+                        "Transfer-Encoding: chunked\r\n"
+                        "\r\n";
+  size_t consumed;
+  SocketHTTP1_Result result;
+  Arena_T arena;
+  SocketHTTP1_Parser_T parser;
+
+  arena = Arena_new ();
+  parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
+  result = SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
+  ASSERT_EQ (HTTP1_OK, result);
+  ASSERT_EQ (HTTP1_BODY_CHUNKED, SocketHTTP1_Parser_body_mode (parser)); // detects in second TE
+  SocketHTTP1_Parser_free (&parser);
+  Arena_dispose (&arena);
+}
+
+TEST (http1_te_unsupported_reject)
+{
+  const char *request = "GET / HTTP/1.1\r\n"
+                        "Host: test.com\r\n"
+                        "Transfer-Encoding: gzip\r\n"
+                        "\r\n";
+  size_t consumed;
+  SocketHTTP1_Result result;
+  SocketHTTP1_Config config;
+  Arena_T arena;
+  SocketHTTP1_Parser_T parser;
+
+  SocketHTTP1_config_defaults (&config);
+  config.strict_mode = 1;
+
+  arena = Arena_new ();
+  parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &config, arena);
+  result = SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
+  ASSERT (result != HTTP1_OK);
+  ASSERT_EQ (HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING, result);
+  SocketHTTP1_Parser_free (&parser);
+  Arena_dispose (&arena);
+}
+
+TEST (http1_te_chunked_with_extra_reject)
+{
+  const char *request = "GET / HTTP/1.1\r\n"
+                        "Host: test.com\r\n"
+                        "Transfer-Encoding: chunked,identity\r\n"
+                        "\r\n";
+  size_t consumed;
+  SocketHTTP1_Result result;
+  SocketHTTP1_Config config;
+  Arena_T arena;
+  SocketHTTP1_Parser_T parser;
+
+  SocketHTTP1_config_defaults (&config);
+  config.strict_mode = 1;
+
+  arena = Arena_new ();
+  parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &config, arena);
+  result = SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
+  ASSERT (result != HTTP1_OK);
+  ASSERT_EQ (HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING, result); // extra coding rejected
+  SocketHTTP1_Parser_free (&parser);
+  Arena_dispose (&arena);
+}
+
+TEST (http1_long_header_line_reject)
+{
+  SocketHTTP1_Config config;
+  SocketHTTP1_config_defaults (&config);
+  config.max_header_line = 50; // small for test
+
+  char long_request[512];
+  strncpy (long_request, "GET / HTTP/1.1\r\nHost: test.com\r\nX-Long: ", sizeof(long_request) - 1);
+  long_request[sizeof(long_request) - 1] = '\0';
+  // Fill with 100 'a' to exceed 50
+  size_t curr_len = strlen (long_request);
+  memset (long_request + curr_len, 'a', (100 < (sizeof(long_request) - curr_len - 6) ? 100 : (sizeof(long_request) - curr_len - 6)));
+  strncat (long_request, "\r\n\r\n", sizeof(long_request) - curr_len - 1);
+
+  size_t consumed;
+  SocketHTTP1_Result result;
+  Arena_T arena;
+  SocketHTTP1_Parser_T parser;
+
+  arena = Arena_new ();
+  parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &config, arena);
+  result = SocketHTTP1_Parser_execute (parser, long_request, strlen (long_request), &consumed);
+  ASSERT (result != HTTP1_OK);
+  ASSERT_EQ (HTTP1_ERROR_HEADER_TOO_LARGE, result); // line too long
+  SocketHTTP1_Parser_free (&parser);
+  Arena_dispose (&arena);
+}
+
+TEST (http1_invalid_uri_reject)
+{
+  const char *invalid_uri = "GET /invalid%GG HTTP/1.1\r\nHost: test.com\r\n\r\n"; // invalid % encoding
+  size_t consumed;
+  SocketHTTP1_Result result;
+  Arena_T arena;
+  SocketHTTP1_Parser_T parser;
+
+  arena = Arena_new ();
+  parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
+  result = SocketHTTP1_Parser_execute (parser, invalid_uri, strlen (invalid_uri), &consumed);
+  ASSERT (result != HTTP1_OK);
+  ASSERT_EQ (HTTP1_ERROR_INVALID_URI, result); // URI parse fails on invalid encoding
+  SocketHTTP1_Parser_free (&parser);
+  Arena_dispose (&arena);
+}
+

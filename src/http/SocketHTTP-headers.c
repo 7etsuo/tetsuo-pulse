@@ -15,12 +15,21 @@
 
 
 #include <string.h>
+#include "core/SocketSecurity.h"
 
 /* ============================================================================
  * Module-Specific Error Handling
  * ============================================================================ */
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+/* Note: DetailedException unused in this file as no exceptions raised here */
 
 #define RAISE_HTTP_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTP, e)
 
@@ -30,6 +39,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 
 /** Overhead for null terminators in header entry size calculation */
 #define HEADER_ENTRY_NULL_OVERHEAD 2
+
+/** Maximum chain length per bucket to prevent hash collision DoS attacks */
+#define SOCKETHTTP_MAX_CHAIN_LEN 10
 
 /* ============================================================================
  * Internal Helper Functions - String Operations
@@ -56,8 +68,15 @@ find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
   unsigned bucket = socket_util_hash_djb2_ci_len (name, name_len, SOCKETHTTP_HEADER_BUCKETS);
   HeaderEntry *entry = headers->buckets[bucket];
 
+  /* SECURITY: Limit traversal to prevent hash collision DoS */
+  int chain_len = 0;
   while (entry)
     {
+      chain_len++;
+      if (chain_len > SOCKETHTTP_MAX_CHAIN_LEN * 2) {  /* Allow double for search tolerance */
+        SOCKET_LOG_WARN_MSG ("SocketHTTP", "Excessive hash chain length %d in bucket %u - potential DoS", chain_len, bucket);
+        return NULL;
+      }
       if (sockethttp_name_equal (entry->name, entry->name_len, name, name_len))
         return entry;
       entry = entry->hash_next;
@@ -70,12 +89,27 @@ find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
  * @headers: Header collection
  * @entry: Entry to add
  */
-static void
+/** Maximum chain length per bucket to prevent hash collision DoS attacks */
+#define SOCKETHTTP_MAX_CHAIN_LEN 10
+
+static int
 add_to_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 {
   unsigned bucket = socket_util_hash_djb2_ci_len (entry->name, entry->name_len, SOCKETHTTP_HEADER_BUCKETS);
+
+  /* SECURITY: Check current chain length to prevent hash collision DoS */
+  int chain_len = 0;
+  for (HeaderEntry *curr = headers->buckets[bucket]; curr; curr = curr->hash_next) {
+    chain_len++;
+    if (chain_len > SOCKETHTTP_MAX_CHAIN_LEN)
+      return -1;  /* Bucket too crowded - potential DoS */
+  }
+  if (chain_len >= SOCKETHTTP_MAX_CHAIN_LEN)
+    return -1;
+
   entry->hash_next = headers->buckets[bucket];
   headers->buckets[bucket] = entry;
+  return 0;
 }
 
 /**
@@ -149,7 +183,19 @@ remove_one_n (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
   if (!entry)
     return 0;
 
-  headers->total_size -= (entry->name_len + entry->value_len + HEADER_ENTRY_NULL_OVERHEAD);
+  size_t delta_temp;
+  size_t delta;
+  if (!SocketSecurity_check_add (entry->name_len, entry->value_len, &delta_temp) ||
+      !SocketSecurity_check_add (delta_temp, HEADER_ENTRY_NULL_OVERHEAD, &delta)) {
+    /* Invalid entry sizes, reset total */
+    headers->total_size = 0;
+    SOCKET_LOG_WARN_MSG ("SocketHTTP", "Invalid header entry sizes in remove");
+  } else if (delta > headers->total_size) {
+    headers->total_size = 0;
+    SOCKET_LOG_WARN_MSG ("SocketHTTP", "Header total_size underflow in remove");
+  } else {
+    headers->total_size -= delta;
+  }
 
   remove_from_bucket (headers, entry);
   remove_from_list (headers, entry);
@@ -223,9 +269,12 @@ token_equal_ci (const char *token, size_t token_len, const char *target,
 static int
 validate_header_limits (SocketHTTP_Headers_T headers, size_t entry_size)
 {
-  if (headers->count >= SOCKETHTTP_MAX_HEADERS)
+  size_t new_count;
+  if (!SocketSecurity_check_add (headers->count, 1, &new_count) || new_count > SOCKETHTTP_MAX_HEADERS)
     return -1;
-  if (headers->total_size + entry_size > SOCKETHTTP_MAX_HEADER_SIZE)
+
+  size_t new_total;
+  if (!SocketSecurity_check_add (headers->total_size, entry_size, &new_total) || new_total > SOCKETHTTP_MAX_HEADER_SIZE)
     return -1;
   return 0;
 }
@@ -340,7 +389,12 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
   if (!SocketHTTP_header_value_valid (value, value_len))
     return -1;
 
-  size_t entry_size = name_len + value_len + HEADER_ENTRY_NULL_OVERHEAD;
+  size_t temp_size;
+  if (!SocketSecurity_check_add (name_len, value_len, &temp_size))
+    return -1;
+  size_t entry_size;
+  if (!SocketSecurity_check_add (temp_size, HEADER_ENTRY_NULL_OVERHEAD, &entry_size))
+    return -1;
   if (validate_header_limits (headers, entry_size) < 0)
     return -1;
 
@@ -354,7 +408,9 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
   if (allocate_entry_value (headers->arena, entry, value, value_len) < 0)
     return -1;
 
-  add_to_bucket (headers, entry);
+  if (add_to_bucket (headers, entry) < 0)
+    return -1;
+
   add_to_list (headers, entry);
   headers->count++;
   headers->total_size += entry_size;

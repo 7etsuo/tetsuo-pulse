@@ -16,7 +16,7 @@
 /* Fallback definitions for disabled optional modules */
 /* These ensure SocketSecurity functions compile and return safe (disabled) values when modules are excluded */
 
-#ifndef SOCKET_HAS_HTTP
+#if !SOCKET_HAS_HTTP
 #define SOCKETHTTP_MAX_URI_LEN                      0
 #define SOCKETHTTP_MAX_HEADER_NAME                  0
 #define SOCKETHTTP_MAX_HEADER_VALUE                 0
@@ -27,9 +27,10 @@
 #define SOCKETHTTP2_DEFAULT_MAX_CONCURRENT_STREAMS  0
 #define SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE          0
 #define SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE    0
+#define SOCKETHPACK_MAX_TABLE_SIZE                   0
 #endif
 
-#ifndef SOCKET_HAS_WEBSOCKET
+#if !SOCKET_HAS_WEBSOCKET
 #define SOCKETWS_MAX_FRAME_SIZE                     0
 #define SOCKETWS_MAX_MESSAGE_SIZE                   0
 #endif
@@ -47,6 +48,7 @@
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
 #include "http/SocketHTTP2.h"
+#include "http/SocketHPACK.h"
 #endif
 
 
@@ -97,15 +99,11 @@ const Except_T SocketSecurity_ValidationFailed
  * Fallbacks removed since SOCKET_HAS_TLS=1
  */
 
-/* ============================================================================
- * Static Helper Functions - Populate Limit Categories
- * ============================================================================
- *
- * Each helper populates a specific category of limits. This keeps functions
- * small and single-purpose per GNU/CII guidelines.
- */
 
-/* Populate helper functions defined above for modularity and small functions */
+
+
+
+
 
 /* ============================================================================
  * Static Helper Functions - Populate Limit Categories
@@ -128,6 +126,7 @@ populate_memory_limits (SocketSecurityLimits *limits)
         limits->max_allocation = SOCKET_SECURITY_MAX_ALLOCATION;
         limits->max_buffer_size = SOCKET_MAX_BUFFER_SIZE;
         limits->max_connections = SOCKET_MAX_CONNECTIONS;
+        limits->arena_max_alloc_size = ARENA_MAX_ALLOC_SIZE;
 }
 
 /**
@@ -177,6 +176,21 @@ populate_http2_limits (SocketSecurityLimits *limits)
         limits->http2_max_header_list_size = SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE;
 }
 
+ 
+
+/**
+ * populate_hpack_limits - Set HPACK limits
+ * @limits: Limits structure to populate (must not be NULL)
+ *
+ * Thread-safe: Yes
+ */
+static void
+populate_hpack_limits (SocketSecurityLimits *limits)
+{
+        assert (limits != NULL);
+        limits->hpack_max_table_size = SOCKETHPACK_MAX_TABLE_SIZE;
+}
+
 /**
  * populate_ws_limits - Set WebSocket limits
  * @limits: Limits structure to populate (must not be NULL)
@@ -191,7 +205,6 @@ populate_ws_limits (SocketSecurityLimits *limits)
         limits->ws_max_message_size = SOCKETWS_MAX_MESSAGE_SIZE;
 }
 
-#if SOCKET_HAS_TLS
 /**
  * populate_tls_limits - Set TLS limits
  * @limits: Limits structure to populate (must not be NULL)
@@ -201,11 +214,17 @@ populate_ws_limits (SocketSecurityLimits *limits)
 static void
 populate_tls_limits (SocketSecurityLimits *limits)
 {
+#if SOCKET_HAS_TLS
         assert (limits != NULL);
         limits->tls_max_cert_chain_depth = SOCKET_TLS_MAX_CERT_CHAIN_DEPTH;
         limits->tls_session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
-}
+        limits->tls_max_alpn_protocols = SOCKET_TLS_MAX_ALPN_PROTOCOLS;
+        limits->tls_max_alpn_len = SOCKET_TLS_MAX_ALPN_LEN;
+        limits->tls_max_alpn_total_bytes = SOCKET_TLS_MAX_ALPN_TOTAL_BYTES; /* From config, e.g., 1024 for DoS protection */
+#else
+        (void)limits;  /* Unused when TLS disabled */
 #endif
+}
 
 /**
  * populate_ratelimit_limits - Set rate limiting defaults
@@ -272,17 +291,12 @@ SocketSecurity_get_limits (SocketSecurityLimits *limits)
         }
 
         populate_memory_limits(limits);
-#if SOCKET_HAS_HTTP
         populate_http_limits(limits);
         populate_http1_limits(limits);
         populate_http2_limits(limits);
-#endif
-#if SOCKET_HAS_WEBSOCKET
+        populate_hpack_limits(limits);
         populate_ws_limits(limits);
-#endif
-#if SOCKET_HAS_TLS
         populate_tls_limits(limits);
-#endif
         populate_ratelimit_limits(limits);
         populate_timeout_limits(limits);
 }
@@ -332,6 +346,30 @@ SocketSecurity_get_ws_limits (size_t *max_frame, size_t *max_message)
 {
         set_size_ptr (max_frame, SOCKETWS_MAX_FRAME_SIZE);
         set_size_ptr (max_message, SOCKETWS_MAX_MESSAGE_SIZE);
+}
+
+/**
+ * SocketSecurity_get_arena_limits - Get arena memory limits
+ * @max_alloc: Output for max arena allocation size (may be NULL)
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketSecurity_get_arena_limits (size_t *max_alloc)
+{
+        set_size_ptr (max_alloc, ARENA_MAX_ALLOC_SIZE);
+}
+
+/**
+ * SocketSecurity_get_hpack_limits - Get HPACK-specific limits
+ * @max_table: Output for max dynamic table size (may be NULL)
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketSecurity_get_hpack_limits (size_t *max_table)
+{
+        set_size_ptr (max_table, SOCKETHPACK_MAX_TABLE_SIZE);
 }
 
 /* ============================================================================

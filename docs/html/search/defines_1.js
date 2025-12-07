@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['calloc_0',['CALLOC',['../Arena_8h.html#af5249a1778cd6cf5db0e2e410b292934',1,'Arena.h']]]
+  ['buffer_5fsize_0',['BUFFER_SIZE',['../graceful__shutdown_8c.html#a6b20d41d6252e9871430c242cb1a56e7',1,'graceful_shutdown.c']]]
 ];

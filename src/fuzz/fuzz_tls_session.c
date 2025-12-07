@@ -12,7 +12,7 @@
  * Run:   ./fuzz_tls_session corpus/tls_session/ -fork=16 -max_len=256
  */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include <assert.h>
 #include <stddef.h>

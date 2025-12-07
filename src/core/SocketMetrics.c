@@ -167,6 +167,16 @@ static const char *const counter_names[SOCKET_COUNTER_METRIC_COUNT] = {
   "tls_session_reuse_count",
   "tls_cert_verify_failures",
   "tls_renegotiations",
+  "tls_pinning_failures",
+  "tls_ct_verification_failures",
+  "tls_crl_check_failures",
+  /* DTLS */
+  "dtls_handshakes_total",
+  "dtls_handshakes_failed",
+  "dtls_cookies_generated",
+  "dtls_cookie_verification_failures",
+  "dtls_replay_packets_detected",
+  "dtls_fragment_failures",
   /* DNS */
   "dns_queries_total",
   "dns_queries_failed",
@@ -237,6 +247,16 @@ static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
   "TLS session resumption count",
   "TLS certificate verification failures",
   "TLS renegotiation attempts (blocked)",
+  "TLS certificate pinning failures",
+  "TLS Certificate Transparency verification failures",
+  "TLS CRL/OCSP revocation check failures",
+  /* DTLS */
+  "Total DTLS handshakes attempted",
+  "Failed DTLS handshakes",
+  "DTLS hello cookies generated for SYN protection",
+  "Invalid or expired DTLS cookies",
+  "DTLS packets rejected due to replay detection",
+  "DTLS fragmented message reassembly failures",
   /* DNS */
   "Total DNS queries submitted",
   "Failed DNS queries",
@@ -289,6 +309,7 @@ static const char *const gauge_names[SOCKET_GAUGE_METRIC_COUNT] = {
   /* TLS */
   "tls_active_sessions",
   "tls_cached_sessions",
+  "dtls_active_sessions",
   /* DNS */
   "dns_pending_queries",
   "dns_worker_threads",
@@ -319,6 +340,7 @@ static const char *const gauge_help[SOCKET_GAUGE_METRIC_COUNT] = {
   /* TLS */
   "Active TLS sessions",
   "Cached TLS session tickets",
+  "Active DTLS sessions",
   /* DNS */
   "Pending DNS queries",
   "Active DNS worker threads",
@@ -349,6 +371,7 @@ static const char *const histogram_names[SOCKET_HISTOGRAM_METRIC_COUNT] = {
   "http_server_request_size",
   /* TLS */
   "tls_handshake_time_ms",
+  "dtls_handshake_time_ms",
   /* DNS */
   "dns_query_time_ms",
   /* Socket */
@@ -371,6 +394,7 @@ static const char *const histogram_help[SOCKET_HISTOGRAM_METRIC_COUNT] = {
   "HTTP request body size (bytes)",
   /* TLS */
   "TLS handshake duration (ms)",
+  "DTLS handshake duration (ms)",
   /* DNS */
   "DNS query duration (ms)",
   /* Socket */

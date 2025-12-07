@@ -135,7 +135,7 @@ $(document).ready(function(){initNavTree('SocketPoll_8h.html',''); initResizable
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketPoll_8h__dep__incl.svg" width="579" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="SocketPoll_8h__dep__incl.svg" width="100%" height="437"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
 </div>
 <p><a href="SocketPoll_8h_source.html">Go to the source code of this file.</a></p>
@@ -205,10 +205,20 @@ Functions</h2></td></tr>
 <tr class="memitem:a665b3363d16ab859ec60e69a792d1ff0" id="r_a665b3363d16ab859ec60e69a792d1ff0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll)</td></tr>
 <tr class="memdesc:a665b3363d16ab859ec60e69a792d1ff0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_get_async - Get async I/O context from poll @poll: Poll instance Returns: Async context or NULL if unavailable Thread-safe: Yes Note: Returns NULL if async I/O is not available on this platform.  <br /></td></tr>
 <tr class="separator:a665b3363d16ab859ec60e69a792d1ff0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16688a9e444183863bab8051f57fe688" id="r_a16688a9e444183863bab8051f57fe688"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a16688a9e444183863bab8051f57fe688">SocketPoll_getmaxregistered</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll)</td></tr>
+<tr class="memdesc:a16688a9e444183863bab8051f57fe688"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_getmaxregistered - Get maximum registered sockets limit @poll: Poll instance Returns: Maximum limit (0 = unlimited) Thread-safe: Yes.  <br /></td></tr>
+<tr class="separator:a16688a9e444183863bab8051f57fe688"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35d4052d444bcab4cae26f41cf5729eb" id="r_a35d4052d444bcab4cae26f41cf5729eb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a35d4052d444bcab4cae26f41cf5729eb">SocketPoll_setmaxregistered</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, int max)</td></tr>
+<tr class="memdesc:a35d4052d444bcab4cae26f41cf5729eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_setmaxregistered - Set maximum registered sockets limit @poll: Poll instance @max: Maximum limit (0 = unlimited) Thread-safe: Yes.  <br /></td></tr>
+<tr class="separator:a35d4052d444bcab4cae26f41cf5729eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac79e719de24f09f84eb3816b3ab60c65" id="r_ac79e719de24f09f84eb3816b3ab60c65"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#ac79e719de24f09f84eb3816b3ab60c65">SocketPoll_getregisteredcount</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll)</td></tr>
+<tr class="memdesc:ac79e719de24f09f84eb3816b3ab60c65"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_getregisteredcount - Get current registered socket count @poll: Poll instance Returns: Number of currently registered sockets Thread-safe: Yes.  <br /></td></tr>
+<tr class="separator:ac79e719de24f09f84eb3816b3ab60c65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:ab4754362476e3ffc3e000b1cbcc2a6f0" id="r_ab4754362476e3ffc3e000b1cbcc2a6f0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#ab4754362476e3ffc3e000b1cbcc2a6f0">SocketPoll_Failed</a></td></tr>
+<tr class="memdesc:ab4754362476e3ffc3e000b1cbcc2a6f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll_Failed - Poll operation failure.  <br /></td></tr>
 <tr class="separator:ab4754362476e3ffc3e000b1cbcc2a6f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/><h2 class="groupheader">Data Structure Documentation</h2>
@@ -225,7 +235,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <div class="textblock"><p>Event structure returned by SocketPoll_wait. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00054">54</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00069">69</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -263,7 +273,7 @@ Socket that triggered event. </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00061">61</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00076">76</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
 
 </div>
 </div>
@@ -355,7 +365,7 @@ Socket that triggered event. </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00043">43</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00058">58</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
 
 </div>
 </div>
@@ -408,6 +418,8 @@ Socket that triggered event. </td></tr>
 
 <p>SocketPoll_add - Add socket to poll set @poll: Poll instance @socket: Socket to monitor @events: Events to monitor (POLL_READ | POLL_WRITE) @data: User data to associate with socket Socket is automatically set to non-blocking mode Raises: SocketPoll_Failed if socket already added or epoll_ctl fails Thread-safe: Yes - uses internal mutex for socket data mapping. </p>
 
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
+
 </div>
 </div>
 <a id="a3074c5a225a7c49880951ecfb984498f" name="a3074c5a225a7c49880951ecfb984498f"></a>
@@ -445,6 +457,9 @@ Socket that triggered event. </td></tr>
 </div><div class="memdoc">
 
 <p>SocketPoll_del - Remove socket from poll set @poll: Poll instance @socket: Socket to remove Silently succeeds if socket not in poll Thread-safe: Yes - uses internal mutex for socket data mapping. </p>
+<p>Note: On backend error (non-ENOENT), raises leaving state intact for retry. Logs ENOENT warning and cleans data map. Security: Prioritizes backend clean. Single-threaded socket access assumed. </p>
+
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
 </div>
 </div>
@@ -473,6 +488,8 @@ Socket that triggered event. </td></tr>
 </div><div class="memdoc">
 
 <p>SocketPoll_free - Free an event poll @poll: Pointer to poll (will be set to NULL) Closes the underlying epoll descriptor. </p>
+
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
 </div>
 </div>
@@ -529,6 +546,63 @@ Socket that triggered event. </td></tr>
 </div><div class="memdoc">
 
 <p>SocketPoll_getdefaulttimeout - Get default wait timeout in milliseconds @poll: Poll instance Returns: Default timeout in milliseconds. </p>
+
+</div>
+</div>
+<a id="a16688a9e444183863bab8051f57fe688" name="a16688a9e444183863bab8051f57fe688"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a16688a9e444183863bab8051f57fe688">&#9670;&#160;</a></span>SocketPoll_getmaxregistered()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketPoll_getmaxregistered </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
+          <td class="paramname"><em>poll</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPoll_getmaxregistered - Get maximum registered sockets limit @poll: Poll instance Returns: Maximum limit (0 = unlimited) Thread-safe: Yes. </p>
+<p>Defense-in-depth: Returns the configured limit on socket registrations. Compile-time default is SOCKET_POLL_MAX_REGISTERED (0 = disabled). </p>
+
+</div>
+</div>
+<a id="ac79e719de24f09f84eb3816b3ab60c65" name="ac79e719de24f09f84eb3816b3ab60c65"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac79e719de24f09f84eb3816b3ab60c65">&#9670;&#160;</a></span>SocketPoll_getregisteredcount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketPoll_getregisteredcount </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
+          <td class="paramname"><em>poll</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPoll_getregisteredcount - Get current registered socket count @poll: Poll instance Returns: Number of currently registered sockets Thread-safe: Yes. </p>
 
 </div>
 </div>
@@ -608,6 +682,8 @@ Socket that triggered event. </td></tr>
 
 <p>SocketPoll_new - Create a new event poll @maxevents: Maximum events to return per wait call Returns: New poll instance Raises: SocketPoll_Failed on error Thread-safe: Yes - returns new instance Creates an edge-triggered epoll instance for high-performance I/O. </p>
 
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
+
 </div>
 </div>
 <a id="a945845cc57758a91e47a75ef17064d2a" name="a945845cc57758a91e47a75ef17064d2a"></a>
@@ -645,6 +721,46 @@ Socket that triggered event. </td></tr>
 </div><div class="memdoc">
 
 <p>SocketPoll_setdefaulttimeout - Set default wait timeout in milliseconds @poll: Poll instance @timeout: Timeout in milliseconds (0 = immediate, -1 = infinite) Returns: Nothing. </p>
+
+</div>
+</div>
+<a id="a35d4052d444bcab4cae26f41cf5729eb" name="a35d4052d444bcab4cae26f41cf5729eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a35d4052d444bcab4cae26f41cf5729eb">&#9670;&#160;</a></span>SocketPoll_setmaxregistered()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketPoll_setmaxregistered </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
+          <td class="paramname"><em>poll</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>max</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketPoll_setmaxregistered - Set maximum registered sockets limit @poll: Poll instance @max: Maximum limit (0 = unlimited) Thread-safe: Yes. </p>
+<p>Defense-in-depth: Limits the number of sockets that can be registered to prevent resource exhaustion attacks. Set to 0 to disable.</p>
+<p>Note: Cannot set limit below current registered_count. Raises: SocketPoll_Failed if max &lt; registered_count and max &gt; 0 </p>
 
 </div>
 </div>
@@ -690,6 +806,8 @@ Socket that triggered event. </td></tr>
 
 <p>SocketPoll_wait - Wait for events @poll: Poll instance @events: Output - array of events that occurred @timeout: Timeout in milliseconds (-1 for infinite) Returns: Number of events (0 on timeout) Raises: SocketPoll_Failed on error Thread-safe: Yes - event array is thread-local to poll instance The events array points to internal memory - do not free Note: Also processes async I/O completions automatically. </p>
 
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
+
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
@@ -712,6 +830,17 @@ Socket that triggered event. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>SocketPoll_Failed - Poll operation failure. </p>
+<p>Category: RESOURCE or PROTOCOL Retryable: Depends on errno</p>
+<p>Raised for:</p><ul>
+<li>epoll/kqueue creation failure (RESOURCE, not retryable)</li>
+<li>Invalid socket (PROTOCOL, not retryable)</li>
+<li>Duplicate socket add (PROTOCOL, not retryable)</li>
+<li>EMFILE/ENFILE (RESOURCE, retryable after fd cleanup) </li>
+</ul>
+
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
 </div>
 </div>

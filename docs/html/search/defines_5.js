@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['iov_5fmax_0',['IOV_MAX',['../SocketConfig_8h.html#a25080e819a36fcf9aede01a6e7298ea4',1,'SocketConfig.h']]]
+  ['finally_0',['FINALLY',['../Except_8h.html#a0e2a75478cd44f1666a6aca626c5c50b',1,'Except.h']]]
 ];

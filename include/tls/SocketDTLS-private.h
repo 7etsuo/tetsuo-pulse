@@ -14,7 +14,7 @@
 #ifndef SOCKETDTLS_PRIVATE_INCLUDED
 #define SOCKETDTLS_PRIVATE_INCLUDED
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include <ctype.h>
 #include <pthread.h>
@@ -200,6 +200,7 @@ dtls_format_openssl_error (const char *context)
     {
       SOCKET_ERROR_MSG("%s: Unknown error", context);
     }
+  ERR_clear_error();  /* Clear remaining OpenSSL error queue */
 }
 
 /* ============================================================================
@@ -223,9 +224,15 @@ dtls_validate_file_path (const char *path)
   if (len == 0 || len > SOCKET_DTLS_MAX_PATH_LEN)
     return 0;
 
-  /* Check for path traversal */
-  if (strstr (path, "..") != NULL)
+  /* Check for path traversal sequences (prefer absolute paths) */
+  if (path[0] != '/' ) { /* Optional: warn or reject relative; preference for absolute */
+    /* Relative paths accepted but may be insecure if cwd untrusted */
+  }
+  if (strstr (path, "../") != NULL || strstr (path, "..\\") != NULL ||
+      strstr (path, "/..") != NULL || strstr (path, "\\..") != NULL ||
+      strstr (path, "..") != NULL) {
     return 0;
+  }
 
   /* Check for control characters */
   for (size_t i = 0; i < len; i++)
@@ -327,25 +334,10 @@ extern __thread Except_T SocketDTLSContext_DetailedException;
  * RAISE_DTLS_CTX_ERROR_MSG - Raise context exception with specific message
  */
 #define RAISE_DTLS_CTX_ERROR_MSG(exception, msg)                               \
-  do                                                                           \
-    {                                                                          \
-      snprintf (dtls_context_error_buf, SOCKET_DTLS_ERROR_BUFSIZE, "%s", msg); \
-      SocketDTLSContext_DetailedException = (exception);                       \
-      SocketDTLSContext_DetailedException.reason = dtls_context_error_buf;     \
-      RAISE (SocketDTLSContext_DetailedException);                             \
-    }                                                                          \
-  while (0)
+  do { SOCKET_RAISE_MSG(SocketDTLSContext, exception, msg); } while(0)
 
 #define RAISE_DTLS_CTX_ERROR_FMT(exception, fmt, ...)                          \
-  do                                                                           \
-    {                                                                          \
-      snprintf (dtls_context_error_buf, SOCKET_DTLS_ERROR_BUFSIZE, fmt,        \
-                __VA_ARGS__);                                                  \
-      SocketDTLSContext_DetailedException = (exception);                       \
-      SocketDTLSContext_DetailedException.reason = dtls_context_error_buf;     \
-      RAISE (SocketDTLSContext_DetailedException);                             \
-    }                                                                          \
-  while (0)
+  do { SOCKET_RAISE_FMT(SocketDTLSContext, exception, fmt, __VA_ARGS__); } while(0)
 
 /* ============================================================================
  * Utility Macros

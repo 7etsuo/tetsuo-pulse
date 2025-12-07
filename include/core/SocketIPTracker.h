@@ -28,6 +28,7 @@
  *   Arena_T arena = Arena_new();
  *   SocketIPTracker_T tracker = SocketIPTracker_new(arena, 10);
  *   // Max 10 connections per IP
+ *   SocketIPTracker_setmaxunique(tracker, 5000); // Optional: limit unique IPs to 5000
  *
  *   const char *client_ip = Socket_getpeeraddr(client);
  *   if (SocketIPTracker_track(tracker, client_ip)) {
@@ -54,6 +55,8 @@ extern const Except_T SocketIPTracker_Failed; /**< IP tracker operation failure 
  * SocketIPTracker_new - Create a new IP connection tracker
  * @arena: Arena for memory allocation (NULL to use malloc)
  * @max_per_ip: Maximum connections allowed per IP (0 = unlimited)
+ * Note: Defaults max_unique_ips to SOCKET_MAX_CONNECTIONS to prevent memory exhaustion.
+ *        Adjustable via SocketIPTracker_setmaxunique().
  *
  * Returns: New IP tracker instance
  * Raises: SocketIPTracker_Failed on allocation failure
@@ -129,6 +132,27 @@ extern void SocketIPTracker_setmax (T tracker, int max_per_ip);
  * Thread-safe: Yes
  */
 extern int SocketIPTracker_getmax (T tracker);
+
+/**
+ * SocketIPTracker_setmaxunique - Set maximum unique IPs tracked
+ * @tracker: IP tracker instance
+ * @max_unique: New maximum (0 = unlimited)
+ *
+ * Thread-safe: Yes
+ *
+ * Limits memory usage by rejecting new unique IPs when limit reached.
+ * Does not evict existing entries.
+ */
+extern void SocketIPTracker_setmaxunique (T tracker, size_t max_unique);
+
+/**
+ * SocketIPTracker_getmaxunique - Get maximum unique IPs limit
+ * @tracker: IP tracker instance
+ *
+ * Returns: Current maximum unique IPs (0 = unlimited)
+ * Thread-safe: Yes
+ */
+extern size_t SocketIPTracker_getmaxunique (T tracker);
 
 /**
  * SocketIPTracker_total - Get total tracked connections

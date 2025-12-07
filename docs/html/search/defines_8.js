@@ -1,7 +1,6 @@
 var searchData=
 [
-  ['raise_0',['RAISE',['../Except_8h.html#a45e87c4d7dee50346b15c7761b0b340a',1,'Except.h']]],
-  ['request_5ft_1',['Request_T',['../SocketDNS_8h.html#aa9ba864e1a3353563283aa17b57abd88',1,'SocketDNS.h']]],
-  ['reraise_2',['RERAISE',['../Except_8h.html#a947ef43f0f0def3fcc050a8df849fd16',1,'Except.h']]],
-  ['return_3',['RETURN',['../Except_8h.html#a6a0e6b80dd3d5ca395cf58151749f5e2',1,'Except.h']]]
+  ['max_5fclients_0',['MAX_CLIENTS',['../websocket__server_8c.html#a0a8f91f93d75a07f0ae45077db45b3eb',1,'websocket_server.c']]],
+  ['max_5fconnections_1',['MAX_CONNECTIONS',['../graceful__shutdown_8c.html#a053b7859476cc9867ec62c49e68d3fa1',1,'graceful_shutdown.c']]],
+  ['msg_5fnosignal_2',['MSG_NOSIGNAL',['../SocketConfig_8h.html#a9f55d0e90dc8cc6b2287312435cdde48',1,'SocketConfig.h']]]
 ];

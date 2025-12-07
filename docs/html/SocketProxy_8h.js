@@ -7,6 +7,7 @@ var SocketProxy_8h =
       [ "host", "SocketProxy_8h.html#a507287d832417162da30794693e16a6e", null ],
       [ "password", "SocketProxy_8h.html#ae619303ab820c36c920c509d735748f2", null ],
       [ "port", "SocketProxy_8h.html#aff28145ee5466be9d0e12fba3e07dc97", null ],
+      [ "tls_ctx", "SocketProxy_8h.html#a7bd4b0058fd2a869d2ccb2f2d1fd740c", null ],
       [ "type", "SocketProxy_8h.html#aa04cfa88d52d6c1f889f9f936a141141", null ],
       [ "username", "SocketProxy_8h.html#a579714517d79e28bb9b03190d67158d5", null ]
     ] ],
@@ -71,6 +72,7 @@ var SocketProxy_8h =
     [ "SocketProxy_Conn_process", "SocketProxy_8h.html#af45ecd7d9e7c6214e6bfcc6b2a42f977", null ],
     [ "SocketProxy_Conn_result", "SocketProxy_8h.html#af191ce0cae571b057d5ea278392bdf24", null ],
     [ "SocketProxy_Conn_socket", "SocketProxy_8h.html#aff1d539486b8b250489938c4b71c89a9", null ],
+    [ "SocketProxy_Conn_start", "SocketProxy_8h.html#a5f6fd1cde0a54b41805862ce002f6f97", null ],
     [ "SocketProxy_Conn_state", "SocketProxy_8h.html#a1ee518c3b280abda4ae21871fae53040", null ],
     [ "SocketProxy_connect", "SocketProxy_8h.html#aad72c8e58d88ee4bbc975c9163266ef0", null ],
     [ "SocketProxy_parse_url", "SocketProxy_8h.html#ae16c20e1d43f38171ccaad8408598490", null ],

@@ -361,6 +361,9 @@ typedef struct
   int retry_on_connection_error; /**< Retry on connect failures (default: 1) */
   int retry_on_timeout;          /**< Retry on timeouts (default: 1) */
   int retry_on_5xx;              /**< Retry on 5xx responses (default: 0) */
+
+  /** Security configuration */
+  int enforce_samesite;          /**< Enforce SameSite attribute (default: 1) */
 } SocketHTTPClient_Config;
 
 /* ============================================================================

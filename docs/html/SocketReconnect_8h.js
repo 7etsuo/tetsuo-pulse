@@ -22,7 +22,7 @@ var SocketReconnect_8h =
     [ "SOCKET_RECONNECT_DEFAULT_MULTIPLIER", "SocketReconnect_8h.html#a8b3825c4901d297714102179ce6d54bc", null ],
     [ "T", "SocketReconnect_8h.html#a0acb682b8260ab1c60b918599864e2e5", null ],
     [ "SocketReconnect_Callback", "SocketReconnect_8h.html#a0d4cc030dc9989344d20a170b6410220", null ],
-    [ "SocketReconnect_HealthCheck", "SocketReconnect_8h.html#ac72a1247fceed09210753d03ae2ebb5e", null ],
+    [ "SocketReconnect_HealthCheck", "SocketReconnect_8h.html#ae24b576ed367f734f434ef30ad8386c3", null ],
     [ "SocketReconnect_T", "SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed", null ],
     [ "SocketReconnect_State", "SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548", [
       [ "RECONNECT_DISCONNECTED", "SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548aad8113419cbfb25276d1139df9831611", null ],

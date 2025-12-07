@@ -123,6 +123,8 @@ $(document).ready(function(){initNavTree('SocketProxy_8h.html',''); initResizabl
 <div class="textblock"><code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="SocketDNS_8h_source.html">dns/SocketDNS.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="SocketPoll_8h_source.html">poll/SocketPoll.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Socket_8h_source.html">socket/Socket.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketTLSContext_8h_source.html">tls/SocketTLSContext.h</a>&quot;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -277,8 +279,11 @@ Functions</h2></td></tr>
 <tr class="memitem:a42d87dba201e99194eec8df1a9522516" id="r_a42d87dba201e99194eec8df1a9522516"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595e">SocketProxy_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#a42d87dba201e99194eec8df1a9522516">SocketProxy_tunnel</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const <a class="el" href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a> *proxy, const char *target_host, int target_port)</td></tr>
 <tr class="memdesc:a42d87dba201e99194eec8df1a9522516"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketProxy_tunnel - Establish tunnel on existing socket (blocking) @socket: Already-connected socket to proxy server @proxy: Proxy configuration (type, auth, timeouts) @target_host: Target hostname or IP @target_port: Target port (1-65535)  <br /></td></tr>
 <tr class="separator:a42d87dba201e99194eec8df1a9522516"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f6fd1cde0a54b41805862ce002f6f97" id="r_a5f6fd1cde0a54b41805862ce002f6f97"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#a5f6fd1cde0a54b41805862ce002f6f97">SocketProxy_Conn_start</a> (<a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns, <a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, const <a class="el" href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a> *proxy, const char *target_host, int target_port)</td></tr>
+<tr class="memdesc:a5f6fd1cde0a54b41805862ce002f6f97"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketProxy_Conn_start - Start truly async proxy connection (event-driven) @dns: DNS resolver instance (caller-owned, must outlive operation) @poll: Poll instance for connection monitoring (caller-owned) @proxy: Proxy configuration @target_host: Target hostname or IP @target_port: Target port (1-65535)  <br /></td></tr>
+<tr class="separator:a5f6fd1cde0a54b41805862ce002f6f97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d17fac3f6b21b9905aa7c4b0d7d47f7" id="r_a6d17fac3f6b21b9905aa7c4b0d7d47f7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#a6d17fac3f6b21b9905aa7c4b0d7d47f7">SocketProxy_Conn_new</a> (const <a class="el" href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a> *proxy, const char *target_host, int target_port)</td></tr>
-<tr class="memdesc:a6d17fac3f6b21b9905aa7c4b0d7d47f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketProxy_Conn_new - Start async proxy connection @proxy: Proxy configuration @target_host: Target hostname or IP @target_port: Target port (1-65535)  <br /></td></tr>
+<tr class="memdesc:a6d17fac3f6b21b9905aa7c4b0d7d47f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketProxy_Conn_new - Start async proxy connection (blocking connect) @proxy: Proxy configuration @target_host: Target hostname or IP @target_port: Target port (1-65535)  <br /></td></tr>
 <tr class="separator:a6d17fac3f6b21b9905aa7c4b0d7d47f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac12fc736c9952313a4846dd50380bc3f" id="r_ac12fc736c9952313a4846dd50380bc3f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#ac12fc736c9952313a4846dd50380bc3f">SocketProxy_Conn_poll</a> (<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn)</td></tr>
 <tr class="memdesc:ac12fc736c9952313a4846dd50380bc3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketProxy_Conn_poll - Check if operation is complete @conn: Proxy connection context.  <br /></td></tr>
@@ -344,7 +349,7 @@ Variables</h2></td></tr>
 <div class="textblock"><p><a class="el" href="SocketProxy_8h.html#structSocketProxy__Config" title="SocketProxy_Config - Proxy configuration.">SocketProxy_Config</a> - Proxy configuration. </p>
 <p>All strings are borrowed (not copied) - caller must ensure they remain valid for the duration of the proxy operation. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00241">241</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00242">242</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -384,6 +389,12 @@ port</td>
 <td class="fielddoc">
 Proxy port (0 = default for type) </td></tr>
 <tr><td class="fieldtype">
+<a id="a7bd4b0058fd2a869d2ccb2f2d1fd740c" name="a7bd4b0058fd2a869d2ccb2f2d1fd740c"></a><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> *</td>
+<td class="fieldname">
+tls_ctx</td>
+<td class="fielddoc">
+TLS context for HTTPS proxies (NULL = use secure defaults) </td></tr>
+<tr><td class="fieldtype">
 <a id="aa04cfa88d52d6c1f889f9f936a141141" name="aa04cfa88d52d6c1f889f9f936a141141"></a><a class="el" href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132">SocketProxyType</a></td>
 <td class="fieldname">
 type</td>
@@ -414,7 +425,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 
 <p>Default timeout for connecting to proxy server (ms) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00121">121</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00122">122</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -432,7 +443,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 
 <p>Default timeout for proxy handshake (ms) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00126">126</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00127">127</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -450,7 +461,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 
 <p>Default HTTP proxy port. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00151">151</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00152">152</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -468,7 +479,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 
 <p>Default HTTPS proxy port. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00156">156</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00157">157</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -486,7 +497,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 
 <p>Default SOCKS port. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00146">146</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00147">147</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -504,7 +515,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 
 <p>Maximum hostname length for SOCKS5 (RFC 1928) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00131">131</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00132">132</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -522,7 +533,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 
 <p>Maximum password length for SOCKS5 (RFC 1929) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00141">141</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00142">142</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -540,7 +551,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 
 <p>Maximum username length for SOCKS5 (RFC 1929) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00136">136</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00137">137</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -556,7 +567,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00100">100</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00101">101</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -573,7 +584,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00094">94</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00095">95</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -589,7 +600,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00101">101</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00102">102</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -641,7 +652,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00186">186</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00187">187</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -682,7 +693,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00217">217</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00218">218</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -716,7 +727,7 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00166">166</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00167">167</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -941,9 +952,11 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>SocketProxy_Conn_new - Start async proxy connection @proxy: Proxy configuration @target_host: Target hostname or IP @target_port: Target port (1-65535) </p>
+<p>SocketProxy_Conn_new - Start async proxy connection (blocking connect) @proxy: Proxy configuration @target_host: Target hostname or IP @target_port: Target port (1-65535) </p>
 <p>Returns: Proxy connection context Raises: SocketProxy_Failed on initialization failure Thread-safe: Yes (creates new instance)</p>
-<p>Starts asynchronous proxy connection. Caller must:</p><ol type="1">
+<p>NOTE: This function blocks during the initial proxy connection phase. For fully non-blocking operation, use <a class="el" href="SocketProxy_8h.html#a5f6fd1cde0a54b41805862ce002f6f97" title="SocketProxy_Conn_start - Start truly async proxy connection (event-driven) @dns: DNS resolver instanc...">SocketProxy_Conn_start()</a> instead.</p>
+<p>Starts proxy connection with blocking connect to proxy server, then async handshake. This is a convenience wrapper that creates internal DNS and poll resources.</p>
+<p>Caller must:</p><ol type="1">
 <li>Call <a class="el" href="SocketProxy_8h.html#af45ecd7d9e7c6214e6bfcc6b2a42f977" title="SocketProxy_Conn_process - Process async connection @conn: Proxy connection context.">SocketProxy_Conn_process()</a> after each poll wait</li>
 <li>Check <a class="el" href="SocketProxy_8h.html#ac12fc736c9952313a4846dd50380bc3f" title="SocketProxy_Conn_poll - Check if operation is complete @conn: Proxy connection context.">SocketProxy_Conn_poll()</a> for completion</li>
 <li>Call <a class="el" href="SocketProxy_8h.html#aff1d539486b8b250489938c4b71c89a9" title="SocketProxy_Conn_socket - Get tunneled socket from completed operation @conn: Proxy connection contex...">SocketProxy_Conn_socket()</a> to get the tunneled socket</li>
@@ -1097,6 +1110,71 @@ Username for SOCKS5/HTTP Basic auth. </td></tr>
 <p>SocketProxy_Conn_socket - Get tunneled socket from completed operation @conn: Proxy connection context. </p>
 <p>Returns: Tunneled socket, or NULL if failed/cancelled/pending Thread-safe: No</p>
 <p>Transfers socket ownership to caller. Caller must <a class="el" href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37" title="Socket_free - Free a socket and close the connection @socket: Pointer to socket (will be set to NULL)">Socket_free()</a> when done. Can only be called once per successful connection - subsequent calls return NULL. </p>
+
+</div>
+</div>
+<a id="a5f6fd1cde0a54b41805862ce002f6f97" name="a5f6fd1cde0a54b41805862ce002f6f97"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f6fd1cde0a54b41805862ce002f6f97">&#9670;&#160;</a></span>SocketProxy_Conn_start()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> SocketProxy_Conn_start </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a>&#160;</td>
+          <td class="paramname"><em>dns</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
+          <td class="paramname"><em>poll</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a> *&#160;</td>
+          <td class="paramname"><em>proxy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>target_host</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>target_port</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketProxy_Conn_start - Start truly async proxy connection (event-driven) @dns: DNS resolver instance (caller-owned, must outlive operation) @poll: Poll instance for connection monitoring (caller-owned) @proxy: Proxy configuration @target_host: Target hostname or IP @target_port: Target port (1-65535) </p>
+<p>Returns: Proxy connection context Raises: SocketProxy_Failed on initialization failure Thread-safe: No (operate from single thread)</p>
+<p>Starts fully asynchronous proxy connection using external DNS and poll resources. This is the preferred API for event-driven applications. The operation is completely non-blocking from the start.</p>
+<p>Caller must:</p><ol type="1">
+<li>Call <a class="el" href="SocketProxy_8h.html#af45ecd7d9e7c6214e6bfcc6b2a42f977" title="SocketProxy_Conn_process - Process async connection @conn: Proxy connection context.">SocketProxy_Conn_process()</a> after each poll wait</li>
+<li>Check <a class="el" href="SocketProxy_8h.html#ac12fc736c9952313a4846dd50380bc3f" title="SocketProxy_Conn_poll - Check if operation is complete @conn: Proxy connection context.">SocketProxy_Conn_poll()</a> for completion</li>
+<li>Call <a class="el" href="SocketProxy_8h.html#aff1d539486b8b250489938c4b71c89a9" title="SocketProxy_Conn_socket - Get tunneled socket from completed operation @conn: Proxy connection contex...">SocketProxy_Conn_socket()</a> to get the tunneled socket</li>
+<li>Call <a class="el" href="SocketProxy_8h.html#afee164cf3e979f5cfe745a33366812d9" title="SocketProxy_Conn_free - Free proxy connection context @conn: Pointer to context (will be set to NULL)">SocketProxy_Conn_free()</a> to release context</li>
+</ol>
+<p>Usage example: SocketProxy_Conn_T conn = SocketProxy_Conn_start(dns, poll, &amp;proxy, "target.com", 443); while (!SocketProxy_Conn_poll(conn)) { int timeout = SocketProxy_Conn_next_timeout_ms(conn); SocketPoll_wait(poll, &amp;events, timeout); SocketProxy_Conn_process(conn); } Socket_T sock = SocketProxy_Conn_socket(conn); SocketProxy_Conn_free(&amp;conn); </p>
 
 </div>
 </div>

@@ -23,8 +23,11 @@
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
+#include "core/SocketSecurity.h"
 
 #include <assert.h>
+
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 
 /* Module exception - required for RAISE_HTTPCLIENT_ERROR macro */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
@@ -100,7 +103,12 @@ pool_entry_alloc (HTTPPool *pool)
     }
 
   /* Allocate new entry from arena (already zeroed by calloc pattern) */
-  entry = Arena_calloc (pool->arena, 1, sizeof (*entry), __FILE__, __LINE__);
+  size_t entry_size = sizeof (*entry);
+  if (!SOCKET_SECURITY_VALID_SIZE(entry_size)) {
+    SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                      "Pool entry size invalid: %zu", entry_size);
+  }
+  entry = Arena_calloc (pool->arena, 1, entry_size, __FILE__, __LINE__);
   return entry;
 }
 
@@ -134,9 +142,12 @@ pool_hash_remove (HTTPPool *pool, HTTPPoolEntry *entry)
   unsigned hash
       = httpclient_host_hash (entry->host, entry->port, pool->hash_size);
 
+  size_t chain_len = 0;
+  const size_t max_chain = 1024;
   HTTPPoolEntry **pp = &pool->hash_table[hash];
-  while (*pp != NULL)
+  while (*pp != NULL && chain_len < max_chain)
     {
+      ++chain_len;
       if (*pp == entry)
         {
           *pp = entry->hash_next;
@@ -145,6 +156,11 @@ pool_hash_remove (HTTPPool *pool, HTTPPoolEntry *entry)
         }
       pp = &(*pp)->hash_next;
     }
+  if (chain_len >= max_chain) {
+    SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                      "Hash chain too long (%zu >= %zu) during removal - possible collision attack",
+                      chain_len, max_chain);
+  }
 }
 
 /**
@@ -279,15 +295,23 @@ static size_t
 pool_count_for_host (HTTPPool *pool, const char *host, int port, int is_secure)
 {
   size_t count = 0;
+  size_t chain_len = 0;
+  const size_t max_chain = 1024;  /* Adjustable limit */
   unsigned hash = httpclient_host_hash (host, port, pool->hash_size);
 
   HTTPPoolEntry *entry = pool->hash_table[hash];
-  while (entry != NULL)
+  while (entry != NULL && chain_len < max_chain)
     {
+      ++chain_len;
       if (host_port_secure_match (entry, host, port, is_secure))
         count++;
       entry = entry->hash_next;
     }
+  if (chain_len >= max_chain) {
+    SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                      "Hash chain too long (%zu >= %zu) in pool count for %s:%d - possible collision attack",
+                      chain_len, max_chain, host, port);
+  }
 
   return count;
 }
@@ -305,14 +329,32 @@ httpclient_pool_new (Arena_T arena, const SocketHTTPClient_Config *config)
   assert (arena != NULL);
   assert (config != NULL);
 
-  pool = Arena_calloc (arena, 1, sizeof (*pool), __FILE__, __LINE__);
+  size_t pool_size = sizeof (*pool);
+  if (!SOCKET_SECURITY_VALID_SIZE(pool_size)) {
+    SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                      "HTTP pool size invalid: %zu", pool_size);
+  }
+  pool = Arena_calloc (arena, 1, pool_size, __FILE__, __LINE__);
 
   pool->arena = arena;
 
-  /* Calculate hash table size based on expected connections */
-  hash_size = HTTPCLIENT_POOL_HASH_SIZE;
-  if (config->max_total_connections > HTTPCLIENT_POOL_LARGE_THRESHOLD)
-    hash_size = HTTPCLIENT_POOL_LARGE_HASH_SIZE;
+  /* Calculate hash table size based on expected connections, with security limits */
+  size_t suggested_size = config->max_total_connections / 8;  /* Target load factor ~8 */
+  if (suggested_size < HTTPCLIENT_POOL_HASH_SIZE) {
+    suggested_size = HTTPCLIENT_POOL_HASH_SIZE;
+  }
+  const size_t max_hash_size = 65536;  /* Prevent excessive memory use */
+  if (suggested_size > max_hash_size) {
+    suggested_size = max_hash_size;
+  }
+  size_t elem_size = sizeof (HTTPPoolEntry *);
+  size_t table_bytes;
+  if (!SocketSecurity_check_multiply (suggested_size, elem_size, &table_bytes) ||
+      !SocketSecurity_check_size (table_bytes)) {
+    SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                      "Computed hash table size too large: %zu elements", suggested_size);
+  }
+  hash_size = (unsigned) suggested_size;  /* Safe cast, checked above */
 
   pool->hash_size = hash_size;
   pool->hash_table = Arena_calloc (arena, hash_size, sizeof (HTTPPoolEntry *),
@@ -371,10 +413,13 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
 
   hash = httpclient_host_hash (host, port, pool->hash_size);
 
-  /* Find an available connection */
+  /* Find an available connection, with chain length limit to prevent DoS */
+  size_t chain_len = 0;
+  const size_t max_chain = 1024;  /* Adjustable limit */
   entry = pool->hash_table[hash];
-  while (entry != NULL)
+  while (entry != NULL && chain_len < max_chain)
     {
+      ++chain_len;
       if (host_port_secure_match (entry, host, port, is_secure) && !entry->in_use
           && !entry->closed)
         {
@@ -386,6 +431,11 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
         }
       entry = entry->hash_next;
     }
+  if (chain_len >= max_chain) {
+    SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                      "Hash chain too long (%zu >= %zu) in pool lookup for %s:%d - possible collision attack",
+                      chain_len, max_chain, host, port);
+  }
 
   pthread_mutex_unlock (&pool->mutex);
   return 0;
@@ -519,9 +569,14 @@ init_http1_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
 {
   size_t host_len = strlen (host);
 
-  entry->host = Arena_alloc (pool->arena, host_len + 1, __FILE__, __LINE__);
+  size_t alloc_size = host_len + 1;
+  if (!SOCKET_SECURITY_VALID_SIZE(alloc_size)) {
+    SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                      "Hostname too long: %zu bytes", host_len);
+  }
 
-  memcpy (entry->host, host, host_len + 1);
+  entry->host = Arena_alloc (pool->arena, alloc_size, __FILE__, __LINE__);
+  memcpy (entry->host, host, alloc_size);
   entry->port = port;
   entry->is_secure = is_secure;
   entry->version = HTTP_VERSION_1_1;
@@ -808,6 +863,19 @@ static int
 setup_tls_connection (SocketHTTPClient_T client, Socket_T *socket,
                       const char *hostname)
 {
+  if (hostname == NULL || *hostname == '\0') {
+    Socket_free (socket);
+    client->last_error = HTTPCLIENT_ERROR_TLS;
+    return -1;
+  }
+  size_t hn_len = strlen (hostname);
+  if (hn_len > SOCKET_TLS_MAX_SNI_LEN) {
+    Socket_free (socket);
+    client->last_error = HTTPCLIENT_ERROR_TLS;
+    HTTPCLIENT_ERROR_MSG ("SNI hostname too long: %zu > %d", hn_len, SOCKET_TLS_MAX_SNI_LEN);
+    return -1;
+  }
+
   SocketTLSContext_T tls_ctx;
   int tls_timeout;
 
@@ -878,16 +946,43 @@ create_temp_entry (Socket_T socket, const char *host, int port, int is_secure)
     }
 
   memset (&temp_entry, 0, sizeof (temp_entry));
-  temp_entry.host = (char *)host;
+
+  /* Create thread-local arena first for host copy and parser */
+  temp_arena = Arena_new ();
+  if (temp_arena == NULL) {
+    return NULL;  /* Allocation failed */
+  }
+
+  /* Copy host with validation */
+  if (host == NULL || *host == '\0') {
+    Arena_dispose (&temp_arena);
+    return NULL;  /* Invalid host */
+  }
+  size_t host_len = strlen (host);
+  size_t alloc_size = host_len + 1;
+  if (!SOCKET_SECURITY_VALID_SIZE(alloc_size)) {
+    Arena_dispose (&temp_arena);
+    SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+               "Hostname too long for temporary entry: %zu bytes", host_len);
+  }
+  temp_entry.host = ALLOC (temp_arena, alloc_size);
+  if (temp_entry.host == NULL) {
+    Arena_dispose (&temp_arena);
+    RAISE (Arena_Failed);
+  }
+  memcpy (temp_entry.host, host, alloc_size);
+
   temp_entry.port = port;
   temp_entry.is_secure = is_secure;
   temp_entry.version = HTTP_VERSION_1_1;
   temp_entry.in_use = 1;
 
-  /* Create parser in thread-local arena */
-  temp_arena = Arena_new ();
   temp_entry.proto.h1.parser
       = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, temp_arena);
+  if (temp_entry.proto.h1.parser == NULL) {
+    Arena_dispose (&temp_arena);
+    return NULL;
+  }
   temp_entry.proto.h1.socket = socket;
 
   return &temp_entry;

@@ -62,8 +62,8 @@ http2_process_priority (SocketHTTP2_Conn_T conn,
                         const SocketHTTP2_FrameHeader *header,
                         const unsigned char *payload)
 {
-        SOCKET_LOG_DEBUG_MSG("Ignoring deprecated HTTP/2 PRIORITY frame on stream %u (payload len=%zu)",
-                             header->stream_id, header->length);
+        SOCKET_LOG_DEBUG_MSG("Ignoring deprecated HTTP/2 PRIORITY frame on stream %u (payload len=%u)",
+                             header->stream_id, (unsigned)header->length);
 
         (void)conn; /* Unused parameter for API consistency */
         (void)payload;

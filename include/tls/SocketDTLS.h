@@ -47,7 +47,7 @@
 #include "core/Except.h"
 #include "socket/SocketDgram.h"
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 /* DTLS error buffer for cross-module error reporting */
 #ifdef _WIN32

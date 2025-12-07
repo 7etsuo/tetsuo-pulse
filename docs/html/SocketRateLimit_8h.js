@@ -4,6 +4,7 @@ var SocketRateLimit_8h =
     [ "SocketRateLimit_T", "SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5", null ],
     [ "SocketRateLimit_available", "SocketRateLimit_8h.html#aeccac0acfc81db650718aa84162c51f3", null ],
     [ "SocketRateLimit_configure", "SocketRateLimit_8h.html#a04a0e83dac474ff6a45597eb4e8a37a0", null ],
+    [ "SocketRateLimit_debug_live_count", "SocketRateLimit_8h.html#ae39058e1d9114bc4dc403587d062b2d6", null ],
     [ "SocketRateLimit_free", "SocketRateLimit_8h.html#ac871476460ec6f0eeea5ecea0b9e8747", null ],
     [ "SocketRateLimit_get_bucket_size", "SocketRateLimit_8h.html#ab29dadd4e6a32a10eb577cf6f1399994", null ],
     [ "SocketRateLimit_get_rate", "SocketRateLimit_8h.html#a33a8790eeb8ee8f3f2cb7f9c8e7d16c9", null ],

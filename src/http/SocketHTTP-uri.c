@@ -36,6 +36,15 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
  * Internal Helper Functions - Character Classification
  * ============================================================================ */
 
+/* Forward declarations for validation functions */
+static SocketHTTP_URIResult validate_reg_name (const char *host, size_t len);
+
+static SocketHTTP_URIResult validate_host (const char *host, size_t len, int *out_is_ipv6);
+
+static SocketHTTP_URIResult validate_path_query (const char *s, size_t len, int is_path);
+
+static SocketHTTP_URIResult validate_fragment (const char *s, size_t len);
+
 /**
  * is_scheme_char - Check if character is valid scheme character
  * @c: Character to check
@@ -116,6 +125,7 @@ scheme_to_lower (char *scheme, size_t len)
  *
  * Returns: URI_PARSE_OK on success, URI_PARSE_ERROR on allocation failure
  */
+
 static SocketHTTP_URIResult
 uri_alloc_component (Arena_T arena, const char *start, const char *end,
                      const char **out_str, size_t *out_len)
@@ -426,6 +436,7 @@ uri_handle_query (URIParseContext *ctx, char c, const char *p)
  *
  * Returns: URI_PARSE_OK on success, error code otherwise
  */
+
 static SocketHTTP_URIResult
 uri_run_state_machine (const char *uri, size_t len, URIParseContext *ctx)
 {
@@ -437,6 +448,9 @@ uri_run_state_machine (const char *uri, size_t len, URIParseContext *ctx)
   while (p < end)
     {
       char c = *p;
+
+      if (is_control_char (c))
+        return URI_PARSE_ERROR;
 
       switch (ctx->state)
         {
@@ -479,8 +493,7 @@ uri_run_state_machine (const char *uri, size_t len, URIParseContext *ctx)
           break;
 
         case URI_STATE_FRAGMENT:
-          if (is_control_char (c))
-            return URI_PARSE_ERROR;
+          // Control chars already rejected above
           break;
         }
 
@@ -497,6 +510,7 @@ uri_run_state_machine (const char *uri, size_t len, URIParseContext *ctx)
  *
  * Returns: URI_PARSE_OK on success, error code otherwise
  */
+
 static SocketHTTP_URIResult
 uri_finalize_state (URIParseContext *ctx, const char *end)
 {
@@ -554,6 +568,7 @@ uri_finalize_state (URIParseContext *ctx, const char *end)
  *
  * Returns: URI_PARSE_OK on success, URI_PARSE_INVALID_PORT on error
  */
+
 static SocketHTTP_URIResult
 uri_parse_port (const char *start, const char *end, int *port_out)
 {
@@ -583,6 +598,7 @@ uri_parse_port (const char *start, const char *end, int *port_out)
  *
  * Returns: URI_PARSE_OK on success, error code otherwise
  */
+
 static SocketHTTP_URIResult
 uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
                           Arena_T arena, const char *end)
@@ -602,16 +618,45 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
     }
 
   /* Userinfo */
+  if (ctx->userinfo_start && ctx->userinfo_end > ctx->userinfo_start)
+    {
+      size_t ulen = (size_t)(ctx->userinfo_end - ctx->userinfo_start);
+      if (ulen > 128)
+        return URI_PARSE_TOO_LONG;
+    }
   r = uri_alloc_component (arena, ctx->userinfo_start, ctx->userinfo_end,
                            &result->userinfo, &result->userinfo_len);
   if (r != URI_PARSE_OK)
     return r;
 
+  /* Validate userinfo syntax (RFC 3986 3.2.1) */
+  if (result->userinfo && result->userinfo_len > 0)
+    {
+      r = validate_reg_name (result->userinfo, result->userinfo_len);
+      if (r != URI_PARSE_OK)
+        return r;
+    }
+
   /* Host */
+  if (ctx->host_start && ctx->host_end > ctx->host_start)
+    {
+      size_t hlen = (size_t)(ctx->host_end - ctx->host_start);
+      if (hlen > 255)
+        return URI_PARSE_TOO_LONG;
+    }
   r = uri_alloc_component (arena, ctx->host_start, ctx->host_end,
                            &result->host, &result->host_len);
   if (r != URI_PARSE_OK)
     return r;
+
+  /* Validate host syntax (RFC 3986 3.2.2) */
+  if (result->host && result->host_len > 0)
+    {
+      int is_ipv6_dummy;
+      r = validate_host (result->host, result->host_len, &is_ipv6_dummy);
+      if (r != URI_PARSE_OK)
+        return r;
+    }
 
   /* Port */
   r = uri_parse_port (ctx->port_start, ctx->port_end, &result->port);
@@ -622,10 +667,21 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
   if (ctx->path_start)
     {
       const char *path_end = ctx->path_end ? ctx->path_end : end;
+      size_t path_len_calc = (size_t)(path_end - ctx->path_start);
+      if (path_len_calc > 4096)
+        return URI_PARSE_TOO_LONG;
       r = uri_alloc_component (arena, ctx->path_start, path_end,
                                &result->path, &result->path_len);
       if (r != URI_PARSE_OK)
         return r;
+
+      /* Validate path syntax (RFC 3986 3.3) */
+      if (result->path && result->path_len > 0)
+        {
+          r = validate_path_query (result->path, result->path_len, 1);
+          if (r != URI_PARSE_OK)
+            return r;
+        }
     }
   else
     {
@@ -640,20 +696,42 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
   if (ctx->query_start)
     {
       const char *query_end = ctx->query_end ? ctx->query_end : end;
+      size_t query_len_calc = (size_t)(query_end - ctx->query_start);
+      if (query_len_calc > 8192)
+        return URI_PARSE_TOO_LONG;
       r = uri_alloc_component (arena, ctx->query_start, query_end,
                                &result->query, &result->query_len);
       if (r != URI_PARSE_OK)
         return r;
+
+      /* Validate query syntax (RFC 3986 3.4) */
+      if (result->query && result->query_len > 0)
+        {
+          r = validate_path_query (result->query, result->query_len, 0);
+          if (r != URI_PARSE_OK)
+            return r;
+        }
     }
 
   /* Fragment */
   if (ctx->fragment_start)
     {
       const char *fragment_end = ctx->fragment_end ? ctx->fragment_end : end;
+      size_t frag_len_calc = (size_t)(fragment_end - ctx->fragment_start);
+      if (frag_len_calc > 8192)
+        return URI_PARSE_TOO_LONG;
       r = uri_alloc_component (arena, ctx->fragment_start, fragment_end,
                                &result->fragment, &result->fragment_len);
       if (r != URI_PARSE_OK)
         return r;
+
+      /* Validate fragment syntax (RFC 3986 3.5) */
+      if (result->fragment && result->fragment_len > 0)
+        {
+          r = validate_fragment (result->fragment, result->fragment_len);
+          if (r != URI_PARSE_OK)
+            return r;
+        }
     }
 
   return URI_PARSE_OK;
@@ -928,6 +1006,270 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
  * ============================================================================ */
 
 /**
+ * is_token_char - Check if character is valid HTTP token character (RFC 7230)
+ * @c: Character to check
+ *
+ * Returns: Non-zero if valid token char, zero otherwise
+ */
+static inline int
+is_token_char (unsigned char c)
+{
+  return isalnum (c) ||
+         c == '!' || c == '#' || c == '$' || c == '%' || c == '&' || c == '\'' ||
+         c == '*' || c == '+' || c == '-' || c == '.' ||
+         c == '^' || c == '_' || c == '`' || c == '|' || c == '~';
+}
+
+/* ============================================================================
+ * URI Component Validation Helpers (RFC 3986)
+ * ============================================================================ */
+
+/**
+ * is_unreserved - Check if character is unreserved (RFC 3986)
+ * @c: Character to check
+ */
+static inline int
+is_unreserved (unsigned char c)
+{
+  return isalnum (c) || c == '-' || c == '.' || c == '_' || c == '~';
+}
+
+/**
+ * is_sub_delims - Check if character is sub-delims (RFC 3986)
+ * @c: Character to check
+ */
+static inline int
+is_sub_delims (unsigned char c)
+{
+  return strchr ("!$&'()*+,;=", c) != NULL;
+}
+
+/**
+ * is_pchar_raw - Check if raw character valid in pchar (excluding %XX)
+ * @c: Character to check
+ */
+static inline int
+is_pchar_raw (unsigned char c)
+{
+  return is_unreserved (c) || is_sub_delims (c) || c == ':' || c == '@';
+}
+
+/**
+ * validate_string_chars - Validate string consists of allowed raw chars
+ * @start: Start of string
+ * @len: Length
+ * @validator: Validation function
+ * @error_type: Error code on failure
+ *
+ * Returns: URI_PARSE_OK or specified error
+ */
+
+static SocketHTTP_URIResult
+validate_string_chars (const char *start, size_t len,
+                       int (*validator)(unsigned char), SocketHTTP_URIResult error_type)
+{
+  for (size_t i = 0; i < len; i++)
+    {
+      if (!validator ((unsigned char)start[i]))
+        return error_type;
+    }
+  return URI_PARSE_OK;
+}
+
+/**
+ * validate_pct_encoded - Basic check for %XX in string (not full decode)
+ * @s: String to check
+ * @len: Length
+ *
+ * Checks % is followed by two hex digits. Does not validate overall syntax.
+ * Returns: URI_PARSE_OK or URI_PARSE_ERROR
+ */
+
+static SocketHTTP_URIResult
+validate_pct_encoded (const char *s, size_t len)
+{
+  size_t i = 0;
+  while (i < len)
+    {
+      if (s[i] == '%')
+        {
+          if (i + 2 >= len)
+            return URI_PARSE_ERROR;
+          unsigned char hi = SOCKETHTTP_HEX_VALUE (s[i + 1]);
+          unsigned char lo = SOCKETHTTP_HEX_VALUE (s[i + 2]);
+          if (hi == 255 || lo == 255)
+            return URI_PARSE_ERROR;
+          i += 3;
+        }
+      else
+        {
+          i++;
+        }
+    }
+  return URI_PARSE_OK;
+}
+
+/**
+ * is_reg_name_raw - Check if raw char valid in reg-name (RFC 3986)
+ * @c: Character to check
+ *
+ * Valid: unreserved / sub-delims / % (pct will be validated separately)
+ */
+static inline int
+is_reg_name_raw (unsigned char c)
+{
+  return is_unreserved (c) || is_sub_delims (c) || c == '%';
+}
+
+/**
+ * validate_reg_name - Validate reg-name component
+ * @host: Host string
+ * @len: Length
+ *
+ * Returns: URI_PARSE_OK or URI_PARSE_INVALID_HOST
+ */
+
+static SocketHTTP_URIResult validate_reg_name (const char *host, size_t len)
+{
+  SocketHTTP_URIResult r = validate_string_chars (host, len, is_reg_name_raw, URI_PARSE_INVALID_HOST);
+  if (r != URI_PARSE_OK)
+    return r;
+  return validate_pct_encoded (host, len);
+}
+
+/**
+ * is_ipv6_char - Basic check for IPv6 literal chars inside [ ]
+ * @c: Character to check
+ */
+static inline int
+is_ipv6_char (unsigned char c)
+{
+  return isxdigit (c) || c == ':' || c == '.';
+}
+
+/**
+ * validate_ipv6_literal - Basic validation for IPv6 address literal [IPv6addr]
+ * @host: Full host string (including [ ])
+ * @len: Length
+ *
+ * Simple check: brackets match, inside valid chars, no early close.
+ * Full validation deferred to socket address functions.
+ * Returns: URI_PARSE_OK or URI_PARSE_INVALID_HOST
+ */
+
+static SocketHTTP_URIResult
+validate_ipv6_literal (const char *host, size_t len)
+{
+  if (len < 4 || host[0] != '[' || host[len - 1] != ']')
+    return URI_PARSE_INVALID_HOST;
+
+  size_t inner_len = len - 2;
+  if (inner_len == 0)
+    return URI_PARSE_INVALID_HOST;
+
+  // Basic char check inside
+  SocketHTTP_URIResult r = validate_string_chars (host + 1, inner_len, is_ipv6_char, URI_PARSE_INVALID_HOST);
+  if (r != URI_PARSE_OK)
+    return r;
+
+  // Check no extra ]
+  if (strchr (host + 1, ']') != host + len - 1)
+    return URI_PARSE_INVALID_HOST;
+
+  return URI_PARSE_OK;
+}
+
+/**
+ * validate_host - Validate host component per RFC 3986 section 3.2.2
+ * @host: Host string
+ * @len: Length
+ * @out_is_ipv6: Set to 1 if IPv6 literal (output)
+ *
+ * Supports reg-name and IPv6 literal (basic). IPv4 deferred.
+ * Returns: URI_PARSE_OK or error
+ */
+
+
+static SocketHTTP_URIResult
+validate_host (const char *host, size_t len, int *out_is_ipv6)
+{
+  if (!host || len == 0)
+    return URI_PARSE_OK;  // Empty host allowed in some contexts?
+
+  *out_is_ipv6 = 0;
+
+  if (host[0] == '[' && host[len - 1] == ']')
+    {
+      *out_is_ipv6 = 1;
+      return validate_ipv6_literal (host, len);
+    }
+
+  // Reg-name or IPv4 (basic IPv4 defer to socket lib)
+  // For security, validate as reg-name (IPv4 digits will pass)
+  return validate_reg_name (host, len);
+}
+
+/**
+ * validate_path_query - Validate path or query chars per RFC 3986 section 3.3
+ * @s: String
+ * @len: Length
+ * @is_path: 1 for path (allows /), 0 for query
+ *
+ * Returns: URI_PARSE_OK or URI_PARSE_INVALID_PATH/QUERY
+ */
+
+
+static SocketHTTP_URIResult
+validate_path_query (const char *s, size_t len, int is_path)
+{
+  SocketHTTP_URIResult err = is_path ? URI_PARSE_INVALID_PATH : URI_PARSE_INVALID_QUERY;
+  size_t i = 0;
+  while (i < len)
+    {
+      char c = s[i];
+      if (c == '%')
+        {
+          SocketHTTP_URIResult r = validate_pct_encoded (s + i, len - i);
+          if (r != URI_PARSE_OK)
+            return err;
+          // Advance past %XX (handle consecutive)
+          i += 3;
+          while (i + 2 < len && s[i] == '%')
+            i += 3;
+          continue;
+        }
+      if (c == '/' || c == '?')
+        {
+          i++;
+          continue;
+        }
+      if (!is_pchar_raw ((unsigned char)c))
+        {
+          return err;
+        }
+      i++;
+    }
+  return URI_PARSE_OK;
+}
+
+/**
+ * validate_fragment - Validate fragment component per RFC 3986 section 3.5
+ * @s: Fragment string
+ * @len: Length
+ *
+ * fragment = *( pchar / "/" / "?" )
+ * Same as query validation.
+ * Returns: URI_PARSE_OK or URI_PARSE_INVALID_QUERY (reused)
+ */
+
+
+static SocketHTTP_URIResult
+validate_fragment (const char *s, size_t len)
+{
+  return validate_path_query (s, len, 0);  // Treat as query-like
+}
+
+/**
  * skip_whitespace - Skip leading whitespace
  * @p: Current position
  * @end: End of input
@@ -979,8 +1321,17 @@ parse_quoted_value (const char *p, const char *end, const char **value_start,
   *value_start = p;
   while (p < end && *p != '"')
     {
-      if (*p == '\\' && p + 1 < end)
-        p++;
+      if (*p == '\\')
+        {
+          if (p + 1 >= end)
+            {
+              // Incomplete escape sequence
+              *value_start = NULL;
+              *value_len = 0;
+              return end;
+            }
+          p++;  // Skip escaped character
+        }
       p++;
     }
   *value_len = (size_t)(p - *value_start);
@@ -1011,6 +1362,13 @@ mediatype_parse_type_subtype (const char *p, const char *end,
     return NULL;
 
   size_t type_len = (size_t)(p - type_start);
+
+  // Validate type is valid token characters (RFC 7230)
+  for (const char *tp = type_start; tp < type_start + type_len; tp++)
+    {
+      if (!is_token_char ((unsigned char)*tp))
+        return NULL;
+    }
   char *type = ALLOC (arena, type_len + 1);
   if (!type)
     return NULL;
@@ -1028,6 +1386,13 @@ mediatype_parse_type_subtype (const char *p, const char *end,
     return NULL;
 
   size_t subtype_len = (size_t)(p - subtype_start);
+
+  // Validate subtype is valid token characters (RFC 7230)
+  for (const char *sp = subtype_start; sp < subtype_start + subtype_len; sp++)
+    {
+      if (!is_token_char ((unsigned char)*sp))
+        return NULL;
+    }
   char *subtype = ALLOC (arena, subtype_len + 1);
   if (!subtype)
     return NULL;
@@ -1065,6 +1430,14 @@ mediatype_parse_parameter (const char *p, const char *end,
     return p;
 
   size_t param_len = (size_t)(p - param_start);
+
+  // Validate parameter name is valid token characters (RFC 7230)
+  for (const char *pp = param_start; pp < param_start + param_len; pp++)
+    {
+      if (!is_token_char ((unsigned char)*pp))
+        return p;
+    }
+
   p++;
 
   const char *value_start;
@@ -1080,6 +1453,13 @@ mediatype_parse_parameter (const char *p, const char *end,
       value_start = p;
       p = find_token_end (p, end, "; \t");
       value_len = (size_t)(p - value_start);
+
+      // Validate unquoted parameter value is valid token characters (RFC 7230)
+      for (const char *vp = value_start; vp < value_start + value_len; vp++)
+        {
+          if (!is_token_char ((unsigned char)*vp))
+            return p;
+        }
     }
 
   /* Check for known parameters */

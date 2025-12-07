@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['🛡️_20error_20handling_0',['🛡️ Error Handling',['../index.html#autotoc_md17',1,'']]]
+  ['zero_20copy_20file_20transfer_0',['Zero-Copy File Transfer',['../index.html#autotoc_md33',1,'']]]
 ];

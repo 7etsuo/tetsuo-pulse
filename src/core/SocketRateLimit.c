@@ -23,6 +23,7 @@
 #include "core/SocketConfig.h"
 #include "socket/SocketCommon.h"
 #include "core/SocketSecurity.h"
+#include "core/SocketUtil.h"
 
 #define T SocketRateLimit_T
 
@@ -59,15 +60,11 @@ ratelimit_calculate_tokens_to_add (int64_t elapsed_ms, size_t tokens_per_sec)
   if (elapsed_ms <= 0)
     return 0;
 
-  uint64_t mul = (uint64_t)elapsed_ms * (uint64_t)tokens_per_sec;
-  if ((uint64_t)elapsed_ms > 0 && mul / (uint64_t)tokens_per_sec != (uint64_t)elapsed_ms)
-    {
-      /* Overflow detected - conservative: add no tokens */
-      return 0;
-    }
-
-  uint64_t tokens64 = mul / SOCKET_MS_PER_SECOND;
-  return (tokens64 > SIZE_MAX) ? SIZE_MAX : (size_t)tokens64;
+  size_t tokens_per_ms = tokens_per_sec / SOCKET_MS_PER_SECOND;
+  size_t safe_tokens = SocketSecurity_safe_multiply ((size_t)elapsed_ms, tokens_per_ms);
+  if (safe_tokens == 0) /* Overflow or zero */
+    return 0;
+  return (safe_tokens > SIZE_MAX) ? SIZE_MAX : safe_tokens;
 }
 
 /**
@@ -84,14 +81,11 @@ ratelimit_calculate_wait_ms (size_t needed, size_t tokens_per_sec)
 
   assert (tokens_per_sec > 0);
 
-  uint64_t mul = (uint64_t)needed * (uint64_t)SOCKET_MS_PER_SECOND;
-  if (needed > 0 && mul / (uint64_t)SOCKET_MS_PER_SECOND != (uint64_t)needed)
-    {
-      /* Overflow detected */
-      return SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
-    }
-
-  uint64_t wait64 = mul / tokens_per_sec;
+  size_t ms_per_token = SOCKET_MS_PER_SECOND / tokens_per_sec;
+  if (ms_per_token == 0) /* tokens_per_sec too large */
+    return SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
+  size_t safe_wait_ms = SocketSecurity_safe_multiply (needed, ms_per_token);
+  uint64_t wait64 = safe_wait_ms;
   if (wait64 > (uint64_t)INT64_MAX)
     {
       return INT64_MAX;
@@ -429,7 +423,7 @@ SocketRateLimit_free (T *limiter)
       WITH_LOCK (l, l->initialized = SOCKET_RATELIMIT_SHUTDOWN; );
 
       /* Wait for concurrent operations to complete before destroying mutex */
-      int retries = 1000; /* max ~1s wait */
+      int retries = 10000; /* max ~10s wait */
       while (retries-- > 0) {
         if (pthread_mutex_trylock(&l->mutex) == 0) {
           pthread_mutex_unlock(&l->mutex);
@@ -437,6 +431,9 @@ SocketRateLimit_free (T *limiter)
         }
         struct timespec ts = {0, 1000000}; /* 1ms */
         nanosleep(&ts, NULL);
+      }
+      if (retries < 0) {
+        SOCKET_LOG_WARN_MSG("SocketRateLimit_free: destroying potentially locked mutex after timeout");
       }
 
       pthread_mutex_destroy (&l->mutex);

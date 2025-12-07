@@ -879,6 +879,7 @@ ws_send_data_frame (SocketWS_T ws, SocketWS_Opcode opcode,
   /* Compress if enabled (permessage-deflate) */
   if (ws->compression_enabled && ws_is_data_opcode (opcode))
     {
+      size_t original_len = len;
       unsigned char *compressed = NULL;
       size_t compressed_len = 0;
 
@@ -887,6 +888,16 @@ ws_send_data_frame (SocketWS_T ws, SocketWS_Opcode opcode,
         {
           data = compressed;
           len = compressed_len;
+
+          /* Check if compression caused expansion beyond frame size limit.
+           * DEFLATE can slightly expand incompressible data. */
+          if (len > ws->config.max_frame_size)
+            {
+              ws_set_error (ws, WS_ERROR_FRAME_TOO_LARGE,
+                            "Compressed frame too large: %zu > %zu (original %zu)",
+                            len, ws->config.max_frame_size, original_len);
+              return -1;
+            }
         }
     }
 #endif
@@ -1117,9 +1128,34 @@ ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
           ws_set_error (ws, err, "Frame header parse error");
           return -1;
         }
+
+      // Validate masking per RFC 6455 Section 5.3: clients MUST mask ALL frames, servers MUST NOT mask any frame
+      if ((ws->role == WS_ROLE_SERVER && ws->frame.masked) ||
+          (ws->role == WS_ROLE_CLIENT && !ws->frame.masked))
+        {
+          ws_set_error (ws, WS_ERROR_PROTOCOL, 
+                        "Invalid frame masking: %s frames not allowed for %s role",
+                        ws->frame.masked ? "Masked" : "Unmasked",
+                        ws->role == WS_ROLE_SERVER ? "server receiving (from client)" : "client receiving (from server)");
+          // Send protocol error close per RFC 6455
+          (void)ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Masking violation");
+          return -1;
+        }
     }
 
   *frame_out = ws->frame;
+
+  /* Validate masking bit per RFC 6455 Section 5.3:
+   * - Clients MUST mask all frames sent to server (masked == 1 when received by server)
+   * - Servers MUST NOT mask frames sent to client (masked == 0 when received by client)
+   */
+  if ((ws->role == WS_ROLE_SERVER && !ws->frame.masked) ||
+      (ws->role == WS_ROLE_CLIENT && ws->frame.masked)) {
+    ws_set_error (ws, WS_ERROR_PROTOCOL,
+                  "Invalid masking in received frame (role=%d, masked=%d)",
+                  (int)ws->role, (int)ws->frame.masked);
+    return -1;
+  }
 
   if (ws_check_payload_size (ws) < 0)
     return -1;

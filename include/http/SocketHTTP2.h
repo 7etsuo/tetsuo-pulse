@@ -96,6 +96,9 @@
 /** Maximum decoded headers per HPACK block */
 #define SOCKETHTTP2_MAX_DECODED_HEADERS 128
 
+/** Maximum CONTINUATION frames per header block (DoS protection) */
+#define SOCKETHTTP2_MAX_CONTINUATION_FRAMES 32
+
 /** Number of pseudo-headers in HTTP/2 requests (:method, :scheme, :authority, :path) */
 #define HTTP2_REQUEST_PSEUDO_HEADER_COUNT 4
 
@@ -123,6 +126,32 @@
 
 #ifndef SOCKETHTTP2_RST_RATE_WINDOW_MS
 #define SOCKETHTTP2_RST_RATE_WINDOW_MS 1000 /* Rate window in milliseconds */
+#endif
+
+/**
+ * PING rate limiting (DoS protection)
+ *
+ * Prevents PING flood attacks.
+ */
+#ifndef SOCKETHTTP2_PING_RATE_LIMIT
+#define SOCKETHTTP2_PING_RATE_LIMIT 50 /* Max PING frames per window */
+#endif
+
+#ifndef SOCKETHTTP2_PING_RATE_WINDOW_MS
+#define SOCKETHTTP2_PING_RATE_WINDOW_MS 1000 /* Rate window in milliseconds */
+#endif
+
+/**
+ * SETTINGS rate limiting (DoS protection)
+ *
+ * Prevents SETTINGS flood for CPU/memory exhaustion.
+ */
+#ifndef SOCKETHTTP2_SETTINGS_RATE_LIMIT
+#define SOCKETHTTP2_SETTINGS_RATE_LIMIT 10 /* Max SETTINGS frames per window */
+#endif
+
+#ifndef SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS
+#define SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS 5000 /* Longer window for config changes */
 #endif
 
 #ifndef SOCKETHTTP2_DEFAULT_SETTINGS_TIMEOUT_MS
@@ -306,7 +335,11 @@ typedef struct
   /* Local settings (we send to peer) */
   uint32_t header_table_size;
   uint32_t enable_push;
-  uint32_t max_concurrent_streams;
+  uint32_t max_concurrent_streams;     /**< Max concurrent streams (SETTINGS_MAX_CONCURRENT_STREAMS) */
+  uint32_t max_stream_open_rate;        /**< Max stream opens per second for rate limiting */
+  uint32_t max_stream_open_burst;       /**< Burst allowance for stream opens */
+  uint32_t max_stream_close_rate;       /**< Max stream closes/RST per second */
+  uint32_t max_stream_close_burst;      /**< Burst for closes/RST */
   uint32_t initial_window_size;
   uint32_t max_frame_size;
   uint32_t max_header_list_size;
@@ -921,13 +954,17 @@ SocketHTTP2_stream_state_string (SocketHTTP2_StreamState state);
 
 /**
  * SocketHTTP2_frame_header_parse - Parse frame header from buffer
- * @data: Input buffer (at least HTTP2_FRAME_HEADER_SIZE bytes)
- * @header: Output header structure
+ * @data: Input buffer containing frame header
+ * @input_len: Length of available data (must be >= HTTP2_FRAME_HEADER_SIZE=9; runtime validated)
+ * @header: Output header structure (populated on success)
  *
- * Returns: 0 on success
+ * Returns: 0 on success, -1 on invalid input (null pointers, input_len < 9)
  * Thread-safe: Yes
+ *
+ * Note: Performs basic length validation for safety; caller should ensure data is from trusted source.
+ * No deep payload validation—use http2_frame_validate for protocol checks.
  */
-extern int SocketHTTP2_frame_header_parse (const unsigned char *data,
+extern int SocketHTTP2_frame_header_parse (const unsigned char *data, size_t input_len,
                                            SocketHTTP2_FrameHeader *header);
 
 /**

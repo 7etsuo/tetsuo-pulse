@@ -430,10 +430,27 @@ ws_validate_accept_value (SocketWS_T ws, SocketHTTP_Headers_T headers)
   accept_len = strlen (accept);
   expected_len = strlen (ws->handshake.expected_accept);
 
-  if (accept_len != expected_len
-      || SocketCrypto_secure_compare (accept, ws->handshake.expected_accept,
-                                      accept_len)
-             != 0)
+  if (accept_len != expected_len)
+    {
+      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                    "Invalid Sec-WebSocket-Accept length: %zu (expected %zu)", accept_len, expected_len);
+      return -1;
+    }
+
+  unsigned char temp_hash[20];
+  ssize_t decoded_len = SocketCrypto_base64_decode (accept, accept_len, temp_hash, sizeof (temp_hash));
+  if (decoded_len != 20)
+    {
+      SocketCrypto_secure_clear (temp_hash, sizeof (temp_hash));
+      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                    "Invalid Sec-WebSocket-Accept format (base64 decode failed or wrong length: %zd)", decoded_len);
+      return -1;
+    }
+  SocketCrypto_secure_clear (temp_hash, sizeof (temp_hash));
+
+  if (SocketCrypto_secure_compare (accept, ws->handshake.expected_accept,
+                                   accept_len)
+         != 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE,
                     "Invalid Sec-WebSocket-Accept value");
@@ -507,7 +524,11 @@ ws_parse_window_bits (const char *extensions, const char *param_name)
   if (!eq)
     return SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
 
-  value = atoi (eq + 1);
+  {
+    char *endptr;
+    long v = strtol (eq + 1, &endptr, 10);
+    value = (v >= 8 && v <= 15) ? (int)v : SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
+  }
   if (value < 8 || value > 15)
     return SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
 
@@ -587,6 +608,25 @@ ws_validate_upgrade_response (SocketWS_T ws,
     return -1;
 
   ws_parse_negotiated_extensions (ws, response->headers);
+
+#ifdef SOCKETWS_HAS_DEFLATE
+  if (ws->handshake.compression_negotiated)
+    {
+      if (ws_compression_init (ws) < 0)
+        {
+          SocketLog_emit (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                          "Compression init failed, continuing without");
+        }
+      else
+        {
+          ws->compression_enabled = 1;
+        }
+    }
+#endif
+
+  // Clear sensitive handshake data after successful validation
+  SocketCrypto_secure_clear (ws->handshake.client_key, sizeof (ws->handshake.client_key));
+  SocketCrypto_secure_clear (ws->handshake.expected_accept, sizeof (ws->handshake.expected_accept));
 
   return 0;
 }
@@ -1005,12 +1045,31 @@ ws_validate_client_key (SocketWS_T ws, SocketHTTP_Headers_T headers,
   const char *key;
 
   key = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Key");
-  if (!key || strlen (key) != SOCKETWS_KEY_BASE64_LENGTH)
+  if (!key)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Missing or invalid Sec-WebSocket-Key");
+                    "Missing Sec-WebSocket-Key");
       return -1;
     }
+
+  size_t key_len = strlen (key);
+  if (key_len != SOCKETWS_KEY_BASE64_LENGTH)
+    {
+      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                    "Invalid Sec-WebSocket-Key length: %zu (expected %d)", key_len, SOCKETWS_KEY_BASE64_LENGTH);
+      return -1;
+    }
+
+  unsigned char temp[16];
+  ssize_t decoded_len = SocketCrypto_base64_decode (key, key_len, temp, sizeof (temp));
+  if (decoded_len != 16)
+    {
+      SocketCrypto_secure_clear (temp, sizeof (temp));
+      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                    "Invalid Sec-WebSocket-Key format (base64 decode failed or wrong length: %zd)", decoded_len);
+      return -1;
+    }
+  SocketCrypto_secure_clear (temp, sizeof (temp));
 
   *key_out = key;
   return 0;
@@ -1304,26 +1363,53 @@ SocketWS_is_upgrade (const SocketHTTP_Request *request)
 void
 SocketWS_server_reject (Socket_T socket, int status_code, const char *reason)
 {
-  char buf[512];
-  int len;
-  const char *msg;
-  size_t msg_len;
+  char buf[1024];  // Increased for safety
+  char status_phrase[64];
+  const char *body_text;
+  size_t body_len;
+  int written;
 
   if (!socket)
     return;
 
-  msg = reason ? reason : "Rejected";
-  msg_len = strlen (msg);
+  body_text = reason ? reason : "WebSocket upgrade rejected";
 
-  len = snprintf (buf, sizeof (buf),
-                  "HTTP/1.1 %d %s\r\n"
-                  "Content-Type: text/plain\r\n"
-                  "Content-Length: %zu\r\n"
-                  "Connection: close\r\n"
-                  "\r\n"
-                  "%s",
-                  status_code, msg, msg_len, msg);
+  // Prepare status phrase (short version of reason or default)
+  if (reason && strlen (reason) < 60)
+    {
+      strncpy (status_phrase, reason, sizeof (status_phrase) - 1);
+      status_phrase[sizeof (status_phrase) - 1] = '\0';
+    }
+  else
+    {
+      strncpy (status_phrase, "WebSocket Error", sizeof(status_phrase) - 1);
+      status_phrase[sizeof(status_phrase) - 1] = '\0';
+    }
 
-  if (len > 0 && (size_t)len < sizeof (buf))
-    Socket_send (socket, buf, (size_t)len);
+  body_len = strlen (body_text);
+  // Cap body length to prevent oversized responses
+  if (body_len > 512)
+    body_len = 512;
+
+  // Format response with exact body length
+  written = snprintf (buf, sizeof (buf),
+                      "HTTP/1.1 %d %s\r\n"
+                      "Content-Type: text/plain\r\n"
+                      "Content-Length: %zu\r\n"
+                      "Connection: close\r\n"
+                      "\r\n"
+                      "%.*s",
+                      status_code, status_phrase, body_len,
+                      (int)body_len, body_text);
+
+  if (written > 0 && (size_t)written <= sizeof (buf))
+    {
+      Socket_send (socket, buf, (size_t)written);
+    }
+  else
+    {
+      // Fallback minimal response on format error
+      const char *fallback = "HTTP/1.1 400 Bad Request\r\n\r\n";
+      Socket_send (socket, fallback, strlen (fallback));
+    }
 }

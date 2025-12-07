@@ -206,6 +206,11 @@ initialize_connection (Connection_T conn, Socket_T socket, time_t now)
   conn->last_activity = now;
   conn->created_at = now;
   conn->active = 1;
+#if SOCKET_HAS_TLS
+  conn->tls_session = NULL;
+  conn->tls_ctx = NULL;
+  conn->tls_handshake_complete = 0;
+#endif
 }
 
 /**
@@ -252,6 +257,7 @@ reset_slot_tls_fields (Connection_T conn)
 #if SOCKET_HAS_TLS
   conn->tls_ctx = NULL;
   conn->tls_handshake_complete = 0;
+  conn->tls_session = NULL;
 #else
   (void)conn;
 #endif
@@ -424,6 +430,12 @@ save_tls_session (Connection_T conn, Socket_T socket)
   if (!ssl)
     return;
 
+  /* Free any existing session before saving new one to avoid leaks */
+  if (conn->tls_session) {
+    SSL_SESSION_free(conn->tls_session);
+    conn->tls_session = NULL;
+  }
+
   sess = SSL_get1_session (ssl);
   if (sess)
     conn->tls_session = sess;
@@ -462,6 +474,9 @@ cleanup_tls_and_save_session (Connection_T conn, Socket_T socket)
 static Connection_T
 handle_existing_slot (Connection_T conn, time_t now)
 {
+  /* Secure clear buffers on reuse to prevent data leakage (security.md Section 20) */
+  SocketBuf_secureclear (conn->inbuf);
+  SocketBuf_secureclear (conn->outbuf);
   update_existing_slot (conn, now);
   SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REUSED, 1);
   return conn;
@@ -576,6 +591,9 @@ SocketPool_add (T pool, Socket_T socket)
   Connection_T conn;
   time_t now;
 
+  if (!pool || !socket) {
+    RAISE_POOL_MSG (SocketPool_Failed, "Invalid NULL pool or socket in SocketPool_add");
+  }
   assert (pool);
   assert (socket);
 
@@ -619,11 +637,15 @@ get_unlocked (T pool, Socket_T socket, time_t now)
  * Returns: 1 if connection is valid (or no callback set), 0 if invalid
  * Thread-safe: Call with mutex held
  */
+static void remove_known_connection (T pool, Connection_T conn, Socket_T socket);
+
 static int
 run_validation_callback_unlocked (T pool, Connection_T conn)
 {
   SocketPool_ValidationCallback cb;
   void *cb_data;
+  int valid;
+  Connection_T current_conn;
 
   cb = pool->validation_cb;
   cb_data = pool->validation_cb_data;
@@ -631,14 +653,33 @@ run_validation_callback_unlocked (T pool, Connection_T conn)
   if (!cb)
     return 1; /* No callback = always valid */
 
-  /* Call validation callback (with mutex held - keep it short!) */
-  if (cb (conn, cb_data))
+  /* Temporarily release mutex for callback to avoid deadlock/long holds.
+   * Re-acquire to safely remove if invalid. Races handled by re-validation. */
+  pthread_mutex_unlock (&pool->mutex);
+
+  valid = cb (conn, cb_data);
+
+  pthread_mutex_lock (&pool->mutex);
+
+  /* Re-validate: Check if connection still exists and matches */
+  current_conn = find_slot (pool, Connection_socket (conn));
+  if (!current_conn || current_conn != conn) {
+    /* Already removed by another thread - assume handled */
+    if (!valid) {
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "Validation invalid but connection already removed");
+    }
+    return 1; /* Treat as valid (gone) */
+  }
+
+  if (valid)
     return 1;
 
-  /* Validation failed */
+  /* Still invalid and present - remove it */
   pool->stats_validation_failures++;
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "Connection validation callback returned invalid");
+                   "Connection validation callback returned invalid - removing");
+  remove_known_connection (pool, conn, conn->socket);
   return 0;
 }
 
@@ -662,6 +703,9 @@ SocketPool_get (T pool, Socket_T socket)
   Connection_T conn;
   time_t now;
 
+  if (!pool || !socket) {
+    RAISE_POOL_MSG (SocketPool_Failed, "Invalid NULL pool or socket in SocketPool_get");
+  }
   assert (pool);
   assert (socket);
 
@@ -670,21 +714,21 @@ SocketPool_get (T pool, Socket_T socket)
   pthread_mutex_lock (&pool->mutex);
   conn = get_unlocked (pool, socket, now);
 
-  /* Run validation callback if connection found */
-  if (conn && !run_validation_callback_unlocked (pool, conn))
-    {
-      /* Validation failed - remove connection */
-      remove_known_connection (pool, conn, socket);
+  /* Run validation callback if connection found (now handles removal internally) */
+  if (conn) {
+    if (!run_validation_callback_unlocked (pool, conn)) {
+      /* Callback indicated invalid; re-check and remove if still present */
+      conn = find_slot (pool, socket);
+      if (conn) {
+        remove_known_connection (pool, conn, socket);
+      }
       pthread_mutex_unlock (&pool->mutex);
       return NULL;
     }
-
-  /* Update reuse stats if connection found */
-  if (conn)
-    {
-      pool->stats_total_reused++;
-      SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REUSED, 1);
-    }
+    /* Valid connection - update stats */
+    pool->stats_total_reused++;
+    SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REUSED, 1);
+  }
 
   pthread_mutex_unlock (&pool->mutex);
 
@@ -786,6 +830,10 @@ remove_unlocked (T pool, Socket_T socket)
 void
 SocketPool_remove (T pool, Socket_T socket)
 {
+  if (!pool || !socket) {
+    RAISE_POOL_MSG (SocketPool_Failed, "Invalid NULL pool or socket in SocketPool_remove");
+    return;
+  }
   assert (pool);
   assert (socket);
 
@@ -946,6 +994,10 @@ SocketPool_cleanup (T pool, time_t idle_timeout)
   time_t now;
   size_t close_count;
 
+  if (!pool || !pool->cleanup_buffer) {
+    SOCKET_LOG_ERROR_MSG ("Invalid pool or missing cleanup_buffer in SocketPool_cleanup");
+    return;
+  }
   assert (pool);
   assert (pool->cleanup_buffer);
 
@@ -1148,6 +1200,9 @@ SocketPool_check_connection (T pool, Connection_T conn)
 {
   time_t idle_timeout;
 
+  if (!pool || !conn) {
+    RAISE_POOL_MSG (SocketPool_Failed, "Invalid NULL pool or conn in SocketPool_check_connection");
+  }
   assert (pool);
   assert (conn);
 

@@ -103,12 +103,12 @@ extern int backend_del (PollBackend_T backend, int fd);
 
 /**
  * backend_wait - Wait for events
- * @backend: Backend instance (const - does not modify backend state)
+ * @backend: Backend instance (modifies internal events array for output)
  * @timeout_ms: Timeout in milliseconds (-1 for infinite)
  * Returns: Number of events ready (>= 0), or -1 on error (sets errno)
  * Note: Returns 0 on timeout or EINTR (signal interrupt)
  */
-extern int backend_wait (const PollBackend_T backend, int timeout_ms);
+extern int backend_wait (PollBackend_T backend, int timeout_ms);
 
 /**
  * backend_get_event - Get event details for index

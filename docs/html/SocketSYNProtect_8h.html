@@ -137,7 +137,7 @@ $(document).ready(function(){initNavTree('SocketSYNProtect_8h.html',''); initRes
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketSYNProtect_8h__dep__incl.svg" width="155" height="110"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketSYNProtect_8h__dep__incl.svg" width="155" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <p><a href="SocketSYNProtect_8h_source.html">Go to the source code of this file.</a></p>
@@ -288,7 +288,7 @@ Variables</h2></td></tr>
 <div class="textblock"><p><a class="el" href="SocketSYNProtect_8h.html#structSocketSYN__IPState" title="SocketSYN_IPState - Per-IP tracking state.">SocketSYN_IPState</a> - Per-IP tracking state. </p>
 <p>Contains all tracked information for a single IP address including sliding window counters, success/failure ratios, and reputation score. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketSYNProtect_8h_source.html#l00102">102</a> of file <a class="el" href="SocketSYNProtect_8h_source.html">SocketSYNProtect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketSYNProtect_8h_source.html#l00101">101</a> of file <a class="el" href="SocketSYNProtect_8h_source.html">SocketSYNProtect.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -369,7 +369,7 @@ Current sliding window start time. </td></tr>
 <div class="textblock"><p><a class="el" href="SocketSYNProtect_8h.html#structSocketSYNProtect__Config" title="SocketSYNProtect_Config - Protection configuration.">SocketSYNProtect_Config</a> - Protection configuration. </p>
 <p>All timing values are in milliseconds unless otherwise noted. Threshold scores are floats in range [0.0, 1.0]. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketSYNProtect_8h_source.html#l00126">126</a> of file <a class="el" href="SocketSYNProtect_8h_source.html">SocketSYNProtect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketSYNProtect_8h_source.html#l00125">125</a> of file <a class="el" href="SocketSYNProtect_8h_source.html">SocketSYNProtect.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -384,6 +384,12 @@ Duration of automatic blocks. </td></tr>
 challenge_defer_sec</td>
 <td class="fielddoc">
 TCP_DEFER_ACCEPT timeout in seconds. </td></tr>
+<tr><td class="fieldtype">
+<a id="ae8aea9e4cc570341d5cc8901f3cb814e" name="ae8aea9e4cc570341d5cc8901f3cb814e"></a>unsigned</td>
+<td class="fieldname">
+hash_seed</td>
+<td class="fielddoc">
+Hash randomization seed (0 = auto-generate crypto random for collision resistance; affects synprotect_hash_ip) </td></tr>
 <tr><td class="fieldtype">
 <a id="a5f9976be0331359859284315ebf66e1a" name="a5f9976be0331359859284315ebf66e1a"></a>int</td>
 <td class="fieldname">
@@ -579,7 +585,7 @@ Time since initialization. </td></tr>
 </div><div class="memdoc">
 
 <p><a class="el" href="SocketSYNProtect_8h.html">SocketSYNProtect.h</a> - SYN Flood Protection Module. </p>
-<p>Part of the Socket Library Following C Interfaces and Implementations patterns</p>
+<p>Part of the Socket Library</p>
 <p>Provides comprehensive SYN flood attack protection through:</p><ul>
 <li>Connection attempt tracking (not just established connections)</li>
 <li>Time-windowed sliding counters for accurate rate measurement</li>
@@ -602,7 +608,7 @@ Time since initialization. </td></tr>
 <p>// Before accept(): SocketSYN_Action action = SocketSYNProtect_check(protect, client_ip, NULL); if (action == SYN_ACTION_BLOCK) { close(client_fd); continue; }</p>
 <p>// After successful accept: SocketSYNProtect_report_success(protect, client_ip); </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketSYNProtect_8h_source.html#l00052">52</a> of file <a class="el" href="SocketSYNProtect_8h_source.html">SocketSYNProtect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketSYNProtect_8h_source.html#l00051">51</a> of file <a class="el" href="SocketSYNProtect_8h_source.html">SocketSYNProtect.h</a>.</p>
 
 </div>
 </div>
@@ -619,7 +625,7 @@ Time since initialization. </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketSYNProtect_8h_source.html#l00053">53</a> of file <a class="el" href="SocketSYNProtect_8h_source.html">SocketSYNProtect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketSYNProtect_8h_source.html#l00052">52</a> of file <a class="el" href="SocketSYNProtect_8h_source.html">SocketSYNProtect.h</a>.</p>
 
 </div>
 </div>
@@ -649,7 +655,7 @@ Time since initialization. </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketSYNProtect_8h_source.html#l00071">71</a> of file <a class="el" href="SocketSYNProtect_8h_source.html">SocketSYNProtect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketSYNProtect_8h_source.html#l00070">70</a> of file <a class="el" href="SocketSYNProtect_8h_source.html">SocketSYNProtect.h</a>.</p>
 
 </div>
 </div>
@@ -678,7 +684,7 @@ Time since initialization. </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketSYNProtect_8h_source.html#l00084">84</a> of file <a class="el" href="SocketSYNProtect_8h_source.html">SocketSYNProtect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketSYNProtect_8h_source.html#l00083">83</a> of file <a class="el" href="SocketSYNProtect_8h_source.html">SocketSYNProtect.h</a>.</p>
 
 </div>
 </div>

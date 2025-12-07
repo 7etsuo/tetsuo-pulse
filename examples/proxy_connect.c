@@ -36,7 +36,7 @@
 #include "socket/Socket.h"
 #include "socket/SocketProxy.h"
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSContext.h"
 #endif
@@ -203,7 +203,7 @@ main (int argc, char **argv)
         /* If target is HTTPS (443), demonstrate TLS setup */
         if (target_port == 443)
           {
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
             printf ("\nTarget port is 443 - performing TLS handshake...\n");
 
             /* Create TLS context */
@@ -288,7 +288,7 @@ main (int argc, char **argv)
     fprintf (stderr, "Socket error\n");
     result = 1;
   }
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   EXCEPT (SocketTLS_HandshakeFailed)
   {
     fprintf (stderr, "TLS handshake failed\n");

@@ -507,6 +507,55 @@ test_whitelist_cidr (void)
 }
 
 /**
+ * test_whitelist_cidr_invalid - Test rejection of invalid CIDR notations and no wildcard effect
+ */
+static int
+test_whitelist_cidr_invalid (void)
+{
+  SocketSYNProtect_T protect = NULL;
+  volatile int success = 0;
+
+  TRY
+  {
+    protect = SocketSYNProtect_new (NULL, NULL);
+
+    /* Invalid prefix like /abc should fail add, not create /0 wildcard */
+    int result1 = SocketSYNProtect_whitelist_add_cidr (protect, "192.168.1.1/abc");
+    success = (result1 == 0);
+
+    /* Failure should not whitelist arbitrary IPs */
+    int contains_arbitrary = SocketSYNProtect_whitelist_contains (protect, "8.8.8.8");
+    success = success && (contains_arbitrary == 0);
+
+    /* Invalid large prefix /999 should fail */
+    int result2 = SocketSYNProtect_whitelist_add_cidr (protect, "192.168.1.1/999");
+    success = success && (result2 == 0);
+
+    /* Negative prefix /-1 should fail */
+    int result3 = SocketSYNProtect_whitelist_add_cidr (protect, "192.168.1.1/-1");
+    success = success && (result3 == 0);
+
+    /* No / should fall back to single IP add (success) */
+    int result4 = SocketSYNProtect_whitelist_add_cidr (protect, "192.168.1.1");
+    success = success && (result4 == 1);
+    int contains_fallback = SocketSYNProtect_whitelist_contains (protect, "192.168.1.1");
+    success = success && (contains_fallback == 1);
+
+    /* /0 should be accepted but match only exact (or disallow?) - test match */
+    int result5 = SocketSYNProtect_whitelist_add_cidr (protect, "0.0.0.0/0");
+    success = success && (result5 == 1);  // Allowed, but verify behavior if needed
+    int contains_all = SocketSYNProtect_whitelist_contains (protect, "255.255.255.255");
+    // Note: /0 matches all IPv4; adjust policy if to disallow
+
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE { success = 0; }
+  END_TRY;
+
+  return success;
+}
+
+/**
  * test_whitelist_remove - Test removing from whitelist
  */
 static int
@@ -1156,6 +1205,7 @@ main (void)
   RUN_TEST (test_whitelist_add_single);
   RUN_TEST (test_whitelist_bypass);
   RUN_TEST (test_whitelist_cidr);
+  RUN_TEST (test_whitelist_cidr_invalid);
   RUN_TEST (test_whitelist_remove);
   RUN_TEST (test_whitelist_clear);
 

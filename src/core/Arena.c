@@ -32,6 +32,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketSecurity.h"
 #include "core/SocketConfig.h"
 #include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
@@ -244,12 +245,11 @@ global_memory_release (size_t nbytes)
 static int
 check_alloc_allowed (size_t current, size_t nbytes, size_t limit)
 {
-  /* Check for overflow in addition */
-  if (current > SIZE_MAX - nbytes)
+  size_t desired;
+  if (!SocketSecurity_check_add(current, nbytes, &desired))
     return 0;
 
-  /* Check if allocation would exceed limit */
-  if (current + nbytes > limit)
+  if (limit > 0 && desired > limit)
     return 0;
 
   return 1;
@@ -257,8 +257,6 @@ check_alloc_allowed (size_t current, size_t nbytes, size_t limit)
 
 /* ==================== Validation Macros ==================== */
 
-#define ARENA_CHECK_OVERFLOW_ADD(a, b) ((a) > SIZE_MAX - (b))
-#define ARENA_CHECK_OVERFLOW_MUL(a, b) ((a) != 0 && (b) > SIZE_MAX / (a))
 #define ARENA_VALID_PTR_ARITH(ptr, offset, max)                               \
   (((uintptr_t) (ptr) <= UINTPTR_MAX - (offset))                              \
    && ((uintptr_t) (ptr) + (offset) <= (uintptr_t) (max)))
@@ -278,15 +276,13 @@ validate_chunk_size (size_t chunk_size, size_t *total_out)
 {
   size_t total;
 
-  if (ARENA_CHECK_OVERFLOW_ADD (sizeof (union header), chunk_size)) {
-    SOCKET_ERROR_MSG ("Chunk size overflow: %zu", chunk_size);
+  if (!SocketSecurity_check_add(sizeof(union header), chunk_size, &total)) {
+    SOCKET_ERROR_MSG ("Chunk size overflow: sizeof(header)=%zu + chunk_size=%zu", sizeof(union header), chunk_size);
     return ARENA_FAILURE;
   }
 
-  total = sizeof (union header) + chunk_size;
-
-  if (total > ARENA_MAX_ALLOC_SIZE) {
-    SOCKET_ERROR_MSG ("Chunk size exceeds maximum: %zu", total);
+  if (!SocketSecurity_check_size(total)) {
+    SOCKET_ERROR_MSG ("Chunk size exceeds maximum: %zu (limit=%zu)", total, SocketSecurity_get_max_allocation());
     return ARENA_FAILURE;
   }
 
@@ -442,9 +438,7 @@ chunk_cache_return (struct ChunkHeader *chunk)
 static int
 arena_validate_nbytes (size_t nbytes)
 {
-  if (nbytes == 0 || nbytes > ARENA_MAX_ALLOC_SIZE)
-    return 0;
-  return 1;
+  return SocketSecurity_check_size(nbytes);
 }
 
 /**
@@ -463,16 +457,14 @@ arena_align_size (size_t nbytes)
   size_t units;
   size_t final_size;
 
-  if (ARENA_CHECK_OVERFLOW_ADD (nbytes, align - 1))
+  if (!SocketSecurity_check_add (nbytes, align - 1, &sum))
     return 0;
 
-  sum = nbytes + align - 1;
   units = sum / align;
 
-  if (ARENA_CHECK_OVERFLOW_MUL (units, align))
+  if (!SocketSecurity_check_multiply (units, align, &final_size))
     return 0;
 
-  final_size = units * align;
   return final_size;
 }
 
@@ -487,7 +479,7 @@ arena_calculate_aligned_size (size_t nbytes)
   final_size = arena_align_size (nbytes);
 
   /* Defensive check for rounding overflow (possible if align large relative to max) */
-  if (final_size > ARENA_MAX_ALLOC_SIZE)
+  if (!SocketSecurity_check_size(final_size))
     return 0;
 
   return final_size;
@@ -857,15 +849,14 @@ validate_calloc_params (size_t count, size_t nbytes, const char *func)
     SOCKET_RAISE_MSG (Arena, Arena_Failed,
                       "Invalid count (%zu) or nbytes (%zu) in %s", count, nbytes, func);
 
-  if (ARENA_CHECK_OVERFLOW_MUL (count, nbytes))
+  size_t total;
+  if (!SocketSecurity_check_multiply(count, nbytes, &total))
     SOCKET_RAISE_MSG (Arena, Arena_Failed,
                       "calloc overflow: count=%zu, nbytes=%zu in %s", count, nbytes, func);
 
-  size_t total = count * nbytes;
-
-  if (total > ARENA_MAX_ALLOC_SIZE)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed, "calloc size exceeds maximum: %zu in %s",
-                      total, func);
+  if (!SocketSecurity_check_size(total))
+    SOCKET_RAISE_MSG (Arena, Arena_Failed, "calloc size exceeds maximum: %zu (limit=%zu) in %s",
+                      total, SocketSecurity_get_max_allocation(), func);
 }
 
 void *

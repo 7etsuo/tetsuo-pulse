@@ -1,5 +1,7 @@
 <map id="SocketReconnect.h" name="SocketReconnect.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,5,143,31"/>
-<area shape="rect" id="Node000002" href="$SocketPool_8h.html" title=" " alt="" coords="24,79,124,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="77,44,77,79,71,79,71,44"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="8,5,145,31"/>
+<area shape="rect" id="Node000002" href="$SocketPool_8h.html" title=" " alt="" coords="27,79,127,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="79,44,79,79,74,79,74,44"/>
+<area shape="rect" id="Node000003" href="$graceful__shutdown_8c.html" title=" " alt="" coords="5,152,148,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="79,118,79,152,74,152,74,118"/>
 </map>

@@ -29,6 +29,7 @@ struct T
   int epfd;                   /* epoll file descriptor */
   struct epoll_event *events; /* Event array for results */
   int maxevents;              /* Maximum events per wait */
+  int last_nev;                 /* Valid events from last backend_wait (0 on error/timeout) */
 };
 #undef T
 
@@ -146,6 +147,7 @@ backend_new (Arena_T arena, int maxevents)
     }
 
   backend->maxevents = maxevents;
+  backend->last_nev = 0;
   return backend;
 }
 
@@ -234,7 +236,7 @@ backend_del (PollBackend_T backend, int fd)
 
 /**
  * backend_wait - Wait for events on the epoll interest set
- * @backend: Poll backend instance (const - read-only)
+ * @backend: Poll backend instance (modifies internal events array for output)
  * @timeout_ms: Timeout in milliseconds (-1 for infinite, 0 for non-blocking)
  *
  * Returns: Number of ready events (0 on timeout/interrupt), -1 on error.
@@ -244,7 +246,7 @@ backend_del (PollBackend_T backend, int fd)
  * Thread-safe: No (epoll_wait not thread-safe)
  */
 int
-backend_wait (const PollBackend_T backend, int timeout_ms)
+backend_wait (PollBackend_T backend, int timeout_ms)
 {
   int nev;
 
@@ -255,22 +257,29 @@ backend_wait (const PollBackend_T backend, int timeout_ms)
 
   if (nev < 0)
     {
+      backend->last_nev = 0;
+      memset (backend->events, 0, (size_t)backend->maxevents * sizeof (struct epoll_event));
       if (errno == EINTR)
         return 0;
       return -1;
     }
 
+  backend->last_nev = nev;
+  if (backend->last_nev == 0)
+    {
+      memset (backend->events, 0, (size_t)backend->maxevents * sizeof (struct epoll_event));
+    }
   return nev;
 }
 
 /**
  * backend_get_event - Retrieve event at specified index
- * @backend: Poll backend instance (const - read-only)
- * @index: Event index (0 to nev-1 from backend_wait)
+ * @backend: Backend instance (const - read-only access to events array)
+ * @index: Event index (0 to backend->last_nev - 1 from most recent backend_wait)
  * @fd_out: Output for file descriptor
  * @events_out: Output for abstract poll event flags
  *
- * Returns: 0 on success, -1 if index out of bounds.
+ * Returns: 0 on success, -1 if index out of valid range (0 to last_nev-1 or >= maxevents).
  *
  * Retrieves the fd and translated events for a ready event.
  * Must be called after backend_wait returns > 0.
@@ -286,7 +295,7 @@ backend_get_event (const PollBackend_T backend, int index, int *fd_out,
   assert (fd_out);
   assert (events_out);
 
-  if (index < 0 || index >= backend->maxevents)
+  if (index < 0 || index >= backend->last_nev || index >= backend->maxevents)
     return -1;
 
   ev = &backend->events[index];

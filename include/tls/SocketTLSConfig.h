@@ -14,7 +14,19 @@
  * Thread-safe: Yes - compile-time constants
  */
 
-#ifdef SOCKET_HAS_TLS
+/* SocketTLSConfig_T - TLS configuration structure (stub for now; expand as needed) */
+typedef struct SocketTLSConfig_T SocketTLSConfig_T;
+
+struct SocketTLSConfig_T {
+  int min_version;  /**< Minimum TLS version (default: SOCKET_TLS_MIN_VERSION) */
+  int max_version;  /**< Maximum TLS version (default: SOCKET_TLS_MAX_VERSION) */
+  /* Expand with ciphers, timeouts, etc. as API evolves */
+};
+
+/* Defaults to secure TLS1.3-only config */
+extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
+
+#if SOCKET_HAS_TLS
 
 #include <openssl/err.h>
 #include <openssl/ssl.h>
@@ -32,9 +44,13 @@
   "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_"      \
   "SHA256"
 
-/* TLS handshake timeout defaults */
+/* TLS handshake and shutdown timeout defaults */
 #ifndef SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS
 #define SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS 30000 /* 30 seconds */
+#endif
+
+#ifndef SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS
+#define SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS 5000 /* 5 seconds */
 #endif
 
 /* TLS handshake poll interval for handshake_loop */
@@ -55,6 +71,11 @@
 /* ALPN protocol string limits */
 #ifndef SOCKET_TLS_MAX_ALPN_LEN
 #define SOCKET_TLS_MAX_ALPN_LEN 255
+#endif
+
+/* Max total bytes for ALPN protocol list (for DoS protection in parsing) */
+#ifndef SOCKET_TLS_MAX_ALPN_TOTAL_BYTES
+#define SOCKET_TLS_MAX_ALPN_TOTAL_BYTES 1024
 #endif
 
 /* SNI hostname length limit */
@@ -134,6 +155,15 @@
 /* CRL auto-refresh configuration */
 #ifndef SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL
 #define SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL 60 /* Minimum 60 seconds */
+
+#ifndef SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL
+#define SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL (365LL * 24 * 3600) /* Max 1 year in seconds */
+#endif
+
+#ifndef SOCKET_TLS_MAX_CRL_SIZE
+#define SOCKET_TLS_MAX_CRL_SIZE (10 * 1024 * 1024) /* Max 10MB for CRL files */
+#define SOCKET_TLS_MAX_CRL_FILES_IN_DIR 1000 /* Max CRL files in directory to prevent exhaustion */
+#endif
 #endif
 
 #ifndef SOCKET_TLS_CRL_MAX_PATH_LEN

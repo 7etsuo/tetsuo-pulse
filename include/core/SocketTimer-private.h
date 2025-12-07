@@ -20,7 +20,7 @@ struct SocketTimer_T
     SocketTimerCallback callback; /* User callback function */
     void *userdata;             /* User data for callback */
     int cancelled;              /* Lazy deletion flag */
-    unsigned id;                /* Unique timer ID */
+    uint64_t id;               /* Unique timer ID (64-bit to prevent wrap-around) */
 
     size_t heap_index;          /* Heap position for fast lookup/cancel, SOCKET_TIMER_INVALID_HEAP_INDEX if not in heap */
 };
@@ -31,7 +31,7 @@ struct SocketTimer_heap_T
     struct SocketTimer_T **timers;  /* Dynamic array of timer pointers (heap) */
     size_t count;                   /* Current number of timers in heap */
     size_t capacity;                /* Allocated capacity of timers array */
-    unsigned next_id;               /* Next timer ID to assign */
+    uint64_t next_id;              /* Next timer ID to assign (64-bit to prevent wrap-around) */
     Arena_T arena;                  /* Memory arena for allocations */
     pthread_mutex_t mutex;          /* Thread safety mutex */
 };

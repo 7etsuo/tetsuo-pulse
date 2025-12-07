@@ -2,12 +2,14 @@ var SocketHappyEyeballs_8h =
 [
     [ "SocketHE_Config_T", "SocketHappyEyeballs_8h.html#structSocketHE__Config__T", [
       [ "attempt_timeout_ms", "SocketHappyEyeballs_8h.html#a6102505cbcca11148c1e2cbcda5caa16", null ],
+      [ "dns_timeout_ms", "SocketHappyEyeballs_8h.html#ae94ef758ca842d9231733fbc9b910e2f", null ],
       [ "first_attempt_delay_ms", "SocketHappyEyeballs_8h.html#a718ced26ae9d5f1a9c51980686007af9", null ],
       [ "max_attempts", "SocketHappyEyeballs_8h.html#a844dbed92f4e7fbcedd41f78089d4edc", null ],
       [ "prefer_ipv6", "SocketHappyEyeballs_8h.html#a2286078d8352300a92ddd005f756ae8b", null ],
       [ "total_timeout_ms", "SocketHappyEyeballs_8h.html#a30f77ee5bd25329726485101935e8a2a", null ]
     ] ],
     [ "SOCKET_HE_DEFAULT_ATTEMPT_TIMEOUT_MS", "SocketHappyEyeballs_8h.html#a66b65910ea1f4b358406d1fb9add485e", null ],
+    [ "SOCKET_HE_DEFAULT_DNS_TIMEOUT_MS", "SocketHappyEyeballs_8h.html#a0eca938e489f47d663007b6c0a7ab18f", null ],
     [ "SOCKET_HE_DEFAULT_FIRST_ATTEMPT_DELAY_MS", "SocketHappyEyeballs_8h.html#a015f1e24903699e20cea8af2bd44b781", null ],
     [ "SOCKET_HE_DEFAULT_MAX_ATTEMPTS", "SocketHappyEyeballs_8h.html#ac03b01e1dccf0fd3b0c78d26e4343646", null ],
     [ "SOCKET_HE_DEFAULT_TOTAL_TIMEOUT_MS", "SocketHappyEyeballs_8h.html#a1400e0f9bd9e1de9d861c5ebfab5a877", null ],

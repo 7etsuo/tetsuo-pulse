@@ -136,7 +136,7 @@ $(document).ready(function(){initNavTree('SocketReconnect_8h.html',''); initResi
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketReconnect_8h__dep__incl.svg" width="148" height="110"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketReconnect_8h__dep__incl.svg" width="154" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <p><a href="SocketReconnect_8h_source.html">Go to the source code of this file.</a></p>
@@ -176,11 +176,11 @@ Typedefs</h2></td></tr>
 <tr class="memitem:a58c9f07cd1532f285c63cb039c548eed" id="r_a58c9f07cd1532f285c63cb039c548eed"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a></td></tr>
 <tr class="separator:a58c9f07cd1532f285c63cb039c548eed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d4cc030dc9989344d20a170b6410220" id="r_a0d4cc030dc9989344d20a170b6410220"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a0d4cc030dc9989344d20a170b6410220">SocketReconnect_Callback</a>) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> old_state, <a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> new_state, void *userdata)</td></tr>
-<tr class="memdesc:a0d4cc030dc9989344d20a170b6410220"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketReconnect_Callback - State change callback function @conn: Reconnection context @old_state: Previous state @new_state: New state @userdata: User data passed to <a class="el" href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082" title="SocketReconnect_new - Create a new reconnecting connection @host: Hostname or IP address to connect t...">SocketReconnect_new()</a>  <br /></td></tr>
+<tr class="memdesc:a0d4cc030dc9989344d20a170b6410220"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketReconnect_Callback - State change callback function @conn: Reconnection context @old_state: Previous state @new_state: New state @userdata: User data passed to <a class="el" href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082" title="@timeout_ms: Maximum time to block in ms, 0=no timeout (use with caution)">SocketReconnect_new()</a>  <br /></td></tr>
 <tr class="separator:a0d4cc030dc9989344d20a170b6410220"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac72a1247fceed09210753d03ae2ebb5e" id="r_ac72a1247fceed09210753d03ae2ebb5e"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#ac72a1247fceed09210753d03ae2ebb5e">SocketReconnect_HealthCheck</a>) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, void *userdata)</td></tr>
-<tr class="memdesc:ac72a1247fceed09210753d03ae2ebb5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketReconnect_HealthCheck - Custom health check function @conn: Reconnection context @socket: Current connected socket @userdata: User data passed to <a class="el" href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082" title="SocketReconnect_new - Create a new reconnecting connection @host: Hostname or IP address to connect t...">SocketReconnect_new()</a>  <br /></td></tr>
-<tr class="separator:ac72a1247fceed09210753d03ae2ebb5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae24b576ed367f734f434ef30ad8386c3" id="r_ae24b576ed367f734f434ef30ad8386c3"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#ae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a>) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int timeout_ms, void *userdata)</td></tr>
+<tr class="memdesc:ae24b576ed367f734f434ef30ad8386c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketReconnect_HealthCheck - Custom health check function @conn: Reconnection context @socket: Current connected socket @timeout_ms: Maximum block time in ms (0=non-blocking check) @userdata: User data passed to <a class="el" href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082" title="@timeout_ms: Maximum time to block in ms, 0=no timeout (use with caution)">SocketReconnect_new()</a>  <br /></td></tr>
+<tr class="separator:ae24b576ed367f734f434ef30ad8386c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -202,7 +202,7 @@ Enumerations</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a2064741bf60283ac3315823128fa2082" id="r_a2064741bf60283ac3315823128fa2082"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082">SocketReconnect_new</a> (const char *host, int port, const <a class="el" href="SocketReconnect_8h.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> *policy, <a class="el" href="SocketReconnect_8h.html#a0d4cc030dc9989344d20a170b6410220">SocketReconnect_Callback</a> callback, void *userdata)</td></tr>
-<tr class="memdesc:a2064741bf60283ac3315823128fa2082"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketReconnect_new - Create a new reconnecting connection @host: Hostname or IP address to connect to @port: Port number (1-65535) @policy: Reconnection policy (NULL for defaults) @callback: State change callback (NULL for no callbacks) @userdata: User data passed to callbacks.  <br /></td></tr>
+<tr class="memdesc:a2064741bf60283ac3315823128fa2082"><td class="mdescLeft">&#160;</td><td class="mdescRight">@timeout_ms: Maximum time to block in ms, 0=no timeout (use with caution)  <br /></td></tr>
 <tr class="separator:a2064741bf60283ac3315823128fa2082"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d8b4dd4a693ba7acb20ff8e78defe91" id="r_a9d8b4dd4a693ba7acb20ff8e78defe91"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a9d8b4dd4a693ba7acb20ff8e78defe91">SocketReconnect_free</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> *conn)</td></tr>
 <tr class="memdesc:a9d8b4dd4a693ba7acb20ff8e78defe91"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketReconnect_free - Free a reconnecting connection @conn: Pointer to context (will be set to NULL)  <br /></td></tr>
@@ -243,7 +243,7 @@ Functions</h2></td></tr>
 <tr class="memitem:a8dd2c1fe7147188da2be29f7623d2822" id="r_a8dd2c1fe7147188da2be29f7623d2822"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a8dd2c1fe7147188da2be29f7623d2822">SocketReconnect_tick</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:a8dd2c1fe7147188da2be29f7623d2822"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketReconnect_tick - Process timers @conn: Reconnection context.  <br /></td></tr>
 <tr class="separator:a8dd2c1fe7147188da2be29f7623d2822"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf257c08816a36a97c02b32e034c0ea0" id="r_acf257c08816a36a97c02b32e034c0ea0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#acf257c08816a36a97c02b32e034c0ea0">SocketReconnect_set_health_check</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="SocketReconnect_8h.html#ac72a1247fceed09210753d03ae2ebb5e">SocketReconnect_HealthCheck</a> check)</td></tr>
+<tr class="memitem:acf257c08816a36a97c02b32e034c0ea0" id="r_acf257c08816a36a97c02b32e034c0ea0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#acf257c08816a36a97c02b32e034c0ea0">SocketReconnect_set_health_check</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="SocketReconnect_8h.html#ae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a> check)</td></tr>
 <tr class="memdesc:acf257c08816a36a97c02b32e034c0ea0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketReconnect_set_health_check - Set custom health check function @conn: Reconnection context @check: Health check function (NULL to use default)  <br /></td></tr>
 <tr class="separator:acf257c08816a36a97c02b32e034c0ea0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4bc781f13408c70bfe9d28148ac87212" id="r_a4bc781f13408c70bfe9d28148ac87212"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a4bc781f13408c70bfe9d28148ac87212">SocketReconnect_policy_defaults</a> (<a class="el" href="SocketReconnect_8h.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> *policy)</td></tr>
@@ -279,7 +279,7 @@ Variables</h2></td></tr>
 <div class="textblock"><p><a class="el" href="SocketReconnect_8h.html#structSocketReconnect__Policy__T" title="SocketReconnect_Policy_T - Reconnection policy configuration.">SocketReconnect_Policy_T</a> - Reconnection policy configuration. </p>
 <p>Controls backoff timing, circuit breaker behavior, and health monitoring. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00086">86</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00085">85</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -353,7 +353,7 @@ Backoff multiplier (default: 2.0) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00130">130</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00129">129</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -369,7 +369,7 @@ Backoff multiplier (default: 2.0) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00126">126</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00125">125</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -385,7 +385,7 @@ Backoff multiplier (default: 2.0) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00134">134</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00133">133</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -401,7 +401,7 @@ Backoff multiplier (default: 2.0) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00138">138</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00137">137</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -417,7 +417,7 @@ Backoff multiplier (default: 2.0) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00106">106</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00105">105</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -433,7 +433,7 @@ Backoff multiplier (default: 2.0) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00118">118</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00117">117</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -449,7 +449,7 @@ Backoff multiplier (default: 2.0) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00122">122</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00121">121</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -465,7 +465,7 @@ Backoff multiplier (default: 2.0) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00110">110</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00109">109</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -481,7 +481,7 @@ Backoff multiplier (default: 2.0) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00114">114</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00113">113</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -498,7 +498,7 @@ Backoff multiplier (default: 2.0) </td></tr>
 </div><div class="memdoc">
 
 <p><a class="el" href="SocketReconnect_8h.html">SocketReconnect.h</a> - Automatic Reconnection Framework. </p>
-<p>Part of the Socket Library Following C Interfaces and Implementations patterns</p>
+<p>Part of the Socket Library</p>
 <p>Provides automatic reconnection with exponential backoff, circuit breaker pattern, and health monitoring for resilient network connections.</p>
 <p>Features:</p><ul>
 <li>Exponential backoff with configurable jitter</li>
@@ -517,7 +517,7 @@ Backoff multiplier (default: 2.0) </td></tr>
 <p>Usage (Event-driven): SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL, callback, data); SocketReconnect_connect(conn); while (running) { int timeout = SocketReconnect_next_timeout_ms(conn); SocketPoll_wait(poll, &amp;events, timeout); SocketReconnect_process(conn); // On poll events SocketReconnect_tick(conn); // Process timers } SocketReconnect_free(&amp;conn);</p>
 <p>Usage (I/O Passthrough): SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL, NULL, NULL); SocketReconnect_connect(conn); // Use SocketReconnect_send/recv - auto-reconnects on error ssize_t n = SocketReconnect_send(conn, data, len); </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00055">55</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00054">54</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -534,31 +534,31 @@ Backoff multiplier (default: 2.0) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>SocketReconnect_Callback - State change callback function @conn: Reconnection context @old_state: Previous state @new_state: New state @userdata: User data passed to <a class="el" href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082" title="SocketReconnect_new - Create a new reconnecting connection @host: Hostname or IP address to connect t...">SocketReconnect_new()</a> </p>
+<p>SocketReconnect_Callback - State change callback function @conn: Reconnection context @old_state: Previous state @new_state: New state @userdata: User data passed to <a class="el" href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082" title="@timeout_ms: Maximum time to block in ms, 0=no timeout (use with caution)">SocketReconnect_new()</a> </p>
 <p>Called when the reconnection state changes. Can be used for logging, metrics, or custom reconnection logic.</p>
 <p>NOTE: Do not call <a class="el" href="SocketReconnect_8h.html#a9d8b4dd4a693ba7acb20ff8e78defe91" title="SocketReconnect_free - Free a reconnecting connection @conn: Pointer to context (will be set to NULL)">SocketReconnect_free()</a> from within the callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00157">157</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00156">156</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
-<a id="ac72a1247fceed09210753d03ae2ebb5e" name="ac72a1247fceed09210753d03ae2ebb5e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac72a1247fceed09210753d03ae2ebb5e">&#9670;&#160;</a></span>SocketReconnect_HealthCheck</h2>
+<a id="ae24b576ed367f734f434ef30ad8386c3" name="ae24b576ed367f734f434ef30ad8386c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae24b576ed367f734f434ef30ad8386c3">&#9670;&#160;</a></span>SocketReconnect_HealthCheck</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef int(* SocketReconnect_HealthCheck) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, void *userdata)</td>
+          <td class="memname">typedef int(* SocketReconnect_HealthCheck) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int timeout_ms, void *userdata)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>SocketReconnect_HealthCheck - Custom health check function @conn: Reconnection context @socket: Current connected socket @userdata: User data passed to <a class="el" href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082" title="SocketReconnect_new - Create a new reconnecting connection @host: Hostname or IP address to connect t...">SocketReconnect_new()</a> </p>
+<p>SocketReconnect_HealthCheck - Custom health check function @conn: Reconnection context @socket: Current connected socket @timeout_ms: Maximum block time in ms (0=non-blocking check) @userdata: User data passed to <a class="el" href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082" title="@timeout_ms: Maximum time to block in ms, 0=no timeout (use with caution)">SocketReconnect_new()</a> </p>
 <p>Returns: 1 if healthy, 0 if unhealthy (triggers reconnect)</p>
-<p>Optional custom health check. If not provided, socket readability with zero bytes (EOF) is used as health indicator. </p>
+<p>Optional custom health check. Must respect timeout_ms to prevent DoS. Default check uses poll with timeout_ms or 100ms min. If not provided, default is used. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00173">173</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00174">174</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -574,7 +574,7 @@ Backoff multiplier (default: 2.0) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00056">56</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00055">55</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -605,7 +605,7 @@ Backoff multiplier (default: 2.0) </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00068">68</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00067">67</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -839,7 +839,8 @@ Backoff multiplier (default: 2.0) </td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>SocketReconnect_new - Create a new reconnecting connection @host: Hostname or IP address to connect to @port: Port number (1-65535) @policy: Reconnection policy (NULL for defaults) @callback: State change callback (NULL for no callbacks) @userdata: User data passed to callbacks. </p>
+<p>@timeout_ms: Maximum time to block in ms, 0=no timeout (use with caution) </p>
+<p>New in v1.1: timeout_ms parameter for DoS protection. Custom checks should respect this limit to prevent blocking. SocketReconnect_new - Create a new reconnecting connection @host: Hostname or IP address to connect to @port: Port number (1-65535) @policy: Reconnection policy (NULL for defaults) @callback: State change callback (NULL for no callbacks) @userdata: User data passed to callbacks</p>
 <p>Returns: New reconnection context Raises: SocketReconnect_Failed on initialization failure Thread-safe: Yes (creates new instance)</p>
 <p>Creates a reconnecting connection context. The connection is not started automatically - call <a class="el" href="SocketReconnect_8h.html#a2669844f3ad8a19649f2bc204eee8401" title="SocketReconnect_connect - Start connecting @conn: Reconnection context.">SocketReconnect_connect()</a> to begin. </p>
 
@@ -1122,7 +1123,7 @@ Backoff multiplier (default: 2.0) </td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#ac72a1247fceed09210753d03ae2ebb5e">SocketReconnect_HealthCheck</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#ae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a>&#160;</td>
           <td class="paramname"><em>check</em>&#160;</td>
         </tr>
         <tr>
@@ -1140,7 +1141,7 @@ Backoff multiplier (default: 2.0) </td></tr>
 
 <p>SocketReconnect_set_health_check - Set custom health check function @conn: Reconnection context @check: Health check function (NULL to use default) </p>
 <p>Thread-safe: No</p>
-<p>Sets a custom health check function. Default health check polls the socket for readability and treats zero bytes (EOF) as unhealthy. </p>
+<p>Sets a custom health check function. Custom checks must respect policy.health_check_timeout_ms to avoid blocking the calling thread. Default health check polls socket with configurable timeout. </p>
 
 </div>
 </div>

@@ -47,6 +47,7 @@ TEST (socketpool_tls_fields_initialization)
 
   /* Should be clean (initialized) */
   ASSERT_NULL (conn2->tls_ctx);
+  ASSERT_NULL (conn2->tls_session);
   ASSERT_EQ (conn2->tls_handshake_complete, 0);
 
   /* Cleanup */
@@ -106,8 +107,17 @@ TEST (socketpool_tls_session_persistence)
 
   /* Validate called in get/add - assume valid, not freed */
 
-  /* Add new socket to same slot - reuse attempt (in add code) */
+  /* Re-add same socket1 to test persistence on reuse (same endpoint) */
+  Connection_T conn2 = SocketPool_add (pool, socket1);
+  ASSERT_NOT_NULL (conn2);
+  ASSERT_EQ (conn1, conn2); /* Same slot reused */
+  ASSERT_NOT_NULL (conn2->tls_session);
+  ASSERT_EQ (conn2->tls_session, mock_session); /* Persisted across remove/add */
+
+  /* Test new socket in same slot clears old session (security) */
   Socket_T socket2 = Socket_new (AF_INET, SOCK_STREAM, 0);
+  SocketPool_remove (pool, socket1); /* Free slot again */
+  /* Mock new TLS for socket2 */
   SSL_CTX *ctx2 = SSL_CTX_new (TLS_method ());
   ASSERT_NOT_NULL (ctx2);
   SSL *ssl2 = SSL_new (ctx2);
@@ -115,9 +125,10 @@ TEST (socketpool_tls_session_persistence)
   socket2->tls_enabled = 1;
   socket2->tls_ctx = (void *)ctx2;
   socket2->tls_ssl = (void *)ssl2;
-  Connection_T conn2 = SocketPool_add (pool, socket2);
-  ASSERT_NOT_NULL (conn2);
-  ASSERT_EQ (conn2->tls_session, mock_session); /* Persisted */
+  Connection_T conn3 = SocketPool_add (pool, socket2);
+  ASSERT_NOT_NULL (conn3);
+  ASSERT_EQ (conn3, conn1); /* Same slot */
+  ASSERT_NULL (conn3->tls_session); /* Cleared for new socket/endpoint */
 
   /* Cleanup */
   Socket_free (&socket1); /* frees ssl1 */
@@ -125,7 +136,7 @@ TEST (socketpool_tls_session_persistence)
   /* Free ctx not owned by socket */
   SSL_CTX_free (ctx1);
   SSL_CTX_free (ctx2);
-  /* Pool now frees the persisted session */
+  /* Pool frees any remaining */
   SocketPool_free (&pool);
   Arena_dispose (&arena);
 #else

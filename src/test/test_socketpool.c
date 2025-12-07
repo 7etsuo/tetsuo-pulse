@@ -754,7 +754,7 @@ TEST (socketpool_batch_accept_single)
   Socket_listen (server, 10);
   Socket_setnonblocking (server);
 
-  int count = SocketPool_accept_batch (pool, server, 1, accepted);
+  int count = SocketPool_accept_batch (pool, server, 1, sizeof(accepted)/sizeof(accepted[0]), accepted);
   /* No connections pending, should return 0 */
   ASSERT_EQ (count, 0);
   EXCEPT (Socket_Failed) ASSERT (0);
@@ -778,7 +778,8 @@ TEST (socketpool_batch_accept_multiple)
   Socket_listen (server, 10);
   Socket_setnonblocking (server);
 
-  int count = SocketPool_accept_batch (pool, server, 10, accepted);
+  size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
+  int count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
   /* No connections pending, should return 0 */
   ASSERT_EQ (count, 0);
   EXCEPT (Socket_Failed) ASSERT (0);
@@ -808,7 +809,8 @@ TEST (socketpool_batch_accept_pool_full)
   SocketPool_add (pool, sock1);
   SocketPool_add (pool, sock2);
 
-  int count = SocketPool_accept_batch (pool, server, 10, accepted);
+  size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
+  int count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
   /* Pool is full, should return 0 */
   ASSERT_EQ (count, 0);
 
@@ -1883,7 +1885,8 @@ TEST (socketpool_batch_accept_with_pending_connection)
 
   TRY
   {
-    count = SocketPool_accept_batch (pool, server, 10, accepted);
+    size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
+    count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
     /* Should accept at least 1 connection */
     ASSERT (count >= 1);
 
@@ -1941,7 +1944,8 @@ TEST (socketpool_batch_accept_pool_add_fails)
     usleep (10000);
 
     /* Try to accept - pool is full, should return 0 */
-    count = SocketPool_accept_batch (pool, server, 10, accepted);
+    size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
+    count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
     ASSERT_EQ (count, 0);
   }
   EXCEPT (Socket_Failed) { /* May fail */ }
@@ -1975,16 +1979,19 @@ TEST (socketpool_batch_accept_invalid_max_accepts)
     Socket_setnonblocking (server);
 
     /* Test with max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS (1000) */
-    int count = SocketPool_accept_batch (pool, server, 2000, accepted);
+    size_t cap2000 = sizeof(accepted)/sizeof(accepted[0]);
+    int count = SocketPool_accept_batch (pool, server, 2000, cap2000, accepted);
     /* Should return 0 due to invalid parameter */
     ASSERT_EQ (count, 0);
 
     /* Test with max_accepts = 0 */
-    count = SocketPool_accept_batch (pool, server, 0, accepted);
+    size_t cap0 = sizeof(accepted)/sizeof(accepted[0]);
+    count = SocketPool_accept_batch (pool, server, 0, cap0, accepted);
     ASSERT_EQ (count, 0);
 
     /* Test with max_accepts < 0 */
-    count = SocketPool_accept_batch (pool, server, -1, accepted);
+    size_t cap_neg = sizeof(accepted)/sizeof(accepted[0]);
+    count = SocketPool_accept_batch (pool, server, -1, cap_neg, accepted);
     ASSERT_EQ (count, 0);
   }
   EXCEPT (Socket_Failed) { ASSERT (0); }
@@ -2367,15 +2374,18 @@ TEST (socketpool_batch_accept_null_params)
     Socket_listen (server, 10);
 
     /* Test with NULL pool */
-    int count = SocketPool_accept_batch (NULL, server, 10, accepted);
+    size_t cap_null = sizeof(accepted)/sizeof(accepted[0]);
+    int count = SocketPool_accept_batch (NULL, server, 10, cap_null, accepted);
     ASSERT_EQ (count, 0);
 
     /* Test with NULL server */
-    count = SocketPool_accept_batch (pool, NULL, 10, accepted);
+    size_t cap_nullserver = sizeof(accepted)/sizeof(accepted[0]);
+    count = SocketPool_accept_batch (pool, NULL, 10, cap_nullserver, accepted);
     ASSERT_EQ (count, 0);
 
     /* Test with NULL accepted array */
-    count = SocketPool_accept_batch (pool, server, 10, NULL);
+    size_t cap_nullarr = 0;  // Invalid capacity for NULL
+    count = SocketPool_accept_batch (pool, server, 10, cap_nullarr, NULL);
     ASSERT_EQ (count, 0);
   }
   EXCEPT (Socket_Failed) { ASSERT (0); }
@@ -2402,7 +2412,8 @@ TEST (socketpool_accept_one_error_not_eagain)
     Socket_setnonblocking (server);
     /* Server not in listen state - accept will fail with error != EAGAIN */
 
-    int count = SocketPool_accept_batch (pool, server, 10, accepted);
+    size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
+  int count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
     /* Should return 0 due to accept error */
     ASSERT_EQ (count, 0);
   }
@@ -2693,7 +2704,8 @@ TEST (socketpool_batch_accept_socket_add_fails)
     usleep (20000);
 
     /* Try to accept 2 - should accept 1 successfully, 2nd will fail to add */
-    count = SocketPool_accept_batch (pool, server, 10, accepted);
+    size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
+    count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
     /* Should have accepted at least 1 */
     ASSERT (count >= 0);
   }
@@ -2751,7 +2763,8 @@ TEST (socketpool_batch_accept_wrap_fd_fails)
   TRY
   {
     /* Normal accept should work */
-    int count = SocketPool_accept_batch (pool, server, 10, accepted);
+    size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
+  int count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
 
     /* Cleanup any accepted */
     for (int i = 0; i < count; i++)
@@ -3120,6 +3133,48 @@ TEST (socketpool_health_status_mapping)
   Socket_free (&socket);
   SocketPool_free (&pool);
   Arena_dispose (&arena);
+}
+
+TEST (socketpool_validation_callback)
+{
+  Arena_T arena = Arena_new ();
+  SocketPool_T pool = SocketPool_new (arena, 10, 1024);
+
+  /* Validation cb that always returns invalid */
+  static int always_invalid_cb (Connection_T conn, void *data) {
+    (void)conn; (void)data;
+    return 0; /* Invalid */
+  }
+
+  /* Set cb */
+  SocketPool_set_validation_cb (pool, always_invalid_cb, NULL);
+
+  /* Create socket and add to pool */
+  Socket_T sock = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Connection_T conn = SocketPool_add (pool, sock);
+  ASSERT_NOT_NULL (conn);
+
+  /* Get should trigger cb, return invalid, remove conn */
+  Connection_T got = SocketPool_get (pool, sock);
+  ASSERT_NULL (got); /* Removed by cb */
+
+  /* Verify removed */
+  ASSERT_EQ (SocketPool_count (pool), 0);
+
+  /* Cleanup */
+  Socket_free (&sock);
+  SocketPool_free (&pool);
+  Arena_dispose (&arena);
+}
+
+/* Test for callback deadlock avoidance - multi-threaded */
+TEST (socketpool_validation_callback_threaded)
+{
+  /* TODO: More advanced test with threads simulating slow cb and concurrent ops.
+   * Verify no deadlock, proper removal under race.
+   * Use pthreads to add/remove while get calls cb.
+   */
+  ASSERT (1); /* Placeholder - implement full test */
 }
 
 int

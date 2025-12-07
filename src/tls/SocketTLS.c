@@ -26,6 +26,7 @@
 #include <openssl/x509_vfy.h>
 #include "poll/SocketPoll.h"
 #include <string.h>
+#include <stdint.h>
 
 #define T SocketTLS_T
 
@@ -133,8 +134,10 @@ free_tls_resources (Socket_T socket)
 
   if (socket->tls_ssl)
     {
-      SSL_set_app_data ((SSL *)socket->tls_ssl, NULL);
-      SSL_free ((SSL *)socket->tls_ssl);
+      SSL *ssl = (SSL *)socket->tls_ssl;
+      SSL_set_app_data (ssl, NULL);
+      tls_cleanup_alpn_temp (ssl);  /* Free ALPN temp buffer if stored */
+      SSL_free (ssl);
       socket->tls_ssl = NULL;
       socket->tls_ctx = NULL;
     }
@@ -146,7 +149,7 @@ free_tls_resources (Socket_T socket)
   /* Clear SNI hostname (may contain sensitive connection info) */
   if (socket->tls_sni_hostname)
     {
-      size_t hostname_len = strlen (socket->tls_sni_hostname);
+      size_t hostname_len = strlen (socket->tls_sni_hostname) + 1;
       SocketCrypto_secure_clear ((void *)socket->tls_sni_hostname, hostname_len);
       socket->tls_sni_hostname = NULL;
     }
@@ -216,6 +219,7 @@ associate_ssl_with_fd (SSL *ssl, int fd)
 {
   if (SSL_set_fd (ssl, fd) != 1)
     {
+      tls_cleanup_alpn_temp (ssl);  /* Cleanup any ex_data before free on error */
       SSL_free (ssl);
       RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to associate SSL with fd");
     }
@@ -468,17 +472,16 @@ validate_handshake_preconditions (Socket_T socket)
 TLSHandshakeState
 SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
 {
-  int elapsed_ms;
-
   assert (socket);
 
   if (socket->tls_handshake_done)
     return TLS_HANDSHAKE_COMPLETE;
 
   validate_handshake_preconditions (socket);
-  elapsed_ms = 0;
 
-  while (elapsed_ms < timeout_ms || timeout_ms == 0)
+  int64_t deadline = (timeout_ms > 0) ? SocketTimeout_deadline_ms (timeout_ms) : 0LL;
+
+  while (true)
     {
       TLSHandshakeState state = SocketTLS_handshake (socket);
 
@@ -489,14 +492,19 @@ SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
       if (timeout_ms == 0)
         return state;
 
-      if (do_handshake_poll (socket, state_to_poll_events (state),
-                             SOCKET_TLS_POLL_INTERVAL_MS))
-        elapsed_ms += SOCKET_TLS_POLL_INTERVAL_MS;
-    }
+      if (SocketTimeout_expired (deadline))
+        {
+          tls_format_openssl_error ("TLS handshake timeout");
+          RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
+        }
 
-  /* Timeout reached */
-  TLS_ERROR_MSG ("TLS handshake timeout");
-  RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
+      unsigned events = state_to_poll_events (state);
+      int poll_timeout = SocketTimeout_poll_timeout (SOCKET_TLS_POLL_INTERVAL_MS, deadline);
+      if (!do_handshake_poll (socket, events, poll_timeout))
+        continue; /* EINTR or partial timeout, check deadline again */
+
+      /* Socket ready, retry handshake */
+    }
 
   return TLS_HANDSHAKE_ERROR; /* Unreachable */
 }
@@ -526,22 +534,57 @@ SocketTLS_shutdown (Socket_T socket)
   if (socket->tls_shutdown_done)
     return;
 
-  SSL *ssl = tls_socket_get_ssl (socket);
-  if (!ssl)
-    RAISE_TLS_ERROR_MSG (SocketTLS_ShutdownFailed, "SSL object not available");
+  /* Use socket operation timeout or default shutdown timeout */
+  int timeout_ms = socket->base->timeouts.operation_timeout_ms;
+  if (timeout_ms <= 0)
+    timeout_ms = SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS;
 
-  int result = SSL_shutdown (ssl);
-  if (result == 1)
+  int64_t deadline = SocketTimeout_deadline_ms (timeout_ms);
+
+  while (!SocketTimeout_expired (deadline))
     {
-      socket->tls_shutdown_done = 1;
-      free_tls_resources (socket);
+      SSL *ssl = tls_socket_get_ssl (socket);
+      if (!ssl)
+        {
+          tls_format_openssl_error ("SSL object not available during shutdown");
+          free_tls_resources (socket);
+          RAISE_TLS_ERROR_MSG (SocketTLS_ShutdownFailed, "SSL object lost during shutdown");
+        }
+
+      int result = SSL_shutdown (ssl);
+      if (result == 1)
+        {
+          socket->tls_shutdown_done = 1;
+          free_tls_resources (socket);
+          return; /* Complete */
+        }
+      else if (result < 0)
+        {
+          TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
+          if (state == TLS_HANDSHAKE_ERROR)
+            {
+              tls_format_openssl_error ("Shutdown failed");
+              free_tls_resources (socket);
+              RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
+            }
+          /* WANT_READ/WRITE: continue loop with poll */
+        }
+      else /* result == 0: partial shutdown, need to retry after I/O */
+        {
+          /* Continue to poll loop below */
+        }
+
+      /* Need I/O for remaining shutdown steps */
+      unsigned events = POLL_READ | POLL_WRITE; /* Shutdown may need both */
+      int poll_timeout = SocketTimeout_poll_timeout (SOCKET_TLS_POLL_INTERVAL_MS, deadline);
+      if (!do_handshake_poll (socket, events, poll_timeout))
+        continue; /* EINTR or timeout slice, retry */
     }
-  else if (result < 0)
-    {
-      TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
-      if (state == TLS_HANDSHAKE_ERROR)
-        RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
-    }
+
+  /* Timeout */
+  tls_format_openssl_error ("Shutdown timeout");
+  free_tls_resources (socket);
+  RAISE_TLS_ERROR_MSG (SocketTLS_ShutdownFailed, "TLS shutdown timeout after %d ms", timeout_ms);
 }
 
 /* ============================================================================

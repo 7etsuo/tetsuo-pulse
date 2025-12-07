@@ -282,6 +282,7 @@ if(SOCKET_HAS_TLS)
         src/tls/SocketTLSContext-session.c
         src/tls/SocketTLSContext-verify.c
         src/tls/SocketTLSContext-pinning.c
+        src/tls/SocketTLSConfig.c
         src/tls/SocketTLSContext-ct.c
         src/tls/SocketTLSContext-crl.c
         # DTLS (Datagram TLS) support
@@ -531,6 +532,7 @@ set(TEST_SOURCES
 # TLS tests (only built when TLS is enabled)
 if(SOCKET_HAS_TLS)
     list(APPEND TEST_SOURCES
+        test_tls_ct
         test_tls_integration
         test_tls_phase4
         test_tls_pinning
@@ -615,6 +617,9 @@ endif()
 add_executable(benchmark_server src/test/benchmark_server.c)
 target_link_libraries(benchmark_server socket_static pthread)
 
+add_executable(benchmark_synprotect src/test/benchmark_synprotect.c)
+target_link_libraries(benchmark_synprotect socket_static pthread)
+
 add_executable(benchmark_client src/test/benchmark_client.c)
 target_link_libraries(benchmark_client socket_static pthread)
 
@@ -696,8 +701,11 @@ if(ENABLE_FUZZING)
         fuzz_proxy_socks4
         fuzz_proxy_http
         fuzz_proxy_url
+        fuzz_dns_inj
+        fuzz_pool_dos
         fuzz_ws_frame
         fuzz_ws_handshake
+        fuzz_utf8
         fuzz_ws_deflate
     )
     
@@ -715,6 +723,10 @@ if(ENABLE_FUZZING)
             fuzz_dtls_context
             fuzz_dtls_io
             fuzz_dtls_cookie
+            fuzz_http_smuggling
+            fuzz_ws_frames
+            fuzz_hpack
+            fuzz_tls_ct
             fuzz_dtls_handshake
         )
     endif()

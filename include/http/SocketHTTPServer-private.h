@@ -128,6 +128,11 @@ struct SocketHTTPServer
   int64_t drain_start_ms;
   int drain_timeout_ms;
 
+  /* Per-server stats tracking for RPS calculation (thread-safe via single-thread poll assumption) */
+  uint64_t stats_prev_requests;
+  int64_t stats_prev_time_ms;
+  pthread_mutex_t stats_mutex;  /* Protect RPS calc if multi-threaded */
+
   /* Statistics moved to SocketMetrics_* (counters, gauges, histograms) 
    * Query via SocketMetrics_get() or specific functions in stats API */
 

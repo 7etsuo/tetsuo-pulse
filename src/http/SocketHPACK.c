@@ -15,6 +15,7 @@
 #include "http/SocketHPACK-private.h"
 #include "http/SocketHPACK.h"
 #include "core/SocketUtil.h"
+#include "core/SocketSecurity.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -450,8 +451,15 @@ decode_string_data_literal (const unsigned char *input, uint64_t str_len,
    * Returns: HPACK_OK on success, HPACK_ERROR on allocation failure
    * Thread-safe: Yes (arena must be)
    */
+  if (str_len > SIZE_MAX)
+    return HPACK_ERROR_INTEGER;
+
+  size_t alloc_size = (size_t)str_len + 1;
+  if (!SocketSecurity_check_size(alloc_size))
+    return HPACK_ERROR_BOMB;
+
   *str_len_out = (size_t)str_len;
-  *str_out = ALLOC (arena, str_len + 1);
+  *str_out = ALLOC (arena, alloc_size);
   if (*str_out == NULL)
     return HPACK_ERROR;
 
@@ -479,12 +487,22 @@ decode_string_data_huffman (const unsigned char *input, uint64_t str_len,
    * Returns: HPACK_OK on success, HPACK_ERROR_HUFFMAN or HPACK_ERROR
    * Thread-safe: Yes (arena must be)
    */
-  size_t max_decoded = str_len * HPACK_HUFFMAN_RATIO;
+  if (str_len > SIZE_MAX)
+    return HPACK_ERROR_INTEGER;
+
+  size_t encoded_len = (size_t)str_len;
+  size_t max_decoded;
+  if (!SocketSecurity_check_multiply(encoded_len, HPACK_HUFFMAN_RATIO, &max_decoded))
+    return HPACK_ERROR_BOMB;
+
+  if (!SocketSecurity_check_size(max_decoded + 1))
+    return HPACK_ERROR_BOMB;
+
   *str_out = ALLOC (arena, max_decoded + 1);
   if (*str_out == NULL)
     return HPACK_ERROR;
 
-  ssize_t decoded = SocketHPACK_huffman_decode (input + pos, (size_t)str_len,
+  ssize_t decoded = SocketHPACK_huffman_decode (input + pos, encoded_len,
                                                 (unsigned char *)*str_out, max_decoded);
   if (decoded < 0)
     return HPACK_ERROR_HUFFMAN;
@@ -510,7 +528,10 @@ hpack_decode_string (const unsigned char *input, size_t input_len,
   if (result != HPACK_OK)
     return result;
 
-  if (pos + str_len > input_len)
+  if (str_len > SIZE_MAX)
+    return HPACK_ERROR_INTEGER;
+
+  if (pos + (size_t)str_len > input_len)
     return HPACK_INCOMPLETE;
 
   if (huffman)
@@ -874,6 +895,7 @@ SocketHPACK_decoder_config_defaults (SocketHPACK_DecoderConfig *config)
   config->max_table_size = SOCKETHPACK_DEFAULT_TABLE_SIZE;
   config->max_header_size = SOCKETHPACK_MAX_HEADER_SIZE;
   config->max_header_list_size = SOCKETHPACK_MAX_HEADER_LIST_SIZE;
+  config->max_expansion_ratio = 10.0;  /* Prevent decompression bombs: decoded <= encoded * ratio */
 }
 
 /* ============================================================================
@@ -901,6 +923,9 @@ SocketHPACK_Decoder_new (const SocketHPACK_DecoderConfig *config, Arena_T arena)
   decoder->max_header_size = config->max_header_size;
   decoder->max_header_list_size = config->max_header_list_size;
   decoder->settings_max_table_size = config->max_table_size;
+  decoder->max_expansion_ratio = config->max_expansion_ratio;
+  decoder->decode_input_bytes = 0;
+  decoder->decode_output_bytes = 0;
   decoder->arena = arena;
 
   return decoder;
@@ -947,13 +972,14 @@ validate_header (SocketHPACK_Decoder_T decoder, const SocketHPACK_Header *header
    * Thread-safe: No
    */
   size_t header_size = hpack_entry_size (header->name_len, header->value_len);
-  if (header_size > decoder->max_header_size)
-    return HPACK_ERROR_HEADER_SIZE;
+  if (header_size == SIZE_MAX || header_size > decoder->max_header_size)
+    return HPACK_ERROR_BOMB;
 
-  if (*total_size > SIZE_MAX - header_size)
+  size_t new_total;
+  if (!SocketSecurity_check_add(*total_size, header_size, &new_total))
     return HPACK_ERROR_LIST_SIZE;  /* Overflow protection */
 
-  *total_size += header_size;
+  *total_size = new_total;
   if (*total_size > decoder->max_header_list_size)
     return HPACK_ERROR_LIST_SIZE;
 
@@ -1028,6 +1054,9 @@ hpack_decode_literal (SocketHPACK_Decoder_T decoder, const unsigned char *input,
   size_t value_len;
 
   /* Decode name index */
+  if (!valid_prefix_bits (prefix_bits))
+    return HPACK_ERROR;
+
   result = SocketHPACK_int_decode (input + *pos, input_len - *pos, prefix_bits,
                                    &index, &consumed);
   if (result != HPACK_OK)
@@ -1087,6 +1116,9 @@ hpack_decode_indexed_field (SocketHPACK_Decoder_T decoder,
   size_t consumed;
   SocketHPACK_Result result;
 
+  if (!valid_prefix_bits (HPACK_PREFIX_INDEXED))
+    return HPACK_ERROR;
+
   result = SocketHPACK_int_decode (input + *pos, input_len - *pos,
                                    HPACK_PREFIX_INDEXED, &index, &consumed);
   if (result != HPACK_OK)
@@ -1108,6 +1140,9 @@ hpack_decode_table_update (SocketHPACK_Decoder_T decoder,
   size_t consumed;
   SocketHPACK_Result result;
 
+  if (!valid_prefix_bits (HPACK_PREFIX_TABLE_UPDATE))
+    return HPACK_ERROR;
+
   result = SocketHPACK_int_decode (input + *pos, input_len - *pos,
                                    HPACK_PREFIX_TABLE_UPDATE, &new_size,
                                    &consumed);
@@ -1115,6 +1150,8 @@ hpack_decode_table_update (SocketHPACK_Decoder_T decoder,
     return result;
   *pos += consumed;
 
+  if (new_size > SIZE_MAX)
+    return HPACK_ERROR_INTEGER;
   if (new_size > decoder->settings_max_table_size)
     return HPACK_ERROR_TABLE_SIZE;
 

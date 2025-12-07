@@ -10,9 +10,9 @@
  * - HTTP methods with semantic properties (safe, idempotent, cacheable)
  * - HTTP status codes with reason phrases and categories
  * - Header collection with O(1) case-insensitive lookup
- * - RFC 3986 URI parsing with percent-encoding support
+ * - RFC 3986 URI parsing with percent-encoding support and syntax validation
  * - HTTP-date parsing (all 3 formats per RFC 9110)
- * - Media type parsing with charset/boundary extraction
+ * - Media type parsing with token validation and escape handling
  * - Content negotiation (Accept header q-value parsing)
  *
  * Thread safety: All functions are thread-safe (no global state).
@@ -20,9 +20,14 @@
  * if sharing across threads.
  *
  * Security notes:
+ * - Rejects control characters and invalid syntax in URI components (host, path, query, fragment)
+ * - Validates host as reg-name or basic IPv6 literal, path/query/fragment per pchar rules
+ * - Media types/parameters validated as HTTP tokens (RFC 7230), rejects malformed escapes
+ * - Per-component length limits (host<=255, path<=4KB, etc.) prevent resource exhaustion
  * - Header names/values validated to reject injection attacks
- * - URI length limits enforced to prevent DoS
- * - Integer overflow protection on all size calculations
+ * - URI total length limited to prevent DoS
+ * - Integer overflow protection on all size calculations and percent decoding
+ * - Basic percent-encoding validation (% followed by valid hex)
  */
 
 #ifndef SOCKETHTTP_INCLUDED

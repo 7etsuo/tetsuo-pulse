@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['keepalive_5ftimeout_5fms_0',['keepalive_timeout_ms',['../SocketHTTPServer_8h.html#a1e78410c99812889132c0977539d170b',1,'SocketHTTPServer_Config']]]
+  ['jitter_0',['jitter',['../SocketRetry_8h.html#ac44aa265265c65b8c29fd80aa3e0f61d',1,'SocketRetry_Policy::jitter'],['../SocketReconnect_8h.html#a803e0eaa631385205819346d33db4974',1,'SocketReconnect_Policy_T::jitter']]],
+  ['json_5fpayload_1',['json_payload',['../http__post_8c.html#a127799c7929ced53036a93a6c24c86ac',1,'http_post.c']]]
 ];

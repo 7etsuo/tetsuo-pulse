@@ -58,7 +58,7 @@
  *   SOCKET_MIN_BUFFER_SIZE        - Min buffer size (512)
  *   SOCKET_MAX_POLL_EVENTS        - Max events per poll (10000)
  *   SOCKET_MAX_LISTEN_BACKLOG     - Max listen backlog (1024)
- *   ARENA_MAX_ALLOC_SIZE          - Max arena allocation (100MB)
+ *   ARENA_MAX_ALLOC_SIZE          - Max arena allocation (see SOCKET_SECURITY_MAX_ALLOCATION, default 256MB)
  *
  * DNS LIMITS (SocketConfig.h):
  *   SOCKET_DNS_MAX_PENDING        - Max pending DNS requests (1000)
@@ -100,7 +100,7 @@
  *   SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE    - Max header list (16KB)
  *
  * HPACK LIMITS (SocketHPACK.h):
- *   SOCKETHPACK_MAX_TABLE_SIZE             - Max dynamic table (4KB default)
+ *   SOCKETHPACK_MAX_TABLE_SIZE             - Max dynamic table (64KB default)
  *
  * WEBSOCKET LIMITS (SocketWS-private.h):
  *   SOCKETWS_MAX_FRAME_SIZE                - Max frame size (16MB)
@@ -127,7 +127,7 @@
 
 /** Maximum allocation size for security checks (256MB default) */
 #ifndef SOCKET_SECURITY_MAX_ALLOCATION
-#define SOCKET_SECURITY_MAX_ALLOCATION (256 * 1024 * 1024)
+#define SOCKET_SECURITY_MAX_ALLOCATION (256UL * 1024 * 1024)
 #endif
 
 /** Maximum body size for HTTP requests/responses (100MB default) */
@@ -179,6 +179,7 @@ typedef struct SocketSecurityLimits
   size_t max_allocation;       /**< Maximum single allocation */
   size_t max_buffer_size;      /**< Maximum buffer size */
   size_t max_connections;      /**< Maximum connections in pool */
+  size_t arena_max_alloc_size;      /**< Maximum arena allocation size */
 
   /* HTTP limits */
   size_t http_max_uri_length;     /**< Maximum URI length */
@@ -196,6 +197,12 @@ typedef struct SocketSecurityLimits
   size_t http2_max_concurrent_streams; /**< Maximum concurrent streams */
   size_t http2_max_frame_size;         /**< Maximum frame size */
   size_t http2_max_header_list_size;   /**< Maximum header list size */
+
+  /* TLS ALPN limits (SocketTLSConfig.h) */
+  size_t tls_max_alpn_protocols;   /**< Max number of ALPN protocols (SOCKET_TLS_MAX_ALPN_PROTOCOLS=16) */
+  size_t tls_max_alpn_len;         /**< Max ALPN protocol string length (SOCKET_TLS_MAX_ALPN_LEN=255) */
+  size_t tls_max_alpn_total_bytes; /**< Max total ALPN list size (custom, e.g., 1024 for DoS protection) */
+  size_t hpack_max_table_size;   /**< Maximum HPACK dynamic table size */
 
   /* WebSocket limits */
   size_t ws_max_frame_size;    /**< Maximum WebSocket frame size */
@@ -262,6 +269,22 @@ extern void SocketSecurity_get_http_limits (size_t *max_uri,
  */
 extern void SocketSecurity_get_ws_limits (size_t *max_frame,
                                           size_t *max_message);
+
+/**
+ * SocketSecurity_get_arena_limits - Get arena memory limits
+ * @max_alloc: Output for max arena allocation size (may be NULL)
+ *
+ * Thread-safe: Yes
+ */
+extern void SocketSecurity_get_arena_limits (size_t *max_alloc);
+
+/**
+ * SocketSecurity_get_hpack_limits - Get HPACK-specific limits
+ * @max_table: Output for max dynamic table size (may be NULL)
+ *
+ * Thread-safe: Yes
+ */
+extern void SocketSecurity_get_hpack_limits (size_t *max_table);
 
 /* ============================================================================
  * Size Validation Functions

@@ -2,6 +2,7 @@ var SocketSYNProtect_8h_structSocketSYNProtect__Config =
 [
     [ "block_duration_ms", "SocketSYNProtect_8h.html#a58785babfc923ba70d9c8f0d5b7a44cf", null ],
     [ "challenge_defer_sec", "SocketSYNProtect_8h.html#a732b2bfe41c8d449ea5be9401f818eb3", null ],
+    [ "hash_seed", "SocketSYNProtect_8h.html#ae8aea9e4cc570341d5cc8901f3cb814e", null ],
     [ "max_attempts_per_window", "SocketSYNProtect_8h.html#a5f9976be0331359859284315ebf66e1a", null ],
     [ "max_blacklist", "SocketSYNProtect_8h.html#a7429afc5fc724582c34ce06cb3d3f5fa", null ],
     [ "max_global_per_second", "SocketSYNProtect_8h.html#a575daabf11edf0ee687ff8a547240c77", null ],

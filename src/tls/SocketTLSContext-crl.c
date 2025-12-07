@@ -11,7 +11,7 @@
  * Refresh check is NOT thread-safe - call from single thread.
  */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include "tls/SocketTLS-private.h"
 
@@ -19,8 +19,11 @@ SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLSContext);
 #include <assert.h>
 #include <string.h>
 #include <time.h>
+#include <stdlib.h>
 #include <limits.h>
 #include <stdint.h>
+
+
 
 #define T SocketTLSContext_T
 
@@ -90,10 +93,60 @@ validate_crl_config(const char *crl_path, long interval_seconds)
   size_t path_len = strlen (crl_path);
   if (path_len >= SOCKET_TLS_CRL_MAX_PATH_LEN)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL path too long");
+
+  /* Check for embedded null bytes */
+  if (memchr (crl_path, '\0', path_len) != NULL)
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL path contains embedded null byte");
+
+  /* Check for control characters */
+  for (size_t i = 0; i < path_len; i++)
+    {
+      unsigned char c = (unsigned char)crl_path[i];
+      if (c < 32 || c == 127)
+        RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL path contains invalid control character");
+    }
+
+  /* Enhanced traversal checks */
+  const char *traversal_patterns[] = {
+    "/../", "\\..\\", "/..\\", "\\../", "/...", "\\...", NULL
+  };
+  for (const char **pat = traversal_patterns; *pat != NULL; ++pat)
+    {
+      if (strstr (crl_path, *pat) != NULL)
+        RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL path contains traversal pattern '%s'", *pat);
+    }
+  if (strncmp (crl_path, "../", 3) == 0 || strncmp (crl_path, "..\\", 3) == 0)
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL path starts with relative traversal");
+
+  /* Basic path security: prevent traversal and validate resolvability */
+  if (strstr (crl_path, "..") != NULL)
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL path contains '..' traversal not allowed");
+
+  char *resolved_path = realpath (crl_path, NULL);
+  if (!resolved_path)
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid or unresolvable CRL path");
+  if (strlen (resolved_path) >= SOCKET_TLS_CRL_MAX_PATH_LEN)
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Resolved CRL path too long");
+
+  /* Additional checks on resolved path */
+  size_t res_len = strlen (resolved_path);
+  if (memchr (resolved_path, '\0', res_len) != NULL)
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Resolved CRL path contains embedded null byte");
+  for (size_t i = 0; i < res_len; i++)
+    {
+      unsigned char c = (unsigned char)resolved_path[i];
+      if (c < 32 || c == 127)
+        RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Resolved CRL path contains invalid control character");
+    }
+  free (resolved_path);
   /* Validate interval */
   if (interval_seconds < 0)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                          "CRL refresh interval cannot be negative");
+  if (interval_seconds > SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL)
+    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                         "CRL refresh interval must be at most %lld seconds (1 year max)",
+                         SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL);
   if (interval_seconds > 0
       && interval_seconds < SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL)
     RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
@@ -114,9 +167,10 @@ validate_crl_config(const char *crl_path, long interval_seconds)
 static void
 schedule_crl_refresh(T ctx, long interval_seconds)
 {
-  time_t now = time (NULL);
-  ctx->crl_next_refresh = (interval_seconds > 0) ?
-    now + interval_seconds : 0;
+  int64_t now_ms = Socket_get_monotonic_ms ();
+  int64_t interval_ms = interval_seconds * 1000LL;
+  ctx->crl_next_refresh_ms = (interval_seconds > 0) ?
+    now_ms + interval_ms : 0;
 }
 
 /**
@@ -131,9 +185,8 @@ schedule_crl_refresh(T ctx, long interval_seconds)
  * Configures periodic CRL refresh. Initial load attempted immediately if interval > 0.
  * Application must call SocketTLSContext_crl_check_refresh() periodically (e.g. every second).
  * Returns: void
- * Raises: SocketTLS_Failed on invalid path (empty, too long), invalid interval (<0 or too small),
- *          or allocation failure
- * Thread-safe: No - configure before sharing context across threads
+ * Raises: SocketTLS_Failed on invalid path (empty, too long), invalid interval, or allocation failure
+ * Thread-safe: Yes (internal mutex protects state changes)
  */
 void
 SocketTLSContext_set_crl_auto_refresh (T ctx, const char *crl_path,
@@ -145,26 +198,36 @@ SocketTLSContext_set_crl_auto_refresh (T ctx, const char *crl_path,
 
   validate_crl_config(crl_path, interval_seconds);
 
-  /* Free existing path if any */
-  /* Note: path is arena-allocated, will be freed with context */
-
-  /* Copy path to arena */
-  ctx->crl_refresh_path
-      = ctx_arena_strdup (ctx, crl_path, "Failed to allocate CRL path");
-
-  ctx->crl_refresh_interval = interval_seconds;
-  ctx->crl_callback = (void *)callback;
-  ctx->crl_user_data = user_data;
-
-  schedule_crl_refresh(ctx, interval_seconds);
-
-  /* Do initial load if interval is set */
-  if (interval_seconds > 0)
+  TRY
     {
-      int success = try_load_crl(ctx, crl_path);
-      if (!success)
-        notify_crl_callback(ctx, crl_path, 0);
+      CRL_LOCK(ctx);
+
+      /* Note: previous path freed with arena on context dispose */
+
+      /* Copy path to arena */
+      ctx->crl_refresh_path
+          = ctx_arena_strdup (ctx, crl_path, "Failed to allocate CRL path");
+
+      ctx->crl_refresh_interval = interval_seconds;
+      ctx->crl_callback = (void *)callback;
+      ctx->crl_user_data = user_data;
+
+      schedule_crl_refresh(ctx, interval_seconds);
+
+      /* Do initial load if interval is set */
+      if (interval_seconds > 0)
+        {
+          int success = try_load_crl(ctx, crl_path);
+          if (!success)
+            notify_crl_callback(ctx, crl_path, 0);  /* under lock, recursive safe */
+        }
     }
+  FINALLY
+    {
+      CRL_UNLOCK(ctx);
+    }
+  END_TRY;
+  /* Exceptions propagate; no return needed for void function */
 }
 
 /**
@@ -176,18 +239,29 @@ SocketTLSContext_set_crl_auto_refresh (T ctx, const char *crl_path,
  * Does not unload currently loaded CRLs.
  * Returns: void
  * Raises: None
- * Thread-safe: No
+ * Thread-safe: Yes (internal mutex)
  */
 void
 SocketTLSContext_cancel_crl_auto_refresh (T ctx)
 {
   assert (ctx);
 
-  ctx->crl_refresh_interval = 0;
-  ctx->crl_next_refresh = 0;
-  ctx->crl_callback = NULL;
-  ctx->crl_user_data = NULL;
-  /* Keep crl_refresh_path - arena will clean it up */
+  TRY
+    {
+      CRL_LOCK(ctx);
+
+      ctx->crl_refresh_interval = 0;
+      ctx->crl_next_refresh_ms = 0;
+      ctx->crl_callback = NULL;
+      ctx->crl_user_data = NULL;
+      /* Keep crl_refresh_path - arena will clean it up */
+    }
+  FINALLY
+    {
+      CRL_UNLOCK(ctx);
+    }
+  END_TRY;
+  /* Exceptions propagate; no return needed for void function */
 }
 
 /**
@@ -199,33 +273,55 @@ SocketTLSContext_cancel_crl_auto_refresh (T ctx)
  * Schedules next refresh and notifies callback on result.
  * Returns: 1 if refresh was attempted (was due), 0 if not configured or not due yet
  * Raises: None - catches load errors internally
- * Thread-safe: No - call from single thread/event loop
+ * Thread-safe: Yes (mutex serialized access)
  */
 int
 SocketTLSContext_crl_check_refresh (T ctx)
 {
   assert (ctx);
 
-  /* Not configured or disabled */
-  if (ctx->crl_refresh_interval <= 0 || !ctx->crl_refresh_path)
-    return 0;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclobbered"
+#endif
 
-  time_t now = time (NULL);
+  TRY
+    {
+      CRL_LOCK(ctx);
 
-  /* Not due yet */
-  if (now < ctx->crl_next_refresh)
-    return 0;
+      /* Not configured or disabled */
+      if (ctx->crl_refresh_interval <= 0 || !ctx->crl_refresh_path)
+        return 0;
 
-  /* Attempt refresh */
-  int success = try_load_crl(ctx, ctx->crl_refresh_path);
+      int64_t now_ms = Socket_get_monotonic_ms ();
 
-  /* Schedule next refresh */
-  ctx->crl_next_refresh = now + ctx->crl_refresh_interval;
+      /* Not due yet */
+      if (now_ms < ctx->crl_next_refresh_ms)
+        return 0;
 
-  /* Notify callback */
-  notify_crl_callback(ctx, ctx->crl_refresh_path, success);
+      /* Attempt refresh */
+      int success = try_load_crl(ctx, ctx->crl_refresh_path);
 
-  return 1;
+      /* Schedule next refresh */
+      ctx->crl_next_refresh_ms = now_ms + (ctx->crl_refresh_interval * 1000LL);
+
+      /* Notify callback (recursive mutex allows reentry, but minimizes hold time) */
+      notify_crl_callback(ctx, ctx->crl_refresh_path, success);
+
+      return 1;
+    }
+  EXCEPT (SocketTLS_Failed)
+    {
+      /* Catch and ignore load errors as per doc: catches internally */
+      return 0;
+    }
+  FINALLY
+    {
+      CRL_UNLOCK(ctx);
+    }
+  END_TRY;
+
+  return 0;
 }
 
 /**
@@ -243,19 +339,35 @@ SocketTLSContext_crl_next_refresh_ms (T ctx)
 {
   assert (ctx);
 
-  if (ctx->crl_refresh_interval <= 0)
-    return -1;
+  TRY
+    {
+      CRL_LOCK(ctx);
 
-  time_t now = time (NULL);
-  time_t remaining_sec = ctx->crl_next_refresh - now;
-  if (remaining_sec <= 0)
-    return 0; /* Due now or past */
+      if (ctx->crl_refresh_interval <= 0)
+        return -1;
 
-  /* Convert to milliseconds with overflow protection */
-  int64_t ms = (int64_t)remaining_sec * 1000LL;
-  if (ms > LONG_MAX)
-    return LONG_MAX;
-  return (long)ms;
+      int64_t now_ms = Socket_get_monotonic_ms ();
+      int64_t remaining_ms = ctx->crl_next_refresh_ms - now_ms;
+      if (remaining_ms <= 0)
+        return 0; /* Due now or past */
+
+      /* Overflow protection */
+      if (remaining_ms > LONG_MAX)
+        return LONG_MAX;
+      return (long)remaining_ms;
+    }
+  EXCEPT (SocketTLS_Failed)
+    {
+      /* Catch any errors and return safe default */
+      return -1;
+    }
+  FINALLY
+    {
+      CRL_UNLOCK(ctx);
+    }
+  END_TRY;
+
+  return -1;
 }
 
 #undef T

@@ -13,6 +13,8 @@
 
 #include "core/SocketSYNProtect.h"
 #include "core/SocketSYNProtect-private.h"
+
+
 #include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
 #include "core/SocketMetrics.h"
@@ -20,6 +22,8 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include "core/SocketCrypto.h"
 
 #define T SocketSYNProtect_T
 
@@ -169,7 +173,7 @@ lru_touch (T protect, SocketSYN_IPEntry *entry)
 static SocketSYN_IPEntry *
 find_ip_entry (T protect, const char *ip)
 {
-  unsigned bucket = synprotect_hash_ip (ip, protect->ip_table_size);
+  unsigned bucket = synprotect_hash_ip (protect, ip, protect->ip_table_size);
   SocketSYN_IPEntry *entry = protect->ip_table[bucket];
 
   while (entry != NULL)
@@ -191,7 +195,7 @@ static void
 remove_ip_entry_from_hash (T protect, SocketSYN_IPEntry *entry)
 {
   unsigned bucket
-      = synprotect_hash_ip (entry->state.ip, protect->ip_table_size);
+      = synprotect_hash_ip (protect, entry->state.ip, protect->ip_table_size);
   SocketSYN_IPEntry **pp = &protect->ip_table[bucket];
 
   while (*pp != NULL)
@@ -257,8 +261,11 @@ create_ip_entry (T protect, const char *ip, int64_t now_ms)
   SocketSYN_IPEntry *entry;
   unsigned bucket;
 
-  while (protect->ip_entry_count >= protect->config.max_tracked_ips)
+  while (protect->use_malloc && protect->ip_entry_count >= protect->config.max_tracked_ips)
     evict_lru_entry (protect);
+
+  if (protect->ip_entry_count >= protect->config.max_tracked_ips)
+    return NULL;  // Still full, can't add more (arena mode or alloc would evict but limit reached)
 
   entry = alloc_zeroed (protect, 1, sizeof (*entry));
   if (entry == NULL)
@@ -266,7 +273,7 @@ create_ip_entry (T protect, const char *ip, int64_t now_ms)
 
   init_ip_state (&entry->state, ip, now_ms);
 
-  bucket = synprotect_hash_ip (ip, protect->ip_table_size);
+  bucket = synprotect_hash_ip (protect, ip, protect->ip_table_size);
   entry->hash_next = protect->ip_table[bucket];
   protect->ip_table[bucket] = entry;
 
@@ -337,6 +344,23 @@ calculate_window_progress (int64_t elapsed, int window_ms)
     elapsed = window_ms;
 
   return (float)elapsed / (float)window_ms;
+}
+
+/**
+ * synprotect_hash_ip - Hash IP address string with instance-specific seed
+ * @protect: Protection instance (provides hash_seed)
+ * @ip: IP address string
+ * @table_size: Hash table size
+ *
+ * Returns: Bucket index, seeded for collision resistance
+ */
+unsigned
+synprotect_hash_ip (T protect, const char *ip, unsigned table_size)
+{
+  unsigned h = socket_util_hash_djb2 (ip, table_size);
+  h ^= protect->hash_seed;
+  h = socket_util_hash_uint (h, table_size);
+  return h % table_size;
 }
 
 /**
@@ -612,27 +636,43 @@ cidr_partial_byte_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes,
  * Returns: 1 if match, 0 otherwise
  */
 static int
-ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
+ip_matches_cidr_bytes (int family, const uint8_t *ip_bytes, const SocketSYN_WhitelistEntry *entry)
 {
-  uint8_t ip_bytes[SOCKET_IPV6_ADDR_BYTES];
-  int family, bits, bytes, remaining_bits;
+  int bits, bytes_to_match, remaining_bits;
 
-  family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
-  if (family == 0 || family != entry->addr_family)
+  if (family != entry->addr_family)
     return 0;
 
   bits = entry->prefix_len;
-  bytes = bits / SOCKET_BITS_PER_BYTE;
+  bytes_to_match = bits / SOCKET_BITS_PER_BYTE;
   remaining_bits = bits % SOCKET_BITS_PER_BYTE;
 
-  if (!cidr_full_bytes_match (ip_bytes, entry->addr_bytes, bytes))
+  if (!cidr_full_bytes_match (ip_bytes, entry->addr_bytes, bytes_to_match))
     return 0;
 
   if (remaining_bits != 0)
-    return cidr_partial_byte_match (ip_bytes, entry->addr_bytes, bytes,
+    return cidr_partial_byte_match (ip_bytes, entry->addr_bytes, bytes_to_match,
                                     remaining_bits);
 
   return 1;
+}
+
+/**
+ * ip_matches_cidr - Check if IP matches CIDR entry
+ * @ip: IP address string
+ * @entry: Whitelist entry with CIDR
+ *
+ * Returns: 1 if match, 0 otherwise
+ * Note: Avoid in loops; use ip_matches_cidr_bytes for efficiency
+ */
+static int
+ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
+{
+  uint8_t ip_bytes[SOCKET_IPV6_ADDR_BYTES];
+  int family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
+  if (family == 0)
+    return 0;
+  return ip_matches_cidr_bytes (family, ip_bytes, entry);
 }
 
 /* ============================================================================
@@ -647,23 +687,33 @@ ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
  * Returns: 1 if found, 0 otherwise
  */
 static int
-whitelist_check_bucket (const SocketSYN_WhitelistEntry *entry, const char *ip)
+whitelist_check_bucket_bytes (const SocketSYN_WhitelistEntry *entry, const char *ip_str,
+                              int family, const uint8_t *ip_bytes)
 {
   while (entry != NULL)
     {
       if (entry->is_cidr)
         {
-          if (ip_matches_cidr (ip, entry))
+          if (entry->addr_family == family &&
+              ip_matches_cidr_bytes (family, ip_bytes, entry))
             return 1;
         }
       else
         {
-          if (strcmp (entry->ip, ip) == 0)
+          if (strcmp (entry->ip, ip_str) == 0)
             return 1;
         }
       entry = entry->next;
     }
   return 0;
+}
+
+static int
+whitelist_check_bucket (const SocketSYN_WhitelistEntry *entry, const char *ip)
+{
+  uint8_t ip_bytes[SOCKET_IPV6_ADDR_BYTES];
+  int family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
+  return whitelist_check_bucket_bytes (entry, ip, family, ip_bytes);
 }
 
 /**
@@ -675,7 +725,7 @@ whitelist_check_bucket (const SocketSYN_WhitelistEntry *entry, const char *ip)
  * Returns: 1 if found, 0 otherwise
  */
 static int
-whitelist_check_all_cidrs (T protect, const char *ip, unsigned skip_bucket)
+whitelist_check_all_cidrs_bytes (T protect, int family, const uint8_t *ip_bytes, unsigned skip_bucket)
 {
   for (size_t i = 0; i < SOCKET_SYN_LIST_HASH_SIZE; i++)
     {
@@ -685,12 +735,23 @@ whitelist_check_all_cidrs (T protect, const char *ip, unsigned skip_bucket)
       const SocketSYN_WhitelistEntry *entry = protect->whitelist_table[i];
       while (entry != NULL)
         {
-          if (entry->is_cidr && ip_matches_cidr (ip, entry))
+          if (entry->is_cidr && entry->addr_family == family &&
+              ip_matches_cidr_bytes (family, ip_bytes, entry))
             return 1;
           entry = entry->next;
         }
     }
   return 0;
+}
+
+static int
+whitelist_check_all_cidrs (T protect, const char *ip, unsigned skip_bucket)
+{
+  uint8_t ip_bytes[SOCKET_IPV6_ADDR_BYTES];
+  int family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
+  if (family == 0)
+    return 0;
+  return whitelist_check_all_cidrs_bytes (protect, family, ip_bytes, skip_bucket);
 }
 
 /**
@@ -704,16 +765,23 @@ static int
 whitelist_check (T protect, const char *ip)
 {
   unsigned bucket;
+  uint8_t ip_bytes[SOCKET_IPV6_ADDR_BYTES];
+  int family;
 
   if (protect->whitelist_count == 0)
     return 0;
 
-  bucket = synprotect_hash_ip (ip, SOCKET_SYN_LIST_HASH_SIZE);
+  family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
+  // If invalid IP, can't be whitelisted
+  if (family == 0)
+    return 0;
 
-  if (whitelist_check_bucket (protect->whitelist_table[bucket], ip))
+  bucket = synprotect_hash_ip (protect, ip, SOCKET_SYN_LIST_HASH_SIZE);
+
+  if (whitelist_check_bucket_bytes (protect->whitelist_table[bucket], ip, family, ip_bytes))
     return 1;
 
-  return whitelist_check_all_cidrs (protect, ip, bucket);
+  return whitelist_check_all_cidrs_bytes (protect, family, ip_bytes, bucket);
 }
 
 /* ============================================================================
@@ -737,7 +805,7 @@ blacklist_check (T protect, const char *ip, int64_t now_ms)
   if (protect->blacklist_count == 0)
     return 0;
 
-  bucket = synprotect_hash_ip (ip, SOCKET_SYN_LIST_HASH_SIZE);
+  bucket = synprotect_hash_ip (protect, ip, SOCKET_SYN_LIST_HASH_SIZE);
   entry = protect->blacklist_table[bucket];
 
   while (entry != NULL)
@@ -1139,9 +1207,14 @@ parse_cidr_notation (const char *cidr, char *ip_out, size_t ip_out_size,
   memcpy (ip_out, cidr, ip_len);
   ip_out[ip_len] = '\0';
 
-  *prefix_out = atoi (slash + 1);
-  if (*prefix_out < 0 || *prefix_out > SOCKET_IPV6_MAX_PREFIX)
+  const char *prefix_str = slash + 1;
+  char *endptr;
+  long prefix_long = strtol(prefix_str, &endptr, 10);
+  if (prefix_str == endptr || *endptr != '\0' || errno == ERANGE ||
+      prefix_long < 0 || prefix_long > SOCKET_IPV6_MAX_PREFIX) {
     return 0;
+  }
+  *prefix_out = (int)prefix_long;
 
   return 1;
 }
@@ -1351,6 +1424,7 @@ SocketSYNProtect_config_defaults (SocketSYNProtect_Config *config)
   config->max_tracked_ips = SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS;
   config->max_whitelist = SOCKET_SYN_DEFAULT_MAX_WHITELIST;
   config->max_blacklist = SOCKET_SYN_DEFAULT_MAX_BLACKLIST;
+  config->hash_seed = 0;  /* Auto-generate random seed for hash collision resistance */
 }
 
 /**
@@ -1367,10 +1441,45 @@ synprotect_get_config (const SocketSYNProtect_Config *config,
   if (config == NULL)
     {
       SocketSYNProtect_config_defaults (local_config);
-      return local_config;
+    }
+  else
+    {
+      *local_config = *config;
     }
 
-  *local_config = *config;
+  // Harden config: Clamp invalid values to prevent misconfig DoS/OOM
+  SocketSYNProtect_Config *cfg = local_config;
+  if (cfg->window_duration_ms <= 0) cfg->window_duration_ms = SOCKET_SYN_DEFAULT_WINDOW_MS;
+  if (cfg->window_duration_ms > 60000) cfg->window_duration_ms = 60000;  // Cap 1min
+
+  if (cfg->max_attempts_per_window <= 0) cfg->max_attempts_per_window = SOCKET_SYN_DEFAULT_MAX_PER_WINDOW;
+  if (cfg->max_attempts_per_window > 1000) cfg->max_attempts_per_window = 1000;
+
+  if (cfg->max_global_per_second <= 0) cfg->max_global_per_second = SOCKET_SYN_DEFAULT_GLOBAL_PER_SEC;
+  if (cfg->max_global_per_second > 10000) cfg->max_global_per_second = 10000;
+
+  // Score thresholds: Ensure logical order 1.0 >= throttle >= challenge >= block >= 0.0
+  cfg->score_throttle = synprotect_clamp_score (cfg->score_throttle);
+  cfg->score_challenge = synprotect_clamp_score (cfg->score_challenge);
+  cfg->score_block = synprotect_clamp_score (cfg->score_block);
+  if (cfg->score_challenge > cfg->score_throttle) cfg->score_challenge = cfg->score_throttle * 0.8f;
+  if (cfg->score_block > cfg->score_challenge) cfg->score_block = cfg->score_challenge * 0.5f;
+
+  // Memory limits: Prevent OOM
+  if (cfg->max_tracked_ips == 0) cfg->max_tracked_ips = SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS;
+  if (cfg->max_tracked_ips > 1000000) cfg->max_tracked_ips = 1000000;  // Reasonable cap
+
+  if (cfg->max_whitelist == 0) cfg->max_whitelist = SOCKET_SYN_DEFAULT_MAX_WHITELIST;
+  if (cfg->max_whitelist > 10000) cfg->max_whitelist = 10000;
+
+  if (cfg->max_blacklist == 0) cfg->max_blacklist = SOCKET_SYN_DEFAULT_MAX_BLACKLIST;
+  if (cfg->max_blacklist > 10000) cfg->max_blacklist = 10000;
+
+  // Other rates positive
+  if (cfg->score_decay_per_sec < 0.0f) cfg->score_decay_per_sec = SOCKET_SYN_DEFAULT_SCORE_DECAY;
+  if (cfg->score_penalty_attempt < 0.0f) cfg->score_penalty_attempt = SOCKET_SYN_DEFAULT_PENALTY_ATTEMPT;
+  // etc.
+
   return local_config;
 }
 
@@ -1403,6 +1512,19 @@ synprotect_init_base (T protect, Arena_T arena,
   protect->arena = arena;
   protect->use_malloc = (arena == NULL);
   memcpy (&protect->config, config, sizeof (protect->config));
+
+  /* Auto-generate hash seed if not provided for collision resistance */
+  if (protect->config.hash_seed == 0) {
+    TRY {
+      if (SocketCrypto_random_bytes (&protect->hash_seed, sizeof (protect->hash_seed)) != 0) {
+        protect->hash_seed = (unsigned) Socket_get_monotonic_ms ();
+      }
+    } EXCEPT (SocketCrypto_Failed) {
+      protect->hash_seed = SOCKET_UTIL_DJB2_SEED;  /* Fallback to standard DJB2 seed */
+    } END_TRY;
+  } else {
+    protect->hash_seed = protect->config.hash_seed;
+  }
 }
 
 /**
@@ -1672,7 +1794,7 @@ SocketSYNProtect_whitelist_add (T protect, const char *ip)
       return 0;
     }
 
-  bucket = synprotect_hash_ip (ip, SOCKET_SYN_LIST_HASH_SIZE);
+  bucket = synprotect_hash_ip (protect, ip, SOCKET_SYN_LIST_HASH_SIZE);
 
   if (find_whitelist_entry_exact (protect->whitelist_table[bucket], ip) != NULL)
     {
@@ -1749,7 +1871,13 @@ SocketSYNProtect_whitelist_add_cidr (T protect, const char *cidr)
       return 0;
     }
 
-  bucket = synprotect_hash_ip (ip_part, SOCKET_SYN_LIST_HASH_SIZE);
+  // Warn on overly broad CIDR (/0 matches all in family)
+  if (prefix_len == 0) {
+    SOCKET_LOG_WARN_MSG ("Adding /0 CIDR - matches all IPs in family %d, potential security risk: %s",
+                         entry->addr_family, cidr);
+  }
+
+  bucket = synprotect_hash_ip (protect, ip_part, SOCKET_SYN_LIST_HASH_SIZE);
   insert_whitelist_entry (protect, entry, bucket);
 
   pthread_mutex_unlock (&protect->mutex);
@@ -1769,7 +1897,7 @@ SocketSYNProtect_whitelist_remove (T protect, const char *ip)
 
   pthread_mutex_lock (&protect->mutex);
 
-  bucket = synprotect_hash_ip (ip, SOCKET_SYN_LIST_HASH_SIZE);
+  bucket = synprotect_hash_ip (protect, ip, SOCKET_SYN_LIST_HASH_SIZE);
   pp = &protect->whitelist_table[bucket];
 
   while (*pp != NULL)
@@ -1871,7 +1999,7 @@ SocketSYNProtect_blacklist_add (T protect, const char *ip, int duration_ms)
       return 0;
     }
 
-  bucket = synprotect_hash_ip (ip, SOCKET_SYN_LIST_HASH_SIZE);
+  bucket = synprotect_hash_ip (protect, ip, SOCKET_SYN_LIST_HASH_SIZE);
 
   entry = find_blacklist_entry (protect->blacklist_table[bucket], ip);
   if (entry != NULL)
@@ -1907,7 +2035,7 @@ SocketSYNProtect_blacklist_remove (T protect, const char *ip)
 
   pthread_mutex_lock (&protect->mutex);
 
-  bucket = synprotect_hash_ip (ip, SOCKET_SYN_LIST_HASH_SIZE);
+  bucket = synprotect_hash_ip (protect, ip, SOCKET_SYN_LIST_HASH_SIZE);
   pp = &protect->blacklist_table[bucket];
 
   while (*pp != NULL)
@@ -2018,6 +2146,33 @@ count_currently_blocked (T protect, int64_t now_ms)
   return blocked_count;
 }
 
+/**
+ * count_active_blacklists - Count active (non-expired) blacklist entries
+ * @protect: Protection instance (must hold mutex)
+ * @now_ms: Current timestamp
+ *
+ * Returns: Number of active blacklisted IPs
+ * Thread-safe: No (caller must hold mutex)
+ */
+static size_t
+count_active_blacklists (T protect, int64_t now_ms)
+{
+  size_t active_count = 0;
+
+  for (size_t i = 0; i < SOCKET_SYN_LIST_HASH_SIZE; i++)
+    {
+      const SocketSYN_BlacklistEntry *entry = protect->blacklist_table[i];
+      while (entry != NULL)
+        {
+          if (entry->expires_ms == 0 || entry->expires_ms > now_ms)
+            active_count++;
+          entry = entry->next;
+        }
+    }
+
+  return active_count;
+}
+
 int
 SocketSYNProtect_get_ip_state (T protect, const char *ip,
                                SocketSYN_IPState *state)
@@ -2066,7 +2221,8 @@ SocketSYNProtect_stats (T protect, SocketSYNProtect_Stats *stats)
 
   pthread_mutex_lock (&protect->mutex);
 
-  blocked_count = count_currently_blocked (protect, now_ms);
+  size_t ip_blocked_count = count_currently_blocked (protect, now_ms);
+  size_t bl_active_count = count_active_blacklists (protect, now_ms);
 
   stats->total_attempts = atomic_load (&protect->stat_attempts);
   stats->total_allowed = atomic_load (&protect->stat_allowed);
@@ -2076,7 +2232,7 @@ SocketSYNProtect_stats (T protect, SocketSYNProtect_Stats *stats)
   stats->total_whitelisted = atomic_load (&protect->stat_whitelisted);
   stats->total_blacklisted = atomic_load (&protect->stat_blacklisted);
   stats->current_tracked_ips = protect->ip_entry_count;
-  stats->current_blocked_ips = blocked_count + protect->blacklist_count;
+  stats->current_blocked_ips = ip_blocked_count + bl_active_count;
   stats->lru_evictions = atomic_load (&protect->stat_lru_evictions);
   stats->uptime_ms = now_ms - protect->start_time_ms;
 
@@ -2140,8 +2296,7 @@ cleanup_expired_blacklist (T protect, int64_t now_ms)
               *pp = expired->next;
               free_memory (protect, expired);
               protect->blacklist_count--;
-  SocketMetrics_gauge_dec(SOCKET_GAU_SYNPROTECT_BLOCKED_IPS);
-  SocketMetrics_gauge_dec(SOCKET_GAU_SYNPROTECT_BLOCKED_IPS);
+              SocketMetrics_gauge_dec(SOCKET_GAU_SYNPROTECT_BLOCKED_IPS);
               removed++;
             }
           else

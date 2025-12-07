@@ -336,37 +336,70 @@ static size_t
 extract_rights_fds (const struct msghdr *msg, int *fds, size_t max_count)
 {
   struct cmsghdr *cmsg = CMSG_FIRSTHDR ((struct msghdr *)msg);
+  int temp_fds[SOCKET_MAX_FDS_PER_MSG];
+  memset(temp_fds, -1, sizeof(temp_fds));  /* Initialize to invalid for safety */
+  size_t total_fds = 0;
+
   while (cmsg != NULL)
     {
       if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS)
         {
-          size_t num_fds = (cmsg->cmsg_len - CMSG_LEN (0)) / sizeof (int);
+          // Validate cmsg before calculation
+          if (cmsg->cmsg_len < CMSG_LEN(0)) {
+            SOCKET_RAISE_MSG (SocketFD, Socket_Failed, "Invalid SCM_RIGHTS cmsg_len too small");
+          }
+          size_t data_len = cmsg->cmsg_len - CMSG_LEN(0);
+          if (data_len % sizeof(int) != 0) {
+            SOCKET_RAISE_MSG (SocketFD, Socket_Failed, "Invalid SCM_RIGHTS data_len not multiple of sizeof(int)");
+          }
+          size_t this_num_fds = data_len / sizeof(int);
+          if (this_num_fds == 0) {
+            cmsg = CMSG_NXTHDR ((struct msghdr *)msg, cmsg);
+            continue;
+          }
+          if (this_num_fds > SOCKET_MAX_FDS_PER_MSG) {
+            int *cmsg_fds = (int *) CMSG_DATA (cmsg);
+            close_received_fds (cmsg_fds, SOCKET_MAX_FDS_PER_MSG);
+            SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
+                              "SCM_RIGHTS cmsg has too many fds (%zu > %d)", this_num_fds, SOCKET_MAX_FDS_PER_MSG);
+          }
 
-          if (num_fds > max_count)
-            {
-              int *cmsg_fds = (int *) CMSG_DATA (cmsg);
-              for (size_t i = max_count; i < num_fds; i++)
-                SAFE_CLOSE (cmsg_fds[i]);
-              SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
-                                "Received more FDs (%zu) than buffer can hold (%zu)",
-                                num_fds, max_count);
-            }
-
-          /* Use temp buffer to validate before copying to caller fds */
-          int temp_fds[SOCKET_MAX_FDS_PER_MSG];
-          memcpy (temp_fds, CMSG_DATA (cmsg), num_fds * sizeof (int));
-
-          /* Validate temp FDs */
-          validate_received_fds (temp_fds, &num_fds, num_fds);  /* Note: sets num_fds=0 on fail, but raises */
-
-          /* All good, copy to output */
-          memcpy (fds, temp_fds, num_fds * sizeof (int));
-          return num_fds;
+          int *cmsg_fds = (int *) CMSG_DATA (cmsg);
+          size_t space_left = (sizeof(temp_fds) / sizeof(int)) - total_fds;
+          size_t to_copy = (this_num_fds < space_left ? this_num_fds : space_left);
+          if (to_copy > 0) {
+            memcpy(temp_fds + total_fds, cmsg_fds, to_copy * sizeof(int));
+            total_fds += to_copy;
+          }
+          // Close excess in this cmsg
+          size_t excess_start = to_copy;
+          if (this_num_fds > excess_start) {
+            close_received_fds(cmsg_fds + excess_start, this_num_fds - excess_start);
+          }
         }
       cmsg = CMSG_NXTHDR ((struct msghdr *)msg, cmsg);
     }
 
-  return 0;
+  // Now check total
+  if (total_fds > max_count)
+    {
+      close_received_fds (temp_fds, total_fds);
+      SOCKET_RAISE_FMT (SocketFD, Socket_Failed,
+                        "Received total more FDs (%zu) than buffer can hold (%zu)",
+                        total_fds, max_count);
+    }
+
+  /* Validate all accumulated FDs */
+  size_t validated_count = total_fds;
+  validate_received_fds (temp_fds, &validated_count, total_fds);  /* raises if invalid, closes all */
+
+  /* All good, copy to output */
+  memcpy (fds, temp_fds, validated_count * sizeof (int));
+  // Set remaining to -1 for safety
+  for (size_t i = validated_count; i < max_count; ++i) {
+    fds[i] = -1;
+  }
+  return validated_count;
 }
 
 /* ==================== Core FD Passing Implementation ==================== */
@@ -463,6 +496,11 @@ socket_recvfds_internal (T socket, int *fds, size_t max_count,
     SOCKET_RAISE_MSG (SocketFD, Socket_Failed,
                       "Control message truncated - FD array may be incomplete");
 
+  /* Check for data truncation - enforce protocol: only dummy byte expected */
+  if (msg.msg_flags & MSG_TRUNC)
+    SOCKET_RAISE_MSG (SocketFD, Socket_Failed,
+                      "FD passing message data truncated - unexpected extra data from peer");
+
   /* Extract and validate FDs from control messages */
   size_t num_fds = extract_rights_fds (&msg, fds, max_count);
   *received_count = num_fds;
@@ -505,7 +543,6 @@ int
 Socket_recvfd (T socket, int *fd_received)
 {
   size_t received_count = 0;
-  int result;
 
   if (!fd_received)
     SOCKET_RAISE_MSG (SocketFD, Socket_Failed, "NULL fd_received pointer");

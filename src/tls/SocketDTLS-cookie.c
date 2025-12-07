@@ -13,10 +13,12 @@
  * requires locking and should be done atomically.
  */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include "tls/SocketDTLS-private.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketMetrics.h"
+#include "core/Except.h"
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
@@ -29,50 +31,86 @@
  */
 
 /**
- * get_timestamp_bucket - Get current timestamp truncated to bucket
+ * get_time_bucket - Get current monotonic time bucket
  *
- * Returns timestamp truncated to SOCKET_DTLS_COOKIE_LIFETIME_SEC intervals.
+ * Returns monotonic time truncated to SOCKET_DTLS_COOKIE_LIFETIME_SEC intervals.
+ * Uses Socket_get_monotonic_ms() to prevent clock manipulation attacks.
  * This allows cookies to be valid for approximately the lifetime period
  * without needing to embed exact timestamp in cookie.
  */
 static uint32_t
-get_timestamp_bucket (void)
+get_time_bucket (void)
 {
-  time_t now = time (NULL);
-  return (uint32_t)(now / SOCKET_DTLS_COOKIE_LIFETIME_SEC);
+  int64_t now_ms = Socket_get_monotonic_ms();
+  int64_t lifetime_ms = (int64_t)SOCKET_DTLS_COOKIE_LIFETIME_SEC * 1000LL;
+  return (uint32_t)(now_ms / lifetime_ms);
 }
 
 /**
- * get_peer_address_from_ssl - Extract peer address from SSL BIO
+ * get_peer_address_from_ssl - Extract peer address from SSL connection
  * @ssl: SSL object
  * @peer_addr: Output buffer for peer address
  * @peer_len: Output for address length
  *
- * Returns: 0 on success, -1 on failure
+ * Tries getpeername() via underlying socket fd first, falls back to
+ * BIO_dgram_get_peer() for DTLS/UDP peer tracking.
+ *
+ * Returns: 0 on success, -1 on failure (unknown address family or extraction failed)
  */
 static int
 get_peer_address_from_ssl (SSL *ssl, struct sockaddr_storage *peer_addr,
                            socklen_t *peer_len)
 {
+  /* Try getpeername first */
   BIO *bio = SSL_get_rbio (ssl);
-  if (!bio)
-    return -1;
-
-  /* Get underlying socket fd from BIO */
-  int fd = BIO_get_fd (bio, NULL);
-  if (fd < 0)
-    return -1;
-
-  /* Get peer address from socket */
-  *peer_len = sizeof (*peer_addr);
-  if (getpeername (fd, (struct sockaddr *)peer_addr, peer_len) != 0)
+  if (bio)
     {
-      /* For unconnected sockets, try recvfrom with MSG_PEEK */
-      /* This is typically only needed for server listening sockets */
-      return -1;
+      int fd = BIO_get_fd (bio, NULL);
+      if (fd >= 0)
+        {
+          *peer_len = sizeof (*peer_addr);
+          if (getpeername (fd, (struct sockaddr *)peer_addr, peer_len) == 0)
+            return 0;
+        }
     }
 
-  return 0;
+  /* Fallback: Extract from BIO dgram peer address */
+  BIO_ADDR *bio_addr = BIO_ADDR_new ();
+  if (!bio_addr)
+    return -1;
+
+  if (bio && BIO_dgram_get_peer (bio, bio_addr))
+    {
+      int family = BIO_ADDR_family (bio_addr);
+      if (family == AF_INET)
+        {
+          *peer_len = sizeof (struct sockaddr_in);
+          memset (peer_addr, 0, *peer_len);
+          struct sockaddr_in *sin = (struct sockaddr_in *)peer_addr;
+          sin->sin_family = AF_INET;
+          sin->sin_port = BIO_ADDR_rawport (bio_addr);
+          size_t addr_len = sizeof (sin->sin_addr);
+          BIO_ADDR_rawaddress (bio_addr, &sin->sin_addr, &addr_len);
+          BIO_ADDR_free (bio_addr);
+          return 0;
+        }
+      else if (family == AF_INET6)
+        {
+          *peer_len = sizeof (struct sockaddr_in6);
+          memset (peer_addr, 0, *peer_len);
+          struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)peer_addr;
+          sin6->sin6_family = AF_INET6;
+          sin6->sin6_port = BIO_ADDR_rawport (bio_addr);
+          sin6->sin6_flowinfo = 0;
+          sin6->sin6_scope_id = 0;
+          size_t addr_len = sizeof (sin6->sin6_addr);
+          BIO_ADDR_rawaddress (bio_addr, &sin6->sin6_addr, &addr_len);
+          BIO_ADDR_free (bio_addr);
+          return 0;
+        }
+    }
+  BIO_ADDR_free (bio_addr);
+  return -1;
 }
 
 /**
@@ -98,6 +136,9 @@ compute_cookie_hmac (const unsigned char *secret,
   unsigned char input[sizeof (struct sockaddr_storage) + sizeof (uint32_t)];
   size_t input_len = 0;
   volatile int result = -1;
+
+  if (peer_len > sizeof (struct sockaddr_storage))
+    return -1;
 
   memcpy (input, peer_addr, peer_len);
   input_len += peer_len;
@@ -146,7 +187,7 @@ dtls_generate_cookie_hmac (const unsigned char *secret,
   if (!secret || !peer_addr || !out_cookie)
     return -1;
 
-  uint32_t timestamp = get_timestamp_bucket ();
+  uint32_t timestamp = get_time_bucket ();
   return compute_cookie_hmac (secret, peer_addr, peer_len, timestamp,
                               out_cookie);
 }
@@ -179,48 +220,7 @@ dtls_cookie_generate_cb (SSL *ssl, unsigned char *cookie,
   socklen_t peer_len;
 
   if (get_peer_address_from_ssl (ssl, &peer_addr, &peer_len) != 0)
-    {
-      /* Try to get from BIO address */
-      BIO_ADDR *bio_addr = BIO_ADDR_new ();
-      if (!bio_addr)
-        return 0;
-
-      BIO *bio = SSL_get_rbio (ssl);
-      if (bio && BIO_dgram_get_peer (bio, bio_addr))
-        {
-          /* Extract address from BIO_ADDR */
-          int family = BIO_ADDR_family (bio_addr);
-          if (family == AF_INET)
-            {
-              peer_len = sizeof (struct sockaddr_in);
-              struct sockaddr_in *sin = (struct sockaddr_in *)&peer_addr;
-              sin->sin_family = AF_INET;
-              sin->sin_port = BIO_ADDR_rawport (bio_addr);
-              size_t addr_len = sizeof (sin->sin_addr);
-              BIO_ADDR_rawaddress (bio_addr, &sin->sin_addr, &addr_len);
-            }
-          else if (family == AF_INET6)
-            {
-              peer_len = sizeof (struct sockaddr_in6);
-              struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&peer_addr;
-              sin6->sin6_family = AF_INET6;
-              sin6->sin6_port = BIO_ADDR_rawport (bio_addr);
-              size_t addr_len = sizeof (sin6->sin6_addr);
-              BIO_ADDR_rawaddress (bio_addr, &sin6->sin6_addr, &addr_len);
-            }
-          else
-            {
-              BIO_ADDR_free (bio_addr);
-              return 0;
-            }
-          BIO_ADDR_free (bio_addr);
-        }
-      else
-        {
-          BIO_ADDR_free (bio_addr);
-          return 0;
-        }
-    }
+    return 0;
 
   /* Generate cookie with current secret */
   pthread_mutex_lock (&ctx->cookie.secret_mutex);
@@ -232,6 +232,7 @@ dtls_cookie_generate_cb (SSL *ssl, unsigned char *cookie,
     return 0;
 
   *cookie_len = SOCKET_DTLS_COOKIE_LEN;
+  SocketMetrics_counter_inc (SOCKET_CTR_DTLS_COOKIES_GENERATED);
   return 1;
 }
 
@@ -261,52 +262,12 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
   socklen_t peer_len;
 
   if (get_peer_address_from_ssl (ssl, &peer_addr, &peer_len) != 0)
-    {
-      /* Try to get from BIO address */
-      BIO_ADDR *bio_addr = BIO_ADDR_new ();
-      if (!bio_addr)
-        return 0;
-
-      BIO *bio = SSL_get_rbio (ssl);
-      if (bio && BIO_dgram_get_peer (bio, bio_addr))
-        {
-          int family = BIO_ADDR_family (bio_addr);
-          if (family == AF_INET)
-            {
-              peer_len = sizeof (struct sockaddr_in);
-              struct sockaddr_in *sin = (struct sockaddr_in *)&peer_addr;
-              sin->sin_family = AF_INET;
-              sin->sin_port = BIO_ADDR_rawport (bio_addr);
-              size_t addr_len = sizeof (sin->sin_addr);
-              BIO_ADDR_rawaddress (bio_addr, &sin->sin_addr, &addr_len);
-            }
-          else if (family == AF_INET6)
-            {
-              peer_len = sizeof (struct sockaddr_in6);
-              struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&peer_addr;
-              sin6->sin6_family = AF_INET6;
-              sin6->sin6_port = BIO_ADDR_rawport (bio_addr);
-              size_t addr_len = sizeof (sin6->sin6_addr);
-              BIO_ADDR_rawaddress (bio_addr, &sin6->sin6_addr, &addr_len);
-            }
-          else
-            {
-              BIO_ADDR_free (bio_addr);
-              return 0;
-            }
-          BIO_ADDR_free (bio_addr);
-        }
-      else
-        {
-          BIO_ADDR_free (bio_addr);
-          return 0;
-        }
-    }
+    return 0;
 
   pthread_mutex_lock (&ctx->cookie.secret_mutex);
 
   /* Try current timestamp bucket */
-  uint32_t timestamp = get_timestamp_bucket ();
+  uint32_t timestamp = get_time_bucket ();
   unsigned char expected_cookie[SOCKET_DTLS_COOKIE_LEN];
 
   /* Verify with current secret */
@@ -316,6 +277,7 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
     {
       if (SocketCrypto_secure_compare (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN) == 0)
         {
+          SocketCrypto_secure_clear (expected_cookie, sizeof (expected_cookie));
           pthread_mutex_unlock (&ctx->cookie.secret_mutex);
           return 1;
         }
@@ -328,6 +290,7 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
     {
       if (SocketCrypto_secure_compare (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN) == 0)
         {
+          SocketCrypto_secure_clear (expected_cookie, sizeof (expected_cookie));
           pthread_mutex_unlock (&ctx->cookie.secret_mutex);
           return 1;
         }
@@ -335,6 +298,7 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
 
   /* Try with previous secret (for rotation) */
   unsigned char zero_secret[SOCKET_DTLS_COOKIE_SECRET_LEN] = { 0 };
+  SocketCrypto_secure_clear (zero_secret, sizeof (zero_secret));
   if (SocketCrypto_secure_compare (ctx->cookie.prev_secret, zero_secret,
                                    SOCKET_DTLS_COOKIE_SECRET_LEN)
       != 0)
@@ -366,11 +330,14 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
             }
         }
     }
+  SocketCrypto_secure_clear (zero_secret, sizeof (zero_secret));
 
   pthread_mutex_unlock (&ctx->cookie.secret_mutex);
 
   /* Clear expected cookie from stack using SocketCrypto */
   SocketCrypto_secure_clear (expected_cookie, sizeof (expected_cookie));
+
+  SocketMetrics_counter_inc (SOCKET_CTR_DTLS_COOKIE_VERIFICATION_FAILURES);
 
   return 0;
 }

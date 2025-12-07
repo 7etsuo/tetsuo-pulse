@@ -36,6 +36,107 @@
     <filename>WEBSOCKET_8md.html</filename>
   </compound>
   <compound kind="file">
+    <name>graceful_shutdown.c</name>
+    <path>examples/</path>
+    <filename>graceful__shutdown_8c.html</filename>
+    <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
+    <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
+    <includes id="SocketPoll_8h" name="SocketPoll.h" local="yes" import="no" module="no" objc="no">poll/SocketPoll.h</includes>
+    <includes id="SocketPool_8h" name="SocketPool.h" local="yes" import="no" module="no" objc="no">pool/SocketPool.h</includes>
+    <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
+    <member kind="define">
+      <type>#define</type>
+      <name>DEFAULT_PORT</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>a16b710f592bf8f7900666392adc444dc</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>MAX_CONNECTIONS</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>a053b7859476cc9867ec62c49e68d3fa1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>BUFFER_SIZE</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>a6b20d41d6252e9871430c242cb1a56e7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>DRAIN_TIMEOUT_MS</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>a13c5505a632e51fbe8500992d7a17b3a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>POLL_TIMEOUT_MS</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>ae185e948f0542226cd0c076cd159576c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>signal_handler</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>ac8e66a8857ca7f368cfc16bdbbac37d9</anchor>
+      <arglist>(int signo)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int</type>
+      <name>setup_signal_handling</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>a419cdf3aeb93a4a2758b620b47584438</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int</type>
+      <name>check_signal_pipe</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>a295e7ddacbf8bd557b8d625970fd6244</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>cleanup_signal_handling</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>ae342ec361b98a9de5121b60e3e886972</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int</type>
+      <name>handle_client_data</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>aa28a4c169a33f7f9821322e49230c62e</anchor>
+      <arglist>(Socket_T client, SocketBuf_T inbuf, SocketBuf_T outbuf)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>main</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>a0ddf1224851353fc92bfbff6f499fa97</anchor>
+      <arglist>(int argc, char *argv[])</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static int</type>
+      <name>g_signal_pipe</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>a7316cc6af9d04132b3715730cf300100</anchor>
+      <arglist>[2]</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static volatile sig_atomic_t</type>
+      <name>g_last_signal</name>
+      <anchorfile>graceful__shutdown_8c.html</anchorfile>
+      <anchor>a7340cff19af378cc7a10afa52708590f</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="file">
     <name>http2_client.c</name>
     <path>examples/</path>
     <filename>http2__client_8c.html</filename>
@@ -471,6 +572,7 @@
     <path>include/core/</path>
     <filename>SocketConfig_8h.html</filename>
     <class kind="struct">SocketTimeouts_T</class>
+    <class kind="struct">SocketTimeouts_Extended_T</class>
     <class kind="union">align</class>
     <member kind="define">
       <type>#define</type>
@@ -747,9 +849,23 @@
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>SOCKET_POLL_MAX_REGISTERED</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a9e03e27adad67f322a99e86a6a5fd29f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>SOCKET_MAX_TIMER_TIMEOUT_MS</name>
       <anchorfile>SocketConfig_8h.html</anchorfile>
       <anchor>ad738dd2be8abca1d0353d31f888ba3eb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_MAX_TIMER_DELAY_MS</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a7f5492f9166c78ee14f4b69362ccaf51</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -771,6 +887,34 @@
       <name>SOCKET_TIMER_HEAP_GROWTH_FACTOR</name>
       <anchorfile>SocketConfig_8h.html</anchorfile>
       <anchor>aca5f033531acb4f68ba5823ce2b769d7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_MAX_TIMERS_PER_HEAP</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a53de6720fd3fc8accf99751c1e4e0d50</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TIMER_MIN_DELAY_MS</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>ab0ced17c77c552330176b69557fb83fc</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TIMER_MIN_INTERVAL_MS</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a59221d1781370448def350dafb2d7e24</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TIMER_INITIAL_ID</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>acd3100d409a6fd3f6d160700ba6c64c6</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -978,6 +1122,41 @@
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>SOCKET_LOG_TIMESTAMP_BUFSIZE</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a9f03e9a6199dbb18586a36f2a6b9fe03</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_LOG_TIMESTAMP_FORMAT</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>ace3fad409b02d99b41b0dd404521291f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_LOG_DEFAULT_TIMESTAMP</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a88eea454f08ac7601d29bde68168ba5d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_LOG_TRUNCATION_SUFFIX</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a2d9c77a58bc1bafac674a2f3e7fd6110</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_LOG_TRUNCATION_SUFFIX_LEN</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a440d1a233318f110550568f5f2d29340</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>SOCKET_ERROR_BUFSIZE</name>
       <anchorfile>SocketConfig_8h.html</anchorfile>
       <anchor>ab28724709065957c1e13fd4c9b8e873a</anchor>
@@ -1030,6 +1209,20 @@
       <name>SOCKET_PLATFORM_MACOS</name>
       <anchorfile>SocketConfig_8h.html</anchorfile>
       <anchor>afe51dc34402f488f54f734a1ebd48307</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_HAS_HTTP</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a54e17fd055aa5d310409f7e73e944f9a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_HAS_WEBSOCKET</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>ae1f8127d7a7541fb20f280f60b3dc308</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -1097,6 +1290,20 @@
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>SOCKET_DEFAULT_TLS_TIMEOUT_MS</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a1b06aa0632dd6d7cb1eaea90a2aadcd8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_DEFAULT_REQUEST_TIMEOUT_MS</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a6365c1f9dad48871009f0580a72d7a9d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>SOCKET_DEFAULT_POOL_SIZE</name>
       <anchorfile>SocketConfig_8h.html</anchorfile>
       <anchor>a2ab0335d59ba489638143cfcdbeb131c</anchor>
@@ -1135,6 +1342,27 @@
       <name>SOCKET_PERCENTAGE_DIVISOR</name>
       <anchorfile>SocketConfig_8h.html</anchorfile>
       <anchor>a775d9db592e6205d00a2b6ad81bf3492</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_POOL_DEFAULT_IDLE_TIMEOUT</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a10afdbc4e530ae2745037155bb78ebb6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_POOL_DEFAULT_CLEANUP_INTERVAL_MS</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a354014b5198b0b853d17d21752d5193c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_POOL_STATS_WINDOW_SEC</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>aa6d9e9b8f4116f114766da91e8dd0744</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -1226,6 +1454,13 @@
       <name>SOCKET_NS_PER_MS</name>
       <anchorfile>SocketConfig_8h.html</anchorfile>
       <anchor>a0dd0226b79f2dc57e6741601fd56b51d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_NS_PER_SECOND</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a3c2718b359486f4075a4b70b5ddfde1c</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -1746,6 +1981,27 @@
       <anchor>a481ecfe6b9e5c83515c92d1808e4b2f9</anchor>
       <arglist>(int errnum)</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketConfig_set_max_memory</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>aed9ff2b1bf0e03f310bb9ade53ea5d12</anchor>
+      <arglist>(size_t max_bytes)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketConfig_get_max_memory</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>aabcf66346ca3fe8e418cc692f11ff279</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketConfig_get_memory_used</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>aab4be8d7fbe44f61e567e06012b5e224</anchor>
+      <arglist>(void)</arglist>
+    </member>
   </compound>
   <compound kind="file">
     <name>SocketCrypto.h</name>
@@ -1861,8 +2117,8 @@
       <type>ssize_t</type>
       <name>SocketCrypto_hex_decode</name>
       <anchorfile>SocketCrypto_8h.html</anchorfile>
-      <anchor>a8d985da150fef6675b4011b04f3465f8</anchor>
-      <arglist>(const char *input, size_t input_len, unsigned char *output)</arglist>
+      <anchor>a48f3e3abb4afe6f9031f1df9c0796718</anchor>
+      <arglist>(const char *input, size_t input_len, unsigned char *output, size_t output_capacity)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -1984,6 +2240,20 @@
       <arglist>(SocketIPTracker_T tracker)</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>SocketIPTracker_setmaxunique</name>
+      <anchorfile>SocketIPTracker_8h.html</anchorfile>
+      <anchor>a9f416e973e3f32b1c9cf2a2b620214f4</anchor>
+      <arglist>(SocketIPTracker_T tracker, size_t max_unique)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketIPTracker_getmaxunique</name>
+      <anchorfile>SocketIPTracker_8h.html</anchorfile>
+      <anchor>a0e4510d8147198039726bd8250b95afb</anchor>
+      <arglist>(SocketIPTracker_T tracker)</arglist>
+    </member>
+    <member kind="function">
       <type>size_t</type>
       <name>SocketIPTracker_total</name>
       <anchorfile>SocketIPTracker_8h.html</anchorfile>
@@ -2010,6 +2280,984 @@
       <anchorfile>SocketIPTracker_8h.html</anchorfile>
       <anchor>a4692098ecf52e6929c8763f0fa9fe222</anchor>
       <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="file">
+    <name>SocketMetrics.h</name>
+    <path>include/core/</path>
+    <filename>SocketMetrics_8h.html</filename>
+    <class kind="struct">SocketMetrics_HistogramSnapshot</class>
+    <class kind="struct">SocketMetrics_Snapshot</class>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_METRICS_HISTOGRAM_BUCKETS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>aee8eaea7cccafbe22afa9435a95aacf2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_METRICS_EXPORT_BUFFER_SIZE</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ae9d038b13784880e2ae832f1410613ea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_METRICS_MAX_LABEL_LEN</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a3284619df6a76d185a0112459a176ad8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_METRICS_MAX_HELP_LEN</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a871d9f89307a302723ffc03db3135746</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_METRICS_TIME_START</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>abca89a8f013fc5feae9b6663171f8062</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_METRICS_TIME_OBSERVE</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>afb13f2b83918ab1e5ed4fbe94fa0813a</anchor>
+      <arglist>(metric)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_METRICS_HTTP_RESPONSE_CLASS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a058d4b283a626069fce638da98446105</anchor>
+      <arglist>(status)</arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketMetricType</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a15ccb5af3b5e42916f5a329763c5b73d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_TYPE_COUNTER</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a15ccb5af3b5e42916f5a329763c5b73da3b97886e5e49aa6cd10fbecc97717a23</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_TYPE_GAUGE</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a15ccb5af3b5e42916f5a329763c5b73dae412561b9220367088fbc0b4badbb54d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_TYPE_HISTOGRAM</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a15ccb5af3b5e42916f5a329763c5b73daf4eb6f92091cf411d473f95656d5ffea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketMetricCategory</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a33af252a522ec94fe17be7f5e6aecf66</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_POOL</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a33af252a522ec94fe17be7f5e6aecf66a5c4b42ef28417b53a62e04c52ed9102c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_HTTP_CLIENT</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a33af252a522ec94fe17be7f5e6aecf66a13c2a6f9a020cfb48e871fad684c67b2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_HTTP_SERVER</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a33af252a522ec94fe17be7f5e6aecf66a1efa2be51eaef017fa79e7ab729c6058</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_TLS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a33af252a522ec94fe17be7f5e6aecf66a512451cf5b9457ed15e4433001c3afb0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_DNS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a33af252a522ec94fe17be7f5e6aecf66ac4e87e55794a5eda33f91a320d85d2ac</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_SOCKET</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a33af252a522ec94fe17be7f5e6aecf66aaedb13c47c45a45c7414ed6eb2985a2f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_POLL</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a33af252a522ec94fe17be7f5e6aecf66aad530adfdedefa080ca04f67a5154581</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_COUNT</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a33af252a522ec94fe17be7f5e6aecf66a48dd3ffeeff316169d3afead7dd7f5ff</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketCounterMetric</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796cee</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_CONNECTIONS_CREATED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea23bac1496677cbfff2ead8150ad6c67b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_CONNECTIONS_DESTROYED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea0b0528da3ffe7351fa991416ab138ad9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_CONNECTIONS_FAILED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea49233167e0dcbfa60f3ca6d980e76e44</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_CONNECTIONS_REUSED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea70f4cf0b9927a60fedbeff0cc47ac25c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_CONNECTIONS_EVICTED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeaa7076d6bed0ebfc621bbbaa8eb373ae6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_DRAIN_STARTED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea6bca8daae014fc82bb7b7b08c12d744a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_DRAIN_COMPLETED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea9760372f2bb1ab740a09959e21a99802</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_CLIENT_REQUESTS_TOTAL</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeaf1511efc40227013ff639abf4f4d9b13</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_CLIENT_REQUESTS_FAILED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea6528013f375d126375f32f18bdf25222</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_CLIENT_REQUESTS_TIMEOUT</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea507a12413d55f789ffe5e9c565dd99e9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_CLIENT_BYTES_SENT</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea47ea62eaadbbbb19ebbea31ef087f01c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_CLIENT_BYTES_RECEIVED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea55ecbc6f23460ffb5901a53f8b2ad5e3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_CLIENT_RETRIES</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea091def884e648a2cedaacaff2dd6cec6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceead8207230f2d1b6bd84abe11c6be841f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea137f714bad61f63fbb3a6b70ac730363</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_SERVER_BYTES_SENT</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea8147ac333d05a2289a840bc971df80e8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea488ec1787e7822bba4dbe180a2f4b324</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea82505a4094f64e44e3efaebb91dcdcd7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_RESPONSES_1XX</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea5ac222dcd2941ded4d577ee70f7a6d02</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_RESPONSES_2XX</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea0fd5fbc4a0cad3431306f26e94c4a6b1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_RESPONSES_3XX</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea60781cacece44aec6d71297d0756d831</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_RESPONSES_4XX</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeaf947fe39578c5421c0ee798b7afbc7c5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_RESPONSES_5XX</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea9ea9f8afe24ace748c8c4b612530cc72</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_HANDSHAKES_TOTAL</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeaaf7d0baea6e4e3930da7314edbfa7bb6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_HANDSHAKES_FAILED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeac310776f7b4aae593e90730f0e213d2b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_SESSION_REUSE_COUNT</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea3ddea97b6728cd7d48218615e95926a4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_CERT_VERIFY_FAILURES</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea2b3cf1bb5dcf3df362a38b24521eda00</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_RENEGOTIATIONS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea3aaf76f030b15e405bba3d7d83b2f360</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_PINNING_FAILURES</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea1123d27ca90ba8abe74f33cd98e3385c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_CT_VERIFICATION_FAILURES</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea9708c06f97d86ece5ebfca3baf3a7f7e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_CRL_CHECK_FAILURES</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea6e4638e88f27c45dca6b2c0b1b27ef27</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DTLS_HANDSHAKES_TOTAL</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea3a29654ecced6f3de9989af568f8d592</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DTLS_HANDSHAKES_FAILED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeaa8976118ea565782357f220d181dbd34</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DTLS_COOKIES_GENERATED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea515eb7dc187e9a2746c17c6309bf5281</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DTLS_COOKIE_VERIFICATION_FAILURES</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea11af47970a03a26c436ef1bc616485e9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DTLS_REPLAY_PACKETS_DETECTED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea4ecac180c7f1bff26623a21bdf276e63</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DTLS_FRAGMENT_FAILURES</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceead4c08a4071bac7bc3be7021dcded790f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DNS_QUERIES_TOTAL</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeac8439ab5fccc233ac13d82aaff13f42d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DNS_QUERIES_FAILED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea14e93ae606e4404c3b3e9183126a67ae</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DNS_QUERIES_TIMEOUT</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea763f84409208d14e38c7c586263b7e7e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DNS_QUERIES_CANCELLED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeac504adb93c00ae711283026876673d40</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DNS_CACHE_HITS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea1cde4dca10c4717a6e50c171ac14f70a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DNS_CACHE_MISSES</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea19512f0a4c325655cce541b490c62b3d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SOCKET_CREATED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeab856f40396326b740f635ecdec4b78cb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SOCKET_CLOSED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeacc9f32e8a51e4720b53f2f4c6018c055</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SOCKET_CONNECT_SUCCESS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea4d7c9119fae6202cf8c5bcc1f6cf32ef</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SOCKET_CONNECT_FAILED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea012e33d28bff41de7468fbb3099c6f9a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SOCKET_ACCEPT_TOTAL</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea8748be5c6643b3ebccebb8e3b0c9efaf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POLL_WAKEUPS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceead596032b7866cc489959efe27c8a161c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POLL_EVENTS_DISPATCHED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeaa519ace23a45810a059ff78ea83f242b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POLL_TIMEOUT_EXPIRATIONS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea33ddef985af75f21110138587921557b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_HEADER_SIZE_EXCEEDED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea87c5cab0d076faf0d8545269857630c0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea469ad98c6f71e2eb6108ebc62901782e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeaefa721fc08c63dceb684b172e52db5e7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_MEMORY_EXCEEDED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeab6e4bc443557892912c5bfe9d9f841bb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea229217bf0b8e0b6f3de27e979cf7ef79</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_STREAMS_EXCEEDED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea6ccae8e4b2e293d7e632a18173313ed4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_HEADER_LIST_EXCEEDED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea3978f99611080420a4340adb5651ddbd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_ATTEMPTS_TOTAL</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea114c39672ec4a163cdf4098cf8a0a6eb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_ALLOWED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeaa2bdcf00107013bb1ad170891a037fe0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_THROTTLED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceeaa59d06736065393b3eb7dc485f908731</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_CHALLENGED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea249dcb3f8a49e03f275b8ce71919e339</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_BLOCKED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceead26d8e35ef134d11c6b749b3129ee546</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_WHITELISTED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea13baf5d07c8a93a675dcfef0abe26b98</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_BLACKLISTED</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea108cb443d96bcb01a2befa326f800baa</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_LRU_EVICTIONS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea49e65f7d780e8f5b401428c372738ca1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_COUNTER_METRIC_COUNT</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1c2d3a4ca0a94b5d52917b2020796ceea0c101f986764f3478eafe2c1bf1b7ea3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketGaugeMetric</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ff</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_POOL_ACTIVE_CONNECTIONS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffa446185d2f544667977af003ef330602a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_POOL_IDLE_CONNECTIONS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffac47f1bdaf5d0df3ffae6504fbe1884d6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_POOL_PENDING_CONNECTIONS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffa984ad78555d7b236536ee2311528a4b4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_POOL_SIZE</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffade5a4447463c80b1cf103c0e4474b38d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffabb4d6a47fdc81281817010e07eb1bab8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_HTTP_CLIENT_OPEN_CONNECTIONS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffaea6ddc03976de41a6a7aa39a90cea006</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffad93011513d4df141b8a1c75c061eb601</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_HTTP_SERVER_ACTIVE_REQUESTS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffa46d69a1bc861fd2e34b032d700d60d47</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_HTTP_SERVER_QUEUED_REQUESTS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffa701762a5f2fe51a57539f8368e40fdd4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_TLS_ACTIVE_SESSIONS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffa42520d99aa0fce9b66eee159a3fcb9bd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_TLS_CACHED_SESSIONS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffa6a3c6ce4d17be23ecb15647fc6fb950a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_DTLS_ACTIVE_SESSIONS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffa30428b3ed5b61e0877f63406775e9713</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_DNS_PENDING_QUERIES</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffaabcab9f22c06831d559b83e6195b66ae</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_DNS_WORKER_THREADS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffa9fe5f07b11823411a057ec5f61f26c9d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_DNS_CACHE_SIZE</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffade63dd14fcf55271418604c47509c3f1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_SOCKET_OPEN_FDS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffa5597c8e13a2ae6ea7f622fab80e00fa3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_POLL_REGISTERED_FDS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffa49bc0db3a4078ebb6dfc37dbf2fa5e2d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_POLL_ACTIVE_TIMERS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffac5f5f50c18cbd1e4df4c6f566520b865</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_SYNPROTECT_TRACKED_IPS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffa2ac4f038181ceef8dd45e2b9fd680156</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_SYNPROTECT_BLOCKED_IPS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffac6f8904f525325cef938129163b2f0c9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAUGE_METRIC_COUNT</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9c3c61abc039bebe2eda8b6f9b0574ffa543681a9ea9c38dcc7219e1dde7e7ba4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketHistogramMetric</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_POOL_ACQUIRE_TIME_MS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1ead858cc3443872f53a524e2a285b9ca07</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_POOL_CONNECTION_AGE_MS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1ea5572c534600bddc6ca7fbb15691343aa</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_POOL_IDLE_TIME_MS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1eadfcc746d42cc93726a3af20e9fefe517</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1ea197f63027af31a6a5783184aa9ae4fbd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_CLIENT_CONNECT_TIME_MS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1eabb53719cb13c0d7cf1836a5797224335</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_CLIENT_TTFB_MS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1ea99e50c80c5ed5aba18f505ab29941e01</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_CLIENT_RESPONSE_SIZE</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1eae6a142e47042024c332d29373618dadf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1ea639c5c4fe6ff72fa817325146734d53f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_SERVER_RESPONSE_SIZE</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1ea6bbd73226e6de01dad82d740f3285e15</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_SERVER_REQUEST_SIZE</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1ea8709b38d3289c4c5953d05c883a422ef</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_TLS_HANDSHAKE_TIME_MS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1ead64e5997211c75d4abaa90cd98b8ab39</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_DTLS_HANDSHAKE_TIME_MS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1ea60c53d1297cc720618318af476b452d1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_DNS_QUERY_TIME_MS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1ea1f82aed60677494fd74769d1b2c975b7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_SOCKET_CONNECT_TIME_MS</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1eafff7ca822fdc69eb6319d04487b88e63</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HISTOGRAM_METRIC_COUNT</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92d395571ae200be798481ea090e0e1eaeb16a87bb4144f588f27145249e184b7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketMetrics_init</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>aeefb37a161dced1c0dcf35cb8c472977</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_shutdown</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ac71136a870ed0e20e810cd9642aa6e88</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_counter_inc</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a051f576075a7c5fa39982fc3256127db</anchor>
+      <arglist>(SocketCounterMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_counter_add</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>af6d348200d7a3feabb7be75c73800e3b</anchor>
+      <arglist>(SocketCounterMetric metric, uint64_t value)</arglist>
+    </member>
+    <member kind="function">
+      <type>uint64_t</type>
+      <name>SocketMetrics_counter_get</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a289b82a795a5b051f500601746c23dcc</anchor>
+      <arglist>(SocketCounterMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_gauge_set</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a136f209696f9bc3f2fc3ad47cdac0458</anchor>
+      <arglist>(SocketGaugeMetric metric, int64_t value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_gauge_inc</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a7282975cd0ea7f0b5fd354c13a12a9d0</anchor>
+      <arglist>(SocketGaugeMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_gauge_dec</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a0fff1810314dc75d6082e982243794b4</anchor>
+      <arglist>(SocketGaugeMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_gauge_add</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1063ad9bcbfe8286a7f45af6e4089771</anchor>
+      <arglist>(SocketGaugeMetric metric, int64_t value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>SocketMetrics_gauge_get</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a35cb4ad83b57507c697c3af957873ce6</anchor>
+      <arglist>(SocketGaugeMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_histogram_observe</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ade1b121ba0fc5aaf631a0ec0a060843c</anchor>
+      <arglist>(SocketHistogramMetric metric, double value)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>SocketMetrics_histogram_percentile</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a6b7dac1935b1cd51f43a54026a9c2081</anchor>
+      <arglist>(SocketHistogramMetric metric, double percentile)</arglist>
+    </member>
+    <member kind="function">
+      <type>uint64_t</type>
+      <name>SocketMetrics_histogram_count</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a78400f007fa3b02037322fa951b526b4</anchor>
+      <arglist>(SocketHistogramMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>SocketMetrics_histogram_sum</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a7bba5d5d82bd9e034920520a5e0a549e</anchor>
+      <arglist>(SocketHistogramMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_histogram_snapshot</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a4276215e9db206451d0bf5c0277895a2</anchor>
+      <arglist>(SocketHistogramMetric metric, SocketMetrics_HistogramSnapshot *snapshot)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_get</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a88d6bd8b457374f89aaa5896e0b7bcca</anchor>
+      <arglist>(SocketMetrics_Snapshot *snapshot)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_reset</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ab129aa3dd03bc8e5670da9abf0c41a47</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_reset_counters</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>abf9b8dc5b74a93097dd1abc4d1c6f173</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketMetrics_reset_histograms</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ad058c5608e74545a1b26ba51a9c2d579</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketMetrics_export_prometheus</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ad2d2769789054962f81f3212df75ef35</anchor>
+      <arglist>(char *buffer, size_t buffer_size)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketMetrics_export_statsd</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a9dadc443aa052757354ab207cf2261cc</anchor>
+      <arglist>(char *buffer, size_t buffer_size, const char *prefix)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketMetrics_export_json</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a2614425d193cc298f59cf4edb4b401f3</anchor>
+      <arglist>(char *buffer, size_t buffer_size)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketMetrics_counter_name</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ab0dea3a76b37f5631595f4a1c429b3ec</anchor>
+      <arglist>(SocketCounterMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketMetrics_gauge_name</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a1688939050a2c8207534463961107b3c</anchor>
+      <arglist>(SocketGaugeMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketMetrics_histogram_name</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a339fc134239b6f057572e4d868abb6cb</anchor>
+      <arglist>(SocketHistogramMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketMetrics_counter_help</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ae21f0f4d73455a7b37a6de0323fdee41</anchor>
+      <arglist>(SocketCounterMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketMetrics_gauge_help</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ab5d0fbf4fb34d69db29bd55f15ddc4a0</anchor>
+      <arglist>(SocketGaugeMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketMetrics_histogram_help</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>aa5e1f5a07ebccb6667f60603a9f0aaa9</anchor>
+      <arglist>(SocketHistogramMetric metric)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketMetrics_category_name</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a6991175422fbbdf883b75713242b0e0f</anchor>
+      <arglist>(SocketMetricCategory category)</arglist>
     </member>
   </compound>
   <compound kind="file">
@@ -2095,11 +3343,173 @@
       <anchor>ab29dadd4e6a32a10eb577cf6f1399994</anchor>
       <arglist>(SocketRateLimit_T limiter)</arglist>
     </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketRateLimit_debug_live_count</name>
+      <anchorfile>SocketRateLimit_8h.html</anchorfile>
+      <anchor>ae39058e1d9114bc4dc403587d062b2d6</anchor>
+      <arglist>(void)</arglist>
+    </member>
     <member kind="variable">
       <type>const Except_T</type>
       <name>SocketRateLimit_Failed</name>
       <anchorfile>SocketRateLimit_8h.html</anchorfile>
       <anchor>af06f7fa3fe589c3d406f8f12cbc4e59e</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="file">
+    <name>SocketRetry.h</name>
+    <path>include/core/</path>
+    <filename>SocketRetry_8h.html</filename>
+    <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
+    <class kind="struct">SocketRetry_Policy</class>
+    <class kind="struct">SocketRetry_Stats</class>
+    <member kind="define">
+      <type>#define</type>
+      <name>T</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a9e4c6bdc5f6ab59683cef18bb3f58211</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a1b9f06edcbcdd60e892086a4b8c2b9ba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_MAX_DELAY_MS</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>ae4c30a1ed41ff40ca11fbdb21c2ec947</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_MULTIPLIER</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a2addc89cb7a7a9b6e75f3cd51eef65ac</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_JITTER</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>afbe9a9852b0477755c295af74aa0f2c7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_MAX_ATTEMPTS</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a6245d4aca908bb154e7cd34f6a36d8dd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>struct SocketRetry_T *</type>
+      <name>SocketRetry_T</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a419cec86f54612ef9204c059be3ec0a9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>int(*</type>
+      <name>SocketRetry_Operation</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a683a32a8d8f572bacd7470f3d386a445</anchor>
+      <arglist>)(void *context, int attempt)</arglist>
+    </member>
+    <member kind="typedef">
+      <type>int(*</type>
+      <name>SocketRetry_ShouldRetry</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>aebff54019f122cf3c0cb72a8ec2ed1b8</anchor>
+      <arglist>)(int error, int attempt, void *context)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketRetry_T</type>
+      <name>SocketRetry_new</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>ac4c2c785391a4a69f76ddb4d9d25f19e</anchor>
+      <arglist>(const SocketRetry_Policy *policy)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketRetry_free</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>ad758455d31f43b861881522be0982d62</anchor>
+      <arglist>(SocketRetry_T *retry)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketRetry_execute</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>ae9cb61aec8d7c8934a7481ed21e3bedf</anchor>
+      <arglist>(SocketRetry_T retry, SocketRetry_Operation operation, SocketRetry_ShouldRetry should_retry, void *context)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketRetry_execute_simple</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a3a533ebca7a1e19c736a6a1debc07336</anchor>
+      <arglist>(SocketRetry_T retry, SocketRetry_Operation operation, void *context)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketRetry_get_stats</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>aa606e706f22216af24351ee324c0a468</anchor>
+      <arglist>(const SocketRetry_T retry, SocketRetry_Stats *stats)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketRetry_reset</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>aceefc84a75ae5e4ed461d0139ceefaa3</anchor>
+      <arglist>(SocketRetry_T retry)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketRetry_get_policy</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a16584da7cc4271a025fd7d831446d028</anchor>
+      <arglist>(const SocketRetry_T retry, SocketRetry_Policy *policy)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketRetry_set_policy</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a29d7511f7531f4a23bd88f656df4636e</anchor>
+      <arglist>(SocketRetry_T retry, const SocketRetry_Policy *policy)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketRetry_policy_defaults</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>ae60e4575d034cfe56be8b50e94ad5481</anchor>
+      <arglist>(SocketRetry_Policy *policy)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketRetry_calculate_delay</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a04fda3694b0be59a6427d2188af4e9de</anchor>
+      <arglist>(const SocketRetry_Policy *policy, int attempt)</arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketRetry_Failed</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>aee6d3d64f3c5b84ac6bbf38c67834fc4</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -2179,6 +3589,20 @@
       <anchorfile>SocketSecurity_8h.html</anchorfile>
       <anchor>aa779b8e16d99a119516a883b12efa558</anchor>
       <arglist>(size_t *max_frame, size_t *max_message)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSecurity_get_arena_limits</name>
+      <anchorfile>SocketSecurity_8h.html</anchorfile>
+      <anchor>a6ad722cc32d48bcf38c13c56fb6716bd</anchor>
+      <arglist>(size_t *max_alloc)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSecurity_get_hpack_limits</name>
+      <anchorfile>SocketSecurity_8h.html</anchorfile>
+      <anchor>abdf9fc30963bf73b15d168407144a3a1</anchor>
+      <arglist>(size_t *max_table)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -2609,6 +4033,34 @@
       <anchor>a45fdc9df7fba5033d071135c934b8547</anchor>
       <arglist></arglist>
     </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_UTF8_1BYTE_MAX</name>
+      <anchorfile>SocketUTF8_8h.html</anchorfile>
+      <anchor>a79465648f060b79ec961cc626975a533</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_UTF8_2BYTE_MAX</name>
+      <anchorfile>SocketUTF8_8h.html</anchorfile>
+      <anchor>a93e8c5ea6de08b28ab080057cd17423c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_UTF8_3BYTE_MAX</name>
+      <anchorfile>SocketUTF8_8h.html</anchorfile>
+      <anchor>a02b7ac016b2dbc2c374081887ef684d5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_UTF8_4BYTE_MIN</name>
+      <anchorfile>SocketUTF8_8h.html</anchorfile>
+      <anchor>ad3cc04d775e04588a8446aedca62326f</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="enumeration">
       <type></type>
       <name>SocketUTF8_Result</name>
@@ -2748,8 +4200,11 @@
     <name>SocketUtil.h</name>
     <path>include/core/</path>
     <filename>SocketUtil_8h.html</filename>
+    <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
     <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
     <includes id="SocketConfig_8h" name="SocketConfig.h" local="yes" import="no" module="no" objc="no">core/SocketConfig.h</includes>
+    <class kind="struct">SocketLogContext</class>
+    <class kind="struct">SocketLogField</class>
     <class kind="struct">SocketMetricsSnapshot</class>
     <class kind="struct">SocketEventRecord</class>
     <class kind="union">SocketEventRecord.data</class>
@@ -2762,6 +4217,62 @@
       <anchorfile>SocketUtil_8h.html</anchorfile>
       <anchor>ae461bf5ddae6eda683926a6303af87f6</anchor>
       <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_LOG_TRACE_MSG</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a365ac6909cf8507f035810946214e639</anchor>
+      <arglist>(fmt,...)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_LOG_DEBUG_MSG</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a7853a630bcaead9d41536ccbfd598f6d</anchor>
+      <arglist>(fmt,...)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_LOG_INFO_MSG</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a9fe70c7ab8b971af2971f3a102b82819</anchor>
+      <arglist>(fmt,...)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_LOG_WARN_MSG</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>ae560ccd4aef66d44e8ecbd256844059c</anchor>
+      <arglist>(fmt,...)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_LOG_ERROR_MSG</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a16642c35dec627aeb4976538671b1552</anchor>
+      <arglist>(fmt,...)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_LOG_FATAL_MSG</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a6b6e85cf504e70eab7723ba1b685fcdb</anchor>
+      <arglist>(fmt,...)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_LOG_ID_SIZE</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>af0a8020773c3515507db1705a81b7fe4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_LOG_FIELDS</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a7bcc2412d2238abb586fedf1e5fd6f0f</anchor>
+      <arglist>(...)</arglist>
     </member>
     <member kind="define">
       <type>#define</type>
@@ -2888,6 +4399,13 @@
       <anchorfile>SocketUtil_8h.html</anchorfile>
       <anchor>add820ca01810b616cfe1d6fef0cbf899</anchor>
       <arglist>)(void *userdata, SocketLogLevel level, const char *component, const char *message)</arglist>
+    </member>
+    <member kind="typedef">
+      <type>void(*</type>
+      <name>SocketLogStructuredCallback</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>ad6d1accb7b4404506736d8778ebe47e0</anchor>
+      <arglist>)(void *userdata, SocketLogLevel level, const char *component, const char *message, const SocketLogField *fields, size_t field_count, const SocketLogContext *context)</arglist>
     </member>
     <member kind="typedef">
       <type>void(*</type>
@@ -3034,6 +4552,30 @@
       <name>SOCKET_METRIC_POOL_DRAIN_COMPLETED</name>
       <anchorfile>SocketUtil_8h.html</anchorfile>
       <anchor>a422e43ad3ca4ce64261dda7879e73e5aa2b6bee98ce6b6dabc241e660f00ddfd0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_POOL_HEALTH_CHECKS</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a422e43ad3ca4ce64261dda7879e73e5aa4f5a9a50e20a5872837a315e260edd14</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_POOL_HEALTH_FAILURES</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a422e43ad3ca4ce64261dda7879e73e5aa8d93d6bb51819fafab7432caa04ccb3c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_POOL_VALIDATION_FAILURES</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a422e43ad3ca4ce64261dda7879e73e5aa964a9546827911dd206d1421fd350c2e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_POOL_IDLE_CLEANUPS</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a422e43ad3ca4ce64261dda7879e73e5aa002fb5e2a1f84e978823670f7744f624</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
@@ -3248,6 +4790,49 @@
       <anchor>acf807f3c720486767d282324cacd4908a77387cd59d0eaec78ac8af7a8d8c1b7e</anchor>
       <arglist></arglist>
     </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketErrorCategory</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a03afe0122d51352f66339825b1eb23b9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_ERROR_CATEGORY_NETWORK</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a03afe0122d51352f66339825b1eb23b9a6652ea8ed6fd071490684c61ec3bb89b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_ERROR_CATEGORY_PROTOCOL</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a03afe0122d51352f66339825b1eb23b9a68506b7a00d8744bc266b799c46c253b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_ERROR_CATEGORY_APPLICATION</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a03afe0122d51352f66339825b1eb23b9a5dfb3fbb41aaf264675f3575bb6932f6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_ERROR_CATEGORY_TIMEOUT</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a03afe0122d51352f66339825b1eb23b9a71956723dac39958d452934301e4bd32</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_ERROR_CATEGORY_RESOURCE</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a03afe0122d51352f66339825b1eb23b9aed5f3770fcdda96b52d1ec13776ab328</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_ERROR_CATEGORY_UNKNOWN</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a03afe0122d51352f66339825b1eb23b9a1e44c5da343948255455a1f0fb019419</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function">
       <type>void</type>
       <name>SocketLog_setcallback</name>
@@ -3292,6 +4877,55 @@
     </member>
     <member kind="function">
       <type>void</type>
+      <name>SocketLog_setlevel</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>ad555b9c9e333d03766b0a0a5d1718111</anchor>
+      <arglist>(SocketLogLevel min_level)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketLogLevel</type>
+      <name>SocketLog_getlevel</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>adea5df0324ab107503097ef91327cf1f</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketLog_setcontext</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a0c14479ea972fb3ae90c7f13d449e1ff</anchor>
+      <arglist>(const SocketLogContext *ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>const SocketLogContext *</type>
+      <name>SocketLog_getcontext</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a1af6754916a1a307ddbbedd2a1f1497a</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketLog_clearcontext</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a13d1f0df4c0447eba5d723c3f2a81ff3</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketLog_setstructuredcallback</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>acea087e19ba17c0c7d2ee7eaf7be97d9</anchor>
+      <arglist>(SocketLogStructuredCallback callback, void *userdata)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketLog_emit_structured</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>ab0d6c6969a0d1866a35b8a7cb89a70dd</anchor>
+      <arglist>(SocketLogLevel level, const char *component, const char *message, const SocketLogField *fields, size_t field_count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
       <name>SocketMetrics_increment</name>
       <anchorfile>SocketUtil_8h.html</anchorfile>
       <anchor>a84618017b97e3f0eeb3c4814e939a7b4</anchor>
@@ -3306,9 +4940,9 @@
     </member>
     <member kind="function">
       <type>void</type>
-      <name>SocketMetrics_reset</name>
+      <name>SocketMetrics_legacy_reset</name>
       <anchorfile>SocketUtil_8h.html</anchorfile>
-      <anchor>ab129aa3dd03bc8e5670da9abf0c41a47</anchor>
+      <anchor>a9697727ca9f22ed6b849da5bc5f6742e</anchor>
       <arglist>(void)</arglist>
     </member>
     <member kind="function">
@@ -3403,6 +5037,27 @@
       <arglist>(int errnum)</arglist>
     </member>
     <member kind="function">
+      <type>SocketErrorCategory</type>
+      <name>SocketError_categorize_errno</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a4b19847d604cdc5896376e694ee2a9c1</anchor>
+      <arglist>(int err)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketError_category_name</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>ac08e05a6f47966909427f4f327d33192</anchor>
+      <arglist>(SocketErrorCategory category)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketError_is_retryable_errno</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a78065a32bc90c30a5d062b0b9ac88163</anchor>
+      <arglist>(int err)</arglist>
+    </member>
+    <member kind="function">
       <type>int64_t</type>
       <name>Socket_get_monotonic_ms</name>
       <anchorfile>SocketUtil_8h.html</anchorfile>
@@ -3429,6 +5084,13 @@
       <anchorfile>SocketUtil_8h.html</anchorfile>
       <anchor>a81d733432a2030afb97cd12be61e7054</anchor>
       <arglist>(unsigned value, unsigned table_size)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static unsigned</type>
+      <name>socket_util_hash_uint_seeded</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>ac2f441288fd2e497dd99474ef017f31f</anchor>
+      <arglist>(unsigned value, unsigned table_size, uint32_t seed)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static unsigned</type>
@@ -3464,6 +5126,62 @@
       <anchorfile>SocketUtil_8h.html</anchorfile>
       <anchor>acd7c2df90f755def2ac7e1edeef37538</anchor>
       <arglist>(size_t n)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static char *</type>
+      <name>socket_util_arena_strdup</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a1af76425187cb52fda8d569dcc931e2d</anchor>
+      <arglist>(Arena_T arena, const char *str)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static char *</type>
+      <name>socket_util_arena_strndup</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a0309fe77e3df0b7cd2c662f77c21c045</anchor>
+      <arglist>(Arena_T arena, const char *str, size_t maxlen)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int64_t</type>
+      <name>SocketTimeout_now_ms</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a528ca682da1482e87bfa1e2af9d9ccf1</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int64_t</type>
+      <name>SocketTimeout_deadline_ms</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>ab64414cb92e686d4410c702aecbc46be</anchor>
+      <arglist>(int timeout_ms)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int64_t</type>
+      <name>SocketTimeout_remaining_ms</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a199880a57fe7bebb439b5d1f1aa967c7</anchor>
+      <arglist>(int64_t deadline_ms)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int</type>
+      <name>SocketTimeout_expired</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a22d242f7f47f94f867a687b05eaf1d2c</anchor>
+      <arglist>(int64_t deadline_ms)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int</type>
+      <name>SocketTimeout_poll_timeout</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a0ade80c651b5f022bf9fec6aea303e71</anchor>
+      <arglist>(int current_timeout_ms, int64_t deadline_ms)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int64_t</type>
+      <name>SocketTimeout_elapsed_ms</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a179e76e704b475882b35ccef7e7f8787</anchor>
+      <arglist>(int64_t start_ms)</arglist>
     </member>
     <member kind="variable">
       <type>char</type>
@@ -4032,6 +5750,90 @@
       <anchor>a613a2fead5a6288d5d4e794ba95adeee</anchor>
       <arglist></arglist>
     </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP_STATUS_CODE_MIN</name>
+      <anchorfile>SocketHTTP_8h.html</anchorfile>
+      <anchor>a7182eca7a6bd99ccbf0cb12b275adf9d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP_STATUS_CODE_MAX</name>
+      <anchorfile>SocketHTTP_8h.html</anchorfile>
+      <anchor>ab6a83b3daff3f633c8deda4408cea03c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP_STATUS_1XX_MIN</name>
+      <anchorfile>SocketHTTP_8h.html</anchorfile>
+      <anchor>aee82a204474700c91dad9a806e48f64f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP_STATUS_1XX_MAX</name>
+      <anchorfile>SocketHTTP_8h.html</anchorfile>
+      <anchor>a261a87375b42933ff21a2b0fc7fdc8c3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP_STATUS_2XX_MIN</name>
+      <anchorfile>SocketHTTP_8h.html</anchorfile>
+      <anchor>a803cba6422aa720d629c3a9bd660cb4c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP_STATUS_2XX_MAX</name>
+      <anchorfile>SocketHTTP_8h.html</anchorfile>
+      <anchor>aa802911b92b079f19b3e1f4049cc36d7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP_STATUS_3XX_MIN</name>
+      <anchorfile>SocketHTTP_8h.html</anchorfile>
+      <anchor>a3991461d2ca50eeab1c693aaf37717a8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP_STATUS_3XX_MAX</name>
+      <anchorfile>SocketHTTP_8h.html</anchorfile>
+      <anchor>a1f0660454bb40ecd77d30150ec42e198</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP_STATUS_4XX_MIN</name>
+      <anchorfile>SocketHTTP_8h.html</anchorfile>
+      <anchor>a530d36f357344463eb4b5ca8a46157b6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP_STATUS_4XX_MAX</name>
+      <anchorfile>SocketHTTP_8h.html</anchorfile>
+      <anchor>af38c37f224e9e3cf82aeec28f1da00b5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP_STATUS_5XX_MIN</name>
+      <anchorfile>SocketHTTP_8h.html</anchorfile>
+      <anchor>abe599c847c5cf301bd5d9f151bba17d7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP_STATUS_5XX_MAX</name>
+      <anchorfile>SocketHTTP_8h.html</anchorfile>
+      <anchor>a18bd3c97e4435317e073b63c13ca6aa1</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="enumeration">
       <type></type>
       <name>SocketHTTP_Version</name>
@@ -4596,23 +6398,9 @@
     </member>
     <member kind="variable">
       <type>const Except_T</type>
-      <name>SocketHTTP_ParseError</name>
+      <name>SocketHTTP_Failed</name>
       <anchorfile>SocketHTTP_8h.html</anchorfile>
-      <anchor>ab3d5ad7e5994f2d6dc5cc732bba2f901</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketHTTP_InvalidURI</name>
-      <anchorfile>SocketHTTP_8h.html</anchorfile>
-      <anchor>a05591446a711d5a6b9d967748d9bc60e</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketHTTP_InvalidHeader</name>
-      <anchorfile>SocketHTTP_8h.html</anchorfile>
-      <anchor>a737d1c3fbff9be0590c8d0790600906a</anchor>
+      <anchor>a4f683bdd1ab1acf36a383a7be5f5b6d2</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -4692,6 +6480,27 @@
       <name>SOCKETHTTP1_MAX_TRAILER_SIZE</name>
       <anchorfile>SocketHTTP1_8h.html</anchorfile>
       <anchor>a207d48fb770893866f7a01d4ec09390d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP1_MAX_HEADER_LINE</name>
+      <anchorfile>SocketHTTP1_8h.html</anchorfile>
+      <anchor>afac78449ad6cedf3dc9f703d5bd338b1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP1_INT_STRING_BUFSIZE</name>
+      <anchorfile>SocketHTTP1_8h.html</anchorfile>
+      <anchor>a17c37ff959acffa4e20330b701877924</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE</name>
+      <anchorfile>SocketHTTP1_8h.html</anchorfile>
+      <anchor>a1ee215b68e39922641052018f578a002</anchor>
       <arglist></arglist>
     </member>
     <member kind="typedef">
@@ -4876,6 +6685,12 @@
       <name>HTTP1_ERROR_CHUNK_TOO_LARGE</name>
       <anchorfile>SocketHTTP1_8h.html</anchorfile>
       <anchor>a2ece68fcfe3c3e99a855f93f6a46f78ea6b628f58fac38dbc2fb615ae075f053d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ERROR_BODY_TOO_LARGE</name>
+      <anchorfile>SocketHTTP1_8h.html</anchorfile>
+      <anchor>a2ece68fcfe3c3e99a855f93f6a46f78eaeb698ed6d2d4a79eb41d9b69346e6743</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
@@ -5109,6 +6924,13 @@
       <anchor>ab0e624687447c4ade518d16bf70ac8a4</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketHTTP1_SerializeError</name>
+      <anchorfile>SocketHTTP1_8h.html</anchorfile>
+      <anchor>a7fe3d14ed6f02dfecfc98f4872d95372</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="file">
     <name>SocketHTTP2.h</name>
@@ -5173,6 +6995,41 @@
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>SOCKETHTTP2_DEFAULT_STREAM_RECV_BUF_SIZE</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a9ce8bfc64e6a1da3f3c8c0058845733f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP2_DEFAULT_INITIAL_HEADER_BLOCK_SIZE</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a58ac0ff2518d8345a13646c636bfd2e8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP2_MAX_DECODED_HEADERS</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>af6d5bb6cb0869bc0426836bf076c9c34</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP2_MAX_CONTINUATION_FRAMES</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a1c458f4c39b9d980a6adbc022fa49abf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP2_REQUEST_PSEUDO_HEADER_COUNT</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>abca4f7f273c332090bc14e9f950519ea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>SOCKETHTTP2_MAX_STREAMS</name>
       <anchorfile>SocketHTTP2_8h.html</anchorfile>
       <anchor>aaaacd21ea311866f022dc2819cdf3970</anchor>
@@ -5187,9 +7044,100 @@
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>SOCKETHTTP2_RST_RATE_LIMIT</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>aa20a27a38e12d263a948524dd53c6fa6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP2_RST_RATE_WINDOW_MS</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a9887f36b7f564f07f4aaf2edbbb380c0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP2_PING_RATE_LIMIT</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a348b0240c0ad1819de8e1c5aac87788b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP2_PING_RATE_WINDOW_MS</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a31f0fa5dd50b7518853bc761bab152a9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP2_SETTINGS_RATE_LIMIT</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a0e84d0a8fa6b2fb3c9cd937eae11cf09</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>aa1404eba0c1374b3ef16a9ce84964773</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP2_DEFAULT_SETTINGS_TIMEOUT_MS</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a771d4aff12b7d59ed835526388a9da1f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP2_DEFAULT_PING_TIMEOUT_MS</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a765dac93880ebf4f64f313d3fad02c1d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP2_MAX_WINDOW_SIZE</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a4c45c0b678bddd3940ec141601a23f50</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETHTTP2_IO_BUFFER_SIZE</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>ab0f69e66f311f76212458acd539d5eb9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>HTTP2_FRAME_HEADER_SIZE</name>
       <anchorfile>SocketHTTP2_8h.html</anchorfile>
       <anchor>ac20a5b006752190a32f4a20df79ced4f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a3cc871112302c2c15fdde2c478a74329</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP2_PUSH_PROMISE_ID_SIZE</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>afc6d5cdfcb6fb6ff19beedc1987c2473</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP2_PRIORITY_PAYLOAD_SIZE</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a64ae18bf7e0c54612b4009eccb94baa2</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -5932,116 +7880,395 @@
     </member>
   </compound>
   <compound kind="file">
-    <name>SocketHTTPClient.h</name>
+    <name>SocketHTTPClient-config.h</name>
     <path>include/http/</path>
-    <filename>SocketHTTPClient_8h.html</filename>
-    <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
-    <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
-    <includes id="SocketHTTP_8h" name="SocketHTTP.h" local="yes" import="no" module="no" objc="no">http/SocketHTTP.h</includes>
-    <includes id="SocketTLSContext_8h" name="SocketTLSContext.h" local="yes" import="no" module="no" objc="no">tls/SocketTLSContext.h</includes>
-    <class kind="struct">SocketHTTPClient_Auth</class>
-    <class kind="struct">SocketHTTPClient_Config</class>
-    <class kind="struct">SocketHTTPClient_Response</class>
-    <class kind="struct">SocketHTTPClient_Cookie</class>
-    <class kind="struct">SocketHTTPClient_PoolStats</class>
+    <filename>SocketHTTPClient-config_8h.html</filename>
     <member kind="define">
       <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
-      <anchor>a6495bfe151f30ebab1389fa05229498d</anchor>
+      <name>HTTPCLIENT_ERROR_BUFSIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a27a6899380c014f0f1a08432877602b2</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
-      <anchor>a48547cb7f217429e34d7fa5c925d9dea</anchor>
+      <name>HTTPCLIENT_POOL_HASH_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a2a80107d7741ba2a46baf779f7928730</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_POOL_LARGE_HASH_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>ae7f6a04a117e98e557b38a582158c4bb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_POOL_LARGE_THRESHOLD</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>afaff4a2f91f9687bf4149fde554c11b8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_IO_BUFFER_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a51703354cc9bc0603b78726aefab346f</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>ad6976b035b7becf34c067ecbfe122a99</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>a86b91e7fbe633ea8ca189984af9b3547</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>a02939decbb5546f8c00a4af02891beaf</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>a9668cac2b62d9570871b2865fcc2d562</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_MAX_REDIRECTS</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>a64838d8d2643dbec1c43f8e50055dbf7</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a6495bfe151f30ebab1389fa05229498d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a48547cb7f217429e34d7fa5c925d9dea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_MAX_AUTH_RETRIES</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a447d54118ee03f42f7f2877718afae7f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_ENABLE_RETRY</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a66d096fe772967107d0642d303b1a51c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_MAX_RETRIES</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a43548f5c8b02196dd3bd71ccb9836c26</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a1827f78650d15ca622a674b130a2b926</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>af7e91b18a488977f7e7d333f0f7c0611</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>afe6a8409016e05e46305b9f7042c7c7a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_RETRY_ON_TIMEOUT</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a2d9b8b306cf8b1a3a926e909f969315f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_RETRY_ON_5XX</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a82f5bad7555e08cf800e56ea7b04d0db</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>ab32a3ecd078fc6919d2f5e0a06d12388</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>a4a61970445f2f7a4a8d23da8680fc09b</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>HTTPCLIENT_COOKIE_HASH_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a2fc6723b3285e4aefbfe964932dca82c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_COOKIE_MAX_NAME_LEN</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>ae4c2b4b036298405fa4df86655f40da0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_COOKIE_MAX_VALUE_LEN</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a865ebc94fbbecd210790ee6724f25ad0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a6232822d5354e8e3a454b9aac0ab3405</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_COOKIE_MAX_PATH_LEN</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a9d065c123fe18985ed947ed344bfabe8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_COOKIE_FILE_LINE_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a93971a79c1854b341367aa92f1dfe657</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_COOKIE_MAX_AGE_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>ab56546d633bcdabb80f6fa61ad4f3c3f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_COOKIE_SAMESITE_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a1f5201287c752c90005b22c9a07c8011</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_AUTH_CREDENTIALS_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>aba4e506b5b48afa5c9e19f692619db35</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DIGEST_A_BUFFER_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a3db68e362a4cd23917b2e2b6dc05ef22</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DIGEST_RESPONSE_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a19c913be80fdc2a1778a5cf592fa5a32</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DIGEST_CNONCE_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a3e4e900df8359ef28d95b0ead64dbcf5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a1fbe044368878287464a35d2887c23cf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DIGEST_NC_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a78e4b4357664a978b08470dc5110b5e9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_REQUEST_BUFFER_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a3de25c3d345626920f73bd6ceb4faefe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_BODY_CHUNK_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a9252df768faf5ccb5438f1e0e9d68b33</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_HOST_HEADER_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a14236d3d25877900fe49a8c2b7c90e25</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_COOKIE_HEADER_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a2bf0debe9f0685663a1f5b1fcaf56510</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_AUTH_HEADER_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>ae0d219a3146b29914fb7f7169c6aa566</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_AUTH_HEADER_LARGE_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a81ac4eefb96b3c919042f5fdd1ea361d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_URI_BUFFER_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a1421459188743de98f5eb1d489d70ec0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_MAX_SET_COOKIES</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a134a20a8c6c468864bb0d94e9d9abb91</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_ACCEPT_ENCODING_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a846e1eb9e4ecd57dc03a065776981e0b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_CONTENT_LENGTH_SIZE</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a4063c6077aa71b96a83dbe475a59e5a9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_RETRY_JITTER_FACTOR</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a441f1405cd4774e167f08b83b3b1e117</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_RETRY_MULTIPLIER</name>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
+      <anchor>a5f5f7ee22b430f5cb019b8b0a6803348</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_USER_AGENT</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>ad23bab3060a93bc022b891a925e34f94</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
-      <name>HTTPCLIENT_POOL_HASH_SIZE</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
-      <anchor>a2a80107d7741ba2a46baf779f7928730</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
       <name>HTTPCLIENT_ENCODING_IDENTITY</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>a1a94747fcfaf987c84d4a91bc3bd7513</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_ENCODING_GZIP</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>aca301afd15b5701276655faf5cdf3104</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_ENCODING_DEFLATE</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>ae68f134e13b2a94d9f4f5973fc02bf3c</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_ENCODING_BR</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchorfile>SocketHTTPClient-config_8h.html</anchorfile>
       <anchor>acf069f17c344d63494b465eb5dcec7b8</anchor>
       <arglist></arglist>
     </member>
+  </compound>
+  <compound kind="file">
+    <name>SocketHTTPClient.h</name>
+    <path>include/http/</path>
+    <filename>SocketHTTPClient_8h.html</filename>
+    <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
+    <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
+    <includes id="SocketHTTP_8h" name="SocketHTTP.h" local="yes" import="no" module="no" objc="no">http/SocketHTTP.h</includes>
+    <includes id="SocketHTTPClient-config_8h" name="SocketHTTPClient-config.h" local="yes" import="no" module="no" objc="no">http/SocketHTTPClient-config.h</includes>
+    <includes id="SocketTLSContext_8h" name="SocketTLSContext.h" local="yes" import="no" module="no" objc="no">tls/SocketTLSContext.h</includes>
+    <class kind="struct">SocketHTTPClient_Auth</class>
+    <class kind="struct">SocketHTTPClient_Config</class>
+    <class kind="struct">SocketHTTPClient_Response</class>
+    <class kind="struct">SocketHTTPClient_Cookie</class>
+    <class kind="struct">SocketHTTPClient_PoolStats</class>
     <member kind="typedef">
       <type>struct SocketHTTPClient *</type>
       <name>SocketHTTPClient_T</name>
@@ -6137,6 +8364,12 @@
       <anchor>a6b0f544308db17e698b4c05ac3358b75aeb7ea1f2504e427a5e5d962af382dd1c</anchor>
       <arglist></arglist>
     </member>
+    <member kind="enumvalue">
+      <name>HTTPCLIENT_ERROR_LIMIT_EXCEEDED</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>a6b0f544308db17e698b4c05ac3358b75a40c972700be18d6b9c5d6c1db5cec9fb</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="enumeration">
       <type></type>
       <name>SocketHTTPClient_AuthType</name>
@@ -6168,17 +8401,12 @@
       <anchor>a720036180c834b3f4b41f437d0ce1f30acda827d72fd9c0a84535434c81558c96</anchor>
       <arglist></arglist>
     </member>
-    <member kind="enumvalue">
-      <name>HTTP_AUTH_NTLM</name>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketHTTPClient_error_is_retryable</name>
       <anchorfile>SocketHTTPClient_8h.html</anchorfile>
-      <anchor>a720036180c834b3f4b41f437d0ce1f30a42fba6486b2a44775f09c0cfb8ac5176</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>HTTP_AUTH_NEGOTIATE</name>
-      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
-      <anchor>a720036180c834b3f4b41f437d0ce1f30ad5b8e072bdf48c353ab70159d8a18ec0</anchor>
-      <arglist></arglist>
+      <anchor>af69fc4efa6d5b4df9cdf207cfa05b6b9</anchor>
+      <arglist>(SocketHTTPClient_Error error)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -6604,6 +8832,7 @@
     <filename>SocketHTTPServer_8h.html</filename>
     <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
     <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
+    <includes id="SocketRateLimit_8h" name="SocketRateLimit.h" local="yes" import="no" module="no" objc="no">core/SocketRateLimit.h</includes>
     <includes id="SocketHTTP_8h" name="SocketHTTP.h" local="yes" import="no" module="no" objc="no">http/SocketHTTP.h</includes>
     <includes id="SocketPoll_8h" name="SocketPoll.h" local="yes" import="no" module="no" objc="no">poll/SocketPoll.h</includes>
     <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
@@ -6614,6 +8843,55 @@
       <name>HTTPSERVER_DEFAULT_BACKLOG</name>
       <anchorfile>SocketHTTPServer_8h.html</anchorfile>
       <anchor>a4522c2e543c78b0021fca2f4e4e731e6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_DEFAULT_PORT</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>adcd2ff25d89289e51c96fe57c120717f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_DEFAULT_BIND_ADDR</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a0667730c5595188e1bdf991b20180ddf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_DEFAULT_ENABLE_H2C_UPGRADE</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a305cd6f6613872a906cd1bc1150645c7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_CONTENT_LENGTH_BUF_SIZE</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a303e75df1224167a8e5a69e0258c1533</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_CHUNK_FINAL_BUF_SIZE</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>abe7c219136e39fcb63d1edd1bd029dcd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_CLIENT_ADDR_MAX</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a04264611026dfbf30d986e60368536f9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_DRAIN_POLL_MS</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a6828829545fd5f379e44e960700bdc21</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -6658,6 +8936,97 @@
       <anchor>a689bbacaca6f6ceff8d330ab6650ed84</anchor>
       <arglist></arglist>
     </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_DEFAULT_REQUEST_READ_TIMEOUT_MS</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>aeb21a7a41a54fc1f559a29b3b8ae87c9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_DEFAULT_RESPONSE_WRITE_TIMEOUT_MS</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a45662a88175b71660de7e17d0908de1d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_DEFAULT_MAX_CONNECTIONS_PER_CLIENT</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>ab341f7aa2e0d398e7fcf27469bc1a62d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_DEFAULT_MAX_CONCURRENT_REQUESTS</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>aed3e151f56c9277c3b5b63ab23c3e09a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_DEFAULT_STREAM_CHUNK_SIZE</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a441035c0576c57af0fe9d979b5a42df1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_RPS_WINDOW_SECONDS</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>af7a1376f4194e9507953d89b715fa656</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_IO_BUFFER_SIZE</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a2d15e59f13b41ae609043cef1fe0d02f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_RECV_BUFFER_SIZE</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>ad6df29e2fea722ad22368a2b940b5531</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>adbc773d7bce0c70ba39358448aa0ace0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_MAX_CLIENTS_PER_ACCEPT</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>ae8e00010a149a907589ccf535454dde8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_CHUNK_BUFFER_SIZE</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a1ebce2db0ae2bba492c06324e38b7370</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_MAX_RATE_LIMIT_ENDPOINTS</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>ad9ded082ab5a397fd3386ca1c63fe114</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPSERVER_LATENCY_SAMPLES</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a3473805e79004874242125148c096a88</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="typedef">
       <type>struct SocketWS *</type>
       <name>SocketWS_T</name>
@@ -6685,6 +9054,52 @@
       <anchorfile>SocketHTTPServer_8h.html</anchorfile>
       <anchor>a8805b706921b37e2e91e68a861ddc97c</anchor>
       <arglist>)(SocketHTTPServer_Request_T req, void *userdata)</arglist>
+    </member>
+    <member kind="typedef">
+      <type>int(*</type>
+      <name>SocketHTTPServer_BodyCallback</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>ab347055b7285aedad5fa0f504c3a655e</anchor>
+      <arglist>)(SocketHTTPServer_Request_T req, const void *chunk, size_t len, int is_final, void *userdata)</arglist>
+    </member>
+    <member kind="typedef">
+      <type>int(*</type>
+      <name>SocketHTTPServer_Validator</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>ab095eb6d03d06f9c1d8041dc3aa56094</anchor>
+      <arglist>)(SocketHTTPServer_Request_T req, int *reject_status, void *userdata)</arglist>
+    </member>
+    <member kind="typedef">
+      <type>void(*</type>
+      <name>SocketHTTPServer_DrainCallback</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a6eeba038caf0b48d3ae3527155ab8162</anchor>
+      <arglist>)(SocketHTTPServer_T server, int timed_out, void *userdata)</arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketHTTPServer_State</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a0ac9162aaf92d18d40cf0443909e3e97</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPSERVER_STATE_RUNNING</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a0ac9162aaf92d18d40cf0443909e3e97a71eb63ea64bc63130077055f5def4470</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPSERVER_STATE_DRAINING</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a0ac9162aaf92d18d40cf0443909e3e97ab9ea109b294256f80f9c605af4ee33da</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPSERVER_STATE_STOPPED</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a0ac9162aaf92d18d40cf0443909e3e97a40470a42c264e62630500ec3e55f5570</anchor>
+      <arglist></arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -6810,6 +9225,13 @@
       <name>SocketHTTPServer_Request_arena</name>
       <anchorfile>SocketHTTPServer_8h.html</anchorfile>
       <anchor>ab962af94432e50a19c4a4d09b307cd68</anchor>
+      <arglist>(SocketHTTPServer_Request_T req)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketHTTPServer_Request_memory_used</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a9b44e54c60728c855c3cfad99196dc64</anchor>
       <arglist>(SocketHTTPServer_Request_T req)</arglist>
     </member>
     <member kind="variable">
@@ -6964,6 +9386,27 @@
       <anchor>a665b3363d16ab859ec60e69a792d1ff0</anchor>
       <arglist>(SocketPoll_T poll)</arglist>
     </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketPoll_getmaxregistered</name>
+      <anchorfile>SocketPoll_8h.html</anchorfile>
+      <anchor>a16688a9e444183863bab8051f57fe688</anchor>
+      <arglist>(SocketPoll_T poll)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPoll_setmaxregistered</name>
+      <anchorfile>SocketPoll_8h.html</anchorfile>
+      <anchor>a35d4052d444bcab4cae26f41cf5729eb</anchor>
+      <arglist>(SocketPoll_T poll, int max)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketPoll_getregisteredcount</name>
+      <anchorfile>SocketPoll_8h.html</anchorfile>
+      <anchor>ac79e719de24f09f84eb3816b3ab60c65</anchor>
+      <arglist>(SocketPoll_T poll)</arglist>
+    </member>
     <member kind="variable">
       <type>const Except_T</type>
       <name>SocketPoll_Failed</name>
@@ -6978,6 +9421,14 @@
     <filename>SocketPoll__backend_8h.html</filename>
     <includes id="SocketPoll_8h" name="SocketPoll.h" local="yes" import="no" module="no" objc="no">poll/SocketPoll.h</includes>
     <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
+    <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
+    <member kind="define">
+      <type>#define</type>
+      <name>VALIDATE_MAXEVENTS</name>
+      <anchorfile>SocketPoll__backend_8h.html</anchorfile>
+      <anchor>ad5c973c74b3941d078d573439e92c65b</anchor>
+      <arglist>(maxevents, event_type)</arglist>
+    </member>
     <member kind="define">
       <type>#define</type>
       <name>VALIDATE_FD</name>
@@ -6996,8 +9447,8 @@
       <type>PollBackend_T</type>
       <name>backend_new</name>
       <anchorfile>SocketPoll__backend_8h.html</anchorfile>
-      <anchor>ae1b5045d5537dde7eb2cce1e8deae997</anchor>
-      <arglist>(int maxevents)</arglist>
+      <anchor>aa198b207e04b5bb6bec2746c7d86b735</anchor>
+      <arglist>(Arena_T arena, int maxevents)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7038,8 +9489,8 @@
       <type>int</type>
       <name>backend_get_event</name>
       <anchorfile>SocketPoll__backend_8h.html</anchorfile>
-      <anchor>ac8fe3c2f41388223c47cb0c59d9428d1</anchor>
-      <arglist>(PollBackend_T backend, int index, int *fd_out, unsigned *events_out)</arglist>
+      <anchor>ad998de1df9f46711f5c3b4dc0257f548</anchor>
+      <arglist>(const PollBackend_T backend, int index, int *fd_out, unsigned *events_out)</arglist>
     </member>
     <member kind="function">
       <type>const char *</type>
@@ -7061,6 +9512,7 @@
     <includes id="SocketBuf_8h" name="SocketBuf.h" local="yes" import="no" module="no" objc="no">socket/SocketBuf.h</includes>
     <includes id="SocketReconnect_8h" name="SocketReconnect.h" local="yes" import="no" module="no" objc="no">socket/SocketReconnect.h</includes>
     <includes id="SocketDNS_8h" name="SocketDNS.h" local="yes" import="no" module="no" objc="no">dns/SocketDNS.h</includes>
+    <class kind="struct">SocketPool_Stats</class>
     <member kind="define">
       <type>#define</type>
       <name>T</name>
@@ -7081,6 +9533,20 @@
       <anchorfile>SocketPool_8h.html</anchorfile>
       <anchor>a424a0221f5eef0991c244d83d02d8b2c</anchor>
       <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>int(*</type>
+      <name>SocketPool_ValidationCallback</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a9a848b27d2034b028ceb2febdc6471b5</anchor>
+      <arglist>)(Connection_T conn, void *data)</arglist>
+    </member>
+    <member kind="typedef">
+      <type>void(*</type>
+      <name>SocketPool_ResizeCallback</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a6ec7b7f0dae3b1366f32f93294dc8b4a</anchor>
+      <arglist>)(SocketPool_T pool, size_t old_size, size_t new_size, void *data)</arglist>
     </member>
     <member kind="typedef">
       <type>void(*</type>
@@ -7146,6 +9612,37 @@
       <anchor>a97c30d41df98c69bb394f0a91c3759aea083eb1503d53d80d116c0ee25022b819</anchor>
       <arglist></arglist>
     </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketPool_ConnHealth</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a92931382e16ec0f93619d6fe95c68fdf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>POOL_CONN_HEALTHY</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a92931382e16ec0f93619d6fe95c68fdfa92d5c5da87579cc06fcbe3ff7f3c312e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>POOL_CONN_DISCONNECTED</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a92931382e16ec0f93619d6fe95c68fdfae8b36f49ecaf54a76a78bed5a38da457</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>POOL_CONN_ERROR</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a92931382e16ec0f93619d6fe95c68fdfa6d7a0c62f6bf32b8e47f29eed6533f69</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>POOL_CONN_STALE</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a92931382e16ec0f93619d6fe95c68fdfa38972b76d931672d61056eea4fec704a</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function">
       <type>SocketPool_T</type>
       <name>SocketPool_new</name>
@@ -7192,8 +9689,8 @@
       <type>int</type>
       <name>SocketPool_accept_batch</name>
       <anchorfile>SocketPool_8h.html</anchorfile>
-      <anchor>aaeae09452d4cfc38c39945cb45c84093</anchor>
-      <arglist>(SocketPool_T pool, Socket_T server, int max_accepts, Socket_T *accepted)</arglist>
+      <anchor>a283d343a8192530c349dc9a02b987c26</anchor>
+      <arglist>(SocketPool_T pool, Socket_T server, int max_accepts, size_t accepted_capacity, Socket_T *accepted)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7496,6 +9993,76 @@
       <anchor>a254e5c125de7413e1fa2a8809350d4e0</anchor>
       <arglist>(SocketPool_T pool, SocketPool_DrainCallback cb, void *data)</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPool_set_idle_timeout</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a76151bb579f44bdf79aeca57dbd8122e</anchor>
+      <arglist>(SocketPool_T pool, time_t timeout_sec)</arglist>
+    </member>
+    <member kind="function">
+      <type>time_t</type>
+      <name>SocketPool_get_idle_timeout</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>aee19a772a9cf21b2c50fd1deec498b0b</anchor>
+      <arglist>(SocketPool_T pool)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>SocketPool_idle_cleanup_due_ms</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>ab0d0f088107c8034fff0a9f87d056100</anchor>
+      <arglist>(SocketPool_T pool)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketPool_run_idle_cleanup</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a8efd44a4a7089eea19819785b0e2de4b</anchor>
+      <arglist>(SocketPool_T pool)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketPool_ConnHealth</type>
+      <name>SocketPool_check_connection</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a3e6eccb3c5a10e8ac40b057a56e77ed5</anchor>
+      <arglist>(SocketPool_T pool, Connection_T conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPool_set_validation_callback</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a11a46794f10d4d659cf75412e84cef31</anchor>
+      <arglist>(SocketPool_T pool, SocketPool_ValidationCallback cb, void *data)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPool_set_resize_callback</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a9c7cd8aa28512bb3e73885f5968a46cd</anchor>
+      <arglist>(SocketPool_T pool, SocketPool_ResizeCallback cb, void *data)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPool_get_stats</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a8289eac993efd5cac1c6147c06d6d645</anchor>
+      <arglist>(SocketPool_T pool, SocketPool_Stats *stats)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPool_reset_stats</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a2f8bfb464d9ab7068fefa9c0ba57c436</anchor>
+      <arglist>(SocketPool_T pool)</arglist>
+    </member>
+    <member kind="function">
+      <type>time_t</type>
+      <name>Connection_created_at</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>adeb31a2cef7f4d6b590baf9c3e4fd048</anchor>
+      <arglist>(const Connection_T conn)</arglist>
+    </member>
     <member kind="variable">
       <type>const Except_T</type>
       <name>SocketPool_Failed</name>
@@ -7525,6 +10092,13 @@
       <anchorfile>Socket_8h.html</anchorfile>
       <anchor>a1bcdb0c6d5827c2493bd622fa7751f14</anchor>
       <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Socket_error_is_retryable</name>
+      <anchorfile>Socket_8h.html</anchorfile>
+      <anchor>a8517adf0df2e5331a952fb713ec314f9</anchor>
+      <arglist>(int err)</arglist>
     </member>
     <member kind="function">
       <type>Socket_T</type>
@@ -7920,6 +10494,20 @@
     </member>
     <member kind="function">
       <type>void</type>
+      <name>Socket_timeouts_set_extended</name>
+      <anchorfile>Socket_8h.html</anchorfile>
+      <anchor>ad663873fbc8f0846c092a380f64b1f52</anchor>
+      <arglist>(Socket_T socket, const SocketTimeouts_Extended_T *extended)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Socket_timeouts_get_extended</name>
+      <anchorfile>Socket_8h.html</anchorfile>
+      <anchor>a4affc77e30721f266acfc9ba7870dff5</anchor>
+      <arglist>(const Socket_T socket, SocketTimeouts_Extended_T *extended)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
       <name>Socket_setbandwidth</name>
       <anchorfile>Socket_8h.html</anchorfile>
       <anchor>acab565f9a6e6c40c56d6d21df89b30a9</anchor>
@@ -8078,6 +10666,13 @@
       <anchorfile>Socket_8h.html</anchorfile>
       <anchor>a28271af8ebad671a64fd37ffb2d07e0c</anchor>
       <arglist>(Socket_T socket, struct addrinfo *res)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Socket_ignore_sigpipe</name>
+      <anchorfile>Socket_8h.html</anchorfile>
+      <anchor>a410b67062c053c3af7e86531acc1620c</anchor>
+      <arglist>(void)</arglist>
     </member>
     <member kind="variable">
       <type>const Except_T</type>
@@ -9070,6 +11665,13 @@
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>SOCKET_HE_DEFAULT_DNS_TIMEOUT_MS</name>
+      <anchorfile>SocketHappyEyeballs_8h.html</anchorfile>
+      <anchor>a0eca938e489f47d663007b6c0a7ab18f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>SOCKET_HE_DEFAULT_MAX_ATTEMPTS</name>
       <anchorfile>SocketHappyEyeballs_8h.html</anchorfile>
       <anchor>ac03b01e1dccf0fd3b0c78d26e4343646</anchor>
@@ -9334,6 +11936,8 @@
     <filename>SocketProxy_8h.html</filename>
     <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
     <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
+    <includes id="SocketDNS_8h" name="SocketDNS.h" local="yes" import="no" module="no" objc="no">dns/SocketDNS.h</includes>
+    <includes id="SocketPoll_8h" name="SocketPoll.h" local="yes" import="no" module="no" objc="no">poll/SocketPoll.h</includes>
     <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
     <includes id="SocketTLSContext_8h" name="SocketTLSContext.h" local="yes" import="no" module="no" objc="no">tls/SocketTLSContext.h</includes>
     <class kind="struct">SocketProxy_Config</class>
@@ -9657,6 +12261,13 @@
     </member>
     <member kind="function">
       <type>SocketProxy_Conn_T</type>
+      <name>SocketProxy_Conn_start</name>
+      <anchorfile>SocketProxy_8h.html</anchorfile>
+      <anchor>a5f6fd1cde0a54b41805862ce002f6f97</anchor>
+      <arglist>(SocketDNS_T dns, SocketPoll_T poll, const SocketProxy_Config *proxy, const char *target_host, int target_port)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketProxy_Conn_T</type>
       <name>SocketProxy_Conn_new</name>
       <anchorfile>SocketProxy_8h.html</anchorfile>
       <anchor>a6d17fac3f6b21b9905aa7c4b0d7d47f7</anchor>
@@ -9863,8 +12474,8 @@
       <type>int(*</type>
       <name>SocketReconnect_HealthCheck</name>
       <anchorfile>SocketReconnect_8h.html</anchorfile>
-      <anchor>ac72a1247fceed09210753d03ae2ebb5e</anchor>
-      <arglist>)(SocketReconnect_T conn, Socket_T socket, void *userdata)</arglist>
+      <anchor>ae24b576ed367f734f434ef30ad8386c3</anchor>
+      <arglist>)(SocketReconnect_T conn, Socket_T socket, int timeout_ms, void *userdata)</arglist>
     </member>
     <member kind="enumeration">
       <type></type>
@@ -10877,6 +13488,13 @@
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE</name>
+      <anchorfile>SocketDTLSConfig_8h.html</anchorfile>
+      <anchor>a83416fe8d965d7133943298dcd693bd3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH</name>
       <anchorfile>SocketDTLSConfig_8h.html</anchorfile>
       <anchor>a0ce437be6ce966c60ba60e165485bb4a</anchor>
@@ -10908,6 +13526,13 @@
       <name>SOCKET_DTLS_MAX_PATH_LEN</name>
       <anchorfile>SocketDTLSConfig_8h.html</anchorfile>
       <anchor>a8c4f3d639af33633c811568f89124e6d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_DTLS_MAX_FILE_SIZE</name>
+      <anchorfile>SocketDTLSConfig_8h.html</anchorfile>
+      <anchor>ab42fd5a40a391bb5d2e3c5f44a1b24fa</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -11231,6 +13856,13 @@
       <arglist>(Socket_T socket, int timeout_ms)</arglist>
     </member>
     <member kind="function">
+      <type>TLSHandshakeState</type>
+      <name>SocketTLS_handshake_auto</name>
+      <anchorfile>SocketTLS_8h.html</anchorfile>
+      <anchor>a54a01327e253586278c0f740c2764010</anchor>
+      <arglist>(Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
       <type>void</type>
       <name>SocketTLS_shutdown</name>
       <anchorfile>SocketTLS_8h.html</anchorfile>
@@ -11370,6 +14002,20 @@
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>ab30f8121a683dd31fff11c10934b1137</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TLS_POLL_INTERVAL_MS</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>a5ca7b5f2bc6a521f8b7fb7b94196a94e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>SOCKET_TLS_BUFFER_SIZE</name>
       <anchorfile>SocketTLSConfig_8h.html</anchorfile>
       <anchor>a21c94d7068bbee12788fb1af5b90a393</anchor>
@@ -11387,6 +14033,13 @@
       <name>SOCKET_TLS_MAX_ALPN_LEN</name>
       <anchorfile>SocketTLSConfig_8h.html</anchorfile>
       <anchor>accea5587344f8cc4d28f5d862dc2fa96</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TLS_MAX_ALPN_TOTAL_BYTES</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>aa52cffca1d260f855e90946554827278</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -11494,6 +14147,41 @@
       <anchor>a3e34a6589554ee91a77d39057681e22e</anchor>
       <arglist></arglist>
     </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>a1c682687285a8a50d6ade71bc8941560</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>adbfa56fdcb0238beabd54ceecdf8aba7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TLS_MAX_CRL_SIZE</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>abcf496a1134e5bff5ea583e6395f4a44</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TLS_MAX_CRL_FILES_IN_DIR</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>a65c50bd768a726e7a7f036f32a58e49d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TLS_CRL_MAX_PATH_LEN</name>
+      <anchorfile>SocketTLSConfig_8h.html</anchorfile>
+      <anchor>a362c108e58b5204fa5141920db407ed0</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="file">
     <name>SocketTLSContext.h</name>
@@ -11524,18 +14212,18 @@
       <arglist>)(int preverify_ok, X509_STORE_CTX *x509_ctx, SocketTLSContext_T tls_ctx, Socket_T socket, void *user_data)</arglist>
     </member>
     <member kind="typedef">
+      <type>void(*</type>
+      <name>SocketTLSCrlCallback</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>a60686895b6fbdd1290a6f6176484bf5b</anchor>
+      <arglist>)(SocketTLSContext_T ctx, const char *path, int success, void *user_data)</arglist>
+    </member>
+    <member kind="typedef">
       <type>OCSP_RESPONSE *(*</type>
       <name>SocketTLSOcspGenCallback</name>
       <anchorfile>SocketTLSContext_8h.html</anchorfile>
       <anchor>a1acd7a590114ffbf4307a6f5a3bab35c</anchor>
       <arglist>)(SSL *ssl, void *arg)</arglist>
-    </member>
-    <member kind="typedef">
-      <type>const char *(*</type>
-      <name>SocketTLSAlpnCallback</name>
-      <anchorfile>SocketTLSContext_8h.html</anchorfile>
-      <anchor>aa53566f8d54960bb2d44516a50f67c70</anchor>
-      <arglist>)(const char **client_protos, size_t client_count, void *user_data)</arglist>
     </member>
     <member kind="function">
       <type>SocketTLSContext_T</type>
@@ -11609,6 +14297,41 @@
     </member>
     <member kind="function">
       <type>void</type>
+      <name>SocketTLSContext_reload_crl</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>ac5ba25c0153bc63b6087cff6304f4938</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *crl_path)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_crl_auto_refresh</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>ac049c86b0b5edba0a7bcb73ca2e1e2eb</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *crl_path, long interval_seconds, SocketTLSCrlCallback callback, void *user_data)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_cancel_crl_auto_refresh</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>ab4bee293124b9d83681f9471f0519689</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLSContext_crl_check_refresh</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>a516c739f9ab7a0a5968279aba78a250c</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>SocketTLSContext_crl_next_refresh_ms</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>a1e822bd45ec2dad56c13d541dcd0c23d</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
       <name>SocketTLSContext_set_ocsp_response</name>
       <anchorfile>SocketTLSContext_8h.html</anchorfile>
       <anchor>acad0c368922de598277e4237779504b7</anchor>
@@ -11627,6 +14350,67 @@
       <anchorfile>SocketTLSContext_8h.html</anchorfile>
       <anchor>ae1a1b2392cfa8dd68e636bbef9df443f</anchor>
       <arglist>(Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_enable_ocsp_stapling</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>a414fb627189037256afd8c4e015b74d1</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLSContext_ocsp_stapling_enabled</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>a7f214a19238ce8cd567d6ad6efa806c9</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>CTValidationMode</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>a4d930163393a67950a5378e540c0e939</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>CT_VALIDATION_PERMISSIVE</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>a4d930163393a67950a5378e540c0e939aea499abb40ae318f0fd2b596ce6cbaa8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>CT_VALIDATION_STRICT</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>a4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>X509 *(*</type>
+      <name>SocketTLSCertLookupCallback</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>a5c2914ee879d575869932c3a3aed4863</anchor>
+      <arglist>)(X509_STORE_CTX *store_ctx, X509_NAME *name, void *user_data)</arglist>
+    </member>
+    <member kind="typedef">
+      <type>const char *(*</type>
+      <name>SocketTLSAlpnCallback</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>aa53566f8d54960bb2d44516a50f67c70</anchor>
+      <arglist>)(const char **client_protos, size_t client_count, void *user_data)</arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketTLS_PinVerifyFailed</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>a445003fff70029dd096df971801be0e4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_cert_lookup_callback</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>ae1d9ff9d7e15f5a798d316ddf6ec6d53</anchor>
+      <arglist>(SocketTLSContext_T ctx, SocketTLSCertLookupCallback callback, void *user_data)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -11716,8 +14500,8 @@
       <type>void</type>
       <name>SocketTLSContext_add_pin_from_x509</name>
       <anchorfile>SocketTLSContext_8h.html</anchorfile>
-      <anchor>aa8e82b71c4a6b575b6ac8de258e56361</anchor>
-      <arglist>(SocketTLSContext_T ctx, X509 *cert)</arglist>
+      <anchor>acf5982c65823fa0eedc34d8d933710a9</anchor>
+      <arglist>(SocketTLSContext_T ctx, const X509 *cert)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -11765,8 +14549,36 @@
       <type>int</type>
       <name>SocketTLSContext_verify_cert_pin</name>
       <anchorfile>SocketTLSContext_8h.html</anchorfile>
-      <anchor>aaa2f2365d0ee66069b1e935fe72ad26f</anchor>
-      <arglist>(SocketTLSContext_T ctx, X509 *cert)</arglist>
+      <anchor>ae69fbca6dae1712eb7abd1f1b268926b</anchor>
+      <arglist>(SocketTLSContext_T ctx, const X509 *cert)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_enable_ct</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>af27bede9402c6c8c7541143e019c635f</anchor>
+      <arglist>(SocketTLSContext_T ctx, CTValidationMode mode)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLSContext_ct_enabled</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>a3b70029e86352f55e3710673ba30c23f</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>CTValidationMode</type>
+      <name>SocketTLSContext_get_ct_mode</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>af18e867664012c78a758c5454f62c367</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_ctlog_list_file</name>
+      <anchorfile>SocketTLSContext_8h.html</anchorfile>
+      <anchor>ada967caf61c070399281b088b35ed78a</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *log_file)</arglist>
     </member>
     <member kind="function">
       <type>void *</type>
@@ -11781,13 +14593,6 @@
       <anchorfile>SocketTLSContext_8h.html</anchorfile>
       <anchor>a39bd71708494c1c833d3064c3a70f8ad</anchor>
       <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketTLS_PinVerifyFailed</name>
-      <anchorfile>SocketTLSContext_8h.html</anchorfile>
-      <anchor>a445003fff70029dd096df971801be0e4</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="union">
@@ -12102,6 +14907,13 @@
     </member>
     <member kind="variable">
       <type>int</type>
+      <name>dns_timeout_ms</name>
+      <anchorfile>SocketHappyEyeballs_8h.html</anchorfile>
+      <anchor>ae94ef758ca842d9231733fbc9b910e2f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
       <name>prefer_ipv6</name>
       <anchorfile>SocketHappyEyeballs_8h.html</anchorfile>
       <anchor>a2286078d8352300a92ddd005f756ae8b</anchor>
@@ -12261,6 +15073,13 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
+      <type>size_t</type>
+      <name>max_header_line</name>
+      <anchorfile>SocketHTTP1_8h.html</anchorfile>
+      <anchor>ad52814be2bcde961f89fd28531af8471</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
       <type>int</type>
       <name>allow_obs_fold</name>
       <anchorfile>SocketHTTP1_8h.html</anchorfile>
@@ -12272,6 +15091,13 @@
       <name>strict_mode</name>
       <anchorfile>SocketHTTP1_8h.html</anchorfile>
       <anchor>af0674dfcd3ff95d357c22a68ac7fcf36</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>max_decompressed_size</name>
+      <anchorfile>SocketHTTP1_8h.html</anchorfile>
+      <anchor>aeda690045f7731461b2a5f29d9c3cc03</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -12305,6 +15131,34 @@
       <name>max_concurrent_streams</name>
       <anchorfile>SocketHTTP2_8h.html</anchorfile>
       <anchor>a4f948d55c4fc6947b5da693aad073731</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>max_stream_open_rate</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a47341b7c9c96d8de9fbbd75debe89d0e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>max_stream_open_burst</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>aa7d444c755f09f5ebca1a996c71b5120</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>max_stream_close_rate</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a938e74eab04a08111335da2fcec3f2d0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>max_stream_close_burst</name>
+      <anchorfile>SocketHTTP2_8h.html</anchorfile>
+      <anchor>a4572833d76ee10a1bddd1470cc789d4f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -12537,6 +15391,20 @@
     </member>
     <member kind="variable">
       <type>int</type>
+      <name>max_connection_age_ms</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>a82bcf56254c541ebd8fbdbba0a7ba7bb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>acquire_timeout_ms</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>a12094d3f2718443658de2cab3f8873b4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
       <name>connect_timeout_ms</name>
       <anchorfile>SocketHTTPClient_8h.html</anchorfile>
       <anchor>ad0964ac6e0738a3c4914054529bb51a7</anchor>
@@ -12617,6 +15485,62 @@
       <name>max_response_size</name>
       <anchorfile>SocketHTTPClient_8h.html</anchorfile>
       <anchor>aa26d176771f3b6ddee9a2d95142e9c46</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>enable_retry</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>adb6071171fe058cbc1c221e1b0d6ec98</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>max_retries</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>ad8b244df21d9337ed74c872e694d10ba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>retry_initial_delay_ms</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>a1b02030b2c83c6e7bd1812de2362ede3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>retry_max_delay_ms</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>afd505949c45d0fb48c0810759cb66176</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>retry_on_connection_error</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>a6355fa7fdfcc9db5d6069189aef62928</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>retry_on_timeout</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>a58a60bcfb2edaa6accced6acd52191ad</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>retry_on_5xx</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>a86ed34fbe021d156e6ee5ac2bc8e9b6e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>enforce_samesite</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>ae9bb372f96fd426c9fcf729fa78f26e3</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -12711,6 +15635,41 @@
       <name>reused_connections</name>
       <anchorfile>SocketHTTPClient_8h.html</anchorfile>
       <anchor>a0bb94abb8c7aa981d1aae1d47469b316</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>connections_created</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>a9a5d4cac43fdb9d880edef1dc778273a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>connections_failed</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>a1dfc46ee0c2d61f3facd7daf0d93f0a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>connections_timed_out</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>ac9548fe3f865ed4d99c7366b0f64937d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>stale_connections_removed</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>a822cd3674285e9ee5a3e541b42cc8f9a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>pool_exhausted_waits</name>
+      <anchorfile>SocketHTTPClient_8h.html</anchorfile>
+      <anchor>a2388e92ca44d26b70ce6904abbcf0d13</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -12836,6 +15795,20 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
+      <type>int</type>
+      <name>request_read_timeout_ms</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>aae5feb01178bcf0f41095d30ec718240</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>response_write_timeout_ms</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a7c6c518a1861c3ee10b133297d47444c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
       <type>size_t</type>
       <name>max_connections</name>
       <anchorfile>SocketHTTPServer_8h.html</anchorfile>
@@ -12847,6 +15820,20 @@
       <name>max_requests_per_connection</name>
       <anchorfile>SocketHTTPServer_8h.html</anchorfile>
       <anchor>a411213143aa7aa44c27de10d645da50c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>max_connections_per_client</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>a5ed0dc426933e2d4fc092685c2f37d3b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>max_concurrent_requests</name>
+      <anchorfile>SocketHTTPServer_8h.html</anchorfile>
+      <anchor>aff8dceb976118d9ad3726cac957f6e97</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -12870,6 +15857,166 @@
     </member>
   </compound>
   <compound kind="struct">
+    <name>SocketLogContext</name>
+    <filename>SocketUtil_8h.html</filename>
+    <anchor>structSocketLogContext</anchor>
+    <member kind="variable">
+      <type>char</type>
+      <name>trace_id</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a8402ba34dfee2fe5117f314071abdcb6</anchor>
+      <arglist>[37]</arglist>
+    </member>
+    <member kind="variable">
+      <type>char</type>
+      <name>request_id</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>aabe172fe52213ef60ac3e0ce7c4c65d1</anchor>
+      <arglist>[37]</arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>connection_fd</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a405290fc36dbecb3fb00cb2e78358d82</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>SocketLogField</name>
+    <filename>SocketUtil_8h.html</filename>
+    <anchor>structSocketLogField</anchor>
+    <member kind="variable">
+      <type>const char *</type>
+      <name>key</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>a9705557e4cfe1b045966c7d2b40a7ab6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const char *</type>
+      <name>value</name>
+      <anchorfile>SocketUtil_8h.html</anchorfile>
+      <anchor>aca7bd4c1b8c5b420e41ba5c949495d96</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>SocketMetrics_HistogramSnapshot</name>
+    <filename>SocketMetrics_8h.html</filename>
+    <anchor>structSocketMetrics__HistogramSnapshot</anchor>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>count</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ae65da7d40c1b636bd5d688c6ab36176a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>sum</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a4088038d1883a118b9818b15772582b0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>min</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ad353d502eaa2af3ba9f5027c024bdad1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>max</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a92aa2bf4c9b19983fa3417159929df81</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>mean</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a39b4ba97214ae557d6664a60881731ee</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>p50</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a8b172fd16d7a741708785715acde4b57</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>p75</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a86b3fe4f2f16158efcd05739be0be2c7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>p90</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ae642be44e4add2bc25d809c22cf75a28</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>p95</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a5009b287c8bfd50a87d3278be6b76d6b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>p99</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a4d8eaa0353371329afd9e8ebc7cd5fd0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>p999</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a117aeb2403d9212a3476a0f5f506d1ba</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>SocketMetrics_Snapshot</name>
+    <filename>SocketMetrics_8h.html</filename>
+    <anchor>structSocketMetrics__Snapshot</anchor>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>timestamp_ms</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>af00d4802f4ec042ec70c2b6cca0ef439</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>counters</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>ac3d167ae7fb495b924c2b9ace863445a</anchor>
+      <arglist>[SOCKET_COUNTER_METRIC_COUNT]</arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>gauges</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a052116cbac741e511d1354dcee03aa14</anchor>
+      <arglist>[SOCKET_GAUGE_METRIC_COUNT]</arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketMetrics_HistogramSnapshot</type>
+      <name>histograms</name>
+      <anchorfile>SocketMetrics_8h.html</anchorfile>
+      <anchor>a2df8269ceffa8db53191bb61ce5a4e08</anchor>
+      <arglist>[SOCKET_HISTOGRAM_METRIC_COUNT]</arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
     <name>SocketMetricsSnapshot</name>
     <filename>SocketUtil_8h.html</filename>
     <anchor>structSocketMetricsSnapshot</anchor>
@@ -12879,6 +16026,102 @@
       <anchorfile>SocketUtil_8h.html</anchorfile>
       <anchor>ad4bec382c27642da1ce45dcf676684e6</anchor>
       <arglist>[SOCKET_METRIC_COUNT]</arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>SocketPool_Stats</name>
+    <filename>SocketPool_8h.html</filename>
+    <anchor>structSocketPool__Stats</anchor>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_added</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>ab6181f0361304b9dc0ca22b2b5b63422</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_removed</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>af3a48d372811cdc1995449539e7fa244</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_reused</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>ae4a38edcc6f06de4427a3fab17df8059</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_health_checks</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a2b87e1f7d01cca34d283f2a198d55582</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_health_failures</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>abc785aa6c8bf923e442c2d8ff6de17ea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_validation_failures</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a12b67886dc33365dacefdbf6898dbaa9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_idle_cleanups</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a93f503d21a575444867f078913f9fdeb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>current_active</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a27243a0956a835deca459b97c6d102f6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>current_idle</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>ae3f9de28a86d86ad1fb47f81934396e4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>max_connections</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>aeb1d2bc03018eb8cf873ca9c7cf1d591</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>reuse_rate</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>acddc4228468fcc3b685ed125e6dcbe4c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>avg_connection_age_sec</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a95ea2264615189143e51b08b2372bde5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>churn_rate_per_sec</name>
+      <anchorfile>SocketPool_8h.html</anchorfile>
+      <anchor>a58155d80879fa628a209dcf26d9ed813</anchor>
+      <arglist></arglist>
     </member>
   </compound>
   <compound kind="struct">
@@ -12925,6 +16168,13 @@
       <name>extra_headers</name>
       <anchorfile>SocketProxy_8h.html</anchorfile>
       <anchor>a1a667bd87d678a4e0cb64c14aa0ffd3d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketTLSContext_T *</type>
+      <name>tls_ctx</name>
+      <anchorfile>SocketProxy_8h.html</anchorfile>
+      <anchor>a7bd4b0058fd2a869d2ccb2f2d1fd740c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -13011,6 +16261,79 @@
     </member>
   </compound>
   <compound kind="struct">
+    <name>SocketRetry_Policy</name>
+    <filename>SocketRetry_8h.html</filename>
+    <anchor>structSocketRetry__Policy</anchor>
+    <member kind="variable">
+      <type>int</type>
+      <name>max_attempts</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>ae4fc9812297db12344b02e21d638a618</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>initial_delay_ms</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a3738bc8ccc78b3f879df09d685494714</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>max_delay_ms</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>aa9acfb8be959ffd198d16e2446a30710</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>multiplier</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>ae292a46f8c68e19cb29e72d49b48317e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>jitter</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>ac44aa265265c65b8c29fd80aa3e0f61d</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>SocketRetry_Stats</name>
+    <filename>SocketRetry_8h.html</filename>
+    <anchor>structSocketRetry__Stats</anchor>
+    <member kind="variable">
+      <type>int</type>
+      <name>attempts</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a7b978de556278e018fccc199dadd4a7d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>last_error</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a560a11b7408ab6b745312cc2552aa387</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>total_delay_ms</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>aba725a298fa2b675bcdc8ea77ba8b27e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>total_time_ms</name>
+      <anchorfile>SocketRetry_8h.html</anchorfile>
+      <anchor>a939cbbd0e2c2537391a2e970991a1c9d</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
     <name>SocketSecurityLimits</name>
     <filename>SocketSecurity_8h.html</filename>
     <anchor>structSocketSecurityLimits</anchor>
@@ -13033,6 +16356,13 @@
       <name>max_connections</name>
       <anchorfile>SocketSecurity_8h.html</anchorfile>
       <anchor>a144d096fe53602d03295e18d0464232a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>arena_max_alloc_size</name>
+      <anchorfile>SocketSecurity_8h.html</anchorfile>
+      <anchor>a504b6f75d0cf2e797ef5e838aea973ba</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -13110,6 +16440,34 @@
       <name>http2_max_header_list_size</name>
       <anchorfile>SocketSecurity_8h.html</anchorfile>
       <anchor>af58899d383dfd65a1776b6c01d209728</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>tls_max_alpn_protocols</name>
+      <anchorfile>SocketSecurity_8h.html</anchorfile>
+      <anchor>aa7bc20fce590c4e1ee35ec373c3c680e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>tls_max_alpn_len</name>
+      <anchorfile>SocketSecurity_8h.html</anchorfile>
+      <anchor>a8192f6e1eaf496898449c75854882f6d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>tls_max_alpn_total_bytes</name>
+      <anchorfile>SocketSecurity_8h.html</anchorfile>
+      <anchor>a3766cfcaec1653412a3c0310bf5f289c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>hpack_max_table_size</name>
+      <anchorfile>SocketSecurity_8h.html</anchorfile>
+      <anchor>a3be4155262be8579d60d13ca4dbf2456</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -13388,6 +16746,13 @@
       <anchor>a7429afc5fc724582c34ce06cb3d3f5fa</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable">
+      <type>unsigned</type>
+      <name>hash_seed</name>
+      <anchorfile>SocketSYNProtect_8h.html</anchorfile>
+      <anchor>ae8aea9e4cc570341d5cc8901f3cb814e</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>SocketSYNProtect_Stats</name>
@@ -13472,6 +16837,46 @@
     </member>
   </compound>
   <compound kind="struct">
+    <name>SocketTimeouts_Extended_T</name>
+    <filename>SocketConfig_8h.html</filename>
+    <anchor>structSocketTimeouts__Extended__T</anchor>
+    <member kind="variable">
+      <type>int</type>
+      <name>dns_timeout_ms</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>abea0b97e93ab95cb1b94a4df51dc4755</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>connect_timeout_ms</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a933213f87e1e773af80ae832d9cc6d47</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>tls_timeout_ms</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a07e7e9d0eba5129a439e104e64d0d9b4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>request_timeout_ms</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a1528bed9d677efdb9685cca4b0eb9b69</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>operation_timeout_ms</name>
+      <anchorfile>SocketConfig_8h.html</anchorfile>
+      <anchor>a69615eb41365b169b06a5dd15bfb53c6</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
     <name>SocketTimeouts_T</name>
     <filename>SocketConfig_8h.html</filename>
     <anchor>structSocketTimeouts__T</anchor>
@@ -13506,13 +16911,6 @@
       <name>state</name>
       <anchorfile>SocketUTF8_8h.html</anchorfile>
       <anchor>a48fe27868c9570c5e60189e4c91dbd26</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>uint32_t</type>
-      <name>codepoint</name>
-      <anchorfile>SocketUTF8_8h.html</anchorfile>
-      <anchor>a82cadcfc6425d071d2bacfa22470676c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">

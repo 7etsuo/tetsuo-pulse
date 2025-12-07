@@ -1,6 +1,8 @@
 var SocketSecurity_8h =
 [
     [ "SocketSecurityLimits", "SocketSecurity_8h.html#structSocketSecurityLimits", [
+      [ "arena_max_alloc_size", "SocketSecurity_8h.html#a504b6f75d0cf2e797ef5e838aea973ba", null ],
+      [ "hpack_max_table_size", "SocketSecurity_8h.html#a3be4155262be8579d60d13ca4dbf2456", null ],
       [ "http1_max_chunk_size", "SocketSecurity_8h.html#a09d8b8ba81dbdfd054852704521c3e3b", null ],
       [ "http1_max_request_line", "SocketSecurity_8h.html#ae52e94d13f09404b25ea5e6ce8b9a244", null ],
       [ "http2_max_concurrent_streams", "SocketSecurity_8h.html#aa6ebf2ebd20aad81fe2e3878840af1d3", null ],
@@ -22,6 +24,9 @@ var SocketSecurity_8h =
       [ "timeout_dns_ms", "SocketSecurity_8h.html#a59af712b30f6d94c681a272029976e7d", null ],
       [ "timeout_idle_ms", "SocketSecurity_8h.html#a896b59f955bafd0a580728136858820f", null ],
       [ "timeout_request_ms", "SocketSecurity_8h.html#ac1311a4929ead36e3ce915720008e206", null ],
+      [ "tls_max_alpn_len", "SocketSecurity_8h.html#a8192f6e1eaf496898449c75854882f6d", null ],
+      [ "tls_max_alpn_protocols", "SocketSecurity_8h.html#aa7bc20fce590c4e1ee35ec373c3c680e", null ],
+      [ "tls_max_alpn_total_bytes", "SocketSecurity_8h.html#a3766cfcaec1653412a3c0310bf5f289c", null ],
       [ "tls_max_cert_chain_depth", "SocketSecurity_8h.html#a51b777a9f3dbcfa40b08249110df5c21", null ],
       [ "tls_session_cache_size", "SocketSecurity_8h.html#af0437c76d97f1c1060cd64292f1d27ff", null ],
       [ "ws_max_frame_size", "SocketSecurity_8h.html#a71de06121ef88aa459fc42e9f087be64", null ],
@@ -36,6 +41,8 @@ var SocketSecurity_8h =
     [ "SocketSecurity_check_add", "SocketSecurity_8h.html#a808c8911cd0b5d129ad1a3ea2e25e2b0", null ],
     [ "SocketSecurity_check_multiply", "SocketSecurity_8h.html#aa5e5f01fe52f1e55de0e686cf32003aa", null ],
     [ "SocketSecurity_check_size", "SocketSecurity_8h.html#aa01e772f756ea6885182b7800f50c5f7", null ],
+    [ "SocketSecurity_get_arena_limits", "SocketSecurity_8h.html#a6ad722cc32d48bcf38c13c56fb6716bd", null ],
+    [ "SocketSecurity_get_hpack_limits", "SocketSecurity_8h.html#abdf9fc30963bf73b15d168407144a3a1", null ],
     [ "SocketSecurity_get_http_limits", "SocketSecurity_8h.html#a06285f75bf78cdd2066e8cf6dd17906f", null ],
     [ "SocketSecurity_get_limits", "SocketSecurity_8h.html#a8285c075f5ae76fe9d20f4caaf1cee05", null ],
     [ "SocketSecurity_get_max_allocation", "SocketSecurity_8h.html#a79be1e38c94c11981392c4ef9b272a20", null ],

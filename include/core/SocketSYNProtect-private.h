@@ -122,6 +122,7 @@ struct SocketSYNProtect_T
 
   /* Configuration (copy of user config) */
   SocketSYNProtect_Config config;
+  unsigned hash_seed;  /**< Random seed for hash functions (collision mitigation) */
 
   /* IP state tracking hash table */
   SocketSYN_IPEntry **ip_table;  /**< Hash table buckets */
@@ -167,11 +168,8 @@ struct SocketSYNProtect_T
  * Returns: Hash bucket index
  * Thread-safe: Yes (pure function)
  */
-static inline unsigned
-synprotect_hash_ip (const char *ip, size_t table_size)
-{
-  return socket_util_hash_djb2 (ip, (unsigned)table_size);
-}
+unsigned
+synprotect_hash_ip (SocketSYNProtect_T protect, const char *ip, unsigned table_size);
 
 /**
  * synprotect_clamp_score - Clamp score to [0.0, 1.0]

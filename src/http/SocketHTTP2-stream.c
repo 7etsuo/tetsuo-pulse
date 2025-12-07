@@ -18,8 +18,11 @@
 #include "socket/SocketBuf.h"
 
 #include <assert.h>
+#include <inttypes.h>
 
 #include <string.h>
+
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 #include "core/SocketConfig.h"
 
 
@@ -144,11 +147,18 @@ http2_stream_lookup (const SocketHTTP2_Conn_T conn, uint32_t stream_id)
 
   assert (conn);
 
-  idx = socket_util_hash_uint (stream_id, HTTP2_STREAM_HASH_SIZE);
+  idx = socket_util_hash_uint_seeded (stream_id, HTTP2_STREAM_HASH_SIZE, conn->hash_seed);
   stream = conn->streams[idx];
 
+  int chain_len = 0;
   while (stream)
     {
+      chain_len++;
+      if (chain_len > 32) {  /* Prevent DoS from hash collision chains */
+        SOCKET_LOG_WARN_MSG("Long hash chain in stream lookup: %d (potential DoS)", chain_len);
+        http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+        return NULL;
+      }
       if (stream->id == stream_id)
         return stream;
       stream = stream->hash_next;
@@ -166,14 +176,16 @@ http2_stream_lookup (const SocketHTTP2_Conn_T conn, uint32_t stream_id)
  * @stream: Stream to initialize
  * @conn: Parent connection
  * @stream_id: Stream identifier
+ * @is_local_initiated: True if locally initiated stream
  */
 static void
 init_stream_fields (SocketHTTP2_Stream_T stream, const SocketHTTP2_Conn_T conn,
-                    uint32_t stream_id)
+                    uint32_t stream_id, bool is_local_initiated)
 {
   stream->id = stream_id;
   stream->state = HTTP2_STREAM_STATE_IDLE;
   stream->conn = conn;
+  stream->is_local_initiated = is_local_initiated;
   stream->send_window = conn->initial_send_window;
   stream->recv_window = conn->initial_recv_window;
   stream->pending_end_stream = 0;
@@ -222,16 +234,31 @@ remove_stream_from_hash (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
  * ============================================================================ */
 
 SocketHTTP2_Stream_T
-http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id)
+http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id, int is_local_initiated)
 {
   SocketHTTP2_Stream_T stream;
 
   assert (conn);
   assert (stream_id > 0);
 
-  if (conn->stream_count
-      >= conn->local_settings[SETTINGS_IDX_MAX_CONCURRENT_STREAMS])
+  /* Rate limit stream creations */
+  if (!SocketRateLimit_try_acquire(conn->stream_open_rate_limit, 1)) {
+    SOCKET_LOG_DEBUG_MSG("Stream creation rate limited for conn %p", (void*)conn);
     return NULL;
+  }
+
+  /* Enforce correct concurrent limits based on initiator */
+  uint32_t *open_count = is_local_initiated ? &conn->server_initiated_count : &conn->client_initiated_count;
+  uint32_t limit = is_local_initiated ? conn->peer_settings[SETTINGS_IDX_MAX_CONCURRENT_STREAMS] : conn->local_settings[SETTINGS_IDX_MAX_CONCURRENT_STREAMS];
+  if (*open_count >= limit) {
+    SOCKET_LOG_DEBUG_MSG("Max concurrent streams exceeded: local=%d, count=%u >= limit=%u", is_local_initiated, *open_count, limit);
+    return NULL;
+  }
+
+  /* Legacy total count check (deprecate later) */
+  if (conn->stream_count >= conn->local_settings[SETTINGS_IDX_MAX_CONCURRENT_STREAMS]) {
+    return NULL;
+  }
 
   stream = Arena_calloc (conn->arena, 1, sizeof (struct SocketHTTP2_Stream), __FILE__, __LINE__);
   if (!stream)
@@ -239,7 +266,7 @@ http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id)
       SOCKET_LOG_ERROR_MSG ("failed to allocate HTTP/2 stream");
       return NULL;
     }
-  init_stream_fields (stream, conn, stream_id);
+  init_stream_fields (stream, conn, stream_id, is_local_initiated);
 
   stream->recv_buf = SocketBuf_new (conn->arena, HTTP2_STREAM_RECV_BUF_SIZE);
   if (!stream->recv_buf)
@@ -250,6 +277,11 @@ http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id)
     }
 
   add_stream_to_hash (conn, stream);
+
+  /* Update initiated count */
+  uint32_t *count = stream->is_local_initiated ? &conn->server_initiated_count : &conn->client_initiated_count;
+  (*count)++;
+
   return stream;
 }
 
@@ -259,7 +291,13 @@ http2_stream_destroy (SocketHTTP2_Stream_T stream)
   if (!stream)
     return;
 
-  remove_stream_from_hash (stream->conn, stream);
+  SocketHTTP2_Conn_T conn = stream->conn;
+
+  /* Update initiated count before remove */
+  uint32_t *count = stream->is_local_initiated ? &conn->server_initiated_count : &conn->client_initiated_count;
+  if (*count > 0) (*count)--;  /* Defensive >0 */
+
+  remove_stream_from_hash (conn, stream);
 
   if (stream->recv_buf)
     SocketBuf_release (&stream->recv_buf);
@@ -619,7 +657,7 @@ SocketHTTP2_Stream_new (SocketHTTP2_Conn_T conn)
   if (stream_id > HTTP2_MAX_STREAM_ID)
     return NULL;
 
-  stream = http2_stream_create (conn, stream_id);
+  stream = http2_stream_create (conn, stream_id, 1 /* local initiated */);
   if (!stream)
     return NULL;
 
@@ -646,6 +684,13 @@ SocketHTTP2_Stream_close (SocketHTTP2_Stream_T stream,
                           SocketHTTP2_ErrorCode error_code)
 {
   assert (stream);
+
+  /* Rate limit closes to prevent RST flood */
+  if (!SocketRateLimit_try_acquire(stream->conn->stream_close_rate_limit, 1)) {
+    SOCKET_LOG_DEBUG_MSG("Stream close rate limited for stream %u", stream->id);
+    stream->state = HTTP2_STREAM_STATE_CLOSED;  /* Close locally anyway */
+    return;
+  }
 
   if (stream->state != HTTP2_STREAM_STATE_CLOSED)
     {
@@ -1113,6 +1158,35 @@ SocketHTTP2_Stream_send_request (SocketHTTP2_Stream_T stream,
   assert (stream);
   assert (request);
 
+  /* Validate pseudo-header inputs for security */
+  TRY {
+    const char *path = request->path ? request->path : "/";
+    size_t path_len = strlen(path);
+    if (path_len == 0 || path[0] != '/' || path_len > SOCKETHTTP_MAX_URI_LEN) {
+      RAISE(SocketHTTP2_ProtocolError);
+    }
+
+    const char *scheme = request->scheme ? request->scheme : "https";
+    if (strcmp(scheme, "http") != 0 && strcmp(scheme, "https") != 0) {
+      SOCKET_RAISE_MSG(SocketHTTP2, SocketHTTP2_ProtocolError, "Invalid :scheme '%s'", scheme);
+    }
+    if (strlen(scheme) > SOCKETHTTP_MAX_HEADER_VALUE) {  /* Reasonable limit */
+      RAISE(SocketHTTP2_ProtocolError);
+    }
+
+    const char *authority = request->authority ? request->authority : "";
+    size_t auth_len = strlen(authority);
+    if (auth_len > SOCKETHTTP_MAX_URI_LEN || strchr(authority, '\r') || strchr(authority, '\n')) {
+      SOCKET_RAISE_MSG(SocketHTTP2, SocketHTTP2_ProtocolError, "Invalid :authority '%s'", authority);
+    }
+
+    if (request->method == HTTP_METHOD_UNKNOWN) {
+      SOCKET_RAISE_MSG(SocketHTTP2, SocketHTTP2_ProtocolError, "Invalid method %d", request->method);
+    }
+  } EXCEPT (SocketHTTP2) {
+    RERAISE;
+  } END_TRY;
+
   build_request_pseudo_headers (request, pseudo_headers);
 
   header_count
@@ -1149,6 +1223,21 @@ SocketHTTP2_Stream_send_response (SocketHTTP2_Stream_T stream,
 
   assert (stream);
   assert (response);
+
+  /* Validate response for security */
+  TRY {
+    if (!SocketHTTP_status_valid(response->status_code)) {
+      SOCKET_RAISE_MSG(SocketHTTP2, SocketHTTP2_ProtocolError, "Invalid status code %d", response->status_code);
+    }
+    if (response->headers) {
+      size_t hcount = SocketHTTP_Headers_count(response->headers);
+      if (hcount > SOCKETHTTP2_MAX_DECODED_HEADERS) {
+        RAISE(SocketHTTP2_ProtocolError);
+      }
+    }
+  } EXCEPT (SocketHTTP2) {
+    RERAISE;
+  } END_TRY;
 
   status_len
       = snprintf (status_buf, sizeof (status_buf), "%d", response->status_code);
@@ -1390,7 +1479,7 @@ SocketHTTP2_Stream_push_promise (SocketHTTP2_Stream_T stream,
   promised_id = conn->next_stream_id;
   conn->next_stream_id += 2;
 
-  pushed = http2_stream_create (conn, promised_id);
+  pushed = http2_stream_create (conn, promised_id, 1 /* local push */);
   if (!pushed)
     return NULL;
   pushed->is_push_stream = 1;
@@ -1501,13 +1590,22 @@ http2_process_data (SocketHTTP2_Conn_T conn,
       return 0;
     }
 
+  /* Check buffer space before writing full frame - defensive against app not draining */
+  if (SocketBuf_space(stream->recv_buf) < padded.len) {
+    SOCKET_LOG_WARN_MSG("Insufficient recv_buf space for DATA frame on stream %u: need %zu, space %zu",
+                        stream->id, padded.len, SocketBuf_space(stream->recv_buf));
+    http2_send_stream_error(conn, stream->id, HTTP2_FLOW_CONTROL_ERROR);
+    return -1;
+  }
+
   if (http2_flow_consume_recv (conn, stream, header->length) < 0)
     {
       http2_send_connection_error (conn, HTTP2_FLOW_CONTROL_ERROR);
       return -1;
     }
 
-  SocketBuf_write (stream->recv_buf, padded.data, padded.len);
+  size_t written = SocketBuf_write (stream->recv_buf, padded.data, padded.len);
+  assert(written == padded.len);  /* Should be full after space check */
 
   if (header->flags & HTTP2_FLAG_END_STREAM)
     stream->end_stream_received = 1;
@@ -1547,7 +1645,7 @@ http2_get_or_create_stream_for_headers (SocketHTTP2_Conn_T conn, uint32_t stream
           return NULL;
         }
 
-      stream = http2_stream_create (conn, stream_id);
+      stream = http2_stream_create (conn, stream_id, 0 /* peer initiated */);
       if (!stream)
         {
           http2_send_stream_error (conn, stream_id, HTTP2_REFUSED_STREAM);
@@ -1691,6 +1789,11 @@ http2_process_headers (SocketHTTP2_Conn_T conn,
       return -1;
     }
 
+  /* Reset continuation counter for new header block */
+  conn->continuation_frame_count = 0;
+  conn->expecting_continuation = !(header->flags & HTTP2_FLAG_END_HEADERS);
+  conn->continuation_stream_id = header->stream_id;
+
   error
       = http2_stream_transition (stream, HTTP2_FRAME_HEADERS, header->flags, 0);
   if (error != HTTP2_NO_ERROR)
@@ -1749,6 +1852,19 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
       return -1;
     }
 
+  /* Limit number of CONTINUATION frames to prevent DoS */
+  conn->continuation_frame_count++;
+  if (conn->continuation_frame_count > SOCKETHTTP2_MAX_CONTINUATION_FRAMES)
+    {
+      SOCKET_LOG_WARN_MSG ("HTTP/2 CONTINUATION flood detected "
+                           "(%" PRIu32 " frames for stream %u), "
+                           "closing connection",
+                           conn->continuation_frame_count,
+                           header->stream_id);
+      http2_send_connection_error (conn, HTTP2_ENHANCE_YOUR_CALM);
+      return -1;
+    }
+
   max_header_list = conn->local_settings[SETTINGS_IDX_MAX_HEADER_LIST_SIZE];
   if (stream->header_block_len + header->length > max_header_list)
     {
@@ -1772,6 +1888,10 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
   if (header->flags & HTTP2_FLAG_END_HEADERS)
     {
       conn->expecting_continuation = 0;
+      conn->continuation_frame_count = 0; /* Reset for next header block */
+      /* Process the complete header block */
+      return process_complete_header_block (conn, stream, stream->header_block,
+                                            stream->header_block_len);
       conn->continuation_stream_id = 0;
 
       if (http2_decode_headers (conn, stream, stream->header_block,
@@ -1885,13 +2005,18 @@ http2_process_push_promise (SocketHTTP2_Conn_T conn,
       return -1;
     }
 
-  promised = http2_stream_create (conn, promised_id);
+  promised = http2_stream_create (conn, promised_id, 1 /* local server-initiated push */);
   if (!promised)
     {
       http2_send_stream_error (conn, promised_id, HTTP2_REFUSED_STREAM);
       return 0;
     }
   promised->is_push_stream = 1;
+
+  /* Reset continuation counter for new push header block */
+  conn->continuation_frame_count = 0;
+  conn->expecting_continuation = !(header->flags & HTTP2_FLAG_END_HEADERS);
+  conn->continuation_stream_id = header->stream_id; /* Parent stream for CONTINUATION */
 
   promised->state = HTTP2_STREAM_STATE_RESERVED_REMOTE;
 

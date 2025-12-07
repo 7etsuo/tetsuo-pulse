@@ -27,6 +27,11 @@
 #include <time.h>
 
 #include "core/Except.h"
+#include "core/SocketSecurity.h"
+#include "core/SocketCrypto.h"
+#include "core/SocketUtil.h"
+
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 
 #include "core/Arena.h"
 #include "core/SocketUtil.h"
@@ -58,29 +63,54 @@ SOCKET_DECLARE_MODULE_EXCEPTION(SocketHTTPClient);
  * ============================================================================ */
 
 /**
+ * is_valid_cookie_octet - Check if char is valid in cookie name/value
+ * @c: Character to check
+ *
+ * Returns: 1 if valid, 0 if invalid
+ *
+ * Per RFC 6265 §3.1, cookie-octet excludes CTL chars (0-31, 127-159).
+ * For unquoted strings, also excludes ; = , and space.
+ * Since we parse quoted, allow " in quoted context, but for simplicity,
+ * reject all CTL and key separators.
+ */
+static int
+is_valid_cookie_octet (unsigned char c)
+{
+  /* Reject CTL chars */
+  if (c <= 31 || (c >= 127 && c <= 159))
+    return 0;
+
+  /* Reject separators that would break parsing */
+  if (c == ';' || c == '=' || c == ',' || c == ' ')
+    return 0;
+
+  return 1;
+}
+
+/**
  * cookie_hash - Hash function for cookie lookup (domain:path:name)
  * @domain: Cookie domain (case-insensitive)
  * @path: Cookie path (case-sensitive)
  * @name: Cookie name (case-sensitive)
  * @table_size: Hash table size
+ * @seed: Random seed for collision resistance
  *
  * Returns: Hash bucket index
  *
- * Uses DJB2 algorithm with additive variant for consistency with
- * socket_util_hash_djb2* functions. Domain is hashed case-insensitively
- * per RFC 6265, while path and name are case-sensitive.
- * Uses SOCKET_UTIL_DJB2_SEED from SocketUtil.h for consistency.
+ * Uses DJB2 algorithm with randomization for collision resistance.
+ * Domain is hashed case-insensitively per RFC 6265.
  */
 static unsigned
 cookie_hash (const char *domain, const char *path, const char *name,
-             size_t table_size)
+             size_t table_size, unsigned seed)
 {
   unsigned h_domain = socket_util_hash_djb2_ci(domain, table_size);
   unsigned h_path = socket_util_hash_djb2(path, table_size);
   unsigned h_name = socket_util_hash_djb2(name, table_size);
 
-  /* Combine hashes sequentially to approximate original behavior */
-  unsigned hash = h_domain;
+  /* Mix with seed for collision resistance */
+  unsigned hash = seed;
+  hash ^= h_domain;
   hash = ((hash << 5) + hash + h_path) % table_size;
   hash = ((hash << 5) + hash + h_name) % table_size;
 
@@ -232,7 +262,19 @@ parse_max_age (const char *value, size_t len)
   if (age <= 0)
     return 1; /* Expire immediately */
 
-  return time (NULL) + age;
+  /* Clamp age to maximum allowed */
+  if (age > HTTPCLIENT_MAX_COOKIE_AGE_SEC)
+    age = HTTPCLIENT_MAX_COOKIE_AGE_SEC;
+
+  /* Safe addition to prevent overflow */
+  time_t now = time (NULL);
+  time_t expires;
+  size_t temp;
+  if (!SocketSecurity_check_add ((size_t)now, (size_t)age, &temp))
+    return 1; /* On overflow, expire immediately */
+  expires = (time_t)temp;
+
+  return expires;
 }
 
 /* SameSite constants */
@@ -325,6 +367,8 @@ SocketHTTPClient_CookieJar_new (void)
 
     jar->arena = arena;
     jar->hash_size = HTTPCLIENT_COOKIE_HASH_SIZE;
+    jar->max_cookies = HTTPCLIENT_MAX_COOKIES;
+    SocketCrypto_random_bytes ((unsigned char *)&jar->hash_seed, sizeof (jar->hash_seed));
 
     jar->hash_table = Arena_calloc (arena, HTTPCLIENT_COOKIE_HASH_SIZE, sizeof (CookieEntry *), __FILE__, __LINE__);
     if (jar->hash_table == NULL)
@@ -385,6 +429,41 @@ cookie_entry_update_value_flags (CookieEntry *entry,
 }
 
 /**
+ * evict_oldest_cookie - Remove the oldest cookie from jar
+ * @jar: Cookie jar
+ *
+ * Finds and removes the cookie with the oldest creation time.
+ * Thread-safe: No (caller must hold mutex)
+ */
+static void
+evict_oldest_cookie (SocketHTTPClient_CookieJar_T jar)
+{
+  time_t oldest_time = (time_t)-1;
+  CookieEntry **oldest_pp = NULL;
+  size_t i;
+
+  for (i = 0; i < jar->hash_size; i++) {
+    CookieEntry **pp = &jar->hash_table[i];
+    while (*pp != NULL) {
+      CookieEntry *entry = *pp;
+      if (entry->created < oldest_time) {
+        oldest_time = entry->created;
+        oldest_pp = pp;
+      }
+      pp = &entry->next;
+    }
+  }
+
+  if (oldest_pp != NULL) {
+    CookieEntry *entry = *oldest_pp;
+    *oldest_pp = entry->next;
+    jar->count--;
+  }
+}
+
+
+
+/**
  * cookie_entry_init_full - Initialize new cookie entry with full data
  * @entry: Pre-allocated entry to initialize
  * @cookie: Source cookie data
@@ -439,20 +518,32 @@ cookie_jar_find_entry (SocketHTTPClient_CookieJar_T jar,
                        const char *domain, const char *path, const char *name)
 {
   const char *effective_path = path ? path : "/";
-  unsigned hash = cookie_hash (domain, effective_path, name, jar->hash_size);
+  unsigned hash = cookie_hash (domain, effective_path, name, jar->hash_size, jar->hash_seed);
 
   CookieEntry *entry = jar->hash_table[hash];
+  int chain_len = 0;
   while (entry != NULL)
     {
+      chain_len++;
       const char *entry_path = entry->cookie.path ? entry->cookie.path : "/";
       if (strcmp (entry->cookie.name, name) == 0 &&
           strcasecmp (entry->cookie.domain, domain) == 0 &&
           strcmp (entry_path, effective_path) == 0)
         {
+          if (chain_len > HTTPCLIENT_COOKIE_MAX_CHAIN_LEN) {
+            SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                             "Hash collision chain too long (%d > %d), potential DoS",
+                             chain_len, HTTPCLIENT_COOKIE_MAX_CHAIN_LEN);
+          }
           return entry;
         }
       entry = entry->next;
     }
+  if (chain_len > HTTPCLIENT_COOKIE_MAX_CHAIN_LEN) {
+    SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                     "Hash collision chain too long (%d > %d), potential DoS",
+                     chain_len, HTTPCLIENT_COOKIE_MAX_CHAIN_LEN);
+  }
   return NULL;
 }
 
@@ -476,7 +567,7 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
 
   TRY
     const char *effective_path = cookie->path ? cookie->path : "/";
-    unsigned hash = cookie_hash (cookie->domain, effective_path, cookie->name, jar->hash_size);
+    unsigned hash = cookie_hash (cookie->domain, effective_path, cookie->name, jar->hash_size, jar->hash_seed);
 
     CookieEntry *entry = cookie_jar_find_entry (jar, cookie->domain, effective_path, cookie->name);
 
@@ -484,17 +575,39 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
       /* Replace existing cookie */
       cookie_entry_update_value_flags (entry, cookie, jar->arena);
     } else {
+      /* Check cookie limit */
+      if (jar->count >= jar->max_cookies) {
+        /* Try to clear expired first */
+        SocketHTTPClient_CookieJar_clear_expired (jar);
+        if (jar->count >= jar->max_cookies) {
+          /* Still full, evict oldest */
+          evict_oldest_cookie (jar);
+          if (jar->count >= jar->max_cookies) {
+            /* Eviction failed or jar corrupted, reject */
+            SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                             "Cookie jar at max capacity (%zu), rejecting new cookie",
+                             jar->max_cookies);
+            result = -1;
+            goto unlock;
+          }
+        }
+      }
+
       /* Create new entry (calloc to zero-initialize) */
       entry = Arena_calloc (jar->arena, 1, sizeof (*entry), __FILE__, __LINE__);
       if (entry == NULL)
         RAISE_HTTPCLIENT_ERROR(SocketHTTPClient_Failed);
 
       cookie_entry_init_full (entry, cookie, effective_path, jar->arena);
+      entry->created = time (NULL);
 
       /* Add to hash table */
       entry->next = jar->hash_table[hash];
       jar->hash_table[hash] = entry;
-      jar->count++;
+      if (!SocketSecurity_check_add (jar->count, 1, &jar->count)) {
+        /* Overflow, but unlikely with max_cookies=10000 */
+        jar->count++;
+      }
     }
   EXCEPT (SocketHTTPClient_Failed)
     result = -1;
@@ -503,6 +616,7 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
     /* No additional cleanup needed - arena retains memory on failure */
   END_TRY;;
 
+unlock:
   pthread_mutex_unlock (&jar->mutex);
   return result;
 }
@@ -580,6 +694,10 @@ SocketHTTPClient_CookieJar_clear_expired (SocketHTTPClient_CookieJar_T jar)
  * Cookie File Persistence
  * ============================================================================ */
 
+/**
+ * Thread-safety note: CookieJar_load is not thread-safe with concurrent
+ * operations on the same jar. Caller must ensure exclusive access.
+ */
 int
 SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
                                  const char *filename)
@@ -625,11 +743,72 @@ SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
 
       if (domain && path && secure && expires && name && value)
         {
+          /* Validate lengths */
+          size_t domain_len = strlen (domain);
+          size_t path_len = strlen (path);
+          size_t name_len = strlen (name);
+          size_t value_len = strlen (value);
+
+          if (!SocketSecurity_check_size (domain_len) ||
+              !SocketSecurity_check_size (path_len) ||
+              !SocketSecurity_check_size (name_len) ||
+              !SocketSecurity_check_size (value_len) ||
+              domain_len > HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN ||
+              path_len > HTTPCLIENT_COOKIE_MAX_PATH_LEN ||
+              name_len > HTTPCLIENT_COOKIE_MAX_NAME_LEN ||
+              value_len > HTTPCLIENT_COOKIE_MAX_VALUE_LEN) {
+            SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                             "Cookie rejected: field too long (domain:%zu, path:%zu, name:%zu, value:%zu)",
+                             domain_len, path_len, name_len, value_len);
+            continue;
+          }
+
+          /* Validate path starts with '/' */
+          if (path[0] != '/') {
+            SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                             "Cookie rejected: invalid path '%s' (must start with '/')", path);
+            continue;
+          }
+
+          /* Validate secure is TRUE or FALSE */
+          if (strcmp (secure, "TRUE") != 0 && strcmp (secure, "FALSE") != 0) {
+            SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                             "Cookie rejected: invalid secure flag '%s'", secure);
+            continue;
+          }
+
+          /* Validate expires is reasonable */
+          time_t expires_time = (time_t)strtoll (expires, NULL, 10);
+          time_t now = time (NULL);
+          if (expires_time != 0 && (expires_time < now - 86400 || expires_time > now + 365*24*3600LL)) {
+            SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                             "Cookie rejected: unreasonable expires %lld", (long long)expires_time);
+            continue;
+          }
+
+          /* Validate name/value characters */
+          int valid = 1;
+          for (size_t i = 0; i < name_len && valid; i++) {
+            if (!is_valid_cookie_octet ((unsigned char)name[i])) {
+              valid = 0;
+            }
+          }
+          for (size_t i = 0; i < value_len && valid; i++) {
+            if (!is_valid_cookie_octet ((unsigned char)value[i])) {
+              valid = 0;
+            }
+          }
+          if (!valid) {
+            SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                             "Cookie rejected: invalid characters in name/value");
+            continue;
+          }
+
           memset (&cookie, 0, sizeof (cookie));
           cookie.domain = domain;
           cookie.path = path;
           cookie.secure = (strcmp (secure, "TRUE") == 0);
-          cookie.expires = (time_t)strtoll (expires, NULL, 10);
+          cookie.expires = expires_time;
           cookie.name = name;
           cookie.value = value;
 
@@ -646,9 +825,17 @@ SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
   }
 
   fclose (f);
+
+  /* Clean up any expired cookies loaded from file */
+  SocketHTTPClient_CookieJar_clear_expired (jar);
+
   return 0;
 }
 
+/**
+ * Thread-safety note: CookieJar_save is not thread-safe with concurrent
+ * operations on the same jar. Caller must ensure exclusive access.
+ */
 int
 SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
                                  const char *filename)
@@ -678,6 +865,15 @@ SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
       while (entry != NULL)
         {
           const SocketHTTPClient_Cookie *c = &entry->cookie;
+
+          /* Validate no \r\n in name/value (breaks Netscape format) */
+          if (strchr (c->name, '\r') || strchr (c->name, '\n') ||
+              strchr (c->value, '\r') || strchr (c->value, '\n')) {
+            SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                             "Cookie '%s' contains \\r\\n, skipping save", c->name);
+            entry = entry->next;
+            continue;
+          }
 
           /* Format: domain\tflag\tpath\tsecure\texpires\tname\tvalue */
           fprintf (f, "%s\t%s\t%s\t%s\t%lld\t%s\t%s\n",
@@ -716,12 +912,20 @@ SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
  * @path: Request path
  * @is_secure: 1 if HTTPS, 0 if HTTP
  * @now: Current time for expiration check
+ * @enforce_samesite: 1 if SameSite enforcement enabled
+ * @is_cross_site: 1 if request is cross-site (default 0 for client)
+ * @is_top_level_nav: 1 if top-level navigation (default 1 for client)
+ * @is_safe_method: 1 if safe method (GET/HEAD/OPTIONS) (default 1 for client)
  *
  * Returns: 1 if cookie should be sent, 0 otherwise
+ *
+ * Enforces RFC 6265bis §5 SameSite attribute if enforce_samesite is set.
  */
 static int
 cookie_matches_request (const SocketHTTPClient_Cookie *cookie, const char *host,
-                        const char *path, int is_secure, time_t now)
+                        const char *path, int is_secure, time_t now,
+                        int enforce_samesite, int is_cross_site,
+                        int is_top_level_nav, int is_safe_method)
 {
   /* Check expiration */
   if (cookie->expires > 0 && cookie->expires < now)
@@ -739,13 +943,25 @@ cookie_matches_request (const SocketHTTPClient_Cookie *cookie, const char *host,
   if (!path_matches (path, cookie->path))
     return 0;
 
+  /* Enforce SameSite attribute per RFC 6265bis §5 */
+  if (enforce_samesite)
+    {
+      if (cookie->same_site == COOKIE_SAMESITE_STRICT && is_cross_site)
+        return 0;
+      if (cookie->same_site == COOKIE_SAMESITE_LAX &&
+          !(is_top_level_nav && is_safe_method))
+        return 0;
+      if (cookie->same_site == COOKIE_SAMESITE_NONE && !is_secure)
+        return 0;
+    }
+
   return 1;
 }
 
 int
 httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
                                 const SocketHTTP_URI *uri, char *output,
-                                size_t output_size)
+                                size_t output_size, int enforce_samesite)
 {
   size_t i;
   size_t written = 0;
@@ -768,12 +984,14 @@ httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
   for (i = 0; i < jar->hash_size; i++)
     {
       CookieEntry *entry = jar->hash_table[i];
+      int chain_len = 0;
       while (entry != NULL)
         {
+          chain_len++;
           const SocketHTTPClient_Cookie *c = &entry->cookie;
 
           if (!cookie_matches_request (c, uri->host, request_path, is_secure,
-                                       now))
+                                       now, enforce_samesite, 0, 1, 1))
             {
               entry = entry->next;
               continue;
@@ -801,6 +1019,11 @@ httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
 
           entry = entry->next;
         }
+      if (chain_len > HTTPCLIENT_COOKIE_MAX_CHAIN_LEN) {
+        SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                         "Hash collision chain too long (%d > %d), potential DoS",
+                         chain_len, HTTPCLIENT_COOKIE_MAX_CHAIN_LEN);
+      }
     }
 
   pthread_mutex_unlock (&jar->mutex);
@@ -979,10 +1202,26 @@ parse_cookie_name_value (const char **p, const char *end,
     return -1;
   }
 
+  /* Validate name characters */
+  for (size_t i = 0; i < name_len; i++) {
+    if (!is_valid_cookie_octet ((unsigned char)name_start[i])) {
+      HTTPCLIENT_ERROR_MSG("Invalid character in cookie name");
+      return -1;
+    }
+  }
+
   cookie->value = socket_util_arena_strndup (arena, value_start, val_len);
   if (cookie->value == NULL) {
     HTTPCLIENT_ERROR_MSG("socket_util_arena_strndup failed for cookie value");
     return -1;
+  }
+
+  /* Validate value characters */
+  for (size_t i = 0; i < val_len; i++) {
+    if (!is_valid_cookie_octet ((unsigned char)value_start[i])) {
+      HTTPCLIENT_ERROR_MSG("Invalid character in cookie value");
+      return -1;
+    }
   }
 
   *p = ptr;

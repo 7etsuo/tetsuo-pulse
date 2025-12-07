@@ -193,6 +193,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a439248f2ff7b87470520de0607569d06" id="r_a439248f2ff7b87470520de0607569d06"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTLS_8h.html#ad092160c037d01929df1bb8d5b75b43c">TLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS_8h.html#a439248f2ff7b87470520de0607569d06">SocketTLS_handshake_loop</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int timeout_ms)</td></tr>
 <tr class="memdesc:a439248f2ff7b87470520de0607569d06"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLS_handshake_loop - Complete handshake with timeout (non-blocking) @socket: The socket instance with TLS enabled @timeout_ms: Maximum time to wait for handshake completion (0 for non-blocking)  <br /></td></tr>
 <tr class="separator:a439248f2ff7b87470520de0607569d06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54a01327e253586278c0f740c2764010" id="r_a54a01327e253586278c0f740c2764010"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTLS_8h.html#ad092160c037d01929df1bb8d5b75b43c">TLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS_8h.html#a54a01327e253586278c0f740c2764010">SocketTLS_handshake_auto</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
+<tr class="memdesc:a54a01327e253586278c0f740c2764010"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLS_handshake_auto - Complete handshake using socket's timeout config @socket: The socket instance with TLS enabled.  <br /></td></tr>
+<tr class="separator:a54a01327e253586278c0f740c2764010"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab11506db6f41f31e9fc170b3d0e848f1" id="r_ab11506db6f41f31e9fc170b3d0e848f1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS_8h.html#ab11506db6f41f31e9fc170b3d0e848f1">SocketTLS_shutdown</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
 <tr class="memdesc:ab11506db6f41f31e9fc170b3d0e848f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLS_shutdown - Perform graceful TLS connection shutdown @socket: The socket instance with TLS enabled.  <br /></td></tr>
 <tr class="separator:ab11506db6f41f31e9fc170b3d0e848f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -227,14 +230,19 @@ Variables</h2></td></tr>
 <tr class="memdesc:ae74b3921236213de2e979bbd2039e452"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="SocketTLS_8h.html">SocketTLS.h</a> - TLS/SSL Socket Integration (TLS1.3-Only by Default)  <br /></td></tr>
 <tr class="separator:ae74b3921236213de2e979bbd2039e452"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc011202dd4f2e080b6ea8eb0f24287e" id="r_abc011202dd4f2e080b6ea8eb0f24287e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS_8h.html#abc011202dd4f2e080b6ea8eb0f24287e">SocketTLS_Failed</a></td></tr>
+<tr class="memdesc:abc011202dd4f2e080b6ea8eb0f24287e"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLS_Failed - General TLS operation failure.  <br /></td></tr>
 <tr class="separator:abc011202dd4f2e080b6ea8eb0f24287e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a82be75dd764021fb64cd6824768e2254" id="r_a82be75dd764021fb64cd6824768e2254"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS_8h.html#a82be75dd764021fb64cd6824768e2254">SocketTLS_HandshakeFailed</a></td></tr>
+<tr class="memdesc:a82be75dd764021fb64cd6824768e2254"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLS_HandshakeFailed - TLS handshake could not complete.  <br /></td></tr>
 <tr class="separator:a82be75dd764021fb64cd6824768e2254"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe406e483a861198db5bca58300f1728" id="r_abe406e483a861198db5bca58300f1728"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS_8h.html#abe406e483a861198db5bca58300f1728">SocketTLS_VerifyFailed</a></td></tr>
+<tr class="memdesc:abe406e483a861198db5bca58300f1728"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLS_VerifyFailed - Certificate verification failure.  <br /></td></tr>
 <tr class="separator:abe406e483a861198db5bca58300f1728"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad97195716332983bae10a77f275740bd" id="r_ad97195716332983bae10a77f275740bd"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS_8h.html#ad97195716332983bae10a77f275740bd">SocketTLS_ProtocolError</a></td></tr>
+<tr class="memdesc:ad97195716332983bae10a77f275740bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLS_ProtocolError - TLS protocol error.  <br /></td></tr>
 <tr class="separator:ad97195716332983bae10a77f275740bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa724dbe4115729ef621c0f1f74b5afd6" id="r_aa724dbe4115729ef621c0f1f74b5afd6"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS_8h.html#aa724dbe4115729ef621c0f1f74b5afd6">SocketTLS_ShutdownFailed</a></td></tr>
+<tr class="memdesc:aa724dbe4115729ef621c0f1f74b5afd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLS_ShutdownFailed - TLS shutdown failure.  <br /></td></tr>
 <tr class="separator:aa724dbe4115729ef621c0f1f74b5afd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -283,7 +291,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketTLS_8h_source.html#l00058">58</a> of file <a class="el" href="SocketTLS_8h_source.html">SocketTLS.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLS_8h_source.html#l00110">110</a> of file <a class="el" href="SocketTLS_8h_source.html">SocketTLS.h</a>.</p>
 
 </div>
 </div>
@@ -308,7 +316,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="ad092160c037d01929df1bb8d5b75b43caca78870a105a05fffb3d5d6ca022aff2" name="ad092160c037d01929df1bb8d5b75b43caca78870a105a05fffb3d5d6ca022aff2"></a>TLS_HANDSHAKE_ERROR&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLS_8h_source.html#l00038">38</a> of file <a class="el" href="SocketTLS_8h_source.html">SocketTLS.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLS_8h_source.html#l00090">90</a> of file <a class="el" href="SocketTLS_8h_source.html">SocketTLS.h</a>.</p>
 
 </div>
 </div>
@@ -330,7 +338,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="ac32c3958835b92ff683ae15f78448694abbcde32e72faadf92044da1ccc76f183" name="ac32c3958835b92ff683ae15f78448694abbcde32e72faadf92044da1ccc76f183"></a>TLS_VERIFY_CLIENT_ONCE&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLS_8h_source.html#l00049">49</a> of file <a class="el" href="SocketTLS_8h_source.html">SocketTLS.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLS_8h_source.html#l00101">101</a> of file <a class="el" href="SocketTLS_8h_source.html">SocketTLS.h</a>.</p>
 
 </div>
 </div>
@@ -578,6 +586,37 @@ Variables</h2></td></tr>
 <p>Note: Integrates with SocketPoll by checking tls_last_handshake_state for pending I/O. </p>
 
 <p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+
+</div>
+</div>
+<a id="a54a01327e253586278c0f740c2764010" name="a54a01327e253586278c0f740c2764010"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a54a01327e253586278c0f740c2764010">&#9670;&#160;</a></span>SocketTLS_handshake_auto()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="SocketTLS_8h.html#ad092160c037d01929df1bb8d5b75b43c">TLSHandshakeState</a> SocketTLS_handshake_auto </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
+          <td class="paramname"><em>socket</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTLS_handshake_auto - Complete handshake using socket's timeout config @socket: The socket instance with TLS enabled. </p>
+<p>Convenience function that performs a TLS handshake using the socket's configured operation_timeout_ms. If operation_timeout_ms is 0 or not set, uses SOCKET_DEFAULT_TLS_HANDSHAKE_TIMEOUT_MS (30 seconds).</p>
+<p>This is the recommended function for production code as it automatically uses the socket's timeout configuration, ensuring consistent timeout behavior across the application.</p>
+<p>Returns: TLSHandshakeState (COMPLETE on success, ERROR on failure/timeout) Raises: SocketTLS_HandshakeFailed on error or timeout Thread-safe: No </p>
 
 </div>
 </div>
@@ -845,6 +884,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>SocketTLS_Failed - General TLS operation failure. </p>
+<p>Category: PROTOCOL Retryable: NO - Usually indicates configuration or setup error </p>
+
 </div>
 </div>
 <a id="a82be75dd764021fb64cd6824768e2254" name="a82be75dd764021fb64cd6824768e2254"></a>
@@ -866,6 +908,14 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>SocketTLS_HandshakeFailed - TLS handshake could not complete. </p>
+<p>Category: PROTOCOL Retryable: NO - Protocol/version mismatch or server rejection</p>
+<p>Raised when handshake fails due to:</p><ul>
+<li><a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p" title="Socket_new - Create a new socket @domain: Address family (AF_INET, AF_INET6, etc.) @type: Socket type...">Protocol</a> version mismatch</li>
+<li>Cipher suite negotiation failure</li>
+<li>Server rejection </li>
+</ul>
 
 <p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
@@ -891,6 +941,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>SocketTLS_ProtocolError - TLS protocol error. </p>
+<p>Category: PROTOCOL Retryable: NO - <a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p" title="Socket_new - Create a new socket @domain: Address family (AF_INET, AF_INET6, etc.) @type: Socket type...">Protocol</a> violation by peer </p>
+
 </div>
 </div>
 <a id="aa724dbe4115729ef621c0f1f74b5afd6" name="aa724dbe4115729ef621c0f1f74b5afd6"></a>
@@ -913,6 +966,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>SocketTLS_ShutdownFailed - TLS shutdown failure. </p>
+<p>Category: PROTOCOL Retryable: NO - Connection already broken </p>
+
 </div>
 </div>
 <a id="abe406e483a861198db5bca58300f1728" name="abe406e483a861198db5bca58300f1728"></a>
@@ -934,6 +990,15 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>SocketTLS_VerifyFailed - Certificate verification failure. </p>
+<p>Category: PROTOCOL Retryable: NO - Certificate won't change on retry</p>
+<p>Raised when peer certificate fails verification:</p><ul>
+<li>Expired certificate</li>
+<li>Invalid signature</li>
+<li>Hostname mismatch</li>
+<li>Unknown CA </li>
+</ul>
 
 <p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 

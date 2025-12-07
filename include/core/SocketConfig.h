@@ -145,7 +145,7 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* Maximum allocation size for arena */
 #ifndef ARENA_MAX_ALLOC_SIZE
-#define ARENA_MAX_ALLOC_SIZE (100 * 1024 * 1024) /* 100MB */
+#define ARENA_MAX_ALLOC_SIZE SOCKET_SECURITY_MAX_ALLOCATION /* Matches centralized limit */
 #endif
 
 /* Maximum number of free chunks to cache for reuse */
@@ -313,9 +313,9 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_TIMER_MIN_INTERVAL_MS 1
 #endif
 
-/* Initial timer ID value (wraps at UINT_MAX) */
+/* Initial timer ID value (wraps at UINT64_MAX) */
 #ifndef SOCKET_TIMER_INITIAL_ID
-#define SOCKET_TIMER_INITIAL_ID 1u
+#define SOCKET_TIMER_INITIAL_ID 1ULL
 #endif
 
 /* ============================================================================

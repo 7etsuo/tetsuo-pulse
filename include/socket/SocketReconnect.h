@@ -162,16 +162,23 @@ typedef void (*SocketReconnect_Callback) (T conn,
  * SocketReconnect_HealthCheck - Custom health check function
  * @conn: Reconnection context
  * @socket: Current connected socket
+ * @timeout_ms: Maximum block time in ms (0=non-blocking check)
  * @userdata: User data passed to SocketReconnect_new()
  *
  * Returns: 1 if healthy, 0 if unhealthy (triggers reconnect)
  *
- * Optional custom health check. If not provided, socket readability
- * with zero bytes (EOF) is used as health indicator.
+ * Optional custom health check. Must respect timeout_ms to prevent DoS.
+ * Default check uses poll with timeout_ms or 100ms min.
+ * If not provided, default is used.
  */
 typedef int (*SocketReconnect_HealthCheck) (T conn, Socket_T socket,
-                                            void *userdata);
-
+                                            int timeout_ms, void *userdata);
+/**
+ * @timeout_ms: Maximum time to block in ms, 0=no timeout (use with caution)
+ *
+ * New in v1.1: timeout_ms parameter for DoS protection.
+ * Custom checks should respect this limit to prevent blocking.
+ */
 /* ============================================================================
  * Context Creation and Destruction
  * ============================================================================ */
@@ -364,8 +371,9 @@ extern void SocketReconnect_tick (T conn);
  *
  * Thread-safe: No
  *
- * Sets a custom health check function. Default health check polls the
- * socket for readability and treats zero bytes (EOF) as unhealthy.
+ * Sets a custom health check function. Custom checks must respect
+ * policy.health_check_timeout_ms to avoid blocking the calling thread.
+ * Default health check polls socket with configurable timeout.
  */
 extern void SocketReconnect_set_health_check (T conn,
                                               SocketReconnect_HealthCheck check);

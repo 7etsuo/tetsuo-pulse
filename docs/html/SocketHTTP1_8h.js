@@ -3,6 +3,8 @@ var SocketHTTP1_8h =
     [ "SocketHTTP1_Config", "SocketHTTP1_8h.html#structSocketHTTP1__Config", [
       [ "allow_obs_fold", "SocketHTTP1_8h.html#acf3abe5c5f8346ef4dc94771023f0c65", null ],
       [ "max_chunk_size", "SocketHTTP1_8h.html#a210e4001f9c4495e5e59ec63992fafcf", null ],
+      [ "max_decompressed_size", "SocketHTTP1_8h.html#aeda690045f7731461b2a5f29d9c3cc03", null ],
+      [ "max_header_line", "SocketHTTP1_8h.html#ad52814be2bcde961f89fd28531af8471", null ],
       [ "max_header_name", "SocketHTTP1_8h.html#a8672fe4cd385d1f07f2a28af17f2bb33", null ],
       [ "max_header_size", "SocketHTTP1_8h.html#a108f87a5b1d893862a9a53da200141b2", null ],
       [ "max_header_value", "SocketHTTP1_8h.html#a88447b7bd33d2baa80abe9ee97c64b21", null ],
@@ -11,8 +13,11 @@ var SocketHTTP1_8h =
       [ "max_trailer_size", "SocketHTTP1_8h.html#a92d57170c7f01130d0b2f55e869bc273", null ],
       [ "strict_mode", "SocketHTTP1_8h.html#af0674dfcd3ff95d357c22a68ac7fcf36", null ]
     ] ],
+    [ "SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE", "SocketHTTP1_8h.html#a1ee215b68e39922641052018f578a002", null ],
+    [ "SOCKETHTTP1_INT_STRING_BUFSIZE", "SocketHTTP1_8h.html#a17c37ff959acffa4e20330b701877924", null ],
     [ "SOCKETHTTP1_MAX_CHUNK_EXT", "SocketHTTP1_8h.html#a2b4e16b62a1a792c810cb1fc94519c85", null ],
     [ "SOCKETHTTP1_MAX_CHUNK_SIZE", "SocketHTTP1_8h.html#a6a2a172023b9fc8609f638e37fc28781", null ],
+    [ "SOCKETHTTP1_MAX_HEADER_LINE", "SocketHTTP1_8h.html#afac78449ad6cedf3dc9f703d5bd338b1", null ],
     [ "SOCKETHTTP1_MAX_HEADER_NAME", "SocketHTTP1_8h.html#a5f5ecb6e846886cb5a2adf261a197f77", null ],
     [ "SOCKETHTTP1_MAX_HEADER_SIZE", "SocketHTTP1_8h.html#a11553aa6152c3065fee134ea4924cc26", null ],
     [ "SOCKETHTTP1_MAX_HEADER_VALUE", "SocketHTTP1_8h.html#a02fdc5c8df1cd6d293ce80c4647e8278", null ],
@@ -48,6 +53,7 @@ var SocketHTTP1_8h =
       [ "HTTP1_ERROR_INVALID_CONTENT_LENGTH", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ead50a7e38db6d2197a2e3b740f7b8bd2a", null ],
       [ "HTTP1_ERROR_INVALID_CHUNK_SIZE", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78eadecd89036519fac2069f6261967ad9a4", null ],
       [ "HTTP1_ERROR_CHUNK_TOO_LARGE", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea6b628f58fac38dbc2fb615ae075f053d", null ],
+      [ "HTTP1_ERROR_BODY_TOO_LARGE", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78eaeb698ed6d2d4a79eb41d9b69346e6743", null ],
       [ "HTTP1_ERROR_INVALID_TRAILER", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea9ad0d4f3b9cb3164139491d0f22f296c", null ],
       [ "HTTP1_ERROR_UNEXPECTED_EOF", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea45da2dd8b558188c3c25ec3ca678187f", null ],
       [ "HTTP1_ERROR_SMUGGLING_DETECTED", "SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea459fb16283ed5b28f9cb7b1dd988e229", null ]
@@ -88,5 +94,6 @@ var SocketHTTP1_8h =
     [ "SocketHTTP1_serialize_headers", "SocketHTTP1_8h.html#af49c3054b9785e30c0377c57b4df4bf4", null ],
     [ "SocketHTTP1_serialize_request", "SocketHTTP1_8h.html#a66bdb40cb195c23e4e02dfa41ad1e4b7", null ],
     [ "SocketHTTP1_serialize_response", "SocketHTTP1_8h.html#ab8921dc474a57cdb9e68ac329f70a100", null ],
-    [ "SocketHTTP1_ParseError", "SocketHTTP1_8h.html#ab0e624687447c4ade518d16bf70ac8a4", null ]
+    [ "SocketHTTP1_ParseError", "SocketHTTP1_8h.html#ab0e624687447c4ade518d16bf70ac8a4", null ],
+    [ "SocketHTTP1_SerializeError", "SocketHTTP1_8h.html#a7fe3d14ed6f02dfecfc98f4872d95372", null ]
 ];

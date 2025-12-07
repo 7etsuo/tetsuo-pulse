@@ -121,11 +121,14 @@ $(document).ready(function(){initNavTree('SocketUtil_8h.html',''); initResizable
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;errno.h&gt;</code><br />
+<code>#include &lt;limits.h&gt;</code><br />
 <code>#include &lt;stdarg.h&gt;</code><br />
 <code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &lt;stdio.h&gt;</code><br />
 <code>#include &lt;string.h&gt;</code><br />
+<code>#include &lt;time.h&gt;</code><br />
+<code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketConfig_8h_source.html">core/SocketConfig.h</a>&quot;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -133,20 +136,26 @@ $(document).ready(function(){initNavTree('SocketUtil_8h.html',''); initResizable
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="SocketUtil_8h__incl.svg" width="100%" height="437"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="SocketUtil_8h__incl.svg" width="100%" height="492"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
 </div><div class="textblock"><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> This graph shows which files directly or indirectly include this file:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketUtil_8h__dep__incl.svg" width="111" height="110"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketUtil_8h__dep__incl.svg" width="154" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <p><a href="SocketUtil_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
+<tr class="memitem:structSocketLogContext" id="r_structSocketLogContext"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#structSocketLogContext">SocketLogContext</a></td></tr>
+<tr class="memdesc:structSocketLogContext"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="SocketUtil_8h.html#structSocketLogContext" title="SocketLogContext - Thread-local logging context for correlation.">SocketLogContext</a> - Thread-local logging context for correlation.  <a href="SocketUtil_8h.html#structSocketLogContext">More...</a><br /></td></tr>
+<tr class="separator:structSocketLogContext"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketLogField" id="r_structSocketLogField"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#structSocketLogField">SocketLogField</a></td></tr>
+<tr class="memdesc:structSocketLogField"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="SocketUtil_8h.html#structSocketLogField" title="SocketLogField - Key-value pair for structured logging.">SocketLogField</a> - Key-value pair for structured logging.  <a href="SocketUtil_8h.html#structSocketLogField">More...</a><br /></td></tr>
+<tr class="separator:structSocketLogField"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:structSocketMetricsSnapshot" id="r_structSocketMetricsSnapshot"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#structSocketMetricsSnapshot">SocketMetricsSnapshot</a></td></tr>
 <tr class="memdesc:structSocketMetricsSnapshot"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="SocketUtil_8h.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot - Atomic snapshot of all metric values.">SocketMetricsSnapshot</a> - Atomic snapshot of all metric values.  <a href="SocketUtil_8h.html#structSocketMetricsSnapshot">More...</a><br /></td></tr>
 <tr class="separator:structSocketMetricsSnapshot"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -166,6 +175,23 @@ Data Structures</h2></td></tr>
 Macros</h2></td></tr>
 <tr class="memitem:ae461bf5ddae6eda683926a6303af87f6" id="r_ae461bf5ddae6eda683926a6303af87f6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>&#160;&#160;&#160;&quot;Socket&quot;</td></tr>
 <tr class="separator:ae461bf5ddae6eda683926a6303af87f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a365ac6909cf8507f035810946214e639" id="r_a365ac6909cf8507f035810946214e639"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a365ac6909cf8507f035810946214e639">SOCKET_LOG_TRACE_MSG</a>(fmt, ...)&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#a32c7a8dfa2948f777cdb62152fe2f6ac">SocketLog_emitf</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1a92a6d90e1c955ab3ad5fff67e93e969e">SOCKET_LOG_TRACE</a>, <a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>, fmt, ##__VA_ARGS__)</td></tr>
+<tr class="separator:a365ac6909cf8507f035810946214e639"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7853a630bcaead9d41536ccbfd598f6d" id="r_a7853a630bcaead9d41536ccbfd598f6d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a7853a630bcaead9d41536ccbfd598f6d">SOCKET_LOG_DEBUG_MSG</a>(fmt, ...)&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#a32c7a8dfa2948f777cdb62152fe2f6ac">SocketLog_emitf</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1afcef44613645b3fd4a45bf5b4bfdbba7">SOCKET_LOG_DEBUG</a>, <a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>, fmt, ##__VA_ARGS__)</td></tr>
+<tr class="separator:a7853a630bcaead9d41536ccbfd598f6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9fe70c7ab8b971af2971f3a102b82819" id="r_a9fe70c7ab8b971af2971f3a102b82819"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a9fe70c7ab8b971af2971f3a102b82819">SOCKET_LOG_INFO_MSG</a>(fmt, ...)&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#a32c7a8dfa2948f777cdb62152fe2f6ac">SocketLog_emitf</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1a0c366302769a94f7e8f4d535f4cc5716">SOCKET_LOG_INFO</a>, <a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>, fmt, ##__VA_ARGS__)</td></tr>
+<tr class="separator:a9fe70c7ab8b971af2971f3a102b82819"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae560ccd4aef66d44e8ecbd256844059c" id="r_ae560ccd4aef66d44e8ecbd256844059c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#ae560ccd4aef66d44e8ecbd256844059c">SOCKET_LOG_WARN_MSG</a>(fmt, ...)&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#a32c7a8dfa2948f777cdb62152fe2f6ac">SocketLog_emitf</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1ae3b46610cd2f65cecc4fa333a827212c">SOCKET_LOG_WARN</a>, <a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>, fmt, ##__VA_ARGS__)</td></tr>
+<tr class="separator:ae560ccd4aef66d44e8ecbd256844059c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16642c35dec627aeb4976538671b1552" id="r_a16642c35dec627aeb4976538671b1552"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a>(fmt, ...)&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#a32c7a8dfa2948f777cdb62152fe2f6ac">SocketLog_emitf</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1a541aa883db8e38a0c52a2d7ccfb795b3">SOCKET_LOG_ERROR</a>, <a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>, fmt, ##__VA_ARGS__)</td></tr>
+<tr class="separator:a16642c35dec627aeb4976538671b1552"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b6e85cf504e70eab7723ba1b685fcdb" id="r_a6b6e85cf504e70eab7723ba1b685fcdb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a6b6e85cf504e70eab7723ba1b685fcdb">SOCKET_LOG_FATAL_MSG</a>(fmt, ...)&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#a32c7a8dfa2948f777cdb62152fe2f6ac">SocketLog_emitf</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1a675d837d7437c7792d86366a567acb57">SOCKET_LOG_FATAL</a>, <a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>, fmt, ##__VA_ARGS__)</td></tr>
+<tr class="separator:a6b6e85cf504e70eab7723ba1b685fcdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0a8020773c3515507db1705a81b7fe4" id="r_af0a8020773c3515507db1705a81b7fe4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#af0a8020773c3515507db1705a81b7fe4">SOCKET_LOG_ID_SIZE</a>&#160;&#160;&#160;37</td></tr>
+<tr class="separator:af0a8020773c3515507db1705a81b7fe4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7bcc2412d2238abb586fedf1e5fd6f0f" id="r_a7bcc2412d2238abb586fedf1e5fd6f0f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a7bcc2412d2238abb586fedf1e5fd6f0f">SOCKET_LOG_FIELDS</a>(...)</td></tr>
+<tr class="memdesc:a7bcc2412d2238abb586fedf1e5fd6f0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SOCKET_LOG_FIELDS - Convenience macro for creating field arrays.  <br /></td></tr>
+<tr class="separator:a7bcc2412d2238abb586fedf1e5fd6f0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb8273a8b69ebd471d3bf7da0290349b" id="r_acb8273a8b69ebd471d3bf7da0290349b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#acb8273a8b69ebd471d3bf7da0290349b">SOCKET_ERROR_APPLY_TRUNCATION</a>(ret)</td></tr>
 <tr class="memdesc:acb8273a8b69ebd471d3bf7da0290349b"><td class="mdescLeft">&#160;</td><td class="mdescRight">SOCKET_ERROR_APPLY_TRUNCATION - Apply truncation marker if message was cut @ret: Return value from snprintf.  <br /></td></tr>
 <tr class="separator:acb8273a8b69ebd471d3bf7da0290349b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -214,6 +240,9 @@ Typedefs</h2></td></tr>
 <tr class="memitem:add820ca01810b616cfe1d6fef0cbf899" id="r_add820ca01810b616cfe1d6fef0cbf899"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#add820ca01810b616cfe1d6fef0cbf899">SocketLogCallback</a>) (void *userdata, <a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1">SocketLogLevel</a> level, const char *component, const char *message)</td></tr>
 <tr class="memdesc:add820ca01810b616cfe1d6fef0cbf899"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketLogCallback - Custom logging callback function type @userdata: User-provided context @level: Log severity level @component: Module/component name @message: Log message.  <br /></td></tr>
 <tr class="separator:add820ca01810b616cfe1d6fef0cbf899"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad6d1accb7b4404506736d8778ebe47e0" id="r_ad6d1accb7b4404506736d8778ebe47e0"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#ad6d1accb7b4404506736d8778ebe47e0">SocketLogStructuredCallback</a>) (void *userdata, <a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1">SocketLogLevel</a> level, const char *component, const char *message, const <a class="el" href="SocketUtil_8h.html#structSocketLogField">SocketLogField</a> *fields, size_t field_count, const <a class="el" href="SocketUtil_8h.html#structSocketLogContext">SocketLogContext</a> *context)</td></tr>
+<tr class="memdesc:ad6d1accb7b4404506736d8778ebe47e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketLogStructuredCallback - Extended callback with structured fields @userdata: User-provided context @level: Log severity level @component: Module/component name @message: Log message @fields: Array of key-value pairs (may be NULL) @field_count: Number of fields in array @context: Thread-local context (may be NULL)  <br /></td></tr>
+<tr class="separator:ad6d1accb7b4404506736d8778ebe47e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d3a15715d38d991d2e0227b21d70bf1" id="r_a3d3a15715d38d991d2e0227b21d70bf1"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a3d3a15715d38d991d2e0227b21d70bf1">SocketEventCallback</a>) (void *userdata, const <a class="el" href="SocketUtil_8h.html#structSocketEventRecord">SocketEventRecord</a> *event)</td></tr>
 <tr class="memdesc:a3d3a15715d38d991d2e0227b21d70bf1"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketEventCallback - Event handler callback type @userdata: User-provided context @event: Event record.  <br /></td></tr>
 <tr class="separator:a3d3a15715d38d991d2e0227b21d70bf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -266,6 +295,14 @@ Enumerations</h2></td></tr>
 &#160;&#160;<a class="el" href="SocketUtil_8h.html#a422e43ad3ca4ce64261dda7879e73e5aaa03c9846d735de7d02e5238fc55eef2d">SOCKET_METRIC_POOL_DRAIN_INITIATED</a>
 , <br />
 &#160;&#160;<a class="el" href="SocketUtil_8h.html#a422e43ad3ca4ce64261dda7879e73e5aa2b6bee98ce6b6dabc241e660f00ddfd0">SOCKET_METRIC_POOL_DRAIN_COMPLETED</a>
+, <br />
+&#160;&#160;<a class="el" href="SocketUtil_8h.html#a422e43ad3ca4ce64261dda7879e73e5aa4f5a9a50e20a5872837a315e260edd14">SOCKET_METRIC_POOL_HEALTH_CHECKS</a>
+, <br />
+&#160;&#160;<a class="el" href="SocketUtil_8h.html#a422e43ad3ca4ce64261dda7879e73e5aa8d93d6bb51819fafab7432caa04ccb3c">SOCKET_METRIC_POOL_HEALTH_FAILURES</a>
+, <br />
+&#160;&#160;<a class="el" href="SocketUtil_8h.html#a422e43ad3ca4ce64261dda7879e73e5aa964a9546827911dd206d1421fd350c2e">SOCKET_METRIC_POOL_VALIDATION_FAILURES</a>
+, <br />
+&#160;&#160;<a class="el" href="SocketUtil_8h.html#a422e43ad3ca4ce64261dda7879e73e5aa002fb5e2a1f84e978823670f7744f624">SOCKET_METRIC_POOL_IDLE_CLEANUPS</a>
 , <br />
 &#160;&#160;<a class="el" href="SocketUtil_8h.html#a422e43ad3ca4ce64261dda7879e73e5aaac38b493847141d2bfc1600c6b093fbb">SOCKET_METRIC_COUNT</a>
 <br />
@@ -344,6 +381,22 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:acf807f3c720486767d282324cacd4908"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketErrorCode - Error code enumeration mapping common errno values.  <a href="SocketUtil_8h.html#acf807f3c720486767d282324cacd4908">More...</a><br /></td></tr>
 <tr class="separator:acf807f3c720486767d282324cacd4908"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03afe0122d51352f66339825b1eb23b9" id="r_a03afe0122d51352f66339825b1eb23b9"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9">SocketErrorCategory</a> { <br />
+&#160;&#160;<a class="el" href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9a6652ea8ed6fd071490684c61ec3bb89b">SOCKET_ERROR_CATEGORY_NETWORK</a> = 0
+, <br />
+&#160;&#160;<a class="el" href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9a68506b7a00d8744bc266b799c46c253b">SOCKET_ERROR_CATEGORY_PROTOCOL</a>
+, <br />
+&#160;&#160;<a class="el" href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9a5dfb3fbb41aaf264675f3575bb6932f6">SOCKET_ERROR_CATEGORY_APPLICATION</a>
+, <br />
+&#160;&#160;<a class="el" href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9a71956723dac39958d452934301e4bd32">SOCKET_ERROR_CATEGORY_TIMEOUT</a>
+, <br />
+&#160;&#160;<a class="el" href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9aed5f3770fcdda96b52d1ec13776ab328">SOCKET_ERROR_CATEGORY_RESOURCE</a>
+, <br />
+&#160;&#160;<a class="el" href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9a1e44c5da343948255455a1f0fb019419">SOCKET_ERROR_CATEGORY_UNKNOWN</a>
+<br />
+ }</td></tr>
+<tr class="memdesc:a03afe0122d51352f66339825b1eb23b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketErrorCategory - High-level error classification.  <a href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9">More...</a><br /></td></tr>
+<tr class="separator:a03afe0122d51352f66339825b1eb23b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -365,15 +418,36 @@ Functions</h2></td></tr>
 <tr class="memitem:a9e7b0a943fc425eb44f0f22c7f2e304d" id="r_a9e7b0a943fc425eb44f0f22c7f2e304d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a9e7b0a943fc425eb44f0f22c7f2e304d">SocketLog_emitfv</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1">SocketLogLevel</a> level, const char *component, const char *fmt, va_list args)</td></tr>
 <tr class="memdesc:a9e7b0a943fc425eb44f0f22c7f2e304d"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketLog_emitfv - Emit formatted log message with va_list @level: Log level @component: Component name @fmt: Printf-style format string @args: Format arguments as va_list Thread-safe: Yes.  <br /></td></tr>
 <tr class="separator:a9e7b0a943fc425eb44f0f22c7f2e304d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad555b9c9e333d03766b0a0a5d1718111" id="r_ad555b9c9e333d03766b0a0a5d1718111"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#ad555b9c9e333d03766b0a0a5d1718111">SocketLog_setlevel</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1">SocketLogLevel</a> min_level)</td></tr>
+<tr class="memdesc:ad555b9c9e333d03766b0a0a5d1718111"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketLog_setlevel - Set minimum log level for filtering @min_level: Minimum level to emit (messages below this are suppressed)  <br /></td></tr>
+<tr class="separator:ad555b9c9e333d03766b0a0a5d1718111"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adea5df0324ab107503097ef91327cf1f" id="r_adea5df0324ab107503097ef91327cf1f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1">SocketLogLevel</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#adea5df0324ab107503097ef91327cf1f">SocketLog_getlevel</a> (void)</td></tr>
+<tr class="memdesc:adea5df0324ab107503097ef91327cf1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketLog_getlevel - Get current minimum log level.  <br /></td></tr>
+<tr class="separator:adea5df0324ab107503097ef91327cf1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c14479ea972fb3ae90c7f13d449e1ff" id="r_a0c14479ea972fb3ae90c7f13d449e1ff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a0c14479ea972fb3ae90c7f13d449e1ff">SocketLog_setcontext</a> (const <a class="el" href="SocketUtil_8h.html#structSocketLogContext">SocketLogContext</a> *ctx)</td></tr>
+<tr class="memdesc:a0c14479ea972fb3ae90c7f13d449e1ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketLog_setcontext - Set thread-local logging context @ctx: Context to copy (NULL clears context)  <br /></td></tr>
+<tr class="separator:a0c14479ea972fb3ae90c7f13d449e1ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1af6754916a1a307ddbbedd2a1f1497a" id="r_a1af6754916a1a307ddbbedd2a1f1497a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="SocketUtil_8h.html#structSocketLogContext">SocketLogContext</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a1af6754916a1a307ddbbedd2a1f1497a">SocketLog_getcontext</a> (void)</td></tr>
+<tr class="memdesc:a1af6754916a1a307ddbbedd2a1f1497a"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketLog_getcontext - Get thread-local logging context.  <br /></td></tr>
+<tr class="separator:a1af6754916a1a307ddbbedd2a1f1497a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a13d1f0df4c0447eba5d723c3f2a81ff3" id="r_a13d1f0df4c0447eba5d723c3f2a81ff3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a13d1f0df4c0447eba5d723c3f2a81ff3">SocketLog_clearcontext</a> (void)</td></tr>
+<tr class="memdesc:a13d1f0df4c0447eba5d723c3f2a81ff3"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketLog_clearcontext - Clear thread-local logging context.  <br /></td></tr>
+<tr class="separator:a13d1f0df4c0447eba5d723c3f2a81ff3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acea087e19ba17c0c7d2ee7eaf7be97d9" id="r_acea087e19ba17c0c7d2ee7eaf7be97d9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#acea087e19ba17c0c7d2ee7eaf7be97d9">SocketLog_setstructuredcallback</a> (<a class="el" href="SocketUtil_8h.html#ad6d1accb7b4404506736d8778ebe47e0">SocketLogStructuredCallback</a> callback, void *userdata)</td></tr>
+<tr class="memdesc:acea087e19ba17c0c7d2ee7eaf7be97d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketLog_setstructuredcallback - Set structured logging callback @callback: Callback function or NULL to disable structured logging @userdata: User data passed to callback.  <br /></td></tr>
+<tr class="separator:acea087e19ba17c0c7d2ee7eaf7be97d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0d6c6969a0d1866a35b8a7cb89a70dd" id="r_ab0d6c6969a0d1866a35b8a7cb89a70dd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#ab0d6c6969a0d1866a35b8a7cb89a70dd">SocketLog_emit_structured</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1">SocketLogLevel</a> level, const char *component, const char *message, const <a class="el" href="SocketUtil_8h.html#structSocketLogField">SocketLogField</a> *fields, size_t field_count)</td></tr>
+<tr class="memdesc:ab0d6c6969a0d1866a35b8a7cb89a70dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketLog_emit_structured - Emit log message with structured fields @level: Log level @component: Component name @message: Log message @fields: Array of key-value pairs (may be NULL) @field_count: Number of fields.  <br /></td></tr>
+<tr class="separator:ab0d6c6969a0d1866a35b8a7cb89a70dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84618017b97e3f0eeb3c4814e939a7b4" id="r_a84618017b97e3f0eeb3c4814e939a7b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a84618017b97e3f0eeb3c4814e939a7b4">SocketMetrics_increment</a> (<a class="el" href="SocketUtil_8h.html#a422e43ad3ca4ce64261dda7879e73e5a">SocketMetric</a> metric, unsigned long value)</td></tr>
 <tr class="memdesc:a84618017b97e3f0eeb3c4814e939a7b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketMetrics_increment - Increment a metric counter @metric: Metric to increment @value: Amount to add Thread-safe: Yes.  <br /></td></tr>
 <tr class="separator:a84618017b97e3f0eeb3c4814e939a7b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf35517a39395522a5884f9d92c7086d" id="r_adf35517a39395522a5884f9d92c7086d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#adf35517a39395522a5884f9d92c7086d">SocketMetrics_getsnapshot</a> (<a class="el" href="SocketUtil_8h.html#structSocketMetricsSnapshot">SocketMetricsSnapshot</a> *snapshot)</td></tr>
 <tr class="memdesc:adf35517a39395522a5884f9d92c7086d"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketMetrics_getsnapshot - Get atomic snapshot of all metrics @snapshot: Output structure to receive metric values Thread-safe: Yes.  <br /></td></tr>
 <tr class="separator:adf35517a39395522a5884f9d92c7086d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab129aa3dd03bc8e5670da9abf0c41a47" id="r_ab129aa3dd03bc8e5670da9abf0c41a47"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#ab129aa3dd03bc8e5670da9abf0c41a47">SocketMetrics_reset</a> (void)</td></tr>
-<tr class="memdesc:ab129aa3dd03bc8e5670da9abf0c41a47"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketMetrics_reset - Reset all metrics to zero Thread-safe: Yes.  <br /></td></tr>
-<tr class="separator:ab129aa3dd03bc8e5670da9abf0c41a47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9697727ca9f22ed6b849da5bc5f6742e" id="r_a9697727ca9f22ed6b849da5bc5f6742e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a9697727ca9f22ed6b849da5bc5f6742e">SocketMetrics_legacy_reset</a> (void)</td></tr>
+<tr class="memdesc:a9697727ca9f22ed6b849da5bc5f6742e"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketMetrics_legacy_reset - Reset legacy metrics to zero Thread-safe: Yes.  <br /></td></tr>
+<tr class="separator:a9697727ca9f22ed6b849da5bc5f6742e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6651459184d27e580841a193a5380bf8" id="r_a6651459184d27e580841a193a5380bf8"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a6651459184d27e580841a193a5380bf8">SocketMetrics_name</a> (<a class="el" href="SocketUtil_8h.html#a422e43ad3ca4ce64261dda7879e73e5a">SocketMetric</a> metric)</td></tr>
 <tr class="memdesc:a6651459184d27e580841a193a5380bf8"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketMetrics_name - Get human-readable name for a metric @metric: Metric to get name for Returns: Static string with metric name Thread-safe: Yes.  <br /></td></tr>
 <tr class="separator:a6651459184d27e580841a193a5380bf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -410,6 +484,14 @@ Functions</h2></td></tr>
 <tr class="memitem:a481ecfe6b9e5c83515c92d1808e4b2f9" id="r_a481ecfe6b9e5c83515c92d1808e4b2f9"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a481ecfe6b9e5c83515c92d1808e4b2f9">Socket_safe_strerror</a> (int errnum)</td></tr>
 <tr class="memdesc:a481ecfe6b9e5c83515c92d1808e4b2f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_safe_strerror - Thread-safe strerror implementation @errnum: Error number to convert Returns: Thread-local string describing the error Thread-safe: Yes.  <br /></td></tr>
 <tr class="separator:a481ecfe6b9e5c83515c92d1808e4b2f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4b19847d604cdc5896376e694ee2a9c1" id="r_a4b19847d604cdc5896376e694ee2a9c1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9">SocketErrorCategory</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a4b19847d604cdc5896376e694ee2a9c1">SocketError_categorize_errno</a> (int err)</td></tr>
+<tr class="memdesc:a4b19847d604cdc5896376e694ee2a9c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketError_categorize_errno - Categorize an errno value @err: errno value to categorize.  <br /></td></tr>
+<tr class="separator:a4b19847d604cdc5896376e694ee2a9c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac08e05a6f47966909427f4f327d33192" id="r_ac08e05a6f47966909427f4f327d33192"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#ac08e05a6f47966909427f4f327d33192">SocketError_category_name</a> (<a class="el" href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9">SocketErrorCategory</a> category)</td></tr>
+<tr class="separator:ac08e05a6f47966909427f4f327d33192"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78065a32bc90c30a5d062b0b9ac88163" id="r_a78065a32bc90c30a5d062b0b9ac88163"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a78065a32bc90c30a5d062b0b9ac88163">SocketError_is_retryable_errno</a> (int err)</td></tr>
+<tr class="memdesc:a78065a32bc90c30a5d062b0b9ac88163"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketError_is_retryable_errno - Check if errno indicates retryable error @err: errno value to check.  <br /></td></tr>
+<tr class="separator:a78065a32bc90c30a5d062b0b9ac88163"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a264bfa9d1cf07aa22446a4df6c4936bf" id="r_a264bfa9d1cf07aa22446a4df6c4936bf"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a264bfa9d1cf07aa22446a4df6c4936bf">Socket_get_monotonic_ms</a> (void)</td></tr>
 <tr class="memdesc:a264bfa9d1cf07aa22446a4df6c4936bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper macros for common module patterns - use RAISE_MODULE_ERROR macro defined in each module that sets module_name appropriately.  <br /></td></tr>
 <tr class="separator:a264bfa9d1cf07aa22446a4df6c4936bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -422,6 +504,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a81d733432a2030afb97cd12be61e7054" id="r_a81d733432a2030afb97cd12be61e7054"><td class="memItemLeft" align="right" valign="top">static unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a81d733432a2030afb97cd12be61e7054">socket_util_hash_uint</a> (unsigned value, unsigned table_size)</td></tr>
 <tr class="memdesc:a81d733432a2030afb97cd12be61e7054"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_util_hash_uint - Hash unsigned integer using golden ratio @value: Unsigned integer to hash @table_size: Hash table size (should be prime for best distribution)  <br /></td></tr>
 <tr class="separator:a81d733432a2030afb97cd12be61e7054"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2f441288fd2e497dd99474ef017f31f" id="r_ac2f441288fd2e497dd99474ef017f31f"><td class="memItemLeft" align="right" valign="top">static unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#ac2f441288fd2e497dd99474ef017f31f">socket_util_hash_uint_seeded</a> (unsigned value, unsigned table_size, uint32_t seed)</td></tr>
+<tr class="memdesc:ac2f441288fd2e497dd99474ef017f31f"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_util_hash_uint_seeded - Seeded hash for collision resistance in security contexts @value: Unsigned integer to hash @table_size: Hash table size (should be prime) @seed: Per-instance random seed (e.g., from SocketCrypto_random_bytes)  <br /></td></tr>
+<tr class="separator:ac2f441288fd2e497dd99474ef017f31f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9fdc2111b7d6f5bce04dce7a5af67dea" id="r_a9fdc2111b7d6f5bce04dce7a5af67dea"><td class="memItemLeft" align="right" valign="top">static unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a9fdc2111b7d6f5bce04dce7a5af67dea">socket_util_hash_djb2</a> (const char *str, unsigned table_size)</td></tr>
 <tr class="memdesc:a9fdc2111b7d6f5bce04dce7a5af67dea"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_util_hash_djb2 - Hash string using DJB2 algorithm @str: String to hash (must not be NULL) @table_size: Hash table size (should be prime for best distribution)  <br /></td></tr>
 <tr class="separator:a9fdc2111b7d6f5bce04dce7a5af67dea"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -438,6 +523,30 @@ Functions</h2></td></tr>
 <tr class="memdesc:acd7c2df90f755def2ac7e1edeef37538"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_util_round_up_pow2 - Round up to next power of 2 <br  />
 : Value to round up (must be &gt; 0)  <br /></td></tr>
 <tr class="separator:acd7c2df90f755def2ac7e1edeef37538"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1af76425187cb52fda8d569dcc931e2d" id="r_a1af76425187cb52fda8d569dcc931e2d"><td class="memItemLeft" align="right" valign="top">static char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a1af76425187cb52fda8d569dcc931e2d">socket_util_arena_strdup</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, const char *str)</td></tr>
+<tr class="memdesc:a1af76425187cb52fda8d569dcc931e2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_util_arena_strdup - Duplicate string into arena @arena: Arena for allocation @str: String to duplicate (may be NULL)  <br /></td></tr>
+<tr class="separator:a1af76425187cb52fda8d569dcc931e2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0309fe77e3df0b7cd2c662f77c21c045" id="r_a0309fe77e3df0b7cd2c662f77c21c045"><td class="memItemLeft" align="right" valign="top">static char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a0309fe77e3df0b7cd2c662f77c21c045">socket_util_arena_strndup</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, const char *str, size_t maxlen)</td></tr>
+<tr class="memdesc:a0309fe77e3df0b7cd2c662f77c21c045"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_util_arena_strndup - Duplicate string with max length into arena @arena: Arena for allocation @str: String to duplicate (may be NULL) @maxlen: Maximum characters to copy (excluding null terminator)  <br /></td></tr>
+<tr class="separator:a0309fe77e3df0b7cd2c662f77c21c045"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a528ca682da1482e87bfa1e2af9d9ccf1" id="r_a528ca682da1482e87bfa1e2af9d9ccf1"><td class="memItemLeft" align="right" valign="top">static int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a528ca682da1482e87bfa1e2af9d9ccf1">SocketTimeout_now_ms</a> (void)</td></tr>
+<tr class="memdesc:a528ca682da1482e87bfa1e2af9d9ccf1"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTimeout_now_ms - Get current monotonic time in milliseconds.  <br /></td></tr>
+<tr class="separator:a528ca682da1482e87bfa1e2af9d9ccf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab64414cb92e686d4410c702aecbc46be" id="r_ab64414cb92e686d4410c702aecbc46be"><td class="memItemLeft" align="right" valign="top">static int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#ab64414cb92e686d4410c702aecbc46be">SocketTimeout_deadline_ms</a> (int timeout_ms)</td></tr>
+<tr class="memdesc:ab64414cb92e686d4410c702aecbc46be"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTimeout_deadline_ms - Create deadline from timeout @timeout_ms: Timeout in milliseconds (0 or negative = no deadline)  <br /></td></tr>
+<tr class="separator:ab64414cb92e686d4410c702aecbc46be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a199880a57fe7bebb439b5d1f1aa967c7" id="r_a199880a57fe7bebb439b5d1f1aa967c7"><td class="memItemLeft" align="right" valign="top">static int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a199880a57fe7bebb439b5d1f1aa967c7">SocketTimeout_remaining_ms</a> (int64_t deadline_ms)</td></tr>
+<tr class="memdesc:a199880a57fe7bebb439b5d1f1aa967c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTimeout_remaining_ms - Calculate remaining time until deadline @deadline_ms: Deadline from <a class="el" href="SocketUtil_8h.html#ab64414cb92e686d4410c702aecbc46be" title="SocketTimeout_deadline_ms - Create deadline from timeout @timeout_ms: Timeout in milliseconds (0 or n...">SocketTimeout_deadline_ms()</a> (0 = no deadline)  <br /></td></tr>
+<tr class="separator:a199880a57fe7bebb439b5d1f1aa967c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22d242f7f47f94f867a687b05eaf1d2c" id="r_a22d242f7f47f94f867a687b05eaf1d2c"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a22d242f7f47f94f867a687b05eaf1d2c">SocketTimeout_expired</a> (int64_t deadline_ms)</td></tr>
+<tr class="memdesc:a22d242f7f47f94f867a687b05eaf1d2c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTimeout_expired - Check if deadline has passed @deadline_ms: Deadline from <a class="el" href="SocketUtil_8h.html#ab64414cb92e686d4410c702aecbc46be" title="SocketTimeout_deadline_ms - Create deadline from timeout @timeout_ms: Timeout in milliseconds (0 or n...">SocketTimeout_deadline_ms()</a> (0 = no deadline)  <br /></td></tr>
+<tr class="separator:a22d242f7f47f94f867a687b05eaf1d2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ade80c651b5f022bf9fec6aea303e71" id="r_a0ade80c651b5f022bf9fec6aea303e71"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a0ade80c651b5f022bf9fec6aea303e71">SocketTimeout_poll_timeout</a> (int current_timeout_ms, int64_t deadline_ms)</td></tr>
+<tr class="memdesc:a0ade80c651b5f022bf9fec6aea303e71"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTimeout_poll_timeout - Adjust poll timeout to not exceed deadline @current_timeout_ms: Current poll timeout (-1 = infinite) @deadline_ms: Deadline from <a class="el" href="SocketUtil_8h.html#ab64414cb92e686d4410c702aecbc46be" title="SocketTimeout_deadline_ms - Create deadline from timeout @timeout_ms: Timeout in milliseconds (0 or n...">SocketTimeout_deadline_ms()</a> (0 = no deadline)  <br /></td></tr>
+<tr class="separator:a0ade80c651b5f022bf9fec6aea303e71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a179e76e704b475882b35ccef7e7f8787" id="r_a179e76e704b475882b35ccef7e7f8787"><td class="memItemLeft" align="right" valign="top">static int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUtil_8h.html#a179e76e704b475882b35ccef7e7f8787">SocketTimeout_elapsed_ms</a> (int64_t start_ms)</td></tr>
+<tr class="memdesc:a179e76e704b475882b35ccef7e7f8787"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTimeout_elapsed_ms - Calculate elapsed time since start @start_ms: Start time from <a class="el" href="SocketUtil_8h.html#a528ca682da1482e87bfa1e2af9d9ccf1" title="SocketTimeout_now_ms - Get current monotonic time in milliseconds.">SocketTimeout_now_ms()</a>  <br /></td></tr>
+<tr class="separator:a179e76e704b475882b35ccef7e7f8787"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -447,6 +556,78 @@ Variables</h2></td></tr>
 <tr class="separator:af5b8b680923b7f67d1ec0aa8c0b0434e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/><h2 class="groupheader">Data Structure Documentation</h2>
+<a name="structSocketLogContext" id="structSocketLogContext"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#structSocketLogContext">&#9670;&#160;</a></span>SocketLogContext</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct SocketLogContext</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="textblock"><p><a class="el" href="SocketUtil_8h.html#structSocketLogContext" title="SocketLogContext - Thread-local logging context for correlation.">SocketLogContext</a> - Thread-local logging context for correlation. </p>
+<p>Custom logging callbacks can access this via <a class="el" href="SocketUtil_8h.html#a1af6754916a1a307ddbbedd2a1f1497a" title="SocketLog_getcontext - Get thread-local logging context.">SocketLog_getcontext()</a> to include correlation IDs in structured log output. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00213">213</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+</div><table class="fieldtable">
+<tr><th colspan="3">Data Fields</th></tr>
+<tr><td class="fieldtype">
+<a id="a405290fc36dbecb3fb00cb2e78358d82" name="a405290fc36dbecb3fb00cb2e78358d82"></a>int</td>
+<td class="fieldname">
+connection_fd</td>
+<td class="fielddoc">
+Associated file descriptor (-1 if none) </td></tr>
+<tr><td class="fieldtype">
+<a id="aabe172fe52213ef60ac3e0ce7c4c65d1" name="aabe172fe52213ef60ac3e0ce7c4c65d1"></a>char</td>
+<td class="fieldname">
+request_id[37]</td>
+<td class="fielddoc">
+Request-specific ID. </td></tr>
+<tr><td class="fieldtype">
+<a id="a8402ba34dfee2fe5117f314071abdcb6" name="a8402ba34dfee2fe5117f314071abdcb6"></a>char</td>
+<td class="fieldname">
+trace_id[37]</td>
+<td class="fielddoc">
+Distributed trace ID (e.g., UUID) </td></tr>
+</table>
+
+</div>
+</div>
+<a name="structSocketLogField" id="structSocketLogField"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#structSocketLogField">&#9670;&#160;</a></span>SocketLogField</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct SocketLogField</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="textblock"><p><a class="el" href="SocketUtil_8h.html#structSocketLogField" title="SocketLogField - Key-value pair for structured logging.">SocketLogField</a> - Key-value pair for structured logging. </p>
+<p>Both key and value must be valid for the duration of the log call. Values should be pre-formatted as strings. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00283">283</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+</div><table class="fieldtable">
+<tr><th colspan="3">Data Fields</th></tr>
+<tr><td class="fieldtype">
+<a id="a9705557e4cfe1b045966c7d2b40a7ab6" name="a9705557e4cfe1b045966c7d2b40a7ab6"></a>const char *</td>
+<td class="fieldname">
+key</td>
+<td class="fielddoc">
+Field name (e.g., "fd", "bytes", "peer") </td></tr>
+<tr><td class="fieldtype">
+<a id="aca7bd4c1b8c5b420e41ba5c949495d96" name="aca7bd4c1b8c5b420e41ba5c949495d96"></a>const char *</td>
+<td class="fieldname">
+value</td>
+<td class="fielddoc">
+Field value as string. </td></tr>
+</table>
+
+</div>
+</div>
 <a name="structSocketMetricsSnapshot" id="structSocketMetricsSnapshot"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#structSocketMetricsSnapshot">&#9670;&#160;</a></span>SocketMetricsSnapshot</h2>
 
@@ -460,7 +641,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <div class="textblock"><p><a class="el" href="SocketUtil_8h.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot - Atomic snapshot of all metric values.">SocketMetricsSnapshot</a> - Atomic snapshot of all metric values. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00145">145</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00385">385</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -486,7 +667,7 @@ values[<a class="el" href="SocketUtil_8h.html#a422e43ad3ca4ce64261dda7879e73e5aa
 </div><div class="memdoc">
 <div class="textblock"><p><a class="el" href="SocketUtil_8h.html#structSocketEventRecord" title="SocketEventRecord - Event data structure.">SocketEventRecord</a> - Event data structure. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00221">221</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00464">464</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -523,7 +704,7 @@ type</td>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00225">225</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00468">468</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -560,7 +741,7 @@ poll</td>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00227">227</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00470">470</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -609,7 +790,7 @@ peer_port</td>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00235">235</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00478">478</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -640,7 +821,7 @@ port</td>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00240">240</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00483">483</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -678,7 +859,7 @@ timeout_ms</td>
 
 <p>SOCKET_DECLARE_MODULE_EXCEPTION - Declare thread-local exception @module_name: Module name (e.g., Socket, SocketBuf, SocketPoll) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00443">443</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00768">768</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -694,7 +875,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00429">429</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00673">673</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -710,7 +891,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00427">427</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00671">671</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -726,7 +907,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00433">433</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00677">677</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -742,7 +923,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00431">431</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00675">675</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -758,7 +939,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00426">426</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00670">670</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -774,7 +955,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00430">430</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00674">674</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -790,7 +971,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00425">425</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00669">669</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -806,7 +987,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00432">432</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00676">676</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -841,15 +1022,15 @@ timeout_ms</td>
 <div class="line">        }                                                                     \</div>
 <div class="line">    }                                                                         \</div>
 <div class="line">  while (0)</div>
-<div class="ttc" id="aSocketConfig_8h_html_a22d6df423f7c13e8d4f1b4192037f537"><div class="ttname"><a href="SocketConfig_8h.html#a22d6df423f7c13e8d4f1b4192037f537">SOCKET_ERROR_TRUNCATION_MARKER</a></div><div class="ttdeci">#define SOCKET_ERROR_TRUNCATION_MARKER</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l00438">SocketConfig.h:438</a></div></div>
-<div class="ttc" id="aSocketConfig_8h_html_a6969c4f53c182cf7112aa6dd0421571f"><div class="ttname"><a href="SocketConfig_8h.html#a6969c4f53c182cf7112aa6dd0421571f">SOCKET_ERROR_TRUNCATION_SIZE</a></div><div class="ttdeci">#define SOCKET_ERROR_TRUNCATION_SIZE</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l00442">SocketConfig.h:442</a></div></div>
-<div class="ttc" id="aSocketConfig_8h_html_ab28724709065957c1e13fd4c9b8e873a"><div class="ttname"><a href="SocketConfig_8h.html#ab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a></div><div class="ttdeci">#define SOCKET_ERROR_BUFSIZE</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l00419">SocketConfig.h:419</a></div></div>
+<div class="ttc" id="aSocketConfig_8h_html_a22d6df423f7c13e8d4f1b4192037f537"><div class="ttname"><a href="SocketConfig_8h.html#a22d6df423f7c13e8d4f1b4192037f537">SOCKET_ERROR_TRUNCATION_MARKER</a></div><div class="ttdeci">#define SOCKET_ERROR_TRUNCATION_MARKER</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l00528">SocketConfig.h:528</a></div></div>
+<div class="ttc" id="aSocketConfig_8h_html_a6969c4f53c182cf7112aa6dd0421571f"><div class="ttname"><a href="SocketConfig_8h.html#a6969c4f53c182cf7112aa6dd0421571f">SOCKET_ERROR_TRUNCATION_SIZE</a></div><div class="ttdeci">#define SOCKET_ERROR_TRUNCATION_SIZE</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l00532">SocketConfig.h:532</a></div></div>
+<div class="ttc" id="aSocketConfig_8h_html_ab28724709065957c1e13fd4c9b8e873a"><div class="ttname"><a href="SocketConfig_8h.html#ab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a></div><div class="ttdeci">#define SOCKET_ERROR_BUFSIZE</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l00509">SocketConfig.h:509</a></div></div>
 <div class="ttc" id="aSocketUtil_8h_html_aad11dd8cef83792df92437f8d7ae3991"><div class="ttname"><a href="SocketUtil_8h.html#aad11dd8cef83792df92437f8d7ae3991">socket_error_buf</a></div><div class="ttdeci">char socket_error_buf[1024]</div></div>
 </div><!-- fragment -->
 <p>SOCKET_ERROR_APPLY_TRUNCATION - Apply truncation marker if message was cut @ret: Return value from snprintf. </p>
 <p>Internal helper macro to eliminate duplication in error formatting. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00341">341</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00579">579</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -881,10 +1062,13 @@ timeout_ms</td>
 <b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">do</span>                                                                          \</div>
 <div class="line">    {                                                                         \</div>
 <div class="line">      <a class="code hl_variable" href="SocketUtil_8h.html#af5b8b680923b7f67d1ec0aa8c0b0434e">socket_last_errno</a> = errno;                                              \</div>
+<div class="line">      <span class="keywordtype">char</span> tmp_buf[<a class="code hl_define" href="SocketConfig_8h.html#ab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a>];                                     \</div>
 <div class="line">      <span class="keywordtype">int</span> _socket_error_ret = snprintf (                                      \</div>
-<div class="line">          <a class="code hl_variable" href="SocketUtil_8h.html#aad11dd8cef83792df92437f8d7ae3991">socket_error_buf</a>, <a class="code hl_define" href="SocketConfig_8h.html#ab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a>, fmt <span class="stringliteral">&quot; (errno: %d - %s)&quot;</span>,    \</div>
+<div class="line">          tmp_buf, <span class="keyword">sizeof</span>(tmp_buf), fmt <span class="stringliteral">&quot; (errno: %d - %s)&quot;</span>,                  \</div>
 <div class="line">          ##__VA_ARGS__, <a class="code hl_variable" href="SocketUtil_8h.html#af5b8b680923b7f67d1ec0aa8c0b0434e">socket_last_errno</a>,                                   \</div>
 <div class="line">          <a class="code hl_function" href="SocketUtil_8h.html#a481ecfe6b9e5c83515c92d1808e4b2f9">Socket_safe_strerror</a> (<a class="code hl_variable" href="SocketUtil_8h.html#af5b8b680923b7f67d1ec0aa8c0b0434e">socket_last_errno</a>));                          \</div>
+<div class="line">      strncpy (<a class="code hl_variable" href="SocketUtil_8h.html#aad11dd8cef83792df92437f8d7ae3991">socket_error_buf</a>, tmp_buf, <a class="code hl_define" href="SocketConfig_8h.html#ab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a> - 1);          \</div>
+<div class="line">      <a class="code hl_variable" href="SocketUtil_8h.html#aad11dd8cef83792df92437f8d7ae3991">socket_error_buf</a>[<a class="code hl_define" href="SocketConfig_8h.html#ab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a> - 1] = <span class="charliteral">&#39;\0&#39;</span>;                      \</div>
 <div class="line">      SOCKET_ERROR_APPLY_TRUNCATION (_socket_error_ret);                      \</div>
 <div class="line">      (void)_socket_error_ret;                                                \</div>
 <div class="line">      SocketLog_emit (<a class="code hl_enumvalue" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1a541aa883db8e38a0c52a2d7ccfb795b3">SOCKET_LOG_ERROR</a>, <a class="code hl_define" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>,                 \</div>
@@ -892,13 +1076,13 @@ timeout_ms</td>
 <div class="line">    }                                                                         \</div>
 <div class="line">  while (0)</div>
 <div class="ttc" id="aSocketUtil_8h_html_a481ecfe6b9e5c83515c92d1808e4b2f9"><div class="ttname"><a href="SocketUtil_8h.html#a481ecfe6b9e5c83515c92d1808e4b2f9">Socket_safe_strerror</a></div><div class="ttdeci">const char * Socket_safe_strerror(int errnum)</div><div class="ttdoc">Socket_safe_strerror - Thread-safe strerror implementation @errnum: Error number to convert Returns: ...</div></div>
-<div class="ttc" id="aSocketUtil_8h_html_adf209a9f107e88a5df277fcc3e2641d1a541aa883db8e38a0c52a2d7ccfb795b3"><div class="ttname"><a href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1a541aa883db8e38a0c52a2d7ccfb795b3">SOCKET_LOG_ERROR</a></div><div class="ttdeci">@ SOCKET_LOG_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00043">SocketUtil.h:43</a></div></div>
-<div class="ttc" id="aSocketUtil_8h_html_ae461bf5ddae6eda683926a6303af87f6"><div class="ttname"><a href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a></div><div class="ttdeci">#define SOCKET_LOG_COMPONENT</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00332">SocketUtil.h:332</a></div></div>
+<div class="ttc" id="aSocketUtil_8h_html_adf209a9f107e88a5df277fcc3e2641d1a541aa883db8e38a0c52a2d7ccfb795b3"><div class="ttname"><a href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1a541aa883db8e38a0c52a2d7ccfb795b3">SOCKET_LOG_ERROR</a></div><div class="ttdeci">@ SOCKET_LOG_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00045">SocketUtil.h:45</a></div></div>
+<div class="ttc" id="aSocketUtil_8h_html_ae461bf5ddae6eda683926a6303af87f6"><div class="ttname"><a href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a></div><div class="ttdeci">#define SOCKET_LOG_COMPONENT</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00142">SocketUtil.h:142</a></div></div>
 <div class="ttc" id="aSocketUtil_8h_html_af5b8b680923b7f67d1ec0aa8c0b0434e"><div class="ttname"><a href="SocketUtil_8h.html#af5b8b680923b7f67d1ec0aa8c0b0434e">socket_last_errno</a></div><div class="ttdeci">int socket_last_errno</div></div>
 </div><!-- fragment -->
 <p>SOCKET_ERROR_FMT - Format error message with errno information Includes truncation protection for long messages. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00363">363</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00601">601</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -930,8 +1114,11 @@ timeout_ms</td>
 <b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">do</span>                                                                          \</div>
 <div class="line">    {                                                                         \</div>
 <div class="line">      <a class="code hl_variable" href="SocketUtil_8h.html#af5b8b680923b7f67d1ec0aa8c0b0434e">socket_last_errno</a> = errno;                                              \</div>
+<div class="line">      <span class="keywordtype">char</span> tmp_buf[<a class="code hl_define" href="SocketConfig_8h.html#ab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a>];                                     \</div>
 <div class="line">      <span class="keywordtype">int</span> _socket_error_ret = snprintf (                                      \</div>
-<div class="line">          <a class="code hl_variable" href="SocketUtil_8h.html#aad11dd8cef83792df92437f8d7ae3991">socket_error_buf</a>, <a class="code hl_define" href="SocketConfig_8h.html#ab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a>, fmt, ##__VA_ARGS__);        \</div>
+<div class="line">          tmp_buf, <span class="keyword">sizeof</span>(tmp_buf), fmt, ##__VA_ARGS__);                      \</div>
+<div class="line">      strncpy (<a class="code hl_variable" href="SocketUtil_8h.html#aad11dd8cef83792df92437f8d7ae3991">socket_error_buf</a>, tmp_buf, <a class="code hl_define" href="SocketConfig_8h.html#ab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a> - 1);          \</div>
+<div class="line">      <a class="code hl_variable" href="SocketUtil_8h.html#aad11dd8cef83792df92437f8d7ae3991">socket_error_buf</a>[<a class="code hl_define" href="SocketConfig_8h.html#ab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a> - 1] = <span class="charliteral">&#39;\0&#39;</span>;                      \</div>
 <div class="line">      SOCKET_ERROR_APPLY_TRUNCATION (_socket_error_ret);                      \</div>
 <div class="line">      (void)_socket_error_ret;                                                \</div>
 <div class="line">      SocketLog_emit (<a class="code hl_enumvalue" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1a541aa883db8e38a0c52a2d7ccfb795b3">SOCKET_LOG_ERROR</a>, <a class="code hl_define" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>,                 \</div>
@@ -941,7 +1128,7 @@ timeout_ms</td>
 </div><!-- fragment -->
 <p>SOCKET_ERROR_MSG - Format error message without errno Includes truncation protection for long messages. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00382">382</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00623">623</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -957,7 +1144,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00428">428</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00672">672</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -973,7 +1160,229 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00332">332</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00142">142</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+</div>
+</div>
+<a id="a7853a630bcaead9d41536ccbfd598f6d" name="a7853a630bcaead9d41536ccbfd598f6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7853a630bcaead9d41536ccbfd598f6d">&#9670;&#160;</a></span>SOCKET_LOG_DEBUG_MSG</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_LOG_DEBUG_MSG</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">fmt, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td>&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#a32c7a8dfa2948f777cdb62152fe2f6ac">SocketLog_emitf</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1afcef44613645b3fd4a45bf5b4bfdbba7">SOCKET_LOG_DEBUG</a>, <a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>, fmt, ##__VA_ARGS__)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00166">166</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+</div>
+</div>
+<a id="a16642c35dec627aeb4976538671b1552" name="a16642c35dec627aeb4976538671b1552"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a16642c35dec627aeb4976538671b1552">&#9670;&#160;</a></span>SOCKET_LOG_ERROR_MSG</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_LOG_ERROR_MSG</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">fmt, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td>&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#a32c7a8dfa2948f777cdb62152fe2f6ac">SocketLog_emitf</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1a541aa883db8e38a0c52a2d7ccfb795b3">SOCKET_LOG_ERROR</a>, <a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>, fmt, ##__VA_ARGS__)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00178">178</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+</div>
+</div>
+<a id="a6b6e85cf504e70eab7723ba1b685fcdb" name="a6b6e85cf504e70eab7723ba1b685fcdb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b6e85cf504e70eab7723ba1b685fcdb">&#9670;&#160;</a></span>SOCKET_LOG_FATAL_MSG</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_LOG_FATAL_MSG</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">fmt, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td>&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#a32c7a8dfa2948f777cdb62152fe2f6ac">SocketLog_emitf</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1a675d837d7437c7792d86366a567acb57">SOCKET_LOG_FATAL</a>, <a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>, fmt, ##__VA_ARGS__)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00182">182</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+</div>
+</div>
+<a id="a7bcc2412d2238abb586fedf1e5fd6f0f" name="a7bcc2412d2238abb586fedf1e5fd6f0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7bcc2412d2238abb586fedf1e5fd6f0f">&#9670;&#160;</a></span>SOCKET_LOG_FIELDS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_LOG_FIELDS</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line">  (<a class="code hl_struct" href="SocketUtil_8h.html#structSocketLogField">SocketLogField</a>[]){ __VA_ARGS__ },                                           \</div>
+<div class="line">      (<span class="keyword">sizeof</span> ((<a class="code hl_struct" href="SocketUtil_8h.html#structSocketLogField">SocketLogField</a>[]){ __VA_ARGS__ }) / <span class="keyword">sizeof</span> (<a class="code hl_struct" href="SocketUtil_8h.html#structSocketLogField">SocketLogField</a>))</div>
+<div class="ttc" id="aSocketUtil_8h_html_structSocketLogField"><div class="ttname"><a href="SocketUtil_8h.html#structSocketLogField">SocketLogField</a></div><div class="ttdoc">SocketLogField - Key-value pair for structured logging.</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00283">SocketUtil.h:284</a></div></div>
+</div><!-- fragment -->
+<p>SOCKET_LOG_FIELDS - Convenience macro for creating field arrays. </p>
+<p>Usage: SocketLog_emit_structured(level, component, message, SOCKET_LOG_FIELDS({"key1", "val1"}, {"key2", "val2"})); </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00347">347</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+</div>
+</div>
+<a id="af0a8020773c3515507db1705a81b7fe4" name="af0a8020773c3515507db1705a81b7fe4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af0a8020773c3515507db1705a81b7fe4">&#9670;&#160;</a></span>SOCKET_LOG_ID_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_LOG_ID_SIZE&#160;&#160;&#160;37</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00205">205</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+</div>
+</div>
+<a id="a9fe70c7ab8b971af2971f3a102b82819" name="a9fe70c7ab8b971af2971f3a102b82819"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9fe70c7ab8b971af2971f3a102b82819">&#9670;&#160;</a></span>SOCKET_LOG_INFO_MSG</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_LOG_INFO_MSG</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">fmt, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td>&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#a32c7a8dfa2948f777cdb62152fe2f6ac">SocketLog_emitf</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1a0c366302769a94f7e8f4d535f4cc5716">SOCKET_LOG_INFO</a>, <a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>, fmt, ##__VA_ARGS__)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00170">170</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+</div>
+</div>
+<a id="a365ac6909cf8507f035810946214e639" name="a365ac6909cf8507f035810946214e639"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a365ac6909cf8507f035810946214e639">&#9670;&#160;</a></span>SOCKET_LOG_TRACE_MSG</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_LOG_TRACE_MSG</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">fmt, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td>&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#a32c7a8dfa2948f777cdb62152fe2f6ac">SocketLog_emitf</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1a92a6d90e1c955ab3ad5fff67e93e969e">SOCKET_LOG_TRACE</a>, <a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>, fmt, ##__VA_ARGS__)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00162">162</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+</div>
+</div>
+<a id="ae560ccd4aef66d44e8ecbd256844059c" name="ae560ccd4aef66d44e8ecbd256844059c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae560ccd4aef66d44e8ecbd256844059c">&#9670;&#160;</a></span>SOCKET_LOG_WARN_MSG</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_LOG_WARN_MSG</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">fmt, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td>&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#a32c7a8dfa2948f777cdb62152fe2f6ac">SocketLog_emitf</a> (<a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1ae3b46610cd2f65cecc4fa333a827212c">SOCKET_LOG_WARN</a>, <a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>, fmt, ##__VA_ARGS__)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00174">174</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1031,7 +1440,7 @@ timeout_ms</td>
 <p>Exception to raise @fmt: Printf-style format string ...: Format arguments</p>
 <p>Combines SOCKET_ERROR_FMT + RAISE_MODULE_ERROR into single macro. Thread-safe: Yes (uses thread-local buffers) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00475">475</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00800">800</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1077,7 +1486,7 @@ timeout_ms</td>
 </dl>
 <p>Exception to raise Thread-safe: Creates thread-local copy with detailed reason </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00452">452</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00777">777</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1135,7 +1544,7 @@ timeout_ms</td>
 <p>Exception to raise @fmt: Printf-style format string (without errno) ...: Format arguments</p>
 <p>Combines SOCKET_ERROR_MSG + RAISE_MODULE_ERROR into single macro. Thread-safe: Yes (uses thread-local buffers) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00493">493</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00818">818</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1154,7 +1563,7 @@ timeout_ms</td>
 <p>DJB2 hash algorithm seed value (Daniel J. </p>
 <p>Bernstein) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00588">588</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00932">932</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1173,7 +1582,7 @@ timeout_ms</td>
 
 <p>SocketEventCallback - Event handler callback type @userdata: User-provided context @event: Event record. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00253">253</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00496">496</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1191,11 +1600,69 @@ timeout_ms</td>
 
 <p>SocketLogCallback - Custom logging callback function type @userdata: User-provided context @level: Log severity level @component: Module/component name @message: Log message. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00054">54</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00056">56</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+</div>
+</div>
+<a id="ad6d1accb7b4404506736d8778ebe47e0" name="ad6d1accb7b4404506736d8778ebe47e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad6d1accb7b4404506736d8778ebe47e0">&#9670;&#160;</a></span>SocketLogStructuredCallback</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef void(* SocketLogStructuredCallback) (void *userdata, <a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1">SocketLogLevel</a> level, const char *component, const char *message, const <a class="el" href="SocketUtil_8h.html#structSocketLogField">SocketLogField</a> *fields, size_t field_count, const <a class="el" href="SocketUtil_8h.html#structSocketLogContext">SocketLogContext</a> *context)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>SocketLogStructuredCallback - Extended callback with structured fields @userdata: User-provided context @level: Log severity level @component: Module/component name @message: Log message @fields: Array of key-value pairs (may be NULL) @field_count: Number of fields in array @context: Thread-local context (may be NULL) </p>
+<p>Callbacks should check for NULL fields/context before accessing. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00301">301</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="a03afe0122d51352f66339825b1eb23b9" name="a03afe0122d51352f66339825b1eb23b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03afe0122d51352f66339825b1eb23b9">&#9670;&#160;</a></span>SocketErrorCategory</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9">SocketErrorCategory</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>SocketErrorCategory - High-level error classification. </p>
+<p>Used to determine appropriate error handling strategy:</p><ul>
+<li>NETWORK errors are typically transient and retryable</li>
+<li>PROTOCOL errors indicate bugs or misconfiguration</li>
+<li>APPLICATION errors depend on business logic</li>
+<li>TIMEOUT errors are retryable with exponential backoff</li>
+<li>RESOURCE errors may resolve after releasing resources </li>
+</ul>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a03afe0122d51352f66339825b1eb23b9a6652ea8ed6fd071490684c61ec3bb89b" name="a03afe0122d51352f66339825b1eb23b9a6652ea8ed6fd071490684c61ec3bb89b"></a>SOCKET_ERROR_CATEGORY_NETWORK&#160;</td><td class="fielddoc"><p>Network-level: ECONNRESET, ECONNREFUSED, etc. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a03afe0122d51352f66339825b1eb23b9a68506b7a00d8744bc266b799c46c253b" name="a03afe0122d51352f66339825b1eb23b9a68506b7a00d8744bc266b799c46c253b"></a>SOCKET_ERROR_CATEGORY_PROTOCOL&#160;</td><td class="fielddoc"><p>Protocol-level: Parse errors, invalid responses. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a03afe0122d51352f66339825b1eb23b9a5dfb3fbb41aaf264675f3575bb6932f6" name="a03afe0122d51352f66339825b1eb23b9a5dfb3fbb41aaf264675f3575bb6932f6"></a>SOCKET_ERROR_CATEGORY_APPLICATION&#160;</td><td class="fielddoc"><p>App-level: Auth failures, 4xx responses. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a03afe0122d51352f66339825b1eb23b9a71956723dac39958d452934301e4bd32" name="a03afe0122d51352f66339825b1eb23b9a71956723dac39958d452934301e4bd32"></a>SOCKET_ERROR_CATEGORY_TIMEOUT&#160;</td><td class="fielddoc"><p>Timeout errors: ETIMEDOUT, deadline exceeded. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a03afe0122d51352f66339825b1eb23b9aed5f3770fcdda96b52d1ec13776ab328" name="a03afe0122d51352f66339825b1eb23b9aed5f3770fcdda96b52d1ec13776ab328"></a>SOCKET_ERROR_CATEGORY_RESOURCE&#160;</td><td class="fielddoc"><p>Resource exhaustion: OOM, fd limits. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a03afe0122d51352f66339825b1eb23b9a1e44c5da343948255455a1f0fb019419" name="a03afe0122d51352f66339825b1eb23b9a1e44c5da343948255455a1f0fb019419"></a>SOCKET_ERROR_CATEGORY_UNKNOWN&#160;</td><td class="fielddoc"><p>Unclassified errors. </p>
+</td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00705">705</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+</div>
+</div>
 <a id="acf807f3c720486767d282324cacd4908" name="acf807f3c720486767d282324cacd4908"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acf807f3c720486767d282324cacd4908">&#9670;&#160;</a></span>SocketErrorCode</h2>
 
@@ -1240,7 +1707,7 @@ timeout_ms</td>
 <tr><td class="fieldname"><a id="acf807f3c720486767d282324cacd4908a77387cd59d0eaec78ac8af7a8d8c1b7e" name="acf807f3c720486767d282324cacd4908a77387cd59d0eaec78ac8af7a8d8c1b7e"></a>SOCKET_ERROR_UNKNOWN&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00289">289</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00532">532</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1264,7 +1731,7 @@ timeout_ms</td>
 <tr><td class="fieldname"><a id="a3d88a760170998089d33794edca8d1bfa4b3179bc062ecb5767e4fd69509f654e" name="a3d88a760170998089d33794edca8d1bfa4b3179bc062ecb5767e4fd69509f654e"></a>SOCKET_EVENT_POLL_WAKEUP&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00210">210</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00453">453</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1281,7 +1748,7 @@ timeout_ms</td>
 </div><div class="memdoc">
 
 <p><a class="el" href="SocketUtil_8h.html">SocketUtil.h</a> - Consolidated utility header (Logging, Metrics, Events, Error) </p>
-<p>Part of the Socket Library Following C Interfaces and Implementations patterns</p>
+<p>Part of the Socket Library</p>
 <p>This header consolidates the observability, instrumentation, and error handling utilities into a single include for cleaner dependencies.</p>
 <p>Provides:</p><ul>
 <li>Logging subsystem (configurable callbacks, multiple log levels)</li>
@@ -1298,7 +1765,7 @@ timeout_ms</td>
 <tr><td class="fieldname"><a id="adf209a9f107e88a5df277fcc3e2641d1a675d837d7437c7792d86366a567acb57" name="adf209a9f107e88a5df277fcc3e2641d1a675d837d7437c7792d86366a567acb57"></a>SOCKET_LOG_FATAL&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00037">37</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00039">39</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1331,10 +1798,14 @@ timeout_ms</td>
 <tr><td class="fieldname"><a id="a422e43ad3ca4ce64261dda7879e73e5aa31fb10d34aa5b27a3bca9813c66699ea" name="a422e43ad3ca4ce64261dda7879e73e5aa31fb10d34aa5b27a3bca9813c66699ea"></a>SOCKET_METRIC_POOL_CONNECTIONS_REUSED&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a422e43ad3ca4ce64261dda7879e73e5aaa03c9846d735de7d02e5238fc55eef2d" name="a422e43ad3ca4ce64261dda7879e73e5aaa03c9846d735de7d02e5238fc55eef2d"></a>SOCKET_METRIC_POOL_DRAIN_INITIATED&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a422e43ad3ca4ce64261dda7879e73e5aa2b6bee98ce6b6dabc241e660f00ddfd0" name="a422e43ad3ca4ce64261dda7879e73e5aa2b6bee98ce6b6dabc241e660f00ddfd0"></a>SOCKET_METRIC_POOL_DRAIN_COMPLETED&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a422e43ad3ca4ce64261dda7879e73e5aa4f5a9a50e20a5872837a315e260edd14" name="a422e43ad3ca4ce64261dda7879e73e5aa4f5a9a50e20a5872837a315e260edd14"></a>SOCKET_METRIC_POOL_HEALTH_CHECKS&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a422e43ad3ca4ce64261dda7879e73e5aa8d93d6bb51819fafab7432caa04ccb3c" name="a422e43ad3ca4ce64261dda7879e73e5aa8d93d6bb51819fafab7432caa04ccb3c"></a>SOCKET_METRIC_POOL_HEALTH_FAILURES&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a422e43ad3ca4ce64261dda7879e73e5aa964a9546827911dd206d1421fd350c2e" name="a422e43ad3ca4ce64261dda7879e73e5aa964a9546827911dd206d1421fd350c2e"></a>SOCKET_METRIC_POOL_VALIDATION_FAILURES&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a422e43ad3ca4ce64261dda7879e73e5aa002fb5e2a1f84e978823670f7744f624" name="a422e43ad3ca4ce64261dda7879e73e5aa002fb5e2a1f84e978823670f7744f624"></a>SOCKET_METRIC_POOL_IDLE_CLEANUPS&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a422e43ad3ca4ce64261dda7879e73e5aaac38b493847141d2bfc1600c6b093fbb" name="a422e43ad3ca4ce64261dda7879e73e5aaac38b493847141d2bfc1600c6b093fbb"></a>SOCKET_METRIC_COUNT&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00122">122</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00358">358</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1449,6 +1920,8 @@ timeout_ms</td>
 
 <p>Socket_GetLastError - Get the last error message Returns: Pointer to thread-local error message buffer Thread-safe: Yes. </p>
 
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00193">handle_client_data()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
+
 </div>
 </div>
 <a id="a481ecfe6b9e5c83515c92d1808e4b2f9" name="a481ecfe6b9e5c83515c92d1808e4b2f9"></a>
@@ -1468,6 +1941,100 @@ timeout_ms</td>
 </div><div class="memdoc">
 
 <p>Socket_safe_strerror - Thread-safe strerror implementation @errnum: Error number to convert Returns: Thread-local string describing the error Thread-safe: Yes. </p>
+
+</div>
+</div>
+<a id="a1af76425187cb52fda8d569dcc931e2d" name="a1af76425187cb52fda8d569dcc931e2d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1af76425187cb52fda8d569dcc931e2d">&#9670;&#160;</a></span>socket_util_arena_strdup()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static char * socket_util_arena_strdup </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
+          <td class="paramname"><em>arena</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>str</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>socket_util_arena_strdup - Duplicate string into arena @arena: Arena for allocation @str: String to duplicate (may be NULL) </p>
+<p>Returns: Duplicated string in arena, or NULL if str is NULL or alloc fails Thread-safe: Yes (if arena is thread-safe)</p>
+<p>Convenience function to duplicate a string into an arena. Avoids repeated strlen+alloc+memcpy pattern in calling code. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01086">1086</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+<p class="reference">References <a class="el" href="Arena_8h.html#ad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>.</p>
+
+</div>
+</div>
+<a id="a0309fe77e3df0b7cd2c662f77c21c045" name="a0309fe77e3df0b7cd2c662f77c21c045"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0309fe77e3df0b7cd2c662f77c21c045">&#9670;&#160;</a></span>socket_util_arena_strndup()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static char * socket_util_arena_strndup </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
+          <td class="paramname"><em>arena</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>str</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>maxlen</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>socket_util_arena_strndup - Duplicate string with max length into arena @arena: Arena for allocation @str: String to duplicate (may be NULL) @maxlen: Maximum characters to copy (excluding null terminator) </p>
+<p>Returns: Duplicated string in arena, or NULL if str is NULL or alloc fails Thread-safe: Yes (if arena is thread-safe)</p>
+<p>Duplicates at most maxlen characters from str. Always null-terminates. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01114">1114</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+<p class="reference">References <a class="el" href="Arena_8h.html#ad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>.</p>
 
 </div>
 </div>
@@ -1510,9 +2077,9 @@ timeout_ms</td>
 <p>DJB2 hash: hash = hash * 33 + c The multiplication by 33 is optimized as (hash &lt;&lt; 5) + hash. Provides good distribution for string keys like IP addresses.</p>
 <p>Security note: DJB2 is a fast, simple hash for load distribution. NOT cryptographic - do not use for security-sensitive purposes. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00606">606</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00950">950</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l00588">SOCKET_UTIL_DJB2_SEED</a>.</p>
+<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l00932">SOCKET_UTIL_DJB2_SEED</a>.</p>
 
 </div>
 </div>
@@ -1554,9 +2121,9 @@ timeout_ms</td>
 <p>Returns: Hash value in range [0, table_size) Thread-safe: Yes (pure function, no shared state)</p>
 <p>Case-insensitive variant for HTTP headers and similar keys. Converts ASCII uppercase to lowercase before hashing. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00653">653</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00997">997</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l00588">SOCKET_UTIL_DJB2_SEED</a>.</p>
+<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l00932">SOCKET_UTIL_DJB2_SEED</a>.</p>
 
 </div>
 </div>
@@ -1604,9 +2171,9 @@ timeout_ms</td>
 <p>Returns: Hash value in range [0, table_size) Thread-safe: Yes (pure function, no shared state)</p>
 <p>Combines length-aware and case-insensitive variants. Ideal for HTTP header name hashing where names aren't null-terminated. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00682">682</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01026">1026</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l00588">SOCKET_UTIL_DJB2_SEED</a>.</p>
+<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l00932">SOCKET_UTIL_DJB2_SEED</a>.</p>
 
 </div>
 </div>
@@ -1654,9 +2221,9 @@ timeout_ms</td>
 <p>Returns: Hash value in range [0, table_size) Thread-safe: Yes (pure function, no shared state)</p>
 <p>Length-aware variant for non-null-terminated strings. Useful for parsing buffers where strings aren't null-terminated. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00630">630</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00974">974</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l00588">SOCKET_UTIL_DJB2_SEED</a>.</p>
+<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l00932">SOCKET_UTIL_DJB2_SEED</a>.</p>
 
 </div>
 </div>
@@ -1698,9 +2265,9 @@ timeout_ms</td>
 <p>Returns: Hash value in range [0, table_size) Thread-safe: Yes (pure function, no shared state)</p>
 <p>Uses the golden ratio constant (2^32 * (sqrt(5)-1)/2) for excellent distribution properties. Suitable for file descriptors, socket IDs, and other small integer keys. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00549">549</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00874">874</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketConfig_8h_source.html#l00562">HASH_GOLDEN_RATIO</a>.</p>
+<p class="reference">References <a class="el" href="SocketConfig_8h_source.html#l00730">HASH_GOLDEN_RATIO</a>.</p>
 
 </div>
 </div>
@@ -1742,9 +2309,9 @@ timeout_ms</td>
 <p>Returns: Hash value in range [0, table_size) Thread-safe: Yes (pure function, no shared state)</p>
 <p>Converts pointer to integer and applies golden ratio hash. Suitable for hashing opaque handles and memory addresses. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00566">566</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00891">891</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketConfig_8h_source.html#l00562">HASH_GOLDEN_RATIO</a>.</p>
+<p class="reference">References <a class="el" href="SocketConfig_8h_source.html#l00730">HASH_GOLDEN_RATIO</a>.</p>
 
 </div>
 </div>
@@ -1786,9 +2353,59 @@ timeout_ms</td>
 <p>Returns: Hash value in range [0, table_size) Thread-safe: Yes (pure function, no shared state)</p>
 <p>General-purpose hash for unsigned integers including request IDs. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00582">582</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00907">907</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketConfig_8h_source.html#l00562">HASH_GOLDEN_RATIO</a>.</p>
+<p class="reference">References <a class="el" href="SocketConfig_8h_source.html#l00730">HASH_GOLDEN_RATIO</a>.</p>
+
+</div>
+</div>
+<a id="ac2f441288fd2e497dd99474ef017f31f" name="ac2f441288fd2e497dd99474ef017f31f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2f441288fd2e497dd99474ef017f31f">&#9670;&#160;</a></span>socket_util_hash_uint_seeded()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static unsigned socket_util_hash_uint_seeded </td>
+          <td>(</td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>table_size</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>seed</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>socket_util_hash_uint_seeded - Seeded hash for collision resistance in security contexts @value: Unsigned integer to hash @table_size: Hash table size (should be prime) @seed: Per-instance random seed (e.g., from SocketCrypto_random_bytes) </p>
+<p>Returns: Hash value in range [0, table_size) Thread-safe: Yes</p>
+<p>Adds seed to prevent predictable collisions in tables like HTTP/2 streams. Use for security-sensitive lookups where attacker may control keys. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00925">925</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+<p class="reference">References <a class="el" href="SocketConfig_8h_source.html#l00730">HASH_GOLDEN_RATIO</a>.</p>
 
 </div>
 </div>
@@ -1821,7 +2438,108 @@ timeout_ms</td>
 <p>Returns: Smallest power of 2 &gt;= n Thread-safe: Yes (pure function)</p>
 <p>Useful for hash table sizing and circular buffer capacities where power-of-2 sizes allow efficient modulo via bitwise AND. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00710">710</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01054">1054</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+</div>
+</div>
+<a id="a4b19847d604cdc5896376e694ee2a9c1" name="a4b19847d604cdc5896376e694ee2a9c1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b19847d604cdc5896376e694ee2a9c1">&#9670;&#160;</a></span>SocketError_categorize_errno()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9">SocketErrorCategory</a> SocketError_categorize_errno </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>err</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketError_categorize_errno - Categorize an errno value @err: errno value to categorize. </p>
+<p>Returns: SocketErrorCategory for the given errno Thread-safe: Yes (pure function)</p>
+<p>Maps common POSIX errno values to high-level categories:</p><ul>
+<li>NETWORK: ECONNREFUSED, ECONNRESET, ECONNABORTED, ENETUNREACH, EHOSTUNREACH, ENETDOWN, EPIPE, ENOTCONN</li>
+<li>TIMEOUT: ETIMEDOUT</li>
+<li>RESOURCE: ENOMEM, EMFILE, ENFILE, ENOBUFS, ENOSPC</li>
+<li>PROTOCOL: EINVAL, EPROTO, EPROTONOSUPPORT, EAFNOSUPPORT</li>
+<li>UNKNOWN: All other errors </li>
+</ul>
+
+</div>
+</div>
+<a id="ac08e05a6f47966909427f4f327d33192" name="ac08e05a6f47966909427f4f327d33192"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac08e05a6f47966909427f4f327d33192">&#9670;&#160;</a></span>SocketError_category_name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char * SocketError_category_name </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketUtil_8h.html#a03afe0122d51352f66339825b1eb23b9">SocketErrorCategory</a>&#160;</td>
+          <td class="paramname"><em>category</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a78065a32bc90c30a5d062b0b9ac88163" name="a78065a32bc90c30a5d062b0b9ac88163"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78065a32bc90c30a5d062b0b9ac88163">&#9670;&#160;</a></span>SocketError_is_retryable_errno()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketError_is_retryable_errno </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>err</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketError_is_retryable_errno - Check if errno indicates retryable error @err: errno value to check. </p>
+<p>Returns: 1 if error is typically retryable, 0 if fatal Thread-safe: Yes (pure function)</p>
+<p>Retryable errors include:</p><ul>
+<li>Network transient: ECONNREFUSED, ECONNRESET, ENETUNREACH, EHOSTUNREACH</li>
+<li>Timeout: ETIMEDOUT</li>
+<li>Temporary resource: EAGAIN, EWOULDBLOCK, EINTR</li>
+</ul>
+<p>Non-retryable errors include:</p><ul>
+<li>Configuration: EACCES, EADDRINUSE, EADDRNOTAVAIL, EPERM</li>
+<li>Programming: EBADF, ENOTSOCK, EINVAL, EFAULT</li>
+<li>Permanent resource: ENOMEM, EMFILE, ENFILE </li>
+</ul>
 
 </div>
 </div>
@@ -2035,6 +2753,36 @@ timeout_ms</td>
 
 </div>
 </div>
+<a id="a13d1f0df4c0447eba5d723c3f2a81ff3" name="a13d1f0df4c0447eba5d723c3f2a81ff3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a13d1f0df4c0447eba5d723c3f2a81ff3">&#9670;&#160;</a></span>SocketLog_clearcontext()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketLog_clearcontext </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketLog_clearcontext - Clear thread-local logging context. </p>
+<p>Thread-safe: Yes (uses thread-local storage)</p>
+<p>Equivalent to SocketLog_setcontext(NULL). </p>
+
+</div>
+</div>
 <a id="a1364e85e147f0f6d43c82b4ce3e326c1" name="a1364e85e147f0f6d43c82b4ce3e326c1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1364e85e147f0f6d43c82b4ce3e326c1">&#9670;&#160;</a></span>SocketLog_emit()</h2>
 
@@ -2068,6 +2816,64 @@ timeout_ms</td>
 </div><div class="memdoc">
 
 <p>SocketLog_emit - Emit a log message @level: Log level @component: Component name (may be NULL) @message: Log message (may be NULL) Thread-safe: Yes. </p>
+
+</div>
+</div>
+<a id="ab0d6c6969a0d1866a35b8a7cb89a70dd" name="ab0d6c6969a0d1866a35b8a7cb89a70dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0d6c6969a0d1866a35b8a7cb89a70dd">&#9670;&#160;</a></span>SocketLog_emit_structured()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketLog_emit_structured </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1">SocketLogLevel</a>&#160;</td>
+          <td class="paramname"><em>level</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>component</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>message</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="SocketUtil_8h.html#structSocketLogField">SocketLogField</a> *&#160;</td>
+          <td class="paramname"><em>fields</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>field_count</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketLog_emit_structured - Emit log message with structured fields @level: Log level @component: Component name @message: Log message @fields: Array of key-value pairs (may be NULL) @field_count: Number of fields. </p>
+<p>Thread-safe: Yes</p>
+<p>Emits a log message with structured key-value pairs. If a structured callback is set, it receives the fields directly. Otherwise, fields are formatted as "key=value" pairs appended to the message. </p>
 
 </div>
 </div>
@@ -2176,6 +2982,65 @@ timeout_ms</td>
 
 </div>
 </div>
+<a id="a1af6754916a1a307ddbbedd2a1f1497a" name="a1af6754916a1a307ddbbedd2a1f1497a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1af6754916a1a307ddbbedd2a1f1497a">&#9670;&#160;</a></span>SocketLog_getcontext()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="SocketUtil_8h.html#structSocketLogContext">SocketLogContext</a> * SocketLog_getcontext </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketLog_getcontext - Get thread-local logging context. </p>
+<p>Returns: Pointer to thread-local context, or NULL if not set Thread-safe: Yes (uses thread-local storage)</p>
+<p>Returns pointer to internal thread-local storage. Do not modify the returned pointer; use SocketLog_setcontext to update. </p>
+
+</div>
+</div>
+<a id="adea5df0324ab107503097ef91327cf1f" name="adea5df0324ab107503097ef91327cf1f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adea5df0324ab107503097ef91327cf1f">&#9670;&#160;</a></span>SocketLog_getlevel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1">SocketLogLevel</a> SocketLog_getlevel </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketLog_getlevel - Get current minimum log level. </p>
+<p>Returns: Current minimum log level Thread-safe: Yes (mutex protected) </p>
+
+</div>
+</div>
 <a id="a6bf61f863971355d13751fa2d76bc1d4" name="a6bf61f863971355d13751fa2d76bc1d4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6bf61f863971355d13751fa2d76bc1d4">&#9670;&#160;</a></span>SocketLog_levelname()</h2>
 
@@ -2223,6 +3088,107 @@ timeout_ms</td>
 </div><div class="memdoc">
 
 <p>SocketLog_setcallback - Set custom logging callback @callback: Callback function or NULL for default logger @userdata: User data passed to callback Thread-safe: Yes. </p>
+
+</div>
+</div>
+<a id="a0c14479ea972fb3ae90c7f13d449e1ff" name="a0c14479ea972fb3ae90c7f13d449e1ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c14479ea972fb3ae90c7f13d449e1ff">&#9670;&#160;</a></span>SocketLog_setcontext()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketLog_setcontext </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="SocketUtil_8h.html#structSocketLogContext">SocketLogContext</a> *&#160;</td>
+          <td class="paramname"><em>ctx</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketLog_setcontext - Set thread-local logging context @ctx: Context to copy (NULL clears context) </p>
+<p>Thread-safe: Yes (uses thread-local storage)</p>
+<p>Sets the logging context for the current thread. The context is copied, so the caller may free or modify ctx after this call. </p>
+
+</div>
+</div>
+<a id="ad555b9c9e333d03766b0a0a5d1718111" name="ad555b9c9e333d03766b0a0a5d1718111"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad555b9c9e333d03766b0a0a5d1718111">&#9670;&#160;</a></span>SocketLog_setlevel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketLog_setlevel </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketUtil_8h.html#adf209a9f107e88a5df277fcc3e2641d1">SocketLogLevel</a>&#160;</td>
+          <td class="paramname"><em>min_level</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketLog_setlevel - Set minimum log level for filtering @min_level: Minimum level to emit (messages below this are suppressed) </p>
+<p>Thread-safe: Yes (mutex protected)</p>
+<p>Sets the global minimum log level. Log messages with severity below min_level will be silently discarded. Default is SOCKET_LOG_INFO.</p>
+<p>Example: SocketLog_setlevel(SOCKET_LOG_DEBUG); // Enable debug logging SocketLog_setlevel(SOCKET_LOG_WARN); // Only warnings and above </p>
+
+</div>
+</div>
+<a id="acea087e19ba17c0c7d2ee7eaf7be97d9" name="acea087e19ba17c0c7d2ee7eaf7be97d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acea087e19ba17c0c7d2ee7eaf7be97d9">&#9670;&#160;</a></span>SocketLog_setstructuredcallback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketLog_setstructuredcallback </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketUtil_8h.html#ad6d1accb7b4404506736d8778ebe47e0">SocketLogStructuredCallback</a>&#160;</td>
+          <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>userdata</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketLog_setstructuredcallback - Set structured logging callback @callback: Callback function or NULL to disable structured logging @userdata: User data passed to callback. </p>
+<p>Thread-safe: Yes (mutex protected)</p>
+<p>When set, <a class="el" href="SocketUtil_8h.html#ab0d6c6969a0d1866a35b8a7cb89a70dd" title="SocketLog_emit_structured - Emit log message with structured fields @level: Log level @component: Com...">SocketLog_emit_structured()</a> will invoke this callback instead of the regular callback, providing access to structured fields. </p>
 
 </div>
 </div>
@@ -2296,6 +3262,27 @@ timeout_ms</td>
 
 </div>
 </div>
+<a id="a9697727ca9f22ed6b849da5bc5f6742e" name="a9697727ca9f22ed6b849da5bc5f6742e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9697727ca9f22ed6b849da5bc5f6742e">&#9670;&#160;</a></span>SocketMetrics_legacy_reset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketMetrics_legacy_reset </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>SocketMetrics_legacy_reset - Reset legacy metrics to zero Thread-safe: Yes. </p>
+<p>NOTE: This is the legacy API. For new code, use <a class="el" href="SocketMetrics_8h.html#ab129aa3dd03bc8e5670da9abf0c41a47" title="SocketMetrics_reset - Reset all metrics to initial values.">SocketMetrics_reset()</a> from <a class="el" href="SocketMetrics_8h.html">SocketMetrics.h</a>. </p>
+
+</div>
+</div>
 <a id="a6651459184d27e580841a193a5380bf8" name="a6651459184d27e580841a193a5380bf8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6651459184d27e580841a193a5380bf8">&#9670;&#160;</a></span>SocketMetrics_name()</h2>
 
@@ -2313,26 +3300,6 @@ timeout_ms</td>
 </div><div class="memdoc">
 
 <p>SocketMetrics_name - Get human-readable name for a metric @metric: Metric to get name for Returns: Static string with metric name Thread-safe: Yes. </p>
-
-</div>
-</div>
-<a id="ab129aa3dd03bc8e5670da9abf0c41a47" name="ab129aa3dd03bc8e5670da9abf0c41a47"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab129aa3dd03bc8e5670da9abf0c41a47">&#9670;&#160;</a></span>SocketMetrics_reset()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketMetrics_reset </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>SocketMetrics_reset - Reset all metrics to zero Thread-safe: Yes. </p>
 
 </div>
 </div>
@@ -2372,9 +3339,220 @@ timeout_ms</td>
 
 <p>SocketMetrics_snapshot_value - Get a specific value from snapshot @snapshot: Snapshot to read from @metric: Metric to retrieve Returns: Metric value, or 0 for invalid inputs. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00193">193</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00436">436</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l00139">SOCKET_METRIC_COUNT</a>, and <a class="el" href="SocketUtil_8h_source.html#l00147">SocketMetricsSnapshot::values</a>.</p>
+<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l00379">SOCKET_METRIC_COUNT</a>, and <a class="el" href="SocketUtil_8h_source.html#l00387">SocketMetricsSnapshot::values</a>.</p>
+
+</div>
+</div>
+<a id="ab64414cb92e686d4410c702aecbc46be" name="ab64414cb92e686d4410c702aecbc46be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab64414cb92e686d4410c702aecbc46be">&#9670;&#160;</a></span>SocketTimeout_deadline_ms()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static int64_t SocketTimeout_deadline_ms </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>timeout_ms</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTimeout_deadline_ms - Create deadline from timeout @timeout_ms: Timeout in milliseconds (0 or negative = no deadline) </p>
+<p>Returns: Absolute deadline in milliseconds, or 0 if no timeout Thread-safe: Yes </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01167">1167</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l01152">SocketTimeout_now_ms()</a>.</p>
+
+</div>
+</div>
+<a id="a179e76e704b475882b35ccef7e7f8787" name="a179e76e704b475882b35ccef7e7f8787"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a179e76e704b475882b35ccef7e7f8787">&#9670;&#160;</a></span>SocketTimeout_elapsed_ms()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static int64_t SocketTimeout_elapsed_ms </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>start_ms</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTimeout_elapsed_ms - Calculate elapsed time since start @start_ms: Start time from <a class="el" href="SocketUtil_8h.html#a528ca682da1482e87bfa1e2af9d9ccf1" title="SocketTimeout_now_ms - Get current monotonic time in milliseconds.">SocketTimeout_now_ms()</a> </p>
+<p>Returns: Elapsed milliseconds since start Thread-safe: Yes </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01255">1255</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l01152">SocketTimeout_now_ms()</a>.</p>
+
+</div>
+</div>
+<a id="a22d242f7f47f94f867a687b05eaf1d2c" name="a22d242f7f47f94f867a687b05eaf1d2c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22d242f7f47f94f867a687b05eaf1d2c">&#9670;&#160;</a></span>SocketTimeout_expired()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static int SocketTimeout_expired </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>deadline_ms</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTimeout_expired - Check if deadline has passed @deadline_ms: Deadline from <a class="el" href="SocketUtil_8h.html#ab64414cb92e686d4410c702aecbc46be" title="SocketTimeout_deadline_ms - Create deadline from timeout @timeout_ms: Timeout in milliseconds (0 or n...">SocketTimeout_deadline_ms()</a> (0 = no deadline) </p>
+<p>Returns: 1 if expired, 0 if not expired or no deadline Thread-safe: Yes </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01201">1201</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l01152">SocketTimeout_now_ms()</a>.</p>
+
+</div>
+</div>
+<a id="a528ca682da1482e87bfa1e2af9d9ccf1" name="a528ca682da1482e87bfa1e2af9d9ccf1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a528ca682da1482e87bfa1e2af9d9ccf1">&#9670;&#160;</a></span>SocketTimeout_now_ms()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static int64_t SocketTimeout_now_ms </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTimeout_now_ms - Get current monotonic time in milliseconds. </p>
+<p>Returns: Current time in milliseconds from monotonic clock Thread-safe: Yes </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01152">1152</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="SocketUtil_8h_source.html#l01167">SocketTimeout_deadline_ms()</a>, <a class="el" href="SocketUtil_8h_source.html#l01255">SocketTimeout_elapsed_ms()</a>, <a class="el" href="SocketUtil_8h_source.html#l01201">SocketTimeout_expired()</a>, and <a class="el" href="SocketUtil_8h_source.html#l01182">SocketTimeout_remaining_ms()</a>.</p>
+
+</div>
+</div>
+<a id="a0ade80c651b5f022bf9fec6aea303e71" name="a0ade80c651b5f022bf9fec6aea303e71"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ade80c651b5f022bf9fec6aea303e71">&#9670;&#160;</a></span>SocketTimeout_poll_timeout()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static int SocketTimeout_poll_timeout </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>current_timeout_ms</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>deadline_ms</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTimeout_poll_timeout - Adjust poll timeout to not exceed deadline @current_timeout_ms: Current poll timeout (-1 = infinite) @deadline_ms: Deadline from <a class="el" href="SocketUtil_8h.html#ab64414cb92e686d4410c702aecbc46be" title="SocketTimeout_deadline_ms - Create deadline from timeout @timeout_ms: Timeout in milliseconds (0 or n...">SocketTimeout_deadline_ms()</a> (0 = no deadline) </p>
+<p>Returns: Adjusted timeout for poll() (minimum of current and remaining) Thread-safe: Yes</p>
+<p>Usage: Use as the timeout argument to poll() when you need to respect both a regular poll interval and an overall operation deadline. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01221">1221</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l01182">SocketTimeout_remaining_ms()</a>.</p>
+
+</div>
+</div>
+<a id="a199880a57fe7bebb439b5d1f1aa967c7" name="a199880a57fe7bebb439b5d1f1aa967c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a199880a57fe7bebb439b5d1f1aa967c7">&#9670;&#160;</a></span>SocketTimeout_remaining_ms()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static int64_t SocketTimeout_remaining_ms </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>deadline_ms</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketTimeout_remaining_ms - Calculate remaining time until deadline @deadline_ms: Deadline from <a class="el" href="SocketUtil_8h.html#ab64414cb92e686d4410c702aecbc46be" title="SocketTimeout_deadline_ms - Create deadline from timeout @timeout_ms: Timeout in milliseconds (0 or n...">SocketTimeout_deadline_ms()</a> (0 = no deadline) </p>
+<p>Returns: Remaining milliseconds (0 if expired, -1 if no deadline) Thread-safe: Yes </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01182">1182</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+
+<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l01152">SocketTimeout_now_ms()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="SocketUtil_8h_source.html#l01221">SocketTimeout_poll_timeout()</a>.</p>
 
 </div>
 </div>

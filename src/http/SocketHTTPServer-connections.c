@@ -202,6 +202,15 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
             SocketBuf_consume (conn->inbuf, consumed);
             conn->body_len = written;
 
+            /* Reject oversized bodies early to prevent DoS - even on initial read */
+            if (conn->body_len > server->config.max_body_size &&
+                !SocketHTTP1_Parser_body_complete (conn->parser)) {
+              SocketMetrics_counter_inc(SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+              connection_send_error (server, conn, 413, "Payload Too Large");
+              conn->state = CONN_STATE_CLOSED;
+              return -1;
+            }
+
             if (r == HTTP1_ERROR) {
               conn->state = CONN_STATE_CLOSED;
               return -1;

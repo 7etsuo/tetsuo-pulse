@@ -12,12 +12,15 @@
  * if context is shared.
  */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include "tls/SocketTLS-private.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+
+#include "core/SocketSecurity.h"
 
 #define T SocketTLSContext_T
 
@@ -57,22 +60,53 @@ parse_client_protos (const unsigned char *in, unsigned int inlen,
 
   size_t count = 0;
   size_t offset = 0;
+  size_t total_bytes = 0;
 
-  while (offset < inlen)
+  /* Use runtime security limits for DoS protection and flexibility */
+  SocketSecurityLimits sec_limits;
+  SocketSecurity_get_limits (&sec_limits);
+  const size_t MAX_ALPN_TOTAL_BYTES = sec_limits.tls_max_alpn_total_bytes;
+  const size_t MAX_ALPN_PROTOCOLS = sec_limits.tls_max_alpn_protocols;
+
+  bool malformed = false;
+
+  while (offset < inlen && !malformed)
     {
       /* Read protocol length byte */
-      unsigned char len = in[offset++];
+      unsigned char plen = in[offset++];
 
-      /* RFC 7301: Protocol names must be 1-255 bytes (0 is invalid) */
-      if (len == 0)
-        break; /* Malformed: empty protocol name is invalid per RFC 7301 */
-
-      if (offset + len > inlen)
-        break; /* Malformed: length exceeds remaining data */
-
-      /* Grow array if needed */
-      if (count >= capacity)
+      /* RFC 7301: Protocol names must be 1-%zu bytes (0 is invalid) */
+      if (plen == 0 || plen > sec_limits.tls_max_alpn_len)
         {
+          malformed = true;
+          break;
+        }
+
+      if (offset + plen > inlen)
+        {
+          /* Malformed: length exceeds remaining data */
+          malformed = true;
+          break;
+        }
+
+      /* Check total size limit to prevent DoS using secure arithmetic */
+      size_t new_total;
+      if (!SocketSecurity_check_add(total_bytes, plen + 1, &new_total) ||
+          new_total > MAX_ALPN_TOTAL_BYTES)
+        {
+          malformed = true;
+          break; /* Exceeds safe total size or overflow */
+        }
+      total_bytes = new_total;
+
+      /* Grow array if needed, but limit count using runtime limit */
+      if (count >= capacity || count >= MAX_ALPN_PROTOCOLS)
+        {
+          if (count >= MAX_ALPN_PROTOCOLS)
+            {
+              free_client_protos (protos, count);
+              return NULL; /* Reject lists with too many protocols */
+            }
           capacity *= 2;
           const char **new_protos = realloc (protos, capacity * sizeof (char *));
           if (!new_protos)
@@ -84,17 +118,43 @@ parse_client_protos (const unsigned char *in, unsigned int inlen,
         }
 
       /* Allocate and copy protocol string */
-      char *proto = malloc (len + 1);
+      char *proto = malloc (plen + 1);
       if (!proto)
         {
           free_client_protos (protos, count);
           return NULL;
         }
-      memcpy (proto, &in[offset], len);
-      proto[len] = '\0';
+      memcpy (proto, &in[offset], plen);
+      proto[plen] = '\0';
+
+      /* Validate protocol name contents per RFC 7301 Section 3.2:
+       * Printable ASCII only (0x21-0x7E), no controls or non-ASCII. */
+      bool valid = true;
+      for (size_t k = 0; k < plen; k++)
+        {
+          unsigned char c = (unsigned char)proto[k];
+          if (c < 0x21u || c > 0x7Eu)
+            {
+              valid = false;
+              break;
+            }
+        }
+      if (!valid)
+        {
+          free (proto);
+          malformed = true;
+          break; /* Reject entire list on invalid protocol */
+        }
 
       protos[count++] = proto;
-      offset += len;
+      total_bytes += plen + 1;
+      offset += plen;
+    }
+
+  if (malformed)
+    {
+      free_client_protos (protos, count);
+      return NULL;
     }
 
   if (count == 0)
@@ -198,20 +258,80 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
                                       client_protos, client_count);
     }
 
-  free_client_protos (client_protos, client_count);
-
+  /* Validate selected protocol is in client list, valid length, and contents.
+   * Hoist length computation for reuse in copy. */
+  size_t validated_len = 0;
   if (selected)
     {
-      size_t selected_len = strlen (selected);
-      /* Validate protocol length fits in unsigned char (ALPN max is 255) */
-      if (selected_len == 0 || selected_len > SOCKET_TLS_MAX_ALPN_LEN)
-        return SSL_TLSEXT_ERR_NOACK;
-      *out = (const unsigned char *)selected;
-      *outlen = (unsigned char)selected_len;
-      return SSL_TLSEXT_ERR_OK;
+      validated_len = strlen (selected);
+      if (validated_len == 0 || validated_len > SOCKET_TLS_MAX_ALPN_LEN)
+        {
+          selected = NULL;
+        }
+      else
+        {
+          bool found = false;
+          for (size_t j = 0; j < client_count; j++)
+            {
+              if (strcmp (selected, client_protos[j]) == 0)
+                {
+                  found = true;
+                  break;
+                }
+            }
+          if (!found)
+            {
+              selected = NULL;
+            }
+          else
+            {
+              /* Validate protocol name contents per RFC 7301 Section 3.2:
+               * Printable ASCII only (0x21-0x7E), no controls or non-ASCII. */
+              bool valid_chars = true;
+              for (size_t k = 0; k < validated_len; k++)
+                {
+                  unsigned char c = (unsigned char)selected[k];
+                  if (c < 0x21u || c > 0x7Eu)
+                    {
+                      valid_chars = false;
+                      break;
+                    }
+                }
+              if (!valid_chars)
+                {
+                  selected = NULL;
+                }
+            }
+        }
     }
 
-  return SSL_TLSEXT_ERR_NOACK;
+  /* Fixed UAF: Allocate copy, store in SSL ex_data for cleanup in tls_cleanup_alpn_temp().
+   * OpenSSL memdups *out after callback; we free later via ex_data. */
+  if (selected)
+    {
+      unsigned char *selected_copy = (unsigned char *) malloc (validated_len);
+      if (selected_copy == NULL)
+        {
+          /* Alloc failure: fallback to no protocol (safe) */
+          free_client_protos (client_protos, client_count);
+          return SSL_TLSEXT_ERR_NOACK;
+        }
+      memcpy (selected_copy, selected, validated_len);
+      /* Store for later cleanup; prevents leak */
+      int idx = tls_get_alpn_ex_idx ();
+      if (idx != -1)
+        SSL_set_ex_data (ssl, idx, (void *) selected_copy);
+      /* else rare failure: leak small buffer */
+      free_client_protos (client_protos, client_count);
+      *out = selected_copy;
+      *outlen = (unsigned char) validated_len;
+      return SSL_TLSEXT_ERR_OK;
+    }
+  else
+    {
+      free_client_protos (client_protos, client_count);
+      return SSL_TLSEXT_ERR_NOACK;
+    }
 }
 
 /* ============================================================================
@@ -236,19 +356,27 @@ build_wire_format (T ctx, const char *const *protos, size_t count,
                    size_t *len_out)
 {
   /* Cache protocol lengths to avoid redundant strlen calls */
-  size_t *lengths = ctx_arena_alloc (ctx, count * sizeof (size_t),
+  size_t lengths_size;
+  if (!SocketSecurity_check_multiply (count, sizeof (size_t), &lengths_size) ||
+      !SocketSecurity_check_size (lengths_size))
+    ctx_raise_openssl_error ("ALPN lengths array size overflow or too large");
+  size_t *lengths = ctx_arena_alloc (ctx, lengths_size,
                                      "Failed to allocate ALPN length cache");
 
   size_t total = 0;
   for (size_t i = 0; i < count; i++)
     {
       lengths[i] = strlen (protos[i]);
-      /* Check for integer overflow before accumulation */
-      if (total > SIZE_MAX - 1 - lengths[i])
+      size_t to_add = 1 + lengths[i];
+      size_t new_total;
+      /* Check for integer overflow using library primitive */
+      if (!SocketSecurity_check_add (total, to_add, &new_total))
         ctx_raise_openssl_error ("ALPN wire format size overflow");
-      total += 1 + lengths[i];
+      total = new_total;
     }
 
+  if (!SocketSecurity_check_size (total))
+    ctx_raise_openssl_error ("ALPN buffer size too large or invalid");
   unsigned char *buf = ctx_arena_alloc (ctx, total,
                                         "Failed to allocate ALPN buffer");
 
@@ -278,8 +406,10 @@ build_wire_format (T ctx, const char *const *protos, size_t count,
 static void
 validate_alpn_count (size_t count)
 {
-  if (count > SOCKET_TLS_MAX_ALPN_PROTOCOLS)
-    ctx_raise_openssl_error ("Too many ALPN protocols");
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+  if (count > limits.tls_max_alpn_protocols)
+    ctx_raise_openssl_error ("Too many ALPN protocols (exceeds runtime limit)");
 }
 
 /**
@@ -293,7 +423,11 @@ validate_alpn_count (size_t count)
 static const char **
 alloc_alpn_array (T ctx, size_t count)
 {
-  return ctx_arena_alloc (ctx, count * sizeof (const char *),
+  size_t arr_size;
+  if (!SocketSecurity_check_multiply (count, sizeof (const char *), &arr_size) ||
+      !SocketSecurity_check_size (arr_size))
+    ctx_raise_openssl_error ("ALPN protocols array size overflow or too large");
+  return ctx_arena_alloc (ctx, arr_size,
                           "Failed to allocate ALPN protocols array");
 }
 
@@ -311,12 +445,32 @@ alloc_alpn_array (T ctx, size_t count)
 static void
 copy_alpn_protocols (T ctx, const char *const *protos, size_t count)
 {
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+
   for (size_t i = 0; i < count; i++)
     {
       assert (protos[i]);
       size_t len = strlen (protos[i]);
-      if (len == 0 || len > SOCKET_TLS_MAX_ALPN_LEN)
-        ctx_raise_openssl_error ("Invalid ALPN protocol length");
+      if (len == 0 || len > limits.tls_max_alpn_len)
+        ctx_raise_openssl_error ("Invalid ALPN protocol length (exceeds runtime limit)");
+
+      /* Validate protocol name contents per RFC 7301 Section 3.2:
+       * Printable ASCII only (0x21-0x7E), no controls or non-ASCII. */
+      bool valid = true;
+      const char *s = protos[i];
+      for (size_t k = 0; k < len; k++)
+        {
+          unsigned char c = (unsigned char)s[k];
+          if (c < 0x21u || c > 0x7Eu)
+            {
+              valid = false;
+              break;
+            }
+        }
+      if (!valid)
+        ctx_raise_openssl_error ("Invalid characters in ALPN protocol name (RFC 7301)");
+
       ctx->alpn.protocols[i]
           = ctx_arena_strdup (ctx, protos[i], "Failed to allocate ALPN buffer");
     }
@@ -376,6 +530,53 @@ SocketTLSContext_set_alpn_callback (T ctx, SocketTLSAlpnCallback callback,
 
   ctx->alpn.callback = callback;
   ctx->alpn.callback_user_data = user_data;
+}
+
+/* ============================================================================
+ * ALPN Temp Buffer Cleanup (for UAF fix)
+ * ============================================================================ */
+
+/* Static process-wide ex_data index for ALPN temp buffers */
+static int tls_alpn_ex_idx = -1;
+
+/**
+ * tls_get_alpn_ex_idx - Get or create ex_data index for ALPN temps
+ *
+ * Lazy init; called once.
+ * Returns: Index or -1 on failure (rare, fallback leak)
+ */
+int
+tls_get_alpn_ex_idx (void)
+{
+  if (tls_alpn_ex_idx == -1)
+    {
+      tls_alpn_ex_idx = SSL_get_ex_new_index (0, "tls alpn temp buf", NULL, NULL, NULL);
+    }
+  return tls_alpn_ex_idx;
+}
+
+/**
+ * tls_cleanup_alpn_temp - Free ALPN temp from SSL ex_data
+ * @ssl: SSL* to clean
+ *
+ * Frees stored malloc'ed copy if present; clears slot.
+ * Call before SSL_free(ssl) in all TLS impl files.
+ */
+void
+tls_cleanup_alpn_temp (SSL *ssl)
+{
+  if (!ssl)
+    return;
+  int idx = tls_get_alpn_ex_idx ();
+  if (idx != -1)
+    {
+      void *ptr = SSL_get_ex_data (ssl, idx);
+      if (ptr)
+        {
+          free (ptr);
+          SSL_set_ex_data (ssl, idx, NULL);
+        }
+    }
 }
 
 #undef T

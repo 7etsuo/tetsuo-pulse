@@ -157,6 +157,36 @@ Available Histogram Metrics:
 | `SOCKET_HIST_DNS_QUERY_TIME_MS` | DNS query duration |
 | `SOCKET_HIST_SOCKET_CONNECT_TIME_MS` | Socket connect duration |
 
+## Security Metrics
+
+The library now includes dedicated metrics for security event monitoring, enhancing observability for TLS/DTLS hardening (see SECURITY.md for details on usage in attack detection).
+
+### TLS/DTLS Security Counters
+
+| Metric | Description |
+|--------|-------------|
+| `SOCKET_CTR_TLS_PINNING_FAILURES` | Certificate pinning violations (e.g., key mismatch during verification) |
+| `SOCKET_CTR_TLS_CT_VERIFICATION_FAILURES` | Certificate Transparency log verification failures |
+| `SOCKET_CTR_TLS_CRL_CHECK_FAILURES` | CRL/OCSP revocation check failures |
+
+### DTLS-Specific Counters (RFC 6347 DoS Protection)
+
+| Metric | Description |
+|--------|-------------|
+| `SOCKET_CTR_DTLS_HANDSHAKES_TOTAL` | Total DTLS handshakes initiated |
+| `SOCKET_CTR_DTLS_HANDSHAKES_FAILED` | Failed DTLS handshakes (e.g., protocol errors) |
+| `SOCKET_CTR_DTLS_COOKIES_GENERATED` | HelloVerifyRequest cookies generated for SYN protection |
+| `SOCKET_CTR_DTLS_COOKIE_VERIFICATION_FAILURES` | Invalid/expired cookies rejected |
+| `SOCKET_CTR_DTLS_REPLAY_PACKETS_DETECTED` | Packets dropped due to replay detection |
+| `SOCKET_CTR_DTLS_FRAGMENT_FAILURES` | Fragmented message reassembly failures |
+
+### Additional Gauges & Histograms
+
+- `SOCKET_GAU_DTLS_ACTIVE_SESSIONS`: Active DTLS sessions (gauge)
+- `SOCKET_HIST_DTLS_HANDSHAKE_TIME_MS`: DTLS handshake latency distribution
+
+Use these to alert on anomalies (e.g., high cookie failures indicate DoS attempts). Integrate via `SocketMetrics_counter_inc()` on failure paths in TLS code.
+
 ## Export Formats
 
 ### Prometheus Format

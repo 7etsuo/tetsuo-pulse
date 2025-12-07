@@ -124,6 +124,11 @@ extern void SocketPoll_mod (T poll, Socket_T socket, unsigned events,
  * Silently succeeds if socket not in poll
  * Thread-safe: Yes - uses internal mutex for socket data mapping
  */
+/**
+ * Note: On backend error (non-ENOENT), raises leaving state intact for retry.
+ * Logs ENOENT warning and cleans data map. Security: Prioritizes backend clean.
+ * Single-threaded socket access assumed.
+ */
 extern void SocketPoll_del (T poll, Socket_T socket);
 
 /**

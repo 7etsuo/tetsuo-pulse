@@ -6,6 +6,7 @@
 #include "core/SocketRateLimit.h"  /* For bandwidth limiting */
 #include "socket/SocketCommon-private.h"  /* For SocketBase_T */
 #include "socket/Socket.h"
+#include <stdatomic.h>
 
 /* Socket live count management - shared across socket modules */
 extern void socket_live_increment(void);
@@ -24,6 +25,8 @@ struct Socket_T
 
   /* Bandwidth limiting */
   SocketRateLimit_T bandwidth_limiter;  /**< Rate limiter for bandwidth (NULL if unlimited) */
+
+  _Atomic int freed;                    /**< Atomic flag to prevent double-free (0=active, 1=being freed; use memory_order_acq_rel for exchange) */
 
 #if SOCKET_HAS_TLS
   /* TLS-specific fields (retained as stream-only) */

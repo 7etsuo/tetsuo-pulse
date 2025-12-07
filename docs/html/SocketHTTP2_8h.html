@@ -173,15 +173,62 @@ Macros</h2></td></tr>
 <tr class="memitem:aab92659a1ac39f911a7031a8fa57532b" id="r_aab92659a1ac39f911a7031a8fa57532b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#aab92659a1ac39f911a7031a8fa57532b">SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE</a>&#160;&#160;&#160;(16 * 1024)</td></tr>
 <tr class="memdesc:aab92659a1ac39f911a7031a8fa57532b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default SETTINGS_MAX_HEADER_LIST_SIZE.  <br /></td></tr>
 <tr class="separator:aab92659a1ac39f911a7031a8fa57532b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ce8bfc64e6a1da3f3c8c0058845733f" id="r_a9ce8bfc64e6a1da3f3c8c0058845733f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a9ce8bfc64e6a1da3f3c8c0058845733f">SOCKETHTTP2_DEFAULT_STREAM_RECV_BUF_SIZE</a>&#160;&#160;&#160;(64 * 1024)</td></tr>
+<tr class="memdesc:a9ce8bfc64e6a1da3f3c8c0058845733f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default stream receive buffer size for DATA frames.  <br /></td></tr>
+<tr class="separator:a9ce8bfc64e6a1da3f3c8c0058845733f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58ac0ff2518d8345a13646c636bfd2e8" id="r_a58ac0ff2518d8345a13646c636bfd2e8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a58ac0ff2518d8345a13646c636bfd2e8">SOCKETHTTP2_DEFAULT_INITIAL_HEADER_BLOCK_SIZE</a>&#160;&#160;&#160;(16 * 1024)</td></tr>
+<tr class="memdesc:a58ac0ff2518d8345a13646c636bfd2e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default initial allocation for header blocks.  <br /></td></tr>
+<tr class="separator:a58ac0ff2518d8345a13646c636bfd2e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6d5bb6cb0869bc0426836bf076c9c34" id="r_af6d5bb6cb0869bc0426836bf076c9c34"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#af6d5bb6cb0869bc0426836bf076c9c34">SOCKETHTTP2_MAX_DECODED_HEADERS</a>&#160;&#160;&#160;128</td></tr>
+<tr class="memdesc:af6d5bb6cb0869bc0426836bf076c9c34"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum decoded headers per HPACK block.  <br /></td></tr>
+<tr class="separator:af6d5bb6cb0869bc0426836bf076c9c34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c458f4c39b9d980a6adbc022fa49abf" id="r_a1c458f4c39b9d980a6adbc022fa49abf"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a1c458f4c39b9d980a6adbc022fa49abf">SOCKETHTTP2_MAX_CONTINUATION_FRAMES</a>&#160;&#160;&#160;32</td></tr>
+<tr class="memdesc:a1c458f4c39b9d980a6adbc022fa49abf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum CONTINUATION frames per header block (DoS protection)  <br /></td></tr>
+<tr class="separator:a1c458f4c39b9d980a6adbc022fa49abf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abca4f7f273c332090bc14e9f950519ea" id="r_abca4f7f273c332090bc14e9f950519ea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#abca4f7f273c332090bc14e9f950519ea">HTTP2_REQUEST_PSEUDO_HEADER_COUNT</a>&#160;&#160;&#160;4</td></tr>
+<tr class="memdesc:abca4f7f273c332090bc14e9f950519ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of pseudo-headers in HTTP/2 requests (:method, :scheme, :authority, :path)  <br /></td></tr>
+<tr class="separator:abca4f7f273c332090bc14e9f950519ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaaacd21ea311866f022dc2819cdf3970" id="r_aaaacd21ea311866f022dc2819cdf3970"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#aaaacd21ea311866f022dc2819cdf3970">SOCKETHTTP2_MAX_STREAMS</a>&#160;&#160;&#160;1000</td></tr>
 <tr class="memdesc:aaaacd21ea311866f022dc2819cdf3970"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implementation limit: maximum streams per connection.  <br /></td></tr>
 <tr class="separator:aaaacd21ea311866f022dc2819cdf3970"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f09ebf529638d4a69b1c52465d50985" id="r_a8f09ebf529638d4a69b1c52465d50985"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a8f09ebf529638d4a69b1c52465d50985">SOCKETHTTP2_CONNECTION_WINDOW_SIZE</a>&#160;&#160;&#160;(1 &lt;&lt; 20) /* 1MB */</td></tr>
 <tr class="memdesc:a8f09ebf529638d4a69b1c52465d50985"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default connection-level window size.  <br /></td></tr>
 <tr class="separator:a8f09ebf529638d4a69b1c52465d50985"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa20a27a38e12d263a948524dd53c6fa6" id="r_aa20a27a38e12d263a948524dd53c6fa6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#aa20a27a38e12d263a948524dd53c6fa6">SOCKETHTTP2_RST_RATE_LIMIT</a>&#160;&#160;&#160;100 /* Max RST_STREAM frames per window */</td></tr>
+<tr class="memdesc:aa20a27a38e12d263a948524dd53c6fa6"><td class="mdescLeft">&#160;</td><td class="mdescRight">RST_STREAM rate limiting (CVE-2023-44487 Rapid Reset protection)  <br /></td></tr>
+<tr class="separator:aa20a27a38e12d263a948524dd53c6fa6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9887f36b7f564f07f4aaf2edbbb380c0" id="r_a9887f36b7f564f07f4aaf2edbbb380c0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a9887f36b7f564f07f4aaf2edbbb380c0">SOCKETHTTP2_RST_RATE_WINDOW_MS</a>&#160;&#160;&#160;1000 /* Rate window in milliseconds */</td></tr>
+<tr class="separator:a9887f36b7f564f07f4aaf2edbbb380c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a348b0240c0ad1819de8e1c5aac87788b" id="r_a348b0240c0ad1819de8e1c5aac87788b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a348b0240c0ad1819de8e1c5aac87788b">SOCKETHTTP2_PING_RATE_LIMIT</a>&#160;&#160;&#160;50 /* Max PING frames per window */</td></tr>
+<tr class="memdesc:a348b0240c0ad1819de8e1c5aac87788b"><td class="mdescLeft">&#160;</td><td class="mdescRight">PING rate limiting (DoS protection)  <br /></td></tr>
+<tr class="separator:a348b0240c0ad1819de8e1c5aac87788b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31f0fa5dd50b7518853bc761bab152a9" id="r_a31f0fa5dd50b7518853bc761bab152a9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a31f0fa5dd50b7518853bc761bab152a9">SOCKETHTTP2_PING_RATE_WINDOW_MS</a>&#160;&#160;&#160;1000 /* Rate window in milliseconds */</td></tr>
+<tr class="separator:a31f0fa5dd50b7518853bc761bab152a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e84d0a8fa6b2fb3c9cd937eae11cf09" id="r_a0e84d0a8fa6b2fb3c9cd937eae11cf09"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a0e84d0a8fa6b2fb3c9cd937eae11cf09">SOCKETHTTP2_SETTINGS_RATE_LIMIT</a>&#160;&#160;&#160;10 /* Max SETTINGS frames per window */</td></tr>
+<tr class="memdesc:a0e84d0a8fa6b2fb3c9cd937eae11cf09"><td class="mdescLeft">&#160;</td><td class="mdescRight">SETTINGS rate limiting (DoS protection)  <br /></td></tr>
+<tr class="separator:a0e84d0a8fa6b2fb3c9cd937eae11cf09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1404eba0c1374b3ef16a9ce84964773" id="r_aa1404eba0c1374b3ef16a9ce84964773"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#aa1404eba0c1374b3ef16a9ce84964773">SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS</a>&#160;&#160;&#160;5000 /* Longer window for config changes */</td></tr>
+<tr class="separator:aa1404eba0c1374b3ef16a9ce84964773"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a771d4aff12b7d59ed835526388a9da1f" id="r_a771d4aff12b7d59ed835526388a9da1f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a771d4aff12b7d59ed835526388a9da1f">SOCKETHTTP2_DEFAULT_SETTINGS_TIMEOUT_MS</a>&#160;&#160;&#160;30000 /* 30 seconds */</td></tr>
+<tr class="separator:a771d4aff12b7d59ed835526388a9da1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a765dac93880ebf4f64f313d3fad02c1d" id="r_a765dac93880ebf4f64f313d3fad02c1d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a765dac93880ebf4f64f313d3fad02c1d">SOCKETHTTP2_DEFAULT_PING_TIMEOUT_MS</a>&#160;&#160;&#160;30000 /* 30 seconds */</td></tr>
+<tr class="separator:a765dac93880ebf4f64f313d3fad02c1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c45c0b678bddd3940ec141601a23f50" id="r_a4c45c0b678bddd3940ec141601a23f50"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a4c45c0b678bddd3940ec141601a23f50">SOCKETHTTP2_MAX_WINDOW_SIZE</a>&#160;&#160;&#160;0x7FFFFFFF /* 2^31 - 1 */</td></tr>
+<tr class="separator:a4c45c0b678bddd3940ec141601a23f50"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0f69e66f311f76212458acd539d5eb9" id="r_ab0f69e66f311f76212458acd539d5eb9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#ab0f69e66f311f76212458acd539d5eb9">SOCKETHTTP2_IO_BUFFER_SIZE</a>&#160;&#160;&#160;<a class="el" href="SocketHTTP2_8h.html#a9ce8bfc64e6a1da3f3c8c0058845733f">SOCKETHTTP2_DEFAULT_STREAM_RECV_BUF_SIZE</a></td></tr>
+<tr class="separator:ab0f69e66f311f76212458acd539d5eb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac20a5b006752190a32f4a20df79ced4f" id="r_ac20a5b006752190a32f4a20df79ced4f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#ac20a5b006752190a32f4a20df79ced4f">HTTP2_FRAME_HEADER_SIZE</a>&#160;&#160;&#160;9</td></tr>
 <tr class="memdesc:ac20a5b006752190a32f4a20df79ced4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frame header size in bytes.  <br /></td></tr>
 <tr class="separator:ac20a5b006752190a32f4a20df79ced4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3cc871112302c2c15fdde2c478a74329" id="r_a3cc871112302c2c15fdde2c478a74329"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a3cc871112302c2c15fdde2c478a74329">HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE</a>&#160;&#160;&#160;4</td></tr>
+<tr class="memdesc:a3cc871112302c2c15fdde2c478a74329"><td class="mdescLeft">&#160;</td><td class="mdescRight">WINDOW_UPDATE and RST_STREAM payload size.  <br /></td></tr>
+<tr class="separator:a3cc871112302c2c15fdde2c478a74329"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc6d5cdfcb6fb6ff19beedc1987c2473" id="r_afc6d5cdfcb6fb6ff19beedc1987c2473"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#afc6d5cdfcb6fb6ff19beedc1987c2473">HTTP2_PUSH_PROMISE_ID_SIZE</a>&#160;&#160;&#160;4</td></tr>
+<tr class="memdesc:afc6d5cdfcb6fb6ff19beedc1987c2473"><td class="mdescLeft">&#160;</td><td class="mdescRight">PUSH_PROMISE promised stream ID size.  <br /></td></tr>
+<tr class="separator:afc6d5cdfcb6fb6ff19beedc1987c2473"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64ae18bf7e0c54612b4009eccb94baa2" id="r_a64ae18bf7e0c54612b4009eccb94baa2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a64ae18bf7e0c54612b4009eccb94baa2">HTTP2_PRIORITY_PAYLOAD_SIZE</a>&#160;&#160;&#160;5</td></tr>
+<tr class="memdesc:a64ae18bf7e0c54612b4009eccb94baa2"><td class="mdescLeft">&#160;</td><td class="mdescRight">PRIORITY payload size (deprecated)  <br /></td></tr>
+<tr class="separator:a64ae18bf7e0c54612b4009eccb94baa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a668002a6051465af0c29b9910c88b266" id="r_a668002a6051465af0c29b9910c88b266"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP2_8h.html#a668002a6051465af0c29b9910c88b266">HTTP2_PREFACE_SIZE</a>&#160;&#160;&#160;24</td></tr>
 <tr class="memdesc:a668002a6051465af0c29b9910c88b266"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection preface magic string length.  <br /></td></tr>
 <tr class="separator:a668002a6051465af0c29b9910c88b266"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -508,7 +555,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <div class="textblock"><p>HTTP/2 frame header (9 bytes on wire) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00212">212</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00303">303</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -552,7 +599,7 @@ Frame type. </td></tr>
 </div><div class="memdoc">
 <div class="textblock"><p>HTTP/2 connection configuration. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00240">240</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00331">331</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -590,7 +637,7 @@ initial_window_size</td>
 <td class="fieldname">
 max_concurrent_streams</td>
 <td class="fielddoc">
-</td></tr>
+Max concurrent streams (SETTINGS_MAX_CONCURRENT_STREAMS) </td></tr>
 <tr><td class="fieldtype">
 <a id="ae782ebee629c89a54830be6dbe1b9dc0" name="ae782ebee629c89a54830be6dbe1b9dc0"></a>uint32_t</td>
 <td class="fieldname">
@@ -603,6 +650,30 @@ max_frame_size</td>
 max_header_list_size</td>
 <td class="fielddoc">
 </td></tr>
+<tr><td class="fieldtype">
+<a id="a4572833d76ee10a1bddd1470cc789d4f" name="a4572833d76ee10a1bddd1470cc789d4f"></a>uint32_t</td>
+<td class="fieldname">
+max_stream_close_burst</td>
+<td class="fielddoc">
+Burst for closes/RST. </td></tr>
+<tr><td class="fieldtype">
+<a id="a938e74eab04a08111335da2fcec3f2d0" name="a938e74eab04a08111335da2fcec3f2d0"></a>uint32_t</td>
+<td class="fieldname">
+max_stream_close_rate</td>
+<td class="fielddoc">
+Max stream closes/RST per second. </td></tr>
+<tr><td class="fieldtype">
+<a id="aa7d444c755f09f5ebca1a996c71b5120" name="aa7d444c755f09f5ebca1a996c71b5120"></a>uint32_t</td>
+<td class="fieldname">
+max_stream_open_burst</td>
+<td class="fielddoc">
+Burst allowance for stream opens. </td></tr>
+<tr><td class="fieldtype">
+<a id="a47341b7c9c96d8de9fbbd75debe89d0e" name="a47341b7c9c96d8de9fbbd75debe89d0e"></a>uint32_t</td>
+<td class="fieldname">
+max_stream_open_rate</td>
+<td class="fielddoc">
+Max stream opens per second for rate limiting. </td></tr>
 <tr><td class="fieldtype">
 <a id="a50c501438f1e35ef6260bb4de12719fa" name="a50c501438f1e35ef6260bb4de12719fa"></a>int</td>
 <td class="fieldname">
@@ -638,7 +709,7 @@ settings_timeout_ms</td>
 </div><div class="memdoc">
 <div class="textblock"><p>Single setting entry. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00278">278</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00373">373</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -672,7 +743,7 @@ value</td>
 
 <p>Connection error. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00767">767</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00862">862</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -690,7 +761,7 @@ value</td>
 
 <p>Data available. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00737">737</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00832">832</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -708,7 +779,7 @@ value</td>
 
 <p>GOAWAY received. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00766">766</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00861">861</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -726,7 +797,7 @@ value</td>
 
 <p>Headers ready. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00736">736</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00831">831</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -744,7 +815,7 @@ value</td>
 
 <p>PING response received. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00765">765</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00860">860</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -762,7 +833,7 @@ value</td>
 
 <p>Push promise received. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00741">741</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00836">836</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -781,7 +852,7 @@ value</td>
 <p>Connection event types. </p>
 <p>SETTINGS acknowledged </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00764">764</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00859">859</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -799,7 +870,7 @@ value</td>
 
 <p>Stream ended normally. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00739">739</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00834">834</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -817,7 +888,7 @@ value</td>
 
 <p>Stream reset by peer. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00740">740</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00835">835</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -836,7 +907,7 @@ value</td>
 <p>Stream event types. </p>
 <p>New stream started </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00735">735</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00830">830</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -854,7 +925,7 @@ value</td>
 
 <p>Trailers ready. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00738">738</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00833">833</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -872,7 +943,7 @@ value</td>
 
 <p>Window increased. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00742">742</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00837">837</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -890,7 +961,7 @@ value</td>
 
 <p>SETTINGS, PING. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00140">140</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00231">231</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -908,7 +979,7 @@ value</td>
 
 <p>HEADERS, PUSH_PROMISE, CONTINUATION. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00137">137</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00228">228</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -926,7 +997,7 @@ value</td>
 
 <p>DATA, HEADERS. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00136">136</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00227">227</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -944,7 +1015,7 @@ value</td>
 
 <p>DATA, HEADERS, PUSH_PROMISE. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00138">138</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00229">229</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -962,7 +1033,7 @@ value</td>
 
 <p>HEADERS. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00139">139</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00230">230</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -980,7 +1051,7 @@ value</td>
 
 <p>Frame header size in bytes. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00093">93</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00174">174</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -998,7 +1069,61 @@ value</td>
 
 <p>Connection preface magic string length. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00096">96</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00187">187</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="a64ae18bf7e0c54612b4009eccb94baa2" name="a64ae18bf7e0c54612b4009eccb94baa2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64ae18bf7e0c54612b4009eccb94baa2">&#9670;&#160;</a></span>HTTP2_PRIORITY_PAYLOAD_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HTTP2_PRIORITY_PAYLOAD_SIZE&#160;&#160;&#160;5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>PRIORITY payload size (deprecated) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00183">183</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="afc6d5cdfcb6fb6ff19beedc1987c2473" name="afc6d5cdfcb6fb6ff19beedc1987c2473"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc6d5cdfcb6fb6ff19beedc1987c2473">&#9670;&#160;</a></span>HTTP2_PUSH_PROMISE_ID_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HTTP2_PUSH_PROMISE_ID_SIZE&#160;&#160;&#160;4</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>PUSH_PROMISE promised stream ID size. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00180">180</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="abca4f7f273c332090bc14e9f950519ea" name="abca4f7f273c332090bc14e9f950519ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abca4f7f273c332090bc14e9f950519ea">&#9670;&#160;</a></span>HTTP2_REQUEST_PSEUDO_HEADER_COUNT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HTTP2_REQUEST_PSEUDO_HEADER_COUNT&#160;&#160;&#160;4</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Number of pseudo-headers in HTTP/2 requests (:method, :scheme, :authority, :path) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00103">103</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1016,7 +1141,7 @@ value</td>
 
 <p>Number of defined settings. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00185">185</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00276">276</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1034,7 +1159,25 @@ value</td>
 
 <p>Stream hash table size (prime for better distribution) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00099">99</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00190">190</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="a3cc871112302c2c15fdde2c478a74329" name="a3cc871112302c2c15fdde2c478a74329"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3cc871112302c2c15fdde2c478a74329">&#9670;&#160;</a></span>HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE&#160;&#160;&#160;4</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>WINDOW_UPDATE and RST_STREAM payload size. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00177">177</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1052,7 +1195,7 @@ value</td>
 
 <p>Default connection-level window size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00089">89</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00114">114</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1070,7 +1213,7 @@ value</td>
 
 <p>Default SETTINGS_ENABLE_PUSH (server only) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00056">56</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00055">55</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1087,7 +1230,7 @@ value</td>
 </div><div class="memdoc">
 
 <p><a class="el" href="SocketHTTP2_8h.html">SocketHTTP2.h</a> - HTTP/2 <a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p" title="Socket_new - Create a new socket @domain: Address family (AF_INET, AF_INET6, etc.) @type: Socket type...">Protocol</a> Implementation (RFC 9113) </p>
-<p>Part of the Socket Library Following C Interfaces and Implementations patterns</p>
+<p>Part of the Socket Library</p>
 <p>Provides complete HTTP/2 implementation with:</p><ul>
 <li>Binary framing layer (9-byte frame headers)</li>
 <li>Stream multiplexing with state machine</li>
@@ -1111,7 +1254,25 @@ value</td>
 <li>SETTINGS_TIMEOUT enforcement Default SETTINGS_HEADER_TABLE_SIZE </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00051">51</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00050">50</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="a58ac0ff2518d8345a13646c636bfd2e8" name="a58ac0ff2518d8345a13646c636bfd2e8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58ac0ff2518d8345a13646c636bfd2e8">&#9670;&#160;</a></span>SOCKETHTTP2_DEFAULT_INITIAL_HEADER_BLOCK_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_DEFAULT_INITIAL_HEADER_BLOCK_SIZE&#160;&#160;&#160;(16 * 1024)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Default initial allocation for header blocks. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00094">94</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1129,7 +1290,7 @@ value</td>
 
 <p>Default SETTINGS_INITIAL_WINDOW_SIZE. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00066">66</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00070">70</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1146,8 +1307,9 @@ value</td>
 </div><div class="memdoc">
 
 <p>Default SETTINGS_MAX_CONCURRENT_STREAMS. </p>
+<p>ENFORCEMENT: Checked in http2_stream_create() before creating new streams. Returns NULL if limit exceeded. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00061">61</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00065">65</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1165,7 +1327,7 @@ value</td>
 
 <p>Default SETTINGS_MAX_FRAME_SIZE. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00071">71</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00075">75</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1182,8 +1344,111 @@ value</td>
 </div><div class="memdoc">
 
 <p>Default SETTINGS_MAX_HEADER_LIST_SIZE. </p>
+<p>ENFORCEMENT: Checked in http2_decode_headers() before processing. Returns COMPRESSION_ERROR if exceeded. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00079">79</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00088">88</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="a765dac93880ebf4f64f313d3fad02c1d" name="a765dac93880ebf4f64f313d3fad02c1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a765dac93880ebf4f64f313d3fad02c1d">&#9670;&#160;</a></span>SOCKETHTTP2_DEFAULT_PING_TIMEOUT_MS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_DEFAULT_PING_TIMEOUT_MS&#160;&#160;&#160;30000 /* 30 seconds */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00162">162</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="a771d4aff12b7d59ed835526388a9da1f" name="a771d4aff12b7d59ed835526388a9da1f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a771d4aff12b7d59ed835526388a9da1f">&#9670;&#160;</a></span>SOCKETHTTP2_DEFAULT_SETTINGS_TIMEOUT_MS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_DEFAULT_SETTINGS_TIMEOUT_MS&#160;&#160;&#160;30000 /* 30 seconds */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00158">158</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="a9ce8bfc64e6a1da3f3c8c0058845733f" name="a9ce8bfc64e6a1da3f3c8c0058845733f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ce8bfc64e6a1da3f3c8c0058845733f">&#9670;&#160;</a></span>SOCKETHTTP2_DEFAULT_STREAM_RECV_BUF_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_DEFAULT_STREAM_RECV_BUF_SIZE&#160;&#160;&#160;(64 * 1024)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Default stream receive buffer size for DATA frames. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00091">91</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="ab0f69e66f311f76212458acd539d5eb9" name="ab0f69e66f311f76212458acd539d5eb9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0f69e66f311f76212458acd539d5eb9">&#9670;&#160;</a></span>SOCKETHTTP2_IO_BUFFER_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_IO_BUFFER_SIZE&#160;&#160;&#160;<a class="el" href="SocketHTTP2_8h.html#a9ce8bfc64e6a1da3f3c8c0058845733f">SOCKETHTTP2_DEFAULT_STREAM_RECV_BUF_SIZE</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00170">170</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="a1c458f4c39b9d980a6adbc022fa49abf" name="a1c458f4c39b9d980a6adbc022fa49abf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1c458f4c39b9d980a6adbc022fa49abf">&#9670;&#160;</a></span>SOCKETHTTP2_MAX_CONTINUATION_FRAMES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_MAX_CONTINUATION_FRAMES&#160;&#160;&#160;32</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum CONTINUATION frames per header block (DoS protection) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00100">100</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="af6d5bb6cb0869bc0426836bf076c9c34" name="af6d5bb6cb0869bc0426836bf076c9c34"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6d5bb6cb0869bc0426836bf076c9c34">&#9670;&#160;</a></span>SOCKETHTTP2_MAX_DECODED_HEADERS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_MAX_DECODED_HEADERS&#160;&#160;&#160;128</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum decoded headers per HPACK block. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00097">97</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1201,7 +1466,7 @@ value</td>
 
 <p>Maximum allowed SETTINGS_MAX_FRAME_SIZE (2^24 - 1) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00075">75</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00079">79</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1219,7 +1484,128 @@ value</td>
 
 <p>Implementation limit: maximum streams per connection. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00084">84</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00109">109</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="a4c45c0b678bddd3940ec141601a23f50" name="a4c45c0b678bddd3940ec141601a23f50"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c45c0b678bddd3940ec141601a23f50">&#9670;&#160;</a></span>SOCKETHTTP2_MAX_WINDOW_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_MAX_WINDOW_SIZE&#160;&#160;&#160;0x7FFFFFFF /* 2^31 - 1 */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00166">166</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="a348b0240c0ad1819de8e1c5aac87788b" name="a348b0240c0ad1819de8e1c5aac87788b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a348b0240c0ad1819de8e1c5aac87788b">&#9670;&#160;</a></span>SOCKETHTTP2_PING_RATE_LIMIT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_PING_RATE_LIMIT&#160;&#160;&#160;50 /* Max PING frames per window */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>PING rate limiting (DoS protection) </p>
+<p>Prevents PING flood attacks. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00137">137</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="a31f0fa5dd50b7518853bc761bab152a9" name="a31f0fa5dd50b7518853bc761bab152a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31f0fa5dd50b7518853bc761bab152a9">&#9670;&#160;</a></span>SOCKETHTTP2_PING_RATE_WINDOW_MS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_PING_RATE_WINDOW_MS&#160;&#160;&#160;1000 /* Rate window in milliseconds */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00141">141</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="aa20a27a38e12d263a948524dd53c6fa6" name="aa20a27a38e12d263a948524dd53c6fa6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa20a27a38e12d263a948524dd53c6fa6">&#9670;&#160;</a></span>SOCKETHTTP2_RST_RATE_LIMIT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_RST_RATE_LIMIT&#160;&#160;&#160;100 /* Max RST_STREAM frames per window */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>RST_STREAM rate limiting (CVE-2023-44487 Rapid Reset protection) </p>
+<p>These limits prevent attackers from exhausting server resources by rapidly opening and resetting streams. When exceeded, ENHANCE_YOUR_CALM is sent. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00124">124</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="a9887f36b7f564f07f4aaf2edbbb380c0" name="a9887f36b7f564f07f4aaf2edbbb380c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9887f36b7f564f07f4aaf2edbbb380c0">&#9670;&#160;</a></span>SOCKETHTTP2_RST_RATE_WINDOW_MS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_RST_RATE_WINDOW_MS&#160;&#160;&#160;1000 /* Rate window in milliseconds */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00128">128</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="a0e84d0a8fa6b2fb3c9cd937eae11cf09" name="a0e84d0a8fa6b2fb3c9cd937eae11cf09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0e84d0a8fa6b2fb3c9cd937eae11cf09">&#9670;&#160;</a></span>SOCKETHTTP2_SETTINGS_RATE_LIMIT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_SETTINGS_RATE_LIMIT&#160;&#160;&#160;10 /* Max SETTINGS frames per window */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>SETTINGS rate limiting (DoS protection) </p>
+<p>Prevents SETTINGS flood for CPU/memory exhaustion. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00150">150</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+
+</div>
+</div>
+<a id="aa1404eba0c1374b3ef16a9ce84964773" name="aa1404eba0c1374b3ef16a9ce84964773"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa1404eba0c1374b3ef16a9ce84964773">&#9670;&#160;</a></span>SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS&#160;&#160;&#160;5000 /* Longer window for config changes */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00154">154</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1238,7 +1624,7 @@ value</td>
 
 <p>HTTP/2 connection (opaque) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00266">266</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00361">361</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1256,7 +1642,7 @@ value</td>
 
 <p>Connection event callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00772">772</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00867">867</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1274,7 +1660,7 @@ value</td>
 
 <p>HTTP/2 stream (opaque) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00269">269</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00364">364</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1292,7 +1678,7 @@ value</td>
 
 <p>Stream event callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00747">747</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00842">842</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1341,7 +1727,7 @@ value</td>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00149">149</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00240">240</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1381,7 +1767,7 @@ value</td>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00121">121</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00212">212</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1403,7 +1789,7 @@ value</td>
 <tr><td class="fieldname"><a id="abdba00019b45cc844046f038c7c7d590acf94ddf824fa513af626e9fcaf922f0e" name="abdba00019b45cc844046f038c7c7d590acf94ddf824fa513af626e9fcaf922f0e"></a>HTTP2_ROLE_SERVER&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00227">227</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00318">318</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1429,7 +1815,7 @@ value</td>
 <tr><td class="fieldname"><a id="a4040b0e6d05a8901e50c497254a8176da763095cc59fc3a905a4612e9a2843705" name="a4040b0e6d05a8901e50c497254a8176da763095cc59fc3a905a4612e9a2843705"></a>HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00174">174</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00265">265</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1456,7 +1842,7 @@ value</td>
 <tr><td class="fieldname"><a id="a6a90f4be9250fb7b967b5deefc0df5dca325a861687bc4a0028a5c1ee096a611c" name="a6a90f4be9250fb7b967b5deefc0df5dca325a861687bc4a0028a5c1ee096a611c"></a>HTTP2_STREAM_STATE_CLOSED&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00194">194</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00285">285</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>

@@ -222,6 +222,7 @@ remove_known_request (T async, struct AsyncRequest *req);
  *
  * Thread-safe: Yes - delegates to find_and_remove_request for mutex handling
  */
+#ifdef SOCKET_HAS_IO_URING
 static void
 handle_completion (T async, unsigned request_id, ssize_t result, int err)
 {
@@ -238,6 +239,7 @@ handle_completion (T async, unsigned request_id, ssize_t result, int err)
 
   socket_async_free_request (async, req);
 }
+#endif /* SOCKET_HAS_IO_URING */
 
 /**
  * setup_async_request - Initialize async request structure
@@ -466,9 +468,6 @@ submit_io_uring_op (T async, struct AsyncRequest *req)
   submitted = io_uring_submit (async->ring);
   if (submitted < 0)
     return -1;
-
-  /* Notify via eventfd */
-  (void)write (async->io_uring_fd, &val, sizeof (val));
 
   return 0;
 }
@@ -705,9 +704,13 @@ detect_async_backend (T async)
           async->io_uring_fd = eventfd (0, EFD_NONBLOCK | EFD_CLOEXEC);
           if (async->io_uring_fd >= 0)
             {
-              async->available = 1;
-              async->backend_name = "io_uring";
-              return 1;
+              if (io_uring_register_eventfd(async->ring, async->io_uring_fd) == 0)
+                {
+                  async->available = 1;
+                  async->backend_name = "io_uring";
+                  return 1;
+                }
+              close(async->io_uring_fd);
             }
           io_uring_queue_exit (async->ring);
           async->ring = NULL;
@@ -838,10 +841,10 @@ socket_async_submit (T async, Socket_T socket, enum AsyncRequestType type,
   unsigned request_id;
 
   /* Validate parameters */
-  if (!async || !socket || !cb || len == 0)
+  if (!async || !socket || !cb || len == 0 || !SOCKET_VALID_BUFFER_SIZE (len))
     {
       errno = EINVAL;
-      SOCKET_ERROR_MSG ("Invalid parameters for async submit");
+      SOCKET_ERROR_FMT ("Invalid parameters or buffer size %zu for async submit", len);
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
   if (type == REQ_SEND && !send_buf)
@@ -856,6 +859,17 @@ socket_async_submit (T async, Socket_T socket, enum AsyncRequestType type,
       SOCKET_ERROR_MSG ("Recv buffer required for REQ_RECV");
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
+
+  /* Ensure socket is non-blocking */
+  TRY
+    {
+      Socket_setnonblocking (socket);
+    }
+  EXCEPT (Socket_Failed)
+    {
+      /* Ignore - may already be set or error */
+    }
+  END_TRY;
 
   req = setup_async_request (async, socket, cb, user_data, type,
                              send_buf, recv_buf, len, flags);
@@ -915,11 +929,30 @@ SocketAsync_free (T *async)
   if (!async || !*async)
     return;
 
+  /* Cleanup pending requests to prevent leaks */
+  pthread_mutex_lock (&(*async)->mutex);
+  for (unsigned i = 0; i < SOCKET_HASH_TABLE_SIZE; ++i)
+    {
+      struct AsyncRequest *req = (*async)->requests[i];
+      while (req)
+        {
+          struct AsyncRequest *next = req->next;
+          socket_async_free_request (*async, req);
+          req = next;
+        }
+      (*async)->requests[i] = NULL;
+    }
+  (*async)->next_request_id = 1;
+  pthread_mutex_unlock (&(*async)->mutex);
+
 #ifdef SOCKET_HAS_IO_URING
   if ((*async)->ring)
     {
       if ((*async)->io_uring_fd >= 0)
-        close ((*async)->io_uring_fd);
+        {
+          io_uring_register_eventfd((*async)->ring, -1);
+          close ((*async)->io_uring_fd);
+        }
       io_uring_queue_exit ((*async)->ring);
       (*async)->ring = NULL;
     }

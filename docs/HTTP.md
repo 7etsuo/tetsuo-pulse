@@ -296,6 +296,17 @@ SocketHTTPClient_CookieJar_free(&jar);
 
 When connecting to an HTTPS endpoint, the client automatically negotiates HTTP/2 via ALPN if the server supports it.
 
+### Flow Control Security Enhancements
+
+Recent updates strengthen HTTP/2 flow control against attacks (RFC 9113 §5.2, §6.5.2):
+
+- **Overflow/Underflow Protection**: Window updates use 64-bit checks to prevent exceeding 2^31-1. Adjustments for `SETTINGS_INITIAL_WINDOW_SIZE` (signed delta) validate against negative values or overflows; invalid cases trigger `FLOW_CONTROL_ERROR` and connection closure.
+- **Validation**: Zero increments rejected as `PROTOCOL_ERROR`. Consumption clamps to prevent negative windows; queries return safe >=0 values.
+- **Mitigations**: Reasonable initials (streams: 65KB, connection: 1MB) limit DoS blast radius. Errors logged + metricated (e.g., `SOCKET_CTR_HTTP2_FLOW_OVERFLOW`) for monitoring.
+- **Best Practices**: Pair with pool rate limits; monitor metrics for anomalies. See `SocketHTTP2-flow.c` and [security.md](SECURITY.md#http2-security-rfc-9113) for details.
+
+This hardening prevents exhaustion DoS, invalid state manipulation, and UB from malformed frames/SETTINGS.
+
 ### Checking Protocol Version
 
 ```c
@@ -543,3 +554,31 @@ config.tls_context = tls;
 - @ref SocketHTTPClient.h
 - @ref SocketHTTPServer.h
 
+
+### HTTP/1.1 Parser Security Enhancements (Recent Fixes)
+
+The SocketHTTP1 parser now includes stronger protections against HTTP request smuggling and DoS:
+
+- **Multi-Header Validation**: 
+  - Content-Length: All instances must parse to identical value; mismatch triggers `HTTP1_ERROR_INVALID_CONTENT_LENGTH` (strict mode detects smuggling).
+  - Transfer-Encoding: Scans **all** TE headers for "chunked" token. Hidden chunked in later headers now detected.
+
+- **Strict Transfer-Encoding Handling**:
+  - Reject unsupported codings (gzip, compress, deflate, identity) in strict mode.
+  - For "chunked" with extras (e.g., "chunked,identity"), reject if strict_mode=1 (`HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING`).
+  - Fallback to until_close only if no chunked and not strict.
+
+- **DoS Mitigations**:
+  - New config `max_header_line` (default 16KB): Limits individual header line length (name + value + OWS).
+  - Existing limits (max_headers, max_header_size) enforced before alloc.
+
+- **URI Validation**:
+  - Post-parse `SocketHTTP_URI_parse` integration in finalize_request: Rejects invalid syntax/encodings (`HTTP1_ERROR_INVALID_URI`).
+
+- **Testing**:
+  - New tests in `test_http1_parser.c`: Multi-header vectors, strict rejections, long lines, invalid URI.
+  - Run `ctest -R http1` to verify.
+
+Update configs for production: Set `strict_mode=1` for servers/proxies.
+
+For full details, see security.md and SocketHTTP1.h docs.

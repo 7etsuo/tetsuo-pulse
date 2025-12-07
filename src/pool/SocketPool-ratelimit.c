@@ -14,6 +14,8 @@
  */
 
 #include <assert.h>
+#include <limits.h>
+#include "core/SocketSecurity.h"
 
 #include "core/SocketIPTracker.h"
 #include "core/SocketRateLimit.h"
@@ -228,6 +230,15 @@ SocketPool_setconnrate (T pool, int conns_per_sec, int burst)
 
   int safe_burst = (burst <= 0) ? conns_per_sec : burst;
 
+  /* Validate parameters to prevent resource exhaustion */
+  size_t max_burst_check;
+  if (conns_per_sec > 1000000 ||
+      !SocketSecurity_check_multiply((size_t)conns_per_sec, 100, &max_burst_check) ||
+      (size_t)safe_burst > max_burst_check ||
+      safe_burst <= 0) {
+    RAISE_POOL_MSG (SocketPool_Failed, "Invalid connection rate: rate=%d burst=%d (max 1M/sec, burst <=100x rate)", conns_per_sec, safe_burst);
+  }
+
   POOL_LOCK (pool);
   config_ok = configure_rate_limiter (pool, (size_t)conns_per_sec,
                                       (size_t)safe_burst);
@@ -250,9 +261,8 @@ SocketPool_getconnrate (T pool)
   assert (pool);
 
   POOL_LOCK (pool);
-  int rate = pool->conn_limiter
-             ? (int)SocketRateLimit_get_rate (pool->conn_limiter)
-             : 0;
+  size_t raw_rate = pool->conn_limiter ? SocketRateLimit_get_rate (pool->conn_limiter) : 0;
+  int rate = (raw_rate > (size_t)INT_MAX) ? INT_MAX : (int)raw_rate;
   POOL_UNLOCK (pool);
 
   return rate;
@@ -284,6 +294,11 @@ SocketPool_setmaxperip (T pool, int max_conns)
       POOL_UNLOCK (pool);
       return;
     }
+
+  /* Validate parameters to prevent resource exhaustion */
+  if (max_conns < 1 || max_conns > 10000) {
+    RAISE_POOL_MSG (SocketPool_Failed, "Invalid max per IP: %d (range 1-10000)", max_conns);
+  }
 
   POOL_LOCK (pool);
   config_ok = configure_ip_tracker (pool, max_conns);
@@ -380,6 +395,15 @@ check_pool_accepting (T pool)
  * Returns NULL immediately if pool is draining or stopped.
  * Consumes a rate token before attempting accept. If accept fails,
  * the token is NOT refunded (prevents DoS via rapid accept failures).
+ *
+ * Note: If per-IP limiting is enabled (via SocketPool_setmaxperip > 0),
+ * this function automatically tracks the client IP after successful Socket_accept.
+ * If the subsequent SocketPool_add(pool, client) fails (e.g., pool full or state
+ * changed to draining), the caller MUST call:
+ *   - SocketPool_release_ip(pool, Socket_getpeeraddr(client)) to decrement the IP count
+ *   - Socket_free(&client) to close the socket and prevent FD/memory leaks.
+ * Failure to do so leads to permanent per-IP connection bans and resource exhaustion
+ * (DoS vulnerability). See examples and SocketPool.h for proper error handling.
  */
 Socket_T
 SocketPool_accept_limited (T pool, Socket_T server)
@@ -423,7 +447,6 @@ SocketPool_accept_limited (T pool, Socket_T server)
 /* ============================================================================
  * Manual IP Tracking - Public API
  * ============================================================================ */
-
 /**
  * SocketPool_track_ip - Manually track IP for per-IP limiting
  * @pool: Connection pool
@@ -455,14 +478,6 @@ SocketPool_release_ip (T pool, const char *ip)
   locked_ip_op_void (pool, ip, SocketIPTracker_release);
 }
 
-/**
- * SocketPool_track_ip - Manually track IP for per-IP limiting
- * @pool: Connection pool
- * @ip: IP address to track (NULL or empty always allowed)
- *
- * Returns: 1 if tracked successfully, 0 if IP limit reached
- * Thread-safe: Yes - acquires pool mutex
- */
 
 /**
  * SocketPool_ip_count - Get connection count for IP

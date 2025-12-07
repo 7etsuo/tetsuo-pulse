@@ -25,6 +25,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include "core/SocketSecurity.h"
 
 /* ============================================================================
  * Logging Component
@@ -89,15 +90,25 @@ flow_consume_window (int32_t *window, size_t bytes)
 static int
 flow_update_window (int32_t *window, uint32_t increment)
 {
-  int64_t new_value = (int64_t)*window + (int64_t)increment;
+  if (increment == 0) {
+    SOCKET_LOG_WARN_MSG("Invalid zero window increment");
+    return -1;
+  }
 
-  if (new_value > HTTP2_MAX_WINDOW_SIZE)
+  if (*window < 0) {
+    SOCKET_LOG_WARN_MSG("Negative flow window: %d", *window);
+    return -1;
+  }
+
+  size_t new_value;
+  if (!SocketSecurity_check_add((size_t)*window, (size_t)increment, &new_value) ||
+      new_value > (size_t)HTTP2_MAX_WINDOW_SIZE)
     {
-      SOCKET_LOG_WARN_MSG("Flow window update overflow: current %ld + %u > max %u", (long)*window, increment, HTTP2_MAX_WINDOW_SIZE);
+      SOCKET_LOG_WARN_MSG("Flow window update overflow or invalid: current %u + %u > max %u", (unsigned)*window, increment, HTTP2_MAX_WINDOW_SIZE);
       return -1;
     }
 
-  *window += (int32_t)increment;
+  *window = (int32_t)new_value;
   return 0;
 }
 
@@ -315,5 +326,47 @@ http2_flow_available_send (const SocketHTTP2_Conn_T conn, const SocketHTTP2_Stre
     available = stream->send_window;
 
   return (available > 0) ? available : 0;
+}
+
+/* ============================================================================
+ * Flow Control - Window Adjustment (for SETTINGS changes)
+ * ============================================================================ */
+
+/**
+ * http2_flow_adjust_window - Adjust window by signed delta (SETTINGS initial window change)
+ * @window: Pointer to window value (int32_t)
+ * @delta: Signed adjustment (+increase, -decrease)
+ *
+ * Returns: 0 on success, -1 if adjustment invalid (negative window or overflow)
+ * Thread-safe: No - modifies window directly
+ *
+ * Per RFC 9113 Section 6.5.2: Adjusts window for SETTINGS_INITIAL_WINDOW_SIZE change.
+ * - Negative window after adjustment -> FLOW_CONTROL_ERROR
+ * - Window > HTTP2_MAX_WINDOW_SIZE -> error (defense against invalid settings)
+ * - Logs warning on error.
+ * - Handles delta == 0 as no-op.
+ */
+int
+http2_flow_adjust_window (int32_t *window, int32_t delta)
+{
+  if (delta == 0)
+    return 0;
+
+  int64_t new_value = (int64_t)*window + (int64_t)delta;
+
+  if (new_value < 0)
+    {
+      SOCKET_LOG_WARN_MSG("Flow window adjustment would make negative: current %ld + %ld", (long)*window, (long)delta);
+      return -1;
+    }
+
+  if (new_value > HTTP2_MAX_WINDOW_SIZE)
+    {
+      SOCKET_LOG_WARN_MSG("Flow window adjustment overflow: current %ld + %ld > max %u", (long)*window, (long)delta, HTTP2_MAX_WINDOW_SIZE);
+      return -1;
+    }
+
+  *window = (int32_t)new_value;
+  return 0;
 }
 

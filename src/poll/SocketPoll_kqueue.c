@@ -47,6 +47,7 @@ struct T
   int kq;                /* kqueue file descriptor */
   struct kevent *events; /* Event array for kevent() results */
   int maxevents;         /* Maximum events per wait call */
+  int last_nev;           /* Valid events from last backend_wait (0 on error/timeout) */
 };
 #undef T
 
@@ -88,6 +89,7 @@ backend_new (Arena_T arena, int maxevents)
     }
 
   backend->maxevents = maxevents;
+  backend->last_nev = 0;
   return backend;
 }
 
@@ -236,7 +238,7 @@ backend_del (PollBackend_T backend, int fd)
  * Thread-safe: No (kevent not thread-safe)
  */
 int
-backend_wait (const PollBackend_T backend, int timeout_ms)
+backend_wait (PollBackend_T backend, int timeout_ms)
 {
   struct timespec ts;
   struct timespec *timeout_ptr = NULL;
@@ -258,23 +260,30 @@ backend_wait (const PollBackend_T backend, int timeout_ms)
 
   if (nev < 0)
     {
+      backend->last_nev = 0;
+      memset (backend->events, 0, (size_t)backend->maxevents * sizeof (struct kevent));
       /* kevent was interrupted by signal - return 0 to allow retry */
       if (errno == EINTR)
         return 0;
       return -1;
     }
 
+  backend->last_nev = nev;
+  if (backend->last_nev == 0)
+    {
+      memset (backend->events, 0, (size_t)backend->maxevents * sizeof (struct kevent));
+    }
   return nev;
 }
 
 /**
  * backend_get_event - Retrieve event details from wait results
- * @backend: Backend instance (const - read-only access)
- * @index: Event index (0 to nev-1 from backend_wait return value)
+ * @backend: Backend instance (read-only access to events; last_nev indicates valid range)
+ * @index: Event index (0 to backend->last_nev - 1 from most recent backend_wait)
  * @fd_out: Output: file descriptor that triggered the event
  * @events_out: Output: event flags (POLL_READ | POLL_WRITE | POLL_ERROR | POLL_HANGUP)
  *
- * Returns: 0 on success, -1 if index is out of bounds
+ * Returns: 0 on success, -1 if index out of valid range (0 to last_nev-1 or >= maxevents)
  *
  * Translates kqueue's kevent structure to the portable POLL_* event flags.
  * kqueue reports each filter (read/write) as a separate event, unlike
@@ -293,7 +302,7 @@ backend_get_event (const PollBackend_T backend, int index, int *fd_out,
   assert (fd_out);
   assert (events_out);
 
-  if (index < 0 || index >= backend->maxevents)
+  if (index < 0 || index >= backend->last_nev || index >= backend->maxevents)
     return -1;
 
   kev = &backend->events[index];

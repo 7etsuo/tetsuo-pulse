@@ -44,7 +44,7 @@
 #include "core/Except.h"
 #include "tls/SocketTLS.h" /* For TLSVerifyMode */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include <openssl/ssl.h>
 #include <openssl/x509_vfy.h>

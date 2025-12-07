@@ -39,6 +39,10 @@
 
 #if SOCKET_HAS_TLS
 #include <openssl/ssl.h>
+#include "core/SocketCrypto.h"
+#include "tls/SocketDTLSConfig.h"
+#include "tls/SocketDTLS.h"
+#include "tls/SocketTLS-private.h"  /* For shared tls_cleanup_alpn_temp (if DTLS uses ALPN) */
 #endif
 
 #define T SocketDgram_T
@@ -124,11 +128,52 @@ SocketDgram_free (T *socket)
   *socket = NULL; /* Invalidate caller pointer before cleanup */
 
 #if SOCKET_HAS_TLS
+  /* DTLS cleanup: free SSL and securely clear sensitive data */
   if (s->dtls_ssl)
     {
+      SSL_set_app_data ((SSL *)s->dtls_ssl, NULL);
+      tls_cleanup_alpn_temp ((SSL *)s->dtls_ssl);  /* Free ALPN temp if stored (shared with TLS) */
       SSL_free ((SSL *)s->dtls_ssl);
       s->dtls_ssl = NULL;
+      s->dtls_ctx = NULL;
     }
+  /* Securely clear DTLS buffers if allocated */
+  if (s->dtls_read_buf)
+    {
+      SocketCrypto_secure_clear (s->dtls_read_buf, SOCKET_DTLS_MAX_RECORD_SIZE);
+      s->dtls_read_buf = NULL;
+      s->dtls_read_buf_len = 0;
+    }
+  if (s->dtls_write_buf)
+    {
+      SocketCrypto_secure_clear (s->dtls_write_buf, SOCKET_DTLS_MAX_RECORD_SIZE);
+      s->dtls_write_buf = NULL;
+      s->dtls_write_buf_len = 0;
+    }
+  /* Clear SNI hostname */
+  if (s->dtls_sni_hostname)
+    {
+      size_t hostname_len = strlen (s->dtls_sni_hostname) + 1;
+      SocketCrypto_secure_clear ((void *)s->dtls_sni_hostname, hostname_len);
+      s->dtls_sni_hostname = NULL;
+    }
+
+  /* Invalidate DTLS peer cache */
+  if (s->dtls_peer_res)
+    {
+      freeaddrinfo (s->dtls_peer_res);
+      s->dtls_peer_res = NULL;
+    }
+  s->dtls_peer_host = NULL;
+  s->dtls_peer_port = 0;
+  s->dtls_peer_cache_ts = 0;
+
+  /* Reset DTLS state flags */
+  s->dtls_enabled = 0;
+  s->dtls_handshake_done = 0;
+  s->dtls_shutdown_done = 0;
+  s->dtls_mtu = 0;
+  s->dtls_last_handshake_state = DTLS_HANDSHAKE_NOT_STARTED;
 #endif
 
   /* Common base cleanup: closes fd, disposes arena (frees s too) */
@@ -303,7 +348,7 @@ SocketDgram_recvfrom (T socket, void *buf, size_t len, char *host,
   memset (&addr, 0, sizeof (addr));
   received = perform_recvfrom (socket, buf, len, &addr, &addrlen);
 
-  if (host && host_len > 0 && port)
+  if (received > 0 && host && host_len > 0 && port)
     extract_sender_info (&addr, addrlen, host, host_len, port);
 
   return received;

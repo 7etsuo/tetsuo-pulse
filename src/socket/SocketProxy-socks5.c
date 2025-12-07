@@ -389,11 +389,23 @@ proxy_socks5_send_connect (struct SocketProxy_Conn_T *conn)
       /* Domain name */
       host_len = strlen (conn->target_host);
 
-      /* Validate length */
-      if (host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
+      /* Validate length and content */
+      if (host_len == 0 || host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
         {
           socketproxy_set_error (conn, PROXY_ERROR,
-                                 "Hostname too long: %zu bytes", host_len);
+                                 "Hostname invalid length: %zu bytes (must be 1-%d)", host_len, SOCKET_PROXY_MAX_HOSTNAME_LEN);
+          return -1;
+        }
+      if (strpbrk (conn->target_host, "\r\n") != NULL)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR,
+                                 "Hostname contains forbidden characters (CR or LF)");
+          return -1;
+        }
+      if (conn->target_port < 1 || conn->target_port > 65535)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR,
+                                 "Invalid target port %d (must be 1-65535)", conn->target_port);
           return -1;
         }
 

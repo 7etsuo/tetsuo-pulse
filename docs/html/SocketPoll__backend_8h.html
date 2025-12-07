@@ -119,6 +119,7 @@ $(document).ready(function(){initNavTree('SocketPoll__backend_8h.html',''); init
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="SocketPoll_8h_source.html">poll/SocketPoll.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Socket_8h_source.html">socket/Socket.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Include dependency graph for SocketPoll_backend.h:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
@@ -131,6 +132,8 @@ $(document).ready(function(){initNavTree('SocketPoll__backend_8h.html',''); init
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
+<tr class="memitem:ad5c973c74b3941d078d573439e92c65b" id="r_ad5c973c74b3941d078d573439e92c65b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#ad5c973c74b3941d078d573439e92c65b">VALIDATE_MAXEVENTS</a>(maxevents,  event_type)</td></tr>
+<tr class="separator:ad5c973c74b3941d078d573439e92c65b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a72ef813749c8c54d8f8ccf64ba724a0a" id="r_a72ef813749c8c54d8f8ccf64ba724a0a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#a72ef813749c8c54d8f8ccf64ba724a0a">VALIDATE_FD</a>(fd)</td></tr>
 <tr class="memdesc:a72ef813749c8c54d8f8ccf64ba724a0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">VALIDATE_FD - Validate file descriptor and return error if invalid Used by all backends to eliminate duplicate fd validation code.  <br /></td></tr>
 <tr class="separator:a72ef813749c8c54d8f8ccf64ba724a0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -143,11 +146,11 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ae1b5045d5537dde7eb2cce1e8deae997" id="r_ae1b5045d5537dde7eb2cce1e8deae997"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#ae1b5045d5537dde7eb2cce1e8deae997">backend_new</a> (int maxevents)</td></tr>
-<tr class="memdesc:ae1b5045d5537dde7eb2cce1e8deae997"><td class="mdescLeft">&#160;</td><td class="mdescRight">Backend interface - all backends must implement these functions.  <br /></td></tr>
-<tr class="separator:ae1b5045d5537dde7eb2cce1e8deae997"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa198b207e04b5bb6bec2746c7d86b735" id="r_aa198b207e04b5bb6bec2746c7d86b735"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#aa198b207e04b5bb6bec2746c7d86b735">backend_new</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, int maxevents)</td></tr>
+<tr class="memdesc:aa198b207e04b5bb6bec2746c7d86b735"><td class="mdescLeft">&#160;</td><td class="mdescRight">Backend interface - all backends must implement these functions.  <br /></td></tr>
+<tr class="separator:aa198b207e04b5bb6bec2746c7d86b735"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30a767499b3aa80b77e4fb63368be228" id="r_a30a767499b3aa80b77e4fb63368be228"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#a30a767499b3aa80b77e4fb63368be228">backend_free</a> (<a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend)</td></tr>
-<tr class="memdesc:a30a767499b3aa80b77e4fb63368be228"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_free - Free backend instance @backend: Backend to free  <br /></td></tr>
+<tr class="memdesc:a30a767499b3aa80b77e4fb63368be228"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_free - Close backend resources @backend: Backend instance (fd closed, memory freed by arena dispose) Note: Only closes the backend fd; memory allocations (struct, events array) are owned by arena and freed by Arena_dispose  <br /></td></tr>
 <tr class="separator:a30a767499b3aa80b77e4fb63368be228"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa51ec4e5f966a860cdd9359c36e977c6" id="r_aa51ec4e5f966a860cdd9359c36e977c6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#aa51ec4e5f966a860cdd9359c36e977c6">backend_add</a> (<a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int fd, unsigned events)</td></tr>
 <tr class="memdesc:aa51ec4e5f966a860cdd9359c36e977c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_add - Add socket to poll set @backend: Backend instance @fd: File descriptor to monitor @events: Events to monitor (POLL_READ | POLL_WRITE) Returns: 0 on success, -1 on failure (sets errno)  <br /></td></tr>
@@ -159,11 +162,11 @@ Functions</h2></td></tr>
 <tr class="memdesc:ae9ec719e250346605c00e5b3efb2e7d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_del - Remove socket from poll set @backend: Backend instance @fd: File descriptor to remove Returns: 0 on success, -1 on failure (sets errno) Note: Should succeed silently if fd not in set  <br /></td></tr>
 <tr class="separator:ae9ec719e250346605c00e5b3efb2e7d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b2c06638f0c76ea3c6c2f38503d266b" id="r_a5b2c06638f0c76ea3c6c2f38503d266b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#a5b2c06638f0c76ea3c6c2f38503d266b">backend_wait</a> (<a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int timeout_ms)</td></tr>
-<tr class="memdesc:a5b2c06638f0c76ea3c6c2f38503d266b"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_wait - Wait for events @backend: Backend instance @timeout_ms: Timeout in milliseconds (-1 for infinite) Returns: Number of events ready (&gt;= 0), or -1 on error (sets errno) Note: Returns 0 on timeout  <br /></td></tr>
+<tr class="memdesc:a5b2c06638f0c76ea3c6c2f38503d266b"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_wait - Wait for events @backend: Backend instance (modifies internal events array for output) @timeout_ms: Timeout in milliseconds (-1 for infinite) Returns: Number of events ready (&gt;= 0), or -1 on error (sets errno) Note: Returns 0 on timeout or EINTR (signal interrupt)  <br /></td></tr>
 <tr class="separator:a5b2c06638f0c76ea3c6c2f38503d266b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac8fe3c2f41388223c47cb0c59d9428d1" id="r_ac8fe3c2f41388223c47cb0c59d9428d1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#ac8fe3c2f41388223c47cb0c59d9428d1">backend_get_event</a> (<a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int index, int *fd_out, unsigned *events_out)</td></tr>
-<tr class="memdesc:ac8fe3c2f41388223c47cb0c59d9428d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_get_event - Get event details for index @backend: Backend instance @index: Event index (0 to count-1 from backend_wait) @fd_out: Output - file descriptor @events_out: Output - events that occurred Returns: 0 on success, -1 on invalid index  <br /></td></tr>
-<tr class="separator:ac8fe3c2f41388223c47cb0c59d9428d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad998de1df9f46711f5c3b4dc0257f548" id="r_ad998de1df9f46711f5c3b4dc0257f548"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#ad998de1df9f46711f5c3b4dc0257f548">backend_get_event</a> (const <a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int index, int *fd_out, unsigned *events_out)</td></tr>
+<tr class="memdesc:ad998de1df9f46711f5c3b4dc0257f548"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_get_event - Get event details for index @backend: Backend instance (const - read-only access to events array) @index: Event index (0 to count-1 from backend_wait) @fd_out: Output - file descriptor @events_out: Output - events that occurred Returns: 0 on success, -1 on invalid index  <br /></td></tr>
+<tr class="separator:ad998de1df9f46711f5c3b4dc0257f548"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2edb00f128ad773d62c8f11c516153d9" id="r_a2edb00f128ad773d62c8f11c516153d9"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll__backend_8h.html#a2edb00f128ad773d62c8f11c516153d9">backend_name</a> (void)</td></tr>
 <tr class="memdesc:a2edb00f128ad773d62c8f11c516153d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">backend_name - Get backend name for debugging Returns: Static string with backend name ("epoll", "kqueue", "poll")  <br /></td></tr>
 <tr class="separator:a2edb00f128ad773d62c8f11c516153d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -196,7 +199,47 @@ Functions</h2></td></tr>
 </div><!-- fragment -->
 <p>VALIDATE_FD - Validate file descriptor and return error if invalid Used by all backends to eliminate duplicate fd validation code. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll__backend_8h_source.html#l00031">31</a> of file <a class="el" href="SocketPoll__backend_8h_source.html">SocketPoll_backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll__backend_8h_source.html#l00047">47</a> of file <a class="el" href="SocketPoll__backend_8h_source.html">SocketPoll_backend.h</a>.</p>
+
+</div>
+</div>
+<a id="ad5c973c74b3941d078d573439e92c65b" name="ad5c973c74b3941d078d573439e92c65b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5c973c74b3941d078d573439e92c65b">&#9670;&#160;</a></span>VALIDATE_MAXEVENTS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define VALIDATE_MAXEVENTS</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">maxevents, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">event_type&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">do</span> { \</div>
+<div class="line">    if ((<span class="keywordtype">size_t</span>)(maxevents) &lt;= 0) { \</div>
+<div class="line">      errno = EINVAL; \</div>
+<div class="line">      <span class="keywordflow">return</span> NULL; \</div>
+<div class="line">    } \</div>
+<div class="line">    if ((<span class="keywordtype">size_t</span>)(maxevents) &gt; SIZE_MAX / <span class="keyword">sizeof</span>(event_type)) { \</div>
+<div class="line">      errno = EOVERFLOW; \</div>
+<div class="line">      <span class="keywordflow">return</span> NULL; \</div>
+<div class="line">    } \</div>
+<div class="line">  } <span class="keywordflow">while</span> (0)</div>
+</div><!-- fragment -->
+<p class="definition">Definition at line <a class="el" href="SocketPoll__backend_8h_source.html#l00028">28</a> of file <a class="el" href="SocketPoll__backend_8h_source.html">SocketPoll_backend.h</a>.</p>
 
 </div>
 </div>
@@ -224,7 +267,7 @@ Functions</h2></td></tr>
 <li>Other POSIX: poll (fallback) </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll__backend_8h_source.html#l00023">23</a> of file <a class="el" href="SocketPoll__backend_8h_source.html">SocketPoll_backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll__backend_8h_source.html#l00024">24</a> of file <a class="el" href="SocketPoll__backend_8h_source.html">SocketPoll_backend.h</a>.</p>
 
 </div>
 </div>
@@ -335,12 +378,12 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>backend_free - Free backend instance @backend: Backend to free </p>
+<p>backend_free - Close backend resources @backend: Backend instance (fd closed, memory freed by arena dispose) Note: Only closes the backend fd; memory allocations (struct, events array) are owned by arena and freed by Arena_dispose </p>
 
 </div>
 </div>
-<a id="ac8fe3c2f41388223c47cb0c59d9428d1" name="ac8fe3c2f41388223c47cb0c59d9428d1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac8fe3c2f41388223c47cb0c59d9428d1">&#9670;&#160;</a></span>backend_get_event()</h2>
+<a id="ad998de1df9f46711f5c3b4dc0257f548" name="ad998de1df9f46711f5c3b4dc0257f548"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad998de1df9f46711f5c3b4dc0257f548">&#9670;&#160;</a></span>backend_get_event()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -351,7 +394,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">int backend_get_event </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a>&#160;</td>
           <td class="paramname"><em>backend</em>, </td>
         </tr>
         <tr>
@@ -385,7 +428,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>backend_get_event - Get event details for index @backend: Backend instance @index: Event index (0 to count-1 from backend_wait) @fd_out: Output - file descriptor @events_out: Output - events that occurred Returns: 0 on success, -1 on invalid index </p>
+<p>backend_get_event - Get event details for index @backend: Backend instance (const - read-only access to events array) @index: Event index (0 to count-1 from backend_wait) @fd_out: Output - file descriptor @events_out: Output - events that occurred Returns: 0 on success, -1 on invalid index </p>
 
 </div>
 </div>
@@ -461,8 +504,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ae1b5045d5537dde7eb2cce1e8deae997" name="ae1b5045d5537dde7eb2cce1e8deae997"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae1b5045d5537dde7eb2cce1e8deae997">&#9670;&#160;</a></span>backend_new()</h2>
+<a id="aa198b207e04b5bb6bec2746c7d86b735" name="aa198b207e04b5bb6bec2746c7d86b735"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa198b207e04b5bb6bec2746c7d86b735">&#9670;&#160;</a></span>backend_new()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -473,9 +516,19 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="SocketPoll__backend_8h.html#add97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend_new </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>maxevents</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
+          <td class="paramname"><em>arena</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>maxevents</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -486,7 +539,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Backend interface - all backends must implement these functions. </p>
-<p>backend_new - Create new backend instance @maxevents: Maximum events to return per wait Returns: Backend instance or NULL on failure </p>
+<p>backend_new - Create new backend instance @arena: Arena for memory allocation (backend and events allocated here) @maxevents: Maximum events to return per wait Returns: Backend instance or NULL on failure (arena allocations leaked on partial failure, freed by caller arena dispose) </p>
 
 </div>
 </div>
@@ -524,7 +577,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>backend_wait - Wait for events @backend: Backend instance @timeout_ms: Timeout in milliseconds (-1 for infinite) Returns: Number of events ready (&gt;= 0), or -1 on error (sets errno) Note: Returns 0 on timeout </p>
+<p>backend_wait - Wait for events @backend: Backend instance (modifies internal events array for output) @timeout_ms: Timeout in milliseconds (-1 for infinite) Returns: Number of events ready (&gt;= 0), or -1 on error (sets errno) Note: Returns 0 on timeout or EINTR (signal interrupt) </p>
 
 </div>
 </div>

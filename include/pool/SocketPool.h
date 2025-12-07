@@ -185,7 +185,12 @@ extern Connection_T SocketPool_add (T pool, Socket_T socket);
  * @pool: Pool instance
  * @server: Server socket (listening, non-blocking)
  * @max_accepts: Max to accept (1-SOCKET_POOL_MAX_BATCH_ACCEPTS)
- * @accepted: Output array of accepted sockets (pre-allocated, see below)
+ * @max_accepts: Maximum number to accept (1 to SOCKET_POOL_MAX_BATCH_ACCEPTS)
+ * @accepted_capacity: Size of accepted array provided by caller (must be >= max_accepts to avoid overflow)
+ * @accepted: Output array for accepted Socket_T pointers (caller-allocated, filled up to count returned)
+ *
+ * Returns: Number of sockets accepted and added to pool (0 to min(max_accepts, accepted_capacity, available_slots))
+ * Note: Validates accepted_capacity >= max_accepts; raises SocketPool_Failed if not.
  *
  * Returns: Number accepted (0 to max_accepts)
  * Raises: SocketPool_Failed on error
@@ -207,7 +212,7 @@ extern Connection_T SocketPool_add (T pool, Socket_T socket);
  *   Socket_T accepted[10];   // Array too small!
  *   int count = SocketPool_accept_batch(pool, server, 100, accepted); // OVERFLOW!
  */
-extern int SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
+extern int SocketPool_accept_batch (T pool, Socket_T server, int max_accepts, size_t accepted_capacity,
                                     Socket_T *accepted);
 
 /**
@@ -486,18 +491,19 @@ extern int SocketPool_accept_allowed (T pool, const char *client_ip);
  * @pool: Pool instance
  * @server: Server socket to accept from
  *
- * Returns: New socket if allowed, NULL if rate limited or would block
- * Raises: SocketPool_Failed on actual errors (not rate limiting)
- * Thread-safe: Yes
+ * Returns: Accepted socket, or NULL if draining/stopped, rate limited, or accept failed
+ * Thread-safe: Yes - acquires pool mutex for rate checks
  *
- * Like Socket_accept() but respects rate limits:
- * - Checks connection rate limit (if enabled)
- * - Checks per-IP limit (if enabled)
- * - Returns NULL without raising if rate limited
- * - Returns NULL without raising if would block (EAGAIN)
+ * Returns NULL immediately if pool is draining or stopped.
+ * Consumes a rate token before attempting accept. If accept fails,
+ * the token is NOT refunded (prevents DoS via rapid accept failures).
  *
- * Note: Caller must add returned socket to pool with SocketPool_add()
- * and handle the IP tracking themselves, OR use the returned socket directly.
+ * If per-IP limiting enabled (SocketPool_setmaxperip > 0), automatically tracks
+ * client IP after successful accept. If subsequent SocketPool_add fails,
+ * caller MUST call SocketPool_release_ip(pool, Socket_getpeeraddr(client))
+ * and Socket_free(&client) to avoid IP slot/FD leaks (DoS vector).
+ *
+ * Like Socket_accept() but with rate limiting and optional SYN protection.
  */
 extern Socket_T SocketPool_accept_limited (T pool, Socket_T server);
 

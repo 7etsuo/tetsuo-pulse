@@ -41,7 +41,7 @@ static volatile int health_fail_calls = 0;
 
 /* Health check that fails a limited number of times then succeeds */
 static int
-always_fail_health_check (SocketReconnect_T conn, Socket_T socket, void *userdata)
+always_fail_health_check (SocketReconnect_T conn, Socket_T socket, int timeout_ms, void *userdata)
 {
   (void)conn;
   (void)socket;

@@ -68,6 +68,7 @@ struct T
   pthread_mutex_t mutex;                             /**< Thread-safety mutex */
   SocketAsync_T async;                               /**< Optional async I/O context */
   SocketTimer_heap_T *timer_heap;                    /**< Timer heap for integrated timers */
+  unsigned hash_seed;                                    /**< Random seed for FD hashing to mitigate collisions */
 };
 
 /* ==================== Exception Handling ==================== */

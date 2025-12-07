@@ -23,9 +23,15 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketUtil.h"
+#include "core/SocketSecurity.h"
 #include "socket/Socket.h"
 
 #include <assert.h>
+
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketReconnect);
+
+#define RAISE_RECONNECT_ERROR_MSG(exception, fmt, ...) \
+  SOCKET_RAISE_FMT (SocketReconnect, exception, fmt, ##__VA_ARGS__)
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
@@ -135,8 +141,8 @@ calculate_backoff_delay (T conn)
   double delay = (double)conn->policy.initial_delay_ms
                  * pow (conn->policy.multiplier, (double)conn->attempt_count);
 
-  /* Cap at max delay */
-  if (delay > (double)conn->policy.max_delay_ms)
+  /* Cap at max delay, handle nan/inf */
+  if (isnan(delay) || isinf(delay) || delay > (double)conn->policy.max_delay_ms)
     delay = (double)conn->policy.max_delay_ms;
 
   /* Add jitter: delay * (1 + jitter * (2*random - 1)) */
@@ -286,12 +292,13 @@ start_connect (T conn)
   /* Create new socket */
   TRY
   {
-    conn->socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+    conn->socket = Socket_new (AF_UNSPEC, SOCK_STREAM, 0);  /* Dual stack support */
   }
   EXCEPT (Socket_Failed)
   {
-    snprintf (conn->error_buf, sizeof (conn->error_buf), /* LCOV_EXCL_LINE */
-              "Failed to create socket: %s", strerror (Socket_geterrno ())); /* LCOV_EXCL_LINE */
+    int err = Socket_geterrno ();
+    snprintf (conn->error_buf, sizeof (conn->error_buf),
+              "Failed to create socket: %s", Socket_safe_strerror (err));
     conn->last_error = Socket_geterrno (); /* LCOV_EXCL_LINE */
     return 0; /* LCOV_EXCL_LINE */
   }
@@ -339,8 +346,9 @@ start_connect (T conn)
     /* LCOV_EXCL_STOP */
 
     /* Real failure */
+    int err = Socket_geterrno ();
     snprintf (conn->error_buf, sizeof (conn->error_buf),
-              "Connect failed: %s", strerror (Socket_geterrno ()));
+              "Connect failed: %s", Socket_safe_strerror (err));
     conn->last_error = Socket_geterrno ();
     close_socket (conn);
     return 0;
@@ -396,7 +404,7 @@ check_connect_completion (T conn)
       getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len);
       conn->last_error = error ? error : ECONNREFUSED;
       snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "Connect failed: %s", strerror (conn->last_error));
+                "Connect failed: %s", Socket_safe_strerror (conn->last_error));
       return -1;
     }
 
@@ -413,7 +421,7 @@ check_connect_completion (T conn)
     {
       conn->last_error = error;
       snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "Connect failed: %s", strerror (error));
+                "Connect failed: %s", Socket_safe_strerror (error));
       return -1;
     }
 
@@ -509,11 +517,12 @@ handle_connect_failure (T conn)
  * EOF (0 bytes readable) indicates disconnection.
  */
 static int
-default_health_check (T conn, Socket_T socket, void *userdata)
+default_health_check (T conn, Socket_T socket, int timeout_ms, void *userdata)
 {
   struct pollfd pfd;
   int fd, result;
   char buf;
+  int poll_timeout = (timeout_ms > 0) ? timeout_ms : 100;  /* Min 100ms check */
 
   (void)conn;
   (void)userdata;
@@ -523,17 +532,17 @@ default_health_check (T conn, Socket_T socket, void *userdata)
 
   fd = Socket_fd (socket);
   pfd.fd = fd;
-  pfd.events = POLLIN;
+  pfd.events = POLLIN | POLLERR | POLLHUP;
   pfd.revents = 0;
 
-  result = poll (&pfd, 1, 0);
+  result = poll (&pfd, 1, poll_timeout);
   if (result < 0)
     return errno == EINTR ? 1 : 0;
 
   if (result == 0)
-    return 1; /* No data, but that's OK */
+    return 1; /* Timeout, assume healthy */
 
-  /* Check for error conditions */
+  /* Error or hangup */
   if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
     return 0;
 
@@ -564,7 +573,7 @@ perform_health_check (T conn)
     return;
 
   check = conn->health_check ? conn->health_check : default_health_check;
-  healthy = check (conn, conn->socket, conn->userdata);
+  healthy = check (conn, conn->socket, conn->policy.health_check_timeout_ms, conn->userdata);
 
   conn->last_health_check_ms = socketreconnect_get_time_ms ();
 
@@ -590,8 +599,14 @@ SocketReconnect_new (const char *host, int port,
   T conn;
   size_t host_len;
 
-  assert (host);
-  assert (port > 0 && port <= 65535);
+  if (!host) {
+    SOCKET_ERROR_MSG ("Host cannot be NULL");
+    RAISE_MODULE_ERROR (SocketReconnect_Failed);
+  }
+  if (!(port > 0 && port <= 65535)) {
+    SOCKET_ERROR_FMT ("Invalid port %d (must be 1-65535)", port);
+    RAISE_MODULE_ERROR (SocketReconnect_Failed);
+  }
 
   conn = calloc (1, sizeof (*conn));
   if (!conn)
@@ -614,8 +629,22 @@ SocketReconnect_new (const char *host, int port,
   else
     SocketReconnect_policy_defaults (&conn->policy);
 
+  /* Validate policy parameters */
+  if (conn->policy.initial_delay_ms < 1) conn->policy.initial_delay_ms = SOCKET_RECONNECT_DEFAULT_INITIAL_DELAY_MS;
+  if (conn->policy.max_delay_ms < conn->policy.initial_delay_ms) conn->policy.max_delay_ms = SOCKET_RECONNECT_DEFAULT_MAX_DELAY_MS;
+  if (conn->policy.multiplier < 1.0) conn->policy.multiplier = SOCKET_RECONNECT_DEFAULT_MULTIPLIER;
+  if (conn->policy.jitter < 0.0 || conn->policy.jitter > 1.0) conn->policy.jitter = SOCKET_RECONNECT_DEFAULT_JITTER;
+  if (conn->policy.max_attempts < 0) conn->policy.max_attempts = SOCKET_RECONNECT_DEFAULT_MAX_ATTEMPTS;
+  if (conn->policy.circuit_failure_threshold < 1) conn->policy.circuit_failure_threshold = SOCKET_RECONNECT_DEFAULT_CIRCUIT_THRESHOLD;
+  if (conn->policy.circuit_reset_timeout_ms < 1000) conn->policy.circuit_reset_timeout_ms = SOCKET_RECONNECT_DEFAULT_CIRCUIT_RESET_MS;
+  if (conn->policy.health_check_interval_ms < 0) conn->policy.health_check_interval_ms = SOCKET_RECONNECT_DEFAULT_HEALTH_INTERVAL_MS;
+  if (conn->policy.health_check_timeout_ms < 100) conn->policy.health_check_timeout_ms = SOCKET_RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS;
+
   /* Copy hostname with length validation */
   host_len = strlen (host) + 1;
+  if (!SocketSecurity_check_size (host_len)) {
+    RAISE_RECONNECT_ERROR_MSG (SocketReconnect_Failed, "Hostname too long for allocation");
+  }
   if (host_len > SOCKET_ERROR_MAX_HOSTNAME + 1)
     {
       Arena_dispose (&conn->arena);
@@ -963,8 +992,9 @@ SocketReconnect_send (T conn, const void *buf, size_t len)
   {
     /* Connection error - trigger reconnect */
     conn->last_error = Socket_geterrno ();
+    int err = Socket_geterrno ();
     snprintf (conn->error_buf, sizeof (conn->error_buf),
-              "Send failed: %s", strerror (Socket_geterrno ()));
+              "Send failed: %s", Socket_safe_strerror (err));
     close_socket (conn);
     handle_connect_failure (conn);
     errno = ENOTCONN;
@@ -1002,8 +1032,9 @@ SocketReconnect_recv (T conn, void *buf, size_t len)
   {
     /* Connection error - trigger reconnect */
     conn->last_error = Socket_geterrno ();
+    int err = Socket_geterrno ();
     snprintf (conn->error_buf, sizeof (conn->error_buf),
-              "Recv failed: %s", strerror (Socket_geterrno ()));
+              "Recv failed: %s", Socket_safe_strerror (err));
     close_socket (conn);
     handle_connect_failure (conn);
     return 0;

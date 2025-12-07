@@ -157,7 +157,6 @@ extern SocketUTF8_Result SocketUTF8_validate_str (const char *str);
 typedef struct
 {
   uint32_t state;        /**< DFA state (internal) */
-  uint32_t codepoint;    /**< Accumulated code point (internal) */
   uint8_t bytes_needed;  /**< Remaining bytes in sequence */
   uint8_t bytes_seen;    /**< Bytes seen in current sequence */
 } SocketUTF8_State;

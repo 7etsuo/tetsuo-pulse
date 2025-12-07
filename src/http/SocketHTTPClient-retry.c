@@ -46,6 +46,11 @@ httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt)
   if (client == NULL || attempt < 1)
     return 1;
 
+  if (attempt > SOCKET_RETRY_MAX_ATTEMPTS) {
+    SOCKET_LOG_WARN_MSG("Attempt %d exceeds max %d, clamping to max_delay", attempt, SOCKET_RETRY_MAX_ATTEMPTS);
+    return client->config.retry_max_delay_ms > 0 ? client->config.retry_max_delay_ms : 30000;
+  }
+
   SocketRetry_Policy policy;
   SocketRetry_policy_defaults(&policy);
   policy.initial_delay_ms = client->config.retry_initial_delay_ms;
@@ -63,7 +68,7 @@ httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt)
  * Thread-safe: Yes
  *
  * Implements precise sleep with EINTR retry loop per POSIX.1-2008.
- * Uses CLOCK_REALTIME via nanosleep (not monotonic, but suitable for backoff delays).
+ * Nanosleep provides relative sleep not affected by clock changes, suitable for backoff delays.
  * Converts ms to timespec: tv_sec = ms/1000, tv_nsec = (ms%1000)*1e6.
  */
 void
@@ -104,6 +109,9 @@ httpclient_retry_sleep_ms (int ms)
 int
 httpclient_should_retry_error (const SocketHTTPClient_T client, SocketHTTPClient_Error error)
 {
+  if (client == NULL)
+    return 0;  /* Default: don't retry on invalid client */
+
   switch (error)
     {
     case HTTPCLIENT_ERROR_DNS:
@@ -135,6 +143,9 @@ httpclient_should_retry_error (const SocketHTTPClient_T client, SocketHTTPClient
 int
 httpclient_should_retry_status (const SocketHTTPClient_T client, int status)
 {
+  if (client == NULL)
+    return 0;  /* Default: don't retry on invalid client */
+
   if (SocketHTTP_status_category (status) == HTTP_STATUS_SERVER_ERROR)
     return client->config.retry_on_5xx;
 

@@ -11,7 +11,7 @@
  * NOTE: Avoids nested TRY/EXCEPT to prevent stack-use-after-scope with ASan.
  */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include <signal.h>
 #include <stdint.h>

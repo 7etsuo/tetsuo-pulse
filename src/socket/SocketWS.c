@@ -38,6 +38,7 @@
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 #include "socket/SocketWS-private.h"
+#include "core/SocketSecurity.h"
 
 /* ============================================================================
  * Module Constants
@@ -281,7 +282,11 @@ static int
 ws_message_check_limits (SocketWS_T ws, size_t additional_len)
 {
   SocketWS_MessageAssembly *msg = &ws->message;
-  size_t new_len = msg->len + additional_len;
+  size_t new_len;
+  if (!SocketSecurity_check_add(msg->len, additional_len, &new_len)) {
+    ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE, "Message size addition overflow in check_limits");
+    return -1;
+  }
 
   if (msg->fragment_count >= ws->config.max_fragments)
     {
@@ -319,8 +324,16 @@ ws_message_grow_buffer (SocketWS_T ws, size_t required_len)
     return 0;
 
   new_capacity = msg->capacity ? msg->capacity : SOCKETWS_INITIAL_MESSAGE_CAPACITY;
-  while (new_capacity < required_len)
-    new_capacity *= SOCKETWS_MESSAGE_BUFFER_GROWTH_FACTOR;
+  size_t iterations = 0;
+  while (new_capacity < required_len && iterations < 64) {  // Prevent potential loop on overflow
+    size_t temp;
+    if (!SocketSecurity_check_multiply(new_capacity, SOCKETWS_MESSAGE_BUFFER_GROWTH_FACTOR, &temp)) {
+      new_capacity = required_len > new_capacity ? required_len : SIZE_MAX;
+      break;
+    }
+    new_capacity = temp;
+    iterations++;
+  }
 
   if (new_capacity > ws->config.max_message_size)
     new_capacity = ws->config.max_message_size;
@@ -381,7 +394,10 @@ ws_message_append (SocketWS_T ws, const unsigned char *data, size_t len,
 
   assert (ws);
   msg = &ws->message;
-  new_len = msg->len + len;
+  if (!SocketSecurity_check_add(msg->len, len, &new_len)) {
+    ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE, "Message size addition overflow in append");
+    return -1;
+  }
 
   if (ws_message_check_limits (ws, len) < 0)
     return -1;
@@ -833,6 +849,16 @@ ws_handle_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
     case WS_OPCODE_PONG:
       ws->last_pong_received_time = Socket_get_monotonic_ms ();
       ws->awaiting_pong = 0;
+
+      // Optional: Validate pong payload matches pending ping (prevents spoofing)
+      if (ws->pending_ping_len > 0 && 
+          (len != (size_t)ws->pending_ping_len ||
+           SocketCrypto_secure_compare(payload, (const unsigned char*)ws->pending_ping_payload, len) != 0)) {
+        SOCKET_LOG_WARN_MSG("Pong payload mismatch - possible spoofing; closing connection");
+        ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Pong payload mismatch");
+        return -1;
+      }
+
       return 0;
 
     default:

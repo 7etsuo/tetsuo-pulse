@@ -172,6 +172,16 @@
 #define HTTPCLIENT_DEFAULT_RETRY_ON_5XX 0
 #endif
 
+/** Enforce SameSite attribute for cookie matching (default: 1) */
+#ifndef HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE
+#define HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE 1
+#endif
+
+/** Maximum number of cookies per jar (default: 10000) */
+#ifndef HTTPCLIENT_MAX_COOKIES
+#define HTTPCLIENT_MAX_COOKIES 10000
+#endif
+
 /**
  * Default maximum response body size (0 = unlimited)
  *
@@ -183,7 +193,7 @@
  * exhaustion attacks (e.g., 10MB for typical API responses).
  */
 #ifndef HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE
-#define HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE 0
+#define HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE (10ULL * 1024 * 1024)  /* 10MB default to prevent DoS */
 #endif
 
 /* ============================================================================
@@ -228,6 +238,16 @@
 /** Maximum SameSite attribute value length ("Strict" = 6 + NUL) */
 #ifndef HTTPCLIENT_COOKIE_SAMESITE_SIZE
 #define HTTPCLIENT_COOKIE_SAMESITE_SIZE 16
+#endif
+
+/** Maximum cookie age in seconds (10 years) */
+#ifndef HTTPCLIENT_MAX_COOKIE_AGE_SEC
+#define HTTPCLIENT_MAX_COOKIE_AGE_SEC (365LL * 24 * 3600 * 10)
+#endif
+
+/** Maximum hash chain length before eviction (DoS protection) */
+#ifndef HTTPCLIENT_COOKIE_MAX_CHAIN_LEN
+#define HTTPCLIENT_COOKIE_MAX_CHAIN_LEN 100
 #endif
 
 /* ============================================================================

@@ -29,9 +29,9 @@
 #include <time.h>
 
 #include "core/SocketConfig.h"
+#include "core/SocketSecurity.h"
 #include "core/Arena.h"
 #include "poll/SocketPoll_backend.h"
-#include "core/Arena.h"
 
 /* Sentinel value indicating FD not in poll set */
 #define FD_INDEX_INVALID (-1)
@@ -46,7 +46,9 @@ struct T
   int capacity;        /* Capacity of fds array */
   int maxevents;       /* Maximum events per wait (not strictly enforced) */
   int last_wait_count; /* Number of events from last wait */
+  int last_nev;        /* Valid events from last backend_wait (0 on error/timeout) - for consistency with other backends */
   int max_fd;          /* Maximum FD value seen */
+  int max_fd_limit;    /* Maximum allowed size for FD mapping to prevent OOM */
 };
 #undef T
 
@@ -64,19 +66,21 @@ struct T
 static int
 safe_calc_size (size_t num, size_t elem_size, size_t *total_out)
 {
+  size_t total;
   if (num == 0 || elem_size == 0)
     {
-      if (total_out)
-        *total_out = 0;
-      return 0;
+      total = 0;
     }
-  if (num > SIZE_MAX / elem_size)
+  else
     {
-      errno = EOVERFLOW;
-      return -1;
+      if (!SocketSecurity_check_multiply (num, elem_size, &total))
+        {
+          errno = EOVERFLOW;
+          return -1;
+        }
     }
   if (total_out)
-    *total_out = num * elem_size;
+    *total_out = total;
   return 0;
 }
 
@@ -143,12 +147,30 @@ safe_realloc_array (void *ptr, size_t num, size_t elem_size)
 static int
 safe_int_add (int a, int b, int *result_out)
 {
-  if (a > INT_MAX - b)
+  if (!result_out)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+  if (a < 0 || b < 0)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+  size_t sa = (size_t)a;
+  size_t sb = (size_t)b;
+  size_t res;
+  if (!SocketSecurity_check_add (sa, sb, &res))
     {
       errno = EOVERFLOW;
       return -1;
     }
-  *result_out = a + b;
+  if (res > (size_t)INT_MAX)
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
+  *result_out = (int)res;
   return 0;
 }
 
@@ -163,12 +185,29 @@ safe_int_add (int a, int b, int *result_out)
 static int
 safe_int_double (int val, int *result_out)
 {
-  if (val > INT_MAX / 2)
+  if (!result_out)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+  if (val < 0)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+  size_t sval = (size_t)val;
+  size_t res;
+  if (!SocketSecurity_check_multiply (sval, 2, &res))
     {
       errno = EOVERFLOW;
       return -1;
     }
-  *result_out = val * 2;
+  if (res > (size_t)INT_MAX)
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
+  *result_out = (int)res;
   return 0;
 }
 /* ==================== Initialization Helpers ==================== */
@@ -245,6 +284,16 @@ backend_new (Arena_T arena, const int maxevents)
 
   /* Allocate FD mapping table - size based on typical FD range */
   backend->max_fd = POLL_INITIAL_FD_MAP_SIZE;
+
+  /* Set maximum FD mapping limit based on security allocation limits */
+  SocketSecurityLimits limits;
+  SocketSecurity_get_limits (&limits);
+  backend->max_fd_limit = (int) (limits.max_allocation / sizeof (int));
+  if (backend->max_fd_limit > INT_MAX)
+    backend->max_fd_limit = INT_MAX;
+  if (backend->max_fd_limit < backend->max_fd)
+    backend->max_fd_limit = backend->max_fd;
+
   if (alloc_and_init_fd_mapping (backend) < 0)
     {
       free (backend->fds); /* stdlib free */
@@ -253,6 +302,7 @@ backend_new (Arena_T arena, const int maxevents)
 
   backend->nfds = 0;
   backend->maxevents = maxevents;
+  backend->last_nev = 0;
   backend->last_wait_count = 0;
 
   return backend;
@@ -317,6 +367,12 @@ ensure_fd_mapping (PollBackend_T backend, const int fd)
 
   if (safe_int_add (fd, POLL_FD_MAP_EXPAND_INCREMENT, &new_max) < 0)
     return -1;
+
+  if (new_max > backend->max_fd_limit)
+    {
+      errno = ENOMEM;
+      return -1;
+    }
 
   int *new_mapping = safe_realloc_array (backend->fd_to_index, (size_t)new_max, sizeof (int));
   if (!new_mapping)
@@ -571,18 +627,29 @@ perform_poll_wait (PollBackend_T backend, int timeout_ms)
 
   if (result < 0)
     {
+      backend->last_nev = 0;
+      /* Clear revents to avoid stale data on error/timeout */
+      for (int j = 0; j < backend->nfds; j++)
+        backend->fds[j].revents = 0;
       /* poll was interrupted by signal - treat as timeout */
       if (errno == EINTR)
         return 0;
       return -1;
     }
 
+  backend->last_nev = result;
+  if (backend->last_nev == 0)
+    {
+      /* Ensure revents cleared on timeout (poll should do this, but explicit) */
+      for (int j = 0; j < backend->nfds; j++)
+        backend->fds[j].revents = 0;
+    }
   backend->last_wait_count = result;
   return result;
 }
 
 int
-backend_wait (const PollBackend_T backend, const int timeout_ms)
+backend_wait (PollBackend_T backend, const int timeout_ms)
 {
   assert (backend);
 
@@ -596,6 +663,7 @@ backend_wait (const PollBackend_T backend, const int timeout_ms)
           ts.tv_nsec = (timeout_ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
           nanosleep (&ts, NULL);
         }
+      backend->last_nev = 0;
       return 0;
     }
 
@@ -604,12 +672,12 @@ backend_wait (const PollBackend_T backend, const int timeout_ms)
 
 /**
  * backend_get_event - Get event details for index
- * @backend: Backend instance
- * @index: Event index (0 to count-1 from backend_wait)
+ * @backend: Backend instance (checks against last_nev for valid range)
+ * @index: Event index (0 to backend->last_nev - 1 from most recent backend_wait)
  * @fd_out: Output - file descriptor with events
  * @events_out: Output - events that occurred (POLL_READ | POLL_WRITE | etc.)
  *
- * Returns: 0 on success, -1 on invalid index
+ * Returns: 0 on success, -1 if index out of valid range (0 to last_nev-1)
  *
  * NOTE: This function is O(n) where n = nfds because poll(2) returns
  * a count of ready FDs but doesn't provide direct indexing like epoll.
@@ -627,6 +695,9 @@ backend_get_event (const PollBackend_T backend, const int index, int *fd_out,
   assert (backend);
   assert (fd_out);
   assert (events_out);
+
+  if (index < 0 || index >= backend->last_nev)
+    return -1;
 
   /* poll returns count of ready FDs, but we need to scan array
    * to find the nth ready FD - this is O(n) by necessity */

@@ -76,7 +76,7 @@ test_frame_header_parse (void)
   data[7] = 0x00;
   data[8] = 0x01; /* Stream ID = 1 */
 
-  TEST_ASSERT (SocketHTTP2_frame_header_parse (data, &header) == 0,
+  TEST_ASSERT (SocketHTTP2_frame_header_parse (data, 9, &header) == 0,
                "Parse should succeed");
   TEST_ASSERT (header.length == 100, "Length should be 100");
   TEST_ASSERT (header.type == HTTP2_FRAME_DATA, "Type should be DATA");
@@ -95,7 +95,7 @@ test_frame_header_parse (void)
   data[7] = 0x00;
   data[8] = 0x00; /* Stream ID = 0 */
 
-  TEST_ASSERT (SocketHTTP2_frame_header_parse (data, &header) == 0,
+  TEST_ASSERT (SocketHTTP2_frame_header_parse (data, 9, &header) == 0,
                "Parse should succeed");
   TEST_ASSERT (header.length == 18, "Length should be 18");
   TEST_ASSERT (header.type == HTTP2_FRAME_SETTINGS, "Type should be SETTINGS");
@@ -113,7 +113,7 @@ test_frame_header_parse (void)
   data[7] = 0x00;
   data[8] = 0x03; /* Stream ID = 3 */
 
-  TEST_ASSERT (SocketHTTP2_frame_header_parse (data, &header) == 0,
+  TEST_ASSERT (SocketHTTP2_frame_header_parse (data, 9, &header) == 0,
                "Parse should succeed");
   TEST_ASSERT (header.length == 16384, "Length should be 16384");
   TEST_ASSERT (header.stream_id == 3, "Stream ID should be 3");

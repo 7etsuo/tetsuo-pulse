@@ -470,13 +470,20 @@ SocketPool_setconnrate(pool, 100, 50);
 /* Limit per-IP connections */
 SocketPool_setmaxperip(pool, 10);
 
-/* Rate-limited accept */
+/* Rate-limited accept with error handling */
 Socket_T client = SocketPool_accept_limited(pool, server);
 if (client) {
     Connection_T conn = SocketPool_add(pool, client);
-    SocketBuf_T input = Connection_inbuf(conn);
-    SocketBuf_T output = Connection_outbuf(conn);
-    /* ... use connection ... */
+    if (conn) {
+        SocketBuf_T input = Connection_inbuf(conn);
+        SocketBuf_T output = Connection_outbuf(conn);
+        /* ... use connection ... */
+    } else {
+        /* Pool full or other error - cleanup to avoid leaks */
+        const char *ip = Socket_getpeeraddr(client);
+        SocketPool_release_ip(pool, ip);
+        Socket_free(&client);
+    }
 }
 
 /* Batch accept for high-throughput servers */

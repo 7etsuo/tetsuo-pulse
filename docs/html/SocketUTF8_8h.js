@@ -3,9 +3,12 @@ var SocketUTF8_8h =
     [ "SocketUTF8_State", "SocketUTF8_8h.html#structSocketUTF8__State", [
       [ "bytes_needed", "SocketUTF8_8h.html#a075c37180d67223a22af1724ebdd9278", null ],
       [ "bytes_seen", "SocketUTF8_8h.html#a216e9dcd5edcfb520dd193928984a537", null ],
-      [ "codepoint", "SocketUTF8_8h.html#a82cadcfc6425d071d2bacfa22470676c", null ],
       [ "state", "SocketUTF8_8h.html#a48fe27868c9570c5e60189e4c91dbd26", null ]
     ] ],
+    [ "SOCKET_UTF8_1BYTE_MAX", "SocketUTF8_8h.html#a79465648f060b79ec961cc626975a533", null ],
+    [ "SOCKET_UTF8_2BYTE_MAX", "SocketUTF8_8h.html#a93e8c5ea6de08b28ab080057cd17423c", null ],
+    [ "SOCKET_UTF8_3BYTE_MAX", "SocketUTF8_8h.html#a02b7ac016b2dbc2c374081887ef684d5", null ],
+    [ "SOCKET_UTF8_4BYTE_MIN", "SocketUTF8_8h.html#ad3cc04d775e04588a8446aedca62326f", null ],
     [ "SOCKET_UTF8_MAX_BYTES", "SocketUTF8_8h.html#ac2c24c8a574da982e47bc14c90c51fcb", null ],
     [ "SOCKET_UTF8_MAX_CODEPOINT", "SocketUTF8_8h.html#aa9c7795dd42c45a40d759b981ea2a124", null ],
     [ "SOCKET_UTF8_SURROGATE_MAX", "SocketUTF8_8h.html#a45fdc9df7fba5033d071135c934b8547", null ],

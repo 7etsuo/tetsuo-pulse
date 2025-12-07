@@ -142,6 +142,11 @@ extern const Except_T SocketProxy_Failed;
 #define SOCKET_PROXY_MAX_PASSWORD_LEN 255
 #endif
 
+/** Maximum userinfo length (user + : + pass + @) */
+#ifndef SOCKET_PROXY_MAX_USERINFO_LEN
+#define SOCKET_PROXY_MAX_USERINFO_LEN 512
+#endif
+
 /** Default SOCKS port */
 #ifndef SOCKET_PROXY_DEFAULT_SOCKS_PORT
 #define SOCKET_PROXY_DEFAULT_SOCKS_PORT 1080
@@ -253,6 +258,10 @@ typedef struct SocketProxy_Config
 
   /* HTTP CONNECT specific */
   SocketHTTP_Headers_T extra_headers; /**< Additional headers (optional) */
+    /* TLS for HTTPS proxy (optional) */
+#if SOCKET_HAS_TLS
+  SocketTLSContext_T tls_ctx; /**< TLS context for HTTPS proxies (NULL = use secure defaults) */
+#endif
 
   /* Timeouts (0 = use defaults) */
   int connect_timeout_ms;   /**< Timeout connecting to proxy */
@@ -330,19 +339,23 @@ extern Socket_T SocketProxy_connect (const SocketProxy_Config *proxy,
  * @proxy: Proxy configuration (type, auth, timeouts)
  * @target_host: Target hostname or IP
  * @target_port: Target port (1-65535)
+ * @arena: Optional arena for internal allocations (e.g., TLS context for HTTPS)
  *
  * Returns: PROXY_OK on success, error code on failure
  * Thread-safe: No
  *
- * Performs proxy handshake on an already-connected socket. Use this
- * when you need control over the proxy connection establishment.
+ * Performs proxy handshake on an already-connected socket. For HTTPS proxies,
+ * performs TLS handshake if tls_ctx in config or auto-creates secure one using arena.
+ * Use this when you need control over the proxy connection establishment.
  *
  * The socket should already be connected to proxy->host:proxy->port.
+ * If arena NULL and HTTPS, may fail if no pre-provided tls_ctx.
  */
 extern SocketProxy_Result SocketProxy_tunnel (Socket_T socket,
                                               const SocketProxy_Config *proxy,
                                               const char *target_host,
-                                              int target_port);
+                                              int target_port,
+                                              Arena_T arena /* optional for TLS context allocation */ );
 
 /* ============================================================================
  * Asynchronous API

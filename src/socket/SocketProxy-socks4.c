@@ -24,6 +24,8 @@
 
 #include "socket/SocketProxy-private.h"
 #include "socket/SocketProxy.h"
+#include "socket/SocketCommon.h"
+#include "core/SocketUTF8.h"
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -83,6 +85,13 @@ socks4_write_userid (unsigned char *buf, size_t buf_remaining,
   userid = (username != NULL) ? username : "";
   userid_len = strlen (userid);
 
+  /* Limit username length per convention */
+  if (userid_len > SOCKET_PROXY_MAX_USERNAME_LEN)
+    {
+      *bytes_written = 0;
+      return -1;
+    }
+
   /* Need space for userid + null terminator */
   if (userid_len + 1 > buf_remaining)
     return -1;
@@ -120,6 +129,31 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
   size_t userid_written;
 
   assert (conn != NULL);
+
+  /* Validate inputs */
+  TRY
+    {
+      SocketCommon_validate_port (conn->target_port, SocketProxy_Failed);
+      SocketCommon_validate_hostname (conn->target_host, SocketProxy_Failed);
+      size_t user_len = conn->username ? strlen (conn->username) : 0;
+      if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                                 "Username too long (max %d): %zu", SOCKET_PROXY_MAX_USERNAME_LEN, user_len);
+          RETURN -1;
+        }
+      if (conn->username && SocketUTF8_validate_str (conn->username) != UTF8_VALID)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "Invalid UTF-8 in username");
+          RETURN -1;
+        }
+    }
+  EXCEPT (SocketProxy_Failed)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "%s", socket_error_buf);
+      RETURN -1;
+    }
+  END_TRY;
 
   /* Parse target as IPv4 address */
   if (inet_pton (AF_INET, conn->target_host, &ipv4) != 1)
@@ -181,16 +215,58 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
 
   assert (conn != NULL);
 
+  /* Validate inputs */
+  TRY
+    {
+      SocketCommon_validate_port (conn->target_port, SocketProxy_Failed);
+      SocketCommon_validate_hostname (conn->target_host, SocketProxy_Failed);
+      size_t user_len = conn->username ? strlen (conn->username) : 0;
+      if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                                 "Username too long (max %d): %zu", SOCKET_PROXY_MAX_USERNAME_LEN, user_len);
+          RETURN -1;
+        }
+      if (conn->username && SocketUTF8_validate_str (conn->username) != UTF8_VALID)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "Invalid UTF-8 in username");
+          RETURN -1;
+        }
+    }
+  EXCEPT (SocketProxy_Failed)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "%s", socket_error_buf);
+      RETURN -1;
+    }
+  END_TRY;
+
   /* Check if target is already an IPv4 address */
   if (inet_pton (AF_INET, conn->target_host, &ipv4) == 1)
     return proxy_socks4_send_connect (conn);
 
-  /* Validate hostname length */
+  /* Validate hostname length and UTF-8 */
   host_len = strlen (conn->target_host);
-  if (host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
+  if (host_len == 0 || host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
     {
       socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "Hostname too long: %zu bytes", host_len);
+                             "Hostname invalid length: %zu bytes (must be 1-%d)", host_len, SOCKET_PROXY_MAX_HOSTNAME_LEN);
+      return -1;
+    }
+  if (strpbrk (conn->target_host, "\r\n") != NULL)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "Hostname contains forbidden characters (CR or LF)");
+      return -1;
+    }
+  if (conn->target_port < 1 || conn->target_port > 65535)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "Invalid target port %d (must be 1-65535)", conn->target_port);
+      return -1;
+    }
+  if (SocketUTF8_validate_str (conn->target_host) != UTF8_VALID)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "Invalid UTF-8 in target host");
       return -1;
     }
 
@@ -280,6 +356,7 @@ proxy_socks4_recv_response (struct SocketProxy_Conn_T *conn)
 
   /* Success - tunnel established */
   conn->proto_state = PROTO_STATE_SOCKS4_CONNECT_RECEIVED;
+  conn->recv_offset += SOCKS4_RESPONSE_SIZE;  /* Consume response bytes */
   return PROXY_OK;
 }
 

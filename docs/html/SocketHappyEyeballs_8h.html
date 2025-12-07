@@ -154,6 +154,9 @@ Macros</h2></td></tr>
 <tr class="memitem:a1400e0f9bd9e1de9d861c5ebfab5a877" id="r_a1400e0f9bd9e1de9d861c5ebfab5a877"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHappyEyeballs_8h.html#a1400e0f9bd9e1de9d861c5ebfab5a877">SOCKET_HE_DEFAULT_TOTAL_TIMEOUT_MS</a>&#160;&#160;&#160;30000</td></tr>
 <tr class="memdesc:a1400e0f9bd9e1de9d861c5ebfab5a877"><td class="mdescLeft">&#160;</td><td class="mdescRight">Total operation timeout including DNS and all connection attempts.  <br /></td></tr>
 <tr class="separator:a1400e0f9bd9e1de9d861c5ebfab5a877"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0eca938e489f47d663007b6c0a7ab18f" id="r_a0eca938e489f47d663007b6c0a7ab18f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHappyEyeballs_8h.html#a0eca938e489f47d663007b6c0a7ab18f">SOCKET_HE_DEFAULT_DNS_TIMEOUT_MS</a>&#160;&#160;&#160;5000</td></tr>
+<tr class="memdesc:a0eca938e489f47d663007b6c0a7ab18f"><td class="mdescLeft">&#160;</td><td class="mdescRight">DNS resolution timeout (0 = use total_timeout_ms as limit)  <br /></td></tr>
+<tr class="separator:a0eca938e489f47d663007b6c0a7ab18f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac03b01e1dccf0fd3b0c78d26e4343646" id="r_ac03b01e1dccf0fd3b0c78d26e4343646"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHappyEyeballs_8h.html#ac03b01e1dccf0fd3b0c78d26e4343646">SOCKET_HE_DEFAULT_MAX_ATTEMPTS</a>&#160;&#160;&#160;2</td></tr>
 <tr class="memdesc:ac03b01e1dccf0fd3b0c78d26e4343646"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum simultaneous connection attempts (per RFC 8305 recommendation)  <br /></td></tr>
 <tr class="separator:ac03b01e1dccf0fd3b0c78d26e4343646"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -245,7 +248,7 @@ Variables</h2></td></tr>
 <div class="textblock"><p><a class="el" href="SocketHappyEyeballs_8h.html#structSocketHE__Config__T" title="SocketHE_Config_T - Happy Eyeballs configuration.">SocketHE_Config_T</a> - Happy Eyeballs configuration. </p>
 <p>All time values are in milliseconds. Use 0 for defaults. Call <a class="el" href="SocketHappyEyeballs_8h.html#a3a5b3e45e53cfda16c76fec1cd4fd637" title="SocketHappyEyeballs_config_defaults - Initialize config with defaults @config: Configuration structur...">SocketHappyEyeballs_config_defaults()</a> to initialize. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00108">108</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00107">107</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -254,6 +257,12 @@ Variables</h2></td></tr>
 attempt_timeout_ms</td>
 <td class="fielddoc">
 Per-attempt connection timeout (5000ms) </td></tr>
+<tr><td class="fieldtype">
+<a id="ae94ef758ca842d9231733fbc9b910e2f" name="ae94ef758ca842d9231733fbc9b910e2f"></a>int</td>
+<td class="fieldname">
+dns_timeout_ms</td>
+<td class="fielddoc">
+DNS resolution timeout (5000ms, 0=use total) </td></tr>
 <tr><td class="fieldtype">
 <a id="a718ced26ae9d5f1a9c51980686007af9" name="a718ced26ae9d5f1a9c51980686007af9"></a>int</td>
 <td class="fieldname">
@@ -301,6 +310,24 @@ Overall operation timeout (30000ms) </td></tr>
 
 </div>
 </div>
+<a id="a0eca938e489f47d663007b6c0a7ab18f" name="a0eca938e489f47d663007b6c0a7ab18f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0eca938e489f47d663007b6c0a7ab18f">&#9670;&#160;</a></span>SOCKET_HE_DEFAULT_DNS_TIMEOUT_MS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_HE_DEFAULT_DNS_TIMEOUT_MS&#160;&#160;&#160;5000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>DNS resolution timeout (0 = use total_timeout_ms as limit) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00138">138</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
+
+</div>
+</div>
 <a id="a015f1e24903699e20cea8af2bd44b781" name="a015f1e24903699e20cea8af2bd44b781"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a015f1e24903699e20cea8af2bd44b781">&#9670;&#160;</a></span>SOCKET_HE_DEFAULT_FIRST_ATTEMPT_DELAY_MS</h2>
 
@@ -333,7 +360,7 @@ Overall operation timeout (30000ms) </td></tr>
 
 <p>Maximum simultaneous connection attempts (per RFC 8305 recommendation) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00138">138</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00143">143</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
 
 </div>
 </div>
@@ -369,7 +396,7 @@ Overall operation timeout (30000ms) </td></tr>
 
 <p>Port string buffer size (max "65535" + null terminator) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00148">148</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00153">153</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
 
 </div>
 </div>
@@ -387,7 +414,7 @@ Overall operation timeout (30000ms) </td></tr>
 
 <p>Poll interval for synchronous connection loop. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00143">143</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00148">148</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
 
 </div>
 </div>
@@ -404,7 +431,7 @@ Overall operation timeout (30000ms) </td></tr>
 </div><div class="memdoc">
 
 <p><a class="el" href="SocketHappyEyeballs_8h.html">SocketHappyEyeballs.h</a> - Happy Eyeballs (RFC 8305) Implementation. </p>
-<p>Part of the Socket Library Following C Interfaces and Implementations patterns</p>
+<p>Part of the Socket Library</p>
 <p>Implements the Happy Eyeballs algorithm for fast dual-stack connection establishment. This algorithm races IPv6 and IPv4 connection attempts to minimize connection delay when one address family is slower or unavailable.</p>
 <p>RFC 8305 Algorithm Summary:</p><ol type="1">
 <li>Start DNS queries for A and AAAA records (parallel or sequential)</li>
@@ -442,7 +469,7 @@ Overall operation timeout (30000ms) </td></tr>
 <p>Usage (Synchronous - Simple): Socket_T sock = SocketHappyEyeballs_connect("example.com", 443, NULL); // sock is connected via fastest address family // Use sock normally, then Socket_free(&amp;sock)</p>
 <p>Usage (Asynchronous - Event-Driven): SocketHE_T he = SocketHappyEyeballs_start(dns, poll, "example.com", 443, NULL); while (!SocketHappyEyeballs_poll(he)) { int timeout = SocketHappyEyeballs_next_timeout_ms(he); SocketPoll_wait(poll, &amp;events, timeout); SocketHappyEyeballs_process(he); } Socket_T sock = SocketHappyEyeballs_result(he); SocketHappyEyeballs_free(&amp;he); </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00070">70</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00069">69</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
 
 </div>
 </div>
@@ -459,7 +486,7 @@ Overall operation timeout (30000ms) </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00071">71</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00070">70</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
 
 </div>
 </div>
@@ -493,7 +520,7 @@ Overall operation timeout (30000ms) </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00088">88</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs_8h_source.html#l00087">87</a> of file <a class="el" href="SocketHappyEyeballs_8h_source.html">SocketHappyEyeballs.h</a>.</p>
 
 </div>
 </div>

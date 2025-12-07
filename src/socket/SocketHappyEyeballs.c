@@ -17,12 +17,15 @@
 #include "dns/SocketDNS.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
+#include "socket/SocketCommon.h"
+#include "core/SocketSecurity.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <limits.h>  /* For INT_MAX */
 #include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -115,6 +118,12 @@ he_init_config (T he, const SocketHE_Config_T *config)
     he->config = *config;
   else
     SocketHappyEyeballs_config_defaults (&he->config);
+
+  /* Clamp max_attempts to prevent resource exhaustion and poll array overflow */
+  if (he->config.max_attempts < 1)
+    he->config.max_attempts = SOCKET_HE_DEFAULT_MAX_ATTEMPTS;
+  else if (he->config.max_attempts > SOCKET_HE_MAX_ATTEMPTS)
+    he->config.max_attempts = SOCKET_HE_MAX_ATTEMPTS;
 }
 
 /**
@@ -127,8 +136,13 @@ he_init_config (T he, const SocketHE_Config_T *config)
 static int
 he_copy_hostname (T he, const char *host)
 {
-  size_t host_len = strlen (host) + 1;
+  size_t len = strlen (host);
+  if (len == 0 || len > 255) {
+    RAISE_MODULE_ERROR(SocketHE_Failed);
+  }
+  SocketCommon_validate_hostname (host, SocketHE_Failed);
 
+  size_t host_len = len + 1;
   he->host = Arena_alloc (he->arena, host_len, __FILE__, __LINE__);
   if (!he->host)
     return -1;
@@ -258,6 +272,16 @@ SocketHappyEyeballs_free (T *he)
 
   if (ctx->state == HE_STATE_RESOLVING || ctx->state == HE_STATE_CONNECTING)
     SocketHappyEyeballs_cancel (ctx);
+
+  /* Always cleanup attempts to close sockets/fds */
+  he_cleanup_attempts (ctx);
+
+  /* Close unclaimed winner socket if connected but not transferred via result() */
+  if (ctx->state == HE_STATE_CONNECTED && ctx->winner)
+    {
+      Socket_free (&ctx->winner);
+      ctx->winner = NULL;
+    }
 
   he_free_resolved (ctx);
   he_free_owned_resources (ctx);
@@ -429,6 +453,9 @@ he_dns_blocking_resolve (T he)
   struct addrinfo *original = NULL;
   char port_str[SOCKET_HE_PORT_STR_SIZE];
   int result;
+
+  SocketCommon_validate_hostname (he->host, SocketHE_Failed);
+  SocketCommon_validate_port (he->port, SocketHE_Failed);
 
   he_setup_dns_hints (&hints);
   he_format_port_string (he->port, port_str, sizeof (port_str));
@@ -995,6 +1022,12 @@ he_start_attempt (T he, SocketHE_AddressEntry_T *entry)
     return -1;
 
   entry->tried = 1;
+
+  if (he->attempt_count >= he->config.max_attempts) {
+    entry->tried = 0;  /* Allow potential retry */
+    return -1;
+  }
+
   sock = he_create_attempt_socket (entry);
   if (!sock)
     return -1;
@@ -1364,6 +1397,8 @@ he_set_error (T he, const char *reason)
 static void
 he_transition_to_failed (T he, const char *reason)
 {
+  he_cleanup_attempts (he);  /* Close any pending sockets on failure */
+
   he->state = HE_STATE_FAILED;
   he_set_error (he, reason);
 
@@ -1404,14 +1439,18 @@ he_should_start_fallback (const T he)
 static int
 he_check_total_timeout (const T he)
 {
-  int64_t elapsed;
-
   if (he->config.total_timeout_ms <= 0)
     return 0;
 
   int64_t now_ms = Socket_get_monotonic_ms ();
-  elapsed = (now_ms > he->start_time_ms) ? (now_ms - he->start_time_ms) : 0;
-  return elapsed >= he->config.total_timeout_ms;
+  int64_t elapsed;
+  if (now_ms < he->start_time_ms) {
+    /* Time warp or overflow: treat as expired */
+    return 1;
+  }
+  elapsed = now_ms - he->start_time_ms;
+  int64_t total = he->config.total_timeout_ms;
+  return elapsed >= total;
 }
 
 /* ============================================================================
@@ -1431,8 +1470,10 @@ he_apply_timeout_limit (int current_timeout, int64_t remaining_ms)
   if (remaining_ms <= 0)
     return 0;
 
-  if (current_timeout < 0 || remaining_ms < current_timeout)
-    return (int)remaining_ms;
+  int64_t clamped = (remaining_ms > INT_MAX) ? INT_MAX : remaining_ms;
+
+  if (current_timeout < 0 || clamped < current_timeout)
+    return (int)clamped;
 
   return current_timeout;
 }
@@ -1453,8 +1494,16 @@ he_calculate_total_timeout_remaining (const T he, int current_timeout)
     return current_timeout;
 
   int64_t now_ms = Socket_get_monotonic_ms ();
-  int64_t elapsed = (now_ms > he->start_time_ms) ? (now_ms - he->start_time_ms) : 0;
-  remaining = he->config.total_timeout_ms - elapsed;
+  if (now_ms < he->start_time_ms) {
+    return 0;  /* Time warp: expired */
+  }
+  int64_t elapsed = now_ms - he->start_time_ms;
+
+  int64_t total = he->config.total_timeout_ms;
+  if (total <= elapsed || total <= 0) {
+    return 0;
+  }
+  remaining = total - elapsed;
   return he_apply_timeout_limit (current_timeout, remaining);
 }
 
@@ -1475,8 +1524,16 @@ he_calculate_fallback_timeout_remaining (const T he, int current_timeout)
     return current_timeout;
 
   int64_t now_ms = Socket_get_monotonic_ms ();
-  int64_t elapsed = (now_ms > he->first_attempt_time_ms) ? (now_ms - he->first_attempt_time_ms) : 0;
-  remaining = he->config.first_attempt_delay_ms - elapsed;
+  if (now_ms < he->first_attempt_time_ms) {
+    return 0;  /* Time warp: expired */
+  }
+  int64_t elapsed = now_ms - he->first_attempt_time_ms;
+
+  int64_t delay = he->config.first_attempt_delay_ms;
+  if (delay <= elapsed || delay <= 0) {
+    return 0;
+  }
+  remaining = delay - elapsed;
   return he_apply_timeout_limit (current_timeout, remaining);
 }
 

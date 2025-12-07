@@ -25,6 +25,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "socket/SocketHappyEyeballs.h"
+#include "socket/SocketHappyEyeballs-private.h"  /* For internal functions in fuzz */
 
 /* Operation codes for HE fuzzing */
 enum HEOp
@@ -134,7 +135,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   if (hostname[0] == '\0')
     {
       /* Need at least some hostname */
-      strcpy (hostname, "localhost");
+      strncpy (hostname, "localhost", sizeof(hostname) - 1);
+      hostname[sizeof(hostname) - 1] = '\0';
     }
 
   /* Verify configuration values are within reasonable bounds */
@@ -144,9 +146,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     SocketHE_Config_T default_config;
     SocketHappyEyeballs_config_defaults (&default_config);
 
-    /* Verify our fuzzed config has valid values */
-    assert (config.max_attempts >= 1);
+    /* Verify our fuzzed config has valid values (post-clamp) */
+    assert (config.max_attempts >= 1 && config.max_attempts <= 8);
     assert (config.prefer_ipv6 == 0 || config.prefer_ipv6 == 1);
+
+    /* Test hostname validation and context creation */
+    Arena_T arena = Arena_new ();
+    assert (arena);
+    SocketHE_T he = he_create_context (NULL, NULL, hostname, port, &config);
+    if (he) {
+      /* Test sync DNS resolution (will validate and potentially fail) */
+      he_dns_blocking_resolve (he);
+      SocketHappyEyeballs_free (&he);
+    }
+    Arena_dispose (&arena);
 
     /* Config values are unsigned, so they're always >= 0 */
     (void)config.first_attempt_delay_ms;
@@ -155,7 +168,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   }
   EXCEPT (SocketHE_Failed)
   {
-    /* Configuration error */
+    /* Expected for invalid configs/hostnames - fuzzer success */
   }
   END_TRY;
 

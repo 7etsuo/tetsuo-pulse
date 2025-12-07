@@ -15,23 +15,31 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   SocketHTTP2_FrameHeader header;
   unsigned char output[HTTP2_FRAME_HEADER_SIZE];
 
-  /* Test frame header parsing */
-  if (size >= HTTP2_FRAME_HEADER_SIZE)
-    {
-      SocketHTTP2_frame_header_parse (data, &header);
+  /* Test frame header parsing with new input_len param */
+  SocketHTTP2_FrameHeader header;
+  /* Test short input */
+  if (size < HTTP2_FRAME_HEADER_SIZE) {
+    SocketHTTP2_frame_header_parse (data, size, &header);  /* Should return -1 */
+    return 0;
+  }
+  /* Test full parse */
+  SocketHTTP2_frame_header_parse (data, size, &header);
 
-      /* Test roundtrip */
-      SocketHTTP2_frame_header_serialize (&header, output);
+  /* Test roundtrip serialize/parse */
+  SocketHTTP2_frame_header_serialize (&header, output);
+  SocketHTTP2_FrameHeader verify;
+  SocketHTTP2_frame_header_parse (output, HTTP2_FRAME_HEADER_SIZE, &verify);
 
-      /* Verify roundtrip for valid frames */
-      if (header.length <= SOCKETHTTP2_MAX_MAX_FRAME_SIZE
-          && header.stream_id <= 0x7FFFFFFF)
-        {
-          SocketHTTP2_FrameHeader verify;
-          SocketHTTP2_frame_header_parse (output, &verify);
-          /* Should match original parse */
-        }
-    }
+  /* Additional edge cases: max frame size, max stream ID */
+  header.length = SOCKETHTTP2_MAX_MAX_FRAME_SIZE;
+  header.stream_id = 0x7FFFFFFF;
+  SocketHTTP2_frame_header_serialize (&header, output);
+  SocketHTTP2_frame_header_parse (output, HTTP2_FRAME_HEADER_SIZE, &verify);  /* Should parse without overflow */
+
+  /* Test invalid short for roundtrip verify */
+  if (size > 0 && size < HTTP2_FRAME_HEADER_SIZE) {
+    SocketHTTP2_frame_header_parse (data, size, &verify);  /* Expect -1, no crash */
+  }
 
   /* Test error string functions with parsed values */
   if (size >= 1)

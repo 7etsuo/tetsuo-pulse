@@ -10,7 +10,7 @@ var SocketCrypto_8h =
     [ "SocketCrypto_base64_decoded_size", "SocketCrypto_8h.html#a1cf99c5eeadfeec437513ae0cd63991b", null ],
     [ "SocketCrypto_base64_encode", "SocketCrypto_8h.html#ae97600ec3667d60bfa5cbfa1d945e0a9", null ],
     [ "SocketCrypto_base64_encoded_size", "SocketCrypto_8h.html#a0db3f49e65df22cd5824c3a65995800f", null ],
-    [ "SocketCrypto_hex_decode", "SocketCrypto_8h.html#a8d985da150fef6675b4011b04f3465f8", null ],
+    [ "SocketCrypto_hex_decode", "SocketCrypto_8h.html#a48f3e3abb4afe6f9031f1df9c0796718", null ],
     [ "SocketCrypto_hex_encode", "SocketCrypto_8h.html#af8dd87ea9b8cd776e3434139d6339fb5", null ],
     [ "SocketCrypto_hmac_sha256", "SocketCrypto_8h.html#af63711dccfbba5ed31224035cb541d37", null ],
     [ "SocketCrypto_md5", "SocketCrypto_8h.html#ac843ec3b2ea1885955d9866a9cba7ac4", null ],

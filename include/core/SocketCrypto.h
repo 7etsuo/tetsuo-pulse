@@ -79,7 +79,7 @@ extern const Except_T SocketCrypto_Failed;
 /**
  * SocketCrypto_sha1 - Compute SHA-1 hash (RFC 3174)
  * @input: Input data
- * @input_len: Length of input data in bytes
+ * @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION)
  * @output: Output buffer (must be at least SOCKET_CRYPTO_SHA1_SIZE bytes)
  *
  * Computes the SHA-1 message digest of the input data.
@@ -96,7 +96,7 @@ extern void SocketCrypto_sha1 (const void *input, size_t input_len,
 /**
  * SocketCrypto_sha256 - Compute SHA-256 hash (FIPS 180-4)
  * @input: Input data
- * @input_len: Length of input data in bytes
+ * @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION)
  * @output: Output buffer (must be at least SOCKET_CRYPTO_SHA256_SIZE bytes)
  *
  * Computes the SHA-256 message digest of the input data.
@@ -110,7 +110,7 @@ extern void SocketCrypto_sha256 (const void *input, size_t input_len,
 /**
  * SocketCrypto_md5 - Compute MD5 hash (RFC 1321)
  * @input: Input data
- * @input_len: Length of input data in bytes
+ * @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION)
  * @output: Output buffer (must be at least SOCKET_CRYPTO_MD5_SIZE bytes)
  *
  * Computes the MD5 message digest of the input data.
@@ -154,7 +154,7 @@ extern void SocketCrypto_hmac_sha256 (const void *key, size_t key_len,
 /**
  * SocketCrypto_base64_encode - Base64 encode data
  * @input: Input data
- * @input_len: Length of input data in bytes
+ * @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION)
  * @output: Output buffer for encoded string
  * @output_size: Size of output buffer in bytes
  *
@@ -193,7 +193,7 @@ extern ssize_t SocketCrypto_base64_decode (const char *input, size_t input_len,
 
 /**
  * SocketCrypto_base64_encoded_size - Calculate required encoded buffer size
- * @input_len: Length of input data in bytes
+ * @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION)
  *
  * Returns: Required buffer size including null terminator
  * Thread-safe: Yes

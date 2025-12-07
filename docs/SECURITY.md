@@ -47,6 +47,56 @@ SocketTLSContext_T ctx = SocketTLSContext_new_server(
 
 ---
 
+## Certificate Transparency (CT)
+
+Certificate Transparency (RFC 6962) provides an auditable public log of certificates issued by CAs. The library supports CT verification for TLS clients to detect mis-issued or undetected certificates.
+
+### Usage
+```c
+SocketTLSContext_T ctx = SocketTLSContext_new_client("ca-bundle.pem");
+
+/* Enable strict CT validation (fail if no valid SCTs) */
+SocketTLSContext_enable_ct(ctx, CT_VALIDATION_STRICT);
+
+/* Or permissive (log but continue on missing/invalid SCTs) */
+SocketTLSContext_enable_ct(ctx, CT_VALIDATION_PERMISSIVE);
+
+/* Load custom trusted CT log list (overrides OpenSSL defaults) */
+SocketTLSContext_set_ctlog_list_file(ctx, "/path/to/ctlogs.txt");
+
+/* Query status */
+if (SocketTLSContext_ct_enabled(ctx)) {
+  CTValidationMode mode = SocketTLSContext_get_ct_mode(ctx);
+  // mode == CT_VALIDATION_STRICT or PERMISSIVE
+}
+```
+
+### Security Benefits
+- **Mis-issuance Detection**: SCTs (Signed Certificate Timestamps) must be obtained from public logs before cert issuance.
+- **CA Accountability**: Monitors CA behavior through public audits.
+- **Integration**: Works with CRL/OCSP for full revocation/CT coverage. Errors reflected in `SocketTLS_get_verify_result`.
+- **Modes**:
+  - **Strict**: Handshake fails without valid SCTs (recommended for high-security).
+  - **Permissive**: Logs issues (via OpenSSL error queue) but allows connection.
+
+### Requirements
+- OpenSSL 1.1.0+ with CT support (`SOCKET_HAS_CT_SUPPORT`).
+- Client-only (server contexts raise `SocketTLS_Failed`).
+
+### Custom Logs
+OpenSSL uses built-in log list (Google, etc.). For custom (e.g., enterprise logs), provide a file with log descriptors (see OpenSSL `CTLOG_STORE_load_file` format). Validate paths with library checks (no traversal, length limits).
+
+### Verification
+- SCTs validated during cert chain check.
+- Missing/invalid SCTs: `X509_V_ERR_NO_VALID_SCTS` or similar in verify result.
+- Test: Use `openssl s_client -ct` or library tests (`ctest -R tls_ct`).
+
+### Limits
+- `SOCKET_TLS_MAX_SCT_LEN`: Max SCT size (config).
+- Chain depth (`SOCKET_TLS_MAX_CERT_CHAIN_DEPTH`) applies to SCT-embedded certs.
+
+Combine with pinning (`SocketTLSContext_add_pin_*`) for defense-in-depth.
+
 ## Certificate Pinning
 
 Pin expected certificates to prevent MITM attacks:
@@ -392,6 +442,17 @@ SocketHTTPClient_CookieJar_set_flags(jar,
     COOKIE_FLAG_SAMESITE     /* Prevent CSRF */
 );
 ```
+
+### HTTP/2 Flow Control Hardening
+
+HTTP/2 flow control now includes enhanced protections (see [HTTP.md#http2-flow-control-security-enhancements](HTTP.md#http2-flow-control-security-enhancements)):
+
+- **Overflow Prevention**: 64-bit checks in window updates/adjustments cap at 2^31-1; errors trigger `FLOW_CONTROL_ERROR`.
+- **Negative Window Rejection**: SETTINGS delta adjustments reject cases leading to <0 windows (RFC 9113 §6.5.2), closing connections.
+- **Invalid Inputs**: Zero increments treated as `PROTOCOL_ERROR`; metrics track violations for attack detection.
+- **Monitoring**: New counters (e.g., `SOCKET_CTR_HTTP2_FLOW_OVERFLOW`) via `SocketMetrics_get` for alerting.
+
+Use with `SocketPool` rate limits to mitigate DoS. Fuzz-tested for robustness.
 
 ---
 

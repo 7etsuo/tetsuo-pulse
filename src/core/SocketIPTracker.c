@@ -27,6 +27,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <time.h>
+#include <unistd.h>
+#include "core/SocketCrypto.h"
+#include "core/SocketSecurity.h"
 
 #define T SocketIPTracker_T
 
@@ -68,12 +74,35 @@ struct T
   IPEntry **buckets;     /**< Hash table buckets */
   size_t bucket_count;   /**< Number of buckets */
   int max_per_ip;        /**< Maximum connections per IP */
+  size_t max_unique_ips; /**< Maximum unique IPs tracked (0=unlimited) */
+  unsigned hash_seed;    /**< Hash salt for DoS resistance */
   size_t total_conns;    /**< Total tracked connections */
   size_t unique_ips;     /**< Number of unique IPs */
   pthread_mutex_t mutex; /**< Thread safety mutex */
   Arena_T arena;         /**< Arena for allocation (NULL if malloc) */
   int initialized;       /**< 1 if mutex initialized */
 };
+
+/**
+ * validate_ip_format - Validate IP string format using inet_pton
+ * @ip: IP address string
+ *
+ * Returns: true if valid IPv4 or IPv6, false otherwise
+ * Thread-safe: Yes (pure function)
+ */
+static bool
+validate_ip_format (const char *ip)
+{
+  struct in_addr ipv4;
+  if (inet_pton (AF_INET, ip, &ipv4) == 1)
+    return true;
+
+  struct in6_addr ipv6;
+  if (inet_pton (AF_INET6, ip, &ipv6) == 1)
+    return true;
+
+  return false;
+}
 
 /* ============================================================================
  * Internal Helper Functions - Hash Computation
@@ -90,11 +119,27 @@ struct T
  * Uses DJB2 hash algorithm via socket_util_hash_djb2.
  */
 static unsigned
-compute_bucket_index (const char *ip, size_t bucket_count)
+salted_djb2 (const char *str, unsigned seed, unsigned table_size);
+
+static unsigned
+compute_bucket_index (const T tracker, const char *ip, size_t bucket_count)
 {
+  assert (tracker != NULL);
   assert (ip != NULL);
   assert (bucket_count > 0);
-  return socket_util_hash_djb2 (ip, (unsigned)bucket_count);
+  return salted_djb2 (ip, tracker->hash_seed, (unsigned) bucket_count);
+}
+
+static unsigned
+salted_djb2 (const char *str, unsigned seed, unsigned table_size)
+{
+  unsigned hash = SOCKET_UTIL_DJB2_SEED ^ seed;
+  int c;
+
+  while ((c = *str++) != '\0')
+    hash = ((hash << 5) + hash) + (unsigned) c;
+
+  return table_size > 0 ? hash % table_size : hash;
 }
 
 /* ============================================================================
@@ -157,7 +202,7 @@ find_entry (const T tracker, const char *ip, unsigned *bucket_out,
   assert (tracker != NULL);
   assert (ip != NULL);
 
-  idx = compute_bucket_index (ip, tracker->bucket_count);
+  idx = compute_bucket_index (tracker, ip, tracker->bucket_count);
 
   if (bucket_out != NULL)
     *bucket_out = idx;
@@ -444,6 +489,8 @@ init_tracker_fields (T tracker, Arena_T arena, int max_per_ip)
   tracker->max_per_ip = max_per_ip;
   if (tracker->max_per_ip < 0)
     tracker->max_per_ip = 0;
+  tracker->max_unique_ips = SOCKET_MAX_CONNECTIONS;
+  tracker->hash_seed = 0; /* set after mutex init */
   tracker->arena = arena;
   tracker->initialized = 0;
 }
@@ -553,6 +600,12 @@ is_unlimited_mode (const T tracker)
 static int
 create_new_entry_and_track (T tracker, const char *ip, unsigned bucket)
 {
+  if (tracker->max_unique_ips > 0 && tracker->unique_ips >= tracker->max_unique_ips)
+    {
+      SOCKET_LOG_WARN_MSG ("IP tracker unique limit reached: skipping new IP %s", ip);
+      return 0;
+    }
+
   IPEntry *entry = create_and_insert_entry (tracker, ip, bucket, 1);
   if (entry == NULL)
     {
@@ -575,7 +628,14 @@ create_new_entry_and_track (T tracker, const char *ip, unsigned bucket)
 static int
 increment_existing_entry (T tracker, IPEntry *entry)
 {
-  if (is_unlimited_mode (tracker) || entry->count < tracker->max_per_ip)
+  if (entry->count >= INT_MAX - 1)
+    {
+      SOCKET_LOG_ERROR_MSG ("IP tracker count overflow for IP %s", entry->ip);
+      return 0;
+    }
+
+  size_t attempted = (size_t) entry->count + 1;
+  if (is_unlimited_mode (tracker) || attempted <= (size_t) tracker->max_per_ip)
     {
       entry->count++;
       tracker->total_conns++;
@@ -648,6 +708,22 @@ SocketIPTracker_new (Arena_T arena, int max_per_ip)
                         "Failed to initialize IP tracker mutex");
     }
 
+  /* Generate secure hash seed for collision resistance */
+  {
+    unsigned char seed_bytes[sizeof (unsigned)];
+    ssize_t got_bytes = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
+    if (got_bytes == (ssize_t) sizeof (seed_bytes))
+      {
+        memcpy (&tracker->hash_seed, seed_bytes, sizeof (tracker->hash_seed));
+      }
+    else
+      {
+        /* Fallback: time + PID */
+        tracker->hash_seed = (unsigned) time (NULL) ^ (unsigned) getpid ();
+        SOCKET_LOG_WARN_MSG ("SocketIPTracker: fallback hash seed (crypto random failed: %zd)", got_bytes);
+      }
+  }
+
   return tracker;
 }
 
@@ -706,6 +782,13 @@ SocketIPTracker_track (T tracker, const char *ip)
   if (!SOCKET_VALID_IP_STRING (ip))
     return 1;
 
+  size_t ip_len = strlen (ip);
+  if (ip_len >= (size_t) SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
+    {
+      SOCKET_LOG_WARN_MSG ("Invalid IP for tracking: %s (len=%zu)", ip, ip_len);
+      return 0; /* Reject invalid IPs */
+    }
+
   pthread_mutex_lock (&tracker->mutex);
 
   result = track_internal (tracker, ip);
@@ -736,6 +819,13 @@ SocketIPTracker_release (T tracker, const char *ip)
 
   if (!SOCKET_VALID_IP_STRING (ip))
     return;
+
+  size_t ip_len = strlen (ip);
+  if (ip_len >= (size_t) SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
+    {
+      SOCKET_LOG_WARN_MSG ("Invalid IP for release: %s", ip);
+      return;
+    }
 
   pthread_mutex_lock (&tracker->mutex);
 
@@ -773,6 +863,10 @@ SocketIPTracker_count (T tracker, const char *ip)
   assert (tracker != NULL);
 
   if (!SOCKET_VALID_IP_STRING (ip))
+    return 0;
+
+  size_t ip_len = strlen (ip);
+  if (ip_len >= (size_t) SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
     return 0;
 
   pthread_mutex_lock (&tracker->mutex);
@@ -826,6 +920,47 @@ SocketIPTracker_getmax (T tracker)
   pthread_mutex_unlock (&tracker->mutex);
 
   return max;
+}
+
+/**
+ * SocketIPTracker_setmaxunique - Set maximum unique IPs tracked
+ * @tracker: IP tracker instance
+ * @max_unique: New limit (0=unlimited)
+ *
+ * Thread-safe: Yes
+ *
+ * Limits total entries to prevent memory exhaustion.
+ * Existing entries not affected; new unique IPs rejected.
+ */
+void
+SocketIPTracker_setmaxunique (T tracker, size_t max_unique)
+{
+  assert (tracker != NULL);
+
+  pthread_mutex_lock (&tracker->mutex);
+  tracker->max_unique_ips = max_unique;
+  pthread_mutex_unlock (&tracker->mutex);
+}
+
+/**
+ * SocketIPTracker_getmaxunique - Get maximum unique IPs limit
+ * @tracker: IP tracker instance
+ *
+ * Returns: Current limit (0=unlimited)
+ * Thread-safe: Yes
+ */
+size_t
+SocketIPTracker_getmaxunique (T tracker)
+{
+  size_t maxu;
+
+  assert (tracker != NULL);
+
+  pthread_mutex_lock (&tracker->mutex);
+  maxu = tracker->max_unique_ips;
+  pthread_mutex_unlock (&tracker->mutex);
+
+  return maxu;
 }
 
 /**

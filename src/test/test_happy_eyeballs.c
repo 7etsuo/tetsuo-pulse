@@ -48,6 +48,8 @@ TEST (he_config_custom)
 {
   SocketHE_Config_T config;
 
+
+
   SocketHappyEyeballs_config_defaults (&config);
 
   config.first_attempt_delay_ms = 100;

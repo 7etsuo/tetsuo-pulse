@@ -45,6 +45,7 @@
 #include "core/SocketConfig.h"
 #define SOCKET_LOG_COMPONENT "SocketCommon"
 #include "core/SocketUtil.h"
+#include "core/SocketSecurity.h"
 #include "dns/SocketDNS.h"
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
@@ -172,7 +173,16 @@ SocketCommon_parse_ip (const char *ip_str, int *family)
   struct in_addr addr4;
   struct in6_addr addr6;
 
-  assert (ip_str);
+    if (!ip_str) {
+    if (family) *family = AF_UNSPEC;
+    return 0;
+  }
+
+  size_t len = strlen(ip_str);
+  if (len == 0 || len > SOCKET_ERROR_MAX_HOSTNAME) {
+    if (family) *family = AF_UNSPEC;
+    return 0;
+  }
 
   if (family)
     *family = AF_UNSPEC;
@@ -291,10 +301,10 @@ socketcommon_parse_cidr (const char *cidr_str, unsigned char *network,
   long prefix_long;
   int result = -1;
 
-  assert (cidr_str);
-  assert (network);
-  assert (prefix_len);
-  assert (family);
+  if (!cidr_str || !network || !prefix_len || !family) return -1;
+
+  size_t len = strlen(cidr_str);
+  if (len == 0 || len > SOCKET_ERROR_MAX_HOSTNAME + 10) return -1;
 
   cidr_copy = strdup (cidr_str);
   if (!cidr_copy)
@@ -369,14 +379,20 @@ socketcommon_compare_masked_addresses (const unsigned char *masked_ip,
 int
 SocketCommon_cidr_match (const char *ip_str, const char *cidr_str)
 {
+  if (!ip_str || !cidr_str) return -1;
+
+  size_t ip_len = strlen(ip_str);
+  size_t cidr_len = strlen(cidr_str);
+  if (ip_len == 0 || ip_len > SOCKET_ERROR_MAX_HOSTNAME ||
+      cidr_len == 0 || cidr_len > SOCKET_ERROR_MAX_HOSTNAME + 10 /* for /prefix */) {
+    return -1;
+  }
+
   unsigned char network[SOCKET_IPV6_ADDR_BYTES] = { 0 };
   unsigned char ip[SOCKET_IPV6_ADDR_BYTES] = { 0 };
   int prefix_len;
   int cidr_family;
   int ip_family;
-
-  assert (ip_str);
-  assert (cidr_str);
 
   if (socketcommon_parse_cidr (cidr_str, network, &prefix_len, &cidr_family)
       != 0)
@@ -507,14 +523,19 @@ socketcommon_validate_hostname_labels (const char *hostname)
 bool
 socketcommon_is_ip_address (const char *host)
 {
+  if (!host) return false;
+
+  size_t len = strlen(host);
+  if (len == 0 || len > SOCKET_ERROR_MAX_HOSTNAME) return false;
+
   struct in_addr addr4;
   struct in6_addr addr6;
 
   if (inet_pton (SOCKET_AF_INET, host, &addr4) == 1)
-    return 1;
+    return true;
   if (inet_pton (SOCKET_AF_INET6, host, &addr6) == 1)
-    return 1;
-  return 0;
+    return true;
+  return false;
 }
 
 /**
@@ -596,6 +617,17 @@ set_single_timeout_opt (int fd, int optname, const char *opt_desc, const struct 
 int
 SocketCommon_create_fd (int domain, int type, int protocol, Except_T exc_type)
 {
+  /* Validate supported domain, type, protocol for security (Section 4) */
+  if (domain != AF_INET && domain != AF_INET6 && domain != AF_UNIX) {
+    SOCKET_RAISE_FMT (SocketCommon, exc_type, "Unsupported address domain: %d (only AF_INET/AF_INET6/AF_UNIX)", domain);
+  }
+  if (type != SOCK_STREAM && type != SOCK_DGRAM) {
+    SOCKET_RAISE_FMT (SocketCommon, exc_type, "Unsupported socket type: %d (only SOCK_STREAM/SOCK_DGRAM)", type);
+  }
+  if (protocol != 0 && protocol != IPPROTO_TCP && protocol != IPPROTO_UDP) {
+    SOCKET_RAISE_FMT (SocketCommon, exc_type, "Unsupported protocol: %d (only 0/TCP/UDP)", protocol);
+  }
+
   int fd;
 
 #if SOCKET_HAS_SOCK_CLOEXEC
@@ -785,7 +817,9 @@ SocketCommon_set_option_int (SocketBase_T base, int level, int optname,
 void
 SocketCommon_setreuseaddr (SocketBase_T base, Except_T exc_type)
 {
-  assert (base);
+  if (!base) {
+    SOCKET_RAISE_MSG (SocketCommon, exc_type, "Invalid base pointer");
+  }
   SocketCommon_set_option_int (base, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEADDR, 1,
                                exc_type);
 }
@@ -793,7 +827,9 @@ SocketCommon_setreuseaddr (SocketBase_T base, Except_T exc_type)
 void
 SocketCommon_setreuseport (SocketBase_T base, Except_T exc_type)
 {
-  assert (base);
+  if (!base) {
+    SOCKET_RAISE_MSG (SocketCommon, exc_type, "Invalid base pointer");
+  }
 
 #if SOCKET_HAS_SO_REUSEPORT
   SocketCommon_set_option_int (base, SOCKET_SOL_SOCKET, SOCKET_SO_REUSEPORT, 1,
@@ -808,7 +844,9 @@ SocketCommon_settimeout (SocketBase_T base, int timeout_sec, Except_T exc_type)
 {
   struct timeval tv;
 
-  assert (base);
+  if (!base) {
+    SOCKET_RAISE_MSG (SocketCommon, exc_type, "Invalid base pointer");
+  }
 
   if (timeout_sec < 0)
     {
@@ -852,7 +890,7 @@ SocketCommon_disable_sigpipe (int fd)
        * and does not affect functionality. */
       SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
                        "Failed to set SO_NOSIGPIPE on fd %d: %s", fd,
-                       strerror (errno));
+                       Socket_safe_strerror (errno));
     }
 #else
   (void)fd; /* Suppress unused parameter warning on Linux */
@@ -946,7 +984,7 @@ SocketCommon_update_local_endpoint (SocketBase_T base)
   if (getsockname (SocketBase_fd (base), (struct sockaddr *)&local, &len) < 0)
     {
       SOCKET_ERROR_MSG ("Failed to update local endpoint: %s",
-                        strerror (errno));
+                        Socket_safe_strerror (errno));
       memset (&base->local_addr, 0, sizeof (base->local_addr));
       base->local_addrlen = 0;
       base->localaddr = NULL;
@@ -997,7 +1035,10 @@ SocketBase_set_timeouts (SocketBase_T base, const SocketTimeouts_T *timeouts)
 void
 SocketCommon_timeouts_getdefaults (SocketTimeouts_T *timeouts)
 {
-  assert (timeouts);
+  if (!timeouts) {
+    SOCKET_ERROR_MSG ("NULL pointer for timeouts output");
+    return;
+  }
 
   pthread_mutex_lock (&socket_default_timeouts_mutex);
   *timeouts = socket_default_timeouts;
@@ -1007,9 +1048,12 @@ SocketCommon_timeouts_getdefaults (SocketTimeouts_T *timeouts)
 void
 SocketCommon_timeouts_setdefaults (const SocketTimeouts_T *timeouts)
 {
-  SocketTimeouts_T local;
+  if (!timeouts) {
+    SOCKET_ERROR_MSG ("NULL pointer for timeouts input");
+    return;
+  }
 
-  assert (timeouts);
+  SocketTimeouts_T local;
 
   pthread_mutex_lock (&socket_default_timeouts_mutex);
   local = socket_default_timeouts;
@@ -1054,11 +1098,21 @@ socketcommon_perform_getaddrinfo (const char *host, const char *port_str,
                                   Except_T exception_type)
 {
   SocketDNS_T dns;
-  int port;
+  volatile int port;
   int timeout_ms;
 
-  /* Parse port string to integer */
-  port = (port_str && *port_str) ? atoi (port_str) : 0;
+  /* Parse port string safely with validation */
+  port = 0;
+  if (port_str && *port_str) {
+    char *endptr;
+    long p = strtol (port_str, &endptr, 10);
+    if (endptr != port_str && *endptr == '\0' && p >= 1 && p <= 65535) {
+      port = (int)p;
+    } else {
+      /* Invalid port - will use default in getaddrinfo */
+      port = 0;
+    }
+  }
 
   /* Get global DNS resolver with timeout support */
   dns = SocketCommon_get_dns_resolver ();
@@ -1401,7 +1455,17 @@ SocketCommon_reverse_lookup (const struct sockaddr *addr, socklen_t addrlen,
 {
   int result;
 
-  assert (addr);
+  if (!addr || addrlen == 0) {
+    SOCKET_ERROR_MSG ("Invalid address for reverse lookup");
+    RAISE_MODULE_ERROR (exception_type);
+    return -1;
+  }
+
+  if ((host && hostlen == 0) || (serv && servlen == 0)) {
+    SOCKET_ERROR_MSG ("Invalid buffer sizes for reverse lookup");
+    RAISE_MODULE_ERROR (exception_type);
+    return -1;
+  }
 
   result = getnameinfo (addr, addrlen, host, hostlen, serv, servlen, flags);
   if (result != 0)
@@ -1522,11 +1586,12 @@ SocketCommon_calculate_total_iov_len (const struct iovec *iov, int iovcnt)
 
   for (i = 0; i < iovcnt; i++)
     {
-      if (iov[i].iov_len > SIZE_MAX - total)
+      size_t new_total;
+      if (!SocketSecurity_check_add(total, iov[i].iov_len, &new_total))
         {
           SOCKET_RAISE_FMT (SocketCommon, SocketCommon_Failed, "iov[%d] overflow: total=%zu + len=%zu > SIZE_MAX", i, total, iov[i].iov_len);
         }
-      total += iov[i].iov_len;
+      total = new_total;
     }
 
   return total;
@@ -1913,6 +1978,15 @@ void
 SocketCommon_join_multicast (SocketBase_T base, const char *group,
                              const char *interface, Except_T exc_type)
 {
+  if (!base || !group) {
+    SOCKET_RAISE_MSG (SocketCommon, exc_type, "Invalid parameters for join_multicast");
+  }
+
+  size_t group_len = strlen(group);
+  if (group_len == 0 || group_len > SOCKET_ERROR_MAX_HOSTNAME) {
+    SOCKET_RAISE_MSG (SocketCommon, exc_type, "Invalid group length for join_multicast");
+  }
+
   common_multicast_operation (base, group, interface, MCAST_OP_JOIN, exc_type);
 }
 
@@ -1920,6 +1994,15 @@ void
 SocketCommon_leave_multicast (SocketBase_T base, const char *group,
                               const char *interface, Except_T exc_type)
 {
+  if (!base || !group) {
+    SOCKET_RAISE_MSG (SocketCommon, exc_type, "Invalid parameters for leave_multicast");
+  }
+
+  size_t group_len = strlen(group);
+  if (group_len == 0 || group_len > SOCKET_ERROR_MAX_HOSTNAME) {
+    SOCKET_RAISE_MSG (SocketCommon, exc_type, "Invalid group length for leave_multicast");
+  }
+
   common_multicast_operation (base, group, interface, MCAST_OP_LEAVE, exc_type);
 }
 

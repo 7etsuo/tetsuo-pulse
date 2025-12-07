@@ -17,10 +17,24 @@
 #include "core/SocketUtil.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
+#include "core/SocketCrypto.h"
 
 #include <assert.h>
 #include <inttypes.h>
 #include <string.h>
+#include <limits.h>
+
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
+
+const Except_T SocketHTTP2 = { NULL, "HTTP/2" };
+
+const Except_T SocketHTTP2_Failed = { &SocketHTTP2, "HTTP/2 operation failed" };
+
+const Except_T SocketHTTP2_ProtocolError = { &SocketHTTP2, "HTTP/2 protocol error" };
+
+const Except_T SocketHTTP2_StreamError = { &SocketHTTP2, "HTTP/2 stream error" };
+
+const Except_T SocketHTTP2_FlowControlError = { &SocketHTTP2, "HTTP/2 flow control error" };
 
 /* ============================================================================
  * Module Exception Setup
@@ -155,6 +169,12 @@ SocketHTTP2_config_defaults (SocketHTTP2_Config *config, SocketHTTP2_Role role)
   config->max_frame_size = SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE;
   config->max_header_list_size = SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE;
 
+  /* Security defaults for rate limiting */
+  config->max_stream_open_rate = 100;        /* streams/sec */
+  config->max_stream_open_burst = 10;
+  config->max_stream_close_rate = 200;       /* closes/sec, higher as natural */
+  config->max_stream_close_burst = 20;
+
   config->connection_window_size = SOCKETHTTP2_CONNECTION_WINDOW_SIZE;
 
   /* Default timeouts */
@@ -226,10 +246,19 @@ init_peer_settings (SocketHTTP2_Conn_T conn)
 static void
 init_flow_control (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
 {
+  /* Clamp windows to prevent signed overflow */
+  uint32_t recv_win = config->connection_window_size;
+  if (recv_win > (uint32_t) INT32_MAX)
+    recv_win = INT32_MAX;
+  conn->recv_window = (int32_t) recv_win;
+
+  uint32_t init_recv_win = config->initial_window_size;
+  if (init_recv_win > (uint32_t) INT32_MAX)
+    init_recv_win = INT32_MAX;
+  conn->initial_recv_window = (int32_t) init_recv_win;
+
   conn->send_window = SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE;
-  conn->recv_window = (int32_t) config->connection_window_size;
   conn->initial_send_window = SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE;
-  conn->initial_recv_window = (int32_t) config->initial_window_size;
 }
 
 /**
@@ -411,6 +440,39 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
       init_peer_settings (conn);
       init_flow_control (conn, cfg);
 
+      /* Initialize security features */
+      uint32_t seed;
+      volatile uint32_t vseed = 0;
+      TRY {
+        unsigned char seed_bytes[sizeof(uint32_t)];
+        ssize_t rv = SocketCrypto_random_bytes(seed_bytes, sizeof(seed_bytes));
+        if (rv != (ssize_t)sizeof(seed_bytes)) {
+          RAISE(SocketHTTP2_Failed);
+        }
+        uint32_t temp;
+        memcpy(&temp, seed_bytes, sizeof(temp));
+        vseed = temp;
+      } EXCEPT (SocketHTTP2) {
+        SocketHTTP2_Conn_free(&conn);
+        RERAISE;
+      } END_TRY;
+      conn->hash_seed = vseed;
+
+      conn->client_initiated_count = 0;
+      conn->server_initiated_count = 0;
+
+      conn->stream_open_rate_limit = SocketRateLimit_new(conn->arena, cfg->max_stream_open_rate, cfg->max_stream_open_burst);
+      if (!conn->stream_open_rate_limit) {
+        SocketHTTP2_Conn_free(&conn);
+        RAISE(SocketHTTP2_Failed);
+      }
+      conn->stream_close_rate_limit = SocketRateLimit_new(conn->arena, cfg->max_stream_close_rate, cfg->max_stream_close_burst);
+      if (!conn->stream_close_rate_limit) {
+        SocketRateLimit_free(&conn->stream_open_rate_limit);
+        SocketHTTP2_Conn_free(&conn);
+        RAISE(SocketHTTP2_Failed);
+      }
+
       /* Initialize internal components (buffers, HPACK, streams) */
       init_connection_components (conn, cfg);
 
@@ -449,6 +511,10 @@ SocketHTTP2_Conn_free (SocketHTTP2_Conn_T *conn)
   /* Free HPACK encoder/decoder */
   if (c->encoder)
     SocketHPACK_Encoder_free (&c->encoder);
+
+  /* Free rate limiters */
+  SocketRateLimit_free (&c->stream_open_rate_limit);
+  SocketRateLimit_free (&c->stream_close_rate_limit);
   if (c->decoder)
     SocketHPACK_Decoder_free (&c->decoder);
 
@@ -755,6 +821,10 @@ SocketHTTP2_Conn_settings (SocketHTTP2_Conn_T conn,
       /* Update local settings */
       if (settings[i].id >= 1 && settings[i].id <= HTTP2_SETTINGS_COUNT)
         conn->local_settings[settings[i].id - 1] = settings[i].value;
+
+      /* Update our encoder for header table size changes */
+      if (settings[i].id == HTTP2_SETTINGS_HEADER_TABLE_SIZE)
+        SocketHPACK_Encoder_set_table_size (conn->encoder, settings[i].value);
     }
 
   header.length = (uint32_t) payload_len;
@@ -944,7 +1014,7 @@ process_single_frame (SocketHTTP2_Conn_T conn)
   if (!data || read_len < HTTP2_FRAME_HEADER_SIZE)
     return 0;
 
-  SocketHTTP2_frame_header_parse (data, &header);
+  SocketHTTP2_frame_header_parse (data, HTTP2_FRAME_HEADER_SIZE, &header);
 
   /* Check if we have complete frame */
   if (available < HTTP2_FRAME_HEADER_SIZE + header.length)
@@ -1155,7 +1225,11 @@ validate_and_apply_setting (SocketHTTP2_Conn_T conn, uint16_t id,
             SocketHTTP2_Stream_T s = conn->streams[j];
             while (s)
               {
-                s->send_window += delta;
+                if (http2_flow_adjust_window (&s->send_window, delta) < 0)
+                  {
+                    http2_send_connection_error (conn, HTTP2_FLOW_CONTROL_ERROR);
+                    return -1;
+                  }
                 s = s->hash_next;
               }
           }
@@ -1172,8 +1246,16 @@ validate_and_apply_setting (SocketHTTP2_Conn_T conn, uint16_t id,
         }
       break;
 
+    case HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS:
+      /* Peer limit for streams we open - validated by stream creation */
+      break;
+
+    case HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE:
+      /* Peer limit for header lists we send - respected by encoder */
+      break;
+
     case HTTP2_SETTINGS_HEADER_TABLE_SIZE:
-      SocketHPACK_Encoder_set_table_size (conn->encoder, value);
+      SocketHPACK_Decoder_set_table_size (conn->decoder, value);
       break;
     }
 
@@ -1250,6 +1332,27 @@ http2_process_settings (SocketHTTP2_Conn_T conn,
       return 0;
     }
 
+  int64_t now_ms = Socket_get_monotonic_ms ();
+
+  /* Rate limit non-ACK SETTINGS frames to prevent flood attacks */
+  if (now_ms - conn->settings_window_start_ms > SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS)
+    {
+      conn->settings_window_start_ms = now_ms;
+      conn->settings_count_in_window = 0;
+    }
+
+  conn->settings_count_in_window++;
+  if (conn->settings_count_in_window > SOCKETHTTP2_SETTINGS_RATE_LIMIT)
+    {
+      SOCKET_LOG_WARN_MSG ("HTTP/2 SETTINGS rate limit exceeded "
+                           "(%" PRIu32 " in %" PRId64 "ms), "
+                           "closing connection",
+                           conn->settings_count_in_window,
+                           now_ms - conn->settings_window_start_ms);
+      http2_send_connection_error (conn, HTTP2_ENHANCE_YOUR_CALM);
+      return -1;
+    }
+
   /* Parse and apply settings from payload */
   if (parse_and_apply_all_settings (conn, payload, header->length) < 0)
     return -1;
@@ -1272,6 +1375,27 @@ http2_process_ping (SocketHTTP2_Conn_T conn,
                     const SocketHTTP2_FrameHeader *header,
                     const unsigned char *payload)
 {
+  int64_t now_ms = Socket_get_monotonic_ms ();
+
+  /* Rate limit PING frames to prevent flood attacks */
+  if (now_ms - conn->ping_window_start_ms > SOCKETHTTP2_PING_RATE_WINDOW_MS)
+    {
+      conn->ping_window_start_ms = now_ms;
+      conn->ping_count_in_window = 0;
+    }
+
+  conn->ping_count_in_window++;
+  if (conn->ping_count_in_window > SOCKETHTTP2_PING_RATE_LIMIT)
+    {
+      SOCKET_LOG_WARN_MSG ("HTTP/2 PING rate limit exceeded "
+                           "(%" PRIu32 " in %" PRId64 "ms), "
+                           "closing connection",
+                           conn->ping_count_in_window,
+                           now_ms - conn->ping_window_start_ms);
+      http2_send_connection_error (conn, HTTP2_ENHANCE_YOUR_CALM);
+      return -1;
+    }
+
   /* PING ACK */
   if (header->flags & HTTP2_FLAG_ACK)
     {
@@ -1513,7 +1637,7 @@ SocketHTTP2_Conn_upgrade_server (Socket_T socket,
   conn->state = HTTP2_CONN_STATE_PREFACE_RECV;
 
   /* Create stream 1 for the upgraded request */
-  stream = http2_stream_create (conn, 1);
+  stream = http2_stream_create (conn, 1, 0 /* peer initiated upgrade */);
   if (!stream)
     {
       SocketHTTP2_Conn_free (&conn);

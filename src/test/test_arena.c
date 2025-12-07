@@ -14,6 +14,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketSecurity.h"
 #include "test/Test.h"
 
 /* Test basic arena creation */
@@ -334,7 +335,7 @@ TEST (arena_calloc_max_size_exceeded)
   TRY
   {
     /* Try to allocate more than maximum allowed */
-    size_t max_size = 100 * 1024 * 1024 + 1; /* ARENA_MAX_ALLOC_SIZE + 1 */
+    size_t max_size = SocketSecurity_get_max_allocation() + 1;
     void *ptr = CALLOC (arena, max_size, 1);
     ASSERT (0); /* Should have raised exception */
     (void)ptr;

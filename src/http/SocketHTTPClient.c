@@ -18,6 +18,7 @@
 #include "core/SocketCrypto.h"
 #include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
+#include "core/SocketSecurity.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
 #include "http/SocketHTTPClient.h"
@@ -45,8 +46,10 @@ const Except_T SocketHTTPClient_DNSFailed
     = { &SocketHTTPClient_DNSFailed, "DNS resolution failed" };
 const Except_T SocketHTTPClient_ConnectFailed
     = { &SocketHTTPClient_ConnectFailed, "Connection failed" };
+#if SOCKET_HAS_TLS
 const Except_T SocketHTTPClient_TLSFailed
     = { &SocketHTTPClient_TLSFailed, "TLS handshake failed" };
+#endif
 const Except_T SocketHTTPClient_Timeout
     = { &SocketHTTPClient_Timeout, "Request timeout" };
 const Except_T SocketHTTPClient_ProtocolError
@@ -64,7 +67,9 @@ static const char *error_strings[] = {
   [HTTPCLIENT_OK] = "Success",
   [HTTPCLIENT_ERROR_DNS] = "DNS resolution failed",
   [HTTPCLIENT_ERROR_CONNECT] = "Connection failed",
+#if SOCKET_HAS_TLS
   [HTTPCLIENT_ERROR_TLS] = "TLS handshake failed",
+#endif
   [HTTPCLIENT_ERROR_TIMEOUT] = "Request timeout",
   [HTTPCLIENT_ERROR_PROTOCOL] = "HTTP protocol error",
   [HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS] = "Too many redirects",
@@ -99,7 +104,9 @@ SocketHTTPClient_error_is_retryable (SocketHTTPClient_Error error)
 
     /* Non-retryable errors - permanent or configuration issues */
     case HTTPCLIENT_OK:                      /* Not an error */
+#if SOCKET_HAS_TLS
     case HTTPCLIENT_ERROR_TLS:               /* Config mismatch */
+#endif
     case HTTPCLIENT_ERROR_PROTOCOL:          /* Server bug */
     case HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS: /* Redirect loop */
     case HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE: /* Size limit */
@@ -180,6 +187,9 @@ SocketHTTPClient_config_defaults (SocketHTTPClient_Config *config)
   config->retry_on_connection_error = HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT;
   config->retry_on_timeout = HTTPCLIENT_DEFAULT_RETRY_ON_TIMEOUT;
   config->retry_on_5xx = HTTPCLIENT_DEFAULT_RETRY_ON_5XX;
+
+  /* Security */
+  config->enforce_samesite = HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE;
 }
 
 /* ============================================================================
@@ -216,6 +226,12 @@ SocketHTTPClient_new (const SocketHTTPClient_Config *config)
     }
 
   client->arena = arena;
+
+  /* Initialize mutex for thread safety */
+  if (pthread_mutex_init(&client->mutex, NULL) != 0) {
+    Arena_dispose(&arena);
+    SOCKET_RAISE_MSG(SocketHTTPClient, SocketHTTPClient_Failed, "Failed to initialize client mutex");
+  }
 
   /* Copy configuration */
   client->config = *config;
@@ -274,6 +290,9 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
 
   /* Free default TLS context if we created it */
   /* Note: TLS context cleanup would go here if we owned it */
+
+  /* Destroy mutex before arena dispose */
+  pthread_mutex_destroy(&c->mutex);
 
   /* Dispose arena (frees everything including client structure itself) */
   if (arena != NULL)
@@ -486,37 +505,70 @@ accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
   if (len == 0)
     return 0;
 
-  /* Check max response size limit */
-  if (acc->max_size > 0 && acc->total_body + len > acc->max_size)
-    return -2; /* Size limit exceeded */
+  /* Check max response size limit with overflow protection */
+  {
+    size_t potential_size;
+    if (!SocketSecurity_check_add(acc->total_body, len, &potential_size) ||
+        (acc->max_size > 0 && potential_size > acc->max_size)) {
+      SocketMetrics_counter_inc(SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED);
+      return -2; /* Overflow or size limit exceeded */
+    }
+  }
 
-  /* Grow buffer if needed */
-  if (acc->total_body + len > acc->body_capacity)
-    {
-      size_t new_cap
-          = acc->body_capacity == 0 ? HTTPCLIENT_BODY_CHUNK_SIZE
-                                    : acc->body_capacity * 2;
-      while (new_cap < acc->total_body + len)
-        new_cap *= 2;
+  /* Grow buffer if needed with overflow protection */
+  {
+    size_t needed_size;
+    if (!SocketSecurity_check_add(acc->total_body, len, &needed_size) ||
+        needed_size > acc->body_capacity) {
+      size_t base_cap = acc->body_capacity == 0 ? HTTPCLIENT_BODY_CHUNK_SIZE : acc->body_capacity;
+      size_t new_cap = SocketSecurity_safe_multiply(base_cap, 2);
+      if (new_cap == 0) {
+        return -1; /* Overflow in growth */
+      }
 
-      /* Clamp to max_size if set to avoid over-allocation */
-      if (acc->max_size > 0 && new_cap > acc->max_size)
+      /* Exponential growth until sufficient (with safe checks) */
+      size_t iter_limit = 32; /* Prevent infinite loop on overflow */
+      while (iter_limit-- > 0) {
+        size_t cmp_size;
+        if (SocketSecurity_check_add(acc->total_body, len, &cmp_size) && new_cap >= cmp_size) {
+          break;
+        }
+        size_t temp_cap = SocketSecurity_safe_multiply(new_cap, 2);
+        if (temp_cap == 0) {
+          return -1; /* Cannot grow further safely */
+        }
+        new_cap = temp_cap;
+      }
+
+      /* Clamp to max_size to avoid over-allocation */
+      if (acc->max_size > 0 && new_cap > acc->max_size) {
         new_cap = acc->max_size;
+      }
 
-      char *new_buf
-          = Arena_alloc (acc->arena, new_cap, __FILE__, __LINE__);
-      if (new_buf == NULL)
+      char *new_buf = Arena_alloc(acc->arena, new_cap, __FILE__, __LINE__);
+      if (new_buf == NULL) {
         return -1;
+      }
 
-      if (acc->body_buf != NULL)
-        memcpy (new_buf, acc->body_buf, acc->total_body);
+      if (acc->body_buf != NULL) {
+        memcpy(new_buf, acc->body_buf, acc->total_body);
+      }
 
       acc->body_buf = new_buf;
       acc->body_capacity = new_cap;
     }
+  }
 
-  memcpy (acc->body_buf + acc->total_body, data, len);
-  acc->total_body += len;
+  {
+    size_t old_total = acc->total_body;
+    memcpy (acc->body_buf + old_total, data, len);
+    size_t new_total;
+    if (!SocketSecurity_check_add(old_total, len, &new_total)) {
+      /* Should not happen after earlier checks, but defensive */
+      return -1;
+    }
+    acc->total_body = new_total;
+  }
 
   return 0;
 }
@@ -793,6 +845,15 @@ add_host_header (SocketHTTPClient_Request_T req)
   if (SocketHTTP_Headers_has (req->headers, "Host"))
     return;
 
+  /* Validate host length before formatting */
+  size_t host_len = strlen(req->uri.host);
+  size_t needed_len = host_len + (req->uri.port == -1 || req->uri.port == 80 || req->uri.port == 443 ? 1 : 10); /* +1 NUL, +port digits */
+  if (needed_len > sizeof(host_header) - 1) {
+    /* Truncate or raise error; here log and skip */
+    HTTPCLIENT_ERROR_MSG("Host header too long, skipping");
+    return;
+  }
+
   if (req->uri.port == -1 || req->uri.port == 80 || req->uri.port == 443)
     {
       snprintf (host_header, sizeof (host_header), "%s", req->uri.host);
@@ -873,7 +934,8 @@ add_cookie_header (SocketHTTPClient_T client, SocketHTTPClient_Request_T req)
     return;
 
   if (httpclient_cookies_for_request (client->cookie_jar, &req->uri,
-                                      cookie_header, sizeof (cookie_header))
+                                      cookie_header, sizeof (cookie_header),
+                                      client->config.enforce_samesite)
       > 0)
     {
       SocketHTTP_Headers_add (req->headers, "Cookie", cookie_header);
@@ -1961,6 +2023,8 @@ SocketHTTPClient_set_auth (SocketHTTPClient_T client,
 {
   assert (client != NULL);
 
+  pthread_mutex_lock(&client->mutex);
+
   /* Securely clear old credentials before setting new ones */
   if (client->default_auth != NULL)
     {
@@ -1976,8 +2040,10 @@ SocketHTTPClient_set_auth (SocketHTTPClient_T client,
   /* Allocate in client arena */
   SocketHTTPClient_Auth *auth_copy
       = Arena_alloc (client->arena, sizeof (*auth_copy), __FILE__, __LINE__);
-  if (auth_copy == NULL)
+  if (auth_copy == NULL) {
+    pthread_mutex_unlock(&client->mutex);
     return;
+  }
 
   *auth_copy = *auth;
 
@@ -1987,6 +2053,8 @@ SocketHTTPClient_set_auth (SocketHTTPClient_T client,
   auth_copy->token = socket_util_arena_strdup (client->arena, auth->token);
 
   client->default_auth = auth_copy;
+
+  pthread_mutex_unlock(&client->mutex);
 }
 
 /* ============================================================================
@@ -1998,14 +2066,21 @@ SocketHTTPClient_set_cookie_jar (SocketHTTPClient_T client,
                                  SocketHTTPClient_CookieJar_T jar)
 {
   assert (client != NULL);
+
+  pthread_mutex_lock(&client->mutex);
   client->cookie_jar = jar;
+  pthread_mutex_unlock(&client->mutex);
 }
 
 SocketHTTPClient_CookieJar_T
 SocketHTTPClient_get_cookie_jar (SocketHTTPClient_T client)
 {
   assert (client != NULL);
-  return client->cookie_jar;
+
+  pthread_mutex_lock(&client->mutex);
+  SocketHTTPClient_CookieJar_T jar = client->cookie_jar;
+  pthread_mutex_unlock(&client->mutex);
+  return jar;
 }
 
 /* ============================================================================
@@ -2019,10 +2094,13 @@ SocketHTTPClient_pool_stats (SocketHTTPClient_T client,
   assert (client != NULL);
   assert (stats != NULL);
 
+  pthread_mutex_lock(&client->mutex);
   memset (stats, 0, sizeof (*stats));
 
-  if (client->pool == NULL)
+  if (client->pool == NULL) {
+    pthread_mutex_unlock(&client->mutex);
     return;
+  }
 
   pthread_mutex_lock (&client->pool->mutex);
 
@@ -2041,6 +2119,7 @@ SocketHTTPClient_pool_stats (SocketHTTPClient_T client,
   stats->reused_connections = client->pool->reused_connections;
 
   pthread_mutex_unlock (&client->pool->mutex);
+  pthread_mutex_unlock(&client->mutex);
 }
 
 void
@@ -2048,8 +2127,11 @@ SocketHTTPClient_pool_clear (SocketHTTPClient_T client)
 {
   assert (client != NULL);
 
-  if (client->pool == NULL)
+  pthread_mutex_lock(&client->mutex);
+  if (client->pool == NULL) {
+    pthread_mutex_unlock(&client->mutex);
     return;
+  }
 
   pthread_mutex_lock (&client->pool->mutex);
 
@@ -2087,6 +2169,7 @@ SocketHTTPClient_pool_clear (SocketHTTPClient_T client)
           client->pool->hash_size * sizeof (HTTPPoolEntry *));
 
   pthread_mutex_unlock (&client->pool->mutex);
+  pthread_mutex_unlock(&client->mutex);
 }
 
 /* ============================================================================

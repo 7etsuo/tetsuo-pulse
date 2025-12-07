@@ -169,6 +169,8 @@ Macros</h2></td></tr>
 <tr class="separator:a2b97166b3033d92fb8fb9dca5c70ea4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d22e3b756e5a6f1c5df5d05a94e8de9" id="r_a6d22e3b756e5a6f1c5df5d05a94e8de9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a6d22e3b756e5a6f1c5df5d05a94e8de9">SOCKET_DTLS_ERROR_BUFSIZE</a>&#160;&#160;&#160;512</td></tr>
 <tr class="separator:a6d22e3b756e5a6f1c5df5d05a94e8de9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83416fe8d965d7133943298dcd693bd3" id="r_a83416fe8d965d7133943298dcd693bd3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a83416fe8d965d7133943298dcd693bd3">SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE</a>&#160;&#160;&#160;256</td></tr>
+<tr class="separator:a83416fe8d965d7133943298dcd693bd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0ce437be6ce966c60ba60e165485bb4a" id="r_a0ce437be6ce966c60ba60e165485bb4a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a0ce437be6ce966c60ba60e165485bb4a">SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH</a>&#160;&#160;&#160;10</td></tr>
 <tr class="separator:a0ce437be6ce966c60ba60e165485bb4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae00f82ec2c7d49c2aa2ecdaa98754371" id="r_ae00f82ec2c7d49c2aa2ecdaa98754371"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#ae00f82ec2c7d49c2aa2ecdaa98754371">SOCKET_DTLS_MAX_SNI_LEN</a>&#160;&#160;&#160;255</td></tr>
@@ -179,6 +181,8 @@ Macros</h2></td></tr>
 <tr class="separator:afcde6945b87c4def2497c74bf3115e87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c4f3d639af33633c811568f89124e6d" id="r_a8c4f3d639af33633c811568f89124e6d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a8c4f3d639af33633c811568f89124e6d">SOCKET_DTLS_MAX_PATH_LEN</a>&#160;&#160;&#160;4096</td></tr>
 <tr class="separator:a8c4f3d639af33633c811568f89124e6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab42fd5a40a391bb5d2e3c5f44a1b24fa" id="r_ab42fd5a40a391bb5d2e3c5f44a1b24fa"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#ab42fd5a40a391bb5d2e3c5f44a1b24fa">SOCKET_DTLS_MAX_FILE_SIZE</a>&#160;&#160;&#160;((size_t)(1ULL &lt;&lt; 20))  /* 1MB */</td></tr>
+<tr class="separator:ab42fd5a40a391bb5d2e3c5f44a1b24fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a187a9aeb5d1836c6756595bde48e659e" id="r_a187a9aeb5d1836c6756595bde48e659e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a187a9aeb5d1836c6756595bde48e659e">SOCKET_DTLS_VALID_MTU</a>(mtu)</td></tr>
 <tr class="separator:a187a9aeb5d1836c6756595bde48e659e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac963ab68af70b569e6ee98ae7062887" id="r_aac963ab68af70b569e6ee98ae7062887"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#aac963ab68af70b569e6ee98ae7062887">SOCKET_DTLS_VALID_TIMEOUT</a>(ms)&#160;&#160;&#160;  ((int) (ms) &gt;= 0 &amp;&amp; (int) (ms) &lt;= <a class="el" href="SocketDTLSConfig_8h.html#ab68a21771cbdedd0e891ba7e9784c668">SOCKET_DTLS_MAX_TIMEOUT_MS</a>)</td></tr>
@@ -203,7 +207,7 @@ Macros</h2></td></tr>
 <div class="line">  <span class="stringliteral">&quot;ECDHE-ECDSA-AES128-GCM-SHA256:&quot;</span>                                             \</div>
 <div class="line">  <span class="stringliteral">&quot;ECDHE-RSA-AES128-GCM-SHA256&quot;</span></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00048">48</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00052">52</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -219,7 +223,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00110">110</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00114">114</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -235,7 +239,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00121">121</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00125">125</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -251,7 +255,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00115">115</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00119">119</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -267,7 +271,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00149">149</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00153">153</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -283,7 +287,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00069">69</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00073">73</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -299,7 +303,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00181">181</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00185">185</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -315,7 +319,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00139">139</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00143">143</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -331,7 +335,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00196">196</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00205">205</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -347,7 +351,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00201">201</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00210">210</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -363,7 +367,23 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00186">186</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00195">195</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ab42fd5a40a391bb5d2e3c5f44a1b24fa" name="ab42fd5a40a391bb5d2e3c5f44a1b24fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab42fd5a40a391bb5d2e3c5f44a1b24fa">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_FILE_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_DTLS_MAX_FILE_SIZE&#160;&#160;&#160;((size_t)(1ULL &lt;&lt; 20))  /* 1MB */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00224">224</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -379,7 +399,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00079">79</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00083">83</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -395,7 +415,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00206">206</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00215">215</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -411,7 +431,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00094">94</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00098">98</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -427,7 +447,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00126">126</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00130">130</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -443,7 +463,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00084">84</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00088">88</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -459,7 +479,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00154">154</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00158">158</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -475,7 +495,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00191">191</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00200">200</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -491,7 +511,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00144">144</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00148">148</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -507,7 +527,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00037">37</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00040">40</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -523,7 +543,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00074">74</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00078">78</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -552,6 +572,22 @@ Macros</h2></td></tr>
 
 </div>
 </div>
+<a id="a83416fe8d965d7133943298dcd693bd3" name="a83416fe8d965d7133943298dcd693bd3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83416fe8d965d7133943298dcd693bd3">&#9670;&#160;</a></span>SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE&#160;&#160;&#160;256</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00190">190</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+
+</div>
+</div>
 <a id="adc0eac3a553975d605f281a788d3a884" name="adc0eac3a553975d605f281a788d3a884"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adc0eac3a553975d605f281a788d3a884">&#9670;&#160;</a></span>SOCKET_DTLS_RECORD_OVERHEAD</h2>
 
@@ -564,7 +600,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00089">89</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00093">93</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -580,7 +616,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00166">166</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00170">170</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -596,7 +632,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00171">171</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00175">175</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -617,10 +653,10 @@ Macros</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">  ((size_t) (mtu) &gt;= <a class="code hl_define" href="SocketDTLSConfig_8h.html#a4e20e95db1f3cb5f21c2d10649ac36da">SOCKET_DTLS_MIN_MTU</a>                                       \</div>
 <div class="line">   &amp;&amp; (size_t) (mtu) &lt;= <a class="code hl_define" href="SocketDTLSConfig_8h.html#a3ac75939ec0806b6b2bbcc594aa16c55">SOCKET_DTLS_MAX_MTU</a>)</div>
-<div class="ttc" id="aSocketDTLSConfig_8h_html_a3ac75939ec0806b6b2bbcc594aa16c55"><div class="ttname"><a href="SocketDTLSConfig_8h.html#a3ac75939ec0806b6b2bbcc594aa16c55">SOCKET_DTLS_MAX_MTU</a></div><div class="ttdeci">#define SOCKET_DTLS_MAX_MTU</div><div class="ttdef"><b>Definition</b> <a href="SocketDTLSConfig_8h_source.html#l00079">SocketDTLSConfig.h:79</a></div></div>
-<div class="ttc" id="aSocketDTLSConfig_8h_html_a4e20e95db1f3cb5f21c2d10649ac36da"><div class="ttname"><a href="SocketDTLSConfig_8h.html#a4e20e95db1f3cb5f21c2d10649ac36da">SOCKET_DTLS_MIN_MTU</a></div><div class="ttdeci">#define SOCKET_DTLS_MIN_MTU</div><div class="ttdef"><b>Definition</b> <a href="SocketDTLSConfig_8h_source.html#l00074">SocketDTLSConfig.h:74</a></div></div>
+<div class="ttc" id="aSocketDTLSConfig_8h_html_a3ac75939ec0806b6b2bbcc594aa16c55"><div class="ttname"><a href="SocketDTLSConfig_8h.html#a3ac75939ec0806b6b2bbcc594aa16c55">SOCKET_DTLS_MAX_MTU</a></div><div class="ttdeci">#define SOCKET_DTLS_MAX_MTU</div><div class="ttdef"><b>Definition</b> <a href="SocketDTLSConfig_8h_source.html#l00083">SocketDTLSConfig.h:83</a></div></div>
+<div class="ttc" id="aSocketDTLSConfig_8h_html_a4e20e95db1f3cb5f21c2d10649ac36da"><div class="ttname"><a href="SocketDTLSConfig_8h.html#a4e20e95db1f3cb5f21c2d10649ac36da">SOCKET_DTLS_MIN_MTU</a></div><div class="ttdeci">#define SOCKET_DTLS_MIN_MTU</div><div class="ttdef"><b>Definition</b> <a href="SocketDTLSConfig_8h_source.html#l00078">SocketDTLSConfig.h:78</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00214">214</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00232">232</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -640,7 +676,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00218">218</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00236">236</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 
 </div>
 </div>

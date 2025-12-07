@@ -115,9 +115,9 @@ $(document).ready(function(){initNavTree('index.html',''); initResizable(); });
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="mainpage"></a> A modern C library for building high-performance networked applications. Production-ready with comprehensive support for TCP, UDP, Unix domain sockets, and TLS 1.3 security.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md1"></a>
+<h1><a class="anchor" id="autotoc_md3"></a>
 Features</h1>
-<h2><a class="anchor" id="autotoc_md2"></a>
+<h2><a class="anchor" id="autotoc_md4"></a>
 Core Networking</h2>
 <ul>
 <li><b>TCP Stream Sockets</b> — Full client/server support with advanced TCP options</li>
@@ -125,7 +125,7 @@ Core Networking</h2>
 <li><b>Unix Domain Sockets</b> — High-performance IPC for local communication</li>
 <li><b>TLS 1.3 Security</b> — Modern encryption via OpenSSL with SNI and ALPN</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md3"></a>
+<h2><a class="anchor" id="autotoc_md5"></a>
 Async &amp; Event-Driven</h2>
 <ul>
 <li><b>Cross-Platform Polling</b> — epoll (Linux), kqueue (BSD/macOS), poll (fallback)</li>
@@ -133,7 +133,7 @@ Async &amp; Event-Driven</h2>
 <li><b>Happy Eyeballs (RFC 8305)</b> — Fast dual-stack connection racing</li>
 <li><b>Auto-Reconnection</b> — Exponential backoff with circuit breaker</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md4"></a>
+<h2><a class="anchor" id="autotoc_md6"></a>
 Performance</h2>
 <ul>
 <li><b>Zero-Copy I/O</b> — Platform-optimized <code>sendfile()</code> and scatter/gather</li>
@@ -141,15 +141,15 @@ Performance</h2>
 <li><b>Arena Allocation</b> — Memory-safe with automatic cleanup</li>
 </ul>
 <hr  />
-<h1><a class="anchor" id="autotoc_md6"></a>
+<h1><a class="anchor" id="autotoc_md8"></a>
 Quick Start</h1>
 <div class="fragment"><div class="line">cmake -S . -B build</div>
 <div class="line">cmake --build build -j</div>
 <div class="line">ctest --test-dir build</div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md8"></a>
+<h1><a class="anchor" id="autotoc_md10"></a>
 Examples</h1>
-<h2><a class="anchor" id="autotoc_md9"></a>
+<h2><a class="anchor" id="autotoc_md11"></a>
 TCP Echo Server</h2>
 <p>A simple server that echoes back whatever clients send.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span></div>
@@ -157,7 +157,7 @@ TCP Echo Server</h2>
 <div class="line"><span class="preprocessor">#include &lt;signal.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -194,8 +194,8 @@ TCP Echo Server</h2>
 <div class="ttc" id="aExcept_8h_html_ad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="Except_8h.html#ad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00103">Except.h:103</a></div></div>
 <div class="ttc" id="aExcept_8h_html_ae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="Except_8h.html#ae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00139">Except.h:139</a></div></div>
 <div class="ttc" id="aSocket_8h_html"><div class="ttname"><a href="Socket_8h.html">Socket.h</a></div></div>
-<div class="ttc" id="aSocket_8h_html_a1bcdb0c6d5827c2493bd622fa7751f14"><div class="ttname"><a href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></div><div class="ttdeci">struct Socket_T * Socket_T</div><div class="ttdef"><b>Definition</b> <a href="Socket_8h_source.html#l00046">Socket.h:46</a></div></div>
-<div class="ttc" id="aSocket_8h_html_a225f4a8fd657fd52a05146c6fc4f58b0"><div class="ttname"><a href="Socket_8h.html#a225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a></div><div class="ttdeci">const Except_T Socket_Failed</div><div class="ttdoc">General socket operation failure.</div></div>
+<div class="ttc" id="aSocket_8h_html_a1bcdb0c6d5827c2493bd622fa7751f14"><div class="ttname"><a href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></div><div class="ttdeci">struct Socket_T * Socket_T</div><div class="ttdef"><b>Definition</b> <a href="Socket_8h_source.html#l00045">Socket.h:45</a></div></div>
+<div class="ttc" id="aSocket_8h_html_a225f4a8fd657fd52a05146c6fc4f58b0"><div class="ttname"><a href="Socket_8h.html#a225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a></div><div class="ttdeci">const Except_T Socket_Failed</div><div class="ttdoc">Socket_Failed - General socket operation failure.</div></div>
 <div class="ttc" id="aSocket_8h_html_a2c6f352cec920859c71206898ed135fc"><div class="ttname"><a href="Socket_8h.html#a2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr</a></div><div class="ttdeci">void Socket_setreuseaddr(Socket_T socket)</div><div class="ttdoc">Socket_setreuseaddr - Enable address reuse @socket: Socket to modify Raises: Socket_Failed on error.</div></div>
 <div class="ttc" id="aSocket_8h_html_a32b67d95639513cd6a602f6175b48f15"><div class="ttname"><a href="Socket_8h.html#a32b67d95639513cd6a602f6175b48f15">Socket_accept</a></div><div class="ttdeci">Socket_T Socket_accept(Socket_T socket)</div><div class="ttdoc">Socket_accept - Accept incoming connection @socket: Listening socket Returns: New socket or NULL if w...</div></div>
 <div class="ttc" id="aSocket_8h_html_a6212fb2b6eefa567592a59f55c25a6f1"><div class="ttname"><a href="Socket_8h.html#a6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a></div><div class="ttdeci">Socket_T Socket_new(int domain, int type, int protocol)</div></div>
@@ -204,9 +204,9 @@ TCP Echo Server</h2>
 <div class="ttc" id="aSocket_8h_html_a95db343f47445925cecd6b20054518e9"><div class="ttname"><a href="Socket_8h.html#a95db343f47445925cecd6b20054518e9">Socket_recv</a></div><div class="ttdeci">ssize_t Socket_recv(Socket_T socket, void *buf, size_t len)</div><div class="ttdoc">Socket_recv - Receive data @socket: Connected socket @buf: Buffer for received data @len: Buffer size...</div></div>
 <div class="ttc" id="aSocket_8h_html_ab24b026bc4c69e6f766211f44675e189"><div class="ttname"><a href="Socket_8h.html#ab24b026bc4c69e6f766211f44675e189">Socket_listen</a></div><div class="ttdeci">void Socket_listen(Socket_T socket, int backlog)</div><div class="ttdoc">Socket_listen - Listen for incoming connections @socket: Bound socket @backlog: Maximum pending conne...</div></div>
 <div class="ttc" id="aSocket_8h_html_acb65d693d8c93e2a1fe6411dd0d0af98"><div class="ttname"><a href="Socket_8h.html#acb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind</a></div><div class="ttdeci">void Socket_bind(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Socket_bind - Bind socket to address and port @socket: Socket to bind @host: IP address or NULL/&quot;0....</div></div>
-<div class="ttc" id="ahttp2__client_8c_html_a3c04138a5bfe5d72780bb7e82a18e627"><div class="ttname"><a href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a></div><div class="ttdeci">int main(int argc, char **argv)</div><div class="ttdef"><b>Definition</b> <a href="http2__client_8c_source.html#l00044">http2_client.c:44</a></div></div>
+<div class="ttc" id="agraceful__shutdown_8c_html_a0ddf1224851353fc92bfbff6f499fa97"><div class="ttname"><a href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a></div><div class="ttdeci">int main(int argc, char *argv[])</div><div class="ttdef"><b>Definition</b> <a href="graceful__shutdown_8c_source.html#l00235">graceful_shutdown.c:235</a></div></div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md11"></a>
+<h2><a class="anchor" id="autotoc_md13"></a>
 TCP Client</h2>
 <p>Connect to a server, send data, and receive a response.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span></div>
@@ -215,7 +215,7 @@ TCP Client</h2>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -243,10 +243,10 @@ TCP Client</h2>
 <div class="line">    <a class="code hl_function" href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;client);</div>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
-<div class="ttc" id="aSocket_8h_html_a2db3d742dcea3f39ad2eb37d4fb1e453"><div class="ttname"><a href="Socket_8h.html#a2db3d742dcea3f39ad2eb37d4fb1e453">Socket_Closed</a></div><div class="ttdeci">const Except_T Socket_Closed</div><div class="ttdoc">Connection closed by peer.</div></div>
+<div class="ttc" id="aSocket_8h_html_a2db3d742dcea3f39ad2eb37d4fb1e453"><div class="ttname"><a href="Socket_8h.html#a2db3d742dcea3f39ad2eb37d4fb1e453">Socket_Closed</a></div><div class="ttdeci">const Except_T Socket_Closed</div><div class="ttdoc">Socket_Closed - Connection closed by peer.</div></div>
 <div class="ttc" id="aSocket_8h_html_ac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Socket_connect - Connect to remote host @socket: Socket to connect @host: Remote IP address or hostna...</div></div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md13"></a>
+<h2><a class="anchor" id="autotoc_md15"></a>
 Event-Driven Server (Non-Blocking)</h2>
 <p>Handle multiple clients concurrently using SocketPoll.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span></div>
@@ -254,7 +254,7 @@ Event-Driven Server (Non-Blocking)</h2>
 <div class="line"><span class="preprocessor">#include &lt;signal.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -307,24 +307,24 @@ Event-Driven Server (Non-Blocking)</h2>
 <div class="line">}</div>
 <div class="ttc" id="aSocketPoll_8h_html"><div class="ttname"><a href="SocketPoll_8h.html">SocketPoll.h</a></div></div>
 <div class="ttc" id="aSocketPoll_8h_html_a6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><div class="ttname"><a href="SocketPoll_8h.html#a6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a></div><div class="ttdeci">void SocketPoll_add(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</div><div class="ttdoc">SocketPoll_add - Add socket to poll set @poll: Poll instance @socket: Socket to monitor @events: Even...</div></div>
-<div class="ttc" id="aSocketPoll_8h_html_a98544b5a507331adac069acd7f42d593"><div class="ttname"><a href="SocketPoll_8h.html#a98544b5a507331adac069acd7f42d593">SocketEvent_T::socket</a></div><div class="ttdeci">Socket_T socket</div><div class="ttdoc">Socket that triggered event.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00056">SocketPoll.h:56</a></div></div>
-<div class="ttc" id="aSocketPoll_8h_html_a9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8"><div class="ttname"><a href="SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a></div><div class="ttdeci">@ POLL_READ</div><div class="ttdoc">Data available for reading.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00045">SocketPoll.h:45</a></div></div>
+<div class="ttc" id="aSocketPoll_8h_html_a98544b5a507331adac069acd7f42d593"><div class="ttname"><a href="SocketPoll_8h.html#a98544b5a507331adac069acd7f42d593">SocketEvent_T::socket</a></div><div class="ttdeci">Socket_T socket</div><div class="ttdoc">Socket that triggered event.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00071">SocketPoll.h:71</a></div></div>
+<div class="ttc" id="aSocketPoll_8h_html_a9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8"><div class="ttname"><a href="SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a></div><div class="ttdeci">@ POLL_READ</div><div class="ttdoc">Data available for reading.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00060">SocketPoll.h:60</a></div></div>
 <div class="ttc" id="aSocketPoll_8h_html_aa3d47365dd18329d50ee636284839738"><div class="ttname"><a href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait</a></div><div class="ttdeci">int SocketPoll_wait(SocketPoll_T poll, SocketEvent_T **events, int timeout)</div><div class="ttdoc">SocketPoll_wait - Wait for events @poll: Poll instance @events: Output - array of events that occurre...</div></div>
 <div class="ttc" id="aSocketPoll_8h_html_ac1fbd1a09d564f7988b0e427e5707ca7"><div class="ttname"><a href="SocketPoll_8h.html#ac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a></div><div class="ttdeci">SocketPoll_T SocketPoll_new(int maxevents)</div><div class="ttdoc">SocketPoll_new - Create a new event poll @maxevents: Maximum events to return per wait call Returns: ...</div></div>
 <div class="ttc" id="aSocketPoll_8h_html_aca744c50badbdb869c52088b9f32f8d2"><div class="ttname"><a href="SocketPoll_8h.html#aca744c50badbdb869c52088b9f32f8d2">SocketPoll_free</a></div><div class="ttdeci">void SocketPoll_free(SocketPoll_T *poll)</div><div class="ttdoc">SocketPoll_free - Free an event poll @poll: Pointer to poll (will be set to NULL) Closes the underlyi...</div></div>
-<div class="ttc" id="aSocketPoll_8h_html_structSocketEvent__T"><div class="ttname"><a href="SocketPoll_8h.html#structSocketEvent__T">SocketEvent_T</a></div><div class="ttdoc">Event structure returned by SocketPoll_wait.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00054">SocketPoll.h:55</a></div></div>
+<div class="ttc" id="aSocketPoll_8h_html_structSocketEvent__T"><div class="ttname"><a href="SocketPoll_8h.html#structSocketEvent__T">SocketEvent_T</a></div><div class="ttdoc">Event structure returned by SocketPoll_wait.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00069">SocketPoll.h:70</a></div></div>
 <div class="ttc" id="aSocketTimer_8h_html_af9e4be8bc025aedb61cc0b77e8926312"><div class="ttname"><a href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a></div><div class="ttdeci">struct SocketPoll_T * SocketPoll_T</div><div class="ttdef"><b>Definition</b> <a href="SocketTimer_8h_source.html#l00041">SocketTimer.h:41</a></div></div>
 <div class="ttc" id="aSocket_8h_html_a35309677a1760480783d5f0c294d0db4"><div class="ttname"><a href="Socket_8h.html#a35309677a1760480783d5f0c294d0db4">Socket_setnonblocking</a></div><div class="ttdeci">void Socket_setnonblocking(Socket_T socket)</div><div class="ttdoc">Socket_setnonblocking - Enable non-blocking mode @socket: Socket to modify Raises: Socket_Failed on e...</div></div>
 <div class="ttc" id="aSocket_8h_html_a4d727948c677509eec04746585819877"><div class="ttname"><a href="Socket_8h.html#a4d727948c677509eec04746585819877">Socket_fd</a></div><div class="ttdeci">int Socket_fd(const Socket_T socket)</div><div class="ttdoc">Socket_fd - Get underlying file descriptor @socket: Socket instance Returns: File descriptor.</div></div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md15"></a>
+<h2><a class="anchor" id="autotoc_md17"></a>
 UDP Echo Server</h2>
 <p>Connectionless datagram server.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketDgram_8h.html">socket/SocketDgram.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Except_8h.html">core/Except.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    <a class="code hl_typedef" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> server = <a class="code hl_function" href="SocketDgram_8h.html#ad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a>(AF_INET, 0);</div>
 <div class="line">    </div>
@@ -361,7 +361,7 @@ UDP Echo Server</h2>
 <div class="ttc" id="aSocketDgram_8h_html_ad6902c87ab5883f155dab2adfa950c52"><div class="ttname"><a href="SocketDgram_8h.html#ad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a></div><div class="ttdeci">SocketDgram_T SocketDgram_new(int domain, int protocol)</div></div>
 <div class="ttc" id="aSocketDgram_8h_html_ada4b76edaec59a44eb5bc959e6948d3f"><div class="ttname"><a href="SocketDgram_8h.html#ada4b76edaec59a44eb5bc959e6948d3f">SocketDgram_recvfrom</a></div><div class="ttdeci">ssize_t SocketDgram_recvfrom(SocketDgram_T socket, void *buf, size_t len, char *host, size_t host_len, int *port)</div><div class="ttdoc">SocketDgram_recvfrom - Receive datagram and get sender address @socket: Socket to receive from @buf: ...</div></div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md17"></a>
+<h2><a class="anchor" id="autotoc_md19"></a>
 UDP Client</h2>
 <p>Send and receive datagrams.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketDgram_8h.html">socket/SocketDgram.h</a>&quot;</span></div>
@@ -369,7 +369,7 @@ UDP Client</h2>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    <a class="code hl_typedef" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> client = <a class="code hl_function" href="SocketDgram_8h.html#ad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a>(AF_INET, 0);</div>
 <div class="line">    </div>
@@ -397,7 +397,7 @@ UDP Client</h2>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md19"></a>
+<h2><a class="anchor" id="autotoc_md21"></a>
 TLS Client (Secure Connection)</h2>
 <p>Connect to an HTTPS server with TLS 1.3.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span></div>
@@ -407,7 +407,7 @@ TLS Client (Secure Connection)</h2>
 <div class="line"><span class="preprocessor">#include &lt;signal.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -466,17 +466,17 @@ TLS Client (Secure Connection)</h2>
 <div class="ttc" id="aSocketTLS_8h_html_a0859f0a6e05840bdc037c3765e22b7b1"><div class="ttname"><a href="SocketTLS_8h.html#a0859f0a6e05840bdc037c3765e22b7b1">SocketTLS_get_cipher</a></div><div class="ttdeci">const char * SocketTLS_get_cipher(Socket_T socket)</div><div class="ttdoc">SocketTLS_get_cipher - Get negotiated cipher suite name @socket: The socket instance with completed h...</div></div>
 <div class="ttc" id="aSocketTLS_8h_html_a15d2c8f4eaea80114bbd2123da025e56"><div class="ttname"><a href="SocketTLS_8h.html#a15d2c8f4eaea80114bbd2123da025e56">SocketTLS_set_hostname</a></div><div class="ttdeci">void SocketTLS_set_hostname(Socket_T socket, const char *hostname)</div><div class="ttdoc">SocketTLS_set_hostname - Set SNI hostname for client TLS connections @socket: The socket instance @ho...</div></div>
 <div class="ttc" id="aSocketTLS_8h_html_a1c71fc02141cd9e6da4fdf1c88dbbaf3"><div class="ttname"><a href="SocketTLS_8h.html#a1c71fc02141cd9e6da4fdf1c88dbbaf3">SocketTLS_recv</a></div><div class="ttdeci">ssize_t SocketTLS_recv(Socket_T socket, void *buf, size_t len)</div><div class="ttdoc">SocketTLS_recv - Receive data from TLS-encrypted connection @socket: The socket instance with complet...</div></div>
-<div class="ttc" id="aSocketTLS_8h_html_a82be75dd764021fb64cd6824768e2254"><div class="ttname"><a href="SocketTLS_8h.html#a82be75dd764021fb64cd6824768e2254">SocketTLS_HandshakeFailed</a></div><div class="ttdeci">const Except_T SocketTLS_HandshakeFailed</div></div>
+<div class="ttc" id="aSocketTLS_8h_html_a82be75dd764021fb64cd6824768e2254"><div class="ttname"><a href="SocketTLS_8h.html#a82be75dd764021fb64cd6824768e2254">SocketTLS_HandshakeFailed</a></div><div class="ttdeci">const Except_T SocketTLS_HandshakeFailed</div><div class="ttdoc">SocketTLS_HandshakeFailed - TLS handshake could not complete.</div></div>
 <div class="ttc" id="aSocketTLS_8h_html_ab11506db6f41f31e9fc170b3d0e848f1"><div class="ttname"><a href="SocketTLS_8h.html#ab11506db6f41f31e9fc170b3d0e848f1">SocketTLS_shutdown</a></div><div class="ttdeci">void SocketTLS_shutdown(Socket_T socket)</div><div class="ttdoc">SocketTLS_shutdown - Perform graceful TLS connection shutdown @socket: The socket instance with TLS e...</div></div>
 <div class="ttc" id="aSocketTLS_8h_html_ab9a8fb788aa1f0d21b5773bc43a48d6f"><div class="ttname"><a href="SocketTLS_8h.html#ab9a8fb788aa1f0d21b5773bc43a48d6f">SocketTLS_enable</a></div><div class="ttdeci">void SocketTLS_enable(Socket_T socket, SocketTLSContext_T ctx)</div><div class="ttdoc">SocketTLS_enable - Enable TLS on a socket using the provided context @socket: The socket instance to ...</div></div>
 <div class="ttc" id="aSocketTLS_8h_html_abdb38e692dde58bbec4ab905eeb8b3aa"><div class="ttname"><a href="SocketTLS_8h.html#abdb38e692dde58bbec4ab905eeb8b3aa">SocketTLS_send</a></div><div class="ttdeci">ssize_t SocketTLS_send(Socket_T socket, const void *buf, size_t len)</div><div class="ttdoc">SocketTLS_send - Send data over TLS-encrypted connection @socket: The socket instance with completed ...</div></div>
-<div class="ttc" id="aSocketTLS_8h_html_abe406e483a861198db5bca58300f1728"><div class="ttname"><a href="SocketTLS_8h.html#abe406e483a861198db5bca58300f1728">SocketTLS_VerifyFailed</a></div><div class="ttdeci">const Except_T SocketTLS_VerifyFailed</div></div>
-<div class="ttc" id="aSocketTLS_8h_html_ac46f2ab9dacbb1af2d590f2974e21577"><div class="ttname"><a href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a></div><div class="ttdeci">struct SocketTLSContext_T * SocketTLSContext_T</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00058">SocketTLS.h:58</a></div></div>
-<div class="ttc" id="aSocketTLS_8h_html_ad092160c037d01929df1bb8d5b75b43cac9d764c27bc5b541bd5e7a4c42eddfce"><div class="ttname"><a href="SocketTLS_8h.html#ad092160c037d01929df1bb8d5b75b43cac9d764c27bc5b541bd5e7a4c42eddfce">TLS_HANDSHAKE_COMPLETE</a></div><div class="ttdeci">@ TLS_HANDSHAKE_COMPLETE</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00044">SocketTLS.h:44</a></div></div>
+<div class="ttc" id="aSocketTLS_8h_html_abe406e483a861198db5bca58300f1728"><div class="ttname"><a href="SocketTLS_8h.html#abe406e483a861198db5bca58300f1728">SocketTLS_VerifyFailed</a></div><div class="ttdeci">const Except_T SocketTLS_VerifyFailed</div><div class="ttdoc">SocketTLS_VerifyFailed - Certificate verification failure.</div></div>
+<div class="ttc" id="aSocketTLS_8h_html_ac46f2ab9dacbb1af2d590f2974e21577"><div class="ttname"><a href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a></div><div class="ttdeci">struct SocketTLSContext_T * SocketTLSContext_T</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00110">SocketTLS.h:110</a></div></div>
+<div class="ttc" id="aSocketTLS_8h_html_ad092160c037d01929df1bb8d5b75b43cac9d764c27bc5b541bd5e7a4c42eddfce"><div class="ttname"><a href="SocketTLS_8h.html#ad092160c037d01929df1bb8d5b75b43cac9d764c27bc5b541bd5e7a4c42eddfce">TLS_HANDSHAKE_COMPLETE</a></div><div class="ttdeci">@ TLS_HANDSHAKE_COMPLETE</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00096">SocketTLS.h:96</a></div></div>
 <div class="ttc" id="aSocketTLS_8h_html_aeaa77dd7852b535baf17b53ee2518454"><div class="ttname"><a href="SocketTLS_8h.html#aeaa77dd7852b535baf17b53ee2518454">SocketTLS_handshake</a></div><div class="ttdeci">TLSHandshakeState SocketTLS_handshake(Socket_T socket)</div><div class="ttdoc">SocketTLS_handshake - Perform non-blocking TLS handshake @socket: The socket instance with TLS enable...</div></div>
 <div class="ttc" id="aSocketTLS_8h_html_aef0f67021658d05419f1da479be2957e"><div class="ttname"><a href="SocketTLS_8h.html#aef0f67021658d05419f1da479be2957e">SocketTLS_get_version</a></div><div class="ttdeci">const char * SocketTLS_get_version(Socket_T socket)</div><div class="ttdoc">SocketTLS_get_version - Get negotiated TLS protocol version @socket: The socket instance with complet...</div></div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md21"></a>
+<h2><a class="anchor" id="autotoc_md23"></a>
 Unix Domain Socket Server</h2>
 <p>High-performance local IPC.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span></div>
@@ -485,7 +485,7 @@ Unix Domain Socket Server</h2>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;unistd.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -523,7 +523,7 @@ Unix Domain Socket Server</h2>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md23"></a>
+<h2><a class="anchor" id="autotoc_md25"></a>
 Happy Eyeballs (Fast Dual-Stack)</h2>
 <p>Race IPv4 and IPv6 for fastest connection (RFC 8305).</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketHappyEyeballs_8h.html">socket/SocketHappyEyeballs.h</a>&quot;</span></div>
@@ -532,7 +532,7 @@ Happy Eyeballs (Fast Dual-Stack)</h2>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -564,7 +564,7 @@ Happy Eyeballs (Fast Dual-Stack)</h2>
 <div class="ttc" id="aSocketHappyEyeballs_8h_html_a2189771ae05195653ab16170d72a251d"><div class="ttname"><a href="SocketHappyEyeballs_8h.html#a2189771ae05195653ab16170d72a251d">SocketHE_Failed</a></div><div class="ttdeci">const Except_T SocketHE_Failed</div><div class="ttdoc">Exception for Happy Eyeballs failures.</div></div>
 <div class="ttc" id="aSocketHappyEyeballs_8h_html_a5ef2e9ba01aa72f8a3ae864a1ba58bc3"><div class="ttname"><a href="SocketHappyEyeballs_8h.html#a5ef2e9ba01aa72f8a3ae864a1ba58bc3">SocketHappyEyeballs_connect</a></div><div class="ttdeci">Socket_T SocketHappyEyeballs_connect(const char *host, int port, const SocketHE_Config_T *config)</div><div class="ttdoc">SocketHappyEyeballs_connect - Connect using Happy Eyeballs (blocking) @host: Hostname or IP address t...</div></div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md25"></a>
+<h2><a class="anchor" id="autotoc_md27"></a>
 Auto-Reconnecting Client</h2>
 <p>Resilient connection with exponential backoff.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketReconnect_8h.html">socket/SocketReconnect.h</a>&quot;</span></div>
@@ -585,7 +585,7 @@ Auto-Reconnecting Client</h2>
 <div class="line">    printf(<span class="stringliteral">&quot;State: %s\n&quot;</span>, states[state]);</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -627,22 +627,22 @@ Auto-Reconnecting Client</h2>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
 <div class="ttc" id="aSocketReconnect_8h_html"><div class="ttname"><a href="SocketReconnect_8h.html">SocketReconnect.h</a></div></div>
-<div class="ttc" id="aSocketReconnect_8h_html_a2064741bf60283ac3315823128fa2082"><div class="ttname"><a href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082">SocketReconnect_new</a></div><div class="ttdeci">SocketReconnect_T SocketReconnect_new(const char *host, int port, const SocketReconnect_Policy_T *policy, SocketReconnect_Callback callback, void *userdata)</div><div class="ttdoc">SocketReconnect_new - Create a new reconnecting connection @host: Hostname or IP address to connect t...</div></div>
+<div class="ttc" id="aSocketReconnect_8h_html_a2064741bf60283ac3315823128fa2082"><div class="ttname"><a href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082">SocketReconnect_new</a></div><div class="ttdeci">SocketReconnect_T SocketReconnect_new(const char *host, int port, const SocketReconnect_Policy_T *policy, SocketReconnect_Callback callback, void *userdata)</div><div class="ttdoc">@timeout_ms: Maximum time to block in ms, 0=no timeout (use with caution)</div></div>
 <div class="ttc" id="aSocketReconnect_8h_html_a2669844f3ad8a19649f2bc204eee8401"><div class="ttname"><a href="SocketReconnect_8h.html#a2669844f3ad8a19649f2bc204eee8401">SocketReconnect_connect</a></div><div class="ttdeci">void SocketReconnect_connect(SocketReconnect_T conn)</div><div class="ttdoc">SocketReconnect_connect - Start connecting @conn: Reconnection context.</div></div>
 <div class="ttc" id="aSocketReconnect_8h_html_a490043a4bfaba8214f5d10a3c7b956de"><div class="ttname"><a href="SocketReconnect_8h.html#a490043a4bfaba8214f5d10a3c7b956de">SocketReconnect_isconnected</a></div><div class="ttdeci">int SocketReconnect_isconnected(SocketReconnect_T conn)</div><div class="ttdoc">SocketReconnect_isconnected - Check if currently connected @conn: Reconnection context.</div></div>
 <div class="ttc" id="aSocketReconnect_8h_html_a4bc781f13408c70bfe9d28148ac87212"><div class="ttname"><a href="SocketReconnect_8h.html#a4bc781f13408c70bfe9d28148ac87212">SocketReconnect_policy_defaults</a></div><div class="ttdeci">void SocketReconnect_policy_defaults(SocketReconnect_Policy_T *policy)</div><div class="ttdoc">SocketReconnect_policy_defaults - Initialize policy with defaults @policy: Policy structure to initia...</div></div>
-<div class="ttc" id="aSocketReconnect_8h_html_a58c9f07cd1532f285c63cb039c548eed"><div class="ttname"><a href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a></div><div class="ttdeci">struct SocketReconnect_T * SocketReconnect_T</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00056">SocketReconnect.h:56</a></div></div>
+<div class="ttc" id="aSocketReconnect_8h_html_a58c9f07cd1532f285c63cb039c548eed"><div class="ttname"><a href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a></div><div class="ttdeci">struct SocketReconnect_T * SocketReconnect_T</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00055">SocketReconnect.h:55</a></div></div>
 <div class="ttc" id="aSocketReconnect_8h_html_a8dd2c1fe7147188da2be29f7623d2822"><div class="ttname"><a href="SocketReconnect_8h.html#a8dd2c1fe7147188da2be29f7623d2822">SocketReconnect_tick</a></div><div class="ttdeci">void SocketReconnect_tick(SocketReconnect_T conn)</div><div class="ttdoc">SocketReconnect_tick - Process timers @conn: Reconnection context.</div></div>
 <div class="ttc" id="aSocketReconnect_8h_html_a92485113993efb3a1302bbcb8f57a908"><div class="ttname"><a href="SocketReconnect_8h.html#a92485113993efb3a1302bbcb8f57a908">SocketReconnect_recv</a></div><div class="ttdeci">ssize_t SocketReconnect_recv(SocketReconnect_T conn, void *buf, size_t len)</div><div class="ttdoc">SocketReconnect_recv - Receive data with auto-reconnect on error @conn: Reconnection context @buf: Bu...</div></div>
 <div class="ttc" id="aSocketReconnect_8h_html_a9d8b4dd4a693ba7acb20ff8e78defe91"><div class="ttname"><a href="SocketReconnect_8h.html#a9d8b4dd4a693ba7acb20ff8e78defe91">SocketReconnect_free</a></div><div class="ttdeci">void SocketReconnect_free(SocketReconnect_T *conn)</div><div class="ttdoc">SocketReconnect_free - Free a reconnecting connection @conn: Pointer to context (will be set to NULL)</div></div>
-<div class="ttc" id="aSocketReconnect_8h_html_ab0f7f9254ebc5d681f058d6b2c26f548"><div class="ttname"><a href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a></div><div class="ttdeci">SocketReconnect_State</div><div class="ttdoc">SocketReconnect_State - State of reconnection connection.</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00068">SocketReconnect.h:69</a></div></div>
-<div class="ttc" id="aSocketReconnect_8h_html_abd49613f2c70d36afe1822ca33ec1a0e"><div class="ttname"><a href="SocketReconnect_8h.html#abd49613f2c70d36afe1822ca33ec1a0e">SocketReconnect_Policy_T::max_attempts</a></div><div class="ttdeci">int max_attempts</div><div class="ttdoc">Max attempts before giving up, 0=unlimited (default: 10)</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00093">SocketReconnect.h:93</a></div></div>
-<div class="ttc" id="aSocketReconnect_8h_html_abf740738ffd922747329556ebd6052ca"><div class="ttname"><a href="SocketReconnect_8h.html#abf740738ffd922747329556ebd6052ca">SocketReconnect_Policy_T::initial_delay_ms</a></div><div class="ttdeci">int initial_delay_ms</div><div class="ttdoc">First retry delay (default: 100ms)</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00089">SocketReconnect.h:89</a></div></div>
+<div class="ttc" id="aSocketReconnect_8h_html_ab0f7f9254ebc5d681f058d6b2c26f548"><div class="ttname"><a href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a></div><div class="ttdeci">SocketReconnect_State</div><div class="ttdoc">SocketReconnect_State - State of reconnection connection.</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00067">SocketReconnect.h:68</a></div></div>
+<div class="ttc" id="aSocketReconnect_8h_html_abd49613f2c70d36afe1822ca33ec1a0e"><div class="ttname"><a href="SocketReconnect_8h.html#abd49613f2c70d36afe1822ca33ec1a0e">SocketReconnect_Policy_T::max_attempts</a></div><div class="ttdeci">int max_attempts</div><div class="ttdoc">Max attempts before giving up, 0=unlimited (default: 10)</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00092">SocketReconnect.h:92</a></div></div>
+<div class="ttc" id="aSocketReconnect_8h_html_abf740738ffd922747329556ebd6052ca"><div class="ttname"><a href="SocketReconnect_8h.html#abf740738ffd922747329556ebd6052ca">SocketReconnect_Policy_T::initial_delay_ms</a></div><div class="ttdeci">int initial_delay_ms</div><div class="ttdoc">First retry delay (default: 100ms)</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00088">SocketReconnect.h:88</a></div></div>
 <div class="ttc" id="aSocketReconnect_8h_html_ae1f6cbe69ac37f9bae1efccfe98538ee"><div class="ttname"><a href="SocketReconnect_8h.html#ae1f6cbe69ac37f9bae1efccfe98538ee">SocketReconnect_send</a></div><div class="ttdeci">ssize_t SocketReconnect_send(SocketReconnect_T conn, const void *buf, size_t len)</div><div class="ttdoc">SocketReconnect_send - Send data with auto-reconnect on error @conn: Reconnection context @buf: Data ...</div></div>
-<div class="ttc" id="aSocketReconnect_8h_html_aea494798fa2b191e8a0cc3b7c64ca0a2"><div class="ttname"><a href="SocketReconnect_8h.html#aea494798fa2b191e8a0cc3b7c64ca0a2">SocketReconnect_Policy_T::max_delay_ms</a></div><div class="ttdeci">int max_delay_ms</div><div class="ttdoc">Maximum backoff cap (default: 30000ms)</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00090">SocketReconnect.h:90</a></div></div>
-<div class="ttc" id="aSocketReconnect_8h_html_structSocketReconnect__Policy__T"><div class="ttname"><a href="SocketReconnect_8h.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a></div><div class="ttdoc">SocketReconnect_Policy_T - Reconnection policy configuration.</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00086">SocketReconnect.h:87</a></div></div>
+<div class="ttc" id="aSocketReconnect_8h_html_aea494798fa2b191e8a0cc3b7c64ca0a2"><div class="ttname"><a href="SocketReconnect_8h.html#aea494798fa2b191e8a0cc3b7c64ca0a2">SocketReconnect_Policy_T::max_delay_ms</a></div><div class="ttdeci">int max_delay_ms</div><div class="ttdoc">Maximum backoff cap (default: 30000ms)</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00089">SocketReconnect.h:89</a></div></div>
+<div class="ttc" id="aSocketReconnect_8h_html_structSocketReconnect__Policy__T"><div class="ttname"><a href="SocketReconnect_8h.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a></div><div class="ttdoc">SocketReconnect_Policy_T - Reconnection policy configuration.</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00085">SocketReconnect.h:86</a></div></div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md27"></a>
+<h2><a class="anchor" id="autotoc_md29"></a>
 Connection Pool with Buffers</h2>
 <p>Efficiently manage multiple connections.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span></div>
@@ -652,7 +652,7 @@ Connection Pool with Buffers</h2>
 <div class="line"><span class="preprocessor">#include &lt;signal.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -724,7 +724,7 @@ Connection Pool with Buffers</h2>
 <div class="ttc" id="aSocketPool_8h_html_acdffcf1802367df60db15c649fc7072d"><div class="ttname"><a href="SocketPool_8h.html#acdffcf1802367df60db15c649fc7072d">SocketPool_remove</a></div><div class="ttdeci">void SocketPool_remove(SocketPool_T pool, Socket_T socket)</div><div class="ttdoc">SocketPool_remove - Remove socket from pool @pool: Pool instance @socket: Socket to remove Clears buf...</div></div>
 <div class="ttc" id="aSocketPool_8h_html_afb57544a14c977302953fd36634bd004"><div class="ttname"><a href="SocketPool_8h.html#afb57544a14c977302953fd36634bd004">SocketPool_free</a></div><div class="ttdeci">void SocketPool_free(SocketPool_T *pool)</div><div class="ttdoc">SocketPool_free - Free a connection pool @pool: Pointer to pool (will be set to NULL) Note: Does not ...</div></div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md29"></a>
+<h2><a class="anchor" id="autotoc_md31"></a>
 Async DNS Resolution</h2>
 <p>Non-blocking DNS lookup.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketDNS_8h.html">dns/SocketDNS.h</a>&quot;</span></div>
@@ -732,7 +732,7 @@ Async DNS Resolution</h2>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;netdb.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    <a class="code hl_typedef" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns = <a class="code hl_function" href="SocketDNS_8h.html#a799f4d96c77eef54ecb9be5523b591fd">SocketDNS_new</a>();</div>
 <div class="line">    <a class="code hl_typedef" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll = <a class="code hl_function" href="SocketPoll_8h.html#ac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(100);</div>
@@ -779,7 +779,7 @@ Async DNS Resolution</h2>
 <div class="ttc" id="aSocketDNS_8h_html_ad8f2fa5ee464e84f44b4b6059b4813e5"><div class="ttname"><a href="SocketDNS_8h.html#ad8f2fa5ee464e84f44b4b6059b4813e5">SocketDNS_check</a></div><div class="ttdeci">int SocketDNS_check(SocketDNS_T dns)</div><div class="ttdoc">SocketDNS_check - Check for completed requests (non-blocking) @dns: DNS resolver instance Returns: Nu...</div></div>
 <div class="ttc" id="aSocketDNS_8h_html_af116c65d3617976fd55b1e3cf68d01ff"><div class="ttname"><a href="SocketDNS_8h.html#af116c65d3617976fd55b1e3cf68d01ff">SocketDNS_getresult</a></div><div class="ttdeci">struct addrinfo * SocketDNS_getresult(SocketDNS_T dns, SocketDNS_Request_T req)</div><div class="ttdoc">SocketDNS_getresult - Get result of completed request @dns: DNS resolver instance @req: Request handl...</div></div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md31"></a>
+<h2><a class="anchor" id="autotoc_md33"></a>
 Zero-Copy File Transfer</h2>
 <p>Efficient file sending with sendfile().</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span></div>
@@ -790,7 +790,7 @@ Zero-Copy File Transfer</h2>
 <div class="line"><span class="preprocessor">#include &lt;sys/stat.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;unistd.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span> *argv[])</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span> *argv[])</div>
 <div class="line">{</div>
 <div class="line">    <span class="keywordflow">if</span> (argc &lt; 3) {</div>
 <div class="line">        fprintf(stderr, <span class="stringliteral">&quot;Usage: %s &lt;host&gt; &lt;file&gt;\n&quot;</span>, argv[0]);</div>
@@ -828,7 +828,7 @@ Zero-Copy File Transfer</h2>
 <div class="line">}</div>
 <div class="ttc" id="aSocket_8h_html_a6262f6ab4c927347abc0fb3c105a0575"><div class="ttname"><a href="Socket_8h.html#a6262f6ab4c927347abc0fb3c105a0575">Socket_sendfileall</a></div><div class="ttdeci">ssize_t Socket_sendfileall(Socket_T socket, int file_fd, off_t *offset, size_t count)</div><div class="ttdoc">Socket_sendfileall - Zero-copy file-to-socket transfer (handles partial) @socket: Connected socket to...</div></div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md33"></a>
+<h2><a class="anchor" id="autotoc_md35"></a>
 Scatter/Gather I/O</h2>
 <p>Send multiple buffers efficiently with writev().</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span></div>
@@ -838,7 +838,7 @@ Scatter/Gather I/O</h2>
 <div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;sys/uio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -873,14 +873,14 @@ Scatter/Gather I/O</h2>
 <div class="line">}</div>
 <div class="ttc" id="aSocket_8h_html_af6d033a04d5041249950fa2f54a8d9fd"><div class="ttname"><a href="Socket_8h.html#af6d033a04d5041249950fa2f54a8d9fd">Socket_sendvall</a></div><div class="ttdeci">ssize_t Socket_sendvall(Socket_T socket, const struct iovec *iov, int iovcnt)</div><div class="ttdoc">Socket_sendvall - Scatter/gather send all (handles partial sends) @socket: Connected socket @iov: Arr...</div></div>
 </div><!-- fragment --><hr  />
-<h2><a class="anchor" id="autotoc_md35"></a>
+<h2><a class="anchor" id="autotoc_md37"></a>
 Advanced TCP Options</h2>
 <p>Configure socket behavior for specific use cases.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;signal.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="http2__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
@@ -927,7 +927,7 @@ Advanced TCP Options</h2>
 <div class="ttc" id="aSocket_8h_html_ae144a341a05e25011d95761368eefe13"><div class="ttname"><a href="Socket_8h.html#ae144a341a05e25011d95761368eefe13">Socket_setcongestion</a></div><div class="ttdeci">void Socket_setcongestion(Socket_T socket, const char *algorithm)</div><div class="ttdoc">Socket_setcongestion - Set TCP congestion control algorithm @socket: Socket to modify @algorithm: Alg...</div></div>
 <div class="ttc" id="aSocket_8h_html_af03ef2a81d1894713aeb96c12bb2389b"><div class="ttname"><a href="Socket_8h.html#af03ef2a81d1894713aeb96c12bb2389b">Socket_setkeepalive</a></div><div class="ttdeci">void Socket_setkeepalive(Socket_T socket, int idle, int interval, int count)</div><div class="ttdoc">Socket_setkeepalive - Enable TCP keepalive @socket: Socket to modify @idle: Seconds before sending ke...</div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md37"></a>
+<h1><a class="anchor" id="autotoc_md39"></a>
 Header Files</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -956,7 +956,7 @@ Header Files</h1>
 <td class="markdownTableBodyNone"><a href="Except_8h.html" target="_blank">Except.h</a>   </td><td class="markdownTableBodyNone">Exception handling   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md39"></a>
+<h1><a class="anchor" id="autotoc_md41"></a>
 Error Handling</h1>
 <p>All operations use exception-based error handling:</p>
 <div class="fragment"><div class="line"><a class="code hl_define" href="Except_8h.html#ad2746371528bdf15c3910b7bf217dac0">TRY</a></div>
@@ -968,7 +968,7 @@ Error Handling</h1>
 <div class="line">    <a class="code hl_function" href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;socket);</div>
 <div class="line"><a class="code hl_define" href="Except_8h.html#ae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
 <div class="ttc" id="aExcept_8h_html_a0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="Except_8h.html#a0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00132">Except.h:132</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md40"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md42"></a>
 Exception Types</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -993,7 +993,7 @@ Exception Types</h2>
 <td class="markdownTableBodyNone"><code>SocketTLS_VerifyFailed</code>   </td><td class="markdownTableBodyNone">Certificate verification failed   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md42"></a>
+<h1><a class="anchor" id="autotoc_md44"></a>
 Platform Support</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -1007,16 +1007,16 @@ Platform Support</h1>
 </table>
 <p><b>Requirements:</b> POSIX-compliant system, C11 compiler, pthread support.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md44"></a>
+<h1><a class="anchor" id="autotoc_md46"></a>
 Documentation</h1>
-<h2><a class="anchor" id="autotoc_md45"></a>
+<h2><a class="anchor" id="autotoc_md47"></a>
 API Reference</h2>
 <ul>
 <li><b><a href="files.html" target="_blank">Files</a></b> — Header file reference</li>
 <li><b><a href="annotated.html" target="_blank">Data Structures</a></b> — Structs and types</li>
 <li><b><a href="globals.html" target="_blank">API Reference</a></b> — Complete function index</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md46"></a>
+<h2><a class="anchor" id="autotoc_md48"></a>
 Guides</h2>
 <ul>
 <li><b><a class="el" href="http_guide.html">HTTP Guide</a></b> — HTTP/1.1 and HTTP/2 client/server</li>
@@ -1026,7 +1026,7 @@ Guides</h2>
 <li><b><a class="el" href="migration_guide.html">Migration Guide</a></b> — Migrate from libcurl, libevent, etc.</li>
 <li><b><a class="el" href="async_io_guide.html">Async I/O Guide</a></b> — io_uring patterns</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md47"></a>
+<h2><a class="anchor" id="autotoc_md49"></a>
 Examples</h2>
 <p>Standalone example programs are in the <code>examples/</code> directory:</p><ul>
 <li><code><a class="el" href="http__get_8c.html">http_get.c</a></code> — Simple HTTP GET request</li>

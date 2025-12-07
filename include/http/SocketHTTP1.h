@@ -119,6 +119,11 @@
 #define SOCKETHTTP1_MAX_TRAILER_SIZE (4 * 1024)
 #endif
 
+/** Maximum individual header line length (name + : + value + OWS + \r\n) */
+#ifndef SOCKETHTTP1_MAX_HEADER_LINE
+#define SOCKETHTTP1_MAX_HEADER_LINE (16 * 1024)
+#endif
+
 /* ============================================================================
  * Serialization Buffer Sizes
  * ============================================================================ */
@@ -208,7 +213,9 @@ typedef enum
   HTTP1_ERROR_INVALID_CONTENT_LENGTH,
   HTTP1_ERROR_INVALID_CHUNK_SIZE,
   HTTP1_ERROR_CHUNK_TOO_LARGE,
+  HTTP1_ERROR_BODY_TOO_LARGE,     /**< Decompressed body exceeds limit */
   HTTP1_ERROR_INVALID_TRAILER,
+  HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING, /**< Unsupported Transfer-Encoding coding */
   HTTP1_ERROR_UNEXPECTED_EOF,
   HTTP1_ERROR_SMUGGLING_DETECTED  /**< Request smuggling attempt */
 } SocketHTTP1_Result;
@@ -235,9 +242,12 @@ typedef struct
   size_t max_headers;        /**< Maximum header count */
   size_t max_header_size;    /**< Maximum total header size */
   size_t max_chunk_size;     /**< Maximum chunk size */
+  size_t max_chunk_ext;      /**< Maximum chunk extension length (default: 1024) */
   size_t max_trailer_size;   /**< Maximum trailer size */
+  size_t max_header_line;        /**< Maximum individual header line length (name + value + OWS + \r\n) */
   int allow_obs_fold;        /**< Allow obsolete header folding (default: 0) */
   int strict_mode;           /**< Reject ambiguous input (default: 1) */
+  size_t max_decompressed_size; /**< Maximum decompressed body size (0=unlimited, default from SocketSecurity_MAX_BODY_SIZE) */
 } SocketHTTP1_Config;
 
 /**
@@ -602,12 +612,14 @@ typedef enum
 /**
  * SocketHTTP1_Decoder_new - Create content decoder
  * @coding: Content coding (GZIP, DEFLATE, BR)
+ * @cfg: Configuration for limits (may be NULL for defaults)
  * @arena: Memory arena
  *
  * Returns: Decoder instance, or NULL on error
  * Thread-safe: Yes
  */
 extern SocketHTTP1_Decoder_T SocketHTTP1_Decoder_new (SocketHTTP_Coding coding,
+                                                      const SocketHTTP1_Config *cfg,
                                                       Arena_T arena);
 
 /**
@@ -650,11 +662,14 @@ SocketHTTP1_Decoder_finish (SocketHTTP1_Decoder_T decoder,
  * SocketHTTP1_Encoder_new - Create content encoder
  * @coding: Content coding (GZIP, DEFLATE, BR)
  * @level: Compression level
+ * @cfg: Configuration for limits (may be NULL for defaults)
  * @arena: Memory arena
  */
 extern SocketHTTP1_Encoder_T
 SocketHTTP1_Encoder_new (SocketHTTP_Coding coding,
-                         SocketHTTP1_CompressLevel level, Arena_T arena);
+                         SocketHTTP1_CompressLevel level,
+                         const SocketHTTP1_Config *cfg,
+                         Arena_T arena);
 
 /**
  * SocketHTTP1_Encoder_free - Free encoder

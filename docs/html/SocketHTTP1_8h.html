@@ -174,6 +174,16 @@ Macros</h2></td></tr>
 <tr class="memitem:a207d48fb770893866f7a01d4ec09390d" id="r_a207d48fb770893866f7a01d4ec09390d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP1_8h.html#a207d48fb770893866f7a01d4ec09390d">SOCKETHTTP1_MAX_TRAILER_SIZE</a>&#160;&#160;&#160;(4 * 1024)</td></tr>
 <tr class="memdesc:a207d48fb770893866f7a01d4ec09390d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum trailer headers size.  <br /></td></tr>
 <tr class="separator:a207d48fb770893866f7a01d4ec09390d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afac78449ad6cedf3dc9f703d5bd338b1" id="r_afac78449ad6cedf3dc9f703d5bd338b1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP1_8h.html#afac78449ad6cedf3dc9f703d5bd338b1">SOCKETHTTP1_MAX_HEADER_LINE</a>&#160;&#160;&#160;(16 * 1024)</td></tr>
+<tr class="memdesc:afac78449ad6cedf3dc9f703d5bd338b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum individual header line length (name + : + value + OWS + \r<br  />
+)  <br /></td></tr>
+<tr class="separator:afac78449ad6cedf3dc9f703d5bd338b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17c37ff959acffa4e20330b701877924" id="r_a17c37ff959acffa4e20330b701877924"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP1_8h.html#a17c37ff959acffa4e20330b701877924">SOCKETHTTP1_INT_STRING_BUFSIZE</a>&#160;&#160;&#160;24</td></tr>
+<tr class="memdesc:a17c37ff959acffa4e20330b701877924"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for integer-to-string conversion (covers int64_t)  <br /></td></tr>
+<tr class="separator:a17c37ff959acffa4e20330b701877924"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ee215b68e39922641052018f578a002" id="r_a1ee215b68e39922641052018f578a002"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP1_8h.html#a1ee215b68e39922641052018f578a002">SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE</a>&#160;&#160;&#160;48</td></tr>
+<tr class="memdesc:a1ee215b68e39922641052018f578a002"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for Content-Length header line ("Content-Length: " + value)  <br /></td></tr>
+<tr class="separator:a1ee215b68e39922641052018f578a002"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
@@ -243,6 +253,8 @@ Enumerations</h2></td></tr>
 &#160;&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78eadecd89036519fac2069f6261967ad9a4">HTTP1_ERROR_INVALID_CHUNK_SIZE</a>
 , <br />
 &#160;&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea6b628f58fac38dbc2fb615ae075f053d">HTTP1_ERROR_CHUNK_TOO_LARGE</a>
+, <br />
+&#160;&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78eaeb698ed6d2d4a79eb41d9b69346e6743">HTTP1_ERROR_BODY_TOO_LARGE</a>
 , <br />
 &#160;&#160;<a class="el" href="SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78ea9ad0d4f3b9cb3164139491d0f22f296c">HTTP1_ERROR_INVALID_TRAILER</a>
 , <br />
@@ -349,6 +361,9 @@ Variables</h2></td></tr>
 <tr class="memitem:ab0e624687447c4ade518d16bf70ac8a4" id="r_ab0e624687447c4ade518d16bf70ac8a4"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP1_8h.html#ab0e624687447c4ade518d16bf70ac8a4">SocketHTTP1_ParseError</a></td></tr>
 <tr class="memdesc:ab0e624687447c4ade518d16bf70ac8a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketHTTP1_ParseError - HTTP/1.1 message parse failure.  <br /></td></tr>
 <tr class="separator:ab0e624687447c4ade518d16bf70ac8a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7fe3d14ed6f02dfecfc98f4872d95372" id="r_a7fe3d14ed6f02dfecfc98f4872d95372"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP1_8h.html#a7fe3d14ed6f02dfecfc98f4872d95372">SocketHTTP1_SerializeError</a></td></tr>
+<tr class="memdesc:a7fe3d14ed6f02dfecfc98f4872d95372"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketHTTP1_SerializeError - HTTP/1.1 message serialization failure.  <br /></td></tr>
+<tr class="separator:a7fe3d14ed6f02dfecfc98f4872d95372"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/><h2 class="groupheader">Data Structure Documentation</h2>
 <a name="structSocketHTTP1__Config" id="structSocketHTTP1__Config"></a>
@@ -364,7 +379,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <div class="textblock"><p>Parser runtime configuration. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00179">179</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00236">236</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -379,6 +394,19 @@ Allow obsolete header folding (default: 0) </td></tr>
 max_chunk_size</td>
 <td class="fielddoc">
 Maximum chunk size. </td></tr>
+<tr><td class="fieldtype">
+<a id="aeda690045f7731461b2a5f29d9c3cc03" name="aeda690045f7731461b2a5f29d9c3cc03"></a>size_t</td>
+<td class="fieldname">
+max_decompressed_size</td>
+<td class="fielddoc">
+Maximum decompressed body size (0=unlimited, default from SocketSecurity_MAX_BODY_SIZE) </td></tr>
+<tr><td class="fieldtype">
+<a id="ad52814be2bcde961f89fd28531af8471" name="ad52814be2bcde961f89fd28531af8471"></a>size_t</td>
+<td class="fieldname">
+max_header_line</td>
+<td class="fielddoc">
+Maximum individual header line length (name + value + OWS + \r<br  />
+) </td></tr>
 <tr><td class="fieldtype">
 <a id="a8672fe4cd385d1f07f2a28af17f2bb33" name="a8672fe4cd385d1f07f2a28af17f2bb33"></a>size_t</td>
 <td class="fieldname">
@@ -426,6 +454,42 @@ Reject ambiguous input (default: 1) </td></tr>
 </div>
 </div>
 <h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="a1ee215b68e39922641052018f578a002" name="a1ee215b68e39922641052018f578a002"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ee215b68e39922641052018f578a002">&#9670;&#160;</a></span>SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE&#160;&#160;&#160;48</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Buffer size for Content-Length header line ("Content-Length: " + value) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00138">138</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+
+</div>
+</div>
+<a id="a17c37ff959acffa4e20330b701877924" name="a17c37ff959acffa4e20330b701877924"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a17c37ff959acffa4e20330b701877924">&#9670;&#160;</a></span>SOCKETHTTP1_INT_STRING_BUFSIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP1_INT_STRING_BUFSIZE&#160;&#160;&#160;24</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Buffer size for integer-to-string conversion (covers int64_t) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00133">133</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+
+</div>
+</div>
 <a id="a2b4e16b62a1a792c810cb1fc94519c85" name="a2b4e16b62a1a792c810cb1fc94519c85"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2b4e16b62a1a792c810cb1fc94519c85">&#9670;&#160;</a></span>SOCKETHTTP1_MAX_CHUNK_EXT</h2>
 
@@ -440,7 +504,7 @@ Reject ambiguous input (default: 1) </td></tr>
 
 <p>Maximum chunk extension length. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00086">86</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00114">114</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -458,7 +522,26 @@ Reject ambiguous input (default: 1) </td></tr>
 
 <p>Maximum chunk size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00081">81</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00109">109</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+
+</div>
+</div>
+<a id="afac78449ad6cedf3dc9f703d5bd338b1" name="afac78449ad6cedf3dc9f703d5bd338b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afac78449ad6cedf3dc9f703d5bd338b1">&#9670;&#160;</a></span>SOCKETHTTP1_MAX_HEADER_LINE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETHTTP1_MAX_HEADER_LINE&#160;&#160;&#160;(16 * 1024)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum individual header line length (name + : + value + OWS + \r<br  />
+) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00124">124</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -476,7 +559,7 @@ Reject ambiguous input (default: 1) </td></tr>
 
 <p>Maximum header name length. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00061">61</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00089">89</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -494,7 +577,7 @@ Reject ambiguous input (default: 1) </td></tr>
 
 <p>Maximum total header size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00076">76</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00104">104</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -512,7 +595,7 @@ Reject ambiguous input (default: 1) </td></tr>
 
 <p>Maximum header value length. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00066">66</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00094">94</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -530,7 +613,7 @@ Reject ambiguous input (default: 1) </td></tr>
 
 <p>Maximum number of headers. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00071">71</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00099">99</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -548,7 +631,7 @@ Reject ambiguous input (default: 1) </td></tr>
 
 <p>Maximum HTTP method length (longest standard: OPTIONS = 7) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00051">51</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00079">79</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -565,7 +648,7 @@ Reject ambiguous input (default: 1) </td></tr>
 </div><div class="memdoc">
 
 <p><a class="el" href="SocketHTTP1_8h.html">SocketHTTP1.h</a> - HTTP/1.1 Message Syntax (RFC 9112) </p>
-<p>Part of the Socket Library Following C Interfaces and Implementations patterns</p>
+<p>Part of the Socket Library</p>
 <p>Provides HTTP/1.1 message parsing, serialization, and chunked encoding. Builds on <a class="el" href="SocketHTTP_8h.html">SocketHTTP.h</a> for core types (methods, status codes, headers, URI).</p>
 <p>Features:</p><ul>
 <li>DFA-based incremental parser (O(n) complexity)</li>
@@ -584,7 +667,7 @@ Reject ambiguous input (default: 1) </td></tr>
 <li>Enforces configurable size limits Maximum request/status line length </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00046">46</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00074">74</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -602,7 +685,7 @@ Reject ambiguous input (default: 1) </td></tr>
 
 <p>Maximum trailer headers size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00091">91</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00119">119</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -620,7 +703,7 @@ Reject ambiguous input (default: 1) </td></tr>
 
 <p>Maximum URI length in request line. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00056">56</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00084">84</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -639,7 +722,7 @@ Reject ambiguous input (default: 1) </td></tr>
 
 <p>Parser instance (opaque type) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00195">195</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00254">254</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -668,7 +751,7 @@ Reject ambiguous input (default: 1) </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00168">168</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00225">225</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -692,7 +775,7 @@ Reject ambiguous input (default: 1) </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00116">116</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00172">172</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -728,13 +811,15 @@ Reject ambiguous input (default: 1) </td></tr>
 <tr><td class="fieldname"><a id="a2ece68fcfe3c3e99a855f93f6a46f78ead50a7e38db6d2197a2e3b740f7b8bd2a" name="a2ece68fcfe3c3e99a855f93f6a46f78ead50a7e38db6d2197a2e3b740f7b8bd2a"></a>HTTP1_ERROR_INVALID_CONTENT_LENGTH&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a2ece68fcfe3c3e99a855f93f6a46f78eadecd89036519fac2069f6261967ad9a4" name="a2ece68fcfe3c3e99a855f93f6a46f78eadecd89036519fac2069f6261967ad9a4"></a>HTTP1_ERROR_INVALID_CHUNK_SIZE&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a2ece68fcfe3c3e99a855f93f6a46f78ea6b628f58fac38dbc2fb615ae075f053d" name="a2ece68fcfe3c3e99a855f93f6a46f78ea6b628f58fac38dbc2fb615ae075f053d"></a>HTTP1_ERROR_CHUNK_TOO_LARGE&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a2ece68fcfe3c3e99a855f93f6a46f78eaeb698ed6d2d4a79eb41d9b69346e6743" name="a2ece68fcfe3c3e99a855f93f6a46f78eaeb698ed6d2d4a79eb41d9b69346e6743"></a>HTTP1_ERROR_BODY_TOO_LARGE&#160;</td><td class="fielddoc"><p>Decompressed body exceeds limit. </p>
+</td></tr>
 <tr><td class="fieldname"><a id="a2ece68fcfe3c3e99a855f93f6a46f78ea9ad0d4f3b9cb3164139491d0f22f296c" name="a2ece68fcfe3c3e99a855f93f6a46f78ea9ad0d4f3b9cb3164139491d0f22f296c"></a>HTTP1_ERROR_INVALID_TRAILER&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a2ece68fcfe3c3e99a855f93f6a46f78ea45da2dd8b558188c3c25ec3ca678187f" name="a2ece68fcfe3c3e99a855f93f6a46f78ea45da2dd8b558188c3c25ec3ca678187f"></a>HTTP1_ERROR_UNEXPECTED_EOF&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a2ece68fcfe3c3e99a855f93f6a46f78ea459fb16283ed5b28f9cb7b1dd988e229" name="a2ece68fcfe3c3e99a855f93f6a46f78ea459fb16283ed5b28f9cb7b1dd988e229"></a>HTTP1_ERROR_SMUGGLING_DETECTED&#160;</td><td class="fielddoc"><p>Request smuggling attempt. </p>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00141">141</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00197">197</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -772,7 +857,7 @@ Reject ambiguous input (default: 1) </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00125">125</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00181">181</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 
 </div>
 </div>
@@ -1592,7 +1677,7 @@ Required output size: len + 20 (for size line and CRLF)</p>
 
 <p>SocketHTTP1_serialize_headers - Serialize headers only @headers: Headers to serialize @output: Output buffer @output_size: Buffer size. </p>
 <p>Each header formatted as "Name: Value\r\n". Does NOT add final CRLF.</p>
-<p>Returns: Bytes written, or -1 on error Thread-safe: Yes </p>
+<p>Returns: Bytes written (excluding null), or -1 on error (buffer too small) Raises: SocketHTTP1_SerializeError on invalid headers Thread-safe: Yes </p>
 
 </div>
 </div>
@@ -1638,7 +1723,7 @@ Required output size: len + 20 (for size line and CRLF)</p>
 
 <p>SocketHTTP1_serialize_request - Serialize request to buffer @request: Request to serialize @output: Output buffer @output_size: Buffer size. </p>
 <p>Serializes request line and headers. Does NOT serialize body. Automatically adds Host header if missing (from authority). Terminates with CRLF CRLF.</p>
-<p>Returns: Bytes written (excluding null), or -1 on error Thread-safe: Yes </p>
+<p>Returns: Bytes written (excluding null), or -1 on error (buffer too small) Raises: SocketHTTP1_SerializeError on invalid input (unknown method/version) Thread-safe: Yes </p>
 
 </div>
 </div>
@@ -1684,7 +1769,7 @@ Required output size: len + 20 (for size line and CRLF)</p>
 
 <p>SocketHTTP1_serialize_response - Serialize response to buffer @response: Response to serialize @output: Output buffer @output_size: Buffer size. </p>
 <p>Serializes status line and headers. Does NOT serialize body.</p>
-<p>Returns: Bytes written, or -1 on error Thread-safe: Yes </p>
+<p>Returns: Bytes written (excluding null), or -1 on error (buffer too small) Raises: SocketHTTP1_SerializeError on invalid input (invalid status/version) Thread-safe: Yes </p>
 
 </div>
 </div>
@@ -1715,6 +1800,34 @@ Required output size: len + 20 (for size line and CRLF)</p>
 <li>Invalid header syntax</li>
 <li>Request smuggling attempt detected</li>
 <li>Size limits exceeded </li>
+</ul>
+
+</div>
+</div>
+<a id="a7fe3d14ed6f02dfecfc98f4872d95372" name="a7fe3d14ed6f02dfecfc98f4872d95372"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7fe3d14ed6f02dfecfc98f4872d95372">&#9670;&#160;</a></span>SocketHTTP1_SerializeError</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTP1_SerializeError</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>SocketHTTP1_SerializeError - HTTP/1.1 message serialization failure. </p>
+<p>Raised when:</p><ul>
+<li>Invalid input data (unknown method, invalid version, etc.)</li>
+<li>Required fields missing or malformed </li>
 </ul>
 
 </div>

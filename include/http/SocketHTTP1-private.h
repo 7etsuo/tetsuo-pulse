@@ -240,6 +240,11 @@ struct SocketHTTP1_Parser
   size_t header_count;         /* Number of headers parsed */
   size_t total_header_size;    /* Total header bytes */
   size_t line_length;          /* Current line length */
+  size_t header_line_length;      /* Current header line length */
+
+  /* Trailer parsing counters */
+  size_t trailer_count;        /* Number of trailer headers parsed */
+  size_t total_trailer_size;   /* Total trailer bytes parsed */
 
   /* Body handling */
   SocketHTTP1_BodyMode body_mode;

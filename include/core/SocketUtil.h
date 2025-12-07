@@ -602,10 +602,13 @@ extern __thread int socket_last_errno;
   do                                                                          \
     {                                                                         \
       socket_last_errno = errno;                                              \
+      char tmp_buf[SOCKET_ERROR_BUFSIZE];                                     \
       int _socket_error_ret = snprintf (                                      \
-          socket_error_buf, SOCKET_ERROR_BUFSIZE, fmt " (errno: %d - %s)",    \
+          tmp_buf, sizeof(tmp_buf), fmt " (errno: %d - %s)",                  \
           ##__VA_ARGS__, socket_last_errno,                                   \
           Socket_safe_strerror (socket_last_errno));                          \
+      strncpy (socket_error_buf, tmp_buf, SOCKET_ERROR_BUFSIZE - 1);          \
+      socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';                      \
       SOCKET_ERROR_APPLY_TRUNCATION (_socket_error_ret);                      \
       (void)_socket_error_ret;                                                \
       SocketLog_emit (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,                 \
@@ -621,8 +624,11 @@ extern __thread int socket_last_errno;
   do                                                                          \
     {                                                                         \
       socket_last_errno = errno;                                              \
+      char tmp_buf[SOCKET_ERROR_BUFSIZE];                                     \
       int _socket_error_ret = snprintf (                                      \
-          socket_error_buf, SOCKET_ERROR_BUFSIZE, fmt, ##__VA_ARGS__);        \
+          tmp_buf, sizeof(tmp_buf), fmt, ##__VA_ARGS__);                      \
+      strncpy (socket_error_buf, tmp_buf, SOCKET_ERROR_BUFSIZE - 1);          \
+      socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';                      \
       SOCKET_ERROR_APPLY_TRUNCATION (_socket_error_ret);                      \
       (void)_socket_error_ret;                                                \
       SocketLog_emit (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,                 \
@@ -901,6 +907,25 @@ static inline unsigned
 socket_util_hash_uint (unsigned value, unsigned table_size)
 {
   return (value * HASH_GOLDEN_RATIO) % table_size;
+}
+
+/**
+ * socket_util_hash_uint_seeded - Seeded hash for collision resistance in security contexts
+ * @value: Unsigned integer to hash
+ * @table_size: Hash table size (should be prime)
+ * @seed: Per-instance random seed (e.g., from SocketCrypto_random_bytes)
+ *
+ * Returns: Hash value in range [0, table_size)
+ * Thread-safe: Yes
+ *
+ * Adds seed to prevent predictable collisions in tables like HTTP/2 streams.
+ * Use for security-sensitive lookups where attacker may control keys.
+ */
+static inline unsigned
+socket_util_hash_uint_seeded (unsigned value, unsigned table_size, uint32_t seed)
+{
+  uint64_t h = (uint64_t)value * HASH_GOLDEN_RATIO + (uint64_t)seed;
+  return (unsigned)(h % table_size);
 }
 
 /** DJB2 hash algorithm seed value (Daniel J. Bernstein) */

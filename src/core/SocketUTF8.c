@@ -425,7 +425,6 @@ SocketUTF8_init (SocketUTF8_State *state)
   }
 
   state->state = UTF8_STATE_ACCEPT;
-  state->codepoint = 0;
   state->bytes_needed = 0;
   state->bytes_seen = 0;
 }

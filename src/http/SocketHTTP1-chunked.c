@@ -36,6 +36,36 @@ static const unsigned char HTTP1_ZERO_CHUNK_BYTES[3] = { '0', '\r', '\n' };
 /** Hex radix for chunk size parsing */
 #define HTTP1_HEX_RADIX 16
 
+/**
+ * is_forbidden_trailer - Check if header name is forbidden in trailers
+ * @name: Header name (null-terminated)
+ *
+ * Returns: 1 if forbidden (TE, CL, Trailer), 0 otherwise
+ */
+static int
+is_forbidden_trailer (const char *name)
+{
+  static const char *forbidden[] = {
+    "transfer-encoding",
+    "content-length",
+    "trailer",
+    NULL
+  };
+
+  if (!name)
+    return 0;
+
+  size_t len = strlen (name);
+
+  for (const char **f = forbidden; *f; f++) {
+    size_t flen = strlen (*f);
+    if (len == flen && strncasecmp (name, *f, flen) == 0)
+      return 1;
+  }
+
+  return 0;
+}
+
 /* ============================================================================
  * CRLF Handling
  * ============================================================================ */
@@ -365,7 +395,7 @@ read_body_until_close (SocketHTTP1_Parser_T parser, const char *input,
  * Returns: Chunk size on success, -1 on error, -2 if incomplete
  */
 static int64_t
-parse_chunk_size (const char *input, size_t len, size_t *line_len)
+parse_chunk_size (const char *input, size_t len, size_t *line_len, size_t max_ext_len)
 {
   const char *p = input;
   const char *end = input + len;
@@ -392,10 +422,17 @@ parse_chunk_size (const char *input, size_t len, size_t *line_len)
     return -1; /* No digits found */
 
   /* Skip chunk extension (semicolon followed by anything until CRLF) */
+  size_t ext_len = 0;
   if (p < end && *p == ';')
     {
-      while (p < end && *p != '\r' && *p != '\n')
-        p++;
+      p++; ext_len = 1;
+      while (p < end && *p != '\r' && *p != '\n' && ext_len < max_ext_len)
+        {
+          p++;
+          ext_len++;
+        }
+      if (ext_len > max_ext_len)
+        return -1;  /* Extension too long */
     }
 
   crlf_result_t res = skip_crlf (&p, end);
@@ -435,7 +472,7 @@ handle_chunk_size_state (SocketHTTP1_Parser_T parser, const char **p,
   int64_t chunk_size;
   size_t line_len;
 
-  chunk_size = parse_chunk_size (*p, (size_t)(end - *p), &line_len);
+  chunk_size = parse_chunk_size (*p, (size_t)(end - *p), &line_len, parser->config.max_chunk_ext);
 
   if (chunk_size == -2)
     return HTTP1_INCOMPLETE; /* Need more data */
@@ -456,6 +493,8 @@ handle_chunk_size_state (SocketHTTP1_Parser_T parser, const char **p,
           return HTTP1_ERROR;
         }
         parser->trailers = trailers;
+        parser->trailer_count = 0;
+        parser->total_trailer_size = 0;
       }
       parser->internal_state = HTTP1_PS_TRAILER_START;
       parser->state = HTTP1_STATE_TRAILERS;
@@ -526,51 +565,7 @@ handle_chunk_crlf_states (SocketHTTP1_Parser_T parser, const char **p,
   return HTTP1_OK;
 }
 
-/**
- * handle_trailer_states - Process trailer parsing states
- * @parser: Parser instance
- * @p: Current input position pointer (updated on return)
- * @end: End of input buffer
- *
- * Handles HTTP1_PS_TRAILER_START and HTTP1_PS_TRAILERS_END_LF states.
- * Simplified implementation that skips trailer content.
- *
- * Returns: HTTP1_OK when complete, HTTP1_INCOMPLETE, or error code
- */
-static SocketHTTP1_Result
-handle_trailer_states (SocketHTTP1_Parser_T parser, const char **p,
-                       const char *end)
-{
-  crlf_result_t res = skip_crlf (p, end);
-  if (res == CRLF_OK)
-    {
-      mark_body_complete (parser);
-      return HTTP1_OK;
-    }
-  if (res == CRLF_INCOMPLETE)
-    return HTTP1_INCOMPLETE;
-
-  // Invalid CRLF start - must be trailer header or error
-  if (!http1_is_tchar (**p))
-    return HTTP1_ERROR_INVALID_TRAILER;
-
-  // Skip header line content until line ending
-  while ((*p) < end && **p != '\r' && **p != '\n')
-    (*p)++;
-
-  if ((*p) >= end)
-    return HTTP1_INCOMPLETE;
-
-  // Skip the line ending (CRLF or LF)
-  res = skip_crlf (p, end);
-  if (res == CRLF_INCOMPLETE)
-    return HTTP1_INCOMPLETE;
-  if (res != CRLF_OK)
-    return HTTP1_ERROR_INVALID_TRAILER;
-
-  // Successfully skipped one trailer header line
-  return HTTP1_OK;
-}
+/* Removed unused handle_trailer_states - trailers now parsed fully inline in state machine */
 
 /* ============================================================================
  * Chunked Body Reading - Main Function
@@ -601,6 +596,9 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *input,
   char *out = output;
   size_t out_remaining = output_len;
   SocketHTTP1_Result result;
+
+  char *name = NULL;
+  size_t name_len = 0;
 
   *consumed = 0;
   *written = 0;
@@ -668,7 +666,10 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *input,
           {
             if (*p == ':')
               {
-                char *name = http1_tokenbuf_terminate (&parser->name_buf, parser->arena, parser->config.max_header_name);
+                name = http1_tokenbuf_terminate (&parser->name_buf, parser->arena, parser->config.max_header_name);
+                if (name != NULL) {
+                  name_len = parser->name_buf.len;
+                }
                 if (name == NULL)
                   {
                     update_progress (input, p, output, out, consumed, written);
@@ -759,10 +760,10 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *input,
                     return HTTP1_ERROR_HEADER_TOO_LARGE;
                   }
                 parser->line_length++;
-                if (parser->line_length > parser->config.max_request_line)
+                if (parser->line_length > parser->config.max_header_value)
                   {
                     update_progress (input, p, output, out, consumed, written);
-                    return HTTP1_ERROR_LINE_TOO_LONG;
+                    return HTTP1_ERROR_HEADER_TOO_LARGE;
                   }
                 p++;
                 return HTTP1_OK;
@@ -783,9 +784,33 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *input,
                     update_progress (input, p, output, out, consumed, written);
                     return HTTP1_ERROR_HEADER_TOO_LARGE;
                   }
+                if (name == NULL)
+                  {
+                    update_progress (input, p, output, out, consumed, written);
+                    return HTTP1_ERROR_HEADER_TOO_LARGE;
+                  }
+                if (is_forbidden_trailer (name)) {
+                  update_progress (input, p, output, out, consumed, written);
+                  return HTTP1_ERROR_INVALID_TRAILER;
+                }
+
+                // Check trailer limits
+                size_t value_len = strlen (value);
+                size_t entry_size = name_len + value_len + 32;  /* Approx overhead for entry struct + nulls + delimiters */
+                if (parser->trailer_count >= parser->config.max_headers ||
+                    parser->total_trailer_size + entry_size > parser->config.max_trailer_size) {
+                  update_progress (input, p, output, out, consumed, written);
+                  return HTTP1_ERROR_HEADER_TOO_LARGE;
+                }
+
                 // Add to trailers
-                char *name = parser->name_buf.data; // already terminated
-                SocketHTTP_Headers_add (parser->trailers, name, value);
+                name = parser->name_buf.data; // already terminated
+                if (SocketHTTP_Headers_add (parser->trailers, name, value) < 0) {
+                  update_progress (input, p, output, out, consumed, written);
+                  return HTTP1_ERROR_HEADER_TOO_LARGE;
+                }
+                parser->trailer_count++;
+                parser->total_trailer_size += entry_size;
                 // Reset for next header
                 http1_tokenbuf_reset (&parser->name_buf);
                 http1_tokenbuf_reset (&parser->value_buf);
@@ -808,8 +833,49 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *input,
                 update_progress (input, p, output, out, consumed, written);
                 return HTTP1_ERROR_HEADER_TOO_LARGE;
               }
-            char *name = parser->name_buf.data;
-            SocketHTTP_Headers_add (parser->trailers, name, value);
+            if (name == NULL)
+              {
+                update_progress (input, p, output, out, consumed, written);
+                return HTTP1_ERROR_HEADER_TOO_LARGE;
+              }
+
+            // Check forbidden trailers (duplicate code - refactor to function later)
+            static const char *forbidden_trailers[] = {
+              "transfer-encoding",
+              "content-length",
+              "trailer",
+              NULL
+            };
+            /* name_len already set in NAME state */
+            int forbidden = 0;
+            for (const char **f = forbidden_trailers; *f; f++) {
+              size_t flen = strlen (*f);
+              if (name_len == flen && strncasecmp (name, *f, flen) == 0) {
+                forbidden = 1;
+                break;
+              }
+            }
+            if (forbidden) {
+              update_progress (input, p, output, out, consumed, written);
+              return HTTP1_ERROR_INVALID_TRAILER;
+            }
+
+            // Check trailer limits
+            size_t value_len = strlen (value);
+            size_t entry_size = name_len + value_len + 32;  /* Approx overhead */
+            if (parser->trailer_count >= parser->config.max_headers ||
+                parser->total_trailer_size + entry_size > parser->config.max_trailer_size) {
+              update_progress (input, p, output, out, consumed, written);
+              return HTTP1_ERROR_HEADER_TOO_LARGE;
+            }
+
+            name = parser->name_buf.data;
+            if (SocketHTTP_Headers_add (parser->trailers, name, value) < 0) {
+              update_progress (input, p, output, out, consumed, written);
+              return HTTP1_ERROR_HEADER_TOO_LARGE;
+            }
+            parser->trailer_count++;
+            parser->total_trailer_size += entry_size;
             http1_tokenbuf_reset (&parser->name_buf);
             http1_tokenbuf_reset (&parser->value_buf);
             parser->internal_state = HTTP1_PS_TRAILER_START;

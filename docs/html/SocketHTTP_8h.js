@@ -7,6 +7,18 @@ var SocketHTTP_8h =
       [ "response_body", "SocketHTTP_8h.html#a56b452f5e749b9785b8926e469093417", null ],
       [ "safe", "SocketHTTP_8h.html#a73218e27f40ce28175276e72244863c6", null ]
     ] ],
+    [ "HTTP_STATUS_1XX_MAX", "SocketHTTP_8h.html#a261a87375b42933ff21a2b0fc7fdc8c3", null ],
+    [ "HTTP_STATUS_1XX_MIN", "SocketHTTP_8h.html#aee82a204474700c91dad9a806e48f64f", null ],
+    [ "HTTP_STATUS_2XX_MAX", "SocketHTTP_8h.html#aa802911b92b079f19b3e1f4049cc36d7", null ],
+    [ "HTTP_STATUS_2XX_MIN", "SocketHTTP_8h.html#a803cba6422aa720d629c3a9bd660cb4c", null ],
+    [ "HTTP_STATUS_3XX_MAX", "SocketHTTP_8h.html#a1f0660454bb40ecd77d30150ec42e198", null ],
+    [ "HTTP_STATUS_3XX_MIN", "SocketHTTP_8h.html#a3991461d2ca50eeab1c693aaf37717a8", null ],
+    [ "HTTP_STATUS_4XX_MAX", "SocketHTTP_8h.html#af38c37f224e9e3cf82aeec28f1da00b5", null ],
+    [ "HTTP_STATUS_4XX_MIN", "SocketHTTP_8h.html#a530d36f357344463eb4b5ca8a46157b6", null ],
+    [ "HTTP_STATUS_5XX_MAX", "SocketHTTP_8h.html#a18bd3c97e4435317e073b63c13ca6aa1", null ],
+    [ "HTTP_STATUS_5XX_MIN", "SocketHTTP_8h.html#abe599c847c5cf301bd5d9f151bba17d7", null ],
+    [ "HTTP_STATUS_CODE_MAX", "SocketHTTP_8h.html#ab6a83b3daff3f633c8deda4408cea03c", null ],
+    [ "HTTP_STATUS_CODE_MIN", "SocketHTTP_8h.html#a7182eca7a6bd99ccbf0cb12b275adf9d", null ],
     [ "SOCKETHTTP_DATE_BUFSIZE", "SocketHTTP_8h.html#a613a2fead5a6288d5d4e794ba95adeee", null ],
     [ "SOCKETHTTP_MAX_HEADER_NAME", "SocketHTTP_8h.html#a67cb8ab40e2085b3682e91a79aea2553", null ],
     [ "SOCKETHTTP_MAX_HEADER_SIZE", "SocketHTTP_8h.html#a7bb4c78960a2783f19b993f193932727", null ],
@@ -109,7 +121,5 @@ var SocketHTTP_8h =
     [ "SocketHTTP_method_valid", "SocketHTTP_8h.html#ac30c95d487cc694a02c2b46796c27d07", null ],
     [ "SocketHTTP_version_parse", "SocketHTTP_8h.html#a2c1cc8d1f48f39b8a3cabe4a47aaa295", null ],
     [ "SocketHTTP_version_string", "SocketHTTP_8h.html#afd6a702248ad5bce0c0d6f1825795f1e", null ],
-    [ "SocketHTTP_InvalidHeader", "SocketHTTP_8h.html#a737d1c3fbff9be0590c8d0790600906a", null ],
-    [ "SocketHTTP_InvalidURI", "SocketHTTP_8h.html#a05591446a711d5a6b9d967748d9bc60e", null ],
-    [ "SocketHTTP_ParseError", "SocketHTTP_8h.html#ab3d5ad7e5994f2d6dc5cc732bba2f901", null ]
+    [ "SocketHTTP_Failed", "SocketHTTP_8h.html#a4f683bdd1ab1acf36a383a7be5f5b6d2", null ]
 ];

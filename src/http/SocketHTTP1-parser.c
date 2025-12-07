@@ -14,6 +14,7 @@
 #include "http/SocketHTTP1-private.h"
 #include "http/SocketHTTP-private.h"
 #include "core/SocketUtil.h"
+#include "core/SocketSecurity.h"
 
 #include <assert.h>
 
@@ -410,6 +411,7 @@ static const char *result_strings[] = {
   [HTTP1_ERROR_INVALID_CHUNK_SIZE] = "Invalid chunk size",
   [HTTP1_ERROR_CHUNK_TOO_LARGE] = "Chunk too large",
   [HTTP1_ERROR_INVALID_TRAILER] = "Invalid trailer",
+  [HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING] = "Unsupported transfer coding",
   [HTTP1_ERROR_UNEXPECTED_EOF] = "Unexpected end of input",
   [HTTP1_ERROR_SMUGGLING_DETECTED] = "Request smuggling attempt detected"
 };
@@ -437,10 +439,13 @@ SocketHTTP1_config_defaults (SocketHTTP1_Config *config)
   config->max_request_line = SOCKETHTTP1_MAX_REQUEST_LINE;
   config->max_header_name = SOCKETHTTP1_MAX_HEADER_NAME;
   config->max_header_value = SOCKETHTTP1_MAX_HEADER_VALUE;
+  config->max_decompressed_size = SOCKET_SECURITY_MAX_BODY_SIZE;
   config->max_headers = SOCKETHTTP1_MAX_HEADERS;
   config->max_header_size = SOCKETHTTP1_MAX_HEADER_SIZE;
   config->max_chunk_size = SOCKETHTTP1_MAX_CHUNK_SIZE;
+  config->max_chunk_ext = SOCKETHTTP1_MAX_CHUNK_EXT;
   config->max_trailer_size = SOCKETHTTP1_MAX_TRAILER_SIZE;
+  config->max_header_line = SOCKETHTTP1_MAX_HEADER_LINE;
   config->allow_obs_fold = 0;
   config->strict_mode = 1;
 }
@@ -594,7 +599,12 @@ SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser)
   /* Reset counters */
   parser->header_count = 0;
   parser->total_header_size = 0;
+  parser->trailer_count = 0;
+  parser->total_trailer_size = 0;
   parser->line_length = 0;
+  parser->header_line_length = 0;
+  parser->header_line_length = 0;
+  parser->header_line_length = 0;
 
   /* Reset body tracking */
   reset_body_tracking (parser);
@@ -619,77 +629,221 @@ SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser)
  * ============================================================================ */
 
 /**
+ * parse_cl_value - Parse single Content-Length value string
+ * @str: String to parse
+ * @len: Length of string (0 for strlen)
+ *
+ * Parses digits with leading/trailing OWS, overflow-safe.
+ * Returns: Parsed value or -1 on invalid.
+ */
+static int64_t
+parse_cl_value (const char *str, size_t len)
+{
+  const char *p;
+  size_t i = 0;
+  int64_t value = 0;
+
+  if (len == 0) len = strlen (str);
+  if (len == 0) return -1;
+
+  p = str;
+
+  /* Skip leading OWS */
+  while (i < len && http1_is_ows (p[i])) i++;
+  if (i == len) return -1;
+
+  /* Digits (no sign for CL) */
+  while (i < len && http1_is_digit (p[i]))
+    {
+      int digit = p[i] - '0';
+      if (value > (INT64_MAX - digit) / 10)
+        return -1;
+      value = value * 10 + digit;
+      i++;
+    }
+
+  /* Trailing OWS only */
+  while (i < len && http1_is_ows (p[i])) i++;
+  if (i < len) return -1; /* Garbage */
+
+  return value;
+}
+
+/**
+ * cl_validator - Callback to validate all CL headers equal
+ * Used with Headers_iterate
+ */
+static int
+cl_validator (const char *name, size_t name_len, const char *value, size_t value_len, void *userdata)
+{
+  int64_t *expected = (int64_t *) userdata;
+
+  if (!sockethttp_name_equal (name, name_len, "Content-Length", 14))
+    return 0; /* Continue */
+
+  int64_t this_val = parse_cl_value (value, value_len);
+  if (this_val < 0 || this_val != *expected)
+    return -1; /* Error */
+
+  return 0;
+}
+
+/**
  * parse_content_length - Parse and validate Content-Length header
  * @headers: Headers collection to search
  *
- * Returns: Value on success, -1 on error, -2 if not present
+ * Now validates ALL Content-Length headers parse to identical value.
+ * Returns: Value on success, -1 on error (invalid or mismatch), -2 if not present
  */
 static int64_t
 parse_content_length (const SocketHTTP_Headers_T headers)
 {
-  const size_t MAX_CL_HEADERS = 2;
-  const char *cl_values[MAX_CL_HEADERS];
-  size_t count;
-  int64_t value;
-  const char *cl;
-  const char *p;
-
-  count = SocketHTTP_Headers_get_all (headers, "Content-Length", cl_values, MAX_CL_HEADERS);
-
-  if (count == 0)
-    return -2; /* Not present */
-
-  /* Multiple headers must have identical values (RFC 9112 Section 6.3) */
-  if (count > 1 && strcmp (cl_values[0], cl_values[1]) != 0)
-    return -1; /* Different values = smuggling attempt */
-
-  cl = cl_values[0];
-  value = 0;
-  p = cl;
-
-  /* Skip leading whitespace */
-  while (*p == ' ' || *p == '\t')
-    p++;
-
-  if (*p == '\0')
-    return -1; /* Empty value */
-
-  /* Must start with digit */
-  if (!http1_is_digit (*p))
+  if (!headers)
     return -1;
 
-  while (http1_is_digit (*p))
+  const char *first_cl = SocketHTTP_Headers_get (headers, "Content-Length");
+  if (!first_cl)
+    return -2; /* Not present */
+
+  size_t first_len = strlen (first_cl);
+  int64_t cl_val = parse_cl_value (first_cl, first_len);
+  if (cl_val < 0)
+    return -1;
+
+  /* Validate all CL headers match (RFC 9112 Section 6.3 strict) */
+  int err = SocketHTTP_Headers_iterate (headers, cl_validator, &cl_val);
+  if (err != 0)
+    return -1; /* Mismatch or invalid */
+
+  return cl_val;
+}
+
+/**
+ * http1_skip_token_delimiters - Skip whitespace and comma delimiters in header values
+ * @p: Pointer to current position
+ *
+ * Returns: Pointer to start of next token or end of string
+ */
+static const char *
+http1_skip_token_delimiters (const char *p)
+{
+  while (*p == ' ' || *p == '\t' || *p == ',')
+    p++;
+  return p;
+}
+
+/**
+ * http1_extract_token_bounds - Find end of current token in header value
+ * @start: Start of token
+ * @end: Output pointer to one past end of token
+ *
+ * Returns: Length of token
+ */
+static size_t
+http1_extract_token_bounds (const char *start, const char **end)
+{
+  const char *p = start;
+  while (*p && *p != ',' && *p != ' ' && *p != '\t')
+    p++;
+  *end = p;
+  return (size_t)(p - start);
+}
+
+/**
+ * http1_token_equal_ci - Case-insensitive token comparison
+ * @token: Token from header value
+ * @token_len: Token length
+ * @target: Target token to match
+ * @target_len: Target length
+ *
+ * Returns: 1 if equal (case-insensitive), 0 otherwise
+ */
+static int
+http1_token_equal_ci (const char *token, size_t token_len, const char *target,
+                      size_t target_len)
+{
+  return sockethttp_name_equal (token, token_len, target, target_len);
+}
+
+/**
+ * http1_contains_token - Check if value contains token (comma-separated)
+ * @value: Header value string
+ * @token: Token to search for
+ *
+ * Returns: 1 if found, 0 otherwise
+ */
+static int
+http1_contains_token (const char *value, const char *token)
+{
+  size_t tlen = strlen (token);
+  if (tlen == 0) return 0;
+
+  const char *p = value;
+  while (*p)
     {
-      int64_t digit = *p - '0';
+      p = http1_skip_token_delimiters (p);
+      if (*p == '\0') break;
 
-      /* Check overflow before multiplication */
-      if (value > (INT64_MAX - digit) / 10)
-        return -1;
+      const char *tok_end;
+      size_t tok_len = http1_extract_token_bounds (p, &tok_end);
 
-      value = value * 10 + digit;
-      p++;
+      if (http1_token_equal_ci (p, tok_len, token, tlen)) return 1;
+
+      p = tok_end;
     }
 
-  /* Skip trailing whitespace */
-  while (*p == ' ' || *p == '\t')
-    p++;
-
-  if (*p != '\0')
-    return -1; /* Trailing garbage */
-
-  return value;
+  return 0;
 }
 
 /**
  * has_chunked_encoding - Check if Transfer-Encoding includes chunked
  * @headers: Headers collection
  *
- * Returns: 1 if chunked, 0 otherwise
+ * Searches ALL Transfer-Encoding headers for "chunked" token.
+ * Returns: 1 if chunked found in any, 0 otherwise
  */
 static int
 has_chunked_encoding (const SocketHTTP_Headers_T headers)
 {
-  return SocketHTTP_Headers_contains (headers, "Transfer-Encoding", "chunked");
+  if (!headers) return 0;
+
+  const char *te_values[SOCKETHTTP_MAX_HEADERS];
+  size_t count = SocketHTTP_Headers_get_all (headers, "Transfer-Encoding", te_values, SOCKETHTTP_MAX_HEADERS);
+
+  for (size_t i = 0; i < count; i++)
+    {
+      if (http1_contains_token (te_values[i], "chunked")) return 1;
+    }
+
+  return 0;
+}
+
+/**
+ * has_other_transfer_coding - Check for unsupported/non-chunked transfer codings
+ * @headers: Headers collection
+ *
+ * Scans TE headers for known unsupported codings (gzip, compress, etc.).
+ * Used for strict validation.
+ * Returns: 1 if unsupported found, 0 otherwise
+ */
+static int
+has_other_transfer_coding (const SocketHTTP_Headers_T headers)
+{
+  static const char *unsupported[] = { "gzip", "x-gzip", "compress", "deflate", "identity", NULL };
+  if (!headers) return 0;
+
+  const char *te_values[SOCKETHTTP_MAX_HEADERS];
+  size_t count = SocketHTTP_Headers_get_all (headers, "Transfer-Encoding", te_values, SOCKETHTTP_MAX_HEADERS);
+
+  for (size_t i = 0; i < count; i++)
+    {
+      for (const char **u = unsupported; *u; u++)
+        {
+          if (http1_contains_token (te_values[i], *u)) return 1;
+        }
+    }
+
+  return 0;
 }
 
 /**
@@ -772,13 +926,21 @@ determine_body_mode (SocketHTTP1_Parser_T parser)
         return HTTP1_ERROR_INVALID_CONTENT_LENGTH;
     }
 
-  /* Transfer-Encoding takes precedence over Content-Length */
+  /* Transfer-Encoding takes precedence over Content-Length, with strict validation */
   if (has_te)
     {
-      if (has_chunked_encoding (parser->headers))
-        set_body_mode_chunked (parser);
+      if (!has_chunked_encoding (parser->headers))
+        {
+          if (parser->config.strict_mode)
+            return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
+          set_body_mode_until_close (parser);
+        }
       else
-        set_body_mode_until_close (parser);
+        {
+          if (parser->config.strict_mode && has_other_transfer_coding (parser->headers))
+            return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
+          set_body_mode_chunked (parser);
+        }
       return HTTP1_OK;
     }
 
@@ -909,6 +1071,12 @@ finalize_request (SocketHTTP1_Parser_T parser)
 
   /* Set request target (path) - already null-terminated */
   req->path = parser->uri_buf.data;
+
+  /* Validate URI syntax for security (basic format, encoding) */
+  SocketHTTP_URI uri_temp;
+  SocketHTTP_URIResult uri_res = SocketHTTP_URI_parse (req->path, strlen (req->path), &uri_temp, parser->arena);
+  if (uri_res != URI_PARSE_OK)
+    return HTTP1_ERROR_INVALID_URI;
 
   /* Extract authority from Host header */
   req->authority = SocketHTTP_Headers_get (parser->headers, "Host");
@@ -1457,8 +1625,24 @@ parse_headers_loop (SocketHTTP1_Parser_T parser,
       /* Update state and counters */
       state = next_state;
       parser->line_length++;
+      if (state >= HTTP1_PS_HEADER_START && state <= HTTP1_PS_HEADERS_END_LF)
+        parser->header_line_length++;
 
       /* Check line length limit */
+  if (state >= HTTP1_PS_HEADER_START && state <= HTTP1_PS_HEADERS_END_LF
+      && parser->header_line_length > parser->config.max_header_line)
+    {
+      set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
+      *consumed = (size_t)(p - data);
+      return parser->error;
+    }
+  if (state >= HTTP1_PS_HEADER_START && state <= HTTP1_PS_HEADERS_END_LF
+      && parser->header_line_length > parser->config.max_header_line)
+    {
+      set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
+      *consumed = (size_t)(p - data);
+      return parser->error;
+    }
       if (state <= HTTP1_PS_LINE_CR
           && parser->line_length > parser->config.max_request_line)
         {
@@ -1471,6 +1655,8 @@ parse_headers_loop (SocketHTTP1_Parser_T parser,
       if (state == HTTP1_PS_HEADER_START)
         {
           parser->line_length = 0;
+  parser->header_line_length = 0;
+  parser->header_line_length = 0;
           parser->state = HTTP1_STATE_HEADERS;
         }
 

@@ -582,7 +582,7 @@ SocketDNS_getmaxpending (struct SocketDNS_T *dns)
 /**
  * SocketDNS_setmaxpending - Set maximum pending requests limit
  * @dns: DNS resolver instance
- * @max_pending: New queue capacity limit (0 = unlimited, but practically capped)
+ * @max_pending: New queue capacity limit (0 = capacity 0 / queuing disabled)
  *
  * Updates the maximum number of pending requests the queue can hold.
  * Cannot reduce below current queue_size (would reject new requests prematurely).

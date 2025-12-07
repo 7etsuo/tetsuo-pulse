@@ -152,6 +152,18 @@ Macros</h2></td></tr>
 <tr class="memitem:a45fdc9df7fba5033d071135c934b8547" id="r_a45fdc9df7fba5033d071135c934b8547"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a45fdc9df7fba5033d071135c934b8547">SOCKET_UTF8_SURROGATE_MAX</a>&#160;&#160;&#160;0xDFFF</td></tr>
 <tr class="memdesc:a45fdc9df7fba5033d071135c934b8547"><td class="mdescLeft">&#160;</td><td class="mdescRight">Last UTF-16 surrogate code point (invalid in UTF-8)  <br /></td></tr>
 <tr class="separator:a45fdc9df7fba5033d071135c934b8547"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a79465648f060b79ec961cc626975a533" id="r_a79465648f060b79ec961cc626975a533"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a79465648f060b79ec961cc626975a533">SOCKET_UTF8_1BYTE_MAX</a>&#160;&#160;&#160;0x7F</td></tr>
+<tr class="memdesc:a79465648f060b79ec961cc626975a533"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum code point encodable in 1 byte (ASCII range)  <br /></td></tr>
+<tr class="separator:a79465648f060b79ec961cc626975a533"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a93e8c5ea6de08b28ab080057cd17423c" id="r_a93e8c5ea6de08b28ab080057cd17423c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a93e8c5ea6de08b28ab080057cd17423c">SOCKET_UTF8_2BYTE_MAX</a>&#160;&#160;&#160;0x7FF</td></tr>
+<tr class="memdesc:a93e8c5ea6de08b28ab080057cd17423c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum code point encodable in 2 bytes.  <br /></td></tr>
+<tr class="separator:a93e8c5ea6de08b28ab080057cd17423c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02b7ac016b2dbc2c374081887ef684d5" id="r_a02b7ac016b2dbc2c374081887ef684d5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a02b7ac016b2dbc2c374081887ef684d5">SOCKET_UTF8_3BYTE_MAX</a>&#160;&#160;&#160;0xFFFF</td></tr>
+<tr class="memdesc:a02b7ac016b2dbc2c374081887ef684d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum code point encodable in 3 bytes.  <br /></td></tr>
+<tr class="separator:a02b7ac016b2dbc2c374081887ef684d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3cc04d775e04588a8446aedca62326f" id="r_ad3cc04d775e04588a8446aedca62326f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#ad3cc04d775e04588a8446aedca62326f">SOCKET_UTF8_4BYTE_MIN</a>&#160;&#160;&#160;0x10000</td></tr>
+<tr class="memdesc:ad3cc04d775e04588a8446aedca62326f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum code point requiring 4 bytes.  <br /></td></tr>
+<tr class="separator:ad3cc04d775e04588a8446aedca62326f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -232,7 +244,7 @@ Variables</h2></td></tr>
 <div class="textblock"><p>UTF-8 incremental validator state Public structure for stack allocation - initialized via <a class="el" href="SocketUTF8_8h.html#a63e171e87998e78fb1398213e4ebc9a5" title="SocketUTF8_init - Initialize incremental validator @state: State structure to initialize (must not be...">SocketUTF8_init()</a> </p>
 <p>This structure maintains validation state across multiple chunks of data, enabling streaming validation where multi-byte sequences may be split across chunk boundaries. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00134">134</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00157">157</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -248,12 +260,6 @@ bytes_seen</td>
 <td class="fielddoc">
 Bytes seen in current sequence. </td></tr>
 <tr><td class="fieldtype">
-<a id="a82cadcfc6425d071d2bacfa22470676c" name="a82cadcfc6425d071d2bacfa22470676c"></a>uint32_t</td>
-<td class="fieldname">
-codepoint</td>
-<td class="fielddoc">
-Accumulated code point (internal) </td></tr>
-<tr><td class="fieldtype">
 <a id="a48fe27868c9570c5e60189e4c91dbd26" name="a48fe27868c9570c5e60189e4c91dbd26"></a>uint32_t</td>
 <td class="fieldname">
 state</td>
@@ -264,6 +270,78 @@ DFA state (internal) </td></tr>
 </div>
 </div>
 <h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="a79465648f060b79ec961cc626975a533" name="a79465648f060b79ec961cc626975a533"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a79465648f060b79ec961cc626975a533">&#9670;&#160;</a></span>SOCKET_UTF8_1BYTE_MAX</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_UTF8_1BYTE_MAX&#160;&#160;&#160;0x7F</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum code point encodable in 1 byte (ASCII range) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00058">58</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+
+</div>
+</div>
+<a id="a93e8c5ea6de08b28ab080057cd17423c" name="a93e8c5ea6de08b28ab080057cd17423c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a93e8c5ea6de08b28ab080057cd17423c">&#9670;&#160;</a></span>SOCKET_UTF8_2BYTE_MAX</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_UTF8_2BYTE_MAX&#160;&#160;&#160;0x7FF</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum code point encodable in 2 bytes. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00063">63</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+
+</div>
+</div>
+<a id="a02b7ac016b2dbc2c374081887ef684d5" name="a02b7ac016b2dbc2c374081887ef684d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02b7ac016b2dbc2c374081887ef684d5">&#9670;&#160;</a></span>SOCKET_UTF8_3BYTE_MAX</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_UTF8_3BYTE_MAX&#160;&#160;&#160;0xFFFF</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum code point encodable in 3 bytes. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00068">68</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+
+</div>
+</div>
+<a id="ad3cc04d775e04588a8446aedca62326f" name="ad3cc04d775e04588a8446aedca62326f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3cc04d775e04588a8446aedca62326f">&#9670;&#160;</a></span>SOCKET_UTF8_4BYTE_MIN</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_UTF8_4BYTE_MIN&#160;&#160;&#160;0x10000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Minimum code point requiring 4 bytes. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00073">73</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+
+</div>
+</div>
 <a id="ac2c24c8a574da982e47bc14c90c51fcb" name="ac2c24c8a574da982e47bc14c90c51fcb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac2c24c8a574da982e47bc14c90c51fcb">&#9670;&#160;</a></span>SOCKET_UTF8_MAX_BYTES</h2>
 
@@ -277,7 +355,7 @@ DFA state (internal) </td></tr>
 </div><div class="memdoc">
 
 <p><a class="el" href="SocketUTF8_8h.html">SocketUTF8.h</a> - UTF-8 Validation for Socket Library. </p>
-<p>Part of the Socket Library Following C Interfaces and Implementations patterns</p>
+<p>Part of the Socket Library</p>
 <p>Provides complete UTF-8 validation per Unicode Standard with incremental API for streaming. Required for WebSocket text frame validation (RFC 6455 Section 8.1).</p>
 <p>Features:</p><ul>
 <li>One-shot validation for complete data</li>
@@ -294,7 +372,7 @@ DFA state (internal) </td></tr>
 <li>No dynamic memory allocation - immune to allocation attacks Maximum bytes in a UTF-8 sequence </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00041">41</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00040">40</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
@@ -312,7 +390,7 @@ DFA state (internal) </td></tr>
 
 <p>Maximum valid Unicode code point. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00044">44</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00043">43</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
@@ -330,7 +408,7 @@ DFA state (internal) </td></tr>
 
 <p>Last UTF-16 surrogate code point (invalid in UTF-8) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00050">50</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00049">49</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
@@ -348,7 +426,7 @@ DFA state (internal) </td></tr>
 
 <p>First UTF-16 surrogate code point (invalid in UTF-8) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00047">47</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00046">46</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
@@ -382,7 +460,7 @@ DFA state (internal) </td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00076">76</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00099">99</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>

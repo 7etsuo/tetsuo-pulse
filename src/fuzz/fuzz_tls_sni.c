@@ -13,7 +13,7 @@
  * Run:   ./fuzz_tls_sni corpus/tls_sni/ -fork=16 -max_len=512
  */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include <assert.h>
 #include <ctype.h>

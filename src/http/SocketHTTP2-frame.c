@@ -181,13 +181,6 @@ static FrameValidator frame_validators[] = {
  * Exception Definitions
  * ============================================================================ */
 
-const Except_T SocketHTTP2_ProtocolError
-    = { &SocketHTTP2_ProtocolError, "HTTP/2 protocol error" };
-const Except_T SocketHTTP2_StreamError
-    = { &SocketHTTP2_StreamError, "HTTP/2 stream error" };
-const Except_T SocketHTTP2_FlowControlError
-    = { &SocketHTTP2_FlowControlError, "HTTP/2 flow control error" };
-
 /* ============================================================================
  * String Lookup Tables
  * ============================================================================ */
@@ -288,20 +281,25 @@ http2_pack_uint32_be(unsigned char *data, uint32_t value)
 
 /**
  * SocketHTTP2_frame_header_parse - Parse 9-byte frame header
- * @data: Input buffer (at least HTTP2_FRAME_HEADER_SIZE bytes)
- * @header: Output structure
+ * @data: Input buffer containing frame header
+ * @input_len: Available bytes in data (must >= HTTP2_FRAME_HEADER_SIZE=9; validated)
+ * @header: Output structure (populated on success)
  *
- * Returns: 0 on success, -1 on invalid input (null pointers)
+ * Returns: 0 on success, -1 on invalid input (null pointers, insufficient length)
  * Thread-safe: Yes
+ *
+ * Performs runtime length check for defensive programming.
+ * Caller should ensure data integrity (e.g., from recv buffer).
  */
 int
-SocketHTTP2_frame_header_parse (const unsigned char *data,
+SocketHTTP2_frame_header_parse (const unsigned char *data, size_t input_len,
                                 SocketHTTP2_FrameHeader *header)
 {
-  if (!data || !header)
+  if (!data || input_len < HTTP2_FRAME_HEADER_SIZE || !header)
     return -1;
 
   assert (data);
+  assert (input_len >= HTTP2_FRAME_HEADER_SIZE);
   assert (header);
 
   /* Length: 24-bit big-endian */

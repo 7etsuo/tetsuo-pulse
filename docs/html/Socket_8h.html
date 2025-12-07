@@ -152,6 +152,9 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a8517adf0df2e5331a952fb713ec314f9" id="r_a8517adf0df2e5331a952fb713ec314f9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a8517adf0df2e5331a952fb713ec314f9">Socket_error_is_retryable</a> (int err)</td></tr>
+<tr class="memdesc:a8517adf0df2e5331a952fb713ec314f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_error_is_retryable - Check if an errno indicates a retryable error @err: errno value to check.  <br /></td></tr>
+<tr class="separator:a8517adf0df2e5331a952fb713ec314f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6212fb2b6eefa567592a59f55c25a6f1" id="r_a6212fb2b6eefa567592a59f55c25a6f1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a> (int domain, int type, int protocol)</td></tr>
 <tr class="separator:a6212fb2b6eefa567592a59f55c25a6f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1290da3d1c546b8c550a59e138f722b8" id="r_a1290da3d1c546b8c550a59e138f722b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a1290da3d1c546b8c550a59e138f722b8">SocketPair_new</a> (int type, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> *socket1, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> *socket2)</td></tr>
@@ -319,6 +322,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a0385e87c51740c37c9d90ff5bba1eced" id="r_a0385e87c51740c37c9d90ff5bba1eced"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a0385e87c51740c37c9d90ff5bba1eced">Socket_timeouts_setdefaults</a> (const <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a> *timeouts)</td></tr>
 <tr class="memdesc:a0385e87c51740c37c9d90ff5bba1eced"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_timeouts_setdefaults - Set global default timeouts @timeouts: New default timeout configuration.  <br /></td></tr>
 <tr class="separator:a0385e87c51740c37c9d90ff5bba1eced"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad663873fbc8f0846c092a380f64b1f52" id="r_ad663873fbc8f0846c092a380f64b1f52"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ad663873fbc8f0846c092a380f64b1f52">Socket_timeouts_set_extended</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__Extended__T">SocketTimeouts_Extended_T</a> *extended)</td></tr>
+<tr class="memdesc:ad663873fbc8f0846c092a380f64b1f52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_timeouts_set_extended - Set per-socket extended timeout configuration @socket: Socket to modify @extended: Extended per-phase timeout configuration.  <br /></td></tr>
+<tr class="separator:ad663873fbc8f0846c092a380f64b1f52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4affc77e30721f266acfc9ba7870dff5" id="r_a4affc77e30721f266acfc9ba7870dff5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a4affc77e30721f266acfc9ba7870dff5">Socket_timeouts_get_extended</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__Extended__T">SocketTimeouts_Extended_T</a> *extended)</td></tr>
+<tr class="memdesc:a4affc77e30721f266acfc9ba7870dff5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_timeouts_get_extended - Retrieve per-socket extended timeout configuration @socket: Socket to query @extended: Output structure for extended timeouts.  <br /></td></tr>
+<tr class="separator:a4affc77e30721f266acfc9ba7870dff5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acab565f9a6e6c40c56d6d21df89b30a9" id="r_acab565f9a6e6c40c56d6d21df89b30a9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#acab565f9a6e6c40c56d6d21df89b30a9">Socket_setbandwidth</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, size_t bytes_per_sec)</td></tr>
 <tr class="memdesc:acab565f9a6e6c40c56d6d21df89b30a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setbandwidth - Set bandwidth limit for socket @socket: Socket to modify @bytes_per_sec: Maximum bytes per second (0 to disable limiting)  <br /></td></tr>
 <tr class="separator:acab565f9a6e6c40c56d6d21df89b30a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -385,17 +394,20 @@ Functions</h2></td></tr>
 <tr class="memitem:a28271af8ebad671a64fd37ffb2d07e0c" id="r_a28271af8ebad671a64fd37ffb2d07e0c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a28271af8ebad671a64fd37ffb2d07e0c">Socket_connect_with_addrinfo</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, struct addrinfo *res)</td></tr>
 <tr class="memdesc:a28271af8ebad671a64fd37ffb2d07e0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_connect_with_addrinfo - Connect socket using resolved address @socket: Socket to connect @res: Resolved addrinfo result from DNS resolution Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a28271af8ebad671a64fd37ffb2d07e0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a410b67062c053c3af7e86531acc1620c" id="r_a410b67062c053c3af7e86531acc1620c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a410b67062c053c3af7e86531acc1620c">Socket_ignore_sigpipe</a> (void)</td></tr>
+<tr class="memdesc:a410b67062c053c3af7e86531acc1620c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_ignore_sigpipe - Globally ignore SIGPIPE signal.  <br /></td></tr>
+<tr class="separator:a410b67062c053c3af7e86531acc1620c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a225f4a8fd657fd52a05146c6fc4f58b0" id="r_a225f4a8fd657fd52a05146c6fc4f58b0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a></td></tr>
-<tr class="memdesc:a225f4a8fd657fd52a05146c6fc4f58b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">General socket operation failure.  <br /></td></tr>
+<tr class="memdesc:a225f4a8fd657fd52a05146c6fc4f58b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_Failed - General socket operation failure.  <br /></td></tr>
 <tr class="separator:a225f4a8fd657fd52a05146c6fc4f58b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2db3d742dcea3f39ad2eb37d4fb1e453" id="r_a2db3d742dcea3f39ad2eb37d4fb1e453"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a2db3d742dcea3f39ad2eb37d4fb1e453">Socket_Closed</a></td></tr>
-<tr class="memdesc:a2db3d742dcea3f39ad2eb37d4fb1e453"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection closed by peer.  <br /></td></tr>
+<tr class="memdesc:a2db3d742dcea3f39ad2eb37d4fb1e453"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_Closed - Connection closed by peer.  <br /></td></tr>
 <tr class="separator:a2db3d742dcea3f39ad2eb37d4fb1e453"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab05e641cc9abed67180036e51a1dc633" id="r_ab05e641cc9abed67180036e51a1dc633"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ab05e641cc9abed67180036e51a1dc633">SocketUnix_Failed</a></td></tr>
-<tr class="memdesc:ab05e641cc9abed67180036e51a1dc633"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unix socket operation failure.  <br /></td></tr>
+<tr class="memdesc:ab05e641cc9abed67180036e51a1dc633"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUnix_Failed - Unix domain socket operation failure.  <br /></td></tr>
 <tr class="separator:ab05e641cc9abed67180036e51a1dc633"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -412,7 +424,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p><a class="el" href="Socket_8h.html">Socket.h</a> - Socket Abstraction Layer. </p>
-<p>Part of the Socket Library Following C Interfaces and Implementations patterns</p>
+<p>Part of the Socket Library</p>
 <p>High-level, exception-based TCP/IP/Unix domain socket interface. This header consolidates all socket operations including:</p><ul>
 <li>Core socket creation and I/O</li>
 <li>State query functions</li>
@@ -438,7 +450,7 @@ Variables</h2></td></tr>
 <li>Applied to DNS resolution and blocking connect() paths </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="Socket_8h_source.html#l00045">45</a> of file <a class="el" href="Socket_8h_source.html">Socket.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Socket_8h_source.html#l00044">44</a> of file <a class="el" href="Socket_8h_source.html">Socket.h</a>.</p>
 
 </div>
 </div>
@@ -455,7 +467,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Socket_8h_source.html#l00046">46</a> of file <a class="el" href="Socket_8h_source.html">Socket.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Socket_8h_source.html#l00045">45</a> of file <a class="el" href="Socket_8h_source.html">Socket.h</a>.</p>
 
 </div>
 </div>
@@ -485,6 +497,8 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Socket_accept - Accept incoming connection @socket: Listening socket Returns: New socket or NULL if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Failed on error. </p>
+
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
 </div>
 </div>
@@ -570,6 +584,8 @@ Variables</h2></td></tr>
 
 <p>Socket_bind - Bind socket to address and port @socket: Socket to bind @host: IP address or NULL/"0.0.0.0" for any @port: Port number (1 to SOCKET_MAX_PORT) WARNING: May block 30+ seconds during DNS resolution if hostname provided. </p>
 <p>Raises: Socket_Failed on error </p>
+
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
 </div>
 </div>
@@ -977,6 +993,54 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a8517adf0df2e5331a952fb713ec314f9" name="a8517adf0df2e5331a952fb713ec314f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8517adf0df2e5331a952fb713ec314f9">&#9670;&#160;</a></span>Socket_error_is_retryable()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Socket_error_is_retryable </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>err</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Socket_error_is_retryable - Check if an errno indicates a retryable error @err: errno value to check. </p>
+<p>Returns: 1 if error is typically retryable, 0 if fatal Thread-safe: Yes (pure function)</p>
+<p>This is a convenience wrapper around <a class="el" href="SocketUtil_8h.html#a78065a32bc90c30a5d062b0b9ac88163" title="SocketError_is_retryable_errno - Check if errno indicates retryable error @err: errno value to check.">SocketError_is_retryable_errno()</a> for socket-specific error handling.</p>
+<p>Retryable errors (return 1):</p><ul>
+<li>ECONNREFUSED: Server not listening, may start later</li>
+<li>ECONNRESET: Connection dropped, can reconnect</li>
+<li>ETIMEDOUT: Timeout, may succeed on retry</li>
+<li>ENETUNREACH: Network route may recover</li>
+<li>EHOSTUNREACH: Host may become reachable</li>
+<li>EAGAIN/EWOULDBLOCK: Resource temporarily unavailable</li>
+<li>EINTR: Interrupted by signal</li>
+</ul>
+<p>Fatal errors (return 0):</p><ul>
+<li>EACCES: Permission denied (won't change)</li>
+<li>EADDRINUSE: Address in use (won't change)</li>
+<li>EBADF: Bad file descriptor (programming error)</li>
+<li>EINVAL: Invalid argument (programming error)</li>
+<li>ENOMEM: Out of memory (system issue)</li>
+<li>EMFILE/ENFILE: Too many open files (system limit)</li>
+</ul>
+<p>Usage: TRY Socket_connect(sock, host, port); <a class="el" href="Except_8h.html#ab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT(Socket_Failed)</a> if (Socket_error_is_retryable(Socket_geterrno())) // Schedule retry with backoff else // Log error and give up END_TRY; </p>
+
+</div>
+</div>
 <a id="a4d727948c677509eec04746585819877" name="a4d727948c677509eec04746585819877"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4d727948c677509eec04746585819877">&#9670;&#160;</a></span>Socket_fd()</h2>
 
@@ -1033,7 +1097,7 @@ Variables</h2></td></tr>
 
 <p>Socket_free - Free a socket and close the connection @socket: Pointer to socket (will be set to NULL) </p>
 
-<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
 </div>
 </div>
@@ -1331,6 +1395,8 @@ Variables</h2></td></tr>
 
 <p>Socket_getpeeraddr - Get peer IP address @socket: Connected socket Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable Note: String is owned by socket, valid until socket freed. </p>
 
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00193">handle_client_data()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
+
 </div>
 </div>
 <a id="a64a5bd6dc33ef5f000b9f7d334a1fdfa" name="a64a5bd6dc33ef5f000b9f7d334a1fdfa"></a>
@@ -1414,6 +1480,8 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Socket_getpeerport - Get peer port number @socket: Connected socket Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable. </p>
+
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00193">handle_client_data()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
 </div>
 </div>
@@ -1557,6 +1625,46 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a410b67062c053c3af7e86531acc1620c" name="a410b67062c053c3af7e86531acc1620c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a410b67062c053c3af7e86531acc1620c">&#9670;&#160;</a></span>Socket_ignore_sigpipe()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Socket_ignore_sigpipe </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Socket_ignore_sigpipe - Globally ignore SIGPIPE signal. </p>
+<p>NOTE: This function is NOT required when using this library. The library handles SIGPIPE internally via:</p><ul>
+<li>MSG_NOSIGNAL flag on send operations (Linux/FreeBSD)</li>
+<li>SO_NOSIGPIPE socket option at creation (BSD/macOS)</li>
+</ul>
+<p>This convenience function is provided for:</p><ul>
+<li>Legacy code migration (applications that previously handled SIGPIPE)</li>
+<li>Applications mixing this library with raw socket code</li>
+<li>Defense-in-depth preference</li>
+</ul>
+<p>Returns: 0 on success, -1 on error (sets errno) Thread-safe: Yes (can be called from any thread, idempotent)</p>
+<p>Usage: // Optional - call once at program startup if desired <a class="el" href="Socket_8h.html#a410b67062c053c3af7e86531acc1620c" title="Socket_ignore_sigpipe - Globally ignore SIGPIPE signal.">Socket_ignore_sigpipe()</a>;</p>
+<p>IMPORTANT: Do not call this if your application needs to handle SIGPIPE for other purposes (e.g., detecting broken pipes in shell pipelines). </p>
+
+</div>
+</div>
 <a id="a1710f1e1251df44fb4f82c60ff199a76" name="a1710f1e1251df44fb4f82c60ff199a76"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1710f1e1251df44fb4f82c60ff199a76">&#9670;&#160;</a></span>Socket_isbound()</h2>
 
@@ -1677,6 +1785,8 @@ Variables</h2></td></tr>
 
 <p>Socket_listen - Listen for incoming connections @socket: Bound socket @backlog: Maximum pending connections Raises: Socket_Failed on error. </p>
 
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
+
 </div>
 </div>
 <a id="a6212fb2b6eefa567592a59f55c25a6f1" name="a6212fb2b6eefa567592a59f55c25a6f1"></a>
@@ -1719,7 +1829,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
 </div>
 </div>
@@ -1793,7 +1903,7 @@ Variables</h2></td></tr>
 
 <p>Socket_recv - Receive data @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) Returns: Bytes received (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other. </p>
 
-<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00193">handle_client_data()</a>, and <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
 </div>
 </div>
@@ -2247,7 +2357,7 @@ Variables</h2></td></tr>
 
 <p>Socket_sendall - Send all data (handles partial sends) @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Total bytes sent (always equals len on success) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors. </p>
 
-<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00193">handle_client_data()</a>, and <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
 </div>
 </div>
@@ -2888,6 +2998,8 @@ Variables</h2></td></tr>
 
 <p>Socket_setnonblocking - Enable non-blocking mode @socket: Socket to modify Raises: Socket_Failed on error. </p>
 
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
+
 </div>
 </div>
 <a id="ad59dc86a3f3728e75983daa0f5b34550" name="ad59dc86a3f3728e75983daa0f5b34550"></a>
@@ -2953,6 +3065,8 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Socket_setreuseaddr - Enable address reuse @socket: Socket to modify Raises: Socket_Failed on error. </p>
+
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
 </div>
 </div>
@@ -3174,6 +3288,46 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a4affc77e30721f266acfc9ba7870dff5" name="a4affc77e30721f266acfc9ba7870dff5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4affc77e30721f266acfc9ba7870dff5">&#9670;&#160;</a></span>Socket_timeouts_get_extended()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Socket_timeouts_get_extended </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="SocketConfig_8h.html#structSocketTimeouts__Extended__T">SocketTimeouts_Extended_T</a> *&#160;</td>
+          <td class="paramname"><em>extended</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Socket_timeouts_get_extended - Retrieve per-socket extended timeout configuration @socket: Socket to query @extended: Output structure for extended timeouts. </p>
+<p>Retrieves the current extended timeout configuration. If extended timeouts haven't been set, returns the basic timeouts mapped to the extended structure.</p>
+<p>Thread-safe: No - caller must ensure exclusive access </p>
+
+</div>
+</div>
 <a id="acfcc79428e54b0284cc7cad257d56adf" name="acfcc79428e54b0284cc7cad257d56adf"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acfcc79428e54b0284cc7cad257d56adf">&#9670;&#160;</a></span>Socket_timeouts_getdefaults()</h2>
 
@@ -3237,6 +3391,47 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Socket_timeouts_set - Set per-socket timeout configuration @socket: Socket instance @timeouts: Timeout configuration (NULL to reset to defaults) </p>
+
+</div>
+</div>
+<a id="ad663873fbc8f0846c092a380f64b1f52" name="ad663873fbc8f0846c092a380f64b1f52"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad663873fbc8f0846c092a380f64b1f52">&#9670;&#160;</a></span>Socket_timeouts_set_extended()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Socket_timeouts_set_extended </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__Extended__T">SocketTimeouts_Extended_T</a> *&#160;</td>
+          <td class="paramname"><em>extended</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Socket_timeouts_set_extended - Set per-socket extended timeout configuration @socket: Socket to modify @extended: Extended per-phase timeout configuration. </p>
+<p>Sets granular per-phase timeouts for advanced use cases. The extended timeouts provide finer control than <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T" title="SocketTimeouts_T - Timeout configuration structure.">SocketTimeouts_T</a>, allowing different timeouts for DNS, connect, TLS, and request phases.</p>
+<p>Values of 0 in the extended structure mean "inherit from basic timeouts". Values of -1 mean "no timeout (infinite)".</p>
+<p>Thread-safe: No - caller must ensure exclusive access </p>
 
 </div>
 </div>
@@ -3454,7 +3649,16 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Connection closed by peer. </p>
+<p>Socket_Closed - Connection closed by peer. </p>
+<p>Category: NETWORK Retryable: Yes - indicates graceful close or reset, reconnect may succeed</p>
+<p>Raised when:</p><ul>
+<li>recv() returns 0 (graceful close)</li>
+<li>ECONNRESET during I/O (connection reset)</li>
+<li>EPIPE during send (broken pipe)</li>
+</ul>
+<p>This is a normal condition for connection-oriented sockets. </p>
+
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00193">handle_client_data()</a>.</p>
 
 </div>
 </div>
@@ -3478,9 +3682,17 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>General socket operation failure. </p>
+<p>Socket_Failed - General socket operation failure. </p>
+<p>Category: NETWORK (usually) or PROTOCOL (configuration errors) Retryable: Depends on errno - use <a class="el" href="Socket_8h.html#a8517adf0df2e5331a952fb713ec314f9" title="Socket_error_is_retryable - Check if an errno indicates a retryable error @err: errno value to check.">Socket_error_is_retryable()</a> to check</p>
+<p>Raised for:</p><ul>
+<li>Socket creation failures (socket(), bind(), listen(), accept())</li>
+<li>Connection failures (connect())</li>
+<li>I/O failures (send(), recv())</li>
+<li>Option setting failures (setsockopt())</li>
+</ul>
+<p>Check errno via <a class="el" href="SocketUtil_8h.html#aacd3ef2f86186c451f2eb90cd490eae5" title="Socket_geterrno - Get the last captured errno value Returns: Last errno value (0 if no error) Thread-...">Socket_geterrno()</a> for specific error code. </p>
 
-<p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00193">handle_client_data()</a>, <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
 </div>
 </div>
@@ -3504,7 +3716,13 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Unix socket operation failure. </p>
+<p>SocketUnix_Failed - Unix domain socket operation failure. </p>
+<p>Category: NETWORK or APPLICATION Retryable: Depends on errno</p>
+<p>Raised for Unix domain socket specific errors:</p><ul>
+<li>Path too long</li>
+<li>Socket file doesn't exist (ENOENT)</li>
+<li>Permission denied (EACCES) </li>
+</ul>
 
 </div>
 </div>

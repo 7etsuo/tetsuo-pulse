@@ -152,6 +152,7 @@ typedef struct SocketSYNProtect_Config
   size_t max_tracked_ips; /**< Maximum IPs to track (LRU eviction) */
   size_t max_whitelist;   /**< Maximum whitelist entries */
   size_t max_blacklist;   /**< Maximum blacklist entries */
+  unsigned hash_seed;       /**< Hash randomization seed (0 = auto-generate crypto random for collision resistance; affects synprotect_hash_ip) */
 } SocketSYNProtect_Config;
 
 /* ============================================================================

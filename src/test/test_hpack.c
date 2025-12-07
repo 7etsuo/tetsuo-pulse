@@ -510,6 +510,49 @@ test_huffman_round_trip (void)
   printf ("PASS\n");
 }
 
+/**
+ * Test Huffman full round-trip for all bytes and edge cases (including long codes, empty, EOS validation)
+ */
+static void
+test_huffman_full_roundtrip (void)
+{
+  unsigned char input[1];
+  unsigned char encoded[64];  /* Ample for long code + EOS + pad */
+  unsigned char decoded[64];
+  ssize_t enc_len, dec_len;
+  size_t i, est_size;
+
+  printf ("  Huffman full round-trip (all bytes + edges)... ");
+
+  /* Test empty string */
+  enc_len = SocketHPACK_huffman_encode (input, 0, encoded, sizeof (encoded));
+  TEST_ASSERT (enc_len == 4, "Empty encode: EOS (30 bits) + pad = 4 bytes");
+  dec_len = SocketHPACK_huffman_decode (encoded, (size_t)enc_len, decoded, sizeof (decoded));
+  TEST_ASSERT (dec_len == 0, "Empty decode: 0 bytes output");
+  est_size = SocketHPACK_huffman_encoded_size (input, 0);
+  TEST_ASSERT (est_size == 4, "Empty encoded_size: 4 bytes");
+
+  /* Test basic invalid: truncated input (should fail decode) */
+  unsigned char trunc[1] = {0xFF};  /* Short invalid bitstream */
+  dec_len = SocketHPACK_huffman_decode (trunc, 1, decoded, sizeof (decoded));
+  TEST_ASSERT (dec_len < 0, "Truncated input fails decode");
+
+  /* Test all single bytes 0-255 (covers short/long codes, EOS handling) */
+  for (i = 0; i < 256; i++)
+    {
+      input[0] = (unsigned char) i;
+      enc_len = SocketHPACK_huffman_encode (input, 1, encoded, sizeof (encoded));
+      TEST_ASSERT (enc_len > 0, "Encode byte succeeds");
+      dec_len = SocketHPACK_huffman_decode (encoded, (size_t)enc_len, decoded, sizeof (decoded));
+      TEST_ASSERT (dec_len == 1, "Decode byte: 1 byte");
+      TEST_ASSERT (decoded[0] == input[0], "Round-trip byte matches");
+      est_size = SocketHPACK_huffman_encoded_size (input, 1);
+      TEST_ASSERT ((size_t)enc_len == est_size, "Size estimate matches for byte");
+    }
+
+  printf ("PASS\n");
+}
+
 /* ============================================================================
  * Encoder Tests
  * ============================================================================ */
@@ -988,6 +1031,7 @@ main (void)
   test_huffman_encoded_size ();
   test_huffman_encode_basic ();
   test_huffman_round_trip ();
+  test_huffman_full_roundtrip ();
 
   printf ("\nEncoder Tests:\n");
   test_encoder_new ();

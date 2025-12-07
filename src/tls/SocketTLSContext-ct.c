@@ -12,12 +12,13 @@
  * Thread safety: Configuration is NOT thread-safe - perform before sharing.
  */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include "tls/SocketTLS-private.h"
+#include "core/SocketMetrics.h"
 #include <assert.h>
-#include <openssl/ct.h>
 #include <openssl/opensslv.h>
+#include <openssl/ssl.h>  /* For SSL_CT_VALIDATION_* constants and SSL_CTX_enable_ct */
 
 #define T SocketTLSContext_T
 
@@ -42,44 +43,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLSContext);
 
 #if SOCKET_HAS_CT_SUPPORT
 
-/**
- * ct_validation_callback - OpenSSL CT validation callback
- * @ctx: CT policy context
- * @scts: List of SCTs
- * @arg: User argument (our TLS context)
- *
- * Returns: 1 to accept, 0 to reject
+/* Custom CT validation callback removed: using OpenSSL built-in policy for proper SCT validation.
+ * This ensures correct handling of SCT verification, log consistency, and timestamps.
  */
-static int
-ct_validation_callback (const CT_POLICY_EVAL_CTX *policy_ctx,
-                        const STACK_OF (SCT) *scts, void *arg)
-{
-  (void)policy_ctx; /* Unused - we get context from arg */
-  T tls_ctx = (T)arg;
-  if (!tls_ctx)
-    return 1;
-
-  int sct_count = scts ? sk_SCT_num (scts) : 0;
-
-  /* In permissive mode, always accept */
-  if (tls_ctx->ct_mode == CT_VALIDATION_PERMISSIVE)
-    return 1;
-
-  /* Strict mode: require at least one valid SCT */
-  if (sct_count == 0)
-    return 0;
-
-  /* Check for at least one valid SCT */
-  for (int i = 0; i < sct_count; i++)
-    {
-      SCT *sct = sk_SCT_value (scts, i);
-      if (sct && SCT_get_validation_status (sct) == SCT_VALIDATION_STATUS_VALID)
-        return 1;
-    }
-
-  /* No valid SCTs found in strict mode - reject */
-  return 0;
-}
 
 void
 SocketTLSContext_enable_ct (T ctx, CTValidationMode mode)
@@ -90,22 +56,17 @@ SocketTLSContext_enable_ct (T ctx, CTValidationMode mode)
   if (ctx->is_server)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CT verification is for clients only");
 
-  /* Enable CT verification with OpenSSL's strict mode as baseline */
-  if (SSL_CTX_enable_ct (ctx->ssl_ctx, SSL_CT_VALIDATION_STRICT) != 1)
+  int openssl_mode = (mode == CT_VALIDATION_STRICT) ? SSL_CT_VALIDATION_STRICT : SSL_CT_VALIDATION_PERMISSIVE;
+
+  /* Enable CT verification with OpenSSL built-in policy matching the requested mode */
+  if (SSL_CTX_enable_ct (ctx->ssl_ctx, openssl_mode) != 1)
     {
       ctx_raise_openssl_error ("Failed to enable Certificate Transparency");
     }
 
-  /* Store mode before registering callback (callback reads it) */
+  /* Store mode for query functions */
   ctx->ct_enabled = 1;
   ctx->ct_mode = mode;
-
-  /* Always register custom validation callback for consistent behavior.
-   * The callback handles both strict and permissive modes internally:
-   * - Strict: Requires at least one valid SCT, rejects otherwise
-   * - Permissive: Always accepts (for logging/monitoring without enforcement)
-   */
-  SSL_CTX_set_ct_validation_callback (ctx->ssl_ctx, ct_validation_callback, ctx);
 }
 
 int
@@ -114,6 +75,55 @@ SocketTLSContext_ct_enabled (T ctx)
   assert (ctx);
   return ctx->ct_enabled;
 }
+
+CTValidationMode
+SocketTLSContext_get_ct_mode (T ctx)
+{
+  assert (ctx);
+  return ctx->ct_enabled ? ctx->ct_mode : CT_VALIDATION_PERMISSIVE;
+}
+
+#if SOCKET_HAS_CT_SUPPORT
+
+void
+SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file)
+{
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+
+  if (ctx->is_server)
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Custom CT log list is for clients only");
+
+  if (!log_file || !*log_file)
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CT log file path cannot be empty");
+
+  if (!tls_validate_file_path (log_file))
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid CT log file path: %s", log_file);
+
+  /* Load custom CT log list file, overriding OpenSSL defaults */
+  if (SSL_CTX_set_ctlog_list_file (ctx->ssl_ctx, log_file) != 1)
+    {
+      ctx_raise_openssl_error ("Failed to load custom CT log list file");
+    }
+
+  /* Optional: Log success */
+  SOCKET_LOG_INFO_MSG ("Loaded custom CT log list from %s", log_file);
+}
+
+#else /* !SOCKET_HAS_CT_SUPPORT */
+
+void
+SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file)
+{
+  (void)ctx;
+  (void)log_file;
+  assert (ctx);
+  RAISE_CTX_ERROR_MSG (
+      SocketTLS_Failed,
+      "Custom CT log list not supported (requires OpenSSL 1.1.0+ with CT)");
+}
+
+#endif /* SOCKET_HAS_CT_SUPPORT */
 
 #else /* !SOCKET_HAS_CT_SUPPORT */
 

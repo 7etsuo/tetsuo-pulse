@@ -160,7 +160,7 @@ socket_restore_blocking_mode (T socket, int original_flags,
       SocketLog_emitf (SOCKET_LOG_WARN, "SocketConnect",
                        "Failed to restore blocking mode after %s "
                        "(fd=%d, errno=%d): %s",
-                       operation, fd, errno, strerror (errno));
+                       operation, fd, errno, Socket_safe_strerror (errno));
     }
 }
 

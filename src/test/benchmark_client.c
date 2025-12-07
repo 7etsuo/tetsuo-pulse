@@ -171,7 +171,10 @@ main (int argc, char **argv)
   for (int i = 1; i < argc; i++)
     {
       if (strncmp (argv[i], "--port=", 7) == 0)
-        port = atoi (argv[i] + 7);
+        {
+          long p = strtol (argv[i] + 7, NULL, 10);
+          port = (p >= 1 && p <= 65535) ? (int)p : 80;  /* Default on invalid */
+        }
       if (strncmp (argv[i], "--reqs=", 7) == 0)
         reqs = atol (argv[i] + 7);
       if (strncmp (argv[i], "--threads=", 10) == 0)

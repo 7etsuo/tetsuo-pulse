@@ -18,9 +18,11 @@
 #include <sys/socket.h>
 #include <time.h>
 #include <unistd.h>
+#include <sched.h>  /* for sched_yield */
 
 #include "dns/SocketDNS.h"
 #include "pool/SocketPool-private.h"
+#include "core/SocketSecurity.h"  /* for SocketSecurity_check_multiply */
 #include "socket/SocketCommon.h"
 /* SocketUtil.h included via SocketPool-private.h */
 
@@ -362,8 +364,14 @@ SocketPool_prewarm (T pool, int percentage)
 
   pthread_mutex_lock (&pool->mutex);
 
-  prewarm_count
-      = (pool->maxconns * (size_t)percentage) / SOCKET_PERCENTAGE_DIVISOR;
+  size_t tmp;
+  if (!SocketSecurity_check_multiply(pool->maxconns, (size_t)percentage, &tmp) ||
+      tmp / SOCKET_PERCENTAGE_DIVISOR > pool->maxconns - pool->count) {
+    prewarm_count = 0;  // Safe fallback
+    SOCKET_LOG_WARN_MSG("Prewarm calculation overflow or exceeds available slots; skipping");
+  } else {
+    prewarm_count = tmp / SOCKET_PERCENTAGE_DIVISOR;
+  }
 
   /* Safer: iterate by index over the authoritative connections array
    * to avoid following possibly-stale pointers in free_list.
@@ -443,11 +451,18 @@ SocketPool_foreach (T pool, void (*func) (Connection_T, void *), void *arg)
 
   pthread_mutex_lock (&pool->mutex);
 
-  for (size_t i = 0; i < pool->maxconns; i++)
-    {
-      if (pool->connections[i].active)
-        func (&pool->connections[i], arg);
+  const size_t batch_size = 100;  // Tune for performance vs contention
+  for (size_t i = 0; i < pool->maxconns; i += batch_size) {
+    size_t end = (i + batch_size < pool->maxconns) ? i + batch_size : pool->maxconns;
+    for (size_t j = i; j < end; ++j) {
+      if (pool->connections[j].active)
+        func (&pool->connections[j], arg);
     }
+    if (end < pool->maxconns) {
+      pthread_mutex_unlock (&pool->mutex);
+      pthread_mutex_lock (&pool->mutex);  // Yield lock briefly
+    }
+  }
 
   pthread_mutex_unlock (&pool->mutex);
 }
@@ -508,7 +523,7 @@ accept_connection_direct (int server_fd)
  * Returns: 1 if valid, 0 if invalid
  */
 static int
-validate_batch_params (T pool, Socket_T server, int max_accepts,
+validate_batch_params (T pool, Socket_T server, int max_accepts, size_t accepted_capacity,
                        Socket_T *accepted)
 {
   if (!pool || !server || !accepted)
@@ -518,6 +533,12 @@ validate_batch_params (T pool, Socket_T server, int max_accepts,
     {
       SOCKET_ERROR_MSG ("Invalid max_accepts %d (must be 1-%d)", max_accepts,
                         SOCKET_POOL_MAX_BATCH_ACCEPTS);
+      return 0;
+    }
+
+  if ((size_t)max_accepts > accepted_capacity)
+    {
+      SOCKET_ERROR_MSG ("accepted_capacity %zu too small for max_accepts %d", accepted_capacity, max_accepts);
       return 0;
     }
   return 1;
@@ -616,8 +637,8 @@ accept_one_connection (T pool, int server_fd, Socket_T *accepted, int count)
  * @server: Server socket to accept from (must be listening and non-blocking)
  * @max_accepts: Maximum number of connections to accept
  *               (1-SOCKET_POOL_MAX_BATCH_ACCEPTS)
- * @accepted: Output array of accepted sockets (must be pre-allocated,
- *            size >= max_accepts)
+ * @accepted_capacity: Capacity of the accepted array (must >= max_accepts)
+ * @accepted: Output array of accepted sockets (pre-allocated with given capacity)
  *
  * Returns: Number of connections actually accepted (0 to max_accepts)
  * Raises: SocketPool_Failed on error
@@ -629,13 +650,14 @@ accept_one_connection (T pool, int server_fd, Socket_T *accepted, int count)
  * All accepted sockets are automatically added to the pool.
  */
 int
-SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
+SocketPool_accept_batch (T pool, Socket_T server, int max_accepts, size_t accepted_capacity, /* unused yet */
                          Socket_T *accepted)
 {
+  (void)accepted_capacity;
   int count = 0;
   int limit;
 
-  if (!validate_batch_params (pool, server, max_accepts, accepted))
+  if (!validate_batch_params (pool, server, max_accepts, max_accepts, accepted))  // Use max_accepts as min capacity
     return 0;
 
   limit = get_available_slots (pool);
@@ -1108,10 +1130,12 @@ apply_syn_throttle (SocketSYN_Action action, SocketSYNProtect_T protect)
 
   if (delay_ms > 0)
     {
-      struct timespec ts;
-      ts.tv_sec = delay_ms / 1000;
-      ts.tv_nsec = (delay_ms % 1000) * 1000000L;
-      nanosleep (&ts, NULL);
+      int64_t start = Socket_get_monotonic_ms();
+      int64_t target = start + delay_ms;
+      while (Socket_get_monotonic_ms() < target) {
+        // Minimal busy loop; could add sched_yield() or usleep(1) for less CPU
+        sched_yield();  // Yield to other threads
+      }
     }
 }
 

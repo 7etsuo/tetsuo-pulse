@@ -18,7 +18,7 @@
  * - RFC 9147: The Datagram Transport Layer Security (DTLS) Protocol Version 1.3
  */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include <openssl/ssl.h>
 
@@ -34,7 +34,11 @@
 #endif
 
 #ifndef SOCKET_DTLS_MAX_VERSION
+#if defined(DTLS1_3_VERSION)
+#define SOCKET_DTLS_MAX_VERSION DTLS1_3_VERSION
+#else
 #define SOCKET_DTLS_MAX_VERSION DTLS1_2_VERSION
+#endif
 #endif
 
 /* ============================================================================
@@ -209,6 +213,15 @@
 /* Maximum file path length for certificates/keys */
 #ifndef SOCKET_DTLS_MAX_PATH_LEN
 #define SOCKET_DTLS_MAX_PATH_LEN 4096
+#endif
+
+/* ============================================================================
+ * File Size Limits (DoS Protection)
+ * ============================================================================
+ */
+/* Maximum size for certificate/key/CA files (prevents memory exhaustion from oversized inputs) */
+#ifndef SOCKET_DTLS_MAX_FILE_SIZE
+#define SOCKET_DTLS_MAX_FILE_SIZE ((size_t)(1ULL << 20))  /* 1MB */
 #endif
 
 /* ============================================================================

@@ -11,6 +11,14 @@
 #include "http/SocketHTTP2.h"
 #include "http/SocketHPACK.h"
 #include "socket/SocketBuf.h"
+#include "core/SocketRateLimit.h"
+#include "core/Except.h"
+
+extern const Except_T SocketHTTP2_Failed;
+extern const Except_T SocketHTTP2_ProtocolError;
+extern const Except_T SocketHTTP2_StreamError;
+extern const Except_T SocketHTTP2_FlowControlError;
+extern const Except_T SocketHTTP2;  /* Base for EXCEPT(SocketHTTP2) */
 
 /* ============================================================================
  * Connection Preface
@@ -101,6 +109,7 @@ struct SocketHTTP2_Stream
 
   /* User data */
   void *userdata;
+  bool is_local_initiated;          /**< True if locally initiated (for limit enforcement) */
 
   /* Hash table chaining */
   struct SocketHTTP2_Stream *hash_next;
@@ -141,7 +150,13 @@ struct SocketHTTP2_Conn
 
   /* Stream management */
   struct SocketHTTP2_Stream **streams;  /**< Hash table */
-  size_t stream_count;            /**< Active stream count */
+  size_t stream_count;            /**< Active stream count (total for legacy, deprecate) */
+  uint32_t client_initiated_count; /**< Count of client-initiated streams */
+  uint32_t server_initiated_count; /**< Count of server-initiated streams (incl push) */
+  SocketRateLimit_T stream_open_rate_limit; /**< Rate limit for stream creations */
+  SocketRateLimit_T stream_close_rate_limit; /**< Rate limit for stream closes/RST */
+  uint32_t hash_seed;             /**< Random seed for stream hash randomization */
+
   uint32_t next_stream_id;        /**< Next stream ID to use */
   uint32_t last_peer_stream_id;   /**< Last peer stream ID processed */
   uint32_t max_peer_stream_id;    /**< Max stream ID from GOAWAY */
@@ -149,6 +164,7 @@ struct SocketHTTP2_Conn
   /* CONTINUATION frame state */
   uint32_t continuation_stream_id; /**< Stream expecting CONTINUATION */
   int expecting_continuation;      /**< Expecting CONTINUATION frame */
+  uint32_t continuation_frame_count; /**< Current CONTINUATION count for header block */
 
   /* GOAWAY state */
   int goaway_sent;                /**< GOAWAY frame sent */
@@ -173,6 +189,14 @@ struct SocketHTTP2_Conn
   /* RST_STREAM rate limiting (CVE-2023-44487 protection) */
   uint32_t rst_count_in_window; /**< RST_STREAM count in current window */
   int64_t rst_window_start_ms;  /**< Window start timestamp (monotonic) */
+
+  /* PING rate limiting (DoS protection) */
+  uint32_t ping_count_in_window; /**< PING count in current window */
+  int64_t ping_window_start_ms;  /**< Window start timestamp (monotonic) */
+
+  /* SETTINGS rate limiting (DoS protection) */
+  uint32_t settings_count_in_window; /**< SETTINGS count in current window */
+  int64_t settings_window_start_ms;  /**< Window start timestamp (monotonic) */
 };
 
 /* ============================================================================
@@ -188,6 +212,16 @@ struct SocketHTTP2_Conn
  */
 extern SocketHTTP2_ErrorCode http2_frame_validate (SocketHTTP2_Conn_T conn,
                                                    const SocketHTTP2_FrameHeader *header);
+
+/**
+ * http2_flow_adjust_window - Adjust window by signed delta for SETTINGS change
+ * @window: Window to adjust
+ * @delta: Signed delta (+increase, -decrease)
+ *
+ * Returns: 0 on success, -1 if invalid (negative or overflow)
+ * See SocketHTTP2-flow.c for details.
+ */
+extern int http2_flow_adjust_window (int32_t *window, int32_t delta);
 
 /**
  * http2_frame_send - Queue frame for sending
@@ -224,7 +258,8 @@ extern SocketHTTP2_Stream_T http2_stream_lookup (const SocketHTTP2_Conn_T conn,
  * Returns: New stream or NULL on error
  */
 extern SocketHTTP2_Stream_T http2_stream_create (SocketHTTP2_Conn_T conn,
-                                                 uint32_t stream_id);
+                                                 uint32_t stream_id,
+                                                 int is_local_initiated);
 
 /**
  * http2_stream_destroy - Remove and free stream

@@ -11,13 +11,15 @@
  * Context modification is NOT thread-safe after sharing.
  */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include "tls/SocketTLS-private.h"
 #include "core/SocketUtil.h"
+#include "core/SocketCrypto.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #define T SocketTLSContext_T
 
@@ -44,9 +46,23 @@ init_exdata_idx (void)
 }
 
 /* ============================================================================
- * OpenSSL Error Handling
+ * Error Handling Helpers
  * ============================================================================
  */
+
+/**
+ * raise_system_error - Format and raise system error (errno-based)
+ * @context: Error context description
+ *
+ * Formats errno into thread-local error buffer and raises SocketTLS_Failed.
+ * Uses Socket_safe_strerror for thread-safety.
+ */
+static void
+raise_system_error (const char *context)
+{
+  SOCKET_ERROR_MSG("%s: %s (errno=%d)", context, Socket_safe_strerror(errno), errno);
+  RAISE_CTX_ERROR (SocketTLS_Failed);
+}
 
 /**
  * ctx_raise_openssl_error - Format and raise OpenSSL error
@@ -70,7 +86,7 @@ ctx_raise_openssl_error (const char *context)
     }
   else
     {
-      SOCKET_ERROR_MSG("%s: Unknown TLS error", context);
+      SOCKET_ERROR_MSG("%s: Unknown TLS error (no OpenSSL error code)", context);
     }
 
   /* Clear remaining errors to prevent stale error information from
@@ -95,7 +111,7 @@ init_sni_certs (TLSContextSNICerts *sni)
   sni->hostnames = NULL;
   sni->cert_files = NULL;
   sni->key_files = NULL;
-  sni->certs = NULL;
+  sni->chains = NULL;
   sni->pkeys = NULL;
   sni->count = 0;
   sni->capacity = 0;
@@ -126,8 +142,35 @@ init_stats_mutex (T ctx)
 {
   if (pthread_mutex_init (&ctx->stats_mutex, NULL) != 0)
     {
-      ctx_raise_openssl_error ("Failed to initialize stats mutex");
+      raise_system_error ("Failed to initialize stats mutex");
     }
+}
+
+/**
+ * init_crl_mutex - Initialize CRL mutex
+ * @ctx: Context to initialize mutex for
+ *
+ * Raises: SocketTLS_Failed on mutex init failure
+ */
+static void
+init_crl_mutex (T ctx)
+{
+  pthread_mutexattr_t attr;
+  if (pthread_mutexattr_init (&attr) != 0)
+    {
+      ctx_raise_openssl_error ("Failed to initialize CRL mutex attr");
+    }
+  if (pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE) != 0)
+    {
+      pthread_mutexattr_destroy (&attr);
+      ctx_raise_openssl_error ("Failed to set recursive mutex type");
+    }
+  if (pthread_mutex_init (&ctx->crl_mutex, &attr) != 0)
+    {
+      pthread_mutexattr_destroy (&attr);
+      ctx_raise_openssl_error ("Failed to initialize CRL mutex");
+    }
+  pthread_mutexattr_destroy (&attr);
 }
 
 /**
@@ -167,9 +210,13 @@ configure_tls13_only (SSL_CTX *ssl_ctx)
    *
    * Note: TLS 1.3 doesn't support renegotiation at all, but this also
    * protects if TLS 1.2 is ever re-enabled via set_min_protocol. */
-#ifdef SSL_OP_NO_RENEGOTIATION
-  SSL_CTX_set_options (ssl_ctx, SSL_OP_NO_RENEGOTIATION);
-#endif
+
+  /* Additional security options:
+   * - Prefer server cipher order (for servers; ignored on clients)
+   * - Disable compression (defensive against CRIME-like attacks, redundant for TLS1.3) */
+  SSL_CTX_set_options (ssl_ctx, SSL_OP_NO_RENEGOTIATION |
+                               SSL_OP_CIPHER_SERVER_PREFERENCE |
+                               SSL_OP_NO_COMPRESSION);
 }
 
 /**
@@ -186,7 +233,7 @@ alloc_context_struct (SSL_CTX *ssl_ctx)
   if (!ctx)
     {
       SSL_CTX_free (ssl_ctx);
-      ctx_raise_openssl_error ("ENOMEM: calloc for context struct");
+      raise_system_error ("Failed to allocate context struct (calloc)");
     }
 
   ctx->arena = Arena_new ();
@@ -194,7 +241,7 @@ alloc_context_struct (SSL_CTX *ssl_ctx)
     {
       free (ctx);
       SSL_CTX_free (ssl_ctx);
-      ctx_raise_openssl_error ("Failed to create context arena");
+      raise_system_error ("Failed to create context arena");
     }
 
   return ctx;
@@ -241,6 +288,7 @@ ctx_alloc_and_init (const SSL_METHOD *method, int is_server)
   ctx->is_server = !!is_server;
   ctx->session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
   init_stats_mutex (ctx);
+  init_crl_mutex (ctx);
   init_sni_certs (&ctx->sni_certs);
   init_alpn (&ctx->alpn);
   tls_pinning_init (&ctx->pinning);
@@ -272,21 +320,21 @@ free_sni_arrays (T ctx)
 static void
 free_sni_objects (T ctx)
 {
-  if (ctx->sni_certs.certs)
+  if (ctx->sni_certs.chains)
     {
       for (size_t i = 0; i < ctx->sni_certs.count; ++i)
         {
-          if (ctx->sni_certs.certs[i])
-            X509_free (ctx->sni_certs.certs[i]);
+          if (ctx->sni_certs.chains[i])
+            sk_X509_pop_free (ctx->sni_certs.chains[i], X509_free);
         }
-      free (ctx->sni_certs.certs);
+      free (ctx->sni_certs.chains);
     }
   if (ctx->sni_certs.pkeys)
     {
       for (size_t i = 0; i < ctx->sni_certs.count; ++i)
         {
           if (ctx->sni_certs.pkeys[i])
-            EVP_PKEY_free (ctx->sni_certs.pkeys[i]);
+            tls_secure_free_pkey (ctx->sni_certs.pkeys[i]);
         }
       free (ctx->sni_certs.pkeys);
     }
@@ -349,15 +397,47 @@ SocketTLSContext_new_client (const char *ca_file)
 {
   T ctx = ctx_alloc_and_init (TLS_client_method (), 0);
 
+  /* Default to peer verification for security; attempt user CA then fallback to system defaults if possible */
+  SocketTLSContext_set_verify_mode (ctx, TLS_VERIFY_PEER);
+
+  bool has_trusted_ca = false;
   if (ca_file)
     {
       TRY
-      SocketTLSContext_load_ca (ctx, ca_file);
-      SocketTLSContext_set_verify_mode (ctx, TLS_VERIFY_PEER);
+        {
+          SocketTLSContext_load_ca (ctx, ca_file);
+          has_trusted_ca = true;
+          SOCKET_LOG_INFO_MSG("Loaded user-provided CA '%s' for client context %p", ca_file, (void*)ctx);
+        }
       EXCEPT (SocketTLS_Failed)
-      SocketTLSContext_free (&ctx);
-      RERAISE;
+        {
+          SOCKET_LOG_WARN_MSG("Failed to load user-provided CA '%s' for client context %p - attempting system CA fallback", ca_file, (void*)ctx);
+        }
       END_TRY;
+    }
+
+  /* Fallback to system default CAs if no user CA successfully loaded */
+  if (!has_trusted_ca)
+    {
+      if (SSL_CTX_set_default_verify_paths(ctx->ssl_ctx) == 1)
+        {
+          has_trusted_ca = true;
+          SOCKET_LOG_INFO_MSG("Loaded system default CAs as fallback for client context %p", (void*)ctx);
+        }
+      else
+        {
+          if (ca_file)
+            {
+              /* User provided CA but both failed - treat as config error */
+              SocketTLSContext_free (&ctx);
+              ctx_raise_openssl_error("Both user CA and system fallback failed - cannot establish trusted verification");
+            }
+          else
+            {
+              /* No user CA and no system - warn but proceed (app responsibility) */
+              SOCKET_LOG_WARN_MSG("Client context %p created with no trusted CAs (user CA absent and system unavailable) - peer verification enabled but handshakes will likely fail (high MITM risk!)", (void*)ctx);
+            }
+        }
     }
 
   return ctx;
@@ -386,9 +466,10 @@ SocketTLSContext_free (T *ctx)
       /* Securely clear pinning data before freeing */
       if (c->pinning.pins && c->pinning.count > 0)
         {
-          OPENSSL_cleanse (c->pinning.pins,
+          SocketCrypto_secure_clear (c->pinning.pins,
                            c->pinning.count * sizeof (TLSCertPin));
         }
+      pthread_mutex_destroy (&c->pinning.lock);
 
       if (c->arena)
         {
@@ -399,6 +480,7 @@ SocketTLSContext_free (T *ctx)
       free_sni_objects (c);
 
       pthread_mutex_destroy (&c->stats_mutex);
+      pthread_mutex_destroy (&c->crl_mutex);
       free (c);
       *ctx = NULL;
     }

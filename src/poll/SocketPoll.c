@@ -23,6 +23,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h> /* for getpid in hash seed fallback */
 
 #include "poll/SocketPoll-private.h"
 #include "poll/SocketPoll_backend.h"
@@ -32,6 +33,8 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketPoll"
 #include "core/SocketConfig.h"
+#include "core/SocketSecurity.h"
+#include "core/SocketCrypto.h"
 
 /* Include timer private header after struct definition */
 #include "core/SocketTimer-private.h"
@@ -67,6 +70,11 @@ static void cleanup_poll_partial (T poll);
 #define ALLOC_ENTRY(poll, type, errmsg)                                        \
   ({                                                                           \
     type *volatile _entry = NULL;                                              \
+    size_t _sz = sizeof (type);                                                \
+    if (!SocketSecurity_check_size (_sz)) {                                    \
+      SOCKET_ERROR_MSG (errmsg ": size exceeds security limit");               \
+      RAISE_POLL_ERROR (SocketPoll_Failed);                                    \
+    }                                                                          \
     TRY                                                                        \
     _entry = CALLOC ((poll)->arena, 1, sizeof (type));                         \
     EXCEPT (Arena_Failed)                                                      \
@@ -101,6 +109,20 @@ allocate_fd_socket_entry (T poll)
 {
   return ALLOC_ENTRY (poll, FdSocketEntry,
                       "Cannot allocate fd to socket mapping");
+}
+
+/**
+ * poll_fd_hash - Seeded hash for FD to mitigate collisions
+ * @poll: Poll instance (for seed)
+ * @fd: File descriptor
+ * Returns: Hashed index into tables
+ * Thread-safe: Yes (read-only access to seed under caller lock)
+ */
+static inline unsigned
+poll_fd_hash (const T poll, int fd)
+{
+  unsigned key = (unsigned) fd ^ poll->hash_seed;
+  return socket_util_hash_uint (key, SOCKET_DATA_HASH_SIZE);
 }
 
 /* ==================== Hash Table Insertion ==================== */
@@ -185,7 +207,7 @@ socket_data_lookup_unlocked (const T poll, const Socket_T socket)
   if (fd < 0)
     return NULL;
 
-  hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
+  hash = poll_fd_hash (poll, fd);
   entry = find_socket_data_entry (poll, hash, socket);
 
   return entry ? entry->data : NULL;
@@ -405,6 +427,10 @@ allocate_poll_event_arrays (T poll, int maxevents)
    * Security: Standard pattern using SIZE_MAX / sizeof for overflow detection */
   if ((size_t)maxevents > SIZE_MAX / sizeof (*poll->socketevents))
     INIT_FAIL ("Array size overflow");
+
+  size_t total_size = (size_t)maxevents * sizeof (*poll->socketevents);
+  if (!SocketSecurity_check_size (total_size))
+    INIT_FAIL ("Event array total size exceeds security limit");
 
   poll->socketevents
       = CALLOC (poll->arena, (size_t)maxevents, sizeof (*poll->socketevents));
@@ -683,6 +709,22 @@ SocketPoll_new (int maxevents)
     allocate_poll_event_arrays ((T)poll, maxevents);
     /* Note: Hash tables already zeroed by calloc in allocate_poll_structure */
     initialize_poll_mutex ((T)poll);
+
+    /* Initialize hash seed for collision resistance */
+    TRY
+      {
+        if (SocketCrypto_random_bytes (&((T)poll)->hash_seed, sizeof (unsigned)) < 0)
+          {
+            ((T)poll)->hash_seed = (unsigned) Socket_get_monotonic_ms () ^ (unsigned) getpid ();
+          }
+      }
+    EXCEPT (SocketCrypto_Failed)
+      {
+        ((T)poll)->hash_seed = 0U;  /* Fixed fallback */
+        SOCKET_LOG_WARN_MSG ("SocketCrypto failed for hash seed; using fixed value");
+      }
+    END_TRY;
+
     initialize_poll_timer_heap ((T)poll);
     initialize_poll_async ((T)poll);
   }
@@ -847,7 +889,7 @@ SocketPoll_add (T poll, Socket_T socket, unsigned events, void *data)
     return;
 
   Socket_setnonblocking (socket);
-  hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
+  hash = poll_fd_hash (poll, fd);
 
   pthread_mutex_lock (&poll->mutex);
   TRY
@@ -875,7 +917,7 @@ SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data)
   assert (socket);
 
   fd = Socket_fd (socket);
-  hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
+  hash = poll_fd_hash (poll, fd);
 
   pthread_mutex_lock (&poll->mutex);
   TRY
@@ -922,36 +964,39 @@ SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data)
 void
 SocketPoll_del (T poll, Socket_T socket)
 {
-  int fd;
-  int backend_result;
-  int saved_errno;
+
 
   assert (poll);
   assert (socket);
 
-  pthread_mutex_lock (&poll->mutex);
+  int fd = Socket_fd (socket);
+  if (fd < 0)
+    {
+      pthread_mutex_unlock (&poll->mutex);
+      return;  /* Invalid FD, nothing to remove */
+    }
 
-  /* Get fd while holding mutex to prevent TOCTOU race
-   * Security: Ensures fd is valid and consistent with data map state */
-  fd = Socket_fd (socket);
+  int backend_result = backend_del (poll->backend, fd);
+  int saved_errno = errno;
 
-  /* Remove from data maps */
+  bool backend_ok = (backend_result >= 0 || saved_errno == ENOENT);
+
+  if (!backend_ok)
+    {
+      pthread_mutex_unlock (&poll->mutex);
+      errno = saved_errno;
+      SOCKET_ERROR_FMT ("Failed to remove socket from backend (fd=%d)", fd);
+      RAISE_POLL_ERROR (SocketPoll_Failed);
+    }
+
+  /* Backend clean or not present - safe to clean data map now */
   socket_data_remove_unlocked (poll, socket);
-
-  /* Remove from backend while still holding mutex
-   * Security: Prevents race where fd could be reused between
-   * data map removal and backend removal */
-  backend_result = backend_del (poll->backend, fd);
-  saved_errno = errno;
 
   pthread_mutex_unlock (&poll->mutex);
 
-  /* Check result after releasing mutex (error handling doesn't need lock) */
-  if (backend_result < 0 && saved_errno != ENOENT)
+  if (backend_result < 0)  /* ENOENT case */
     {
-      errno = saved_errno;
-      SOCKET_ERROR_FMT ("Failed to remove socket from poll (fd=%d)", fd);
-      RAISE_POLL_ERROR (SocketPoll_Failed);
+      SOCKET_LOG_WARN_MSG ("Cleaned data map for fd=%d (backend ENOENT; possible prior inconsistency)", fd);
     }
 }
 

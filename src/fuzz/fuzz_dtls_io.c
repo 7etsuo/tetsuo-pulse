@@ -11,7 +11,7 @@
  * DTLS operations on unconnected sockets will fail, which is expected.
  */
 
-#ifdef SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
 
 #include <signal.h>
 #include <stdint.h>

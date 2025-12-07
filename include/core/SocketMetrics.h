@@ -159,6 +159,17 @@ typedef enum SocketCounterMetric
   SOCKET_CTR_TLS_SESSION_REUSE_COUNT,          /**< Session resumption count */
   SOCKET_CTR_TLS_CERT_VERIFY_FAILURES,         /**< Certificate verification failures */
   SOCKET_CTR_TLS_RENEGOTIATIONS,               /**< TLS renegotiations (blocked) */
+  SOCKET_CTR_TLS_PINNING_FAILURES,             /**< Certificate pinning violations */
+  SOCKET_CTR_TLS_CT_VERIFICATION_FAILURES,     /**< Certificate Transparency failures */
+  SOCKET_CTR_TLS_CRL_CHECK_FAILURES,           /**< CRL/OCSP revocation check failures */
+
+  /* DTLS Counters */
+  SOCKET_CTR_DTLS_HANDSHAKES_TOTAL,            /**< Total DTLS handshakes */
+  SOCKET_CTR_DTLS_HANDSHAKES_FAILED,           /**< Failed DTLS handshakes */
+  SOCKET_CTR_DTLS_COOKIES_GENERATED,           /**< DTLS cookies generated */
+  SOCKET_CTR_DTLS_COOKIE_VERIFICATION_FAILURES,/**< Invalid DTLS cookies */
+  SOCKET_CTR_DTLS_REPLAY_PACKETS_DETECTED,     /**< DTLS replay protection triggers */
+  SOCKET_CTR_DTLS_FRAGMENT_FAILURES,           /**< DTLS fragmentation errors */
 
   /* DNS Counters */
   SOCKET_CTR_DNS_QUERIES_TOTAL,                /**< Total DNS queries */
@@ -232,6 +243,7 @@ typedef enum SocketGaugeMetric
   /* TLS Gauges */
   SOCKET_GAU_TLS_ACTIVE_SESSIONS,              /**< Active TLS sessions */
   SOCKET_GAU_TLS_CACHED_SESSIONS,              /**< Cached session tickets */
+  SOCKET_GAU_DTLS_ACTIVE_SESSIONS,             /**< Active DTLS sessions */
 
   /* DNS Gauges */
   SOCKET_GAU_DNS_PENDING_QUERIES,              /**< Pending DNS queries */
@@ -282,6 +294,7 @@ typedef enum SocketHistogramMetric
 
   /* TLS Histograms */
   SOCKET_HIST_TLS_HANDSHAKE_TIME_MS,           /**< TLS handshake duration */
+  SOCKET_HIST_DTLS_HANDSHAKE_TIME_MS,          /**< DTLS handshake duration */
 
   /* DNS Histograms */
   SOCKET_HIST_DNS_QUERY_TIME_MS,               /**< DNS query duration */

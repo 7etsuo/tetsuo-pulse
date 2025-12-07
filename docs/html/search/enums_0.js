@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['dtlshandshakestate_0',['DTLSHandshakeState',['../SocketDTLS_8h.html#a8e83c28a6ad188b97243c4b237ee075a',1,'SocketDTLS.h']]]
+  ['ctvalidationmode_0',['CTValidationMode',['../SocketTLSContext_8h.html#a4d930163393a67950a5378e540c0e939',1,'SocketTLSContext.h']]]
 ];

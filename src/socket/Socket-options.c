@@ -103,7 +103,8 @@ void
 Socket_setcloexec (T socket, int enable)
 {
   assert (socket);
-  SocketCommon_setcloexec_with_error (socket->base, enable, Socket_Failed);
+  int val = (enable != 0) ? 1 : 0;
+  SocketCommon_setcloexec_with_error (socket->base, val, Socket_Failed);
 }
 
 /* ============================================================================
@@ -276,6 +277,12 @@ validate_keepalive_parameters (int idle, int interval, int count)
                "Invalid keepalive parameters (idle=%d, interval=%d, "
                "count=%d): all must be > 0",
                idle, interval, count);
+  if (idle > 86400 * 365 || interval > 3600 || count > 32) {
+    RAISE_MSG (Socket_Failed,
+               "Unreasonable keepalive parameters (idle=%d, interval=%d, "
+               "count=%d): values too large (max idle=1yr, interval=1hr, count=32)",
+               idle, interval, count);
+  }
 }
 
 /**
@@ -428,8 +435,9 @@ void
 Socket_setnodelay (T socket, int nodelay)
 {
   assert (socket);
+  int val = (nodelay != 0) ? 1 : 0;
   SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
-                               SOCKET_TCP_NODELAY, nodelay, Socket_Failed);
+                               SOCKET_TCP_NODELAY, val, Socket_Failed);
 }
 
 int
@@ -452,11 +460,18 @@ Socket_setcongestion (T socket, const char *algorithm)
   assert (algorithm);
 
 #if SOCKET_HAS_TCP_CONGESTION
+  if (algorithm == NULL || *algorithm == '\0') {
+    RAISE_MSG (Socket_Failed, "Invalid congestion algorithm: null or empty string");
+  }
+  size_t alen = strnlen (algorithm, 64);
+  if (alen == 64) {
+    RAISE_MSG (Socket_Failed, "Congestion algorithm name too long (maximum 63 characters)");
+  }
   if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
-                  SOCKET_TCP_CONGESTION, algorithm, strlen (algorithm) + 1)
+                  SOCKET_TCP_CONGESTION, algorithm, (socklen_t)(alen + 1))
       < 0)
-    RAISE_FMT (Socket_Failed, "Failed to set TCP_CONGESTION (algorithm=%s)",
-               algorithm);
+    RAISE_FMT (Socket_Failed, "Failed to set TCP_CONGESTION (algorithm=%.*s)",
+               (int)alen, algorithm);
 #else
   RAISE_MSG (Socket_Failed, "TCP_CONGESTION not supported on this platform");
 #endif
@@ -475,6 +490,11 @@ Socket_getcongestion (T socket, char *algorithm, size_t len)
 #if SOCKET_HAS_TCP_CONGESTION
   if (socket_options_get_option_no_raise (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_CONGESTION, algorithm, &optlen) < 0)
     return -1;
+  if (optlen > (socklen_t)len) {
+    errno = EMSGSIZE;
+    return -1;
+  }
+  algorithm[(size_t)len - 1] = '\0';  /* Ensure null termination */
   return 0;
 #else
   (void)fd;
@@ -491,6 +511,10 @@ Socket_setrcvbuf (T socket, int size)
 {
   assert (socket);
   assert (size > 0);
+  if (!SOCKET_VALID_BUFFER_SIZE ((size_t)size)) {
+    RAISE_FMT (Socket_Failed, "Invalid receive buffer size %d (min=%d, max=%d)",
+               size, (int)SOCKET_MIN_BUFFER_SIZE, (int)SOCKET_MAX_BUFFER_SIZE);
+  }
   SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET,
                                SOCKET_SO_RCVBUF, size, Socket_Failed);
 }
@@ -500,6 +524,10 @@ Socket_setsndbuf (T socket, int size)
 {
   assert (socket);
   assert (size > 0);
+  if (!SOCKET_VALID_BUFFER_SIZE ((size_t)size)) {
+    RAISE_FMT (Socket_Failed, "Invalid send buffer size %d (min=%d, max=%d)",
+               size, (int)SOCKET_MIN_BUFFER_SIZE, (int)SOCKET_MAX_BUFFER_SIZE);
+  }
   SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET,
                                SOCKET_SO_SNDBUF, size, Socket_Failed);
 }
@@ -538,9 +566,9 @@ void
 Socket_setfastopen (T socket, int enable)
 {
   assert (socket);
-
+  int val = (enable != 0) ? 1 : 0;
 #if SOCKET_HAS_TCP_FASTOPEN
-  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP, SOCKET_TCP_FASTOPEN, enable ? 1 : 0, Socket_Failed);
+  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP, SOCKET_TCP_FASTOPEN, val, Socket_Failed);
 #else
   RAISE_MSG (Socket_Failed, "TCP_FASTOPEN not supported on this platform");
 #endif
@@ -570,6 +598,9 @@ Socket_setusertimeout (T socket, unsigned int timeout_ms)
 {
   assert (socket);
   assert (timeout_ms > 0);
+  if (timeout_ms > INT_MAX) {
+    RAISE_MSG (Socket_Failed, "User timeout value %u exceeds maximum supported %d", timeout_ms, INT_MAX);
+  }
 
 #if SOCKET_HAS_TCP_USER_TIMEOUT
   SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP, SOCKET_TCP_USER_TIMEOUT, (int)timeout_ms, Socket_Failed);
@@ -658,6 +689,10 @@ Socket_setdeferaccept (T socket, int timeout_sec)
   if (timeout_sec < 0)
     RAISE_MSG (Socket_Failed,
                "Invalid defer accept timeout: %d (must be >= 0)", timeout_sec);
+  if (timeout_sec > 3600) {
+    RAISE_MSG (Socket_Failed,
+               "Defer accept timeout too large: %d (maximum 1 hour)", timeout_sec);
+  }
 
 #if SOCKET_HAS_TCP_DEFER_ACCEPT
   set_deferaccept_linux (SocketBase_fd (socket->base), timeout_sec);

@@ -1243,6 +1243,62 @@ TEST (tls_alpn_protos_validation)
   EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Unexpected failure */ }
   END_TRY;
 
+  /* Test invalid characters (now rejects per full RFC 7301 printable ASCII) */
+  TRY
+  {
+    const char *invalid_chars[] = { "h2", "http/1.1 ", "!invalid space and !", "spdy" }; // space 0x20 invalid, ! 0x21 ok but test
+    SocketTLSContext_set_alpn_protos (ctx, invalid_chars, 4);
+    ASSERT (0); /* Should raise on invalid chars */
+  }
+  EXCEPT (SocketTLS_Failed) { /* Expected: validation failure */ }
+  END_TRY;
+
+  /* Test embedded NUL or control char */
+  TRY
+  {
+    char nul_proto[10] = "http/1.1";
+    nul_proto[6] = '\0'; // embed null
+    const char *protos_nul[] = { "h2", nul_proto, "spdy" };
+    SocketTLSContext_set_alpn_protos (ctx, protos_nul, 3);
+    ASSERT (0); /* Should raise on NUL char */
+  }
+  EXCEPT (SocketTLS_Failed) { /* Expected */ }
+  END_TRY;
+
+  /* Test too long protocol */
+  TRY
+  {
+    char long_proto[300] = {0};
+    memset (long_proto, 'a', 299);
+    long_proto[299] = '\0';
+    const char *protos_long[] = { long_proto };
+    SocketTLSContext_set_alpn_protos (ctx, protos_long, 1);
+    ASSERT (0); /* Should raise on length >255 */
+  }
+  EXCEPT (SocketTLS_Failed) { /* Expected */ }
+  END_TRY;
+
+  /* Test too many protocols (exceeds max) */
+  TRY
+  {
+    const char *many_protos[17];
+    for (int i = 0; i < 17; i++)
+      {
+        char buf[10];
+        snprintf (buf, sizeof (buf), "proto%d", i);
+        many_protos[i] = strdup (buf); /* Leak ok for test */
+      }
+    SocketTLSContext_set_alpn_protos (ctx, many_protos, 17);
+    ASSERT (0); /* Should raise on count > max (16) */
+  }
+  EXCEPT (SocketTLS_Failed) { /* Expected */ }
+  FINALLY
+  {
+    /* Cleanup test leak */
+    for (int i = 0; i < 17; i++) free ((void*)many_protos[i]);
+  }
+  END_TRY;
+
   /* Test with empty protocol count (should be no-op) */
   TRY
   {

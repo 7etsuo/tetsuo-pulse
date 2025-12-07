@@ -34,7 +34,7 @@
 
 /** Internal I/O buffer size */
 #ifndef SOCKET_PROXY_BUFFER_SIZE
-#define SOCKET_PROXY_BUFFER_SIZE 4096
+#define SOCKET_PROXY_BUFFER_SIZE 65536  // Increased for large HTTP headers (64KB max per SocketHTTP.h)
 #endif
 
 /** Maximum URL length for parsing */
@@ -222,6 +222,10 @@ struct SocketProxy_Conn_T
   int connect_timeout_ms;             /**< Proxy connect timeout */
   int handshake_timeout_ms;           /**< Handshake timeout */
   SocketHTTP_Headers_T extra_headers; /**< HTTP CONNECT extra headers */
+    #if SOCKET_HAS_TLS
+  SocketTLSContext_T tls_ctx; /**< TLS context from config (copied ptr) */
+  int tls_enabled;             /**< 1 after successful TLS handshake to proxy */
+#endif
 
   /* Internal resources (owned) */
   Arena_T arena;      /**< Memory arena for all allocations */
@@ -520,12 +524,14 @@ extern int socketproxy_parse_userinfo (const char *start,
  * @start: Start of host section
  * @config: Output config
  * @arena: Arena for allocation (or NULL for static buffer)
+ * @consumed_out: Output - bytes consumed from start (optional, can be NULL)
  *
  * Returns: 0 on success, -1 on error
  */
 extern int socketproxy_parse_hostport (const char *start,
                                        SocketProxy_Config *config,
-                                       Arena_T arena);
+                                       Arena_T arena,
+                                       size_t *consumed_out);
 
 #endif /* SOCKETPROXY_PRIVATE_INCLUDED */
 
