@@ -966,17 +966,14 @@ SocketPoll_mod (T poll, Socket_T socket, unsigned events, void *data)
 void
 SocketPoll_del (T poll, Socket_T socket)
 {
-
-
   assert (poll);
   assert (socket);
 
   int fd = Socket_fd (socket);
   if (fd < 0)
-    {
-      pthread_mutex_unlock (&poll->mutex);
-      return;  /* Invalid FD, nothing to remove */
-    }
+    return;  /* Invalid FD, nothing to remove */
+
+  pthread_mutex_lock (&poll->mutex);
 
   int backend_result = backend_del (poll->backend, fd);
   int saved_errno = errno;

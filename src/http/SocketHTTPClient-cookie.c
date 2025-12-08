@@ -20,6 +20,7 @@
 
 #include <assert.h>
 
+#include <limits.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -247,10 +248,12 @@ parse_max_age (const char *value, size_t len)
   int has_digit = 0;
   while (remaining > 0 && *start >= '0' && *start <= '9') {
     has_digit = 1;
-    long new_age = age * 10 + (*start - '0');
-    if (new_age < age)  /* Overflow */
-      return 0;
-    age = new_age;
+    /* Check for overflow BEFORE multiplication to avoid undefined behavior.
+     * The maximum we can safely add is 9 (a single digit), so check if
+     * age * 10 + 9 would overflow. */
+    if (age > (LONG_MAX - 9) / 10)
+      return 0;  /* Would overflow */
+    age = age * 10 + (*start - '0');
     start++;
     remaining--;
   }

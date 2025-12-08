@@ -1822,12 +1822,17 @@ TEST (socketpool_find_slot_chain_traversal)
 /**
  * Helper to create a pending connection to a server socket.
  * Returns port number on success, 0 on failure.
+ *
+ * Note: Restructured to avoid returning from within TRY blocks.
+ * Early returns from TRY/EXCEPT blocks leave stale pointers in
+ * Except_stack, causing ASan stack-use-after-return errors.
  */
 static int
 create_pending_connection (Socket_T server, Socket_T *out_client)
 {
   volatile int port = 0;
   volatile Socket_T client = NULL;
+  volatile int success = 0;
 
   TRY
   {
@@ -1847,23 +1852,30 @@ create_pending_connection (Socket_T server, Socket_T *out_client)
       if (errno != EINPROGRESS && errno != EWOULDBLOCK)
         {
           Socket_free ((Socket_T *)&client);
-          return 0;
+          client = NULL;
+          port = 0;
         }
     }
     END_TRY;
 
-    *out_client = (Socket_T)client;
-    return port;
+    if (client != NULL)
+      {
+        *out_client = (Socket_T)client;
+        success = 1;
+      }
   }
   EXCEPT (Socket_Failed)
   {
     if (client)
-      Socket_free ((Socket_T *)&client);
-    return 0;
+      {
+        Socket_free ((Socket_T *)&client);
+        client = NULL;
+      }
+    port = 0;
   }
   END_TRY;
 
-  return port;
+  return success ? (int)port : 0;
 }
 
 TEST (socketpool_batch_accept_with_pending_connection)

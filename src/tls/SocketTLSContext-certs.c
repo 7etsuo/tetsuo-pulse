@@ -459,15 +459,18 @@ load_chain_from_file (const char *cert_file)
       ctx_raise_openssl_error ("Failed to allocate certificate chain stack");
     }
 
-  X509 *cert = NULL;
+  /* Use volatile to prevent clobbering by longjmp in exception handlers.
+   * GCC warns that cert may be clobbered by calls to ctx_raise_openssl_error
+   * which uses longjmp internally. */
+  X509 *volatile cert = NULL;
   int num_certs = 0;
 
   while ((cert = PEM_read_X509 (fp, NULL, NULL, NULL)) != NULL)
     {
-      if (sk_X509_push (chain, cert) > 0)
+      if (sk_X509_push (chain, (X509 *)cert) > 0)
         num_certs++;
       else
-        X509_free (cert);  /* Push failed, free it */
+        X509_free ((X509 *)cert);  /* Push failed, free it */
       cert = NULL;
     }
 
