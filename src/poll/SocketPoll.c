@@ -587,8 +587,10 @@ translate_backend_events_to_socket_events (T poll, int nfds)
       if (backend_get_event (poll->backend, i, &fd, &event_flags) < 0)
         continue;
 
-      /* Compute hash once, use for both lookups */
-      fd_hash = socket_util_hash_fd (fd, SOCKET_DATA_HASH_SIZE);
+      /* Compute hash once, use for both lookups.
+       * CRITICAL: Must use poll_fd_hash() to match socket_data_add_unlocked().
+       * Using socket_util_hash_fd() here would break lookups due to hash mismatch. */
+      fd_hash = poll_fd_hash (poll, fd);
       lookup_socket_and_data_by_fd (poll, fd, fd_hash, &socket, &data);
 
       if (!socket)
