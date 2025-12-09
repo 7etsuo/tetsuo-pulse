@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <pthread.h>
 #include <signal.h>
 #include <string.h>
@@ -1602,6 +1603,327 @@ Socket_resetstats (T socket)
   socket->base->stats.rtt_var_us = -1;
 
   pthread_mutex_unlock (&socket->base->mutex);
+}
+
+/* ==================== Connection Health & Probing ==================== */
+
+/**
+ * Socket_probe - Check if connection is still alive
+ * @socket: Connected socket to probe
+ * @timeout_ms: Maximum probe time (-1 for non-blocking)
+ *
+ * Returns: 1 if healthy, 0 if dead/error
+ * Thread-safe: Yes
+ */
+int
+Socket_probe (T socket, int timeout_ms)
+{
+  int fd;
+  int error;
+  socklen_t error_len;
+  struct pollfd pfd;
+  char peek_buf;
+  ssize_t peek_result;
+  int poll_timeout;
+
+  assert (socket);
+
+  fd = SocketBase_fd (socket->base);
+  if (fd < 0)
+    return 0;
+
+  /* Step 1: Check for pending socket error (SO_ERROR) */
+  error = 0;
+  error_len = sizeof (error);
+  if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &error_len) < 0)
+    return 0;
+
+  if (error != 0)
+    return 0; /* Socket has pending error */
+
+  /* Step 2: Check if socket is readable/has data or closed */
+  poll_timeout = (timeout_ms < 0) ? 0 : timeout_ms;
+  pfd.fd = fd;
+  pfd.events = POLLIN;
+  pfd.revents = 0;
+
+  if (poll (&pfd, 1, poll_timeout) < 0)
+    {
+      if (errno == EINTR)
+        return 1; /* Interrupted, assume healthy */
+      return 0;
+    }
+
+  if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+    return 0; /* Error or hangup */
+
+  /* Step 3: If readable, peek to see if it's EOF (closed) or data */
+  if (pfd.revents & POLLIN)
+    {
+      peek_result = recv (fd, &peek_buf, 1, MSG_PEEK | MSG_DONTWAIT);
+      if (peek_result == 0)
+        return 0; /* Peer closed connection gracefully */
+      if (peek_result < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+        return 0; /* Error */
+      /* Data available - connection healthy */
+    }
+
+  return 1; /* Appears healthy */
+}
+
+/**
+ * Socket_get_error - Get pending socket error (SO_ERROR)
+ * @socket: Socket to check
+ *
+ * Returns: 0 if no error, otherwise errno value
+ * Thread-safe: Yes
+ */
+int
+Socket_get_error (T socket)
+{
+  int fd;
+  int error = 0;
+  socklen_t error_len = sizeof (error);
+
+  assert (socket);
+
+  fd = SocketBase_fd (socket->base);
+  if (fd < 0)
+    return EBADF;
+
+  if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &error_len) < 0)
+    return errno;
+
+  return error;
+}
+
+/**
+ * Socket_is_readable - Check if socket has data available
+ * @socket: Socket to check
+ *
+ * Returns: 1 if data available, 0 if would block, -1 on error
+ * Thread-safe: Yes
+ */
+int
+Socket_is_readable (T socket)
+{
+  int fd;
+  struct pollfd pfd;
+
+  assert (socket);
+
+  fd = SocketBase_fd (socket->base);
+  if (fd < 0)
+    return -1;
+
+  pfd.fd = fd;
+  pfd.events = POLLIN;
+  pfd.revents = 0;
+
+  if (poll (&pfd, 1, 0) < 0)
+    return -1;
+
+  if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+    return -1;
+
+  return (pfd.revents & POLLIN) ? 1 : 0;
+}
+
+/**
+ * Socket_is_writable - Check if socket can accept writes
+ * @socket: Socket to check
+ *
+ * Returns: 1 if write ready, 0 if would block, -1 on error
+ * Thread-safe: Yes
+ */
+int
+Socket_is_writable (T socket)
+{
+  int fd;
+  struct pollfd pfd;
+
+  assert (socket);
+
+  fd = SocketBase_fd (socket->base);
+  if (fd < 0)
+    return -1;
+
+  pfd.fd = fd;
+  pfd.events = POLLOUT;
+  pfd.revents = 0;
+
+  if (poll (&pfd, 1, 0) < 0)
+    return -1;
+
+  if (pfd.revents & (POLLERR | POLLNVAL))
+    return -1;
+
+  /* POLLHUP with POLLOUT means writable but peer closed read side */
+  return (pfd.revents & POLLOUT) ? 1 : 0;
+}
+
+#ifdef __linux__
+/**
+ * Socket_get_tcp_info - Retrieve TCP connection statistics (Linux)
+ * @socket: Connected TCP socket
+ * @info: Output structure
+ *
+ * Returns: 0 on success, -1 on error
+ * Thread-safe: Yes
+ */
+int
+Socket_get_tcp_info (T socket, SocketTCPInfo *info)
+{
+  int fd;
+  struct tcp_info kernel_info;
+  socklen_t info_len = sizeof (kernel_info);
+
+  assert (socket);
+  assert (info);
+
+  fd = SocketBase_fd (socket->base);
+  if (fd < 0)
+    return -1;
+
+  memset (&kernel_info, 0, sizeof (kernel_info));
+
+  if (getsockopt (fd, IPPROTO_TCP, TCP_INFO, &kernel_info, &info_len) < 0)
+    return -1;
+
+  /* Map kernel tcp_info to our SocketTCPInfo structure */
+  memset (info, 0, sizeof (*info));
+
+  info->state = kernel_info.tcpi_state;
+  info->ca_state = kernel_info.tcpi_ca_state;
+  info->retransmits = kernel_info.tcpi_retransmits;
+  info->probes = kernel_info.tcpi_probes;
+  info->backoff = kernel_info.tcpi_backoff;
+
+  info->options = kernel_info.tcpi_options;
+  info->snd_wscale = kernel_info.tcpi_snd_wscale;
+  info->rcv_wscale = kernel_info.tcpi_rcv_wscale;
+
+  info->rto_us = kernel_info.tcpi_rto;
+  info->ato_us = kernel_info.tcpi_ato;
+  info->snd_mss = kernel_info.tcpi_snd_mss;
+  info->rcv_mss = kernel_info.tcpi_rcv_mss;
+
+  info->unacked = kernel_info.tcpi_unacked;
+  info->sacked = kernel_info.tcpi_sacked;
+  info->lost = kernel_info.tcpi_lost;
+  info->retrans = kernel_info.tcpi_retrans;
+  info->fackets = kernel_info.tcpi_fackets;
+
+  info->last_data_sent_ms = kernel_info.tcpi_last_data_sent;
+  info->last_ack_sent_ms = kernel_info.tcpi_last_ack_sent;
+  info->last_data_recv_ms = kernel_info.tcpi_last_data_recv;
+  info->last_ack_recv_ms = kernel_info.tcpi_last_ack_recv;
+
+  info->pmtu = kernel_info.tcpi_pmtu;
+  info->rcv_ssthresh = kernel_info.tcpi_rcv_ssthresh;
+  info->rtt_us = kernel_info.tcpi_rtt;
+  info->rttvar_us = kernel_info.tcpi_rttvar;
+  info->snd_ssthresh = kernel_info.tcpi_snd_ssthresh;
+  info->snd_cwnd = kernel_info.tcpi_snd_cwnd;
+  info->advmss = kernel_info.tcpi_advmss;
+  info->reordering = kernel_info.tcpi_reordering;
+
+  info->rcv_rtt_us = kernel_info.tcpi_rcv_rtt;
+  info->rcv_space = kernel_info.tcpi_rcv_space;
+
+  info->total_retrans = kernel_info.tcpi_total_retrans;
+
+/* Extended fields - check if available */
+#ifdef HAVE_TCP_INFO_PACING_RATE
+  info->pacing_rate = kernel_info.tcpi_pacing_rate;
+  info->max_pacing_rate = kernel_info.tcpi_max_pacing_rate;
+#endif
+
+#ifdef HAVE_TCP_INFO_BYTES_ACKED
+  info->bytes_acked = kernel_info.tcpi_bytes_acked;
+  info->bytes_received = kernel_info.tcpi_bytes_received;
+#endif
+
+#ifdef HAVE_TCP_INFO_SEGS_OUT
+  info->segs_out = kernel_info.tcpi_segs_out;
+  info->segs_in = kernel_info.tcpi_segs_in;
+#endif
+
+#ifdef HAVE_TCP_INFO_NOTSENT_BYTES
+  info->notsent_bytes = kernel_info.tcpi_notsent_bytes;
+  info->min_rtt_us = kernel_info.tcpi_min_rtt;
+  info->data_segs_in = kernel_info.tcpi_data_segs_in;
+  info->data_segs_out = kernel_info.tcpi_data_segs_out;
+#endif
+
+#ifdef HAVE_TCP_INFO_DELIVERY_RATE
+  info->delivery_rate = kernel_info.tcpi_delivery_rate;
+#endif
+
+  return 0;
+}
+#endif /* __linux__ */
+
+/**
+ * Socket_get_rtt - Get current RTT estimate
+ * @socket: Connected TCP socket
+ *
+ * Returns: RTT in microseconds, or -1 if unavailable
+ * Thread-safe: Yes
+ */
+int32_t
+Socket_get_rtt (T socket)
+{
+#if defined(__linux__) && defined(TCP_INFO)
+  int fd;
+  struct tcp_info info;
+  socklen_t info_len = sizeof (info);
+
+  assert (socket);
+
+  fd = SocketBase_fd (socket->base);
+  if (fd < 0)
+    return -1;
+
+  if (getsockopt (fd, IPPROTO_TCP, TCP_INFO, &info, &info_len) < 0)
+    return -1;
+
+  return (int32_t)info.tcpi_rtt;
+#else
+  (void)socket;
+  return -1;
+#endif
+}
+
+/**
+ * Socket_get_cwnd - Get current congestion window size
+ * @socket: Connected TCP socket
+ *
+ * Returns: Congestion window in segments, or -1 if unavailable
+ * Thread-safe: Yes
+ */
+int32_t
+Socket_get_cwnd (T socket)
+{
+#if defined(__linux__) && defined(TCP_INFO)
+  int fd;
+  struct tcp_info info;
+  socklen_t info_len = sizeof (info);
+
+  assert (socket);
+
+  fd = SocketBase_fd (socket->base);
+  if (fd < 0)
+    return -1;
+
+  if (getsockopt (fd, IPPROTO_TCP, TCP_INFO, &info, &info_len) < 0)
+    return -1;
+
+  return (int32_t)info.tcpi_snd_cwnd;
+#else
+  (void)socket;
+  return -1;
+#endif
 }
 
 #undef T

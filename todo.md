@@ -73,15 +73,15 @@
 ## Connection Health & Probing
 
 ### Health Checks
-- [ ] `Socket_probe(socket, timeout_ms)` - Check if connection is alive
-- [ ] `Socket_get_error(socket)` - Get pending socket error (SO_ERROR)
-- [ ] `Socket_is_readable(socket)` - Check if data available without blocking
-- [ ] `Socket_is_writable(socket)` - Check if write would block
+- [x] `Socket_probe(socket, timeout_ms)` - Check if connection is alive
+- [x] `Socket_get_error(socket)` - Get pending socket error (SO_ERROR)
+- [x] `Socket_is_readable(socket)` - Check if data available without blocking
+- [x] `Socket_is_writable(socket)` - Check if write would block
 
 ### TCP Info
-- [ ] `Socket_get_tcp_info(socket, info)` - Retrieve TCP_INFO stats (Linux)
-- [ ] `Socket_get_rtt(socket)` - Get current RTT estimate
-- [ ] `Socket_get_cwnd(socket)` - Get congestion window size
+- [x] `Socket_get_tcp_info(socket, info)` - Retrieve TCP_INFO stats (Linux)
+- [x] `Socket_get_rtt(socket)` - Get current RTT estimate
+- [x] `Socket_get_cwnd(socket)` - Get congestion window size
 
 ---
 

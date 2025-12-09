@@ -760,6 +760,352 @@ extern void Socket_getstats (const T socket, SocketStats_T *stats);
 extern void Socket_resetstats (T socket);
 
 /* ============================================================================
+ * Connection Health & Probing
+ * ============================================================================
+ */
+
+/**
+ * @brief Probe if a connection is still alive.
+ * @ingroup core_io
+ *
+ * Performs a non-destructive check to determine if the connection is still
+ * valid. Uses a combination of:
+ * 1. SO_ERROR check for pending socket errors
+ * 2. Zero-byte MSG_PEEK recv to detect closed connections
+ * 3. Optional write probe (if enabled)
+ *
+ * @param[in] socket Connected socket to probe
+ * @param[in] timeout_ms Maximum time to wait for response (-1 for non-blocking)
+ *
+ * @return 1 if connection appears healthy, 0 if connection is dead/error
+ *
+ * @threadsafe Yes - read-only probe
+ *
+ * ## Return Values
+ *
+ * | Return | Meaning |
+ * |--------|---------|
+ * | 1 | Connection healthy (no errors detected) |
+ * | 0 | Connection dead, reset, or error pending |
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Quick health check before expensive operation
+ * if (!Socket_probe(sock, 0)) {
+ *     printf("Connection lost, reconnecting...\n");
+ *     reconnect(sock);
+ * }
+ *
+ * // With timeout for more thorough check
+ * if (!Socket_probe(sock, 100)) {  // 100ms probe
+ *     handle_disconnect();
+ * }
+ * @endcode
+ *
+ * @note This is a best-effort check; TCP half-open states may not be detected
+ * @note For TCP, a true liveness check requires application-level heartbeats
+ *
+ * @see Socket_get_error() for retrieving specific error codes
+ * @see Socket_isconnected() for basic connection state check
+ */
+extern int Socket_probe (T socket, int timeout_ms);
+
+/**
+ * @brief Get pending socket error (SO_ERROR).
+ * @ingroup core_io
+ *
+ * Retrieves and clears the pending socket error via getsockopt(SO_ERROR).
+ * Useful after non-blocking connect() or to check for async errors.
+ *
+ * @param[in] socket Socket to check
+ *
+ * @return 0 if no error, otherwise errno value (ECONNREFUSED, ETIMEDOUT, etc.)
+ *
+ * @threadsafe Yes - atomic getsockopt call
+ *
+ * ## Common Error Values
+ *
+ * | Error | Meaning |
+ * |-------|---------|
+ * | 0 | No error |
+ * | ECONNREFUSED | Connection refused by peer |
+ * | ECONNRESET | Connection reset by peer |
+ * | ETIMEDOUT | Connection timed out |
+ * | ENETUNREACH | Network unreachable |
+ * | EHOSTUNREACH | Host unreachable |
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // After non-blocking connect, poll for writability, then:
+ * int error = Socket_get_error(sock);
+ * if (error != 0) {
+ *     fprintf(stderr, "Connect failed: %s\n", strerror(error));
+ * } else {
+ *     printf("Connected successfully\n");
+ * }
+ * @endcode
+ *
+ * @note SO_ERROR is cleared after retrieval (per POSIX)
+ *
+ * @see Socket_probe() for comprehensive health check
+ * @see Socket_connect_nonblocking() for async connect usage
+ */
+extern int Socket_get_error (T socket);
+
+/**
+ * @brief Check if socket has data available to read without blocking.
+ * @ingroup core_io
+ *
+ * Performs a quick check to see if recv() would return data immediately.
+ * Uses poll() with zero timeout to check POLLIN status.
+ *
+ * @param[in] socket Socket to check
+ *
+ * @return 1 if data available, 0 if would block, -1 on error
+ *
+ * @threadsafe Yes - atomic poll call
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Check before blocking recv
+ * if (Socket_is_readable(sock) > 0) {
+ *     ssize_t n = Socket_recv(sock, buf, sizeof(buf));
+ *     // Process data
+ * }
+ *
+ * // In select/poll alternative
+ * while (Socket_is_readable(sock) > 0) {
+ *     process_incoming_data(sock);
+ * }
+ * @endcode
+ *
+ * @note Also returns 1 if peer has closed connection (recv will return 0)
+ * @note For more efficient I/O multiplexing, use SocketPoll
+ *
+ * @see Socket_is_writable() for write readiness check
+ * @see SocketPoll for efficient event-driven I/O
+ */
+extern int Socket_is_readable (T socket);
+
+/**
+ * @brief Check if socket can accept writes without blocking.
+ * @ingroup core_io
+ *
+ * Performs a quick check to see if send() would succeed immediately.
+ * Uses poll() with zero timeout to check POLLOUT status.
+ *
+ * @param[in] socket Socket to check
+ *
+ * @return 1 if write ready, 0 if would block, -1 on error
+ *
+ * @threadsafe Yes - atomic poll call
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Check before potentially blocking send
+ * if (Socket_is_writable(sock) > 0) {
+ *     ssize_t n = Socket_send(sock, buf, len);
+ * } else {
+ *     // Buffer full, queue for later
+ *     queue_pending_write(buf, len);
+ * }
+ * @endcode
+ *
+ * @note Returns 1 if send buffer has space; doesn't guarantee all data fits
+ * @note For non-blocking connect, writable means connect completed (check error)
+ *
+ * @see Socket_is_readable() for read readiness check
+ * @see Socket_get_error() to check after non-blocking connect
+ */
+extern int Socket_is_writable (T socket);
+
+#ifdef __linux__
+/**
+ * @brief TCP connection information structure (Linux-specific).
+ * @ingroup core_io
+ *
+ * Provides detailed TCP stack information via TCP_INFO sockopt.
+ * All timing values are in microseconds unless noted.
+ *
+ * @see Socket_get_tcp_info() to retrieve this information
+ */
+typedef struct SocketTCPInfo
+{
+  /* Connection state */
+  uint8_t state;        /**< TCP state (TCP_ESTABLISHED, etc.) */
+  uint8_t ca_state;     /**< Congestion avoidance state */
+  uint8_t retransmits;  /**< Number of unrecovered RTOs */
+  uint8_t probes;       /**< Number of unanswered zero-window probes */
+  uint8_t backoff;      /**< Backoff exponent for RTO */
+
+  /* Options */
+  uint8_t options;      /**< TCP options enabled */
+  uint8_t snd_wscale;   /**< Send window scale */
+  uint8_t rcv_wscale;   /**< Receive window scale */
+
+  /* RTT estimation */
+  uint32_t rto_us;      /**< Retransmission timeout (microseconds) */
+  uint32_t ato_us;      /**< ACK timeout (microseconds) */
+  uint32_t snd_mss;     /**< Send MSS */
+  uint32_t rcv_mss;     /**< Receive MSS */
+
+  /* Counters */
+  uint32_t unacked;     /**< Unacknowledged segments */
+  uint32_t sacked;      /**< SACKed segments */
+  uint32_t lost;        /**< Lost segments */
+  uint32_t retrans;     /**< Retransmitted segments */
+  uint32_t fackets;     /**< FACKed segments */
+
+  /* Timing */
+  uint32_t last_data_sent_ms; /**< Time since last data sent (ms) */
+  uint32_t last_ack_sent_ms;  /**< Time since last ACK sent (ms) */
+  uint32_t last_data_recv_ms; /**< Time since last data received (ms) */
+  uint32_t last_ack_recv_ms;  /**< Time since last ACK received (ms) */
+
+  /* Metrics */
+  uint32_t pmtu;        /**< Path MTU */
+  uint32_t rcv_ssthresh; /**< Receive slow-start threshold */
+  uint32_t rtt_us;      /**< Smoothed RTT (microseconds) */
+  uint32_t rttvar_us;   /**< RTT variance (microseconds) */
+  uint32_t snd_ssthresh; /**< Send slow-start threshold */
+  uint32_t snd_cwnd;    /**< Send congestion window */
+  uint32_t advmss;      /**< Advertised MSS */
+  uint32_t reordering;  /**< Reordering metric */
+
+  /* Extended (Linux 2.6.10+) */
+  uint32_t rcv_rtt_us;  /**< Receiver RTT estimate (microseconds) */
+  uint32_t rcv_space;   /**< Receive buffer space */
+
+  uint32_t total_retrans; /**< Total retransmissions */
+
+  /* Pacing (Linux 3.16+) */
+  uint64_t pacing_rate;     /**< Current pacing rate (bytes/sec) */
+  uint64_t max_pacing_rate; /**< Maximum pacing rate (bytes/sec) */
+
+  /* Bytes in flight (Linux 4.0+) */
+  uint64_t bytes_acked;    /**< Bytes acknowledged */
+  uint64_t bytes_received; /**< Bytes received */
+
+  /* Segments (Linux 4.2+) */
+  uint32_t segs_out;       /**< Segments sent */
+  uint32_t segs_in;        /**< Segments received */
+
+  /* Delivery (Linux 4.6+) */
+  uint32_t notsent_bytes;  /**< Not-yet-sent bytes in write queue */
+  uint32_t min_rtt_us;     /**< Minimum observed RTT (microseconds) */
+  uint32_t data_segs_in;   /**< Data segments received */
+  uint32_t data_segs_out;  /**< Data segments sent */
+
+  uint64_t delivery_rate;  /**< Delivery rate (bytes/sec) */
+} SocketTCPInfo;
+
+/**
+ * @brief Retrieve TCP connection statistics (Linux-specific).
+ * @ingroup core_io
+ *
+ * Retrieves detailed TCP stack information via getsockopt(TCP_INFO).
+ * Provides RTT measurements, congestion window, MSS, retransmission
+ * counts, and other TCP internals useful for diagnostics and monitoring.
+ *
+ * @param[in] socket Connected TCP socket
+ * @param[out] info Output structure for TCP information
+ *
+ * @return 0 on success, -1 on error (errno set)
+ *
+ * @threadsafe Yes - atomic getsockopt call
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * SocketTCPInfo info;
+ * if (Socket_get_tcp_info(sock, &info) == 0) {
+ *     printf("RTT: %.2f ms (variance: %.2f ms)\n",
+ *            info.rtt_us / 1000.0, info.rttvar_us / 1000.0);
+ *     printf("Congestion window: %u segments\n", info.snd_cwnd);
+ *     printf("Retransmissions: %u\n", info.total_retrans);
+ *     if (info.delivery_rate > 0) {
+ *         printf("Delivery rate: %.2f Mbps\n",
+ *                info.delivery_rate * 8.0 / 1e6);
+ *     }
+ * }
+ * @endcode
+ *
+ * @note Linux-specific; not available on other platforms
+ * @note Some fields require newer kernel versions (noted in structure)
+ *
+ * @see Socket_get_rtt() for simple RTT query
+ * @see Socket_get_cwnd() for congestion window query
+ * @see SocketTCPInfo for field descriptions
+ */
+extern int Socket_get_tcp_info (T socket, SocketTCPInfo *info);
+#endif /* __linux__ */
+
+/**
+ * @brief Get current RTT (round-trip time) estimate.
+ * @ingroup core_io
+ *
+ * Retrieves the TCP stack's smoothed RTT estimate for the connection.
+ * On Linux, uses TCP_INFO; on other platforms, may return -1.
+ *
+ * @param[in] socket Connected TCP socket
+ *
+ * @return RTT in microseconds, or -1 if unavailable
+ *
+ * @threadsafe Yes
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * int32_t rtt = Socket_get_rtt(sock);
+ * if (rtt >= 0) {
+ *     printf("RTT: %.2f ms\n", rtt / 1000.0);
+ * } else {
+ *     printf("RTT unavailable on this platform\n");
+ * }
+ * @endcode
+ *
+ * @note TCP stack updates RTT based on ACK timing; may not reflect current
+ * @note For UDP, always returns -1
+ *
+ * @see Socket_get_tcp_info() for comprehensive TCP statistics (Linux)
+ * @see Socket_getstats() for SocketStats_T with rtt_us field
+ */
+extern int32_t Socket_get_rtt (T socket);
+
+/**
+ * @brief Get current congestion window size.
+ * @ingroup core_io
+ *
+ * Retrieves the TCP congestion window (cwnd) which limits how much
+ * unacknowledged data can be in flight. Useful for network diagnostics.
+ *
+ * @param[in] socket Connected TCP socket
+ *
+ * @return Congestion window in segments, or -1 if unavailable
+ *
+ * @threadsafe Yes
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * int32_t cwnd = Socket_get_cwnd(sock);
+ * if (cwnd >= 0) {
+ *     printf("Congestion window: %d segments\n", cwnd);
+ * }
+ * @endcode
+ *
+ * @note Linux-specific; returns -1 on other platforms
+ * @note cwnd is dynamically adjusted by congestion control algorithm
+ *
+ * @see Socket_get_tcp_info() for comprehensive TCP statistics (Linux)
+ */
+extern int32_t Socket_get_cwnd (T socket);
+
+/* ============================================================================
  * Connection Operations
  * ============================================================================
  */

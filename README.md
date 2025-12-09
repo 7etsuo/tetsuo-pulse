@@ -849,6 +849,68 @@ size_t limit = Socket_getbandwidth(socket);
 Socket_free(&socket);
 ```
 
+### Connection Health & Probing
+
+```c
+#include "socket/Socket.h"
+
+Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+Socket_connect(sock, "example.com", 80);
+
+/* Quick health check (non-blocking) */
+if (!Socket_probe(sock, 0)) {
+    printf("Connection appears dead\n");
+}
+
+/* Health check with timeout (waits up to 100ms for response) */
+if (!Socket_probe(sock, 100)) {
+    printf("Connection lost, reconnecting...\n");
+}
+
+/* Check for pending socket errors (after non-blocking connect) */
+int error = Socket_get_error(sock);
+if (error != 0) {
+    printf("Socket error: %s\n", strerror(error));
+}
+
+/* Check read/write readiness without blocking */
+if (Socket_is_readable(sock) > 0) {
+    char buf[1024];
+    ssize_t n = Socket_recv(sock, buf, sizeof(buf));
+}
+
+if (Socket_is_writable(sock) > 0) {
+    Socket_send(sock, "GET / HTTP/1.1\r\n\r\n", 18);
+}
+
+#ifdef __linux__
+/* Get TCP stack statistics (Linux only) */
+SocketTCPInfo info;
+if (Socket_get_tcp_info(sock, &info) == 0) {
+    printf("RTT: %.2f ms\n", info.rtt_us / 1000.0);
+    printf("Congestion window: %u segments\n", info.snd_cwnd);
+    printf("Retransmissions: %u\n", info.total_retrans);
+    if (info.delivery_rate > 0) {
+        printf("Delivery rate: %.2f Mbps\n", info.delivery_rate * 8.0 / 1e6);
+    }
+}
+#endif
+
+/* Simple RTT query (cross-platform, returns -1 if unavailable) */
+int32_t rtt = Socket_get_rtt(sock);
+if (rtt >= 0) {
+    printf("RTT: %.2f ms\n", rtt / 1000.0);
+}
+
+/* Congestion window query (Linux only) */
+int32_t cwnd = Socket_get_cwnd(sock);
+if (cwnd >= 0) {
+    printf("CWND: %d segments\n", cwnd);
+}
+
+Socket_free(&sock);
+```
+
 ### Timers
 
 ```c
