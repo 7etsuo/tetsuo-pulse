@@ -962,6 +962,317 @@ extern int SocketTLS_is_session_reused (Socket_T socket);
  */
 extern const char *SocketTLS_get_alpn_selected (Socket_T socket);
 
+/* ============================================================================
+ * TLS Session Management
+ * ============================================================================
+ */
+
+/**
+ * @brief Export TLS session for later resumption
+ * @ingroup security
+ * @param[in] socket Socket with completed TLS handshake
+ * @param[out] buffer Buffer to store serialized session
+ * @param[in,out] len On input: buffer size; On output: actual session size
+ *
+ * Exports the current TLS session data in a format suitable for persistent
+ * storage or transfer to another process. The session can later be restored
+ * with SocketTLS_session_restore() for 0-RTT or abbreviated handshakes.
+ *
+ * @return 1 on success, 0 if buffer too small (len updated with required size),
+ *         -1 on error (no session, TLS not enabled)
+ *
+ * @throws None
+ * @threadsafe No - must synchronize access to same socket
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Save session for later resumption
+ * size_t len = 4096;
+ * unsigned char session_data[4096];
+ *
+ * if (SocketTLS_session_save(sock, session_data, &len) == 1) {
+ *     // Store session_data[:len] to disk or cache
+ *     write_session_cache(host, session_data, len);
+ * }
+ * @endcode
+ *
+ * @note Session data is sensitive - store securely
+ * @note Session validity depends on server policy (typically 24h-7d)
+ *
+ * @see SocketTLS_session_restore() to import saved session
+ * @see SocketTLS_is_session_reused() to verify resumption worked
+ * @see SocketTLSContext_enable_session_cache() for server-side caching
+ */
+extern int SocketTLS_session_save (Socket_T socket, unsigned char *buffer,
+                                   size_t *len);
+
+/**
+ * @brief Import previously saved TLS session for resumption
+ * @ingroup security
+ * @param[in] socket Socket with TLS enabled but before handshake
+ * @param[in] buffer Buffer containing serialized session
+ * @param[in] len Length of session data
+ *
+ * Restores a previously exported TLS session to enable session resumption.
+ * Must be called after SocketTLS_enable() but before SocketTLS_handshake().
+ * If the server accepts the session, the handshake will be abbreviated.
+ *
+ * @return 1 on success, 0 on invalid session data, -1 on error
+ *
+ * @throws None
+ * @threadsafe No - must synchronize access to same socket
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Restore session for faster reconnect
+ * SocketTLS_enable(sock, ctx);
+ * SocketTLS_set_hostname(sock, "example.com");
+ *
+ * size_t len;
+ * unsigned char *session_data = read_session_cache("example.com", &len);
+ * if (session_data) {
+ *     SocketTLS_session_restore(sock, session_data, len);
+ *     free(session_data);
+ * }
+ *
+ * SocketTLS_handshake_auto(sock);
+ * if (SocketTLS_is_session_reused(sock)) {
+ *     printf("Session resumed!\n");
+ * }
+ * @endcode
+ *
+ * @note Session may be rejected by server (full handshake will occur)
+ * @note Only valid for same server the session was created with
+ *
+ * @see SocketTLS_session_save() to export session
+ * @see SocketTLS_is_session_reused() to verify resumption
+ */
+extern int SocketTLS_session_restore (Socket_T socket,
+                                      const unsigned char *buffer, size_t len);
+
+/* ============================================================================
+ * TLS Renegotiation Control
+ * ============================================================================
+ */
+
+/**
+ * @brief Check for and process pending renegotiation
+ * @ingroup security
+ * @param socket TLS socket
+ *
+ * Checks if the peer has requested a renegotiation and handles it if
+ * renegotiation is allowed. TLS 1.3 does not support renegotiation.
+ *
+ * @return 1 if renegotiation was processed, 0 if none pending,
+ *         -1 if renegotiation rejected/disabled
+ *
+ * @throws SocketTLS_ProtocolError if renegotiation fails
+ * @threadsafe No - modifies SSL state
+ *
+ * @note TLS 1.3 uses key update instead of renegotiation
+ * @note Renegotiation can be a DoS vector - consider disabling
+ *
+ * @see SocketTLS_disable_renegotiation() to prevent renegotiation
+ */
+extern int SocketTLS_check_renegotiation (Socket_T socket);
+
+/**
+ * @brief Disable TLS renegotiation on socket
+ * @ingroup security
+ * @param socket TLS socket
+ *
+ * Prevents the peer from initiating renegotiation. Renegotiation can be
+ * exploited for DoS attacks (CPU exhaustion) and has had security
+ * vulnerabilities (CVE-2009-3555).
+ *
+ * @return 0 on success, -1 on error (TLS not enabled)
+ *
+ * @throws None
+ * @threadsafe No - modifies SSL configuration
+ *
+ * ## Security Note
+ *
+ * Client-initiated renegotiation is a known attack vector:
+ * - CVE-2009-3555: Renegotiation injection attack
+ * - CPU exhaustion by forcing repeated handshakes
+ *
+ * TLS 1.3 removed renegotiation entirely. For TLS 1.2 and earlier,
+ * disabling renegotiation is recommended unless specifically needed.
+ *
+ * @code{.c}
+ * SocketTLS_enable(sock, ctx);
+ * SocketTLS_disable_renegotiation(sock);  // Prevent DoS
+ * SocketTLS_handshake_auto(sock);
+ * @endcode
+ *
+ * @see SocketTLS_check_renegotiation() for processing requests
+ */
+extern int SocketTLS_disable_renegotiation (Socket_T socket);
+
+/* ============================================================================
+ * TLS Certificate Information
+ * ============================================================================
+ */
+
+/**
+ * @brief Peer certificate information structure
+ * @ingroup security
+ */
+typedef struct SocketTLS_CertInfo
+{
+  char subject[256];   /**< Certificate subject (CN, O, etc) */
+  char issuer[256];    /**< Issuer DN string */
+  time_t not_before;   /**< Certificate validity start (UTC) */
+  time_t not_after;    /**< Certificate validity end (UTC) */
+  int version;         /**< X.509 version (typically 3) */
+  char serial[64];     /**< Serial number (hex string) */
+  char fingerprint[65]; /**< SHA256 fingerprint (hex string) */
+} SocketTLS_CertInfo;
+
+/**
+ * @brief Get peer certificate details
+ * @ingroup security
+ * @param[in] socket Socket with completed TLS handshake
+ * @param[out] info Certificate information structure
+ *
+ * Extracts detailed information from the peer's certificate including
+ * subject, issuer, validity period, and fingerprint.
+ *
+ * @return 1 on success, 0 if no peer certificate, -1 on error
+ *
+ * @throws None
+ * @threadsafe Yes - reads immutable post-handshake data
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * SocketTLS_CertInfo info;
+ * if (SocketTLS_get_peer_cert_info(sock, &info) == 1) {
+ *     printf("Subject: %s\n", info.subject);
+ *     printf("Issuer: %s\n", info.issuer);
+ *     printf("Expires: %s", ctime(&info.not_after));
+ *     printf("Fingerprint: %s\n", info.fingerprint);
+ * }
+ * @endcode
+ *
+ * @see SocketTLS_get_cert_expiry() for just expiration time
+ * @see SocketTLS_get_cert_subject() for just subject
+ */
+extern int SocketTLS_get_peer_cert_info (Socket_T socket,
+                                         SocketTLS_CertInfo *info);
+
+/**
+ * @brief Get peer certificate expiration time
+ * @ingroup security
+ * @param socket Socket with completed TLS handshake
+ *
+ * Returns the expiration timestamp of the peer's certificate.
+ *
+ * @return Expiration time (time_t), or (time_t)-1 on error/no cert
+ *
+ * @throws None
+ * @threadsafe Yes - reads immutable post-handshake data
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * time_t expiry = SocketTLS_get_cert_expiry(sock);
+ * if (expiry != (time_t)-1) {
+ *     time_t now = time(NULL);
+ *     int days_left = (expiry - now) / 86400;
+ *     if (days_left < 30) {
+ *         printf("Warning: Certificate expires in %d days\n", days_left);
+ *     }
+ * }
+ * @endcode
+ *
+ * @see SocketTLS_get_peer_cert_info() for full certificate details
+ */
+extern time_t SocketTLS_get_cert_expiry (Socket_T socket);
+
+/**
+ * @brief Get peer certificate subject string
+ * @ingroup security
+ * @param[in] socket Socket with completed TLS handshake
+ * @param[out] buf Buffer for subject string
+ * @param[in] len Buffer size
+ *
+ * Retrieves the subject distinguished name (DN) of the peer's certificate
+ * in OpenSSL one-line format (e.g., "CN=example.com,O=Example Inc,C=US").
+ *
+ * @return Length written on success (excluding NUL), 0 if no cert,
+ *         -1 on error
+ *
+ * @throws None
+ * @threadsafe Yes - reads immutable post-handshake data
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * char subject[256];
+ * if (SocketTLS_get_cert_subject(sock, subject, sizeof(subject)) > 0) {
+ *     printf("Connected to: %s\n", subject);
+ * }
+ * @endcode
+ *
+ * @see SocketTLS_get_peer_cert_info() for full certificate details
+ */
+extern int SocketTLS_get_cert_subject (Socket_T socket, char *buf, size_t len);
+
+/* ============================================================================
+ * OCSP Status (Client-side)
+ * ============================================================================
+ */
+
+/**
+ * @brief Get OCSP stapling status from server response
+ * @ingroup security
+ * @param socket Socket with completed TLS handshake
+ *
+ * Retrieves the status from the OCSP response stapled by the server.
+ * This is a client-side function to verify server certificate revocation
+ * status without making a separate OCSP request.
+ *
+ * @return OCSP status:
+ *         - 1: Certificate is good (OCSP_CERTSTATUS_GOOD)
+ *         - 0: Certificate is revoked (OCSP_CERTSTATUS_REVOKED)
+ *         - -1: No OCSP response or unknown status
+ *         - -2: OCSP response verification failed
+ *
+ * @throws None
+ * @threadsafe Yes - reads immutable post-handshake data
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // After handshake, verify OCSP status
+ * int ocsp_status = SocketTLS_get_ocsp_response_status(sock);
+ * switch (ocsp_status) {
+ *     case 1:
+ *         printf("Certificate verified via OCSP\n");
+ *         break;
+ *     case 0:
+ *         printf("Certificate REVOKED!\n");
+ *         Socket_free(&sock);
+ *         return;
+ *     case -1:
+ *         printf("No OCSP response (server doesn't support stapling)\n");
+ *         break;
+ *     case -2:
+ *         printf("OCSP response verification failed\n");
+ *         break;
+ * }
+ * @endcode
+ *
+ * @note Requires server to have OCSP stapling enabled
+ *
+ * @see SocketTLSContext_enable_ocsp_stapling() for server-side setup
+ * @see SocketTLS_get_ocsp_status() for simpler boolean check
+ */
+extern int SocketTLS_get_ocsp_response_status (Socket_T socket);
+
 #undef T
 
 /** @} */ /* end of security group */

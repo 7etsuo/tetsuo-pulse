@@ -1111,6 +1111,109 @@ Socket_free(&socket);
 SocketTLSContext_free(&ctx);
 ```
 
+### TLS Session Resumption
+
+```c
+#include "tls/SocketTLS.h"
+
+/* Save session for later resumption */
+size_t session_len = 4096;
+unsigned char session_data[4096];
+
+if (SocketTLS_session_save(sock, session_data, &session_len) == 1) {
+    /* Store session_data[:session_len] to disk/cache */
+    write_session_to_cache(hostname, session_data, session_len);
+}
+
+/* Later: restore session for faster reconnect */
+Socket_T sock2 = Socket_connect_tcp(hostname, port, 5000);
+SocketTLS_enable(sock2, ctx);
+SocketTLS_set_hostname(sock2, hostname);
+
+/* Restore previously saved session */
+unsigned char *cached_session = read_session_from_cache(hostname, &cached_len);
+if (cached_session) {
+    SocketTLS_session_restore(sock2, cached_session, cached_len);
+    free(cached_session);
+}
+
+SocketTLS_handshake_auto(sock2);
+
+/* Check if session was resumed (0-RTT or abbreviated handshake) */
+if (SocketTLS_is_session_reused(sock2)) {
+    printf("Session resumed - faster handshake!\n");
+}
+```
+
+### TLS Certificate Information
+
+```c
+#include "tls/SocketTLS.h"
+
+/* Get full certificate details */
+SocketTLS_CertInfo info;
+if (SocketTLS_get_peer_cert_info(sock, &info) == 1) {
+    printf("Subject: %s\n", info.subject);
+    printf("Issuer: %s\n", info.issuer);
+    printf("Version: X.509v%d\n", info.version);
+    printf("Serial: %s\n", info.serial);
+    printf("Fingerprint: %s\n", info.fingerprint);
+    printf("Valid from: %s", ctime(&info.not_before));
+    printf("Valid until: %s", ctime(&info.not_after));
+}
+
+/* Quick certificate expiry check */
+time_t expiry = SocketTLS_get_cert_expiry(sock);
+if (expiry != (time_t)-1) {
+    time_t now = time(NULL);
+    int days_left = (expiry - now) / 86400;
+    if (days_left < 30) {
+        printf("Warning: Certificate expires in %d days!\n", days_left);
+    }
+}
+
+/* Just get subject for logging */
+char subject[256];
+if (SocketTLS_get_cert_subject(sock, subject, sizeof(subject)) > 0) {
+    printf("Connected to: %s\n", subject);
+}
+```
+
+### TLS OCSP and Renegotiation
+
+```c
+#include "tls/SocketTLS.h"
+
+/* Check OCSP stapling status */
+int ocsp_status = SocketTLS_get_ocsp_response_status(sock);
+switch (ocsp_status) {
+    case 1:
+        printf("Certificate verified via OCSP\n");
+        break;
+    case 0:
+        printf("WARNING: Certificate REVOKED!\n");
+        Socket_free(&sock);
+        return;
+    case -1:
+        printf("No OCSP response (server doesn't support stapling)\n");
+        break;
+    case -2:
+        printf("OCSP response verification failed\n");
+        break;
+}
+
+/* Disable renegotiation for security (prevents DoS attacks) */
+SocketTLS_disable_renegotiation(sock);
+
+/* Or check for pending renegotiation requests */
+int reneg = SocketTLS_check_renegotiation(sock);
+if (reneg == 1) {
+    printf("Renegotiation completed\n");
+} else if (reneg == -1) {
+    printf("Renegotiation rejected (disabled or TLS 1.3)\n");
+}
+```
+
 ### TLS Server with SNI and Certificate Pinning
 
 ```c

@@ -24,9 +24,14 @@
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <openssl/bn.h>
+#include <openssl/evp.h>
+#include <openssl/ocsp.h>
+#include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 
 #define T SocketTLS_T
 
@@ -775,6 +780,347 @@ SocketTLS_get_alpn_selected (Socket_T socket)
   memcpy (proto_copy, alpn_data, alpn_len);
   proto_copy[alpn_len] = '\0';
   return proto_copy;
+}
+
+/* ==================== Session Management ==================== */
+
+int
+SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
+{
+  assert (socket);
+  assert (buffer || len);
+  assert (len);
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+  SSL_SESSION *session = SSL_get1_session (ssl);
+  if (!session)
+    return -1;
+
+  /* Get required length first */
+  int session_len = i2d_SSL_SESSION (session, NULL);
+  if (session_len <= 0)
+    {
+      SSL_SESSION_free (session);
+      return -1;
+    }
+
+  /* Check if buffer is large enough */
+  if ((size_t)session_len > *len)
+    {
+      *len = (size_t)session_len;
+      SSL_SESSION_free (session);
+      return 0; /* Buffer too small */
+    }
+
+  /* Serialize session */
+  unsigned char *p = buffer;
+  int written = i2d_SSL_SESSION (session, &p);
+  SSL_SESSION_free (session);
+
+  if (written <= 0)
+    return -1;
+
+  *len = (size_t)written;
+  return 1;
+}
+
+int
+SocketTLS_session_restore (Socket_T socket, const unsigned char *buffer,
+                           size_t len)
+{
+  assert (socket);
+  assert (buffer);
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+  /* Deserialize session */
+  const unsigned char *p = buffer;
+  SSL_SESSION *session = d2i_SSL_SESSION (NULL, &p, (long)len);
+  if (!session)
+    return 0; /* Invalid session data */
+
+  /* Set session for resumption */
+  int ret = SSL_set_session (ssl, session);
+  SSL_SESSION_free (session);
+
+  return ret ? 1 : -1;
+}
+
+/* ==================== Renegotiation Control ==================== */
+
+int
+SocketTLS_check_renegotiation (Socket_T socket)
+{
+  assert (socket);
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+  /* TLS 1.3 doesn't support renegotiation */
+  if (SSL_version (ssl) >= TLS1_3_VERSION)
+    return 0;
+
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+  /* Check if renegotiation is pending */
+  if (SSL_renegotiate_pending (ssl))
+    {
+      /* Check if renegotiation is allowed */
+      if (SSL_get_secure_renegotiation_support (ssl))
+        {
+          int ret = SSL_do_handshake (ssl);
+          if (ret == 1)
+            return 1; /* Renegotiation completed */
+          return -1;  /* Renegotiation failed/rejected */
+        }
+      return -1; /* Renegotiation not supported securely */
+    }
+#endif
+
+  return 0; /* No renegotiation pending */
+}
+
+int
+SocketTLS_disable_renegotiation (Socket_T socket)
+{
+  assert (socket);
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+  /* Disable client-initiated renegotiation */
+  SSL_set_options (ssl, SSL_OP_NO_RENEGOTIATION);
+#endif
+
+  return 0;
+}
+
+/* ==================== Certificate Information ==================== */
+
+/**
+ * asn1_time_to_time_t - Convert ASN1_TIME to time_t
+ * @asn1: ASN1_TIME value
+ *
+ * Returns: time_t value, or (time_t)-1 on error
+ */
+static time_t
+asn1_time_to_time_t (const ASN1_TIME *asn1)
+{
+  if (!asn1)
+    return (time_t)-1;
+
+  struct tm tm_time = { 0 };
+  int ret = ASN1_TIME_to_tm (asn1, &tm_time);
+  if (ret != 1)
+    return (time_t)-1;
+
+  return timegm (&tm_time);
+}
+
+int
+SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
+{
+  assert (socket);
+  assert (info);
+
+  memset (info, 0, sizeof (*info));
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+  X509 *cert = SSL_get_peer_certificate (ssl);
+  if (!cert)
+    return 0; /* No peer certificate */
+
+  /* Subject */
+  X509_NAME *subject_name = X509_get_subject_name (cert);
+  if (subject_name)
+    X509_NAME_oneline (subject_name, info->subject, sizeof (info->subject));
+
+  /* Issuer */
+  X509_NAME *issuer_name = X509_get_issuer_name (cert);
+  if (issuer_name)
+    X509_NAME_oneline (issuer_name, info->issuer, sizeof (info->issuer));
+
+  /* Validity period */
+  info->not_before = asn1_time_to_time_t (X509_get0_notBefore (cert));
+  info->not_after = asn1_time_to_time_t (X509_get0_notAfter (cert));
+
+  /* Version (0-indexed in X509, add 1 for standard numbering) */
+  info->version = (int)X509_get_version (cert) + 1;
+
+  /* Serial number */
+  ASN1_INTEGER *serial = X509_get_serialNumber (cert);
+  if (serial)
+    {
+      BIGNUM *bn = ASN1_INTEGER_to_BN (serial, NULL);
+      if (bn)
+        {
+          char *hex = BN_bn2hex (bn);
+          if (hex)
+            {
+              strncpy (info->serial, hex, sizeof (info->serial) - 1);
+              info->serial[sizeof (info->serial) - 1] = '\0';
+              OPENSSL_free (hex);
+            }
+          BN_free (bn);
+        }
+    }
+
+  /* SHA256 fingerprint */
+  unsigned char md[EVP_MAX_MD_SIZE];
+  unsigned int md_len = 0;
+  if (X509_digest (cert, EVP_sha256 (), md, &md_len))
+    {
+      char *p = info->fingerprint;
+      for (unsigned int i = 0; i < md_len && i < 32; i++)
+        {
+          sprintf (p, "%02X", md[i]);
+          p += 2;
+        }
+      *p = '\0';
+    }
+
+  X509_free (cert);
+  return 1;
+}
+
+time_t
+SocketTLS_get_cert_expiry (Socket_T socket)
+{
+  assert (socket);
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return (time_t)-1;
+
+  X509 *cert = SSL_get_peer_certificate (ssl);
+  if (!cert)
+    return (time_t)-1;
+
+  time_t expiry = asn1_time_to_time_t (X509_get0_notAfter (cert));
+  X509_free (cert);
+  return expiry;
+}
+
+int
+SocketTLS_get_cert_subject (Socket_T socket, char *buf, size_t len)
+{
+  assert (socket);
+  assert (buf);
+  assert (len > 0);
+
+  buf[0] = '\0';
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+  X509 *cert = SSL_get_peer_certificate (ssl);
+  if (!cert)
+    return 0;
+
+  X509_NAME *subject_name = X509_get_subject_name (cert);
+  if (!subject_name)
+    {
+      X509_free (cert);
+      return 0;
+    }
+
+  char *result = X509_NAME_oneline (subject_name, buf, (int)len);
+  X509_free (cert);
+
+  if (!result)
+    return -1;
+
+  return (int)strlen (buf);
+}
+
+/* ==================== OCSP Status ==================== */
+
+int
+SocketTLS_get_ocsp_response_status (Socket_T socket)
+{
+  assert (socket);
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+#if !defined(OPENSSL_NO_OCSP)
+  const unsigned char *ocsp_resp;
+  long ocsp_len = SSL_get_tlsext_status_ocsp_resp (ssl, &ocsp_resp);
+
+  if (ocsp_len <= 0 || !ocsp_resp)
+    return -1; /* No OCSP response */
+
+  OCSP_RESPONSE *resp
+      = d2i_OCSP_RESPONSE (NULL, &ocsp_resp, (long)ocsp_len);
+  if (!resp)
+    return -2; /* Invalid/failed verification */
+
+  int response_status = OCSP_response_status (resp);
+  if (response_status != OCSP_RESPONSE_STATUS_SUCCESSFUL)
+    {
+      OCSP_RESPONSE_free (resp);
+      return -2; /* OCSP response not successful */
+    }
+
+  OCSP_BASICRESP *basic = OCSP_response_get1_basic (resp);
+  if (!basic)
+    {
+      OCSP_RESPONSE_free (resp);
+      return -2;
+    }
+
+  /* Get peer certificate for verification */
+  X509 *cert = SSL_get_peer_certificate (ssl);
+  if (!cert)
+    {
+      OCSP_BASICRESP_free (basic);
+      OCSP_RESPONSE_free (resp);
+      return -2;
+    }
+
+  /* Get certificate ID from basic response */
+  int cert_status = -1;
+  ASN1_GENERALIZEDTIME *thisupd = NULL;
+  ASN1_GENERALIZEDTIME *nextupd = NULL;
+
+  int resp_count = OCSP_resp_count (basic);
+  for (int i = 0; i < resp_count; i++)
+    {
+      OCSP_SINGLERESP *single = OCSP_resp_get0 (basic, i);
+      if (single)
+        {
+          int reason = 0;
+          int status
+              = OCSP_single_get0_status (single, &reason, NULL, &thisupd,
+                                         &nextupd);
+          if (status == V_OCSP_CERTSTATUS_GOOD)
+            cert_status = 1;
+          else if (status == V_OCSP_CERTSTATUS_REVOKED)
+            cert_status = 0;
+          break;
+        }
+    }
+
+  X509_free (cert);
+  OCSP_BASICRESP_free (basic);
+  OCSP_RESPONSE_free (resp);
+
+  return cert_status;
+#else
+  return -1; /* OCSP not compiled in */
+#endif
 }
 
 #undef T

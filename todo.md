@@ -107,22 +107,22 @@
 ## TLS Enhancements
 
 ### Session Management
-- [ ] `SocketTLS_session_save(socket, buffer, len)` - Export session for resumption
-- [ ] `SocketTLS_session_restore(socket, buffer, len)` - Import saved session
-- [ ] `SocketTLS_get_session_reused(socket)` - Check if session was reused
+- [x] `SocketTLS_session_save(socket, buffer, len)` - Export session for resumption
+- [x] `SocketTLS_session_restore(socket, buffer, len)` - Import saved session
+- [x] `SocketTLS_is_session_reused(socket)` - Check if session was reused (already existed)
 
 ### Renegotiation
-- [ ] `SocketTLS_check_renegotiation(socket)` - Handle renegotiation requests
-- [ ] `SocketTLS_disable_renegotiation(socket)` - Prevent renegotiation
+- [x] `SocketTLS_check_renegotiation(socket)` - Handle renegotiation requests
+- [x] `SocketTLS_disable_renegotiation(socket)` - Prevent renegotiation
 
 ### Certificate Info
-- [ ] `SocketTLS_get_peer_cert_info(socket, info)` - Get peer certificate details
-- [ ] `SocketTLS_get_cert_expiry(socket)` - Get peer cert expiration time
-- [ ] `SocketTLS_get_cert_subject(socket, buf, len)` - Get certificate subject
+- [x] `SocketTLS_get_peer_cert_info(socket, info)` - Get peer certificate details
+- [x] `SocketTLS_get_cert_expiry(socket)` - Get peer cert expiration time
+- [x] `SocketTLS_get_cert_subject(socket, buf, len)` - Get certificate subject
 
 ### OCSP
-- [ ] `SocketTLS_enable_ocsp_stapling(ctx)` - Enable OCSP stapling
-- [ ] `SocketTLS_get_ocsp_response(socket, response)` - Get stapled response
+- [x] `SocketTLSContext_enable_ocsp_stapling(ctx)` - Enable OCSP stapling (already existed)
+- [x] `SocketTLS_get_ocsp_response_status(socket)` - Get stapled response status
 
 ---
 
