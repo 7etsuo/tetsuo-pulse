@@ -8,7 +8,7 @@ High-performance, exception-driven socket toolkit for POSIX systems. Provides a 
 - **TCP Stream Sockets** - Full-featured TCP client/server with scatter/gather I/O
 - **UDP Datagram Sockets** - Connectionless and connected modes with multicast/broadcast
 - **Unix Domain Sockets** - IPC sockets with peer credential support and file descriptor passing
-- **TLS 1.3 Support** - Modern TLS with SNI, ALPN, session resumption, CRL/OCSP, certificate pinning
+- **TLS 1.3 Support** - Modern TLS with SNI, ALPN, session resumption, CRL/OCSP, certificate pinning, Certificate Transparency (CT)
 - **DTLS 1.2+ Support** - Secure UDP with cookie exchange for DoS protection
 
 ### HTTP Protocol Stack
@@ -123,6 +123,7 @@ int main(void)
         Socket_setreuseaddr(server);
         Socket_bind(server, NULL, 8080);
         Socket_listen(server, 128);
+        printf("Server listening on port 8080...\n");
         
         while (1) {
             Socket_T client = Socket_accept(server);
@@ -137,7 +138,7 @@ int main(void)
             }
         }
     EXCEPT(Socket_Failed)
-        fprintf(stderr, "Error: %s\n", Socket_Failed.reason);
+        fprintf(stderr, "Error: %s\n", Socket_GetLastError());
     END_TRY;
     
     Socket_free(&server);
@@ -159,6 +160,7 @@ int main(void)
     
     TRY
         Socket_connect(client, "127.0.0.1", 8080);
+        printf("Connected to server\n");
         
         const char *msg = "Hello, Server!";
         Socket_sendall(client, msg, strlen(msg));
@@ -168,7 +170,7 @@ int main(void)
         buf[n] = '\0';
         printf("Received: %s\n", buf);
     EXCEPT(Socket_Failed)
-        fprintf(stderr, "Error: %s\n", Socket_Failed.reason);
+        fprintf(stderr, "Error: %s\n", Socket_GetLastError());
     EXCEPT(Socket_Closed)
         fprintf(stderr, "Connection closed\n");
     END_TRY;
@@ -251,30 +253,29 @@ Socket_free(&server);
 
 /* Simple GET request */
 SocketHTTPClient_T client = SocketHTTPClient_new(NULL);
-SocketHTTPClient_Response_T resp = SocketHTTPClient_get(client, "https://example.com/api");
+SocketHTTPClient_Response response = {0};
 
-printf("Status: %d\n", SocketHTTPClient_Response_status(resp));
-printf("Body: %.*s\n", 
-       (int)SocketHTTPClient_Response_body_len(resp),
-       SocketHTTPClient_Response_body(resp));
-
-SocketHTTPClient_Response_free(&resp);
+if (SocketHTTPClient_get(client, "https://example.com/api", &response) == 0) {
+    printf("Status: %d\n", response.status_code);
+    printf("Body: %.*s\n", (int)response.body_len, (char *)response.body);
+}
+SocketHTTPClient_Response_free(&response);
 
 /* Request builder pattern */
-SocketHTTPClient_Request_T req = SocketHTTPClient_Request_new(client, "POST", "https://api.example.com/data");
+SocketHTTPClient_Request_T req = SocketHTTPClient_Request_new(
+    client, HTTP_METHOD_POST, "https://api.example.com/data");
 SocketHTTPClient_Request_header(req, "Content-Type", "application/json");
 SocketHTTPClient_Request_body(req, "{\"key\": \"value\"}", 16);
 SocketHTTPClient_Request_timeout(req, 30000);
 
-resp = SocketHTTPClient_Request_execute(req);
+if (SocketHTTPClient_Request_execute(req, &response) == 0) {
+    printf("POST Status: %d\n", response.status_code);
+}
 SocketHTTPClient_Request_free(&req);
-SocketHTTPClient_Response_free(&resp);
-
-/* Authentication */
-SocketHTTPClient_setauth(client, HTTPCLIENT_AUTH_BASIC, "user", "password");
+SocketHTTPClient_Response_free(&response);
 
 /* Cookie jar */
-SocketHTTPClient_CookieJar_T jar = SocketHTTPClient_CookieJar_new(NULL);
+SocketHTTPClient_CookieJar_T jar = SocketHTTPClient_CookieJar_new();
 SocketHTTPClient_set_cookie_jar(client, jar);
 
 SocketHTTPClient_free(&client);
@@ -887,6 +888,31 @@ SocketTLSContext_add_pin_hex(client_ctx,
 SocketTLSContext_set_pin_enforcement(client_ctx, 1);  /* Strict mode */
 ```
 
+### Certificate Transparency (CT)
+
+```c
+#include "tls/SocketTLSContext.h"
+
+/* Enable Certificate Transparency validation (RFC 6962) */
+SocketTLSContext_T ctx = SocketTLSContext_new_client("ca-bundle.pem");
+
+/* Strict mode - fail if no valid SCTs */
+SocketTLSContext_enable_ct(ctx, CT_VALIDATION_STRICT);
+
+/* Or permissive mode - log but continue */
+SocketTLSContext_enable_ct(ctx, CT_VALIDATION_PERMISSIVE);
+
+/* Custom CT log list (optional) */
+SocketTLSContext_set_ctlog_list_file(ctx, "/path/to/ctlogs.txt");
+
+/* Query CT status */
+if (SocketTLSContext_ct_enabled(ctx)) {
+    CTValidationMode mode = SocketTLSContext_get_ct_mode(ctx);
+    printf("CT validation: %s\n", 
+           mode == CT_VALIDATION_STRICT ? "strict" : "permissive");
+}
+```
+
 ### Zero-Copy File Transfer
 
 ```c
@@ -1010,6 +1036,14 @@ SocketLog_setlevel(SOCKET_LOG_DEBUG);
 #define SOCKET_LOG_COMPONENT "MyApp"
 SOCKET_LOG_INFO_MSG("Server started on port %d", port);
 SOCKET_LOG_ERROR_MSG("Connection failed: %s", strerror(errno));
+
+/* Correlation IDs for distributed tracing */
+SocketLogContext ctx = {0};
+strncpy(ctx.request_id, "req-12345", sizeof(ctx.request_id) - 1);
+strncpy(ctx.trace_id, "trace-abcde", sizeof(ctx.trace_id) - 1);
+SocketLog_setcontext(&ctx);
+SOCKET_LOG_INFO_MSG("Processing request");  /* Includes correlation IDs */
+SocketLog_clearcontext();
 ```
 
 ### Observability - Metrics
