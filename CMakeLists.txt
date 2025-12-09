@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(socket VERSION 1.0.0 LANGUAGES C)
+project(socket VERSION 1.1.0 LANGUAGES C)
 
 # Generate compile_commands.json for IDE integration (clangd)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

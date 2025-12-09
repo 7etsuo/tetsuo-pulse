@@ -675,7 +675,7 @@ extern const char *SocketMetrics_histogram_help (SocketHistogramMetric metric);
 
 /**
  * SocketMetrics_category_name - Get category name
- * @category: Metric category
+ * @category Metric category
  *
  * Returns: Static string with category name
  * Thread-safe: Yes

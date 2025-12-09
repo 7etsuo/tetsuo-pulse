@@ -10,7 +10,7 @@
 #---------------------------------------------------------------------------
 
 PROJECT_NAME           = "Socket Library"
-PROJECT_NUMBER         = "1.0.0"
+PROJECT_NUMBER         = "1.1.0"
 PROJECT_BRIEF          = "High-performance, exception-driven socket toolkit for POSIX systems"
 PROJECT_LOGO           = 
 OUTPUT_DIRECTORY       = docs
@@ -95,9 +95,9 @@ STRIP_FROM_INC_PATH    = include/
 SHORT_NAMES            = NO
 
 # Auto-brief parsing (makes code comments look cleaner)
-JAVADOC_AUTOBRIEF      = YES
+JAVADOC_AUTOBRIEF      = NO
 QT_AUTOBRIEF           = NO
-MULTILINE_CPP_IS_BRIEF = YES
+MULTILINE_CPP_IS_BRIEF = NO
 INHERIT_DOCS           = YES
 SEPARATE_MEMBER_PAGES  = NO
 TAB_SIZE               = 4
@@ -361,10 +361,10 @@ DOT_CLEANUP            = YES
 
 QUIET                  = NO
 WARNINGS               = YES
-WARN_IF_UNDOCUMENTED   = YES
-WARN_IF_DOC_ERROR      = YES
-WARN_IF_INCOMPLETE_DOC = YES
-WARN_NO_PARAMDOC       = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = NO
+WARN_IF_INCOMPLETE_DOC = NO
+WARN_NO_PARAMDOC       = NO
 WARN_AS_ERROR          = NO
 WARN_FORMAT            = "$file:$line: $text"
 WARN_LINE_FORMAT       = "at line $line of file $file"

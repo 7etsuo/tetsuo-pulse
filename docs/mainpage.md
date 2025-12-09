@@ -2,6 +2,9 @@
 
 A modern C library for building high-performance networked applications. Production-ready with comprehensive support for TCP, UDP, Unix domain sockets, and TLS 1.3 security.
 
+**Version:** 1.1.0
+**Last Updated:** December 9, 2025
+
 ---
 
 ## Features
@@ -11,17 +14,20 @@ A modern C library for building high-performance networked applications. Product
 - **UDP Datagram Sockets** — Connectionless and connected modes, multicast support
 - **Unix Domain Sockets** — High-performance IPC for local communication
 - **TLS 1.3 Security** — Modern encryption via OpenSSL with SNI and ALPN
+- **Advanced Security** — SYN flood protection, DoS mitigation, certificate pinning
 
 ### Async & Event-Driven
 - **Cross-Platform Polling** — epoll (Linux), kqueue (BSD/macOS), poll (fallback)
 - **Asynchronous DNS** — Non-blocking resolution with thread pool
 - **Happy Eyeballs (RFC 8305)** — Fast dual-stack connection racing
 - **Auto-Reconnection** — Exponential backoff with circuit breaker
+- **Advanced Rate Limiting** — Token bucket with per-IP controls
 
 ### Performance
 - **Zero-Copy I/O** — Platform-optimized `sendfile()` and scatter/gather
 - **Connection Pooling** — O(1) lookup with buffer management
 - **Arena Allocation** — Memory-safe with automatic cleanup
+- **Advanced Metrics** — Comprehensive observability with Prometheus/StatsD export
 
 ---
 

@@ -731,7 +731,7 @@ extern SocketErrorCategory SocketError_categorize_errno (int err);
 
 /**
  * SocketError_category_name - Get string name for error category
- * @category: Error category
+ * @category Error category
  *
  * Returns: Static string with category name
  * Thread-safe: Yes (returns static data)
