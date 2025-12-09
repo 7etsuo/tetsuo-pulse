@@ -1,0 +1,14 @@
+<map id="SocketSYNProtect_T" name="SocketSYNProtect_T">
+<area shape="rect" id="Node000001" title="Core internal structure for the SYN protection module." alt="" coords="321,205,469,231"/>
+<area shape="rect" id="Node000002" href="$group__security.html#structSocketSYN__IPEntry" title="Internal IP tracking entry for hash table and LRU management." alt="" coords="24,73,167,99"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="165,100,186,108,293,157,374,203,371,207,291,162,184,112,163,105"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="64,59,74,50,95,47,113,49,124,55,127,65,122,75,117,72,122,64,120,59,112,54,95,52,76,55,68,63"/>
+<area shape="rect" id="Node000003" href="$group__security.html#structSocketSYN__WhitelistEntry" title="Structure for whitelist entries supporting single IPs and CIDR ranges." alt="" coords="5,161,185,187"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="196,186,321,205,321,210,196,191"/>
+<area shape="poly" id="edge4_Node000003_Node000003" title=" " alt="" coords="64,147,74,138,95,135,113,137,124,143,127,153,122,163,117,160,122,152,120,147,112,142,95,140,76,143,68,151"/>
+<area shape="rect" id="Node000004" href="$group__security.html#structSocketSYN__BlacklistEntry" title="Internal structure for blacklisted IP addresses with expiry support." alt="" coords="6,249,185,275"/>
+<area shape="poly" id="edge5_Node000001_Node000004" title=" " alt="" coords="196,245,321,226,321,231,196,250"/>
+<area shape="poly" id="edge6_Node000004_Node000004" title=" " alt="" coords="64,235,74,226,95,223,113,225,124,231,127,241,122,251,117,248,122,240,120,235,112,230,95,228,76,231,68,239"/>
+<area shape="rect" id="Node000005" href="$SocketRateLimit-private_8h.html#structSocketRateLimit__T" title=" " alt="" coords="28,299,163,324"/>
+<area shape="poly" id="edge7_Node000001_Node000005" title=" " alt="" coords="176,295,236,282,296,263,336,246,371,228,373,233,339,251,298,269,237,287,177,300"/>
+</map>

@@ -20,7 +20,7 @@
 
 #include "core/SocketSecurity.h"
 
-#ifdef SOCKETHTTP1_HAS_COMPRESSION
+#if SOCKETHTTP1_HAS_COMPRESSION
 
 #include <assert.h>
 #include <limits.h>

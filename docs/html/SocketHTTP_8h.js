@@ -19,7 +19,6 @@ var SocketHTTP_8h =
     [ "SOCKETHTTP_MAX_HEADERS", "group__http.html#ga2f5713c3b88ddc329d0119a789847ba6", null ],
     [ "SOCKETHTTP_MAX_URI_LEN", "group__http.html#ga13dfbee4ad8c1b29949c1fd0cc360f45", null ],
     [ "SocketHTTP_HeaderCallback", "group__http.html#ga991d5a6b9f11673b53a19b7505224668", null ],
-    [ "SocketHTTP_Headers_T", "group__http.html#gaf1f6772bf122ad6e2e90639b2877754f", null ],
     [ "SocketHTTP_Coding", "group__http.html#ga5b16a96fcd7f45cd6d9e1929c9d9ab80", [
       [ "HTTP_CODING_IDENTITY", "group__http.html#gga5b16a96fcd7f45cd6d9e1929c9d9ab80a671a1c83bc150850262b1b8f664219ad", null ],
       [ "HTTP_CODING_CHUNKED", "group__http.html#gga5b16a96fcd7f45cd6d9e1929c9d9ab80a40b5711e85eaca643ab447f7fd54e497", null ],

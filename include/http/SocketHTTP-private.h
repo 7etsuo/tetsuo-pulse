@@ -33,12 +33,14 @@
 
 /**
  * @brief Hash table bucket count for header collections (internal constant).
+ * @internal
  * @ingroup http
  *
  * Fixed prime number (31) providing good distribution for typical HTTP header counts (10-30).
  * Balances low collision rate with minimal memory overhead.
  *
  * @see sockethttp_hash_name() for the hashing function used.
+ * @threadsafe Yes - compile-time constant.
  * @see SocketHTTP_Headers::buckets for the hash table implementation.
  */
 #define SOCKETHTTP_HEADER_BUCKETS 31
@@ -46,6 +48,7 @@
 
 /**
  * @brief Individual HTTP header entry (name-value pair).
+ * @internal
  * @ingroup http
  *
  * Internal node structure used by SocketHTTP_Headers_T for storing individual
@@ -74,6 +77,7 @@ typedef struct HeaderEntry
 
 /**
  * @brief Internal implementation of SocketHTTP_Headers_T header collection.
+ * @internal
  * @ingroup http
  *
  * Private structure providing case-insensitive header lookup via hash table
@@ -103,8 +107,8 @@ struct SocketHTTP_Headers
  */
 
 /**
- * @internal
  * @brief Hash HTTP header name for case-insensitive bucket lookup.
+ * @internal
  * @ingroup http
  * @param name Pointer to null-terminated or length-bounded header name bytes.
  * @param len Exact byte length of name (excluding null if present).
@@ -123,8 +127,8 @@ static inline unsigned
 sockethttp_hash_name (const char *name, size_t len);
 
 /**
- * @internal
  * @brief Perform case-insensitive comparison of HTTP header names.
+ * @internal
  * @ingroup http
  * @param a Pointer to first header name bytes.
  * @param a_len Byte length of first name.
@@ -158,6 +162,7 @@ sockethttp_name_equal (const char *a, size_t a_len, const char *b,
 
 /**
  * @brief Internal states for DFA-based URI parser (RFC 3986 compliant).
+ * @internal
  * @ingroup http
  *
  * State machine states used by SocketHTTP_URI_parse() for parsing URI components:
@@ -192,6 +197,7 @@ typedef enum
 
 /**
  * @brief Lookup table for valid HTTP token characters (tchar) per RFC 9110 §5.6.
+ * @internal
  * @ingroup http
  *
  * Static array[256] where non-zero value indicates the character is a valid token char
@@ -203,12 +209,14 @@ typedef enum
  * Used for fast validation in header parsing and media type processing.
  *
  * @see SOCKETHTTP_IS_TCHAR() macro for usage.
+ * @threadsafe Yes - static const array, read-only.
  * @see SocketHTTP_Headers_add() for header validation context.
  */
 extern const unsigned char sockethttp_tchar_table[256];
 
 /**
  * @brief Check if a character is a valid HTTP token character (tchar).
+ * @internal
  * @ingroup http
  * @param c Character to validate (automatically promoted to unsigned char via cast)
  * @return Non-zero if valid tchar per RFC 9110, zero otherwise.
@@ -217,12 +225,14 @@ extern const unsigned char sockethttp_tchar_table[256];
  * header field names, values, media type parameters, etc.
  *
  * @see sockethttp_tchar_table for the underlying validation table.
+ * @threadsafe Yes - macro, pure function.
  * @see RFC 9110 §5.6 for complete tchar grammar.
  */
 #define SOCKETHTTP_IS_TCHAR(c) (sockethttp_tchar_table[(unsigned char)(c)])
 
 /**
  * @brief Lookup table for URI unreserved characters per RFC 3986 §2.3.
+ * @internal
  * @ingroup http
  *
  * Static array[256] where non-zero value indicates characters that do not require
@@ -231,6 +241,7 @@ extern const unsigned char sockethttp_tchar_table[256];
  * Used in URI encoding to identify safe characters and in decoding validation.
  *
  * @see SOCKETHTTP_IS_UNRESERVED() macro.
+ * @threadsafe Yes - static const array, read-only.
  * @see SocketHTTP_URI_encode() and SocketHTTP_URI_decode().
  * @see RFC 3986 §2.3 for unreserved set definition.
  */
@@ -238,6 +249,7 @@ extern const unsigned char sockethttp_uri_unreserved[256];
 
 /**
  * @brief Test if a character is URI unreserved (no percent-encoding required).
+ * @internal
  * @ingroup http
  * @param c Character to test (promoted to unsigned char)
  * @return Non-zero if unreserved per RFC 3986, zero otherwise.
@@ -246,6 +258,7 @@ extern const unsigned char sockethttp_uri_unreserved[256];
  *
  * @see sockethttp_uri_unreserved table.
  * @see SocketHTTP_URI_encode() for encoding context.
+ * @threadsafe Yes - macro, pure function.
  * @see RFC 3986 §2.3 unreserved characters.
  */
 #define SOCKETHTTP_IS_UNRESERVED(c)                                           \
@@ -253,6 +266,7 @@ extern const unsigned char sockethttp_uri_unreserved[256];
 
 /**
  * @brief Hexadecimal digit value lookup table for decoding and validation.
+ * @internal
  * @ingroup http
  *
  * Static array[256] mapping ASCII characters to their hex value (0-15) for valid digits,
@@ -268,6 +282,7 @@ extern const unsigned char sockethttp_hex_value[256];
 
 /**
  * @brief Extract numeric value from hexadecimal digit character.
+ * @internal
  * @ingroup http
  * @param c ASCII character to convert ('0'-'9', 'a'-'f', 'A'-'F')
  * @return 0-15 for valid hex digit, 255 for invalid input.
@@ -276,6 +291,8 @@ extern const unsigned char sockethttp_hex_value[256];
  * Invalid characters (non-hex) return 255 to simplify error checking.
  *
  * @see sockethttp_hex_value table.
+ * @threadsafe Yes - static const array, read-only.
+ * @threadsafe Yes - macro, pure function.
  * @see SocketHTTP_URI_decode() usage example.
  */
 #define SOCKETHTTP_HEX_VALUE(c) (sockethttp_hex_value[(unsigned char)(c)])

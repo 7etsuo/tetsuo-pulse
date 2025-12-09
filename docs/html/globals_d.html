@@ -115,8 +115,28 @@ $(document).ready(function(){initNavTree('globals_d.html',''); initResizable(); 
 <h3><a id="index_d" name="index_d"></a>- d -</h3><ul>
 <li>Arena_dispose()&#160;:&#160;<a class="el" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena.h</a></li>
 <li>Connection_data()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga1faf8c706d1ed9418446fc155fa289dd">SocketPool.h</a></li>
+<li>decrement_pool_count()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga5374f9969a32eb12ea7794b1f1a20d77">SocketPool-private.h</a></li>
 <li>DEFAULT_PORT&#160;:&#160;<a class="el" href="graceful__shutdown_8c.html#a16b710f592bf8f7900666392adc444dc">graceful_shutdown.c</a></li>
+<li>dequeue_request()&#160;:&#160;<a class="el" href="group__dns.html#gaf2ecd94190827e14a98bab9b52b3cd7d">SocketDNS-private.h</a></li>
+<li>destroy_dns_resources()&#160;:&#160;<a class="el" href="group__dns.html#ga3a861e18294d856d7424ed8d7430d642">SocketDNS-private.h</a></li>
+<li>dns_cancellation_error()&#160;:&#160;<a class="el" href="group__dns.html#ga08d853b1c769338c43c424a51f071876">SocketDNS-private.h</a></li>
+<li>DNS_CLEAN_ARENA&#160;:&#160;<a class="el" href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99afbae8735e6a307a7f4eea386f3d5afbb">SocketDNS-private.h</a></li>
+<li>DNS_CLEAN_CONDS&#160;:&#160;<a class="el" href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99a2e24c3dd9e7450a52d40c9480eaccffc">SocketDNS-private.h</a></li>
+<li>DNS_CLEAN_MUTEX&#160;:&#160;<a class="el" href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99a615acce89a6c289fce7fd44bd35b0d25">SocketDNS-private.h</a></li>
+<li>DNS_CLEAN_NONE&#160;:&#160;<a class="el" href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99aae3ddf1daeda71dca3b2cb763696b941">SocketDNS-private.h</a></li>
+<li>DNS_CLEAN_PIPE&#160;:&#160;<a class="el" href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99a080e8c4f0bc500d949f6210704a156ca">SocketDNS-private.h</a></li>
+<li>DnsCleanupLevel&#160;:&#160;<a class="el" href="group__dns.html#gaba752f803497a475aa1b96ed2351dd99">SocketDNS-private.h</a></li>
+<li>drain_completion_pipe()&#160;:&#160;<a class="el" href="group__dns.html#ga898228e143549696bc2d4e5d00f8965f">SocketDNS-private.h</a></li>
 <li>DRAIN_TIMEOUT_MS&#160;:&#160;<a class="el" href="graceful__shutdown_8c.html#a13c5505a632e51fbe8500992d7a17b3a">graceful_shutdown.c</a></li>
+<li>dtls_context_error_buf&#160;:&#160;<a class="el" href="SocketDTLS-private_8h.html#aab746d0e6a33c35bd9509aab8ac70dff">SocketDTLS-private.h</a></li>
+<li>dtls_context_get_from_ssl()&#160;:&#160;<a class="el" href="group__security.html#gae23a324083d5bf71680d6fc525477a7a">SocketDTLS-private.h</a></li>
+<li>dtls_cookie_generate_cb()&#160;:&#160;<a class="el" href="group__security.html#gae37473787004b0ea65d2ee0b51702f44">SocketDTLS-private.h</a></li>
+<li>dtls_cookie_verify_cb()&#160;:&#160;<a class="el" href="SocketDTLS-private_8h.html#aa177905ba40634829622c877b4f79976">SocketDTLS-private.h</a></li>
+<li>DTLS_ERROR_FMT&#160;:&#160;<a class="el" href="group__security.html#ga4e97bd0cd12ea34b564755e1a377d02f">SocketDTLS-private.h</a></li>
+<li>DTLS_ERROR_MSG&#160;:&#160;<a class="el" href="group__security.html#gacca68f6e3be556e42dcd9ab54da96ded">SocketDTLS-private.h</a></li>
+<li>dtls_format_openssl_error()&#160;:&#160;<a class="el" href="group__security.html#ga52868028efe42ac286ffdcad2e5f8a51">SocketDTLS-private.h</a></li>
+<li>dtls_generate_cookie_hmac()&#160;:&#160;<a class="el" href="SocketDTLS-private_8h.html#a0c2b10ddc94bfe7732fa86d17ae162da">SocketDTLS-private.h</a></li>
+<li>dtls_handle_ssl_error()&#160;:&#160;<a class="el" href="group__security.html#gaff7268760d38bc90af34fdbf313ecbb5">SocketDTLS-private.h</a></li>
 <li>DTLS_HANDSHAKE_COMPLETE&#160;:&#160;<a class="el" href="group__security.html#gga8e83c28a6ad188b97243c4b237ee075aa11985350a6b101701d89412f26fdeba5">SocketDTLS.h</a></li>
 <li>DTLS_HANDSHAKE_COOKIE_EXCHANGE&#160;:&#160;<a class="el" href="group__security.html#gga8e83c28a6ad188b97243c4b237ee075aa206e6713dc03f89a32b4567221dedb78">SocketDTLS.h</a></li>
 <li>DTLS_HANDSHAKE_ERROR&#160;:&#160;<a class="el" href="group__security.html#gga8e83c28a6ad188b97243c4b237ee075aa929e6faa551a280db427a04ae5ced133">SocketDTLS.h</a></li>
@@ -124,9 +144,13 @@ $(document).ready(function(){initNavTree('globals_d.html',''); initResizable(); 
 <li>DTLS_HANDSHAKE_NOT_STARTED&#160;:&#160;<a class="el" href="group__security.html#gga8e83c28a6ad188b97243c4b237ee075aac64c8906fdc9860f22cacc933593f01d">SocketDTLS.h</a></li>
 <li>DTLS_HANDSHAKE_WANT_READ&#160;:&#160;<a class="el" href="group__security.html#gga8e83c28a6ad188b97243c4b237ee075aaa17434dadb8cec2cfe51d9437f6fdbd9">SocketDTLS.h</a></li>
 <li>DTLS_HANDSHAKE_WANT_WRITE&#160;:&#160;<a class="el" href="group__security.html#gga8e83c28a6ad188b97243c4b237ee075aad5e0e23bed76e7569444db7c50c38fc8">SocketDTLS.h</a></li>
+<li>dtls_socket_get_ssl()&#160;:&#160;<a class="el" href="group__security.html#ga8d5647f2b71d9cd5c60e6a1c385854dd">SocketDTLS-private.h</a></li>
+<li>DTLS_UNUSED&#160;:&#160;<a class="el" href="group__security.html#gad7d623f22e9e764aba13c6b053c1506f">SocketDTLS-private.h</a></li>
+<li>dtls_validate_file_path()&#160;:&#160;<a class="el" href="group__security.html#ga43a9d75df4015935d50b33c528342d80">SocketDTLS-private.h</a></li>
 <li>DTLSHandshakeState&#160;:&#160;<a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">SocketDTLS.h</a></li>
-<li>Socket_debug_live_count()&#160;:&#160;<a class="el" href="group__core__io.html#gaa8cacd863c275e6e12f7c63b65708e1b">Socket.h</a>, <a class="el" href="group__core__io.html#ga0e8f0a454d58b2ff87878e39960c9187">SocketDgram.h</a></li>
+<li>SocketDgram_debug_live_count()&#160;:&#160;<a class="el" href="group__core__io.html#ga0e8f0a454d58b2ff87878e39960c9187">SocketDgram.h</a></li>
 <li>SocketPoll_del()&#160;:&#160;<a class="el" href="group__event__system.html#ga3074c5a225a7c49880951ecfb984498f">SocketPoll.h</a></li>
+<li>SocketPool_DetailedException&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gaeea0045572d9693e0579e265d0e00981">SocketPool-private.h</a></li>
 <li>SocketPool_disable_reconnect()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga7be3d82708a40f4d7601737467cdd51a">SocketPool.h</a></li>
 <li>SocketPool_drain()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga24cd4e2f757497906a5aef89b133b068">SocketPool.h</a></li>
 <li>SocketPool_drain_force()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga0cbc1088d796c166f582de4d17e5d968">SocketPool.h</a></li>

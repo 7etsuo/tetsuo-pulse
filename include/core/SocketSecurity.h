@@ -120,17 +120,61 @@
  * These are convenience aliases that reference the canonical definitions.
  */
 
-/** Maximum allocation size for security checks (256MB default) */
+/**
+ * @brief Maximum single allocation size permitted by security policy.
+ * @ingroup foundation
+ *
+ * Limits individual allocations (e.g., malloc, Arena_alloc, SocketBuf_new) to mitigate
+ * denial-of-service attacks from excessively large requests.
+ *
+ * Default: 256 MiB (268435456 bytes). Override by defining this macro to a different
+ * value before including SocketSecurity.h or any header that includes it.
+ *
+ * This limit is enforced in memory allocation hotspots and buffer creations across
+ * the library.
+ *
+ * @see SocketSecurity_get_max_allocation() for runtime query.
+ * @see SocketSecurity_check_size() for validating sizes against this limit.
+ * @see SocketSecurity_SizeExceeded exception raised when exceeded.
+ * @see ARENA_MAX_ALLOC_SIZE related arena-specific limit.
+ */
 #ifndef SOCKET_SECURITY_MAX_ALLOCATION
 #define SOCKET_SECURITY_MAX_ALLOCATION (256UL * 1024 * 1024)
 #endif
 
-/** Maximum body size for HTTP requests/responses (100MB default) */
+/**
+ * @brief Maximum permitted size for HTTP request/response bodies.
+ * @ingroup foundation
+ *
+ * Limits HTTP body payloads to prevent memory exhaustion from large uploads/downloads.
+ * Default: 100 MiB. Override via compile-time definition.
+ *
+ * Enforced in SocketHTTPClient, SocketHTTPServer, and protocol parsers.
+ * Exceeding this triggers truncation or rejection with 413 Payload Too Large.
+ *
+ * @see SocketSecurity_get_limits() -> http_max_body_size runtime value.
+ * @see SocketHTTP_Headers_get("Content-Length") for body size indication.
+ * @see @ref http "HTTP Module" for protocol limits.
+ */
 #ifndef SOCKET_SECURITY_MAX_BODY_SIZE
 #define SOCKET_SECURITY_MAX_BODY_SIZE (100 * 1024 * 1024)
 #endif
 
-/** Maximum request timeout in milliseconds (60s default) */
+/**
+ * @brief Maximum allowed request timeout value in milliseconds.
+ * @ingroup foundation
+ *
+ * Caps the maximum timeout for operations like connect, read, write to prevent
+ * indefinite resource holds. Default: 60 seconds (60000 ms).
+ * Override by defining before inclusion.
+ *
+ * Used in Socket_connect, SocketHTTPClient config, etc., to bound timeout parameters.
+ * Values exceeding this are clamped or rejected.
+ *
+ * @see SocketSecurity_get_limits() -> timeout_request_ms (related).
+ * @see SocketConfig.h for other timeout defaults.
+ * @see SocketTimeouts_T for timeout structures.
+ */
 #ifndef SOCKET_SECURITY_MAX_REQUEST_TIMEOUT_MS
 #define SOCKET_SECURITY_MAX_REQUEST_TIMEOUT_MS 60000
 #endif
@@ -149,7 +193,7 @@
  * - Buffer operation would exceed configured limits
  * - Integer overflow detected in size calculation
  * @see SocketSecurity_check_size() for size validation utilities.
- * @see @ref error-handling.mdc "Error Handling Guide" for exception patterns.
+ * @see docs/ERROR_HANDLING.md "Error Handling Guide" for exception patterns.
  */
 extern const Except_T SocketSecurity_SizeExceeded;
 
@@ -162,7 +206,7 @@ extern const Except_T SocketSecurity_SizeExceeded;
  * - Invalid characters detected in protocol data
  * @see SocketSecurity_check_size() for size-related validations.
  * @see SocketUTF8_validate() for UTF-8 specific validation.
- * @see @ref error-handling.mdc "Error Handling Guide" for exception patterns.
+ * @see docs/ERROR_HANDLING.md "Error Handling Guide" for exception patterns.
  */
 extern const Except_T SocketSecurity_ValidationFailed;
 
@@ -248,13 +292,17 @@ typedef struct SocketSecurityLimits
 /**
  * @brief Get the currently configured security limits.
  * @ingroup foundation
- * @param limits Pointer to SocketSecurityLimits structure to populate.
+ * @param limits [out] Pointer to SocketSecurityLimits structure to populate. Must not be NULL.
  *
- * Populates the provided structure with all security-relevant limits derived
- * from compile-time configuration constants.
+ * Validates input parameter and populates the provided structure with all
+ * security-relevant limits derived from compile-time configuration constants.
+ * No global state is modified.
+ *
+ * @throws SocketSecurity_ValidationFailed If limits is NULL.
  * @threadsafe Yes (purely reads compile-time constants, no state mutation).
  * @see SocketSecurityLimits for structure members.
  * @see SocketSecurity_get_max_allocation() for specific limit queries.
+ * @see SocketSecurity_ValidationFailed for details on validation exception.
  */
 extern void SocketSecurity_get_limits (SocketSecurityLimits *limits);
 
@@ -475,11 +523,12 @@ SocketSecurity_safe_add (size_t a, size_t b)
 /**
  * @brief Check if TLS support is enabled in the build.
  * @ingroup foundation
- * @return 1 if the library was compiled with TLS support (SOCKET_HAS_TLS), 0 otherwise.
- * @threadsafe Yes (compile-time constant check).
- * @see #if SOCKET_HAS_TLS for conditional code inclusion.
- * @see @ref security "Security Module" for TLS-related functionality.
- * @see SocketTLS.h for TLS APIs when available.
+ * @return 1 if compiled with TLS support (SOCKET_HAS_TLS=1), 0 otherwise.
+ * @threadsafe Yes (compile-time constant).
+ * @see SOCKET_HAS_TLS macro (set to 0 or 1 via -DENABLE_TLS=ON and library detection).
+ * @see @ref security "Security Module" for TLS modules like SocketTLS and SocketDTLS.
+ * @see SocketTLS.h included only when SOCKET_HAS_TLS=1.
+ * @see CMakeLists.txt for TLS build options.
  */
 static inline int
 SocketSecurity_has_tls (void)
@@ -492,18 +541,19 @@ SocketSecurity_has_tls (void)
 }
 
 /**
- * @brief Check if HTTP compression support is compiled in.
+ * @brief Check if HTTP/1.1 compression support (gzip/deflate/brotli) is enabled in the build.
  * @ingroup foundation
- * @return 1 if HTTP/1.1 compression (gzip/deflate) is available, 0 otherwise.
- * @threadsafe Yes (compile-time constant).
- * @see SOCKETHTTP1_HAS_COMPRESSION for the build configuration macro.
- * @see SocketHTTP1.h for using compression in HTTP/1.1 transfers.
- * @see @ref http "HTTP Module" for protocol-level compression details.
+ * @return 1 if compression libraries were detected and feature enabled (SOCKETHTTP1_HAS_COMPRESSION=1), 0 otherwise.
+ * @threadsafe Yes (compile-time constant evaluation).
+ * @see SOCKETHTTP1_HAS_COMPRESSION compile-time macro (set to 0 or 1 based on CMake configuration and library availability).
+ * @see SocketHTTP1_Decoder_T and SocketHTTP1_Encoder_T for compression APIs when available.
+ * @see @ref http1 "HTTP/1.1 Module" for content encoding details.
+ * @see CMakeLists.txt option(ENABLE_HTTP_COMPRESSION ...) for build configuration.
  */
 static inline int
 SocketSecurity_has_compression (void)
 {
-#ifdef SOCKETHTTP1_HAS_COMPRESSION
+#if SOCKETHTTP1_HAS_COMPRESSION
   return 1;
 #else
   return 0;

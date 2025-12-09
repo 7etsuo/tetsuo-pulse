@@ -551,6 +551,7 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
   if (!result || hmac_len != SOCKET_CRYPTO_SHA256_SIZE)
     SOCKET_CRYPTO_RAISE_COMPUTE_FAILED ("HMAC-SHA256");
 #else
+  (void)output;
   SOCKET_CRYPTO_REQUIRE_TLS;
 #endif
 }

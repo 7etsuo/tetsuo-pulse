@@ -32,6 +32,7 @@
  * progress, and linking for hash table storage.
  *
  * @internal
+ * @ingroup async_io
  * @note Buffers (send_buf, recv_buf) must not be freed or modified until callback invocation.
  * @see SocketAsync_T for the async context that owns these requests.
  * @see SocketAsync_Callback for completion notification.
@@ -137,6 +138,7 @@ struct AsyncRequest
  * request tracking hash table, mutex for thread safety, and configuration.
  *
  * @internal
+ * @ingroup async_io
  * @see SocketAsync_new() for creation.
  * @see SocketAsync_free() for destruction.
  * @see SocketPoll_get_async() for integrated poll context.

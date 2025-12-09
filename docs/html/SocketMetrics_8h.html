@@ -115,7 +115,7 @@ $(document).ready(function(){initNavTree('SocketMetrics_8h.html',''); initResiza
 <a href="#define-members">Macros</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">SocketMetrics.h File Reference<div class="ingroups"><a class="el" href="group__foundation.html">Core Foundation Modules</a></div></div></div>
+  <div class="headertitle"><div class="title">SocketMetrics.h File Reference<div class="ingroups"><a class="el" href="group__utilities.html">Utility Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
 
@@ -135,375 +135,375 @@ $(document).ready(function(){initNavTree('SocketMetrics_8h.html',''); initResiza
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketMetrics__HistogramSnapshot" id="r_structSocketMetrics__HistogramSnapshot"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#structSocketMetrics__HistogramSnapshot">SocketMetrics_HistogramSnapshot</a></td></tr>
-<tr class="memdesc:structSocketMetrics__HistogramSnapshot"><td class="mdescLeft">&#160;</td><td class="mdescRight">Point-in-time snapshot of histogram statistics with percentiles.Contains count, sum, min/max, mean, and common percentiles (p50, p95, etc.).  <a href="group__foundation.html#structSocketMetrics__HistogramSnapshot">More...</a><br /></td></tr>
+<tr class="memitem:structSocketMetrics__HistogramSnapshot" id="r_structSocketMetrics__HistogramSnapshot"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#structSocketMetrics__HistogramSnapshot">SocketMetrics_HistogramSnapshot</a></td></tr>
+<tr class="memdesc:structSocketMetrics__HistogramSnapshot"><td class="mdescLeft">&#160;</td><td class="mdescRight">Point-in-time snapshot of histogram statistics with percentiles.Contains count, sum, min/max, mean, and common percentiles (p50, p95, etc.).  <a href="group__utilities.html#structSocketMetrics__HistogramSnapshot">More...</a><br /></td></tr>
 <tr class="separator:structSocketMetrics__HistogramSnapshot"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketMetrics__Snapshot" id="r_structSocketMetrics__Snapshot"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#structSocketMetrics__Snapshot">SocketMetrics_Snapshot</a></td></tr>
-<tr class="memdesc:structSocketMetrics__Snapshot"><td class="mdescLeft">&#160;</td><td class="mdescRight">Complete point-in-time snapshot of all metrics for export and analysis.  <a href="group__foundation.html#structSocketMetrics__Snapshot">More...</a><br /></td></tr>
+<tr class="memitem:structSocketMetrics__Snapshot" id="r_structSocketMetrics__Snapshot"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#structSocketMetrics__Snapshot">SocketMetrics_Snapshot</a></td></tr>
+<tr class="memdesc:structSocketMetrics__Snapshot"><td class="mdescLeft">&#160;</td><td class="mdescRight">Complete point-in-time snapshot of all metrics for export and analysis.  <a href="group__utilities.html#structSocketMetrics__Snapshot">More...</a><br /></td></tr>
 <tr class="separator:structSocketMetrics__Snapshot"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:gaee8eaea7cccafbe22afa9435a95aacf2" id="r_gaee8eaea7cccafbe22afa9435a95aacf2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaee8eaea7cccafbe22afa9435a95aacf2">SOCKET_METRICS_HISTOGRAM_BUCKETS</a>&#160;&#160;&#160;1024</td></tr>
+<tr class="memitem:gaee8eaea7cccafbe22afa9435a95aacf2" id="r_gaee8eaea7cccafbe22afa9435a95aacf2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaee8eaea7cccafbe22afa9435a95aacf2">SOCKET_METRICS_HISTOGRAM_BUCKETS</a>&#160;&#160;&#160;1024</td></tr>
 <tr class="memdesc:gaee8eaea7cccafbe22afa9435a95aacf2"><td class="mdescLeft">&#160;</td><td class="mdescRight">SOCKET_METRICS_HISTOGRAM_BUCKETS - Number of samples in histogram reservoir.  <br /></td></tr>
 <tr class="separator:gaee8eaea7cccafbe22afa9435a95aacf2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae9d038b13784880e2ae832f1410613ea" id="r_gae9d038b13784880e2ae832f1410613ea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gae9d038b13784880e2ae832f1410613ea">SOCKET_METRICS_EXPORT_BUFFER_SIZE</a>&#160;&#160;&#160;65536</td></tr>
+<tr class="memitem:gae9d038b13784880e2ae832f1410613ea" id="r_gae9d038b13784880e2ae832f1410613ea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae9d038b13784880e2ae832f1410613ea">SOCKET_METRICS_EXPORT_BUFFER_SIZE</a>&#160;&#160;&#160;65536</td></tr>
 <tr class="memdesc:gae9d038b13784880e2ae832f1410613ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">SOCKET_METRICS_EXPORT_BUFFER_SIZE - Default export buffer size.  <br /></td></tr>
 <tr class="separator:gae9d038b13784880e2ae832f1410613ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3284619df6a76d185a0112459a176ad8" id="r_ga3284619df6a76d185a0112459a176ad8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga3284619df6a76d185a0112459a176ad8">SOCKET_METRICS_MAX_LABEL_LEN</a>&#160;&#160;&#160;64</td></tr>
+<tr class="memitem:ga3284619df6a76d185a0112459a176ad8" id="r_ga3284619df6a76d185a0112459a176ad8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga3284619df6a76d185a0112459a176ad8">SOCKET_METRICS_MAX_LABEL_LEN</a>&#160;&#160;&#160;64</td></tr>
 <tr class="memdesc:ga3284619df6a76d185a0112459a176ad8"><td class="mdescLeft">&#160;</td><td class="mdescRight">SOCKET_METRICS_MAX_LABEL_LEN - Maximum length for metric labels.  <br /></td></tr>
 <tr class="separator:ga3284619df6a76d185a0112459a176ad8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga871d9f89307a302723ffc03db3135746" id="r_ga871d9f89307a302723ffc03db3135746"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga871d9f89307a302723ffc03db3135746">SOCKET_METRICS_MAX_HELP_LEN</a>&#160;&#160;&#160;256</td></tr>
+<tr class="memitem:ga871d9f89307a302723ffc03db3135746" id="r_ga871d9f89307a302723ffc03db3135746"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga871d9f89307a302723ffc03db3135746">SOCKET_METRICS_MAX_HELP_LEN</a>&#160;&#160;&#160;256</td></tr>
 <tr class="memdesc:ga871d9f89307a302723ffc03db3135746"><td class="mdescLeft">&#160;</td><td class="mdescRight">SOCKET_METRICS_MAX_HELP_LEN - Maximum length for metric help text.  <br /></td></tr>
 <tr class="separator:ga871d9f89307a302723ffc03db3135746"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabca89a8f013fc5feae9b6663171f8062" id="r_gabca89a8f013fc5feae9b6663171f8062"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gabca89a8f013fc5feae9b6663171f8062">SOCKET_METRICS_TIME_START</a>()&#160;&#160;&#160;  int64_t _socket_metrics_start_time = <a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf">Socket_get_monotonic_ms</a> ()</td></tr>
+<tr class="memitem:gabca89a8f013fc5feae9b6663171f8062" id="r_gabca89a8f013fc5feae9b6663171f8062"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gabca89a8f013fc5feae9b6663171f8062">SOCKET_METRICS_TIME_START</a>()&#160;&#160;&#160;  int64_t _socket_metrics_start_time = <a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf">Socket_get_monotonic_ms</a> ()</td></tr>
 <tr class="memdesc:gabca89a8f013fc5feae9b6663171f8062"><td class="mdescLeft">&#160;</td><td class="mdescRight">SOCKET_METRICS_TIME_START - Start timing an operation.  <br /></td></tr>
 <tr class="separator:gabca89a8f013fc5feae9b6663171f8062"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafb13f2b83918ab1e5ed4fbe94fa0813a" id="r_gafb13f2b83918ab1e5ed4fbe94fa0813a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gafb13f2b83918ab1e5ed4fbe94fa0813a">SOCKET_METRICS_TIME_OBSERVE</a>(metric)</td></tr>
+<tr class="memitem:gafb13f2b83918ab1e5ed4fbe94fa0813a" id="r_gafb13f2b83918ab1e5ed4fbe94fa0813a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gafb13f2b83918ab1e5ed4fbe94fa0813a">SOCKET_METRICS_TIME_OBSERVE</a>(metric)</td></tr>
 <tr class="memdesc:gafb13f2b83918ab1e5ed4fbe94fa0813a"><td class="mdescLeft">&#160;</td><td class="mdescRight">SOCKET_METRICS_TIME_OBSERVE - Record elapsed time to histogram.  <br /></td></tr>
 <tr class="separator:gafb13f2b83918ab1e5ed4fbe94fa0813a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga058d4b283a626069fce638da98446105" id="r_ga058d4b283a626069fce638da98446105"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga058d4b283a626069fce638da98446105">SOCKET_METRICS_HTTP_RESPONSE_CLASS</a>(status)</td></tr>
+<tr class="memitem:ga058d4b283a626069fce638da98446105" id="r_ga058d4b283a626069fce638da98446105"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga058d4b283a626069fce638da98446105">SOCKET_METRICS_HTTP_RESPONSE_CLASS</a>(status)</td></tr>
 <tr class="memdesc:ga058d4b283a626069fce638da98446105"><td class="mdescLeft">&#160;</td><td class="mdescRight">SOCKET_METRICS_HTTP_RESPONSE_CLASS - Record HTTP response by status class.  <br /></td></tr>
 <tr class="separator:ga058d4b283a626069fce638da98446105"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:ga15ccb5af3b5e42916f5a329763c5b73d" id="r_ga15ccb5af3b5e42916f5a329763c5b73d"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga15ccb5af3b5e42916f5a329763c5b73d">SocketMetricType</a> { <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga15ccb5af3b5e42916f5a329763c5b73da3b97886e5e49aa6cd10fbecc97717a23">SOCKET_METRIC_TYPE_COUNTER</a> = 0
+<tr class="memitem:ga15ccb5af3b5e42916f5a329763c5b73d" id="r_ga15ccb5af3b5e42916f5a329763c5b73d"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga15ccb5af3b5e42916f5a329763c5b73d">SocketMetricType</a> { <br />
+&#160;&#160;<a class="el" href="group__utilities.html#gga15ccb5af3b5e42916f5a329763c5b73da3b97886e5e49aa6cd10fbecc97717a23">SOCKET_METRIC_TYPE_COUNTER</a> = 0
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga15ccb5af3b5e42916f5a329763c5b73dae412561b9220367088fbc0b4badbb54d">SOCKET_METRIC_TYPE_GAUGE</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga15ccb5af3b5e42916f5a329763c5b73dae412561b9220367088fbc0b4badbb54d">SOCKET_METRIC_TYPE_GAUGE</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga15ccb5af3b5e42916f5a329763c5b73daf4eb6f92091cf411d473f95656d5ffea">SOCKET_METRIC_TYPE_HISTOGRAM</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga15ccb5af3b5e42916f5a329763c5b73daf4eb6f92091cf411d473f95656d5ffea">SOCKET_METRIC_TYPE_HISTOGRAM</a>
 <br />
  }</td></tr>
-<tr class="memdesc:ga15ccb5af3b5e42916f5a329763c5b73d"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketMetricType - Type of metric.  <a href="group__foundation.html#ga15ccb5af3b5e42916f5a329763c5b73d">More...</a><br /></td></tr>
+<tr class="memdesc:ga15ccb5af3b5e42916f5a329763c5b73d"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketMetricType - Type of metric.  <a href="group__utilities.html#ga15ccb5af3b5e42916f5a329763c5b73d">More...</a><br /></td></tr>
 <tr class="separator:ga15ccb5af3b5e42916f5a329763c5b73d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga33af252a522ec94fe17be7f5e6aecf66" id="r_ga33af252a522ec94fe17be7f5e6aecf66"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga33af252a522ec94fe17be7f5e6aecf66">SocketMetricCategory</a> { <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga33af252a522ec94fe17be7f5e6aecf66a5c4b42ef28417b53a62e04c52ed9102c">SOCKET_METRIC_CAT_POOL</a> = 0
+<tr class="memitem:ga33af252a522ec94fe17be7f5e6aecf66" id="r_ga33af252a522ec94fe17be7f5e6aecf66"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga33af252a522ec94fe17be7f5e6aecf66">SocketMetricCategory</a> { <br />
+&#160;&#160;<a class="el" href="group__utilities.html#gga33af252a522ec94fe17be7f5e6aecf66a5c4b42ef28417b53a62e04c52ed9102c">SOCKET_METRIC_CAT_POOL</a> = 0
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga33af252a522ec94fe17be7f5e6aecf66a13c2a6f9a020cfb48e871fad684c67b2">SOCKET_METRIC_CAT_HTTP_CLIENT</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga33af252a522ec94fe17be7f5e6aecf66a13c2a6f9a020cfb48e871fad684c67b2">SOCKET_METRIC_CAT_HTTP_CLIENT</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga33af252a522ec94fe17be7f5e6aecf66a1efa2be51eaef017fa79e7ab729c6058">SOCKET_METRIC_CAT_HTTP_SERVER</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga33af252a522ec94fe17be7f5e6aecf66a1efa2be51eaef017fa79e7ab729c6058">SOCKET_METRIC_CAT_HTTP_SERVER</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga33af252a522ec94fe17be7f5e6aecf66a512451cf5b9457ed15e4433001c3afb0">SOCKET_METRIC_CAT_TLS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga33af252a522ec94fe17be7f5e6aecf66a512451cf5b9457ed15e4433001c3afb0">SOCKET_METRIC_CAT_TLS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga33af252a522ec94fe17be7f5e6aecf66ac4e87e55794a5eda33f91a320d85d2ac">SOCKET_METRIC_CAT_DNS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga33af252a522ec94fe17be7f5e6aecf66ac4e87e55794a5eda33f91a320d85d2ac">SOCKET_METRIC_CAT_DNS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga33af252a522ec94fe17be7f5e6aecf66aaedb13c47c45a45c7414ed6eb2985a2f">SOCKET_METRIC_CAT_SOCKET</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga33af252a522ec94fe17be7f5e6aecf66aaedb13c47c45a45c7414ed6eb2985a2f">SOCKET_METRIC_CAT_SOCKET</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga33af252a522ec94fe17be7f5e6aecf66aad530adfdedefa080ca04f67a5154581">SOCKET_METRIC_CAT_POLL</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga33af252a522ec94fe17be7f5e6aecf66aad530adfdedefa080ca04f67a5154581">SOCKET_METRIC_CAT_POLL</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga33af252a522ec94fe17be7f5e6aecf66a48dd3ffeeff316169d3afead7dd7f5ff">SOCKET_METRIC_CAT_COUNT</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga33af252a522ec94fe17be7f5e6aecf66a48dd3ffeeff316169d3afead7dd7f5ff">SOCKET_METRIC_CAT_COUNT</a>
 <br />
  }</td></tr>
-<tr class="memdesc:ga33af252a522ec94fe17be7f5e6aecf66"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketMetricCategory - Category grouping for metrics.  <a href="group__foundation.html#ga33af252a522ec94fe17be7f5e6aecf66">More...</a><br /></td></tr>
+<tr class="memdesc:ga33af252a522ec94fe17be7f5e6aecf66"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketMetricCategory - Category grouping for metrics.  <a href="group__utilities.html#ga33af252a522ec94fe17be7f5e6aecf66">More...</a><br /></td></tr>
 <tr class="separator:ga33af252a522ec94fe17be7f5e6aecf66"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1c2d3a4ca0a94b5d52917b2020796cee" id="r_ga1c2d3a4ca0a94b5d52917b2020796cee"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga1c2d3a4ca0a94b5d52917b2020796cee">SocketCounterMetric</a> { <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea23bac1496677cbfff2ead8150ad6c67b">SOCKET_CTR_POOL_CONNECTIONS_CREATED</a> = 0
+<tr class="memitem:ga1c2d3a4ca0a94b5d52917b2020796cee" id="r_ga1c2d3a4ca0a94b5d52917b2020796cee"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga1c2d3a4ca0a94b5d52917b2020796cee">SocketCounterMetric</a> { <br />
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea23bac1496677cbfff2ead8150ad6c67b">SOCKET_CTR_POOL_CONNECTIONS_CREATED</a> = 0
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea0b0528da3ffe7351fa991416ab138ad9">SOCKET_CTR_POOL_CONNECTIONS_DESTROYED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea0b0528da3ffe7351fa991416ab138ad9">SOCKET_CTR_POOL_CONNECTIONS_DESTROYED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea49233167e0dcbfa60f3ca6d980e76e44">SOCKET_CTR_POOL_CONNECTIONS_FAILED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea49233167e0dcbfa60f3ca6d980e76e44">SOCKET_CTR_POOL_CONNECTIONS_FAILED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea70f4cf0b9927a60fedbeff0cc47ac25c">SOCKET_CTR_POOL_CONNECTIONS_REUSED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea70f4cf0b9927a60fedbeff0cc47ac25c">SOCKET_CTR_POOL_CONNECTIONS_REUSED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaa7076d6bed0ebfc621bbbaa8eb373ae6">SOCKET_CTR_POOL_CONNECTIONS_EVICTED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaa7076d6bed0ebfc621bbbaa8eb373ae6">SOCKET_CTR_POOL_CONNECTIONS_EVICTED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea6bca8daae014fc82bb7b7b08c12d744a">SOCKET_CTR_POOL_DRAIN_STARTED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea6bca8daae014fc82bb7b7b08c12d744a">SOCKET_CTR_POOL_DRAIN_STARTED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea9760372f2bb1ab740a09959e21a99802">SOCKET_CTR_POOL_DRAIN_COMPLETED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea9760372f2bb1ab740a09959e21a99802">SOCKET_CTR_POOL_DRAIN_COMPLETED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaf1511efc40227013ff639abf4f4d9b13">SOCKET_CTR_HTTP_CLIENT_REQUESTS_TOTAL</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaf1511efc40227013ff639abf4f4d9b13">SOCKET_CTR_HTTP_CLIENT_REQUESTS_TOTAL</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea6528013f375d126375f32f18bdf25222">SOCKET_CTR_HTTP_CLIENT_REQUESTS_FAILED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea6528013f375d126375f32f18bdf25222">SOCKET_CTR_HTTP_CLIENT_REQUESTS_FAILED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea507a12413d55f789ffe5e9c565dd99e9">SOCKET_CTR_HTTP_CLIENT_REQUESTS_TIMEOUT</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea507a12413d55f789ffe5e9c565dd99e9">SOCKET_CTR_HTTP_CLIENT_REQUESTS_TIMEOUT</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea47ea62eaadbbbb19ebbea31ef087f01c">SOCKET_CTR_HTTP_CLIENT_BYTES_SENT</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea47ea62eaadbbbb19ebbea31ef087f01c">SOCKET_CTR_HTTP_CLIENT_BYTES_SENT</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea55ecbc6f23460ffb5901a53f8b2ad5e3">SOCKET_CTR_HTTP_CLIENT_BYTES_RECEIVED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea55ecbc6f23460ffb5901a53f8b2ad5e3">SOCKET_CTR_HTTP_CLIENT_BYTES_RECEIVED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea091def884e648a2cedaacaff2dd6cec6">SOCKET_CTR_HTTP_CLIENT_RETRIES</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea091def884e648a2cedaacaff2dd6cec6">SOCKET_CTR_HTTP_CLIENT_RETRIES</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceead8207230f2d1b6bd84abe11c6be841f3">SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceead8207230f2d1b6bd84abe11c6be841f3">SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea137f714bad61f63fbb3a6b70ac730363">SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea137f714bad61f63fbb3a6b70ac730363">SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea8147ac333d05a2289a840bc971df80e8">SOCKET_CTR_HTTP_SERVER_BYTES_SENT</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea8147ac333d05a2289a840bc971df80e8">SOCKET_CTR_HTTP_SERVER_BYTES_SENT</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea488ec1787e7822bba4dbe180a2f4b324">SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea488ec1787e7822bba4dbe180a2f4b324">SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea82505a4094f64e44e3efaebb91dcdcd7">SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea82505a4094f64e44e3efaebb91dcdcd7">SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea5ac222dcd2941ded4d577ee70f7a6d02">SOCKET_CTR_HTTP_RESPONSES_1XX</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea5ac222dcd2941ded4d577ee70f7a6d02">SOCKET_CTR_HTTP_RESPONSES_1XX</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea0fd5fbc4a0cad3431306f26e94c4a6b1">SOCKET_CTR_HTTP_RESPONSES_2XX</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea0fd5fbc4a0cad3431306f26e94c4a6b1">SOCKET_CTR_HTTP_RESPONSES_2XX</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea60781cacece44aec6d71297d0756d831">SOCKET_CTR_HTTP_RESPONSES_3XX</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea60781cacece44aec6d71297d0756d831">SOCKET_CTR_HTTP_RESPONSES_3XX</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaf947fe39578c5421c0ee798b7afbc7c5">SOCKET_CTR_HTTP_RESPONSES_4XX</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaf947fe39578c5421c0ee798b7afbc7c5">SOCKET_CTR_HTTP_RESPONSES_4XX</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea9ea9f8afe24ace748c8c4b612530cc72">SOCKET_CTR_HTTP_RESPONSES_5XX</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea9ea9f8afe24ace748c8c4b612530cc72">SOCKET_CTR_HTTP_RESPONSES_5XX</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaaf7d0baea6e4e3930da7314edbfa7bb6">SOCKET_CTR_TLS_HANDSHAKES_TOTAL</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaaf7d0baea6e4e3930da7314edbfa7bb6">SOCKET_CTR_TLS_HANDSHAKES_TOTAL</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeac310776f7b4aae593e90730f0e213d2b">SOCKET_CTR_TLS_HANDSHAKES_FAILED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeac310776f7b4aae593e90730f0e213d2b">SOCKET_CTR_TLS_HANDSHAKES_FAILED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea3ddea97b6728cd7d48218615e95926a4">SOCKET_CTR_TLS_SESSION_REUSE_COUNT</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea3ddea97b6728cd7d48218615e95926a4">SOCKET_CTR_TLS_SESSION_REUSE_COUNT</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea2b3cf1bb5dcf3df362a38b24521eda00">SOCKET_CTR_TLS_CERT_VERIFY_FAILURES</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea2b3cf1bb5dcf3df362a38b24521eda00">SOCKET_CTR_TLS_CERT_VERIFY_FAILURES</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea3aaf76f030b15e405bba3d7d83b2f360">SOCKET_CTR_TLS_RENEGOTIATIONS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea3aaf76f030b15e405bba3d7d83b2f360">SOCKET_CTR_TLS_RENEGOTIATIONS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea1123d27ca90ba8abe74f33cd98e3385c">SOCKET_CTR_TLS_PINNING_FAILURES</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea1123d27ca90ba8abe74f33cd98e3385c">SOCKET_CTR_TLS_PINNING_FAILURES</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea9708c06f97d86ece5ebfca3baf3a7f7e">SOCKET_CTR_TLS_CT_VERIFICATION_FAILURES</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea9708c06f97d86ece5ebfca3baf3a7f7e">SOCKET_CTR_TLS_CT_VERIFICATION_FAILURES</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea6e4638e88f27c45dca6b2c0b1b27ef27">SOCKET_CTR_TLS_CRL_CHECK_FAILURES</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea6e4638e88f27c45dca6b2c0b1b27ef27">SOCKET_CTR_TLS_CRL_CHECK_FAILURES</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea3a29654ecced6f3de9989af568f8d592">SOCKET_CTR_DTLS_HANDSHAKES_TOTAL</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea3a29654ecced6f3de9989af568f8d592">SOCKET_CTR_DTLS_HANDSHAKES_TOTAL</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaa8976118ea565782357f220d181dbd34">SOCKET_CTR_DTLS_HANDSHAKES_FAILED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaa8976118ea565782357f220d181dbd34">SOCKET_CTR_DTLS_HANDSHAKES_FAILED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea515eb7dc187e9a2746c17c6309bf5281">SOCKET_CTR_DTLS_COOKIES_GENERATED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea515eb7dc187e9a2746c17c6309bf5281">SOCKET_CTR_DTLS_COOKIES_GENERATED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea11af47970a03a26c436ef1bc616485e9">SOCKET_CTR_DTLS_COOKIE_VERIFICATION_FAILURES</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea11af47970a03a26c436ef1bc616485e9">SOCKET_CTR_DTLS_COOKIE_VERIFICATION_FAILURES</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea4ecac180c7f1bff26623a21bdf276e63">SOCKET_CTR_DTLS_REPLAY_PACKETS_DETECTED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea4ecac180c7f1bff26623a21bdf276e63">SOCKET_CTR_DTLS_REPLAY_PACKETS_DETECTED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceead4c08a4071bac7bc3be7021dcded790f">SOCKET_CTR_DTLS_FRAGMENT_FAILURES</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceead4c08a4071bac7bc3be7021dcded790f">SOCKET_CTR_DTLS_FRAGMENT_FAILURES</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeac8439ab5fccc233ac13d82aaff13f42d">SOCKET_CTR_DNS_QUERIES_TOTAL</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeac8439ab5fccc233ac13d82aaff13f42d">SOCKET_CTR_DNS_QUERIES_TOTAL</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea14e93ae606e4404c3b3e9183126a67ae">SOCKET_CTR_DNS_QUERIES_FAILED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea14e93ae606e4404c3b3e9183126a67ae">SOCKET_CTR_DNS_QUERIES_FAILED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea763f84409208d14e38c7c586263b7e7e">SOCKET_CTR_DNS_QUERIES_TIMEOUT</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea763f84409208d14e38c7c586263b7e7e">SOCKET_CTR_DNS_QUERIES_TIMEOUT</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeac504adb93c00ae711283026876673d40">SOCKET_CTR_DNS_QUERIES_CANCELLED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeac504adb93c00ae711283026876673d40">SOCKET_CTR_DNS_QUERIES_CANCELLED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea1cde4dca10c4717a6e50c171ac14f70a">SOCKET_CTR_DNS_CACHE_HITS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea1cde4dca10c4717a6e50c171ac14f70a">SOCKET_CTR_DNS_CACHE_HITS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea19512f0a4c325655cce541b490c62b3d">SOCKET_CTR_DNS_CACHE_MISSES</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea19512f0a4c325655cce541b490c62b3d">SOCKET_CTR_DNS_CACHE_MISSES</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeab856f40396326b740f635ecdec4b78cb">SOCKET_CTR_SOCKET_CREATED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeab856f40396326b740f635ecdec4b78cb">SOCKET_CTR_SOCKET_CREATED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeacc9f32e8a51e4720b53f2f4c6018c055">SOCKET_CTR_SOCKET_CLOSED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeacc9f32e8a51e4720b53f2f4c6018c055">SOCKET_CTR_SOCKET_CLOSED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea4d7c9119fae6202cf8c5bcc1f6cf32ef">SOCKET_CTR_SOCKET_CONNECT_SUCCESS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea4d7c9119fae6202cf8c5bcc1f6cf32ef">SOCKET_CTR_SOCKET_CONNECT_SUCCESS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea012e33d28bff41de7468fbb3099c6f9a">SOCKET_CTR_SOCKET_CONNECT_FAILED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea012e33d28bff41de7468fbb3099c6f9a">SOCKET_CTR_SOCKET_CONNECT_FAILED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea8748be5c6643b3ebccebb8e3b0c9efaf">SOCKET_CTR_SOCKET_ACCEPT_TOTAL</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea8748be5c6643b3ebccebb8e3b0c9efaf">SOCKET_CTR_SOCKET_ACCEPT_TOTAL</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceead596032b7866cc489959efe27c8a161c">SOCKET_CTR_POLL_WAKEUPS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceead596032b7866cc489959efe27c8a161c">SOCKET_CTR_POLL_WAKEUPS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaa519ace23a45810a059ff78ea83f242b">SOCKET_CTR_POLL_EVENTS_DISPATCHED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaa519ace23a45810a059ff78ea83f242b">SOCKET_CTR_POLL_EVENTS_DISPATCHED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea33ddef985af75f21110138587921557b">SOCKET_CTR_POLL_TIMEOUT_EXPIRATIONS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea33ddef985af75f21110138587921557b">SOCKET_CTR_POLL_TIMEOUT_EXPIRATIONS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea87c5cab0d076faf0d8545269857630c0">SOCKET_CTR_LIMIT_HEADER_SIZE_EXCEEDED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea87c5cab0d076faf0d8545269857630c0">SOCKET_CTR_LIMIT_HEADER_SIZE_EXCEEDED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea469ad98c6f71e2eb6108ebc62901782e">SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea469ad98c6f71e2eb6108ebc62901782e">SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaefa721fc08c63dceb684b172e52db5e7">SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaefa721fc08c63dceb684b172e52db5e7">SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeab6e4bc443557892912c5bfe9d9f841bb">SOCKET_CTR_LIMIT_MEMORY_EXCEEDED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeab6e4bc443557892912c5bfe9d9f841bb">SOCKET_CTR_LIMIT_MEMORY_EXCEEDED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea229217bf0b8e0b6f3de27e979cf7ef79">SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea229217bf0b8e0b6f3de27e979cf7ef79">SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea6ccae8e4b2e293d7e632a18173313ed4">SOCKET_CTR_LIMIT_STREAMS_EXCEEDED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea6ccae8e4b2e293d7e632a18173313ed4">SOCKET_CTR_LIMIT_STREAMS_EXCEEDED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea3978f99611080420a4340adb5651ddbd">SOCKET_CTR_LIMIT_HEADER_LIST_EXCEEDED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea3978f99611080420a4340adb5651ddbd">SOCKET_CTR_LIMIT_HEADER_LIST_EXCEEDED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea114c39672ec4a163cdf4098cf8a0a6eb">SOCKET_CTR_SYNPROTECT_ATTEMPTS_TOTAL</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea114c39672ec4a163cdf4098cf8a0a6eb">SOCKET_CTR_SYNPROTECT_ATTEMPTS_TOTAL</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaa2bdcf00107013bb1ad170891a037fe0">SOCKET_CTR_SYNPROTECT_ALLOWED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaa2bdcf00107013bb1ad170891a037fe0">SOCKET_CTR_SYNPROTECT_ALLOWED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaa59d06736065393b3eb7dc485f908731">SOCKET_CTR_SYNPROTECT_THROTTLED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaa59d06736065393b3eb7dc485f908731">SOCKET_CTR_SYNPROTECT_THROTTLED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea249dcb3f8a49e03f275b8ce71919e339">SOCKET_CTR_SYNPROTECT_CHALLENGED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea249dcb3f8a49e03f275b8ce71919e339">SOCKET_CTR_SYNPROTECT_CHALLENGED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceead26d8e35ef134d11c6b749b3129ee546">SOCKET_CTR_SYNPROTECT_BLOCKED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceead26d8e35ef134d11c6b749b3129ee546">SOCKET_CTR_SYNPROTECT_BLOCKED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea13baf5d07c8a93a675dcfef0abe26b98">SOCKET_CTR_SYNPROTECT_WHITELISTED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea13baf5d07c8a93a675dcfef0abe26b98">SOCKET_CTR_SYNPROTECT_WHITELISTED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea108cb443d96bcb01a2befa326f800baa">SOCKET_CTR_SYNPROTECT_BLACKLISTED</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea108cb443d96bcb01a2befa326f800baa">SOCKET_CTR_SYNPROTECT_BLACKLISTED</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea49e65f7d780e8f5b401428c372738ca1">SOCKET_CTR_SYNPROTECT_LRU_EVICTIONS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea49e65f7d780e8f5b401428c372738ca1">SOCKET_CTR_SYNPROTECT_LRU_EVICTIONS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga1c2d3a4ca0a94b5d52917b2020796ceea0c101f986764f3478eafe2c1bf1b7ea3">SOCKET_COUNTER_METRIC_COUNT</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea0c101f986764f3478eafe2c1bf1b7ea3">SOCKET_COUNTER_METRIC_COUNT</a>
 <br />
  }</td></tr>
-<tr class="memdesc:ga1c2d3a4ca0a94b5d52917b2020796cee"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCounterMetric - Counter metric identifiers.  <a href="group__foundation.html#ga1c2d3a4ca0a94b5d52917b2020796cee">More...</a><br /></td></tr>
+<tr class="memdesc:ga1c2d3a4ca0a94b5d52917b2020796cee"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCounterMetric - Counter metric identifiers.  <a href="group__utilities.html#ga1c2d3a4ca0a94b5d52917b2020796cee">More...</a><br /></td></tr>
 <tr class="separator:ga1c2d3a4ca0a94b5d52917b2020796cee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9c3c61abc039bebe2eda8b6f9b0574ff" id="r_ga9c3c61abc039bebe2eda8b6f9b0574ff"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> { <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa446185d2f544667977af003ef330602a">SOCKET_GAU_POOL_ACTIVE_CONNECTIONS</a> = 0
+<tr class="memitem:ga9c3c61abc039bebe2eda8b6f9b0574ff" id="r_ga9c3c61abc039bebe2eda8b6f9b0574ff"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> { <br />
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa446185d2f544667977af003ef330602a">SOCKET_GAU_POOL_ACTIVE_CONNECTIONS</a> = 0
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffac47f1bdaf5d0df3ffae6504fbe1884d6">SOCKET_GAU_POOL_IDLE_CONNECTIONS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffac47f1bdaf5d0df3ffae6504fbe1884d6">SOCKET_GAU_POOL_IDLE_CONNECTIONS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa984ad78555d7b236536ee2311528a4b4">SOCKET_GAU_POOL_PENDING_CONNECTIONS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa984ad78555d7b236536ee2311528a4b4">SOCKET_GAU_POOL_PENDING_CONNECTIONS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffade5a4447463c80b1cf103c0e4474b38d">SOCKET_GAU_POOL_SIZE</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffade5a4447463c80b1cf103c0e4474b38d">SOCKET_GAU_POOL_SIZE</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffabb4d6a47fdc81281817010e07eb1bab8">SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffabb4d6a47fdc81281817010e07eb1bab8">SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffaea6ddc03976de41a6a7aa39a90cea006">SOCKET_GAU_HTTP_CLIENT_OPEN_CONNECTIONS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffaea6ddc03976de41a6a7aa39a90cea006">SOCKET_GAU_HTTP_CLIENT_OPEN_CONNECTIONS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffad93011513d4df141b8a1c75c061eb601">SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffad93011513d4df141b8a1c75c061eb601">SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa46d69a1bc861fd2e34b032d700d60d47">SOCKET_GAU_HTTP_SERVER_ACTIVE_REQUESTS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa46d69a1bc861fd2e34b032d700d60d47">SOCKET_GAU_HTTP_SERVER_ACTIVE_REQUESTS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa701762a5f2fe51a57539f8368e40fdd4">SOCKET_GAU_HTTP_SERVER_QUEUED_REQUESTS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa701762a5f2fe51a57539f8368e40fdd4">SOCKET_GAU_HTTP_SERVER_QUEUED_REQUESTS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa42520d99aa0fce9b66eee159a3fcb9bd">SOCKET_GAU_TLS_ACTIVE_SESSIONS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa42520d99aa0fce9b66eee159a3fcb9bd">SOCKET_GAU_TLS_ACTIVE_SESSIONS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa6a3c6ce4d17be23ecb15647fc6fb950a">SOCKET_GAU_TLS_CACHED_SESSIONS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa6a3c6ce4d17be23ecb15647fc6fb950a">SOCKET_GAU_TLS_CACHED_SESSIONS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa30428b3ed5b61e0877f63406775e9713">SOCKET_GAU_DTLS_ACTIVE_SESSIONS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa30428b3ed5b61e0877f63406775e9713">SOCKET_GAU_DTLS_ACTIVE_SESSIONS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffaabcab9f22c06831d559b83e6195b66ae">SOCKET_GAU_DNS_PENDING_QUERIES</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffaabcab9f22c06831d559b83e6195b66ae">SOCKET_GAU_DNS_PENDING_QUERIES</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa9fe5f07b11823411a057ec5f61f26c9d">SOCKET_GAU_DNS_WORKER_THREADS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa9fe5f07b11823411a057ec5f61f26c9d">SOCKET_GAU_DNS_WORKER_THREADS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffade63dd14fcf55271418604c47509c3f1">SOCKET_GAU_DNS_CACHE_SIZE</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffade63dd14fcf55271418604c47509c3f1">SOCKET_GAU_DNS_CACHE_SIZE</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa5597c8e13a2ae6ea7f622fab80e00fa3">SOCKET_GAU_SOCKET_OPEN_FDS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa5597c8e13a2ae6ea7f622fab80e00fa3">SOCKET_GAU_SOCKET_OPEN_FDS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa49bc0db3a4078ebb6dfc37dbf2fa5e2d">SOCKET_GAU_POLL_REGISTERED_FDS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa49bc0db3a4078ebb6dfc37dbf2fa5e2d">SOCKET_GAU_POLL_REGISTERED_FDS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffac5f5f50c18cbd1e4df4c6f566520b865">SOCKET_GAU_POLL_ACTIVE_TIMERS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffac5f5f50c18cbd1e4df4c6f566520b865">SOCKET_GAU_POLL_ACTIVE_TIMERS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa2ac4f038181ceef8dd45e2b9fd680156">SOCKET_GAU_SYNPROTECT_TRACKED_IPS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa2ac4f038181ceef8dd45e2b9fd680156">SOCKET_GAU_SYNPROTECT_TRACKED_IPS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffac6f8904f525325cef938129163b2f0c9">SOCKET_GAU_SYNPROTECT_BLOCKED_IPS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffac6f8904f525325cef938129163b2f0c9">SOCKET_GAU_SYNPROTECT_BLOCKED_IPS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa543681a9ea9c38dcc7219e1dde7e7ba4">SOCKET_GAUGE_METRIC_COUNT</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa543681a9ea9c38dcc7219e1dde7e7ba4">SOCKET_GAUGE_METRIC_COUNT</a>
 <br />
  }</td></tr>
-<tr class="memdesc:ga9c3c61abc039bebe2eda8b6f9b0574ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketGaugeMetric - Gauge metric identifiers.  <a href="group__foundation.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">More...</a><br /></td></tr>
+<tr class="memdesc:ga9c3c61abc039bebe2eda8b6f9b0574ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketGaugeMetric - Gauge metric identifiers.  <a href="group__utilities.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">More...</a><br /></td></tr>
 <tr class="separator:ga9c3c61abc039bebe2eda8b6f9b0574ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga92d395571ae200be798481ea090e0e1e" id="r_ga92d395571ae200be798481ea090e0e1e"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> { <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1ead858cc3443872f53a524e2a285b9ca07">SOCKET_HIST_POOL_ACQUIRE_TIME_MS</a> = 0
+<tr class="memitem:ga92d395571ae200be798481ea090e0e1e" id="r_ga92d395571ae200be798481ea090e0e1e"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> { <br />
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ead858cc3443872f53a524e2a285b9ca07">SOCKET_HIST_POOL_ACQUIRE_TIME_MS</a> = 0
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1ea5572c534600bddc6ca7fbb15691343aa">SOCKET_HIST_POOL_CONNECTION_AGE_MS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ea5572c534600bddc6ca7fbb15691343aa">SOCKET_HIST_POOL_CONNECTION_AGE_MS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1eadfcc746d42cc93726a3af20e9fefe517">SOCKET_HIST_POOL_IDLE_TIME_MS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1eadfcc746d42cc93726a3af20e9fefe517">SOCKET_HIST_POOL_IDLE_TIME_MS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1ea197f63027af31a6a5783184aa9ae4fbd">SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ea197f63027af31a6a5783184aa9ae4fbd">SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1eabb53719cb13c0d7cf1836a5797224335">SOCKET_HIST_HTTP_CLIENT_CONNECT_TIME_MS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1eabb53719cb13c0d7cf1836a5797224335">SOCKET_HIST_HTTP_CLIENT_CONNECT_TIME_MS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1ea99e50c80c5ed5aba18f505ab29941e01">SOCKET_HIST_HTTP_CLIENT_TTFB_MS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ea99e50c80c5ed5aba18f505ab29941e01">SOCKET_HIST_HTTP_CLIENT_TTFB_MS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1eae6a142e47042024c332d29373618dadf">SOCKET_HIST_HTTP_CLIENT_RESPONSE_SIZE</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1eae6a142e47042024c332d29373618dadf">SOCKET_HIST_HTTP_CLIENT_RESPONSE_SIZE</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1ea639c5c4fe6ff72fa817325146734d53f">SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ea639c5c4fe6ff72fa817325146734d53f">SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1ea6bbd73226e6de01dad82d740f3285e15">SOCKET_HIST_HTTP_SERVER_RESPONSE_SIZE</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ea6bbd73226e6de01dad82d740f3285e15">SOCKET_HIST_HTTP_SERVER_RESPONSE_SIZE</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1ea8709b38d3289c4c5953d05c883a422ef">SOCKET_HIST_HTTP_SERVER_REQUEST_SIZE</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ea8709b38d3289c4c5953d05c883a422ef">SOCKET_HIST_HTTP_SERVER_REQUEST_SIZE</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1ead64e5997211c75d4abaa90cd98b8ab39">SOCKET_HIST_TLS_HANDSHAKE_TIME_MS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ead64e5997211c75d4abaa90cd98b8ab39">SOCKET_HIST_TLS_HANDSHAKE_TIME_MS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1ea60c53d1297cc720618318af476b452d1">SOCKET_HIST_DTLS_HANDSHAKE_TIME_MS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ea60c53d1297cc720618318af476b452d1">SOCKET_HIST_DTLS_HANDSHAKE_TIME_MS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1ea1f82aed60677494fd74769d1b2c975b7">SOCKET_HIST_DNS_QUERY_TIME_MS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ea1f82aed60677494fd74769d1b2c975b7">SOCKET_HIST_DNS_QUERY_TIME_MS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1eafff7ca822fdc69eb6319d04487b88e63">SOCKET_HIST_SOCKET_CONNECT_TIME_MS</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1eafff7ca822fdc69eb6319d04487b88e63">SOCKET_HIST_SOCKET_CONNECT_TIME_MS</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#gga92d395571ae200be798481ea090e0e1eaeb16a87bb4144f588f27145249e184b7">SOCKET_HISTOGRAM_METRIC_COUNT</a>
+&#160;&#160;<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1eaeb16a87bb4144f588f27145249e184b7">SOCKET_HISTOGRAM_METRIC_COUNT</a>
 <br />
  }</td></tr>
-<tr class="memdesc:ga92d395571ae200be798481ea090e0e1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketHistogramMetric - Histogram metric identifiers.  <a href="group__foundation.html#ga92d395571ae200be798481ea090e0e1e">More...</a><br /></td></tr>
+<tr class="memdesc:ga92d395571ae200be798481ea090e0e1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketHistogramMetric - Histogram metric identifiers.  <a href="group__utilities.html#ga92d395571ae200be798481ea090e0e1e">More...</a><br /></td></tr>
 <tr class="separator:ga92d395571ae200be798481ea090e0e1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gaeefb37a161dced1c0dcf35cb8c472977" id="r_gaeefb37a161dced1c0dcf35cb8c472977"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaeefb37a161dced1c0dcf35cb8c472977">SocketMetrics_init</a> (void)</td></tr>
+<tr class="memitem:gaeefb37a161dced1c0dcf35cb8c472977" id="r_gaeefb37a161dced1c0dcf35cb8c472977"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaeefb37a161dced1c0dcf35cb8c472977">SocketMetrics_init</a> (void)</td></tr>
 <tr class="memdesc:gaeefb37a161dced1c0dcf35cb8c472977"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the metrics subsystem.  <br /></td></tr>
 <tr class="separator:gaeefb37a161dced1c0dcf35cb8c472977"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac71136a870ed0e20e810cd9642aa6e88" id="r_gac71136a870ed0e20e810cd9642aa6e88"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gac71136a870ed0e20e810cd9642aa6e88">SocketMetrics_shutdown</a> (void)</td></tr>
+<tr class="memitem:gac71136a870ed0e20e810cd9642aa6e88" id="r_gac71136a870ed0e20e810cd9642aa6e88"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gac71136a870ed0e20e810cd9642aa6e88">SocketMetrics_shutdown</a> (void)</td></tr>
 <tr class="memdesc:gac71136a870ed0e20e810cd9642aa6e88"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shut down the metrics subsystem, releasing all resources.  <br /></td></tr>
 <tr class="separator:gac71136a870ed0e20e810cd9642aa6e88"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga051f576075a7c5fa39982fc3256127db" id="r_ga051f576075a7c5fa39982fc3256127db"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga051f576075a7c5fa39982fc3256127db">SocketMetrics_counter_inc</a> (<a class="el" href="group__foundation.html#ga1c2d3a4ca0a94b5d52917b2020796cee">SocketCounterMetric</a> metric)</td></tr>
+<tr class="memitem:ga051f576075a7c5fa39982fc3256127db" id="r_ga051f576075a7c5fa39982fc3256127db"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga051f576075a7c5fa39982fc3256127db">SocketMetrics_counter_inc</a> (<a class="el" href="group__utilities.html#ga1c2d3a4ca0a94b5d52917b2020796cee">SocketCounterMetric</a> metric)</td></tr>
 <tr class="memdesc:ga051f576075a7c5fa39982fc3256127db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Increment a counter metric by 1 atomically.  <br /></td></tr>
 <tr class="separator:ga051f576075a7c5fa39982fc3256127db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf6d348200d7a3feabb7be75c73800e3b" id="r_gaf6d348200d7a3feabb7be75c73800e3b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaf6d348200d7a3feabb7be75c73800e3b">SocketMetrics_counter_add</a> (<a class="el" href="group__foundation.html#ga1c2d3a4ca0a94b5d52917b2020796cee">SocketCounterMetric</a> metric, uint64_t value)</td></tr>
+<tr class="memitem:gaf6d348200d7a3feabb7be75c73800e3b" id="r_gaf6d348200d7a3feabb7be75c73800e3b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaf6d348200d7a3feabb7be75c73800e3b">SocketMetrics_counter_add</a> (<a class="el" href="group__utilities.html#ga1c2d3a4ca0a94b5d52917b2020796cee">SocketCounterMetric</a> metric, uint64_t value)</td></tr>
 <tr class="memdesc:gaf6d348200d7a3feabb7be75c73800e3b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add value to counter.  <br /></td></tr>
 <tr class="separator:gaf6d348200d7a3feabb7be75c73800e3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga289b82a795a5b051f500601746c23dcc" id="r_ga289b82a795a5b051f500601746c23dcc"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga289b82a795a5b051f500601746c23dcc">SocketMetrics_counter_get</a> (<a class="el" href="group__foundation.html#ga1c2d3a4ca0a94b5d52917b2020796cee">SocketCounterMetric</a> metric)</td></tr>
+<tr class="memitem:ga289b82a795a5b051f500601746c23dcc" id="r_ga289b82a795a5b051f500601746c23dcc"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga289b82a795a5b051f500601746c23dcc">SocketMetrics_counter_get</a> (<a class="el" href="group__utilities.html#ga1c2d3a4ca0a94b5d52917b2020796cee">SocketCounterMetric</a> metric)</td></tr>
 <tr class="memdesc:ga289b82a795a5b051f500601746c23dcc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current counter value.  <br /></td></tr>
 <tr class="separator:ga289b82a795a5b051f500601746c23dcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga136f209696f9bc3f2fc3ad47cdac0458" id="r_ga136f209696f9bc3f2fc3ad47cdac0458"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga136f209696f9bc3f2fc3ad47cdac0458">SocketMetrics_gauge_set</a> (<a class="el" href="group__foundation.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric, int64_t value)</td></tr>
+<tr class="memitem:ga136f209696f9bc3f2fc3ad47cdac0458" id="r_ga136f209696f9bc3f2fc3ad47cdac0458"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga136f209696f9bc3f2fc3ad47cdac0458">SocketMetrics_gauge_set</a> (<a class="el" href="group__utilities.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric, int64_t value)</td></tr>
 <tr class="memdesc:ga136f209696f9bc3f2fc3ad47cdac0458"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set gauge to specific value.  <br /></td></tr>
 <tr class="separator:ga136f209696f9bc3f2fc3ad47cdac0458"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7282975cd0ea7f0b5fd354c13a12a9d0" id="r_ga7282975cd0ea7f0b5fd354c13a12a9d0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga7282975cd0ea7f0b5fd354c13a12a9d0">SocketMetrics_gauge_inc</a> (<a class="el" href="group__foundation.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric)</td></tr>
+<tr class="memitem:ga7282975cd0ea7f0b5fd354c13a12a9d0" id="r_ga7282975cd0ea7f0b5fd354c13a12a9d0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga7282975cd0ea7f0b5fd354c13a12a9d0">SocketMetrics_gauge_inc</a> (<a class="el" href="group__utilities.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric)</td></tr>
 <tr class="memdesc:ga7282975cd0ea7f0b5fd354c13a12a9d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Increment gauge by 1.  <br /></td></tr>
 <tr class="separator:ga7282975cd0ea7f0b5fd354c13a12a9d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0fff1810314dc75d6082e982243794b4" id="r_ga0fff1810314dc75d6082e982243794b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga0fff1810314dc75d6082e982243794b4">SocketMetrics_gauge_dec</a> (<a class="el" href="group__foundation.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric)</td></tr>
+<tr class="memitem:ga0fff1810314dc75d6082e982243794b4" id="r_ga0fff1810314dc75d6082e982243794b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga0fff1810314dc75d6082e982243794b4">SocketMetrics_gauge_dec</a> (<a class="el" href="group__utilities.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric)</td></tr>
 <tr class="memdesc:ga0fff1810314dc75d6082e982243794b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decrement gauge by 1.  <br /></td></tr>
 <tr class="separator:ga0fff1810314dc75d6082e982243794b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1063ad9bcbfe8286a7f45af6e4089771" id="r_ga1063ad9bcbfe8286a7f45af6e4089771"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga1063ad9bcbfe8286a7f45af6e4089771">SocketMetrics_gauge_add</a> (<a class="el" href="group__foundation.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric, int64_t value)</td></tr>
+<tr class="memitem:ga1063ad9bcbfe8286a7f45af6e4089771" id="r_ga1063ad9bcbfe8286a7f45af6e4089771"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga1063ad9bcbfe8286a7f45af6e4089771">SocketMetrics_gauge_add</a> (<a class="el" href="group__utilities.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric, int64_t value)</td></tr>
 <tr class="memdesc:ga1063ad9bcbfe8286a7f45af6e4089771"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add value to gauge.  <br /></td></tr>
 <tr class="separator:ga1063ad9bcbfe8286a7f45af6e4089771"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga35cb4ad83b57507c697c3af957873ce6" id="r_ga35cb4ad83b57507c697c3af957873ce6"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga35cb4ad83b57507c697c3af957873ce6">SocketMetrics_gauge_get</a> (<a class="el" href="group__foundation.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric)</td></tr>
+<tr class="memitem:ga35cb4ad83b57507c697c3af957873ce6" id="r_ga35cb4ad83b57507c697c3af957873ce6"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga35cb4ad83b57507c697c3af957873ce6">SocketMetrics_gauge_get</a> (<a class="el" href="group__utilities.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric)</td></tr>
 <tr class="memdesc:ga35cb4ad83b57507c697c3af957873ce6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current gauge value.  <br /></td></tr>
 <tr class="separator:ga35cb4ad83b57507c697c3af957873ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gade1b121ba0fc5aaf631a0ec0a060843c" id="r_gade1b121ba0fc5aaf631a0ec0a060843c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gade1b121ba0fc5aaf631a0ec0a060843c">SocketMetrics_histogram_observe</a> (<a class="el" href="group__foundation.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric, double value)</td></tr>
+<tr class="memitem:gade1b121ba0fc5aaf631a0ec0a060843c" id="r_gade1b121ba0fc5aaf631a0ec0a060843c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gade1b121ba0fc5aaf631a0ec0a060843c">SocketMetrics_histogram_observe</a> (<a class="el" href="group__utilities.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric, double value)</td></tr>
 <tr class="memdesc:gade1b121ba0fc5aaf631a0ec0a060843c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Record observation in histogram.  <br /></td></tr>
 <tr class="separator:gade1b121ba0fc5aaf631a0ec0a060843c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6b7dac1935b1cd51f43a54026a9c2081" id="r_ga6b7dac1935b1cd51f43a54026a9c2081"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga6b7dac1935b1cd51f43a54026a9c2081">SocketMetrics_histogram_percentile</a> (<a class="el" href="group__foundation.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric, double percentile)</td></tr>
+<tr class="memitem:ga6b7dac1935b1cd51f43a54026a9c2081" id="r_ga6b7dac1935b1cd51f43a54026a9c2081"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga6b7dac1935b1cd51f43a54026a9c2081">SocketMetrics_histogram_percentile</a> (<a class="el" href="group__utilities.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric, double percentile)</td></tr>
 <tr class="memdesc:ga6b7dac1935b1cd51f43a54026a9c2081"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get percentile from histogram.  <br /></td></tr>
 <tr class="separator:ga6b7dac1935b1cd51f43a54026a9c2081"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga78400f007fa3b02037322fa951b526b4" id="r_ga78400f007fa3b02037322fa951b526b4"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga78400f007fa3b02037322fa951b526b4">SocketMetrics_histogram_count</a> (<a class="el" href="group__foundation.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric)</td></tr>
+<tr class="memitem:ga78400f007fa3b02037322fa951b526b4" id="r_ga78400f007fa3b02037322fa951b526b4"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga78400f007fa3b02037322fa951b526b4">SocketMetrics_histogram_count</a> (<a class="el" href="group__utilities.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric)</td></tr>
 <tr class="memdesc:ga78400f007fa3b02037322fa951b526b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get observation count.  <br /></td></tr>
 <tr class="separator:ga78400f007fa3b02037322fa951b526b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7bba5d5d82bd9e034920520a5e0a549e" id="r_ga7bba5d5d82bd9e034920520a5e0a549e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga7bba5d5d82bd9e034920520a5e0a549e">SocketMetrics_histogram_sum</a> (<a class="el" href="group__foundation.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric)</td></tr>
+<tr class="memitem:ga7bba5d5d82bd9e034920520a5e0a549e" id="r_ga7bba5d5d82bd9e034920520a5e0a549e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga7bba5d5d82bd9e034920520a5e0a549e">SocketMetrics_histogram_sum</a> (<a class="el" href="group__utilities.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric)</td></tr>
 <tr class="memdesc:ga7bba5d5d82bd9e034920520a5e0a549e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get sum of observations.  <br /></td></tr>
 <tr class="separator:ga7bba5d5d82bd9e034920520a5e0a549e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4276215e9db206451d0bf5c0277895a2" id="r_ga4276215e9db206451d0bf5c0277895a2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga4276215e9db206451d0bf5c0277895a2">SocketMetrics_histogram_snapshot</a> (<a class="el" href="group__foundation.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric, <a class="el" href="group__foundation.html#structSocketMetrics__HistogramSnapshot">SocketMetrics_HistogramSnapshot</a> *snapshot)</td></tr>
+<tr class="memitem:ga4276215e9db206451d0bf5c0277895a2" id="r_ga4276215e9db206451d0bf5c0277895a2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga4276215e9db206451d0bf5c0277895a2">SocketMetrics_histogram_snapshot</a> (<a class="el" href="group__utilities.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric, <a class="el" href="group__utilities.html#structSocketMetrics__HistogramSnapshot">SocketMetrics_HistogramSnapshot</a> *snapshot)</td></tr>
 <tr class="memdesc:ga4276215e9db206451d0bf5c0277895a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get histogram snapshot.  <br /></td></tr>
 <tr class="separator:ga4276215e9db206451d0bf5c0277895a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga88d6bd8b457374f89aaa5896e0b7bcca" id="r_ga88d6bd8b457374f89aaa5896e0b7bcca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga88d6bd8b457374f89aaa5896e0b7bcca">SocketMetrics_get</a> (<a class="el" href="group__foundation.html#structSocketMetrics__Snapshot">SocketMetrics_Snapshot</a> *snapshot)</td></tr>
+<tr class="memitem:ga88d6bd8b457374f89aaa5896e0b7bcca" id="r_ga88d6bd8b457374f89aaa5896e0b7bcca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga88d6bd8b457374f89aaa5896e0b7bcca">SocketMetrics_get</a> (<a class="el" href="group__utilities.html#structSocketMetrics__Snapshot">SocketMetrics_Snapshot</a> *snapshot)</td></tr>
 <tr class="memdesc:ga88d6bd8b457374f89aaa5896e0b7bcca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Capture a complete point-in-time snapshot of all metrics.  <br /></td></tr>
 <tr class="separator:ga88d6bd8b457374f89aaa5896e0b7bcca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab129aa3dd03bc8e5670da9abf0c41a47" id="r_gab129aa3dd03bc8e5670da9abf0c41a47"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gab129aa3dd03bc8e5670da9abf0c41a47">SocketMetrics_reset</a> (void)</td></tr>
+<tr class="memitem:gab129aa3dd03bc8e5670da9abf0c41a47" id="r_gab129aa3dd03bc8e5670da9abf0c41a47"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gab129aa3dd03bc8e5670da9abf0c41a47">SocketMetrics_reset</a> (void)</td></tr>
 <tr class="memdesc:gab129aa3dd03bc8e5670da9abf0c41a47"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset all metrics to initial values.  <br /></td></tr>
 <tr class="separator:gab129aa3dd03bc8e5670da9abf0c41a47"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabf9b8dc5b74a93097dd1abc4d1c6f173" id="r_gabf9b8dc5b74a93097dd1abc4d1c6f173"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gabf9b8dc5b74a93097dd1abc4d1c6f173">SocketMetrics_reset_counters</a> (void)</td></tr>
+<tr class="memitem:gabf9b8dc5b74a93097dd1abc4d1c6f173" id="r_gabf9b8dc5b74a93097dd1abc4d1c6f173"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gabf9b8dc5b74a93097dd1abc4d1c6f173">SocketMetrics_reset_counters</a> (void)</td></tr>
 <tr class="memdesc:gabf9b8dc5b74a93097dd1abc4d1c6f173"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset only counter metrics.  <br /></td></tr>
 <tr class="separator:gabf9b8dc5b74a93097dd1abc4d1c6f173"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad058c5608e74545a1b26ba51a9c2d579" id="r_gad058c5608e74545a1b26ba51a9c2d579"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gad058c5608e74545a1b26ba51a9c2d579">SocketMetrics_reset_histograms</a> (void)</td></tr>
+<tr class="memitem:gad058c5608e74545a1b26ba51a9c2d579" id="r_gad058c5608e74545a1b26ba51a9c2d579"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gad058c5608e74545a1b26ba51a9c2d579">SocketMetrics_reset_histograms</a> (void)</td></tr>
 <tr class="memdesc:gad058c5608e74545a1b26ba51a9c2d579"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset only histogram metrics.  <br /></td></tr>
 <tr class="separator:gad058c5608e74545a1b26ba51a9c2d579"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad2d2769789054962f81f3212df75ef35" id="r_gad2d2769789054962f81f3212df75ef35"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gad2d2769789054962f81f3212df75ef35">SocketMetrics_export_prometheus</a> (char *buffer, size_t buffer_size)</td></tr>
+<tr class="memitem:gad2d2769789054962f81f3212df75ef35" id="r_gad2d2769789054962f81f3212df75ef35"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gad2d2769789054962f81f3212df75ef35">SocketMetrics_export_prometheus</a> (char *buffer, size_t buffer_size)</td></tr>
 <tr class="memdesc:gad2d2769789054962f81f3212df75ef35"><td class="mdescLeft">&#160;</td><td class="mdescRight">Export metrics in Prometheus text format.  <br /></td></tr>
 <tr class="separator:gad2d2769789054962f81f3212df75ef35"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9dadc443aa052757354ab207cf2261cc" id="r_ga9dadc443aa052757354ab207cf2261cc"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga9dadc443aa052757354ab207cf2261cc">SocketMetrics_export_statsd</a> (char *buffer, size_t buffer_size, const char *prefix)</td></tr>
+<tr class="memitem:ga9dadc443aa052757354ab207cf2261cc" id="r_ga9dadc443aa052757354ab207cf2261cc"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga9dadc443aa052757354ab207cf2261cc">SocketMetrics_export_statsd</a> (char *buffer, size_t buffer_size, const char *prefix)</td></tr>
 <tr class="memdesc:ga9dadc443aa052757354ab207cf2261cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Export metrics in StatsD format.  <br /></td></tr>
 <tr class="separator:ga9dadc443aa052757354ab207cf2261cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2614425d193cc298f59cf4edb4b401f3" id="r_ga2614425d193cc298f59cf4edb4b401f3"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga2614425d193cc298f59cf4edb4b401f3">SocketMetrics_export_json</a> (char *buffer, size_t buffer_size)</td></tr>
+<tr class="memitem:ga2614425d193cc298f59cf4edb4b401f3" id="r_ga2614425d193cc298f59cf4edb4b401f3"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga2614425d193cc298f59cf4edb4b401f3">SocketMetrics_export_json</a> (char *buffer, size_t buffer_size)</td></tr>
 <tr class="memdesc:ga2614425d193cc298f59cf4edb4b401f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Export metrics in JSON format.  <br /></td></tr>
 <tr class="separator:ga2614425d193cc298f59cf4edb4b401f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab0dea3a76b37f5631595f4a1c429b3ec" id="r_gab0dea3a76b37f5631595f4a1c429b3ec"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gab0dea3a76b37f5631595f4a1c429b3ec">SocketMetrics_counter_name</a> (<a class="el" href="group__foundation.html#ga1c2d3a4ca0a94b5d52917b2020796cee">SocketCounterMetric</a> metric)</td></tr>
+<tr class="memitem:gab0dea3a76b37f5631595f4a1c429b3ec" id="r_gab0dea3a76b37f5631595f4a1c429b3ec"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gab0dea3a76b37f5631595f4a1c429b3ec">SocketMetrics_counter_name</a> (<a class="el" href="group__utilities.html#ga1c2d3a4ca0a94b5d52917b2020796cee">SocketCounterMetric</a> metric)</td></tr>
 <tr class="memdesc:gab0dea3a76b37f5631595f4a1c429b3ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get counter metric name.  <br /></td></tr>
 <tr class="separator:gab0dea3a76b37f5631595f4a1c429b3ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1688939050a2c8207534463961107b3c" id="r_ga1688939050a2c8207534463961107b3c"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga1688939050a2c8207534463961107b3c">SocketMetrics_gauge_name</a> (<a class="el" href="group__foundation.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric)</td></tr>
+<tr class="memitem:ga1688939050a2c8207534463961107b3c" id="r_ga1688939050a2c8207534463961107b3c"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga1688939050a2c8207534463961107b3c">SocketMetrics_gauge_name</a> (<a class="el" href="group__utilities.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric)</td></tr>
 <tr class="memdesc:ga1688939050a2c8207534463961107b3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get gauge metric name.  <br /></td></tr>
 <tr class="separator:ga1688939050a2c8207534463961107b3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga339fc134239b6f057572e4d868abb6cb" id="r_ga339fc134239b6f057572e4d868abb6cb"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga339fc134239b6f057572e4d868abb6cb">SocketMetrics_histogram_name</a> (<a class="el" href="group__foundation.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric)</td></tr>
+<tr class="memitem:ga339fc134239b6f057572e4d868abb6cb" id="r_ga339fc134239b6f057572e4d868abb6cb"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga339fc134239b6f057572e4d868abb6cb">SocketMetrics_histogram_name</a> (<a class="el" href="group__utilities.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric)</td></tr>
 <tr class="memdesc:ga339fc134239b6f057572e4d868abb6cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get histogram metric name.  <br /></td></tr>
 <tr class="separator:ga339fc134239b6f057572e4d868abb6cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae21f0f4d73455a7b37a6de0323fdee41" id="r_gae21f0f4d73455a7b37a6de0323fdee41"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gae21f0f4d73455a7b37a6de0323fdee41">SocketMetrics_counter_help</a> (<a class="el" href="group__foundation.html#ga1c2d3a4ca0a94b5d52917b2020796cee">SocketCounterMetric</a> metric)</td></tr>
+<tr class="memitem:gae21f0f4d73455a7b37a6de0323fdee41" id="r_gae21f0f4d73455a7b37a6de0323fdee41"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae21f0f4d73455a7b37a6de0323fdee41">SocketMetrics_counter_help</a> (<a class="el" href="group__utilities.html#ga1c2d3a4ca0a94b5d52917b2020796cee">SocketCounterMetric</a> metric)</td></tr>
 <tr class="memdesc:gae21f0f4d73455a7b37a6de0323fdee41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get counter metric help text.  <br /></td></tr>
 <tr class="separator:gae21f0f4d73455a7b37a6de0323fdee41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab5d0fbf4fb34d69db29bd55f15ddc4a0" id="r_gab5d0fbf4fb34d69db29bd55f15ddc4a0"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gab5d0fbf4fb34d69db29bd55f15ddc4a0">SocketMetrics_gauge_help</a> (<a class="el" href="group__foundation.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric)</td></tr>
+<tr class="memitem:gab5d0fbf4fb34d69db29bd55f15ddc4a0" id="r_gab5d0fbf4fb34d69db29bd55f15ddc4a0"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gab5d0fbf4fb34d69db29bd55f15ddc4a0">SocketMetrics_gauge_help</a> (<a class="el" href="group__utilities.html#ga9c3c61abc039bebe2eda8b6f9b0574ff">SocketGaugeMetric</a> metric)</td></tr>
 <tr class="memdesc:gab5d0fbf4fb34d69db29bd55f15ddc4a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get gauge metric help text.  <br /></td></tr>
 <tr class="separator:gab5d0fbf4fb34d69db29bd55f15ddc4a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa5e1f5a07ebccb6667f60603a9f0aaa9" id="r_gaa5e1f5a07ebccb6667f60603a9f0aaa9"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaa5e1f5a07ebccb6667f60603a9f0aaa9">SocketMetrics_histogram_help</a> (<a class="el" href="group__foundation.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric)</td></tr>
+<tr class="memitem:gaa5e1f5a07ebccb6667f60603a9f0aaa9" id="r_gaa5e1f5a07ebccb6667f60603a9f0aaa9"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaa5e1f5a07ebccb6667f60603a9f0aaa9">SocketMetrics_histogram_help</a> (<a class="el" href="group__utilities.html#ga92d395571ae200be798481ea090e0e1e">SocketHistogramMetric</a> metric)</td></tr>
 <tr class="memdesc:gaa5e1f5a07ebccb6667f60603a9f0aaa9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get histogram metric help text.  <br /></td></tr>
 <tr class="separator:gaa5e1f5a07ebccb6667f60603a9f0aaa9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6991175422fbbdf883b75713242b0e0f" id="r_ga6991175422fbbdf883b75713242b0e0f"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga6991175422fbbdf883b75713242b0e0f">SocketMetrics_category_name</a> (<a class="el" href="group__foundation.html#ga33af252a522ec94fe17be7f5e6aecf66">SocketMetricCategory</a> category)</td></tr>
+<tr class="memitem:ga6991175422fbbdf883b75713242b0e0f" id="r_ga6991175422fbbdf883b75713242b0e0f"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga6991175422fbbdf883b75713242b0e0f">SocketMetrics_category_name</a> (<a class="el" href="group__utilities.html#ga33af252a522ec94fe17be7f5e6aecf66">SocketMetricCategory</a> category)</td></tr>
 <tr class="memdesc:ga6991175422fbbdf883b75713242b0e0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the name of a metric category as a static string.  <br /></td></tr>
 <tr class="separator:ga6991175422fbbdf883b75713242b0e0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -528,13 +528,13 @@ Functions</h2></td></tr>
 <li>No dynamic allocation after initialization</li>
 <li>Total memory usage: ~100KB for default configuration</li>
 </ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga051f576075a7c5fa39982fc3256127db" title="Increment a counter metric by 1 atomically.">SocketMetrics_counter_inc()</a> for recording counter metrics. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga051f576075a7c5fa39982fc3256127db" title="Increment a counter metric by 1 atomically.">SocketMetrics_counter_inc()</a> for recording counter metrics. </dd>
 <dd>
-<a class="el" href="group__foundation.html#ga136f209696f9bc3f2fc3ad47cdac0458" title="Set gauge to specific value.">SocketMetrics_gauge_set()</a> for gauge metrics. </dd>
+<a class="el" href="group__utilities.html#ga136f209696f9bc3f2fc3ad47cdac0458" title="Set gauge to specific value.">SocketMetrics_gauge_set()</a> for gauge metrics. </dd>
 <dd>
-<a class="el" href="group__foundation.html#gade1b121ba0fc5aaf631a0ec0a060843c" title="Record observation in histogram.">SocketMetrics_histogram_observe()</a> for histogram metrics. </dd>
+<a class="el" href="group__utilities.html#gade1b121ba0fc5aaf631a0ec0a060843c" title="Record observation in histogram.">SocketMetrics_histogram_observe()</a> for histogram metrics. </dd>
 <dd>
-<a class="el" href="group__foundation.html#gad2d2769789054962f81f3212df75ef35" title="Export metrics in Prometheus text format.">SocketMetrics_export_prometheus()</a> for metric export. </dd></dl>
+<a class="el" href="group__utilities.html#gad2d2769789054962f81f3212df75ef35" title="Export metrics in Prometheus text format.">SocketMetrics_export_prometheus()</a> for metric export. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 </div></div><!-- contents -->

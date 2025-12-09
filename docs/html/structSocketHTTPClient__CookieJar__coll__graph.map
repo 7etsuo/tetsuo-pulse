@@ -1,0 +1,8 @@
+<map id="SocketHTTPClient_CookieJar_T" name="SocketHTTPClient_CookieJar_T">
+<area shape="rect" id="Node000001" title="Cookie jar for storing and managing HTTP cookies per domain." alt="" coords="5,181,219,207"/>
+<area shape="rect" id="Node000002" href="$group__http.html#structCookieEntry" title="Individual cookie storage in the client cookie jar." alt="" coords="65,93,159,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="115,133,115,181,109,181,109,133"/>
+<area shape="poly" id="edge3_Node000002_Node000002" title=" " alt="" coords="174,97,186,106,178,114,160,117,159,111,175,109,181,106,172,102"/>
+<area shape="rect" id="Node000003" href="$group__http__client.html#structSocketHTTPClient__Cookie" title="Cookie attributes structure (RFC 6265)." alt="" coords="22,5,202,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="115,45,115,93,109,93,109,45"/>
+</map>

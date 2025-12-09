@@ -1,0 +1,4 @@
+<map id="Asynchronous DNS Resolution" name="Asynchronous DNS Resolution">
+<area shape="rect" id="Node000002" href="$group__core__io.html" title="Fundamental socket operations for TCP, UDP, and Unix domain sockets.The Core I/O group provides the b..." alt="" coords="5,5,131,31"/>
+<area shape="rect" id="Node000001" title="Thread pool&#45;based DNS resolution with guaranteed timeouts and SocketPoll integration." alt="" coords="179,5,383,31"/>
+</map>

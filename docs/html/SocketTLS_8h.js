@@ -2,7 +2,6 @@ var SocketTLS_8h =
 [
     [ "T", "group__security.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
     [ "SocketTLS_T", "group__security.html#ga63e73c93350813167a68162c5cb3d819", null ],
-    [ "SocketTLSContext_T", "group__security.html#gac46f2ab9dacbb1af2d590f2974e21577", null ],
     [ "TLSHandshakeState", "group__security.html#gad092160c037d01929df1bb8d5b75b43c", [
       [ "TLS_HANDSHAKE_NOT_STARTED", "group__security.html#ggad092160c037d01929df1bb8d5b75b43cae3a7df914ebdf339b8e7d711779670e2", null ],
       [ "TLS_HANDSHAKE_IN_PROGRESS", "group__security.html#ggad092160c037d01929df1bb8d5b75b43ca445915a69a47e09546e8d5b275eedf2a", null ],

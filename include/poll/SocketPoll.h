@@ -6,17 +6,16 @@
 #include "socket/Socket.h"
 
 /**
- * @brief Asynchronous I/O context for high-throughput, zero-copy operations.
+ * @brief Asynchronous I/O context for high-throughput, zero-copy operations, integrated with SocketPoll_T.
  * @ingroup async_io
- * @ingroup event_system
- * Integrates with SocketPoll_T for automatic completion processing during event waits.
- * Enables advanced patterns like scatter-gather I/O and non-blocking file operations.
+ * Enables automatic completion processing during event waits and advanced patterns like scatter-gather I/O and non-blocking file operations.
  *
  * @see @ref event_system for core polling infrastructure.
  * @see SocketPoll_get_async() to retrieve from a poll instance.
  * @see @ref async_io "Async I/O module" for detailed usage and patterns.
  * @see docs/ASYNC_IO.md for implementation examples and best practices.
  */
+  
 struct SocketAsync_T;
 typedef struct SocketAsync_T *SocketAsync_T;
 
@@ -24,13 +23,13 @@ typedef struct SocketAsync_T *SocketAsync_T;
  * @defgroup event_system Event System Modules
  * @brief High-performance I/O multiplexing with cross-platform backends.
  * @{
- * Key components: SocketPoll (epoll/kqueue/poll), SocketTimer (timers), SocketAsync (async I/O).
+ * Key components: SocketPoll_T (cross-platform I/O multiplexing), SocketTimer_T (timer management).
  * Enables scalable event-driven network applications with automatic platform adaptation.
  *
  * Architecture Overview:
  * - # SocketPoll_T: Core polling interface with backend abstraction for epoll/kqueue/poll.
  * - # SocketTimer_T: Heap-based timer scheduling integrated with poll wait cycles.
- * - # SocketAsync_T: Asynchronous I/O extensions for zero-copy, high-throughput operations.
+ * - Integration with @ref async_io::SocketAsync_T via SocketPoll_get_async() for zero-copy, high-throughput async operations.
  *
  * Backend Selection:
  * - Linux: epoll(7) for O(1) edge-triggered notifications.
@@ -57,7 +56,7 @@ typedef struct SocketAsync_T *SocketAsync_T;
  * @see @ref utilities for rate limiting and retry logic integration.
  * @see SocketPoll_T for polling API details.
  * @see SocketTimer_T for timer API (re-exported here).
- * @see SocketAsync_T for async extensions (forward declared).
+ * @see @ref async_io::SocketAsync_T for async extensions (integrated via SocketPoll_get_async()).
  * @see docs/ASYNC_IO.md for event-driven programming examples and best practices.
  * @see docs/ERROR_HANDLING.md for exception patterns in event loops.
  * @}
@@ -213,11 +212,11 @@ typedef struct SocketEvent
  * @brief Create a new event poll instance.
  * @ingroup event_system
  * @param maxevents Maximum number of events to process per wait call (suggest 1024+ for servers).
- * @return New SocketPoll_T instance or NULL on failure.
+ * @return New SocketPoll_T instance.
  * @throws SocketPoll_Failed if backend initialization fails (e.g., resource limits).
  * @threadsafe Yes - each instance is independent.
  * @note Automatically selects and initializes platform-optimal backend (epoll/kqueue/poll) with edge-triggered mode where supported.
- * @note Allocates internal structures using caller's arena if provided; otherwise uses default.
+ * @note Allocates an internal arena for efficient memory management tied to poll lifecycle.
  * @see SocketPoll_free() for resource cleanup.
  * @see SocketPoll_setmaxregistered() for configuring registration limits.
  * @see SocketPoll_wait() for primary event loop integration.

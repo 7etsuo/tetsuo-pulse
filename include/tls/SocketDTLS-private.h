@@ -495,6 +495,20 @@ extern __thread Except_T SocketDTLSContext_DetailedException;
  * ============================================================================
  */
 
+/**
+ * @brief Suppress unused parameter compiler warnings.
+ * @ingroup security
+ * @param x Variable or parameter marked as intentionally unused.
+ *
+ * Casts the parameter to void to inform the compiler that the variable is
+ * intentionally unused, suppressing -Wunused-parameter warnings. Commonly used
+ * in callback functions with fixed signatures or debug-only code paths.
+ *
+ * @note Prefer removing unused parameters when possible; use this only when
+ * necessary due to API constraints.
+ * @threadsafe Yes - no side effects or shared state.
+ * @see SocketUtil.h for general utility macros.
+ */
 #define DTLS_UNUSED(x) (void)(x)
 
 /* ============================================================================

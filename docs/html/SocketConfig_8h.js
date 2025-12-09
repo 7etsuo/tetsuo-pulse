@@ -122,7 +122,7 @@ var SocketConfig_8h =
     [ "SOCKET_NS_PER_MS", "group__foundation.html#ga0dd0226b79f2dc57e6741601fd56b51d", null ],
     [ "SOCKET_NS_PER_SECOND", "group__foundation.html#ga3c2718b359486f4075a4b70b5ddfde1c", null ],
     [ "SOCKET_PERCENTAGE_DIVISOR", "group__connection__mgmt.html#ga775d9db592e6205d00a2b6ad81bf3492", null ],
-    [ "SOCKET_PLATFORM_MACOS", "SocketConfig_8h.html#afe51dc34402f488f54f734a1ebd48307", null ],
+    [ "SOCKET_PLATFORM_MACOS", "group__foundation.html#gafe51dc34402f488f54f734a1ebd48307", null ],
     [ "SOCKET_POLL_MAX_REGISTERED", "SocketConfig_8h.html#a9e03e27adad67f322a99e86a6a5fd29f", null ],
     [ "SOCKET_POOL_DEFAULT_CLEANUP_INTERVAL_MS", "SocketConfig_8h.html#a354014b5198b0b853d17d21752d5193c", null ],
     [ "SOCKET_POOL_DEFAULT_IDLE_TIMEOUT", "SocketConfig_8h.html#a10afdbc4e530ae2745037155bb78ebb6", null ],

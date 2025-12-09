@@ -1,0 +1,4 @@
+<map id="Event System Modules" name="Event System Modules">
+<area shape="rect" id="Node000002" href="$group__core__io.html" title="Fundamental socket operations for TCP, UDP, and Unix domain sockets.The Core I/O group provides the b..." alt="" coords="5,5,131,31"/>
+<area shape="rect" id="Node000001" title="High&#45;performance I/O multiplexing with cross&#45;platform backends.Key components: SocketPoll (epoll/kque..." alt="" coords="253,5,412,31"/>
+</map>

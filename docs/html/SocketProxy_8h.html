@@ -113,7 +113,6 @@ $(document).ready(function(){initNavTree('SocketProxy_8h.html',''); initResizabl
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
-<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
@@ -121,7 +120,7 @@ $(document).ready(function(){initNavTree('SocketProxy_8h.html',''); initResizabl
 </div><!--header-->
 <div class="contents">
 
-<p>Proxy tunneling support for HTTP CONNECT and SOCKS protocols.  
+<p>Proxy tunneling module for HTTP CONNECT and SOCKS protocols.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
@@ -142,47 +141,49 @@ $(document).ready(function(){initNavTree('SocketProxy_8h.html',''); initResizabl
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketProxy_8h__dep__incl.svg" width="130" height="110"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketProxy_8h__dep__incl.svg" width="304" height="110"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <p><a href="SocketProxy_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketProxy__Config" id="r_structSocketProxy__Config"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a></td></tr>
-<tr class="memdesc:structSocketProxy__Config"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configuration structure for proxy connections.  <a href="group__core__io.html#structSocketProxy__Config">More...</a><br /></td></tr>
+<tr class="memitem:structSocketProxy__Config" id="r_structSocketProxy__Config"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__proxy.html#structSocketProxy__Config">SocketProxy_Config</a></td></tr>
+<tr class="memdesc:structSocketProxy__Config"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configuration structure for proxy connections.  <a href="group__proxy.html#structSocketProxy__Config">More...</a><br /></td></tr>
 <tr class="separator:structSocketProxy__Config"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a></td></tr>
+<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a></td></tr>
 <tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque context for managing asynchronous proxy tunneling operations.  <br /></td></tr>
 <tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6b08f5d67aab6be5b659223ae32a45f0" id="r_a6b08f5d67aab6be5b659223ae32a45f0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#a6b08f5d67aab6be5b659223ae32a45f0">SOCKET_PROXY_DEFAULT_CONNECT_TIMEOUT_MS</a>&#160;&#160;&#160;30000</td></tr>
-<tr class="separator:a6b08f5d67aab6be5b659223ae32a45f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f89412ba3bf491edcac4617c03dd39b" id="r_a9f89412ba3bf491edcac4617c03dd39b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#a9f89412ba3bf491edcac4617c03dd39b">SOCKET_PROXY_DEFAULT_HANDSHAKE_TIMEOUT_MS</a>&#160;&#160;&#160;30000</td></tr>
-<tr class="separator:a9f89412ba3bf491edcac4617c03dd39b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8eab241f263ed3b03ed6071c87c0b3e2" id="r_a8eab241f263ed3b03ed6071c87c0b3e2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#a8eab241f263ed3b03ed6071c87c0b3e2">SOCKET_PROXY_MAX_HOSTNAME_LEN</a>&#160;&#160;&#160;255</td></tr>
-<tr class="separator:a8eab241f263ed3b03ed6071c87c0b3e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a42ca2ffbfb0de8352e90cf75fc40fc65" id="r_a42ca2ffbfb0de8352e90cf75fc40fc65"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#a42ca2ffbfb0de8352e90cf75fc40fc65">SOCKET_PROXY_MAX_USERNAME_LEN</a>&#160;&#160;&#160;255</td></tr>
-<tr class="separator:a42ca2ffbfb0de8352e90cf75fc40fc65"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e1be1cb4883cf9ffb8740802a13e80d" id="r_a3e1be1cb4883cf9ffb8740802a13e80d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#a3e1be1cb4883cf9ffb8740802a13e80d">SOCKET_PROXY_MAX_PASSWORD_LEN</a>&#160;&#160;&#160;255</td></tr>
-<tr class="separator:a3e1be1cb4883cf9ffb8740802a13e80d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a171e300c127615c82898fcdb6c79eb22" id="r_a171e300c127615c82898fcdb6c79eb22"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#a171e300c127615c82898fcdb6c79eb22">SOCKET_PROXY_MAX_USERINFO_LEN</a>&#160;&#160;&#160;512</td></tr>
-<tr class="separator:a171e300c127615c82898fcdb6c79eb22"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5d2dd3c09cef803b630431503f55972" id="r_ac5d2dd3c09cef803b630431503f55972"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#ac5d2dd3c09cef803b630431503f55972">SOCKET_PROXY_DEFAULT_SOCKS_PORT</a>&#160;&#160;&#160;1080</td></tr>
-<tr class="separator:ac5d2dd3c09cef803b630431503f55972"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abc8fb5cad208dd7c9fa2a09021a1b514" id="r_abc8fb5cad208dd7c9fa2a09021a1b514"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#abc8fb5cad208dd7c9fa2a09021a1b514">SOCKET_PROXY_DEFAULT_HTTP_PORT</a>&#160;&#160;&#160;8080</td></tr>
-<tr class="separator:abc8fb5cad208dd7c9fa2a09021a1b514"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f65090a7ed6c0d2e6168714dfe0b2c7" id="r_a7f65090a7ed6c0d2e6168714dfe0b2c7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#a7f65090a7ed6c0d2e6168714dfe0b2c7">SOCKET_PROXY_DEFAULT_HTTPS_PORT</a>&#160;&#160;&#160;8080</td></tr>
-<tr class="separator:a7f65090a7ed6c0d2e6168714dfe0b2c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
-Typedefs</h2></td></tr>
-<tr class="memitem:af1f6772bf122ad6e2e90639b2877754f" id="r_af1f6772bf122ad6e2e90639b2877754f"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTP_Headers *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#af1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a></td></tr>
-<tr class="separator:af1f6772bf122ad6e2e90639b2877754f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f08cbaf58cda2bfda0fa9ce8cc28007" id="r_a7f08cbaf58cda2bfda0fa9ce8cc28007"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a></td></tr>
-<tr class="separator:a7f08cbaf58cda2bfda0fa9ce8cc28007"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6b08f5d67aab6be5b659223ae32a45f0" id="r_ga6b08f5d67aab6be5b659223ae32a45f0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__proxy.html#ga6b08f5d67aab6be5b659223ae32a45f0">SOCKET_PROXY_DEFAULT_CONNECT_TIMEOUT_MS</a>&#160;&#160;&#160;30000</td></tr>
+<tr class="memdesc:ga6b08f5d67aab6be5b659223ae32a45f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default timeout for establishing connection to proxy server. Value: 30000 ms (30 seconds). Used when config.connect_timeout_ms = 0.  <br /></td></tr>
+<tr class="separator:ga6b08f5d67aab6be5b659223ae32a45f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9f89412ba3bf491edcac4617c03dd39b" id="r_ga9f89412ba3bf491edcac4617c03dd39b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__proxy.html#ga9f89412ba3bf491edcac4617c03dd39b">SOCKET_PROXY_DEFAULT_HANDSHAKE_TIMEOUT_MS</a>&#160;&#160;&#160;30000</td></tr>
+<tr class="memdesc:ga9f89412ba3bf491edcac4617c03dd39b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default timeout for proxy protocol handshake and authentication. Value: 30000 ms (30 seconds). Covers TLS, request send/recv, auth subnegotiation.  <br /></td></tr>
+<tr class="separator:ga9f89412ba3bf491edcac4617c03dd39b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8eab241f263ed3b03ed6071c87c0b3e2" id="r_ga8eab241f263ed3b03ed6071c87c0b3e2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__proxy.html#ga8eab241f263ed3b03ed6071c87c0b3e2">SOCKET_PROXY_MAX_HOSTNAME_LEN</a>&#160;&#160;&#160;255</td></tr>
+<tr class="memdesc:ga8eab241f263ed3b03ed6071c87c0b3e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum allowed hostname/domain length in SOCKS5 requests (RFC 1928). Value: 255 bytes. Enforced for security against buffer overflows.  <br /></td></tr>
+<tr class="separator:ga8eab241f263ed3b03ed6071c87c0b3e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga42ca2ffbfb0de8352e90cf75fc40fc65" id="r_ga42ca2ffbfb0de8352e90cf75fc40fc65"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__proxy.html#ga42ca2ffbfb0de8352e90cf75fc40fc65">SOCKET_PROXY_MAX_USERNAME_LEN</a>&#160;&#160;&#160;255</td></tr>
+<tr class="memdesc:ga42ca2ffbfb0de8352e90cf75fc40fc65"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum username length for SOCKS5 authentication (RFC 1929). Value: 255 bytes.  <br /></td></tr>
+<tr class="separator:ga42ca2ffbfb0de8352e90cf75fc40fc65"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3e1be1cb4883cf9ffb8740802a13e80d" id="r_ga3e1be1cb4883cf9ffb8740802a13e80d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__proxy.html#ga3e1be1cb4883cf9ffb8740802a13e80d">SOCKET_PROXY_MAX_PASSWORD_LEN</a>&#160;&#160;&#160;255</td></tr>
+<tr class="memdesc:ga3e1be1cb4883cf9ffb8740802a13e80d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum password length for SOCKS5 authentication (RFC 1929). Value: 255 bytes. Handled securely with memory clearing.  <br /></td></tr>
+<tr class="separator:ga3e1be1cb4883cf9ffb8740802a13e80d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga171e300c127615c82898fcdb6c79eb22" id="r_ga171e300c127615c82898fcdb6c79eb22"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__proxy.html#ga171e300c127615c82898fcdb6c79eb22">SOCKET_PROXY_MAX_USERINFO_LEN</a>&#160;&#160;&#160;512</td></tr>
+<tr class="memdesc:ga171e300c127615c82898fcdb6c79eb22"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum length for userinfo in proxy URLs (user:pass@). Value: 512 bytes (conservative for user + pass + delimiters). Used in parsing to prevent buffer issues.  <br /></td></tr>
+<tr class="separator:ga171e300c127615c82898fcdb6c79eb22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac5d2dd3c09cef803b630431503f55972" id="r_gac5d2dd3c09cef803b630431503f55972"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__proxy.html#gac5d2dd3c09cef803b630431503f55972">SOCKET_PROXY_DEFAULT_SOCKS_PORT</a>&#160;&#160;&#160;1080</td></tr>
+<tr class="memdesc:gac5d2dd3c09cef803b630431503f55972"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default port for SOCKS proxies. Value: 1080 (standard IANA assignment). Used when config.port = 0 and type is SOCKS*.  <br /></td></tr>
+<tr class="separator:gac5d2dd3c09cef803b630431503f55972"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabc8fb5cad208dd7c9fa2a09021a1b514" id="r_gabc8fb5cad208dd7c9fa2a09021a1b514"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__proxy.html#gabc8fb5cad208dd7c9fa2a09021a1b514">SOCKET_PROXY_DEFAULT_HTTP_PORT</a>&#160;&#160;&#160;8080</td></tr>
+<tr class="memdesc:gabc8fb5cad208dd7c9fa2a09021a1b514"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default port for HTTP proxies. Value: 8080 (common convention). Used for SOCKET_PROXY_HTTP when port unspecified.  <br /></td></tr>
+<tr class="separator:gabc8fb5cad208dd7c9fa2a09021a1b514"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7f65090a7ed6c0d2e6168714dfe0b2c7" id="r_ga7f65090a7ed6c0d2e6168714dfe0b2c7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__proxy.html#ga7f65090a7ed6c0d2e6168714dfe0b2c7">SOCKET_PROXY_DEFAULT_HTTPS_PORT</a>&#160;&#160;&#160;8080</td></tr>
+<tr class="memdesc:ga7f65090a7ed6c0d2e6168714dfe0b2c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default port for HTTPS proxies. Value: 8080 (same as HTTP; TLS on top). Used for SOCKET_PROXY_HTTPS when port unspecified.  <br /></td></tr>
+<tr class="separator:ga7f65090a7ed6c0d2e6168714dfe0b2c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -265,55 +266,55 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga197242786615adf218d849747bc0fd67" id="r_ga197242786615adf218d849747bc0fd67"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga197242786615adf218d849747bc0fd67">SocketProxy_config_defaults</a> (<a class="el" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a> *config)</td></tr>
+<tr class="memitem:ga197242786615adf218d849747bc0fd67" id="r_ga197242786615adf218d849747bc0fd67"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga197242786615adf218d849747bc0fd67">SocketProxy_config_defaults</a> (<a class="el" href="group__proxy.html#structSocketProxy__Config">SocketProxy_Config</a> *config)</td></tr>
 <tr class="memdesc:ga197242786615adf218d849747bc0fd67"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize proxy configuration with safe default values.  <br /></td></tr>
 <tr class="separator:ga197242786615adf218d849747bc0fd67"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae16c20e1d43f38171ccaad8408598490" id="r_gae16c20e1d43f38171ccaad8408598490"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a> (const char *url, <a class="el" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a> *config, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memitem:gae16c20e1d43f38171ccaad8408598490" id="r_gae16c20e1d43f38171ccaad8408598490"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a> (const char *url, <a class="el" href="group__proxy.html#structSocketProxy__Config">SocketProxy_Config</a> *config, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
 <tr class="memdesc:gae16c20e1d43f38171ccaad8408598490"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse proxy URL string into configuration structure.  <br /></td></tr>
 <tr class="separator:gae16c20e1d43f38171ccaad8408598490"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaad72c8e58d88ee4bbc975c9163266ef0" id="r_gaad72c8e58d88ee4bbc975c9163266ef0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a> (const <a class="el" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a> *proxy, const char *target_host, int target_port)</td></tr>
+<tr class="memitem:gaad72c8e58d88ee4bbc975c9163266ef0" id="r_gaad72c8e58d88ee4bbc975c9163266ef0"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a> (const <a class="el" href="group__proxy.html#structSocketProxy__Config">SocketProxy_Config</a> *proxy, const char *target_host, int target_port)</td></tr>
 <tr class="memdesc:gaad72c8e58d88ee4bbc975c9163266ef0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Establish synchronous connection to target via proxy tunnel.  <br /></td></tr>
 <tr class="separator:gaad72c8e58d88ee4bbc975c9163266ef0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga58fac7f1a89c5921c7152e393dd8ad36" id="r_ga58fac7f1a89c5921c7152e393dd8ad36"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga58fac7f1a89c5921c7152e393dd8ad36">SocketProxy_tunnel</a> (<a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const <a class="el" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a> *proxy, const char *target_host, int target_port, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memitem:ga58fac7f1a89c5921c7152e393dd8ad36" id="r_ga58fac7f1a89c5921c7152e393dd8ad36"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga58fac7f1a89c5921c7152e393dd8ad36">SocketProxy_tunnel</a> (Socket_T socket, const <a class="el" href="group__proxy.html#structSocketProxy__Config">SocketProxy_Config</a> *proxy, const char *target_host, int target_port, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
 <tr class="memdesc:ga58fac7f1a89c5921c7152e393dd8ad36"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform proxy handshake on pre-connected socket to establish tunnel.  <br /></td></tr>
 <tr class="separator:ga58fac7f1a89c5921c7152e393dd8ad36"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5f6fd1cde0a54b41805862ce002f6f97" id="r_ga5f6fd1cde0a54b41805862ce002f6f97"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga5f6fd1cde0a54b41805862ce002f6f97">SocketProxy_Conn_start</a> (<a class="el" href="group__dns.html#gac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns, <a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, const <a class="el" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a> *proxy, const char *target_host, int target_port)</td></tr>
+<tr class="memitem:ga5f6fd1cde0a54b41805862ce002f6f97" id="r_ga5f6fd1cde0a54b41805862ce002f6f97"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga5f6fd1cde0a54b41805862ce002f6f97">SocketProxy_Conn_start</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, <a class="el" href="group__event__system.html#structSocketPoll__T">SocketPoll_T</a> poll, const <a class="el" href="group__proxy.html#structSocketProxy__Config">SocketProxy_Config</a> *proxy, const char *target_host, int target_port)</td></tr>
 <tr class="memdesc:ga5f6fd1cde0a54b41805862ce002f6f97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize and start fully asynchronous proxy tunneling operation.  <br /></td></tr>
 <tr class="separator:ga5f6fd1cde0a54b41805862ce002f6f97"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6d17fac3f6b21b9905aa7c4b0d7d47f7" id="r_ga6d17fac3f6b21b9905aa7c4b0d7d47f7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga6d17fac3f6b21b9905aa7c4b0d7d47f7">SocketProxy_Conn_new</a> (const <a class="el" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a> *proxy, const char *target_host, int target_port)</td></tr>
+<tr class="memitem:ga6d17fac3f6b21b9905aa7c4b0d7d47f7" id="r_ga6d17fac3f6b21b9905aa7c4b0d7d47f7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga6d17fac3f6b21b9905aa7c4b0d7d47f7">SocketProxy_Conn_new</a> (const <a class="el" href="group__proxy.html#structSocketProxy__Config">SocketProxy_Config</a> *proxy, const char *target_host, int target_port)</td></tr>
 <tr class="memdesc:ga6d17fac3f6b21b9905aa7c4b0d7d47f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create proxy connection context with blocking proxy connect, async handshake.  <br /></td></tr>
 <tr class="separator:ga6d17fac3f6b21b9905aa7c4b0d7d47f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac12fc736c9952313a4846dd50380bc3f" id="r_gac12fc736c9952313a4846dd50380bc3f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gac12fc736c9952313a4846dd50380bc3f">SocketProxy_Conn_poll</a> (<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn)</td></tr>
+<tr class="memitem:gac12fc736c9952313a4846dd50380bc3f" id="r_gac12fc736c9952313a4846dd50380bc3f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gac12fc736c9952313a4846dd50380bc3f">SocketProxy_Conn_poll</a> (<a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a> conn)</td></tr>
 <tr class="memdesc:gac12fc736c9952313a4846dd50380bc3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query if proxy operation has completed.  <br /></td></tr>
 <tr class="separator:gac12fc736c9952313a4846dd50380bc3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf45ecd7d9e7c6214e6bfcc6b2a42f977" id="r_gaf45ecd7d9e7c6214e6bfcc6b2a42f977"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaf45ecd7d9e7c6214e6bfcc6b2a42f977">SocketProxy_Conn_process</a> (<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn)</td></tr>
+<tr class="memitem:gaf45ecd7d9e7c6214e6bfcc6b2a42f977" id="r_gaf45ecd7d9e7c6214e6bfcc6b2a42f977"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaf45ecd7d9e7c6214e6bfcc6b2a42f977">SocketProxy_Conn_process</a> (<a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a> conn)</td></tr>
 <tr class="memdesc:gaf45ecd7d9e7c6214e6bfcc6b2a42f977"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advance asynchronous proxy connection state machine.  <br /></td></tr>
 <tr class="separator:gaf45ecd7d9e7c6214e6bfcc6b2a42f977"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaff1d539486b8b250489938c4b71c89a9" id="r_gaff1d539486b8b250489938c4b71c89a9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaff1d539486b8b250489938c4b71c89a9">SocketProxy_Conn_socket</a> (<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn)</td></tr>
+<tr class="memitem:gaff1d539486b8b250489938c4b71c89a9" id="r_gaff1d539486b8b250489938c4b71c89a9"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaff1d539486b8b250489938c4b71c89a9">SocketProxy_Conn_socket</a> (<a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a> conn)</td></tr>
 <tr class="memdesc:gaff1d539486b8b250489938c4b71c89a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extract successfully tunneled socket from completed context.  <br /></td></tr>
 <tr class="separator:gaff1d539486b8b250489938c4b71c89a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2853a36e933b9ac3803173169b1b159e" id="r_ga2853a36e933b9ac3803173169b1b159e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga2853a36e933b9ac3803173169b1b159e">SocketProxy_Conn_cancel</a> (<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn)</td></tr>
+<tr class="memitem:ga2853a36e933b9ac3803173169b1b159e" id="r_ga2853a36e933b9ac3803173169b1b159e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga2853a36e933b9ac3803173169b1b159e">SocketProxy_Conn_cancel</a> (<a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a> conn)</td></tr>
 <tr class="memdesc:ga2853a36e933b9ac3803173169b1b159e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancel ongoing proxy connection and cleanup resources.  <br /></td></tr>
 <tr class="separator:ga2853a36e933b9ac3803173169b1b159e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafee164cf3e979f5cfe745a33366812d9" id="r_gafee164cf3e979f5cfe745a33366812d9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gafee164cf3e979f5cfe745a33366812d9">SocketProxy_Conn_free</a> (<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> *conn)</td></tr>
+<tr class="memitem:gafee164cf3e979f5cfe745a33366812d9" id="r_gafee164cf3e979f5cfe745a33366812d9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gafee164cf3e979f5cfe745a33366812d9">SocketProxy_Conn_free</a> (<a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a> *conn)</td></tr>
 <tr class="memdesc:gafee164cf3e979f5cfe745a33366812d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release proxy connection context and associated resources.  <br /></td></tr>
 <tr class="separator:gafee164cf3e979f5cfe745a33366812d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1ee518c3b280abda4ae21871fae53040" id="r_ga1ee518c3b280abda4ae21871fae53040"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#gaf9f1c72bfcb303aa9ee5dae6d903b9be">SocketProxy_State</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga1ee518c3b280abda4ae21871fae53040">SocketProxy_Conn_state</a> (<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn)</td></tr>
+<tr class="memitem:ga1ee518c3b280abda4ae21871fae53040" id="r_ga1ee518c3b280abda4ae21871fae53040"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#gaf9f1c72bfcb303aa9ee5dae6d903b9be">SocketProxy_State</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga1ee518c3b280abda4ae21871fae53040">SocketProxy_Conn_state</a> (<a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a> conn)</td></tr>
 <tr class="memdesc:ga1ee518c3b280abda4ae21871fae53040"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve current state of proxy connection.  <br /></td></tr>
 <tr class="separator:ga1ee518c3b280abda4ae21871fae53040"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf191ce0cae571b057d5ea278392bdf24" id="r_gaf191ce0cae571b057d5ea278392bdf24"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaf191ce0cae571b057d5ea278392bdf24">SocketProxy_Conn_result</a> (<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn)</td></tr>
+<tr class="memitem:gaf191ce0cae571b057d5ea278392bdf24" id="r_gaf191ce0cae571b057d5ea278392bdf24"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaf191ce0cae571b057d5ea278392bdf24">SocketProxy_Conn_result</a> (<a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a> conn)</td></tr>
 <tr class="memdesc:gaf191ce0cae571b057d5ea278392bdf24"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get final result code after operation completion.  <br /></td></tr>
 <tr class="separator:gaf191ce0cae571b057d5ea278392bdf24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga93a495a98a7efa7ecc9d42ce838d4a3e" id="r_ga93a495a98a7efa7ecc9d42ce838d4a3e"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga93a495a98a7efa7ecc9d42ce838d4a3e">SocketProxy_Conn_error</a> (<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn)</td></tr>
+<tr class="memitem:ga93a495a98a7efa7ecc9d42ce838d4a3e" id="r_ga93a495a98a7efa7ecc9d42ce838d4a3e"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga93a495a98a7efa7ecc9d42ce838d4a3e">SocketProxy_Conn_error</a> (<a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a> conn)</td></tr>
 <tr class="memdesc:ga93a495a98a7efa7ecc9d42ce838d4a3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve human-readable error description for failed operations.  <br /></td></tr>
 <tr class="separator:ga93a495a98a7efa7ecc9d42ce838d4a3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9d1139d24bcabc22e6e2b07762e8f753" id="r_ga9d1139d24bcabc22e6e2b07762e8f753"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga9d1139d24bcabc22e6e2b07762e8f753">SocketProxy_Conn_fd</a> (<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn)</td></tr>
+<tr class="memitem:ga9d1139d24bcabc22e6e2b07762e8f753" id="r_ga9d1139d24bcabc22e6e2b07762e8f753"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga9d1139d24bcabc22e6e2b07762e8f753">SocketProxy_Conn_fd</a> (<a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a> conn)</td></tr>
 <tr class="memdesc:ga9d1139d24bcabc22e6e2b07762e8f753"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get underlying file descriptor for poll integration.  <br /></td></tr>
 <tr class="separator:ga9d1139d24bcabc22e6e2b07762e8f753"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8d7492a46210e78249073e289c556ea8" id="r_ga8d7492a46210e78249073e289c556ea8"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga8d7492a46210e78249073e289c556ea8">SocketProxy_Conn_events</a> (<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn)</td></tr>
+<tr class="memitem:ga8d7492a46210e78249073e289c556ea8" id="r_ga8d7492a46210e78249073e289c556ea8"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga8d7492a46210e78249073e289c556ea8">SocketProxy_Conn_events</a> (<a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a> conn)</td></tr>
 <tr class="memdesc:ga8d7492a46210e78249073e289c556ea8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get poll event mask for current connection phase.  <br /></td></tr>
 <tr class="separator:ga8d7492a46210e78249073e289c556ea8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf64af0e87ee1735152783f2b7fd132c9" id="r_gaf64af0e87ee1735152783f2b7fd132c9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaf64af0e87ee1735152783f2b7fd132c9">SocketProxy_Conn_next_timeout_ms</a> (<a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn)</td></tr>
+<tr class="memitem:gaf64af0e87ee1735152783f2b7fd132c9" id="r_gaf64af0e87ee1735152783f2b7fd132c9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaf64af0e87ee1735152783f2b7fd132c9">SocketProxy_Conn_next_timeout_ms</a> (<a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T">SocketProxy_Conn_T</a> conn)</td></tr>
 <tr class="memdesc:gaf64af0e87ee1735152783f2b7fd132c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate milliseconds until next internal timeout.  <br /></td></tr>
 <tr class="separator:gaf64af0e87ee1735152783f2b7fd132c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga2a0ac262c4e03ed00c5eeb2aa8d210bd" id="r_ga2a0ac262c4e03ed00c5eeb2aa8d210bd"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga2a0ac262c4e03ed00c5eeb2aa8d210bd">SocketProxy_result_string</a> (<a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> result)</td></tr>
@@ -333,244 +334,10 @@ Variables</h2></td></tr>
 <tr class="separator:ga8c1385083c8f3a50e20e1ce11faec7b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Proxy tunneling support for HTTP CONNECT and SOCKS protocols. </p>
-<p>Provides transparent proxy tunneling for TCP connections, supporting HTTP CONNECT and SOCKS4/4a/5 protocols. The implementation follows the same patterns as SocketHappyEyeballs with both synchronous and asynchronous APIs.</p>
-<p>Supported Proxy Types:</p><ul>
-<li>HTTP CONNECT (RFC 7231) with optional Basic authentication</li>
-<li>HTTPS CONNECT (TLS to proxy)</li>
-<li>SOCKS4 (IPv4 only)</li>
-<li>SOCKS4a (hostname resolution at proxy)</li>
-<li>SOCKS5 (RFC 1928) with no auth or username/password</li>
-<li>SOCKS5H (SOCKS5 with hostname resolution at proxy)</li>
-</ul>
-<p>Features:</p><ul>
-<li>Synchronous and asynchronous APIs</li>
-<li>URL parsing (socks5://user:pass@host:port)</li>
-<li>Configurable timeouts</li>
-<li>Secure credential handling</li>
-<li>Integration with SocketHappyEyeballs for fast proxy connection</li>
-</ul>
-<p>Module Reuse (no code duplication):</p><ul>
-<li>SocketHappyEyeballs for proxy server connection (handles DNS internally)</li>
-<li>SocketHTTP1_Parser_T for HTTP CONNECT response parsing</li>
-<li>SocketCrypto for Basic auth encoding and secure memory clearing</li>
-<li>SocketBuf for buffered protocol I/O</li>
-</ul>
-<p>Thread Safety:</p><ul>
-<li>SocketProxy_Conn_T instances are NOT thread-safe</li>
-<li>Multiple instances can be used from different threads</li>
-<li>Synchronous API is thread-safe (uses internal resources)</li>
-</ul>
-<p>Security Notes:</p><ul>
-<li>Credentials are cleared from memory after use via <a class="el" href="group__foundation.html#ga00f94677d393f24e0b0c549be7bbcdf2" title="Securely clear sensitive data from memory.">SocketCrypto_secure_clear()</a></li>
-<li>Hostnames are validated (SOCKS5 max 255 bytes)</li>
-<li>HTTP response parsing uses strict mode to prevent smuggling</li>
-<li>All protocol responses are bounds-checked</li>
-</ul>
-<p>Usage (Synchronous): SocketProxy_Result result = SocketProxy_connect( socket, &amp;proxy, "target.example.com", 443); if (result == PROXY_OK) { // Socket is now tunneled to target // Perform TLS handshake if needed }</p>
-<p>Usage (Asynchronous): SocketProxy_Conn_T conn = SocketProxy_Conn_new( socket, &amp;proxy, "target.example.com", 443); while (!SocketProxy_Conn_poll(conn)) { int timeout = SocketProxy_Conn_next_timeout_ms(conn); SocketPoll_wait(poll, &amp;events, timeout); SocketProxy_Conn_process(conn); } SocketProxy_Result result = SocketProxy_Conn_result(conn); SocketProxy_Conn_free(&amp;conn);</p>
-<p>Platform Requirements:</p><ul>
-<li>POSIX-compliant system (Linux, BSD, macOS)</li>
-<li>SocketHappyEyeballs module for proxy connection</li>
-<li>Optional: SocketTLS for HTTPS proxy support</li>
-</ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gaad72c8e58d88ee4bbc975c9163266ef0" title="Establish synchronous connection to target via proxy tunnel.">SocketProxy_connect()</a> for synchronous proxy connection. </dd>
-<dd>
-SocketProxy_new() for asynchronous proxy connection setup. </dd>
-<dd>
-<a class="el" href="SocketHappyEyeballs_8h.html" title="Happy Eyeballs (RFC 8305) implementation for fast dual-stack connections.">SocketHappyEyeballs.h</a> for connection racing integration. </dd>
-<dd>
-<a class="el" href="SocketTLS_8h.html" title="TLS/SSL socket integration with TLS 1.3 support.">SocketTLS.h</a> for TLS proxy support. </dd></dl>
+<div class="textblock"><p>Proxy tunneling module for HTTP CONNECT and SOCKS protocols. </p>
 
 <p class="definition">Definition in file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
-</div><h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a6b08f5d67aab6be5b659223ae32a45f0" name="a6b08f5d67aab6be5b659223ae32a45f0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6b08f5d67aab6be5b659223ae32a45f0">&#9670;&#160;</a></span>SOCKET_PROXY_DEFAULT_CONNECT_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_PROXY_DEFAULT_CONNECT_TIMEOUT_MS&#160;&#160;&#160;30000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default timeout for connecting to proxy server (ms) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00146">146</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
-
-</div>
-</div>
-<a id="a9f89412ba3bf491edcac4617c03dd39b" name="a9f89412ba3bf491edcac4617c03dd39b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9f89412ba3bf491edcac4617c03dd39b">&#9670;&#160;</a></span>SOCKET_PROXY_DEFAULT_HANDSHAKE_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_PROXY_DEFAULT_HANDSHAKE_TIMEOUT_MS&#160;&#160;&#160;30000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default timeout for proxy handshake (ms) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00151">151</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
-
-</div>
-</div>
-<a id="abc8fb5cad208dd7c9fa2a09021a1b514" name="abc8fb5cad208dd7c9fa2a09021a1b514"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abc8fb5cad208dd7c9fa2a09021a1b514">&#9670;&#160;</a></span>SOCKET_PROXY_DEFAULT_HTTP_PORT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_PROXY_DEFAULT_HTTP_PORT&#160;&#160;&#160;8080</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default HTTP proxy port </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00181">181</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
-
-</div>
-</div>
-<a id="a7f65090a7ed6c0d2e6168714dfe0b2c7" name="a7f65090a7ed6c0d2e6168714dfe0b2c7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f65090a7ed6c0d2e6168714dfe0b2c7">&#9670;&#160;</a></span>SOCKET_PROXY_DEFAULT_HTTPS_PORT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_PROXY_DEFAULT_HTTPS_PORT&#160;&#160;&#160;8080</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default HTTPS proxy port </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00186">186</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
-
-</div>
-</div>
-<a id="ac5d2dd3c09cef803b630431503f55972" name="ac5d2dd3c09cef803b630431503f55972"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5d2dd3c09cef803b630431503f55972">&#9670;&#160;</a></span>SOCKET_PROXY_DEFAULT_SOCKS_PORT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_PROXY_DEFAULT_SOCKS_PORT&#160;&#160;&#160;1080</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default SOCKS port </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00176">176</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
-
-</div>
-</div>
-<a id="a8eab241f263ed3b03ed6071c87c0b3e2" name="a8eab241f263ed3b03ed6071c87c0b3e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8eab241f263ed3b03ed6071c87c0b3e2">&#9670;&#160;</a></span>SOCKET_PROXY_MAX_HOSTNAME_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_PROXY_MAX_HOSTNAME_LEN&#160;&#160;&#160;255</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum hostname length for SOCKS5 (RFC 1928) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00156">156</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
-
-</div>
-</div>
-<a id="a3e1be1cb4883cf9ffb8740802a13e80d" name="a3e1be1cb4883cf9ffb8740802a13e80d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3e1be1cb4883cf9ffb8740802a13e80d">&#9670;&#160;</a></span>SOCKET_PROXY_MAX_PASSWORD_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_PROXY_MAX_PASSWORD_LEN&#160;&#160;&#160;255</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum password length for SOCKS5 (RFC 1929) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00166">166</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
-
-</div>
-</div>
-<a id="a171e300c127615c82898fcdb6c79eb22" name="a171e300c127615c82898fcdb6c79eb22"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a171e300c127615c82898fcdb6c79eb22">&#9670;&#160;</a></span>SOCKET_PROXY_MAX_USERINFO_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_PROXY_MAX_USERINFO_LEN&#160;&#160;&#160;512</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum userinfo length (user + : + pass + @) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00171">171</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
-
-</div>
-</div>
-<a id="a42ca2ffbfb0de8352e90cf75fc40fc65" name="a42ca2ffbfb0de8352e90cf75fc40fc65"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a42ca2ffbfb0de8352e90cf75fc40fc65">&#9670;&#160;</a></span>SOCKET_PROXY_MAX_USERNAME_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_PROXY_MAX_USERNAME_LEN&#160;&#160;&#160;255</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum username length for SOCKS5 (RFC 1929) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00161">161</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="af1f6772bf122ad6e2e90639b2877754f" name="af1f6772bf122ad6e2e90639b2877754f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af1f6772bf122ad6e2e90639b2877754f">&#9670;&#160;</a></span>SocketHTTP_Headers_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct SocketHTTP_Headers* <a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00094">94</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
-
-</div>
-</div>
-<a id="a7f08cbaf58cda2bfda0fa9ce8cc28007" name="a7f08cbaf58cda2bfda0fa9ce8cc28007"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f08cbaf58cda2bfda0fa9ce8cc28007">&#9670;&#160;</a></span>SocketProxy_Conn_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct <a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a>* <a class="el" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00117">117</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

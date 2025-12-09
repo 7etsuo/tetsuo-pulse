@@ -5,7 +5,7 @@
  * @internal
  *
  * Internal header exposing structures and helpers for HTTP server implementation.
- * **Not part of public API** - intended for use only within src/http/*.c files.
+ * **Not part of public API** - intended for use only within C implementation files (src/http/ *.c).
  * For public interface, include SocketHTTPServer.h.
  *
  * Key internals documented here:
@@ -286,7 +286,7 @@ struct SocketHTTPServer
  * - Histogram support for latency percentiles
  * - Consistent naming across library modules
  *
- * Update calls in all src/http/*.c files. Tests and examples updated accordingly.
+ * Update calls in all src/http/ *.c files. Tests and examples updated accordingly.
  * Legacy macros undefined to prevent use.
  *
  * @see @ref utilities "Utilities Module" for SocketMetrics details.
@@ -357,27 +357,47 @@ struct SocketHTTPServer
  */
 /** @} */ /* http_error_macros */
 
-/* ============================================================================
- * Error Handling Macros (legacy comment preserved for context)
- * ============================================================================
- * Centralized for consistency across split files.
- * Uses socket_error_buf (thread-local) for messages.
+/**
+ * @brief Raise HTTP server-specific exception using current error buffer.
+ * @ingroup http_error_macros
+ * @internal
+ *
+ * Raises a module-registered exception with the error message from the thread-local
+ * buffer (populated by HTTPSERVER_ERROR_FMT or HTTPSERVER_ERROR_MSG).
+ * Centralized for consistency across HTTP server implementation files.
+ *
+ * @param e Exception type (e.g., SocketHTTPServer_Failed, SocketHTTPServer_ProtocolError).
+ *
+ * @see HTTPSERVER_ERROR_FMT() and HTTPSERVER_ERROR_MSG() for setting the error message.
+ * @see SOCKET_RAISE_MODULE_ERROR() underlying implementation.
+ * @see Except.h for exception handling framework.
+ * @see SocketHTTPServer.h for public exception types.
  */
 #define RAISE_HTTPSERVER_ERROR(e) SOCKET_RAISE_MODULE_ERROR (HTTPServer, e)
 
 /**
- * @brief Internal helper functions for HTTP server connection management.
+ * @defgroup http_server_connection_mgmt Internal HTTP Server Connection Management Helpers
  * @ingroup http
  * @internal
+ * @brief Helper functions for managing individual HTTP server connections.
  *
- * These functions implement the core logic for managing individual connections,
- * including creation, I/O, parsing, response sending, and cleanup.
- * Designed for use across split implementation files (.c files in src/http/).
- * All functions assume single-threaded access via server poll loop.
+ * These functions implement core connection lifecycle logic: creation, I/O handling,
+ * request parsing, response generation, and cleanup. Designed for use in split
+ * implementation files (src/http/ *.c). All functions assume single-threaded access
+ * via the server's poll loop and are not thread-safe.
  *
- * @see ServerConnection for connection state structure.
- * @see SocketHTTPServer for server-level management.
- * @see SocketPoll_T for event-driven invocation.
+ * Key areas:
+ * - Connection allocation and teardown (@ref connection_new, @ref connection_close)
+ * - I/O operations with buffering and timeouts (@ref connection_read, @ref connection_send_data)
+ * - HTTP request parsing and validation (@ref connection_parse_request)
+ * - Response serialization and error handling (@ref connection_send_response, @ref connection_send_error)
+ *
+ * @see ServerConnection structure for connection state details.
+ * @see SocketHTTPServer_T for server-level management and integration.
+ * @see SocketPoll_T for event-driven I/O multiplexing.
+ * @see @ref event_system "Event System Group" for polling integration.
+ * @see @ref core_io "Core I/O Group" for underlying socket operations.
+ * @{
  */
 
 /* Connection management */
@@ -517,6 +537,8 @@ void connection_send_response (SocketHTTPServer_T server,
  */
 void connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
                             int status, const char *body);
+
+/** @} http_server_connection_mgmt */
 
 /**
  * @brief Note on removed latency tracking for HTTP requests.

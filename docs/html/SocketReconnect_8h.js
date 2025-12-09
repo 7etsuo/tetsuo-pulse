@@ -12,7 +12,6 @@ var SocketReconnect_8h =
     [ "T", "SocketReconnect_8h.html#a0acb682b8260ab1c60b918599864e2e5", null ],
     [ "SocketReconnect_Callback", "group__connection__mgmt.html#ga0d4cc030dc9989344d20a170b6410220", null ],
     [ "SocketReconnect_HealthCheck", "group__connection__mgmt.html#gae24b576ed367f734f434ef30ad8386c3", null ],
-    [ "SocketReconnect_T", "SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed", null ],
     [ "SocketReconnect_State", "group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548", [
       [ "RECONNECT_DISCONNECTED", "group__connection__mgmt.html#ggab0f7f9254ebc5d681f058d6b2c26f548aad8113419cbfb25276d1139df9831611", null ],
       [ "RECONNECT_CONNECTING", "group__connection__mgmt.html#ggab0f7f9254ebc5d681f058d6b2c26f548aa8ce7a5b74cbcbbaf91d733e39ec0c07", null ],

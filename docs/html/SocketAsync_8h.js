@@ -2,7 +2,6 @@ var SocketAsync_8h =
 [
     [ "T", "group__async__io.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
     [ "SocketAsync_Callback", "group__async__io.html#gad6644a0c3153b65fa217ecbc45b5b8f9", null ],
-    [ "SocketAsync_T", "group__async__io.html#ga733615fa159421d6c73d01f6bb34bac8", null ],
     [ "SocketAsync_Flags", "group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf", [
       [ "ASYNC_FLAG_NONE", "group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c", null ],
       [ "ASYNC_FLAG_ZERO_COPY", "group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d", null ],

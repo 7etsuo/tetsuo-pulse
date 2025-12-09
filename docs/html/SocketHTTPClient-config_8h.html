@@ -123,7 +123,7 @@ $(document).ready(function(){initNavTree('SocketHTTPClient-config_8h.html',''); 
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketHTTPClient-config_8h__dep__incl.svg" width="326" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketHTTPClient-config_8h__dep__incl.svg" width="538" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <p><a href="SocketHTTPClient-config_8h_source.html">Go to the source code of this file.</a></p>
@@ -136,110 +136,155 @@ Macros</h2></td></tr>
 <tr class="memitem:ga2a80107d7741ba2a46baf779f7928730" id="r_ga2a80107d7741ba2a46baf779f7928730"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2a80107d7741ba2a46baf779f7928730">HTTPCLIENT_POOL_HASH_SIZE</a>&#160;&#160;&#160;127</td></tr>
 <tr class="memdesc:ga2a80107d7741ba2a46baf779f7928730"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default initial hash table size for HTTP client connection pool.Prime number 127 chosen for good distribution with low load factor. Automatically resizes to larger table when exceeding HTTPCLIENT_POOL_LARGE_THRESHOLD connections.  <br /></td></tr>
 <tr class="separator:ga2a80107d7741ba2a46baf779f7928730"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7f6a04a117e98e557b38a582158c4bb" id="r_ae7f6a04a117e98e557b38a582158c4bb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#ae7f6a04a117e98e557b38a582158c4bb">HTTPCLIENT_POOL_LARGE_HASH_SIZE</a>&#160;&#160;&#160;251</td></tr>
-<tr class="separator:ae7f6a04a117e98e557b38a582158c4bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afaff4a2f91f9687bf4149fde554c11b8" id="r_afaff4a2f91f9687bf4149fde554c11b8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#afaff4a2f91f9687bf4149fde554c11b8">HTTPCLIENT_POOL_LARGE_THRESHOLD</a>&#160;&#160;&#160;100</td></tr>
-<tr class="separator:afaff4a2f91f9687bf4149fde554c11b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a51703354cc9bc0603b78726aefab346f" id="r_a51703354cc9bc0603b78726aefab346f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a51703354cc9bc0603b78726aefab346f">HTTPCLIENT_IO_BUFFER_SIZE</a>&#160;&#160;&#160;8192</td></tr>
-<tr class="separator:a51703354cc9bc0603b78726aefab346f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae7f6a04a117e98e557b38a582158c4bb" id="r_gae7f6a04a117e98e557b38a582158c4bb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gae7f6a04a117e98e557b38a582158c4bb">HTTPCLIENT_POOL_LARGE_HASH_SIZE</a>&#160;&#160;&#160;251</td></tr>
+<tr class="memdesc:gae7f6a04a117e98e557b38a582158c4bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Larger hash table size for HTTP client connection pools exceeding 100 connections.  <br /></td></tr>
+<tr class="separator:gae7f6a04a117e98e557b38a582158c4bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafaff4a2f91f9687bf4149fde554c11b8" id="r_gafaff4a2f91f9687bf4149fde554c11b8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gafaff4a2f91f9687bf4149fde554c11b8">HTTPCLIENT_POOL_LARGE_THRESHOLD</a>&#160;&#160;&#160;100</td></tr>
+<tr class="memdesc:gafaff4a2f91f9687bf4149fde554c11b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Threshold for switching to larger hash table in connection pool.  <br /></td></tr>
+<tr class="separator:gafaff4a2f91f9687bf4149fde554c11b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga51703354cc9bc0603b78726aefab346f" id="r_ga51703354cc9bc0603b78726aefab346f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga51703354cc9bc0603b78726aefab346f">HTTPCLIENT_IO_BUFFER_SIZE</a>&#160;&#160;&#160;8192</td></tr>
+<tr class="memdesc:ga51703354cc9bc0603b78726aefab346f"><td class="mdescLeft">&#160;</td><td class="mdescRight">I/O buffer size for pooled connections in HTTP client.  <br /></td></tr>
+<tr class="separator:ga51703354cc9bc0603b78726aefab346f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gad6976b035b7becf34c067ecbfe122a99" id="r_gad6976b035b7becf34c067ecbfe122a99"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gad6976b035b7becf34c067ecbfe122a99">HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS</a>&#160;&#160;&#160;30000</td></tr>
-<tr class="memdesc:gad6976b035b7becf34c067ecbfe122a99"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default timeout for establishing new connections (30 seconds).Applies to TCP connect, TLS handshake, and proxy connections. Override via <a class="el" href="group__http.html#ad0964ac6e0738a3c4914054529bb51a7">SocketHTTPClient_Config.connect_timeout_ms</a> or per-request.  <br /></td></tr>
+<tr class="memdesc:gad6976b035b7becf34c067ecbfe122a99"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default timeout for establishing new connections (30 seconds).Applies to TCP connect, TLS handshake, and proxy connections. Override via <a class="el" href="group__http__client.html#ad0964ac6e0738a3c4914054529bb51a7">SocketHTTPClient_Config.connect_timeout_ms</a> or per-request.  <br /></td></tr>
 <tr class="separator:gad6976b035b7becf34c067ecbfe122a99"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86b91e7fbe633ea8ca189984af9b3547" id="r_a86b91e7fbe633ea8ca189984af9b3547"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a86b91e7fbe633ea8ca189984af9b3547">HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS</a>&#160;&#160;&#160;60000</td></tr>
-<tr class="separator:a86b91e7fbe633ea8ca189984af9b3547"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a02939decbb5546f8c00a4af02891beaf" id="r_a02939decbb5546f8c00a4af02891beaf"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a02939decbb5546f8c00a4af02891beaf">HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS</a>&#160;&#160;&#160;10000</td></tr>
-<tr class="separator:a02939decbb5546f8c00a4af02891beaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9668cac2b62d9570871b2865fcc2d562" id="r_a9668cac2b62d9570871b2865fcc2d562"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a9668cac2b62d9570871b2865fcc2d562">HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS</a>&#160;&#160;&#160;60000</td></tr>
-<tr class="separator:a9668cac2b62d9570871b2865fcc2d562"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a64838d8d2643dbec1c43f8e50055dbf7" id="r_a64838d8d2643dbec1c43f8e50055dbf7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a64838d8d2643dbec1c43f8e50055dbf7">HTTPCLIENT_DEFAULT_MAX_REDIRECTS</a>&#160;&#160;&#160;10</td></tr>
-<tr class="separator:a64838d8d2643dbec1c43f8e50055dbf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6495bfe151f30ebab1389fa05229498d" id="r_a6495bfe151f30ebab1389fa05229498d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a6495bfe151f30ebab1389fa05229498d">HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST</a>&#160;&#160;&#160;6</td></tr>
-<tr class="separator:a6495bfe151f30ebab1389fa05229498d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a48547cb7f217429e34d7fa5c925d9dea" id="r_a48547cb7f217429e34d7fa5c925d9dea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a48547cb7f217429e34d7fa5c925d9dea">HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS</a>&#160;&#160;&#160;100</td></tr>
-<tr class="separator:a48547cb7f217429e34d7fa5c925d9dea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a447d54118ee03f42f7f2877718afae7f" id="r_a447d54118ee03f42f7f2877718afae7f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a447d54118ee03f42f7f2877718afae7f">HTTPCLIENT_MAX_AUTH_RETRIES</a>&#160;&#160;&#160;2</td></tr>
-<tr class="separator:a447d54118ee03f42f7f2877718afae7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga66d096fe772967107d0642d303b1a51c" id="r_ga66d096fe772967107d0642d303b1a51c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga66d096fe772967107d0642d303b1a51c">HTTPCLIENT_DEFAULT_ENABLE_RETRY</a>&#160;&#160;&#160;0</td></tr>
-<tr class="memdesc:ga66d096fe772967107d0642d303b1a51c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flag to enable automatic retry logic for transient failures.Default: 0 (disabled) for backward compatibility. When enabled, client retries on connect errors, timeouts, and optionally 5xx responses.  <br /></td></tr>
+<tr class="memitem:ga86b91e7fbe633ea8ca189984af9b3547" id="r_ga86b91e7fbe633ea8ca189984af9b3547"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga86b91e7fbe633ea8ca189984af9b3547">HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS</a>&#160;&#160;&#160;60000</td></tr>
+<tr class="memdesc:ga86b91e7fbe633ea8ca189984af9b3547"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default timeout for full HTTP request completion (60 seconds).  <br /></td></tr>
+<tr class="separator:ga86b91e7fbe633ea8ca189984af9b3547"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga02939decbb5546f8c00a4af02891beaf" id="r_ga02939decbb5546f8c00a4af02891beaf"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga02939decbb5546f8c00a4af02891beaf">HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS</a>&#160;&#160;&#160;10000</td></tr>
+<tr class="memdesc:ga02939decbb5546f8c00a4af02891beaf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default timeout for DNS resolution (10 seconds).  <br /></td></tr>
+<tr class="separator:ga02939decbb5546f8c00a4af02891beaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9668cac2b62d9570871b2865fcc2d562" id="r_ga9668cac2b62d9570871b2865fcc2d562"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga9668cac2b62d9570871b2865fcc2d562">HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS</a>&#160;&#160;&#160;60000</td></tr>
+<tr class="memdesc:ga9668cac2b62d9570871b2865fcc2d562"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default idle timeout for pooled connections (60 seconds).  <br /></td></tr>
+<tr class="separator:ga9668cac2b62d9570871b2865fcc2d562"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga64838d8d2643dbec1c43f8e50055dbf7" id="r_ga64838d8d2643dbec1c43f8e50055dbf7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga64838d8d2643dbec1c43f8e50055dbf7">HTTPCLIENT_DEFAULT_MAX_REDIRECTS</a>&#160;&#160;&#160;10</td></tr>
+<tr class="memdesc:ga64838d8d2643dbec1c43f8e50055dbf7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default maximum number of redirects to follow (10).  <br /></td></tr>
+<tr class="separator:ga64838d8d2643dbec1c43f8e50055dbf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6495bfe151f30ebab1389fa05229498d" id="r_ga6495bfe151f30ebab1389fa05229498d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga6495bfe151f30ebab1389fa05229498d">HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST</a>&#160;&#160;&#160;6</td></tr>
+<tr class="memdesc:ga6495bfe151f30ebab1389fa05229498d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default maximum concurrent connections per host (6).  <br /></td></tr>
+<tr class="separator:ga6495bfe151f30ebab1389fa05229498d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga48547cb7f217429e34d7fa5c925d9dea" id="r_ga48547cb7f217429e34d7fa5c925d9dea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga48547cb7f217429e34d7fa5c925d9dea">HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS</a>&#160;&#160;&#160;100</td></tr>
+<tr class="memdesc:ga48547cb7f217429e34d7fa5c925d9dea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default total maximum connections across all hosts (100).  <br /></td></tr>
+<tr class="separator:ga48547cb7f217429e34d7fa5c925d9dea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga447d54118ee03f42f7f2877718afae7f" id="r_ga447d54118ee03f42f7f2877718afae7f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__limits.html#ga447d54118ee03f42f7f2877718afae7f">HTTPCLIENT_MAX_AUTH_RETRIES</a>&#160;&#160;&#160;2</td></tr>
+<tr class="memdesc:ga447d54118ee03f42f7f2877718afae7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum retries for HTTP authentication challenges (2).  <br /></td></tr>
+<tr class="separator:ga447d54118ee03f42f7f2877718afae7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga66d096fe772967107d0642d303b1a51c" id="r_ga66d096fe772967107d0642d303b1a51c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__retry.html#ga66d096fe772967107d0642d303b1a51c">HTTPCLIENT_DEFAULT_ENABLE_RETRY</a>&#160;&#160;&#160;0</td></tr>
+<tr class="memdesc:ga66d096fe772967107d0642d303b1a51c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flag to enable automatic retry logic for transient failures.Default: 0 (disabled) for backward compatibility. When enabled, client retries on connect errors, timeouts, and optionally 5xx responses. Uses configured backoff parameters for exponential retry with jitter.  <br /></td></tr>
 <tr class="separator:ga66d096fe772967107d0642d303b1a51c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a43548f5c8b02196dd3bd71ccb9836c26" id="r_a43548f5c8b02196dd3bd71ccb9836c26"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a43548f5c8b02196dd3bd71ccb9836c26">HTTPCLIENT_DEFAULT_MAX_RETRIES</a>&#160;&#160;&#160;3</td></tr>
-<tr class="separator:a43548f5c8b02196dd3bd71ccb9836c26"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1827f78650d15ca622a674b130a2b926" id="r_a1827f78650d15ca622a674b130a2b926"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a1827f78650d15ca622a674b130a2b926">HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS</a>&#160;&#160;&#160;100</td></tr>
-<tr class="separator:a1827f78650d15ca622a674b130a2b926"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7e91b18a488977f7e7d333f0f7c0611" id="r_af7e91b18a488977f7e7d333f0f7c0611"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#af7e91b18a488977f7e7d333f0f7c0611">HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS</a>&#160;&#160;&#160;10000</td></tr>
-<tr class="separator:af7e91b18a488977f7e7d333f0f7c0611"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe6a8409016e05e46305b9f7042c7c7a" id="r_afe6a8409016e05e46305b9f7042c7c7a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#afe6a8409016e05e46305b9f7042c7c7a">HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT</a>&#160;&#160;&#160;1</td></tr>
-<tr class="separator:afe6a8409016e05e46305b9f7042c7c7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d9b8b306cf8b1a3a926e909f969315f" id="r_a2d9b8b306cf8b1a3a926e909f969315f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a2d9b8b306cf8b1a3a926e909f969315f">HTTPCLIENT_DEFAULT_RETRY_ON_TIMEOUT</a>&#160;&#160;&#160;1</td></tr>
-<tr class="separator:a2d9b8b306cf8b1a3a926e909f969315f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a82f5bad7555e08cf800e56ea7b04d0db" id="r_a82f5bad7555e08cf800e56ea7b04d0db"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a82f5bad7555e08cf800e56ea7b04d0db">HTTPCLIENT_DEFAULT_RETRY_ON_5XX</a>&#160;&#160;&#160;0</td></tr>
-<tr class="separator:a82f5bad7555e08cf800e56ea7b04d0db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab32a3ecd078fc6919d2f5e0a06d12388" id="r_ab32a3ecd078fc6919d2f5e0a06d12388"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#ab32a3ecd078fc6919d2f5e0a06d12388">HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE</a>&#160;&#160;&#160;1</td></tr>
-<tr class="separator:ab32a3ecd078fc6919d2f5e0a06d12388"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acaa7d0af3789f8dd4dd0b0ada62ea8fb" id="r_acaa7d0af3789f8dd4dd0b0ada62ea8fb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#acaa7d0af3789f8dd4dd0b0ada62ea8fb">HTTPCLIENT_MAX_COOKIES</a>&#160;&#160;&#160;10000</td></tr>
-<tr class="separator:acaa7d0af3789f8dd4dd0b0ada62ea8fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga43548f5c8b02196dd3bd71ccb9836c26" id="r_ga43548f5c8b02196dd3bd71ccb9836c26"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga43548f5c8b02196dd3bd71ccb9836c26">HTTPCLIENT_DEFAULT_MAX_RETRIES</a>&#160;&#160;&#160;3</td></tr>
+<tr class="memdesc:ga43548f5c8b02196dd3bd71ccb9836c26"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default maximum number of retry attempts for transient failures (3).  <br /></td></tr>
+<tr class="separator:ga43548f5c8b02196dd3bd71ccb9836c26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1827f78650d15ca622a674b130a2b926" id="r_ga1827f78650d15ca622a674b130a2b926"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga1827f78650d15ca622a674b130a2b926">HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS</a>&#160;&#160;&#160;100</td></tr>
+<tr class="memdesc:ga1827f78650d15ca622a674b130a2b926"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default initial backoff delay for retries (100ms).  <br /></td></tr>
+<tr class="separator:ga1827f78650d15ca622a674b130a2b926"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf7e91b18a488977f7e7d333f0f7c0611" id="r_gaf7e91b18a488977f7e7d333f0f7c0611"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf7e91b18a488977f7e7d333f0f7c0611">HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS</a>&#160;&#160;&#160;10000</td></tr>
+<tr class="memdesc:gaf7e91b18a488977f7e7d333f0f7c0611"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default maximum backoff delay between retries (10 seconds).  <br /></td></tr>
+<tr class="separator:gaf7e91b18a488977f7e7d333f0f7c0611"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafe6a8409016e05e46305b9f7042c7c7a" id="r_gafe6a8409016e05e46305b9f7042c7c7a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gafe6a8409016e05e46305b9f7042c7c7a">HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT</a>&#160;&#160;&#160;1</td></tr>
+<tr class="memdesc:gafe6a8409016e05e46305b9f7042c7c7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default flag to retry on connection establishment errors (1 = enabled).  <br /></td></tr>
+<tr class="separator:gafe6a8409016e05e46305b9f7042c7c7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2d9b8b306cf8b1a3a926e909f969315f" id="r_ga2d9b8b306cf8b1a3a926e909f969315f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2d9b8b306cf8b1a3a926e909f969315f">HTTPCLIENT_DEFAULT_RETRY_ON_TIMEOUT</a>&#160;&#160;&#160;1</td></tr>
+<tr class="memdesc:ga2d9b8b306cf8b1a3a926e909f969315f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default flag to retry on request timeouts (1 = enabled).  <br /></td></tr>
+<tr class="separator:ga2d9b8b306cf8b1a3a926e909f969315f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga82f5bad7555e08cf800e56ea7b04d0db" id="r_ga82f5bad7555e08cf800e56ea7b04d0db"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__retry.html#ga82f5bad7555e08cf800e56ea7b04d0db">HTTPCLIENT_DEFAULT_RETRY_ON_5XX</a>&#160;&#160;&#160;0</td></tr>
+<tr class="memdesc:ga82f5bad7555e08cf800e56ea7b04d0db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default flag to retry on 5xx server errors (0 = disabled).  <br /></td></tr>
+<tr class="separator:ga82f5bad7555e08cf800e56ea7b04d0db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab32a3ecd078fc6919d2f5e0a06d12388" id="r_gab32a3ecd078fc6919d2f5e0a06d12388"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__cookie.html#gab32a3ecd078fc6919d2f5e0a06d12388">HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE</a>&#160;&#160;&#160;1</td></tr>
+<tr class="memdesc:gab32a3ecd078fc6919d2f5e0a06d12388"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default flag to enforce SameSite cookie attribute in matching logic (1 = enabled).  <br /></td></tr>
+<tr class="separator:gab32a3ecd078fc6919d2f5e0a06d12388"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacaa7d0af3789f8dd4dd0b0ada62ea8fb" id="r_gacaa7d0af3789f8dd4dd0b0ada62ea8fb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__cookie.html#gacaa7d0af3789f8dd4dd0b0ada62ea8fb">HTTPCLIENT_MAX_COOKIES</a>&#160;&#160;&#160;10000</td></tr>
+<tr class="memdesc:gacaa7d0af3789f8dd4dd0b0ada62ea8fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum total cookies allowed in a single cookie jar (10000).  <br /></td></tr>
+<tr class="separator:gacaa7d0af3789f8dd4dd0b0ada62ea8fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4a61970445f2f7a4a8d23da8680fc09b" id="r_ga4a61970445f2f7a4a8d23da8680fc09b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga4a61970445f2f7a4a8d23da8680fc09b">HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE</a>&#160;&#160;&#160;  (10ULL * 1024 * 1024) /* 10MB default to prevent DoS */</td></tr>
 <tr class="memdesc:ga4a61970445f2f7a4a8d23da8680fc09b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default maximum size for HTTP response bodies (10MB).  <br /></td></tr>
 <tr class="separator:ga4a61970445f2f7a4a8d23da8680fc09b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga2fc6723b3285e4aefbfe964932dca82c" id="r_ga2fc6723b3285e4aefbfe964932dca82c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__cookie.html#ga2fc6723b3285e4aefbfe964932dca82c">HTTPCLIENT_COOKIE_HASH_SIZE</a>&#160;&#160;&#160;127</td></tr>
+<tr class="memdesc:ga2fc6723b3285e4aefbfe964932dca82c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initial hash table size for cookie jar (prime 127 for distribution).  <br /></td></tr>
 <tr class="separator:ga2fc6723b3285e4aefbfe964932dca82c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae4c2b4b036298405fa4df86655f40da0" id="r_gae4c2b4b036298405fa4df86655f40da0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__cookie.html#gae4c2b4b036298405fa4df86655f40da0">HTTPCLIENT_COOKIE_MAX_NAME_LEN</a>&#160;&#160;&#160;256</td></tr>
+<tr class="memdesc:gae4c2b4b036298405fa4df86655f40da0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum allowed length for cookie names (256 bytes).  <br /></td></tr>
 <tr class="separator:gae4c2b4b036298405fa4df86655f40da0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga865ebc94fbbecd210790ee6724f25ad0" id="r_ga865ebc94fbbecd210790ee6724f25ad0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__cookie.html#ga865ebc94fbbecd210790ee6724f25ad0">HTTPCLIENT_COOKIE_MAX_VALUE_LEN</a>&#160;&#160;&#160;4096</td></tr>
+<tr class="memdesc:ga865ebc94fbbecd210790ee6724f25ad0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum allowed length for cookie values (4096 bytes).  <br /></td></tr>
 <tr class="separator:ga865ebc94fbbecd210790ee6724f25ad0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga6232822d5354e8e3a454b9aac0ab3405" id="r_ga6232822d5354e8e3a454b9aac0ab3405"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__cookie.html#ga6232822d5354e8e3a454b9aac0ab3405">HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN</a>&#160;&#160;&#160;256</td></tr>
+<tr class="memdesc:ga6232822d5354e8e3a454b9aac0ab3405"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum allowed length for cookie domain attributes (256 bytes).  <br /></td></tr>
 <tr class="separator:ga6232822d5354e8e3a454b9aac0ab3405"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9d065c123fe18985ed947ed344bfabe8" id="r_ga9d065c123fe18985ed947ed344bfabe8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__cookie.html#ga9d065c123fe18985ed947ed344bfabe8">HTTPCLIENT_COOKIE_MAX_PATH_LEN</a>&#160;&#160;&#160;1024</td></tr>
+<tr class="memdesc:ga9d065c123fe18985ed947ed344bfabe8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum allowed length for cookie path attributes (1024 bytes).  <br /></td></tr>
 <tr class="separator:ga9d065c123fe18985ed947ed344bfabe8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga93971a79c1854b341367aa92f1dfe657" id="r_ga93971a79c1854b341367aa92f1dfe657"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__cookie.html#ga93971a79c1854b341367aa92f1dfe657">HTTPCLIENT_COOKIE_FILE_LINE_SIZE</a>&#160;&#160;&#160;4096</td></tr>
+<tr class="memdesc:ga93971a79c1854b341367aa92f1dfe657"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for parsing cookie files in Netscape format (4096 bytes).  <br /></td></tr>
 <tr class="separator:ga93971a79c1854b341367aa92f1dfe657"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab56546d633bcdabb80f6fa61ad4f3c3f" id="r_gab56546d633bcdabb80f6fa61ad4f3c3f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__cookie.html#gab56546d633bcdabb80f6fa61ad4f3c3f">HTTPCLIENT_COOKIE_MAX_AGE_SIZE</a>&#160;&#160;&#160;32</td></tr>
+<tr class="memdesc:gab56546d633bcdabb80f6fa61ad4f3c3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum length for Max-Age attribute string parsing (32 bytes).  <br /></td></tr>
 <tr class="separator:gab56546d633bcdabb80f6fa61ad4f3c3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga1f5201287c752c90005b22c9a07c8011" id="r_ga1f5201287c752c90005b22c9a07c8011"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__cookie.html#ga1f5201287c752c90005b22c9a07c8011">HTTPCLIENT_COOKIE_SAMESITE_SIZE</a>&#160;&#160;&#160;16</td></tr>
+<tr class="memdesc:ga1f5201287c752c90005b22c9a07c8011"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum length for SameSite attribute value strings (16 bytes).  <br /></td></tr>
 <tr class="separator:ga1f5201287c752c90005b22c9a07c8011"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga560da3bb4151944df985b9975287edfe" id="r_ga560da3bb4151944df985b9975287edfe"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__cookie.html#ga560da3bb4151944df985b9975287edfe">HTTPCLIENT_MAX_COOKIE_AGE_SEC</a>&#160;&#160;&#160;(365LL * 24 * 3600 * 10)</td></tr>
+<tr class="memdesc:ga560da3bb4151944df985b9975287edfe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Absolute maximum cookie lifetime in seconds (10 years).  <br /></td></tr>
 <tr class="separator:ga560da3bb4151944df985b9975287edfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga03d6fecf7157434b85280da192866051" id="r_ga03d6fecf7157434b85280da192866051"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga03d6fecf7157434b85280da192866051">HTTPCLIENT_COOKIE_MAX_CHAIN_LEN</a>&#160;&#160;&#160;100</td></tr>
-<tr class="memdesc:ga03d6fecf7157434b85280da192866051"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum allowed length of hash chains in cookie jar hash table.Exceeding this triggers eviction of oldest cookies to prevent DoS via hash collision attacks. Balances performance and security.  <br /></td></tr>
+<tr class="memitem:ga03d6fecf7157434b85280da192866051" id="r_ga03d6fecf7157434b85280da192866051"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__cookie.html#ga03d6fecf7157434b85280da192866051">HTTPCLIENT_COOKIE_MAX_CHAIN_LEN</a>&#160;&#160;&#160;100</td></tr>
+<tr class="memdesc:ga03d6fecf7157434b85280da192866051"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum allowed length of hash chains in cookie jar hash table.  <br /></td></tr>
 <tr class="separator:ga03d6fecf7157434b85280da192866051"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aba4e506b5b48afa5c9e19f692619db35" id="r_aba4e506b5b48afa5c9e19f692619db35"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#aba4e506b5b48afa5c9e19f692619db35">HTTPCLIENT_AUTH_CREDENTIALS_SIZE</a>&#160;&#160;&#160;512</td></tr>
-<tr class="separator:aba4e506b5b48afa5c9e19f692619db35"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3db68e362a4cd23917b2e2b6dc05ef22" id="r_a3db68e362a4cd23917b2e2b6dc05ef22"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a3db68e362a4cd23917b2e2b6dc05ef22">HTTPCLIENT_DIGEST_A_BUFFER_SIZE</a>&#160;&#160;&#160;512</td></tr>
-<tr class="separator:a3db68e362a4cd23917b2e2b6dc05ef22"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a19c913be80fdc2a1778a5cf592fa5a32" id="r_a19c913be80fdc2a1778a5cf592fa5a32"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a19c913be80fdc2a1778a5cf592fa5a32">HTTPCLIENT_DIGEST_RESPONSE_SIZE</a>&#160;&#160;&#160;256</td></tr>
-<tr class="separator:a19c913be80fdc2a1778a5cf592fa5a32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e4e900df8359ef28d95b0ead64dbcf5" id="r_a3e4e900df8359ef28d95b0ead64dbcf5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a3e4e900df8359ef28d95b0ead64dbcf5">HTTPCLIENT_DIGEST_CNONCE_SIZE</a>&#160;&#160;&#160;16</td></tr>
-<tr class="separator:a3e4e900df8359ef28d95b0ead64dbcf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1fbe044368878287464a35d2887c23cf" id="r_a1fbe044368878287464a35d2887c23cf"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a1fbe044368878287464a35d2887c23cf">HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE</a>&#160;&#160;&#160;33</td></tr>
-<tr class="separator:a1fbe044368878287464a35d2887c23cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a78e4b4357664a978b08470dc5110b5e9" id="r_a78e4b4357664a978b08470dc5110b5e9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a78e4b4357664a978b08470dc5110b5e9">HTTPCLIENT_DIGEST_NC_SIZE</a>&#160;&#160;&#160;16</td></tr>
-<tr class="separator:a78e4b4357664a978b08470dc5110b5e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3de25c3d345626920f73bd6ceb4faefe" id="r_a3de25c3d345626920f73bd6ceb4faefe"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a3de25c3d345626920f73bd6ceb4faefe">HTTPCLIENT_REQUEST_BUFFER_SIZE</a>&#160;&#160;&#160;8192</td></tr>
-<tr class="separator:a3de25c3d345626920f73bd6ceb4faefe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9252df768faf5ccb5438f1e0e9d68b33" id="r_a9252df768faf5ccb5438f1e0e9d68b33"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a9252df768faf5ccb5438f1e0e9d68b33">HTTPCLIENT_BODY_CHUNK_SIZE</a>&#160;&#160;&#160;4096</td></tr>
-<tr class="separator:a9252df768faf5ccb5438f1e0e9d68b33"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a14236d3d25877900fe49a8c2b7c90e25" id="r_a14236d3d25877900fe49a8c2b7c90e25"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a14236d3d25877900fe49a8c2b7c90e25">HTTPCLIENT_HOST_HEADER_SIZE</a>&#160;&#160;&#160;256</td></tr>
-<tr class="separator:a14236d3d25877900fe49a8c2b7c90e25"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2bf0debe9f0685663a1f5b1fcaf56510" id="r_a2bf0debe9f0685663a1f5b1fcaf56510"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a2bf0debe9f0685663a1f5b1fcaf56510">HTTPCLIENT_COOKIE_HEADER_SIZE</a>&#160;&#160;&#160;4096</td></tr>
-<tr class="separator:a2bf0debe9f0685663a1f5b1fcaf56510"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae0d219a3146b29914fb7f7169c6aa566" id="r_ae0d219a3146b29914fb7f7169c6aa566"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#ae0d219a3146b29914fb7f7169c6aa566">HTTPCLIENT_AUTH_HEADER_SIZE</a>&#160;&#160;&#160;512</td></tr>
-<tr class="separator:ae0d219a3146b29914fb7f7169c6aa566"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81ac4eefb96b3c919042f5fdd1ea361d" id="r_a81ac4eefb96b3c919042f5fdd1ea361d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a81ac4eefb96b3c919042f5fdd1ea361d">HTTPCLIENT_AUTH_HEADER_LARGE_SIZE</a>&#160;&#160;&#160;1024</td></tr>
-<tr class="separator:a81ac4eefb96b3c919042f5fdd1ea361d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1421459188743de98f5eb1d489d70ec0" id="r_a1421459188743de98f5eb1d489d70ec0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a1421459188743de98f5eb1d489d70ec0">HTTPCLIENT_URI_BUFFER_SIZE</a>&#160;&#160;&#160;512</td></tr>
-<tr class="separator:a1421459188743de98f5eb1d489d70ec0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a134a20a8c6c468864bb0d94e9d9abb91" id="r_a134a20a8c6c468864bb0d94e9d9abb91"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a134a20a8c6c468864bb0d94e9d9abb91">HTTPCLIENT_MAX_SET_COOKIES</a>&#160;&#160;&#160;16</td></tr>
-<tr class="separator:a134a20a8c6c468864bb0d94e9d9abb91"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a846e1eb9e4ecd57dc03a065776981e0b" id="r_a846e1eb9e4ecd57dc03a065776981e0b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a846e1eb9e4ecd57dc03a065776981e0b">HTTPCLIENT_ACCEPT_ENCODING_SIZE</a>&#160;&#160;&#160;64</td></tr>
-<tr class="separator:a846e1eb9e4ecd57dc03a065776981e0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4063c6077aa71b96a83dbe475a59e5a9" id="r_a4063c6077aa71b96a83dbe475a59e5a9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a4063c6077aa71b96a83dbe475a59e5a9">HTTPCLIENT_CONTENT_LENGTH_SIZE</a>&#160;&#160;&#160;32</td></tr>
-<tr class="separator:a4063c6077aa71b96a83dbe475a59e5a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a441f1405cd4774e167f08b83b3b1e117" id="r_a441f1405cd4774e167f08b83b3b1e117"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a441f1405cd4774e167f08b83b3b1e117">HTTPCLIENT_RETRY_JITTER_FACTOR</a>&#160;&#160;&#160;0.25</td></tr>
-<tr class="separator:a441f1405cd4774e167f08b83b3b1e117"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f5f7ee22b430f5cb019b8b0a6803348" id="r_a5f5f7ee22b430f5cb019b8b0a6803348"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#a5f5f7ee22b430f5cb019b8b0a6803348">HTTPCLIENT_RETRY_MULTIPLIER</a>&#160;&#160;&#160;2.0</td></tr>
-<tr class="separator:a5f5f7ee22b430f5cb019b8b0a6803348"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad23bab3060a93bc022b891a925e34f94" id="r_ad23bab3060a93bc022b891a925e34f94"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient-config_8h.html#ad23bab3060a93bc022b891a925e34f94">HTTPCLIENT_DEFAULT_USER_AGENT</a>&#160;&#160;&#160;&quot;SocketHTTPClient/1.0&quot;</td></tr>
-<tr class="separator:ad23bab3060a93bc022b891a925e34f94"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaba4e506b5b48afa5c9e19f692619db35" id="r_gaba4e506b5b48afa5c9e19f692619db35"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaba4e506b5b48afa5c9e19f692619db35">HTTPCLIENT_AUTH_CREDENTIALS_SIZE</a>&#160;&#160;&#160;512</td></tr>
+<tr class="memdesc:gaba4e506b5b48afa5c9e19f692619db35"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for Basic auth credentials string (username:password, 512 bytes).  <br /></td></tr>
+<tr class="separator:gaba4e506b5b48afa5c9e19f692619db35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3db68e362a4cd23917b2e2b6dc05ef22" id="r_ga3db68e362a4cd23917b2e2b6dc05ef22"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga3db68e362a4cd23917b2e2b6dc05ef22">HTTPCLIENT_DIGEST_A_BUFFER_SIZE</a>&#160;&#160;&#160;512</td></tr>
+<tr class="memdesc:ga3db68e362a4cd23917b2e2b6dc05ef22"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for Digest auth A1/A2 intermediate hashes (512 bytes).  <br /></td></tr>
+<tr class="separator:ga3db68e362a4cd23917b2e2b6dc05ef22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga19c913be80fdc2a1778a5cf592fa5a32" id="r_ga19c913be80fdc2a1778a5cf592fa5a32"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga19c913be80fdc2a1778a5cf592fa5a32">HTTPCLIENT_DIGEST_RESPONSE_SIZE</a>&#160;&#160;&#160;256</td></tr>
+<tr class="memdesc:ga19c913be80fdc2a1778a5cf592fa5a32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for Digest auth response value (256 bytes).  <br /></td></tr>
+<tr class="separator:ga19c913be80fdc2a1778a5cf592fa5a32"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3e4e900df8359ef28d95b0ead64dbcf5" id="r_ga3e4e900df8359ef28d95b0ead64dbcf5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga3e4e900df8359ef28d95b0ead64dbcf5">HTTPCLIENT_DIGEST_CNONCE_SIZE</a>&#160;&#160;&#160;16</td></tr>
+<tr class="memdesc:ga3e4e900df8359ef28d95b0ead64dbcf5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size of client nonce (cnonce) in bytes for Digest auth (16 bytes random).  <br /></td></tr>
+<tr class="separator:ga3e4e900df8359ef28d95b0ead64dbcf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1fbe044368878287464a35d2887c23cf" id="r_ga1fbe044368878287464a35d2887c23cf"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga1fbe044368878287464a35d2887c23cf">HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE</a>&#160;&#160;&#160;33</td></tr>
+<tr class="memdesc:ga1fbe044368878287464a35d2887c23cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size of hex-encoded client nonce string for Digest auth headers (33 bytes).  <br /></td></tr>
+<tr class="separator:ga1fbe044368878287464a35d2887c23cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga78e4b4357664a978b08470dc5110b5e9" id="r_ga78e4b4357664a978b08470dc5110b5e9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga78e4b4357664a978b08470dc5110b5e9">HTTPCLIENT_DIGEST_NC_SIZE</a>&#160;&#160;&#160;16</td></tr>
+<tr class="memdesc:ga78e4b4357664a978b08470dc5110b5e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for Digest auth nonce-count (nc) hex string (16 bytes).  <br /></td></tr>
+<tr class="separator:ga78e4b4357664a978b08470dc5110b5e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3de25c3d345626920f73bd6ceb4faefe" id="r_ga3de25c3d345626920f73bd6ceb4faefe"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga3de25c3d345626920f73bd6ceb4faefe">HTTPCLIENT_REQUEST_BUFFER_SIZE</a>&#160;&#160;&#160;8192</td></tr>
+<tr class="memdesc:ga3de25c3d345626920f73bd6ceb4faefe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for serializing HTTP request lines and headers (8192 bytes).  <br /></td></tr>
+<tr class="separator:ga3de25c3d345626920f73bd6ceb4faefe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9252df768faf5ccb5438f1e0e9d68b33" id="r_ga9252df768faf5ccb5438f1e0e9d68b33"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga9252df768faf5ccb5438f1e0e9d68b33">HTTPCLIENT_BODY_CHUNK_SIZE</a>&#160;&#160;&#160;4096</td></tr>
+<tr class="memdesc:ga9252df768faf5ccb5438f1e0e9d68b33"><td class="mdescLeft">&#160;</td><td class="mdescRight">Chunk size for reading response bodies incrementally (4096 bytes).  <br /></td></tr>
+<tr class="separator:ga9252df768faf5ccb5438f1e0e9d68b33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga14236d3d25877900fe49a8c2b7c90e25" id="r_ga14236d3d25877900fe49a8c2b7c90e25"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga14236d3d25877900fe49a8c2b7c90e25">HTTPCLIENT_HOST_HEADER_SIZE</a>&#160;&#160;&#160;256</td></tr>
+<tr class="memdesc:ga14236d3d25877900fe49a8c2b7c90e25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for generating Host header (256 bytes).  <br /></td></tr>
+<tr class="separator:ga14236d3d25877900fe49a8c2b7c90e25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2bf0debe9f0685663a1f5b1fcaf56510" id="r_ga2bf0debe9f0685663a1f5b1fcaf56510"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2bf0debe9f0685663a1f5b1fcaf56510">HTTPCLIENT_COOKIE_HEADER_SIZE</a>&#160;&#160;&#160;4096</td></tr>
+<tr class="memdesc:ga2bf0debe9f0685663a1f5b1fcaf56510"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for serializing Cookie header in outgoing requests (4096 bytes).  <br /></td></tr>
+<tr class="separator:ga2bf0debe9f0685663a1f5b1fcaf56510"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae0d219a3146b29914fb7f7169c6aa566" id="r_gae0d219a3146b29914fb7f7169c6aa566"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gae0d219a3146b29914fb7f7169c6aa566">HTTPCLIENT_AUTH_HEADER_SIZE</a>&#160;&#160;&#160;512</td></tr>
+<tr class="memdesc:gae0d219a3146b29914fb7f7169c6aa566"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for standard Authorization headers (Basic/Digest/Bearer, 512 bytes).  <br /></td></tr>
+<tr class="separator:gae0d219a3146b29914fb7f7169c6aa566"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga81ac4eefb96b3c919042f5fdd1ea361d" id="r_ga81ac4eefb96b3c919042f5fdd1ea361d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga81ac4eefb96b3c919042f5fdd1ea361d">HTTPCLIENT_AUTH_HEADER_LARGE_SIZE</a>&#160;&#160;&#160;1024</td></tr>
+<tr class="memdesc:ga81ac4eefb96b3c919042f5fdd1ea361d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Larger buffer for complex Authorization headers, e.g., Digest with long nonces (1024 bytes).  <br /></td></tr>
+<tr class="separator:ga81ac4eefb96b3c919042f5fdd1ea361d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1421459188743de98f5eb1d489d70ec0" id="r_ga1421459188743de98f5eb1d489d70ec0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga1421459188743de98f5eb1d489d70ec0">HTTPCLIENT_URI_BUFFER_SIZE</a>&#160;&#160;&#160;512</td></tr>
+<tr class="memdesc:ga1421459188743de98f5eb1d489d70ec0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for URI string in Digest auth calculations (512 bytes).  <br /></td></tr>
+<tr class="separator:ga1421459188743de98f5eb1d489d70ec0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga134a20a8c6c468864bb0d94e9d9abb91" id="r_ga134a20a8c6c468864bb0d94e9d9abb91"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga134a20a8c6c468864bb0d94e9d9abb91">HTTPCLIENT_MAX_SET_COOKIES</a>&#160;&#160;&#160;16</td></tr>
+<tr class="memdesc:ga134a20a8c6c468864bb0d94e9d9abb91"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum Set-Cookie headers processed per HTTP response (16).  <br /></td></tr>
+<tr class="separator:ga134a20a8c6c468864bb0d94e9d9abb91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga846e1eb9e4ecd57dc03a065776981e0b" id="r_ga846e1eb9e4ecd57dc03a065776981e0b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga846e1eb9e4ecd57dc03a065776981e0b">HTTPCLIENT_ACCEPT_ENCODING_SIZE</a>&#160;&#160;&#160;64</td></tr>
+<tr class="memdesc:ga846e1eb9e4ecd57dc03a065776981e0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for constructing Accept-Encoding request header (64 bytes).  <br /></td></tr>
+<tr class="separator:ga846e1eb9e4ecd57dc03a065776981e0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4063c6077aa71b96a83dbe475a59e5a9" id="r_ga4063c6077aa71b96a83dbe475a59e5a9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga4063c6077aa71b96a83dbe475a59e5a9">HTTPCLIENT_CONTENT_LENGTH_SIZE</a>&#160;&#160;&#160;32</td></tr>
+<tr class="memdesc:ga4063c6077aa71b96a83dbe475a59e5a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer size for Content-Length header value string (32 bytes).  <br /></td></tr>
+<tr class="separator:ga4063c6077aa71b96a83dbe475a59e5a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga441f1405cd4774e167f08b83b3b1e117" id="r_ga441f1405cd4774e167f08b83b3b1e117"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga441f1405cd4774e167f08b83b3b1e117">HTTPCLIENT_RETRY_JITTER_FACTOR</a>&#160;&#160;&#160;0.25</td></tr>
+<tr class="memdesc:ga441f1405cd4774e167f08b83b3b1e117"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default retry backoff parameters: jitter factor (0.25) and multiplier (2.0).  <br /></td></tr>
+<tr class="separator:ga441f1405cd4774e167f08b83b3b1e117"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5f5f7ee22b430f5cb019b8b0a6803348" id="r_ga5f5f7ee22b430f5cb019b8b0a6803348"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__buffers.html#ga5f5f7ee22b430f5cb019b8b0a6803348">HTTPCLIENT_RETRY_MULTIPLIER</a>&#160;&#160;&#160;2.0</td></tr>
+<tr class="separator:ga5f5f7ee22b430f5cb019b8b0a6803348"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad23bab3060a93bc022b891a925e34f94" id="r_gad23bab3060a93bc022b891a925e34f94"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gad23bab3060a93bc022b891a925e34f94">HTTPCLIENT_DEFAULT_USER_AGENT</a>&#160;&#160;&#160;&quot;SocketHTTPClient/1.0&quot;</td></tr>
+<tr class="memdesc:gad23bab3060a93bc022b891a925e34f94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default User-Agent header string sent in requests.  <br /></td></tr>
+<tr class="separator:gad23bab3060a93bc022b891a925e34f94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga1a94747fcfaf987c84d4a91bc3bd7513" id="r_ga1a94747fcfaf987c84d4a91bc3bd7513"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga1a94747fcfaf987c84d4a91bc3bd7513">HTTPCLIENT_ENCODING_IDENTITY</a>&#160;&#160;&#160;0x00</td></tr>
 <tr class="memdesc:ga1a94747fcfaf987c84d4a91bc3bd7513"><td class="mdescLeft">&#160;</td><td class="mdescRight">Identity (no compression) encoding flag.  <br /></td></tr>
 <tr class="separator:ga1a94747fcfaf987c84d4a91bc3bd7513"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -257,7 +302,7 @@ Macros</h2></td></tr>
 <div class="textblock"><p>Configuration constants for HTTP client with compile-time override support. </p>
 <p>Centralized configuration for HTTP client module. All magic numbers are defined here with compile-time override support.</p>
 <p>Configurable Limits Summary:</p>
-<p>All limits can be overridden at compile time with -D flags or at runtime via <a class="el" href="group__http.html#structSocketHTTPClient__Config" title="HTTP client configuration structure.">SocketHTTPClient_Config</a> fields.</p>
+<p>All limits can be overridden at compile time with -D flags or at runtime via <a class="el" href="group__http__client.html#structSocketHTTPClient__Config" title="HTTP client configuration structure.">SocketHTTPClient_Config</a> fields.</p>
 <p>Resource Limits:</p><ul>
 <li>HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE: 10MB - Max response body size (0=unlimited via config)</li>
 <li>HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST: 6 - Per-host connection limit</li>
@@ -266,7 +311,7 @@ Macros</h2></td></tr>
 <li>HTTPCLIENT_MAX_AUTH_RETRIES: 2 - Max auth retry attempts</li>
 </ul>
 <p>Timeout Limits:</p><ul>
-<li>HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS: 30s - Connection establishment timeout</li>
+<li>HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS: 30s - <a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> establishment timeout</li>
 <li>HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS: 60s - Full request completion timeout</li>
 <li>HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS: 10s - DNS resolution timeout</li>
 <li>HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS: 60s - Idle connection timeout</li>
@@ -281,652 +326,23 @@ Macros</h2></td></tr>
 </ul>
 <p>Constants grouped by category:</p><ul>
 <li>Error buffers</li>
-<li>Connection pool</li>
+<li><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> pool</li>
 <li>Timeouts</li>
-<li>Connection limits</li>
+<li><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> limits</li>
 <li>Retry configuration</li>
 <li>Cookie configuration</li>
 <li>Authentication buffers</li>
 <li>Request/Response limits</li>
 <li>Encoding flags</li>
 </ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#gaad5ad81c60bb230588b5f660a834f40e" title="Initialize SocketHTTPClient_Config with safe defaults.">SocketHTTPClient_config_defaults()</a> for runtime defaults. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gaad5ad81c60bb230588b5f660a834f40e" title="Initialize SocketHTTPClient_Config with safe defaults.">SocketHTTPClient_config_defaults()</a> for runtime defaults. </dd>
 <dd>
-<a class="el" href="group__http.html#structSocketHTTPClient__Config" title="HTTP client configuration structure.">SocketHTTPClient_Config</a> for full structure. </dd>
+<a class="el" href="group__http__client.html#structSocketHTTPClient__Config" title="HTTP client configuration structure.">SocketHTTPClient_Config</a> for full structure. </dd>
 <dd>
 <a class="el" href="group__http.html">HTTP Module</a> for related components. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-</div><h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a846e1eb9e4ecd57dc03a065776981e0b" name="a846e1eb9e4ecd57dc03a065776981e0b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a846e1eb9e4ecd57dc03a065776981e0b">&#9670;&#160;</a></span>HTTPCLIENT_ACCEPT_ENCODING_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_ACCEPT_ENCODING_SIZE&#160;&#160;&#160;64</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Accept-Encoding header buffer size </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00402">402</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="aba4e506b5b48afa5c9e19f692619db35" name="aba4e506b5b48afa5c9e19f692619db35"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aba4e506b5b48afa5c9e19f692619db35">&#9670;&#160;</a></span>HTTPCLIENT_AUTH_CREDENTIALS_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_AUTH_CREDENTIALS_SIZE&#160;&#160;&#160;512</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Credentials buffer size (username:password before base64) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00327">327</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a81ac4eefb96b3c919042f5fdd1ea361d" name="a81ac4eefb96b3c919042f5fdd1ea361d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a81ac4eefb96b3c919042f5fdd1ea361d">&#9670;&#160;</a></span>HTTPCLIENT_AUTH_HEADER_LARGE_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_AUTH_HEADER_LARGE_SIZE&#160;&#160;&#160;1024</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Large authorization header size (for Digest with long params) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00387">387</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="ae0d219a3146b29914fb7f7169c6aa566" name="ae0d219a3146b29914fb7f7169c6aa566"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0d219a3146b29914fb7f7169c6aa566">&#9670;&#160;</a></span>HTTPCLIENT_AUTH_HEADER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_AUTH_HEADER_SIZE&#160;&#160;&#160;512</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Authorization header buffer size (Basic/Digest/Bearer) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00382">382</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a9252df768faf5ccb5438f1e0e9d68b33" name="a9252df768faf5ccb5438f1e0e9d68b33"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9252df768faf5ccb5438f1e0e9d68b33">&#9670;&#160;</a></span>HTTPCLIENT_BODY_CHUNK_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_BODY_CHUNK_SIZE&#160;&#160;&#160;4096</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Response body read chunk size </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00367">367</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a4063c6077aa71b96a83dbe475a59e5a9" name="a4063c6077aa71b96a83dbe475a59e5a9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4063c6077aa71b96a83dbe475a59e5a9">&#9670;&#160;</a></span>HTTPCLIENT_CONTENT_LENGTH_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_CONTENT_LENGTH_SIZE&#160;&#160;&#160;32</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Content-Length header buffer size </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00407">407</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a2bf0debe9f0685663a1f5b1fcaf56510" name="a2bf0debe9f0685663a1f5b1fcaf56510"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2bf0debe9f0685663a1f5b1fcaf56510">&#9670;&#160;</a></span>HTTPCLIENT_COOKIE_HEADER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_COOKIE_HEADER_SIZE&#160;&#160;&#160;4096</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Cookie header buffer size (for outgoing requests) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00377">377</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a02939decbb5546f8c00a4af02891beaf" name="a02939decbb5546f8c00a4af02891beaf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a02939decbb5546f8c00a4af02891beaf">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS&#160;&#160;&#160;10000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default DNS resolution timeout </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00126">126</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="ab32a3ecd078fc6919d2f5e0a06d12388" name="ab32a3ecd078fc6919d2f5e0a06d12388"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab32a3ecd078fc6919d2f5e0a06d12388">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE&#160;&#160;&#160;1</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Enforce SameSite attribute for cookie matching (default: 1) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00214">214</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a9668cac2b62d9570871b2865fcc2d562" name="a9668cac2b62d9570871b2865fcc2d562"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9668cac2b62d9570871b2865fcc2d562">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS&#160;&#160;&#160;60000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default idle connection timeout </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00131">131</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a6495bfe151f30ebab1389fa05229498d" name="a6495bfe151f30ebab1389fa05229498d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6495bfe151f30ebab1389fa05229498d">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST&#160;&#160;&#160;6</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Per-host connection limit (matches browser defaults) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00146">146</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a64838d8d2643dbec1c43f8e50055dbf7" name="a64838d8d2643dbec1c43f8e50055dbf7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a64838d8d2643dbec1c43f8e50055dbf7">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_MAX_REDIRECTS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_MAX_REDIRECTS&#160;&#160;&#160;10</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum redirects to follow (prevents infinite redirect loops) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00141">141</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a43548f5c8b02196dd3bd71ccb9836c26" name="a43548f5c8b02196dd3bd71ccb9836c26"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a43548f5c8b02196dd3bd71ccb9836c26">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_MAX_RETRIES</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_MAX_RETRIES&#160;&#160;&#160;3</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum retry attempts (default: 3) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00184">184</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a48547cb7f217429e34d7fa5c925d9dea" name="a48547cb7f217429e34d7fa5c925d9dea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a48547cb7f217429e34d7fa5c925d9dea">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS&#160;&#160;&#160;100</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Total connection limit across all hosts </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00151">151</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a86b91e7fbe633ea8ca189984af9b3547" name="a86b91e7fbe633ea8ca189984af9b3547"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a86b91e7fbe633ea8ca189984af9b3547">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS&#160;&#160;&#160;60000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default request timeout </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00121">121</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a1827f78650d15ca622a674b130a2b926" name="a1827f78650d15ca622a674b130a2b926"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1827f78650d15ca622a674b130a2b926">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS&#160;&#160;&#160;100</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Initial backoff delay in milliseconds (default: 100ms) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00189">189</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="af7e91b18a488977f7e7d333f0f7c0611" name="af7e91b18a488977f7e7d333f0f7c0611"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af7e91b18a488977f7e7d333f0f7c0611">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS&#160;&#160;&#160;10000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum backoff delay in milliseconds (default: 10s) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00194">194</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a82f5bad7555e08cf800e56ea7b04d0db" name="a82f5bad7555e08cf800e56ea7b04d0db"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a82f5bad7555e08cf800e56ea7b04d0db">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_RETRY_ON_5XX</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_RETRY_ON_5XX&#160;&#160;&#160;0</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Retry on 5xx server errors (use only for idempotent requests!) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00209">209</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="afe6a8409016e05e46305b9f7042c7c7a" name="afe6a8409016e05e46305b9f7042c7c7a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afe6a8409016e05e46305b9f7042c7c7a">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT&#160;&#160;&#160;1</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Retry on connection errors (ECONNREFUSED, ENETUNREACH, etc.) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00199">199</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a2d9b8b306cf8b1a3a926e909f969315f" name="a2d9b8b306cf8b1a3a926e909f969315f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d9b8b306cf8b1a3a926e909f969315f">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_RETRY_ON_TIMEOUT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_RETRY_ON_TIMEOUT&#160;&#160;&#160;1</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Retry on request timeout </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00204">204</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="ad23bab3060a93bc022b891a925e34f94" name="ad23bab3060a93bc022b891a925e34f94"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad23bab3060a93bc022b891a925e34f94">&#9670;&#160;</a></span>HTTPCLIENT_DEFAULT_USER_AGENT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DEFAULT_USER_AGENT&#160;&#160;&#160;&quot;SocketHTTPClient/1.0&quot;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default User-Agent string </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00423">423</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a3db68e362a4cd23917b2e2b6dc05ef22" name="a3db68e362a4cd23917b2e2b6dc05ef22"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3db68e362a4cd23917b2e2b6dc05ef22">&#9670;&#160;</a></span>HTTPCLIENT_DIGEST_A_BUFFER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DIGEST_A_BUFFER_SIZE&#160;&#160;&#160;512</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum Digest auth A1/A2 buffer size </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00332">332</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a1fbe044368878287464a35d2887c23cf" name="a1fbe044368878287464a35d2887c23cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1fbe044368878287464a35d2887c23cf">&#9670;&#160;</a></span>HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE&#160;&#160;&#160;33</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Digest auth cnonce hex string size (2 chars per byte + null) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00347">347</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a3e4e900df8359ef28d95b0ead64dbcf5" name="a3e4e900df8359ef28d95b0ead64dbcf5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3e4e900df8359ef28d95b0ead64dbcf5">&#9670;&#160;</a></span>HTTPCLIENT_DIGEST_CNONCE_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DIGEST_CNONCE_SIZE&#160;&#160;&#160;16</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Digest auth cnonce size (bytes of random data) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00342">342</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a78e4b4357664a978b08470dc5110b5e9" name="a78e4b4357664a978b08470dc5110b5e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a78e4b4357664a978b08470dc5110b5e9">&#9670;&#160;</a></span>HTTPCLIENT_DIGEST_NC_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DIGEST_NC_SIZE&#160;&#160;&#160;16</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Nonce count buffer size (e.g., "00000001") </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00352">352</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a19c913be80fdc2a1778a5cf592fa5a32" name="a19c913be80fdc2a1778a5cf592fa5a32"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a19c913be80fdc2a1778a5cf592fa5a32">&#9670;&#160;</a></span>HTTPCLIENT_DIGEST_RESPONSE_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_DIGEST_RESPONSE_SIZE&#160;&#160;&#160;256</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum Digest auth response buffer size </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00337">337</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a14236d3d25877900fe49a8c2b7c90e25" name="a14236d3d25877900fe49a8c2b7c90e25"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a14236d3d25877900fe49a8c2b7c90e25">&#9670;&#160;</a></span>HTTPCLIENT_HOST_HEADER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_HOST_HEADER_SIZE&#160;&#160;&#160;256</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Host header buffer size </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00372">372</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a51703354cc9bc0603b78726aefab346f" name="a51703354cc9bc0603b78726aefab346f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a51703354cc9bc0603b78726aefab346f">&#9670;&#160;</a></span>HTTPCLIENT_IO_BUFFER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_IO_BUFFER_SIZE&#160;&#160;&#160;8192</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>I/O buffer size for pooled connections (bytes) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00098">98</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a447d54118ee03f42f7f2877718afae7f" name="a447d54118ee03f42f7f2877718afae7f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a447d54118ee03f42f7f2877718afae7f">&#9670;&#160;</a></span>HTTPCLIENT_MAX_AUTH_RETRIES</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_MAX_AUTH_RETRIES&#160;&#160;&#160;2</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum authentication retries (prevents loops on bad credentials) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00156">156</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="acaa7d0af3789f8dd4dd0b0ada62ea8fb" name="acaa7d0af3789f8dd4dd0b0ada62ea8fb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acaa7d0af3789f8dd4dd0b0ada62ea8fb">&#9670;&#160;</a></span>HTTPCLIENT_MAX_COOKIES</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_MAX_COOKIES&#160;&#160;&#160;10000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum number of cookies per jar (default: 10000) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00219">219</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a134a20a8c6c468864bb0d94e9d9abb91" name="a134a20a8c6c468864bb0d94e9d9abb91"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a134a20a8c6c468864bb0d94e9d9abb91">&#9670;&#160;</a></span>HTTPCLIENT_MAX_SET_COOKIES</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_MAX_SET_COOKIES&#160;&#160;&#160;16</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum number of Set-Cookie headers to process per response </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00397">397</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="ae7f6a04a117e98e557b38a582158c4bb" name="ae7f6a04a117e98e557b38a582158c4bb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7f6a04a117e98e557b38a582158c4bb">&#9670;&#160;</a></span>HTTPCLIENT_POOL_LARGE_HASH_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_POOL_LARGE_HASH_SIZE&#160;&#160;&#160;251</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Larger hash table size for pools with &gt;100 connections </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00088">88</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="afaff4a2f91f9687bf4149fde554c11b8" name="afaff4a2f91f9687bf4149fde554c11b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afaff4a2f91f9687bf4149fde554c11b8">&#9670;&#160;</a></span>HTTPCLIENT_POOL_LARGE_THRESHOLD</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_POOL_LARGE_THRESHOLD&#160;&#160;&#160;100</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Threshold for switching to larger hash table </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00093">93</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a3de25c3d345626920f73bd6ceb4faefe" name="a3de25c3d345626920f73bd6ceb4faefe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3de25c3d345626920f73bd6ceb4faefe">&#9670;&#160;</a></span>HTTPCLIENT_REQUEST_BUFFER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_REQUEST_BUFFER_SIZE&#160;&#160;&#160;8192</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Request line/header serialization buffer size </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00362">362</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a441f1405cd4774e167f08b83b3b1e117" name="a441f1405cd4774e167f08b83b3b1e117"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a441f1405cd4774e167f08b83b3b1e117">&#9670;&#160;</a></span>HTTPCLIENT_RETRY_JITTER_FACTOR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_RETRY_JITTER_FACTOR&#160;&#160;&#160;0.25</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Retry jitter factor (0.0 to 1.0, applied as +/- percentage) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00412">412</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a5f5f7ee22b430f5cb019b8b0a6803348" name="a5f5f7ee22b430f5cb019b8b0a6803348"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f5f7ee22b430f5cb019b8b0a6803348">&#9670;&#160;</a></span>HTTPCLIENT_RETRY_MULTIPLIER</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_RETRY_MULTIPLIER&#160;&#160;&#160;2.0</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00413">413</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-<a id="a1421459188743de98f5eb1d489d70ec0" name="a1421459188743de98f5eb1d489d70ec0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1421459188743de98f5eb1d489d70ec0">&#9670;&#160;</a></span>HTTPCLIENT_URI_BUFFER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPCLIENT_URI_BUFFER_SIZE&#160;&#160;&#160;512</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>URI string buffer size for Digest auth </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00392">392</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

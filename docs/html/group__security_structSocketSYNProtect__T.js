@@ -1,0 +1,28 @@
+var group__security_structSocketSYNProtect__T =
+[
+    [ "arena", "group__security.html#a1b4608934e33c166847aadb6b3b300ff", null ],
+    [ "blacklist_count", "group__security.html#a76e029e48debf27beb8eb46839812460", null ],
+    [ "blacklist_table", "group__security.html#a9a7f15f3a9242acca61b40feaa735d9e", null ],
+    [ "config", "group__security.html#af88652450be6613f044b426aade9b45d", null ],
+    [ "global_limiter", "group__security.html#a16dc128385532751d8cfc607f375c6a9", null ],
+    [ "hash_seed", "group__security.html#aca53166ea4260cce7127974828793cd4", null ],
+    [ "initialized", "group__security.html#ac914f385e89bf69271a3b511b2876869", null ],
+    [ "ip_entry_count", "group__security.html#af7532535d45ad592cb063efe42c7f545", null ],
+    [ "ip_table", "group__security.html#ad510a10bf5b3f26894d4d91351cc6cf8", null ],
+    [ "ip_table_size", "group__security.html#ad9f7e1412f8939f220a1a013f4c3c3ae", null ],
+    [ "lru_head", "group__security.html#a49dca188d614c3e2a8ff64052b6149a9", null ],
+    [ "lru_tail", "group__security.html#a3d9b707a9091714a9958862c904fb8db", null ],
+    [ "mutex", "group__security.html#ad9b6ff60c42f2d8b0a55643dbaf94a29", null ],
+    [ "start_time_ms", "group__security.html#a2435ab1bf8f6d566cd438d1b0f45cce6", null ],
+    [ "stat_allowed", "group__security.html#a089be07acdf293fc014af76520d54ce4", null ],
+    [ "stat_attempts", "group__security.html#add703132667908f679102beff0ec3fd6", null ],
+    [ "stat_blacklisted", "group__security.html#ac3e91fc6e07f92ec095d0337d5332887", null ],
+    [ "stat_blocked", "group__security.html#ae2a19f598a5b3163a97e148985d14590", null ],
+    [ "stat_challenged", "group__security.html#a5a412ef3f6f21ffc8efa0b1d74a6df0b", null ],
+    [ "stat_lru_evictions", "group__security.html#ab9beef6cc21010a2ee659e4d10c5696c", null ],
+    [ "stat_throttled", "group__security.html#a7b30091dfcd7fc93bcd7769979b804aa", null ],
+    [ "stat_whitelisted", "group__security.html#ae7d7e3a01f2ab67327773cdd94d6224b", null ],
+    [ "use_malloc", "group__security.html#a1beb68e242ded87711d537eb0af833f3", null ],
+    [ "whitelist_count", "group__security.html#a62aa5e759587de0ec3976c98dcdd2d8f", null ],
+    [ "whitelist_table", "group__security.html#ada8dc27f63197debf3707785227a9f78", null ]
+];

@@ -36,7 +36,7 @@ HIDE_UNDOC_MEMBERS     = NO
 HIDE_UNDOC_CLASSES     = NO
 HIDE_FRIEND_COMPOUNDS  = NO
 HIDE_IN_BODY_DOCS      = NO
-INTERNAL_DOCS          = NO
+INTERNAL_DOCS          = YES
 CASE_SENSE_NAMES       = YES
 HIDE_SCOPE_NAMES       = NO
 HIDE_COMPOUND_REFERENCE= NO
@@ -165,7 +165,7 @@ EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = */test/* \
                          */build/* \
                          */.cursor/* \
-                         *-private.h
+                         #*-private.h  /* Temporarily included for internal doc review */
 
 EXCLUDE_SYMBOLS        = 
 

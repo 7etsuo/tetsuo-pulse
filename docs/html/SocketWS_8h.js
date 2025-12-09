@@ -1,55 +1,53 @@
 var SocketWS_8h =
 [
     [ "T", "group__websocket.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
-    [ "SocketPoll_T", "group__websocket.html#gaf9e4be8bc025aedb61cc0b77e8926312", null ],
-    [ "SocketWS_T", "group__websocket.html#ga62eac457c36851d5e4a184e1a5602555", null ],
-    [ "SocketWS_CloseCode", "group__http.html#ga386c437e966aeaeb091d1d81c0e77b13", [
-      [ "WS_CLOSE_NORMAL", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13a297d5e27c1ad4b7c6660b005308a5f30", null ],
-      [ "WS_CLOSE_GOING_AWAY", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13a9bb565620ebf9a5c79afa6281a253b6d", null ],
-      [ "WS_CLOSE_PROTOCOL_ERROR", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13aaf641b4eedfe849aeed35a84f61709bf", null ],
-      [ "WS_CLOSE_UNSUPPORTED_DATA", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13a2852358b8d5151feda017ab29972f16e", null ],
-      [ "WS_CLOSE_NO_STATUS", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13a859b46a0f5a7a29e664a22a1c1c86919", null ],
-      [ "WS_CLOSE_ABNORMAL", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13aa5b58d4bfbfbeb754edc424760ff4b04", null ],
-      [ "WS_CLOSE_INVALID_PAYLOAD", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13a5fcad814a12fede092794145c328fb9f", null ],
-      [ "WS_CLOSE_POLICY_VIOLATION", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13a35ac58f4457834de3faeb1fa7792366d", null ],
-      [ "WS_CLOSE_MESSAGE_TOO_BIG", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13adbdae48a85dc5e937a163e01508001c6", null ],
-      [ "WS_CLOSE_MANDATORY_EXT", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13a1f6f581ca2b8fc652c8ffb993fb8194a", null ],
-      [ "WS_CLOSE_INTERNAL_ERROR", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13a5724188e50f92c13d3673f08ce69412a", null ],
-      [ "WS_CLOSE_SERVICE_RESTART", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13a9af38cc3ecad679dcf15e666000dfa4b", null ],
-      [ "WS_CLOSE_TRY_AGAIN_LATER", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13ae899716cd2fc4d8f76d4dad9889129e2", null ],
-      [ "WS_CLOSE_BAD_GATEWAY", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13ac0935030c6af954b99019692f8757b1b", null ],
-      [ "WS_CLOSE_TLS_HANDSHAKE", "group__http.html#gga386c437e966aeaeb091d1d81c0e77b13aceffd9fee405e4dee36e9596939ba5ec", null ]
+    [ "SocketWS_CloseCode", "group__websocket.html#ga386c437e966aeaeb091d1d81c0e77b13", [
+      [ "WS_CLOSE_NORMAL", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13a297d5e27c1ad4b7c6660b005308a5f30", null ],
+      [ "WS_CLOSE_GOING_AWAY", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13a9bb565620ebf9a5c79afa6281a253b6d", null ],
+      [ "WS_CLOSE_PROTOCOL_ERROR", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13aaf641b4eedfe849aeed35a84f61709bf", null ],
+      [ "WS_CLOSE_UNSUPPORTED_DATA", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13a2852358b8d5151feda017ab29972f16e", null ],
+      [ "WS_CLOSE_NO_STATUS", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13a859b46a0f5a7a29e664a22a1c1c86919", null ],
+      [ "WS_CLOSE_ABNORMAL", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13aa5b58d4bfbfbeb754edc424760ff4b04", null ],
+      [ "WS_CLOSE_INVALID_PAYLOAD", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13a5fcad814a12fede092794145c328fb9f", null ],
+      [ "WS_CLOSE_POLICY_VIOLATION", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13a35ac58f4457834de3faeb1fa7792366d", null ],
+      [ "WS_CLOSE_MESSAGE_TOO_BIG", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13adbdae48a85dc5e937a163e01508001c6", null ],
+      [ "WS_CLOSE_MANDATORY_EXT", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13a1f6f581ca2b8fc652c8ffb993fb8194a", null ],
+      [ "WS_CLOSE_INTERNAL_ERROR", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13a5724188e50f92c13d3673f08ce69412a", null ],
+      [ "WS_CLOSE_SERVICE_RESTART", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13a9af38cc3ecad679dcf15e666000dfa4b", null ],
+      [ "WS_CLOSE_TRY_AGAIN_LATER", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13ae899716cd2fc4d8f76d4dad9889129e2", null ],
+      [ "WS_CLOSE_BAD_GATEWAY", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13ac0935030c6af954b99019692f8757b1b", null ],
+      [ "WS_CLOSE_TLS_HANDSHAKE", "group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13aceffd9fee405e4dee36e9596939ba5ec", null ]
     ] ],
-    [ "SocketWS_Error", "group__http.html#gabd79199a60ad91cf785166f24f41101f", [
-      [ "WS_OK", "group__http.html#ggabd79199a60ad91cf785166f24f41101fa8d6c24a81bab48a188c7f458bf6ecddb", null ],
-      [ "WS_ERROR", "group__http.html#ggabd79199a60ad91cf785166f24f41101faa41b8e2f5c20dd621e69746820e10ecd", null ],
-      [ "WS_ERROR_HANDSHAKE", "group__http.html#ggabd79199a60ad91cf785166f24f41101fa326cba4dbca2cd3fc40aa705e3c8c43c", null ],
-      [ "WS_ERROR_PROTOCOL", "group__http.html#ggabd79199a60ad91cf785166f24f41101fac3b45ed8d1cffbe97ae99ad9368edfec", null ],
-      [ "WS_ERROR_FRAME_TOO_LARGE", "group__http.html#ggabd79199a60ad91cf785166f24f41101fad67cba0f02674ecdb494d3c897945304", null ],
-      [ "WS_ERROR_MESSAGE_TOO_LARGE", "group__http.html#ggabd79199a60ad91cf785166f24f41101fa202edc337483e9a546142eeadae60afa", null ],
-      [ "WS_ERROR_INVALID_UTF8", "group__http.html#ggabd79199a60ad91cf785166f24f41101fa276c19a5f29e2a5d3032eeebf7d54a8e", null ],
-      [ "WS_ERROR_COMPRESSION", "group__http.html#ggabd79199a60ad91cf785166f24f41101fa7bb811cc75e39503c96e5e58f41e392f", null ],
-      [ "WS_ERROR_CLOSED", "group__http.html#ggabd79199a60ad91cf785166f24f41101fa4b6bd8241f6074e7efa54cc113fce39c", null ],
-      [ "WS_ERROR_WOULD_BLOCK", "group__http.html#ggabd79199a60ad91cf785166f24f41101fad8bea1e89b1464f633c15cc454699761", null ],
-      [ "WS_ERROR_TIMEOUT", "group__http.html#ggabd79199a60ad91cf785166f24f41101fab7f48522858a5f62bb83f2102996daaf", null ]
+    [ "SocketWS_Error", "group__websocket.html#gabd79199a60ad91cf785166f24f41101f", [
+      [ "WS_OK", "group__websocket.html#ggabd79199a60ad91cf785166f24f41101fa8d6c24a81bab48a188c7f458bf6ecddb", null ],
+      [ "WS_ERROR", "group__websocket.html#ggabd79199a60ad91cf785166f24f41101faa41b8e2f5c20dd621e69746820e10ecd", null ],
+      [ "WS_ERROR_HANDSHAKE", "group__websocket.html#ggabd79199a60ad91cf785166f24f41101fa326cba4dbca2cd3fc40aa705e3c8c43c", null ],
+      [ "WS_ERROR_PROTOCOL", "group__websocket.html#ggabd79199a60ad91cf785166f24f41101fac3b45ed8d1cffbe97ae99ad9368edfec", null ],
+      [ "WS_ERROR_FRAME_TOO_LARGE", "group__websocket.html#ggabd79199a60ad91cf785166f24f41101fad67cba0f02674ecdb494d3c897945304", null ],
+      [ "WS_ERROR_MESSAGE_TOO_LARGE", "group__websocket.html#ggabd79199a60ad91cf785166f24f41101fa202edc337483e9a546142eeadae60afa", null ],
+      [ "WS_ERROR_INVALID_UTF8", "group__websocket.html#ggabd79199a60ad91cf785166f24f41101fa276c19a5f29e2a5d3032eeebf7d54a8e", null ],
+      [ "WS_ERROR_COMPRESSION", "group__websocket.html#ggabd79199a60ad91cf785166f24f41101fa7bb811cc75e39503c96e5e58f41e392f", null ],
+      [ "WS_ERROR_CLOSED", "group__websocket.html#ggabd79199a60ad91cf785166f24f41101fa4b6bd8241f6074e7efa54cc113fce39c", null ],
+      [ "WS_ERROR_WOULD_BLOCK", "group__websocket.html#ggabd79199a60ad91cf785166f24f41101fad8bea1e89b1464f633c15cc454699761", null ],
+      [ "WS_ERROR_TIMEOUT", "group__websocket.html#ggabd79199a60ad91cf785166f24f41101fab7f48522858a5f62bb83f2102996daaf", null ]
     ] ],
-    [ "SocketWS_Opcode", "group__http.html#ga174740343c7f920060f8640f23600c7b", [
-      [ "WS_OPCODE_CONTINUATION", "group__http.html#gga174740343c7f920060f8640f23600c7ba414ed52e10fc98a59c9fbadc896b3ea3", null ],
-      [ "WS_OPCODE_TEXT", "group__http.html#gga174740343c7f920060f8640f23600c7bab290478c848bb099a2fefe6c7b633558", null ],
-      [ "WS_OPCODE_BINARY", "group__http.html#gga174740343c7f920060f8640f23600c7ba01f825533b31920937ba5ddb2315a361", null ],
-      [ "WS_OPCODE_CLOSE", "group__http.html#gga174740343c7f920060f8640f23600c7ba847b054f16b331a8a701b7e76255d8e5", null ],
-      [ "WS_OPCODE_PING", "group__http.html#gga174740343c7f920060f8640f23600c7ba2e1dad19209b2641fcb2d12025651539", null ],
-      [ "WS_OPCODE_PONG", "group__http.html#gga174740343c7f920060f8640f23600c7ba809eaa105785fd07440fa833f602469c", null ]
+    [ "SocketWS_Opcode", "group__websocket.html#ga174740343c7f920060f8640f23600c7b", [
+      [ "WS_OPCODE_CONTINUATION", "group__websocket.html#gga174740343c7f920060f8640f23600c7ba414ed52e10fc98a59c9fbadc896b3ea3", null ],
+      [ "WS_OPCODE_TEXT", "group__websocket.html#gga174740343c7f920060f8640f23600c7bab290478c848bb099a2fefe6c7b633558", null ],
+      [ "WS_OPCODE_BINARY", "group__websocket.html#gga174740343c7f920060f8640f23600c7ba01f825533b31920937ba5ddb2315a361", null ],
+      [ "WS_OPCODE_CLOSE", "group__websocket.html#gga174740343c7f920060f8640f23600c7ba847b054f16b331a8a701b7e76255d8e5", null ],
+      [ "WS_OPCODE_PING", "group__websocket.html#gga174740343c7f920060f8640f23600c7ba2e1dad19209b2641fcb2d12025651539", null ],
+      [ "WS_OPCODE_PONG", "group__websocket.html#gga174740343c7f920060f8640f23600c7ba809eaa105785fd07440fa833f602469c", null ]
     ] ],
-    [ "SocketWS_Role", "group__http.html#ga9d14d3d0f1b05e44fcd74782107cbd94", [
-      [ "WS_ROLE_CLIENT", "group__http.html#gga9d14d3d0f1b05e44fcd74782107cbd94adb564f62107e65c4ba508183929404d1", null ],
-      [ "WS_ROLE_SERVER", "group__http.html#gga9d14d3d0f1b05e44fcd74782107cbd94afa4a0c78e19b98cca7f556560ca4061b", null ]
+    [ "SocketWS_Role", "group__websocket.html#ga9d14d3d0f1b05e44fcd74782107cbd94", [
+      [ "WS_ROLE_CLIENT", "group__websocket.html#gga9d14d3d0f1b05e44fcd74782107cbd94adb564f62107e65c4ba508183929404d1", null ],
+      [ "WS_ROLE_SERVER", "group__websocket.html#gga9d14d3d0f1b05e44fcd74782107cbd94afa4a0c78e19b98cca7f556560ca4061b", null ]
     ] ],
-    [ "SocketWS_State", "group__http.html#gab8b49607a661224d66bb264b1e597e2d", [
-      [ "WS_STATE_CONNECTING", "group__http.html#ggab8b49607a661224d66bb264b1e597e2da782bbde9b515882abdd6b712c127af31", null ],
-      [ "WS_STATE_OPEN", "group__http.html#ggab8b49607a661224d66bb264b1e597e2dab0325195f22aca5be7491a425f84808c", null ],
-      [ "WS_STATE_CLOSING", "group__http.html#ggab8b49607a661224d66bb264b1e597e2daa3bafc31c6e8514011174ffeb2dd1eac", null ],
-      [ "WS_STATE_CLOSED", "group__http.html#ggab8b49607a661224d66bb264b1e597e2da4356293e46722d1fa27ca8624f62b296", null ]
+    [ "SocketWS_State", "group__websocket.html#gab8b49607a661224d66bb264b1e597e2d", [
+      [ "WS_STATE_CONNECTING", "group__websocket.html#ggab8b49607a661224d66bb264b1e597e2da782bbde9b515882abdd6b712c127af31", null ],
+      [ "WS_STATE_OPEN", "group__websocket.html#ggab8b49607a661224d66bb264b1e597e2dab0325195f22aca5be7491a425f84808c", null ],
+      [ "WS_STATE_CLOSING", "group__websocket.html#ggab8b49607a661224d66bb264b1e597e2daa3bafc31c6e8514011174ffeb2dd1eac", null ],
+      [ "WS_STATE_CLOSED", "group__websocket.html#ggab8b49607a661224d66bb264b1e597e2da4356293e46722d1fa27ca8624f62b296", null ]
     ] ],
     [ "SocketWS_client_new", "group__websocket.html#gacad45d5dbc4f2191ba5f732a1b648842", null ],
     [ "SocketWS_close", "group__websocket.html#gaf04efc033266e882f59db340ca2f8d47", null ],
@@ -69,16 +67,16 @@ var SocketWS_8h =
     [ "SocketWS_pollfd", "group__websocket.html#ga37704f6a0ea36147b25c96efd2981d9b", null ],
     [ "SocketWS_pong", "group__websocket.html#ga3e17279abcb92810c8066f1813287334", null ],
     [ "SocketWS_process", "group__websocket.html#ga5c38be960976fd0d55b7328d1786ed9d", null ],
-    [ "SocketWS_recv_available", "group__http.html#ga134ea19e7c00142525cdf82b82425b6d", null ],
-    [ "SocketWS_recv_message", "group__http.html#ga4614f5978e94a42cdb1191dbb6d38e85", null ],
-    [ "SocketWS_selected_subprotocol", "group__http.html#ga2a1ce264ad5e6d3cf25ce2442504aa20", null ],
-    [ "SocketWS_send_binary", "group__http.html#ga1a8aff35f7c69172e0c2f9c0ec53abcb", null ],
-    [ "SocketWS_send_text", "group__http.html#ga4b8450a05502aaa70e88cdf14a73fa03", null ],
+    [ "SocketWS_recv_available", "group__websocket.html#ga134ea19e7c00142525cdf82b82425b6d", null ],
+    [ "SocketWS_recv_message", "group__websocket.html#ga4614f5978e94a42cdb1191dbb6d38e85", null ],
+    [ "SocketWS_selected_subprotocol", "group__websocket.html#ga2a1ce264ad5e6d3cf25ce2442504aa20", null ],
+    [ "SocketWS_send_binary", "group__websocket.html#ga1a8aff35f7c69172e0c2f9c0ec53abcb", null ],
+    [ "SocketWS_send_text", "group__websocket.html#ga4b8450a05502aaa70e88cdf14a73fa03", null ],
     [ "SocketWS_server_accept", "group__websocket.html#ga29e02ecca2d5a1b78d0eaf2c08883960", null ],
     [ "SocketWS_server_reject", "group__websocket.html#gad6e400c85623f8603c5965d38b1a60e0", null ],
     [ "SocketWS_socket", "group__websocket.html#ga00e6f2953f92843874cd7b6c3e363288", null ],
     [ "SocketWS_state", "group__websocket.html#gaa40def588d31ab50126603fa720f83b0", null ],
-    [ "SocketWS_Closed", "group__http.html#ga51caf3b6f8086dc6535fd843593dcbde", null ],
-    [ "SocketWS_Failed", "group__http.html#ga0fb92a65a798e17aca6df1cdba118067", null ],
-    [ "SocketWS_ProtocolError", "group__http.html#ga8400199bb1b785111015ff06d16de370", null ]
+    [ "SocketWS_Closed", "group__websocket.html#ga51caf3b6f8086dc6535fd843593dcbde", null ],
+    [ "SocketWS_Failed", "group__websocket.html#ga0fb92a65a798e17aca6df1cdba118067", null ],
+    [ "SocketWS_ProtocolError", "group__websocket.html#ga8400199bb1b785111015ff06d16de370", null ]
 ];

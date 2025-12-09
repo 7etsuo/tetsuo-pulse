@@ -1,0 +1,6 @@
+<map id="SocketHTTP_Headers_T" name="SocketHTTP_Headers_T">
+<area shape="rect" id="Node000001" title="Internal implementation of SocketHTTP_Headers_T header collection." alt="" coords="5,141,175,167"/>
+<area shape="rect" id="Node000002" href="$group__http.html#structHeaderEntry" title="Individual HTTP header entry (name&#45;value pair)." alt="" coords="43,15,137,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,54,93,141,87,141,87,54"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="152,15,160,19,164,28,156,39,138,42,137,37,153,34,159,27,157,23,150,19"/>
+</map>

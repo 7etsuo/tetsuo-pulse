@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['poll_5ftimeout_5fms_0',['POLL_TIMEOUT_MS',['../graceful__shutdown_8c.html#ae185e948f0542226cd0c076cd159576c',1,'graceful_shutdown.c']]]
+  ['max_5fclients_0',['MAX_CLIENTS',['../websocket__server_8c.html#a0a8f91f93d75a07f0ae45077db45b3eb',1,'websocket_server.c']]],
+  ['max_5fconnections_1',['MAX_CONNECTIONS',['../graceful__shutdown_8c.html#a053b7859476cc9867ec62c49e68d3fa1',1,'graceful_shutdown.c']]]
 ];

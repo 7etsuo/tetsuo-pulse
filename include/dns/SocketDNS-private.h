@@ -5,7 +5,6 @@
  * @file SocketDNS-private.h
  * @brief Internal structures, enums, and prototypes for asynchronous DNS resolver implementation.
  * @ingroup dns
- * @ingroup core_io
  *
  * Defines private data structures, state enumerations, and internal function prototypes
  * for the thread-pool based DNS resolution module. Intended solely for library maintainers.
@@ -124,7 +123,6 @@ typedef enum
 /**
  * @brief Levels for partial cleanup during initialization failures.
  * @ingroup dns
- * @ingroup core_io
  *
  * Defines cleanup scope for cleanup_on_init_failure() based on init progress.
  * Values correspond to initialization order to enable reverse-order resource release.

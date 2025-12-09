@@ -24,7 +24,7 @@
 
 /**
  * @file SocketHTTP2.h
- * @ingroup http2
+ * @ingroup http22
  * @brief HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control.
  *
  * Provides complete HTTP/2 implementation with:
@@ -231,7 +231,7 @@
 
 /**
  * @brief Protocol-level error (connection must close)
- * @ingroup http
+ * @ingroup http2
  *
  * Thrown for fatal protocol errors requiring connection termination.
  * @see SocketHTTP2_Conn_free() for cleanup after error.
@@ -240,7 +240,7 @@ extern const Except_T SocketHTTP2_ProtocolError;
 
 /**
  * @brief Stream-level error (stream reset, connection continues)
- * @ingroup http
+ * @ingroup http2
  *
  * Thrown for stream-specific errors; other streams may continue.
  * @see SocketHTTP2_Stream_close() for explicit stream termination.
@@ -249,7 +249,7 @@ extern const Except_T SocketHTTP2_StreamError;
 
 /**
  * @brief Flow control violation
- * @ingroup http
+ * @ingroup http2
  *
  * Thrown when flow control limits (window size) are exceeded.
  * @see SocketHTTP2_Conn_window_update() to increase windows.
@@ -264,7 +264,7 @@ extern const Except_T SocketHTTP2_FlowControlError;
 
 /**
  * @brief HTTP/2 frame types (RFC 9113 Section 6)
- * @ingroup http
+ * @ingroup http2
  *
  * Enumerates all HTTP/2 frame types used in binary framing protocol.
  * @see SocketHTTP2_frame_type_string() for string representation.
@@ -284,7 +284,16 @@ typedef enum
   HTTP2_FRAME_CONTINUATION = 0x9   /**< Section 6.10 - Header continuation */
 } SocketHTTP2_FrameType;
 
-/* Frame flags */
+/**
+ * @brief HTTP/2 frame flags (bitmasks).
+ * @ingroup http2
+ *
+ * Flags set in the 8-bit flags field of each frame header.
+ * Specific meanings depend on frame type.
+ * @see SocketHTTP2_FrameType
+ * @see SocketHTTP2_FrameHeader
+ */
+ /* Frame flags */
 #define HTTP2_FLAG_END_STREAM 0x01  /**< DATA, HEADERS */
 #define HTTP2_FLAG_END_HEADERS 0x04 /**< HEADERS, PUSH_PROMISE, CONTINUATION  \
                                      */
@@ -299,7 +308,7 @@ typedef enum
 
 /**
  * @brief HTTP/2 error codes for RST_STREAM and GOAWAY (RFC 9113 Section 7)
- * @ingroup http
+ * @ingroup http2
  *
  * Standard error codes used in RST_STREAM and GOAWAY frames.
  * HTTP2_NO_ERROR indicates graceful closure without error.
@@ -332,7 +341,7 @@ typedef enum
 
 /**
  * @brief HTTP/2 settings parameters (RFC 9113 Section 6.5.2)
- * @ingroup http
+ * @ingroup http2
  *
  * Identifiers for SETTINGS frame parameters exchanged during connection setup.
  * @see SocketHTTP2_Config for configuration structure.
@@ -358,7 +367,7 @@ typedef enum
 
 /**
  * @brief HTTP/2 stream states (RFC 9113 Section 5.1)
- * @ingroup http
+ * @ingroup http2
  *
  * Stream lifecycle states managed by HTTP/2 state machine.
  * Transitions driven by frame receipt and endpoint actions.
@@ -383,7 +392,7 @@ typedef enum
 
 /**
  * @brief HTTP/2 frame header (9 bytes on wire)
- * @ingroup http
+ * @ingroup http2
  *
  * Every HTTP/2 frame begins with a fixed 9-byte header containing length, type,
  * flags, and stream ID. Stream ID 0 is reserved for connection-level frames.
@@ -405,7 +414,7 @@ typedef struct
 
 /**
  * @brief HTTP/2 endpoint role
- * @ingroup http
+ * @ingroup http2
  *
  * Determines client or server behavior in connection setup and frame processing.
  * Clients initiate with preface; servers validate it.
@@ -425,7 +434,7 @@ typedef enum
 
 /**
  * @brief HTTP/2 connection configuration
- * @ingroup http
+ * @ingroup http2
  *
  * Configuration parameters for HTTP/2 connections, including settings to send
  * to peer and local limits for resource management.
@@ -469,7 +478,7 @@ typedef struct
 
 /**
  * @brief HTTP/2 connection (opaque type)
- * @ingroup http2
+ * @ingroup http22
  *
  * Manages connection state, streams, flow control windows, and frame processing.
  * Not thread-safe; use one per thread or synchronize externally.
@@ -481,7 +490,7 @@ typedef struct SocketHTTP2_Conn *SocketHTTP2_Conn_T;
 
 /**
  * @brief HTTP/2 stream (opaque type)
- * @ingroup http2
+ * @ingroup http22
  *
  * Represents a single bidirectional stream within an HTTP/2 connection.
  * Supports headers, data, trailers, and flow control.
@@ -498,7 +507,7 @@ typedef struct SocketHTTP2_Stream *SocketHTTP2_Stream_T;
 
 /**
  * @brief Single setting entry (for SETTINGS frame)
- * @ingroup http
+ * @ingroup http2
  *
  * Represents one parameter in SETTINGS frame payload.
  * @see SocketHTTP2_SettingsId for valid IDs.
@@ -517,7 +526,7 @@ typedef struct
 
 /**
  * @brief Initialize config with RFC defaults
- * @ingroup http
+ * @ingroup http2
  * @param config Configuration structure to initialize
  * @param role Client or server role
  * @threadsafe Yes
@@ -532,10 +541,10 @@ extern void SocketHTTP2_config_defaults (SocketHTTP2_Config *config,
 
 /**
  * @brief Create HTTP/2 connection
- * @ingroup http
- * @socket  Underlying TCP socket (after TLS handshake for h2)
- * @config  Configuration (NULL for defaults)
- * @arena  Memory arena
+ * @ingroup http2
+ * @param socket  Underlying TCP socket (after TLS handshake for h2)
+ * @param config  Configuration (NULL for defaults)
+ * @param arena  Memory arena
  *
  * @return New connection instance
  * @throws SocketHTTP2_ProtocolError on allocation failure
@@ -547,8 +556,8 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
 
 /**
  * @brief Free connection and all streams
- * @ingroup http
- * @conn  Pointer to connection (will be set to NULL)
+ * @ingroup http2
+ * @param conn  Pointer to connection (will be set to NULL)
  *
  * @threadsafe No
  */
@@ -556,8 +565,8 @@ extern void SocketHTTP2_Conn_free (SocketHTTP2_Conn_T *conn);
 
 /**
  * @brief Perform HTTP/2 connection preface
- * @ingroup http
- * @conn  Connection
+ * @ingroup http2
+ * @param conn  Connection
  *
  * Client sends: "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n" + SETTINGS
  * Server expects preface, sends SETTINGS
@@ -569,9 +578,9 @@ extern int SocketHTTP2_Conn_handshake (SocketHTTP2_Conn_T conn);
 
 /**
  * @brief Process incoming data
- * @ingroup http
- * @conn  Connection
- * @events  Poll events (POLL_READ, POLL_WRITE, etc.)
+ * @ingroup http2
+ * @param conn  Connection
+ * @param events  Poll events (POLL_READ, POLL_WRITE, etc.)
  *
  * Call when socket is readable/writable. Processes frames and
  * invokes callbacks for stream events.
@@ -583,8 +592,8 @@ extern int SocketHTTP2_Conn_process (SocketHTTP2_Conn_T conn, unsigned events);
 
 /**
  * @brief Flush pending output
- * @ingroup http
- * @conn  Connection
+ * @ingroup http2
+ * @param conn  Connection
  *
  * @return 0 on success, -1 on error
  * @threadsafe No
@@ -593,8 +602,8 @@ extern int SocketHTTP2_Conn_flush (SocketHTTP2_Conn_T conn);
 
 /**
  * @brief Get underlying socket
- * @ingroup http
- * @conn  Connection
+ * @ingroup http2
+ * @param conn  Connection
  *
  * @return Socket instance
  * @threadsafe Yes
@@ -603,8 +612,8 @@ extern Socket_T SocketHTTP2_Conn_socket (SocketHTTP2_Conn_T conn);
 
 /**
  * @brief Check if connection closed
- * @ingroup http
- * @conn  Connection
+ * @ingroup http2
+ * @param conn  Connection
  *
  * @return 1 if closed (GOAWAY sent/received), 0 otherwise
  * @threadsafe Yes
@@ -613,8 +622,8 @@ extern int SocketHTTP2_Conn_is_closed (SocketHTTP2_Conn_T conn);
 
 /**
  * @brief Get connection's arena
- * @ingroup http
- * @conn  Connection
+ * @ingroup http2
+ * @param conn  Connection
  *
  * @return Arena instance
  * @threadsafe Yes
@@ -628,10 +637,10 @@ extern Arena_T SocketHTTP2_Conn_arena (SocketHTTP2_Conn_T conn);
 
 /**
  * @brief Send SETTINGS frame
- * @ingroup http
- * @conn  Connection
- * @settings  Array of settings
- * @count  Number of settings
+ * @ingroup http2
+ * @param conn  Connection
+ * @param settings  Array of settings
+ * @param count  Number of settings
  *
  * @return 0 on success, -1 on error
  * @threadsafe No
@@ -642,9 +651,9 @@ extern int SocketHTTP2_Conn_settings (SocketHTTP2_Conn_T conn,
 
 /**
  * @brief Get peer's setting value
- * @ingroup http
- * @conn  Connection
- * @id  Setting identifier
+ * @ingroup http2
+ * @param conn  Connection
+ * @param id  Setting identifier
  *
  * @return Setting value (peer's acknowledged value)
  * @threadsafe Yes
@@ -654,9 +663,9 @@ extern uint32_t SocketHTTP2_Conn_get_setting (SocketHTTP2_Conn_T conn,
 
 /**
  * @brief Get our setting value
- * @ingroup http
- * @conn  Connection
- * @id  Setting identifier
+ * @ingroup http2
+ * @param conn  Connection
+ * @param id  Setting identifier
  *
  * @return Our setting value
  * @threadsafe Yes
@@ -666,9 +675,9 @@ extern uint32_t SocketHTTP2_Conn_get_local_setting (SocketHTTP2_Conn_T conn,
 
 /**
  * @brief Send PING frame
- * @ingroup http
- * @conn  Connection
- * @opaque  8 bytes opaque data (NULL for auto-generate)
+ * @ingroup http2
+ * @param conn  Connection
+ * @param opaque  8 bytes opaque data (NULL for auto-generate)
  *
  * @return 0 on success, -1 on error
  * @threadsafe No
@@ -678,11 +687,11 @@ extern int SocketHTTP2_Conn_ping (SocketHTTP2_Conn_T conn,
 
 /**
  * @brief Send GOAWAY frame
- * @ingroup http
- * @conn  Connection
- * @error_code  Error code
- * @debug_data  Optional debug data (NULL for none)
- * @debug_len  Debug data length
+ * @ingroup http2
+ * @param conn  Connection
+ * @param error_code  Error code
+ * @param debug_data  Optional debug data (NULL for none)
+ * @param debug_len  Debug data length
  *
  * Initiates graceful shutdown. No new streams will be accepted.
  *
@@ -695,8 +704,8 @@ extern int SocketHTTP2_Conn_goaway (SocketHTTP2_Conn_T conn,
 
 /**
  * @brief Get last processed stream ID
- * @ingroup http
- * @conn  Connection
+ * @ingroup http2
+ * @param conn  Connection
  *
  * @return Last peer stream ID processed
  * @threadsafe Yes
@@ -710,9 +719,9 @@ extern uint32_t SocketHTTP2_Conn_last_stream_id (SocketHTTP2_Conn_T conn);
 
 /**
  * @brief Update connection-level window
- * @ingroup http
- * @conn  Connection
- * @increment  Window size increment (1 to 2^31-1)
+ * @ingroup http2
+ * @param conn  Connection
+ * @param increment  Window size increment (1 to 2^31-1)
  *
  * @return 0 on success, -1 on error
  * @threadsafe No
@@ -722,8 +731,8 @@ extern int SocketHTTP2_Conn_window_update (SocketHTTP2_Conn_T conn,
 
 /**
  * @brief Get available send window
- * @ingroup http
- * @conn  Connection
+ * @ingroup http2
+ * @param conn  Connection
  *
  * @return Available bytes in connection send window
  * @threadsafe Yes
@@ -732,8 +741,8 @@ extern int32_t SocketHTTP2_Conn_send_window (SocketHTTP2_Conn_T conn);
 
 /**
  * @brief Get receive window
- * @ingroup http
- * @conn  Connection
+ * @ingroup http2
+ * @param conn  Connection
  *
  * @return Current receive window size
  * @threadsafe Yes
@@ -747,8 +756,8 @@ extern int32_t SocketHTTP2_Conn_recv_window (SocketHTTP2_Conn_T conn);
 
 /**
  * @brief Create new stream
- * @ingroup http
- * @conn  Parent connection
+ * @ingroup http2
+ * @param conn  Parent connection
  *
  * Client streams use odd IDs (1, 3, 5, ...)
  * Server streams (push) use even IDs (2, 4, 6, ...)
@@ -760,8 +769,8 @@ extern SocketHTTP2_Stream_T SocketHTTP2_Stream_new (SocketHTTP2_Conn_T conn);
 
 /**
  * @brief Get stream ID
- * @ingroup http
- * @stream  Stream
+ * @ingroup http2
+ * @param stream  Stream
  *
  * @return Stream identifier
  * @threadsafe Yes
@@ -770,8 +779,8 @@ extern uint32_t SocketHTTP2_Stream_id (SocketHTTP2_Stream_T stream);
 
 /**
  * @brief Get stream state
- * @ingroup http
- * @stream  Stream
+ * @ingroup http2
+ * @param stream  Stream
  *
  * @return Current stream state
  * @threadsafe Yes
@@ -781,7 +790,7 @@ SocketHTTP2_Stream_state (SocketHTTP2_Stream_T stream);
 
 /**
  * @brief Close HTTP/2 stream
- * @ingroup http
+ * @ingroup http2
  * @param stream Stream to close
  * @param error_code Error code (HTTP2_NO_ERROR for normal close)
  * @threadsafe No
@@ -791,7 +800,7 @@ extern void SocketHTTP2_Stream_close (SocketHTTP2_Stream_T stream,
 
 /**
  * @brief Get user data
- * @ingroup http
+ * @ingroup http2
  * @param stream Stream
  * @return User data pointer
  * @threadsafe Yes
@@ -800,7 +809,7 @@ extern void *SocketHTTP2_Stream_get_userdata (SocketHTTP2_Stream_T stream);
 
 /**
  * @brief Set user data
- * @ingroup http
+ * @ingroup http2
  * @param stream Stream
  * @param userdata User data pointer
  * @threadsafe No
@@ -815,16 +824,13 @@ extern void SocketHTTP2_Stream_set_userdata (SocketHTTP2_Stream_T stream,
 
 /**
  * @brief Send HEADERS frame
- * @ingroup http
- * @stream  Stream
- * @headers  Header array (includes pseudo-headers)
- * @header_count  Number of headers
- * @end_stream  Set END_STREAM flag (no body follows)
+ * @ingroup http2
+ * @param stream  Stream
+ * @param headers  Header array (includes pseudo-headers)
+ * @param header_count  Number of headers
+ * @param end_stream  Set END_STREAM flag (no body follows)
  *
- * @brief Pseudo-headers for requests: :method, :scheme, :authority, :path
- * @ingroup http
- * @brief Pseudo-headers for responses: :status
- * @ingroup http
+ * @note Required pseudo-headers: requests (:method, :scheme, :authority, :path); responses (:status).
  *
  * @return 0 on success, -1 on error
  * @threadsafe No
@@ -836,10 +842,10 @@ extern int SocketHTTP2_Stream_send_headers (SocketHTTP2_Stream_T stream,
 
 /**
  * @brief Send request (convenience)
- * @ingroup http
- * @stream  Stream
- * @request  HTTP request
- * @end_stream  No body follows
+ * @ingroup http2
+ * @param stream  Stream
+ * @param request  HTTP request
+ * @param end_stream  No body follows
  *
  * @return 0 on success, -1 on error
  * @threadsafe No
@@ -850,10 +856,10 @@ extern int SocketHTTP2_Stream_send_request (SocketHTTP2_Stream_T stream,
 
 /**
  * @brief Send response (convenience)
- * @ingroup http
- * @stream  Stream
- * @response  HTTP response
- * @end_stream  No body follows
+ * @ingroup http2
+ * @param stream  Stream
+ * @param response  HTTP response
+ * @param end_stream  No body follows
  *
  * @return 0 on success, -1 on error
  * @threadsafe No
@@ -865,11 +871,11 @@ SocketHTTP2_Stream_send_response (SocketHTTP2_Stream_T stream,
 
 /**
  * @brief Send DATA frame
- * @ingroup http
- * @stream  Stream
- * @data  Payload data
- * @len  Data length
- * @end_stream  Set END_STREAM flag
+ * @ingroup http2
+ * @param stream  Stream
+ * @param data  Payload data
+ * @param len  Data length
+ * @param end_stream  Set END_STREAM flag
  *
  * @return Bytes accepted (may be less due to flow control), -1 on error
  * @threadsafe No
@@ -880,10 +886,10 @@ extern ssize_t SocketHTTP2_Stream_send_data (SocketHTTP2_Stream_T stream,
 
 /**
  * @brief Send trailer headers
- * @ingroup http
- * @stream  Stream
- * @trailers  Trailer header array
- * @count  Number of trailers
+ * @ingroup http2
+ * @param stream  Stream
+ * @param trailers  Trailer header array
+ * @param count  Number of trailers
  *
  * @return 0 on success, -1 on error
  * @threadsafe No
@@ -900,12 +906,12 @@ SocketHTTP2_Stream_send_trailers (SocketHTTP2_Stream_T stream,
 
 /**
  * @brief Check for received headers
- * @ingroup http
- * @stream  Stream
- * @headers  Output header array
- * @max_headers  Maximum headers to receive
- * @header_count  Output - number of headers
- * @end_stream  Output - END_STREAM was set
+ * @ingroup http2
+ * @param stream  Stream
+ * @param headers  Output header array
+ * @param max_headers  Maximum headers to receive
+ * @param header_count  Output - number of headers
+ * @param end_stream  Output - END_STREAM was set
  *
  * @return 1 if headers available, 0 if not, -1 on error
  * @threadsafe No
@@ -918,11 +924,11 @@ extern int SocketHTTP2_Stream_recv_headers (SocketHTTP2_Stream_T stream,
 
 /**
  * @brief Receive DATA
- * @ingroup http
- * @stream  Stream
- * @buf  Output buffer
- * @len  Buffer size
- * @end_stream  Output - END_STREAM was set
+ * @ingroup http2
+ * @param stream  Stream
+ * @param buf  Output buffer
+ * @param len  Buffer size
+ * @param end_stream  Output - END_STREAM was set
  *
  * @return Bytes received, 0 if would block, -1 on error
  * @threadsafe No
@@ -933,11 +939,11 @@ extern ssize_t SocketHTTP2_Stream_recv_data (SocketHTTP2_Stream_T stream,
 
 /**
  * @brief Receive trailer headers
- * @ingroup http
- * @stream  Stream
- * @trailers  Output trailer array
- * @max_trailers  Maximum trailers
- * @trailer_count  Output - number of trailers
+ * @ingroup http2
+ * @param stream  Stream
+ * @param trailers  Output trailer array
+ * @param max_trailers  Maximum trailers
+ * @param trailer_count  Output - number of trailers
  *
  * @return 1 if trailers available, 0 if not, -1 on error
  * @threadsafe No
@@ -954,9 +960,9 @@ extern int SocketHTTP2_Stream_recv_trailers (SocketHTTP2_Stream_T stream,
 
 /**
  * @brief Update stream window
- * @ingroup http
- * @stream  Stream
- * @increment  Window size increment
+ * @ingroup http2
+ * @param stream  Stream
+ * @param increment  Window size increment
  *
  * @return 0 on success, -1 on error
  * @threadsafe No
@@ -966,8 +972,8 @@ extern int SocketHTTP2_Stream_window_update (SocketHTTP2_Stream_T stream,
 
 /**
  * @brief Get stream send window
- * @ingroup http
- * @stream  Stream
+ * @ingroup http2
+ * @param stream  Stream
  *
  * @return Available bytes (minimum of stream and connection windows)
  * @threadsafe Yes
@@ -976,8 +982,8 @@ extern int32_t SocketHTTP2_Stream_send_window (SocketHTTP2_Stream_T stream);
 
 /**
  * @brief Get stream receive window
- * @ingroup http
- * @stream  Stream
+ * @ingroup http2
+ * @param stream  Stream
  *
  * @return Current receive window size
  * @threadsafe Yes
@@ -991,10 +997,10 @@ extern int32_t SocketHTTP2_Stream_recv_window (SocketHTTP2_Stream_T stream);
 
 /**
  * @brief Send PUSH_PROMISE (server only)
- * @ingroup http
- * @stream  Parent stream
- * @request_headers  Pushed request headers
- * @header_count  Number of headers
+ * @ingroup http2
+ * @param stream  Parent stream
+ * @param request_headers  Pushed request headers
+ * @param header_count  Number of headers
  *
  * @return New reserved stream for pushing response, or NULL if disabled
  * @threadsafe No
@@ -1028,10 +1034,10 @@ typedef void (*SocketHTTP2_StreamCallback) (SocketHTTP2_Conn_T conn,
 
 /**
  * @brief Set stream event callback
- * @ingroup http
- * @conn  Connection
- * @callback  Callback function
- * @userdata  User data passed to callback
+ * @ingroup http2
+ * @param conn  Connection
+ * @param callback  Callback function
+ * @param userdata  User data passed to callback
  *
  * @threadsafe No
  */
@@ -1054,10 +1060,10 @@ typedef void (*SocketHTTP2_ConnCallback) (SocketHTTP2_Conn_T conn, int event,
 
 /**
  * @brief Set connection callback
- * @ingroup http
- * @conn  Connection
- * @callback  Callback function
- * @userdata  User data passed to callback
+ * @ingroup http2
+ * @param conn  Connection
+ * @param callback  Callback function
+ * @param userdata  User data passed to callback
  *
  * @threadsafe No
  */
@@ -1073,11 +1079,11 @@ SocketHTTP2_Conn_set_conn_callback (SocketHTTP2_Conn_T conn,
 
 /**
  * @brief Upgrade from HTTP/1.1 (client)
- * @ingroup http
- * @socket  Socket after sending upgrade request
- * @settings_payload  Base64-decoded HTTP2-Settings header value
- * @settings_len  Length of settings payload
- * @arena  Memory arena
+ * @ingroup http2
+ * @param socket  Socket after sending upgrade request
+ * @param settings_payload  Base64-decoded HTTP2-Settings header value
+ * @param settings_len  Length of settings payload
+ * @param arena  Memory arena
  *
  * @return HTTP/2 connection
  * @threadsafe No
@@ -1089,12 +1095,12 @@ SocketHTTP2_Conn_upgrade_client (Socket_T socket,
 
 /**
  * @brief Upgrade from HTTP/1.1 (server)
- * @ingroup http
- * @socket  Socket after receiving upgrade request
- * @initial_request  The HTTP/1.1 request that triggered upgrade
- * @settings_payload  Decoded HTTP2-Settings from client
- * @settings_len  Length of settings
- * @arena  Memory arena
+ * @ingroup http2
+ * @param socket  Socket after receiving upgrade request
+ * @param initial_request  The HTTP/1.1 request that triggered upgrade
+ * @param settings_payload  Decoded HTTP2-Settings from client
+ * @param settings_len  Length of settings
+ * @param arena  Memory arena
  *
  * @return HTTP/2 connection with stream 1 pre-created
  * @threadsafe No
@@ -1110,7 +1116,7 @@ extern SocketHTTP2_Conn_T SocketHTTP2_Conn_upgrade_server (
 
 /**
  * @brief Get error code description
- * @ingroup http
+ * @ingroup http2
  * @param code Error code
  * @return Static string describing the error
  * @threadsafe Yes
@@ -1119,7 +1125,7 @@ extern const char *SocketHTTP2_error_string (SocketHTTP2_ErrorCode code);
 
 /**
  * @brief Get frame type name
- * @ingroup http
+ * @ingroup http2
  * @type  Frame type
  *
  * @return Static string with frame type name
@@ -1129,7 +1135,7 @@ extern const char *SocketHTTP2_frame_type_string (SocketHTTP2_FrameType type);
 
 /**
  * @brief Get stream state name
- * @ingroup http
+ * @ingroup http2
  * @state  Stream state
  *
  * @return Static string with state name
@@ -1145,8 +1151,8 @@ SocketHTTP2_stream_state_string (SocketHTTP2_StreamState state);
 
 /**
  * @brief Parse frame header from buffer
- * @ingroup http
- * @data  Input buffer containing frame header
+ * @ingroup http2
+ * @param data  Input buffer containing frame header
  * @input_len  Length of available data (must be >= HTTP2_FRAME_HEADER_SIZE=9;
  * runtime validated)
  * @header  Output header structure (populated on success)
@@ -1164,9 +1170,9 @@ extern int SocketHTTP2_frame_header_parse (const unsigned char *data,
 
 /**
  * @brief Serialize frame header to buffer
- * @ingroup http
+ * @ingroup http2
  * @header  Header structure
- * @data  Output buffer (at least HTTP2_FRAME_HEADER_SIZE bytes)
+ * @param data  Output buffer (at least HTTP2_FRAME_HEADER_SIZE bytes)
  *
  * @threadsafe Yes
  */

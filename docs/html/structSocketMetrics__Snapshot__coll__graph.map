@@ -1,5 +1,5 @@
 <map id="SocketMetrics_Snapshot" name="SocketMetrics_Snapshot">
 <area shape="rect" id="Node000001" title="Complete point&#45;in&#45;time snapshot of all metrics for export and analysis." alt="" coords="35,93,203,119"/>
-<area shape="rect" id="Node000002" href="$group__foundation.html#structSocketMetrics__HistogramSnapshot" title="Point&#45;in&#45;time snapshot of histogram statistics with percentiles.Contains count, sum,..." alt="" coords="5,5,233,31"/>
+<area shape="rect" id="Node000002" href="$group__utilities.html#structSocketMetrics__HistogramSnapshot" title="Point&#45;in&#45;time snapshot of histogram statistics with percentiles.Contains count, sum,..." alt="" coords="5,5,233,31"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="122,45,122,93,117,93,117,45"/>
 </map>

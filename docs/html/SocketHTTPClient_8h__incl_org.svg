@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="High&#45;level HTTP client library with pooling, async support, and protocol negotiation.">
+<g id="a_Node000001"><a xlink:title="Public API for the HTTP client module, including types, functions, and configuration.">
 <polygon fill="#999999" stroke="#666666" points="263.36,-415 156.36,-415 156.36,-396 263.36,-396 263.36,-415"/>
 <text text-anchor="middle" x="209.86" y="-403" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTPClient.h</text>
 </a>

@@ -2,9 +2,9 @@ var SocketSecurity_8h =
 [
     [ "SOCKET_SECURITY_CHECK_OVERFLOW_ADD", "group__foundation.html#gac5270b656510253faca9dca69f21a0fb", null ],
     [ "SOCKET_SECURITY_CHECK_OVERFLOW_MUL", "group__foundation.html#gac0f2047bd8559eff753e7eeeac8c10d2", null ],
-    [ "SOCKET_SECURITY_MAX_ALLOCATION", "SocketSecurity_8h.html#a96a4c4c07078b24744bf2accf84ccaf0", null ],
-    [ "SOCKET_SECURITY_MAX_BODY_SIZE", "SocketSecurity_8h.html#a2c9ad192fd1c92f1b2af612d213f8dc5", null ],
-    [ "SOCKET_SECURITY_MAX_REQUEST_TIMEOUT_MS", "SocketSecurity_8h.html#aecf2f2b54a209d002ce224d7de9c5e4b", null ],
+    [ "SOCKET_SECURITY_MAX_ALLOCATION", "group__foundation.html#ga96a4c4c07078b24744bf2accf84ccaf0", null ],
+    [ "SOCKET_SECURITY_MAX_BODY_SIZE", "group__foundation.html#ga2c9ad192fd1c92f1b2af612d213f8dc5", null ],
+    [ "SOCKET_SECURITY_MAX_REQUEST_TIMEOUT_MS", "group__foundation.html#gaecf2f2b54a209d002ce224d7de9c5e4b", null ],
     [ "SOCKET_SECURITY_VALID_SIZE", "group__foundation.html#gab118e25b6e3d4b7ba3abb6fb465a4908", null ],
     [ "SocketSecurity_check_add", "group__foundation.html#ga808c8911cd0b5d129ad1a3ea2e25e2b0", null ],
     [ "SocketSecurity_check_multiply", "group__foundation.html#gaa5e5f01fe52f1e55de0e686cf32003aa", null ],

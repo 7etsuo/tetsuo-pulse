@@ -1,6 +1,6 @@
 /**
  * @file SocketHTTP1.h
- * @ingroup http1
+ * @ingroup http
  * @brief HTTP/1.1 message syntax parsing and serialization (RFC 9112).
  *
  * Provides HTTP/1.1 message parsing, serialization, and chunked encoding.
@@ -34,7 +34,7 @@
 
 /**
  * @defgroup http1 HTTP/1.1 Parser and Serializer Module
- * @ingroup http1
+ * @ingroup http
  * @brief Comprehensive HTTP/1.1 parsing, serialization, and transfer encoding support.
  *
  * This module implements the HTTP/1.1 protocol (RFC 9112) with focus on security,
@@ -118,57 +118,57 @@
  *   - Validates all header names/values for injection attacks
  */
 
-/** Maximum request/status line length */
+/** @brief Maximum request/status line length. @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_REQUEST_LINE
 #define SOCKETHTTP1_MAX_REQUEST_LINE (8 * 1024)
 #endif
 
-/** Maximum HTTP method length (longest standard: OPTIONS = 7) */
+/** @brief Maximum HTTP method length (longest standard: OPTIONS = 7). @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_METHOD_LEN
 #define SOCKETHTTP1_MAX_METHOD_LEN 16
 #endif
 
-/** Maximum URI length in request line */
+/** @brief Maximum URI length in request line. @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_URI_LEN
 #define SOCKETHTTP1_MAX_URI_LEN (8 * 1024)
 #endif
 
-/** Maximum header name length */
+/** @brief Maximum header name length. @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_HEADER_NAME
 #define SOCKETHTTP1_MAX_HEADER_NAME 256
 #endif
 
-/** Maximum header value length */
+/** @brief Maximum header value length. @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_HEADER_VALUE
 #define SOCKETHTTP1_MAX_HEADER_VALUE (8 * 1024)
 #endif
 
-/** Maximum number of headers */
+/** @brief Maximum number of headers. @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_HEADERS
 #define SOCKETHTTP1_MAX_HEADERS 100
 #endif
 
-/** Maximum total header size */
+/** @brief Maximum total header size. @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_HEADER_SIZE
 #define SOCKETHTTP1_MAX_HEADER_SIZE (64 * 1024)
 #endif
 
-/** Maximum chunk size */
+/** @brief Maximum chunk size. @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_CHUNK_SIZE
 #define SOCKETHTTP1_MAX_CHUNK_SIZE (16 * 1024 * 1024)
 #endif
 
-/** Maximum chunk extension length */
+/** @brief Maximum chunk extension length. @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_CHUNK_EXT
 #define SOCKETHTTP1_MAX_CHUNK_EXT 1024
 #endif
 
-/** Maximum trailer headers size */
+/** @brief Maximum trailer headers size. @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_TRAILER_SIZE
 #define SOCKETHTTP1_MAX_TRAILER_SIZE (4 * 1024)
 #endif
 
-/** Maximum individual header line length (name + : + value + OWS + \r\n) */
+/** @brief Maximum individual header line length (name + : + value + OWS + \r\n). @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_HEADER_LINE
 #define SOCKETHTTP1_MAX_HEADER_LINE (16 * 1024)
 #endif
@@ -178,12 +178,12 @@
  * ============================================================================
  */
 
-/** Buffer size for integer-to-string conversion (covers int64_t) */
+/** @brief Buffer size for integer-to-string conversion (covers int64_t). @ingroup http1 */
 #ifndef SOCKETHTTP1_INT_STRING_BUFSIZE
 #define SOCKETHTTP1_INT_STRING_BUFSIZE 24
 #endif
 
-/** Buffer size for Content-Length header line ("Content-Length: " + value) */
+/** @brief Buffer size for Content-Length header line ("Content-Length: " + value). @ingroup http1 */
 #ifndef SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE
 #define SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE 48
 #endif
@@ -195,7 +195,7 @@
 
 /**
  * @brief Exception for HTTP/1.1 parsing failures.
- * @ingroup http11
+ * @ingroup http1
  *
  * Thrown by parser functions on syntax errors, security violations, or limit breaches.
  * Specific conditions:
@@ -213,7 +213,7 @@ extern const Except_T SocketHTTP1_ParseError;
 
 /**
  * @brief Exception for HTTP/1.1 serialization failures.
- * @ingroup http11
+ * @ingroup http1
  *
  * Thrown when input to serialization functions is invalid or malformed.
  * Common causes:
@@ -375,7 +375,7 @@ typedef struct SocketHTTP1_Parser *SocketHTTP1_Parser_T;
 
 /**
  * @brief Initialize SocketHTTP1_Config with safe default values.
- * @ingroup http11
+ * @ingroup http1
  * @param config [out] Configuration structure to populate
  * @threadsafe Yes - pure function, no side effects
  *
@@ -717,7 +717,7 @@ extern size_t SocketHTTP1_chunk_encode_size (size_t data_len);
  * ============================================================================
  */
 
-#ifdef SOCKETHTTP1_HAS_COMPRESSION
+#if SOCKETHTTP1_HAS_COMPRESSION
 
 /**
  * @brief HTTP/1.1 content decoder (opaque type)
@@ -866,7 +866,7 @@ extern const char *SocketHTTP1_result_string (SocketHTTP1_Result result);
 /** @} */ /* http1 */
 
 /**
- * @ingroup http11
+ * @ingroup http1
  * @page http1_page HTTP/1.1 Module Overview
  *
  * Additional module-specific page if needed.

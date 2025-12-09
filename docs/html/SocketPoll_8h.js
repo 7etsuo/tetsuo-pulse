@@ -2,8 +2,6 @@ var SocketPoll_8h =
 [
     [ "SOCKET_POLL_TIMEOUT_USE_DEFAULT", "group__event__system.html#ga0fc8aa94a3e9bb10cb26d85c6474d04e", null ],
     [ "T", "group__event__system.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
-    [ "SocketAsync_T", "SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8", null ],
-    [ "SocketPoll_T", "SocketPoll_8h.html#af9e4be8bc025aedb61cc0b77e8926312", null ],
     [ "SocketPoll_Events", "group__event__system.html#ga9e8943c9cb47aba63dda4ad9083142b6", [
       [ "POLL_READ", "group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8", null ],
       [ "POLL_WRITE", "group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195", null ],

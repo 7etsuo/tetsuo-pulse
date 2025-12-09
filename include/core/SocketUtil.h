@@ -133,32 +133,96 @@ const char *SocketLog_levelname (SocketLogLevel level);
  * @param message Log message (may be NULL).
  * @threadsafe Yes
  */
+/**
+ * @brief Emit a plain log message without formatting or variable arguments.
+ * @ingroup foundation
+ *
+ * @param level Log severity level (e.g., SOCKET_LOG_INFO).
+ * @param component Component or module name for categorization (may be NULL for default "Socket").
+ * @param message Fixed log message string (may be NULL, logged as empty string).
+ * @threadsafe Yes - synchronized emission to callback or default handler.
+ *
+ * Dispatches the message to the registered SocketLogCallback or default stdout logger.
+ * Automatically filtered by global minimum level from SocketLog_setlevel().
+ * Includes thread-local SocketLogContext data if set, for correlation.
+ *
+ * Best for static messages; use SocketLog_emitf() for dynamic content.
+ *
+ * @return void
+ * @see SocketLog_emitf() for formatted variant.
+ * @see SocketLog_emit_structured() for key-value metadata.
+ * @see SocketLog_setlevel() to control filtering.
+ * @see SocketLogCallback for custom handling.
+ * @see SocketLogContext for auto-included thread metadata.
+ * @see docs/LOGGING.md for subsystem overview and examples.
+ * @note No formatting performed; message should be pre-formatted if needed.
+ * @note Integrates with SocketMetrics for log-related counters if emitted.
+ */
 void SocketLog_emit (SocketLogLevel level, const char *component,
                      const char *message);
 
 /**
- * @brief Emit formatted log message.
+ * @brief Emit a formatted log message using printf-style variable arguments.
+ * @ingroup foundation
 
  * @param level Log level.
  * @param component Component name.
  * @param fmt Printf-style format string.
  * @param ... Format arguments.
  * @threadsafe Yes
+ * @return void
  *
- * WARNING: fmt must be a compile-time literal to prevent format string
- * attacks. Do not use user-controlled format strings.
+ * Performs safe formatting using internal buffer, then emits to registered callback
+ * or default logger. Supports common printf specifiers; limits length to prevent
+ * DoS from excessive args. Automatically includes thread-local SocketLogContext
+ * for tracing and correlation IDs.
+ *
+ * Use via convenience macros like SOCKET_LOG_INFO_MSG() which define component
+ * and expand to this function. Essential for dynamic logging in hot paths.
+ *
+ * @warning fmt must be a compile-time literal string to prevent format string
+ * vulnerabilities (e.g., %x, %n exploits with user input). Validate or escape
+ * user data in arguments, not fmt.
+ * @note Truncates long messages; failure in formatting logs internal error.
+ * @note Filtered by global SocketLog_getlevel(); lower levels suppressed.
+ * @see SocketLog_emit() for non-formatted logs.
+ * @see SocketLog_emitfv() va_list variant for wrappers.
+ * @see SocketLog_emit_structured() for structured/metadata logs.
+ * @see SOCKET_LOG_*_MSG macros for module-specific usage.
+ * @see SocketLog_setcallback() for output customization.
+ * @see SocketLogContext auto-appended metadata.
+ * @see docs/LOGGING.md security and performance guidelines.
+ * @see @ref foundation for related utilities like SocketMetrics.
  */
 void SocketLog_emitf (SocketLogLevel level, const char *component,
                       const char *fmt, ...);
 
 /**
- * @brief Emit formatted log message with va_list.
+ * @brief Emit formatted log message using va_list for arguments.
+ * @ingroup foundation
 
  * @param level Log level.
  * @param component Component name.
  * @param fmt Printf-style format string.
  * @param args Format arguments as va_list.
  * @threadsafe Yes
+ * @return void
+ *
+ * Identical to SocketLog_emitf() but accepts pre-prepared va_list for
+ * functions that need to forward variable arguments (e.g., logging wrappers,
+ * error handlers). Performs formatting and emission with same safety checks,
+ * filtering, and context integration.
+ *
+ * Use when va_list is available from caller; avoids variadic overhead.
+ * Same security requirement: fmt literal only.
+ *
+ * @warning fmt must be compile-time literal; same risks as emitf().
+ * @note Does not consume or modify args; valid until callback completes.
+ * @see SocketLog_emitf() primary variadic version.
+ * @see SocketLog_emit() non-formatted.
+ * @see SocketLog_emit_structured() structured alternative.
+ * @see docs/LOGGING.md for advanced usage.
+ * @see SocketLog_setcallback() for output routing.
  */
 void SocketLog_emitfv (SocketLogLevel level, const char *component,
                        const char *fmt, va_list args);
@@ -216,10 +280,27 @@ void SocketLog_emitfv (SocketLogLevel level, const char *component,
 extern void SocketLog_setlevel (SocketLogLevel min_level);
 
 /**
- * @brief Get current minimum log level.
+ * @brief Retrieve the active global minimum log level threshold.
+ * @ingroup foundation
 
- * @return Current minimum log level.
- * @threadsafe Yes (mutex protected)
+ * @return Current global SocketLogLevel threshold (e.g., SOCKET_LOG_WARN).
+ * @threadsafe Yes - atomic or mutex-protected read.
+ * @return Current global SocketLogLevel threshold (e.g., SOCKET_LOG_WARN).
+ *
+ * Queries the minimum severity for log emission. Logs below this level are suppressed.
+ * Useful for runtime configuration checks or conditional detailed logging.
+ * Reflects last call to SocketLog_setlevel() or default (SOCKET_LOG_INFO).
+ *
+ * Example:
+ *   if (SocketLog_getlevel() <= SOCKET_LOG_DEBUG) {
+ *     SOCKET_LOG_DEBUG_MSG("Detailed state: %d", state);
+ *   }
+ *
+ * @see SocketLog_setlevel() to configure.
+ * @see SocketLogLevel enum definitions.
+ * @see SocketLog_levelname() for string conversion.
+ * @see docs/LOGGING.md configuration details.
+ * @note Global value; changes affect all threads immediately.
  */
 extern SocketLogLevel SocketLog_getlevel (void);
 
@@ -324,33 +405,87 @@ typedef struct SocketLogContext
 } SocketLogContext;
 
 /**
- * @brief Set thread-local logging context.
+ * @brief Set thread-local logging context for request tracing and metadata.
+ * @ingroup foundation
 
  * @param ctx Context to copy (NULL clears context).
- * @threadsafe Yes (uses thread-local storage)
+ * @threadsafe Yes - thread-local storage (TLS), no locks or races.
+ * @return void
  *
- * Sets the logging context for the current thread. The context is
- * copied, so the caller may free or modify ctx after this call.
+ * Copies ctx into per-thread storage for use by subsequent SocketLog_emit*()
+ * calls in this thread. Custom callbacks can access via SocketLog_getcontext()
+ * to enrich logs with trace_id (e.g., UUID), request_id, or connection_fd.
+ * NULL ctx clears to defaults (empty strings, fd=-1).
+ *
+ * Pattern for request handling:
+ *   SocketLogContext ctx = { .connection_fd = sock_fd };
+ *   snprintf(ctx.trace_id, sizeof(ctx.trace_id), "%llx", generate_trace());
+ *   SocketLog_setcontext(&ctx);
+ *   // ... process request with contextual logs ...
+ *   SocketLog_clearcontext(); // Or let persist per thread
+ *
+ * @note Fixed-size strings; caller must null-terminate and fit within limits.
+ * @note Context visible only to current thread; inter-thread via app logic.
+ * @see SocketLog_getcontext() retrieval in callbacks.
+ * @see SocketLog_clearcontext() reset equivalent to set(NULL).
+ * @see SocketLogContext fields details.
+ * @see SocketLogStructuredCallback for field usage in structured logs.
+ * @see docs/LOGGING.md tracing integration.
+ * @see SocketEvent_emit_* auto-setting connection_fd for events.
  */
 extern void SocketLog_setcontext (const SocketLogContext *ctx);
 
 /**
- * @brief Get thread-local logging context.
+ * @brief Retrieve pointer to current thread's logging context.
+ * @ingroup foundation
 
- * @return Pointer to thread-local context, or NULL if not set.
- * @threadsafe Yes (uses thread-local storage)
+ * @return Const pointer to thread-local SocketLogContext or NULL if unset.
+ * @threadsafe Yes - direct read from TLS, read-only access.
+ * @return Const pointer to thread-local SocketLogContext or NULL if unset.
  *
- * Returns pointer to internal thread-local storage. Do not modify
- * the returned pointer; use SocketLog_setcontext to update.
+ * For use in custom SocketLogCallback or SocketLogStructuredCallback to
+ * append context fields (trace_id, request_id, connection_fd) to log output.
+ * Enables distributed tracing, request correlation, and per-connection logging.
+ * Returned pointer remains valid until next set/clear in this thread.
+ * Do not free or mutate; structure owned by logging subsystem.
+ *
+ * Example in callback:
+ *   const SocketLogContext *ctx = SocketLog_getcontext();
+ *   if (ctx) {
+ *     fprintf(stream, "[%s] fd=%d %s\n", ctx->trace_id ?: "none",
+ *             ctx->connection_fd, message);
+ *   }
+ *
+ * @note NULL if never set or cleared; check before deref.
+ * @note Fields may be empty strings or -1; validate as needed.
+ * @see SocketLog_setcontext() to populate.
+ * @see SocketLog_clearcontext() to NULLify.
+ * @see SocketLogContext field semantics.
+ * @see docs/LOGGING.md for callback patterns.
+ * @see SocketLogStructuredCallback context param.
  */
 extern const SocketLogContext *SocketLog_getcontext (void);
 
 /**
- * @brief Clear thread-local logging context.
+ * @brief Reset thread-local logging context to default state.
+ * @ingroup foundation
 
- * @threadsafe Yes (uses thread-local storage)
+ * @threadsafe Yes - local TLS update, no synchronization.
+ * @return void
  *
- * Equivalent to SocketLog_setcontext(NULL).
+ * Clears current thread's logging context by setting all fields to defaults:
+ * trace_id and request_id to empty strings, connection_fd to -1.
+ * Ensures no leakage of previous request data to subsequent logs.
+ * Idempotent; safe to call multiple times.
+ *
+ * Recommended after completing request/connection handling to isolate logs.
+ * Alternative to SocketLog_setcontext(NULL); slightly more explicit.
+ *
+ * @see SocketLog_setcontext(NULL) functional equivalent.
+ * @see SocketLog_getcontext() to verify cleared (returns non-NULL but empty).
+ * @see SocketLogContext default values.
+ * @see docs/LOGGING.md context management patterns.
+ * @note Does not affect global log level or callbacks.
  */
 extern void SocketLog_clearcontext (void);
 
@@ -416,17 +551,37 @@ typedef struct SocketLogField
 } SocketLogField;
 
 /**
- * @brief SocketLogStructuredCallback - Extended callback with structured fields
+ * @brief Typedef for callback handling structured logs with key-value fields and context.
+ * @ingroup foundation
 
- * @userdata: User-provided context
- * @level: Log severity level
- * @component: Module/component name
- * @message: Log message
- * @fields: Array of key-value pairs (may be NULL)
- * @field_count: Number of fields in array
- * @context: Thread-local context (may be NULL)
  *
- * Callbacks should check for NULL fields/context before accessing.
+ * Extended variant of SocketLogCallback that receives metadata fields separately
+ * for machine-readable output formats like JSON or logfmt. Invoked by
+ * SocketLog_emit_structured() when registered via SocketLog_setstructuredcallback().
+ *
+ * @param userdata User-provided opaque context passed during registration.
+ * @param level Log severity level (SOCKET_LOG_TRACE to SOCKET_LOG_FATAL).
+ * @param component String identifying emitting module or subsystem (non-NULL).
+ * @param message Descriptive event string (non-NULL, may be empty).
+ * @param fields Pointer to array of SocketLogField structs or NULL if none.
+ * @param field_count Number of valid fields in array (0 if fields NULL).
+ * @param context Pointer to current thread's SocketLogContext or NULL.
+ * @threadsafe Conditional - implementor must handle concurrency if userdata shared.
+ *
+ * Guidelines:
+ * - Validate NULL fields/context before access to avoid crashes.
+ * - Fields values are caller-provided strings; lifetime until callback returns.
+ * - Format output as needed (JSON, key=value pairs, etc.); no default formatting.
+ * - Integrate with external systems like ELK stack or Prometheus for observability.
+ *
+ * @see SocketLog_setstructuredcallback() to register this callback.
+ * @see SocketLog_emit_structured() emission trigger.
+ * @see SocketLogField for field structure.
+ * @see SocketLogContext for context details.
+ * @see SocketLogCallback base callback fallback.
+ * @see docs/LOGGING.md for examples and integration.
+ * @note Fields array not copied; valid only during call.
+ * @note Prefer for new code; enables better tooling and analysis.
  */
 typedef void (*SocketLogStructuredCallback) (
     void *userdata, SocketLogLevel level, const char *component,
@@ -434,7 +589,8 @@ typedef void (*SocketLogStructuredCallback) (
     const SocketLogContext *context);
 
 /**
- * @brief SocketLog_setstructuredcallback - Set structured logging callback
+ * @brief Register callback for handling structured log emissions with fields.
+ * @ingroup foundation
 
  * @callback: Callback function or NULL to disable structured logging
  * @userdata: User data passed to callback
@@ -450,7 +606,8 @@ SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
                                  void *userdata);
 
 /**
- * @brief SocketLog_emit_structured - Emit log message with structured fields
+ * @brief Emit log message with attached structured key-value metadata fields.
+ * @ingroup foundation
 
  * @level: Log level
  * @component: Component name

@@ -43,7 +43,7 @@
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
 #include "core/SocketTimer-private.h"
-#include "core/SocketUtil.h" /* REFACTOR: For SOCKET_RAISE_MODULE_ERROR */
+#include "core/SocketUtil.h"
 #include "poll/SocketPoll.h"
 #include "poll/SocketPoll_backend.h"
 #include "socket/Socket.h"

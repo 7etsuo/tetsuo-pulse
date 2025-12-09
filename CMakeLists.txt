@@ -145,6 +145,8 @@ endif()
 
 # HTTP Compression support (optional - requires zlib and/or brotli)
 option(ENABLE_HTTP_COMPRESSION "Enable HTTP gzip/deflate/brotli compression" OFF)
+
+set(SOCKETHTTP1_HAS_COMPRESSION OFF)
 set(HTTP_COMPRESSION_LIBS "")
 
 if(ENABLE_HTTP_COMPRESSION)
@@ -174,13 +176,19 @@ if(ENABLE_HTTP_COMPRESSION)
     
     # Enable compression module if any compression library found
     if(ZLIB_FOUND OR (BROTLI_DEC_LIB AND BROTLI_ENC_LIB))
-        add_definitions(-DSOCKETHTTP1_HAS_COMPRESSION)
+        set(SOCKETHTTP1_HAS_COMPRESSION ON)
         message(STATUS "HTTP compression support enabled")
     else()
         message(WARNING "HTTP compression requested but no compression libraries found")
     endif()
 else()
     message(STATUS "HTTP compression disabled (use -DENABLE_HTTP_COMPRESSION=ON to enable)")
+endif()
+
+if(SOCKETHTTP1_HAS_COMPRESSION)
+    add_definitions(-DSOCKETHTTP1_HAS_COMPRESSION=1)
+else()
+    add_definitions(-DSOCKETHTTP1_HAS_COMPRESSION=0)
 endif()
 
 # Collect all source files

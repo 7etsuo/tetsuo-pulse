@@ -11,6 +11,7 @@
  * - SocketRateLimit (rate-limit): Token bucket rate limiting
  * - SocketRetry (retry): Exponential backoff retry logic
  * - SocketMetrics (metrics): Performance metrics collection
+ * - SocketUTF8 (utf8): Secure UTF-8 validation and encoding utilities
  *
  * Related modules for security features like SYN protection and IP tracking
  * are documented under @ref security.
@@ -87,26 +88,19 @@
 #include <stdint.h>
 
 /**
- * @brief Opaque handle for a token bucket rate limiter.
- * @ingroup utilities
- *
- * Represents a thread-safe rate limiter instance implementing the token bucket
- * algorithm for controlling rates of operations like connections or bandwidth.
- *
- * @see SocketRateLimit_new() to create an instance.
- * @see SocketRateLimit_free() to dispose of an instance.
- * @see @ref utilities "Utilities module" for related helpers.
- */
-/**
  * @brief Opaque token bucket rate limiter instance.
  * @ingroup utilities
  *
- * Thread-safe rate limiter using token bucket algorithm for controlling
- * operation rates with support for bursting.
+ * Thread-safe implementation of the token bucket algorithm for controlling operation
+ * rates (e.g., connections or bandwidth throttling) with burst support up to the
+ * configured bucket capacity.
  *
- * @see SocketRateLimit_new() for creating instances.
- * @see SocketRateLimit_try_acquire() for token consumption.
- * @see SocketRateLimit_free() for cleanup.
+ * Allows short bursts while enforcing long-term average rates.
+ *
+ * @see SocketRateLimit_new() for instance creation.
+ * @see SocketRateLimit_free() for resource disposal.
+ * @see SocketRateLimit_try_acquire() for non-blocking token consumption.
+ * @see @ref utilities "Utilities module" for related helper modules.
  */
 #define T SocketRateLimit_T
 typedef struct T *T;

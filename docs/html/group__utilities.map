@@ -1,0 +1,4 @@
+<map id="Utility Modules" name="Utility Modules">
+<area shape="rect" id="Node000002" href="$group__foundation.html" title="Base infrastructure for memory management, exception handling, and core utilities...." alt="" coords="5,5,176,31"/>
+<area shape="rect" id="Node000001" title="Helper modules for rate limiting, retry logic, and metrics." alt="" coords="224,5,333,31"/>
+</map>

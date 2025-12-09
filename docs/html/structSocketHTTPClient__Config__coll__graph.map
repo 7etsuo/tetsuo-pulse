@@ -1,5 +1,17 @@
 <map id="SocketHTTPClient_Config" name="SocketHTTPClient_Config">
-<area shape="rect" id="Node000001" title="HTTP client configuration structure." alt="" coords="5,93,183,119"/>
-<area shape="rect" id="Node000002" href="$group__core__io.html#structSocketProxy__Config" title="Configuration structure for proxy connections." alt="" coords="23,5,165,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,45,97,93,91,93,91,45"/>
+<area shape="rect" id="Node000001" title="HTTP client configuration structure." alt="" coords="151,357,329,383"/>
+<area shape="rect" id="Node000002" href="$group__security.html#structSocketTLSContext__T" title="TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,..." alt="" coords="166,181,314,207"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="239,221,235,256,235,295,241,357,236,357,229,295,230,255,233,220"/>
+<area shape="poly" id="edge4_Node000002_Node000002" title=" " alt="" coords="329,186,341,194,332,201,315,204,314,199,330,197,335,194,327,190"/>
+<area shape="rect" id="Node000007" href="$group__proxy.html#structSocketProxy__Config" title="Configuration structure for proxy connections." alt="" coords="313,269,455,295"/>
+<area shape="poly" id="edge8_Node000007_Node000002" title=" " alt="" coords="272,211,366,267,363,271,270,216"/>
+<area shape="rect" id="Node000003" href="$structTLSContextSNICerts.html" title="Structure for managing SNI certificate mappings in TLS context." alt="" coords="5,93,152,119"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="114,123,219,179,217,183,111,128"/>
+<area shape="rect" id="Node000004" href="$group__security.html#structTLSContextALPN" title="Configuration for ALPN protocol negotiation." alt="" coords="177,93,303,119"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="243,133,243,181,237,181,237,133"/>
+<area shape="rect" id="Node000005" href="$group__security.html#structTLSContextPinning" title="TLSContextPinning &#45; Certificate pinning configuration." alt="" coords="327,93,462,119"/>
+<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="363,128,262,183,260,179,361,123"/>
+<area shape="rect" id="Node000006" href="$group__security.html#structTLSCertPin" title="TLSCertPin &#45; Single certificate pin entry (SPKI SHA256 hash)" alt="" coords="349,5,440,31"/>
+<area shape="poly" id="edge6_Node000005_Node000006" title=" " alt="" coords="397,45,397,93,392,93,392,45"/>
+<area shape="poly" id="edge7_Node000001_Node000007" title=" " alt="" coords="354,304,261,359,258,355,352,299"/>
 </map>

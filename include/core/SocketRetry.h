@@ -90,34 +90,87 @@ extern const Except_T SocketRetry_Failed;
  */
 typedef struct SocketRetry_Policy
 {
-  int max_attempts;     /**< Maximum retry attempts (default: 3) */
-  int initial_delay_ms; /**< Initial backoff delay in ms (default: 100ms) */
-  int max_delay_ms;     /**< Maximum backoff delay cap in ms (default: 30000ms) */
-  double multiplier;    /**< Backoff multiplier per attempt (default: 2.0) */
-  double jitter;        /**< Jitter factor 0.0-1.0 to randomize delays (default: 0.25) */
+  int max_attempts;     /**< Maximum retry attempts (default: SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS) 
+ * @ingroup utilities */
+  int initial_delay_ms; /**< Initial backoff delay in ms (default: SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS) 
+ * @ingroup utilities */
+  int max_delay_ms;     /**< Maximum backoff delay cap in ms (default: SOCKET_RETRY_DEFAULT_MAX_DELAY_MS) 
+ * @ingroup utilities */
+  double multiplier;    /**< Backoff multiplier per attempt (default: SOCKET_RETRY_DEFAULT_MULTIPLIER) 
+ * @ingroup utilities */
+  double jitter;        /**< Jitter factor 0.0-1.0 to randomize delays (default: SOCKET_RETRY_DEFAULT_JITTER) 
+ * @ingroup utilities */
 } SocketRetry_Policy;
 
-/* Default policy values - can be overridden at compile time */
+/**
+ * @brief Compile-time configurable default values for SocketRetry_Policy fields.
+ * @ingroup utilities
+ *
+ * These macros allow customization of retry policy defaults without modifying source code.
+ * Override them before including SocketRetry.h.
+ *
+ * @see SocketRetry_policy_defaults() which uses these values.
+ * @see SocketRetry_Policy for structure details.
+ */
+
+/**
+ * @brief Default maximum number of retry attempts.
+ * @ingroup utilities
+ * @note Override before inclusion to change default in SocketRetry_new(NULL) and policy_defaults().
+ * @see SocketRetry_Policy::max_attempts
+ */
 #ifndef SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS
 #define SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS 3
 #endif
 
+/**
+ * @brief Default initial backoff delay in milliseconds.
+ * @ingroup utilities
+ * @note Conservative starting delay for first retry.
+ * @see SocketRetry_Policy::initial_delay_ms
+ */
 #ifndef SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS
 #define SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS 100
 #endif
 
+/**
+ * @brief Default maximum backoff delay cap in milliseconds.
+ * @ingroup utilities
+ * @note Prevents excessively long delays in prolonged failure scenarios.
+ * @see SocketRetry_Policy::max_delay_ms
+ */
 #ifndef SOCKET_RETRY_DEFAULT_MAX_DELAY_MS
 #define SOCKET_RETRY_DEFAULT_MAX_DELAY_MS 30000
 #endif
 
+/**
+ * @brief Default exponential backoff multiplier.
+ * @ingroup utilities
+ * @note Standard value of 2.0 for doubling delay per attempt.
+ * @see SocketRetry_Policy::multiplier
+ */
 #ifndef SOCKET_RETRY_DEFAULT_MULTIPLIER
 #define SOCKET_RETRY_DEFAULT_MULTIPLIER 2.0
 #endif
 
+/**
+ * @brief Default jitter factor for randomized backoff (0.0 to 1.0).
+ * @ingroup utilities
+ * @note 0.25 provides moderate randomization to avoid thundering herd.
+ * @see SocketRetry_Policy::jitter
+ */
 #ifndef SOCKET_RETRY_DEFAULT_JITTER
 #define SOCKET_RETRY_DEFAULT_JITTER 0.25
 #endif
 
+/**
+ * @brief Hard maximum attempts limit to prevent infinite retries.
+ * @ingroup utilities
+ * @note Internal safety cap; policy max_attempts cannot exceed this.
+ * Used in validation and delay calculations.
+ * @see SocketRetry_calculate_delay()
+ * @see SocketRetry_Policy::max_attempts
+ */
 #ifndef SOCKET_RETRY_MAX_ATTEMPTS
 #define SOCKET_RETRY_MAX_ATTEMPTS 10000
 #endif

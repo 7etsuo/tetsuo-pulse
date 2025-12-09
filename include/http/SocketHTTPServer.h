@@ -830,20 +830,6 @@ extern SocketPoll_T SocketHTTPServer_poll (SocketHTTPServer_T server);
  * @see SocketHTTP_method_properties() for method attributes (safe, idempotent, etc.).
  * @see SocketHTTP_method_parse() for parsing raw strings.
  */
-/**
- * @brief Retrieve the parsed HTTP method from the request.
- * @ingroup http
- *
- * Extracts the method from the request line (e.g., GET, POST, PUT).
- * Valid after request parsing in handler or validator callbacks.
- *
- * @param req Request context.
- * @return SocketHTTP_Method enum value corresponding to the method.
- *
- * @see SocketHTTP_method_name() to convert to string (e.g., "GET").
- * @see SocketHTTP_method_properties() for method attributes (safe, idempotent, etc.).
- * @see SocketHTTP_method_parse() for parsing raw strings.
- */
 extern SocketHTTP_Method
 SocketHTTPServer_Request_method (SocketHTTPServer_Request_T req);
 
@@ -1022,51 +1008,144 @@ SocketHTTPServer_Request_memory_used (SocketHTTPServer_Request_T req);
  */
 
 /**
- * @brief Set response status
+ * @brief Set the HTTP status code for the response.
  * @ingroup http
- * @param req Request context
- * @param code HTTP status code
+ *
+ * Specifies the status code to send in the response (e.g., 200 OK, 404 Not Found, 500 Internal Server Error).
+ * Must be called before adding headers, body, or calling finish(). If not set, defaults to 200 OK.
+ * Server may override in error cases (e.g., parsing failures -> 400/500).
+ *
+ * @param req Request context (valid during handler callback).
+ * @param code HTTP status code (100-599 range recommended; validated).
+ *
+ * @note Reason phrase auto-appended using SocketHTTP_status_reason(code).
+ * @note For client errors (4xx), consider logging request details for debugging.
+ * @note For redirects (3xx), pair with Location header.
+ *
+ * @see SocketHTTP_status_reason(int) for standard reason phrases.
+ * @see SocketHTTP_status_category(int) to classify codes (1xx informational, 2xx success, etc.).
+ * @see SocketHTTP_status_valid(int) to check valid range.
+ * @see SocketHTTPServer_Request_header() to add response headers (e.g., Location for redirects).
+ * @see SocketHTTPServer_Request_finish() to send after setting status/headers/body.
+ * @see docs/HTTP.md "HTTP Response Guidelines" for best practices.
+ *
+ * @threadsafe No - modifies shared request state.
  */
 extern void SocketHTTPServer_Request_status (SocketHTTPServer_Request_T req,
                                              int code);
 
 /**
- * @brief Add response header
+ * @brief Add a header field to the HTTP response.
  * @ingroup http
- * @param req Request context
- * @param name Header name
- * @param value Header value
+ *
+ * Appends a name-value pair to the response headers collection. Headers are sent
+ * immediately after the status line when finish() or streaming begins.
+ * Supports multiple values for the same header (e.g., repeated Set-Cookie).
+ * Header names are normalized to lowercase for consistency.
+ *
+ * @param req Request context (valid during handler or validator).
+ * @param name Null-terminated header name string (e.g., "Content-Type", "Authorization").
+ * @param value Null-terminated header value string (may contain commas for multi-value).
+ *
+ * @note Validates header name and value per RFC 7230/9110: tokens, no invalid chars.
+ * @note Server automatically adds mandatory headers: Date, Connection, Server (configurable).
+ * @note Content-Length auto-set if body provided and not chunked.
+ * @note For security, sanitize values to prevent injection (e.g., CRLF in values -> header smuggling).
+ *
+ * @see SocketHTTP_Headers_T for underlying header storage and advanced ops.
+ * @see SocketHTTP_Headers_add() similar low-level function.
+ * @see SocketHTTPServer_Request_headers() for direct access/modification.
+ * @see docs/SECURITY.md "HTTP Header Security" for best practices and risks.
+ * @see SocketHTTP_Headers_get() to query existing headers.
+ *
+ * @threadsafe No - concurrent modifications to same req may corrupt headers.
+ * @throws SocketHTTPServer_ProtocolError if name/value invalid (e.g., empty name, control chars).
  */
 extern void SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
                                              const char *name,
                                              const char *value);
 
 /**
- * @brief Set response body
+ * @brief Set the complete response body from a data buffer.
  * @ingroup http
- * @param req Request context
- * @param data Body data
- * @len  Body length
+ *
+ * Provides the full response body content. The body is sent after headers
+ * during finish(). Automatically computes and sets Content-Length header.
+ * For large or dynamic bodies (e.g., file streams), prefer streaming API.
+ * Data is referenced or copied internally; remains valid until finish().
+ *
+ * @param req Request context.
+ * @param data Pointer to response body bytes (may be NULL if len=0).
+ * @param len Exact length of body in bytes.
+ *
+ * @note Sets Content-Type to application/octet-stream if unspecified.
+ * @note Supports zero-length bodies (no Content-Length or Transfer-Encoding).
+ * @note Compression (e.g., gzip) applied if client accepts via Accept-Encoding.
+ * @note For text content, explicitly set Content-Type with charset.
+ *
+ * @see SocketHTTPServer_Request_body_string() for null-terminated strings.
+ * @see SocketHTTPServer_Request_begin_stream() for chunked/dynamic streaming.
+ * @see SocketHTTPServer_Request_header("Content-Type", "application/json") for type.
+ * @see SocketHTTP_Headers_set() for advanced header control.
+ *
+ * @threadsafe No - sets shared body state.
+ * @throws SocketHTTPServer_Failed if len exceeds max_body_size or allocation fails.
  */
 extern void SocketHTTPServer_Request_body_data (SocketHTTPServer_Request_T req,
                                                 const void *data, size_t len);
 
 /**
- * @brief Set response body from string
+ * @brief Set the response body from a null-terminated C string.
  * @ingroup http
- * @param req Request context
- * @param str Null-terminated string
+ *
+ * Convenience function for text-based responses. Computes length via strlen()
+ * and sets body accordingly. Equivalent to body_data(str, strlen(str)).
+ * Ideal for simple responses like JSON, HTML fragments, or plain text.
+ *
+ * @param req Request context.
+ * @param str Pointer to null-terminated string (NULL for empty body).
+ *
+ * @note strlen() excludes null terminator; binary data with \0 requires body_data().
+ * @note Sets Content-Type to text/plain; charset=utf-8 if not overridden.
+ * @note Large strings buffered in memory; stream for generated content.
+ *
+ * @see SocketHTTPServer_Request_body_data() for binary data with explicit length.
+ * @see SocketHTTPServer_Request_header("Content-Type", ...) to override type.
+ * @see SocketHTTPServer_Request_begin_stream() for streaming text generation.
+ *
+ * @threadsafe No.
+ * @throws Same as body_data(): allocation or size limit violations.
  */
 extern void
 SocketHTTPServer_Request_body_string (SocketHTTPServer_Request_T req,
                                       const char *str);
 
 /**
- * @brief Finish and send response
+ * @brief Finalize the response and transmit it to the client.
  * @ingroup http
- * @param req Request context
  *
- * Must be called to complete the response.
+ * Serializes the configured status, headers, and body into an HTTP message
+ * and sends it over the connection. For non-streaming responses, full body sent.
+ * Marks the request as complete; subsequent modifications ignored.
+ * Handles protocol specifics: chunked for HTTP/1.1 without length, frames for HTTP/2.
+ * Connection kept alive if possible (protocol, headers, timeouts allow).
+ *
+ * @param req Request context (invalidated after this call; do not use further).
+ *
+ * @note Call exactly once per request, typically at end of handler.
+ * @note If streaming enabled, call after end_stream() (finish() not needed).
+ * @note Auto-flushes buffers; blocks until sent or error/timeout.
+ * @note Updates server stats (bytes sent, latency, error counters if fails).
+ * @warning After call, req and its contents may be freed/recycled.
+ *
+ * @see SocketHTTPServer_Request_status() and Request_header() before finish.
+ * @see SocketHTTPServer_Request_body_data() or streaming alternatives.
+ * @see SocketHTTPServer_Request_end_stream() for streaming completion.
+ * @see SocketHTTPServer_process() underlying transmission loop.
+ *
+ * @threadsafe No - finalizes shared state, sends on connection fd.
+ * @throws SocketHTTPServer_Failed on I/O errors (e.g., broken pipe, timeout).
+ * @throws SocketHTTPServer_ProtocolError on serialization failures (rare).
  */
 extern void SocketHTTPServer_Request_finish (SocketHTTPServer_Request_T req);
 
@@ -1096,23 +1175,55 @@ SocketHTTPServer_Request_body_stream (SocketHTTPServer_Request_T req,
                                       void *userdata);
 
 /**
- * @brief Get expected body length
+ * @brief Retrieve the expected total length of the request body.
  * @ingroup http
- * @param req Request context
  *
- * @return Content-Length if known, -1 if chunked/unknown
- * @threadsafe No
+ * Returns the advertised body size from Content-Length header or -1 if unknown
+ * (e.g., chunked transfer-encoding or missing header). Useful for pre-allocating
+ * buffers or deciding streaming vs. buffering in handler/validator.
+ * Accurate after headers parsed, before body read (even if streaming enabled).
+ *
+ * @param req Request context (valid during handler or body callback).
+ *
+ * @return >=0 exact expected bytes (Content-Length), or -1 if undetermined/chunked.
+ *
+ * @note For chunked, total unknown until final chunk; use body_len() post-complete.
+ * @note 0 indicates empty body (common for GET/HEAD).
+ * @note May differ from actual received if client lies/truncated.
+ *
+ * @see SocketHTTPServer_Request_body_len() for actual received length (post-read).
+ * @see SocketHTTPServer_Request_is_chunked() to detect transfer encoding.
+ * @see SocketHTTP1_Parser_content_length() underlying parser value.
+ * @see docs/HTTP.md "Request Body Handling" for details.
+ *
+ * @threadsafe No - reads request state snapshot.
  */
 extern int64_t
 SocketHTTPServer_Request_body_expected (SocketHTTPServer_Request_T req);
 
 /**
- * @brief Check if request uses chunked encoding
+ * @brief Determine if the request body uses chunked transfer encoding.
  * @ingroup http
- * @param req Request context
  *
- * @return 1 if chunked transfer encoding, 0 otherwise
- * @threadsafe No
+ * Checks the Transfer-Encoding header for "chunked" (case-insensitive).
+ * Chunked used when Content-Length absent (HTTP/1.1 requirement for unknown length).
+ * Indicates body arrives in delimited chunks; total length unknown until end.
+ * Relevant for streaming decisions or buffer management.
+ *
+ * @param req Request context (after headers parsed).
+ *
+ * @return 1 if chunked encoding detected, 0 if not (fixed length or no body).
+ *
+ * @note HTTP/2 uses DATA frames (similar to chunked, but protocol-handled).
+ * @note False for fixed-length bodies or GET/HEAD (no body).
+ * @note In validator/handler, before body read; remains constant.
+ *
+ * @see SocketHTTPServer_Request_body_expected() for length if not chunked.
+ * @see SocketHTTPServer_Request_body_stream() compatible with chunked.
+ * @see SocketHTTP1_chunk_encode() for response chunking.
+ * @see RFC 9112 Section 7.1 "Chunked Transfer Coding".
+ *
+ * @threadsafe Yes - const query on parsed headers.
  */
 extern int
 SocketHTTPServer_Request_is_chunked (SocketHTTPServer_Request_T req);
@@ -1123,18 +1234,34 @@ SocketHTTPServer_Request_is_chunked (SocketHTTPServer_Request_T req);
  */
 
 /**
- * @brief Begin streaming response
+ * @brief Initiate a streaming (chunked) response to the client.
  * @ingroup http
- * @param req Request context
  *
- * Begins a chunked transfer-encoding response. After calling:
- * - Response headers are sent with Transfer-Encoding: chunked
- * - Use send_chunk() to send body data
- * - Use end_stream() to complete the response
- * - Do NOT call body_data(), body_string(), or finish()
+ * Starts the response by sending status and headers with Transfer-Encoding: chunked
+ * (or equivalent HTTP/2 frames). Enables sending body in arbitrary chunks without
+ * knowing total length upfront. Ideal for dynamic content generation, large files,
+ * or real-time data (e.g., SSE, progress updates).
+ * Headers sent immediately; subsequent send_chunk() append body chunks.
+ * Must follow with end_stream() to finalize (sends trailers if any).
  *
- * @return 0 on success, -1 on error
- * @threadsafe No
+ * @param req Request context (headers/status must be set prior).
+ *
+ * @return 0 on success (headers sent, ready for chunks), -1 on failure.
+ *
+ * @note Do not call status(), header(), body_data(), body_string(), or finish() after.
+ * @note Chunk size unlimited per call, but internal buffers apply (8KB typical).
+ * @note Client must support chunked (HTTP/1.1 default); HTTP/1.0 may fail.
+ * @note For HTTP/2, translates to multiple DATA frames with end-stream flag on last.
+ * @warning No Content-Length set; clients buffer until end_stream().
+ *
+ * @see SocketHTTPServer_Request_send_chunk() to emit body chunks.
+ * @see SocketHTTPServer_Request_end_stream() to finalize and close body.
+ * @see SocketHTTP1_chunk_encode() low-level chunk formatting.
+ * @see RFC 9112 Section 7.1 for chunked encoding spec.
+ * @see docs/HTTP.md "Streaming Responses" for examples.
+ *
+ * @threadsafe No - commits response, modifies connection state.
+ * @throws SocketHTTPServer_Failed on immediate send failure (e.g., closed conn).
  */
 extern int
 SocketHTTPServer_Request_begin_stream (SocketHTTPServer_Request_T req);
@@ -1175,29 +1302,60 @@ SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req);
  */
 
 /**
- * @brief Push a resource (HTTP/2 only)
+ * @brief Initiate an HTTP/2 server push of a related resource to the client.
  * @ingroup http
- * @param req Request context
- * @param path Path of resource to push
- * @param headers Headers for pushed request (can be NULL)
  *
- * Initiates HTTP/2 server push for a resource. Only works for HTTP/2
- * connections. For HTTP/1.1 connections, returns -1.
+ * Sends a promised PUSH_PROMISE frame followed by pushed response (HEADERS + DATA).
+ * Allows server to preemptively send resources likely needed by client (e.g., CSS/JS for HTML).
+ * Only functional on HTTP/2 connections; HTTP/1.x returns -1 (no push support).
+ * Client may refuse (via RST_STREAM); check return for success.
+ * Path relative to request URI authority; full URL constructed internally.
  *
- * @return 0 on success, -1 on error or not supported
- * @threadsafe No
+ * @param req Request context on HTTP/2 stream.
+ * @param path Target resource path (e.g., "/style.css"; relative).
+ * @param headers Optional headers for pushed request (method GET assumed; :method can override).
+ *
+ * @return 0 if push initiated successfully, -1 if failed/unsupported (not HTTP/2, client refused, error).
+ *
+ * @note Push streams consume window/bandwidth; use judiciously to avoid DoS.
+ * @note Client settings (e.g., ENABLE_PUSH=0) or GOAWAY may disable.
+ * @note Pushed responses still subject to server config limits/timeouts.
+ * @warning Over-pushing harms performance; base on Cache-Control, Link headers.
+ *
+ * @see SocketHTTPServer_Request_is_http2() to check protocol support.
+ * @see SocketHTTP2_Stream for low-level push control.
+ * @see RFC 9113 Section 6.6 "Server Push" for specification.
+ * @see docs/HTTP.md "HTTP/2 Server Push" for usage patterns.
+ *
+ * @threadsafe No - allocates push stream on connection.
+ * @throws SocketHTTPServer_ProtocolError if HTTP/2 frame errors.
  */
 extern int SocketHTTPServer_Request_push (SocketHTTPServer_Request_T req,
                                           const char *path,
                                           SocketHTTP_Headers_T headers);
 
 /**
- * @brief Check if connection is HTTP/2
+ * @brief Check if the underlying connection uses HTTP/2 protocol.
  * @ingroup http
- * @param req Request context
  *
- * @return 1 if HTTP/2, 0 if HTTP/1.x
- * @threadsafe No
+ * Queries the negotiated protocol version for the connection/stream.
+ * HTTP/2 detected via ALPN (TLS), prior-knowledge, or upgrade (h2c).
+ * Enables/disables HTTP/2 features: multiplexing, push, header compression.
+ *
+ * @param req Request context (any stream on connection).
+ *
+ * @return 1 if HTTP/2 (or h2 via upgrade), 0 if HTTP/1.1 or lower.
+ *
+ * @note Constant for connection lifetime; not per-request.
+ * @note HTTP/2 requires prior negotiation; plain HTTP/1.1 cannot upgrade post-start.
+ * @note For h2c (cleartext HTTP/2), requires config enable_h2c_upgrade.
+ *
+ * @see SocketHTTPServer_Request_version() for exact version enum.
+ * @see SocketHTTPServer_Config.max_version to control support.
+ * @see SocketHTTP2_Conn for HTTP/2-specific APIs.
+ * @see docs/HTTP.md "HTTP/2 Negotiation" for details.
+ *
+ * @threadsafe Yes - reads immutable connection flag.
  */
 extern int SocketHTTPServer_Request_is_http2 (SocketHTTPServer_Request_T req);
 
@@ -1207,25 +1365,59 @@ extern int SocketHTTPServer_Request_is_http2 (SocketHTTPServer_Request_T req);
  */
 
 /**
- * @brief Check WebSocket upgrade
+ * @brief Check if the request is a WebSocket upgrade attempt.
  * @ingroup http
- * @param req Request context
  *
- * @return 1 if WebSocket upgrade requested, 0 otherwise
+ * Inspects Upgrade: websocket header, Sec-WebSocket-Key, etc., per RFC 9112.
+ * True if client requests protocol switch from HTTP to WebSocket (ws/wss).
+ * Typically on GET with specific headers; server can accept/reject.
+ *
+ * @param req Request context (after headers parsed, in handler/validator).
+ *
+ * @return 1 if valid WebSocket upgrade request, 0 if not (standard HTTP).
+ *
+ * @note Requires HTTP/1.1+; HTTP/2 uses extended CONNECT but not standard here.
+ * @note Validates all required headers (Upgrade, Connection: Upgrade, Sec-WebSocket-Key).
+ * @note Origin header checked against config if security enabled.
+ *
+ * @see SocketHTTPServer_Request_upgrade_websocket() to accept and get WS handle.
+ * @see SocketWS_T for WebSocket protocol handling.
+ * @see RFC 9112 Appendix B "WebSocket Upgrade" for handshake details.
+ * @see docs/WEBSOCKET.md for WebSocket integration guide.
+ *
+ * @threadsafe Yes - const header check.
  */
 extern int
 SocketHTTPServer_Request_is_websocket (SocketHTTPServer_Request_T req);
 
 /**
- * @brief Upgrade to WebSocket
+ * @brief Accept WebSocket upgrade and switch protocol.
  * @ingroup http
- * @param req Request context
  *
- * @return WebSocket instance (Phase 9), or NULL on error
- * @threadsafe No
+ * Performs WebSocket handshake: sends 101 Switching Protocols response with
+ * Sec-WebSocket-Accept key, then returns opaque WebSocket_T handle for framing.
+ * Transitions connection from HTTP to WebSocket (ws:// or wss:// over TLS).
+ * After upgrade, use SocketWS APIs for messages, close, etc.; HTTP functions invalid.
+ * Request context and HTTP state discarded post-upgrade.
  *
- * Sends 101 Switching Protocols and returns WebSocket handle.
- * The request context is invalid after this call.
+ * @param req Request context with valid upgrade request (is_websocket() true).
+ *
+ * @return SocketWS_T instance for WebSocket operations, or NULL on failure (e.g., invalid handshake).
+ *
+ * @note Validates client key, computes accept value per RFC 6455.
+ * @note Sec-WebSocket-Protocol negotiated if offered (config or first).
+ * @note TLS remains active if HTTPS (becomes wss://).
+ * @warning Connection now WebSocket-only; no revert to HTTP.
+ * @note Metrics: upgrades counted in stats; errors logged.
+ *
+ * @see SocketHTTPServer_Request_is_websocket() to check before upgrade.
+ * @see SocketWS_T and group__websocket for WebSocket API.
+ * @see RFC 6455 "The WebSocket Protocol" for handshake spec.
+ * @see docs/WEBSOCKET.md "Upgrading from HTTP" for examples and config.
+ *
+ * @threadsafe No - switches connection state, consumes req.
+ * @throws SocketHTTPServer_ProtocolError on handshake validation failure.
+ * @throws SocketHTTPServer_Failed on response send error.
  */
 extern SocketWS_T
 SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req);
@@ -1236,17 +1428,31 @@ SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req);
  */
 
 /**
- * @brief Set rate limiter for endpoint
+ * @brief Register a rate limiter for specific endpoints or globally.
  * @ingroup http
- * @param server Server instance
- * @param path_prefix Path prefix to limit (NULL for global default)
- * @param limiter Rate limiter instance
  *
- * Registers a rate limiter for requests matching path_prefix.
- * When rate limit exceeded, server returns 429 Too Many Requests.
- * NULL limiter removes rate limiting for the path.
+ * Associates a SocketRateLimit_T instance with a path prefix (e.g., "/api/").
+ * Incoming requests matching prefix (via Request_path() starts-with) checked against limiter
+ * before handler invocation. Exceeded limits trigger 429 Too Many Requests with Retry-After.
+ * NULL path_prefix applies globally (all requests). NULL limiter disables for prefix.
+ * Supports dynamic updates; affects new requests only.
  *
- * @threadsafe No
+ * @param server Server instance (running or not).
+ * @param path_prefix Path prefix to match (e.g., "/api/v1", NULL=global), case-sensitive.
+ * @param limiter Rate limiter (owned by caller; server references, not frees).
+ *
+ * @note Up to HTTPSERVER_MAX_RATE_LIMIT_ENDPOINTS (64 default) slots.
+ * @note Path matching simple prefix; for regex/glob, implement in validator.
+ * @note Per-IP limits via max_connections_per_client; this is per-endpoint RPS.
+ * @note Stats: rate_limited counter incremented on rejections.
+ *
+ * @see SocketRateLimit_T from utilities group for token bucket config.
+ * @see SocketHTTPServer_set_validator() for custom rate logic.
+ * @see SocketHTTPServer_Stats.rate_limited for monitoring.
+ * @see @ref utilities "Utilities Group" for SocketRateLimit details.
+ * @see docs/SECURITY.md "Rate Limiting" for deployment tips.
+ *
+ * @threadsafe No - updates server map; use mutex for multi-thread.
  */
 extern void SocketHTTPServer_set_rate_limit (SocketHTTPServer_T server,
                                              const char *path_prefix,
@@ -1258,16 +1464,30 @@ extern void SocketHTTPServer_set_rate_limit (SocketHTTPServer_T server,
  */
 
 /**
- * @brief Set request validation callback
+ * @brief Install a middleware validator callback for incoming requests.
  * @ingroup http
- * @param server Server instance
- * @param validator Validation callback (NULL to disable)
- * @userdata  User data passed to callback
  *
- * Sets a middleware callback that runs before each request handler.
- * Can be used for authentication, authorization, input validation.
+ * Registers a function executed after parsing headers but before body read/handler.
+ * Ideal for early rejection: auth (tokens, JWT), rate limiting, CORS, schema validation.
+ * Validator can set reject_status (e.g., 401) and return 0 to short-circuit (no handler).
+ * Runs per-request; stateful validators must be thread-safe or per-connection.
+ * Replaces prior validator; NULL disables.
  *
- * @threadsafe No
+ * @param server Server instance.
+ * @param validator Callback or NULL to disable validation.
+ * @param userdata Opaque data passed to each invocation.
+ *
+ * @note Executes in event thread; fast operations preferred to avoid blocking poll.
+ * @note Access to method, path, query, headers; body unavailable yet (use stream for large).
+ * @note Rejection sends minimal error response (status + basic headers); customize via validator.
+ * @note Chain multiple via wrapper if needed, but single slot provided.
+ *
+ * @see SocketHTTPServer_Validator callback signature and usage.
+ * @see SocketHTTPServer_Request_* accessors available in validator (no body()).
+ * @see SocketHTTPServer_set_rate_limit() for built-in endpoint limiting.
+ * @see docs/SECURITY.md "Middleware and Validation" for patterns.
+ *
+ * @threadsafe No - replaces server callback; concurrent set races.
  */
 extern void
 SocketHTTPServer_set_validator (SocketHTTPServer_T server,
@@ -1280,66 +1500,146 @@ SocketHTTPServer_set_validator (SocketHTTPServer_T server,
  */
 
 /**
- * @brief Begin graceful shutdown
+ * @brief Initiate graceful server shutdown by draining active connections.
  * @ingroup http
- * @param server Server instance
- * @timeout_ms  Maximum time to wait for requests to complete (-1 = infinite)
  *
- * Begins draining the server:
- * - Stops accepting new connections
- * - Existing connections continue processing
- * - After timeout, force-closes remaining connections
+ * Transitions server to DRAINING state: closes listening socket (no new accepts),
+ * allows in-flight requests/connections to complete naturally via timeouts or finish().
+ * After specified timeout (or infinite), force-closes any remaining to STOPPED.
+ * Integrates with poll/process loop; call drain_poll() or drain_wait() to monitor.
+ * Signals OS/epoll to stop queuing new SYNs if possible.
  *
- * @return 0 on success, -1 on error
- * @threadsafe No
+ * @param server Server instance (running state).
+ * @param timeout_ms Max ms to wait for graceful completion (-1=infinite, 0=immediate force).
+ *
+ * @return 0 if drain started successfully, -1 on error (already stopped/draining).
+ *
+ * @note Existing connections: requests handled, but no new on them after start.
+ * @note Timeout triggers abrupt close (possible data loss for unfinished responses).
+ * @note Call before free() for clean shutdown; drain_wait() for blocking.
+ * @note Stats preserved; errors during drain logged/incremented.
+ *
+ * @see SocketHTTPServer_drain_poll() to check progress in loop.
+ * @see SocketHTTPServer_drain_wait() blocking convenience.
+ * @see SocketHTTPServer_state() to query current state.
+ * @see SocketHTTPServer_set_drain_callback() for completion notification.
+ * @see docs/SIGNALS.md "Graceful Shutdown" for signal integration.
+ *
+ * @threadsafe No - changes server state globally.
+ * @throws SocketHTTPServer_Failed if internal timer/setup fails.
  */
 extern int SocketHTTPServer_drain (SocketHTTPServer_T server, int timeout_ms);
 
 /**
- * @brief Poll drain progress
+ * @brief Non-blocking check of drain progress and remaining work.
  * @ingroup http
- * @param server Server instance
  *
- * Check drain status. Call repeatedly until returns 0 or negative.
+ * Queries number of active connections during DRAINING: polls internal pool/timer.
+ * Returns count of connections needing completion (processing or idle but open).
+ * Call in event loop (with process()) until 0 (complete) or -1 (timed out, force-closed).
+ * Complements drain_wait() for custom loops or integration.
  *
- * @return >0 remaining connections, 0 drain complete, -1 timed out (forced)
- * @threadsafe No
+ * @param server Server in DRAINING (ignore otherwise).
+ *
+ * @return >0 active connections remaining, 0 fully drained (STOPPED soon),
+ *         -1 drain timed out (force-close triggered, state STOPPED).
+ *
+ * @note Decreases as requests finish/connections idle-timeout.
+ * @note Call frequently during drain; pairs with process() for progress.
+ * @note On -1, remaining connections closed abruptly (possible aborted requests).
+ * @note Callback invoked on 0 or -1 transition.
+ *
+ * @see SocketHTTPServer_drain() initiates draining.
+ * @see SocketHTTPServer_drain_wait() blocking wrapper using this.
+ * @see SocketHTTPServer_state() alternative state query.
+ * @see SocketHTTPServer_Stats.active_connections cross-check.
+ * @see docs/SIGNALS.md for poll in signal handlers.
+ *
+ * @threadsafe No - snapshots internal counts, may race.
  */
 extern int SocketHTTPServer_drain_poll (SocketHTTPServer_T server);
 
 /**
- * @brief Blocking wait for drain
+ * @brief Block until graceful drain completes or times out.
  * @ingroup http
- * @param server Server instance
- * @timeout_ms  Maximum time to wait (-1 = use drain timeout)
  *
- * Blocks until drain completes or timeout. Convenience wrapper around
- * drain + drain_poll loop.
+ * Convenience function to wait for drain process: repeatedly calls process(0)
+ * and drain_poll() until STOPPED or timeout. Handles the loop internally.
+ * Uses provided timeout or falls back to drain() timeout if -1.
+ * Non-blocking alternative: manual loop with drain_poll().
  *
- * @return 0 on graceful completion, -1 on timeout (forced)
- * @threadsafe No
+ * @param server Server in DRAINING state (after drain()).
+ * @param timeout_ms Max additional ms to wait (-1=use drain timeout, 0=check once).
+ *
+ * @return 0 if fully drained gracefully (STOPPED, no force-close),
+ *         -1 if timed out (remaining connections force-closed).
+ *
+ * @note Continues processing events during wait (requests complete).
+ * @note Infinite timeout (-1) blocks forever if stuck (e.g., hanging client).
+ * @note After return, server STOPPED; safe to free().
+ * @note Callback (if set) invoked on completion regardless.
+ *
+ * @see SocketHTTPServer_drain() to initiate.
+ * @see SocketHTTPServer_drain_poll() for non-blocking progress.
+ * @see SocketHTTPServer_state() post-wait verification.
+ * @see SocketHTTPServer_drain_remaining_ms() for time left.
+ *
+ * @threadsafe No - blocks calling thread, modifies state.
+ * @throws Propagates from process()/drain_poll() (rare during shutdown).
  */
 extern int SocketHTTPServer_drain_wait (SocketHTTPServer_T server,
                                         int timeout_ms);
 
 /**
- * @brief Get time until forced shutdown
+ * @brief Calculate remaining time before drain timeout forces connection closure.
  * @ingroup http
- * @param server Server instance
  *
- * @return Milliseconds until drain timeout, 0 if not draining, -1 if infinite
- * @threadsafe Yes (atomic read)
+ * Returns ms left until DRAINING state force-closes lingering connections.
+ * Uses monotonic clock for accuracy; accounts for elapsed since drain start.
+ * 0 indicates immediate force-close imminent or already STOPPED.
+ * Useful for logging warnings or client notifications during shutdown.
+ *
+ * @param server Server instance (in DRAINING for meaningful >0).
+ *
+ * @return >0 ms remaining, 0 not draining/imminent force, -1 infinite timeout.
+ *
+ * @note Precision ~1ms; negative not returned (clamped).
+ * @note Updates dynamically as drain progresses/time passes.
+ * @note When <=0, server may transition to STOPPED soon.
+ *
+ * @see SocketHTTPServer_state() pair with for full status.
+ * @see SocketHTTPServer_drain() sets initial timeout.
+ * @see Socket_get_monotonic_ms() underlying time source.
+ * @see SocketHTTPServer_drain_wait() uses similar logic.
+ *
+ * @threadsafe Yes - atomic computation from cached deadlines.
  */
 extern int64_t SocketHTTPServer_drain_remaining_ms (SocketHTTPServer_T server);
 
 /**
- * @brief Set drain completion callback
+ * @brief Register callback for graceful drain completion notification.
  * @ingroup http
- * @param server Server instance
- * @callback  Callback (NULL to disable)
- * @userdata  User data passed to callback
  *
- * @threadsafe No
+ * Sets function invoked when drain reaches STOPPED: either graceful (all done)
+ * or timed-out (force-closed). Called from event thread during/after process().
+ * Useful for final cleanup, logging shutdown stats, or signaling parent process.
+ * Replaces prior callback; NULL disables. Set before drain() for immediate effect.
+ *
+ * @param server Server instance.
+ * @param callback Drain completion handler or NULL to disable.
+ * @param userdata User data forwarded to callback unchanged.
+ *
+ * @note Invoked once per drain cycle, even if multiple drain() calls.
+ * @note If timed_out=1, check stats for aborted connections.
+ * @note Safe to free() server from callback (after invocation).
+ * @note Not called on abrupt free()/errors; use atexit or signals for those.
+ *
+ * @see SocketHTTPServer_DrainCallback signature: receives server, timed_out flag.
+ * @see SocketHTTPServer_drain() to start process triggering callback.
+ * @see SocketHTTPServer_Stats for post-drain metrics snapshot.
+ * @see docs/SIGNALS.md "Shutdown Hooks" for integration.
+ *
+ * @threadsafe No - updates server callback slot.
  */
 extern void
 SocketHTTPServer_set_drain_callback (SocketHTTPServer_T server,
@@ -1347,12 +1647,28 @@ SocketHTTPServer_set_drain_callback (SocketHTTPServer_T server,
                                      void *userdata);
 
 /**
- * @brief Get server lifecycle state
+ * @brief Query the current lifecycle state of the server.
  * @ingroup http
- * @param server Server instance
  *
- * @return Current state (RUNNING, DRAINING, or STOPPED)
- * @threadsafe Yes (atomic read)
+ * Returns enum indicating operational phase: RUNNING (normal), DRAINING (shutdown initiated),
+ * or STOPPED (no activity). Useful for monitoring, logging, or conditional logic during shutdown.
+ * Atomic read for concurrency safety.
+ *
+ * @param server Server instance (any state).
+ *
+ * @return SocketHTTPServer_State: RUNNING, DRAINING, or STOPPED.
+ *
+ * @note RUNNING: accepting/processing; DRAINING: finishing existing; STOPPED: idle/closed.
+ * @note State changes via start()/stop()/drain()/free().
+ * @note During DRAINING, process()/poll continue until complete.
+ *
+ * @see SocketHTTPServer_State enum definition.
+ * @see SocketHTTPServer_drain() triggers DRAINING.
+ * @see SocketHTTPServer_stop() may lead to DRAINING if connections active.
+ * @see SocketHTTPServer_free() finalizes to implicit STOPPED.
+ * @see docs/SIGNALS.md for state in signal handlers.
+ *
+ * @threadsafe Yes - atomic enum read, no side effects.
  */
 extern SocketHTTPServer_State
 SocketHTTPServer_state (SocketHTTPServer_T server);

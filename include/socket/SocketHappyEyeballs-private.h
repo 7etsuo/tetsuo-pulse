@@ -4,7 +4,7 @@
 /**
  * @file SocketHappyEyeballs-private.h
  * @brief Internal structures and state for Happy Eyeballs connection racing (RFC 8305).
- * @ingroup core_io
+ * @ingroup async_io
  *
  * Part of the Socket Library.
  *
@@ -37,7 +37,7 @@
 
 /**
  * @brief Maximum number of simultaneous connection attempts allowed.
- * @ingroup core_io
+ * @ingroup async_io
  * @note Default 8, as recommended by RFC 8305 for balancing performance and resources.
  * @see SocketHE_T::attempt_count for runtime tracking.
  */
@@ -47,7 +47,7 @@
 
 /**
  * @brief Size of internal error message buffer in bytes.
- * @ingroup core_io
+ * @ingroup async_io
  * @note Sufficient for typical errno/strerror messages plus context.
  */
 #ifndef SOCKET_HE_ERROR_BUFSIZE
@@ -61,7 +61,7 @@
 
 /**
  * @brief State of an individual Happy Eyeballs connection attempt.
- * @ingroup core_io
+ * @ingroup async_io
  *
  * Tracks progression: IDLE → CONNECTING (on connect(2)) → CONNECTED (success)
  * or FAILED (error/timeout).
@@ -84,7 +84,7 @@ typedef enum SocketHE_AttemptState
 
 /**
  * @brief Single connection attempt structure in Happy Eyeballs racing.
- * @ingroup core_io
+ * @ingroup async_io
  *
  * Represents one parallel connection try to a resolved address.
  * Multiple instances run concurrently for IPv4/IPv6 racing.
@@ -111,7 +111,7 @@ typedef struct SocketHE_Attempt
 
 /**
  * @brief Wrapper for resolved addresses in Happy Eyeballs address ordering.
- * @ingroup core_io
+ * @ingroup async_io
  *
  * Per RFC 8305 §4.2, sorts and interleaves IPv6/IPv4 addresses preferring
  * the configured family, with tracking for which have been attempted.
@@ -136,7 +136,7 @@ typedef struct SocketHE_AddressEntry
 
 /**
  * @brief Main context structure for Happy Eyeballs (RFC 8305) connection racing.
- * @ingroup core_io
+ * @ingroup async_io
  *
  * Orchestrates DNS resolution, address sorting, parallel connection attempts,
  * winner selection, and cleanup. Supports both synchronous and asynchronous modes
@@ -202,7 +202,7 @@ struct SocketHE_T
 
 /**
  * @brief Safe iteration macro over linked list of connection attempts.
- * @ingroup core_io
+ * @ingroup async_io
  * @param he Pointer to SocketHE_T context containing the attempts list.
  * @param iter Name of the loop variable (type: SocketHE_Attempt_T *).
  * @internal
@@ -223,7 +223,7 @@ struct SocketHE_T
 
 /**
  * @note Timing and Monotonic Clocks
- * @ingroup core_io
+ * @ingroup async_io
  *
  * All internal timing uses Socket_get_monotonic_ms() for reliable, non-decreasing
  * timestamps (CLOCK_MONOTONIC). This avoids issues with system clock adjustments

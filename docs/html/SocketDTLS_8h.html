@@ -111,16 +111,12 @@ $(document).ready(function(){initNavTree('SocketDTLS_8h.html',''); initResizable
 
 <div class="header">
   <div class="summary">
-<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">SocketDTLS.h File Reference<div class="ingroups"><a class="el" href="group__security.html">Security Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>Datagram TLS (DTLS) protocol implementation for UDP sockets.  
-<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketDgram_8h_source.html">socket/SocketDgram.h</a>&quot;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -130,15 +126,16 @@ $(document).ready(function(){initNavTree('SocketDTLS_8h.html',''); initResizable
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="SocketDTLS_8h__incl.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
+</div><div class="textblock"><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-1-trigger" src="closed.png" alt="+"/> This graph shows which files directly or indirectly include this file:</div>
+<div id="dynsection-1-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-1-content" class="dyncontent" style="display:none;">
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketDTLS_8h__dep__incl.svg" width="162" height="110"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
 </div>
 <p><a href="SocketDTLS_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
-Typedefs</h2></td></tr>
-<tr class="memitem:ga05a015dd6cc639dd38a5853194c9002f" id="r_ga05a015dd6cc639dd38a5853194c9002f"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group__security.html#ga05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a></td></tr>
-<tr class="memdesc:ga05a015dd6cc639dd38a5853194c9002f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque DTLS context type.  <br /></td></tr>
-<tr class="separator:ga05a015dd6cc639dd38a5853194c9002f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
 <tr class="memitem:ga8e83c28a6ad188b97243c4b237ee075a" id="r_ga8e83c28a6ad188b97243c4b237ee075a"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a> { <br />
@@ -162,71 +159,71 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gad2f26460b23a711e0fa74605371cf127" id="r_gad2f26460b23a711e0fa74605371cf127"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gad2f26460b23a711e0fa74605371cf127">SocketDTLS_enable</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, <a class="el" href="group__security.html#ga05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx)</td></tr>
+<tr class="memitem:gad2f26460b23a711e0fa74605371cf127" id="r_gad2f26460b23a711e0fa74605371cf127"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gad2f26460b23a711e0fa74605371cf127">SocketDTLS_enable</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, <a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx)</td></tr>
 <tr class="memdesc:gad2f26460b23a711e0fa74605371cf127"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable DTLS encryption on a datagram socket.  <br /></td></tr>
 <tr class="separator:gad2f26460b23a711e0fa74605371cf127"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf742a2fb837173f6fd8d347e5bc1d1d3" id="r_gaf742a2fb837173f6fd8d347e5bc1d1d3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaf742a2fb837173f6fd8d347e5bc1d1d3">SocketDTLS_set_peer</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *host, int port)</td></tr>
+<tr class="memitem:gaf742a2fb837173f6fd8d347e5bc1d1d3" id="r_gaf742a2fb837173f6fd8d347e5bc1d1d3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaf742a2fb837173f6fd8d347e5bc1d1d3">SocketDTLS_set_peer</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, const char *host, int port)</td></tr>
 <tr class="memdesc:gaf742a2fb837173f6fd8d347e5bc1d1d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the peer address for a DTLS connection.  <br /></td></tr>
 <tr class="separator:gaf742a2fb837173f6fd8d347e5bc1d1d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabf3857e3cea92190f4c6eca7a8418be3" id="r_gabf3857e3cea92190f4c6eca7a8418be3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gabf3857e3cea92190f4c6eca7a8418be3">SocketDTLS_set_hostname</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *hostname)</td></tr>
-<tr class="memdesc:gabf3857e3cea92190f4c6eca7a8418be3"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_set_hostname - Set SNI hostname for client DTLS connections.  <br /></td></tr>
+<tr class="memitem:gabf3857e3cea92190f4c6eca7a8418be3" id="r_gabf3857e3cea92190f4c6eca7a8418be3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gabf3857e3cea92190f4c6eca7a8418be3">SocketDTLS_set_hostname</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, const char *hostname)</td></tr>
+<tr class="memdesc:gabf3857e3cea92190f4c6eca7a8418be3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set SNI hostname for client DTLS connections.  <br /></td></tr>
 <tr class="separator:gabf3857e3cea92190f4c6eca7a8418be3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga804d5dd4b27255e3c9c28c58a2914a18" id="r_ga804d5dd4b27255e3c9c28c58a2914a18"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga804d5dd4b27255e3c9c28c58a2914a18">SocketDTLS_set_mtu</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, size_t mtu)</td></tr>
-<tr class="memdesc:ga804d5dd4b27255e3c9c28c58a2914a18"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_set_mtu - Set link MTU for this connection.  <br /></td></tr>
+<tr class="memitem:ga804d5dd4b27255e3c9c28c58a2914a18" id="r_ga804d5dd4b27255e3c9c28c58a2914a18"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga804d5dd4b27255e3c9c28c58a2914a18">SocketDTLS_set_mtu</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, size_t mtu)</td></tr>
+<tr class="memdesc:ga804d5dd4b27255e3c9c28c58a2914a18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set link MTU for this connection.  <br /></td></tr>
 <tr class="separator:ga804d5dd4b27255e3c9c28c58a2914a18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga17e8bd79af2c5a20b5dbb9e8dff6f84c" id="r_ga17e8bd79af2c5a20b5dbb9e8dff6f84c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga17e8bd79af2c5a20b5dbb9e8dff6f84c">SocketDTLS_handshake</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ga17e8bd79af2c5a20b5dbb9e8dff6f84c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_handshake - Perform non-blocking DTLS handshake step.  <br /></td></tr>
+<tr class="memitem:ga17e8bd79af2c5a20b5dbb9e8dff6f84c" id="r_ga17e8bd79af2c5a20b5dbb9e8dff6f84c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga17e8bd79af2c5a20b5dbb9e8dff6f84c">SocketDTLS_handshake</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga17e8bd79af2c5a20b5dbb9e8dff6f84c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform non-blocking DTLS handshake step.  <br /></td></tr>
 <tr class="separator:ga17e8bd79af2c5a20b5dbb9e8dff6f84c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga095bfc830b421398fbecacb1ac3d6755" id="r_ga095bfc830b421398fbecacb1ac3d6755"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga095bfc830b421398fbecacb1ac3d6755">SocketDTLS_handshake_loop</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int timeout_ms)</td></tr>
-<tr class="memdesc:ga095bfc830b421398fbecacb1ac3d6755"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_handshake_loop - Complete handshake with timeout (blocking helper)  <br /></td></tr>
+<tr class="memitem:ga095bfc830b421398fbecacb1ac3d6755" id="r_ga095bfc830b421398fbecacb1ac3d6755"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga095bfc830b421398fbecacb1ac3d6755">SocketDTLS_handshake_loop</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, int timeout_ms)</td></tr>
+<tr class="memdesc:ga095bfc830b421398fbecacb1ac3d6755"><td class="mdescLeft">&#160;</td><td class="mdescRight">Complete handshake with timeout (blocking helper)  <br /></td></tr>
 <tr class="separator:ga095bfc830b421398fbecacb1ac3d6755"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0e2af3b3ad31869d659162ea06cf667b" id="r_ga0e2af3b3ad31869d659162ea06cf667b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga0e2af3b3ad31869d659162ea06cf667b">SocketDTLS_listen</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ga0e2af3b3ad31869d659162ea06cf667b"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_listen - Server Wait for incoming DTLS connection.  <br /></td></tr>
+<tr class="memitem:ga0e2af3b3ad31869d659162ea06cf667b" id="r_ga0e2af3b3ad31869d659162ea06cf667b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga0e2af3b3ad31869d659162ea06cf667b">SocketDTLS_listen</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga0e2af3b3ad31869d659162ea06cf667b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Server Wait for incoming DTLS connection.  <br /></td></tr>
 <tr class="separator:ga0e2af3b3ad31869d659162ea06cf667b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9fe6acb926cc7fbc8c4f0239834b5460" id="r_ga9fe6acb926cc7fbc8c4f0239834b5460"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga9fe6acb926cc7fbc8c4f0239834b5460">SocketDTLS_send</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const void *buf, size_t len)</td></tr>
-<tr class="memdesc:ga9fe6acb926cc7fbc8c4f0239834b5460"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_send - Send data over DTLS-encrypted connection.  <br /></td></tr>
+<tr class="memitem:ga9fe6acb926cc7fbc8c4f0239834b5460" id="r_ga9fe6acb926cc7fbc8c4f0239834b5460"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga9fe6acb926cc7fbc8c4f0239834b5460">SocketDTLS_send</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, const void *buf, size_t len)</td></tr>
+<tr class="memdesc:ga9fe6acb926cc7fbc8c4f0239834b5460"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send data over DTLS-encrypted connection.  <br /></td></tr>
 <tr class="separator:ga9fe6acb926cc7fbc8c4f0239834b5460"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac4fc033d5799456ce6d1b1417228c7e1" id="r_gac4fc033d5799456ce6d1b1417228c7e1"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gac4fc033d5799456ce6d1b1417228c7e1">SocketDTLS_recv</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, void *buf, size_t len)</td></tr>
-<tr class="memdesc:gac4fc033d5799456ce6d1b1417228c7e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_recv - Receive data from DTLS-encrypted connection.  <br /></td></tr>
+<tr class="memitem:gac4fc033d5799456ce6d1b1417228c7e1" id="r_gac4fc033d5799456ce6d1b1417228c7e1"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gac4fc033d5799456ce6d1b1417228c7e1">SocketDTLS_recv</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, void *buf, size_t len)</td></tr>
+<tr class="memdesc:gac4fc033d5799456ce6d1b1417228c7e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive data from DTLS-encrypted connection.  <br /></td></tr>
 <tr class="separator:gac4fc033d5799456ce6d1b1417228c7e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4e060f6143e7c9896452a6e0654041e5" id="r_ga4e060f6143e7c9896452a6e0654041e5"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga4e060f6143e7c9896452a6e0654041e5">SocketDTLS_sendto</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const void *buf, size_t len, const char *host, int port)</td></tr>
-<tr class="memdesc:ga4e060f6143e7c9896452a6e0654041e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_sendto - Send DTLS datagram to specific address.  <br /></td></tr>
+<tr class="memitem:ga4e060f6143e7c9896452a6e0654041e5" id="r_ga4e060f6143e7c9896452a6e0654041e5"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga4e060f6143e7c9896452a6e0654041e5">SocketDTLS_sendto</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, const void *buf, size_t len, const char *host, int port)</td></tr>
+<tr class="memdesc:ga4e060f6143e7c9896452a6e0654041e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send DTLS datagram to specific address.  <br /></td></tr>
 <tr class="separator:ga4e060f6143e7c9896452a6e0654041e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac974bd84fcd68c06870530c11908170f" id="r_gac974bd84fcd68c06870530c11908170f"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gac974bd84fcd68c06870530c11908170f">SocketDTLS_recvfrom</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, void *buf, size_t len, char *host, size_t host_len, int *port)</td></tr>
-<tr class="memdesc:gac974bd84fcd68c06870530c11908170f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_recvfrom - Receive DTLS datagram with sender address.  <br /></td></tr>
+<tr class="memitem:gac974bd84fcd68c06870530c11908170f" id="r_gac974bd84fcd68c06870530c11908170f"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gac974bd84fcd68c06870530c11908170f">SocketDTLS_recvfrom</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, void *buf, size_t len, char *host, size_t host_len, int *port)</td></tr>
+<tr class="memdesc:gac974bd84fcd68c06870530c11908170f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive DTLS datagram with sender address.  <br /></td></tr>
 <tr class="separator:gac974bd84fcd68c06870530c11908170f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga12039ba9c9513fbf9df6e02f997d09ab" id="r_ga12039ba9c9513fbf9df6e02f997d09ab"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga12039ba9c9513fbf9df6e02f997d09ab">SocketDTLS_get_cipher</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ga12039ba9c9513fbf9df6e02f997d09ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_get_cipher - Get negotiated cipher suite name.  <br /></td></tr>
+<tr class="memitem:ga12039ba9c9513fbf9df6e02f997d09ab" id="r_ga12039ba9c9513fbf9df6e02f997d09ab"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga12039ba9c9513fbf9df6e02f997d09ab">SocketDTLS_get_cipher</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga12039ba9c9513fbf9df6e02f997d09ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get negotiated cipher suite name.  <br /></td></tr>
 <tr class="separator:ga12039ba9c9513fbf9df6e02f997d09ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4651d3701fdc086051bc90cecb79b11e" id="r_ga4651d3701fdc086051bc90cecb79b11e"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga4651d3701fdc086051bc90cecb79b11e">SocketDTLS_get_version</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ga4651d3701fdc086051bc90cecb79b11e"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_get_version - Get negotiated DTLS protocol version.  <br /></td></tr>
+<tr class="memitem:ga4651d3701fdc086051bc90cecb79b11e" id="r_ga4651d3701fdc086051bc90cecb79b11e"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga4651d3701fdc086051bc90cecb79b11e">SocketDTLS_get_version</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga4651d3701fdc086051bc90cecb79b11e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get negotiated DTLS protocol version.  <br /></td></tr>
 <tr class="separator:ga4651d3701fdc086051bc90cecb79b11e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad0e45780e041b9ddb58956d9f0fb20d1" id="r_gad0e45780e041b9ddb58956d9f0fb20d1"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gad0e45780e041b9ddb58956d9f0fb20d1">SocketDTLS_get_verify_result</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:gad0e45780e041b9ddb58956d9f0fb20d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_get_verify_result - Get peer certificate verification result.  <br /></td></tr>
+<tr class="memitem:gad0e45780e041b9ddb58956d9f0fb20d1" id="r_gad0e45780e041b9ddb58956d9f0fb20d1"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gad0e45780e041b9ddb58956d9f0fb20d1">SocketDTLS_get_verify_result</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:gad0e45780e041b9ddb58956d9f0fb20d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get peer certificate verification result.  <br /></td></tr>
 <tr class="separator:gad0e45780e041b9ddb58956d9f0fb20d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaeeca3aaa5a1e0f7fbb22b16a465421fd" id="r_gaeeca3aaa5a1e0f7fbb22b16a465421fd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaeeca3aaa5a1e0f7fbb22b16a465421fd">SocketDTLS_is_session_reused</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:gaeeca3aaa5a1e0f7fbb22b16a465421fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_is_session_reused - Check if DTLS session was resumed.  <br /></td></tr>
+<tr class="memitem:gaeeca3aaa5a1e0f7fbb22b16a465421fd" id="r_gaeeca3aaa5a1e0f7fbb22b16a465421fd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaeeca3aaa5a1e0f7fbb22b16a465421fd">SocketDTLS_is_session_reused</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:gaeeca3aaa5a1e0f7fbb22b16a465421fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if DTLS session was resumed.  <br /></td></tr>
 <tr class="separator:gaeeca3aaa5a1e0f7fbb22b16a465421fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae91ad38ad7d4a00961f342e3366d7097" id="r_gae91ad38ad7d4a00961f342e3366d7097"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gae91ad38ad7d4a00961f342e3366d7097">SocketDTLS_get_alpn_selected</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:gae91ad38ad7d4a00961f342e3366d7097"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_get_alpn_selected - Get the negotiated ALPN protocol.  <br /></td></tr>
+<tr class="memitem:gae91ad38ad7d4a00961f342e3366d7097" id="r_gae91ad38ad7d4a00961f342e3366d7097"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gae91ad38ad7d4a00961f342e3366d7097">SocketDTLS_get_alpn_selected</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:gae91ad38ad7d4a00961f342e3366d7097"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the negotiated ALPN protocol.  <br /></td></tr>
 <tr class="separator:gae91ad38ad7d4a00961f342e3366d7097"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7752aae6c38da47f187f8d766b4ae12e" id="r_ga7752aae6c38da47f187f8d766b4ae12e"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga7752aae6c38da47f187f8d766b4ae12e">SocketDTLS_get_mtu</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ga7752aae6c38da47f187f8d766b4ae12e"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_get_mtu - Get current effective MTU.  <br /></td></tr>
+<tr class="memitem:ga7752aae6c38da47f187f8d766b4ae12e" id="r_ga7752aae6c38da47f187f8d766b4ae12e"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga7752aae6c38da47f187f8d766b4ae12e">SocketDTLS_get_mtu</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga7752aae6c38da47f187f8d766b4ae12e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current effective MTU.  <br /></td></tr>
 <tr class="separator:ga7752aae6c38da47f187f8d766b4ae12e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab42fd91bb31edaf15149d75920446a0a" id="r_gab42fd91bb31edaf15149d75920446a0a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gab42fd91bb31edaf15149d75920446a0a">SocketDTLS_shutdown</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:gab42fd91bb31edaf15149d75920446a0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_shutdown - Perform graceful DTLS connection shutdown.  <br /></td></tr>
+<tr class="memitem:gab42fd91bb31edaf15149d75920446a0a" id="r_gab42fd91bb31edaf15149d75920446a0a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gab42fd91bb31edaf15149d75920446a0a">SocketDTLS_shutdown</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:gab42fd91bb31edaf15149d75920446a0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform graceful DTLS connection shutdown.  <br /></td></tr>
 <tr class="separator:gab42fd91bb31edaf15149d75920446a0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaad0b27539517934a510df081364e08ab" id="r_gaad0b27539517934a510df081364e08ab"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaad0b27539517934a510df081364e08ab">SocketDTLS_is_shutdown</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:gaad0b27539517934a510df081364e08ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_is_shutdown - Check if DTLS shutdown completed.  <br /></td></tr>
+<tr class="memitem:gaad0b27539517934a510df081364e08ab" id="r_gaad0b27539517934a510df081364e08ab"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaad0b27539517934a510df081364e08ab">SocketDTLS_is_shutdown</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:gaad0b27539517934a510df081364e08ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if DTLS shutdown completed.  <br /></td></tr>
 <tr class="separator:gaad0b27539517934a510df081364e08ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga861c0da7896b4275fb38ee2d0ac73af1" id="r_ga861c0da7896b4275fb38ee2d0ac73af1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga861c0da7896b4275fb38ee2d0ac73af1">SocketDTLS_is_enabled</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ga861c0da7896b4275fb38ee2d0ac73af1"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_is_enabled - Check if DTLS is enabled on socket.  <br /></td></tr>
+<tr class="memitem:ga861c0da7896b4275fb38ee2d0ac73af1" id="r_ga861c0da7896b4275fb38ee2d0ac73af1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga861c0da7896b4275fb38ee2d0ac73af1">SocketDTLS_is_enabled</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga861c0da7896b4275fb38ee2d0ac73af1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if DTLS is enabled on socket.  <br /></td></tr>
 <tr class="separator:ga861c0da7896b4275fb38ee2d0ac73af1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae702a60aae194a098bdc6af32549f1ae" id="r_gae702a60aae194a098bdc6af32549f1ae"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gae702a60aae194a098bdc6af32549f1ae">SocketDTLS_is_handshake_done</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:gae702a60aae194a098bdc6af32549f1ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_is_handshake_done - Check if DTLS handshake is complete.  <br /></td></tr>
+<tr class="memitem:gae702a60aae194a098bdc6af32549f1ae" id="r_gae702a60aae194a098bdc6af32549f1ae"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gae702a60aae194a098bdc6af32549f1ae">SocketDTLS_is_handshake_done</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:gae702a60aae194a098bdc6af32549f1ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if DTLS handshake is complete.  <br /></td></tr>
 <tr class="separator:gae702a60aae194a098bdc6af32549f1ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga42abbf654fe23dd417b2115dc00590db" id="r_ga42abbf654fe23dd417b2115dc00590db"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga42abbf654fe23dd417b2115dc00590db">SocketDTLS_get_last_state</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ga42abbf654fe23dd417b2115dc00590db"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLS_get_last_state - Get last handshake state.  <br /></td></tr>
+<tr class="memitem:ga42abbf654fe23dd417b2115dc00590db" id="r_ga42abbf654fe23dd417b2115dc00590db"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga42abbf654fe23dd417b2115dc00590db">SocketDTLS_get_last_state</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga42abbf654fe23dd417b2115dc00590db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get last handshake state.  <br /></td></tr>
 <tr class="separator:ga42abbf654fe23dd417b2115dc00590db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
@@ -250,38 +247,7 @@ Variables</h2></td></tr>
 <tr class="memdesc:ga28d15a7e6fc136b5d542236ef27f0be6"><td class="mdescLeft">&#160;</td><td class="mdescRight">DTLS shutdown failure.  <br /></td></tr>
 <tr class="separator:ga28d15a7e6fc136b5d542236ef27f0be6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Datagram TLS (DTLS) protocol implementation for UDP sockets. </p>
-<p>Enables secure, encrypted communication over UDP using DTLS 1.2+, providing TLS-equivalent security with datagram semantics. API parallels SocketTLS but for <a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>, supporting non-blocking I/O and event integration.</p>
-<p>Core capabilities include:</p><ul>
-<li>Strict DTLS 1.2+ enforcement with PFS and secure ciphers</li>
-<li>Cookie-based DoS protection for servers</li>
-<li>SNI, hostname verification, and ALPN negotiation</li>
-<li>Session resumption and configurable timeouts/MTU</li>
-<li>Transparent integration with SocketPoll</li>
-</ul>
-<p>Requires OpenSSL/LibreSSL with DTLS support on POSIX platforms.</p>
-<dl class="section warning"><dt>Warning</dt><dd>DTLS does not guarantee delivery; applications must handle loss/reordering.</dd></dl>
-<p>References:</p><ul>
-<li>RFC 6347 (DTLS 1.2)</li>
-<li>RFC 9147 (DTLS 1.3)</li>
-</ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#gad2f26460b23a711e0fa74605371cf127" title="Enable DTLS encryption on a datagram socket.">SocketDTLS_enable()</a> </dd>
-<dd>
-<a class="el" href="group__security.html#ga05a015dd6cc639dd38a5853194c9002f" title="Opaque DTLS context type.">SocketDTLSContext_T</a> </dd>
-<dd>
-<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f" title="Opaque handle for UDP/datagram sockets.">SocketDgram_T</a> (<a class="el" href="group__core__io.html">Core I/O Modules</a>) </dd>
-<dd>
-<a class="el" href="group__security.html#ga63e73c93350813167a68162c5cb3d819">SocketTLS_T</a> (<a class="el" href="group__security.html">Security Modules</a>) </dd>
-<dd>
-<a class="el" href="group__event__system.html">Event System Modules</a> for async handshake handling. </dd>
-<dd>
-<a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a> </dd>
-<dd>
-<a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a> </dd></dl>
-
-<p class="definition">Definition in file <a class="el" href="SocketDTLS_8h_source.html">SocketDTLS.h</a>.</p>
-</div></div><!-- contents -->
+</div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

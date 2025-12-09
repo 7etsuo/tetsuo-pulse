@@ -1,5 +1,5 @@
 <map id="SocketProxy.h" name="SocketProxy.h">
-<area shape="rect" id="Node000001" title="Proxy tunneling support for HTTP CONNECT and SOCKS protocols." alt="" coords="493,5,600,31"/>
+<area shape="rect" id="Node000001" title="Proxy tunneling module for HTTP CONNECT and SOCKS protocols." alt="" coords="493,5,600,31"/>
 <area shape="rect" id="Node000002" title=" " alt="" coords="5,445,75,471"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="493,25,362,37,283,48,204,62,132,81,73,104,50,117,33,131,22,147,19,164,19,313,25,377,36,432,31,433,19,378,13,313,13,163,17,145,29,128,47,113,70,99,130,76,203,57,282,43,361,32,493,20"/>
 <area shape="rect" id="Node000003" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="245,372,341,397"/>

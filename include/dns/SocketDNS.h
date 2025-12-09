@@ -123,7 +123,7 @@ typedef void (*SocketDNS_Callback)(SocketDNS_Request_T *req, struct addrinfo *re
  * @ingroup dns
  * @return New DNS resolver instance.
  * @throws SocketDNS_Failed on initialization failure.
- * @note Thread-safe: Yes - returns new instance.
+ * @threadsafe Yes - returns new instance.
  *
  * Creates a thread pool for DNS resolution. Default thread count is
  * SOCKET_DNS_THREAD_COUNT (configurable via SocketConfig.h).
@@ -142,7 +142,7 @@ extern T SocketDNS_new(void);
  * Drains pending requests, signals worker threads to stop, and joins threads.
  * Any pending requests that have not been retrieved are cancelled.
  *
- * @note Thread-safe: Yes - safely shuts down thread pool.
+ * @threadsafe Yes - safely shuts down thread pool.
  * @see SocketDNS_new() for creation.
  * @see SocketDNS_cancel() for cancelling individual requests.
  */
@@ -158,7 +158,7 @@ extern void SocketDNS_free(T *dns);
  * @param data User data passed to callback.
  * @return Request handle (never NULL).
  * @throws SocketDNS_Failed on queue full or invalid parameters.
- * @note Thread-safe: Yes - protected by internal mutex.
+ * @threadsafe Yes - protected by internal mutex.
  *
  * Starts asynchronous DNS resolution. If callback is NULL, use SocketPoll
  * integration: add SocketDNS_pollfd() to SocketPoll and call SocketDNS_check()
@@ -187,7 +187,7 @@ extern Request_T SocketDNS_resolve(T dns, const char *host, int port,
  * @ingroup dns
  * @param dns DNS resolver instance.
  * @param req Request handle to cancel.
- * @note Thread-safe: Yes - protected by internal mutex.
+ * @threadsafe Yes - protected by internal mutex.
  *
  * Cancels a pending request. If resolution has already completed, this
  * has no effect. The request handle becomes invalid after cancellation.
@@ -203,7 +203,7 @@ extern void SocketDNS_cancel(T dns, Request_T req);
  * @ingroup dns
  * @param dns DNS resolver instance.
  * @return Current pending request limit.
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see SocketDNS_setmaxpending() for setting the limit.
  */
 extern size_t SocketDNS_getmaxpending(T dns);
@@ -214,7 +214,7 @@ extern size_t SocketDNS_getmaxpending(T dns);
  * @param dns DNS resolver instance.
  * @param max_pending New pending request limit (0 allows no pending requests).
  * @throws SocketDNS_Failed if max_pending < current queue depth.
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see SocketDNS_getmaxpending() for retrieving the current limit.
  */
 extern void SocketDNS_setmaxpending(T dns, size_t max_pending);
@@ -224,7 +224,7 @@ extern void SocketDNS_setmaxpending(T dns, size_t max_pending);
  * @ingroup dns
  * @param dns DNS resolver instance.
  * @return Timeout in milliseconds (0 disables timeout).
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see SocketDNS_settimeout() for setting the timeout.
  */
 extern int SocketDNS_gettimeout(T dns);
@@ -234,7 +234,7 @@ extern int SocketDNS_gettimeout(T dns);
  * @ingroup dns
  * @param dns DNS resolver instance.
  * @param timeout_ms Timeout in milliseconds (0 disables timeout).
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see SocketDNS_gettimeout() for retrieving the current timeout.
  */
 extern void SocketDNS_settimeout(T dns, int timeout_ms);
@@ -244,7 +244,7 @@ extern void SocketDNS_settimeout(T dns, int timeout_ms);
  * @ingroup dns
  * @param dns DNS resolver instance.
  * @return File descriptor ready for reading when requests complete.
- * @note Thread-safe: Yes - returns stable file descriptor.
+ * @threadsafe Yes - returns stable file descriptor.
  *
  * Returns a file descriptor (pipe or eventfd) that becomes readable when
  * DNS resolution requests complete. Add this to SocketPoll with POLL_READ
@@ -262,7 +262,7 @@ extern int SocketDNS_pollfd(T dns);
  * @ingroup dns
  * @param dns DNS resolver instance.
  * @return Number of completion signals drained (1 byte per completed/cancelled/timeout request).
- * @note Thread-safe: Yes - safe to call from any thread.
+ * @threadsafe Yes - safe to call from any thread.
  *
  * Drains the signal pipe for completed DNS events. Does not automatically
  * retrieve results. For poll-mode requests (no callback), track your Request_T
@@ -280,7 +280,7 @@ extern int SocketDNS_check(T dns);
  * @param dns DNS resolver instance.
  * @param req Request handle (must have been returned by SocketDNS_resolve() on this same resolver instance).
  * @return Completed addrinfo result or NULL if pending/error/cancelled/invalid.
- * @note Thread-safe: Yes - protected by internal mutex.
+ * @threadsafe Yes - protected by internal mutex.
  *
  * Retrieves the result of a completed DNS resolution. Returns NULL if:
  * - Request is still pending
@@ -311,7 +311,7 @@ extern struct addrinfo *SocketDNS_getresult(T dns, Request_T req);
  * @param dns DNS resolver instance.
  * @param req Request handle (must have been returned by SocketDNS_resolve() on this same resolver instance).
  * @return getaddrinfo() error code, or 0 on success, or 0 if request does not belong to this resolver (invalid handle).
- * @note Thread-safe: Yes - protected by internal mutex.
+ * @threadsafe Yes - protected by internal mutex.
  *
  * IMPORTANT: Only use request handles returned by SocketDNS_resolve() or
  * SocketDNS_create_completed_request() on the SAME resolver instance.
@@ -327,7 +327,7 @@ extern int SocketDNS_geterror(T dns, const struct SocketDNS_Request_T *req);
  * @param dns DNS resolver instance.
  * @param req Request handle.
  * @param timeout_ms Timeout in milliseconds (0 disables timeout for this request).
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see SocketDNS_settimeout() for setting the default timeout.
  * @see SocketDNS_resolve() for creating requests.
  */
@@ -341,7 +341,7 @@ extern void SocketDNS_request_settimeout(T dns, Request_T req, int timeout_ms);
  * @param port Port number.
  * @return Request handle for completed request.
  * @throws SocketDNS_Failed on allocation failure.
- * @note Thread-safe: Yes - protected by internal mutex.
+ * @threadsafe Yes - protected by internal mutex.
  *
  * Creates a request that is already marked as complete with the provided
  * result. Useful for synchronous resolution (e.g., wildcard bind) that doesn't
@@ -364,7 +364,7 @@ SocketDNS_create_completed_request(T dns, struct addrinfo *result, int port);
  * @param timeout_ms Timeout in milliseconds (0 = use resolver default).
  * @return addrinfo result (caller must call freeaddrinfo()).
  * @throws SocketDNS_Failed on error or timeout.
- * @note Thread-safe: Yes - uses internal synchronization.
+ * @threadsafe Yes - uses internal synchronization.
  *
  * This function provides synchronous DNS resolution with GUARANTEED timeout.
  * Unlike raw getaddrinfo() which can block for 30+ seconds, this function

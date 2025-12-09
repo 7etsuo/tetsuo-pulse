@@ -32,8 +32,8 @@
  * - Do not call SocketTimer_cancel() from within timer callbacks
  *
  * Limitations:
- * - Maximum timer delay: ~9.2 billion milliseconds (~107 days)
- * - Timer IDs wrap around at ~4 billion (unsigned int)
+ * - Maximum practical timer delay: limited by int64_t range (~292 billion years theoretically) and poll backend timeout (typically ~2.1 billion ms or ~25 days)
+ * - Timer IDs use 64-bit unsigned integers (wrap around after 2^64 timers, practically unlimited)
  *
  * @see SocketPoll_T for event loop integration.
  * @see SocketTimer_add() for creating timers.
@@ -109,7 +109,7 @@ extern const Except_T SocketTimer_Failed;
  * @param callback Function to call when timer expires.
  * @param userdata User data passed to callback.
  * @return Timer handle for cancellation and management.
- * @throws SocketTimer_Failed on invalid parameters (e.g., negative delay/interval, null callback/poll), memory allocation failure, or internal heap error.
+ * @throws SocketTimer_Failed on invalid parameters (e.g., delay_ms < 0, null callback or poll), memory allocation failure, or internal heap error.
  * @threadsafe Yes.
  * @note Timer fires once after delay_ms milliseconds. Callbacks execute during SocketPoll_wait() in the calling thread.
  * @see SocketTimer_add_repeating() for repeating timers.
@@ -126,7 +126,7 @@ extern T SocketTimer_add (SocketPoll_T poll, int64_t delay_ms,
  * @param callback Function to call when timer expires.
  * @param userdata User data passed to callback.
  * @return Timer handle for cancellation and management.
- * @throws SocketTimer_Failed on invalid parameters (e.g., negative delay/interval, null callback/poll), memory allocation failure, or internal heap error.
+ * @throws SocketTimer_Failed on invalid parameters (e.g., interval_ms < 1, null callback or poll), memory allocation failure, or internal heap error.
  * @threadsafe Yes.
  * @note Timer fires repeatedly every interval_ms milliseconds. First firing occurs after interval_ms milliseconds.
  * @note Use SocketTimer_cancel() to stop.

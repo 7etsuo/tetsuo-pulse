@@ -5,12 +5,12 @@
  * The HTTP group provides comprehensive HTTP protocol support including
  * parsing, serialization, client/server implementations, and advanced
  * features. Key components include:
- * - SocketHTTP (core): HTTP types, headers, URI parsing, status codes
- * - SocketHTTP1 (http1): HTTP/1.1 parsing and serialization
- * - SocketHTTP2 (http2): HTTP/2 protocol implementation
- * - SocketHTTPClient (client): High-level HTTP client with pooling
- * - SocketHTTPServer (server): HTTP server implementation
- * - SocketHPACK (hpack): HTTP/2 header compression
+ * - SocketHTTP (core): HTTP types, headers, URI parsing, status codes (@ref http)
+ * - SocketHTTP1: HTTP/1.1 parsing and serialization (@ref http1 "HTTP/1.1 Module")
+ * - SocketHTTP2: HTTP/2 protocol implementation (@ref http2 "HTTP/2 Module")
+ * - SocketHTTPClient: High-level HTTP client with pooling (@ref http_client "HTTP Client Module")
+ * - SocketHTTPServer: HTTP server implementation (@ref http_server "HTTP Server Module")
+ * - SocketHPACK: HTTP/2 header compression (@ref hpack "HPACK Module")
  *
  * @see foundation for base infrastructure.
  * @see core_io for socket primitives.
@@ -74,32 +74,103 @@
  * ============================================================================
  */
 
-/** Maximum header name length in bytes */
+/**
+ * @brief Maximum allowed length for HTTP header names, in bytes.
+ * @ingroup http
+ *
+ * This configurable limit protects against denial-of-service attacks via excessively long
+ * header names. The default value of 256 bytes is sufficient for all standard HTTP headers
+ * (e.g., "Authorization", "Content-Type") and most custom headers.
+ *
+ * Redefine before including SocketHTTP.h to adjust for specific needs, but keep conservative
+ * for security. Exceeding this during parsing raises SocketHTTP_Failed.
+ *
+ * @note Header names must also be valid tokens per RFC 9110 (tchar characters only).
+ * @see SocketHTTP_header_name_valid() for validation function.
+ * @see SocketHTTP_MAX_HEADER_VALUE for value length limits.
+ * @see SocketHTTP_MAX_HEADER_SIZE for total headers limit.
+ */
 #ifndef SOCKETHTTP_MAX_HEADER_NAME
 #define SOCKETHTTP_MAX_HEADER_NAME 256
 #endif
 
-/** Maximum header value length in bytes */
+/**
+ * @brief Maximum allowed length for individual HTTP header values, in bytes.
+ * @ingroup http
+ *
+ * Limits single header values to prevent memory exhaustion or buffer overflows.
+ * Default 8 KiB accommodates large values like base64-encoded data in Authorization or cookies.
+ * Larger values may indicate attacks; adjust cautiously.
+ *
+ * Exceeding this during addition or parsing triggers error or exception.
+ *
+ * @note Values are validated to exclude control characters (CR/LF/NUL) for security.
+ * @see SocketHTTP_header_value_valid() for validation.
+ * @see SocketHTTP_MAX_HEADER_NAME for name limits.
+ * @see SocketHTTP_MAX_HEADERS for count limits.
+ */
 #ifndef SOCKETHTTP_MAX_HEADER_VALUE
 #define SOCKETHTTP_MAX_HEADER_VALUE (8 * 1024)
 #endif
 
-/** Maximum total header size in bytes */
+/**
+ * @brief Maximum total size for all HTTP headers combined, in bytes.
+ * @ingroup http
+ *
+ * Cumulative limit on header block size to mitigate DoS from many/small headers or few/large ones.
+ * Default 64 KiB is generous for typical requests but protects servers from abuse.
+ * Used in parsing to prevent excessive memory use.
+ *
+ * @note Enforced in header collection; exceeding raises SocketHTTP_Failed in parsers.
+ * @see SocketHTTP_Headers_count() for number of headers.
+ * @see SocketHTTP_MAX_HEADERS for maximum count.
+ */
 #ifndef SOCKETHTTP_MAX_HEADER_SIZE
 #define SOCKETHTTP_MAX_HEADER_SIZE (64 * 1024)
 #endif
 
-/** Maximum header count */
+/**
+ * @brief Maximum number of HTTP headers allowed in a collection.
+ * @ingroup http
+ *
+ * Limits header count to prevent resource exhaustion from header flooding attacks.
+ * Default 100 is ample for standard HTTP/1.1 and HTTP/2 requests.
+ * Duplicate headers (e.g., multiple Set-Cookie) count separately.
+ *
+ * @note HTTP/2 has separate frame limits; this applies to logical header sets.
+ * @see SocketHTTP_Headers_T for header collection.
+ * @see SocketHTTP_MAX_HEADER_SIZE for total size limit.
+ */
 #ifndef SOCKETHTTP_MAX_HEADERS
 #define SOCKETHTTP_MAX_HEADERS 100
 #endif
 
-/** Maximum URI length in bytes */
+/**
+ * @brief Maximum length for URI strings during parsing, in bytes.
+ * @ingroup http
+ *
+ * Prevents DoS from oversized URIs. Default 8 KiB covers complex queries and paths.
+ * Enforced in SocketHTTP_URI_parse(); longer URIs raise URI_PARSE_TOO_LONG.
+ *
+ * @note Does not limit encoded size; decoded may be smaller.
+ * @see SocketHTTP_URI_parse() for URI parsing.
+ * @see SocketHTTP_URI_encode() and SocketHTTP_URI_decode() for percent handling.
+ */
 #ifndef SOCKETHTTP_MAX_URI_LEN
 #define SOCKETHTTP_MAX_URI_LEN (8 * 1024)
 #endif
 
-/** HTTP-date buffer size (30 bytes including null) */
+/**
+ * @brief Recommended buffer size for HTTP-date formatting output.
+ * @ingroup http
+ *
+ * IMF-fixdate format requires 29 bytes + null terminator = 30 bytes.
+ * Use this constant for stack-allocated buffers in SocketHTTP_date_format().
+ *
+ * @note Fixed size; all valid HTTP-dates fit within this.
+ * @see SocketHTTP_date_format() for formatting time_t to HTTP-date string.
+ * @see SocketHTTP_date_parse() for parsing HTTP-date strings.
+ */
 #define SOCKETHTTP_DATE_BUFSIZE 30
 
 /* ============================================================================
@@ -339,28 +410,92 @@ typedef enum
 } SocketHTTP_StatusCode;
 
 /**
- * Status code boundary constants
+ * @brief Boundary constants for HTTP status code validation and categorization.
+ * @ingroup http
  *
- * Used for validation and categorization.
- * Note: Not all codes in range are defined in SocketHTTP_StatusCode enum;
- * enum only includes standard/common codes.
+ * These defines provide ranges for status code classes (1xx-5xx) and overall valid range (100-599).
+ * Used in SocketHTTP_status_valid(), SocketHTTP_status_category(), and internal checks.
+ * The SocketHTTP_StatusCode enum defines specific codes; these are for range checks.
+ *
+ * @note Not all codes in 100-599 are standardized; custom codes should use valid range.
+ * @see SocketHTTP_status_valid() to check if a code is in valid range.
+ * @see SocketHTTP_status_category() to get category (1-5).
+ * @see SocketHTTP_StatusCode for enumerated status codes.
+ */
+
+/**
+ * @brief Minimum valid HTTP status code.
+ * @ingroup http
+ * @note Codes below 100 are informational or invalid per RFC 9110.
  */
 #define HTTP_STATUS_CODE_MIN 100
+
+/**
+ * @brief Maximum valid HTTP status code.
+ * @ingroup http
+ * @note Codes above 599 are not standard; extensions may use higher but library limits to 599.
+ */
 #define HTTP_STATUS_CODE_MAX 599
 
+/**
+ * @brief Minimum 1xx informational status code.
+ * @ingroup http
+ */
 #define HTTP_STATUS_1XX_MIN HTTP_STATUS_CONTINUE
+
+/**
+ * @brief Maximum 1xx informational status code.
+ * @ingroup http
+ */
 #define HTTP_STATUS_1XX_MAX 199
 
+/**
+ * @brief Minimum 2xx successful status code.
+ * @ingroup http
+ */
 #define HTTP_STATUS_2XX_MIN HTTP_STATUS_OK
+
+/**
+ * @brief Maximum 2xx successful status code.
+ * @ingroup http
+ */
 #define HTTP_STATUS_2XX_MAX 299
 
+/**
+ * @brief Minimum 3xx redirection status code.
+ * @ingroup http
+ */
 #define HTTP_STATUS_3XX_MIN HTTP_STATUS_MULTIPLE_CHOICES
+
+/**
+ * @brief Maximum 3xx redirection status code.
+ * @ingroup http
+ */
 #define HTTP_STATUS_3XX_MAX 399
 
+/**
+ * @brief Minimum 4xx client error status code.
+ * @ingroup http
+ */
 #define HTTP_STATUS_4XX_MIN HTTP_STATUS_BAD_REQUEST
+
+/**
+ * @brief Maximum 4xx client error status code.
+ * @ingroup http
+ */
 #define HTTP_STATUS_4XX_MAX 499
 
+/**
+ * @brief Minimum 5xx server error status code.
+ * @ingroup http
+ */
 #define HTTP_STATUS_5XX_MIN HTTP_STATUS_INTERNAL_ERROR
+
+/**
+ * @brief Maximum 5xx server error status code.
+ * @ingroup http
+ * @note Extends to 599 for future standard codes.
+ */
 #define HTTP_STATUS_5XX_MAX 599
 
 /**
@@ -621,8 +756,23 @@ extern const SocketHTTP_Header *
 SocketHTTP_Headers_at (SocketHTTP_Headers_T headers, size_t index);
 
 /**
- * Header iteration callback
- * Return non-zero to stop iteration
+ * @brief Callback function for iterating over HTTP headers in SocketHTTP_Headers_iterate().
+ * @ingroup http
+ *
+ * Invoked for each header in the collection. Parameters provide name/value with lengths for efficiency.
+ * Case-insensitive name matching via hash table in collection.
+ *
+ * @param name Header name (null-terminated string, case-preserved).
+ * @param name_len Length of name (excluding null).
+ * @param value Header value (null-terminated, may be empty string).
+ * @param value_len Length of value (excluding null).
+ * @param userdata User data passed from SocketHTTP_Headers_iterate().
+ * @return 0 to continue iteration, non-zero to stop early.
+ * @threadsafe No - called from caller context.
+ *
+ * @note Callback should not modify collection; undefined behavior.
+ * @see SocketHTTP_Headers_iterate() for usage.
+ * @see SocketHTTP_Header for structure with name/value.
  */
 typedef int (*SocketHTTP_HeaderCallback) (const char *name, size_t name_len,
                                           const char *value, size_t value_len,
@@ -886,7 +1036,7 @@ extern int SocketHTTP_date_format (time_t t, char *output);
  * Other parameters ignored; full parsing requires custom handling.
  * Strings point into arena or input buffer; null-terminated with lengths provided.
  * @see SocketHTTP_MediaType_parse() to populate from header value string.
- * @see SocketHTTP_MediaType_matches() to check against pattern (supports the * /* wildcard).
+ * @see SocketHTTP_MediaType_matches() to check against pattern (supports wildcard patterns like * / * for any media type).
  */
 typedef struct
 {
@@ -899,6 +1049,10 @@ typedef struct
   const char *boundary;    /**< Multipart boundary parameter (NULL if absent or not multipart) */
   size_t boundary_len;     /**< Length of boundary */
 } SocketHTTP_MediaType;
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 /**
  * @brief Parse Content-Type header

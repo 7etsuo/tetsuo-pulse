@@ -751,35 +751,179 @@ extern int http2_process_settings (SocketHTTP2_Conn_T conn,
                                    const unsigned char *payload);
 
 /**
- * http2_process_push_promise - Process PUSH_PROMISE frame
+ * @brief Process incoming HTTP/2 PUSH_PROMISE frame for server push promise.
+ * @ingroup http
+ * @internal
+ *
+ * Handles server-sent PUSH_PROMISE frames on client side: validates receipt conditions
+ * (client role, push enabled in settings, associated stream open), extracts promised stream ID
+ * (must be even, unused), creates promised stream in RESERVED_REMOTE state marked as push,
+ * handles padding if flagged, initiates HPACK header block decoding into promised stream's
+ * headers, sets up CONTINUATION state if END_HEADERS not flagged, checks against
+ * MAX_HEADER_LIST_SIZE setting.
+ *
+ * On failure (invalid promised ID, size exceed, etc.), sends RST_STREAM (REFUSED_STREAM)
+ * or triggers GOAWAY (PROTOCOL_ERROR). Successfully starts header decoding process.
+ *
+ * @param conn The HTTP/2 connection context (must be client role).
+ * @param header PUSH_PROMISE frame header (stream_id identifies associated open request stream).
+ * @param payload Raw payload: optional pad length (1 byte if PADDED), promised_stream_id (4 bytes),
+ *                header block fragment, optional padding bytes.
+ * @return 0 on successful processing (stream created, decoding queued), -1 on error
+ *         (connection/stream error sent, may lead to GOAWAY).
+ * @pre Frame header validated by http2_frame_validate(); connection ready.
+ * @throws SocketHTTP2_ProtocolError via http2_send_connection_error() on validation failure.
+ * @throws SocketHTTP2_StreamError via RST if stream creation fails or limits exceeded.
+ * @note Server push only; servers ignore incoming PUSH_PROMISE.
+ * @see validate_push_promise() internal validation.
+ * @see extract_push_promise_payload() payload parsing.
+ * @see http2_stream_create() for promised stream allocation.
+ * @see http2_decode_headers() for header block decompression.
+ * @see SocketHTTP2_Conn::expecting_continuation for chaining support.
+ * @see RFC 9113 Section 6.6 PUSH_PROMISE for format and semantics.
+ * @see RFC 9113 Section 8.2 Server Push for usage and client control via settings.
  */
 extern int http2_process_push_promise (SocketHTTP2_Conn_T conn,
                                        const SocketHTTP2_FrameHeader *header,
                                        const unsigned char *payload);
 
 /**
- * http2_process_ping - Process PING frame
+ * @brief Process incoming HTTP/2 PING frame for connection liveness checks and timing.
+ * @ingroup http
+ * @internal
+ *
+ * Applies DoS protection by rate limiting PING frames within a sliding time window;
+ * exceeds limit triggers connection closure with ENHANCE_YOUR_CALM error. For frames
+ * with ACK flag, verifies the 8-byte opaque payload matches any outstanding ping request
+ * opaque data, clears pending state if matched, and emits HTTP2_EVENT_PING_ACK event
+ * via connection callback. For non-ACK PING frames (probes from peer), immediately
+ * responds by queuing a PING ACK frame echoing the same opaque payload for round-trip
+ * time measurement. PING frames are connection-level (stream_id must be 0) and do not
+ * affect flow control or streams.
+ *
+ * @param conn The HTTP/2 connection context.
+ * @param header PING frame header (type=PING, length=8, stream_id=0, flags=ACK or 0).
+ * @param payload Fixed 8-byte opaque arbitrary data for correlation between request/ACK.
+ * @return 0 on successful processing (ACK queued or verified), -1 on rate limit exceeded
+ *         or validation failure (sends GOAWAY via connection error).
+ * @pre Frame header validated (fixed length 8, stream_id 0).
+ * @throws SocketHTTP2_ProtocolError indirectly if validation or state mismatch.
+ * @note Rate limiting uses monotonic timestamps; window reset on timeout.
+ * @note Thread-safe: No - modifies connection state (use mutex if multi-threaded).
+ * @see SocketHTTP2_Conn::ping_count_in_window and ::ping_window_start_ms for limits.
+ * @see http2_frame_send() for queuing ACK response.
+ * @see http2_emit_conn_event() for PING_ACK notification.
+ * @see RFC 9113 Section 6.7 PING Frames for protocol details and usage.
+ * @see SocketHTTP2_Conn::ping_pending and ::ping_opaque for request/ACK matching.
  */
 extern int http2_process_ping (SocketHTTP2_Conn_T conn,
                                const SocketHTTP2_FrameHeader *header,
                                const unsigned char *payload);
 
 /**
- * http2_process_goaway - Process GOAWAY frame
+ * @brief Process incoming HTTP/2 GOAWAY frame for connection shutdown notification.
+ * @ingroup http
+ * @internal
+ *
+ * Parses the GOAWAY payload to extract the highest stream ID the sender has processed
+ * successfully (last_stream_id, 31-bit unsigned) and the error code indicating the reason
+ * for initiating shutdown (e.g., NO_ERROR for graceful close, PROTOCOL_ERROR for issues).
+ * Updates connection state: sets goaway_received flag, records max_peer_stream_id to prevent
+ * new streams beyond this ID, and stores error code. Emits HTTP2_EVENT_GOAWAY_RECEIVED event
+ * via connection callback, allowing application to handle (e.g., close higher streams, retry
+ * elsewhere). Ignores frame header (pre-validated) and any optional debug data following
+ * the 8-byte fixed header fields in payload. Does not respond or alter other state.
+ *
+ * @param conn The HTTP/2 connection context.
+ * @param header GOAWAY frame header (type=GOAWAY, stream_id=0, length >=8).
+ * @param payload Payload: last_stream_id (4 bytes big-endian u31), error_code (4 bytes u32),
+ *                optional variable-length debug data (ignored).
+ * @return 0 on successful parsing and state update (always succeeds post-validation).
+ * @pre Frame header validated by http2_frame_validate().
+ * @note NO_ERROR (0) indicates graceful shutdown; non-zero codes signal errors affecting new streams.
+ * @note Application must poll connection state or events to detect and react.
+ * @see SocketHTTP2_Conn::goaway_received, ::max_peer_stream_id, ::goaway_error_code for updated fields.
+ * @see http2_emit_conn_event() for event notification.
+ * @see http2_send_connection_error() for sending local GOAWAY.
+ * @see RFC 9113 Section 6.8 GOAWAY for format, semantics, and error code details.
+ * @see RFC 9113 Section 9.3 for HTTP/2 error handling and connection closure.
  */
 extern int http2_process_goaway (SocketHTTP2_Conn_T conn,
                                  const SocketHTTP2_FrameHeader *header,
                                  const unsigned char *payload);
 
 /**
- * http2_process_window_update - Process WINDOW_UPDATE frame
+ * @brief Process incoming HTTP/2 WINDOW_UPDATE frame to replenish flow control windows.
+ * @ingroup http
+ * @internal
+ *
+ * Deserializes the 31-bit unsigned window increment from the fixed 4-byte payload.
+ * Rejects increment == 0 as PROTOCOL_ERROR, sending GOAWAY (connection-level) or
+ * RST_STREAM (stream-level) accordingly. For connection-level updates (stream_id=0),
+ * applies increment to connection send window using http2_flow_update_send (NULL stream);
+ * arithmetic overflow or invalid state triggers GOAWAY with FLOW_CONTROL_ERROR.
+ * For stream-level (stream_id >0), retrieves stream via lookup; if found, updates both
+ * stream and connection send windows, emits HTTP2_EVENT_WINDOW_UPDATE via stream callback
+ * on success; failure sends RST_STREAM with FLOW_CONTROL_ERROR to that stream. Unknown
+ * or closed streams are silently ignored per RFC. This frame allows receiver to advertise
+ * additional data capacity after consuming buffered DATA, unblocking peer sends.
+ *
+ * @param conn The HTTP/2 connection context.
+ * @param header WINDOW_UPDATE frame header (type=WINDOW_UPDATE, length=4, stream_id=0 or stream ID).
+ * @param payload Fixed 4-byte big-endian unsigned 31-bit increment (>0 required).
+ * @return 0 on successful update (or ignore for unknown stream), -1 on validation or update error
+ *         (sends GOAWAY or RST_STREAM as appropriate).
+ * @pre Frame header validated by http2_frame_validate().
+ * @throws SocketHTTP2_FlowControlError via error frames on window update failure (e.g., overflow).
+ * @throws SocketHTTP2_ProtocolError for zero increment.
+ * @note Updates affect http2_flow_available_send() immediately, potentially unblocking sends.
+ * @see http2_flow_update_send() for window arithmetic and validation.
+ * @see process_connection_window_update() and process_stream_window_update() for dispatch logic.
+ * @see http2_stream_lookup() for stream retrieval.
+ * @see http2_emit_stream_event() for event emission on stream updates.
+ * @see RFC 9113 Section 6.9 WINDOW_UPDATE Frames for details and rules.
+ * @see RFC 9113 Section 6.9.2 Flow-Control Windows: receiving updates.
+ * @see RFC 9113 Section 5.1 Stream States: window updates only on open/half-closed streams.
  */
 extern int http2_process_window_update (SocketHTTP2_Conn_T conn,
                                         const SocketHTTP2_FrameHeader *header,
                                         const unsigned char *payload);
 
 /**
- * http2_process_continuation - Process CONTINUATION frame
+ * @brief Process incoming HTTP/2 CONTINUATION frame to continue oversized header blocks.
+ * @ingroup http
+ * @internal
+ *
+ * Validates the frame occurs immediately after a HEADERS, PUSH_PROMISE, or previous
+ * CONTINUATION without END_HEADERS (checks expecting_continuation and stream_id match).
+ * Retrieves the target stream; failure or no pending header_block triggers PROTOCOL_ERROR
+ * GOAWAY. Enforces limit on CONTINUATION frames per header block to mitigate DoS floods
+ * (exceed -> GOAWAY ENHANCE_YOUR_CALM). Appends payload fragment to stream's accumulated
+ * header_block, validating total size <= MAX_HEADER_LIST_SIZE setting (exceed -> RST_STREAM
+ * ENHANCE_YOUR_CALM). Dynamically grows the temporary buffer if needed via arena allocation.
+ * If END_HEADERS flag set, finalizes the block: resets continuation state, decodes complete
+ * HPACK header block into stream's headers[] or trailers[] array (depending on context),
+ * emits headers event via stream callback, applies any pending END_STREAM from initial frame,
+ * and frees the temporary header_block. Supports split headers for large or compressed blocks.
+ *
+ * @param conn The HTTP/2 connection context (must be expecting CONTINUATION).
+ * @param header CONTINUATION frame header (type=CONTINUATION, stream_id=pending stream,
+ *               flags=END_HEADERS or 0, length=fragment size; no padding/priority).
+ * @param payload Raw header block fragment bytes to append (HPACK compressed).
+ * @return 0 on successful append or complete processing/decode, -1 on validation, size exceed,
+ *         or DoS detection (sends GOAWAY or RST_STREAM).
+ * @pre Frame header validated by http2_frame_validate(); prior frame set continuation state.
+ * @throws SocketHTTP2_ProtocolError on unexpected CONTINUATION or state mismatch.
+ * @throws SocketHTTP2_StreamError via RST on size limits or stream issues.
+ * @note CONTINUATION must strictly follow without interleaving other frames for same stream.
+ * @note Temporary buffer grown via arena; cleared after decode to free memory.
+ * @see SocketHTTP2_Conn::expecting_continuation, ::continuation_stream_id, ::continuation_frame_count.
+ * @see SocketHTTP2_Stream::header_block, ::header_block_len for accumulation.
+ * @see http2_decode_headers() invoked on END_HEADERS for HPACK decompression.
+ * @see grow_header_block() for buffer expansion.
+ * @see RFC 9113 Section 6.10 CONTINUATION Frames for sequencing and format.
+ * @see RFC 9113 Section 4.3 Header Block Fragment for split handling rules.
+ * @see RFC 9114 Section 4 for HPACK block processing after reassembly.
  */
 extern int http2_process_continuation (SocketHTTP2_Conn_T conn,
                                        const SocketHTTP2_FrameHeader *header,
@@ -892,13 +1036,55 @@ extern void http2_send_stream_error (SocketHTTP2_Conn_T conn,
                                      SocketHTTP2_ErrorCode error_code);
 
 /**
- * http2_emit_stream_event - Emit stream event callback
+ * @brief Invoke registered stream event callback for notifications.
+ * @ingroup http
+ * @internal
+ *
+ * Calls the connection's stream_callback function if registered (non-null), passing
+ * the connection context, the affected stream, the specific event type (e.g.,
+ * HTTP2_EVENT_HEADERS_RECEIVED, HTTP2_EVENT_DATA_RECEIVED, HTTP2_EVENT_STREAM_RESET,
+ * HTTP2_EVENT_WINDOW_UPDATE), and the associated userdata. Includes null checks on
+ * conn and stream parameters to safely skip invocation if invalid. Emitted internally
+ * after key stream lifecycle events like header decoding complete, data buffering,
+ * flow control updates, or error conditions, enabling user code to react (e.g., parse
+ * headers, forward data, retry logic). Synchronous direct call; does not queue events.
+ *
+ * @param conn The HTTP/2 connection containing the callback registration (null-safe).
+ * @param stream The stream associated with the event (null-safe).
+ * @param event Event identifier from HTTP2_EVENT_* constants.
+ * @note Callback execution is immediate; user must avoid modifying conn/stream destructively.
+ * @note No return value from callback; fire-and-forget notification.
+ * @note Thread-unsafe: Direct state access; serialize if multi-threaded.
+ * @see SocketHTTP2_Conn::stream_callback and ::stream_callback_data for registration.
+ * @see SocketHTTP2_StreamCallback typedef in SocketHTTP2.h for function signature.
+ * @see http2_emit_conn_event() counterpart for connection events.
+ * @see Usage in frame processors like http2_process_headers(), http2_process_data().
  */
 extern void http2_emit_stream_event (SocketHTTP2_Conn_T conn,
                                      SocketHTTP2_Stream_T stream, int event);
 
 /**
- * http2_emit_conn_event - Emit connection event callback
+ * @brief Invoke registered connection event callback for notifications.
+ * @ingroup http
+ * @internal
+ *
+ * Calls the connection's conn_callback function if registered (non-null), passing
+ * the connection context, the event type (e.g., HTTP2_EVENT_SETTINGS_ACK, HTTP2_EVENT_PING_ACK,
+ * HTTP2_EVENT_GOAWAY_RECEIVED, HTTP2_EVENT_CONN_CLOSED), and the associated userdata.
+ * Includes null check on conn to safely skip if invalid. Emitted internally after significant
+ * connection-level events like settings negotiation complete, ping acknowledgments, GOAWAY
+ * receipt, or connection closure/ready states, allowing user code to monitor health, adjust
+ * configuration, or initiate failover. Synchronous direct call; no queuing.
+ *
+ * @param conn The HTTP/2 connection containing the callback registration (null-safe).
+ * @param event Event identifier from HTTP2_EVENT_* constants (connection-specific).
+ * @note Immediate execution; user callback should not destroy the connection.
+ * @note Fire-and-forget; callback return ignored.
+ * @note Thread-unsafe: Direct access; protect with locks in concurrent use.
+ * @see SocketHTTP2_Conn::conn_callback and ::conn_callback_data for registration.
+ * @see SocketHTTP2_ConnCallback typedef in SocketHTTP2.h for function signature.
+ * @see http2_emit_stream_event() for stream-specific events.
+ * @see Examples: emitted in http2_process_settings(), http2_process_ping(), http2_process_goaway().
  */
 extern void http2_emit_conn_event (SocketHTTP2_Conn_T conn, int event);
 

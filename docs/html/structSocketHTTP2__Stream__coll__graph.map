@@ -1,0 +1,9 @@
+<map id="SocketHTTP2_Stream_T" name="SocketHTTP2_Stream_T">
+<area shape="rect" id="Node000001" title="Internal structure for managing an HTTP/2 stream." alt="" coords="5,200,175,225"/>
+<area shape="rect" id="Node000002" href="$group__hpack.html#structSocketHPACK__Header" title="HPACK header field representation." alt="" coords="11,5,169,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="89,44,84,88,83,137,91,200,85,200,78,137,79,87,83,44"/>
+<area shape="rect" id="Node000003" href="$group__http2__private.html#structSocketHTTP2__Stream" title="Internal structure for managing an HTTP/2 stream." alt="" coords="144,110,313,135"/>
+<area shape="poly" id="edge3_Node000003_Node000002" title=" " alt="" coords="118,37,215,108,211,112,115,41"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="201,145,110,202,107,198,198,140"/>
+<area shape="poly" id="edge4_Node000003_Node000003" title=" " alt="" coords="328,114,340,122,332,130,314,133,313,128,330,125,335,123,325,119"/>
+</map>

@@ -37,8 +37,9 @@
  * @param buf Data to send
  * @param len Length of data
  * @param flags Send flags (MSG_NOSIGNAL, etc.)
- * @return Bytes sent or 0 if would block
- * @throws Socket_Failed or SocketTLS_Failed
+ * @return Number of bytes sent, or 0 if operation would block (EAGAIN/EWOULDBLOCK).
+ * @throws Socket_Failed on underlying socket errors such as invalid file descriptor or network issues.
+ * @throws SocketTLS_Failed on TLS encryption or write failures (#if SOCKET_HAS_TLS).
  * @threadsafe Yes - operates on single socket.
  * @note Routes through SSL_write() if TLS is enabled, otherwise uses send().
  * @note Handles partial sends and EAGAIN mapping.
@@ -58,8 +59,10 @@ extern ssize_t socket_send_internal (T socket, const void *buf, size_t len,
  * @param buf Buffer for received data
  * @param len Buffer size
  * @param flags Receive flags
- * @return Bytes received or 0 if would block
- * @throws Socket_Failed or SocketTLS_Failed, Socket_Closed on EOF
+ * @return Number of bytes received, or 0 if would block (EAGAIN/EWOULDBLOCK) or EOF (connection closed).
+ * @throws Socket_Failed on underlying socket errors such as invalid file descriptor or network issues.
+ * @throws SocketTLS_Failed on TLS decryption or read failures (#if SOCKET_HAS_TLS).
+ * @throws Socket_Closed on connection closure detected by recv returning 0 or ECONNRESET.
  * @threadsafe Yes - operates on single socket.
  * @note Routes through SSL_read() if TLS is enabled, otherwise uses recv().
  * @note Maps SSL errors to errno (EAGAIN for WANT_READ/WRITE).
@@ -80,8 +83,9 @@ extern ssize_t socket_recv_internal (T socket, void *buf, size_t len,
  * @param iov Array of iovec structures
  * @param iovcnt Number of iovec structures
  * @param flags Send flags
- * @return Total bytes sent or 0 if would block
- * @throws Socket_Failed or SocketTLS_Failed
+ * @return Total number of bytes sent from iov buffers, or 0 if would block.
+ * @throws Socket_Failed on underlying socket or vectored I/O errors.
+ * @throws SocketTLS_Failed on TLS write failures or buffer allocation issues (#if SOCKET_HAS_TLS).
  * @threadsafe Yes - operates on single socket.
  * @note For TLS: Copies iov to temp buffer, calls SSL_write().
  * @note For non-TLS: Uses writev() directly.
@@ -102,8 +106,10 @@ extern ssize_t socket_sendv_internal (T socket, const struct iovec *iov,
  * @param iov Array of iovec structures
  * @param iovcnt Number of iovec structures
  * @param flags Receive flags
- * @return Total bytes received or 0 if would block
- * @throws Socket_Failed or SocketTLS_Failed, Socket_Closed on EOF
+ * @return Total number of bytes received into iov buffers, or 0 if would block or EOF.
+ * @throws Socket_Failed on underlying socket or vectored I/O errors.
+ * @throws SocketTLS_Failed on TLS read failures (#if SOCKET_HAS_TLS).
+ * @throws Socket_Closed on connection closure detected by readv returning 0 or ECONNRESET.
  * @threadsafe Yes - operates on single socket.
  * @note For TLS: Calls SSL_read() into first iov, advances manually.
  * @note For non-TLS: Uses readv() directly.
@@ -118,33 +124,41 @@ extern ssize_t socket_recvv_internal (T socket, struct iovec *iov, int iovcnt,
 
 /**
  * @brief Check if socket has TLS enabled.
- * @ingroup security
+ * @ingroup core_io
  * @param socket Socket to check.
- * @return 1 if TLS enabled, 0 if not.
- * @threadsafe Yes.
- * @see SocketTLS_enable() for enabling TLS.
+ * @return 1 if TLS is enabled on the socket, 0 otherwise.
+ * @threadsafe Yes - atomic read of socket state.
+ * @see SocketTLS_enable() to enable TLS on a socket.
+ * @see socket_tls_want_read() and socket_tls_want_write() for checking TLS handshake needs.
+ * @see @ref group__security for TLS module documentation.
  */
 extern int socket_is_tls_enabled (const T socket);
 
 /**
- * @brief Check if TLS wants to read more data.
- * @ingroup security
- * @param socket TLS-enabled socket.
- * @return 1 if TLS handshake/protocol needs more data, 0 otherwise.
- * @note Used for event loop integration.
- * @threadsafe Yes.
- * @see SocketTLS_handshake() for TLS handshake.
+ * @brief Check if TLS wants to read more data for handshake or protocol.
+ * @ingroup core_io
+ * @param socket TLS-enabled socket to query.
+ * @return 1 if TLS needs more input data, 0 otherwise.
+ * @note Used in event loops to determine if POLL_READ should be enabled for TLS sockets.
+ * @threadsafe Yes - read-only access to TLS state.
+ * @see SocketTLS_handshake() for performing TLS handshake.
+ * @see socket_tls_want_write() for write readiness.
+ * @see @ref SocketPoll_T for event system integration.
+ * @see @ref group__security for TLS details.
  */
 extern int socket_tls_want_read (const T socket);
 
 /**
- * @brief Check if TLS wants to write more data.
- * @ingroup security
- * @param socket TLS-enabled socket.
- * @return 1 if TLS handshake/protocol needs to write data, 0 otherwise.
- * @note Used for event loop integration.
- * @threadsafe Yes.
- * @see SocketTLS_handshake() for TLS handshake.
+ * @brief Check if TLS wants to write more data for handshake or protocol.
+ * @ingroup core_io
+ * @param socket TLS-enabled socket to query.
+ * @return 1 if TLS needs to output data, 0 otherwise.
+ * @note Used in event loops to determine if POLL_WRITE should be enabled for TLS sockets.
+ * @threadsafe Yes - read-only access to TLS state.
+ * @see SocketTLS_handshake() for performing TLS handshake.
+ * @see socket_tls_want_read() for read readiness.
+ * @see @ref SocketPoll_T for event system integration.
+ * @see @ref group__security for TLS details.
  */
 extern int socket_tls_want_write (const T socket);
 
@@ -184,8 +198,9 @@ extern SSL *socket_get_ssl (T socket);
  * @brief Validate TLS is ready for I/O
  * @ingroup core_io
  * @param socket Socket instance
- * @return SSL pointer if ready
- * @throws Socket_Failed or SocketTLS_HandshakeFailed if not ready
+ * @return SSL* pointer if TLS is fully ready for I/O operations.
+ * @throws Socket_Failed if socket is invalid or TLS not enabled.
+ * @throws SocketTLS_HandshakeFailed if TLS handshake is not complete or failed (#if SOCKET_HAS_TLS).
  * @threadsafe Yes - operates on single socket.
  * @note Shared helper for TLS I/O functions.
  *

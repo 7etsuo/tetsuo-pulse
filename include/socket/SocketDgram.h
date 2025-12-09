@@ -8,9 +8,8 @@
 
 /**
  * @file SocketDgram.h
+ * @brief High-level UDP/datagram socket interface with multicast and broadcast support.
  * @ingroup core_io
- * @ingroup core_io
-* @brief High-level UDP/datagram socket interface with multicast and broadcast support.
  *
  * Provides a high-level, exception-based interface for UDP/datagram sockets.
  * All functions use exceptions for error handling, making code cleaner
@@ -48,9 +47,8 @@
 
 #define T SocketDgram_T
 /**
+ * @brief Opaque handle for UDP/datagram sockets.
  * @ingroup core_io
- * @ingroup core_io
-* @brief Opaque handle for UDP/datagram sockets.
  *
  * Provides connectionless messaging capabilities for IPv4 and IPv6,
  * including support for broadcast, multicast, and standard socket options.
@@ -65,9 +63,8 @@ typedef struct T *T;
 
 /* Exception types */
 /**
+ * @brief Exception raised on general datagram socket operation failures.
  * @ingroup core_io
- * @ingroup core_io
-* @brief Exception raised on general datagram socket operation failures.
  *
  * Covers system call errors (e.g., bind, connect, send, recv failures),
  * invalid parameters, and resource exhaustion.

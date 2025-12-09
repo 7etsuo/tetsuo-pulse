@@ -7,9 +7,6 @@ var SocketHPACK_8h =
     [ "SOCKETHPACK_MAX_TABLE_SIZE", "group__http.html#ga0e75d44640cb3681b7fdbc8c49cb10b9", null ],
     [ "SOCKETHPACK_MAX_TABLE_UPDATES", "group__http.html#gac25417892f0002db253f31bb5bab7be2", null ],
     [ "SOCKETHPACK_STATIC_TABLE_SIZE", "group__http.html#ga09450c50e4284b2cdc1613f7f8062752", null ],
-    [ "SocketHPACK_Decoder_T", "group__http.html#ga47e194052251cf94ee0a17ab490ed56d", null ],
-    [ "SocketHPACK_Encoder_T", "group__http.html#gab3d2fec45b36d20aff38b5b5f8ccc317", null ],
-    [ "SocketHPACK_Table_T", "group__http.html#ga689301e4de369172c0566705afe33156", null ],
     [ "SocketHPACK_Result", "group__http.html#ga623ed321b4ede47b3ac642a001c57ef4", [
       [ "HPACK_OK", "group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a", null ],
       [ "HPACK_INCOMPLETE", "group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35", null ],

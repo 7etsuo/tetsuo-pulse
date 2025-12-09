@@ -1,22 +1,39 @@
 <map id="SocketTimer.h" name="SocketTimer.h">
-<area shape="rect" id="Node000001" title="High&#45;performance timer subsystem integrated with the event loop." alt="" coords="353,5,459,31"/>
-<area shape="rect" id="Node000002" href="$SocketPoll_8h.html" title="Cross&#45;platform high&#45;level interface for monitoring multiple sockets for I/O events." alt="" coords="358,79,454,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="409,44,409,79,403,79,403,44"/>
-<area shape="rect" id="Node000003" href="$SocketHTTPServer_8h.html" title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols." alt="" coords="13,152,159,177"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="345,109,138,154,137,149,344,104"/>
-<area shape="rect" id="Node000005" href="$websocket__server_8c.html" title=" " alt="" coords="127,225,266,251"/>
-<area shape="poly" id="edge10_Node000002_Node000005" title=" " alt="" coords="345,101,313,107,281,118,250,133,224,154,212,171,205,190,200,226,194,225,200,189,208,168,220,150,248,128,279,113,312,102,343,95"/>
-<area shape="rect" id="Node000006" href="$SocketHappyEyeballs_8h.html" title="Happy Eyeballs (RFC 8305) implementation for fast dual&#45;stack connections." alt="" coords="234,152,397,177"/>
-<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="382,115,332,154,329,150,379,110"/>
-<area shape="rect" id="Node000007" href="$SocketPoll__backend_8h.html" title="Abstract interface for platform&#45;specific polling implementations." alt="" coords="421,152,573,177"/>
-<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="433,110,483,150,480,154,430,115"/>
-<area shape="rect" id="Node000008" href="$SocketProxy_8h.html" title="Proxy tunneling support for HTTP CONNECT and SOCKS protocols." alt="" coords="597,152,703,177"/>
-<area shape="poly" id="edge7_Node000002_Node000008" title=" " alt="" coords="459,105,611,149,610,154,457,110"/>
-<area shape="rect" id="Node000010" href="$graceful__shutdown_8c.html" title=" " alt="" coords="728,152,871,177"/>
-<area shape="poly" id="edge9_Node000002_Node000010" title=" " alt="" coords="468,101,737,149,736,155,467,106"/>
-<area shape="rect" id="Node000004" href="$http__server_8c.html" title=" " alt="" coords="5,225,103,251"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="78,191,62,226,57,224,73,189"/>
-<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="117,183,180,223,177,227,114,187"/>
-<area shape="rect" id="Node000009" href="$proxy__connect_8c.html" title=" " alt="" coords="591,225,709,251"/>
-<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="653,191,653,225,647,225,647,191"/>
+<area shape="rect" id="Node000001" title="High&#45;performance timer subsystem integrated with the event loop." alt="" coords="1086,5,1193,31"/>
+<area shape="rect" id="Node000002" href="$SocketPoll_8h.html" title="Cross&#45;platform high&#45;level interface for monitoring multiple sockets for I/O events." alt="" coords="753,79,849,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1073,36,850,82,849,77,1072,31"/>
+<area shape="rect" id="Node000015" href="$SocketTimer-private_8h.html" title="Internal timer implementation details and heap management." alt="" coords="1064,79,1215,104"/>
+<area shape="poly" id="edge19_Node000001_Node000015" title=" " alt="" coords="1142,44,1142,79,1137,79,1137,44"/>
+<area shape="rect" id="Node000016" href="$SocketWS-private_8h.html" title="Internal implementation details for WebSocket module." alt="" coords="1239,79,1378,104"/>
+<area shape="poly" id="edge21_Node000001_Node000016" title=" " alt="" coords="1180,34,1282,76,1280,81,1178,38"/>
+<area shape="rect" id="Node000003" href="$SocketHTTPServer_8h.html" title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols." alt="" coords="239,152,386,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="740,104,386,155,386,150,739,99"/>
+<area shape="rect" id="Node000006" href="$websocket__server_8c.html" title=" " alt="" coords="342,233,481,258"/>
+<area shape="poly" id="edge18_Node000002_Node000006" title=" " alt="" coords="740,101,640,119,585,134,532,154,500,173,469,195,425,234,421,230,466,191,497,168,530,150,583,129,639,114,739,96"/>
+<area shape="rect" id="Node000007" href="$SocketHappyEyeballs-private_8h.html" title="Internal structures and state for Happy Eyeballs connection racing (RFC 8305)." alt="" coords="505,225,656,265"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="739,101,683,108,625,119,575,134,557,144,546,154,539,170,543,188,552,207,565,224,560,227,548,210,538,190,534,170,541,150,554,139,573,129,624,114,682,103,738,96"/>
+<area shape="rect" id="Node000008" href="$SocketHappyEyeballs_8h.html" title="Happy Eyeballs (RFC 8305) implementation for fast dual&#45;stack connections." alt="" coords="555,152,718,177"/>
+<area shape="poly" id="edge7_Node000002_Node000008" title=" " alt="" coords="763,112,665,154,662,149,761,107"/>
+<area shape="rect" id="Node000009" href="$SocketProxy-private_8h.html" title="Internal structures and functions for SocketProxy module." alt="" coords="680,233,831,258"/>
+<area shape="poly" id="edge13_Node000002_Node000009" title=" " alt="" coords="795,118,783,153,761,233,756,232,778,151,790,116"/>
+<area shape="rect" id="Node000010" href="$SocketPoll-private_8h.html" title="Internal implementation details for SocketPoll module." alt="" coords="998,233,1137,258"/>
+<area shape="poly" id="edge10_Node000002_Node000010" title=" " alt="" coords="836,108,913,150,1050,230,1047,235,910,154,833,113"/>
+<area shape="rect" id="Node000011" href="$SocketPoll__backend_8h.html" title="Abstract interface for platform&#45;specific polling implementations." alt="" coords="974,152,1126,177"/>
+<area shape="poly" id="edge11_Node000002_Node000011" title=" " alt="" coords="855,105,1010,149,1009,154,853,110"/>
+<area shape="rect" id="Node000012" href="$SocketProxy_8h.html" title="Proxy tunneling module for HTTP CONNECT and SOCKS protocols." alt="" coords="793,152,899,177"/>
+<area shape="poly" id="edge14_Node000002_Node000012" title=" " alt="" coords="818,114,841,150,836,153,813,117"/>
+<area shape="rect" id="Node000014" href="$graceful__shutdown_8c.html" title=" " alt="" coords="1151,152,1293,177"/>
+<area shape="poly" id="edge17_Node000002_Node000014" title=" " alt="" coords="863,100,1155,149,1154,155,862,106"/>
+<area shape="rect" id="Node000004" href="$SocketHTTPServer-private_8h.html" title="Private implementation details for HTTP server connection and state management." alt="" coords="5,233,196,258"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="270,184,132,235,131,230,268,179"/>
+<area shape="rect" id="Node000005" href="$http__server_8c.html" title=" " alt="" coords="220,233,317,258"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="302,191,278,234,273,231,297,188"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="340,184,398,230,395,235,336,188"/>
+<area shape="poly" id="edge8_Node000008_Node000007" title=" " alt="" coords="623,190,596,227,592,224,618,187"/>
+<area shape="poly" id="edge9_Node000008_Node000009" title=" " alt="" coords="667,183,739,230,736,235,664,187"/>
+<area shape="poly" id="edge12_Node000011_Node000010" title=" " alt="" coords="1058,190,1067,232,1062,233,1053,191"/>
+<area shape="poly" id="edge15_Node000012_Node000009" title=" " alt="" coords="824,188,771,234,767,230,821,184"/>
+<area shape="rect" id="Node000013" href="$proxy__connect_8c.html" title=" " alt="" coords="855,233,973,258"/>
+<area shape="poly" id="edge16_Node000012_Node000013" title=" " alt="" coords="867,186,906,231,902,234,863,189"/>
+<area shape="poly" id="edge20_Node000015_Node000010" title=" " alt="" coords="1228,104,1267,116,1298,131,1308,141,1314,152,1314,165,1307,179,1280,198,1238,214,1138,236,1137,231,1236,209,1277,194,1303,176,1309,164,1309,154,1304,144,1295,136,1265,121,1227,110"/>
 </map>

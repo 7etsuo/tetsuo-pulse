@@ -13,7 +13,6 @@ var SocketHTTP1_8h =
     [ "SOCKETHTTP1_MAX_REQUEST_LINE", "group__http1.html#ga31c24401916c5664adb6ea3616681b46", null ],
     [ "SOCKETHTTP1_MAX_TRAILER_SIZE", "group__http1.html#ga207d48fb770893866f7a01d4ec09390d", null ],
     [ "SOCKETHTTP1_MAX_URI_LEN", "group__http1.html#gaad40b2eeddd7e9517f82d47349f9d271", null ],
-    [ "SocketHTTP1_Parser_T", "group__http1.html#ga06fc705e348330ddf1d6644fc80c3b59", null ],
     [ "SocketHTTP1_BodyMode", "group__http1.html#ga5b086c700986994685f83dd033821f0e", [
       [ "HTTP1_BODY_NONE", "group__http1.html#gga5b086c700986994685f83dd033821f0ead046cbedac23049ecf363b915c3d103a", null ],
       [ "HTTP1_BODY_CONTENT_LENGTH", "group__http1.html#gga5b086c700986994685f83dd033821f0eaf53be77b9110eb429f3f76f152a918e8", null ],

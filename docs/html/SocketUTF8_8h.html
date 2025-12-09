@@ -116,7 +116,7 @@ $(document).ready(function(){initNavTree('SocketUTF8_8h.html',''); initResizable
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketUTF8.h File Reference<div class="ingroups"><a class="el" href="group__foundation.html">Core Foundation Modules</a></div></div></div>
+  <div class="headertitle"><div class="title">SocketUTF8.h File Reference<div class="ingroups"><a class="el" href="group__utilities.html">Utility Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
 
@@ -132,103 +132,110 @@ $(document).ready(function(){initNavTree('SocketUTF8_8h.html',''); initResizable
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
 <div class="center"><iframe scrolling="no" frameborder="0" src="SocketUTF8_8h__incl.svg" width="298" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
+</div><div class="textblock"><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-1-trigger" src="closed.png" alt="+"/> This graph shows which files directly or indirectly include this file:</div>
+<div id="dynsection-1-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-1-content" class="dyncontent" style="display:none;">
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketUTF8_8h__dep__incl.svg" width="150" height="110"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
 </div>
 <p><a href="SocketUTF8_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketUTF8__State" id="r_structSocketUTF8__State"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#structSocketUTF8__State">SocketUTF8_State</a></td></tr>
-<tr class="memdesc:structSocketUTF8__State"><td class="mdescLeft">&#160;</td><td class="mdescRight">State structure for incremental UTF-8 validation.  <a href="group__foundation.html#structSocketUTF8__State">More...</a><br /></td></tr>
+<tr class="memitem:structSocketUTF8__State" id="r_structSocketUTF8__State"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a></td></tr>
+<tr class="memdesc:structSocketUTF8__State"><td class="mdescLeft">&#160;</td><td class="mdescRight">State structure for incremental UTF-8 validation.  <a href="group__utilities.html#structSocketUTF8__State">More...</a><br /></td></tr>
 <tr class="separator:structSocketUTF8__State"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:gac2c24c8a574da982e47bc14c90c51fcb" id="r_gac2c24c8a574da982e47bc14c90c51fcb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gac2c24c8a574da982e47bc14c90c51fcb">SOCKET_UTF8_MAX_BYTES</a>&#160;&#160;&#160;4</td></tr>
+<tr class="memitem:gac2c24c8a574da982e47bc14c90c51fcb" id="r_gac2c24c8a574da982e47bc14c90c51fcb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gac2c24c8a574da982e47bc14c90c51fcb">SOCKET_UTF8_MAX_BYTES</a>&#160;&#160;&#160;4</td></tr>
 <tr class="memdesc:gac2c24c8a574da982e47bc14c90c51fcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum bytes required to encode any single Unicode code point in UTF-8.  <br /></td></tr>
 <tr class="separator:gac2c24c8a574da982e47bc14c90c51fcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa9c7795dd42c45a40d759b981ea2a124" id="r_gaa9c7795dd42c45a40d759b981ea2a124"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaa9c7795dd42c45a40d759b981ea2a124">SOCKET_UTF8_MAX_CODEPOINT</a>&#160;&#160;&#160;0x10FFFF</td></tr>
+<tr class="memitem:gaa9c7795dd42c45a40d759b981ea2a124" id="r_gaa9c7795dd42c45a40d759b981ea2a124"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaa9c7795dd42c45a40d759b981ea2a124">SOCKET_UTF8_MAX_CODEPOINT</a>&#160;&#160;&#160;0x10FFFF</td></tr>
 <tr class="memdesc:gaa9c7795dd42c45a40d759b981ea2a124"><td class="mdescLeft">&#160;</td><td class="mdescRight">Highest valid Unicode code point (end of UTF-8 encodable range).  <br /></td></tr>
 <tr class="separator:gaa9c7795dd42c45a40d759b981ea2a124"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga93252af0c4c16e848f1faad437679dea" id="r_ga93252af0c4c16e848f1faad437679dea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga93252af0c4c16e848f1faad437679dea">SOCKET_UTF8_SURROGATE_MIN</a>&#160;&#160;&#160;0xD800</td></tr>
+<tr class="memitem:ga93252af0c4c16e848f1faad437679dea" id="r_ga93252af0c4c16e848f1faad437679dea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga93252af0c4c16e848f1faad437679dea">SOCKET_UTF8_SURROGATE_MIN</a>&#160;&#160;&#160;0xD800</td></tr>
 <tr class="memdesc:ga93252af0c4c16e848f1faad437679dea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start of UTF-16 surrogate range (invalid in pure UTF-8).  <br /></td></tr>
 <tr class="separator:ga93252af0c4c16e848f1faad437679dea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga45fdc9df7fba5033d071135c934b8547" id="r_ga45fdc9df7fba5033d071135c934b8547"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga45fdc9df7fba5033d071135c934b8547">SOCKET_UTF8_SURROGATE_MAX</a>&#160;&#160;&#160;0xDFFF</td></tr>
+<tr class="memitem:ga45fdc9df7fba5033d071135c934b8547" id="r_ga45fdc9df7fba5033d071135c934b8547"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga45fdc9df7fba5033d071135c934b8547">SOCKET_UTF8_SURROGATE_MAX</a>&#160;&#160;&#160;0xDFFF</td></tr>
 <tr class="memdesc:ga45fdc9df7fba5033d071135c934b8547"><td class="mdescLeft">&#160;</td><td class="mdescRight">End of UTF-16 surrogate range (invalid in pure UTF-8).  <br /></td></tr>
 <tr class="separator:ga45fdc9df7fba5033d071135c934b8547"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga79465648f060b79ec961cc626975a533" id="r_ga79465648f060b79ec961cc626975a533"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga79465648f060b79ec961cc626975a533">SOCKET_UTF8_1BYTE_MAX</a>&#160;&#160;&#160;0x7F</td></tr>
+<tr class="memitem:ga79465648f060b79ec961cc626975a533" id="r_ga79465648f060b79ec961cc626975a533"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga79465648f060b79ec961cc626975a533">SOCKET_UTF8_1BYTE_MAX</a>&#160;&#160;&#160;0x7F</td></tr>
 <tr class="memdesc:ga79465648f060b79ec961cc626975a533"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum code point encodable in a single UTF-8 byte.Corresponds to 7-bit ASCII range (U+0000 to U+007F); lead byte 0xxxxxxx.  <br /></td></tr>
 <tr class="separator:ga79465648f060b79ec961cc626975a533"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga93e8c5ea6de08b28ab080057cd17423c" id="r_ga93e8c5ea6de08b28ab080057cd17423c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga93e8c5ea6de08b28ab080057cd17423c">SOCKET_UTF8_2BYTE_MAX</a>&#160;&#160;&#160;0x7FF</td></tr>
+<tr class="memitem:ga93e8c5ea6de08b28ab080057cd17423c" id="r_ga93e8c5ea6de08b28ab080057cd17423c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga93e8c5ea6de08b28ab080057cd17423c">SOCKET_UTF8_2BYTE_MAX</a>&#160;&#160;&#160;0x7FF</td></tr>
 <tr class="memdesc:ga93e8c5ea6de08b28ab080057cd17423c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum code point encodable in two UTF-8 bytes.Range U+0080 to U+07FF; lead byte 110xxxxx followed by continuation byte.  <br /></td></tr>
 <tr class="separator:ga93e8c5ea6de08b28ab080057cd17423c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga02b7ac016b2dbc2c374081887ef684d5" id="r_ga02b7ac016b2dbc2c374081887ef684d5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga02b7ac016b2dbc2c374081887ef684d5">SOCKET_UTF8_3BYTE_MAX</a>&#160;&#160;&#160;0xFFFF</td></tr>
+<tr class="memitem:ga02b7ac016b2dbc2c374081887ef684d5" id="r_ga02b7ac016b2dbc2c374081887ef684d5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga02b7ac016b2dbc2c374081887ef684d5">SOCKET_UTF8_3BYTE_MAX</a>&#160;&#160;&#160;0xFFFF</td></tr>
 <tr class="memdesc:ga02b7ac016b2dbc2c374081887ef684d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum code point encodable in three UTF-8 bytes.Range U+0800 to U+FFFF (excluding surrogates); lead byte 1110xxxx. Note: U+D800–U+DFFF invalid surrogates not encodable.  <br /></td></tr>
 <tr class="separator:ga02b7ac016b2dbc2c374081887ef684d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad3cc04d775e04588a8446aedca62326f" id="r_gad3cc04d775e04588a8446aedca62326f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gad3cc04d775e04588a8446aedca62326f">SOCKET_UTF8_4BYTE_MIN</a>&#160;&#160;&#160;0x10000</td></tr>
+<tr class="memitem:gad3cc04d775e04588a8446aedca62326f" id="r_gad3cc04d775e04588a8446aedca62326f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gad3cc04d775e04588a8446aedca62326f">SOCKET_UTF8_4BYTE_MIN</a>&#160;&#160;&#160;0x10000</td></tr>
 <tr class="memdesc:gad3cc04d775e04588a8446aedca62326f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum code point requiring four UTF-8 bytes.Start of 4-byte encodings for supplementary planes (U+10000+); lead byte 11110xxx.  <br /></td></tr>
 <tr class="separator:gad3cc04d775e04588a8446aedca62326f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:gae8b6c527962e3019992746f49aac247b" id="r_gae8b6c527962e3019992746f49aac247b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> { <br />
-&#160;&#160;<a class="el" href="group__foundation.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a> = 0
+<tr class="memitem:gae8b6c527962e3019992746f49aac247b" id="r_gae8b6c527962e3019992746f49aac247b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> { <br />
+&#160;&#160;<a class="el" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a> = 0
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#ggae8b6c527962e3019992746f49aac247ba5517838e6342334352553b1013ced8e6">UTF8_INVALID</a>
+&#160;&#160;<a class="el" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba5517838e6342334352553b1013ced8e6">UTF8_INVALID</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402">UTF8_INCOMPLETE</a>
+&#160;&#160;<a class="el" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402">UTF8_INCOMPLETE</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#ggae8b6c527962e3019992746f49aac247baa8dc4f40f8b669aaf6dcc16cf64c9b6c">UTF8_OVERLONG</a>
+&#160;&#160;<a class="el" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247baa8dc4f40f8b669aaf6dcc16cf64c9b6c">UTF8_OVERLONG</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#ggae8b6c527962e3019992746f49aac247ba9b6f15c76888c3639b5d42aab0f8c26f">UTF8_SURROGATE</a>
+&#160;&#160;<a class="el" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba9b6f15c76888c3639b5d42aab0f8c26f">UTF8_SURROGATE</a>
 , <br />
-&#160;&#160;<a class="el" href="group__foundation.html#ggae8b6c527962e3019992746f49aac247ba6dbaccc954823626b88b579a7f6d6fb0">UTF8_TOO_LARGE</a>
+&#160;&#160;<a class="el" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba6dbaccc954823626b88b579a7f6d6fb0">UTF8_TOO_LARGE</a>
 <br />
  }</td></tr>
-<tr class="memdesc:gae8b6c527962e3019992746f49aac247b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration of UTF-8 validation results.  <a href="group__foundation.html#gae8b6c527962e3019992746f49aac247b">More...</a><br /></td></tr>
+<tr class="memdesc:gae8b6c527962e3019992746f49aac247b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration of UTF-8 validation results.  <a href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">More...</a><br /></td></tr>
 <tr class="separator:gae8b6c527962e3019992746f49aac247b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga68491b1f63c513ccc96a83a14d069e7b" id="r_ga68491b1f63c513ccc96a83a14d069e7b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a> (const unsigned char *data, size_t len)</td></tr>
+<tr class="memitem:ga68491b1f63c513ccc96a83a14d069e7b" id="r_ga68491b1f63c513ccc96a83a14d069e7b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a> (const unsigned char *data, size_t len)</td></tr>
 <tr class="memdesc:ga68491b1f63c513ccc96a83a14d069e7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform one-shot validation of complete UTF-8 data buffer.  <br /></td></tr>
 <tr class="separator:ga68491b1f63c513ccc96a83a14d069e7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga409d0ca4c468b8ca69e7b3b75c58841d" id="r_ga409d0ca4c468b8ca69e7b3b75c58841d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga409d0ca4c468b8ca69e7b3b75c58841d">SocketUTF8_validate_str</a> (const char *str)</td></tr>
+<tr class="memitem:ga409d0ca4c468b8ca69e7b3b75c58841d" id="r_ga409d0ca4c468b8ca69e7b3b75c58841d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga409d0ca4c468b8ca69e7b3b75c58841d">SocketUTF8_validate_str</a> (const char *str)</td></tr>
 <tr class="memdesc:ga409d0ca4c468b8ca69e7b3b75c58841d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate a null-terminated C string as UTF-8.  <br /></td></tr>
 <tr class="separator:ga409d0ca4c468b8ca69e7b3b75c58841d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga63e171e87998e78fb1398213e4ebc9a5" id="r_ga63e171e87998e78fb1398213e4ebc9a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a> (<a class="el" href="group__foundation.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
+<tr class="memitem:ga63e171e87998e78fb1398213e4ebc9a5" id="r_ga63e171e87998e78fb1398213e4ebc9a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
 <tr class="memdesc:ga63e171e87998e78fb1398213e4ebc9a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize UTF-8 incremental validation state.  <br /></td></tr>
 <tr class="separator:ga63e171e87998e78fb1398213e4ebc9a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac7bf6c0717c79f93d931fcd50bf04b60" id="r_gac7bf6c0717c79f93d931fcd50bf04b60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a> (<a class="el" href="group__foundation.html#structSocketUTF8__State">SocketUTF8_State</a> *state, const unsigned char *data, size_t len)</td></tr>
+<tr class="memitem:gac7bf6c0717c79f93d931fcd50bf04b60" id="r_gac7bf6c0717c79f93d931fcd50bf04b60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *state, const unsigned char *data, size_t len)</td></tr>
 <tr class="memdesc:gac7bf6c0717c79f93d931fcd50bf04b60"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a chunk of data through incremental UTF-8 validator.  <br /></td></tr>
 <tr class="separator:gac7bf6c0717c79f93d931fcd50bf04b60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga388818b9081b6d4f7ad496c6f4a364ad" id="r_ga388818b9081b6d4f7ad496c6f4a364ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a> (const <a class="el" href="group__foundation.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
+<tr class="memitem:ga388818b9081b6d4f7ad496c6f4a364ad" id="r_ga388818b9081b6d4f7ad496c6f4a364ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a> (const <a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
 <tr class="memdesc:ga388818b9081b6d4f7ad496c6f4a364ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finalize incremental UTF-8 validation and check completeness.  <br /></td></tr>
 <tr class="separator:ga388818b9081b6d4f7ad496c6f4a364ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga46408361a51a348e46420dfeeb3cca5c" id="r_ga46408361a51a348e46420dfeeb3cca5c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga46408361a51a348e46420dfeeb3cca5c">SocketUTF8_reset</a> (<a class="el" href="group__foundation.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
+<tr class="memitem:ga46408361a51a348e46420dfeeb3cca5c" id="r_ga46408361a51a348e46420dfeeb3cca5c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga46408361a51a348e46420dfeeb3cca5c">SocketUTF8_reset</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
 <tr class="memdesc:ga46408361a51a348e46420dfeeb3cca5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset incremental validator state for reuse.  <br /></td></tr>
 <tr class="separator:ga46408361a51a348e46420dfeeb3cca5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1563bde34c7c6e25d605d3d4d64ca103" id="r_ga1563bde34c7c6e25d605d3d4d64ca103"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga1563bde34c7c6e25d605d3d4d64ca103">SocketUTF8_codepoint_len</a> (uint32_t codepoint)</td></tr>
+<tr class="memitem:ga1563bde34c7c6e25d605d3d4d64ca103" id="r_ga1563bde34c7c6e25d605d3d4d64ca103"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga1563bde34c7c6e25d605d3d4d64ca103">SocketUTF8_codepoint_len</a> (uint32_t codepoint)</td></tr>
 <tr class="memdesc:ga1563bde34c7c6e25d605d3d4d64ca103"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine byte length required to encode a Unicode code point in UTF-8.  <br /></td></tr>
 <tr class="separator:ga1563bde34c7c6e25d605d3d4d64ca103"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1544e5297cf89454b89912f8c8af9046" id="r_ga1544e5297cf89454b89912f8c8af9046"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga1544e5297cf89454b89912f8c8af9046">SocketUTF8_sequence_len</a> (unsigned char first_byte)</td></tr>
+<tr class="memitem:ga1544e5297cf89454b89912f8c8af9046" id="r_ga1544e5297cf89454b89912f8c8af9046"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga1544e5297cf89454b89912f8c8af9046">SocketUTF8_sequence_len</a> (unsigned char first_byte)</td></tr>
 <tr class="memdesc:ga1544e5297cf89454b89912f8c8af9046"><td class="mdescLeft">&#160;</td><td class="mdescRight">Infer expected length of UTF-8 sequence from leading byte.  <br /></td></tr>
 <tr class="separator:ga1544e5297cf89454b89912f8c8af9046"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0d7d4a24b88fb2a7add5dce1a5ffdecf" id="r_ga0d7d4a24b88fb2a7add5dce1a5ffdecf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga0d7d4a24b88fb2a7add5dce1a5ffdecf">SocketUTF8_encode</a> (uint32_t codepoint, unsigned char *output)</td></tr>
+<tr class="memitem:ga0d7d4a24b88fb2a7add5dce1a5ffdecf" id="r_ga0d7d4a24b88fb2a7add5dce1a5ffdecf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga0d7d4a24b88fb2a7add5dce1a5ffdecf">SocketUTF8_encode</a> (uint32_t codepoint, unsigned char *output)</td></tr>
 <tr class="memdesc:ga0d7d4a24b88fb2a7add5dce1a5ffdecf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encode a single Unicode code point into UTF-8 bytes.  <br /></td></tr>
 <tr class="separator:ga0d7d4a24b88fb2a7add5dce1a5ffdecf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa22db28501f980ac3124b9ec4986fdb8" id="r_gaa22db28501f980ac3124b9ec4986fdb8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaa22db28501f980ac3124b9ec4986fdb8">SocketUTF8_decode</a> (const unsigned char *data, size_t len, uint32_t *codepoint, size_t *consumed)</td></tr>
+<tr class="memitem:gaa22db28501f980ac3124b9ec4986fdb8" id="r_gaa22db28501f980ac3124b9ec4986fdb8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaa22db28501f980ac3124b9ec4986fdb8">SocketUTF8_decode</a> (const unsigned char *data, size_t len, uint32_t *codepoint, size_t *consumed)</td></tr>
 <tr class="memdesc:gaa22db28501f980ac3124b9ec4986fdb8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decode the next complete UTF-8 sequence to a Unicode code point.  <br /></td></tr>
 <tr class="separator:gaa22db28501f980ac3124b9ec4986fdb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga473245344234f9352a2b968201d39634" id="r_ga473245344234f9352a2b968201d39634"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga473245344234f9352a2b968201d39634">SocketUTF8_count_codepoints</a> (const unsigned char *data, size_t len, size_t *count)</td></tr>
+<tr class="memitem:ga473245344234f9352a2b968201d39634" id="r_ga473245344234f9352a2b968201d39634"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga473245344234f9352a2b968201d39634">SocketUTF8_count_codepoints</a> (const unsigned char *data, size_t len, size_t *count)</td></tr>
 <tr class="memdesc:ga473245344234f9352a2b968201d39634"><td class="mdescLeft">&#160;</td><td class="mdescRight">Count the number of Unicode code points in a UTF-8 buffer while validating.  <br /></td></tr>
 <tr class="separator:ga473245344234f9352a2b968201d39634"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga305b150f1e0b525b236bf0a8952c5315" id="r_ga305b150f1e0b525b236bf0a8952c5315"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a> (<a class="el" href="group__foundation.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> result)</td></tr>
+<tr class="memitem:ga305b150f1e0b525b236bf0a8952c5315" id="r_ga305b150f1e0b525b236bf0a8952c5315"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a> (<a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> result)</td></tr>
 <tr class="memdesc:ga305b150f1e0b525b236bf0a8952c5315"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve descriptive string for a UTF-8 validation result code.  <br /></td></tr>
 <tr class="separator:ga305b150f1e0b525b236bf0a8952c5315"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:ga96b509b874774db6b22b3f25438a21d2" id="r_ga96b509b874774db6b22b3f25438a21d2"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga96b509b874774db6b22b3f25438a21d2">SocketUTF8_Failed</a></td></tr>
+<tr class="memitem:ga96b509b874774db6b22b3f25438a21d2" id="r_ga96b509b874774db6b22b3f25438a21d2"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga96b509b874774db6b22b3f25438a21d2">SocketUTF8_Failed</a></td></tr>
 <tr class="memdesc:ga96b509b874774db6b22b3f25438a21d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception for UTF-8 validation and encoding failures.  <br /></td></tr>
 <tr class="separator:ga96b509b874774db6b22b3f25438a21d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -249,13 +256,13 @@ Variables</h2></td></tr>
 </ul>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html">Core Foundation Modules</a> for related <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a>. </dd>
 <dd>
-<a class="el" href="group__foundation.html#ga68491b1f63c513ccc96a83a14d069e7b" title="Perform one-shot validation of complete UTF-8 data buffer.">SocketUTF8_validate()</a> primary one-shot validation entry point. </dd>
+<a class="el" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b" title="Perform one-shot validation of complete UTF-8 data buffer.">SocketUTF8_validate()</a> primary one-shot validation entry point. </dd>
 <dd>
-<a class="el" href="group__foundation.html#gac7bf6c0717c79f93d931fcd50bf04b60" title="Process a chunk of data through incremental UTF-8 validator.">SocketUTF8_update()</a> for incremental processing. </dd>
+<a class="el" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60" title="Process a chunk of data through incremental UTF-8 validator.">SocketUTF8_update()</a> for incremental processing. </dd>
 <dd>
-<a class="el" href="group__foundation.html#ga0d7d4a24b88fb2a7add5dce1a5ffdecf" title="Encode a single Unicode code point into UTF-8 bytes.">SocketUTF8_encode()</a> and <a class="el" href="group__foundation.html#gaa22db28501f980ac3124b9ec4986fdb8" title="Decode the next complete UTF-8 sequence to a Unicode code point.">SocketUTF8_decode()</a> for conversion <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a>. </dd>
+<a class="el" href="group__utilities.html#ga0d7d4a24b88fb2a7add5dce1a5ffdecf" title="Encode a single Unicode code point into UTF-8 bytes.">SocketUTF8_encode()</a> and <a class="el" href="group__utilities.html#gaa22db28501f980ac3124b9ec4986fdb8" title="Decode the next complete UTF-8 sequence to a Unicode code point.">SocketUTF8_decode()</a> for conversion <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a>. </dd>
 <dd>
-<a class="el" href="SocketWS_8h.html" title="WebSocket Protocol (RFC 6455) implementation with compression support.">SocketWS.h</a> WebSocket module integration (text frame validation). </dd>
+<a class="el" href="group__websocket.html#a2229fadf97885c574f68d8d98136b2a0">SocketWS.h</a> WebSocket module integration (text frame validation). </dd>
 <dd>
 docs/SECURITY_GUIDE.md for <a class="el" href="group__security.html" title="TLS encryption and security protection mechanisms.">Security Modules</a> considerations in protocol handling. </dd></dl>
 

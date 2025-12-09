@@ -1,0 +1,4 @@
+<map id="Request/Response Buffer Constants" name="Request/Response Buffer Constants">
+<area shape="rect" id="Node000002" href="$group__http__client__auth.html" title="Internal buffer sizes for HTTP authentication header generation and computation." alt="" coords="5,5,149,45"/>
+<area shape="rect" id="Node000001" title="Buffer sizes for HTTP request serialization, response reading, and headers." alt="" coords="197,5,371,45"/>
+</map>

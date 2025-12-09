@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['except_5fframe_0',['Except_Frame',['../Except_8h.html#structExcept__Frame',1,'']]],
-  ['except_5ft_1',['Except_T',['../group__foundation.html#structExcept__T',1,'']]]
+  ['connection_0',['Connection',['../group__connection__mgmt.html#structConnection',1,'']]],
+  ['cookieentry_1',['CookieEntry',['../group__http.html#structCookieEntry',1,'']]]
 ];

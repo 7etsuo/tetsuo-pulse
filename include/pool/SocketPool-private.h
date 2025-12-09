@@ -32,7 +32,7 @@
  * - Core I/O (@ref core_io): Socket, SocketBuf, SocketDNS
  * - Utilities (@ref utilities): SocketRateLimit, SocketIPTracker
  * - Security (@ref security): SocketSYNProtect (optional)
- * - Socket (@ref socket): SocketReconnect (optional)
+ * - Connection Mgmt (@ref connection_mgmt): SocketReconnect (optional)
  * - TLS (@ref security): SocketTLSContext (conditional on SOCKET_HAS_TLS)
  *
  * IMPLEMENTATION NOTES:
@@ -245,7 +245,7 @@ extern __thread Except_T SocketPool_DetailedException;
  * @see SocketPool_add() / SocketPool_get() for public entry points.
  * @see SocketPool.h::Connection_T for public opaque interface.
  * @see @ref connection_mgmt "Connection Mgmt Module" for pooling patterns.
- * @see @ref socket::SocketReconnect for reconnection integration.
+ * @see @ref connection_mgmt::SocketReconnect_T for reconnection integration.
  * @see @ref security::SocketTLSContext for TLS support.
  */
 struct Connection
@@ -320,7 +320,7 @@ typedef struct Connection *Connection_T;
  *
  * @see SocketPool_connect_async() for public async connect initiation.
  * @see SocketPool_ConnectCallback for completion notification requirements.
- * @see SocketDNS.h::Request_T for DNS request handling (@ref dns module).
+ * @see SocketDNS.h::Request_T for DNS request handling (@ref dns).
  * @see AsyncConnectContext_T for opaque typedef.
  * @see SocketPool_free() for ensuring pending sockets are cleaned up.
  * @see SocketPool.h for overall connection pool API.
@@ -331,7 +331,7 @@ struct AsyncConnectContext
 {
   SocketPool_T pool;                /**< Pool instance */
   Socket_T socket;                  /**< Socket being connected */
-  Request_T req;          /**< DNS resolution request (@ref SocketDNS::Request_T). Used to track and retrieve results from async DNS lookup for host resolution. @see SocketDNS_resolve() for initiating resolution, SocketDNS_cancel() for aborting, SocketDNS_getresult() for retrieving addrinfo results. */
+  Request_T req;          /**< DNS resolution request (@ref dns::Request_T). Used to track and retrieve results from async DNS lookup for host resolution. @see SocketDNS_resolve() for initiating resolution, SocketDNS_cancel() for aborting, SocketDNS_getresult() for retrieving addrinfo results. */
   SocketPool_ConnectCallback cb;    /**< User callback */
   void *user_data;                  /**< User data for callback */
   struct AsyncConnectContext *next; /**< Next context in list */

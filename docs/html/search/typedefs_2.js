@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['pollbackend_5ft_0',['PollBackend_T',['../group__event__system.html#gadd97c2d63f6b491ef855bd928211e71b',1,'SocketPoll_backend.h']]]
+  ['request_5ft_0',['Request_T',['../group__dns.html#gaec7a4f82232cde2b125b4b1e1df03b1f',1,'SocketDNS.h']]]
 ];

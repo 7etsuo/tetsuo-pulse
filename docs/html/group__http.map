@@ -1,0 +1,15 @@
+<map id="HTTP Modules" name="HTTP Modules">
+<area shape="rect" id="Node000003" href="$group__hpack.html" title=" " alt="" coords="355,35,549,75"/>
+<area shape="rect" id="Node000002" href="$group__hpack__private.html" title=" " alt="" coords="349,233,555,273"/>
+<area shape="rect" id="Node000001" title="Complete HTTP/1.1 and HTTP/2 protocol implementation with client and server support." alt="" coords="5,422,116,447"/>
+<area shape="rect" id="Node000004" href="$group__http1.html" title="Comprehensive HTTP/1.1 parsing, serialization, and transfer encoding support." alt="" coords="379,297,525,337"/>
+<area shape="rect" id="Node000006" href="$group__http2.html" title="HTTP/2 (RFC 9113) support with framing, streams, flow control, and HPACK integration." alt="" coords="345,362,559,387"/>
+<area shape="rect" id="Node000005" href="$group__http2__private.html" title=" " alt="" coords="349,412,555,452"/>
+<area shape="rect" id="Node000011" href="$group__http__client.html" title="High&#45;level HTTP client library supporting HTTP/1.1, HTTP/2, connection pooling, async I/O,..." alt="" coords="381,477,523,502"/>
+<area shape="rect" id="Node000010" href="$group__http__client__auth.html" title="Internal buffer sizes for HTTP authentication header generation and computation." alt="" coords="380,527,524,567"/>
+<area shape="rect" id="Node000009" href="$group__http__client__cookie.html" title="Limits and buffer sizes for HTTP client cookie handling and jar management." alt="" coords="380,591,524,631"/>
+<area shape="rect" id="Node000007" href="$group__http__client__limits.html" title="Limits on redirects, connections, and retries for safety and performance." alt="" coords="365,655,539,695"/>
+<area shape="rect" id="Node000008" href="$group__http__client__retry.html" title="Parameters for automatic retry logic on transient failures." alt="" coords="385,719,519,759"/>
+<area shape="rect" id="Node000012" href="$group__http__error__macros.html" title="Migration guide for deprecated HTTP server statistics macros." alt="" coords="359,783,545,823"/>
+<area shape="rect" id="Node000013" href="$group__http__server__connection__mgmt.html" title="Helper functions for managing individual HTTP server connections." alt="" coords="367,847,537,902"/>
+</map>

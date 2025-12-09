@@ -1,0 +1,10 @@
+<map id="SocketReconnect_T" name="SocketReconnect_T">
+<area shape="rect" id="Node000001" title="Opaque context for managing reconnecting socket connections." alt="" coords="61,183,203,209"/>
+<area shape="poly" id="edge4_Node000001_Node000001" title=" " alt="" coords="218,187,229,196,221,204,203,207,203,201,219,199,224,196,215,192"/>
+<area shape="rect" id="Node000002" href="$group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure for reconnection backoff and circuit breaker policy." alt="" coords="5,93,189,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,130,130,182,125,184,104,132"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="214,93,293,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="228,129,149,185,146,181,225,124"/>
+<area shape="rect" id="Node000004" href="$group__foundation.html#structSocketTimeouts__T" title="Timeout configuration structure for socket operations." alt="" coords="187,5,319,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="256,45,256,93,251,93,251,45"/>
+</map>

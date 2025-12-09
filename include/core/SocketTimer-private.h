@@ -34,6 +34,14 @@
  * @note Allocated and managed by SocketTimer_heap_T.
  * @note Thread-safe access via heap mutex.
  *
+ * @var SocketTimer_T::expiry_ms Absolute expiry time in milliseconds using monotonic clock (CLOCK_MONOTONIC).
+ * @var SocketTimer_T::interval_ms Repeating interval in milliseconds; 0 for one-shot, >0 for periodic firing.
+ * @var SocketTimer_T::callback User-provided callback function invoked upon timer expiry.
+ * @var SocketTimer_T::userdata Opaque user data passed to the callback function.
+ * @var SocketTimer_T::cancelled Flag indicating lazy cancellation; checked during heap processing.
+ * @var SocketTimer_T::id Unique 64-bit identifier for timer uniqueness and debugging.
+ * @var SocketTimer_T::heap_index Position in the binary heap's array for efficient operations; SOCKET_TIMER_INVALID_HEAP_INDEX if inactive.
+ *
  * @see SocketTimer_heap_T for the containing heap.
  * @see SocketTimer.h for public API.
  */

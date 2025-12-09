@@ -132,14 +132,9 @@ typedef enum
  * @ingroup async_io
  *
  * All time values are in milliseconds. Use 0 for defaults.
- * Call SocketHappyEyeballs_config_defaults() to initialize.
+ * Call SocketHappyEyeballs_config_defaults() to initialize to RFC 8305 recommended values.
  *
- * @var SocketHE_Config_T::first_attempt_delay_ms Delay before starting second family (250ms default).
- * @var SocketHE_Config_T::attempt_timeout_ms Per-attempt connection timeout (5000ms default).
- * @var SocketHE_Config_T::total_timeout_ms Overall operation timeout (30000ms default).
- * @var SocketHE_Config_T::dns_timeout_ms DNS resolution timeout (5000ms default, 0=use total).
- * @var SocketHE_Config_T::prefer_ipv6 1=IPv6 first (default), 0=IPv4 first.
- * @var SocketHE_Config_T::max_attempts Maximum simultaneous attempts (2 default).
+ * See inline field documentation below for details.
  *
  * @see SocketHappyEyeballs_config_defaults() to set defaults.
  * @see SocketHappyEyeballs_connect(), SocketHappyEyeballs_start() for usage.
@@ -147,8 +142,7 @@ typedef enum
  */
 typedef struct SocketHE_Config
 {
-  int first_attempt_delay_ms; /**< Delay before starting second family (250ms)
-                               */
+  int first_attempt_delay_ms; /**< Delay before starting second family (250ms default, RFC 8305 Section 3). */
   int attempt_timeout_ms;     /**< Per-attempt connection timeout (5000ms) */
   int total_timeout_ms;       /**< Overall operation timeout (30000ms) */
   int dns_timeout_ms; /**< DNS resolution timeout (5000ms, 0=use total) */

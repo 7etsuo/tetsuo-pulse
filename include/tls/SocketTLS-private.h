@@ -273,12 +273,17 @@ tls_handle_ssl_error (Socket_T socket, SSL *ssl, int ssl_result)
 }
 
 /**
- * tls_format_openssl_error - Format OpenSSL error into buffer
- * @param context Context string for error message
+ * @brief Format OpenSSL error into the thread-local error buffer.
+ * @ingroup security
+ * @param context Context string for the error message.
  *
- * Formats current OpenSSL error into tls_error_buf with context.
- * Clears the entire error queue to prevent stale errors from affecting
- * subsequent operations or leaking information.
+ * Formats the current OpenSSL error queue into tls_error_buf prefixed with the given context.
+ * Clears the error queue after formatting to prevent interference with subsequent operations.
+ * Used internally for consistent error reporting in TLS functions.
+ *
+ * @threadsafe Yes - operates on thread-local error buffer.
+ * @see tls_handle_ssl_error() for SSL error state mapping.
+ * @see ERR_clear_error() OpenSSL error queue management.
  */
 static inline void
 tls_format_openssl_error (const char *context)
@@ -307,21 +312,24 @@ tls_format_openssl_error (const char *context)
  */
 
 /**
- * @brief Validate certificate/key/CA file path for security
+ * @brief Validate file path for certificates, keys, or CAs against security threats.
  * @ingroup security
- * @param path File path string to validate
- * @return 1 if valid, 0 if invalid
+ * @param path Null-terminated file path string to validate.
+ * @return 1 if path passes all security checks, 0 otherwise.
  *
- * Performs comprehensive security validation on file paths to prevent
- * directory traversal attacks and other path-based exploits:
- * - Non-empty and within configured length limits
- * - Rejects path traversal sequences (..) in any form
- * - Rejects control characters (except forward slash for paths)
- * - Validates against symlink attacks by checking file type
- * - Prevents embedded null bytes that could cause truncation
+ * Comprehensive validation to mitigate path traversal, symlink following, and injection attacks:
+ * - Length limits and non-empty check
+ * - Blocks traversal patterns like "/../", "\\..\\", etc.
+ * - Rejects control characters and embedded nulls
+ * - Detects and rejects symlinks via lstat (if accessible)
+ * - Case-insensitive on Windows patterns if needed (platform-specific)
  *
- * This is critical for preventing attacks where untrusted input
- * could access sensitive files outside intended directories.
+ * Essential for secure loading of TLS credentials from potentially untrusted sources.
+ *
+ * @threadsafe Yes - pure string and stat operations, no shared state.
+ * @see tls_validate_hostname() for SNI name validation.
+ * @see tls_secure_free_pkey() for secure key handling post-load.
+ * @note lstat failure (e.g., no permission) allows validation to proceed conservatively.
  */
 
 
@@ -341,26 +349,34 @@ tls_format_openssl_error (const char *context)
  */
 
 /**
- * @brief tls_get_alpn_ex_idx - Get ex_data index for ALPN temp buffers
+ * @brief Get global ex_data index for ALPN temporary protocol buffers.
  * @ingroup security
- * @return Valid ex_data index for ALPN protocol storage
+ * @return Non-negative ex_data index for SSL/SSL_CTX ex_data storage.
  *
- * Returns the SSL ex_data index used to store temporary ALPN protocol
- * copies. The index is lazily initialized once per process using
- * thread-safe mechanisms. Used by ALPN selection callbacks to store
- * persistent protocol strings.
+ * Lazily initializes and returns the process-global SSL ex_data index
+ * used to store arena-allocated copies of ALPN protocol strings in callbacks.
+ * Thread-safe initialization using atomic operations or mutex.
+ * Prevents use-after-free by persisting short-lived protocol pointers.
+ *
+ * @see tls_cleanup_alpn_temp() for buffer cleanup on SSL free.
+ * @see SSL_set_ex_data() / SSL_get_ex_data() OpenSSL ex_data API.
+ * @threadsafe Yes - atomic initialization, read-only after init.
  */
 extern int tls_get_alpn_ex_idx (void);
 
 /**
- * @brief tls_cleanup_alpn_temp - Free ALPN temp buffer from SSL ex_data
+ * @brief Clean up temporary ALPN protocol buffer from SSL ex_data.
  * @ingroup security
- * @param ssl SSL object to cleanup
+ * @param ssl OpenSSL SSL object to clean.
  *
- * Frees the temporary ALPN protocol copy stored in SSL ex_data (if any)
- * and clears the ex_data slot. Must be called before SSL_free() to
- * prevent memory leaks. Safe to call multiple times or on SSL objects
- * that never used ALPN.
+ * Frees any arena-allocated ALPN protocol string stored in the SSL's ex_data
+ * using tls_get_alpn_ex_idx and clears the ex_data slot to NULL.
+ * Prevents memory leaks in ALPN callbacks; safe for repeated calls or non-ALPN SSLs.
+ * Called internally before SSL_free in socket TLS cleanup.
+ *
+ * @see tls_get_alpn_ex_idx() for the ex_data index used.
+ * @see Arena_dispose() indirect via buffer free.
+ * @threadsafe Conditional - safe if no concurrent access to SSL ex_data.
  */
 extern void tls_cleanup_alpn_temp (SSL *ssl);
 static inline int
@@ -419,21 +435,21 @@ tls_validate_file_path (const char *path)
 }
 
 /**
- * @brief Securely free EVP_PKEY with cryptographic key material clearing
+ * @brief Securely free EVP_PKEY with key material zeroization.
  * @ingroup security
- * @param pkey Pointer to private key to free (may be NULL)
+ * @param pkey EVP_PKEY private key to free (safe for NULL).
  *
- * Performs secure cleanup of private key material to prevent memory disclosure:
- * 1. Exports private key to DER format for access to raw key bytes
- * 2. Securely clears the exported DER buffer using SocketCrypto_secure_clear()
- * 3. Frees the DER buffer and then the original EVP_PKEY
+ * Exports the private key to DER, securely wipes the key bytes using
+ * SocketCrypto_secure_clear, then frees both DER buffer and EVP_PKEY.
+ * Mitigates forensic recovery of keys from memory post-free.
  *
- * This mitigates cold boot attacks and memory analysis that could recover
- * private keys from process memory after free(). Note: OpenSSL's internal
- * EVP_PKEY structure may retain some metadata, but raw key material is cleared.
+ * Best-effort: succeeds even if export fails; always calls EVP_PKEY_free.
+ * OpenSSL may leave some metadata, but sensitive key bytes are overwritten.
  *
- * @see SocketCrypto_secure_clear() for secure memory wiping
- * @see EVP_PKEY_free() for standard OpenSSL cleanup
+ * @threadsafe Conditional - safe if no concurrent use of pkey.
+ * @see SocketCrypto_secure_clear() constant-time memory wipe.
+ * @see i2d_PrivateKey() OpenSSL DER export.
+ * @see tls_secure_free_pkey in context cleanup for usage.
  */
 static inline void
 tls_secure_free_pkey (EVP_PKEY *pkey)
@@ -454,21 +470,24 @@ tls_secure_free_pkey (EVP_PKEY *pkey)
 }
 
 /**
- * @brief Validate SNI hostname format according to RFC standards
+ * @brief Validate SNI hostname against RFC-compliant format rules.
  * @ingroup security
- * @param hostname Hostname string to validate
- * @return 1 if valid, 0 if invalid
+ * @param hostname Null-terminated hostname string for SNI.
+ * @return 1 if valid SNI hostname, 0 if invalid or malformed.
  *
- * Performs strict validation of hostname format for Server Name Indication (SNI):
- * - Validates against RFC 952 (hostname syntax) and RFC 1123 (case insensitivity)
- * - Labels contain only alphanumeric characters and hyphens
- * - Labels cannot start or end with a hyphen (RFC 1123)
- * - Individual labels are 1-63 characters (RFC 1035 DNS limits)
- * - Total hostname length within RFC 6066 SNI limits (255 chars)
- * - Supports internationalized domain names (IDNA) through case-insensitive validation
+ * Enforces RFC 952/1123/1035/6066 rules for domain labels:
+ * - Alphanumeric + hyphen only, no starting/ending hyphen per label
+ * - Label length 1-63 chars, total <=255 chars for SNI
+ * - No empty labels, proper dot separation
+ * - Basic IDN support via punycode assumption (caller normalizes)
  *
- * Critical for preventing hostname spoofing attacks in virtual hosting scenarios.
- * @see RFC 6066 Section 3 for SNI hostname validation requirements
+ * Prevents invalid SNI attacks like label injection or buffer overflows in virtual servers.
+ *
+ * @threadsafe Yes - pure string parsing, no side effects.
+ * @see RFC 6066 for TLS SNI extension details.
+ * @see RFC 1123 for domain name syntax updates.
+ * @see tls_validate_file_path() companion for file path security.
+ * @note Does not perform DNS resolution or existence check.
  */
 static inline int
 tls_validate_hostname (const char *hostname)
@@ -557,7 +576,20 @@ typedef struct
 } TLSContextPinning;
 
 /**
- * SNI Certificate Mapping - Stores hostname-to-certificate mappings
+ * @brief Structure for managing SNI certificate mappings in TLS context.
+ * @ingroup security
+ *
+ * Holds arrays mapping hostnames to certificate files, private keys, and pre-loaded
+ * X509 chains and EVP_PKEY objects. Supports multiple mappings per hostname and
+ * a default entry (NULL hostnames). Used for dynamic certificate selection
+ * based on SNI during TLS handshakes.
+ *
+ * Memory is arena-allocated; chains are owned by STACK_OF(X509) (references only).
+ * Thread-safe via context-level locking.
+ *
+ * @see SocketTLSContext_add_sni_cert() for adding mappings.
+ * @see tls_validate_hostname() for SNI hostname validation.
+ * @see SSL_CTX_set_tlsext_servername_callback() OpenSSL SNI integration.
  */
 typedef struct
 {
@@ -574,7 +606,20 @@ typedef struct
 } TLSContextSNICerts;
 
 /**
- * ALPN Configuration - Application-Layer Protocol Negotiation settings
+ * @brief Configuration for ALPN protocol negotiation.
+ * @ingroup security
+ *
+ * Manages the list of supported ALPN protocols, selection callback, and storage
+ * for the negotiated protocol string. Used during TLS handshake for protocol
+ * negotiation with peers.
+ *
+ * Protocols are null-terminated strings; callback allows custom selection logic.
+ * Thread-safe via context mutex for modifications.
+ *
+ * @see SocketTLSContext_set_alpn_protocols() for configuring protocols.
+ * @see SocketTLSContext_set_alpn_callback() for custom selection.
+ * @see tls_get_alpn_ex_idx() for safe buffer management in callbacks.
+ * @see SSL_set_alpn_protos() OpenSSL ALPN interface.
  */
 typedef struct
 {
@@ -653,6 +698,20 @@ struct T
   void *cert_lookup_user_data; /**< User data for cert lookup callback */
 };
 
+/**
+ * @brief Acquire lock on TLS context's CRL mutex.
+ * @ingroup security
+ * @param ctx SocketTLSContext_T instance.
+ *
+ * Thread-safe macro to lock the CRL refresh mutex. Logs error and raises
+ * SocketTLS_Failed if pthread_mutex_lock fails (e.g., deadlock or invalid mutex).
+ * Ensures exclusive access to CRL auto-refresh state and operations.
+ *
+ * @warning Not recursive; avoid calling from within locked sections.
+ * @see CRL_UNLOCK(ctx) to release the lock.
+ * @see pthread_mutex_lock() for POSIX mutex semantics.
+ * @threadsafe Yes - standard mutex locking.
+ */
 #define CRL_LOCK(ctx)                                                         \
   do                                                                          \
     {                                                                         \
@@ -666,6 +725,20 @@ struct T
     }                                                                         \
   while (0)
 
+/**
+ * @brief Release lock on TLS context's CRL mutex.
+ * @ingroup security
+ * @param ctx SocketTLSContext_T instance.
+ *
+ * Thread-safe macro to unlock the CRL refresh mutex. Logs error and raises
+ * SocketTLS_Failed if pthread_mutex_unlock fails (e.g., not locked by caller).
+ * Balances CRL_LOCK for exclusive access control.
+ *
+ * @warning Undefined behavior if mutex not locked by calling thread.
+ * @see CRL_LOCK(ctx) to acquire the lock.
+ * @see pthread_mutex_unlock() for POSIX mutex release.
+ * @threadsafe Yes - standard mutex unlocking.
+ */
 #define CRL_UNLOCK(ctx)                                                       \
   do                                                                          \
     {                                                                         \
@@ -685,20 +758,55 @@ struct T
  */
 
 /**
- * @brief RAISE_CTX_ERROR - Raise context exception with current error buffer
+ * @brief Raise a SocketTLSContext module exception using current error state.
  * @ingroup security
+ * @param exception Specific SocketTLSContext exception type (e.g., SocketTLSContext_Failed).
+ *
+ * Uses the thread-local error buffer (tls_error_buf) populated by prior error formatting
+ * macros like TLS_ERROR_MSG or tls_format_openssl_error. Creates a detailed exception
+ * copy via SOCKET_RAISE_MODULE_ERROR to avoid races in multi-threaded environments.
+ *
+ * Intended for context-level operations where OpenSSL or allocation errors occur.
+ *
+ * @see RAISE_CTX_ERROR_MSG() for exceptions with custom formatted messages.
+ * @see SocketTLS_DetailedException for thread-local exception details.
+ * @see tls_error_buf for error message storage.
  */
 
 #define RAISE_CTX_ERROR(exception)                                            \
   SOCKET_RAISE_MODULE_ERROR (SocketTLSContext, exception)
 
 /**
- * @brief RAISE_CTX_ERROR_MSG - Raise context exception with specific message
+ * @brief Raise a SocketTLSContext exception with formatted message.
  * @ingroup security
+ * @param exception Specific SocketTLSContext exception type.
+ * @param fmt printf-style format string for error message.
+ * @param ... Arguments for format string.
+ *
+ * Formats the message into thread-local tls_error_buf using SOCKET_ERROR_MSG,
+ * then raises the exception with details via SOCKET_RAISE_MSG.
+ * Provides convenient error reporting for context operations.
+ *
+ * @throws SocketTLSContext exception variant with formatted message.
+ * @see RAISE_CTX_ERROR() for using pre-formatted error buffer.
+ * @see SOCKET_RAISE_MSG() underlying macro implementation.
  */
 #define RAISE_CTX_ERROR_MSG(exception, fmt, ...)                              \
   SOCKET_RAISE_MSG (SocketTLSContext, exception, fmt, ##__VA_ARGS__)
 
+/**
+ * @brief Raise SocketTLSContext exception with variadic formatted message.
+ * @ingroup security
+ * @param exception Specific exception type to raise.
+ * @param fmt printf-style format string.
+ * @param ... Variable arguments for formatting.
+ *
+ * Similar to RAISE_CTX_ERROR_MSG but uses __VA_ARGS__ for better handling of
+ * zero-argument cases in some compilers. Formats into tls_error_buf and raises.
+ *
+ * @throws SocketTLSContext exception with formatted details.
+ * @see RAISE_CTX_ERROR_MSG() primary formatted exception macro.
+ */
 #define RAISE_CTX_ERROR_FMT(exception, fmt, ...)                              \
   SOCKET_RAISE_MSG (SocketTLSContext, exception, fmt, __VA_ARGS__)
 
@@ -708,9 +816,15 @@ struct T
  */
 
 /**
- * @brief UNUSED - Suppress unused parameter warnings
+ * @brief Suppress compiler warnings for intentionally unused parameters.
  * @ingroup security
- * @param x Unused parameter
+ * @param x Parameter or variable that is intentionally unused (e.g., in asserts only).
+ *
+ * Casts the parameter to void to inform the compiler it is deliberately unused.
+ * Common in callback functions or when params are used conditionally.
+ *
+ * @note Use (void)param; style for single use; macro for readability.
+ * @see socket_util_unused() if available in core utils.
  */
 #define TLS_UNUSED(x) (void)(x)
 
@@ -720,23 +834,36 @@ struct T
  */
 
 /**
- * ctx_raise_openssl_error - Raise TLS exception with OpenSSL error
- * @context: Context description for error message
+ * @brief Raise a SocketTLSContext exception from an OpenSSL error.
+ * @ingroup security
+ * @param context Descriptive context for the error (e.g., "SSL_CTX_new failed").
  *
- * Formats OpenSSL error and raises SocketTLS_Failed.
+ * Formats the current OpenSSL error queue using tls_format_openssl_error and raises
+ * SocketTLSContext_Failed with the details in the thread-local exception.
+ * Clears the OpenSSL error queue after handling.
+ *
+ * @throws SocketTLSContext_Failed Always raised with formatted OpenSSL error details.
+ * @see tls_format_openssl_error() for error message formatting.
+ * @see ERR_get_error() for accessing OpenSSL error queue.
  */
 extern void ctx_raise_openssl_error (const char *context);
 
 /**
- * ctx_arena_strdup - Copy string to context arena with error handling
- * @param ctx TLS context with arena
- * @param str String to copy
- * @param error_msg Error message on allocation failure
+ * @brief Duplicate a string into the TLS context's arena.
+ * @ingroup security
+ * @param ctx TLS context providing the memory arena.
+ * @param str Null-terminated C string to duplicate.
+ * @param error_msg Context message for allocation failure exception.
+ * @return Pointer to the duplicated string in the arena.
+ * @throws SocketTLS_Failed if Arena_alloc fails.
  *
- * @return Arena-allocated copy of string
- * @throws SocketTLS_Failed on allocation failure
+ * Performs strlen + 1 allocation, copies the string, and handles allocation failure
+ * by raising an exception with the provided error context.
+ * Used to centralize arena-based string duplication in TLS context code.
  *
- * Consolidates repeated string copy patterns across TLS modules.
+ * @see ctx_arena_alloc() for general-purpose allocation helper.
+ * @see Arena_alloc() underlying memory allocation.
+ * @threadsafe Conditional - safe if arena is not concurrently modified.
  */
 static inline char *
 ctx_arena_strdup (SocketTLSContext_T ctx, const char *str,
@@ -753,15 +880,20 @@ ctx_arena_strdup (SocketTLSContext_T ctx, const char *str,
 }
 
 /**
- * ctx_arena_alloc - Allocate from context arena with error handling
- * @param ctx TLS context with arena
- * @param size Number of bytes to allocate
- * @param error_msg Error message on allocation failure
+ * @brief Allocate memory from the TLS context's arena with exception handling.
+ * @ingroup security
+ * @param ctx TLS context providing the memory arena.
+ * @param size Number of bytes to allocate.
+ * @param error_msg Context message for allocation failure exception.
+ * @return Pointer to allocated memory block.
+ * @throws SocketTLS_Failed if Arena_alloc returns NULL.
  *
- * @return Arena-allocated memory
- * @throws SocketTLS_Failed on allocation failure
+ * Allocates memory using the context's arena and raises an exception on failure
+ * with the specified error context. Centralizes allocation patterns in TLS code.
  *
- * Consolidates repeated allocation + error patterns across TLS modules.
+ * @see ctx_arena_strdup() for string-specific allocation.
+ * @see Arena_alloc() underlying allocator with file/line tracking.
+ * @threadsafe Conditional - safe if arena is thread-local or protected.
  */
 static inline void *
 ctx_arena_alloc (SocketTLSContext_T ctx, size_t size, const char *error_msg)
@@ -857,38 +989,62 @@ tls_pinning_init (TLSContextPinning *pinning)
 }
 
 /**
- * tls_pinning_extract_spki_hash - Extract SPKI SHA256 hash from certificate
- * @param cert X509 certificate
- * @param out_hash Output buffer (must be SOCKET_TLS_PIN_HASH_LEN bytes)
+ * @brief Compute SPKI SHA256 hash from X509 certificate for pinning verification.
+ * @ingroup security
+ * @param cert Input X509 certificate object.
+ * @param out_hash Output buffer for the 32-byte SHA256 hash (must be at least SOCKET_TLS_PIN_HASH_LEN).
+ * @return 0 on success, -1 on failure (e.g., invalid certificate or DER extraction error).
  *
- * @return 0 on success, -1 on failure
+ * Extracts the SubjectPublicKeyInfo (SPKI) DER from the certificate and computes its SHA256 digest.
+ * This method is recommended by OWASP for certificate pinning as it targets the public key material,
+ * surviving certificate renewals with the same key.
  *
- * Computes SHA256 of the SubjectPublicKeyInfo (SPKI) DER encoding.
- * This is the OWASP-recommended pinning approach.
+ * @see tls_pinning_check_chain() for verifying chain against pins.
+ * @see tls_pinning_find() for constant-time hash matching.
+ * @see RFC 7469 Certificate Transparency and Public Key Pinning Extension.
+ * @threadsafe Yes - pure computation on input objects.
  */
 extern int tls_pinning_extract_spki_hash (const X509 *cert,
                                           unsigned char *out_hash);
 
 /**
- * tls_pinning_check_chain - Check if any cert in chain matches a pin
- * @param ctx TLS context with pins configured
- * @param chain Certificate chain to check
+ * @brief Verify if any certificate in the chain matches a configured pin.
+ * @ingroup security
+ * @param ctx TLS context with pinning configuration.
+ * @param chain STACK_OF(X509) certificate chain (leaf first).
+ * @return 1 if a matching pin is found, 0 if no match (or pinning disabled).
  *
- * @return 1 if match found, 0 if no match
+ * Iterates through the certificate chain, extracts SPKI hashes for each cert,
+ * and checks against configured pins using constant-time comparison.
+ * Logs warnings or errors based on enforce mode; may raise exceptions in strict mode.
+ *
+ * Called during TLS verification callback to enforce pinning policy.
+ *
+ * @see tls_pinning_extract_spki_hash() for hash extraction.
+ * @see tls_pinning_find() for pin matching logic.
+ * @see SocketTLSContext_add_pin() for configuring pins.
+ * @threadsafe Yes - locks pinning mutex internally.
  */
 extern int tls_pinning_check_chain (SocketTLSContext_T ctx,
                                     const STACK_OF (X509) * chain);
 
 /**
- * tls_pinning_find - Constant-time search for pin in array
- * @param pins Array of pins
- * @param count Number of pins
- * @param hash Hash to search for
+ * @brief Perform constant-time search for a hash in pinning array.
+ * @ingroup security
+ * @param pins Array of TLSCertPin structures.
+ * @param count Number of pins in the array.
+ * @param hash 32-byte SHA256 hash to search for.
+ * @return 1 if exact match found, 0 otherwise.
  *
- * Uses constant-time comparison to prevent timing attacks.
- * Scans all pins regardless of match position.
+ * Scans the entire pin array using SocketCrypto_secure_compare for each entry
+ * to prevent timing side-channel attacks. Accumulates comparison results in
+ * constant time regardless of position.
  *
- * @return 1 if found, 0 if not found
+ * Critical for secure certificate pinning verification.
+ *
+ * @see SocketCrypto_secure_compare() for constant-time memcmp.
+ * @see tls_pinning_extract_spki_hash() for generating search hashes.
+ * @threadsafe No - caller must hold pinning lock.
  */
 extern int tls_pinning_find (const TLSCertPin *pins, size_t count,
                              const unsigned char *hash);

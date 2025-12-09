@@ -1,0 +1,37 @@
+var group__tls__config =
+[
+    [ "SocketTLSConfig_T", "group__tls__config.html#structSocketTLSConfig__T", [
+      [ "max_version", "group__tls__config.html#a5d3105c29493e11690b519dce33267a1", null ],
+      [ "min_version", "group__tls__config.html#a670bdce01faa6f2ff73dc3ce67b14db5", null ]
+    ] ],
+    [ "SOCKET_TLS13_CIPHERSUITES", "group__tls__config.html#ga8c3a6a178964eee6129e588f6f18861b", null ],
+    [ "SOCKET_TLS_BUFFER_SIZE", "group__tls__config.html#ga21c94d7068bbee12788fb1af5b90a393", null ],
+    [ "SOCKET_TLS_CRL_MAX_PATH_LEN", "group__tls__config.html#ga362c108e58b5204fa5141920db407ed0", null ],
+    [ "SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL", "group__tls__config.html#gadbfa56fdcb0238beabd54ceecdf8aba7", null ],
+    [ "SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL", "group__tls__config.html#ga1c682687285a8a50d6ade71bc8941560", null ],
+    [ "SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS", "group__tls__config.html#ga261f36b20bf9986a7f09fa9ed31b793e", null ],
+    [ "SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS", "group__tls__config.html#gab30f8121a683dd31fff11c10934b1137", null ],
+    [ "SOCKET_TLS_ERROR_BUFSIZE", "group__tls__config.html#gaa6df1c1fb5a0bcfe9a77b4dbb037c77f", null ],
+    [ "SOCKET_TLS_MAX_ALPN_LEN", "group__tls__config.html#gaccea5587344f8cc4d28f5d862dc2fa96", null ],
+    [ "SOCKET_TLS_MAX_ALPN_PROTOCOLS", "group__tls__config.html#ga31c8aa5bed2b0db51e53847e6b6bc22c", null ],
+    [ "SOCKET_TLS_MAX_ALPN_TOTAL_BYTES", "group__tls__config.html#gaa52cffca1d260f855e90946554827278", null ],
+    [ "SOCKET_TLS_MAX_CERT_CHAIN_DEPTH", "group__tls__config.html#ga4d5991568275ac5f8d677aea34656f0a", null ],
+    [ "SOCKET_TLS_MAX_CRL_FILES_IN_DIR", "group__tls__config.html#ga65c50bd768a726e7a7f036f32a58e49d", null ],
+    [ "SOCKET_TLS_MAX_CRL_SIZE", "group__tls__config.html#gabcf496a1134e5bff5ea583e6395f4a44", null ],
+    [ "SOCKET_TLS_MAX_LABEL_LEN", "group__tls__config.html#ga17ff6f02c79ea2099d8329a0e82a6000", null ],
+    [ "SOCKET_TLS_MAX_OCSP_RESPONSE_LEN", "group__tls__config.html#ga5249d9cf8a8fd02a5c2fcc84b393d160", null ],
+    [ "SOCKET_TLS_MAX_PATH_LEN", "group__tls__config.html#gabd952b038e2ba7a919097a1c3fca116d", null ],
+    [ "SOCKET_TLS_MAX_PINS", "group__tls__config.html#gacf406dfb5329bd8170f908b258660a72", null ],
+    [ "SOCKET_TLS_MAX_SNI_CERTS", "group__tls__config.html#gac5d4211edcb3114d8d9b26c22b50fac3", null ],
+    [ "SOCKET_TLS_MAX_SNI_LEN", "group__tls__config.html#ga2f3a226ee7b72b9153e60d985e90fd15", null ],
+    [ "SOCKET_TLS_MAX_VERSION", "group__tls__config.html#ga1bb6850b2066656bb9ca5be7bc4e7a26", null ],
+    [ "SOCKET_TLS_MIN_VERSION", "group__tls__config.html#ga3d1a24e799511be7b94d7cb83e30c826", null ],
+    [ "SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE", "group__tls__config.html#gae6650ea0075b47d60f5dcfc068c9cb69", null ],
+    [ "SOCKET_TLS_PIN_HASH_LEN", "group__tls__config.html#gab727e6443392c2d7a9b350723f4bf827", null ],
+    [ "SOCKET_TLS_PIN_INITIAL_CAPACITY", "group__tls__config.html#ga3e34a6589554ee91a77d39057681e22e", null ],
+    [ "SOCKET_TLS_POLL_INTERVAL_MS", "group__tls__config.html#ga5ca7b5f2bc6a521f8b7fb7b94196a94e", null ],
+    [ "SOCKET_TLS_SESSION_CACHE_SIZE", "group__tls__config.html#gaddb5f5a6224c2d4c50908c19baab9a2d", null ],
+    [ "SOCKET_TLS_SESSION_TIMEOUT_DEFAULT", "group__tls__config.html#ga5554586ea5eb4bf0a81c54963d0cbb2f", null ],
+    [ "SOCKET_TLS_SNI_INITIAL_CAPACITY", "group__tls__config.html#gaed59df6881f4fbedd888f060a563eca0", null ],
+    [ "SOCKET_TLS_TICKET_KEY_LEN", "group__tls__config.html#gac328cd9a67a36754bdeb92361fb9526b", null ]
+];

@@ -139,7 +139,7 @@ $(document).ready(function(){initNavTree('SocketReconnect_8h.html',''); initResi
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketReconnect_8h__dep__incl.svg" width="154" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketReconnect_8h__dep__incl.svg" width="419" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <p><a href="SocketReconnect_8h_source.html">Go to the source code of this file.</a></p>
@@ -152,7 +152,7 @@ Data Structures</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a></td></tr>
+<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85a14030855898b980c0f942cb15933b" id="r_a85a14030855898b980c0f942cb15933b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a85a14030855898b980c0f942cb15933b">SOCKET_RECONNECT_DEFAULT_INITIAL_DELAY_MS</a>&#160;&#160;&#160;100</td></tr>
 <tr class="separator:a85a14030855898b980c0f942cb15933b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -175,12 +175,10 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a58c9f07cd1532f285c63cb039c548eed" id="r_a58c9f07cd1532f285c63cb039c548eed"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a></td></tr>
-<tr class="separator:a58c9f07cd1532f285c63cb039c548eed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0d4cc030dc9989344d20a170b6410220" id="r_ga0d4cc030dc9989344d20a170b6410220"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga0d4cc030dc9989344d20a170b6410220">SocketReconnect_Callback</a>) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> old_state, <a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> new_state, void *userdata)</td></tr>
+<tr class="memitem:ga0d4cc030dc9989344d20a170b6410220" id="r_ga0d4cc030dc9989344d20a170b6410220"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga0d4cc030dc9989344d20a170b6410220">SocketReconnect_Callback</a>) (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn, <a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> old_state, <a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> new_state, void *userdata)</td></tr>
 <tr class="memdesc:ga0d4cc030dc9989344d20a170b6410220"><td class="mdescLeft">&#160;</td><td class="mdescRight">Type for state change notification callback.  <br /></td></tr>
 <tr class="separator:ga0d4cc030dc9989344d20a170b6410220"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae24b576ed367f734f434ef30ad8386c3" id="r_gae24b576ed367f734f434ef30ad8386c3"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a>) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int timeout_ms, void *userdata)</td></tr>
+<tr class="memitem:gae24b576ed367f734f434ef30ad8386c3" id="r_gae24b576ed367f734f434ef30ad8386c3"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a>) (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn, Socket_T socket, int timeout_ms, void *userdata)</td></tr>
 <tr class="memdesc:gae24b576ed367f734f434ef30ad8386c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Type for custom health check callback.  <br /></td></tr>
 <tr class="separator:gae24b576ed367f734f434ef30ad8386c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -203,58 +201,58 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga2064741bf60283ac3315823128fa2082" id="r_ga2064741bf60283ac3315823128fa2082"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082">SocketReconnect_new</a> (const char *host, int port, const <a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> *policy, <a class="el" href="group__connection__mgmt.html#ga0d4cc030dc9989344d20a170b6410220">SocketReconnect_Callback</a> callback, void *userdata)</td></tr>
+<tr class="memitem:ga2064741bf60283ac3315823128fa2082" id="r_ga2064741bf60283ac3315823128fa2082"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082">SocketReconnect_new</a> (const char *host, int port, const <a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> *policy, <a class="el" href="group__connection__mgmt.html#ga0d4cc030dc9989344d20a170b6410220">SocketReconnect_Callback</a> callback, void *userdata)</td></tr>
 <tr class="memdesc:ga2064741bf60283ac3315823128fa2082"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new reconnecting connection.  <br /></td></tr>
 <tr class="separator:ga2064741bf60283ac3315823128fa2082"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9d8b4dd4a693ba7acb20ff8e78defe91" id="r_ga9d8b4dd4a693ba7acb20ff8e78defe91"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga9d8b4dd4a693ba7acb20ff8e78defe91">SocketReconnect_free</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> *conn)</td></tr>
+<tr class="memitem:ga9d8b4dd4a693ba7acb20ff8e78defe91" id="r_ga9d8b4dd4a693ba7acb20ff8e78defe91"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga9d8b4dd4a693ba7acb20ff8e78defe91">SocketReconnect_free</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> *conn)</td></tr>
 <tr class="memdesc:ga9d8b4dd4a693ba7acb20ff8e78defe91"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free a reconnecting connection.  <br /></td></tr>
 <tr class="separator:ga9d8b4dd4a693ba7acb20ff8e78defe91"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2669844f3ad8a19649f2bc204eee8401" id="r_ga2669844f3ad8a19649f2bc204eee8401"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga2669844f3ad8a19649f2bc204eee8401">SocketReconnect_connect</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memitem:ga2669844f3ad8a19649f2bc204eee8401" id="r_ga2669844f3ad8a19649f2bc204eee8401"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga2669844f3ad8a19649f2bc204eee8401">SocketReconnect_connect</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:ga2669844f3ad8a19649f2bc204eee8401"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start connection process or queue for retry.  <br /></td></tr>
 <tr class="separator:ga2669844f3ad8a19649f2bc204eee8401"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa3794b861d4dad021064bae97ea12e78" id="r_gaa3794b861d4dad021064bae97ea12e78"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa3794b861d4dad021064bae97ea12e78">SocketReconnect_disconnect</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memitem:gaa3794b861d4dad021064bae97ea12e78" id="r_gaa3794b861d4dad021064bae97ea12e78"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa3794b861d4dad021064bae97ea12e78">SocketReconnect_disconnect</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:gaa3794b861d4dad021064bae97ea12e78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gracefully disconnect without triggering reconnect.  <br /></td></tr>
 <tr class="separator:gaa3794b861d4dad021064bae97ea12e78"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gace6fc797f7fe9c6cd3319f540db4b672" id="r_gace6fc797f7fe9c6cd3319f540db4b672"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gace6fc797f7fe9c6cd3319f540db4b672">SocketReconnect_reset</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memitem:gace6fc797f7fe9c6cd3319f540db4b672" id="r_gace6fc797f7fe9c6cd3319f540db4b672"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gace6fc797f7fe9c6cd3319f540db4b672">SocketReconnect_reset</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:gace6fc797f7fe9c6cd3319f540db4b672"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset reconnection statistics and state machine.  <br /></td></tr>
 <tr class="separator:gace6fc797f7fe9c6cd3319f540db4b672"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4c91b5c376059d9c35d2623cbc6bd7b5" id="r_ga4c91b5c376059d9c35d2623cbc6bd7b5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga4c91b5c376059d9c35d2623cbc6bd7b5">SocketReconnect_socket</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memitem:ga4c91b5c376059d9c35d2623cbc6bd7b5" id="r_ga4c91b5c376059d9c35d2623cbc6bd7b5"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga4c91b5c376059d9c35d2623cbc6bd7b5">SocketReconnect_socket</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:ga4c91b5c376059d9c35d2623cbc6bd7b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the underlying Socket_T when connected.  <br /></td></tr>
 <tr class="separator:ga4c91b5c376059d9c35d2623cbc6bd7b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac2a144f4c67fde49d88d0a53aa528c14" id="r_gac2a144f4c67fde49d88d0a53aa528c14"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gac2a144f4c67fde49d88d0a53aa528c14">SocketReconnect_state</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memitem:gac2a144f4c67fde49d88d0a53aa528c14" id="r_gac2a144f4c67fde49d88d0a53aa528c14"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gac2a144f4c67fde49d88d0a53aa528c14">SocketReconnect_state</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:gac2a144f4c67fde49d88d0a53aa528c14"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current reconnection state.  <br /></td></tr>
 <tr class="separator:gac2a144f4c67fde49d88d0a53aa528c14"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga490043a4bfaba8214f5d10a3c7b956de" id="r_ga490043a4bfaba8214f5d10a3c7b956de"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga490043a4bfaba8214f5d10a3c7b956de">SocketReconnect_isconnected</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memitem:ga490043a4bfaba8214f5d10a3c7b956de" id="r_ga490043a4bfaba8214f5d10a3c7b956de"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga490043a4bfaba8214f5d10a3c7b956de">SocketReconnect_isconnected</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:ga490043a4bfaba8214f5d10a3c7b956de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if reconnection is currently in connected state.  <br /></td></tr>
 <tr class="separator:ga490043a4bfaba8214f5d10a3c7b956de"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae798b2ae7451bbc7247fe71481190ee6" id="r_gae798b2ae7451bbc7247fe71481190ee6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gae798b2ae7451bbc7247fe71481190ee6">SocketReconnect_attempts</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memitem:gae798b2ae7451bbc7247fe71481190ee6" id="r_gae798b2ae7451bbc7247fe71481190ee6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gae798b2ae7451bbc7247fe71481190ee6">SocketReconnect_attempts</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:gae798b2ae7451bbc7247fe71481190ee6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get number of connection attempts since last success or reset.  <br /></td></tr>
 <tr class="separator:gae798b2ae7451bbc7247fe71481190ee6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9f80ff5ac565edacc7b5c08a263ec73d" id="r_ga9f80ff5ac565edacc7b5c08a263ec73d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga9f80ff5ac565edacc7b5c08a263ec73d">SocketReconnect_failures</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memitem:ga9f80ff5ac565edacc7b5c08a263ec73d" id="r_ga9f80ff5ac565edacc7b5c08a263ec73d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga9f80ff5ac565edacc7b5c08a263ec73d">SocketReconnect_failures</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:ga9f80ff5ac565edacc7b5c08a263ec73d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get count of consecutive connection failures.  <br /></td></tr>
 <tr class="separator:ga9f80ff5ac565edacc7b5c08a263ec73d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa2db0dea41db5bb5a7efeec947323da8" id="r_gaa2db0dea41db5bb5a7efeec947323da8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa2db0dea41db5bb5a7efeec947323da8">SocketReconnect_pollfd</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memitem:gaa2db0dea41db5bb5a7efeec947323da8" id="r_gaa2db0dea41db5bb5a7efeec947323da8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa2db0dea41db5bb5a7efeec947323da8">SocketReconnect_pollfd</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:gaa2db0dea41db5bb5a7efeec947323da8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get file descriptor for integration with poll/epoll/kqueue.  <br /></td></tr>
 <tr class="separator:gaa2db0dea41db5bb5a7efeec947323da8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4ca4375d521b1eddcc4cf3f75fe3b538" id="r_ga4ca4375d521b1eddcc4cf3f75fe3b538"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga4ca4375d521b1eddcc4cf3f75fe3b538">SocketReconnect_process</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memitem:ga4ca4375d521b1eddcc4cf3f75fe3b538" id="r_ga4ca4375d521b1eddcc4cf3f75fe3b538"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga4ca4375d521b1eddcc4cf3f75fe3b538">SocketReconnect_process</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:ga4ca4375d521b1eddcc4cf3f75fe3b538"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process I/O events from poll loop.  <br /></td></tr>
 <tr class="separator:ga4ca4375d521b1eddcc4cf3f75fe3b538"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf5bf725fe34ae1de58a3ee05fbe270fd" id="r_gaf5bf725fe34ae1de58a3ee05fbe270fd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaf5bf725fe34ae1de58a3ee05fbe270fd">SocketReconnect_next_timeout_ms</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memitem:gaf5bf725fe34ae1de58a3ee05fbe270fd" id="r_gaf5bf725fe34ae1de58a3ee05fbe270fd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaf5bf725fe34ae1de58a3ee05fbe270fd">SocketReconnect_next_timeout_ms</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:gaf5bf725fe34ae1de58a3ee05fbe270fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate milliseconds until next timer event or action.  <br /></td></tr>
 <tr class="separator:gaf5bf725fe34ae1de58a3ee05fbe270fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8dd2c1fe7147188da2be29f7623d2822" id="r_ga8dd2c1fe7147188da2be29f7623d2822"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga8dd2c1fe7147188da2be29f7623d2822">SocketReconnect_tick</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memitem:ga8dd2c1fe7147188da2be29f7623d2822" id="r_ga8dd2c1fe7147188da2be29f7623d2822"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga8dd2c1fe7147188da2be29f7623d2822">SocketReconnect_tick</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn)</td></tr>
 <tr class="memdesc:ga8dd2c1fe7147188da2be29f7623d2822"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advance internal timers and check for state transitions.  <br /></td></tr>
 <tr class="separator:ga8dd2c1fe7147188da2be29f7623d2822"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gacf257c08816a36a97c02b32e034c0ea0" id="r_gacf257c08816a36a97c02b32e034c0ea0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gacf257c08816a36a97c02b32e034c0ea0">SocketReconnect_set_health_check</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="group__connection__mgmt.html#gae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a> check)</td></tr>
+<tr class="memitem:gacf257c08816a36a97c02b32e034c0ea0" id="r_gacf257c08816a36a97c02b32e034c0ea0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gacf257c08816a36a97c02b32e034c0ea0">SocketReconnect_set_health_check</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn, <a class="el" href="group__connection__mgmt.html#gae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a> check)</td></tr>
 <tr class="memdesc:gacf257c08816a36a97c02b32e034c0ea0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configure custom health check callback.  <br /></td></tr>
 <tr class="separator:gacf257c08816a36a97c02b32e034c0ea0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4bc781f13408c70bfe9d28148ac87212" id="r_ga4bc781f13408c70bfe9d28148ac87212"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga4bc781f13408c70bfe9d28148ac87212">SocketReconnect_policy_defaults</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> *policy)</td></tr>
 <tr class="memdesc:ga4bc781f13408c70bfe9d28148ac87212"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize <a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure for reconnection backoff and circuit breaker policy.">SocketReconnect_Policy_T</a> with default values.  <br /></td></tr>
 <tr class="separator:ga4bc781f13408c70bfe9d28148ac87212"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae1f6cbe69ac37f9bae1efccfe98538ee" id="r_gae1f6cbe69ac37f9bae1efccfe98538ee"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gae1f6cbe69ac37f9bae1efccfe98538ee">SocketReconnect_send</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, const void *buf, size_t len)</td></tr>
+<tr class="memitem:gae1f6cbe69ac37f9bae1efccfe98538ee" id="r_gae1f6cbe69ac37f9bae1efccfe98538ee"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gae1f6cbe69ac37f9bae1efccfe98538ee">SocketReconnect_send</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn, const void *buf, size_t len)</td></tr>
 <tr class="memdesc:gae1f6cbe69ac37f9bae1efccfe98538ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send data, automatically reconnecting on connection loss.  <br /></td></tr>
 <tr class="separator:gae1f6cbe69ac37f9bae1efccfe98538ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga92485113993efb3a1302bbcb8f57a908" id="r_ga92485113993efb3a1302bbcb8f57a908"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga92485113993efb3a1302bbcb8f57a908">SocketReconnect_recv</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, void *buf, size_t len)</td></tr>
+<tr class="memitem:ga92485113993efb3a1302bbcb8f57a908" id="r_ga92485113993efb3a1302bbcb8f57a908"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga92485113993efb3a1302bbcb8f57a908">SocketReconnect_recv</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a> conn, void *buf, size_t len)</td></tr>
 <tr class="memdesc:ga92485113993efb3a1302bbcb8f57a908"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive data, triggering reconnect on EOF or error.  <br /></td></tr>
 <tr class="separator:ga92485113993efb3a1302bbcb8f57a908"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga0678924e4ecd0f43e1385d2e0b5354d4" id="r_ga0678924e4ecd0f43e1385d2e0b5354d4"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga0678924e4ecd0f43e1385d2e0b5354d4">SocketReconnect_state_name</a> (<a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> state)</td></tr>
@@ -278,26 +276,24 @@ Variables</h2></td></tr>
 <li>Transparent I/O passthrough with auto-reconnect on error</li>
 <li>Event loop integration via poll fd and timers</li>
 </ul>
-<p>State Machine:</p>
-<p>DISCONNECTED -&gt; CONNECTING -&gt; CONNECTED -&gt; DISCONNECTED</p>
-<p>| | v v BACKOFF &lt;--&mdash;&gt; CIRCUIT_OPEN</p>
+<p>State Machine: DISCONNECTED -&gt; CONNECTING -&gt; CONNECTED -&gt; DISCONNECTED | | v v BACKOFF &lt;--&mdash;&gt; CIRCUIT_OPEN</p>
 <p>Thread Safety:</p><ul>
-<li>SocketReconnect_T instances are NOT thread-safe</li>
+<li><a class="el" href="group__connection__mgmt.html#structSocketReconnect__T" title="Opaque context for managing reconnecting socket connections.">SocketReconnect_T</a> instances are NOT thread-safe</li>
 <li>Multiple instances can be used from different threads</li>
 <li>Callbacks are invoked from the same thread that calls process/tick</li>
 </ul>
-<p>Usage (I/O Passthrough): SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL, NULL, NULL); SocketReconnect_connect(conn); // Use SocketReconnect_send/recv - auto-reconnects on error ssize_t n = SocketReconnect_send(conn, data, len);</p>
+<p>Usage (I/O Passthrough): <a class="el" href="group__connection__mgmt.html#structSocketReconnect__T" title="Opaque context for managing reconnecting socket connections.">SocketReconnect_T</a> conn = SocketReconnect_new("example.com", 443, NULL, NULL, NULL); SocketReconnect_connect(conn); // Use SocketReconnect_send/recv - auto-reconnects on error ssize_t n = SocketReconnect_send(conn, data, len);</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082" title="Create a new reconnecting connection.">SocketReconnect_new()</a> for creating reconnection instances. </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html#ga2669844f3ad8a19649f2bc204eee8401" title="Start connection process or queue for retry.">SocketReconnect_connect()</a> for initiating connection. </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html#gae1f6cbe69ac37f9bae1efccfe98538ee" title="Send data, automatically reconnecting on connection loss.">SocketReconnect_send()</a> for transparent I/O operations. </dd>
 <dd>
-<a class="el" href="group__connection__mgmt.html#ga9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> for integration with connection pools. </dd>
+<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for integration with connection pools. </dd>
 <dd>
-<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> for HTTP client reconnection. </dd>
+SocketHTTPClient_T for HTTP client reconnection. </dd>
 <dd>
-SocketProxy_T for proxy reconnection scenarios. </dd></dl>
+core_io::SocketProxy_Conn_T for <a class="el" href="group__proxy.html" title="Transparent TCP proxy support with sync/async APIs.">Proxy Tunneling Module</a> reconnection scenarios. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 </div><h2 class="groupheader">Macro Definition Documentation</h2>
@@ -313,7 +309,7 @@ SocketProxy_T for proxy reconnection scenarios. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00146">146</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00161">161</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -329,7 +325,7 @@ SocketProxy_T for proxy reconnection scenarios. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00142">142</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00157">157</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -345,7 +341,7 @@ SocketProxy_T for proxy reconnection scenarios. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00150">150</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00165">165</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -361,7 +357,7 @@ SocketProxy_T for proxy reconnection scenarios. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00154">154</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00169">169</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -377,7 +373,7 @@ SocketProxy_T for proxy reconnection scenarios. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00122">122</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00137">137</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -393,7 +389,7 @@ SocketProxy_T for proxy reconnection scenarios. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00134">134</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00149">149</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -409,7 +405,7 @@ SocketProxy_T for proxy reconnection scenarios. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00138">138</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00153">153</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -425,7 +421,7 @@ SocketProxy_T for proxy reconnection scenarios. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00126">126</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00141">141</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -441,7 +437,7 @@ SocketProxy_T for proxy reconnection scenarios. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00130">130</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00145">145</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -452,29 +448,12 @@ SocketProxy_T for proxy reconnection scenarios. </dd></dl>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a></td>
+          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__connection__mgmt.html#structSocketReconnect__T">SocketReconnect_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00052">52</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="a58c9f07cd1532f285c63cb039c548eed" name="a58c9f07cd1532f285c63cb039c548eed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a58c9f07cd1532f285c63cb039c548eed">&#9670;&#160;</a></span>SocketReconnect_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct <a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>* <a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00053">53</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00051">51</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>

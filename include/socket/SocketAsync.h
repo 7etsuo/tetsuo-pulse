@@ -17,7 +17,7 @@
  * @see @ref http "HTTP" modules for async HTTP/2 streams.
  * @see docs/ASYNC_IO.md for usage examples and performance tuning.
  */
-/* Happy Eyeballs module documentation updated and grouped under async_io. See include/socket/SocketHappyEyeballs.h */
+
 
 #ifndef SOCKETASYNC_INCLUDED
 #define SOCKETASYNC_INCLUDED
@@ -82,7 +82,7 @@ typedef struct T *T;
  * - Internal state corruption or resource exhaustion
  * - Platform-specific async errors (e.g., io_uring ring corruption)
  *
- * @see @ref error-handling.mdc for TRY/EXCEPT patterns.
+ * @see docs/ERROR_HANDLING.md for TRY/EXCEPT patterns.
  * @see SocketAsync_new() which may throw on init failure.
  * @see SocketAsync_send()/recv() which may throw on submit failure.
  */
@@ -133,7 +133,10 @@ typedef void (*SocketAsync_Callback) (Socket_T socket, ssize_t bytes, int err,
  * @see docs/ASYNC_IO.md for backend-specific flag support.
  */
 typedef enum {
-  ASYNC_FLAG_NONE = 0, /**< Default operation with no special features enabled. */
+  /**
+   * @brief Default operation with no special features enabled.
+   */
+  ASYNC_FLAG_NONE = 0,
 
   /**
    * @brief Request zero-copy I/O to minimize data copying.
@@ -211,7 +214,7 @@ extern void SocketAsync_free (T *async);
  * @param flags Operation flags (ASYNC_FLAG_ZERO_COPY, etc.).
  * @return Request ID (> 0) on success, 0 on failure.
  * @throws SocketAsync_Failed if submission fails.
- * @note Thread-safe: Yes - uses internal mutex for request tracking.
+ * @threadsafe Yes - uses internal mutex for request tracking.
  *
  * Operation is submitted immediately. Completion will be delivered
  * via callback when data is sent (or error occurs). Callback is invoked
@@ -246,7 +249,7 @@ extern unsigned SocketAsync_send (T async, Socket_T socket, const void *buf,
  * @param flags Operation flags (currently unused).
  * @return Request ID (> 0) on success, 0 on failure.
  * @throws SocketAsync_Failed if submission fails.
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  *
  * Callback receives bytes received (0 = EOF, < 0 = error).
  * Buffer must remain valid until callback is invoked.
@@ -265,7 +268,7 @@ extern unsigned SocketAsync_recv (T async, Socket_T socket, void *buf,
  * @param async Async context.
  * @param request_id Request ID returned from send/recv.
  * @return 0 on success, -1 if request not found or already completed.
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  *
  * Cancellation is best-effort. Operation may complete before
  * cancellation takes effect.
@@ -281,7 +284,7 @@ extern int SocketAsync_cancel (T async, unsigned request_id);
  * @param async Async context.
  * @param timeout_ms Timeout in milliseconds (0 = non-blocking).
  * @return Number of completions processed.
- * @note Thread-safe: Yes - uses internal mutex.
+ * @threadsafe Yes - uses internal mutex.
  *
  * This is called automatically by SocketPoll_wait(). Applications
  * typically don't need to call this directly.
@@ -296,7 +299,7 @@ extern int SocketAsync_process_completions (T async, int timeout_ms);
  * @ingroup async_io
  * @param async Async context (read-only).
  * @return Non-zero if async I/O is available, 0 if fallback mode.
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see SocketAsync_backend_name() for getting the backend name.
  */
 extern int SocketAsync_is_available (const T async);
@@ -306,7 +309,7 @@ extern int SocketAsync_is_available (const T async);
  * @ingroup async_io
  * @param async Async context (read-only).
  * @return String describing backend ("io_uring", "kqueue", "edge-triggered").
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see SocketAsync_is_available() for checking availability.
  */
 extern const char *SocketAsync_backend_name (const T async);

@@ -42,13 +42,14 @@
  * @see TRY/EXCEPT/FINALLY macros for exception handling.
  * @see Except_raise() for internal exception raising function.
  * @see @ref core_io for modules that use this exception system.
+ * @see docs/ERROR_HANDLING.md for detailed exception handling documentation and best practices.
  */
 
 /**
  * @brief Exception structure for structured error handling.
  * @ingroup foundation
  *
- * Represents an exception with a type and human-readable reason string.
+ * Value type (not opaque) representing an exception with a type and human-readable reason string.
  * Exceptions are raised using RAISE() and caught with TRY/EXCEPT blocks.
  *
  * @see TRY/EXCEPT/FINALLY macros for exception handling.
@@ -170,6 +171,7 @@ void Except_raise (const Except_T *e, const char *file, int line);
 /**
  * @brief Return from function while cleaning up exception stack.
  * @ingroup foundation
+ * @threadsafe No - modifies thread-local exception stack (use within same-thread TRY context).
  *
  * Safe return macro that pops the current exception frame before returning.
  * Must be used within TRY blocks when returning early to prevent stack leaks.

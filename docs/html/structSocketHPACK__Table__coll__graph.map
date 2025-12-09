@@ -1,0 +1,5 @@
+<map id="SocketHPACK_Table_T" name="SocketHPACK_Table_T">
+<area shape="rect" id="Node000001" title="Dynamic table for storing header fields in HPACK compression (RFC 7541)." alt="" coords="5,93,167,119"/>
+<area shape="rect" id="Node000002" href="$group__http.html#structHPACK__DynamicEntry" title="Entry in the HPACK dynamic table storing a header field name&#45;value pair." alt="" coords="7,5,165,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="89,45,89,93,83,93,83,45"/>
+</map>

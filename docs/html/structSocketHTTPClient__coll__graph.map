@@ -1,0 +1,27 @@
+<map id="SocketHTTPClient_T" name="SocketHTTPClient_T">
+<area shape="rect" id="Node000001" title="Main HTTP client instance managing configuration, pool, auth, and state." alt="" coords="325,493,472,519"/>
+<area shape="rect" id="Node000002" href="$group__http__client.html#structSocketHTTPClient__Config" title="HTTP client configuration structure." alt="" coords="214,405,391,431"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="327,438,387,491,384,495,324,442"/>
+<area shape="rect" id="Node000003" href="$group__security.html#structSocketTLSContext__T" title="TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,..." alt="" coords="166,181,314,207"/>
+<area shape="poly" id="edge14_Node000001_Node000003" title=" " alt="" coords="223,219,200,250,179,290,166,335,165,358,169,381,179,403,194,423,213,440,234,455,281,477,328,491,326,496,279,482,231,459,209,444,190,427,175,406,164,382,160,358,161,335,174,288,196,247,219,216"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="243,220,246,264,255,313,276,364,298,404,293,406,271,367,249,314,240,265,237,221"/>
+<area shape="poly" id="edge5_Node000003_Node000003" title=" " alt="" coords="329,186,341,194,332,201,315,204,314,199,330,197,335,194,327,190"/>
+<area shape="rect" id="Node000008" href="$group__proxy.html#structSocketProxy__Config" title="Configuration structure for proxy connections." alt="" coords="334,279,477,304"/>
+<area shape="poly" id="edge9_Node000008_Node000003" title=" " alt="" coords="273,211,387,276,384,281,271,216"/>
+<area shape="rect" id="Node000004" href="$structTLSContextSNICerts.html" title="Structure for managing SNI certificate mappings in TLS context." alt="" coords="5,93,152,119"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="114,123,219,179,217,183,111,128"/>
+<area shape="rect" id="Node000005" href="$group__security.html#structTLSContextALPN" title="Configuration for ALPN protocol negotiation." alt="" coords="177,93,303,119"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="243,133,243,181,237,181,237,133"/>
+<area shape="rect" id="Node000006" href="$group__security.html#structTLSContextPinning" title="TLSContextPinning &#45; Certificate pinning configuration." alt="" coords="327,93,462,119"/>
+<area shape="poly" id="edge6_Node000003_Node000006" title=" " alt="" coords="363,128,262,183,260,179,361,123"/>
+<area shape="rect" id="Node000007" href="$group__security.html#structTLSCertPin" title="TLSCertPin &#45; Single certificate pin entry (SPKI SHA256 hash)" alt="" coords="349,5,440,31"/>
+<area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="397,45,397,93,392,93,392,45"/>
+<area shape="poly" id="edge8_Node000002_Node000008" title=" " alt="" coords="389,316,314,407,310,404,385,313"/>
+<area shape="rect" id="Node000009" href="$group__http.html#structHTTPPool" title="HTTP connection pool managing reusable connections by host:port key." alt="" coords="416,405,499,431"/>
+<area shape="poly" id="edge10_Node000001_Node000009" title=" " alt="" coords="444,444,409,494,405,491,439,441"/>
+<area shape="rect" id="Node000010" href="$group__http.html#structHTTPPoolEntry" title="HTTP connection pool entry for reusing connections to the same host:port." alt="" coords="501,279,616,304"/>
+<area shape="poly" id="edge11_Node000009_Node000010" title=" " alt="" coords="543,316,469,407,465,404,539,313"/>
+<area shape="poly" id="edge12_Node000010_Node000010" title=" " alt="" coords="631,281,639,285,643,292,634,300,617,304,616,299,632,296,637,291,635,289,629,286"/>
+<area shape="rect" id="Node000011" href="$group__http__client.html#structSocketHTTPClient__Auth" title="Authentication credentials structure." alt="" coords="523,405,690,431"/>
+<area shape="poly" id="edge13_Node000001_Node000011" title=" " alt="" coords="567,438,428,496,426,491,565,434"/>
+</map>

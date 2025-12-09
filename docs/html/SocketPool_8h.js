@@ -1,11 +1,9 @@
 var SocketPool_8h =
 [
     [ "T", "group__connection__mgmt.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
-    [ "Connection_T", "group__connection__mgmt.html#ga424a0221f5eef0991c244d83d02d8b2c", null ],
     [ "SocketPool_ConnectCallback", "group__connection__mgmt.html#ga5441c8cf779cd74fbb9f39bd322c33bd", null ],
     [ "SocketPool_DrainCallback", "group__connection__mgmt.html#gad7679db7b1be62e465d9896944f3ad20", null ],
     [ "SocketPool_ResizeCallback", "group__connection__mgmt.html#ga6ec7b7f0dae3b1366f32f93294dc8b4a", null ],
-    [ "SocketPool_T", "group__connection__mgmt.html#ga9b894da8ce452934ac1e3ab806060ae9", null ],
     [ "SocketPool_ValidationCallback", "group__connection__mgmt.html#ga9a848b27d2034b028ceb2febdc6471b5", null ],
     [ "SocketPool_ConnHealth", "group__connection__mgmt.html#ga92931382e16ec0f93619d6fe95c68fdf", [
       [ "POOL_CONN_HEALTHY", "group__connection__mgmt.html#gga92931382e16ec0f93619d6fe95c68fdfa92d5c5da87579cc06fcbe3ff7f3c312e", null ],

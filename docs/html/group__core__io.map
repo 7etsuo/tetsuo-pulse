@@ -1,0 +1,6 @@
+<map id="Core I/O Modules" name="Core I/O Modules">
+<area shape="rect" id="Node000001" title="Fundamental socket operations for TCP, UDP, and Unix domain sockets.The Core I/O group provides the b..." alt="" coords="5,73,131,99"/>
+<area shape="rect" id="Node000002" href="$group__dns.html" title="Thread pool&#45;based DNS resolution with guaranteed timeouts and SocketPoll integration." alt="" coords="308,5,512,31"/>
+<area shape="rect" id="Node000004" href="$group__proxy.html" title="Transparent TCP proxy support with sync/async APIs." alt="" coords="329,64,491,89"/>
+<area shape="rect" id="Node000003" href="$group__proxy__private.html" title=" " alt="" coords="330,125,490,165"/>
+</map>

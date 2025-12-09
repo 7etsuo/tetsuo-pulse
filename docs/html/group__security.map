@@ -1,0 +1,6 @@
+<map id="Security Modules" name="Security Modules">
+<area shape="rect" id="Node000002" href="$group__dtls__config.html" title="Secure default constants for DTLS protocol parameters, MTU management, cookie protection,..." alt="" coords="321,5,459,45"/>
+<area shape="rect" id="Node000003" href="$group__dtls__context.html" title="Secure DTLS context configuration and lifecycle management." alt="" coords="297,70,483,95"/>
+<area shape="rect" id="Node000001" title="TLS encryption and security protection mechanisms." alt="" coords="5,87,128,113"/>
+<area shape="rect" id="Node000004" href="$group__tls__config.html" title="Secure default constants for TLS protocol versions, cipher suites, timeouts, buffers,..." alt="" coords="295,129,485,154"/>
+</map>

@@ -3,15 +3,17 @@
 
 /**
  * @file SocketReconnect-private.h
- * @ingroup connection_mgmt
  * @brief Internal implementation details for automatic reconnection framework.
+ * @ingroup connection_mgmt
+ * @defgroup reconnect_private SocketReconnect Private Implementation Details
+ * @ingroup connection_mgmt
  * @internal
  *
  * This header contains private structures and helper functions for the
  * SocketReconnect module. Not intended for public use or direct inclusion.
  *
  * @see SocketReconnect.h for the public API.
- * @see @ref connection_mgmt "Connection Management Modules" group.
+ * @see @ref connection_mgmt Connection Management Modules.
  */
 
 #include "core/Arena.h"
@@ -135,6 +137,7 @@ struct SocketReconnect_T
 /**
  * @brief Get current monotonic time in milliseconds.
  * @internal
+ * @threadsafe Yes - reentrant system clock query.
  * @return Current monotonic time in milliseconds (int64_t).
  *
  * Internal helper using Socket_get_monotonic_ms() to ensure monotonic time
@@ -152,6 +155,7 @@ socketreconnect_get_time_ms(void)
 /**
  * @brief Calculate elapsed time since a start timestamp.
  * @internal
+ * @threadsafe Yes - simple arithmetic on input values.
  * @param start_ms Start time from socketreconnect_get_time_ms().
  * @return Elapsed milliseconds since start (non-negative).
  *
@@ -205,5 +209,9 @@ socketreconnect_random_double(void)
     return (double)seed / (double)0xFFFFFFFFU;
   }
 }
+
+/**
+ * @} -- reconnect_private
+ */
 
 #endif /* SOCKETRECONNECT_PRIVATE_INCLUDED */

@@ -1361,7 +1361,7 @@ proxy_process_connecting (struct SocketProxy_Conn_T *conn)
 #if SOCKET_HAS_TLS
       if (conn->type == SOCKET_PROXY_HTTPS)
         {
-          struct SocketTLSConfig_T tls_cfg;
+          SocketTLSConfig_T tls_cfg;
           SocketTLS_config_defaults (&tls_cfg);
           /* Harden TLS config for proxy connection */
           tls_cfg.min_version = SOCKET_TLS_MIN_VERSION; /* TLS1.3 only */
@@ -1854,7 +1854,7 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
 #if SOCKET_HAS_TLS
   if (conn->type == SOCKET_PROXY_HTTPS)
     {
-      struct SocketTLSConfig_T tls_cfg;
+      SocketTLSConfig_T tls_cfg;
       SocketTLS_config_defaults (&tls_cfg);
       /* Harden for proxy TLS */
       tls_cfg.min_version = TLS_VERSION_1_3;

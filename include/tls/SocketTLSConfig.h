@@ -25,6 +25,23 @@
  */
 
 /**
+ * @defgroup tls_config TLS Configuration Constants
+ * @ingroup security
+ * @brief Secure default constants for TLS protocol versions, cipher suites, timeouts, buffers, and security limits.
+ *
+ * These constants define secure defaults for TLS operations and can be overridden before including this header.
+ * Enforces TLS 1.3-only policy, modern ciphers, and protection against common attacks (DoS, overflows).
+ * Provides stubs when TLS support is disabled (@ref SOCKET_HAS_TLS).
+ *
+ * @{
+ *
+ * @see SocketTLSConfig_T for the configuration structure.
+ * @see SocketTLS_config_defaults() for initializing configurations.
+ * @see @ref SocketTLSContext_T for applying configurations to contexts.
+ * @see SocketDTLSConfig.h for DTLS-specific constants.
+ */
+
+/**
  * @brief TLS configuration parameters for customizing TLS protocol versions and other settings.
  * @ingroup security
  *
@@ -34,13 +51,7 @@
  *
  * @see SocketTLS_config_defaults() for initialization.
  * @see SocketTLSContext_new() for creating contexts with custom config.
- */
-/**
- * @brief TLS configuration parameters.
- * @ingroup security
- */
-struct SocketTLSConfig_T
-{
+ */struct SocketTLSConfig_T{
   /** Minimum supported TLS protocol version (e.g., TLS1_3_VERSION).
    * Default value set by SocketTLS_config_defaults() to SOCKET_TLS_MIN_VERSION (TLS1_3_VERSION).
    * @see SOCKET_TLS_MIN_VERSION
@@ -52,8 +63,10 @@ struct SocketTLSConfig_T
    */
   int max_version;
   /* Expand with ciphers, timeouts, etc. as API evolves */
+
 };
 
+typedef struct SocketTLSConfig_T SocketTLSConfig_T;
 /**
  * @brief Initialize the TLS configuration with secure library defaults.
  * @ingroup security
@@ -73,7 +86,7 @@ struct SocketTLSConfig_T
  * @see SocketTLSContext_new() to create a TLS context using this configuration.
  * @see @ref security "Security Modules" for overview.
  */
-extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
+extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 
 #if SOCKET_HAS_TLS
 
@@ -88,7 +101,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Minimum TLS protocol version - STRICT TLS 1.3 ONLY
- * @ingroup security
+ * @ingroup tls_config
  *
  * Enforces TLS 1.3 minimum for perfect forward secrecy and modern security.
  * Legacy protocols (SSL 2.0/3.0, TLS 1.0/1.1/1.2) are disabled to prevent
@@ -101,7 +114,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Maximum TLS protocol version - STRICT TLS 1.3 ONLY
- * @ingroup security
+ * @ingroup tls_config
  *
  * Limits maximum protocol to TLS 1.3 for security. TLS 1.4+ not yet defined.
  * This ensures consistent security guarantees across all connections.
@@ -116,7 +129,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief TLS 1.3 Modern Cipher Suites (ECDHE-PFS only, AEAD ciphers)
- * @ingroup security
+ * @ingroup tls_config
  *
  * Modern cipher suites providing perfect forward secrecy and authenticated
  * encryption with associated data (AEAD). Prioritizes ChaCha20-Poly1305
@@ -141,7 +154,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Default TLS handshake timeout in milliseconds
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum time allowed for TLS handshake completion. 30 seconds provides
  * reasonable security (prevents slowloris-style attacks) while allowing
@@ -155,7 +168,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Default TLS shutdown timeout in milliseconds
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum time to wait for graceful TLS connection shutdown. Shorter than
  * handshake timeout since shutdown should complete quickly. 5 seconds
@@ -167,7 +180,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief TLS handshake poll interval for non-blocking operations
- * @ingroup security
+ * @ingroup tls_config
  *
  * Polling interval used by SocketTLS_handshake_loop() for event-driven
  * handshake completion. 100ms balances responsiveness with CPU usage.
@@ -179,7 +192,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief TLS read/write buffer size
- * @ingroup security
+ * @ingroup tls_config
  *
  * Buffer size for TLS record I/O operations. Set to maximum TLS record
  * size (16384 bytes) to ensure complete records can be processed in
@@ -192,7 +205,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Maximum certificate chain depth for verification
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum depth of certificate chains accepted during verification.
  * Prevents excessive memory usage from maliciously long chains.
@@ -204,7 +217,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Maximum ALPN protocol name length
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum length for individual ALPN protocol names in bytes.
  * Conforms to RFC 7301 Section 3.2 protocol identifier limits.
@@ -216,7 +229,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Maximum total bytes for ALPN protocol list
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum total size of ALPN protocol list to prevent DoS attacks
  * during parsing. Limits memory allocation and processing time.
@@ -228,7 +241,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief SNI hostname length limit
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum length for Server Name Indication hostnames.
  * Conforms to DNS hostname limits (253 chars) with padding.
@@ -240,7 +253,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief TLS session cache size (number of cached sessions)
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum number of TLS sessions to cache for resumption.
  * Larger caches improve performance for frequent reconnections
@@ -253,7 +266,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief TLS error buffer size for detailed error messages
- * @ingroup security
+ * @ingroup tls_config
  *
  * Buffer size for thread-local error messages used in exception handling.
  * Must accommodate detailed OpenSSL error strings and context information.
@@ -265,7 +278,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief OpenSSL error string buffer size for temporary formatting
- * @ingroup security
+ * @ingroup tls_config
  *
  * Temporary buffer for formatting individual OpenSSL error strings.
  * Used during error queue processing. 256 bytes accommodates typical
@@ -277,7 +290,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Maximum number of SNI certificates per context
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum number of certificate/key pairs that can be configured
  * for Server Name Indication (SNI) virtual hosting. 100 certificates
@@ -289,7 +302,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Initial SNI certificate array capacity
- * @ingroup security
+ * @ingroup tls_config
  *
  * Starting capacity for SNI certificate array. Array doubles in size
  * when capacity is exceeded. 4 provides reasonable starting point
@@ -301,7 +314,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Maximum number of ALPN protocols per context
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum number of Application-Layer Protocol Negotiation (ALPN)
  * protocols that can be advertised. 16 protocols covers all
@@ -313,7 +326,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Session ticket encryption key length
- * @ingroup security
+ * @ingroup tls_config
  *
  * Length of the key used for encrypting TLS session tickets.
  * OpenSSL uses 80 bytes: 16 bytes for name, 32 bytes AES key,
@@ -326,7 +339,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Default TLS session cache timeout in seconds
- * @ingroup security
+ * @ingroup tls_config
  *
  * Default lifetime for cached TLS sessions. 300 seconds (5 minutes)
  * balances security (prevents stale sessions) with performance
@@ -338,7 +351,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Maximum OCSP response size
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum size for Online Certificate Status Protocol (OCSP) responses.
  * 64KB accommodates large OCSP responses while preventing memory exhaustion.
@@ -350,7 +363,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Maximum file path length for certificates/keys
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum length for certificate and key file paths.
  * 4096 bytes accommodates long paths in complex directory structures
@@ -362,7 +375,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Maximum DNS label length per RFC 1035
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum length for individual DNS hostname labels.
  * RFC 1035 specifies 63 characters maximum for DNS labels.
@@ -374,12 +387,12 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Certificate pinning configuration
- * @ingroup security
+ * @ingroup tls_config
  */
 
 /**
  * @brief Maximum number of certificate pins per context
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum number of Subject Public Key Info (SPKI) SHA256 pins
  * that can be configured per TLS context. 32 pins supports
@@ -391,7 +404,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Certificate pin hash length (SHA256)
- * @ingroup security
+ * @ingroup tls_config
  *
  * Length of SHA256 hash used for certificate pinning.
  * SHA256 produces 32-byte (256-bit) hashes for strong collision
@@ -403,7 +416,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Initial certificate pin array capacity
- * @ingroup security
+ * @ingroup tls_config
  *
  * Starting capacity for pin array. Array doubles when capacity
  * is exceeded. 4 provides reasonable starting point for most
@@ -415,12 +428,12 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief CRL auto-refresh configuration
- * @ingroup security
+ * @ingroup tls_config
  */
 
 /**
  * @brief Minimum CRL refresh interval in seconds
- * @ingroup security
+ * @ingroup tls_config
  *
  * Minimum time between CRL refresh attempts. 60 seconds prevents
  * excessive refresh attempts that could overwhelm CRL distribution
@@ -432,7 +445,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Maximum CRL refresh interval in seconds
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum time between CRL refresh attempts. 1 year (365*24*3600 seconds)
  * ensures CRLs don't become stale even with very long intervals.
@@ -445,7 +458,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Maximum CRL file size
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum size allowed for Certificate Revocation List (CRL) files.
  * 10MB accommodates large CRLs from major CAs while preventing
@@ -462,7 +475,7 @@ extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 /**
  * @brief Maximum CRL path length
- * @ingroup security
+ * @ingroup tls_config
  *
  * Maximum length for CRL file paths. Same as certificate paths
  * for consistency. 4096 bytes accommodates complex directory structures.
@@ -489,4 +502,7 @@ typedef void X509_STORE;
 
 #endif /* SOCKET_HAS_TLS */
 
+/**
+ * @} tls_config
+ */
 #endif /* SOCKETTLSCONFIG_INCLUDED */

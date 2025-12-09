@@ -14,7 +14,7 @@
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSConfig);
 
 void
-SocketTLS_config_defaults (struct SocketTLSConfig_T *config)
+SocketTLS_config_defaults (SocketTLSConfig_T *config)
 {
   if (!config)
     return;
@@ -30,7 +30,7 @@ SocketTLS_config_defaults (struct SocketTLSConfig_T *config)
 }
 
 SocketTLSContext_T
-SocketTLSContext_new (const struct SocketTLSConfig_T *config)
+SocketTLSContext_new (const SocketTLSConfig_T *config)
 {
   /* Stub impl: delegate to new_client with defaults if config NULL */
   SocketTLSContext_T ctx;
@@ -57,13 +57,13 @@ SocketTLSContext_new (const struct SocketTLSConfig_T *config)
 #else /* !SOCKET_HAS_TLS */
 
 void
-SocketTLS_config_defaults (struct SocketTLSConfig_T *config)
+SocketTLS_config_defaults (SocketTLSConfig_T *config)
 {
   (void)config;
 }
 
 SocketTLSContext_T
-SocketTLSContext_new (const struct SocketTLSConfig_T *config)
+SocketTLSContext_new (const SocketTLSConfig_T *config)
 {
   (void)config;
   return NULL; /* Stub */

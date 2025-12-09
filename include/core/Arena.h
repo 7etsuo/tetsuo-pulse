@@ -7,8 +7,8 @@
  * - Arena (memory): Region-based memory allocation with fast
  * allocation/deallocation
  * - Except (exceptions): Structured exception handling with TRY/EXCEPT/FINALLY
- * - SocketUtil (utilities): Hash functions, error handling, metrics, and
- * logging
+ * - SocketUtil (utilities): Hash functions, error handling, logging
+ * - SocketMetrics (metrics): Comprehensive counters, gauges, and histograms for observability and monitoring
  * - SocketConfig (configuration): Global configuration management
  *
  * @see @ref core_io for socket primitives built on foundation.
@@ -57,7 +57,7 @@
  * @see @ref Arena_T for the opaque arena type.
  * @see @ref Arena_new() for arena creation.
  * @see @ref Arena_dispose() for cleanup.
- * @see @ref memory-management.mdc for detailed memory management patterns.
+
  */
 
 #include "core/Except.h"
@@ -72,7 +72,7 @@
  *
  * @see Arena_new() for creation.
  * @see Arena_dispose() for cleanup.
- * @see @ref memory-management.mdc for usage patterns.
+
  */
 #define T Arena_T
 typedef struct T *T;
@@ -86,20 +86,20 @@ typedef struct T *T;
  * - Mutex initialization fails
  * - Arena expansion fails due to system limits
  *
- * @see @ref error-handling.mdc for exception handling patterns.
+ * @see ERROR_HANDLING.md for exception handling patterns.
  */
 extern const Except_T Arena_Failed;
 
 /**
  * @brief Create a new memory arena.
  * @ingroup foundation
- * @return New arena instance, or NULL on allocation failure.
+ * @return New arena instance.
  * @throws Arena_Failed if malloc fails or mutex initialization fails.
  * @threadsafe Yes
  * @see Arena_dispose() for cleanup.
  * @see ALLOC() macro for convenience.
  * @see Arena_clear() for selective cleanup.
- * @see @ref memory-management.mdc for arena usage patterns.
+
  */
 extern T Arena_new (void);
 
@@ -120,14 +120,14 @@ extern void Arena_dispose (T *ap);
  * @param nbytes Number of bytes to allocate.
  * @param file Source file (for debugging).
  * @param line Source line (for debugging).
- * @return Pointer to allocated memory, or NULL on failure.
+ * @return Pointer to allocated memory.
  * @throws Arena_Failed if allocation fails.
  * @threadsafe Yes
  * @note Memory is aligned appropriately for any data type.
  * @see ALLOC() macro for convenience.
  * @see Arena_calloc() for zero-initialized allocation.
  * @see Arena_new() for arena creation.
- * @see @ref memory-management.mdc for allocation patterns.
+
  */
 extern void *Arena_alloc (T arena, size_t nbytes, const char *file, int line);
 
@@ -139,7 +139,7 @@ extern void *Arena_alloc (T arena, size_t nbytes, const char *file, int line);
  * @param nbytes Size of each element.
  * @param file Source file (for debugging).
  * @param line Source line (for debugging).
- * @return Pointer to zeroed memory, or NULL on failure.
+ * @return Pointer to zeroed memory.
  * @throws Arena_Failed if allocation fails.
  * @threadsafe Yes
  * @see CALLOC() macro for convenience.
@@ -156,7 +156,7 @@ extern void *Arena_calloc (T arena, size_t count, size_t nbytes,
  * @see Arena_dispose() for full cleanup.
  * @see Arena_new() for creation.
  * @see Arena_alloc() for allocation after clearing.
- * @see @ref memory-management.mdc for arena lifecycle management.
+
  */
 extern void Arena_clear (T arena);
 
@@ -165,7 +165,7 @@ extern void Arena_clear (T arena);
  * @ingroup foundation
  * @param arena Arena to allocate from.
  * @param nbytes Number of bytes to allocate.
- * @return Pointer to allocated memory, or NULL on failure.
+ * @return Pointer to allocated memory.
  * @throws Arena_Failed if allocation fails.
  * @threadsafe Yes
  * @note Automatically passes __FILE__ and __LINE__ for debugging.
@@ -181,7 +181,7 @@ extern void Arena_clear (T arena);
  * @param arena Arena to allocate from.
  * @param count Number of elements.
  * @param nbytes Size of each element.
- * @return Pointer to zeroed memory, or NULL on failure.
+ * @return Pointer to zeroed memory.
  * @throws Arena_Failed if allocation fails.
  * @threadsafe Yes
  * @note Automatically passes __FILE__ and __LINE__ for debugging.

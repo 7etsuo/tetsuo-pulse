@@ -1,0 +1,9 @@
+<map id="SocketCrypto.h" name="SocketCrypto.h">
+<area shape="rect" id="Node000001" title="Cryptographic utility functions for secure operations." alt="" coords="224,5,337,31"/>
+<area shape="rect" id="Node000002" href="$SocketReconnect-private_8h.html" title="Internal implementation details for automatic reconnection framework." alt="" coords="5,79,185,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="239,38,127,81,125,76,237,33"/>
+<area shape="rect" id="Node000003" href="$SocketTLS-private_8h.html" title="TLS internal shared definitions and helper functions." alt="" coords="210,79,351,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="283,44,283,79,278,79,278,44"/>
+<area shape="rect" id="Node000004" href="$SocketWS-private_8h.html" title="Internal implementation details for WebSocket module." alt="" coords="375,79,514,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="321,34,419,76,417,81,319,39"/>
+</map>

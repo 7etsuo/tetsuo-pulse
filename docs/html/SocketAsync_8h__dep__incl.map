@@ -1,0 +1,7 @@
+<map id="SocketAsync.h" name="SocketAsync.h">
+<area shape="rect" id="Node000001" title="Asynchronous I/O operations using platform&#45;optimized mechanisms." alt="" coords="113,5,223,31"/>
+<area shape="rect" id="Node000002" href="$SocketAsync-private_8h.html" title="Private internal definitions for the SocketAsync module." alt="" coords="5,79,160,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="146,41,98,80,95,76,142,37"/>
+<area shape="rect" id="Node000003" href="$SocketPoll-private_8h.html" title="Internal implementation details for SocketPoll module." alt="" coords="184,79,323,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="194,37,241,76,238,80,190,41"/>
+</map>

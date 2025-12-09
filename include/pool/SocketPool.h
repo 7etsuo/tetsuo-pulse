@@ -28,10 +28,10 @@
  * @see @ref foundation for memory management and exceptions.
  * @see @ref dns for DNS resolution support.
  * @see SocketPool_T for connection pooling.
- * @see @ref socket::SocketReconnect for auto-reconnection.
+ * @see @ref connection_mgmt::SocketReconnect_T for auto-reconnection.
  * @see Connection_T for connection accessors.
- * @see @ref utilities::SocketRateLimit for rate limiting.
- * @see @ref security::SocketSYNProtect for SYN flood protection.
+ * @see @ref utilities::SocketRateLimit_T for rate limiting.
+ * @see @ref security::SocketSYNProtect_T for SYN flood protection.
  */
 
 /**
@@ -112,21 +112,31 @@ typedef struct Connection *Connection_T;
  * @ingroup connection_mgmt
  * @param conn Connection being validated for reuse.
  * @param data User data from SocketPool_set_validation_callback().
- * @return Non-zero if connection is valid for reuse, 0 to remove it.
+ * @return Non-zero if connection is valid for reuse, 0 to remove it (forces removal from pool).
+ *
+ * Called during SocketPool_get() before returning the connection to the caller.
+ * If returns 0, the connection is automatically removed from the pool and NULL is returned to the caller.
  *
  * CRITICAL THREAD SAFETY REQUIREMENTS:
- * - Called with pool mutex HELD - MUST NOT call SocketPool functions
- * - MUST NOT block for extended periods (degrades pool performance)
- * - SHOULD complete execution in < 1ms for good performance
- * - MAY read connection data via Connection_* accessors (thread-safe reads)
- * - MAY perform quick socket health checks (e.g., poll with 0 timeout)
+ * The callback is invoked with the pool mutex held:
+ * - MUST NOT call any SocketPool_* functions (will cause deadlock)
+ * - MUST NOT call functions that acquire the pool mutex
+ * - MUST NOT block for extended periods (degrades pool performance for all users)
+ * - SHOULD complete in &lt;1ms for optimal performance
+ * - MAY safely read via Connection_* accessors (thread-safe)
+ * - MAY perform quick socket health checks (e.g., poll(fd, 0 timeout))
  *
- * Use for application-level health checks beyond built-in validation.
- * Return 0 to force connection removal and cleanup.
+ * Violating these may cause deadlocks or severe performance degradation.
+ * For complex validation:
+ * - Use a separate validation thread with async notification
+ * - Perform additional validation after SocketPool_get() returns
+ * - Rely on SocketPool_check_connection() for simple cases
+ *
+ * Use for application-specific health checks beyond built-in validation.
  *
  * @see SocketPool_set_validation_callback() for registration.
  * @see SocketPool_check_connection() for built-in health checks.
- * @see SocketPool_get() for when validation occurs.
+ * @see SocketPool_get() for invocation context.
  * @see @ref connection_mgmt for connection management patterns.
  */
 typedef int (*SocketPool_ValidationCallback) (Connection_T conn, void *data);
@@ -140,6 +150,8 @@ typedef int (*SocketPool_ValidationCallback) (Connection_T conn, void *data);
  * @param data User data from SocketPool_set_resize_callback().
  *
  * Called after successful pool resize operations for monitoring/logging.
+ *
+ * @threadsafe Yes - callback is invoked outside pool mutex.
  *
  * @see SocketPool_set_resize_callback() for registration.
  * @see SocketPool_resize() for resize operations.
@@ -170,7 +182,7 @@ typedef void (*SocketPool_ResizeCallback) (T pool, size_t old_size,
  * EHOSTUNREACH (routing), ECONNRESET (reset), or other socket errors.
  *
  * @see SocketPool_connect_async() for initiation.
- * @see @ref dns::SocketDNS for DNS resolution details.
+ * @see @ref SocketDNS_T for DNS resolution details.
  * @see @ref async_dns for async DNS patterns.
  * @see SocketPool_ConnectCallback for callback requirements.
  */
@@ -244,7 +256,7 @@ extern T SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize);
  * and SocketPool_add(). On error, Socket_free() the socket.
  *
  * @see SocketPool_connect_async() for higher-level async connection.
- * @see @ref dns::SocketDNS for DNS resolution details.
+ * @see @ref SocketDNS_T for DNS resolution details.
  * @see SocketPool_add() for adding completed connections.
  * @see Socket_connect_with_addrinfo() for completing the connection.
  * @see Socket_free() for cleanup on error.
@@ -288,7 +300,7 @@ extern void SocketPool_free (T *pool);
  *
  * @see SocketPool_prepare_connection() for lower-level control.
  * @see SocketPool_ConnectCallback for callback requirements.
- * @see @ref dns::SocketDNS for DNS resolution details.
+ * @see @ref SocketDNS_T for DNS resolution details.
  * @see SocketPool_add() for adding completed connections to pool.
  */
 extern Request_T
@@ -655,7 +667,7 @@ extern int Connection_has_reconnect (const Connection_T conn);
  * @see SocketPool_accept_limited() for rate-limited accepting.
  * @see SocketPool_getconnrate() to check current limit.
  * @see SocketPool_setmaxperip() for per-IP limits.
- * @see @ref utilities::SocketRateLimit for token bucket implementation.
+ * @see @ref utilities::SocketRateLimit_T for token bucket implementation.
  */
 extern void SocketPool_setconnrate (T pool, int conns_per_sec, int burst);
 
@@ -736,7 +748,7 @@ extern int SocketPool_accept_allowed (T pool, const char *client_ip);
  * @see SocketPool_accept_protected() for SYN protection.
  * @see SocketPool_release_ip() for cleanup on SocketPool_add() failure.
  * @see Socket_free() for socket cleanup.
- * @see @ref utilities::SocketRateLimit for token bucket implementation.
+ * @see @ref utilities::SocketRateLimit_T for token bucket implementation.
  */
 extern Socket_T SocketPool_accept_limited (T pool, Socket_T server);
 
@@ -1168,35 +1180,7 @@ extern SocketPool_ConnHealth SocketPool_check_connection (T pool,
  * ============================================================================
  */
 
-/**
- * @brief Callback to validate connection before reuse.
- * @ingroup connection_mgmt
- * @param conn Connection being validated.
- * @param data User data from SocketPool_set_validation_callback.
- * @return Non-zero if connection is valid, 0 if connection should be removed.
- *
- * Called during SocketPool_get() before returning a connection.
- * If callback returns 0, connection is removed from pool and NULL is returned.
- *
- * CRITICAL THREAD SAFETY REQUIREMENTS:
- *
- * The callback is invoked with the pool mutex HELD. The callback:
- *
- * - MUST NOT call any SocketPool_* functions (DEADLOCK will occur)
- * - MUST NOT call functions that may acquire the pool mutex
- * - MUST NOT block for extended periods (degrades pool performance)
- * - SHOULD complete execution in < 1ms
- * - MAY read connection data via Connection_* accessors (thread-safe reads)
- * - MAY perform quick socket health checks (e.g., poll with 0 timeout)
- *
- * Violating these requirements will cause deadlock or severe performance
- * degradation. For complex validation logic, consider:
- * - Using a separate validation thread with async notification
- * - Performing validation after SocketPool_get() returns
- * - Using SocketPool_check_connection() instead of custom callback.
- *
- * @see SocketPool_set_validation_callback() for registration.
- */
+/* See SocketPool_ValidationCallback typedef above for full callback details and thread safety requirements. */
 
 /**
  * @brief Set connection validation callback.
@@ -1222,17 +1206,7 @@ SocketPool_set_validation_callback (T pool, SocketPool_ValidationCallback cb,
  * ============================================================================
  */
 
-/**
- * @brief Callback invoked after pool resize.
- * @ingroup connection_mgmt
- * @param pool Pool instance.
- * @param old_size Previous maximum connections.
- * @param new_size New maximum connections.
- * @param data User data from SocketPool_set_resize_callback.
- * @threadsafe Callback is invoked outside pool mutex.
- * @see SocketPool_set_resize_callback() for registration.
- * @see SocketPool_resize() for resize operations.
- */
+/* See SocketPool_ResizeCallback typedef for details. */
 
 /**
  * @brief Register pool resize notification callback.

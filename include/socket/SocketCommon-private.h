@@ -23,7 +23,9 @@
  * - Module-specific exceptions declared here for convenience across implementations.
  * - Thread-safety documented per function; generally requires external synchronization.
  *
- * @see docs/CODING_STANDARDS.md for full rules (if exists) or .cursorrules.
+ * @see docs/ERROR_HANDLING.md for exception handling patterns.
+ * @see CONTRIBUTING.md for contribution guidelines and coding standards.
+ * @see .cursorrules for build system and detailed implementation rules.
  */
 
 #include "core/Arena.h"
@@ -89,40 +91,52 @@ struct SocketBase_T
 /**
  * @brief Retrieve the socket file descriptor from the base structure.
  * @internal
+ * @ingroup core_io
  * @param base Socket base instance (non-NULL).
  * @return File descriptor (int fd, -1 if closed/invalid).
  * @note Direct access discouraged; use for low-level operations like poll/epoll.
+ * @threadsafe Conditional - safe if no concurrent modification to the base structure (fd is typically read-only after initialization).
  * @see socket(2), close(2)
+ * @see SocketCommon.h for public socket API.
  */
 extern int SocketBase_fd (SocketBase_T base);
 
 /**
  * @brief Get the memory arena associated with the socket base.
  * @internal
+ * @ingroup core_io
  * @param base Socket base instance.
  * @return Arena_T used for this socket's allocations.
  * @note Used for allocating per-socket resources (buffers, strings).
+ * @threadsafe Conditional - safe if no concurrent modification to base.
  * @see Arena.h, ALLOC() macro
+ * @see @ref foundation "Foundation module" for memory management.
  */
 extern Arena_T SocketBase_arena (SocketBase_T base);
 
 /**
  * @brief Get the address domain (family) of the socket.
  * @internal
+ * @ingroup core_io
  * @param base Socket base instance.
  * @return Domain (AF_INET, AF_INET6, AF_UNIX, etc.).
  * @note Set at creation; used for address resolution and options.
+ * @threadsafe Conditional - safe if no concurrent modification to base.
  * @see getaddrinfo(3), AF_*
+ * @see SocketCommon_resolve_address() in SocketCommon.h for resolution using domain.
  */
 extern int SocketBase_domain (SocketBase_T base);
 
 /**
  * @brief Get cached remote address string representation.
  * @internal
+ * @ingroup core_io
  * @param base Socket base instance.
  * @return Pointer to arena-allocated remote address string, or NULL if unset/unavailable.
- * @note String format: numeric IP or Unix path; NULL-checked.
+ * @note String format: numeric IP or Unix path; NULL-checked. String lifetime tied to base arena.
+ * @threadsafe Conditional - acquire base->mutex if concurrent access/modification possible.
  * @see SocketBase_remoteport()
+ * @see SocketCommon_cache_endpoint() for caching mechanism.
  */
 static inline char *
 SocketBase_remoteaddr (SocketBase_T base)
@@ -133,9 +147,12 @@ SocketBase_remoteaddr (SocketBase_T base)
 /**
  * @brief Get remote peer port number.
  * @internal
+ * @ingroup core_io
  * @param base Socket base instance.
  * @return Remote port (0 if unknown/unconnected).
+ * @threadsafe Conditional - acquire base->mutex if concurrent access possible.
  * @see SocketBase_remoteaddr()
+ * @see Socket_getpeerport() public wrapper.
  */
 static inline int
 SocketBase_remoteport (SocketBase_T base)
@@ -189,11 +206,15 @@ SocketBase_timeouts (SocketBase_T base)
 /**
  * @brief Set the timeouts configuration for the socket base.
  * @internal
+ * @ingroup core_io
  * @param base Socket base instance.
  * @param timeouts Source timeouts to copy (may be NULL for defaults).
- * @note Copies values; does not take ownership.
+ * @note Copies values; does not take ownership. Applies to connect, DNS, operations.
+ * @threadsafe No - caller must acquire base->mutex.
+ * @throws None - safe even if timeouts is NULL.
  * @see SocketBase_timeouts() getter.
- * @see SocketCommon_timeouts_getdefaults()
+ * @see SocketCommon_timeouts_getdefaults() for global defaults.
+ * @see SocketCommon_settimeout() for socket-level timeout setting.
  */
 extern void SocketBase_set_timeouts (SocketBase_T base,
                                      const SocketTimeouts_T *timeouts);
@@ -203,13 +224,18 @@ extern void SocketBase_set_timeouts (SocketBase_T base,
 /**
  * @brief Create a new socket file descriptor.
  * @internal
+ * @ingroup core_io
  * @param domain Address family (AF_INET, etc.).
  * @param type Socket type (SOCK_STREAM, etc.).
  * @param protocol Protocol (usually 0).
  * @param exc_type Exception to raise on failure.
  * @return New fd on success, -1 on error (raises exception).
- * @note Wrapper around socket() syscall with error handling.
+ * @throws exc_type on socket() failure (e.g., EMFILE, ENFILE, EAFNOSUPPORT).
+ * @note Wrapper around socket() syscall with error handling and CLOEXEC setup.
+ * @threadsafe Yes - no shared state.
  * @see socket(2)
+ * @see SocketCommon_init_base() for subsequent base initialization.
+ * @see SocketCommon_setcloexec_with_error() for FD flags.
  */
 extern int SocketCommon_create_fd (int domain, int type, int protocol,
                                    Except_T exc_type);

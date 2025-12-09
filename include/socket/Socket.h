@@ -12,6 +12,7 @@
  * - SocketBuf (buffers): Circular buffer for efficient socket I/O
  * - SocketDgram (udp): UDP datagram sockets with multicast/broadcast support
  * - SocketDNS (dns): Asynchronous DNS resolution with worker threads
+ * - SocketProxy (proxy): Transparent proxy tunneling for HTTP CONNECT and SOCKS protocols
  * - SocketIO (io): Low-level socket I/O primitives
  *
  * @see foundation for base infrastructure.
@@ -208,6 +209,7 @@ extern int Socket_error_is_retryable (int err);
  * @param protocol Protocol (usually 0 for default).
  * @return New socket instance.
  * @throws Socket_Failed on error.
+ * @threadsafe Yes - creates new socket without accessing shared resources.
  * @see Socket_free() for cleanup.
  * @see Socket_connect() for establishing connections.
  * @see Socket_bind() for server-side binding.
@@ -221,7 +223,7 @@ extern T Socket_new (int domain, int type, int protocol);
  * @param socket1 Output - first socket of the pair.
  * @param socket2 Output - second socket of the pair.
  * @throws Socket_Failed on error.
- * @note Thread-safe: Yes (creates new sockets).
+ * @threadsafe Yes - creates new sockets without modifying any shared state.
  * @note Creates two connected Unix domain sockets for IPC. Both sockets are ready to use - no bind/connect needed.
  * @see Socket_new() for individual socket creation.
  */
@@ -230,8 +232,11 @@ extern void SocketPair_new (int type, T *socket1, T *socket2);
 /**
  * @brief Free a socket and close the connection.
  * @ingroup core_io
- * @param socket Pointer to socket (will be set to NULL).
+ * @param socket Pointer to socket (will be set to NULL on success).
+ * @threadsafe Yes - operates only on the specified socket instance.
+ * @note Closes the underlying file descriptor and frees resources.
  * @see Socket_new() for socket creation.
+ * @see Socket_debug_live_count() for verifying no leaks in tests.
  */
 extern void Socket_free (T *socket);
 
@@ -241,7 +246,7 @@ extern void Socket_free (T *socket);
  * @param fd File descriptor (must be valid socket, will be set to non-blocking).
  * @return New Socket_T instance or NULL on failure.
  * @throws Socket_Failed on error.
- * @note Thread-safe: Yes - returns new instance.
+ * @threadsafe Yes - returns new instance without modifying shared state.
  * @see Socket_new() for creating new sockets.
  * @see Socket_fd() for getting file descriptors from Socket_T instances.
  */
@@ -271,7 +276,7 @@ extern int Socket_debug_live_count (void);
  * @note For non-blocking operation, use IP addresses directly.
  * @see Socket_listen() for listening on bound sockets.
  * @see Socket_connect() for client-side connection.
- * @see @ref dns::SocketDNS "Async DNS resolution" for non-blocking hostname resolution.
+ * @see @ref SocketDNS_T "Async DNS resolution" for non-blocking hostname resolution.
  */
 extern void Socket_bind (T socket, const char *host, int port);
 
@@ -307,7 +312,7 @@ extern T Socket_accept (T socket);
  * @warning May block 30+ seconds during DNS resolution if hostname provided.
  * @note For non-blocking operation, use IP addresses directly.
  * @see Socket_bind() for binding to local addresses.
- * @see @ref dns::SocketDNS "Async DNS resolution" for non-blocking hostname resolution.
+ * @see @ref SocketDNS_T "Async DNS resolution" for non-blocking hostname resolution.
  */
 extern void Socket_connect (T socket, const char *host, int port);
 
@@ -496,7 +501,7 @@ extern ssize_t Socket_recvmsg (T socket, struct msghdr *msg, int flags);
  * @ingroup core_io
  * @param socket Socket to check.
  * @return 1 if connected, 0 if not connected.
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see Socket_connect() for establishing connections.
  * @see Socket_isbound() for checking binding state.
  */
@@ -507,7 +512,7 @@ extern int Socket_isconnected (T socket);
  * @ingroup core_io
  * @param socket Socket to check.
  * @return 1 if bound, 0 if not bound.
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see Socket_bind() for binding sockets.
  * @see Socket_isconnected() for checking connection state.
  */
@@ -518,7 +523,7 @@ extern int Socket_isbound (T socket);
  * @ingroup core_io
  * @param socket Socket to check.
  * @return 1 if listening, 0 if not listening.
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see Socket_listen() for setting up listening sockets.
  * @see Socket_accept() for accepting connections.
  */
@@ -816,7 +821,7 @@ extern void Socket_setcloexec (T socket, int enable);
  * BSD/macOS: Uses SO_ACCEPTFILTER with "dataready" filter
  *
  * @throws Socket_Failed on error or if unsupported.
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see Socket_getdeferaccept() for retrieving current setting.
  * @see Socket_accept() for accepting connections.
  */
@@ -828,7 +833,7 @@ extern void Socket_setdeferaccept (T socket, int timeout_sec);
  * @param socket Listening socket.
  * @return Current defer accept timeout in seconds, 0 if disabled.
  * @throws Socket_Failed on error.
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see Socket_setdeferaccept() for setting defer accept.
  */
 extern int Socket_getdeferaccept (T socket);
@@ -888,7 +893,7 @@ extern void Socket_timeouts_setdefaults (const SocketTimeouts_T *timeouts);
  * Values of 0 in the extended structure mean "inherit from basic timeouts".
  * Values of -1 mean "no timeout (infinite)".
  *
- * @note Thread-safe: No - caller must ensure exclusive access.
+ * @threadsafe No - caller must ensure exclusive access to socket.
  * @see Socket_timeouts_get_extended() for retrieving extended timeouts.
  * @see SocketTimeouts_Extended_T for timeout structure details.
  */
@@ -906,7 +911,7 @@ Socket_timeouts_set_extended (T socket,
  * haven't been set, returns the basic timeouts mapped to the extended
  * structure.
  *
- * @note Thread-safe: No - caller must ensure exclusive access.
+ * @threadsafe No - caller must ensure exclusive access to socket.
  * @see Socket_timeouts_set_extended() for setting extended timeouts.
  */
 extern void Socket_timeouts_get_extended (const T socket,
@@ -923,7 +928,7 @@ extern void Socket_timeouts_get_extended (const T socket,
  * @param socket Socket to modify.
  * @param bytes_per_sec Maximum bytes per second (0 to disable limiting).
  * @throws Socket_Failed on allocation failure.
- * @note Thread-safe: Yes - uses internal mutex.
+ * @threadsafe Yes - uses internal mutex for synchronization.
  *
  * Enables bandwidth throttling using a token bucket algorithm.
  * The burst capacity is set to bytes_per_sec (1 second of data).
@@ -939,7 +944,7 @@ extern void Socket_setbandwidth (T socket, size_t bytes_per_sec);
  * @ingroup core_io
  * @param socket Socket to query.
  * @return Bandwidth limit in bytes per second (0 if unlimited).
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  * @see Socket_setbandwidth() for setting bandwidth limit.
  */
 extern size_t Socket_getbandwidth (T socket);
@@ -952,7 +957,7 @@ extern size_t Socket_getbandwidth (T socket);
  * @param len Length of data (> 0).
  * @return Bytes sent (> 0), 0 if rate limited (try again later), or raises.
  * @throws Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors.
- * @note Thread-safe: Yes - uses socket's bandwidth limiter.
+ * @threadsafe Yes - uses per-socket bandwidth limiter with internal locking.
  *
  * Like Socket_send() but respects bandwidth limit set by
  * Socket_setbandwidth(). If bandwidth limiting is disabled (0), behaves like
@@ -972,7 +977,7 @@ extern ssize_t Socket_send_limited (T socket, const void *buf, size_t len);
  * @param len Buffer size (> 0).
  * @return Bytes received (> 0), 0 if rate limited or would block, or raises.
  * @throws Socket_Closed on peer close, Socket_Failed on other errors.
- * @note Thread-safe: Yes - uses socket's bandwidth limiter.
+ * @threadsafe Yes - uses per-socket bandwidth limiter with internal locking.
  *
  * Like Socket_recv() but respects bandwidth limit set by
  * Socket_setbandwidth(). If bandwidth limiting is disabled (0), behaves like
@@ -988,7 +993,7 @@ extern ssize_t Socket_recv_limited (T socket, void *buf, size_t len);
  * @param socket Socket to query.
  * @param bytes Number of bytes needed.
  * @return Milliseconds to wait, 0 if immediate, -1 if impossible.
- * @note Thread-safe: Yes.
+ * @threadsafe Yes.
  *
  * Useful for event loop integration - use as poll timeout.
  *
@@ -1078,7 +1083,7 @@ extern int Socket_getpeergid (const T socket);
  * - Only works with connected Unix domain sockets
  * - Receiving process should validate the fd type before use
  *
- * @note Thread-safe: Yes (uses thread-local error buffers).
+ * @threadsafe Yes - uses thread-local error buffers for safe concurrent operation.
  * @see Socket_recvfd() for receiving file descriptors.
  * @see Socket_sendfds() for sending multiple descriptors.
  */
@@ -1097,7 +1102,7 @@ extern int Socket_sendfd (T socket, int fd_to_pass);
  *
  * OWNERSHIP: Caller takes ownership of the received fd and MUST close it.
  *
- * @note Thread-safe: Yes (uses thread-local error buffers).
+ * @threadsafe Yes - uses thread-local error buffers for safe concurrent operation.
  * @see Socket_sendfd() for sending file descriptors.
  * @see Socket_recvfds() for receiving multiple descriptors.
  */
@@ -1115,7 +1120,7 @@ extern int Socket_recvfd (T socket, int *fd_received);
  * Passes multiple file descriptors atomically in a single message.
  * All descriptors are either sent together or none are sent.
  *
- * @note Thread-safe: Yes (uses thread-local error buffers).
+ * @threadsafe Yes - uses thread-local error buffers for safe concurrent operation.
  * @see Socket_recvfds() for receiving multiple descriptors.
  * @see Socket_sendfd() for sending single descriptor.
  */
@@ -1136,18 +1141,74 @@ extern int Socket_sendfds (T socket, const int *fds, size_t count);
  *
  * OWNERSHIP: Caller takes ownership of all received fds and MUST close them.
  *
- * @note Thread-safe: Yes (uses thread-local error buffers).
+ * @threadsafe Yes - uses thread-local error buffers for safe concurrent operation.
  * @see Socket_sendfds() for sending multiple descriptors.
  * @see Socket_recvfd() for receiving single descriptor.
  */
 extern int Socket_recvfds (T socket, int *fds, size_t max_count,
                            size_t *received_count);
 
-/* Unix domain socket internal helpers */
+/**
+ * @brief Bind Unix domain socket to a filesystem path.
+ * @ingroup core_io
+ * @internal
+ * @param base The socket base structure containing the file descriptor and domain.
+ * @param path Null-terminated string specifying the Unix socket path.
+ * @param exc_type Exception type to raise on failure.
+ * @throws exc_type On bind errors such as EADDRINUSE, ENOENT, or EACCES.
+ *
+ * Internal helper function that performs Unix domain socket binding.
+ * Validates the path and calls bind(2) system call.
+ * Supports both filesystem paths and abstract sockets (Linux).
+ *
+ * @see Socket_bind_unix() for the public high-level interface.
+ * @see SocketUnix_connect() for the connect counterpart.
+ * @see SocketUnix_validate_unix_path() for path validation.
+ * @threadsafe Conditional - safe if base fd is not shared across threads without locking.
+ */
 extern void SocketUnix_bind (SocketBase_T base, const char *path,
                              Except_T exc_type);
+
+/**
+ * @brief Connect Unix domain socket to a filesystem path.
+ * @ingroup core_io
+ * @internal
+ * @param base The socket base structure containing the file descriptor and domain.
+ * @param path Null-terminated string specifying the remote Unix socket path.
+ * @param exc_type Exception type to raise on failure.
+ * @throws exc_type On connect errors such as ECONNREFUSED, ENOENT, or EACCES.
+ *
+ * Internal helper function that performs Unix domain socket connection.
+ * Validates the path and calls connect(2) system call.
+ * Supports both filesystem paths and abstract sockets (Linux).
+ *
+ * @see Socket_connect_unix() for the public high-level interface.
+ * @see SocketUnix_bind() for the bind counterpart.
+ * @see SocketUnix_validate_unix_path() for path validation.
+ * @threadsafe Conditional - safe if base fd is not shared across threads without locking.
+ */
 extern void SocketUnix_connect (SocketBase_T base, const char *path,
                                 Except_T exc_type);
+
+/**
+ * @brief Validate a Unix domain socket path.
+ * @ingroup core_io
+ * @internal
+ * @param path The path string to validate.
+ * @param path_len Length of the path string (excluding null terminator).
+ * @return 1 if the path is valid for Unix socket operations, 0 otherwise.
+ *
+ * Checks path constraints:
+ * - Length <= UNIX_PATH_MAX (typically 108 bytes)
+ * - Not empty
+ * - Supports abstract socket prefix (\0 on Linux)
+ *
+ * Used by bind and connect helpers to ensure valid paths before system calls.
+ *
+ * @see SocketUnix_bind()
+ * @see SocketUnix_connect()
+ * @threadsafe Yes - pure function, no side effects.
+ */
 extern int SocketUnix_validate_unix_path (const char *path, size_t path_len);
 
 /* ============================================================================
@@ -1234,7 +1295,7 @@ extern void Socket_connect_with_addrinfo (T socket, struct addrinfo *res);
  * @brief Globally ignore SIGPIPE signal.
  * @ingroup core_io
  * @return 0 on success, -1 on error (sets errno).
- * @note Thread-safe: Yes (can be called from any thread, idempotent).
+ * @threadsafe Yes - can be called from any thread, idempotent operation.
  *
  * NOTE: This function is NOT required when using this library. The library
  * handles SIGPIPE internally via:

@@ -1,13 +1,5 @@
 var SocketHappyEyeballs_8h =
 [
-    [ "SocketHE_Config_T", "SocketHappyEyeballs_8h.html#structSocketHE__Config__T", [
-      [ "attempt_timeout_ms", "SocketHappyEyeballs_8h.html#a6102505cbcca11148c1e2cbcda5caa16", null ],
-      [ "dns_timeout_ms", "SocketHappyEyeballs_8h.html#ae94ef758ca842d9231733fbc9b910e2f", null ],
-      [ "first_attempt_delay_ms", "SocketHappyEyeballs_8h.html#a718ced26ae9d5f1a9c51980686007af9", null ],
-      [ "max_attempts", "SocketHappyEyeballs_8h.html#a844dbed92f4e7fbcedd41f78089d4edc", null ],
-      [ "prefer_ipv6", "SocketHappyEyeballs_8h.html#a2286078d8352300a92ddd005f756ae8b", null ],
-      [ "total_timeout_ms", "SocketHappyEyeballs_8h.html#a30f77ee5bd25329726485101935e8a2a", null ]
-    ] ],
     [ "SOCKET_HE_DEFAULT_ATTEMPT_TIMEOUT_MS", "group__async__io.html#ga66b65910ea1f4b358406d1fb9add485e", null ],
     [ "SOCKET_HE_DEFAULT_DNS_TIMEOUT_MS", "group__async__io.html#ga0eca938e489f47d663007b6c0a7ab18f", null ],
     [ "SOCKET_HE_DEFAULT_FIRST_ATTEMPT_DELAY_MS", "group__async__io.html#ga015f1e24903699e20cea8af2bd44b781", null ],
@@ -16,7 +8,6 @@ var SocketHappyEyeballs_8h =
     [ "SOCKET_HE_PORT_STR_SIZE", "group__async__io.html#ga07e470dce144233028bfd6d2193e8c03", null ],
     [ "SOCKET_HE_SYNC_POLL_INTERVAL_MS", "group__async__io.html#ga869ed228765bfcb7b4aab39b7cfc8c9d", null ],
     [ "T", "group__async__io.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
-    [ "SocketHE_T", "SocketHappyEyeballs_8h.html#aa6c35b0180840e5c2f9fe45cefbae03d", null ],
     [ "SocketHE_State", "group__async__io.html#gac1b193256ec44f27e6f0f307b0c2e524", [
       [ "HE_STATE_IDLE", "group__async__io.html#ggac1b193256ec44f27e6f0f307b0c2e524a12a52375165d28d6f3de5737a90c9f97", null ],
       [ "HE_STATE_RESOLVING", "group__async__io.html#ggac1b193256ec44f27e6f0f307b0c2e524ab70cde7846b5284942af2d54f407df8e", null ],

@@ -1,13 +1,7 @@
 var SocketCommon_8h =
 [
-    [ "SocketLiveCount", "SocketCommon_8h.html#structSocketLiveCount", [
-      [ "count", "SocketCommon_8h.html#aa0eb80c5ca5d1e5862958659252abf7e", null ],
-      [ "mutex", "SocketCommon_8h.html#a2184fefc1d68daf0fa7309d8de989e88", null ]
-    ] ],
-    [ "SocketBase_T", "group__core__io.html#ga875ae9df41c30f375802590471923dd1", null ],
-    [ "SOCKETLIVECOUNT_STATIC_INIT", "SocketCommon_8h.html#afdd7aa5138146bb99a2360fface85b12", null ],
-    [ "SocketBase_T", "SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2", null ],
-    [ "SocketDNS_T", "group__core__io.html#gac9190fe07142a017f86dae46145cb2fd", null ],
+    [ "SocketBase_T", "group__core__io.html#ga2ef0927dc8f89dfd9193fc9a39300fc2", null ],
+    [ "SOCKETLIVECOUNT_STATIC_INIT", "group__core__io.html#gafdd7aa5138146bb99a2360fface85b12", null ],
     [ "SocketCommon_advance_iov", "group__core__io.html#ga33af6b6698782c490ff383bb37c197e7", null ],
     [ "SocketCommon_alloc_iov_copy", "group__core__io.html#ga0ccd95f99962c7a6631b93bf9adfea4d", null ],
     [ "SocketCommon_cache_endpoint", "group__core__io.html#gadfc31bff834af43e2a6ee2facd9951d4", null ],

@@ -312,10 +312,12 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
 int
 socket_is_tls_enabled (const T socket)
 {
+  (void) socket;
   assert (socket);
 #if SOCKET_HAS_TLS
   return socket->tls_enabled ? 1 : 0;
 #else
+  (void)socket;
   return 0;
 #endif
 }
@@ -328,6 +330,7 @@ socket_is_tls_enabled (const T socket)
 int
 socket_tls_want_read (const T socket)
 {
+  (void) socket;
   assert (socket);
 #if SOCKET_HAS_TLS
   SSL *ssl = socket_get_ssl (socket);
@@ -337,6 +340,7 @@ socket_tls_want_read (const T socket)
     return socket->tls_last_handshake_state == TLS_HANDSHAKE_WANT_READ;
   return SSL_pending (ssl) > 0;
 #else
+  (void)socket;
   return 0;
 #endif
 }
@@ -349,6 +353,7 @@ socket_tls_want_read (const T socket)
 int
 socket_tls_want_write (const T socket)
 {
+  (void) socket;
   assert (socket);
 #if SOCKET_HAS_TLS
   if (!socket_get_ssl (socket))
@@ -357,6 +362,7 @@ socket_tls_want_write (const T socket)
     return socket->tls_last_handshake_state == TLS_HANDSHAKE_WANT_WRITE;
   return 0;
 #else
+  (void)socket;
   return 0;
 #endif
 }

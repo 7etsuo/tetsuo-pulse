@@ -1,0 +1,4 @@
+<map id="SocketSYN_WhitelistEntry" name="SocketSYN_WhitelistEntry">
+<area shape="rect" id="Node000001" title="Structure for whitelist entries supporting single IPs and CIDR ranges." alt="" coords="5,5,185,31"/>
+<area shape="poly" id="edge1_Node000001_Node000001" title=" " alt="" coords="200,12,212,18,186,25,185,19,207,18,199,17"/>
+</map>

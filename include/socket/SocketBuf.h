@@ -108,6 +108,7 @@ extern void SocketBuf_release (T *buf);
  * @param data Pointer to data to append.
  * @param len Number of bytes to write.
  * @return Number of bytes successfully written (<= len); 0 if full.
+ * @throws SocketBuf_Failed if buffer is invalid or data is NULL with len > 0.
  * @note Writes as much as possible; partial writes possible if space limited.
  * @note Handles internal wraparound transparently.
  * @note Performance: O(n) time where n = bytes written, due to potential memcpy.
@@ -127,6 +128,7 @@ extern size_t SocketBuf_write (T buf, const void *data, size_t len);
  * @param data Destination buffer for read data.
  * @param len Maximum bytes to read into data.
  * @return Number of bytes read and removed (<= len); 0 if empty.
+ * @throws SocketBuf_Failed if buffer is invalid or data is NULL with len > 0.
  * @note Partial reads possible if less data available.
  * @note Data is removed from buffer after successful read.
  * @note Performance: O(n) time where n = bytes read.
@@ -147,6 +149,7 @@ extern size_t SocketBuf_read (T buf, void *data, size_t len);
  * @param data Destination for peeked data.
  * @param len Maximum bytes to peek.
  * @return Number of bytes copied to data (<= len); 0 if empty.
+ * @throws SocketBuf_Failed if buffer is invalid or data is NULL with len > 0.
  * @note Non-destructive: data remains available for subsequent reads.
  * @note Useful for protocol parsing without consuming stream.
  * @note Performance: O(n) time where n = bytes peeked.
@@ -163,6 +166,7 @@ extern size_t SocketBuf_peek (T buf, void *data, size_t len);
  * @ingroup core_io
  * @param buf The buffer to modify.
  * @param len Number of bytes to discard.
+ * @throws SocketBuf_Failed if buffer is invalid or len > available data.
  * @note Behavior undefined (assert in debug) if len > SocketBuf_available(buf).
  * @note Efficient for skipping known-length headers or invalid data.
  * @note Performance: O(1) - only updates internal pointers.
@@ -239,6 +243,7 @@ extern int SocketBuf_full (const T buf);
  * @brief Reset buffer to empty state without zeroing memory.
  * @ingroup core_io
  * @param buf The buffer to clear.
+ * @throws SocketBuf_Failed if buffer is invalid.
  * @note Only updates read/write pointers; memory contents may remain until overwritten.
  * @warning Not suitable for sensitive data - use SocketBuf_secureclear() to prevent leakage.
  * @note Performance: O(1) - no memory operations.
@@ -255,6 +260,7 @@ extern void SocketBuf_clear (T buf);
  * @brief Securely erase all data by zeroing memory contents.
  * @ingroup core_io
  * @param buf The buffer containing potentially sensitive data.
+ * @throws SocketBuf_Failed if buffer is invalid.
  * @note Overwrites entire buffer capacity with zeros before resetting pointers.
  * @note Essential for cryptographic keys, credentials, or PII to mitigate timing attacks or memory dumps.
  * @warning Performance: O(n) where n = current capacity; slower than clear().
@@ -341,6 +347,7 @@ extern void *SocketBuf_writeptr (T buf, size_t *len);
  * @ingroup core_io
  * @param buf The buffer where data was written.
  * @param len Exact number of bytes written at the pointer from writeptr().
+ * @throws SocketBuf_Failed if buffer is invalid or len > available space.
  * @note Must match or be <= the len from corresponding SocketBuf_writeptr() call.
  * @note Behavior undefined (assert in debug) if len exceeds available space.
  * @note Updates internal write position and available space.

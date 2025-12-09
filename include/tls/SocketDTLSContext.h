@@ -3,7 +3,7 @@
 
 /**
  * @file SocketDTLSContext.h
- * @ingroup security
+ * @ingroup dtls_context
  * @brief DTLS context management with cookie protection and secure defaults.
  *
  * Manages OpenSSL SSL_CTX objects for DTLS with socket library integration.
@@ -34,6 +34,25 @@
  * @see SocketDTLS_enable() for applying DTLS to UDP sockets.
  * @see @ref SocketTLSContext_T for TLS context management on TCP sockets.
  * @see @ref SocketDTLSConfig.h for DTLS configuration constants.
+ * @ingroup dtls_context
+ */
+
+/**
+ * @defgroup dtls_context DTLS Context Management
+ * @ingroup security
+ * @brief Secure DTLS context configuration and lifecycle management.
+ *
+ * Wraps OpenSSL SSL_CTX with socket library integration, providing secure
+ * defaults (DTLS 1.2+, ECDHE ciphers), certificate handling, cookie DoS
+ * protection (RFC 6347), ALPN, MTU config, and session caching for UDP/TLS.
+ *
+ * Thread safety: Creation thread-safe; modifications not safe after sharing.
+ * Use per-thread contexts or mutex-protect config phase.
+ *
+ * @see SocketDTLS_T for applying contexts to UDP sockets.
+ * @see SocketDTLSConfig.h for constants (e.g., ciphersuites, timeouts).
+ * @see security for TLS/SYN protection modules.
+ * @{
  */
 
 #include "core/Arena.h"
@@ -47,9 +66,45 @@
 #include <stddef.h>
 
 #define T SocketDTLSContext_T
-typedef struct T *T; /* Opaque pointer to DTLS context */
+/**
+ * @brief Opaque handle for a DTLS security context.
+ * @ingroup dtls_context
+ *
+ * Encapsulates an OpenSSL SSL_CTX configured for DTLS with secure defaults,
+ * including protocol version enforcement, cipher selection, certificate
+ * management, cookie generation for DoS mitigation, ALPN protocols, and
+ * session caching.
+ *
+ * Lifecycle: Create via new_server() or new_client(), configure options,
+ * load certs/CA, then associate with UDP sockets using SocketDTLS_enable().
+ * Dispose with free() to release resources including arena allocations.
+ *
+ * Threading: Thread-safe for creation and read-only access after full setup.
+ * Avoid concurrent modifications (e.g., set_verify_mode) without external locking.
+ *
+ * @note All internal allocations use an embedded Arena_T for lifecycle management.
+ * @note Exceptions raised via SocketDTLS_Failed include detailed OpenSSL error info.
+ *
+ * @see SocketDTLSContext_new_server() to create server contexts.
+ * @see SocketDTLSContext_new_client() to create client contexts.
+ * @see SocketDTLSContext_free() for disposal.
+ * @see SocketDTLS_enable() to apply context to a SocketDgram_T.
+ * @see @ref dtls_config for related constants and limits.
+ */
+typedef struct T *T;
 
-/* Forward declaration for socket type */
+/**
+ * @brief Forward declaration of the opaque UDP datagram socket type.
+ * @ingroup core_io
+ *
+ * Required for DTLS operations over UDP. Full definition and operations
+ * provided in SocketDgram.h and socket/SocketDgram.h.
+ *
+ * DTLS contexts are applied to SocketDgram_T instances via SocketDTLS_enable().
+ *
+ * @see SocketDgram.h for UDP socket creation, bind, send/recv, etc.
+ * @see SocketDTLS_enable() for enabling DTLS on UDP sockets.
+ */
 typedef struct SocketDgram_T *SocketDgram_T;
 
 /* ============================================================================
@@ -59,7 +114,7 @@ typedef struct SocketDgram_T *SocketDgram_T;
 
 /**
  * @brief Create server DTLS context with cert/key
- * @ingroup security
+ * @ingroup dtls_context
  * @param cert_file Path to server certificate file (PEM format)
  * @param key_file Path to private key file (PEM format)
  * @param ca_file Optional path to CA file/directory for client auth (NULL to
@@ -80,7 +135,7 @@ extern T SocketDTLSContext_new_server (const char *cert_file,
 
 /**
  * @brief Create client DTLS context
- * @ingroup security
+ * @ingroup dtls_context
  * @param ca_file Optional path to CA file/directory for server verification (NULL
  * to disable)
  *
@@ -95,7 +150,7 @@ extern T SocketDTLSContext_new_client (const char *ca_file);
 
 /**
  * @brief Dispose of DTLS context and resources
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx_p Pointer to context pointer (set to NULL on success)
  *
  * Frees the SSL_CTX, Arena (internal allocations), cookie secret, ALPN data.
@@ -114,7 +169,7 @@ extern void SocketDTLSContext_free (T *ctx_p);
 
 /**
  * @brief Load server certificate and private key
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  * @param cert_file Path to certificate file (PEM)
  * @param key_file Path to private key file (PEM)
@@ -131,7 +186,7 @@ extern void SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
 
 /**
  * @brief Load trusted CA certificates
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  * @param ca_file Path to CA file or directory containing PEM CA certs
  *
@@ -145,7 +200,7 @@ extern void SocketDTLSContext_load_ca (T ctx, const char *ca_file);
 
 /**
  * @brief Set certificate verification policy
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  * @param mode Verification mode enum (TLS_VERIFY_NONE, PEER, etc.)
  *
@@ -153,7 +208,7 @@ extern void SocketDTLSContext_load_ca (T ctx, const char *ca_file);
  * flags.
  *
  * @return void
- * @throws SocketDTLS_Failed on invalid mode
+ * @note Maps provided flags to OpenSSL SSL_VERIFY_* constants; invalid or unsupported flags are ignored without error.
  * @threadsafe No
  */
 extern void SocketDTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode);
@@ -165,7 +220,7 @@ extern void SocketDTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode);
 
 /**
  * @brief Enable stateless cookie DoS protection
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance (server only)
  *
  * Enables RFC 6347 cookie exchange. Server sends HelloVerifyRequest with
@@ -183,7 +238,7 @@ extern void SocketDTLSContext_enable_cookie_exchange (T ctx);
 
 /**
  * @brief Set cookie HMAC secret key
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  * @param secret Secret key bytes (must be SOCKET_DTLS_COOKIE_SECRET_LEN bytes)
  * @param len Length of secret (must be SOCKET_DTLS_COOKIE_SECRET_LEN)
@@ -202,7 +257,7 @@ extern void SocketDTLSContext_set_cookie_secret (T ctx,
 
 /**
  * @brief Generate new cookie secret
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  *
  * Generates a new random secret for cookie HMAC. Call periodically
@@ -222,7 +277,7 @@ extern void SocketDTLSContext_rotate_cookie_secret (T ctx);
 
 /**
  * @brief Set link MTU for DTLS record sizing
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  * @param mtu Maximum Transmission Unit in bytes
  *
@@ -238,7 +293,7 @@ extern void SocketDTLSContext_set_mtu (T ctx, size_t mtu);
 
 /**
  * @brief Get configured MTU
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  *
  * @return Current MTU setting in bytes
@@ -254,7 +309,7 @@ extern size_t SocketDTLSContext_get_mtu (T ctx);
 
 /**
  * @brief Set minimum supported DTLS version
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  * @param version OpenSSL version constant (e.g., DTLS1_2_VERSION)
  *
@@ -268,7 +323,7 @@ extern void SocketDTLSContext_set_min_protocol (T ctx, int version);
 
 /**
  * @brief Set maximum supported DTLS version
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  * @param version OpenSSL version constant (e.g., DTLS1_2_VERSION)
  *
@@ -282,7 +337,7 @@ extern void SocketDTLSContext_set_max_protocol (T ctx, int version);
 
 /**
  * @brief Set allowed cipher suites
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  * @param ciphers Cipher list string in OpenSSL format, or NULL for defaults
  *
@@ -301,7 +356,7 @@ extern void SocketDTLSContext_set_cipher_list (T ctx, const char *ciphers);
 
 /**
  * @brief Advertise ALPN protocols
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  * @param protos Array of null-terminated protocol strings (e.g., "coap", "h3")
  * @param count Number of protocols
@@ -326,7 +381,7 @@ extern void SocketDTLSContext_set_alpn_protos (T ctx, const char **protos,
 
 /**
  * @brief Enable session caching
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  * @param max_sessions Maximum number of sessions to cache (>0), 0 for default
  * @param timeout_seconds Session timeout in seconds, 0 for OpenSSL default (300s)
@@ -342,7 +397,7 @@ extern void SocketDTLSContext_enable_session_cache (T ctx, size_t max_sessions,
 
 /**
  * @brief Get session cache statistics
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  * @param hits Output number of cache hits
  * @param misses Output number of cache misses
@@ -366,7 +421,7 @@ extern void SocketDTLSContext_get_cache_stats (T ctx, size_t *hits,
 
 /**
  * @brief Set handshake timeout parameters
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  * @param initial_ms Initial retransmission timeout in milliseconds
  * @param max_ms Maximum timeout after exponential backoff
@@ -387,7 +442,7 @@ extern void SocketDTLSContext_set_timeout (T ctx, int initial_ms, int max_ms);
 
 /**
  * @brief Get underlying OpenSSL SSL_CTX*
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  *
  * Internal access to raw SSL_CTX for SocketDTLS_enable() etc.
@@ -400,7 +455,7 @@ extern void *SocketDTLSContext_get_ssl_ctx (T ctx);
 
 /**
  * @brief Check if context is server-mode
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  *
  * Internal helper to determine client vs server configuration.
@@ -413,7 +468,7 @@ extern int SocketDTLSContext_is_server (T ctx);
 
 /**
  * @brief Check if cookie exchange enabled
- * @ingroup security
+ * @ingroup dtls_context
  * @param ctx The DTLS context instance
  *
  * @return 1 if enabled, 0 if disabled
@@ -422,6 +477,10 @@ extern int SocketDTLSContext_is_server (T ctx);
  */
 extern int SocketDTLSContext_has_cookie_exchange (T ctx);
 
+/** @} */ /* dtls_context */
+
+/*
+ * @} */ /* security */  // Optional, if wanted, but since defined elsewhere
 #undef T
 
 #endif /* SOCKET_HAS_TLS */

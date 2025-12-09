@@ -5,7 +5,7 @@
  * @file SocketSYNProtect-private.h
  * @ingroup security
  * @internal
- * @brief Internal SYN flood protection implementation details.
+ * @brief Internal SYN flood protection implementation details for the @ref security "Security Modules" group.
  *
  * Private header containing internal structures and functions for the SocketSYNProtect
  * module. Not part of the public API - do not include directly from user code.
@@ -20,7 +20,6 @@
  * @note Do not include directly - use SocketSYNProtect.h instead.
  * @warning Internal implementation details subject to change.
  * @see SocketSYNProtect.h for public SYN protection API.
- * @ingroup security
  */
 
 #include "core/Arena.h"

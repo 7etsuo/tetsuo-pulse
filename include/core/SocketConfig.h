@@ -1073,6 +1073,21 @@ extern const char *Socket_safe_strerror (int errnum);
  * ============================================================================
  */
 
+/**
+ * @brief Platform detection flag for macOS/Apple systems.
+ * @ingroup foundation
+ *
+ * Set to 1 when compiled under __APPLE__ macro (macOS, iOS), enabling
+ * platform-specific features such as kqueue event polling backend,
+ * SO_NOSIGPIPE socket option, and Darwin-specific workarounds.
+ *
+ * Used internally to select optimal I/O primitives and handle platform
+ * differences in socket options and system calls.
+ *
+ * @see @ref event_system for platform backend selection (epoll vs kqueue).
+ * @see SocketPoll_backend.h for backend implementations.
+ * @see SOCKET_HAS_SO_NOSIGPIPE for SIGPIPE suppression on macOS.
+ */
 #ifdef __APPLE__
 #define SOCKET_PLATFORM_MACOS 1
 #else
@@ -1085,15 +1100,6 @@ extern const char *Socket_safe_strerror (int errnum);
  *
  * Compile-time flags for optional features. Set to 0 to disable.
  * Can be overridden via CMake or compiler defines.
- */
-
-/**
- * @brief HTTP protocol support flag.
- *
- * Includes HTTP/1.1, HTTP/2, HPACK, client/server support.
- * Set by CMake configuration.
- *
- * @ingroup http
  */
 /**
  * @brief HTTP protocol support flag.
@@ -1113,15 +1119,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #ifndef SOCKET_HAS_HTTP
 #define SOCKET_HAS_HTTP 1
 #endif
-
-/**
- * @brief WebSocket protocol support flag.
- *
- * WebSocket RFC 6455 + permessage-deflate.
- * Set by CMake configuration.
- *
- * @ingroup http
- */
 /**
  * @brief WebSocket protocol support flag.
  * @ingroup http
@@ -1140,15 +1137,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #ifndef SOCKET_HAS_WEBSOCKET
 #define SOCKET_HAS_WEBSOCKET 1
 #endif
-
-/**
- * @brief TLS/SSL support flag.
- *
- * TLS 1.3 only (OpenSSL/LibreSSL) + DTLS.
- * Set by CMake configuration.
- *
- * @ingroup security
- */
 /**
  * @brief TLS/SSL support flag.
  * @ingroup security
@@ -1826,6 +1814,21 @@ union align
  * @brief Linux-specific accept4() support flag.
  *
  * @ingroup core_io
+ */
+/**
+ * @brief Linux-specific features detection.
+ * @ingroup core_io
+ *
+ * Detects Linux platform (__linux__) to enable Linux-only optimizations and options:
+ * - accept4(): Atomic accept with non-blocking and CLOEXEC flags.
+ * - SO_DOMAIN: Socket option to query address family (AF_INET, etc.).
+ *
+ * On non-Linux platforms, these fall back to standard accept() + fcntl() and
+ * no SO_DOMAIN support.
+ *
+ * @see accept4(2) Linux man page for accept4 details.
+ * @see Socket_accept() portable wrapper.
+ * @see getsockopt(2) for SO_DOMAIN usage.
  */
 #ifdef __linux__
 #define SOCKET_HAS_ACCEPT4 1

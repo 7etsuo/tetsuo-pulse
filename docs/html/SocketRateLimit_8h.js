@@ -1,7 +1,6 @@
 var SocketRateLimit_8h =
 [
     [ "T", "group__utilities.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
-    [ "SocketRateLimit_T", "group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5", null ],
     [ "SocketRateLimit_available", "group__utilities.html#gaeccac0acfc81db650718aa84162c51f3", null ],
     [ "SocketRateLimit_configure", "group__utilities.html#ga04a0e83dac474ff6a45597eb4e8a37a0", null ],
     [ "SocketRateLimit_debug_live_count", "group__utilities.html#gae39058e1d9114bc4dc403587d062b2d6", null ],

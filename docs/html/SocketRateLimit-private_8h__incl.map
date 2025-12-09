@@ -1,0 +1,57 @@
+<map id="SocketRateLimit&#45;private.h" name="SocketRateLimit&#45;private.h">
+<area shape="rect" id="Node000001" title="Private implementation details for the token bucket rate limiter module." alt="" coords="138,5,312,31"/>
+<area shape="rect" id="Node000002" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="33,152,129,177"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="150,33,109,51,91,64,76,80,71,94,69,108,74,138,69,139,64,109,65,92,72,77,87,60,106,46,148,28"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="18,225,88,251"/>
+<area shape="poly" id="edge32_Node000001_Node000003" title=" " alt="" coords="170,33,116,52,89,65,64,81,37,102,18,123,9,147,13,177,22,196,34,213,30,217,17,199,8,178,4,146,13,120,34,98,61,77,86,60,114,47,168,28"/>
+<area shape="rect" id="Node000006" href="$SocketRateLimit_8h.html" title="Token bucket rate limiter for controlling operation rates." alt="" coords="87,79,246,104"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="217,33,186,70,182,67,213,29"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="204,152,270,177"/>
+<area shape="poly" id="edge33_Node000001_Node000007" title=" " alt="" coords="236,29,249,51,260,78,260,111,251,140,246,138,255,110,254,79,244,54,231,32"/>
+<area shape="rect" id="Node000008" href="$SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling." alt="" coords="366,79,489,104"/>
+<area shape="poly" id="edge10_Node000001_Node000008" title=" " alt="" coords="258,28,383,72,381,77,257,33"/>
+<area shape="rect" id="Node000022" title=" " alt="" coords="514,79,590,104"/>
+<area shape="poly" id="edge31_Node000001_Node000022" title=" " alt="" coords="279,28,501,76,500,81,278,33"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="79,179,65,214,60,212,74,177"/>
+<area shape="rect" id="Node000004" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="112,225,215,251"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="96,175,141,214,138,218,92,179"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="128,299,200,324"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="166,251,166,285,161,285,161,251"/>
+<area shape="poly" id="edge6_Node000006_Node000002" title=" " alt="" coords="154,106,107,145,104,141,151,102"/>
+<area shape="poly" id="edge8_Node000006_Node000003" title=" " alt="" coords="96,106,55,124,38,137,23,153,18,168,20,183,36,213,31,216,15,184,13,167,19,151,34,133,53,119,94,102"/>
+<area shape="poly" id="edge7_Node000006_Node000004" title=" " alt="" coords="169,105,167,212,161,212,163,104"/>
+<area shape="poly" id="edge9_Node000006_Node000007" title=" " alt="" coords="180,102,218,140,214,144,176,106"/>
+<area shape="poly" id="edge19_Node000008_Node000002" title=" " alt="" coords="372,107,143,153,142,148,371,101"/>
+<area shape="poly" id="edge14_Node000008_Node000003" title=" " alt="" coords="409,107,282,180,102,227,101,222,280,175,406,102"/>
+<area shape="poly" id="edge20_Node000008_Node000004" title=" " alt="" coords="418,107,380,142,328,180,274,205,221,224,219,219,272,200,325,175,376,138,414,103"/>
+<area shape="poly" id="edge15_Node000008_Node000007" title=" " alt="" coords="398,107,282,149,280,144,396,102"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="866,225,928,251"/>
+<area shape="poly" id="edge11_Node000008_Node000009" title=" " alt="" coords="490,100,622,124,731,149,864,217,862,221,729,155,621,129,489,105"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="396,152,460,177"/>
+<area shape="poly" id="edge12_Node000008_Node000010" title=" " alt="" coords="430,104,430,138,425,138,425,104"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="484,152,553,177"/>
+<area shape="poly" id="edge13_Node000008_Node000011" title=" " alt="" coords="444,102,494,141,491,145,441,106"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="953,225,1014,251"/>
+<area shape="poly" id="edge16_Node000008_Node000012" title=" " alt="" coords="490,100,501,101,603,105,736,107,803,110,865,117,917,130,956,150,968,163,976,179,984,211,979,212,971,181,964,166,953,154,915,135,864,122,802,115,735,112,603,111,501,107,489,105"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="794,152,859,177"/>
+<area shape="poly" id="edge17_Node000008_Node000013" title=" " alt="" coords="490,100,775,149,781,151,780,156,774,155,489,105"/>
+<area shape="rect" id="Node000014" title=" " alt="" coords="884,152,942,177"/>
+<area shape="poly" id="edge18_Node000008_Node000014" title=" " alt="" coords="490,100,501,101,684,122,766,131,870,149,869,155,765,137,684,127,501,107,489,105"/>
+<area shape="rect" id="Node000015" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="577,152,718,177"/>
+<area shape="poly" id="edge21_Node000008_Node000015" title=" " alt="" coords="464,101,600,145,598,150,462,107"/>
+<area shape="poly" id="edge26_Node000015_Node000003" title=" " alt="" coords="577,179,565,180,436,193,335,200,233,209,102,228,101,223,232,204,334,195,436,188,565,175,576,173"/>
+<area shape="poly" id="edge22_Node000015_Node000009" title=" " alt="" coords="688,175,853,221,851,227,687,180"/>
+<area shape="poly" id="edge27_Node000015_Node000012" title=" " alt="" coords="710,175,940,223,939,228,709,180"/>
+<area shape="rect" id="Node000016" title=" " alt="" coords="240,225,298,251"/>
+<area shape="poly" id="edge23_Node000015_Node000016" title=" " alt="" coords="577,179,457,199,312,228,311,223,456,194,576,174"/>
+<area shape="rect" id="Node000017" title=" " alt="" coords="323,225,410,251"/>
+<area shape="poly" id="edge24_Node000015_Node000017" title=" " alt="" coords="603,180,424,225,422,220,602,175"/>
+<area shape="rect" id="Node000018" title=" " alt="" coords="434,225,528,251"/>
+<area shape="poly" id="edge25_Node000015_Node000018" title=" " alt="" coords="622,180,522,222,520,217,620,175"/>
+<area shape="rect" id="Node000019" title=" " alt="" coords="552,225,650,251"/>
+<area shape="poly" id="edge28_Node000015_Node000019" title=" " alt="" coords="642,179,618,215,614,212,638,176"/>
+<area shape="rect" id="Node000020" title=" " alt="" coords="674,225,749,251"/>
+<area shape="poly" id="edge29_Node000015_Node000020" title=" " alt="" coords="660,176,694,213,690,217,656,179"/>
+<area shape="rect" id="Node000021" title=" " alt="" coords="774,225,842,251"/>
+<area shape="poly" id="edge30_Node000015_Node000021" title=" " alt="" coords="674,175,770,217,768,222,672,180"/>
+</map>

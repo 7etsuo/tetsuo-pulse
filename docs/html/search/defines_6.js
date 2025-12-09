@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['t_0',['t',['../SocketSYNProtect_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketSYNProtect.h'],['../SocketBuf_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketBuf.h'],['../SocketDgram_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketDgram.h'],['../SocketIO_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketIO.h'],['../SocketReconnect_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketReconnect.h'],['../SocketDTLSContext_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketDTLSContext.h'],['../SocketTLSContext_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketTLSContext.h']]]
+  ['raise_5fdtls_5fctx_5ferror_5ffmt_0',['RAISE_DTLS_CTX_ERROR_FMT',['../SocketDTLS-private_8h.html#ad718ae67d2e6b5e48460d1f627d06275',1,'SocketDTLS-private.h']]],
+  ['raise_5fws_5ferror_1',['RAISE_WS_ERROR',['../SocketWS-private_8h.html#ad47afcd717fda7a921345994a4e5f4a5',1,'SocketWS-private.h']]]
 ];

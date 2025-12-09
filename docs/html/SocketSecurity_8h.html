@@ -132,6 +132,13 @@ $(document).ready(function(){initNavTree('SocketSecurity_8h.html',''); initResiz
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="SocketSecurity_8h__incl.svg" width="100%" height="437"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
+</div><div class="textblock"><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-1-trigger" src="closed.png" alt="+"/> This graph shows which files directly or indirectly include this file:</div>
+<div id="dynsection-1-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-1-content" class="dyncontent" style="display:none;">
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketSecurity_8h__dep__incl.svg" width="174" height="110"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
 </div>
 <p><a href="SocketSecurity_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
@@ -143,13 +150,16 @@ Data Structures</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a96a4c4c07078b24744bf2accf84ccaf0" id="r_a96a4c4c07078b24744bf2accf84ccaf0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketSecurity_8h.html#a96a4c4c07078b24744bf2accf84ccaf0">SOCKET_SECURITY_MAX_ALLOCATION</a>&#160;&#160;&#160;(256UL * 1024 * 1024)</td></tr>
-<tr class="separator:a96a4c4c07078b24744bf2accf84ccaf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2c9ad192fd1c92f1b2af612d213f8dc5" id="r_a2c9ad192fd1c92f1b2af612d213f8dc5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketSecurity_8h.html#a2c9ad192fd1c92f1b2af612d213f8dc5">SOCKET_SECURITY_MAX_BODY_SIZE</a>&#160;&#160;&#160;(100 * 1024 * 1024)</td></tr>
-<tr class="separator:a2c9ad192fd1c92f1b2af612d213f8dc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aecf2f2b54a209d002ce224d7de9c5e4b" id="r_aecf2f2b54a209d002ce224d7de9c5e4b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketSecurity_8h.html#aecf2f2b54a209d002ce224d7de9c5e4b">SOCKET_SECURITY_MAX_REQUEST_TIMEOUT_MS</a>&#160;&#160;&#160;60000</td></tr>
-<tr class="separator:aecf2f2b54a209d002ce224d7de9c5e4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab118e25b6e3d4b7ba3abb6fb465a4908" id="r_gab118e25b6e3d4b7ba3abb6fb465a4908"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gab118e25b6e3d4b7ba3abb6fb465a4908">SOCKET_SECURITY_VALID_SIZE</a>(s)&#160;&#160;&#160;  ((size_t)(s) &gt; 0 &amp;&amp; (size_t)(s) &lt;= <a class="el" href="SocketSecurity_8h.html#a96a4c4c07078b24744bf2accf84ccaf0">SOCKET_SECURITY_MAX_ALLOCATION</a>)</td></tr>
+<tr class="memitem:ga96a4c4c07078b24744bf2accf84ccaf0" id="r_ga96a4c4c07078b24744bf2accf84ccaf0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga96a4c4c07078b24744bf2accf84ccaf0">SOCKET_SECURITY_MAX_ALLOCATION</a>&#160;&#160;&#160;(256UL * 1024 * 1024)</td></tr>
+<tr class="memdesc:ga96a4c4c07078b24744bf2accf84ccaf0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum single allocation size permitted by security policy.  <br /></td></tr>
+<tr class="separator:ga96a4c4c07078b24744bf2accf84ccaf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2c9ad192fd1c92f1b2af612d213f8dc5" id="r_ga2c9ad192fd1c92f1b2af612d213f8dc5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga2c9ad192fd1c92f1b2af612d213f8dc5">SOCKET_SECURITY_MAX_BODY_SIZE</a>&#160;&#160;&#160;(100 * 1024 * 1024)</td></tr>
+<tr class="memdesc:ga2c9ad192fd1c92f1b2af612d213f8dc5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum permitted size for HTTP request/response bodies.  <br /></td></tr>
+<tr class="separator:ga2c9ad192fd1c92f1b2af612d213f8dc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaecf2f2b54a209d002ce224d7de9c5e4b" id="r_gaecf2f2b54a209d002ce224d7de9c5e4b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaecf2f2b54a209d002ce224d7de9c5e4b">SOCKET_SECURITY_MAX_REQUEST_TIMEOUT_MS</a>&#160;&#160;&#160;60000</td></tr>
+<tr class="memdesc:gaecf2f2b54a209d002ce224d7de9c5e4b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum allowed request timeout value in milliseconds.  <br /></td></tr>
+<tr class="separator:gaecf2f2b54a209d002ce224d7de9c5e4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab118e25b6e3d4b7ba3abb6fb465a4908" id="r_gab118e25b6e3d4b7ba3abb6fb465a4908"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gab118e25b6e3d4b7ba3abb6fb465a4908">SOCKET_SECURITY_VALID_SIZE</a>(s)&#160;&#160;&#160;  ((size_t)(s) &gt; 0 &amp;&amp; (size_t)(s) &lt;= <a class="el" href="group__foundation.html#ga96a4c4c07078b24744bf2accf84ccaf0">SOCKET_SECURITY_MAX_ALLOCATION</a>)</td></tr>
 <tr class="memdesc:gab118e25b6e3d4b7ba3abb6fb465a4908"><td class="mdescLeft">&#160;</td><td class="mdescRight">Macro to check if a size is within security allocation limits.  <br /></td></tr>
 <tr class="separator:gab118e25b6e3d4b7ba3abb6fb465a4908"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac0f2047bd8559eff753e7eeeac8c10d2" id="r_gac0f2047bd8559eff753e7eeeac8c10d2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gac0f2047bd8559eff753e7eeeac8c10d2">SOCKET_SECURITY_CHECK_OVERFLOW_MUL</a>(a,  b)&#160;&#160;&#160;  ((b) == 0 || (a) &lt;= SIZE_MAX / (b))</td></tr>
@@ -198,7 +208,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:ga85d842e423cb2cf351f0e49b4302f138"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if TLS support is enabled in the build.  <br /></td></tr>
 <tr class="separator:ga85d842e423cb2cf351f0e49b4302f138"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab104c1727674778ad21a4648148f3ce1" id="r_gab104c1727674778ad21a4648148f3ce1"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gab104c1727674778ad21a4648148f3ce1">SocketSecurity_has_compression</a> (void)</td></tr>
-<tr class="memdesc:gab104c1727674778ad21a4648148f3ce1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if HTTP compression support is compiled in.  <br /></td></tr>
+<tr class="memdesc:gab104c1727674778ad21a4648148f3ce1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if HTTP/1.1 compression support (gzip/deflate/brotli) is enabled in the build.  <br /></td></tr>
 <tr class="separator:gab104c1727674778ad21a4648148f3ce1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
@@ -239,59 +249,7 @@ Variables</h2></td></tr>
 <a class="el" href="group__security.html#ga79a403f2f54f21c90a92e9cb73e24cbc" title="Create server TLS context with cert/key.">SocketTLSContext_new_server()</a> for TLS 1.3 enforcement. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketSecurity_8h_source.html">SocketSecurity.h</a>.</p>
-</div><h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a96a4c4c07078b24744bf2accf84ccaf0" name="a96a4c4c07078b24744bf2accf84ccaf0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a96a4c4c07078b24744bf2accf84ccaf0">&#9670;&#160;</a></span>SOCKET_SECURITY_MAX_ALLOCATION</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_SECURITY_MAX_ALLOCATION&#160;&#160;&#160;(256UL * 1024 * 1024)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum allocation size for security checks (256MB default) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketSecurity_8h_source.html#l00125">125</a> of file <a class="el" href="SocketSecurity_8h_source.html">SocketSecurity.h</a>.</p>
-
-</div>
-</div>
-<a id="a2c9ad192fd1c92f1b2af612d213f8dc5" name="a2c9ad192fd1c92f1b2af612d213f8dc5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2c9ad192fd1c92f1b2af612d213f8dc5">&#9670;&#160;</a></span>SOCKET_SECURITY_MAX_BODY_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_SECURITY_MAX_BODY_SIZE&#160;&#160;&#160;(100 * 1024 * 1024)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum body size for HTTP requests/responses (100MB default) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketSecurity_8h_source.html#l00130">130</a> of file <a class="el" href="SocketSecurity_8h_source.html">SocketSecurity.h</a>.</p>
-
-</div>
-</div>
-<a id="aecf2f2b54a209d002ce224d7de9c5e4b" name="aecf2f2b54a209d002ce224d7de9c5e4b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aecf2f2b54a209d002ce224d7de9c5e4b">&#9670;&#160;</a></span>SOCKET_SECURITY_MAX_REQUEST_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_SECURITY_MAX_REQUEST_TIMEOUT_MS&#160;&#160;&#160;60000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum request timeout in milliseconds (60s default) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketSecurity_8h_source.html#l00135">135</a> of file <a class="el" href="SocketSecurity_8h_source.html">SocketSecurity.h</a>.</p>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

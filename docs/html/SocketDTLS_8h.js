@@ -1,6 +1,5 @@
 var SocketDTLS_8h =
 [
-    [ "SocketDTLSContext_T", "group__security.html#ga05a015dd6cc639dd38a5853194c9002f", null ],
     [ "DTLSHandshakeState", "group__security.html#ga8e83c28a6ad188b97243c4b237ee075a", [
       [ "DTLS_HANDSHAKE_NOT_STARTED", "group__security.html#gga8e83c28a6ad188b97243c4b237ee075aac64c8906fdc9860f22cacc933593f01d", null ],
       [ "DTLS_HANDSHAKE_IN_PROGRESS", "group__security.html#gga8e83c28a6ad188b97243c4b237ee075aad8f8ad815c25bf8e696b02a71795f66d", null ],

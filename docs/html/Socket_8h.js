@@ -1,7 +1,6 @@
 var Socket_8h =
 [
     [ "T", "group__core__io.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
-    [ "Socket_T", "group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14", null ],
     [ "Socket_accept", "group__core__io.html#ga32b67d95639513cd6a602f6175b48f15", null ],
     [ "Socket_bandwidth_wait_ms", "group__core__io.html#ga89643e52780099fe0012e2fa22725e07", null ],
     [ "Socket_bind", "group__core__io.html#gacb65d693d8c93e2a1fe6411dd0d0af98", null ],
@@ -14,7 +13,6 @@ var Socket_8h =
     [ "Socket_connect_async_cancel", "group__core__io.html#ga0f9515df873a2af7b054451afec8fd71", null ],
     [ "Socket_connect_unix", "group__core__io.html#gad353c95a8994569af7b650f1fda7036f", null ],
     [ "Socket_connect_with_addrinfo", "group__core__io.html#ga28271af8ebad671a64fd37ffb2d07e0c", null ],
-    [ "Socket_debug_live_count", "group__core__io.html#gaa8cacd863c275e6e12f7c63b65708e1b", null ],
     [ "Socket_error_is_retryable", "group__core__io.html#ga8517adf0df2e5331a952fb713ec314f9", null ],
     [ "Socket_fd", "group__core__io.html#ga4d727948c677509eec04746585819877", null ],
     [ "Socket_free", "group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37", null ],

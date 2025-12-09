@@ -1,7 +1,11 @@
 <map id="SocketSYNProtect.h" name="SocketSYNProtect.h">
-<area shape="rect" id="Node000001" title="SYN flood protection using IP reputation and adaptive rate limiting." alt="" coords="5,5,149,31"/>
-<area shape="rect" id="Node000002" href="$SocketPool_8h.html" title="Connection pooling with automatic lifecycle management." alt="" coords="27,79,127,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="80,44,80,79,75,79,75,44"/>
-<area shape="rect" id="Node000003" href="$graceful__shutdown_8c.html" title=" " alt="" coords="6,152,149,177"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="80,118,80,152,75,152,75,118"/>
+<area shape="rect" id="Node000001" title="SYN flood protection using IP reputation and adaptive rate limiting." alt="" coords="171,5,315,31"/>
+<area shape="rect" id="Node000002" href="$SocketPool_8h.html" title="Connection pooling with automatic lifecycle management." alt="" coords="109,79,209,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="221,42,175,80,171,76,218,38"/>
+<area shape="rect" id="Node000005" href="$SocketSYNProtect-private_8h.html" title="Internal SYN flood protection implementation details for the Security Modules group." alt="" coords="234,79,421,104"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="269,38,315,76,312,80,266,42"/>
+<area shape="rect" id="Node000003" href="$SocketPool-private_8h.html" title="Private implementation details and internal structures for SocketPool module." alt="" coords="5,152,148,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="137,115,92,154,88,150,134,111"/>
+<area shape="rect" id="Node000004" href="$graceful__shutdown_8c.html" title=" " alt="" coords="172,152,315,177"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="185,111,231,150,228,154,182,115"/>
 </map>

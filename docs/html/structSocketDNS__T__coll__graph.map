@@ -1,0 +1,7 @@
+<map id="SocketDNS_T" name="SocketDNS_T">
+<area shape="rect" id="Node000001" title="Async DNS resolver structure." alt="" coords="33,5,140,31"/>
+<area shape="rect" id="Node000002" href="$group__dns.html#structSocketDNS__Request__T" title="DNS resolution request structure." alt="" coords="5,132,168,157"/>
+<area shape="poly" id="edge3_Node000002_Node000001" title=" " alt="" coords="45,40,30,56,24,76,30,97,45,116,64,129,61,134,41,120,26,100,18,76,26,53,41,36"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,119,109,98,113,77,110,56,95,32,100,29,114,54,119,77,115,99,105,121"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="183,133,191,138,195,145,187,155,169,159,168,154,184,150,189,144,187,141,180,138"/>
+</map>

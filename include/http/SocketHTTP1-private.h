@@ -2,6 +2,7 @@
  * @file SocketHTTP1-private.h
  * @brief Internal HTTP/1.1 parser structures and DFA state machine.
  * @ingroup http
+ * @addtogroup http1
  *
  * This header contains internal structures for the HTTP/1.1 parser implementation.
  * NOT for public consumption - use SocketHTTP1.h instead.
@@ -115,6 +116,7 @@ typedef enum
  * @see RFC 7230 sections 3 (message format) and 4 (request/response) for grammar.
  * @see SocketHTTP1_Parser_execute() for how states are advanced.
  * @see SocketHTTP1.h for public parser interface.
+ * @see @ref http1 "HTTP/1.1 Module" for group documentation.
  */
 typedef enum
 {
@@ -234,9 +236,10 @@ extern const uint8_t http1_resp_action[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES];
  * incremental parsing. Allocations from provided Arena_T; grows by doubling
  * capacity as needed up to configured limits.
 
- * @var data      Pointer to the allocated buffer data (null-terminated after terminate()).
- * @var len       Current length of data stored (excluding null terminator).
- * @var capacity  Current allocated size of the data buffer.
+ * Fields:
+ * - data: Pointer to the allocated buffer data (null-terminated after terminate()).
+ * - len: Current length of data stored (excluding null terminator).
+ * - capacity: Current allocated size of the data buffer.
 
  * @see http1_tokenbuf_init() to allocate and initialize.
  * @see http1_tokenbuf_append() to add characters with growth.

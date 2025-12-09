@@ -3,8 +3,8 @@
 
 /**
  * @file SocketIPTracker.h
- * @ingroup security
  * @brief Per-IP connection tracking for rate limiting and DoS protection.
+ * @ingroup security
  *
  * Tracks the number of concurrent connections from each IP address.
  * Used to enforce per-IP connection limits to prevent single-source
@@ -18,6 +18,8 @@
  *
  * @see SocketRateLimit_T for bandwidth rate limiting.
  * @see SocketPool_T for connection pool integration.
+ * @see SocketPool_setmaxperip() for configuring per-IP connection limits in pools.
+ * @see SocketPool_track_ip() and SocketPool_release_ip() for pool-managed IP tracking.
  * @see @ref connection_mgmt for connection management modules.
  *
  * PLATFORM REQUIREMENTS:
@@ -112,6 +114,7 @@ extern void SocketIPTracker_free (T *tracker);
  * @return 1 if allowed (under limit), 0 if limit reached.
  * @threadsafe Yes - uses internal mutex.
  * @see SocketIPTracker_release() to decrement count.
+ * @see SocketPool_track_ip() for equivalent pool-integrated operation.
  */
 extern int SocketIPTracker_track (T tracker, const char *ip);
 
@@ -127,6 +130,7 @@ extern int SocketIPTracker_track (T tracker, const char *ip);
  *
  * @threadsafe Yes - uses internal mutex.
  * @see SocketIPTracker_track() to increment count.
+ * @see SocketPool_release_ip() for equivalent pool-integrated operation.
  */
 extern void SocketIPTracker_release (T tracker, const char *ip);
 
@@ -154,6 +158,7 @@ extern int SocketIPTracker_count (T tracker, const char *ip);
  *
  * @threadsafe Yes - uses internal mutex.
  * @see SocketIPTracker_getmax() to retrieve current limit.
+ * @see SocketPool_setmaxperip() for pool equivalent configuration.
  */
 extern void SocketIPTracker_setmax (T tracker, int max_per_ip);
 

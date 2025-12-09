@@ -42,6 +42,7 @@
 /**
  * @brief Minimum wait time in milliseconds for rate limiting operations.
  * @ingroup utilities
+ * @internal
  *
  * When tokens are needed but calculated wait is zero, return this minimum
  * to ensure callers always wait at least a small amount.
@@ -54,6 +55,7 @@
 /**
  * @brief Return value indicating impossible token requests.
  * @ingroup utilities
+ * @internal
  *
  * Returned by SocketRateLimit_wait_time_ms() when requested tokens exceed
  * bucket_size, making the request impossible to fulfill.
@@ -114,9 +116,17 @@
  * Uses monotonic time (CLOCK_MONOTONIC) for refill calculations to handle
  * system clock adjustments gracefully.
  *
+ * @var SocketRateLimit_T::tokens_per_sec Configured token refill rate in tokens per second.
+ * @var SocketRateLimit_T::bucket_size Configured maximum bucket capacity (burst allowance).
+ * @var SocketRateLimit_T::tokens Current number of available tokens (refilled over time).
+ * @var SocketRateLimit_T::last_refill_ms Monotonic timestamp (ms) of last refill/acquire.
+ * @var SocketRateLimit_T::mutex Mutex protecting all operations and fields.
+ * @var SocketRateLimit_T::arena Arena for this instance's memory allocation (NULL for malloc).
+ * @var SocketRateLimit_T::initialized State flag: -1=shutdown (during free), 0=uninitialized, 1=ready.
+ *
  * @see SocketRateLimit_T public opaque type.
  * @see SocketRateLimit_new() for creation and initialization.
- * @see SocketRateLimit_private.h for private details.
+ * @see SocketRateLimit.c for static internal helper functions.
  */
 struct T
 {

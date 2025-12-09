@@ -152,17 +152,41 @@
 #define SOCKET_DTLS_MAX_MTU 9000
 #endif
 
-/* Maximum DTLS record size (same as TLS) */
+/**
+ * @brief Maximum size of a single DTLS record in bytes.
+ * @ingroup dtls_config
+ * @details Matches TLS maximum record size of 16384 bytes per RFC 6347 Section 4.2.3.
+ * Used for internal buffer sizing to accommodate full records without truncation.
+ * @see SOCKET_DTLS_MAX_PAYLOAD for effective application data limit after overhead.
+ * @see RFC 6347 "Datagram Transport Layer Security Version 1.2" for record layer details.
+ */
 #ifndef SOCKET_DTLS_MAX_RECORD_SIZE
 #define SOCKET_DTLS_MAX_RECORD_SIZE 16384
 #endif
 
-/* DTLS record overhead (header + MAC + padding worst case) */
+/**
+ * @brief Estimated overhead bytes per DTLS record for conservative buffer sizing.
+ * @ingroup dtls_config
+ * @details Includes 13-byte record header, variable MAC (up to 20 bytes), explicit IV, padding, etc.
+ * Conservative 64-byte estimate accounts for worst-case scenarios across ciphersuites.
+ * Used in payload calculations to prevent fragmentation.
+ * @see SOCKET_DTLS_MAX_PAYLOAD for computed max application data.
+ * @see RFC 6347 Section 4.2.3 for record format and overhead details.
+ */
 #ifndef SOCKET_DTLS_RECORD_OVERHEAD
 #define SOCKET_DTLS_RECORD_OVERHEAD 64
 #endif
 
-/* Maximum application data per record (MTU - overhead - IP/UDP headers) */
+/**
+ * @brief Maximum application data payload per DTLS record using default MTU.
+ * @ingroup dtls_config
+ * @details Computed as (default MTU - record overhead - 28 bytes for IPv4/UDP headers).
+ * Ensures packets fit within default MTU without IP fragmentation.
+ * Actual value depends on network path MTU; use path MTU discovery for optimization.
+ * @see SOCKET_DTLS_DEFAULT_MTU
+ * @see SOCKET_DTLS_RECORD_OVERHEAD
+ * @see RFC 6347 Section 4.2.5 "Path MTU" for fragmentation avoidance.
+ */
 #ifndef SOCKET_DTLS_MAX_PAYLOAD
 #define SOCKET_DTLS_MAX_PAYLOAD                                               \
   (SOCKET_DTLS_DEFAULT_MTU - SOCKET_DTLS_RECORD_OVERHEAD - 28)
@@ -334,9 +358,19 @@
 #define SOCKET_DTLS_VALID_TIMEOUT(ms)                                         \
   ((int)(ms) >= 0 && (int)(ms) <= SOCKET_DTLS_MAX_TIMEOUT_MS)
 
+
+
 #else /* SOCKET_HAS_TLS not defined */
 
-/* Stub definitions when DTLS is disabled */
+/**
+ * @brief Stub definitions for DTLS configuration constants when TLS support is disabled.
+ * @ingroup security
+ * @details These compile-time stubs enable header inclusion and conditional compilation
+ * without OpenSSL dependency. Values are set to safe zeros or minimal defaults to
+ * prevent misuse in disabled mode. Do not use these values for protocol operations.
+ * @see dtls_config group documentation for enabled-mode constants and details.
+ * @see SocketDTLSConfig.h main documentation for full configuration reference.
+ */
 #define SOCKET_DTLS_MIN_VERSION 0
 #define SOCKET_DTLS_MAX_VERSION 0
 #define SOCKET_DTLS_DEFAULT_MTU 1400
@@ -344,5 +378,8 @@
 #define SOCKET_DTLS_ERROR_BUFSIZE 512
 
 #endif /* SOCKET_HAS_TLS */
+/**
+ * @} */ /* dtls_config */ 
+
 
 #endif

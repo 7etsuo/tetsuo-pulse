@@ -1,0 +1,4 @@
+<map id="SocketSYN_BlacklistEntry" name="SocketSYN_BlacklistEntry">
+<area shape="rect" id="Node000001" title="Internal structure for blacklisted IP addresses with expiry support." alt="" coords="5,5,184,31"/>
+<area shape="poly" id="edge1_Node000001_Node000001" title=" " alt="" coords="199,12,211,18,185,25,184,19,205,18,197,17"/>
+</map>

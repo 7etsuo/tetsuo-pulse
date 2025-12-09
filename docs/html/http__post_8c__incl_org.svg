@@ -110,7 +110,7 @@
 <!-- Node8 -->
 <g id="Node000008" class="node">
 <title>Node8</title>
-<g id="a_Node000008"><a xlink:href="SocketHTTPClient_8h.html" target="_top" xlink:title="High&#45;level HTTP client library with pooling, async support, and protocol negotiation.">
+<g id="a_Node000008"><a xlink:href="SocketHTTPClient_8h.html" target="_top" xlink:title="Public API for the HTTP client module, including types, functions, and configuration.">
 <polygon fill="white" stroke="#666666" points="312.5,-415 185.5,-415 185.5,-396 312.5,-396 312.5,-415"/>
 <text text-anchor="middle" x="249" y="-403" font-family="Helvetica,sans-Serif" font-size="10.00">http/SocketHTTPClient.h</text>
 </a>

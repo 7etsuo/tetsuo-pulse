@@ -10,7 +10,7 @@
 <area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="277,25,522,76,521,81,276,30"/>
 <area shape="rect" id="Node000006" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="557,533,659,559"/>
 <area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="209,33,175,52,143,80,127,103,118,122,113,143,112,171,112,400,115,416,124,430,159,456,212,478,276,496,419,523,544,537,543,542,418,528,275,502,210,483,157,461,120,434,110,418,107,401,107,171,108,142,113,120,123,100,139,77,172,48,207,28"/>
-<area shape="rect" id="Node000008" href="$SocketHTTPClient_8h.html" title="High&#45;level HTTP client library with pooling, async support, and protocol negotiation." alt="" coords="253,79,422,104"/>
+<area shape="rect" id="Node000008" href="$SocketHTTPClient_8h.html" title="Public API for the HTTP client module, including types, functions, and configuration." alt="" coords="253,79,422,104"/>
 <area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="254,28,311,68,308,73,251,33"/>
 <area shape="rect" id="Node000007" title=" " alt="" coords="572,607,644,632"/>
 <area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="611,559,611,593,605,593,605,559"/>

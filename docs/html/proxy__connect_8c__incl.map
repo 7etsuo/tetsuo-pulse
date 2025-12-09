@@ -12,7 +12,7 @@
 <area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="1919,17,2083,23,2183,31,2285,43,2378,61,2456,86,2486,102,2509,120,2524,140,2529,163,2529,387,2523,401,2506,414,2446,437,2358,459,2251,478,2023,508,1838,527,1837,522,2022,503,2251,473,2356,454,2444,432,2503,409,2519,397,2524,385,2524,164,2519,142,2505,124,2483,107,2454,91,2377,67,2284,49,2183,36,2083,28,1918,22"/>
 <area shape="rect" id="Node000008" href="$Socket_8h.html" title="High&#45;level TCP/IP and Unix domain socket interface." alt="" coords="1309,299,1427,324"/>
 <area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="1800,25,1714,31,1617,42,1527,58,1492,69,1467,81,1443,101,1423,125,1408,153,1395,182,1380,239,1373,285,1367,284,1374,238,1390,180,1403,150,1419,122,1439,97,1464,76,1490,64,1526,53,1616,37,1714,26,1799,20"/>
-<area shape="rect" id="Node000027" href="$SocketProxy_8h.html" title="Proxy tunneling support for HTTP CONNECT and SOCKS protocols." alt="" coords="1477,79,1627,104"/>
+<area shape="rect" id="Node000027" href="$SocketProxy_8h.html" title="Proxy tunneling module for HTTP CONNECT and SOCKS protocols." alt="" coords="1477,79,1627,104"/>
 <area shape="poly" id="edge39_Node000001_Node000027" title=" " alt="" coords="1810,33,1616,78,1614,73,1809,28"/>
 <area shape="rect" id="Node000031" href="$SocketTLSContext_8h.html" title="TLS context management with secure defaults and certificate handling." alt="" coords="1896,152,2059,177"/>
 <area shape="poly" id="edge65_Node000001_Node000031" title=" " alt="" coords="1870,29,1961,140,1957,143,1866,33"/>

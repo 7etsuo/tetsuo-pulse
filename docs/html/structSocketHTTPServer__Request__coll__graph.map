@@ -1,0 +1,12 @@
+<map id="SocketHTTPServer_Request_T" name="SocketHTTPServer_Request_T">
+<area shape="rect" id="Node000001" title="Internal implementation details of the SocketHTTPServer_Request opaque type." alt="" coords="39,273,245,299"/>
+<area shape="rect" id="Node000002" href="$group__http.html#structServerConnection" title="Core internal structure representing an active HTTP client connection." alt="" coords="79,183,205,209"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="145,222,145,273,139,273,139,222"/>
+<area shape="poly" id="edge5_Node000002_Node000002" title=" " alt="" coords="221,187,232,196,224,204,206,207,205,202,222,199,227,196,218,192"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="32,93,111,119"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="91,128,135,181,130,185,87,131"/>
+<area shape="rect" id="Node000004" href="$group__foundation.html#structSocketTimeouts__T" title="Timeout configuration structure for socket operations." alt="" coords="5,5,137,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="74,45,74,93,69,93,69,45"/>
+<area shape="rect" id="Node000005" href="$group__http.html#structSocketHTTP__Request" title="Protocol&#45;agnostic representation of an HTTP request message." alt="" coords="135,93,290,119"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="197,131,154,185,149,181,193,128"/>
+</map>

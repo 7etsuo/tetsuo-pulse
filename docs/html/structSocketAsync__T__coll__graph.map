@@ -1,0 +1,10 @@
+<map id="SocketAsync_T" name="SocketAsync_T">
+<area shape="rect" id="Node000001" title="Opaque structure representing the asynchronous I/O context." alt="" coords="14,284,129,309"/>
+<area shape="rect" id="Node000002" href="$structAsyncRequest.html" title="Internal structure for tracking asynchronous I/O requests." alt="" coords="17,196,125,221"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="74,235,74,283,69,283,69,235"/>
+<area shape="poly" id="edge4_Node000002_Node000002" title=" " alt="" coords="141,200,152,209,144,217,126,219,125,214,142,212,147,209,138,205"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="32,93,111,119"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="74,133,74,196,69,196,69,133"/>
+<area shape="rect" id="Node000004" href="$group__foundation.html#structSocketTimeouts__T" title="Timeout configuration structure for socket operations." alt="" coords="5,5,137,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="74,45,74,93,69,93,69,45"/>
+</map>

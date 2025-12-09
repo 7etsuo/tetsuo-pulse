@@ -3,8 +3,6 @@ var SocketDNS_8h =
     [ "T", "group__dns.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
     [ "Request_T", "group__dns.html#gaec7a4f82232cde2b125b4b1e1df03b1f", null ],
     [ "SocketDNS_Callback", "group__dns.html#ga88905fdf7322b96426e000683280445d", null ],
-    [ "SocketDNS_Request_T", "group__dns.html#ga478eb3b817f9356537ce3e2acde6bc0f", null ],
-    [ "SocketDNS_T", "group__dns.html#gac9190fe07142a017f86dae46145cb2fd", null ],
     [ "SocketDNS_cancel", "group__dns.html#ga7ca6cf65c0823f0a23aa2c0c5cbe2223", null ],
     [ "SocketDNS_check", "group__dns.html#gad8f2fa5ee464e84f44b4b6059b4813e5", null ],
     [ "SocketDNS_create_completed_request", "group__dns.html#ga494e7ef72d567b90e5fdcb1df6501ea5", null ],

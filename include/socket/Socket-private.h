@@ -17,15 +17,15 @@
  * @see docs/ERROR_HANDLING.md for exception handling in socket operations.
  */
 
-#include "core/Arena.h"           /**< Arena-based memory management for socket allocations. @see core/Arena.h @ingroup foundation */
+#include "core/Arena.h"           /**< Arena-based memory management for socket allocations. @ingroup foundation */
 
-#include "core/SocketConfig.h"       /**< Global socket configuration and default timeouts. @see core/SocketConfig.h @ingroup core_io */
+#include "core/SocketConfig.h"       /**< Global socket configuration and default timeouts. @ingroup core_io */
 
-#include "core/SocketRateLimit.h"
+#include "core/SocketRateLimit.h"     /**< Rate limiting for socket bandwidth control. @ingroup utilities */
 
-#include "socket/Socket.h"
+#include "socket/Socket.h"          /**< Public interface for Socket_T operations. @ingroup core_io */
 
-#include "socket/SocketCommon-private.h"
+#include "socket/SocketCommon-private.h" /**< Shared private base for socket implementations. @ingroup core_io */
 
 #include <stdatomic.h>               /**< C11 atomic operations for thread-safe state management (e.g., free flag). */
 
@@ -35,26 +35,32 @@
  * @ingroup core_io
  * @details These functions maintain a thread-safe counter of active Socket instances
  * for debugging, leak detection, and resource tracking. Called during alloc/free.
- * Tests must verify socket_debug_live_count() == 0 after teardown.
+ * Tests must verify Socket_debug_live_count() == 0 after teardown.
  * @see Socket.h for public debugging if exposed.
- * @note Atomic operations ensure correctness in multi-threaded environments.
+ * @note Thread-safe mechanisms (atomic or mutex) ensure correctness in multi-threaded environments.
  */
  
 /**
- * @brief Atomically increment the global live socket counter.
+ * @brief Increment the global live socket counter.
  * @private
  * @ingroup core_io
  * @details Invoked on successful Socket_T allocation (e.g., Socket_new).
+ * Macro wrapper for thread-safe operation.
+ * @threadsafe Yes - invokes thread-safe SocketLiveCount_increment().
  * @see socket_live_decrement() for balancing decrement.
+ * @see core/SocketCommon.h for live count implementation.
  */
 extern void socket_live_increment(void);
 
 /**
- * @brief Atomically decrement the global live socket counter.
+ * @brief Decrement the global live socket counter.
  * @private
  * @ingroup core_io
  * @details Invoked on Socket_T deallocation (e.g., Socket_free).
+ * Macro wrapper for thread-safe operation.
+ * @threadsafe Yes - invokes thread-safe SocketLiveCount_decrement().
  * @see socket_live_increment() for balancing increment.
+ * @see core/SocketCommon.h for live count implementation.
  */
 extern void socket_live_decrement(void);
 
@@ -64,25 +70,25 @@ extern void socket_live_decrement(void);
  * @ingroup core_io
  * @return int The current count of allocated Socket_T objects.
  * @details Primarily for unit tests and debug builds to detect leaks.
- * Public equivalent may exist as Socket_debug_live_count() in Socket.h.
+ * Public version available as Socket_debug_live_count() in Socket.h.
+ * @threadsafe Yes - mutex-protected read via SocketLiveCount_get().
+ * @see core/SocketCommon.h for underlying live count structure.
  */
-extern int socket_debug_live_count(void);
+extern int Socket_debug_live_count(void);
 
 #if SOCKET_HAS_TLS
 /**
- * @brief Initialize all TLS-related fields in a newly created or accepted Socket_T.
+ * @brief Initialize TLS-related fields to safe default values (NULL/0).
  * @private
  * @ingroup core_io
  * @param sock The Socket_T instance to initialize.
- * @details Shared utility called from Socket_new(), Socket_accept(), or TLS enable paths.
- * Allocates internal buffers from sock->base.arena and sets up opaque TLS pointers.
- * Prepares for TLS handshake by configuring SNI if provided.
- * @note Only compiled and called when SOCKET_HAS_TLS == 1.
- * @throws Arena_Failed if buffer allocation fails.
- * @throws SocketTLS_Failed if underlying TLS context creation fails.
- * @see tls/SocketTLS.h for public TLS handshake and I/O functions.
- * @see SocketTLS_enable() which may invoke this internally.
- * @see docs/SECURITY.md for TLS best practices and configuration.
+ * @details Shared utility called from Socket_new(), Socket_accept(), and other creation paths.
+ * Sets all TLS fields to defaults for new or accepted sockets.
+ * @note Only compiled when SOCKET_HAS_TLS == 1.
+ * @threadsafe No - direct assignment to socket fields without locking; use during single-threaded construction.
+ * @see socket/Socket.h for socket creation and acceptance.
+ * @see tls/SocketTLS.h for TLS enable and handshake functions.
+ * @see docs/SECURITY.md for TLS security guidelines.
  */
 extern void socket_init_tls_fields(Socket_T sock);
 #endif

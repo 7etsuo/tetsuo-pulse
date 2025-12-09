@@ -1,0 +1,25 @@
+var group__http_structSocketHTTPServer =
+[
+    [ "arena", "group__http.html#acb94b296b6027a91c87888a989860c9e", null ],
+    [ "config", "group__http.html#abfeac7f4a6a29e34d77f18b2c156d0c9", null ],
+    [ "connection_count", "group__http.html#ad77c6e75d51e6d398bd53a055a1b85c0", null ],
+    [ "connections", "group__http.html#a555f3c6c2ce79552c411329bfb10af5a", null ],
+    [ "drain_callback", "group__http.html#ab6b1a9deb2596831f6b6efd8bd3eb8f4", null ],
+    [ "drain_callback_userdata", "group__http.html#aee824fcd4e762b49f35b2bd0cbc3ba52", null ],
+    [ "drain_start_ms", "group__http.html#a02f8a4e70d8ebd64bd6f4ecb8d8e91f9", null ],
+    [ "drain_timeout_ms", "group__http.html#a4a68c31bed72578e27b19cf4a05acfcf", null ],
+    [ "global_rate_limiter", "group__http.html#a25065c9023ffa2d8ad52e63f9b41b604", null ],
+    [ "handler", "group__http.html#a3638b986edd2b6a22e7617b946f89623", null ],
+    [ "handler_userdata", "group__http.html#af71f0994d61ef2564ff1c537a6930348", null ],
+    [ "ip_tracker", "group__http.html#ac96a7600e8e719bb5ae779828d816ad2", null ],
+    [ "listen_socket", "group__http.html#a99580335049a93e18d9c91738d9aedaa", null ],
+    [ "poll", "group__http.html#ace4771540acab364599204f12b0b905e", null ],
+    [ "rate_limiters", "group__http.html#a7b77f331d56cde2f5370e6b29b6ffb20", null ],
+    [ "running", "group__http.html#ab30f4724d58ca6215731e5ff93f61892", null ],
+    [ "state", "group__http.html#ae15811062d47790e6215a091976fc1ab", null ],
+    [ "stats_mutex", "group__http.html#a9517df8601a2c33f1de1debe1ab6450a", null ],
+    [ "stats_prev_requests", "group__http.html#ad6080c60d1cea91bdcb420151e93c615", null ],
+    [ "stats_prev_time_ms", "group__http.html#a1ba46644197f3fd1cb7021e05d0f6e53", null ],
+    [ "validator", "group__http.html#a24863762ecf7b5ba0a8383e1d05363d6", null ],
+    [ "validator_userdata", "group__http.html#a47f8f8115db55305ba7fd0bd0d740a28", null ]
+];

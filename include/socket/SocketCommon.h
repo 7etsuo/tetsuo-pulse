@@ -667,11 +667,14 @@ SocketCommon_check_bound_by_family (const struct sockaddr_storage *addr)
  */
 
 /**
- * @brief SocketLiveCount - Thread-safe live count tracker for socket instances
+ * @brief Thread-safe live count tracker for socket instances.
+ * @ingroup core_io
  *
- * Provides thread-safe increment/decrement operations for tracking
- * live socket instances. Used by both Socket_T and SocketDgram_T
+ * Provides thread-safe increment/decrement operations for tracking live
+ * socket instances. Used by both Socket_T and SocketDgram_T implementations
  * for debugging and leak detection.
+ *
+ * @see Socket_debug_live_count() for querying the count.
  */
 struct SocketLiveCount
 {
@@ -679,6 +682,19 @@ struct SocketLiveCount
   pthread_mutex_t mutex;
 };
 
+/**
+ * @brief Static initializer for SocketLiveCount structure.
+ * @ingroup core_io
+ *
+ * Initializes the count to 0 and the mutex to the default unlocked state
+ * using PTHREAD_MUTEX_INITIALIZER.
+ *
+ * Usage:
+ *   static struct SocketLiveCount tracker = SOCKETLIVECOUNT_STATIC_INIT;
+ *
+ * @see struct SocketLiveCount for field details.
+ * @see SocketLiveCount_increment(), SocketLiveCount_decrement() for usage.
+ */
 #define SOCKETLIVECOUNT_STATIC_INIT                                           \
   {                                                                           \
     0, PTHREAD_MUTEX_INITIALIZER                                              \

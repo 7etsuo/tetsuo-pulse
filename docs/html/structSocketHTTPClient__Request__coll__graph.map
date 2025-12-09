@@ -1,0 +1,7 @@
+<map id="SocketHTTPClient_Request_T" name="SocketHTTPClient_Request_T">
+<area shape="rect" id="Node000001" title="Per&#45;request builder and state for custom HTTP requests." alt="" coords="54,93,257,119"/>
+<area shape="rect" id="Node000002" href="$group__http.html#structSocketHTTP__URI" title="Parsed URI components according to RFC 3986." alt="" coords="5,5,135,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,39,145,91,142,95,89,43"/>
+<area shape="rect" id="Node000003" href="$group__http__client.html#structSocketHTTPClient__Auth" title="Authentication credentials structure." alt="" coords="159,5,325,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="223,42,169,95,166,91,219,38"/>
+</map>

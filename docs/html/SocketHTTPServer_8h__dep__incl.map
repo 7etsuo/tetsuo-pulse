@@ -1,7 +1,9 @@
 <map id="SocketHTTPServer.h" name="SocketHTTPServer.h">
-<area shape="rect" id="Node000001" title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols." alt="" coords="51,5,198,31"/>
-<area shape="rect" id="Node000002" href="$http__server_8c.html" title=" " alt="" coords="5,79,103,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="105,43,67,80,64,77,101,39"/>
-<area shape="rect" id="Node000003" href="$websocket__server_8c.html" title=" " alt="" coords="127,79,266,104"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="148,39,187,77,183,80,145,43"/>
+<area shape="rect" id="Node000001" title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols." alt="" coords="195,5,342,31"/>
+<area shape="rect" id="Node000002" href="$SocketHTTPServer-private_8h.html" title="Private implementation details for HTTP server connection and state management." alt="" coords="5,79,196,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="230,38,129,81,127,76,228,34"/>
+<area shape="rect" id="Node000003" href="$http__server_8c.html" title=" " alt="" coords="220,79,317,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="271,44,271,79,266,79,266,44"/>
+<area shape="rect" id="Node000004" href="$websocket__server_8c.html" title=" " alt="" coords="342,79,481,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="305,34,389,76,387,81,302,39"/>
 </map>

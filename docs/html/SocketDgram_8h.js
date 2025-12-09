@@ -1,7 +1,6 @@
 var SocketDgram_8h =
 [
     [ "T", "SocketDgram_8h.html#a0acb682b8260ab1c60b918599864e2e5", null ],
-    [ "SocketDgram_T", "group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f", null ],
     [ "SocketDgram_bind", "group__core__io.html#ga0c81d9ef1d90e7ab34dd7286f13878ee", null ],
     [ "SocketDgram_connect", "group__core__io.html#gabcb18c16142d3b5ef49bee08a96e15fa", null ],
     [ "SocketDgram_debug_live_count", "group__core__io.html#ga0e8f0a454d58b2ff87878e39960c9187", null ],

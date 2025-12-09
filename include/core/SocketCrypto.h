@@ -1,7 +1,7 @@
 /**
  * @file SocketCrypto.h
- * @ingroup foundation
  * @brief Cryptographic utility functions for secure operations.
+ * @ingroup foundation
  *
  * Provides essential crypto primitives as thin wrappers around OpenSSL (or
  * fallbacks when #SOCKET_HAS_TLS is 0). Used across HTTP, WebSocket, TLS,

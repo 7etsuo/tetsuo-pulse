@@ -2,6 +2,9 @@
  * @file SocketHPACK.h
  * @ingroup http
  * @brief HPACK header compression (RFC 7541) for HTTP/2.
+ * @defgroup hpack HPACK Header Compression Module
+ * @ingroup http
+ * @{
  *
  * Provides HPACK header compression for HTTP/2, including:
  * - Static table (61 common headers per RFC 7541 Appendix A)
@@ -27,7 +30,7 @@
  * @see SocketHTTP2.h for HTTP/2 integration.
  * @see SocketHPACK_Encoder_new() for creating encoders.
  * @see SocketHPACK_Decoder_new() for creating decoders.
- * @see SocketHTTP_T for core HTTP types and utilities.
+ * @see @ref group__http for core HTTP types and utilities.
  */
 
 #ifndef SOCKETHPACK_INCLUDED
@@ -630,5 +633,12 @@ extern int SocketHPACK_static_find (const char *name, size_t name_len,
  * @threadsafe Yes
  */
 extern const char *SocketHPACK_result_string (SocketHPACK_Result result);
+
+/** @} */ /* hpack */
+
+/* ============================================================================
+ * Utility Functions
+ * ============================================================================
+ */
 
 #endif /* SOCKETHPACK_INCLUDED */

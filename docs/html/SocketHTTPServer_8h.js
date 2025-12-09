@@ -30,10 +30,7 @@ var SocketHTTPServer_8h =
     [ "SocketHTTPServer_BodyCallback", "group__http.html#gab347055b7285aedad5fa0f504c3a655e", null ],
     [ "SocketHTTPServer_DrainCallback", "group__http.html#ga6eeba038caf0b48d3ae3527155ab8162", null ],
     [ "SocketHTTPServer_Handler", "group__http.html#ga8805b706921b37e2e91e68a861ddc97c", null ],
-    [ "SocketHTTPServer_Request_T", "group__http.html#ga071a3760545fbd5fca4c2df224af0fad", null ],
-    [ "SocketHTTPServer_T", "group__http.html#gad59859e8ae07bfb95f5807590dd034f4", null ],
     [ "SocketHTTPServer_Validator", "group__http.html#gab095eb6d03d06f9c1d8041dc3aa56094", null ],
-    [ "SocketWS_T", "SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555", null ],
     [ "SocketHTTPServer_State", "group__http.html#ga0ac9162aaf92d18d40cf0443909e3e97", [
       [ "HTTPSERVER_STATE_RUNNING", "group__http.html#gga0ac9162aaf92d18d40cf0443909e3e97a71eb63ea64bc63130077055f5def4470", null ],
       [ "HTTPSERVER_STATE_DRAINING", "group__http.html#gga0ac9162aaf92d18d40cf0443909e3e97ab9ea109b294256f80f9c605af4ee33da", null ],

@@ -1,75 +1,71 @@
 /**
  * @file SocketProxy.h
+ * @brief Proxy tunneling module for HTTP CONNECT and SOCKS protocols.
  * @ingroup core_io
- * @brief Proxy tunneling support for HTTP CONNECT and SOCKS protocols.
+ * @defgroup proxy Proxy Tunneling Module
+ * @ingroup core_io
  *
- * Provides transparent proxy tunneling for TCP connections, supporting
- * HTTP CONNECT and SOCKS4/4a/5 protocols. The implementation follows
- * the same patterns as SocketHappyEyeballs with both synchronous and
- * asynchronous APIs.
+ * @brief Transparent TCP proxy support with sync/async APIs.
  *
- * Supported Proxy Types:
- * - HTTP CONNECT (RFC 7231) with optional Basic authentication
- * - HTTPS CONNECT (TLS to proxy)
- * - SOCKS4 (IPv4 only)
- * - SOCKS4a (hostname resolution at proxy)
- * - SOCKS5 (RFC 1928) with no auth or username/password
- * - SOCKS5H (SOCKS5 with hostname resolution at proxy)
+ * Provides high-performance proxy tunneling for applications requiring
+ * HTTP CONNECT (RFC 7230) or SOCKS (RFC 1928/1929) protocols.
+ * Integrates seamlessly with core socket primitives, async I/O, DNS resolution,
+ * and TLS for end-to-end secure tunneling.
  *
- * Features:
- * - Synchronous and asynchronous APIs
- * - URL parsing (socks5://user:pass@host:port)
- * - Configurable timeouts
- * - Secure credential handling
- * - Integration with SocketHappyEyeballs for fast proxy connection
+ * Key capabilities:
+ * - **Protocols**: HTTP CONNECT (with Basic auth), SOCKS4/4a/5/5H (with password auth).
+ * - **Modes**: Synchronous convenience or full asynchronous with event loop integration.
+ * - **Features**: URL-based config parsing, timeouts, secure credential handling, HappyEyeballs racing.
+ * - **Integration**: SocketHTTP1 for parsing, SocketTLS for HTTPS proxies, SocketPool for management.
  *
- * Module Reuse (no code duplication):
- * - SocketHappyEyeballs for proxy server connection (handles DNS internally)
- * - SocketHTTP1_Parser_T for HTTP CONNECT response parsing
- * - SocketCrypto for Basic auth encoding and secure memory clearing
- * - SocketBuf for buffered protocol I/O
+ * Usage patterns:
+ * - Direct connect: `SocketProxy_connect(config, target, port)` - blocks until tunneled socket ready.
+ * - Tunnel existing: `SocketProxy_tunnel(sock, config, target, port)` - handshake on pre-connected sock.
+ * - Async full: `SocketProxy_Conn_start(dns, poll, config, target, port)` - non-blocking from resolution.
+ * - Async hybrid: `SocketProxy_Conn_new(config, target, port)` - block connect, async handshake.
  *
- * Thread Safety:
- * - SocketProxy_Conn_T instances are NOT thread-safe
- * - Multiple instances can be used from different threads
- * - Synchronous API is thread-safe (uses internal resources)
+ * Security:
+ * - Credentials zeroed after use.
+ * - Strict parsing prevents buffer attacks.
+ * - Timeouts mitigate DoS.
+ * - Optional TLS to proxy for encrypted handshakes.
  *
- * Security Notes:
- * - Credentials are cleared from memory after use via
- * SocketCrypto_secure_clear()
- * - Hostnames are validated (SOCKS5 max 255 bytes)
- * - HTTP response parsing uses strict mode to prevent smuggling
- * - All protocol responses are bounds-checked
+ * Thread safety:
+ * - Sync APIs thread-safe.
+ * - Async Conn_T instances not thread-safe (single-thread per conn).
  *
- * Usage (Synchronous):
- *   SocketProxy_Result result = SocketProxy_connect(
- *       socket, &proxy, "target.example.com", 443);
- *   if (result == PROXY_OK) {
- *       // Socket is now tunneled to target
- *       // Perform TLS handshake if needed
- *   }
+ * Platform:
+ * - POSIX (Linux/BSD/macOS).
+ * - Requires SocketHappyEyeballs for optimal connects.
+ * - TLS optional via SOCKET_HAS_TLS.
  *
- * Usage (Asynchronous):
- *   SocketProxy_Conn_T conn = SocketProxy_Conn_new(
- *       socket, &proxy, "target.example.com", 443);
- *   while (!SocketProxy_Conn_poll(conn)) {
- *       int timeout = SocketProxy_Conn_next_timeout_ms(conn);
- *       SocketPoll_wait(poll, &events, timeout);
- *       SocketProxy_Conn_process(conn);
- *   }
- *   SocketProxy_Result result = SocketProxy_Conn_result(conn);
- *   SocketProxy_Conn_free(&conn);
+ * Examples in examples/proxy_connect.c and docs/PROXY.md.
  *
- * Platform Requirements:
- * - POSIX-compliant system (Linux, BSD, macOS)
- * - SocketHappyEyeballs module for proxy connection
- * - Optional: SocketTLS for HTTPS proxy support
+ * @{
  *
- * @see SocketProxy_connect() for synchronous proxy connection.
- * @see SocketProxy_new() for asynchronous proxy connection setup.
- * @see SocketHappyEyeballs.h for connection racing integration.
- * @see SocketTLS.h for TLS proxy support.
+ * @see SocketProxy_connect() synchronous API entry.
+ * @see SocketProxy_Conn_new() async convenience.
+ * @see SocketProxy_Conn_start() full async.
+ * @see SocketProxy_Config for setup.
+ * @see SocketProxy_parse_url() URL parsing.
+ * @see SocketProxy_Result for error codes.
+ * @see @ref async_io for event integration.
+ * @see @ref dns for resolution.
+ * @see @ref security for TLS.
+ * @see @ref http for CONNECT headers.
+ * @see docs/PROXY.md detailed guide.
+ * @see docs/SECURITY.md credential/TLS best practices.
+ * @see docs/ERROR_HANDLING.md exception handling.
+ * @see docs/ASYNC_IO.md async patterns.
+ *
+ * Related primitives:
+ * @see Socket for base I/O.
+ * @see SocketHappyEyeballs for connects.
+ * @see SocketPool for management.
  */
+
+
+
 
 #ifndef SOCKETPROXY_INCLUDED
 #define SOCKETPROXY_INCLUDED
@@ -959,4 +955,17 @@ extern const char *SocketProxy_state_string (SocketProxy_State state);
 extern const char *SocketProxy_type_string (SocketProxyType type);
 
 #undef T
+/** @} */ /* proxy group */
+
+/**
+ * @page proxy_guide Proxy Tunneling Guide
+ *
+ * Detailed user guide for SocketProxy module.
+ * @subpage proxy_usage
+ * @subpage proxy_security
+ * @subpage proxy_async
+ *
+ * @see SocketProxy.h API
+ */
+
 #endif /* SOCKETPROXY_INCLUDED */

@@ -1,5 +1,5 @@
 <map id="SocketDTLS.h" name="SocketDTLS.h">
-<area shape="rect" id="Node000001" title="Datagram TLS (DTLS) protocol implementation for UDP sockets." alt="" coords="5,5,113,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,5,113,31"/>
 <area shape="rect" id="Node000002" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="8,299,111,324"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="58,32,47,79,44,136,46,194,57,285,52,285,41,194,39,136,42,78,53,30"/>
 <area shape="rect" id="Node000004" href="$SocketDgram_8h.html" title="High&#45;level UDP/datagram socket interface with multicast and broadcast support." alt="" coords="57,79,213,104"/>

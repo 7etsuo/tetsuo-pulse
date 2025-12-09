@@ -271,8 +271,6 @@
  * @internal
  * @ingroup websocket
  * @brief States for the frame parsing state machine.
- * @internal
- * @ingroup websocket
  *
  * Tracks progress through frame header parsing, length extension, masking, and payload.
  * Used to handle incremental frame reception in non-blocking mode.
@@ -293,8 +291,6 @@ typedef enum
  * @internal
  * @ingroup websocket
  * @brief Context for parsing incoming WebSocket frames.
- * @internal
- * @ingroup websocket
  *
  * Manages incremental parsing of frame headers and payloads.
  * Supports partial reads for non-blocking sockets.
@@ -344,8 +340,6 @@ typedef struct
  * @internal
  * @ingroup websocket
  * @brief State for reassembling fragmented WebSocket messages.
- * @internal
- * @ingroup websocket
  *
  * Accumulates data from multiple CONTINUATION frames into a single message buffer.
  * Supports UTF-8 validation for text messages across fragments.
@@ -387,8 +381,6 @@ typedef struct
  * @internal
  * @ingroup websocket
  * @brief States for WebSocket HTTP upgrade handshake.
- * @internal
- * @ingroup websocket
  *
  * Tracks progress of client or server handshake over HTTP/1.1.
  * Client: INIT -> SEND_REQUEST -> READ_RESPONSE -> COMPLETE/FAILED
@@ -411,8 +403,6 @@ typedef enum
  * @internal
  * @ingroup websocket
  * @brief Context for WebSocket HTTP upgrade handshake.
- * @internal
- * @ingroup websocket
  *
  * Manages client or server handshake state, key generation/validation,
  * header negotiation (subprotocols, compression), and HTTP parsing/serialization.
@@ -470,8 +460,6 @@ typedef struct
  * @internal
  * @ingroup websocket
  * @brief Compression context for permessage-deflate extension (RFC 7692).
- * @internal
- * @ingroup websocket
  *
  * Manages zlib streams for per-message compression/decompression.
  * Supports context takeover negotiation (no-takeover flags).
@@ -519,8 +507,6 @@ typedef struct
  * @internal
  * @ingroup websocket
  * @brief Main WebSocket connection context (opaque in public header).
- * @internal
- * @ingroup websocket
  *
  * Central structure holding all state for a WebSocket connection.
  * Opaque to public users; access via public API functions only.
@@ -619,8 +605,6 @@ struct SocketWS
  * @internal
  * @ingroup websocket
  * @brief Opaque type for WebSocket connection (public interface).
- * @internal
- * @ingroup websocket
  *
  * In public header (SocketWS.h), defined as #define T SocketWS_T \n typedef struct SocketWS *T;
  * Here, reveals the pointer to private struct SocketWS.
@@ -635,8 +619,6 @@ typedef struct SocketWS *SocketWS_T;
  * @internal
  * @ingroup websocket
  * @brief Thread-local exception declarations for SocketWS module.
- * @internal
- * @ingroup websocket
  *
  * Declares module exceptions using SOCKET_DECLARE_MODULE_EXCEPTION.
  * These are raised via TRY/EXCEPT or RAISE_WS_ERROR macro.
@@ -670,11 +652,15 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketWS);
  */
 
 /**
- * ws_copy_string - Copy string to arena
- * @arena: Memory arena
- * @str: String to copy (may be NULL)
- *
- * Returns: Copied string or NULL
+ * @brief Copies a string into the provided arena.
+ * @internal
+ * @ingroup websocket
+ * @param arena The memory arena to allocate from.
+ * @param str The input string to copy (may be NULL).
+ * @return An arena-allocated copy of the string, or NULL if str is NULL or allocation fails.
+ * @throws Arena_Failed if allocation fails.
+ * @see socket_util_arena_strdup() for utility wrapper.
+ * @see Arena.h for memory management.
  */
 char *ws_copy_string (Arena_T arena, const char *str);
 
@@ -684,26 +670,37 @@ char *ws_copy_string (Arena_T arena, const char *str);
  */
 
 /**
- * ws_send_control_frame - Send a control frame (PING/PONG/CLOSE)
- * @ws: WebSocket context
- * @opcode: Control frame opcode
- * @payload: Payload data (may be NULL)
- * @len: Payload length (max 125)
- *
- * Returns: 0 on success, -1 on error
+ * @brief Sends a WebSocket control frame (PING, PONG, or CLOSE).
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket connection context.
+ * @param opcode The control frame opcode (WS_OPCODE_PING, WS_OPCODE_PONG, or WS_OPCODE_CLOSE).
+ * @param payload The optional payload data (NULL for no payload).
+ * @param len The length of the payload (0-125 bytes; must be SOCKETWS_MAX_CONTROL_PAYLOAD or less).
+ * @return 0 on success, -1 on error (sets last_error).
+ * @throws SocketWS_Failed if send fails or invalid parameters.
+ * @note Control frames must not be fragmented; processed immediately.
+ * @see ws_send_data_frame() for data frames.
+ * @see RFC 6455 Section 5.5 for control frame requirements.
  */
 int ws_send_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
                            const unsigned char *payload, size_t len);
 
 /**
- * ws_send_data_frame - Send a data frame (TEXT/BINARY)
- * @ws: WebSocket context
- * @opcode: Data frame opcode
- * @data: Payload data
- * @len: Payload length
- * @fin: Final fragment flag
- *
- * Returns: 0 on success, -1 on error
+ * @brief Sends a WebSocket data frame (TEXT or BINARY).
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket connection context.
+ * @param opcode The data frame opcode (WS_OPCODE_TEXT or WS_OPCODE_BINARY).
+ * @param data The payload data to send.
+ * @param len The length of the payload data.
+ * @param fin Non-zero if this is the final fragment of the message.
+ * @return 0 on success, -1 on error (sets last_error).
+ * @throws SocketWS_Failed if send fails, invalid opcode, or exceeds limits.
+ * @note Supports fragmentation (fin=0 for continuation frames).
+ * @note Payload masked for client role, unmasked for server.
+ * @see ws_send_control_frame() for control frames.
+ * @see RFC 6455 Section 5.6 for data frame format and masking.
  */
 int ws_send_data_frame (SocketWS_T ws, SocketWS_Opcode opcode,
                         const unsigned char *data, size_t len, int fin);
@@ -714,35 +711,49 @@ int ws_send_data_frame (SocketWS_T ws, SocketWS_Opcode opcode,
  */
 
 /**
- * ws_frame_reset - Reset frame parsing state for next frame
- * @frame: Frame parsing state
+ * @brief Resets the frame parsing state to initial for the next incoming frame.
+ * @internal
+ * @ingroup websocket
+ * @param frame The frame parse context to reset.
+ * @note Clears all fields except possibly persistent state if needed.
+ * @see ws_frame_parse_header() to start parsing new frame.
+ * @see SocketWS_FrameParse for structure details.
  */
 void ws_frame_reset (SocketWS_FrameParse *frame);
 
 /**
- * ws_frame_parse_header - Parse frame header bytes
- * @frame: Frame parsing state
- * @data: Input data
- * @len: Input length
- * @consumed: Output - bytes consumed
- *
- * Returns: WS_OK if header complete, WS_ERROR_WOULD_BLOCK if need more,
- *          or error code
+ * @brief Incrementally parses WebSocket frame header from input data.
+ * @internal
+ * @ingroup websocket
+ * @param frame The frame parse state structure.
+ * @param data Buffer containing incoming frame bytes.
+ * @param len Length of data buffer.
+ * @param[out] consumed Number of bytes consumed from data (updated on call).
+ * @return SocketWS_Error: WS_OK if header fully parsed, WS_NEED_MORE_DATA if incomplete,
+ *         or error code (e.g., WS_PROTOCOL_ERROR for invalid header).
+ * @note Advances frame->state based on bytes parsed.
+ * @note Handles variable header length (2-14 bytes).
+ * @see ws_frame_reset() before first call.
+ * @see RFC 6455 Section 5.2 for frame header format.
  */
 SocketWS_Error ws_frame_parse_header (SocketWS_FrameParse *frame,
                                       const unsigned char *data, size_t len,
                                       size_t *consumed);
 
 /**
- * ws_frame_build_header - Build frame header
- * @header: Output buffer (at least SOCKETWS_MAX_HEADER_SIZE)
- * @fin: Final fragment flag
- * @opcode: Frame opcode
- * @masked: Whether to mask (client = yes, server = no)
- * @mask_key: 4-byte mask key (only if masked)
- * @payload_len: Payload length
- *
- * Returns: Header length written
+ * @brief Builds the binary WebSocket frame header into output buffer.
+ * @internal
+ * @ingroup websocket
+ * @param header Output buffer for header bytes (must hold at least SOCKETWS_MAX_HEADER_SIZE).
+ * @param fin Non-zero if final fragment (sets FIN bit).
+ * @param opcode The frame opcode.
+ * @param masked Non-zero if payload is masked (client frames).
+ * @param mask_key 4-byte mask key if masked, ignored otherwise.
+ * @param payload_len The payload length (encodes as 7/16/64-bit).
+ * @return Number of bytes written to header (2-14), or 0 on error (invalid params).
+ * @note Validates opcode and length; does not include payload or mask application.
+ * @see ws_mask_payload() to mask payload after header.
+ * @see RFC 6455 Section 5.2 for header encoding details.
  */
 size_t ws_frame_build_header (unsigned char *header, int fin,
                               SocketWS_Opcode opcode, int masked,
@@ -750,24 +761,34 @@ size_t ws_frame_build_header (unsigned char *header, int fin,
                               uint64_t payload_len);
 
 /**
- * ws_mask_payload - Apply XOR mask to payload (optimized)
- * @data: Data buffer (modified in place)
- * @len: Data length
- * @mask: 4-byte mask key
- *
- * Uses 8-byte aligned XOR for performance.
+ * @brief Applies XOR masking to WebSocket payload data in place.
+ * @internal
+ * @ingroup websocket
+ * @param data The payload buffer to mask (modified in place).
+ * @param len The length of the data to mask.
+ * @param mask The 4-byte masking key (cycles every 4 bytes).
+ * @note Required for client-to-server frames per RFC.
+ * @note Optimized with 64-bit aligned loops for performance.
+ * @note Server frames must not be masked.
+ * @see ws_mask_payload_offset() for incremental masking.
+ * @see RFC 6455 Section 5.3 for masking algorithm.
  */
 void ws_mask_payload (unsigned char *data, size_t len,
                       const unsigned char mask[4]);
 
 /**
- * ws_mask_payload_offset - Apply XOR mask with offset
- * @data: Data buffer
- * @len: Data length
- * @mask: 4-byte mask key
- * @offset: Starting offset into mask (for continuation)
- *
- * Returns: New offset (for next call)
+ * @brief Applies XOR masking to payload starting from a given mask offset.
+ * @internal
+ * @ingroup websocket
+ * @param data The payload buffer to mask (modified in place).
+ * @param len The length of the data to mask.
+ * @param mask The 4-byte masking key.
+ * @param offset Initial offset into the mask cycle (0-3).
+ * @return The updated offset for the next chunk ((offset + len) % 4).
+ * @note Used for incremental masking in streaming scenarios.
+ * @note Equivalent to ws_mask_payload() when offset=0.
+ * @see ws_mask_payload() for full payload masking.
+ * @see RFC 6455 Section 5.3 masking details.
  */
 size_t ws_mask_payload_offset (unsigned char *data, size_t len,
                                const unsigned char mask[4], size_t offset);
@@ -778,46 +799,74 @@ size_t ws_mask_payload_offset (unsigned char *data, size_t len,
  */
 
 /**
- * ws_handshake_client_init - Initialize client handshake
- * @ws: WebSocket context
- *
- * Generates Sec-WebSocket-Key and builds HTTP upgrade request.
- * Returns: 0 on success, -1 on error
+ * @brief Initializes the client-side WebSocket handshake.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @return 0 on success, -1 on error (sets last_error).
+ * @note Generates random Sec-WebSocket-Key and constructs HTTP GET upgrade request.
+ * @note Sets handshake.state to WS_HANDSHAKE_SENDING_REQUEST.
+ * @see ws_handshake_client_process() to send request and read response.
+ * @see SocketCrypto for key generation.
+ * @see RFC 6455 Section 4.1 for client handshake.
  */
 int ws_handshake_client_init (SocketWS_T ws);
 
 /**
- * ws_handshake_client_process - Process client handshake I/O
- * @ws: WebSocket context
- *
- * Returns: 0 if complete, 1 if in progress, -1 on error
+ * @brief Processes client handshake I/O in non-blocking manner.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @return 0 if handshake complete (state=COMPLETE), 1 if in progress (need more I/O),
+ *         -1 on error (sets last_error, state=FAILED).
+ * @note Handles sending request and receiving response incrementally.
+ * @note Validates Sec-WebSocket-Accept header.
+ * @see ws_handshake_client_init() to start.
+ * @see ws_handshake_validate_accept() for validation.
+ * @see RFC 6455 Section 1.3 for opening handshake.
  */
 int ws_handshake_client_process (SocketWS_T ws);
 
 /**
- * ws_handshake_server_init - Initialize server handshake
- * @ws: WebSocket context
- * @request: Parsed HTTP upgrade request
- *
- * Returns: 0 on success, -1 on error
+ * @brief Initializes the server-side WebSocket handshake from HTTP request.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @param request The parsed SocketHTTP_Request from client upgrade.
+ * @return 0 on success, -1 on error (invalid request, sets last_error).
+ * @note Validates required headers (Upgrade, Connection, Sec-WebSocket-Key).
+ * @note Computes Sec-WebSocket-Accept from client key.
+ * @note Negotiates subprotocols and extensions (e.g., permessage-deflate).
+ * @see SocketHTTP1_Parser for request parsing.
+ * @see ws_handshake_server_process() to send response.
+ * @see RFC 6455 Section 4.2.2 for server validation.
  */
 int ws_handshake_server_init (SocketWS_T ws,
                               const SocketHTTP_Request *request);
 
 /**
- * ws_handshake_server_process - Process server handshake I/O
- * @ws: WebSocket context
- *
- * Returns: 0 if complete, 1 if in progress, -1 on error
+ * @brief Processes server handshake I/O in non-blocking manner.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @return 0 if handshake complete, 1 if in progress, -1 on error.
+ * @note Sends 101 response after validation.
+ * @note Transitions to frame mode on success.
+ * @see ws_handshake_server_init() prerequisite.
+ * @see RFC 6455 Section 4.1 for server opening handshake.
  */
 int ws_handshake_server_process (SocketWS_T ws);
 
 /**
- * ws_handshake_validate_accept - Validate Sec-WebSocket-Accept
- * @ws: WebSocket context
- * @accept: Received accept value
- *
- * Returns: 0 if valid, -1 if invalid
+ * @brief Validates the server's Sec-WebSocket-Accept header value.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context (contains expected_accept).
+ * @param accept The received accept string from server response.
+ * @return 0 if matches expected value, -1 if mismatch or invalid.
+ * @note Computes expected as SHA1(key + magic) base64.
+ * @see SocketCrypto_websocket_accept_compute() for computation.
+ * @see RFC 6455 Section 4.2.2 for accept key derivation.
  */
 int ws_handshake_validate_accept (SocketWS_T ws, const char *accept);
 
@@ -828,42 +877,63 @@ int ws_handshake_validate_accept (SocketWS_T ws, const char *accept);
 
 #ifdef SOCKETWS_HAS_DEFLATE
 /**
- * ws_compression_init - Initialize compression context
- * @ws: WebSocket context
- *
- * Returns: 0 on success, -1 on error
+ * @brief Initializes zlib streams for permessage-deflate compression.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context with negotiated compression params.
+ * @return 0 on success, -1 on error (zlib init fail, sets last_error).
+ * @note Called after handshake if compression negotiated.
+ * @note Sets up deflate and inflate streams with window bits, no-takeover flags.
+ * @see ws_compression_free() for cleanup.
+ * @see RFC 7692 for permessage-deflate parameters.
  */
 int ws_compression_init (SocketWS_T ws);
 
 /**
- * ws_compression_free - Free compression context
- * @ws: WebSocket context
+ * @brief Frees zlib streams and buffers for compression context.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @note Deflates/inflates end and frees temporary buffers.
+ * @note Called on connection close if compression enabled.
+ * @see ws_compression_init() counterpart.
+ * @see zlib.h deflateEnd/inflateEnd.
  */
 void ws_compression_free (SocketWS_T ws);
 
 /**
- * ws_compress_message - Compress message data
- * @ws: WebSocket context
- * @input: Input data
- * @input_len: Input length
- * @output: Output buffer (arena allocated)
- * @output_len: Output length
- *
- * Returns: 0 on success, -1 on error
+ * @brief Compresses a message payload using permessage-deflate.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context with compression config.
+ * @param input Uncompressed input data.
+ * @param input_len Length of input.
+ * @param[out] output Pointer to compressed data (allocated by function using arena).
+ * @param[out] output_len Length of compressed output.
+ * @return 0 on success, -1 on zlib error.
+ * @note Per-message compression; reset context if no-takeover.
+ * @note Sets RSV1 bit in frame header when used.
+ * @see ws_decompress_message() counterpart.
+ * @see RFC 7692 Section 7 for compression format.
  */
 int ws_compress_message (SocketWS_T ws, const unsigned char *input,
                          size_t input_len, unsigned char **output,
                          size_t *output_len);
 
 /**
- * ws_decompress_message - Decompress message data
- * @ws: WebSocket context
- * @input: Compressed input
- * @input_len: Input length
- * @output: Output buffer (arena allocated)
- * @output_len: Output length
- *
- * Returns: 0 on success, -1 on error
+ * @brief Decompresses a compressed message payload using permessage-deflate.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context with compression config.
+ * @param input Compressed input data (RSV1 set in frame).
+ * @param input_len Length of input.
+ * @param[out] output Pointer to decompressed data (arena allocated).
+ * @param[out] output_len Length of decompressed output.
+ * @return 0 on success, -1 on zlib error or invalid compressed data.
+ * @note Handles per-message decompression.
+ * @note Flushes stream if needed for complete message.
+ * @see ws_compress_message() for compression.
+ * @see RFC 7692 Section 7 for decompression rules.
  */
 int ws_decompress_message (SocketWS_T ws, const unsigned char *input,
                            size_t input_len, unsigned char **output,
@@ -876,43 +946,67 @@ int ws_decompress_message (SocketWS_T ws, const unsigned char *input,
  */
 
 /**
- * ws_send_close - Send CLOSE frame
- * @ws: WebSocket context
- * @code: Close code
- * @reason: Optional reason string (may be NULL)
- *
- * Returns: 0 on success, -1 on error
+ * @brief Sends a WebSocket CLOSE control frame to initiate graceful shutdown.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @param code The close status code (valid per RFC or 0 for no code).
+ * @param reason Optional UTF-8 reason string (truncated to max length).
+ * @return 0 on success, -1 on error (sets last_error).
+ * @note Validates code with ws_is_valid_close_code().
+ * @note Sets close_sent flag; peer should respond with CLOSE.
+ * @note After mutual CLOSE, connection enters CLOSING state.
+ * @see SocketWS_close() public API wrapper.
+ * @see RFC 6455 Section 7.1 for close handshake.
  */
 int ws_send_close (SocketWS_T ws, SocketWS_CloseCode code, const char *reason);
 
 /**
- * ws_send_ping - Send PING frame
- * @ws: WebSocket context
- * @payload: Optional payload (may be NULL)
- * @len: Payload length (max 125)
- *
- * Returns: 0 on success, -1 on error
+ * @brief Sends a WebSocket PING control frame for keepalive.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @param payload Optional application data in ping (NULL for empty).
+ * @param len Length of payload (0 to 125 bytes).
+ * @return 0 on success, -1 on error.
+ * @note Peer must respond with PONG containing same payload.
+ * @note Used for heartbeat; auto-triggered by timer if configured.
+ * @see ws_send_pong() for response.
+ * @see ws_auto_ping_start() for automatic pings.
+ * @see RFC 6455 Section 5.5.2 for PING/PONG.
  */
 int ws_send_ping (SocketWS_T ws, const unsigned char *payload, size_t len);
 
 /**
- * ws_send_pong - Send PONG frame
- * @ws: WebSocket context
- * @payload: Payload from PING (may be NULL)
- * @len: Payload length
- *
- * Returns: 0 on success, -1 on error
+ * @brief Sends a WebSocket PONG control frame in response to PING.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @param payload The payload to echo from received PING (or arbitrary).
+ * @param len Length of payload (0-125).
+ * @return 0 on success, -1 on error.
+ * @note Typically called automatically on PING receipt.
+ * @see ws_handle_control_frame() for automatic response.
+ * @see ws_send_ping() for initiating ping.
+ * @see RFC 6455 Section 5.5.3 for PONG semantics.
  */
 int ws_send_pong (SocketWS_T ws, const unsigned char *payload, size_t len);
 
 /**
- * ws_handle_control_frame - Process received control frame
- * @ws: WebSocket context
- * @opcode: Frame opcode
- * @payload: Frame payload
- * @len: Payload length
- *
- * Returns: 0 on success, -1 on error
+ * @brief Handles a received WebSocket control frame (CLOSE, PING, PONG).
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @param opcode The control opcode received.
+ * @param payload The unmasked payload data.
+ * @param len The payload length.
+ * @return 0 on success, -1 on error (e.g., invalid close code).
+ * @note For PING: sends PONG response, clears timeout.
+ * @note For CLOSE: sets close_received, may initiate response.
+ * @note For PONG: updates last_pong_received_time.
+ * @see ws_send_pong() for PING response.
+ * @see ws_send_close() for CLOSE response.
+ * @see RFC 6455 Section 5.5 for control frame processing.
  */
 int ws_handle_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
                              const unsigned char *payload, size_t len);
@@ -923,29 +1017,47 @@ int ws_handle_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
  */
 
 /**
- * ws_message_reset - Reset message assembly state
- * @message: Message assembly state
+ * @brief Resets the message reassembly state for a new message.
+ * @internal
+ * @ingroup websocket
+ * @param message The message assembly structure to reset.
+ * @note Clears data buffer, length, fragments, UTF-8 state.
+ * @note Called before first fragment of new message.
+ * @see ws_message_append() to start assembly.
+ * @see SocketWS_MessageAssembly for fields.
  */
 void ws_message_reset (SocketWS_MessageAssembly *message);
 
 /**
- * ws_message_append - Append fragment to message
- * @ws: WebSocket context
- * @data: Fragment data
- * @len: Fragment length
- * @is_text: Whether this is text data
- *
- * Returns: 0 on success, -1 on error
+ * @brief Appends a data frame fragment to the current message assembly.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @param data The fragment payload (unmasked).
+ * @param len Length of fragment.
+ * @param is_text Non-zero if text message (enables UTF-8 validation).
+ * @return 0 on success, -1 on error (exceeds max size/fragments, UTF-8 invalid).
+ * @note Updates message.len and fragment_count; checks limits.
+ * @note Decompresses if RSV1 set on first fragment.
+ * @see ws_message_finalize() called on FIN=1.
+ * @see SocketWS_MessageAssembly for state.
+ * @see RFC 6455 Section 5.4 for message fragmentation.
  */
 int ws_message_append (SocketWS_T ws, const unsigned char *data, size_t len,
                        int is_text);
 
 /**
- * ws_message_finalize - Finalize assembled message
- * @ws: WebSocket context
- *
- * Validates UTF-8 for text messages.
- * Returns: 0 on success, -1 on error
+ * @brief Finalizes message assembly on last fragment and delivers to user.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @return 0 on success, -1 on error (UTF-8 invalid for text, or other).
+ * @note Called when FIN=1 on data frame.
+ * @note Performs final UTF-8 validation for text messages.
+ * @note Invokes user callback with complete SocketWS_Message.
+ * @note Resets assembly state for next message.
+ * @see SocketWS_MessageCallback for delivery.
+ * @see SocketUTF8_State for validation.
  */
 int ws_message_finalize (SocketWS_T ws);
 
@@ -955,23 +1067,41 @@ int ws_message_finalize (SocketWS_T ws);
  */
 
 /**
- * ws_auto_ping_start - Start auto-ping timer
- * @ws: WebSocket context
- * @poll: Poll instance for timer
- *
- * Returns: 0 on success, -1 on error
+ * @brief Starts the automatic PING timer for keepalive.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context with config.ping_interval_ms.
+ * @param poll The SocketPoll instance for timer integration.
+ * @return 0 on success, -1 on error (timer add fail).
+ * @note Schedules first ping after interval_ms from now.
+ * @note Uses SocketTimer_add_repeating for periodic pings.
+ * @see ws_auto_ping_callback() timer handler.
+ * @see SocketTimer_T for timer management.
  */
 int ws_auto_ping_start (SocketWS_T ws, SocketPoll_T poll);
 
 /**
- * ws_auto_ping_stop - Stop auto-ping timer
- * @ws: WebSocket context
+ * @brief Stops the automatic PING timer.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @note Cancels the repeating timer using SocketTimer_cancel.
+ * @note Called on close or disable.
+ * @see ws_auto_ping_start() to start.
+ * @see SocketTimer_cancel() underlying call.
  */
 void ws_auto_ping_stop (SocketWS_T ws);
 
 /**
- * ws_auto_ping_callback - Timer callback for auto-ping
- * @userdata: WebSocket context
+ * @brief Timer callback invoked to send periodic PING.
+ * @internal
+ * @ingroup websocket
+ * @param userdata The WebSocket context (cast from void*).
+ * @note Sends PING with empty payload or config payload.
+ * @note Sets awaiting_pong and timeout check.
+ * @note Reschedules next timer.
+ * @see SocketTimerCallback typedef.
+ * @see ws_send_ping() for sending.
  */
 void ws_auto_ping_callback (void *userdata);
 
@@ -981,26 +1111,43 @@ void ws_auto_ping_callback (void *userdata);
  */
 
 /**
- * ws_flush_send_buffer - Flush send buffer to socket
- * @ws: WebSocket context
- *
- * Returns: Bytes sent, 0 if would block, -1 on error
+ * @brief Flushes pending data from send buffer to underlying socket.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @return Number of bytes sent (>0), 0 if would block (EAGAIN), -1 on error.
+ * @note Uses Socket_send() or TLS send if enabled.
+ * @note Continues until buffer empty or block.
+ * @see SocketBuf_T for buffer management.
+ * @see Socket_send() low-level send.
  */
 ssize_t ws_flush_send_buffer (SocketWS_T ws);
 
 /**
- * ws_fill_recv_buffer - Fill receive buffer from socket
- * @ws: WebSocket context
- *
- * Returns: Bytes received, 0 on EOF, -1 on error (EAGAIN = 0)
+ * @brief Fills the receive buffer from the underlying socket.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @return Bytes received (>0), 0 on EOF or would block, -1 on error.
+ * @note Uses Socket_recv() or TLS recv.
+ * @note Fills until buffer full or block/EOF.
+ * @note Handles partial reads for non-blocking.
+ * @see SocketBuf_T recv_buf.
+ * @see Socket_recv() low-level recv.
  */
 ssize_t ws_fill_recv_buffer (SocketWS_T ws);
 
 /**
- * ws_set_error - Set error state with message
- * @ws: WebSocket context
- * @error: Error code
- * @fmt: Format string
+ * @brief Sets the last error code and formats error message.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @param error The SocketWS_Error code to set.
+ * @param fmt printf-style format string for error_buf.
+ * @param ... Arguments for format string.
+ * @note Truncates message to SOCKETWS_ERROR_BUFSIZE.
+ * @note Used internally for all error paths.
+ * @see SocketWS_get_last_error() public accessor.
  */
 void ws_set_error (SocketWS_T ws, SocketWS_Error error, const char *fmt, ...);
 
@@ -1050,7 +1197,14 @@ ws_is_data_opcode (SocketWS_Opcode opcode)
 }
 
 /**
- * ws_is_valid_opcode - Check if opcode is valid
+ * @brief Checks if a WebSocket opcode is valid per RFC 6455.
+ * @internal
+ * @ingroup websocket
+ * @param opcode The opcode to validate.
+ * @return 1 if valid (0-2 data, 8-A control), 0 otherwise.
+ * @note Data: 0 CONT, 1 TEXT, 2 BINARY; Control: 8 CLOSE, 9 PING, A PONG.
+ * @see ws_is_control_opcode(), ws_is_data_opcode().
+ * @see RFC 6455 Section 5.2 Table 1 for opcodes.
  */
 static inline int
 ws_is_valid_opcode (SocketWS_Opcode opcode)

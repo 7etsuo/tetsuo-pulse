@@ -1,0 +1,5 @@
+<map id="SocketHTTP&#45;private.h" name="SocketHTTP&#45;private.h">
+<area shape="rect" id="Node000001" title="Internal HTTP core structures and helper functions." alt="" coords="9,5,161,31"/>
+<area shape="rect" id="Node000002" href="$SocketHTTP1-private_8h.html" title="Internal HTTP/1.1 parser structures and DFA state machine." alt="" coords="5,79,164,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="87,44,87,79,82,79,82,44"/>
+</map>

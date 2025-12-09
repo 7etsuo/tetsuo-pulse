@@ -1,0 +1,7 @@
+<map id="SocketIPTracker.h" name="SocketIPTracker.h">
+<area shape="rect" id="Node000001" title="Per&#45;IP connection tracking for rate limiting and DoS protection." alt="" coords="130,5,261,31"/>
+<area shape="rect" id="Node000002" href="$SocketHTTPServer-private_8h.html" title="Private implementation details for HTTP server connection and state management." alt="" coords="5,79,196,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="171,41,118,81,115,76,168,37"/>
+<area shape="rect" id="Node000003" href="$SocketPool-private_8h.html" title="Private implementation details and internal structures for SocketPool module." alt="" coords="220,79,363,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="223,37,277,76,274,81,220,41"/>
+</map>
