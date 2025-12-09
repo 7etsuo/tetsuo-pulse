@@ -16,9 +16,11 @@
 
 /* ============================================================================
  * Internal Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
-/** Estimated average dynamic entry size for initial capacity calculation (bytes) */
+/** Estimated average dynamic entry size for initial capacity calculation
+ * (bytes) */
 #define HPACK_AVERAGE_DYNAMIC_ENTRY_SIZE 50
 
 /** Minimum dynamic table capacity (power-of-2 for efficient modulo) */
@@ -44,7 +46,8 @@
 
 /* ============================================================================
  * Dynamic Table Entry
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Dynamic table entry
@@ -61,7 +64,8 @@ typedef struct
 
 /* ============================================================================
  * Dynamic Table Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Dynamic table implementation
@@ -84,45 +88,51 @@ struct SocketHPACK_Table
 
 /* ============================================================================
  * Encoder Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HPACK encoder implementation
  */
 struct SocketHPACK_Encoder
 {
-  SocketHPACK_Table_T table;       /**< Dynamic table */
-  size_t pending_table_size;       /**< Pending size update (0 = none) */
-  int pending_table_size_update;   /**< Flag for pending update */
-  int huffman_encode;              /**< Use Huffman encoding */
-  int use_indexing;                /**< Add to dynamic table */
-  Arena_T arena;                   /**< Memory arena */
+  SocketHPACK_Table_T table;     /**< Dynamic table */
+  size_t pending_table_size;     /**< Pending size update (0 = none) */
+  int pending_table_size_update; /**< Flag for pending update */
+  int huffman_encode;            /**< Use Huffman encoding */
+  int use_indexing;              /**< Add to dynamic table */
+  Arena_T arena;                 /**< Memory arena */
 };
 
 /* ============================================================================
  * Decoder Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HPACK decoder implementation
  */
 struct SocketHPACK_Decoder
 {
-  SocketHPACK_Table_T table;       /**< Dynamic table */
-  size_t max_header_size;          /**< Max individual header size */
-  size_t max_header_list_size;     /**< Max total decoded size */
-  size_t settings_max_table_size;  /**< Max size from SETTINGS */
-  Arena_T arena;                   /**< Memory arena */
+  SocketHPACK_Table_T table;      /**< Dynamic table */
+  size_t max_header_size;         /**< Max individual header size */
+  size_t max_header_list_size;    /**< Max total decoded size */
+  size_t settings_max_table_size; /**< Max size from SETTINGS */
+  Arena_T arena;                  /**< Memory arena */
 
   /* Decompression bomb protection */
-  uint64_t decode_input_bytes;     /**< Cumulative input bytes in current decode session */
-  uint64_t decode_output_bytes;    /**< Cumulative output bytes in current decode session */
-  double max_expansion_ratio;      /**< Max allowed output/input ratio (default 10.0) */
+  uint64_t decode_input_bytes;  /**< Cumulative input bytes in current decode
+                                   session */
+  uint64_t decode_output_bytes; /**< Cumulative output bytes in current decode
+                                   session */
+  double max_expansion_ratio;   /**< Max allowed output/input ratio
+                                   (default 10.0) */
 };
 
 /* ============================================================================
  * Static Table Entry
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Static table entry structure
@@ -138,7 +148,8 @@ typedef struct
 
 /* ============================================================================
  * Huffman Tables (defined in SocketHPACK-huffman.c)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Huffman encode table entry
@@ -162,10 +173,10 @@ typedef struct
 } HPACK_HuffmanTransition;
 
 /** DFA flags */
-#define HPACK_DFA_ACCEPT 0x01   /**< State produces output */
-#define HPACK_DFA_EOS    0x02   /**< EOS symbol encountered */
-#define HPACK_DFA_ERROR  0x04   /**< Invalid sequence */
-#define HPACK_DFA_SYM2   0x08   /**< Second symbol available */
+#define HPACK_DFA_ACCEPT 0x01 /**< State produces output */
+#define HPACK_DFA_EOS 0x02    /**< EOS symbol encountered */
+#define HPACK_DFA_ERROR 0x04  /**< Invalid sequence */
+#define HPACK_DFA_SYM2 0x08   /**< Second symbol available */
 
 /* External declarations for Huffman tables */
 extern const HPACK_HuffmanSymbol hpack_huffman_encode[HPACK_HUFFMAN_SYMBOLS];
@@ -173,11 +184,13 @@ extern const HPACK_HuffmanTransition
     hpack_huffman_decode[HPACK_HUFFMAN_NUM_STATES][16];
 
 /* External declaration for static table */
-extern const HPACK_StaticEntry hpack_static_table[SOCKETHPACK_STATIC_TABLE_SIZE];
+extern const HPACK_StaticEntry
+    hpack_static_table[SOCKETHPACK_STATIC_TABLE_SIZE];
 
 /* ============================================================================
  * Internal Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * hpack_table_evict - Evict oldest entries until size fits
@@ -200,12 +213,12 @@ static inline size_t
 hpack_entry_size (size_t name_len, size_t value_len)
 {
   size_t temp;
-  if (SocketSecurity_check_add(name_len, value_len, &temp) &&
-      SocketSecurity_check_add(temp, SOCKETHPACK_ENTRY_OVERHEAD, &temp)) {
-    return temp;
-  }
+  if (SocketSecurity_check_add (name_len, value_len, &temp)
+      && SocketSecurity_check_add (temp, SOCKETHPACK_ENTRY_OVERHEAD, &temp))
+    {
+      return temp;
+    }
   return SIZE_MAX; /* Overflow or invalid - caller should check */
 }
 
 #endif /* SOCKETHPACK_PRIVATE_INCLUDED */
-

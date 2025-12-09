@@ -20,7 +20,8 @@
 
 /* ============================================================================
  * Rate Limiter Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SOCKET_RATELIMIT_MIN_WAIT_MS - Minimum wait time in milliseconds
@@ -33,7 +34,8 @@
 #endif
 
 /**
- * SOCKET_RATELIMIT_IMPOSSIBLE_WAIT - Return value for impossible token requests
+ * SOCKET_RATELIMIT_IMPOSSIBLE_WAIT - Return value for impossible token
+ * requests
  *
  * Returned by SocketRateLimit_wait_time_ms() when requested tokens exceed
  * bucket_size, making the request impossible to fulfill.
@@ -43,7 +45,8 @@
 #endif
 
 /**
- * SOCKET_RATELIMIT_SHUTDOWN - Flag indicating instance is shutdown (being freed)
+ * SOCKET_RATELIMIT_SHUTDOWN - Flag indicating instance is shutdown (being
+ * freed)
  */
 #define SOCKET_RATELIMIT_SHUTDOWN (-1)
 
@@ -53,13 +56,15 @@
 #define SOCKET_RATELIMIT_MUTEX_UNINITIALIZED 0
 
 /**
- * SOCKET_RATELIMIT_MUTEX_INITIALIZED - Flag indicating mutex is initialized and ready
+ * SOCKET_RATELIMIT_MUTEX_INITIALIZED - Flag indicating mutex is initialized
+ * and ready
  */
 #define SOCKET_RATELIMIT_MUTEX_INITIALIZED 1
 
 /* ============================================================================
  * Rate Limiter Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define T SocketRateLimit_T
 
@@ -67,17 +72,20 @@
  * struct T - Token bucket rate limiter internal structure
  *
  * Implements the token bucket algorithm with thread-safe operations.
- * All time values use monotonic clock to avoid issues with system time changes.
+ * All time values use monotonic clock to avoid issues with system time
+ * changes.
  */
 struct T
 {
-  size_t tokens_per_sec;   /**< Token refill rate (tokens added per second) */
-  size_t bucket_size;      /**< Maximum bucket capacity (burst limit) */
-  size_t tokens;           /**< Current available tokens */
-  int64_t last_refill_ms;  /**< Last refill timestamp (monotonic milliseconds) */
-  pthread_mutex_t mutex;   /**< Thread safety mutex for all operations */
-  Arena_T arena;           /**< Arena used for allocation (NULL if malloc) */
-  int initialized;         /**< -1 shutdown (being freed), 0 uninitialized, 1 mutex initialized and ready */
+  size_t tokens_per_sec; /**< Token refill rate (tokens added per second) */
+  size_t bucket_size;    /**< Maximum bucket capacity (burst limit) */
+  size_t tokens;         /**< Current available tokens */
+  int64_t
+      last_refill_ms;    /**< Last refill timestamp (monotonic milliseconds) */
+  pthread_mutex_t mutex; /**< Thread safety mutex for all operations */
+  Arena_T arena;         /**< Arena used for allocation (NULL if malloc) */
+  int initialized; /**< -1 shutdown (being freed), 0 uninitialized, 1 mutex
+                      initialized and ready */
 };
 
 #undef T
@@ -93,6 +101,7 @@ struct T
  *
  * This design keeps the implementation details hidden while allowing the
  * structure to be accessed for direct field access where needed (e.g., tests).
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #endif /* SOCKETRATELIMIT_PRIVATE_INCLUDED */

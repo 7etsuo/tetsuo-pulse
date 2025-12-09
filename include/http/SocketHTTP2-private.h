@@ -8,21 +8,22 @@
 #ifndef SOCKETHTTP2_PRIVATE_INCLUDED
 #define SOCKETHTTP2_PRIVATE_INCLUDED
 
-#include "http/SocketHTTP2.h"
-#include "http/SocketHPACK.h"
-#include "socket/SocketBuf.h"
-#include "core/SocketRateLimit.h"
 #include "core/Except.h"
+#include "core/SocketRateLimit.h"
+#include "http/SocketHPACK.h"
+#include "http/SocketHTTP2.h"
+#include "socket/SocketBuf.h"
 
 extern const Except_T SocketHTTP2_Failed;
 extern const Except_T SocketHTTP2_ProtocolError;
 extern const Except_T SocketHTTP2_StreamError;
 extern const Except_T SocketHTTP2_FlowControlError;
-extern const Except_T SocketHTTP2;  /* Base for EXCEPT(SocketHTTP2) */
+extern const Except_T SocketHTTP2; /* Base for EXCEPT(SocketHTTP2) */
 
 /* ============================================================================
  * Connection Preface
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Client connection preface magic string */
 static const unsigned char HTTP2_CLIENT_PREFACE[HTTP2_PREFACE_SIZE]
@@ -30,7 +31,8 @@ static const unsigned char HTTP2_CLIENT_PREFACE[HTTP2_PREFACE_SIZE]
 
 /* ============================================================================
  * Internal Settings Array Indices
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SETTINGS_IDX_HEADER_TABLE_SIZE 0
 #define SETTINGS_IDX_ENABLE_PUSH 1
@@ -47,69 +49,75 @@ static const unsigned char HTTP2_CLIENT_PREFACE[HTTP2_PREFACE_SIZE]
 
 /* ============================================================================
  * Connection State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP/2 connection handshake state
  */
 typedef enum
 {
-  HTTP2_CONN_STATE_INIT = 0,       /**< Initial state */
-  HTTP2_CONN_STATE_PREFACE_SENT,   /**< Client preface sent */
-  HTTP2_CONN_STATE_PREFACE_RECV,   /**< Server preface received */
-  HTTP2_CONN_STATE_SETTINGS_SENT,  /**< SETTINGS sent */
-  HTTP2_CONN_STATE_SETTINGS_RECV,  /**< SETTINGS received */
-  HTTP2_CONN_STATE_READY,          /**< Connection ready */
-  HTTP2_CONN_STATE_GOAWAY_SENT,    /**< GOAWAY sent */
-  HTTP2_CONN_STATE_GOAWAY_RECV,    /**< GOAWAY received */
-  HTTP2_CONN_STATE_CLOSED          /**< Connection closed */
+  HTTP2_CONN_STATE_INIT = 0,      /**< Initial state */
+  HTTP2_CONN_STATE_PREFACE_SENT,  /**< Client preface sent */
+  HTTP2_CONN_STATE_PREFACE_RECV,  /**< Server preface received */
+  HTTP2_CONN_STATE_SETTINGS_SENT, /**< SETTINGS sent */
+  HTTP2_CONN_STATE_SETTINGS_RECV, /**< SETTINGS received */
+  HTTP2_CONN_STATE_READY,         /**< Connection ready */
+  HTTP2_CONN_STATE_GOAWAY_SENT,   /**< GOAWAY sent */
+  HTTP2_CONN_STATE_GOAWAY_RECV,   /**< GOAWAY received */
+  HTTP2_CONN_STATE_CLOSED         /**< Connection closed */
 } SocketHTTP2_ConnState;
 
 /* ============================================================================
  * Stream Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP/2 stream
  */
 struct SocketHTTP2_Stream
 {
-  uint32_t id;                    /**< Stream identifier */
-  SocketHTTP2_StreamState state;  /**< Current state */
-  SocketHTTP2_Conn_T conn;        /**< Parent connection */
+  uint32_t id;                   /**< Stream identifier */
+  SocketHTTP2_StreamState state; /**< Current state */
+  SocketHTTP2_Conn_T conn;       /**< Parent connection */
 
   /* Flow control */
-  int32_t send_window;            /**< Send window size */
-  int32_t recv_window;            /**< Receive window size */
+  int32_t send_window; /**< Send window size */
+  int32_t recv_window; /**< Receive window size */
 
   /* Received data buffer */
-  SocketBuf_T recv_buf;           /**< Received DATA frames */
+  SocketBuf_T recv_buf; /**< Received DATA frames */
 
   /* Header state */
-  int headers_received;           /**< Headers have been received */
-  int end_stream_received;        /**< END_STREAM flag received */
-  int end_stream_sent;            /**< END_STREAM flag sent */
-  int pending_end_stream;          /**< Pending END_STREAM flag from initial frame in split headers */
-  int is_push_stream;              /**< 1 if this is a server push stream, 0 otherwise */
-  int trailers_received;          /**< Trailers received */
+  int headers_received;    /**< Headers have been received */
+  int end_stream_received; /**< END_STREAM flag received */
+  int end_stream_sent;     /**< END_STREAM flag sent */
+  int pending_end_stream;  /**< Pending END_STREAM flag from initial frame in
+                              split headers */
+  int is_push_stream;    /**< 1 if this is a server push stream, 0 otherwise */
+  int trailers_received; /**< Trailers received */
 
   /* Decoded headers storage */
-  SocketHPACK_Header headers[SOCKETHTTP2_MAX_DECODED_HEADERS]; /**< Decoded initial headers */
-  size_t header_count;                                        /**< Number of initial headers */
-  int headers_consumed;                                       /**< Headers already consumed by user */
+  SocketHPACK_Header
+      headers[SOCKETHTTP2_MAX_DECODED_HEADERS]; /**< Decoded initial headers */
+  size_t header_count;  /**< Number of initial headers */
+  int headers_consumed; /**< Headers already consumed by user */
 
-  SocketHPACK_Header trailers[SOCKETHTTP2_MAX_DECODED_HEADERS]; /**< Decoded trailers */
-  size_t trailer_count;                                        /**< Number of trailers */
-  int trailers_consumed;                                       /**< Trailers already consumed by user */
+  SocketHPACK_Header
+      trailers[SOCKETHTTP2_MAX_DECODED_HEADERS]; /**< Decoded trailers */
+  size_t trailer_count;                          /**< Number of trailers */
+  int trailers_consumed; /**< Trailers already consumed by user */
 
   /* Pending headers (accumulated from CONTINUATION) */
-  unsigned char *header_block;    /**< Accumulated header block */
-  size_t header_block_len;        /**< Current length */
-  size_t header_block_capacity;   /**< Allocated capacity */
+  unsigned char *header_block;  /**< Accumulated header block */
+  size_t header_block_len;      /**< Current length */
+  size_t header_block_capacity; /**< Allocated capacity */
 
   /* User data */
   void *userdata;
-  bool is_local_initiated;          /**< True if locally initiated (for limit enforcement) */
+  bool is_local_initiated; /**< True if locally initiated (for limit
+                              enforcement) */
 
   /* Hash table chaining */
   struct SocketHTTP2_Stream *hash_next;
@@ -117,63 +125,69 @@ struct SocketHTTP2_Stream
 
 /* ============================================================================
  * Connection Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP/2 connection
  */
 struct SocketHTTP2_Conn
 {
-  Socket_T socket;                /**< Underlying transport */
-  Arena_T arena;                  /**< Memory arena */
-  SocketHTTP2_Role role;          /**< Client or server */
-  SocketHTTP2_ConnState state;    /**< Connection state */
+  Socket_T socket;             /**< Underlying transport */
+  Arena_T arena;               /**< Memory arena */
+  SocketHTTP2_Role role;       /**< Client or server */
+  SocketHTTP2_ConnState state; /**< Connection state */
 
   /* HPACK compressor/decompressor */
-  SocketHPACK_Encoder_T encoder;  /**< Header encoder */
-  SocketHPACK_Decoder_T decoder;  /**< Header decoder */
+  SocketHPACK_Encoder_T encoder; /**< Header encoder */
+  SocketHPACK_Decoder_T decoder; /**< Header decoder */
 
   /* I/O buffers */
-  SocketBuf_T recv_buf;           /**< Receive buffer */
-  SocketBuf_T send_buf;           /**< Send buffer */
+  SocketBuf_T recv_buf; /**< Receive buffer */
+  SocketBuf_T send_buf; /**< Send buffer */
 
   /* Settings */
-  uint32_t local_settings[HTTP2_SETTINGS_COUNT];  /**< Our settings */
-  uint32_t peer_settings[HTTP2_SETTINGS_COUNT];   /**< Peer's settings */
-  int settings_ack_pending;       /**< Waiting for SETTINGS ACK */
+  uint32_t local_settings[HTTP2_SETTINGS_COUNT]; /**< Our settings */
+  uint32_t peer_settings[HTTP2_SETTINGS_COUNT];  /**< Peer's settings */
+  int settings_ack_pending; /**< Waiting for SETTINGS ACK */
 
   /* Flow control */
-  int32_t send_window;            /**< Connection send window */
-  int32_t recv_window;            /**< Connection receive window */
-  int32_t initial_send_window;    /**< Initial stream send window */
-  int32_t initial_recv_window;    /**< Initial stream recv window */
+  int32_t send_window;         /**< Connection send window */
+  int32_t recv_window;         /**< Connection receive window */
+  int32_t initial_send_window; /**< Initial stream send window */
+  int32_t initial_recv_window; /**< Initial stream recv window */
 
   /* Stream management */
-  struct SocketHTTP2_Stream **streams;  /**< Hash table */
-  size_t stream_count;            /**< Active stream count (total for legacy, deprecate) */
+  struct SocketHTTP2_Stream **streams; /**< Hash table */
+  size_t
+      stream_count; /**< Active stream count (total for legacy, deprecate) */
   uint32_t client_initiated_count; /**< Count of client-initiated streams */
-  uint32_t server_initiated_count; /**< Count of server-initiated streams (incl push) */
-  SocketRateLimit_T stream_open_rate_limit; /**< Rate limit for stream creations */
-  SocketRateLimit_T stream_close_rate_limit; /**< Rate limit for stream closes/RST */
-  uint32_t hash_seed;             /**< Random seed for stream hash randomization */
+  uint32_t server_initiated_count; /**< Count of server-initiated streams (incl
+                                      push) */
+  SocketRateLimit_T
+      stream_open_rate_limit; /**< Rate limit for stream creations */
+  SocketRateLimit_T
+      stream_close_rate_limit; /**< Rate limit for stream closes/RST */
+  uint32_t hash_seed; /**< Random seed for stream hash randomization */
 
-  uint32_t next_stream_id;        /**< Next stream ID to use */
-  uint32_t last_peer_stream_id;   /**< Last peer stream ID processed */
-  uint32_t max_peer_stream_id;    /**< Max stream ID from GOAWAY */
+  uint32_t next_stream_id;      /**< Next stream ID to use */
+  uint32_t last_peer_stream_id; /**< Last peer stream ID processed */
+  uint32_t max_peer_stream_id;  /**< Max stream ID from GOAWAY */
 
   /* CONTINUATION frame state */
-  uint32_t continuation_stream_id; /**< Stream expecting CONTINUATION */
-  int expecting_continuation;      /**< Expecting CONTINUATION frame */
-  uint32_t continuation_frame_count; /**< Current CONTINUATION count for header block */
+  uint32_t continuation_stream_id;   /**< Stream expecting CONTINUATION */
+  int expecting_continuation;        /**< Expecting CONTINUATION frame */
+  uint32_t continuation_frame_count; /**< Current CONTINUATION count for header
+                                        block */
 
   /* GOAWAY state */
-  int goaway_sent;                /**< GOAWAY frame sent */
-  int goaway_received;            /**< GOAWAY frame received */
-  SocketHTTP2_ErrorCode goaway_error_code;  /**< GOAWAY error code */
+  int goaway_sent;                         /**< GOAWAY frame sent */
+  int goaway_received;                     /**< GOAWAY frame received */
+  SocketHTTP2_ErrorCode goaway_error_code; /**< GOAWAY error code */
 
   /* PING state */
-  unsigned char ping_opaque[8];   /**< Last PING opaque data */
-  int ping_pending;               /**< Waiting for PING ACK */
+  unsigned char ping_opaque[8]; /**< Last PING opaque data */
+  int ping_pending;             /**< Waiting for PING ACK */
 
   /* Callbacks */
   SocketHTTP2_StreamCallback stream_callback;
@@ -201,7 +215,8 @@ struct SocketHTTP2_Conn
 
 /* ============================================================================
  * Internal Functions - Frame Layer
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http2_frame_validate - Validate frame against protocol rules
@@ -210,8 +225,9 @@ struct SocketHTTP2_Conn
  *
  * Returns: 0 if valid, HTTP2 error code if invalid
  */
-extern SocketHTTP2_ErrorCode http2_frame_validate (SocketHTTP2_Conn_T conn,
-                                                   const SocketHTTP2_FrameHeader *header);
+extern SocketHTTP2_ErrorCode
+http2_frame_validate (SocketHTTP2_Conn_T conn,
+                      const SocketHTTP2_FrameHeader *header);
 
 /**
  * http2_flow_adjust_window - Adjust window by signed delta for SETTINGS change
@@ -238,7 +254,8 @@ extern int http2_frame_send (SocketHTTP2_Conn_T conn,
 
 /* ============================================================================
  * Internal Functions - Stream Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http2_stream_lookup - Find stream by ID
@@ -276,14 +293,14 @@ extern void http2_stream_destroy (SocketHTTP2_Stream_T stream);
  *
  * Returns: 0 on valid transition, HTTP2 error code on invalid
  */
-extern SocketHTTP2_ErrorCode http2_stream_transition (SocketHTTP2_Stream_T stream,
-                                                      uint8_t frame_type,
-                                                      uint8_t flags,
-                                                      int is_send);
+extern SocketHTTP2_ErrorCode
+http2_stream_transition (SocketHTTP2_Stream_T stream, uint8_t frame_type,
+                         uint8_t flags, int is_send);
 
 /* ============================================================================
  * Internal Functions - Flow Control
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http2_flow_consume_recv - Consume receive window
@@ -294,8 +311,7 @@ extern SocketHTTP2_ErrorCode http2_stream_transition (SocketHTTP2_Stream_T strea
  * Returns: 0 on success, -1 if window exceeded
  */
 extern int http2_flow_consume_recv (SocketHTTP2_Conn_T conn,
-                                    SocketHTTP2_Stream_T stream,
-                                    size_t bytes);
+                                    SocketHTTP2_Stream_T stream, size_t bytes);
 
 /**
  * http2_flow_consume_send - Consume send window
@@ -306,8 +322,7 @@ extern int http2_flow_consume_recv (SocketHTTP2_Conn_T conn,
  * Returns: 0 on success, -1 if window exceeded
  */
 extern int http2_flow_consume_send (SocketHTTP2_Conn_T conn,
-                                    SocketHTTP2_Stream_T stream,
-                                    size_t bytes);
+                                    SocketHTTP2_Stream_T stream, size_t bytes);
 
 /**
  * http2_flow_update_recv - Update receive window
@@ -348,7 +363,8 @@ extern int32_t http2_flow_available_send (const SocketHTTP2_Conn_T conn,
 
 /* ============================================================================
  * Internal Functions - Frame Processing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http2_process_frame - Process a single frame
@@ -434,7 +450,8 @@ extern int http2_process_continuation (SocketHTTP2_Conn_T conn,
 
 /* ============================================================================
  * Internal Functions - Header Processing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http2_decode_headers - Decode HPACK header block
@@ -447,8 +464,7 @@ extern int http2_process_continuation (SocketHTTP2_Conn_T conn,
  */
 extern int http2_decode_headers (SocketHTTP2_Conn_T conn,
                                  SocketHTTP2_Stream_T stream,
-                                 const unsigned char *block,
-                                 size_t len);
+                                 const unsigned char *block, size_t len);
 
 /**
  * http2_encode_headers - Encode headers using HPACK
@@ -462,13 +478,13 @@ extern int http2_decode_headers (SocketHTTP2_Conn_T conn,
  */
 extern ssize_t http2_encode_headers (SocketHTTP2_Conn_T conn,
                                      const SocketHPACK_Header *headers,
-                                     size_t count,
-                                     unsigned char *output,
+                                     size_t count, unsigned char *output,
                                      size_t output_size);
 
 /* ============================================================================
  * Internal Functions - Utility
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http2_send_connection_error - Send GOAWAY and close
@@ -492,8 +508,7 @@ extern void http2_send_stream_error (SocketHTTP2_Conn_T conn,
  * http2_emit_stream_event - Emit stream event callback
  */
 extern void http2_emit_stream_event (SocketHTTP2_Conn_T conn,
-                                     SocketHTTP2_Stream_T stream,
-                                     int event);
+                                     SocketHTTP2_Stream_T stream, int event);
 
 /**
  * http2_emit_conn_event - Emit connection event callback
@@ -501,4 +516,3 @@ extern void http2_emit_stream_event (SocketHTTP2_Conn_T conn,
 extern void http2_emit_conn_event (SocketHTTP2_Conn_T conn, int event);
 
 #endif /* SOCKETHTTP2_PRIVATE_INCLUDED */
-

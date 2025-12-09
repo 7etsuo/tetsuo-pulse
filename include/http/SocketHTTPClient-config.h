@@ -1,7 +1,8 @@
 /**
  * @file SocketHTTPClient-config.h
  * @ingroup http
- * @brief Configuration constants for HTTP client with compile-time override support.
+ * @brief Configuration constants for HTTP client with compile-time override
+ * support.
  *
  * Centralized configuration for HTTP client module.
  * All magic numbers are defined here with compile-time override support.
@@ -50,7 +51,8 @@
 
 /* ============================================================================
  * Error Buffer Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Error message buffer size (bytes) */
 #ifndef HTTPCLIENT_ERROR_BUFSIZE
@@ -59,9 +61,11 @@
 
 /* ============================================================================
  * Connection Pool Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
-/** Default hash table size for connection pool (prime for better distribution) */
+/** Default hash table size for connection pool (prime for better distribution)
+ */
 #ifndef HTTPCLIENT_POOL_HASH_SIZE
 #define HTTPCLIENT_POOL_HASH_SIZE 127
 #endif
@@ -83,7 +87,8 @@
 
 /* ============================================================================
  * Default Timeouts (milliseconds)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Default connection timeout */
 #ifndef HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS
@@ -107,7 +112,8 @@
 
 /* ============================================================================
  * Connection Limits
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Maximum redirects to follow (prevents infinite redirect loops) */
 #ifndef HTTPCLIENT_DEFAULT_MAX_REDIRECTS
@@ -196,12 +202,14 @@
  * exhaustion attacks (e.g., 10MB for typical API responses).
  */
 #ifndef HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE
-#define HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE (10ULL * 1024 * 1024)  /* 10MB default to prevent DoS */
+#define HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE                                  \
+  (10ULL * 1024 * 1024) /* 10MB default to prevent DoS */
 #endif
 
 /* ============================================================================
  * Cookie Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Cookie jar hash table size (prime for better distribution) */
 #ifndef HTTPCLIENT_COOKIE_HASH_SIZE
@@ -258,7 +266,8 @@
  *
  * These are internal buffer sizes for authentication header generation.
  * They are sized to handle typical use cases with some margin.
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Credentials buffer size (username:password before base64) */
 #ifndef HTTPCLIENT_AUTH_CREDENTIALS_SIZE
@@ -292,7 +301,8 @@
 
 /* ============================================================================
  * Request/Response Buffer Limits
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Request line/header serialization buffer size */
 #ifndef HTTPCLIENT_REQUEST_BUFFER_SIZE
@@ -352,7 +362,8 @@
 
 /* ============================================================================
  * Default User-Agent
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Default User-Agent string */
 #ifndef HTTPCLIENT_DEFAULT_USER_AGENT
@@ -361,12 +372,12 @@
 
 /* ============================================================================
  * Encoding Constants (Content-Encoding support flags)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define HTTPCLIENT_ENCODING_IDENTITY 0x00
-#define HTTPCLIENT_ENCODING_GZIP     0x01
-#define HTTPCLIENT_ENCODING_DEFLATE  0x02
-#define HTTPCLIENT_ENCODING_BR       0x04
+#define HTTPCLIENT_ENCODING_GZIP 0x01
+#define HTTPCLIENT_ENCODING_DEFLATE 0x02
+#define HTTPCLIENT_ENCODING_BR 0x04
 
 #endif /* SOCKETHTTPCLIENT_CONFIG_INCLUDED */
-

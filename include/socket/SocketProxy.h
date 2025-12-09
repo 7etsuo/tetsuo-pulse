@@ -59,16 +59,15 @@
  *   SocketProxy_Result result = SocketProxy_Conn_result(conn);
  *   SocketProxy_Conn_free(&conn);
  *
+ * Platform Requirements:
+ * - POSIX-compliant system (Linux, BSD, macOS)
+ * - SocketHappyEyeballs module for proxy connection
+ * - Optional: SocketTLS for HTTPS proxy support
+ *
  * @see SocketProxy_connect() for synchronous proxy connection.
  * @see SocketProxy_new() for asynchronous proxy connection setup.
  * @see SocketHappyEyeballs.h for connection racing integration.
  * @see SocketTLS.h for TLS proxy support.
- */
- *
- * PLATFORM REQUIREMENTS:
- * - POSIX-compliant system (Linux, BSD, macOS)
- * - SocketHappyEyeballs module for proxy connection
- * - Optional: SocketTLS for HTTPS proxy support
  */
 
 #ifndef SOCKETPROXY_INCLUDED

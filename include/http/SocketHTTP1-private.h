@@ -12,12 +12,13 @@
 
 #include <string.h>
 
-#include "http/SocketHTTP1.h"
 #include "http/SocketHTTP-private.h"
+#include "http/SocketHTTP1.h"
 
 /* ============================================================================
  * Table-Driven DFA Character Classes
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Character classification for table-driven DFA
@@ -25,25 +26,25 @@
  */
 typedef enum
 {
-  HTTP1_CC_CTL = 0,  /**< Control chars (0x00-0x1F except HTAB) - invalid */
-  HTTP1_CC_SP,       /**< Space (0x20) */
-  HTTP1_CC_HTAB,     /**< Horizontal tab (0x09) - OWS */
-  HTTP1_CC_CR,       /**< Carriage return (0x0D) */
-  HTTP1_CC_LF,       /**< Line feed (0x0A) */
-  HTTP1_CC_COLON,    /**< Colon ':' - header separator */
-  HTTP1_CC_SLASH,    /**< Slash '/' - version separator */
-  HTTP1_CC_DOT,      /**< Dot '.' - version separator */
-  HTTP1_CC_DIGIT,    /**< 0-9 */
-  HTTP1_CC_HEX,      /**< a-f, A-F (hex only, not digit) */
-  HTTP1_CC_ALPHA,    /**< A-Za-z (not H, T, P) */
-  HTTP1_CC_H,        /**< 'H' - HTTP version start */
-  HTTP1_CC_T,        /**< 'T' - HTTP version */
-  HTTP1_CC_P,        /**< 'P' - HTTP version */
-  HTTP1_CC_TCHAR,    /**< Other token chars: !#$%&'*+-.^_`|~ */
-  HTTP1_CC_VCHAR,    /**< Other visible chars (0x21-0x7E not above) */
-  HTTP1_CC_OBS,      /**< obs-text (0x80-0xFF) */
-  HTTP1_CC_INVALID,  /**< Invalid (NUL, DEL, etc.) */
-  HTTP1_NUM_CLASSES  /**< Number of character classes */
+  HTTP1_CC_CTL = 0, /**< Control chars (0x00-0x1F except HTAB) - invalid */
+  HTTP1_CC_SP,      /**< Space (0x20) */
+  HTTP1_CC_HTAB,    /**< Horizontal tab (0x09) - OWS */
+  HTTP1_CC_CR,      /**< Carriage return (0x0D) */
+  HTTP1_CC_LF,      /**< Line feed (0x0A) */
+  HTTP1_CC_COLON,   /**< Colon ':' - header separator */
+  HTTP1_CC_SLASH,   /**< Slash '/' - version separator */
+  HTTP1_CC_DOT,     /**< Dot '.' - version separator */
+  HTTP1_CC_DIGIT,   /**< 0-9 */
+  HTTP1_CC_HEX,     /**< a-f, A-F (hex only, not digit) */
+  HTTP1_CC_ALPHA,   /**< A-Za-z (not H, T, P) */
+  HTTP1_CC_H,       /**< 'H' - HTTP version start */
+  HTTP1_CC_T,       /**< 'T' - HTTP version */
+  HTTP1_CC_P,       /**< 'P' - HTTP version */
+  HTTP1_CC_TCHAR,   /**< Other token chars: !#$%&'*+-.^_`|~ */
+  HTTP1_CC_VCHAR,   /**< Other visible chars (0x21-0x7E not above) */
+  HTTP1_CC_OBS,     /**< obs-text (0x80-0xFF) */
+  HTTP1_CC_INVALID, /**< Invalid (NUL, DEL, etc.) */
+  HTTP1_NUM_CLASSES /**< Number of character classes */
 } HTTP1_CharClass;
 
 /**
@@ -51,26 +52,27 @@ typedef enum
  */
 typedef enum
 {
-  HTTP1_ACT_NONE = 0,       /**< Just transition, no side effect */
-  HTTP1_ACT_STORE_METHOD,   /**< Store byte in method buffer */
-  HTTP1_ACT_STORE_URI,      /**< Store byte in URI buffer */
-  HTTP1_ACT_STORE_REASON,   /**< Store byte in reason buffer */
-  HTTP1_ACT_STORE_NAME,     /**< Store byte in header name buffer */
-  HTTP1_ACT_STORE_VALUE,    /**< Store byte in header value buffer */
-  HTTP1_ACT_METHOD_END,     /**< Complete method token */
-  HTTP1_ACT_URI_END,        /**< Complete URI */
-  HTTP1_ACT_VERSION_MAJ,    /**< Store major version digit */
-  HTTP1_ACT_VERSION_MIN,    /**< Store minor version digit */
-  HTTP1_ACT_STATUS_DIGIT,   /**< Store status code digit */
-  HTTP1_ACT_REASON_END,     /**< Complete reason phrase */
-  HTTP1_ACT_HEADER_END,     /**< Complete current header */
-  HTTP1_ACT_HEADERS_DONE,   /**< All headers complete */
-  HTTP1_ACT_ERROR           /**< Transition to error state */
+  HTTP1_ACT_NONE = 0,     /**< Just transition, no side effect */
+  HTTP1_ACT_STORE_METHOD, /**< Store byte in method buffer */
+  HTTP1_ACT_STORE_URI,    /**< Store byte in URI buffer */
+  HTTP1_ACT_STORE_REASON, /**< Store byte in reason buffer */
+  HTTP1_ACT_STORE_NAME,   /**< Store byte in header name buffer */
+  HTTP1_ACT_STORE_VALUE,  /**< Store byte in header value buffer */
+  HTTP1_ACT_METHOD_END,   /**< Complete method token */
+  HTTP1_ACT_URI_END,      /**< Complete URI */
+  HTTP1_ACT_VERSION_MAJ,  /**< Store major version digit */
+  HTTP1_ACT_VERSION_MIN,  /**< Store minor version digit */
+  HTTP1_ACT_STATUS_DIGIT, /**< Store status code digit */
+  HTTP1_ACT_REASON_END,   /**< Complete reason phrase */
+  HTTP1_ACT_HEADER_END,   /**< Complete current header */
+  HTTP1_ACT_HEADERS_DONE, /**< All headers complete */
+  HTTP1_ACT_ERROR         /**< Transition to error state */
 } HTTP1_Action;
 
 /* ============================================================================
  * Internal Parser State Machine
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Low-level parser states (DFA states)
@@ -85,29 +87,29 @@ typedef enum
   HTTP1_PS_START = 0,
 
   /* Request line states */
-  HTTP1_PS_METHOD,           /* Parsing method token */
-  HTTP1_PS_SP_AFTER_METHOD,  /* Single space after method */
-  HTTP1_PS_URI,              /* Parsing request target */
-  HTTP1_PS_SP_AFTER_URI,     /* Single space after URI */
+  HTTP1_PS_METHOD,          /* Parsing method token */
+  HTTP1_PS_SP_AFTER_METHOD, /* Single space after method */
+  HTTP1_PS_URI,             /* Parsing request target */
+  HTTP1_PS_SP_AFTER_URI,    /* Single space after URI */
 
   /* Status line states (response only) */
-  HTTP1_PS_STATUS_CODE,      /* 3 digits */
-  HTTP1_PS_SP_AFTER_STATUS,  /* Space after status */
-  HTTP1_PS_REASON,           /* Reason phrase (optional) */
+  HTTP1_PS_STATUS_CODE,     /* 3 digits */
+  HTTP1_PS_SP_AFTER_STATUS, /* Space after status */
+  HTTP1_PS_REASON,          /* Reason phrase (optional) */
 
   /* Version states (shared) */
-  HTTP1_PS_VERSION_H,        /* Expecting 'H' */
-  HTTP1_PS_VERSION_T1,       /* Expecting first 'T' */
-  HTTP1_PS_VERSION_T2,       /* Expecting second 'T' */
-  HTTP1_PS_VERSION_P,        /* Expecting 'P' */
-  HTTP1_PS_VERSION_SLASH,    /* Expecting '/' */
-  HTTP1_PS_VERSION_MAJOR,    /* Major version digit */
-  HTTP1_PS_VERSION_DOT,      /* Expecting '.' */
-  HTTP1_PS_VERSION_MINOR,    /* Minor version digit */
+  HTTP1_PS_VERSION_H,     /* Expecting 'H' */
+  HTTP1_PS_VERSION_T1,    /* Expecting first 'T' */
+  HTTP1_PS_VERSION_T2,    /* Expecting second 'T' */
+  HTTP1_PS_VERSION_P,     /* Expecting 'P' */
+  HTTP1_PS_VERSION_SLASH, /* Expecting '/' */
+  HTTP1_PS_VERSION_MAJOR, /* Major version digit */
+  HTTP1_PS_VERSION_DOT,   /* Expecting '.' */
+  HTTP1_PS_VERSION_MINOR, /* Minor version digit */
 
   /* Line ending states */
-  HTTP1_PS_LINE_CR,          /* Expecting CR after request/status line */
-  HTTP1_PS_LINE_LF,          /* Expecting LF after CR */
+  HTTP1_PS_LINE_CR, /* Expecting CR after request/status line */
+  HTTP1_PS_LINE_LF, /* Expecting LF after CR */
 
   /* Header states */
   HTTP1_PS_HEADER_START,     /* Start of header or empty line */
@@ -124,13 +126,13 @@ typedef enum
   HTTP1_PS_BODY_UNTIL_CLOSE, /* Reading until EOF */
 
   /* Chunked encoding states */
-  HTTP1_PS_CHUNK_SIZE,       /* Hex digits */
-  HTTP1_PS_CHUNK_SIZE_EXT,   /* Chunk extension (skip) */
-  HTTP1_PS_CHUNK_SIZE_CR,    /* CR after size */
-  HTTP1_PS_CHUNK_SIZE_LF,    /* LF after CR */
-  HTTP1_PS_CHUNK_DATA,       /* Reading chunk data */
-  HTTP1_PS_CHUNK_DATA_CR,    /* CR after chunk data */
-  HTTP1_PS_CHUNK_DATA_LF,    /* LF after chunk CR */
+  HTTP1_PS_CHUNK_SIZE,     /* Hex digits */
+  HTTP1_PS_CHUNK_SIZE_EXT, /* Chunk extension (skip) */
+  HTTP1_PS_CHUNK_SIZE_CR,  /* CR after size */
+  HTTP1_PS_CHUNK_SIZE_LF,  /* LF after CR */
+  HTTP1_PS_CHUNK_DATA,     /* Reading chunk data */
+  HTTP1_PS_CHUNK_DATA_CR,  /* CR after chunk data */
+  HTTP1_PS_CHUNK_DATA_LF,  /* LF after chunk CR */
 
   /* Trailer states (reuse header logic) */
   HTTP1_PS_TRAILER_START,
@@ -142,15 +144,16 @@ typedef enum
   HTTP1_PS_TRAILERS_END_LF,
 
   /* Terminal states */
-  HTTP1_PS_COMPLETE,         /* Message complete */
-  HTTP1_PS_ERROR,            /* Parse error */
+  HTTP1_PS_COMPLETE, /* Message complete */
+  HTTP1_PS_ERROR,    /* Parse error */
 
-  HTTP1_NUM_STATES           /* Number of states */
+  HTTP1_NUM_STATES /* Number of states */
 } HTTP1_InternalState;
 
 /* ============================================================================
  * DFA Tables (defined in SocketHTTP1-parser.c)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Character classification table (256 bytes)
@@ -184,7 +187,8 @@ extern const uint8_t http1_resp_action[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES];
 
 /* ============================================================================
  * Token Accumulator
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Token buffer for accumulating parsed values
@@ -199,7 +203,8 @@ typedef struct
 
 /* ============================================================================
  * Parser Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP/1.1 Parser internal structure
@@ -230,31 +235,31 @@ struct SocketHTTP1_Parser
   SocketHTTP_Headers_T trailers;
 
   /* Token accumulators */
-  HTTP1_TokenBuf method_buf;   /* Method token */
-  HTTP1_TokenBuf uri_buf;      /* Request target */
-  HTTP1_TokenBuf reason_buf;   /* Reason phrase */
-  HTTP1_TokenBuf name_buf;     /* Current header name */
-  HTTP1_TokenBuf value_buf;    /* Current header value */
+  HTTP1_TokenBuf method_buf; /* Method token */
+  HTTP1_TokenBuf uri_buf;    /* Request target */
+  HTTP1_TokenBuf reason_buf; /* Reason phrase */
+  HTTP1_TokenBuf name_buf;   /* Current header name */
+  HTTP1_TokenBuf value_buf;  /* Current header value */
 
   /* Parsing counters */
-  size_t header_count;         /* Number of headers parsed */
-  size_t total_header_size;    /* Total header bytes */
-  size_t line_length;          /* Current line length */
-  size_t header_line_length;      /* Current header line length */
+  size_t header_count;       /* Number of headers parsed */
+  size_t total_header_size;  /* Total header bytes */
+  size_t line_length;        /* Current line length */
+  size_t header_line_length; /* Current header line length */
 
   /* Trailer parsing counters */
-  size_t trailer_count;        /* Number of trailer headers parsed */
-  size_t total_trailer_size;   /* Total trailer bytes parsed */
+  size_t trailer_count;      /* Number of trailer headers parsed */
+  size_t total_trailer_size; /* Total trailer bytes parsed */
 
   /* Body handling */
   SocketHTTP1_BodyMode body_mode;
-  int64_t content_length;      /* From header, or -1 */
-  int64_t body_remaining;      /* Bytes remaining */
-  int body_complete;           /* Body fully received */
+  int64_t content_length; /* From header, or -1 */
+  int64_t body_remaining; /* Bytes remaining */
+  int body_complete;      /* Body fully received */
 
   /* Chunked encoding */
-  size_t chunk_size;           /* Current chunk size */
-  size_t chunk_remaining;      /* Bytes remaining in chunk */
+  size_t chunk_size;      /* Current chunk size */
+  size_t chunk_remaining; /* Bytes remaining in chunk */
 
   /* Version parsing */
   int version_major;
@@ -264,8 +269,8 @@ struct SocketHTTP1_Parser
   int status_code;
 
   /* Connection flags */
-  int keepalive;               /* Keep-alive determined */
-  int is_upgrade;              /* Upgrade requested */
+  int keepalive;  /* Keep-alive determined */
+  int is_upgrade; /* Upgrade requested */
   const char *upgrade_protocol;
 
   /* 100-continue */
@@ -274,7 +279,8 @@ struct SocketHTTP1_Parser
 
 /* ============================================================================
  * Internal Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http1_tokenbuf_init - Initialize token buffer
@@ -285,7 +291,8 @@ struct SocketHTTP1_Parser
  * Returns: 0 on success, -1 on failure
  */
 static inline int
-http1_tokenbuf_init (HTTP1_TokenBuf *buf, Arena_T arena, size_t initial_capacity)
+http1_tokenbuf_init (HTTP1_TokenBuf *buf, Arena_T arena,
+                     size_t initial_capacity)
 {
   buf->data = Arena_alloc (arena, initial_capacity, __FILE__, __LINE__);
   if (!buf->data)
@@ -374,7 +381,8 @@ http1_tokenbuf_terminate (HTTP1_TokenBuf *buf, Arena_T arena, size_t max_size)
 
 /* ============================================================================
  * Validation Helpers (using Phase 3 tables)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http1_is_tchar - Check if character is valid token character
@@ -393,7 +401,7 @@ http1_tokenbuf_terminate (HTTP1_TokenBuf *buf, Arena_T arena, size_t max_size)
  * http1_is_hex - Check if character is hexadecimal digit
  */
 #define http1_is_hex(c)                                                       \
-  (((c) >= '0' && (c) <= '9') || ((c) >= 'a' && (c) <= 'f')                    \
+  (((c) >= '0' && (c) <= '9') || ((c) >= 'a' && (c) <= 'f')                   \
    || ((c) >= 'A' && (c) <= 'F'))
 
 /**
@@ -410,7 +418,8 @@ http1_tokenbuf_terminate (HTTP1_TokenBuf *buf, Arena_T arena, size_t max_size)
 /**
  * http1_is_vchar - Check if character is visible character (0x21-0x7E)
  */
-#define http1_is_vchar(c) ((unsigned char)(c) >= 0x21 && (unsigned char)(c) <= 0x7E)
+#define http1_is_vchar(c)                                                     \
+  ((unsigned char)(c) >= 0x21 && (unsigned char)(c) <= 0x7E)
 
 /**
  * http1_is_obs_text - Check if character is obs-text (0x80-0xFF)
@@ -431,4 +440,3 @@ http1_tokenbuf_terminate (HTTP1_TokenBuf *buf, Arena_T arena, size_t max_size)
 #define HTTP1_DEFAULT_HEADER_VALUE_BUF_SIZE 256
 
 #endif /* SOCKETHTTP1_PRIVATE_INCLUDED */
-

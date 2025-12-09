@@ -1,12 +1,15 @@
 /**
  * @defgroup foundation Core Foundation Modules
- * @brief Base infrastructure for memory management, exception handling, and core utilities.
+ * @brief Base infrastructure for memory management, exception handling, and
+ * core utilities.
  *
- * The Foundation group provides the fundamental building blocks used by all other
- * modules in the socket library. Key components include:
- * - Arena (memory): Region-based memory allocation with fast allocation/deallocation
+ * The Foundation group provides the fundamental building blocks used by all
+ * other modules in the socket library. Key components include:
+ * - Arena (memory): Region-based memory allocation with fast
+ * allocation/deallocation
  * - Except (exceptions): Structured exception handling with TRY/EXCEPT/FINALLY
- * - SocketUtil (utilities): Hash functions, error handling, metrics, and logging
+ * - SocketUtil (utilities): Hash functions, error handling, metrics, and
+ * logging
  * - SocketConfig (configuration): Global configuration management
  *
  * @see core_io for socket primitives built on foundation modules.

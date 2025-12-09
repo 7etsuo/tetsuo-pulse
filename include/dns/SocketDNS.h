@@ -61,7 +61,8 @@ typedef struct Request_T *Request_T;
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketDNS_Failed - DNS resolution operation failure
@@ -236,8 +237,9 @@ extern int SocketDNS_check (T dns);
  * @req: Request handle (must have been returned by SocketDNS_resolve() on
  *       this same resolver instance)
  *
- * Returns: Completed addrinfo result or NULL if pending/error/cancelled/invalid
- * Thread-safe: Yes - protected by internal mutex
+ * Returns: Completed addrinfo result or NULL if
+ * pending/error/cancelled/invalid Thread-safe: Yes - protected by internal
+ * mutex
  *
  * Retrieves the result of a completed DNS resolution. Returns NULL if:
  * - Request is still pending
@@ -330,9 +332,9 @@ SocketDNS_create_completed_request (T dns, struct addrinfo *result, int port);
  *   freeaddrinfo(res);
  */
 extern struct addrinfo *SocketDNS_resolve_sync (T dns, const char *host,
-                                                 int port,
-                                                 const struct addrinfo *hints,
-                                                 int timeout_ms);
+                                                int port,
+                                                const struct addrinfo *hints,
+                                                int timeout_ms);
 
 #undef T
 #undef Request_T

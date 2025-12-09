@@ -4,7 +4,8 @@
 /**
  * @file SocketUtil.h
  * @ingroup foundation
- * @brief Consolidated utility header for logging, metrics, events, and error handling.
+ * @brief Consolidated utility header for logging, metrics, events, and error
+ * handling.
  *
  * This header consolidates the observability, instrumentation, and error
  * handling utilities into a single include for cleaner dependencies.
@@ -35,7 +36,8 @@
 
 /* ============================================================================
  * LOGGING SUBSYSTEM
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * @brief Log severity levels.
@@ -151,14 +153,15 @@ extern void SocketLog_setlevel (SocketLogLevel min_level);
  */
 extern SocketLogLevel SocketLog_getlevel (void);
 
-/* Default log component - modules should override before including this header */
+/* Default log component - modules should override before including this header
+ */
 #ifndef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "Socket"
 #endif
 
 /* ----------------------------------------------------------------------------
  * Convenience Logging Macros
- * ---------------------------------------------------------------------------- 
+ * ----------------------------------------------------------------------------
  *
  * These macros provide ergonomic logging that automatically uses the
  * SOCKET_LOG_COMPONENT macro defined by each module. Each module should
@@ -173,32 +176,32 @@ extern SocketLogLevel SocketLog_getlevel (void);
  */
 
 /* Log at TRACE level (most verbose, detailed tracing) */
-#define SOCKET_LOG_TRACE_MSG(fmt, ...)                                         \
+#define SOCKET_LOG_TRACE_MSG(fmt, ...)                                        \
   SocketLog_emitf (SOCKET_LOG_TRACE, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
 
 /* Log at DEBUG level (debugging information) */
-#define SOCKET_LOG_DEBUG_MSG(fmt, ...)                                         \
+#define SOCKET_LOG_DEBUG_MSG(fmt, ...)                                        \
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
 
 /* Log at INFO level (normal operational messages) */
-#define SOCKET_LOG_INFO_MSG(fmt, ...)                                          \
+#define SOCKET_LOG_INFO_MSG(fmt, ...)                                         \
   SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
 
 /* Log at WARN level (warning conditions) */
-#define SOCKET_LOG_WARN_MSG(fmt, ...)                                          \
+#define SOCKET_LOG_WARN_MSG(fmt, ...)                                         \
   SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
 
 /* Log at ERROR level (error conditions) */
-#define SOCKET_LOG_ERROR_MSG(fmt, ...)                                         \
+#define SOCKET_LOG_ERROR_MSG(fmt, ...)                                        \
   SocketLog_emitf (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
 
 /* Log at FATAL level (critical errors, typically before abort) */
-#define SOCKET_LOG_FATAL_MSG(fmt, ...)                                         \
+#define SOCKET_LOG_FATAL_MSG(fmt, ...)                                        \
   SocketLog_emitf (SOCKET_LOG_FATAL, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
 
 /* ----------------------------------------------------------------------------
  * Thread-Local Logging Context
- * ---------------------------------------------------------------------------- 
+ * ----------------------------------------------------------------------------
  *
  * Provides correlation IDs for distributed tracing and request tracking.
  * Each thread can set its own context that will be available to custom
@@ -226,9 +229,9 @@ extern SocketLogLevel SocketLog_getlevel (void);
  */
 typedef struct SocketLogContext
 {
-  char trace_id[SOCKET_LOG_ID_SIZE];   /**< Distributed trace ID (e.g., UUID) */
+  char trace_id[SOCKET_LOG_ID_SIZE]; /**< Distributed trace ID (e.g., UUID) */
   char request_id[SOCKET_LOG_ID_SIZE]; /**< Request-specific ID */
-  int connection_fd;                   /**< Associated file descriptor (-1 if none) */
+  int connection_fd; /**< Associated file descriptor (-1 if none) */
 } SocketLogContext;
 
 /**
@@ -264,7 +267,7 @@ extern void SocketLog_clearcontext (void);
 
 /* ----------------------------------------------------------------------------
  * Structured Logging
- * ---------------------------------------------------------------------------- 
+ * ----------------------------------------------------------------------------
  *
  * Provides key-value pair logging for machine-parseable output.
  * Custom callbacks can format these fields as JSON, logfmt, etc.
@@ -327,8 +330,9 @@ typedef void (*SocketLogStructuredCallback) (
  * When set, SocketLog_emit_structured() will invoke this callback
  * instead of the regular callback, providing access to structured fields.
  */
-extern void SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
-                                             void *userdata);
+extern void
+SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
+                                 void *userdata);
 
 /**
  * SocketLog_emit_structured - Emit log message with structured fields
@@ -358,13 +362,14 @@ extern void SocketLog_emit_structured (SocketLogLevel level,
  *                             SOCKET_LOG_FIELDS({"key1", "val1"},
  *                                               {"key2", "val2"}));
  */
-#define SOCKET_LOG_FIELDS(...)                                                 \
-  (SocketLogField[]){ __VA_ARGS__ },                                           \
+#define SOCKET_LOG_FIELDS(...)                                                \
+  (SocketLogField[]){ __VA_ARGS__ },                                          \
       (sizeof ((SocketLogField[]){ __VA_ARGS__ }) / sizeof (SocketLogField))
 
 /* ============================================================================
  * METRICS SUBSYSTEM
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketMetric - Metrics enumeration
@@ -459,7 +464,8 @@ SocketMetrics_snapshot_value (const SocketMetricsSnapshot *snapshot,
 
 /* ============================================================================
  * EVENTS SUBSYSTEM
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketEventType - Event type enumeration
@@ -524,7 +530,8 @@ void SocketEvent_register (SocketEventCallback callback, void *userdata);
  * @userdata: User data that was passed to register
  * Thread-safe: Yes
  */
-void SocketEvent_unregister (SocketEventCallback callback, const void *userdata);
+void SocketEvent_unregister (SocketEventCallback callback,
+                             const void *userdata);
 
 /**
  * Event emission functions - Thread-safe
@@ -538,7 +545,8 @@ void SocketEvent_emit_poll_wakeup (int nfds, int timeout_ms);
 
 /* ============================================================================
  * ERROR HANDLING SUBSYSTEM
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketErrorCode - Error code enumeration mapping common errno values
@@ -618,9 +626,8 @@ extern __thread int socket_last_errno;
       socket_last_errno = errno;                                              \
       char tmp_buf[SOCKET_ERROR_BUFSIZE];                                     \
       int _socket_error_ret = snprintf (                                      \
-          tmp_buf, sizeof(tmp_buf), fmt " (errno: %d - %s)",                  \
-          ##__VA_ARGS__, socket_last_errno,                                   \
-          Socket_safe_strerror (socket_last_errno));                          \
+          tmp_buf, sizeof (tmp_buf), fmt " (errno: %d - %s)", ##__VA_ARGS__,  \
+          socket_last_errno, Socket_safe_strerror (socket_last_errno));       \
       strncpy (socket_error_buf, tmp_buf, SOCKET_ERROR_BUFSIZE - 1);          \
       socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';                      \
       SOCKET_ERROR_APPLY_TRUNCATION (_socket_error_ret);                      \
@@ -639,8 +646,8 @@ extern __thread int socket_last_errno;
     {                                                                         \
       socket_last_errno = errno;                                              \
       char tmp_buf[SOCKET_ERROR_BUFSIZE];                                     \
-      int _socket_error_ret = snprintf (                                      \
-          tmp_buf, sizeof(tmp_buf), fmt, ##__VA_ARGS__);                      \
+      int _socket_error_ret                                                   \
+          = snprintf (tmp_buf, sizeof (tmp_buf), fmt, ##__VA_ARGS__);         \
       strncpy (socket_error_buf, tmp_buf, SOCKET_ERROR_BUFSIZE - 1);          \
       socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';                      \
       SOCKET_ERROR_APPLY_TRUNCATION (_socket_error_ret);                      \
@@ -718,12 +725,16 @@ const char *Socket_safe_strerror (int errnum);
  */
 typedef enum SocketErrorCategory
 {
-  SOCKET_ERROR_CATEGORY_NETWORK = 0,   /**< Network-level: ECONNRESET, ECONNREFUSED, etc. */
-  SOCKET_ERROR_CATEGORY_PROTOCOL,      /**< Protocol-level: Parse errors, invalid responses */
-  SOCKET_ERROR_CATEGORY_APPLICATION,   /**< App-level: Auth failures, 4xx responses */
-  SOCKET_ERROR_CATEGORY_TIMEOUT,       /**< Timeout errors: ETIMEDOUT, deadline exceeded */
-  SOCKET_ERROR_CATEGORY_RESOURCE,      /**< Resource exhaustion: OOM, fd limits */
-  SOCKET_ERROR_CATEGORY_UNKNOWN        /**< Unclassified errors */
+  SOCKET_ERROR_CATEGORY_NETWORK
+  = 0, /**< Network-level: ECONNRESET, ECONNREFUSED, etc. */
+  SOCKET_ERROR_CATEGORY_PROTOCOL,    /**< Protocol-level: Parse errors, invalid
+                                        responses */
+  SOCKET_ERROR_CATEGORY_APPLICATION, /**< App-level: Auth failures, 4xx
+                                        responses */
+  SOCKET_ERROR_CATEGORY_TIMEOUT,     /**< Timeout errors: ETIMEDOUT, deadline
+                                        exceeded */
+  SOCKET_ERROR_CATEGORY_RESOURCE, /**< Resource exhaustion: OOM, fd limits */
+  SOCKET_ERROR_CATEGORY_UNKNOWN   /**< Unclassified errors */
 } SocketErrorCategory;
 
 /**
@@ -773,13 +784,14 @@ extern int SocketError_is_retryable_errno (int err);
 
 /* ============================================================================
  * Centralized Exception Infrastructure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SOCKET_DECLARE_MODULE_EXCEPTION - Declare thread-local exception
  * @module_name: Module name (e.g., Socket, SocketBuf, SocketPoll)
  */
-#define SOCKET_DECLARE_MODULE_EXCEPTION(module_name)                           \
+#define SOCKET_DECLARE_MODULE_EXCEPTION(module_name)                          \
   static __thread Except_T module_name##_DetailedException
 
 /**
@@ -788,18 +800,19 @@ extern int SocketError_is_retryable_errno (int err);
  * @exception: Exception to raise
  * Thread-safe: Creates thread-local copy with detailed reason
  */
-#define SOCKET_RAISE_MODULE_ERROR(module_name, exception)                      \
-  do                                                                           \
-    {                                                                          \
-      module_name##_DetailedException = (exception);                           \
-      module_name##_DetailedException.reason = socket_error_buf;               \
-      RAISE (module_name##_DetailedException);                                 \
-    }                                                                          \
+#define SOCKET_RAISE_MODULE_ERROR(module_name, exception)                     \
+  do                                                                          \
+    {                                                                         \
+      module_name##_DetailedException = (exception);                          \
+      module_name##_DetailedException.reason = socket_error_buf;              \
+      RAISE (module_name##_DetailedException);                                \
+    }                                                                         \
   while (0)
 
 /* ============================================================================
  * Unified Error + Raise Macros (Eliminates Redundant Patterns)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SOCKET_RAISE_FMT - Format error with errno and raise exception in one step
@@ -811,12 +824,12 @@ extern int SocketError_is_retryable_errno (int err);
  * Combines SOCKET_ERROR_FMT + RAISE_MODULE_ERROR into single macro.
  * Thread-safe: Yes (uses thread-local buffers)
  */
-#define SOCKET_RAISE_FMT(module_name, exception, fmt, ...)                     \
-  do                                                                           \
-    {                                                                          \
-      SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__);                                   \
-      SOCKET_RAISE_MODULE_ERROR (module_name, exception);                      \
-    }                                                                          \
+#define SOCKET_RAISE_FMT(module_name, exception, fmt, ...)                    \
+  do                                                                          \
+    {                                                                         \
+      SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__);                                  \
+      SOCKET_RAISE_MODULE_ERROR (module_name, exception);                     \
+    }                                                                         \
   while (0)
 
 /**
@@ -829,12 +842,12 @@ extern int SocketError_is_retryable_errno (int err);
  * Combines SOCKET_ERROR_MSG + RAISE_MODULE_ERROR into single macro.
  * Thread-safe: Yes (uses thread-local buffers)
  */
-#define SOCKET_RAISE_MSG(module_name, exception, fmt, ...)                     \
-  do                                                                           \
-    {                                                                          \
-      SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__);                                   \
-      SOCKET_RAISE_MODULE_ERROR (module_name, exception);                      \
-    }                                                                          \
+#define SOCKET_RAISE_MSG(module_name, exception, fmt, ...)                    \
+  do                                                                          \
+    {                                                                         \
+      SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__);                                  \
+      SOCKET_RAISE_MODULE_ERROR (module_name, exception);                     \
+    }                                                                         \
   while (0)
 
 /**
@@ -844,13 +857,15 @@ extern int SocketError_is_retryable_errno (int err);
  * Example module setup:
  *   SOCKET_DECLARE_MODULE_EXCEPTION(MyModule);
  *   #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(MyModule, e)
- *   #define RAISE_FMT(e, fmt, ...) SOCKET_RAISE_FMT(MyModule, e, fmt, ##__VA_ARGS__)
- *   #define RAISE_MSG(e, fmt, ...) SOCKET_RAISE_MSG(MyModule, e, fmt, ##__VA_ARGS__)
+ *   #define RAISE_FMT(e, fmt, ...) SOCKET_RAISE_FMT(MyModule, e, fmt,
+ * ##__VA_ARGS__) #define RAISE_MSG(e, fmt, ...) SOCKET_RAISE_MSG(MyModule, e,
+ * fmt, ##__VA_ARGS__)
  */
 
 /* ============================================================================
  * TIME UTILITIES (Consolidated monotonic clock functions)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_get_monotonic_ms - Get current monotonic time in milliseconds
@@ -870,7 +885,8 @@ int64_t Socket_get_monotonic_ms (void);
 
 /* ============================================================================
  * HASH UTILITIES (Consolidated from multiple modules)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * socket_util_hash_fd - Hash file descriptor using golden ratio multiplicative
@@ -924,7 +940,8 @@ socket_util_hash_uint (unsigned value, unsigned table_size)
 }
 
 /**
- * socket_util_hash_uint_seeded - Seeded hash for collision resistance in security contexts
+ * socket_util_hash_uint_seeded - Seeded hash for collision resistance in
+ * security contexts
  * @value: Unsigned integer to hash
  * @table_size: Hash table size (should be prime)
  * @seed: Per-instance random seed (e.g., from SocketCrypto_random_bytes)
@@ -936,7 +953,8 @@ socket_util_hash_uint (unsigned value, unsigned table_size)
  * Use for security-sensitive lookups where attacker may control keys.
  */
 static inline unsigned
-socket_util_hash_uint_seeded (unsigned value, unsigned table_size, uint32_t seed)
+socket_util_hash_uint_seeded (unsigned value, unsigned table_size,
+                              uint32_t seed)
 {
   uint64_t h = (uint64_t)value * HASH_GOLDEN_RATIO + (uint64_t)seed;
   return (unsigned)(h % table_size);
@@ -1083,7 +1101,8 @@ socket_util_round_up_pow2 (size_t n)
 
 /* ============================================================================
  * String Utilities
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * socket_util_arena_strdup - Duplicate string into arena
@@ -1272,4 +1291,3 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
 }
 
 #endif /* SOCKETUTIL_INCLUDED */
-

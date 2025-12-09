@@ -41,7 +41,8 @@
 
 /* ============================================================================
  * Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** SHA-1 digest size in bytes */
 #define SOCKET_CRYPTO_SHA1_SIZE 20
@@ -52,7 +53,8 @@
 /** MD5 digest size in bytes */
 #define SOCKET_CRYPTO_MD5_SIZE 16
 
-/** WebSocket GUID for Sec-WebSocket-Accept computation (RFC 6455 Section 4.2.2) */
+/** WebSocket GUID for Sec-WebSocket-Accept computation (RFC 6455
+ * Section 4.2.2) */
 #define SOCKET_CRYPTO_WEBSOCKET_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 /** WebSocket key size (16 random bytes, base64 encoded = 24 chars + null) */
@@ -63,7 +65,8 @@
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketCrypto_Failed - General cryptographic operation failure
@@ -78,12 +81,14 @@ extern const Except_T SocketCrypto_Failed;
 
 /* ============================================================================
  * Hash Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketCrypto_sha1 - Compute SHA-1 hash (RFC 3174)
  * @input: Input data
- * @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION)
+ * @input_len: Length of input data in bytes (must not exceed
+ * SOCKET_SECURITY_MAX_ALLOCATION)
  * @output: Output buffer (must be at least SOCKET_CRYPTO_SHA1_SIZE bytes)
  *
  * Computes the SHA-1 message digest of the input data.
@@ -100,7 +105,8 @@ extern void SocketCrypto_sha1 (const void *input, size_t input_len,
 /**
  * SocketCrypto_sha256 - Compute SHA-256 hash (FIPS 180-4)
  * @input: Input data
- * @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION)
+ * @input_len: Length of input data in bytes (must not exceed
+ * SOCKET_SECURITY_MAX_ALLOCATION)
  * @output: Output buffer (must be at least SOCKET_CRYPTO_SHA256_SIZE bytes)
  *
  * Computes the SHA-256 message digest of the input data.
@@ -108,13 +114,15 @@ extern void SocketCrypto_sha1 (const void *input, size_t input_len,
  * Thread-safe: Yes
  * Raises: SocketCrypto_Failed on error or if TLS not available
  */
-extern void SocketCrypto_sha256 (const void *input, size_t input_len,
-                                 unsigned char output[SOCKET_CRYPTO_SHA256_SIZE]);
+extern void
+SocketCrypto_sha256 (const void *input, size_t input_len,
+                     unsigned char output[SOCKET_CRYPTO_SHA256_SIZE]);
 
 /**
  * SocketCrypto_md5 - Compute MD5 hash (RFC 1321)
  * @input: Input data
- * @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION)
+ * @input_len: Length of input data in bytes (must not exceed
+ * SOCKET_SECURITY_MAX_ALLOCATION)
  * @output: Output buffer (must be at least SOCKET_CRYPTO_MD5_SIZE bytes)
  *
  * Computes the MD5 message digest of the input data.
@@ -130,7 +138,8 @@ extern void SocketCrypto_md5 (const void *input, size_t input_len,
 
 /* ============================================================================
  * HMAC Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketCrypto_hmac_sha256 - Compute HMAC-SHA256
@@ -147,18 +156,21 @@ extern void SocketCrypto_md5 (const void *input, size_t input_len,
  * Thread-safe: Yes
  * Raises: SocketCrypto_Failed on error or if TLS not available
  */
-extern void SocketCrypto_hmac_sha256 (const void *key, size_t key_len,
-                                      const void *data, size_t data_len,
-                                      unsigned char output[SOCKET_CRYPTO_SHA256_SIZE]);
+extern void
+SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
+                          size_t data_len,
+                          unsigned char output[SOCKET_CRYPTO_SHA256_SIZE]);
 
 /* ============================================================================
  * Base64 Encoding (RFC 4648)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketCrypto_base64_encode - Base64 encode data
  * @input: Input data
- * @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION)
+ * @input_len: Length of input data in bytes (must not exceed
+ * SOCKET_SECURITY_MAX_ALLOCATION)
  * @output: Output buffer for encoded string
  * @output_size: Size of output buffer in bytes
  *
@@ -167,8 +179,8 @@ extern void SocketCrypto_hmac_sha256 (const void *key, size_t key_len,
  * Required buffer size: ((input_len + 2) / 3) * 4 + 1
  * Use SocketCrypto_base64_encoded_size() to calculate.
  *
- * Returns: Length of encoded string (excluding null terminator), or -1 on error
- * Thread-safe: Yes
+ * Returns: Length of encoded string (excluding null terminator), or -1 on
+ * error Thread-safe: Yes
  */
 extern ssize_t SocketCrypto_base64_encode (const void *input, size_t input_len,
                                            char *output, size_t output_size);
@@ -197,7 +209,8 @@ extern ssize_t SocketCrypto_base64_decode (const char *input, size_t input_len,
 
 /**
  * SocketCrypto_base64_encoded_size - Calculate required encoded buffer size
- * @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION)
+ * @input_len: Length of input data in bytes (must not exceed
+ * SOCKET_SECURITY_MAX_ALLOCATION)
  *
  * Returns: Required buffer size including null terminator
  * Thread-safe: Yes
@@ -215,7 +228,8 @@ extern size_t SocketCrypto_base64_decoded_size (size_t input_len);
 
 /* ============================================================================
  * Hexadecimal Encoding
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketCrypto_hex_encode - Encode binary data as hexadecimal
@@ -236,20 +250,23 @@ extern void SocketCrypto_hex_encode (const void *input, size_t input_len,
  * @input: Hex string
  * @input_len: Length of string (must be even)
  * @output: Output buffer
- * @output_capacity: Capacity of output buffer in bytes (must be at least input_len / 2)
+ * @output_capacity: Capacity of output buffer in bytes (must be at least
+ * input_len / 2)
  *
  * Decodes hexadecimal string to binary data.
  * Accepts both uppercase and lowercase hex digits.
  *
- * Returns: Decoded length (min(input_len / 2, output_capacity)), or -1 on error (invalid input, odd length, insufficient capacity)
- * Thread-safe: Yes
+ * Returns: Decoded length (min(input_len / 2, output_capacity)), or -1 on
+ * error (invalid input, odd length, insufficient capacity) Thread-safe: Yes
  */
 extern ssize_t SocketCrypto_hex_decode (const char *input, size_t input_len,
-                                        unsigned char *output, size_t output_capacity);
+                                        unsigned char *output,
+                                        size_t output_capacity);
 
 /* ============================================================================
  * Random Number Generation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketCrypto_random_bytes - Generate cryptographically secure random bytes
@@ -275,12 +292,14 @@ extern uint32_t SocketCrypto_random_uint32 (void);
 
 /* ============================================================================
  * WebSocket Handshake Helpers (RFC 6455)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketCrypto_websocket_accept - Compute Sec-WebSocket-Accept value
  * @client_key: Sec-WebSocket-Key from client request (24 chars base64)
- * @output: Output buffer (must be at least SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE bytes)
+ * @output: Output buffer (must be at least SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE
+ * bytes)
  *
  * Computes: base64(SHA1(client_key + GUID))
  * Per RFC 6455 Section 4.2.2
@@ -288,12 +307,13 @@ extern uint32_t SocketCrypto_random_uint32 (void);
  * Returns: 0 on success, -1 on error
  * Thread-safe: Yes
  */
-extern int SocketCrypto_websocket_accept (const char *client_key,
-                                          char output[SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE]);
+extern int SocketCrypto_websocket_accept (
+    const char *client_key, char output[SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE]);
 
 /**
  * SocketCrypto_websocket_key - Generate random Sec-WebSocket-Key
- * @output: Output buffer (must be at least SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE bytes)
+ * @output: Output buffer (must be at least SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE
+ * bytes)
  *
  * Generates 16 random bytes and base64 encodes to 24 chars + null.
  * Per RFC 6455 Section 4.1
@@ -301,11 +321,13 @@ extern int SocketCrypto_websocket_accept (const char *client_key,
  * Returns: 0 on success, -1 on error
  * Thread-safe: Yes
  */
-extern int SocketCrypto_websocket_key (char output[SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE]);
+extern int
+SocketCrypto_websocket_key (char output[SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE]);
 
 /* ============================================================================
  * Security Utilities
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketCrypto_secure_compare - Constant-time memory comparison
@@ -335,4 +357,3 @@ extern int SocketCrypto_secure_compare (const void *a, const void *b,
 extern void SocketCrypto_secure_clear (void *ptr, size_t len);
 
 #endif /* SOCKETCRYPTO_INCLUDED */
-

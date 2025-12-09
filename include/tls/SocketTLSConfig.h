@@ -14,12 +14,16 @@
  * Thread-safe: Yes - compile-time constants
  */
 
-/* SocketTLSConfig_T - TLS configuration structure (stub for now; expand as needed) */
+/* SocketTLSConfig_T - TLS configuration structure (stub for now; expand as
+ * needed) */
 typedef struct SocketTLSConfig_T SocketTLSConfig_T;
 
-struct SocketTLSConfig_T {
-  int min_version;  /**< Minimum TLS version (default: SOCKET_TLS_MIN_VERSION) */
-  int max_version;  /**< Maximum TLS version (default: SOCKET_TLS_MAX_VERSION) */
+struct SocketTLSConfig_T
+{
+  int min_version; /**< Minimum TLS version (default: SOCKET_TLS_MIN_VERSION)
+                    */
+  int max_version; /**< Maximum TLS version (default: SOCKET_TLS_MAX_VERSION)
+                    */
   /* Expand with ciphers, timeouts, etc. as API evolves */
 };
 
@@ -113,7 +117,8 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #define SOCKET_TLS_MAX_ALPN_PROTOCOLS 16
 #endif
 
-/* Session ticket key length (OpenSSL uses 80 bytes: 16 name + 32 AES + 32 HMAC)
+/* Session ticket key length (OpenSSL uses 80 bytes: 16 name + 32 AES + 32
+ * HMAC)
  */
 #ifndef SOCKET_TLS_TICKET_KEY_LEN
 #define SOCKET_TLS_TICKET_KEY_LEN 80
@@ -157,12 +162,15 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #define SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL 60 /* Minimum 60 seconds */
 
 #ifndef SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL
-#define SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL (365LL * 24 * 3600) /* Max 1 year in seconds */
+#define SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL                                   \
+  (365LL * 24 * 3600) /* Max 1 year in seconds */
 #endif
 
 #ifndef SOCKET_TLS_MAX_CRL_SIZE
-#define SOCKET_TLS_MAX_CRL_SIZE (10 * 1024 * 1024) /* Max 10MB for CRL files */
-#define SOCKET_TLS_MAX_CRL_FILES_IN_DIR 1000 /* Max CRL files in directory to prevent exhaustion */
+#define SOCKET_TLS_MAX_CRL_SIZE (10 * 1024 * 1024) /* Max 10MB for CRL files  \
+                                                    */
+#define SOCKET_TLS_MAX_CRL_FILES_IN_DIR                                       \
+  1000 /* Max CRL files in directory to prevent exhaustion */
 #endif
 #endif
 

@@ -275,6 +275,19 @@ init_completed_request_fields (struct SocketDNS_Request_T *req,
   req->timeout_override_ms = -1;
 }
 
+/* Forward declarations for synchronous resolution helpers */
+static int
+wait_for_completion (struct SocketDNS_T *dns,
+                     const struct SocketDNS_Request_T *req, int timeout_ms);
+
+static void
+handle_sync_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
+                     int timeout_ms, const char *host);
+
+static void
+handle_sync_error (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
+                   int error, const char *host);
+
 /**
  * @brief Fast-path synchronous resolution for IP addresses and wildcard binds.
  *
@@ -283,7 +296,7 @@ init_completed_request_fields (struct SocketDNS_Request_T *req,
  * NULL host for wildcard binding with AI_PASSIVE flag).
  *
  * @param host Hostname or IP address string (NULL for wildcard/AI_PASSIVE)
- * @param port Port number to associate with addresses
+ * @port Port number to associate with addresses
  * @param hints getaddrinfo() hints structure (may be NULL for defaults)
  *
  * @return Newly allocated addrinfo linked list (caller must free with

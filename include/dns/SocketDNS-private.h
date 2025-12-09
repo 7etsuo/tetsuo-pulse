@@ -21,7 +21,8 @@
 typedef struct Arena_T *Arena_T;
 
 /* Forward typedef for callback */
-typedef void (*SocketDNS_Callback) (struct SocketDNS_Request_T *, struct addrinfo *, int, void *);
+typedef void (*SocketDNS_Callback) (struct SocketDNS_Request_T *,
+                                    struct addrinfo *, int, void *);
 
 /*
  * =============================================================================
@@ -32,7 +33,8 @@ typedef void (*SocketDNS_Callback) (struct SocketDNS_Request_T *, struct addrinf
 /**
  * RequestState - DNS request lifecycle states
  */
-typedef enum {
+typedef enum
+{
   REQ_PENDING,    /**< In queue, not yet processed by worker */
   REQ_PROCESSING, /**< Worker thread currently resolving */
   REQ_COMPLETE,   /**< Result available for retrieval */
@@ -45,7 +47,8 @@ typedef enum {
  * Used by cleanup_on_init_failure() to know which resources need cleanup
  * when initialization fails partway through. Listed in initialization order.
  */
-enum DnsCleanupLevel {
+enum DnsCleanupLevel
+{
   DNS_CLEAN_NONE = 0, /**< No cleanup needed */
   DNS_CLEAN_MUTEX,    /**< Cleanup mutex only */
   DNS_CLEAN_CONDS,    /**< Cleanup condition variables and mutex */
@@ -66,19 +69,20 @@ enum DnsCleanupLevel {
  * Allocated from the resolver's arena and lives until result is retrieved
  * or request is cancelled.
  */
-struct SocketDNS_Request_T {
-  char *host;                   /**< Hostname to resolve (arena-allocated) */
-  int port;                     /**< Port number for service lookup */
-  SocketDNS_Callback callback;  /**< Completion callback (NULL for polling) */
-  void *callback_data;          /**< User data passed to callback */
-  RequestState state;           /**< Current request lifecycle state */
-  struct addrinfo *result;      /**< Resolution result (owned until retrieved) */
-  int error;                    /**< getaddrinfo() error code (0 on success) */
+struct SocketDNS_Request_T
+{
+  char *host;                  /**< Hostname to resolve (arena-allocated) */
+  int port;                    /**< Port number for service lookup */
+  SocketDNS_Callback callback; /**< Completion callback (NULL for polling) */
+  void *callback_data;         /**< User data passed to callback */
+  RequestState state;          /**< Current request lifecycle state */
+  struct addrinfo *result; /**< Resolution result (owned until retrieved) */
+  int error;               /**< getaddrinfo() error code (0 on success) */
   struct SocketDNS_Request_T *queue_next; /**< Queue linked list pointer */
   struct SocketDNS_Request_T *hash_next;  /**< Hash table chain pointer */
-  unsigned hash_value;          /**< Cached hash for O(1) removal */
-  struct timespec submit_time;  /**< CLOCK_MONOTONIC submission timestamp */
-  int timeout_override_ms;      /**< Per-request timeout (-1 = use default) */
+  unsigned hash_value;                    /**< Cached hash for O(1) removal */
+  struct timespec submit_time; /**< CLOCK_MONOTONIC submission timestamp */
+  int timeout_override_ms;     /**< Per-request timeout (-1 = use default) */
   struct SocketDNS_T *dns_resolver; /**< Back-pointer to owning resolver */
 };
 
@@ -96,22 +100,23 @@ struct SocketDNS_Request_T {
  * - Hash table size is prime (SOCKET_DNS_REQUEST_HASH_SIZE = 1021)
  * - Worst case is O(n) lookup per bucket, not a security vulnerability
  */
-struct SocketDNS_T {
-  Arena_T arena;                /**< Arena for request/hostname allocation */
-  pthread_t *workers;           /**< Worker thread array (arena-allocated) */
-  int num_workers;              /**< Number of worker threads */
+struct SocketDNS_T
+{
+  Arena_T arena;      /**< Arena for request/hostname allocation */
+  pthread_t *workers; /**< Worker thread array (arena-allocated) */
+  int num_workers;    /**< Number of worker threads */
   struct SocketDNS_Request_T *queue_head; /**< Request queue FIFO head */
   struct SocketDNS_Request_T *queue_tail; /**< Request queue FIFO tail */
-  size_t queue_size;            /**< Current pending request count */
-  size_t max_pending;           /**< Queue capacity limit */
+  size_t queue_size;                      /**< Current pending request count */
+  size_t max_pending;                     /**< Queue capacity limit */
   struct SocketDNS_Request_T *request_hash[SOCKET_DNS_REQUEST_HASH_SIZE];
-                                /**< Hash table for O(1) request lookup */
-  pthread_mutex_t mutex;        /**< Protects all mutable state */
-  pthread_cond_t queue_cond;    /**< Signals workers when work available */
-  pthread_cond_t result_cond;   /**< Signals waiters when result ready */
-  int shutdown;                 /**< Shutdown flag (1 = shutting down) */
-  int pipefd[2];                /**< Completion pipe [0]=read, [1]=write */
-  int request_timeout_ms;       /**< Default timeout (0 = no timeout) */
+  /**< Hash table for O(1) request lookup */
+  pthread_mutex_t mutex;      /**< Protects all mutable state */
+  pthread_cond_t queue_cond;  /**< Signals workers when work available */
+  pthread_cond_t result_cond; /**< Signals waiters when result ready */
+  int shutdown;               /**< Shutdown flag (1 = shutting down) */
+  int pipefd[2];              /**< Completion pipe [0]=read, [1]=write */
+  int request_timeout_ms;     /**< Default timeout (0 = no timeout) */
 };
 
 /* Internal macros - use centralized constant */
@@ -135,15 +140,15 @@ struct SocketDNS_T {
  * @timeout_ms: Timeout in milliseconds
  * Returns: 0 if negative, otherwise original value
  */
-#define SANITIZE_TIMEOUT_MS(timeout_ms)                                       \
-  ((timeout_ms) < 0 ? 0 : (timeout_ms))
+#define SANITIZE_TIMEOUT_MS(timeout_ms) ((timeout_ms) < 0 ? 0 : (timeout_ms))
 
 /* Thread-local exception - extern declaration (defined in SocketDNS.c) */
 extern const Except_T SocketDNS_Failed;
 
-/* NOTE: Error raising uses SOCKET_RAISE_MSG/FMT directly (combined format+raise).
- * Each .c file that raises exceptions must include SOCKET_DECLARE_MODULE_EXCEPTION.
- * See SocketDNS.c and SocketDNS-internal.c for the pattern. */
+/* NOTE: Error raising uses SOCKET_RAISE_MSG/FMT directly (combined
+ * format+raise). Each .c file that raises exceptions must include
+ * SOCKET_DECLARE_MODULE_EXCEPTION. See SocketDNS.c and SocketDNS-internal.c
+ * for the pattern. */
 
 /*
  * =============================================================================
@@ -155,11 +160,12 @@ extern const Except_T SocketDNS_Failed;
  */
 
 /* Initialization and allocation */
-extern struct SocketDNS_T * allocate_dns_resolver (void);
+extern struct SocketDNS_T *allocate_dns_resolver (void);
 extern void initialize_dns_fields (struct SocketDNS_T *dns);
 extern void initialize_dns_components (struct SocketDNS_T *dns);
 extern void setup_thread_attributes (pthread_attr_t *attr);
-extern int create_single_worker_thread (struct SocketDNS_T *dns, int thread_index);
+extern int create_single_worker_thread (struct SocketDNS_T *dns,
+                                        int thread_index);
 extern void create_worker_threads (struct SocketDNS_T *dns);
 extern void start_dns_workers (struct SocketDNS_T *dns);
 
@@ -189,19 +195,17 @@ extern void free_all_requests (struct SocketDNS_T *d);
 
 /* Request allocation and queue management */
 extern unsigned request_hash_function (const struct SocketDNS_Request_T *req);
-extern struct SocketDNS_Request_T *allocate_request_structure (
-    struct SocketDNS_T *dns);
+extern struct SocketDNS_Request_T *
+allocate_request_structure (struct SocketDNS_T *dns);
 extern void allocate_request_hostname (struct SocketDNS_T *dns,
                                        struct SocketDNS_Request_T *req,
                                        const char *host, size_t host_len);
 extern void initialize_request_fields (struct SocketDNS_Request_T *req,
                                        int port, SocketDNS_Callback callback,
                                        void *data);
-extern struct SocketDNS_Request_T *allocate_request (struct SocketDNS_T *dns,
-                                                     const char *host,
-                                                     size_t host_len, int port,
-                                                     SocketDNS_Callback cb,
-                                                     void *data);
+extern struct SocketDNS_Request_T *
+allocate_request (struct SocketDNS_T *dns, const char *host, size_t host_len,
+                  int port, SocketDNS_Callback cb, void *data);
 extern void hash_table_insert (struct SocketDNS_T *dns,
                                struct SocketDNS_Request_T *req);
 extern void hash_table_remove (struct SocketDNS_T *dns,
@@ -221,8 +225,9 @@ extern void cancel_pending_request (struct SocketDNS_T *dns,
                                     struct SocketDNS_Request_T *req);
 
 /* Timeout handling */
-extern int request_effective_timeout_ms (const struct SocketDNS_T *dns,
-                                         const struct SocketDNS_Request_T *req);
+extern int
+request_effective_timeout_ms (const struct SocketDNS_T *dns,
+                              const struct SocketDNS_Request_T *req);
 extern int request_timed_out (const struct SocketDNS_T *dns,
                               const struct SocketDNS_Request_T *req);
 extern void mark_request_timeout (struct SocketDNS_T *dns,
@@ -232,7 +237,7 @@ extern void handle_request_timeout (struct SocketDNS_T *dns,
 
 /* Worker thread and resolution */
 extern void initialize_addrinfo_hints (struct addrinfo *hints);
-extern void * worker_thread (void *arg);
+extern void *worker_thread (void *arg);
 extern void prepare_local_hints (struct addrinfo *local_hints,
                                  const struct addrinfo *base_hints,
                                  const struct SocketDNS_Request_T *req);
@@ -243,7 +248,7 @@ extern void process_single_request (struct SocketDNS_T *dns,
                                     struct SocketDNS_Request_T *req,
                                     const struct addrinfo *base_hints);
 extern struct SocketDNS_Request_T *dequeue_request (struct SocketDNS_T *dns);
-extern struct SocketDNS_Request_T * wait_for_request (struct SocketDNS_T *dns);
+extern struct SocketDNS_Request_T *wait_for_request (struct SocketDNS_T *dns);
 extern void signal_completion (struct SocketDNS_T *dns);
 extern void store_resolution_result (struct SocketDNS_T *dns,
                                      struct SocketDNS_Request_T *req,
@@ -264,8 +269,6 @@ extern void invoke_callback (struct SocketDNS_T *dns,
  */
 
 /* Validation */
-
-
 
 extern void validate_resolve_params (const char *host, int port);
 

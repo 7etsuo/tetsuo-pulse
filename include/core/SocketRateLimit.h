@@ -73,7 +73,8 @@
 typedef struct T *T;
 
 /* Exception types */
-extern const Except_T SocketRateLimit_Failed; /**< Rate limiter operation failure */
+extern const Except_T
+    SocketRateLimit_Failed; /**< Rate limiter operation failure */
 
 /**
  * SocketRateLimit_new - Create a new token bucket rate limiter
@@ -162,7 +163,8 @@ extern void SocketRateLimit_reset (T limiter);
  *
  * Thread-safe: Yes - uses internal mutex
  *
- * Allows runtime reconfiguration. Current tokens are capped to new bucket_size.
+ * Allows runtime reconfiguration. Current tokens are capped to new
+ * bucket_size.
  */
 extern void SocketRateLimit_configure (T limiter, size_t tokens_per_sec,
                                        size_t bucket_size);

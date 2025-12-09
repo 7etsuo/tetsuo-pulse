@@ -1,7 +1,8 @@
 /**
  * @file SocketHTTP.h
  * @ingroup http
- * @brief Protocol-agnostic HTTP types, header handling, URI parsing, and utilities.
+ * @brief Protocol-agnostic HTTP types, header handling, URI parsing, and
+ * utilities.
  *
  * Provides protocol-agnostic HTTP types, header handling, URI parsing,
  * and date/media type utilities. Foundation for HTTP/1.1 and HTTP/2.
@@ -45,7 +46,8 @@
 
 /* ============================================================================
  * Configuration Limits
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Maximum header name length in bytes */
 #ifndef SOCKETHTTP_MAX_HEADER_NAME
@@ -77,7 +79,8 @@
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP_Failed - Generic HTTP module failure
@@ -87,10 +90,10 @@
  */
 extern const Except_T SocketHTTP_Failed;
 
-
 /* ============================================================================
  * HTTP Version
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP protocol versions
@@ -126,22 +129,23 @@ extern SocketHTTP_Version SocketHTTP_version_parse (const char *str,
 
 /* ============================================================================
  * HTTP Methods (RFC 9110 Section 9)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP request methods
  */
 typedef enum
 {
-  HTTP_METHOD_GET = 0,    /**< RFC 9110 Section 9.3.1 */
-  HTTP_METHOD_HEAD,       /**< RFC 9110 Section 9.3.2 */
-  HTTP_METHOD_POST,       /**< RFC 9110 Section 9.3.3 */
-  HTTP_METHOD_PUT,        /**< RFC 9110 Section 9.3.4 */
-  HTTP_METHOD_DELETE,     /**< RFC 9110 Section 9.3.5 */
-  HTTP_METHOD_CONNECT,    /**< RFC 9110 Section 9.3.6 */
-  HTTP_METHOD_OPTIONS,    /**< RFC 9110 Section 9.3.7 */
-  HTTP_METHOD_TRACE,      /**< RFC 9110 Section 9.3.8 */
-  HTTP_METHOD_PATCH,      /**< RFC 5789 */
+  HTTP_METHOD_GET = 0, /**< RFC 9110 Section 9.3.1 */
+  HTTP_METHOD_HEAD,    /**< RFC 9110 Section 9.3.2 */
+  HTTP_METHOD_POST,    /**< RFC 9110 Section 9.3.3 */
+  HTTP_METHOD_PUT,     /**< RFC 9110 Section 9.3.4 */
+  HTTP_METHOD_DELETE,  /**< RFC 9110 Section 9.3.5 */
+  HTTP_METHOD_CONNECT, /**< RFC 9110 Section 9.3.6 */
+  HTTP_METHOD_OPTIONS, /**< RFC 9110 Section 9.3.7 */
+  HTTP_METHOD_TRACE,   /**< RFC 9110 Section 9.3.8 */
+  HTTP_METHOD_PATCH,   /**< RFC 5789 */
   HTTP_METHOD_UNKNOWN = -1
 } SocketHTTP_Method;
 
@@ -200,7 +204,8 @@ extern int SocketHTTP_method_valid (const char *str, size_t len);
 
 /* ============================================================================
  * HTTP Status Codes (RFC 9110 Section 15)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP status codes
@@ -221,9 +226,9 @@ typedef enum
   HTTP_STATUS_NO_CONTENT = 204,
   HTTP_STATUS_RESET_CONTENT = 205,
   HTTP_STATUS_PARTIAL_CONTENT = 206,
-  HTTP_STATUS_MULTI_STATUS = 207,      /**< RFC 4918 */
-  HTTP_STATUS_ALREADY_REPORTED = 208,  /**< RFC 5842 */
-  HTTP_STATUS_IM_USED = 226,           /**< RFC 3229 */
+  HTTP_STATUS_MULTI_STATUS = 207,     /**< RFC 4918 */
+  HTTP_STATUS_ALREADY_REPORTED = 208, /**< RFC 5842 */
+  HTTP_STATUS_IM_USED = 226,          /**< RFC 3229 */
 
   /* 3xx Redirection */
   HTTP_STATUS_MULTIPLE_CHOICES = 300,
@@ -254,12 +259,12 @@ typedef enum
   HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE = 415,
   HTTP_STATUS_RANGE_NOT_SATISFIABLE = 416,
   HTTP_STATUS_EXPECTATION_FAILED = 417,
-  HTTP_STATUS_IM_A_TEAPOT = 418,          /**< RFC 2324 */
+  HTTP_STATUS_IM_A_TEAPOT = 418, /**< RFC 2324 */
   HTTP_STATUS_MISDIRECTED_REQUEST = 421,
   HTTP_STATUS_UNPROCESSABLE_CONTENT = 422,
-  HTTP_STATUS_LOCKED = 423,               /**< RFC 4918 */
-  HTTP_STATUS_FAILED_DEPENDENCY = 424,    /**< RFC 4918 */
-  HTTP_STATUS_TOO_EARLY = 425,            /**< RFC 8470 */
+  HTTP_STATUS_LOCKED = 423,            /**< RFC 4918 */
+  HTTP_STATUS_FAILED_DEPENDENCY = 424, /**< RFC 4918 */
+  HTTP_STATUS_TOO_EARLY = 425,         /**< RFC 8470 */
   HTTP_STATUS_UPGRADE_REQUIRED = 426,
   HTTP_STATUS_PRECONDITION_REQUIRED = 428, /**< RFC 6585 */
   HTTP_STATUS_TOO_MANY_REQUESTS = 429,     /**< RFC 6585 */
@@ -280,7 +285,6 @@ typedef enum
   HTTP_STATUS_NETWORK_AUTH_REQUIRED = 511    /**< RFC 6585 */
 } SocketHTTP_StatusCode;
 
-
 /**
  * Status code boundary constants
  *
@@ -288,23 +292,23 @@ typedef enum
  * Note: Not all codes in range are defined in SocketHTTP_StatusCode enum;
  * enum only includes standard/common codes.
  */
-#define HTTP_STATUS_CODE_MIN              100
-#define HTTP_STATUS_CODE_MAX              599
+#define HTTP_STATUS_CODE_MIN 100
+#define HTTP_STATUS_CODE_MAX 599
 
-#define HTTP_STATUS_1XX_MIN  HTTP_STATUS_CONTINUE
-#define HTTP_STATUS_1XX_MAX               199
+#define HTTP_STATUS_1XX_MIN HTTP_STATUS_CONTINUE
+#define HTTP_STATUS_1XX_MAX 199
 
-#define HTTP_STATUS_2XX_MIN  HTTP_STATUS_OK
-#define HTTP_STATUS_2XX_MAX               299
+#define HTTP_STATUS_2XX_MIN HTTP_STATUS_OK
+#define HTTP_STATUS_2XX_MAX 299
 
-#define HTTP_STATUS_3XX_MIN  HTTP_STATUS_MULTIPLE_CHOICES
-#define HTTP_STATUS_3XX_MAX               399
+#define HTTP_STATUS_3XX_MIN HTTP_STATUS_MULTIPLE_CHOICES
+#define HTTP_STATUS_3XX_MAX 399
 
-#define HTTP_STATUS_4XX_MIN  HTTP_STATUS_BAD_REQUEST
-#define HTTP_STATUS_4XX_MAX               499
+#define HTTP_STATUS_4XX_MIN HTTP_STATUS_BAD_REQUEST
+#define HTTP_STATUS_4XX_MAX 499
 
-#define HTTP_STATUS_5XX_MIN  HTTP_STATUS_INTERNAL_ERROR
-#define HTTP_STATUS_5XX_MAX               599
+#define HTTP_STATUS_5XX_MIN HTTP_STATUS_INTERNAL_ERROR
+#define HTTP_STATUS_5XX_MAX 599
 
 /**
  * Status code categories
@@ -347,14 +351,15 @@ extern int SocketHTTP_status_valid (int code);
 
 /* ============================================================================
  * HTTP Headers (RFC 9110 Section 5)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Single header field (for iteration)
  */
 typedef struct
 {
-  const char *name;  /**< Header name (case-preserved) */
+  const char *name; /**< Header name (case-preserved) */
   size_t name_len;
   const char *value; /**< Header value */
   size_t value_len;
@@ -545,8 +550,8 @@ typedef int (*SocketHTTP_HeaderCallback) (const char *name, size_t name_len,
  * @callback: Callback function
  * @userdata: User data passed to callback
  *
- * Returns: 0 if completed, or value returned by callback that stopped iteration
- * Thread-safe: No
+ * Returns: 0 if completed, or value returned by callback that stopped
+ * iteration Thread-safe: No
  */
 extern int SocketHTTP_Headers_iterate (SocketHTTP_Headers_T headers,
                                        SocketHTTP_HeaderCallback callback,
@@ -586,7 +591,8 @@ extern int SocketHTTP_header_value_valid (const char *value, size_t len);
 
 /* ============================================================================
  * URI Parsing (RFC 3986)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Parsed URI components
@@ -596,18 +602,18 @@ extern int SocketHTTP_header_value_valid (const char *value, size_t len);
  */
 typedef struct
 {
-  const char *scheme;     /**< "http", "https", etc. (lowercase) */
+  const char *scheme; /**< "http", "https", etc. (lowercase) */
   size_t scheme_len;
-  const char *userinfo;   /**< username:password (deprecated, may be NULL) */
+  const char *userinfo; /**< username:password (deprecated, may be NULL) */
   size_t userinfo_len;
-  const char *host;       /**< Hostname or IP (may be IPv6 in brackets) */
+  const char *host; /**< Hostname or IP (may be IPv6 in brackets) */
   size_t host_len;
-  int port;               /**< Port number or -1 if not specified */
-  const char *path;       /**< Path component (may be empty, not NULL) */
+  int port;         /**< Port number or -1 if not specified */
+  const char *path; /**< Path component (may be empty, not NULL) */
   size_t path_len;
-  const char *query;      /**< Query string after ? (NULL if none) */
+  const char *query; /**< Query string after ? (NULL if none) */
   size_t query_len;
-  const char *fragment;   /**< Fragment after # (NULL if none) */
+  const char *fragment; /**< Fragment after # (NULL if none) */
   size_t fragment_len;
 } SocketHTTP_URI;
 
@@ -617,13 +623,13 @@ typedef struct
 typedef enum
 {
   URI_PARSE_OK = 0,
-  URI_PARSE_ERROR,           /**< Generic parse error */
-  URI_PARSE_INVALID_SCHEME,  /**< Invalid scheme characters */
-  URI_PARSE_INVALID_HOST,    /**< Invalid host (empty or bad chars) */
-  URI_PARSE_INVALID_PORT,    /**< Port not a number or out of range */
-  URI_PARSE_INVALID_PATH,    /**< Invalid path characters */
-  URI_PARSE_INVALID_QUERY,   /**< Invalid query characters */
-  URI_PARSE_TOO_LONG         /**< URI exceeds SOCKETHTTP_MAX_URI_LEN */
+  URI_PARSE_ERROR,          /**< Generic parse error */
+  URI_PARSE_INVALID_SCHEME, /**< Invalid scheme characters */
+  URI_PARSE_INVALID_HOST,   /**< Invalid host (empty or bad chars) */
+  URI_PARSE_INVALID_PORT,   /**< Port not a number or out of range */
+  URI_PARSE_INVALID_PATH,   /**< Invalid path characters */
+  URI_PARSE_INVALID_QUERY,  /**< Invalid query characters */
+  URI_PARSE_TOO_LONG        /**< URI exceeds SOCKETHTTP_MAX_URI_LEN */
 } SocketHTTP_URIResult;
 
 /**
@@ -661,7 +667,8 @@ extern const char *SocketHTTP_URI_result_string (SocketHTTP_URIResult result);
  * Returns: Explicit port from URI, or default_port if uri->port == -1
  * Thread-safe: Yes
  */
-extern int SocketHTTP_URI_get_port (const SocketHTTP_URI *uri, int default_port);
+extern int SocketHTTP_URI_get_port (const SocketHTTP_URI *uri,
+                                    int default_port);
 
 /**
  * SocketHTTP_URI_is_secure - Check if URI uses secure scheme
@@ -695,8 +702,8 @@ extern ssize_t SocketHTTP_URI_encode (const char *input, size_t len,
  * @output: Output buffer
  * @output_size: Output buffer size
  *
- * Returns: Output length, or -1 on error (invalid encoding or buffer too small)
- * Thread-safe: Yes
+ * Returns: Output length, or -1 on error (invalid encoding or buffer too
+ * small) Thread-safe: Yes
  */
 extern ssize_t SocketHTTP_URI_decode (const char *input, size_t len,
                                       char *output, size_t output_size);
@@ -717,7 +724,8 @@ extern ssize_t SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
 
 /* ============================================================================
  * Date Parsing (RFC 9110 Section 5.6.7)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP_date_parse - Parse HTTP-date
@@ -750,21 +758,22 @@ extern int SocketHTTP_date_format (time_t t, char *output);
 
 /* ============================================================================
  * Content Type Parsing (RFC 9110 Section 8.3)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Parsed media type
  */
 typedef struct
 {
-  const char *type;       /**< "text", "application", etc. */
+  const char *type; /**< "text", "application", etc. */
   size_t type_len;
-  const char *subtype;    /**< "html", "json", etc. */
+  const char *subtype; /**< "html", "json", etc. */
   size_t subtype_len;
-  const char *charset;    /**< charset parameter value (NULL if not present) */
+  const char *charset; /**< charset parameter value (NULL if not present) */
   size_t charset_len;
-  const char *boundary;   /**< boundary parameter for multipart (NULL if not
-                             present) */
+  const char *boundary; /**< boundary parameter for multipart (NULL if not
+                           present) */
   size_t boundary_len;
 } SocketHTTP_MediaType;
 
@@ -799,16 +808,17 @@ extern int SocketHTTP_MediaType_matches (const SocketHTTP_MediaType *type,
 
 /* ============================================================================
  * Content Negotiation (RFC 9110 Section 12)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Quality value (q-value) from Accept headers
  */
 typedef struct
 {
-  const char *value;   /**< Media type or other value */
+  const char *value; /**< Media type or other value */
   size_t value_len;
-  float quality;       /**< 0.0 to 1.0, default 1.0 */
+  float quality; /**< 0.0 to 1.0, default 1.0 */
 } SocketHTTP_QualityValue;
 
 /**
@@ -831,7 +841,8 @@ extern size_t SocketHTTP_parse_accept (const char *value, size_t len,
 
 /* ============================================================================
  * Transfer and Content Codings
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Transfer/content encoding types
@@ -855,7 +866,8 @@ typedef enum
  * Returns: Coding type, or HTTP_CODING_UNKNOWN
  * Thread-safe: Yes
  */
-extern SocketHTTP_Coding SocketHTTP_coding_parse (const char *name, size_t len);
+extern SocketHTTP_Coding SocketHTTP_coding_parse (const char *name,
+                                                  size_t len);
 
 /**
  * SocketHTTP_coding_name - Get coding name string
@@ -868,7 +880,8 @@ extern const char *SocketHTTP_coding_name (SocketHTTP_Coding coding);
 
 /* ============================================================================
  * Request/Response Structures (Protocol-Agnostic)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP Request (protocol-agnostic)
@@ -882,9 +895,9 @@ typedef struct
   SocketHTTP_Version version;
 
   /* Request target (different forms per RFC 9112) */
-  const char *scheme;     /**< "http" or "https" (for absolute-form) */
-  const char *authority;  /**< host[:port] */
-  const char *path;       /**< Path and query string */
+  const char *scheme;    /**< "http" or "https" (for absolute-form) */
+  const char *authority; /**< host[:port] */
+  const char *path;      /**< Path and query string */
 
   SocketHTTP_Headers_T headers;
 
@@ -910,4 +923,3 @@ typedef struct
 } SocketHTTP_Response;
 
 #endif /* SOCKETHTTP_INCLUDED */
-

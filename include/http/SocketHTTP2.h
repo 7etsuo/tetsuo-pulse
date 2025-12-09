@@ -1,7 +1,8 @@
 /**
  * @file SocketHTTP2.h
  * @ingroup http
- * @brief HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control.
+ * @brief HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow
+ * control.
  *
  * Provides complete HTTP/2 implementation with:
  * - Binary framing layer (9-byte frame headers)
@@ -47,7 +48,8 @@
 
 /* ============================================================================
  * Configuration Limits (RFC 9113 Section 6.5.2)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Default SETTINGS_HEADER_TABLE_SIZE */
 #ifndef SOCKETHTTP2_DEFAULT_HEADER_TABLE_SIZE
@@ -103,7 +105,8 @@
 /** Maximum CONTINUATION frames per header block (DoS protection) */
 #define SOCKETHTTP2_MAX_CONTINUATION_FRAMES 32
 
-/** Number of pseudo-headers in HTTP/2 requests (:method, :scheme, :authority, :path) */
+/** Number of pseudo-headers in HTTP/2 requests (:method, :scheme, :authority,
+ * :path) */
 #define HTTP2_REQUEST_PSEUDO_HEADER_COUNT 4
 
 #endif
@@ -142,7 +145,8 @@
 #endif
 
 #ifndef SOCKETHTTP2_PING_RATE_WINDOW_MS
-#define SOCKETHTTP2_PING_RATE_WINDOW_MS 1000 /* Rate window in milliseconds */
+#define SOCKETHTTP2_PING_RATE_WINDOW_MS 1000 /* Rate window in milliseconds   \
+                                              */
 #endif
 
 /**
@@ -151,11 +155,13 @@
  * Prevents SETTINGS flood for CPU/memory exhaustion.
  */
 #ifndef SOCKETHTTP2_SETTINGS_RATE_LIMIT
-#define SOCKETHTTP2_SETTINGS_RATE_LIMIT 10 /* Max SETTINGS frames per window */
+#define SOCKETHTTP2_SETTINGS_RATE_LIMIT 10 /* Max SETTINGS frames per window  \
+                                            */
 #endif
 
 #ifndef SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS
-#define SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS 5000 /* Longer window for config changes */
+#define SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS                                   \
+  5000 /* Longer window for config changes */
 #endif
 
 #ifndef SOCKETHTTP2_DEFAULT_SETTINGS_TIMEOUT_MS
@@ -186,7 +192,6 @@
 /** PRIORITY payload size (deprecated) */
 #define HTTP2_PRIORITY_PAYLOAD_SIZE 5
 
-
 /** Connection preface magic string length */
 #define HTTP2_PREFACE_SIZE 24
 
@@ -195,7 +200,8 @@
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Protocol-level error (connection must close) */
 extern const Except_T SocketHTTP2_ProtocolError;
@@ -208,35 +214,38 @@ extern const Except_T SocketHTTP2_FlowControlError;
 
 /* ============================================================================
  * Frame Types (RFC 9113 Section 6)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP/2 frame types
  */
 typedef enum
 {
-  HTTP2_FRAME_DATA = 0x0,         /**< Section 6.1 - Payload data */
-  HTTP2_FRAME_HEADERS = 0x1,      /**< Section 6.2 - Header block */
-  HTTP2_FRAME_PRIORITY = 0x2,     /**< Section 6.3 - Deprecated */
-  HTTP2_FRAME_RST_STREAM = 0x3,   /**< Section 6.4 - Stream termination */
-  HTTP2_FRAME_SETTINGS = 0x4,     /**< Section 6.5 - Configuration */
-  HTTP2_FRAME_PUSH_PROMISE = 0x5, /**< Section 6.6 - Server push */
-  HTTP2_FRAME_PING = 0x6,         /**< Section 6.7 - Keep-alive/RTT */
-  HTTP2_FRAME_GOAWAY = 0x7,       /**< Section 6.8 - Graceful shutdown */
+  HTTP2_FRAME_DATA = 0x0,          /**< Section 6.1 - Payload data */
+  HTTP2_FRAME_HEADERS = 0x1,       /**< Section 6.2 - Header block */
+  HTTP2_FRAME_PRIORITY = 0x2,      /**< Section 6.3 - Deprecated */
+  HTTP2_FRAME_RST_STREAM = 0x3,    /**< Section 6.4 - Stream termination */
+  HTTP2_FRAME_SETTINGS = 0x4,      /**< Section 6.5 - Configuration */
+  HTTP2_FRAME_PUSH_PROMISE = 0x5,  /**< Section 6.6 - Server push */
+  HTTP2_FRAME_PING = 0x6,          /**< Section 6.7 - Keep-alive/RTT */
+  HTTP2_FRAME_GOAWAY = 0x7,        /**< Section 6.8 - Graceful shutdown */
   HTTP2_FRAME_WINDOW_UPDATE = 0x8, /**< Section 6.9 - Flow control */
-  HTTP2_FRAME_CONTINUATION = 0x9  /**< Section 6.10 - Header continuation */
+  HTTP2_FRAME_CONTINUATION = 0x9   /**< Section 6.10 - Header continuation */
 } SocketHTTP2_FrameType;
 
 /* Frame flags */
 #define HTTP2_FLAG_END_STREAM 0x01  /**< DATA, HEADERS */
-#define HTTP2_FLAG_END_HEADERS 0x04 /**< HEADERS, PUSH_PROMISE, CONTINUATION */
+#define HTTP2_FLAG_END_HEADERS 0x04 /**< HEADERS, PUSH_PROMISE, CONTINUATION  \
+                                     */
 #define HTTP2_FLAG_PADDED 0x08      /**< DATA, HEADERS, PUSH_PROMISE */
 #define HTTP2_FLAG_PRIORITY 0x20    /**< HEADERS */
 #define HTTP2_FLAG_ACK 0x01         /**< SETTINGS, PING */
 
 /* ============================================================================
  * Error Codes (RFC 9113 Section 7)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP/2 error codes for RST_STREAM and GOAWAY
@@ -261,7 +270,8 @@ typedef enum
 
 /* ============================================================================
  * Settings Identifiers (RFC 9113 Section 6.5.2)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP/2 settings parameters
@@ -281,7 +291,8 @@ typedef enum
 
 /* ============================================================================
  * Stream States (RFC 9113 Section 5.1)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP/2 stream states
@@ -299,7 +310,8 @@ typedef enum
 
 /* ============================================================================
  * Frame Header
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP/2 frame header (9 bytes on wire)
@@ -314,7 +326,8 @@ typedef struct
 
 /* ============================================================================
  * Connection Role
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP/2 endpoint role
@@ -327,7 +340,8 @@ typedef enum
 
 /* ============================================================================
  * Connection Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP/2 connection configuration
@@ -339,11 +353,13 @@ typedef struct
   /* Local settings (we send to peer) */
   uint32_t header_table_size;
   uint32_t enable_push;
-  uint32_t max_concurrent_streams;     /**< Max concurrent streams (SETTINGS_MAX_CONCURRENT_STREAMS) */
-  uint32_t max_stream_open_rate;        /**< Max stream opens per second for rate limiting */
-  uint32_t max_stream_open_burst;       /**< Burst allowance for stream opens */
-  uint32_t max_stream_close_rate;       /**< Max stream closes/RST per second */
-  uint32_t max_stream_close_burst;      /**< Burst for closes/RST */
+  uint32_t max_concurrent_streams; /**< Max concurrent streams
+                                      (SETTINGS_MAX_CONCURRENT_STREAMS) */
+  uint32_t max_stream_open_rate;   /**< Max stream opens per second for rate
+                                      limiting */
+  uint32_t max_stream_open_burst;  /**< Burst allowance for stream opens */
+  uint32_t max_stream_close_rate;  /**< Max stream closes/RST per second */
+  uint32_t max_stream_close_burst; /**< Burst for closes/RST */
   uint32_t initial_window_size;
   uint32_t max_frame_size;
   uint32_t max_header_list_size;
@@ -359,7 +375,8 @@ typedef struct
 
 /* ============================================================================
  * Opaque Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** HTTP/2 connection (opaque) */
 typedef struct SocketHTTP2_Conn *SocketHTTP2_Conn_T;
@@ -369,7 +386,8 @@ typedef struct SocketHTTP2_Stream *SocketHTTP2_Stream_T;
 
 /* ============================================================================
  * Setting Entry (for SETTINGS frame)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Single setting entry
@@ -382,7 +400,8 @@ typedef struct
 
 /* ============================================================================
  * Configuration Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP2_config_defaults - Initialize config with RFC defaults
@@ -396,7 +415,8 @@ extern void SocketHTTP2_config_defaults (SocketHTTP2_Config *config,
 
 /* ============================================================================
  * Connection Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP2_Conn_new - Create HTTP/2 connection
@@ -408,9 +428,9 @@ extern void SocketHTTP2_config_defaults (SocketHTTP2_Config *config,
  * Raises: SocketHTTP2_ProtocolError on allocation failure
  * Thread-safe: Yes (arena must be thread-safe or thread-local)
  */
-extern SocketHTTP2_Conn_T SocketHTTP2_Conn_new (Socket_T socket,
-                                                const SocketHTTP2_Config *config,
-                                                Arena_T arena);
+extern SocketHTTP2_Conn_T
+SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
+                      Arena_T arena);
 
 /**
  * SocketHTTP2_Conn_free - Free connection and all streams
@@ -483,7 +503,8 @@ extern Arena_T SocketHTTP2_Conn_arena (SocketHTTP2_Conn_T conn);
 
 /* ============================================================================
  * Connection Control
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP2_Conn_settings - Send SETTINGS frame
@@ -558,7 +579,8 @@ extern uint32_t SocketHTTP2_Conn_last_stream_id (SocketHTTP2_Conn_T conn);
 
 /* ============================================================================
  * Connection Flow Control
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP2_Conn_window_update - Update connection-level window
@@ -591,7 +613,8 @@ extern int32_t SocketHTTP2_Conn_recv_window (SocketHTTP2_Conn_T conn);
 
 /* ============================================================================
  * Stream Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP2_Stream_new - Create new stream
@@ -621,7 +644,8 @@ extern uint32_t SocketHTTP2_Stream_id (SocketHTTP2_Stream_T stream);
  * Returns: Current stream state
  * Thread-safe: Yes
  */
-extern SocketHTTP2_StreamState SocketHTTP2_Stream_state (SocketHTTP2_Stream_T stream);
+extern SocketHTTP2_StreamState
+SocketHTTP2_Stream_state (SocketHTTP2_Stream_T stream);
 
 /**
  * SocketHTTP2_Stream_close - Close stream
@@ -654,7 +678,8 @@ extern void SocketHTTP2_Stream_set_userdata (SocketHTTP2_Stream_T stream,
 
 /* ============================================================================
  * Sending (Client/Server)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP2_Stream_send_headers - Send HEADERS frame
@@ -671,7 +696,8 @@ extern void SocketHTTP2_Stream_set_userdata (SocketHTTP2_Stream_T stream,
  */
 extern int SocketHTTP2_Stream_send_headers (SocketHTTP2_Stream_T stream,
                                             const SocketHPACK_Header *headers,
-                                            size_t header_count, int end_stream);
+                                            size_t header_count,
+                                            int end_stream);
 
 /**
  * SocketHTTP2_Stream_send_request - Send request (convenience)
@@ -695,9 +721,10 @@ extern int SocketHTTP2_Stream_send_request (SocketHTTP2_Stream_T stream,
  * Returns: 0 on success, -1 on error
  * Thread-safe: No
  */
-extern int SocketHTTP2_Stream_send_response (SocketHTTP2_Stream_T stream,
-                                             const SocketHTTP_Response *response,
-                                             int end_stream);
+extern int
+SocketHTTP2_Stream_send_response (SocketHTTP2_Stream_T stream,
+                                  const SocketHTTP_Response *response,
+                                  int end_stream);
 
 /**
  * SocketHTTP2_Stream_send_data - Send DATA frame
@@ -722,13 +749,15 @@ extern ssize_t SocketHTTP2_Stream_send_data (SocketHTTP2_Stream_T stream,
  * Returns: 0 on success, -1 on error
  * Thread-safe: No
  */
-extern int SocketHTTP2_Stream_send_trailers (SocketHTTP2_Stream_T stream,
-                                             const SocketHPACK_Header *trailers,
-                                             size_t count);
+extern int
+SocketHTTP2_Stream_send_trailers (SocketHTTP2_Stream_T stream,
+                                  const SocketHPACK_Header *trailers,
+                                  size_t count);
 
 /* ============================================================================
  * Receiving
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP2_Stream_recv_headers - Check for received headers
@@ -778,7 +807,8 @@ extern int SocketHTTP2_Stream_recv_trailers (SocketHTTP2_Stream_T stream,
 
 /* ============================================================================
  * Stream Flow Control
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP2_Stream_window_update - Update stream window
@@ -811,7 +841,8 @@ extern int32_t SocketHTTP2_Stream_recv_window (SocketHTTP2_Stream_T stream);
 
 /* ============================================================================
  * Server Push (RFC 9113 Section 8.4)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP2_Stream_push_promise - Send PUSH_PROMISE (server only)
@@ -822,13 +853,15 @@ extern int32_t SocketHTTP2_Stream_recv_window (SocketHTTP2_Stream_T stream);
  * Returns: New reserved stream for pushing response, or NULL if disabled
  * Thread-safe: No
  */
-extern SocketHTTP2_Stream_T SocketHTTP2_Stream_push_promise (
-    SocketHTTP2_Stream_T stream, const SocketHPACK_Header *request_headers,
-    size_t header_count);
+extern SocketHTTP2_Stream_T
+SocketHTTP2_Stream_push_promise (SocketHTTP2_Stream_T stream,
+                                 const SocketHPACK_Header *request_headers,
+                                 size_t header_count);
 
 /* ============================================================================
  * Callbacks
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Stream event types */
 #define HTTP2_EVENT_STREAM_START 1      /**< New stream started */
@@ -855,9 +888,10 @@ typedef void (*SocketHTTP2_StreamCallback) (SocketHTTP2_Conn_T conn,
  *
  * Thread-safe: No
  */
-extern void SocketHTTP2_Conn_set_stream_callback (
-    SocketHTTP2_Conn_T conn, SocketHTTP2_StreamCallback callback,
-    void *userdata);
+extern void
+SocketHTTP2_Conn_set_stream_callback (SocketHTTP2_Conn_T conn,
+                                      SocketHTTP2_StreamCallback callback,
+                                      void *userdata);
 
 /** Connection event types */
 #define HTTP2_EVENT_SETTINGS_ACK 20     /**< SETTINGS acknowledged */
@@ -886,7 +920,8 @@ SocketHTTP2_Conn_set_conn_callback (SocketHTTP2_Conn_T conn,
 
 /* ============================================================================
  * h2c Upgrade (Cleartext HTTP/2)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP2_Conn_upgrade_client - Upgrade from HTTP/1.1 (client)
@@ -914,15 +949,14 @@ SocketHTTP2_Conn_upgrade_client (Socket_T socket,
  * Returns: HTTP/2 connection with stream 1 pre-created
  * Thread-safe: No
  */
-extern SocketHTTP2_Conn_T
-SocketHTTP2_Conn_upgrade_server (Socket_T socket,
-                                 const SocketHTTP_Request *initial_request,
-                                 const unsigned char *settings_payload,
-                                 size_t settings_len, Arena_T arena);
+extern SocketHTTP2_Conn_T SocketHTTP2_Conn_upgrade_server (
+    Socket_T socket, const SocketHTTP_Request *initial_request,
+    const unsigned char *settings_payload, size_t settings_len, Arena_T arena);
 
 /* ============================================================================
  * Utility Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP2_error_string - Get error code description
@@ -954,21 +988,25 @@ SocketHTTP2_stream_state_string (SocketHTTP2_StreamState state);
 
 /* ============================================================================
  * Frame Parsing (Low-level API)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP2_frame_header_parse - Parse frame header from buffer
  * @data: Input buffer containing frame header
- * @input_len: Length of available data (must be >= HTTP2_FRAME_HEADER_SIZE=9; runtime validated)
+ * @input_len: Length of available data (must be >= HTTP2_FRAME_HEADER_SIZE=9;
+ * runtime validated)
  * @header: Output header structure (populated on success)
  *
  * Returns: 0 on success, -1 on invalid input (null pointers, input_len < 9)
  * Thread-safe: Yes
  *
- * Note: Performs basic length validation for safety; caller should ensure data is from trusted source.
- * No deep payload validation—use http2_frame_validate for protocol checks.
+ * Note: Performs basic length validation for safety; caller should ensure data
+ * is from trusted source. No deep payload validation—use http2_frame_validate
+ * for protocol checks.
  */
-extern int SocketHTTP2_frame_header_parse (const unsigned char *data, size_t input_len,
+extern int SocketHTTP2_frame_header_parse (const unsigned char *data,
+                                           size_t input_len,
                                            SocketHTTP2_FrameHeader *header);
 
 /**
@@ -978,8 +1016,8 @@ extern int SocketHTTP2_frame_header_parse (const unsigned char *data, size_t inp
  *
  * Thread-safe: Yes
  */
-extern void SocketHTTP2_frame_header_serialize (
-    const SocketHTTP2_FrameHeader *header, unsigned char *data);
+extern void
+SocketHTTP2_frame_header_serialize (const SocketHTTP2_FrameHeader *header,
+                                    unsigned char *data);
 
 #endif /* SOCKETHTTP2_INCLUDED */
-

@@ -4,7 +4,8 @@
 /**
  * @file SocketConfig.h
  * @ingroup foundation
- * @brief Compile-time configuration and platform detection for the socket library.
+ * @brief Compile-time configuration and platform detection for the socket
+ * library.
  *
  * This header provides compile-time configuration for the socket library
  * including all size limits, platform detection, and socket option mappings.
@@ -29,7 +30,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * Library Version
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SOCKET_VERSION_MAJOR 0
 #define SOCKET_VERSION_MINOR 1
@@ -37,7 +39,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 #define SOCKET_VERSION_STRING "0.1.0"
 
-/* Numeric version for compile-time comparisons: (MAJOR * 10000) + (MINOR * 100) + PATCH */
+/* Numeric version for compile-time comparisons: (MAJOR * 10000) + (MINOR *
+ * 100) + PATCH */
 #define SOCKET_VERSION                                                        \
   ((SOCKET_VERSION_MAJOR * 10000) + (SOCKET_VERSION_MINOR * 100)              \
    + SOCKET_VERSION_PATCH)
@@ -90,7 +93,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* UDP limits to avoid fragmentation and respect protocol max */
 #ifndef UDP_MAX_PAYLOAD
-#define UDP_MAX_PAYLOAD 65507UL /* IPv4/6 max UDP payload excluding headers */
+#define UDP_MAX_PAYLOAD 65507UL /* IPv4/6 max UDP payload excluding headers   \
+                                 */
 #endif
 
 #ifndef SAFE_UDP_SIZE
@@ -139,7 +143,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * Arena Memory Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Arena chunk size */
 #ifndef ARENA_CHUNK_SIZE
@@ -148,7 +153,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* Maximum allocation size for arena */
 #ifndef ARENA_MAX_ALLOC_SIZE
-#define ARENA_MAX_ALLOC_SIZE SOCKET_SECURITY_MAX_ALLOCATION /* Matches centralized limit */
+#define ARENA_MAX_ALLOC_SIZE                                                  \
+  SOCKET_SECURITY_MAX_ALLOCATION /* Matches centralized limit */
 #endif
 
 /* Maximum number of free chunks to cache for reuse */
@@ -163,7 +169,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * Buffer Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Minimum capacity for circular buffers */
 #ifndef SOCKETBUF_MIN_CAPACITY
@@ -195,7 +202,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * DNS Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #ifndef SOCKET_DNS_THREAD_COUNT
 #define SOCKET_DNS_THREAD_COUNT 4
@@ -240,7 +248,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * Poll Backend Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #ifndef POLL_INITIAL_FDS
 #define POLL_INITIAL_FDS 64
@@ -270,7 +279,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * Timer Subsystem Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Maximum timer timeout to prevent indefinite blocking (5 minutes) */
 #ifndef SOCKET_MAX_TIMER_TIMEOUT_MS
@@ -283,7 +293,7 @@ extern const char *Socket_safe_strerror (int errnum);
  * Can be overridden at compile time.
  */
 #ifndef SOCKET_MAX_TIMER_DELAY_MS
-#define SOCKET_MAX_TIMER_DELAY_MS (INT64_C(31536000000)) /* 365 days */
+#define SOCKET_MAX_TIMER_DELAY_MS (INT64_C (31536000000)) /* 365 days */
 #endif
 
 /* Timer error buffer size for detailed error messages */
@@ -301,7 +311,8 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_TIMER_HEAP_GROWTH_FACTOR 2
 #endif
 
-/* Maximum number of timers per heap to prevent resource exhaustion (default 100000) */
+/* Maximum number of timers per heap to prevent resource exhaustion (default
+ * 100000) */
 #ifndef SOCKET_MAX_TIMERS_PER_HEAP
 #define SOCKET_MAX_TIMERS_PER_HEAP 100000
 #endif
@@ -323,7 +334,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * Event Subsystem Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Maximum number of event handlers that can be registered */
 #ifndef SOCKET_EVENT_MAX_HANDLERS
@@ -332,7 +344,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * Rate Limiting Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Default connection rate limit (new connections per second) */
 #ifndef SOCKET_RATELIMIT_DEFAULT_CONN_PER_SEC
@@ -366,7 +379,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * SYN Flood Protection Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Sliding window duration for rate measurement (milliseconds) */
 #ifndef SOCKET_SYN_DEFAULT_WINDOW_MS
@@ -453,7 +467,8 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_SYN_DEFAULT_MAX_BLACKLIST 10000
 #endif
 
-/* Score threshold at or above which IP is considered trusted (for reputation) */
+/* Score threshold at or above which IP is considered trusted (for reputation)
+ */
 #ifndef SOCKET_SYN_TRUSTED_SCORE_THRESHOLD
 #define SOCKET_SYN_TRUSTED_SCORE_THRESHOLD 0.9f
 #endif
@@ -475,7 +490,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * Logging Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Buffer size for formatted log messages */
 #ifndef SOCKET_LOG_BUFFER_SIZE
@@ -500,12 +516,14 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 #ifndef SOCKET_LOG_TRUNCATION_SUFFIX_LEN
-#define SOCKET_LOG_TRUNCATION_SUFFIX_LEN (sizeof(SOCKET_LOG_TRUNCATION_SUFFIX) - 1)
+#define SOCKET_LOG_TRUNCATION_SUFFIX_LEN                                      \
+  (sizeof (SOCKET_LOG_TRUNCATION_SUFFIX) - 1)
 #endif
 
 /* ============================================================================
  * Error Handling Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Error buffer size */
 #ifndef SOCKET_ERROR_BUFSIZE
@@ -542,7 +560,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * Platform Detection
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #ifdef __APPLE__
 #define SOCKET_PLATFORM_MACOS 1
@@ -559,15 +578,18 @@ extern const char *Socket_safe_strerror (int errnum);
  */
 
 #ifndef SOCKET_HAS_HTTP
-#define SOCKET_HAS_HTTP 1  /**< HTTP/1.1, HTTP/2, HPACK, client/server support */
+#define SOCKET_HAS_HTTP                                                       \
+  1 /**< HTTP/1.1, HTTP/2, HPACK, client/server support */
 #endif
 
 #ifndef SOCKET_HAS_WEBSOCKET
-#define SOCKET_HAS_WEBSOCKET 1  /**< WebSocket RFC 6455 + permessage-deflate */
+#define SOCKET_HAS_WEBSOCKET 1 /**< WebSocket RFC 6455 + permessage-deflate   \
+                                */
 #endif
 
 #ifndef SOCKET_HAS_TLS
-#define SOCKET_HAS_TLS 0  /**< TLS 1.3 only (OpenSSL/LibreSSL) + DTLS - set by cmake */
+#define SOCKET_HAS_TLS                                                        \
+  0 /**< TLS 1.3 only (OpenSSL/LibreSSL) + DTLS - set by cmake */
 #endif
 
 /* IOV_MAX fallback if not defined */
@@ -581,7 +603,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * Timeout Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #ifndef SOCKET_DEFAULT_CONNECT_TIMEOUT_MS
 #define SOCKET_DEFAULT_CONNECT_TIMEOUT_MS 30000 /* 30 seconds */
@@ -589,7 +612,8 @@ extern const char *Socket_safe_strerror (int errnum);
 
 /* ============================================================================
  * Happy Eyeballs (RFC 8305) Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SOCKET_CONNECT_HAPPY_EYEBALLS - Enable Happy Eyeballs for Socket_connect()
@@ -630,15 +654,16 @@ typedef struct SocketTimeouts
 {
   int connect_timeout_ms;   /**< Connect timeout in ms (0 = infinite) */
   int dns_timeout_ms;       /**< DNS resolution timeout in ms (0 = infinite) */
-  int operation_timeout_ms; /**< General operation timeout in ms (0 = infinite) */
+  int operation_timeout_ms; /**< General operation timeout in ms (0 = infinite)
+                             */
 } SocketTimeouts_T;
 
 /**
  * SocketTimeouts_Extended_T - Extended per-phase timeout configuration
  *
  * Provides granular control over individual operation phases. This structure
- * allows fine-tuned timeout settings for production deployments where different
- * phases may have different latency characteristics.
+ * allows fine-tuned timeout settings for production deployments where
+ * different phases may have different latency characteristics.
  *
  * Timeout precedence (highest to lowest):
  * 1. Per-request timeout (if supported by API)
@@ -652,33 +677,38 @@ typedef struct SocketTimeouts
 typedef struct SocketTimeouts_Extended
 {
   /* DNS resolution phase */
-  int dns_timeout_ms;       /**< DNS resolution (0 = use basic, -1 = infinite) */
+  int dns_timeout_ms; /**< DNS resolution (0 = use basic, -1 = infinite) */
 
   /* Connection establishment phase */
-  int connect_timeout_ms;   /**< TCP connect (0 = use basic, -1 = infinite) */
+  int connect_timeout_ms; /**< TCP connect (0 = use basic, -1 = infinite) */
 
   /* TLS handshake phase */
-  int tls_timeout_ms;       /**< TLS handshake (0 = use operation_timeout_ms) */
+  int tls_timeout_ms; /**< TLS handshake (0 = use operation_timeout_ms) */
 
   /* Request/response cycle */
-  int request_timeout_ms;   /**< Full request cycle (0 = use operation_timeout_ms) */
+  int request_timeout_ms; /**< Full request cycle (0 = use
+                             operation_timeout_ms) */
 
   /* Generic operation timeout (fallback for unspecified phases) */
-  int operation_timeout_ms; /**< Default for other ops (0 = use basic, -1 = infinite) */
+  int operation_timeout_ms; /**< Default for other ops (0 = use basic, -1 =
+                               infinite) */
 } SocketTimeouts_Extended_T;
 
 /* Default values for extended timeouts (in milliseconds) */
 #ifndef SOCKET_DEFAULT_TLS_TIMEOUT_MS
-#define SOCKET_DEFAULT_TLS_TIMEOUT_MS 30000 /**< 30 seconds for TLS handshake */
+#define SOCKET_DEFAULT_TLS_TIMEOUT_MS                                         \
+  30000 /**< 30 seconds for TLS handshake */
 #endif
 
 #ifndef SOCKET_DEFAULT_REQUEST_TIMEOUT_MS
-#define SOCKET_DEFAULT_REQUEST_TIMEOUT_MS 60000 /**< 60 seconds for request cycle */
+#define SOCKET_DEFAULT_REQUEST_TIMEOUT_MS                                     \
+  60000 /**< 60 seconds for request cycle */
 #endif
 
 /* ============================================================================
  * Pool Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #ifndef SOCKET_DEFAULT_POOL_SIZE
 #define SOCKET_DEFAULT_POOL_SIZE 1000
@@ -726,7 +756,8 @@ typedef struct SocketTimeouts_Extended
 
 /* ============================================================================
  * Hash and Algorithm Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Golden ratio constant for multiplicative hashing (2^32 * (sqrt(5)-1)/2) */
 #ifndef HASH_GOLDEN_RATIO
@@ -735,7 +766,8 @@ typedef struct SocketTimeouts_Extended
 
 /* ============================================================================
  * Arena Memory Alignment
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Alignment union - ensures proper alignment for all data types */
 union align
@@ -793,7 +825,8 @@ union align
 
 /* ============================================================================
  * Time Conversion Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SOCKET_MS_PER_SECOND 1000
 #define SOCKET_NS_PER_MS 1000000LL
@@ -801,14 +834,16 @@ union align
 
 /* ============================================================================
  * Async I/O Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SOCKET_DEFAULT_IO_URING_ENTRIES 1024
 #define SOCKET_MAX_EVENT_BATCH 100
 
 /* ============================================================================
  * String Conversion Macros
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SOCKET_STRINGIFY(x) #x
 #define SOCKET_TO_STRING(x) SOCKET_STRINGIFY (x)
@@ -820,7 +855,8 @@ union align
 
 /* ============================================================================
  * Socket Type and Family Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SOCKET_STREAM_TYPE SOCK_STREAM
 #define SOCKET_DGRAM_TYPE SOCK_DGRAM
@@ -837,7 +873,8 @@ union align
 
 /* ============================================================================
  * Socket Options
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SOCKET_SOL_SOCKET SOL_SOCKET
 #define SOCKET_SO_REUSEADDR SO_REUSEADDR
@@ -878,7 +915,8 @@ union align
 
 /* ============================================================================
  * TCP Options
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SOCKET_TCP_NODELAY TCP_NODELAY
 #define SOCKET_TCP_KEEPIDLE TCP_KEEPIDLE
@@ -929,7 +967,8 @@ union align
 
 /* ============================================================================
  * IPv6 Options
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SOCKET_IPV6_V6ONLY IPV6_V6ONLY
 
@@ -953,7 +992,8 @@ union align
 
 /* ============================================================================
  * IP Options
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SOCKET_IP_TTL IP_TTL
 #define SOCKET_IP_ADD_MEMBERSHIP IP_ADD_MEMBERSHIP
@@ -961,7 +1001,8 @@ union align
 
 /* ============================================================================
  * Address and Name Info Flags
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SOCKET_AI_PASSIVE AI_PASSIVE
 #define SOCKET_AI_NUMERICHOST AI_NUMERICHOST
@@ -973,7 +1014,8 @@ union align
 
 /* ============================================================================
  * Shutdown and Message Flags
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SOCKET_SHUT_RD SHUT_RD
 #define SOCKET_SHUT_WR SHUT_WR
@@ -1000,7 +1042,8 @@ union align
 
 /* ============================================================================
  * Default Parameters
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define SOCKET_DEFAULT_KEEPALIVE_IDLE 60
 #define SOCKET_DEFAULT_KEEPALIVE_INTERVAL 10
@@ -1046,7 +1089,8 @@ extern size_t SocketConfig_get_memory_used (void);
 /* Validation macros */
 #define SOCKET_VALID_PORT(p) ((int)(p) >= 0 && (int)(p) <= 65535)
 #define SOCKET_VALID_BUFFER_SIZE(s)                                           \
-  ((size_t)(s) >= SOCKET_MIN_BUFFER_SIZE && (size_t)(s) <= SOCKET_MAX_BUFFER_SIZE)
+  ((size_t)(s) >= SOCKET_MIN_BUFFER_SIZE                                      \
+   && (size_t)(s) <= SOCKET_MAX_BUFFER_SIZE)
 #define SOCKET_VALID_CONNECTION_COUNT(c)                                      \
   ((size_t)(c) > 0 && (size_t)(c) <= SOCKET_MAX_CONNECTIONS)
 #define SOCKET_VALID_POLL_EVENTS(e)                                           \
@@ -1061,7 +1105,8 @@ extern size_t SocketConfig_get_memory_used (void);
         {                                                                     \
           int _r = close (fd);                                                \
           if (_r < 0 && errno != EINTR)                                       \
-            fprintf (stderr, "close failed: %s\n", Socket_safe_strerror (errno)); \
+            fprintf (stderr, "close failed: %s\n",                            \
+                     Socket_safe_strerror (errno));                           \
         }                                                                     \
     }                                                                         \
   while (0)

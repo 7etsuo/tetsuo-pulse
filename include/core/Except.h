@@ -37,7 +37,8 @@
  * @see TRY/EXCEPT/FINALLY macros for exception handling.
  */
 
-typedef struct Except_T {
+typedef struct Except_T
+{
   const struct Except_T *type;
   const char *reason; /**< Human-readable error description */
 } Except_T;

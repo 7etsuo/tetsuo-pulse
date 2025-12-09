@@ -4,7 +4,8 @@
 /**
  * @file SocketSYNProtect.h
  * @ingroup foundation
- * @brief SYN flood protection with connection attempt tracking and IP reputation.
+ * @brief SYN flood protection with connection attempt tracking and IP
+ * reputation.
  *
  * Provides comprehensive SYN flood attack protection through:
  * - Connection attempt tracking (not just established connections)
@@ -40,13 +41,15 @@ typedef struct T *T;
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 extern const Except_T SocketSYNProtect_Failed; /**< SYN protection failure */
 
 /* ============================================================================
  * Action and Reputation Enums
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYN_Action - Protection response actions
@@ -56,10 +59,10 @@ extern const Except_T SocketSYNProtect_Failed; /**< SYN protection failure */
  */
 typedef enum SocketSYN_Action
 {
-  SYN_ACTION_ALLOW = 0,   /**< Normal accept - no restrictions */
-  SYN_ACTION_THROTTLE,    /**< Accept with artificial delay */
-  SYN_ACTION_CHALLENGE,   /**< Use TCP_DEFER_ACCEPT (require data) */
-  SYN_ACTION_BLOCK        /**< Reject connection immediately */
+  SYN_ACTION_ALLOW = 0, /**< Normal accept - no restrictions */
+  SYN_ACTION_THROTTLE,  /**< Accept with artificial delay */
+  SYN_ACTION_CHALLENGE, /**< Use TCP_DEFER_ACCEPT (require data) */
+  SYN_ACTION_BLOCK      /**< Reject connection immediately */
 } SocketSYN_Action;
 
 /**
@@ -77,7 +80,8 @@ typedef enum SocketSYN_Reputation
 
 /* ============================================================================
  * Per-IP State Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYN_IPState - Per-IP tracking state
@@ -96,12 +100,13 @@ typedef struct SocketSYN_IPState
   int64_t last_attempt_ms;    /**< Timestamp of last attempt */
   int64_t block_until_ms;     /**< Block expiry timestamp (0 = not blocked) */
   SocketSYN_Reputation rep;   /**< Current reputation state */
-  float score;                /**< Reputation score (0.0=hostile, 1.0=trusted) */
+  float score; /**< Reputation score (0.0=hostile, 1.0=trusted) */
 } SocketSYN_IPState;
 
 /* ============================================================================
  * Configuration Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYNProtect_Config - Protection configuration
@@ -139,12 +144,15 @@ typedef struct SocketSYNProtect_Config
   size_t max_tracked_ips; /**< Maximum IPs to track (LRU eviction) */
   size_t max_whitelist;   /**< Maximum whitelist entries */
   size_t max_blacklist;   /**< Maximum blacklist entries */
-  unsigned hash_seed;       /**< Hash randomization seed (0 = auto-generate crypto random for collision resistance; affects synprotect_hash_ip) */
+  unsigned
+      hash_seed; /**< Hash randomization seed (0 = auto-generate crypto random
+                    for collision resistance; affects synprotect_hash_ip) */
 } SocketSYNProtect_Config;
 
 /* ============================================================================
  * Statistics Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYNProtect_Stats - Protection statistics
@@ -153,22 +161,23 @@ typedef struct SocketSYNProtect_Config
  */
 typedef struct SocketSYNProtect_Stats
 {
-  uint64_t total_attempts;     /**< Total connection attempts checked */
-  uint64_t total_allowed;      /**< Attempts allowed (SYN_ACTION_ALLOW) */
-  uint64_t total_throttled;    /**< Attempts throttled */
-  uint64_t total_challenged;   /**< Attempts challenged (TCP_DEFER_ACCEPT) */
-  uint64_t total_blocked;      /**< Attempts blocked */
-  uint64_t total_whitelisted;  /**< Attempts from whitelisted IPs */
-  uint64_t total_blacklisted;  /**< Attempts from blacklisted IPs */
+  uint64_t total_attempts;      /**< Total connection attempts checked */
+  uint64_t total_allowed;       /**< Attempts allowed (SYN_ACTION_ALLOW) */
+  uint64_t total_throttled;     /**< Attempts throttled */
+  uint64_t total_challenged;    /**< Attempts challenged (TCP_DEFER_ACCEPT) */
+  uint64_t total_blocked;       /**< Attempts blocked */
+  uint64_t total_whitelisted;   /**< Attempts from whitelisted IPs */
+  uint64_t total_blacklisted;   /**< Attempts from blacklisted IPs */
   uint64_t current_tracked_ips; /**< Currently tracked unique IPs */
   uint64_t current_blocked_ips; /**< Currently blocked IPs */
-  uint64_t lru_evictions;      /**< Number of LRU evictions */
-  int64_t uptime_ms;           /**< Time since initialization */
+  uint64_t lru_evictions;       /**< Number of LRU evictions */
+  int64_t uptime_ms;            /**< Time since initialization */
 } SocketSYNProtect_Stats;
 
 /* ============================================================================
  * Lifecycle Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYNProtect_new - Create a new SYN protection instance
@@ -215,7 +224,8 @@ extern void SocketSYNProtect_configure (T protect,
 
 /* ============================================================================
  * Core Protection Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYNProtect_check - Check IP and determine action
@@ -231,7 +241,8 @@ extern void SocketSYNProtect_configure (T protect,
  *
  * If client_ip is NULL or empty, returns SYN_ACTION_ALLOW.
  */
-extern SocketSYN_Action SocketSYNProtect_check (T protect, const char *client_ip,
+extern SocketSYN_Action SocketSYNProtect_check (T protect,
+                                                const char *client_ip,
                                                 SocketSYN_IPState *state_out);
 
 /**
@@ -262,7 +273,8 @@ extern void SocketSYNProtect_report_failure (T protect, const char *client_ip,
 
 /* ============================================================================
  * Whitelist Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYNProtect_whitelist_add - Add IP to whitelist
@@ -315,7 +327,8 @@ extern void SocketSYNProtect_whitelist_clear (T protect);
 
 /* ============================================================================
  * Blacklist Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYNProtect_blacklist_add - Add IP to blacklist
@@ -362,7 +375,8 @@ extern void SocketSYNProtect_blacklist_clear (T protect);
 
 /* ============================================================================
  * Query and Statistics Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYNProtect_get_ip_state - Get current state for an IP
@@ -415,7 +429,8 @@ extern const char *SocketSYNProtect_reputation_name (SocketSYN_Reputation rep);
 
 /* ============================================================================
  * Maintenance Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYNProtect_cleanup - Remove expired entries
@@ -455,4 +470,3 @@ extern void SocketSYNProtect_reset (T protect);
 
 #undef T
 #endif /* SOCKETSYNPROTECT_INCLUDED */
-

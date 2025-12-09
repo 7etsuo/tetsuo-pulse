@@ -38,7 +38,8 @@
 
 /* ============================================================================
  * Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Maximum bytes in a UTF-8 sequence */
 #define SOCKET_UTF8_MAX_BYTES 4
@@ -54,31 +55,33 @@
 
 /* ============================================================================
  * Byte Length Boundaries
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Maximum code point encodable in 1 byte (ASCII range)
  */
-#define SOCKET_UTF8_1BYTE_MAX      0x7F
+#define SOCKET_UTF8_1BYTE_MAX 0x7F
 
 /**
  * Maximum code point encodable in 2 bytes
  */
-#define SOCKET_UTF8_2BYTE_MAX      0x7FF
+#define SOCKET_UTF8_2BYTE_MAX 0x7FF
 
 /**
  * Maximum code point encodable in 3 bytes
  */
-#define SOCKET_UTF8_3BYTE_MAX      0xFFFF
+#define SOCKET_UTF8_3BYTE_MAX 0xFFFF
 
 /**
  * Minimum code point requiring 4 bytes
  */
-#define SOCKET_UTF8_4BYTE_MIN      0x10000
+#define SOCKET_UTF8_4BYTE_MIN 0x10000
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketUTF8_Failed - UTF-8 operation failure
@@ -92,7 +95,8 @@ extern const Except_T SocketUTF8_Failed;
 
 /* ============================================================================
  * UTF-8 Validation Result
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * UTF-8 validation result codes
@@ -102,17 +106,18 @@ extern const Except_T SocketUTF8_Failed;
  */
 typedef enum
 {
-  UTF8_VALID = 0,    /**< Complete valid UTF-8 sequence */
-  UTF8_INVALID,      /**< Invalid byte sequence detected */
-  UTF8_INCOMPLETE,   /**< Valid prefix, needs more bytes */
-  UTF8_OVERLONG,     /**< Overlong encoding (security issue) */
-  UTF8_SURROGATE,    /**< UTF-16 surrogate (U+D800-U+DFFF) */
-  UTF8_TOO_LARGE     /**< Code point > U+10FFFF */
+  UTF8_VALID = 0,  /**< Complete valid UTF-8 sequence */
+  UTF8_INVALID,    /**< Invalid byte sequence detected */
+  UTF8_INCOMPLETE, /**< Valid prefix, needs more bytes */
+  UTF8_OVERLONG,   /**< Overlong encoding (security issue) */
+  UTF8_SURROGATE,  /**< UTF-16 surrogate (U+D800-U+DFFF) */
+  UTF8_TOO_LARGE   /**< Code point > U+10FFFF */
 } SocketUTF8_Result;
 
 /* ============================================================================
  * One-Shot Validation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketUTF8_validate - Validate UTF-8 data (complete check)
@@ -148,7 +153,8 @@ extern SocketUTF8_Result SocketUTF8_validate_str (const char *str);
 
 /* ============================================================================
  * Incremental Validation (for streaming)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * UTF-8 incremental validator state
@@ -160,9 +166,9 @@ extern SocketUTF8_Result SocketUTF8_validate_str (const char *str);
  */
 typedef struct
 {
-  uint32_t state;        /**< DFA state (internal) */
-  uint8_t bytes_needed;  /**< Remaining bytes in sequence */
-  uint8_t bytes_seen;    /**< Bytes seen in current sequence */
+  uint32_t state;       /**< DFA state (internal) */
+  uint8_t bytes_needed; /**< Remaining bytes in sequence */
+  uint8_t bytes_seen;   /**< Bytes seen in current sequence */
 } SocketUTF8_State;
 
 /**
@@ -223,7 +229,8 @@ extern void SocketUTF8_reset (SocketUTF8_State *state);
 
 /* ============================================================================
  * UTF-8 Utilities
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketUTF8_codepoint_len - Get UTF-8 byte length for code point
@@ -295,9 +302,9 @@ extern SocketUTF8_Result SocketUTF8_decode (const unsigned char *data,
  * Returns: UTF8_VALID if valid (count is set), error code otherwise
  * Thread-safe: Yes
  */
-extern SocketUTF8_Result SocketUTF8_count_codepoints (const unsigned char *data,
-                                                      size_t len,
-                                                      size_t *count);
+extern SocketUTF8_Result
+SocketUTF8_count_codepoints (const unsigned char *data, size_t len,
+                             size_t *count);
 
 /**
  * SocketUTF8_result_string - Get human-readable result description
@@ -309,4 +316,3 @@ extern SocketUTF8_Result SocketUTF8_count_codepoints (const unsigned char *data,
 extern const char *SocketUTF8_result_string (SocketUTF8_Result result);
 
 #endif /* SOCKETUTF8_INCLUDED */
-

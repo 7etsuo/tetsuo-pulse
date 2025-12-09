@@ -33,12 +33,16 @@
  * - Multiple instances can be used from different threads
  * - Callbacks are invoked from the same thread that calls process/tick
  *
+ * Usage (I/O Passthrough):
+ *   SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL, NULL, NULL);
+ *   SocketReconnect_connect(conn);
+ *   // Use SocketReconnect_send/recv - auto-reconnects on error
+ *   ssize_t n = SocketReconnect_send(conn, data, len);
+ *
  * @see SocketReconnect_new() for creating reconnection instances.
  * @see SocketReconnect_connect() for initiating connection.
  * @see SocketReconnect_send() for transparent I/O operations.
  * @see connection_mgmt for integration with connection pools.
- */
- *   ssize_t n = SocketReconnect_send(conn, data, len);
  */
 
 #define T SocketReconnect_T

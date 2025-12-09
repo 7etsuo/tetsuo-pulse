@@ -19,21 +19,21 @@
 #include <ctype.h>
 #include <pthread.h>
 #include <string.h>
-#include <sys/stat.h>  /* For lstat and S_ISLNK */
-#include <unistd.h>    /* For lstat portability */
+#include <sys/stat.h> /* For lstat and S_ISLNK */
+#include <unistd.h>   /* For lstat portability */
 
 #include "core/Arena.h"
-#include "core/SocketUtil.h"
 #include "core/Except.h"
+#include "core/SocketCrypto.h" /* For SocketCrypto_secure_clear */
+#include "core/SocketUtil.h"
 #include "socket/Socket-private.h"
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSConfig.h"
-#include "core/SocketCrypto.h"  /* For SocketCrypto_secure_clear */
 #include "tls/SocketTLSContext.h"
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
+#include <openssl/stack.h> /* For STACK_OF and sk_* functions */
 #include <openssl/x509.h>
-#include <openssl/stack.h>  /* For STACK_OF and sk_* functions */
 
 /* ============================================================================
  * Thread-Local Error Handling for SocketTLS
@@ -55,14 +55,16 @@
  *
  * Creates thread-local copy of exception with reason from tls_error_buf.
  */
-#define RAISE_TLS_ERROR(exception) SOCKET_RAISE_MODULE_ERROR(SocketTLS, exception)
+#define RAISE_TLS_ERROR(exception)                                            \
+  SOCKET_RAISE_MODULE_ERROR (SocketTLS, exception)
 
 /**
  * RAISE_TLS_ERROR_MSG - Raise TLS exception with specific message
  * @exception: Exception type to raise
  * @msg: Error message string
  */
-#define RAISE_TLS_ERROR_MSG(exception, fmt, ...) SOCKET_RAISE_MSG(SocketTLS, exception, fmt, ##__VA_ARGS__)
+#define RAISE_TLS_ERROR_MSG(exception, fmt, ...)                              \
+  SOCKET_RAISE_MSG (SocketTLS, exception, fmt, ##__VA_ARGS__)
 
 /**
  * REQUIRE_TLS_ENABLED - Validate TLS is enabled on socket
@@ -81,14 +83,14 @@
  * TLS_ERROR_MSG - Format simple error message
  * @msg: Message string
  */
-#define TLS_ERROR_MSG(msg) SOCKET_ERROR_MSG("%s", msg)
+#define TLS_ERROR_MSG(msg) SOCKET_ERROR_MSG ("%s", msg)
 
 /**
  * TLS_ERROR_FMT - Format error message with arguments
  * @fmt: Format string
  * @...: Format arguments
  */
-#define TLS_ERROR_FMT(fmt, ...) SOCKET_ERROR_MSG(fmt, __VA_ARGS__)
+#define TLS_ERROR_FMT(fmt, ...) SOCKET_ERROR_MSG (fmt, __VA_ARGS__)
 
 /**
  * VALIDATE_TLS_IO_READY - Validate socket is ready for TLS I/O
@@ -181,7 +183,8 @@ tls_handle_ssl_error (Socket_T socket, SSL *ssl, int ssl_result)
       return TLS_HANDSHAKE_WANT_WRITE;
 
     case SSL_ERROR_ZERO_RETURN:
-      /* Clean shutdown by peer - not an error per se, but connection is done */
+      /* Clean shutdown by peer - not an error per se, but connection is done
+       */
       socket->tls_handshake_done = 0;
       return TLS_HANDSHAKE_ERROR;
 
@@ -202,7 +205,8 @@ tls_handle_ssl_error (Socket_T socket, SSL *ssl, int ssl_result)
       return TLS_HANDSHAKE_ERROR;
 
     default:
-      /* Unknown error type - should not happen with current OpenSSL versions */
+      /* Unknown error type - should not happen with current OpenSSL versions
+       */
       socket->tls_handshake_done = 0;
       errno = EIO;
       return TLS_HANDSHAKE_ERROR;
@@ -226,11 +230,11 @@ tls_format_openssl_error (const char *context)
   if (err != 0)
     {
       ERR_error_string_n (err, err_str, sizeof (err_str));
-      SOCKET_ERROR_MSG("%s: %s", context, err_str);
+      SOCKET_ERROR_MSG ("%s: %s", context, err_str);
     }
   else
     {
-      SOCKET_ERROR_MSG("%s: Unknown error", context);
+      SOCKET_ERROR_MSG ("%s: Unknown error", context);
     }
 
   /* Clear remaining errors to prevent stale error information from
@@ -256,27 +260,28 @@ tls_format_openssl_error (const char *context)
  * Returns: 1 if valid, 0 if invalid
  */
 
- /* ============================================================================
-  * ALPN Temp Buffer Management (for UAF fix in selection callback)
-  * ============================================================================ */
- /**
-  * tls_get_alpn_ex_idx - Get ex_data index for ALPN temp buffers
-  *
-  * Lazy initialization of SSL ex_data index for storing temp ALPN copies.
-  * Called once per process.
-  *
-  * Returns: Valid ex_data index
-  */
- extern int tls_get_alpn_ex_idx (void);
+/* ============================================================================
+ * ALPN Temp Buffer Management (for UAF fix in selection callback)
+ * ============================================================================
+ */
+/**
+ * tls_get_alpn_ex_idx - Get ex_data index for ALPN temp buffers
+ *
+ * Lazy initialization of SSL ex_data index for storing temp ALPN copies.
+ * Called once per process.
+ *
+ * Returns: Valid ex_data index
+ */
+extern int tls_get_alpn_ex_idx (void);
 
- /**
-  * tls_cleanup_alpn_temp - Free ALPN temp buffer from SSL ex_data
-  * @ssl: SSL object to cleanup
-  *
-  * Frees the temporary ALPN protocol copy stored in ex_data (if any)
-  * and clears the slot. Call before SSL_free(ssl).
-  */
- extern void tls_cleanup_alpn_temp (SSL *ssl);
+/**
+ * tls_cleanup_alpn_temp - Free ALPN temp buffer from SSL ex_data
+ * @ssl: SSL object to cleanup
+ *
+ * Frees the temporary ALPN protocol copy stored in ex_data (if any)
+ * and clears the slot. Call before SSL_free(ssl).
+ */
+extern void tls_cleanup_alpn_temp (SSL *ssl);
 static inline int
 tls_validate_file_path (const char *path)
 {
@@ -287,11 +292,12 @@ tls_validate_file_path (const char *path)
   if (len == 0 || len > SOCKET_TLS_MAX_PATH_LEN)
     return 0;
 
-  /* Check for specific path traversal sequences (avoid false positives on filenames like "cert..pem") */
-  const char *traversal_patterns[] = {
-    "/../", "\\..\\", "/..\\", "\\../", "/.../", "\\../", /* Added context-aware */
-    NULL
-  };
+  /* Check for specific path traversal sequences (avoid false positives on
+   * filenames like "cert..pem") */
+  const char *traversal_patterns[]
+      = { "/../",  "\\..\\", "/..\\",
+          "\\../", "/.../",  "\\../", /* Added context-aware */
+          NULL };
   for (const char **pat = traversal_patterns; *pat != NULL; ++pat)
     {
       if (strstr (path, *pat) != NULL)
@@ -302,14 +308,16 @@ tls_validate_file_path (const char *path)
   if (strncmp (path, "../", 3) == 0 || strncmp (path, "..\\", 3) == 0)
     return 0;
 
-  /* Additional symlink detection (optional, conservative: reject if detectable symlink) */
+  /* Additional symlink detection (optional, conservative: reject if detectable
+   * symlink) */
   struct stat sb;
   if (lstat (path, &sb) == 0)
     {
       if (S_ISLNK (sb.st_mode))
-        return 0;  /* Reject symlinks to prevent attacks */
+        return 0; /* Reject symlinks to prevent attacks */
     }
-  /* If lstat fails (e.g., no perm), continue validation (false negative ok for usability) */
+  /* If lstat fails (e.g., no perm), continue validation (false negative ok for
+   * usability) */
 
   /* Reject embedded null bytes (paranoia check).
      Note: memchr is intentional - we're checking WITHIN the valid strlen,
@@ -330,12 +338,14 @@ tls_validate_file_path (const char *path)
 }
 
 /**
- * tls_secure_free_pkey - Securely free EVP_PKEY with best-effort key material clearing
+ * tls_secure_free_pkey - Securely free EVP_PKEY with best-effort key material
+ * clearing
  * @pkey: Pointer to private key to free (may be NULL)
  *
- * Exports key to DER format, securely clears the exported buffer, then frees the original PKEY.
- * Mitigates memory disclosure of private keys in process memory.
- * Limitation: Original PKEY struct fields may not be fully zeroed (OpenSSL internal).
+ * Exports key to DER format, securely clears the exported buffer, then frees
+ * the original PKEY. Mitigates memory disclosure of private keys in process
+ * memory. Limitation: Original PKEY struct fields may not be fully zeroed
+ * (OpenSSL internal).
  *
  * Requires: OpenSSL EVP functions.
  */
@@ -350,7 +360,7 @@ tls_secure_free_pkey (EVP_PKEY *pkey)
   int der_len = i2d_PrivateKey (pkey, &der);
   if (der_len > 0)
     {
-      SocketCrypto_secure_clear (der, (size_t) der_len);
+      SocketCrypto_secure_clear (der, (size_t)der_len);
       OPENSSL_free (der);
     }
 
@@ -381,13 +391,15 @@ tls_validate_hostname (const char *hostname)
 
   const char *p = hostname;
   int label_len = 0;
-  int prev_hyphen = 0; /* Track if previous char was hyphen (for end-of-label check) */
+  int prev_hyphen
+      = 0; /* Track if previous char was hyphen (for end-of-label check) */
 
   while (*p)
     {
       if (*p == '.')
         {
-          /* RFC 952/1123: Labels cannot be empty, exceed 63 chars, or end with hyphen */
+          /* RFC 952/1123: Labels cannot be empty, exceed 63 chars, or end with
+           * hyphen */
           if (label_len == 0 || label_len > 63 || prev_hyphen)
             return 0;
           label_len = 0;
@@ -438,7 +450,8 @@ typedef struct
  * Uses linear scan with SocketCrypto_secure_compare() to prevent timing
  * attacks. For typical deployments (1-5 pins), this is effectively O(1).
  *
- * Thread safety: Thread-safe with internal mutex protecting configuration and verification.
+ * Thread safety: Thread-safe with internal mutex protecting configuration and
+ * verification.
  */
 typedef struct
 {
@@ -446,7 +459,8 @@ typedef struct
   size_t count;     /* Number of pins */
   size_t capacity;  /* Allocated capacity */
   int enforce;      /* 1 = fail on mismatch, 0 = warn only (default: 1) */
-  pthread_mutex_t lock; /* Protects pinning configuration and access for thread safety */
+  pthread_mutex_t
+      lock; /* Protects pinning configuration and access for thread safety */
 } TLSContextPinning;
 
 /**
@@ -454,13 +468,16 @@ typedef struct
  */
 typedef struct
 {
-  char **hostnames;  /* Array of hostname strings (arena-allocated, NULL for default) */
+  char **hostnames;  /* Array of hostname strings (arena-allocated, NULL for
+                        default) */
   char **cert_files; /* Array of certificate file paths (arena-allocated) */
   char **key_files;  /* Array of private key file paths (arena-allocated) */
-  STACK_OF(X509) **chains; /* Pre-loaded certificate chains for each entry (sk_X509 owns cert refs; leaf at index 0, followed by intermediates) */
-  EVP_PKEY **pkeys;  /* Pre-loaded private key objects */
-  size_t count;      /* Number of certificate mappings */
-  size_t capacity;   /* Allocated capacity */
+  STACK_OF (X509)
+      * *chains; /* Pre-loaded certificate chains for each entry (sk_X509 owns
+                    cert refs; leaf at index 0, followed by intermediates) */
+  EVP_PKEY **pkeys; /* Pre-loaded private key objects */
+  size_t count;     /* Number of certificate mappings */
+  size_t capacity;  /* Allocated capacity */
 } TLSContextSNICerts;
 
 /**
@@ -483,19 +500,19 @@ typedef struct
  */
 struct T
 {
-  SSL_CTX *ssl_ctx;          /* OpenSSL context */
-  Arena_T arena;             /* Arena for allocations */
-  int is_server;             /* 1 for server, 0 for client */
-  int session_cache_enabled; /* Session cache flag */
-  size_t session_cache_size; /* Session cache size */
-  size_t cache_hits;         /* Session resumptions (hits) */
-  size_t cache_misses;       /* Full handshakes */
-  size_t cache_stores;       /* New sessions stored */
+  SSL_CTX *ssl_ctx;            /* OpenSSL context */
+  Arena_T arena;               /* Arena for allocations */
+  int is_server;               /* 1 for server, 0 for client */
+  int session_cache_enabled;   /* Session cache flag */
+  size_t session_cache_size;   /* Session cache size */
+  size_t cache_hits;           /* Session resumptions (hits) */
+  size_t cache_misses;         /* Full handshakes */
+  size_t cache_stores;         /* New sessions stored */
   pthread_mutex_t stats_mutex; /* Thread-safe stats update */
 
   /* Session tickets */
   unsigned char ticket_key[SOCKET_TLS_TICKET_KEY_LEN]; /* Session ticket key */
-  int tickets_enabled;          /* 1 if session tickets enabled */
+  int tickets_enabled; /* 1 if session tickets enabled */
 
   /* OCSP stapling */
   SocketTLSOcspGenCallback ocsp_gen_cb; /* Dynamic OCSP callback */
@@ -518,64 +535,76 @@ struct T
   TLSContextPinning pinning;
 
   /* Certificate Transparency (RFC 6962) */
-  int ct_enabled;            /**< 1 if CT verification enabled */
-  CTValidationMode ct_mode;  /**< CT validation mode (strict/permissive) */
+  int ct_enabled;           /**< 1 if CT verification enabled */
+  CTValidationMode ct_mode; /**< CT validation mode (strict/permissive) */
 
   /* CRL Auto-Refresh Configuration */
-  char *crl_refresh_path;    /**< Path to CRL file for auto-refresh (arena-allocated) */
+  char *crl_refresh_path;    /**< Path to CRL file for auto-refresh
+                                (arena-allocated) */
   long crl_refresh_interval; /**< Refresh interval in seconds (0 = disabled) */
-  int64_t crl_next_refresh_ms;   /**< Next scheduled refresh time in monotonic milliseconds */
-  void *crl_callback;        /**< SocketTLSCrlCallback (cast to avoid circular deps) */
-  void *crl_user_data;       /**< User data for CRL callback */
+  int64_t crl_next_refresh_ms; /**< Next scheduled refresh time in monotonic
+                                  milliseconds */
+  void
+      *crl_callback; /**< SocketTLSCrlCallback (cast to avoid circular deps) */
+  void *crl_user_data; /**< User data for CRL callback */
 
-  pthread_mutex_t crl_mutex;  /**< Mutex protecting CRL refresh state and load operations */
+  pthread_mutex_t
+      crl_mutex; /**< Mutex protecting CRL refresh state and load operations */
 
   /* OCSP Stapling Client Mode */
   int ocsp_stapling_enabled; /**< 1 if client requests OCSP stapling */
 
   /* Custom Certificate Store Lookup */
-  void *cert_lookup_callback; /**< SocketTLSCertLookupCallback (cast) */
+  void *cert_lookup_callback;  /**< SocketTLSCertLookupCallback (cast) */
   void *cert_lookup_user_data; /**< User data for cert lookup callback */
 };
 
-#define CRL_LOCK(ctx) \
-  do { \
-    int err = pthread_mutex_lock (&(ctx)->crl_mutex); \
-    if (err != 0) { \
-      SOCKET_LOG_ERROR_MSG("CRL mutex lock failed: %d", err); \
-      RAISE_CTX_ERROR_MSG(SocketTLS_Failed, "CRL mutex lock failed: %d", err); \
-    } \
-  } while (0)
+#define CRL_LOCK(ctx)                                                         \
+  do                                                                          \
+    {                                                                         \
+      int err = pthread_mutex_lock (&(ctx)->crl_mutex);                       \
+      if (err != 0)                                                           \
+        {                                                                     \
+          SOCKET_LOG_ERROR_MSG ("CRL mutex lock failed: %d", err);            \
+          RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL mutex lock failed: %d", \
+                               err);                                          \
+        }                                                                     \
+    }                                                                         \
+  while (0)
 
-#define CRL_UNLOCK(ctx) \
-  do { \
-    int err = pthread_mutex_unlock (&(ctx)->crl_mutex); \
-    if (err != 0) { \
-      SOCKET_LOG_ERROR_MSG("CRL mutex unlock failed: %d", err); \
-      RAISE_CTX_ERROR_MSG(SocketTLS_Failed, "CRL mutex unlock failed: %d", err); \
-    } \
-  } while (0)
+#define CRL_UNLOCK(ctx)                                                       \
+  do                                                                          \
+    {                                                                         \
+      int err = pthread_mutex_unlock (&(ctx)->crl_mutex);                     \
+      if (err != 0)                                                           \
+        {                                                                     \
+          SOCKET_LOG_ERROR_MSG ("CRL mutex unlock failed: %d", err);          \
+          RAISE_CTX_ERROR_MSG (SocketTLS_Failed,                              \
+                               "CRL mutex unlock failed: %d", err);           \
+        }                                                                     \
+    }                                                                         \
+  while (0)
 
 /* ============================================================================
  * Thread-Local Error Handling for SocketTLSContext
  * ============================================================================
  */
 
-
 /**
  * RAISE_CTX_ERROR - Raise context exception with current error buffer
  */
 
-
-
-#define RAISE_CTX_ERROR(exception) SOCKET_RAISE_MODULE_ERROR(SocketTLSContext, exception)
+#define RAISE_CTX_ERROR(exception)                                            \
+  SOCKET_RAISE_MODULE_ERROR (SocketTLSContext, exception)
 
 /**
  * RAISE_CTX_ERROR_MSG - Raise context exception with specific message
  */
-#define RAISE_CTX_ERROR_MSG(exception, fmt, ...) SOCKET_RAISE_MSG(SocketTLSContext, exception, fmt, ##__VA_ARGS__)
+#define RAISE_CTX_ERROR_MSG(exception, fmt, ...)                              \
+  SOCKET_RAISE_MSG (SocketTLSContext, exception, fmt, ##__VA_ARGS__)
 
-#define RAISE_CTX_ERROR_FMT(exception, fmt, ...) SOCKET_RAISE_MSG(SocketTLSContext, exception, fmt, __VA_ARGS__)
+#define RAISE_CTX_ERROR_FMT(exception, fmt, ...)                              \
+  SOCKET_RAISE_MSG (SocketTLSContext, exception, fmt, __VA_ARGS__)
 
 /* ============================================================================
  * Utility Macros
@@ -709,7 +738,8 @@ tls_pinning_init (TLSContextPinning *pinning)
  * Computes SHA256 of the SubjectPublicKeyInfo (SPKI) DER encoding.
  * This is the OWASP-recommended pinning approach.
  */
-extern int tls_pinning_extract_spki_hash (const X509 *cert, unsigned char *out_hash);
+extern int tls_pinning_extract_spki_hash (const X509 *cert,
+                                          unsigned char *out_hash);
 
 /**
  * tls_pinning_check_chain - Check if any cert in chain matches a pin

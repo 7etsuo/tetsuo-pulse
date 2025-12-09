@@ -3,17 +3,18 @@
  *
  * Part of the Socket Library
  *
- * PRIVATE HEADER - Do not include directly. Included by SocketHTTPServer.c and split files.
+ * PRIVATE HEADER - Do not include directly. Included by SocketHTTPServer.c and
+ * split files.
  */
 
 #ifndef SOCKETHTTPSERVER_PRIVATE_INCLUDED
 #define SOCKETHTTPSERVER_PRIVATE_INCLUDED
 
 #include "SocketHTTPServer.h"
-#include "http/SocketHTTP1.h"
-#include "socket/SocketBuf.h"
 #include "core/SocketIPTracker.h"
 #include "core/SocketRateLimit.h"
+#include "http/SocketHTTP1.h"
+#include "socket/SocketBuf.h"
 #include <pthread.h>
 
 /* Internal types */
@@ -50,7 +51,7 @@ typedef struct ServerConnection
   void *body;
   size_t body_len;
   size_t body_capacity;
-  SocketHTTP1_BodyMode body_mode;  /* Body transfer mode for processing */
+  SocketHTTP1_BodyMode body_mode; /* Body transfer mode for processing */
   size_t body_received;
 
   /* Request body streaming */
@@ -128,15 +129,17 @@ struct SocketHTTPServer
   int64_t drain_start_ms;
   int drain_timeout_ms;
 
-  /* Per-server stats tracking for RPS calculation (thread-safe via single-thread poll assumption) */
+  /* Per-server stats tracking for RPS calculation (thread-safe via
+   * single-thread poll assumption) */
   uint64_t stats_prev_requests;
   int64_t stats_prev_time_ms;
-  pthread_mutex_t stats_mutex;  /* Protect RPS calc if multi-threaded */
+  pthread_mutex_t stats_mutex; /* Protect RPS calc if multi-threaded */
 
-  /* Statistics moved to SocketMetrics_* (counters, gauges, histograms) 
+  /* Statistics moved to SocketMetrics_* (counters, gauges, histograms)
    * Query via SocketMetrics_get() or specific functions in stats API */
 
-  /* Latency tracking moved to SocketMetrics (SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS) */
+  /* Latency tracking moved to SocketMetrics
+   * (SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS) */
 
   /* No custom mutex - SocketMetrics handles thread safety internally */
 
@@ -144,11 +147,11 @@ struct SocketHTTPServer
   Arena_T arena;
 };
 
-/* STATS macros removed - replace with SocketMetrics_counter_inc/gauge_inc etc. calls
- * Examples:
+/* STATS macros removed - replace with SocketMetrics_counter_inc/gauge_inc etc.
+ * calls Examples:
  *   SocketMetrics_counter_inc(SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL);
  *   SocketMetrics_gauge_inc(SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
- *   SocketMetrics_counter_add(SOCKET_CTR_HTTP_SERVER_BYTES_SENT, bytes); 
+ *   SocketMetrics_counter_add(SOCKET_CTR_HTTP_SERVER_BYTES_SENT, bytes);
  */
 
 /* ============================================================================
@@ -172,15 +175,18 @@ int connection_read (SocketHTTPServer_T server, ServerConnection *conn);
 int connection_send_data (SocketHTTPServer_T server, ServerConnection *conn,
                           const void *data, size_t len);
 void connection_reset_for_keepalive (ServerConnection *conn);
-void connection_finish_request (SocketHTTPServer_T server, ServerConnection *conn);
-int connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn);
-void connection_send_response (SocketHTTPServer_T server, ServerConnection *conn);
+void connection_finish_request (SocketHTTPServer_T server,
+                                ServerConnection *conn);
+int connection_parse_request (SocketHTTPServer_T server,
+                              ServerConnection *conn);
+void connection_send_response (SocketHTTPServer_T server,
+                               ServerConnection *conn);
 void connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
                             int status, const char *body);
 
 /* Latency tracking removed - use SocketMetrics histograms instead:
- *   SocketMetrics_histogram_observe(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, latency);
+ *   SocketMetrics_histogram_observe(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS,
+ * latency);
  */
-
 
 #endif /* SOCKETHTTPSERVER_PRIVATE_INCLUDED */

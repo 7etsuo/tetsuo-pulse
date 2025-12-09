@@ -130,7 +130,8 @@
 
 /* ============================================================================
  * Serialization Buffer Sizes
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Buffer size for integer-to-string conversion (covers int64_t) */
 #ifndef SOCKETHTTP1_INT_STRING_BUFSIZE
@@ -144,7 +145,8 @@
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP1_ParseError - HTTP/1.1 message parse failure
@@ -168,15 +170,16 @@ extern const Except_T SocketHTTP1_SerializeError;
 
 /* ============================================================================
  * Parser Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Parser mode
  */
 typedef enum
 {
-  HTTP1_PARSE_REQUEST,  /**< Parse HTTP requests */
-  HTTP1_PARSE_RESPONSE  /**< Parse HTTP responses */
+  HTTP1_PARSE_REQUEST, /**< Parse HTTP requests */
+  HTTP1_PARSE_RESPONSE /**< Parse HTTP responses */
 } SocketHTTP1_ParseMode;
 
 /**
@@ -184,15 +187,15 @@ typedef enum
  */
 typedef enum
 {
-  HTTP1_STATE_START,     /**< Waiting for first line */
-  HTTP1_STATE_HEADERS,   /**< Parsing headers */
-  HTTP1_STATE_BODY,      /**< Reading body */
-  HTTP1_STATE_CHUNK_SIZE,/**< Reading chunk size line */
-  HTTP1_STATE_CHUNK_DATA,/**< Reading chunk data */
-  HTTP1_STATE_CHUNK_END, /**< Reading chunk CRLF */
-  HTTP1_STATE_TRAILERS,  /**< Reading trailers */
-  HTTP1_STATE_COMPLETE,  /**< Message complete */
-  HTTP1_STATE_ERROR      /**< Parse error */
+  HTTP1_STATE_START,      /**< Waiting for first line */
+  HTTP1_STATE_HEADERS,    /**< Parsing headers */
+  HTTP1_STATE_BODY,       /**< Reading body */
+  HTTP1_STATE_CHUNK_SIZE, /**< Reading chunk size line */
+  HTTP1_STATE_CHUNK_DATA, /**< Reading chunk data */
+  HTTP1_STATE_CHUNK_END,  /**< Reading chunk CRLF */
+  HTTP1_STATE_TRAILERS,   /**< Reading trailers */
+  HTTP1_STATE_COMPLETE,   /**< Message complete */
+  HTTP1_STATE_ERROR       /**< Parse error */
 } SocketHTTP1_State;
 
 /**
@@ -200,9 +203,9 @@ typedef enum
  */
 typedef enum
 {
-  HTTP1_OK = 0,              /**< Complete message or chunk parsed */
-  HTTP1_INCOMPLETE,          /**< Need more data */
-  HTTP1_ERROR,               /**< Generic error */
+  HTTP1_OK = 0,     /**< Complete message or chunk parsed */
+  HTTP1_INCOMPLETE, /**< Need more data */
+  HTTP1_ERROR,      /**< Generic error */
 
   /* Specific errors for diagnostics */
   HTTP1_ERROR_LINE_TOO_LONG,
@@ -217,11 +220,12 @@ typedef enum
   HTTP1_ERROR_INVALID_CONTENT_LENGTH,
   HTTP1_ERROR_INVALID_CHUNK_SIZE,
   HTTP1_ERROR_CHUNK_TOO_LARGE,
-  HTTP1_ERROR_BODY_TOO_LARGE,     /**< Decompressed body exceeds limit */
+  HTTP1_ERROR_BODY_TOO_LARGE, /**< Decompressed body exceeds limit */
   HTTP1_ERROR_INVALID_TRAILER,
-  HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING, /**< Unsupported Transfer-Encoding coding */
+  HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING, /**< Unsupported Transfer-Encoding
+                                              coding */
   HTTP1_ERROR_UNEXPECTED_EOF,
-  HTTP1_ERROR_SMUGGLING_DETECTED  /**< Request smuggling attempt */
+  HTTP1_ERROR_SMUGGLING_DETECTED /**< Request smuggling attempt */
 } SocketHTTP1_Result;
 
 /**
@@ -240,18 +244,21 @@ typedef enum
  */
 typedef struct
 {
-  size_t max_request_line;   /**< Maximum request/status line length */
-  size_t max_header_name;    /**< Maximum header name length */
-  size_t max_header_value;   /**< Maximum header value length */
-  size_t max_headers;        /**< Maximum header count */
-  size_t max_header_size;    /**< Maximum total header size */
-  size_t max_chunk_size;     /**< Maximum chunk size */
-  size_t max_chunk_ext;      /**< Maximum chunk extension length (default: 1024) */
-  size_t max_trailer_size;   /**< Maximum trailer size */
-  size_t max_header_line;        /**< Maximum individual header line length (name + value + OWS + \r\n) */
-  int allow_obs_fold;        /**< Allow obsolete header folding (default: 0) */
-  int strict_mode;           /**< Reject ambiguous input (default: 1) */
-  size_t max_decompressed_size; /**< Maximum decompressed body size (0=unlimited, default from SocketSecurity_MAX_BODY_SIZE) */
+  size_t max_request_line; /**< Maximum request/status line length */
+  size_t max_header_name;  /**< Maximum header name length */
+  size_t max_header_value; /**< Maximum header value length */
+  size_t max_headers;      /**< Maximum header count */
+  size_t max_header_size;  /**< Maximum total header size */
+  size_t max_chunk_size;   /**< Maximum chunk size */
+  size_t max_chunk_ext; /**< Maximum chunk extension length (default: 1024) */
+  size_t max_trailer_size; /**< Maximum trailer size */
+  size_t max_header_line;  /**< Maximum individual header line length (name +
+                              value + OWS + \r\n) */
+  int allow_obs_fold;      /**< Allow obsolete header folding (default: 0) */
+  int strict_mode;         /**< Reject ambiguous input (default: 1) */
+  size_t
+      max_decompressed_size; /**< Maximum decompressed body size (0=unlimited,
+                                default from SocketSecurity_MAX_BODY_SIZE) */
 } SocketHTTP1_Config;
 
 /**
@@ -261,7 +268,8 @@ typedef struct SocketHTTP1_Parser *SocketHTTP1_Parser_T;
 
 /* ============================================================================
  * Parser Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP1_config_defaults - Initialize config with defaults
@@ -274,7 +282,8 @@ extern void SocketHTTP1_config_defaults (SocketHTTP1_Config *config);
 
 /* ============================================================================
  * Parser Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP1_Parser_new - Create new parser
@@ -311,7 +320,8 @@ extern void SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser);
 
 /* ============================================================================
  * Parsing API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP1_Parser_execute - Parse data incrementally
@@ -330,10 +340,9 @@ extern void SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser);
  *          or error code
  * Thread-safe: No
  */
-extern SocketHTTP1_Result SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser,
-                                                      const char *data,
-                                                      size_t len,
-                                                      size_t *consumed);
+extern SocketHTTP1_Result
+SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
+                            size_t len, size_t *consumed);
 
 /**
  * SocketHTTP1_Parser_state - Get current parser state
@@ -342,7 +351,8 @@ extern SocketHTTP1_Result SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parse
  * Returns: Current high-level state
  * Thread-safe: No
  */
-extern SocketHTTP1_State SocketHTTP1_Parser_state (SocketHTTP1_Parser_T parser);
+extern SocketHTTP1_State
+SocketHTTP1_Parser_state (SocketHTTP1_Parser_T parser);
 
 /**
  * SocketHTTP1_Parser_get_request - Get parsed request
@@ -370,7 +380,8 @@ SocketHTTP1_Parser_get_response (SocketHTTP1_Parser_T parser);
 
 /* ============================================================================
  * Body Handling
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP1_Parser_body_mode - Get body transfer mode
@@ -448,7 +459,8 @@ SocketHTTP1_Parser_get_trailers (SocketHTTP1_Parser_T parser);
 
 /* ============================================================================
  * Connection Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP1_Parser_should_keepalive - Check keep-alive status
@@ -493,7 +505,8 @@ extern int SocketHTTP1_Parser_expects_continue (SocketHTTP1_Parser_T parser);
 
 /* ============================================================================
  * Serialization API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP1_serialize_request - Serialize request to buffer
@@ -509,8 +522,9 @@ extern int SocketHTTP1_Parser_expects_continue (SocketHTTP1_Parser_T parser);
  * Raises: SocketHTTP1_SerializeError on invalid input (unknown method/version)
  * Thread-safe: Yes
  */
-extern ssize_t SocketHTTP1_serialize_request (const SocketHTTP_Request *request,
-                                              char *output, size_t output_size);
+extern ssize_t
+SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
+                               size_t output_size);
 
 /**
  * SocketHTTP1_serialize_response - Serialize response to buffer
@@ -542,11 +556,13 @@ SocketHTTP1_serialize_response (const SocketHTTP_Response *response,
  * Thread-safe: Yes
  */
 extern ssize_t SocketHTTP1_serialize_headers (SocketHTTP_Headers_T headers,
-                                              char *output, size_t output_size);
+                                              char *output,
+                                              size_t output_size);
 
 /* ============================================================================
  * Chunked Encoding
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP1_chunk_encode - Encode data as single chunk
@@ -589,7 +605,8 @@ extern size_t SocketHTTP1_chunk_encode_size (size_t data_len);
 
 /* ============================================================================
  * Content Encoding (Optional - requires zlib/brotli)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #ifdef SOCKETHTTP1_HAS_COMPRESSION
 
@@ -622,9 +639,9 @@ typedef enum
  * Returns: Decoder instance, or NULL on error
  * Thread-safe: Yes
  */
-extern SocketHTTP1_Decoder_T SocketHTTP1_Decoder_new (SocketHTTP_Coding coding,
-                                                      const SocketHTTP1_Config *cfg,
-                                                      Arena_T arena);
+extern SocketHTTP1_Decoder_T
+SocketHTTP1_Decoder_new (SocketHTTP_Coding coding,
+                         const SocketHTTP1_Config *cfg, Arena_T arena);
 
 /**
  * SocketHTTP1_Decoder_free - Free decoder
@@ -672,8 +689,7 @@ SocketHTTP1_Decoder_finish (SocketHTTP1_Decoder_T decoder,
 extern SocketHTTP1_Encoder_T
 SocketHTTP1_Encoder_new (SocketHTTP_Coding coding,
                          SocketHTTP1_CompressLevel level,
-                         const SocketHTTP1_Config *cfg,
-                         Arena_T arena);
+                         const SocketHTTP1_Config *cfg, Arena_T arena);
 
 /**
  * SocketHTTP1_Encoder_free - Free encoder
@@ -713,7 +729,8 @@ extern ssize_t SocketHTTP1_Encoder_finish (SocketHTTP1_Encoder_T encoder,
 
 /* ============================================================================
  * Error Handling
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTP1_result_string - Get human-readable error description
@@ -725,4 +742,3 @@ extern ssize_t SocketHTTP1_Encoder_finish (SocketHTTP1_Encoder_T encoder,
 extern const char *SocketHTTP1_result_string (SocketHTTP1_Result result);
 
 #endif /* SOCKETHTTP1_INCLUDED */
-

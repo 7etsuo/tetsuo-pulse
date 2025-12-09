@@ -738,7 +738,10 @@ hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   /* Defensive bounds check - prevent out-of-bounds access if
    * hash_value is corrupted or request is from different resolver */
   if (hash >= SOCKET_DNS_REQUEST_HASH_SIZE)
-    return;
+    {
+      SOCKET_LOG_DEBUG_MSG ("Invalid hash_value=%u for req=%p in hash_table_remove", hash, req);
+      return;
+    }
 
   pp = &dns->request_hash[hash];
   while (*pp)
@@ -1292,10 +1295,10 @@ handle_resolution_result (struct SocketDNS_T *dns,
  * releases before invoking callback (which may take arbitrary time),
  * then re-acquires to clear result pointer.
  *
- * Security: Callback receives ownership of result. The result pointer is
- * cleared after callback returns to prevent use-after-free. The check for
- * req->callback prevents double-free in SocketDNS_cancel scenarios.
- * SocketDNS_getresult() returns NULL if callback was provided.
+ * Security: Callback receives ownership of result and callback pointer is cleared
+ * after invocation to prevent use-after-free or double invocation. Both result and
+ * callback are NULLed post-invoke. SocketDNS_getresult() returns NULL if callback
+ * was provided (ownership transferred).
  */
 void
 invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)

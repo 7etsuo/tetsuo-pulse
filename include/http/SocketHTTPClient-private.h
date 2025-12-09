@@ -10,14 +10,14 @@
 #ifndef SOCKETHTTPCLIENT_PRIVATE_INCLUDED
 #define SOCKETHTTPCLIENT_PRIVATE_INCLUDED
 
-#include "http/SocketHTTPClient.h"
-#include "http/SocketHTTPClient-config.h"
+#include "core/SocketUtil.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
 #include "http/SocketHTTP2.h"
+#include "http/SocketHTTPClient-config.h"
+#include "http/SocketHTTPClient.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
-#include "core/SocketUtil.h"
 
 #include <pthread.h>
 #include <time.h>
@@ -59,13 +59,13 @@
  *
  * Requires: SOCKET_DECLARE_MODULE_EXCEPTION(HTTPClient) in .c file.
  */
-#define RAISE_HTTPCLIENT_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTPClient, e)
-
-
+#define RAISE_HTTPCLIENT_ERROR(e)                                             \
+  SOCKET_RAISE_MODULE_ERROR (SocketHTTPClient, e)
 
 /* ============================================================================
  * Connection Pool Entry
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP connection pool entry
@@ -76,9 +76,9 @@
  */
 typedef struct HTTPPoolEntry
 {
-  char *host;      /**< Target hostname (owned, null-terminated) */
-  int port;        /**< Target port */
-  int is_secure;   /**< Using TLS */
+  char *host;    /**< Target hostname (owned, null-terminated) */
+  int port;      /**< Target port */
+  int is_secure; /**< Using TLS */
 
   SocketHTTP_Version version; /**< Negotiated protocol version */
 
@@ -91,7 +91,8 @@ typedef struct HTTPPoolEntry
       SocketHTTP1_Parser_T parser;
       SocketBuf_T inbuf;
       SocketBuf_T outbuf;
-      Arena_T conn_arena; /**< Arena for connection resources (parser, buffers) */
+      Arena_T
+          conn_arena; /**< Arena for connection resources (parser, buffers) */
     } h1;
     struct
     {
@@ -100,10 +101,10 @@ typedef struct HTTPPoolEntry
     } h2;
   } proto;
 
-  time_t created_at;   /**< Connection creation time */
-  time_t last_used;    /**< Last activity time */
-  int in_use;          /**< For H1.1: currently handling request */
-  int closed;          /**< Connection closed by peer */
+  time_t created_at; /**< Connection creation time */
+  time_t last_used;  /**< Last activity time */
+  int in_use;        /**< For H1.1: currently handling request */
+  int closed;        /**< Connection closed by peer */
 
   struct HTTPPoolEntry *hash_next; /**< Hash chain for host:port */
   struct HTTPPoolEntry *next;      /**< Free list / all connections list */
@@ -112,7 +113,8 @@ typedef struct HTTPPoolEntry
 
 /* ============================================================================
  * Connection Pool
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP connection pool
@@ -122,19 +124,19 @@ typedef struct HTTPPoolEntry
  */
 typedef struct HTTPPool
 {
-  HTTPPoolEntry **hash_table;    /**< Hash table for host:port lookup */
-  size_t hash_size;              /**< Hash table size */
+  HTTPPoolEntry **hash_table; /**< Hash table for host:port lookup */
+  size_t hash_size;           /**< Hash table size */
 
-  HTTPPoolEntry *all_conns;      /**< All connections (for cleanup) */
-  HTTPPoolEntry *free_entries;   /**< Free entry pool */
+  HTTPPoolEntry *all_conns;    /**< All connections (for cleanup) */
+  HTTPPoolEntry *free_entries; /**< Free entry pool */
 
-  size_t max_per_host;           /**< Max connections per host */
-  size_t max_total;              /**< Max total connections */
-  size_t current_count;          /**< Current connection count */
-  int idle_timeout_ms;           /**< Idle connection timeout */
+  size_t max_per_host;  /**< Max connections per host */
+  size_t max_total;     /**< Max total connections */
+  size_t current_count; /**< Current connection count */
+  int idle_timeout_ms;  /**< Idle connection timeout */
 
-  Arena_T arena;                 /**< Memory arena */
-  pthread_mutex_t mutex;         /**< Thread safety */
+  Arena_T arena;         /**< Memory arena */
+  pthread_mutex_t mutex; /**< Thread safety */
 
   /* Statistics */
   size_t total_requests;
@@ -144,7 +146,8 @@ typedef struct HTTPPool
 
 /* ============================================================================
  * Client Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP client main structure
@@ -153,7 +156,7 @@ struct SocketHTTPClient
 {
   SocketHTTPClient_Config config; /**< Configuration copy */
 
-  HTTPPool *pool;                 /**< Connection pool */
+  HTTPPool *pool; /**< Connection pool */
 
   /* Authentication */
   SocketHTTPClient_Auth *default_auth; /**< Default auth (owned) */
@@ -170,7 +173,8 @@ struct SocketHTTPClient
   SocketHTTPClient_Error last_error;
 
   /* Thread safety */
-  pthread_mutex_t mutex; /**< Protects shared client state (auth, cookies, pool access) */
+  pthread_mutex_t
+      mutex; /**< Protects shared client state (auth, cookies, pool access) */
 
   /* Memory */
   Arena_T arena;
@@ -178,19 +182,20 @@ struct SocketHTTPClient
 
 /* ============================================================================
  * Request Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP request builder
  */
 struct SocketHTTPClient_Request
 {
-  SocketHTTPClient_T client;      /**< Parent client */
+  SocketHTTPClient_T client; /**< Parent client */
 
   SocketHTTP_Method method;
   SocketHTTP_URI uri;
 
-  SocketHTTP_Headers_T headers;   /**< Request headers */
+  SocketHTTP_Headers_T headers; /**< Request headers */
 
   /* Body */
   void *body;
@@ -199,8 +204,8 @@ struct SocketHTTPClient_Request
   void *body_stream_userdata;
 
   /* Per-request overrides */
-  int timeout_ms;                 /**< -1 = use client default */
-  SocketHTTPClient_Auth *auth;    /**< NULL = use client default */
+  int timeout_ms;              /**< -1 = use client default */
+  SocketHTTPClient_Auth *auth; /**< NULL = use client default */
 
   /* Memory */
   Arena_T arena;
@@ -208,7 +213,8 @@ struct SocketHTTPClient_Request
 
 /* ============================================================================
  * Async Request Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Async request state
@@ -236,7 +242,7 @@ struct SocketHTTPClient_AsyncRequest
   HTTPAsyncState state;
   SocketHTTPClient_Error error;
 
-  HTTPPoolEntry *conn;            /**< Connection being used */
+  HTTPPoolEntry *conn; /**< Connection being used */
 
   /* Response accumulation */
   SocketHTTPClient_Response response;
@@ -251,7 +257,8 @@ struct SocketHTTPClient_AsyncRequest
 
 /* ============================================================================
  * Cookie Storage
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Cookie entry in jar
@@ -279,7 +286,8 @@ struct SocketHTTPClient_CookieJar
 
 /* ============================================================================
  * Internal Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Pool operations */
 extern HTTPPool *httpclient_pool_new (Arena_T arena,
@@ -302,59 +310,52 @@ extern int httpclient_receive_response (HTTPPoolEntry *conn,
 
 /* ============================================================================
  * Authentication Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Buffer sizes for Digest authentication fields */
-#define HTTPCLIENT_DIGEST_REALM_MAX_LEN       128
-#define HTTPCLIENT_DIGEST_NONCE_MAX_LEN       128
-#define HTTPCLIENT_DIGEST_OPAQUE_MAX_LEN      128
-#define HTTPCLIENT_DIGEST_QOP_MAX_LEN         64
-#define HTTPCLIENT_DIGEST_ALGORITHM_MAX_LEN   32
-#define HTTPCLIENT_DIGEST_PARAM_NAME_MAX_LEN  32
-#define HTTPCLIENT_DIGEST_VALUE_MAX_LEN       256
+#define HTTPCLIENT_DIGEST_REALM_MAX_LEN 128
+#define HTTPCLIENT_DIGEST_NONCE_MAX_LEN 128
+#define HTTPCLIENT_DIGEST_OPAQUE_MAX_LEN 128
+#define HTTPCLIENT_DIGEST_QOP_MAX_LEN 64
+#define HTTPCLIENT_DIGEST_ALGORITHM_MAX_LEN 32
+#define HTTPCLIENT_DIGEST_PARAM_NAME_MAX_LEN 32
+#define HTTPCLIENT_DIGEST_VALUE_MAX_LEN 256
 
 /* Digest token constants */
-#define HTTPCLIENT_DIGEST_TOKEN_AUTH          "auth"
-#define HTTPCLIENT_DIGEST_TOKEN_AUTH_LEN      4
-#define HTTPCLIENT_DIGEST_TOKEN_TRUE          "true"
-#define HTTPCLIENT_DIGEST_TOKEN_TRUE_LEN      4
-#define HTTPCLIENT_DIGEST_TOKEN_STALE         "stale"
-#define HTTPCLIENT_DIGEST_TOKEN_STALE_LEN     5
+#define HTTPCLIENT_DIGEST_TOKEN_AUTH "auth"
+#define HTTPCLIENT_DIGEST_TOKEN_AUTH_LEN 4
+#define HTTPCLIENT_DIGEST_TOKEN_TRUE "true"
+#define HTTPCLIENT_DIGEST_TOKEN_TRUE_LEN 4
+#define HTTPCLIENT_DIGEST_TOKEN_STALE "stale"
+#define HTTPCLIENT_DIGEST_TOKEN_STALE_LEN 5
 
 /* Digest prefixes and lengths */
-#define HTTPCLIENT_DIGEST_PREFIX              "Digest "
-#define HTTPCLIENT_DIGEST_PREFIX_LEN          7
-#define HTTPCLIENT_DIGEST_BASIC_PREFIX        "Basic "
-#define HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN    6
+#define HTTPCLIENT_DIGEST_PREFIX "Digest "
+#define HTTPCLIENT_DIGEST_PREFIX_LEN 7
+#define HTTPCLIENT_DIGEST_BASIC_PREFIX "Basic "
+#define HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN 6
 
 /* Hex digest size (max of MD5/SHA256) */
-#define HTTPCLIENT_DIGEST_HEX_SIZE            (SOCKET_CRYPTO_SHA256_SIZE * 2 + 1)
+#define HTTPCLIENT_DIGEST_HEX_SIZE (SOCKET_CRYPTO_SHA256_SIZE * 2 + 1)
 
 /* Basic auth credentials buffer size defined in SocketHTTPClient-config.h */
 
 /* Client nonce sizes */
-#define HTTPCLIENT_DIGEST_CNONCE_SIZE         16
-
+#define HTTPCLIENT_DIGEST_CNONCE_SIZE 16
 
 /* Temporary buffers for hash computations */
-#define HTTPCLIENT_DIGEST_A_BUFFER_SIZE       512
+#define HTTPCLIENT_DIGEST_A_BUFFER_SIZE 512
 
 /* Authentication helpers (uses SocketCrypto) */
 extern int httpclient_auth_basic_header (const char *username,
                                          const char *password, char *output,
                                          size_t output_size);
-extern int httpclient_auth_digest_response (const char *username,
-                                            const char *password,
-                                            const char *realm,
-                                            const char *nonce,
-                                            const char *uri,
-                                            const char *method,
-                                            const char *qop,
-                                            const char *nc,
-                                            const char *cnonce,
-                                            int use_sha256,
-                                            char *output,
-                                            size_t output_size);
+extern int httpclient_auth_digest_response (
+    const char *username, const char *password, const char *realm,
+    const char *nonce, const char *uri, const char *method, const char *qop,
+    const char *nc, const char *cnonce, int use_sha256, char *output,
+    size_t output_size);
 
 /**
  * httpclient_auth_digest_challenge - Handle Digest WWW-Authenticate challenge
@@ -373,14 +374,10 @@ extern int httpclient_auth_digest_response (const char *username,
  * header value. Handles both MD5 and SHA-256 algorithms, qop=auth.
  * NOTE: qop=auth-int is NOT supported.
  */
-extern int httpclient_auth_digest_challenge (const char *www_authenticate,
-                                             const char *username,
-                                             const char *password,
-                                             const char *method,
-                                             const char *uri,
-                                             const char *nc_value,
-                                             char *output,
-                                             size_t output_size);
+extern int httpclient_auth_digest_challenge (
+    const char *www_authenticate, const char *username, const char *password,
+    const char *method, const char *uri, const char *nc_value, char *output,
+    size_t output_size);
 
 /**
  * httpclient_auth_bearer_header - Generate Bearer token Authorization header
@@ -396,10 +393,12 @@ extern int httpclient_auth_digest_challenge (const char *www_authenticate,
  * Token length limited by output_size - 7.
  */
 
-extern int httpclient_auth_bearer_header (const char *token, char *output, size_t output_size);
+extern int httpclient_auth_bearer_header (const char *token, char *output,
+                                          size_t output_size);
 
 /**
- * httpclient_auth_is_stale_nonce - Check if WWW-Authenticate contains stale=true
+ * httpclient_auth_is_stale_nonce - Check if WWW-Authenticate contains
+ * stale=true
  * @www_authenticate: WWW-Authenticate header value
  *
  * Returns: 1 if stale=true present, 0 otherwise
@@ -410,10 +409,10 @@ extern int httpclient_auth_bearer_header (const char *token, char *output, size_
 extern int httpclient_auth_is_stale_nonce (const char *www_authenticate);
 
 /* Cookie helpers */
-extern int httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
-                                           const SocketHTTP_URI *uri,
-                                           char *output, size_t output_size,
-                                           int enforce_samesite);  /* 1 to enforce SameSite cookie policy */
+extern int httpclient_cookies_for_request (
+    SocketHTTPClient_CookieJar_T jar, const SocketHTTP_URI *uri, char *output,
+    size_t output_size,
+    int enforce_samesite); /* 1 to enforce SameSite cookie policy */
 extern int httpclient_parse_set_cookie (const char *value, size_t len,
                                         const SocketHTTP_URI *request_uri,
                                         SocketHTTPClient_Cookie *cookie,
@@ -435,20 +434,24 @@ static inline unsigned
 httpclient_host_hash (const char *host, int port, size_t table_size)
 {
   size_t host_len = strlen (host);
-  unsigned host_hash = socket_util_hash_djb2_ci_len (host, host_len, table_size);
+  unsigned host_hash
+      = socket_util_hash_djb2_ci_len (host, host_len, table_size);
   unsigned port_hash = socket_util_hash_uint ((unsigned)port, table_size);
   unsigned combined = host_hash ^ port_hash;
   return socket_util_hash_uint (combined, table_size);
 }
 
 /* Retry helpers (from SocketHTTPClient-retry.c) */
-extern int httpclient_should_retry_error (const SocketHTTPClient_T client, SocketHTTPClient_Error error);
-extern int httpclient_should_retry_status (const SocketHTTPClient_T client, int status);
-extern int httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt);
+extern int httpclient_should_retry_error (const SocketHTTPClient_T client,
+                                          SocketHTTPClient_Error error);
+extern int httpclient_should_retry_status (const SocketHTTPClient_T client,
+                                           int status);
+extern int httpclient_calculate_retry_delay (const SocketHTTPClient_T client,
+                                             int attempt);
 extern void httpclient_retry_sleep_ms (int ms);
 
 extern void clear_response_for_retry (SocketHTTP_Response *response);
-extern void httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
+extern void
+httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
 
 #endif /* SOCKETHTTPCLIENT_PRIVATE_INCLUDED */
-

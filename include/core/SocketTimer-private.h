@@ -15,25 +15,27 @@
 /* Timer structure - internal definition */
 struct SocketTimer_T
 {
-    int64_t expiry_ms;           /* Absolute expiry time (monotonic clock) */
-    int64_t interval_ms;         /* 0 for one-shot, >0 for repeating */
-    SocketTimerCallback callback; /* User callback function */
-    void *userdata;             /* User data for callback */
-    int cancelled;              /* Lazy deletion flag */
-    uint64_t id;               /* Unique timer ID (64-bit to prevent wrap-around) */
+  int64_t expiry_ms;            /* Absolute expiry time (monotonic clock) */
+  int64_t interval_ms;          /* 0 for one-shot, >0 for repeating */
+  SocketTimerCallback callback; /* User callback function */
+  void *userdata;               /* User data for callback */
+  int cancelled;                /* Lazy deletion flag */
+  uint64_t id; /* Unique timer ID (64-bit to prevent wrap-around) */
 
-    size_t heap_index;          /* Heap position for fast lookup/cancel, SOCKET_TIMER_INVALID_HEAP_INDEX if not in heap */
+  size_t heap_index; /* Heap position for fast lookup/cancel,
+                        SOCKET_TIMER_INVALID_HEAP_INDEX if not in heap */
 };
 
 /* Heap structure - internal definition */
 struct SocketTimer_heap_T
 {
-    struct SocketTimer_T **timers;  /* Dynamic array of timer pointers (heap) */
-    size_t count;                   /* Current number of timers in heap */
-    size_t capacity;                /* Allocated capacity of timers array */
-    uint64_t next_id;              /* Next timer ID to assign (64-bit to prevent wrap-around) */
-    Arena_T arena;                  /* Memory arena for allocations */
-    pthread_mutex_t mutex;          /* Thread safety mutex */
+  struct SocketTimer_T **timers; /* Dynamic array of timer pointers (heap) */
+  size_t count;                  /* Current number of timers in heap */
+  size_t capacity;               /* Allocated capacity of timers array */
+  uint64_t
+      next_id;   /* Next timer ID to assign (64-bit to prevent wrap-around) */
+  Arena_T arena; /* Memory arena for allocations */
+  pthread_mutex_t mutex; /* Thread safety mutex */
 };
 
 /* Type alias for heap */
@@ -42,7 +44,7 @@ typedef struct SocketTimer_heap_T SocketTimer_heap_T;
 /**
  * Invalid heap index value - indicates timer not in heap
  */
-#define SOCKET_TIMER_INVALID_HEAP_INDEX ((size_t)-1)
+#define SOCKET_TIMER_INVALID_HEAP_INDEX ((size_t) - 1)
 
 /**
  * SocketTimer_heap_new - Create a new timer heap
@@ -57,8 +59,8 @@ SocketTimer_heap_T *SocketTimer_heap_new (Arena_T arena);
  * @heap: Heap to free (may be NULL)
  *
  * Frees the heap control structure and destroys the mutex. Timers and timers
- * array must be freed via Arena_dispose(arena). Arena lifetime managed by caller.
- * Thread-safe: No (caller must ensure no concurrent access)
+ * array must be freed via Arena_dispose(arena). Arena lifetime managed by
+ * caller. Thread-safe: No (caller must ensure no concurrent access)
  */
 void SocketTimer_heap_free (SocketTimer_heap_T **heap);
 
@@ -69,7 +71,8 @@ void SocketTimer_heap_free (SocketTimer_heap_T **heap);
  * Raises: SocketTimer_Failed on allocation failure
  * Thread-safe: Yes - uses heap mutex
  */
-void SocketTimer_heap_push (SocketTimer_heap_T *heap, struct SocketTimer_T *timer);
+void SocketTimer_heap_push (SocketTimer_heap_T *heap,
+                            struct SocketTimer_T *timer);
 
 /**
  * SocketTimer_heap_pop - Remove and return earliest timer
@@ -113,17 +116,18 @@ int SocketTimer_process_expired (SocketTimer_heap_T *heap);
  * Thread-safe: Yes - uses heap mutex
  * Note: O(1) time complexity using maintained heap_index field
  */
-int SocketTimer_heap_cancel (SocketTimer_heap_T *heap, struct SocketTimer_T *timer);
+int SocketTimer_heap_cancel (SocketTimer_heap_T *heap,
+                             struct SocketTimer_T *timer);
 
 /**
  * SocketTimer_heap_remaining - Get milliseconds until timer expiry
  * @heap: Timer heap
  * @timer: Timer to query
- * Returns: Milliseconds until expiry (>= 0), or -1 if timer not found/cancelled
- * Thread-safe: Yes - uses heap mutex
- * Note: O(1) time complexity using maintained heap_index field
+ * Returns: Milliseconds until expiry (>= 0), or -1 if timer not
+ * found/cancelled Thread-safe: Yes - uses heap mutex Note: O(1) time
+ * complexity using maintained heap_index field
  */
 int64_t SocketTimer_heap_remaining (SocketTimer_heap_T *heap,
-                                   const struct SocketTimer_T *timer);
+                                    const struct SocketTimer_T *timer);
 
 #endif /* SOCKETTIMER_PRIVATE_INCLUDED */

@@ -41,7 +41,8 @@
 
 /* ============================================================================
  * Configuration Limits
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Default dynamic table size (RFC 7541 default) */
 #ifndef SOCKETHPACK_DEFAULT_TABLE_SIZE
@@ -51,8 +52,9 @@
 /**
  * Maximum dynamic table size
  *
- * ENFORCEMENT: Table size updates are validated in SocketHPACK_Decoder_decode().
- * Rejects updates exceeding settings_max_table_size.
+ * ENFORCEMENT: Table size updates are validated in
+ * SocketHPACK_Decoder_decode(). Rejects updates exceeding
+ * settings_max_table_size.
  */
 #ifndef SOCKETHPACK_MAX_TABLE_SIZE
 #define SOCKETHPACK_MAX_TABLE_SIZE (64 * 1024)
@@ -81,7 +83,8 @@
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHPACK_Error - General HPACK operation failure
@@ -97,28 +100,30 @@ extern const Except_T SocketHPACK_Error;
 
 /* ============================================================================
  * Result Codes
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HPACK operation result codes
  */
 typedef enum
 {
-  HPACK_OK = 0,               /**< Success */
-  HPACK_INCOMPLETE,           /**< Need more data */
-  HPACK_ERROR,                /**< Generic error */
-  HPACK_ERROR_INVALID_INDEX,  /**< Index out of range */
-  HPACK_ERROR_HUFFMAN,        /**< Huffman decoding error */
-  HPACK_ERROR_INTEGER,        /**< Integer overflow */
-  HPACK_ERROR_TABLE_SIZE,     /**< Dynamic table size update invalid */
-  HPACK_ERROR_HEADER_SIZE,    /**< Individual header too large */
-  HPACK_ERROR_LIST_SIZE,      /**< Total header list too large */
-  HPACK_ERROR_BOMB            /**< HPACK bomb detected */
+  HPACK_OK = 0,              /**< Success */
+  HPACK_INCOMPLETE,          /**< Need more data */
+  HPACK_ERROR,               /**< Generic error */
+  HPACK_ERROR_INVALID_INDEX, /**< Index out of range */
+  HPACK_ERROR_HUFFMAN,       /**< Huffman decoding error */
+  HPACK_ERROR_INTEGER,       /**< Integer overflow */
+  HPACK_ERROR_TABLE_SIZE,    /**< Dynamic table size update invalid */
+  HPACK_ERROR_HEADER_SIZE,   /**< Individual header too large */
+  HPACK_ERROR_LIST_SIZE,     /**< Total header list too large */
+  HPACK_ERROR_BOMB           /**< HPACK bomb detected */
 } SocketHPACK_Result;
 
 /* ============================================================================
  * Header Representation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HPACK header field
@@ -129,16 +134,17 @@ typedef enum
  */
 typedef struct
 {
-  const char *name;   /**< Header name */
-  size_t name_len;    /**< Name length in bytes */
-  const char *value;  /**< Header value */
-  size_t value_len;   /**< Value length in bytes */
-  int never_index;    /**< Sensitive - never add to dynamic table */
+  const char *name;  /**< Header name */
+  size_t name_len;   /**< Name length in bytes */
+  const char *value; /**< Header value */
+  size_t value_len;  /**< Value length in bytes */
+  int never_index;   /**< Sensitive - never add to dynamic table */
 } SocketHPACK_Header;
 
 /* ============================================================================
  * Dynamic Table
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HPACK dynamic table (opaque type)
@@ -239,15 +245,14 @@ extern SocketHPACK_Result SocketHPACK_Table_get (SocketHPACK_Table_T table,
  * Returns: HPACK_OK on success
  * Thread-safe: No
  */
-extern SocketHPACK_Result SocketHPACK_Table_add (SocketHPACK_Table_T table,
-                                                 const char *name,
-                                                 size_t name_len,
-                                                 const char *value,
-                                                 size_t value_len);
+extern SocketHPACK_Result
+SocketHPACK_Table_add (SocketHPACK_Table_T table, const char *name,
+                       size_t name_len, const char *value, size_t value_len);
 
 /* ============================================================================
  * Encoder
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HPACK encoder (opaque type)
@@ -265,7 +270,8 @@ typedef struct
 } SocketHPACK_EncoderConfig;
 
 /**
- * SocketHPACK_encoder_config_defaults - Initialize encoder config with defaults
+ * SocketHPACK_encoder_config_defaults - Initialize encoder config with
+ * defaults
  * @config: Configuration structure to initialize
  *
  * Thread-safe: Yes
@@ -339,7 +345,8 @@ SocketHPACK_Encoder_get_table (SocketHPACK_Encoder_T encoder);
 
 /* ============================================================================
  * Decoder
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HPACK decoder (opaque type)
@@ -354,12 +361,14 @@ typedef struct
   size_t max_table_size;       /**< Maximum dynamic table size */
   size_t max_header_size;      /**< Maximum individual header size */
   size_t max_header_list_size; /**< Maximum total decoded size */
-  double max_expansion_ratio;  /**< Max decoded/encoded ratio to prevent decompression bombs (default: 10.0) */
+  double max_expansion_ratio;  /**< Max decoded/encoded ratio to prevent
+                                  decompression bombs (default: 10.0) */
 
 } SocketHPACK_DecoderConfig;
 
 /**
- * SocketHPACK_decoder_config_defaults - Initialize decoder config with defaults
+ * SocketHPACK_decoder_config_defaults - Initialize decoder config with
+ * defaults
  * @config: Configuration structure to initialize
  *
  * Thread-safe: Yes
@@ -434,7 +443,8 @@ SocketHPACK_Decoder_get_table (SocketHPACK_Decoder_T decoder);
 
 /* ============================================================================
  * Huffman Coding
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHPACK_huffman_encode - Huffman encode string
@@ -486,7 +496,8 @@ extern size_t SocketHPACK_huffman_encoded_size (const unsigned char *input,
 
 /* ============================================================================
  * Integer Coding (RFC 7541 Section 5.1)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHPACK_int_encode - Encode integer with prefix
@@ -517,15 +528,14 @@ extern size_t SocketHPACK_int_encode (uint64_t value, int prefix_bits,
  * Returns: Result code
  * Thread-safe: Yes
  */
-extern SocketHPACK_Result SocketHPACK_int_decode (const unsigned char *input,
-                                                  size_t input_len,
-                                                  int prefix_bits,
-                                                  uint64_t *value,
-                                                  size_t *consumed);
+extern SocketHPACK_Result
+SocketHPACK_int_decode (const unsigned char *input, size_t input_len,
+                        int prefix_bits, uint64_t *value, size_t *consumed);
 
 /* ============================================================================
  * Static Table Lookup
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHPACK_static_get - Get entry from static table
@@ -549,15 +559,16 @@ extern SocketHPACK_Result SocketHPACK_static_get (size_t index,
  *
  * Searches for an entry in the static table.
  *
- * Returns: Index (1-61) on exact match, negative index if only name matches, 0 if not found
- * Thread-safe: Yes
+ * Returns: Index (1-61) on exact match, negative index if only name matches, 0
+ * if not found Thread-safe: Yes
  */
 extern int SocketHPACK_static_find (const char *name, size_t name_len,
                                     const char *value, size_t value_len);
 
 /* ============================================================================
  * Utility Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHPACK_result_string - Get error description
@@ -569,4 +580,3 @@ extern int SocketHPACK_static_find (const char *name, size_t name_len,
 extern const char *SocketHPACK_result_string (SocketHPACK_Result result);
 
 #endif /* SOCKETHPACK_INCLUDED */
-

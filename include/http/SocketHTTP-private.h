@@ -10,13 +10,14 @@
 #ifndef SOCKETHTTP_PRIVATE_INCLUDED
 #define SOCKETHTTP_PRIVATE_INCLUDED
 
-#include "http/SocketHTTP.h"
 #include "core/SocketUtil.h"
-#include <string.h>  /* for strncasecmp */
+#include "http/SocketHTTP.h"
+#include <string.h> /* for strncasecmp */
 
 /* ============================================================================
  * Header Collection Internals
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Hash table bucket count (prime for better distribution)
@@ -29,14 +30,14 @@
  */
 typedef struct HeaderEntry
 {
-  char *name;       /**< Header name (case-preserved, arena-allocated) */
+  char *name; /**< Header name (case-preserved, arena-allocated) */
   size_t name_len;
-  char *value;      /**< Header value (arena-allocated) */
+  char *value; /**< Header value (arena-allocated) */
   size_t value_len;
 
-  struct HeaderEntry *hash_next;  /**< Next entry in hash bucket chain */
-  struct HeaderEntry *list_next;  /**< Next entry in insertion order list */
-  struct HeaderEntry *list_prev;  /**< Previous entry in insertion order */
+  struct HeaderEntry *hash_next; /**< Next entry in hash bucket chain */
+  struct HeaderEntry *list_next; /**< Next entry in insertion order list */
+  struct HeaderEntry *list_prev; /**< Previous entry in insertion order */
 } HeaderEntry;
 
 /**
@@ -47,17 +48,18 @@ typedef struct HeaderEntry
  */
 struct SocketHTTP_Headers
 {
-  Arena_T arena;                                /**< Memory arena */
+  Arena_T arena;                                   /**< Memory arena */
   HeaderEntry *buckets[SOCKETHTTP_HEADER_BUCKETS]; /**< Hash table */
-  HeaderEntry *first;                           /**< First header (insertion order) */
-  HeaderEntry *last;                            /**< Last header (insertion order) */
-  size_t count;                                 /**< Total header count */
-  size_t total_size;                            /**< Total size of all headers */
+  HeaderEntry *first; /**< First header (insertion order) */
+  HeaderEntry *last;  /**< Last header (insertion order) */
+  size_t count;       /**< Total header count */
+  size_t total_size;  /**< Total size of all headers */
 };
 
 /* ============================================================================
  * Internal Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * sockethttp_hash_name - Hash header name (case-insensitive)
@@ -69,7 +71,6 @@ struct SocketHTTP_Headers
  * Returns: Hash value in range [0, SOCKETHTTP_HEADER_BUCKETS)
  */
 
-
 /**
  * sockethttp_name_equal - Compare header names (case-insensitive)
  * @a: First name
@@ -80,7 +81,8 @@ struct SocketHTTP_Headers
  * Returns: 1 if equal (case-insensitive), 0 otherwise
  */
 static inline int
-sockethttp_name_equal (const char *a, size_t a_len, const char *b, size_t b_len)
+sockethttp_name_equal (const char *a, size_t a_len, const char *b,
+                       size_t b_len)
 {
   if (a_len != b_len)
     return 0;
@@ -89,7 +91,8 @@ sockethttp_name_equal (const char *a, size_t a_len, const char *b, size_t b_len)
 
 /* ============================================================================
  * URI Parser Internals
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * URI parser state machine states
@@ -111,7 +114,8 @@ typedef enum
 
 /* ============================================================================
  * Character Classification Tables
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Token character table for RFC 9110
@@ -134,7 +138,8 @@ extern const unsigned char sockethttp_uri_unreserved[256];
 /**
  * Check if character is unreserved (doesn't need encoding)
  */
-#define SOCKETHTTP_IS_UNRESERVED(c) (sockethttp_uri_unreserved[(unsigned char)(c)])
+#define SOCKETHTTP_IS_UNRESERVED(c)                                           \
+  (sockethttp_uri_unreserved[(unsigned char)(c)])
 
 /**
  * Hex value table for percent decoding
@@ -148,4 +153,3 @@ extern const unsigned char sockethttp_hex_value[256];
 #define SOCKETHTTP_HEX_VALUE(c) (sockethttp_hex_value[(unsigned char)(c)])
 
 #endif /* SOCKETHTTP_PRIVATE_INCLUDED */
-

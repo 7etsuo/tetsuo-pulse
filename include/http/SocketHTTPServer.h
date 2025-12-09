@@ -76,8 +76,8 @@ typedef struct SocketWS *SocketWS_T;
  *   HTTPSERVER_DEFAULT_MAX_BODY_SIZE    - 10MB   - Max request body size
  *   HTTPSERVER_DEFAULT_MAX_CONNECTIONS  - 1000   - Max concurrent connections
  *   HTTPSERVER_DEFAULT_MAX_CONNECTIONS_PER_CLIENT - 100 - Per-IP limit
- *   HTTPSERVER_DEFAULT_MAX_REQUESTS_PER_CONN - 1000 - Max requests per connection
- *   HTTPSERVER_DEFAULT_MAX_CONCURRENT_REQUESTS - 100 - HTTP/2 streams
+ *   HTTPSERVER_DEFAULT_MAX_REQUESTS_PER_CONN - 1000 - Max requests per
+ * connection HTTPSERVER_DEFAULT_MAX_CONCURRENT_REQUESTS - 100 - HTTP/2 streams
  *
  * TIMEOUT LIMITS:
  *   HTTPSERVER_DEFAULT_REQUEST_TIMEOUT_MS - 30s - Idle timeout
@@ -93,7 +93,8 @@ typedef struct SocketWS *SocketWS_T;
  *
  * METRICS:
  *   - SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED incremented on body limit violation
- *   - SOCKET_CTR_LIMIT_HEADER_SIZE_EXCEEDED incremented on header limit violation
+ *   - SOCKET_CTR_LIMIT_HEADER_SIZE_EXCEEDED incremented on header limit
+ * violation
  */
 
 /** Default listen backlog */
@@ -132,7 +133,6 @@ typedef struct SocketWS *SocketWS_T;
 #ifndef HTTPSERVER_DRAIN_POLL_MS
 #define HTTPSERVER_DRAIN_POLL_MS 100
 #endif /* temporarily without #endif ? No, keep but to balance, wait */
-
 
 /** Default maximum connections */
 #ifndef HTTPSERVER_DEFAULT_MAX_CONNECTIONS
@@ -237,7 +237,8 @@ typedef struct SocketWS *SocketWS_T;
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** General server failure */
 extern const Except_T SocketHTTPServer_Failed;
@@ -250,7 +251,8 @@ extern const Except_T SocketHTTPServer_ProtocolError;
 
 /* ============================================================================
  * Server State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Server lifecycle state for graceful shutdown
@@ -264,7 +266,8 @@ typedef enum
 
 /* ============================================================================
  * Server Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP server configuration
@@ -302,7 +305,8 @@ typedef struct
 
 /* ============================================================================
  * Opaque Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** HTTP server instance */
 typedef struct SocketHTTPServer *SocketHTTPServer_T;
@@ -312,7 +316,8 @@ typedef struct SocketHTTPServer_Request *SocketHTTPServer_Request_T;
 
 /* ============================================================================
  * Callback Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Request handler callback
@@ -375,7 +380,8 @@ typedef void (*SocketHTTPServer_DrainCallback) (SocketHTTPServer_T server,
 
 /* ============================================================================
  * Server Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPServer_config_defaults - Initialize config with defaults
@@ -436,7 +442,8 @@ extern void SocketHTTPServer_set_handler (SocketHTTPServer_T server,
 
 /* ============================================================================
  * Event Loop Integration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPServer_fd - Get server socket for poll
@@ -457,7 +464,8 @@ extern int SocketHTTPServer_fd (SocketHTTPServer_T server);
  * Returns: Number of requests processed
  * Thread-safe: No
  */
-extern int SocketHTTPServer_process (SocketHTTPServer_T server, int timeout_ms);
+extern int SocketHTTPServer_process (SocketHTTPServer_T server,
+                                     int timeout_ms);
 
 /**
  * SocketHTTPServer_poll - Get poll instance
@@ -470,7 +478,8 @@ extern SocketPoll_T SocketHTTPServer_poll (SocketHTTPServer_T server);
 
 /* ============================================================================
  * Request Accessors
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPServer_Request_method - Get request method
@@ -537,7 +546,8 @@ SocketHTTPServer_Request_memory_used (SocketHTTPServer_Request_T req);
 
 /* ============================================================================
  * Response Building
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPServer_Request_status - Set response status
@@ -585,7 +595,8 @@ extern void SocketHTTPServer_Request_finish (SocketHTTPServer_Request_T req);
 
 /* ============================================================================
  * Request Body Streaming
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPServer_Request_body_stream - Enable streaming body callback
@@ -601,9 +612,10 @@ extern void SocketHTTPServer_Request_finish (SocketHTTPServer_Request_T req);
  * Call this before calling finish() to receive body data.
  * Thread-safe: No
  */
-extern void SocketHTTPServer_Request_body_stream (
-    SocketHTTPServer_Request_T req, SocketHTTPServer_BodyCallback callback,
-    void *userdata);
+extern void
+SocketHTTPServer_Request_body_stream (SocketHTTPServer_Request_T req,
+                                      SocketHTTPServer_BodyCallback callback,
+                                      void *userdata);
 
 /**
  * SocketHTTPServer_Request_body_expected - Get expected body length
@@ -627,7 +639,8 @@ SocketHTTPServer_Request_is_chunked (SocketHTTPServer_Request_T req);
 
 /* ============================================================================
  * Response Body Streaming
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPServer_Request_begin_stream - Begin streaming response
@@ -675,7 +688,8 @@ SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req);
 
 /* ============================================================================
  * HTTP/2 Server Push
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPServer_Request_push - Push a resource (HTTP/2 only)
@@ -704,7 +718,8 @@ extern int SocketHTTPServer_Request_is_http2 (SocketHTTPServer_Request_T req);
 
 /* ============================================================================
  * WebSocket Upgrade
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPServer_Request_is_websocket - Check WebSocket upgrade
@@ -730,7 +745,8 @@ SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req);
 
 /* ============================================================================
  * Rate Limiting
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPServer_set_rate_limit - Set rate limiter for endpoint
@@ -750,7 +766,8 @@ extern void SocketHTTPServer_set_rate_limit (SocketHTTPServer_T server,
 
 /* ============================================================================
  * Request Validation Middleware
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPServer_set_validator - Set request validation callback
@@ -763,13 +780,15 @@ extern void SocketHTTPServer_set_rate_limit (SocketHTTPServer_T server,
  *
  * Thread-safe: No
  */
-extern void SocketHTTPServer_set_validator (SocketHTTPServer_T server,
-                                            SocketHTTPServer_Validator validator,
-                                            void *userdata);
+extern void
+SocketHTTPServer_set_validator (SocketHTTPServer_T server,
+                                SocketHTTPServer_Validator validator,
+                                void *userdata);
 
 /* ============================================================================
  * Graceful Shutdown
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPServer_drain - Begin graceful shutdown
@@ -840,11 +859,13 @@ SocketHTTPServer_set_drain_callback (SocketHTTPServer_T server,
  * Returns: Current state (RUNNING, DRAINING, or STOPPED)
  * Thread-safe: Yes (atomic read)
  */
-extern SocketHTTPServer_State SocketHTTPServer_state (SocketHTTPServer_T server);
+extern SocketHTTPServer_State
+SocketHTTPServer_state (SocketHTTPServer_T server);
 
 /* ============================================================================
  * Server Statistics
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Server statistics (enhanced for production monitoring)
@@ -852,30 +873,30 @@ extern SocketHTTPServer_State SocketHTTPServer_state (SocketHTTPServer_T server)
 typedef struct
 {
   /* Connection stats */
-  size_t active_connections;       /**< Current active connections */
-  size_t total_connections;        /**< Total connections accepted */
-  size_t connections_rejected;     /**< Connections rejected (limits) */
+  size_t active_connections;   /**< Current active connections */
+  size_t total_connections;    /**< Total connections accepted */
+  size_t connections_rejected; /**< Connections rejected (limits) */
 
   /* Request stats */
-  size_t total_requests;           /**< Total requests processed */
-  size_t requests_per_second;      /**< RPS over sliding window */
+  size_t total_requests;      /**< Total requests processed */
+  size_t requests_per_second; /**< RPS over sliding window */
 
   /* Byte counters */
-  size_t total_bytes_sent;         /**< Total bytes sent */
-  size_t total_bytes_received;     /**< Total bytes received */
+  size_t total_bytes_sent;     /**< Total bytes sent */
+  size_t total_bytes_received; /**< Total bytes received */
 
   /* Error stats */
-  size_t errors_4xx;               /**< 4xx client errors */
-  size_t errors_5xx;               /**< 5xx server errors */
-  size_t timeouts;                 /**< Connections closed by timeout */
-  size_t rate_limited;             /**< Requests rate limited (429) */
+  size_t errors_4xx;   /**< 4xx client errors */
+  size_t errors_5xx;   /**< 5xx server errors */
+  size_t timeouts;     /**< Connections closed by timeout */
+  size_t rate_limited; /**< Requests rate limited (429) */
 
   /* Latency stats (microseconds) */
-  int64_t avg_request_time_us;     /**< Average request latency */
-  int64_t max_request_time_us;     /**< Maximum request latency */
-  int64_t p50_request_time_us;     /**< 50th percentile latency */
-  int64_t p95_request_time_us;     /**< 95th percentile latency */
-  int64_t p99_request_time_us;     /**< 99th percentile latency */
+  int64_t avg_request_time_us; /**< Average request latency */
+  int64_t max_request_time_us; /**< Maximum request latency */
+  int64_t p50_request_time_us; /**< 50th percentile latency */
+  int64_t p95_request_time_us; /**< 95th percentile latency */
+  int64_t p99_request_time_us; /**< 99th percentile latency */
 } SocketHTTPServer_Stats;
 
 /**
@@ -898,4 +919,3 @@ extern void SocketHTTPServer_stats (SocketHTTPServer_T server,
 extern void SocketHTTPServer_stats_reset (SocketHTTPServer_T server);
 
 #endif /* SOCKETHTTPSERVER_INCLUDED */
-

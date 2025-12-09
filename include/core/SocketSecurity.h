@@ -50,7 +50,8 @@
  *   SOCKET_MIN_BUFFER_SIZE        - Min buffer size (512)
  *   SOCKET_MAX_POLL_EVENTS        - Max events per poll (10000)
  *   SOCKET_MAX_LISTEN_BACKLOG     - Max listen backlog (1024)
- *   ARENA_MAX_ALLOC_SIZE          - Max arena allocation (see SOCKET_SECURITY_MAX_ALLOCATION, default 256MB)
+ *   ARENA_MAX_ALLOC_SIZE          - Max arena allocation (see
+ * SOCKET_SECURITY_MAX_ALLOCATION, default 256MB)
  *
  * DNS LIMITS (SocketConfig.h):
  *   SOCKET_DNS_MAX_PENDING        - Max pending DNS requests (1000)
@@ -134,7 +135,8 @@
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSecurity_SizeExceeded - Allocation or buffer size exceeds limits
@@ -157,7 +159,8 @@ extern const Except_T SocketSecurity_ValidationFailed;
 
 /* ============================================================================
  * Security Limits Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSecurityLimits - Runtime-queryable security limits
@@ -171,19 +174,19 @@ typedef struct SocketSecurityLimits
   size_t max_allocation;       /**< Maximum single allocation */
   size_t max_buffer_size;      /**< Maximum buffer size */
   size_t max_connections;      /**< Maximum connections in pool */
-  size_t arena_max_alloc_size;      /**< Maximum arena allocation size */
+  size_t arena_max_alloc_size; /**< Maximum arena allocation size */
 
   /* HTTP limits */
-  size_t http_max_uri_length;     /**< Maximum URI length */
-  size_t http_max_header_name;    /**< Maximum header name length */
-  size_t http_max_header_value;   /**< Maximum header value length */
-  size_t http_max_header_size;    /**< Maximum total header size */
-  size_t http_max_headers;        /**< Maximum header count */
-  size_t http_max_body_size;      /**< Maximum body size */
+  size_t http_max_uri_length;   /**< Maximum URI length */
+  size_t http_max_header_name;  /**< Maximum header name length */
+  size_t http_max_header_value; /**< Maximum header value length */
+  size_t http_max_header_size;  /**< Maximum total header size */
+  size_t http_max_headers;      /**< Maximum header count */
+  size_t http_max_body_size;    /**< Maximum body size */
 
   /* HTTP/1.1 limits */
-  size_t http1_max_request_line;  /**< Maximum request/status line */
-  size_t http1_max_chunk_size;    /**< Maximum chunk size */
+  size_t http1_max_request_line; /**< Maximum request/status line */
+  size_t http1_max_chunk_size;   /**< Maximum chunk size */
 
   /* HTTP/2 limits */
   size_t http2_max_concurrent_streams; /**< Maximum concurrent streams */
@@ -191,35 +194,39 @@ typedef struct SocketSecurityLimits
   size_t http2_max_header_list_size;   /**< Maximum header list size */
 
   /* TLS ALPN limits (SocketTLSConfig.h) */
-  size_t tls_max_alpn_protocols;   /**< Max number of ALPN protocols (SOCKET_TLS_MAX_ALPN_PROTOCOLS=16) */
-  size_t tls_max_alpn_len;         /**< Max ALPN protocol string length (SOCKET_TLS_MAX_ALPN_LEN=255) */
-  size_t tls_max_alpn_total_bytes; /**< Max total ALPN list size (custom, e.g., 1024 for DoS protection) */
-  size_t hpack_max_table_size;   /**< Maximum HPACK dynamic table size */
+  size_t tls_max_alpn_protocols;   /**< Max number of ALPN protocols
+                                      (SOCKET_TLS_MAX_ALPN_PROTOCOLS=16) */
+  size_t tls_max_alpn_len;         /**< Max ALPN protocol string length
+                                      (SOCKET_TLS_MAX_ALPN_LEN=255) */
+  size_t tls_max_alpn_total_bytes; /**< Max total ALPN list size (custom, e.g.,
+                                      1024 for DoS protection) */
+  size_t hpack_max_table_size;     /**< Maximum HPACK dynamic table size */
 
   /* WebSocket limits */
-  size_t ws_max_frame_size;    /**< Maximum WebSocket frame size */
-  size_t ws_max_message_size;  /**< Maximum WebSocket message size */
+  size_t ws_max_frame_size;   /**< Maximum WebSocket frame size */
+  size_t ws_max_message_size; /**< Maximum WebSocket message size */
 
   /* TLS limits */
   size_t tls_max_cert_chain_depth; /**< Maximum certificate chain depth */
   size_t tls_session_cache_size;   /**< TLS session cache size */
 
   /* Rate limiting */
-  size_t ratelimit_conn_per_sec;   /**< Connection rate per second */
-  size_t ratelimit_burst;          /**< Burst capacity */
-  size_t ratelimit_max_per_ip;     /**< Per-IP connection limit */
+  size_t ratelimit_conn_per_sec; /**< Connection rate per second */
+  size_t ratelimit_burst;        /**< Burst capacity */
+  size_t ratelimit_max_per_ip;   /**< Per-IP connection limit */
 
   /* Timeouts (milliseconds) */
-  int timeout_connect_ms;      /**< Connect timeout */
-  int timeout_dns_ms;          /**< DNS resolution timeout */
-  int timeout_idle_ms;         /**< Idle connection timeout */
-  int timeout_request_ms;      /**< Request timeout */
+  int timeout_connect_ms; /**< Connect timeout */
+  int timeout_dns_ms;     /**< DNS resolution timeout */
+  int timeout_idle_ms;    /**< Idle connection timeout */
+  int timeout_request_ms; /**< Request timeout */
 
 } SocketSecurityLimits;
 
 /* ============================================================================
  * Limit Query Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSecurity_get_limits - Get current security limits
@@ -280,7 +287,8 @@ extern void SocketSecurity_get_hpack_limits (size_t *max_table);
 
 /* ============================================================================
  * Size Validation Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSecurity_check_size - Validate allocation size
@@ -360,18 +368,19 @@ SocketSecurity_safe_add (size_t a, size_t b)
 
 /* ============================================================================
  * Validation Macros
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SOCKET_SECURITY_VALID_SIZE - Check if size is within safe limits
  */
-#define SOCKET_SECURITY_VALID_SIZE(s)                                          \
-  ((size_t) (s) > 0 && (size_t) (s) <= SOCKET_SECURITY_MAX_ALLOCATION)
+#define SOCKET_SECURITY_VALID_SIZE(s)                                         \
+  ((size_t)(s) > 0 && (size_t)(s) <= SOCKET_SECURITY_MAX_ALLOCATION)
 
 /**
  * SOCKET_SECURITY_CHECK_OVERFLOW_MUL - Check multiplication overflow
  */
-#define SOCKET_SECURITY_CHECK_OVERFLOW_MUL(a, b)                               \
+#define SOCKET_SECURITY_CHECK_OVERFLOW_MUL(a, b)                              \
   ((b) == 0 || (a) <= SIZE_MAX / (b))
 
 /**
@@ -381,7 +390,8 @@ SocketSecurity_safe_add (size_t a, size_t b)
 
 /* ============================================================================
  * Security Feature Detection
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSecurity_has_tls - Check if TLS support is compiled in
@@ -450,4 +460,3 @@ SocketSecurity_has_compression (void)
  */
 
 #endif /* SOCKETSECURITY_INCLUDED */
-

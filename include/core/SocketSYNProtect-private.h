@@ -19,7 +19,8 @@
 
 /* ============================================================================
  * Internal Configuration Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Hash table size for IP tracking - prime number for good distribution */
 #ifndef SOCKET_SYN_IP_HASH_SIZE
@@ -48,7 +49,8 @@
 
 /* ============================================================================
  * IP Entry Structure (for hash table with LRU)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYN_IPEntry - Internal IP tracking entry
@@ -71,7 +73,8 @@ typedef struct SocketSYN_IPEntry
 
 /* ============================================================================
  * Whitelist Entry Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYN_WhitelistEntry - Whitelist entry
@@ -90,7 +93,8 @@ typedef struct SocketSYN_WhitelistEntry
 
 /* ============================================================================
  * Blacklist Entry Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketSYN_BlacklistEntry - Blacklist entry with expiry
@@ -104,7 +108,8 @@ typedef struct SocketSYN_BlacklistEntry
 
 /* ============================================================================
  * Main Structure Definition
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * struct SocketSYNProtect_T - Main SYN protection structure
@@ -115,23 +120,24 @@ typedef struct SocketSYN_BlacklistEntry
 struct SocketSYNProtect_T
 {
   /* Memory management */
-  Arena_T arena;       /**< Arena for allocations (NULL = malloc) */
-  int use_malloc;      /**< 1 if using malloc, 0 if arena */
-  int initialized;     /**< 1 if mutex initialized */
+  Arena_T arena;         /**< Arena for allocations (NULL = malloc) */
+  int use_malloc;        /**< 1 if using malloc, 0 if arena */
+  int initialized;       /**< 1 if mutex initialized */
   pthread_mutex_t mutex; /**< Thread safety mutex */
 
   /* Configuration (copy of user config) */
   SocketSYNProtect_Config config;
-  unsigned hash_seed;  /**< Random seed for hash functions (collision mitigation) */
+  unsigned
+      hash_seed; /**< Random seed for hash functions (collision mitigation) */
 
   /* IP state tracking hash table */
-  SocketSYN_IPEntry **ip_table;  /**< Hash table buckets */
-  size_t ip_table_size;          /**< Number of buckets */
-  size_t ip_entry_count;         /**< Current entries */
+  SocketSYN_IPEntry **ip_table; /**< Hash table buckets */
+  size_t ip_table_size;         /**< Number of buckets */
+  size_t ip_entry_count;        /**< Current entries */
 
   /* LRU list for eviction */
-  SocketSYN_IPEntry *lru_head;   /**< Most recently used */
-  SocketSYN_IPEntry *lru_tail;   /**< Least recently used */
+  SocketSYN_IPEntry *lru_head; /**< Most recently used */
+  SocketSYN_IPEntry *lru_tail; /**< Least recently used */
 
   /* Whitelist hash table */
   SocketSYN_WhitelistEntry **whitelist_table;
@@ -158,7 +164,8 @@ struct SocketSYNProtect_T
 
 /* ============================================================================
  * Internal Helper Function Declarations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * synprotect_hash_ip - Hash IP address string
@@ -168,8 +175,8 @@ struct SocketSYNProtect_T
  * Returns: Hash bucket index
  * Thread-safe: Yes (pure function)
  */
-unsigned
-synprotect_hash_ip (SocketSYNProtect_T protect, const char *ip, unsigned table_size);
+unsigned synprotect_hash_ip (SocketSYNProtect_T protect, const char *ip,
+                             unsigned table_size);
 
 /**
  * synprotect_clamp_score - Clamp score to [0.0, 1.0]
@@ -206,4 +213,3 @@ synprotect_max (int64_t a, int64_t b)
 }
 
 #endif /* SOCKETSYNPROTECT_PRIVATE_INCLUDED */
-

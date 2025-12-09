@@ -1,10 +1,11 @@
 /**
  * @defgroup http HTTP Modules
- * @brief Complete HTTP/1.1 and HTTP/2 protocol implementation with client and server support.
+ * @brief Complete HTTP/1.1 and HTTP/2 protocol implementation with client and
+ * server support.
  *
  * The HTTP group provides comprehensive HTTP protocol support including
- * parsing, serialization, client/server implementations, and advanced features.
- * Key components include:
+ * parsing, serialization, client/server implementations, and advanced
+ * features. Key components include:
  * - SocketHTTP (core): HTTP types, headers, URI parsing, status codes
  * - SocketHTTP1 (http1): HTTP/1.1 parsing and serialization
  * - SocketHTTP2 (http2): HTTP/2 protocol implementation
@@ -23,7 +24,8 @@
 /**
  * @file SocketHTTPClient.h
  * @ingroup http
- * @brief High-level HTTP client with connection pooling and protocol negotiation.
+ * @brief High-level HTTP client with connection pooling and protocol
+ * negotiation.
  *
  * High-level HTTP client abstracting HTTP/1.1 and HTTP/2 with:
  * - Connection pooling with per-host limits
@@ -91,7 +93,8 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
  *   - HTTPCLIENT_POOL_HASH_SIZE (127)
  *   - HTTPCLIENT_ENCODING_* flags
  * All constants support compile-time override via #ifndef guards.
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* ============================================================================
  * Exception Types
@@ -99,7 +102,8 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
  *
  * RETRYABILITY GUIDE:
  * - RETRYABLE exceptions indicate transient failures that may succeed on retry
- * - NON-RETRYABLE exceptions indicate permanent failures or configuration errors
+ * - NON-RETRYABLE exceptions indicate permanent failures or configuration
+ * errors
  * - Use SocketHTTPClient_error_is_retryable() to check programmatically
  */
 
@@ -203,7 +207,8 @@ extern const Except_T SocketHTTPClient_ResponseTooLarge;
 
 /* ============================================================================
  * Error Codes
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Error codes for async operations
@@ -294,7 +299,8 @@ extern int SocketHTTPClient_error_is_retryable (SocketHTTPClient_Error error);
  *   - Negotiate/SPNEGO (requires GSSAPI/Kerberos integration)
  *   - AWS Signature (v2/v4) - use dedicated AWS SDK
  *   - Hawk, HOBA, Mutual, OAuth 1.0a
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Authentication scheme types
@@ -321,13 +327,15 @@ typedef struct
 
 /* ============================================================================
  * Proxy Configuration (Forward declaration - implemented in Phase 8)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef struct SocketProxy_Config SocketProxy_Config;
 
 /* ============================================================================
  * Client Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP client configuration
@@ -339,12 +347,12 @@ typedef struct
   int allow_http2_cleartext;      /**< Allow h2c upgrade (default: 0) */
 
   /* Connection pooling */
-  int enable_connection_pool;    /**< Enable pooling (default: 1) */
+  int enable_connection_pool;      /**< Enable pooling (default: 1) */
   size_t max_connections_per_host; /**< Per-host limit (default: 6) */
-  size_t max_total_connections;  /**< Total limit (default: 100) */
-  int idle_timeout_ms;           /**< Idle connection timeout */
-  int max_connection_age_ms;     /**< Max connection age (0 = unlimited) */
-  int acquire_timeout_ms;        /**< Timeout waiting for pool slot */
+  size_t max_total_connections;    /**< Total limit (default: 100) */
+  int idle_timeout_ms;             /**< Idle connection timeout */
+  int max_connection_age_ms;       /**< Max connection age (0 = unlimited) */
+  int acquire_timeout_ms;          /**< Timeout waiting for pool slot */
 
   /* Timeouts */
   int connect_timeout_ms; /**< Connection timeout */
@@ -389,12 +397,13 @@ typedef struct
   int retry_on_5xx;              /**< Retry on 5xx responses (default: 0) */
 
   /** Security configuration */
-  int enforce_samesite;          /**< Enforce SameSite attribute (default: 1) */
+  int enforce_samesite; /**< Enforce SameSite attribute (default: 1) */
 } SocketHTTPClient_Config;
 
 /* ============================================================================
  * Opaque Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** HTTP client instance */
 typedef struct SocketHTTPClient *SocketHTTPClient_T;
@@ -410,7 +419,8 @@ typedef struct SocketHTTPClient_CookieJar *SocketHTTPClient_CookieJar_T;
 
 /* ============================================================================
  * Response Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HTTP response (owned by caller)
@@ -427,7 +437,8 @@ typedef struct
 
 /* ============================================================================
  * Client Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPClient_config_defaults - Initialize config with defaults
@@ -458,7 +469,8 @@ extern void SocketHTTPClient_free (SocketHTTPClient_T *client);
 
 /* ============================================================================
  * Simple Synchronous API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPClient_get - Perform GET request
@@ -518,7 +530,8 @@ SocketHTTPClient_Response_free (SocketHTTPClient_Response *response);
 
 /* ============================================================================
  * Custom Request API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPClient_Request_new - Create request builder
@@ -530,8 +543,8 @@ SocketHTTPClient_Response_free (SocketHTTPClient_Response *response);
  * Thread-safe: No
  */
 extern SocketHTTPClient_Request_T
-SocketHTTPClient_Request_new (SocketHTTPClient_T client, SocketHTTP_Method method,
-                              const char *url);
+SocketHTTPClient_Request_new (SocketHTTPClient_T client,
+                              SocketHTTP_Method method, const char *url);
 
 /**
  * SocketHTTPClient_Request_free - Free request builder
@@ -548,7 +561,8 @@ extern void SocketHTTPClient_Request_free (SocketHTTPClient_Request_T *req);
  * Returns: 0 on success, -1 on error
  */
 extern int SocketHTTPClient_Request_header (SocketHTTPClient_Request_T req,
-                                            const char *name, const char *value);
+                                            const char *name,
+                                            const char *value);
 
 /**
  * SocketHTTPClient_Request_body - Set request body
@@ -571,7 +585,8 @@ extern int SocketHTTPClient_Request_body (SocketHTTPClient_Request_T req,
  */
 extern int SocketHTTPClient_Request_body_stream (
     SocketHTTPClient_Request_T req,
-    ssize_t (*read_cb) (void *buf, size_t len, void *userdata), void *userdata);
+    ssize_t (*read_cb) (void *buf, size_t len, void *userdata),
+    void *userdata);
 
 /**
  * SocketHTTPClient_Request_timeout - Set per-request timeout
@@ -603,7 +618,8 @@ SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
 
 /* ============================================================================
  * Asynchronous API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Async completion callback
@@ -618,16 +634,16 @@ typedef void (*SocketHTTPClient_Callback) (SocketHTTPClient_AsyncRequest_T req,
  */
 extern SocketHTTPClient_AsyncRequest_T
 SocketHTTPClient_get_async (SocketHTTPClient_T client, const char *url,
-                            SocketHTTPClient_Callback callback, void *userdata);
+                            SocketHTTPClient_Callback callback,
+                            void *userdata);
 
 /**
  * SocketHTTPClient_post_async - Start async POST
  */
-extern SocketHTTPClient_AsyncRequest_T
-SocketHTTPClient_post_async (SocketHTTPClient_T client, const char *url,
-                             const char *content_type, const void *body,
-                             size_t body_len, SocketHTTPClient_Callback callback,
-                             void *userdata);
+extern SocketHTTPClient_AsyncRequest_T SocketHTTPClient_post_async (
+    SocketHTTPClient_T client, const char *url, const char *content_type,
+    const void *body, size_t body_len, SocketHTTPClient_Callback callback,
+    void *userdata);
 
 /**
  * SocketHTTPClient_Request_async - Start async custom request
@@ -653,11 +669,13 @@ SocketHTTPClient_AsyncRequest_cancel (SocketHTTPClient_AsyncRequest_T req);
  *
  * Call in event loop to process pending async requests.
  */
-extern int SocketHTTPClient_process (SocketHTTPClient_T client, int timeout_ms);
+extern int SocketHTTPClient_process (SocketHTTPClient_T client,
+                                     int timeout_ms);
 
 /* ============================================================================
  * Cookie Jar (RFC 6265)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Cookie SameSite attribute values
@@ -723,8 +741,9 @@ SocketHTTPClient_get_cookie_jar (SocketHTTPClient_T client);
  *
  * Returns: 0 on success, -1 on error
  */
-extern int SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
-                                           const SocketHTTPClient_Cookie *cookie);
+extern int
+SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
+                                const SocketHTTPClient_Cookie *cookie);
 
 /**
  * SocketHTTPClient_CookieJar_get - Get cookie by name
@@ -744,7 +763,8 @@ SocketHTTPClient_CookieJar_get (SocketHTTPClient_CookieJar_T jar,
  * SocketHTTPClient_CookieJar_clear - Clear all cookies
  * @jar: Cookie jar
  */
-extern void SocketHTTPClient_CookieJar_clear (SocketHTTPClient_CookieJar_T jar);
+extern void
+SocketHTTPClient_CookieJar_clear (SocketHTTPClient_CookieJar_T jar);
 
 /**
  * SocketHTTPClient_CookieJar_clear_expired - Clear expired cookies
@@ -775,7 +795,8 @@ extern int SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
 
 /* ============================================================================
  * Client Authentication
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPClient_set_auth - Set default authentication
@@ -787,22 +808,23 @@ extern void SocketHTTPClient_set_auth (SocketHTTPClient_T client,
 
 /* ============================================================================
  * Connection Pool Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Pool statistics
  */
 typedef struct
 {
-  size_t active_connections;      /**< Connections currently in use */
-  size_t idle_connections;        /**< Connections available for reuse */
-  size_t total_requests;          /**< Total requests made */
-  size_t reused_connections;      /**< Times a pooled connection was reused */
-  size_t connections_created;     /**< Total connections created */
-  size_t connections_failed;      /**< Connection attempts that failed */
-  size_t connections_timed_out;   /**< Connections that timed out waiting */
+  size_t active_connections;    /**< Connections currently in use */
+  size_t idle_connections;      /**< Connections available for reuse */
+  size_t total_requests;        /**< Total requests made */
+  size_t reused_connections;    /**< Times a pooled connection was reused */
+  size_t connections_created;   /**< Total connections created */
+  size_t connections_failed;    /**< Connection attempts that failed */
+  size_t connections_timed_out; /**< Connections that timed out waiting */
   size_t stale_connections_removed; /**< Stale/dead connections cleaned up */
-  size_t pool_exhausted_waits;    /**< Times we waited for pool slot */
+  size_t pool_exhausted_waits;      /**< Times we waited for pool slot */
 } SocketHTTPClient_PoolStats;
 
 /**
@@ -821,7 +843,8 @@ extern void SocketHTTPClient_pool_clear (SocketHTTPClient_T client);
 
 /* ============================================================================
  * Error Handling
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPClient_last_error - Get last error code
@@ -839,9 +862,9 @@ SocketHTTPClient_last_error (SocketHTTPClient_T client);
  * Returns: Static string
  * Thread-safe: Yes
  */
-extern const char *SocketHTTPClient_error_string (SocketHTTPClient_Error error);
+extern const char *
+SocketHTTPClient_error_string (SocketHTTPClient_Error error);
 
 /** @} */ /* end of http group */
 
 #endif /* SOCKETHTTPCLIENT_INCLUDED */
-

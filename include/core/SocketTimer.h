@@ -9,9 +9,10 @@
  * @ingroup event_system
  * @brief High-performance timer subsystem integrated with the event loop.
  *
- * Provides high-performance timer functionality integrated with the event loop.
- * Timers are stored in a min-heap for O(log n) insert/delete and O(1) next-timer
- * lookup. Timer callbacks fire automatically during SocketPoll_wait().
+ * Provides high-performance timer functionality integrated with the event
+ * loop. Timers are stored in a min-heap for O(log n) insert/delete and O(1)
+ * next-timer lookup. Timer callbacks fire automatically during
+ * SocketPoll_wait().
  *
  * Features:
  * - One-shot and repeating timers
@@ -46,10 +47,11 @@ struct SocketPoll_T;
 typedef struct SocketPoll_T *SocketPoll_T;
 
 /* Timer callback function type */
-typedef void (*SocketTimerCallback)(void *userdata);
+typedef void (*SocketTimerCallback) (void *userdata);
 
 /* Exception types */
-extern const Except_T SocketTimer_Failed; /**< General timer operation failure */
+extern const Except_T
+    SocketTimer_Failed; /**< General timer operation failure */
 
 /**
  * SocketTimer_add - Add a one-shot timer
@@ -79,7 +81,8 @@ extern T SocketTimer_add (SocketPoll_T poll, int64_t delay_ms,
  * occurs after interval_ms milliseconds. Use SocketTimer_cancel() to stop.
  */
 extern T SocketTimer_add_repeating (SocketPoll_T poll, int64_t interval_ms,
-                                    SocketTimerCallback callback, void *userdata);
+                                    SocketTimerCallback callback,
+                                    void *userdata);
 
 /**
  * SocketTimer_cancel - Cancel a pending timer

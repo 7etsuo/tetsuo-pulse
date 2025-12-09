@@ -17,6 +17,7 @@
 #include <time.h>
 
 #include "pool/SocketPool-private.h"
+#include "socket/SocketReconnect.h"
 /* SocketUtil.h included via SocketPool-private.h */
 
 /* Override default log component (SocketUtil.h sets "Socket") */

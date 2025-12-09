@@ -38,7 +38,8 @@ extern const Except_T SocketRetry_Failed;
 
 /* ============================================================================
  * Retry Policy Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketRetry_Policy - Retry behavior configuration
@@ -47,11 +48,11 @@ extern const Except_T SocketRetry_Failed;
  */
 typedef struct SocketRetry_Policy
 {
-  int max_attempts;       /**< Maximum retry attempts (default: 3) */
-  int initial_delay_ms;   /**< Initial backoff delay (default: 100ms) */
-  int max_delay_ms;       /**< Maximum backoff delay cap (default: 30000ms) */
-  double multiplier;      /**< Backoff multiplier per attempt (default: 2.0) */
-  double jitter;          /**< Jitter factor 0.0-1.0 (default: 0.25) */
+  int max_attempts;     /**< Maximum retry attempts (default: 3) */
+  int initial_delay_ms; /**< Initial backoff delay (default: 100ms) */
+  int max_delay_ms;     /**< Maximum backoff delay cap (default: 30000ms) */
+  double multiplier;    /**< Backoff multiplier per attempt (default: 2.0) */
+  double jitter;        /**< Jitter factor 0.0-1.0 (default: 0.25) */
 } SocketRetry_Policy;
 
 /* Default policy values - can be overridden at compile time */
@@ -81,7 +82,8 @@ typedef struct SocketRetry_Policy
 
 /* ============================================================================
  * Callback Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketRetry_Operation - Operation to retry
@@ -122,7 +124,8 @@ typedef int (*SocketRetry_ShouldRetry) (int error, int attempt, void *context);
 
 /* ============================================================================
  * Retry Statistics
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketRetry_Stats - Statistics from retry execution
@@ -137,15 +140,16 @@ typedef struct SocketRetry_Stats
 
 /* ============================================================================
  * Context Creation and Destruction
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketRetry_new - Create a new retry context
  * @policy: Retry policy (NULL for defaults)
  *
  * Returns: New retry context
- * Raises: SocketRetry_Failed on allocation failure or invalid policy parameters
- * Thread-safe: Yes (creates new instance)
+ * Raises: SocketRetry_Failed on allocation failure or invalid policy
+ * parameters Thread-safe: Yes (creates new instance)
  */
 extern T SocketRetry_new (const SocketRetry_Policy *policy);
 
@@ -159,7 +163,8 @@ extern void SocketRetry_free (T *retry);
 
 /* ============================================================================
  * Retry Execution
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketRetry_execute - Execute operation with retries
@@ -196,12 +201,14 @@ extern int SocketRetry_execute (T retry, SocketRetry_Operation operation,
  * Convenience function that retries all non-zero returns.
  * Equivalent to SocketRetry_execute(retry, op, NULL, ctx).
  */
-extern int SocketRetry_execute_simple (T retry, SocketRetry_Operation operation,
+extern int SocketRetry_execute_simple (T retry,
+                                       SocketRetry_Operation operation,
                                        void *context);
 
 /* ============================================================================
  * Statistics and State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketRetry_get_stats - Get statistics from last execution
@@ -246,7 +253,8 @@ extern void SocketRetry_set_policy (T retry, const SocketRetry_Policy *policy);
 
 /* ============================================================================
  * Policy Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketRetry_policy_defaults - Initialize policy with defaults

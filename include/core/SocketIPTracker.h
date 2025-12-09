@@ -28,7 +28,8 @@
  *   Arena_T arena = Arena_new();
  *   SocketIPTracker_T tracker = SocketIPTracker_new(arena, 10);
  *   // Max 10 connections per IP
- *   SocketIPTracker_setmaxunique(tracker, 5000); // Optional: limit unique IPs to 5000
+ *   SocketIPTracker_setmaxunique(tracker, 5000); // Optional: limit unique IPs
+ * to 5000
  *
  *   const char *client_ip = Socket_getpeeraddr(client);
  *   if (SocketIPTracker_track(tracker, client_ip)) {
@@ -49,14 +50,15 @@
 typedef struct T *T;
 
 /* Exception types */
-extern const Except_T SocketIPTracker_Failed; /**< IP tracker operation failure */
+extern const Except_T
+    SocketIPTracker_Failed; /**< IP tracker operation failure */
 
 /**
  * SocketIPTracker_new - Create a new IP connection tracker
  * @arena: Arena for memory allocation (NULL to use malloc)
  * @max_per_ip: Maximum connections allowed per IP (0 = unlimited)
- * Note: Defaults max_unique_ips to SOCKET_MAX_CONNECTIONS to prevent memory exhaustion.
- *        Adjustable via SocketIPTracker_setmaxunique().
+ * Note: Defaults max_unique_ips to SOCKET_MAX_CONNECTIONS to prevent memory
+ * exhaustion. Adjustable via SocketIPTracker_setmaxunique().
  *
  * Returns: New IP tracker instance
  * Raises: SocketIPTracker_Failed on allocation failure
@@ -89,8 +91,7 @@ extern void SocketIPTracker_free (T *tracker);
  */
 extern int SocketIPTracker_track (T tracker, const char *ip);
 
-/**
- * SocketIPTracker_release - Release a connection from IP
+/** SocketIPTracker_release - Release a connection from IP
  * @tracker: IP tracker instance
  * @ip: IP address string (IPv4 or IPv6)
  *
