@@ -8,11 +8,13 @@
  * - SocketTLS (tls): TLS/SSL socket integration with TLS 1.3 support
  * - SocketTLSContext (tls-context): TLS context management and certificates
  * - SocketSYNProtect (syn-protect): SYN flood protection
+ * - SocketDTLS (dtls): DTLS for UDP sockets with cookie protection
  * - SocketIPTracker (ip-tracker): IP-based rate limiting and filtering
  *
  * @see @ref core_io for socket primitives that can be secured.
  * @see @ref http for TLS integration in HTTP clients/servers.
  * @see SocketTLS_enable() for enabling TLS on sockets.
+ * @see SocketDTLS_enable() for DTLS on UDP sockets.
  * @see SocketSYNProtect_T for SYN flood protection.
  * @{
  */
@@ -232,7 +234,7 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 
 /* TLS socket operations */
 /**
- * @brief SocketTLS_enable - Enable TLS on a socket using the provided context
+ * @brief Enable TLS on a socket using the provided context
  * @ingroup security
  * @param socket The socket instance to enable TLS on
  * @param ctx The TLS context to use for this connection
@@ -255,7 +257,7 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 extern void SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx);
 
 /**
- * @brief SocketTLS_set_hostname - Set SNI hostname for client TLS connections
+ * @brief Set SNI hostname for client TLS connections
  * @ingroup security
  * @param socket The socket instance
  * @param hostname Null-terminated hostname string for SNI and verification
@@ -267,12 +269,12 @@ extern void SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx);
  *
  * @return void
  * @throws SocketTLS_Failed if TLS not enabled, invalid hostname, or OpenSSL
- * error Thread-safe: No - modifies socket and SSL state
+ * @threadsafe No - modifies socket and SSL state
  */
 extern void SocketTLS_set_hostname (Socket_T socket, const char *hostname);
 
 /**
- * @brief SocketTLS_handshake - Perform non-blocking TLS handshake
+ * @brief Perform non-blocking TLS handshake
  * @ingroup security
  * @param socket The socket instance with TLS enabled
  *
@@ -294,7 +296,7 @@ extern void SocketTLS_set_hostname (Socket_T socket, const char *hostname);
 extern TLSHandshakeState SocketTLS_handshake (Socket_T socket);
 
 /**
- * @brief SocketTLS_handshake_loop - Complete handshake with timeout (non-blocking)
+ * @brief Complete handshake with timeout (non-blocking)
  * @ingroup security
  * @param socket The socket instance with TLS enabled
  * @param timeout_ms Maximum time to wait for handshake completion (0 for
@@ -314,7 +316,7 @@ extern TLSHandshakeState SocketTLS_handshake_loop (Socket_T socket,
                                                    int timeout_ms);
 
 /**
- * @brief SocketTLS_handshake_auto - Complete handshake using socket's timeout config
+ * @brief Complete handshake using socket's timeout config
  * @ingroup security
  * @param socket The socket instance with TLS enabled
  *
@@ -333,7 +335,7 @@ extern TLSHandshakeState SocketTLS_handshake_loop (Socket_T socket,
 extern TLSHandshakeState SocketTLS_handshake_auto (Socket_T socket);
 
 /**
- * @brief SocketTLS_shutdown - Perform graceful TLS connection shutdown
+ * @brief Perform graceful TLS connection shutdown
  * @ingroup security
  * @param socket The socket instance with TLS enabled
  *
@@ -349,7 +351,7 @@ extern void SocketTLS_shutdown (Socket_T socket);
 
 /* TLS I/O operations */
 /**
- * @brief SocketTLS_send - Send data over TLS-encrypted connection
+ * @brief Send data over TLS-encrypted connection
  * @ingroup security
  * @param socket The socket instance with completed TLS handshake
  * @param buf Buffer containing data to send
@@ -368,7 +370,7 @@ extern void SocketTLS_shutdown (Socket_T socket);
 extern ssize_t SocketTLS_send (Socket_T socket, const void *buf, size_t len);
 
 /**
- * @brief SocketTLS_recv - Receive data from TLS-encrypted connection
+ * @brief Receive data from TLS-encrypted connection
  * @ingroup security
  * @param socket The socket instance with completed TLS handshake
  * @param buf Buffer to receive data into
@@ -389,7 +391,7 @@ extern ssize_t SocketTLS_recv (Socket_T socket, void *buf, size_t len);
 
 /* TLS information */
 /**
- * @brief SocketTLS_get_cipher - Get negotiated cipher suite name
+ * @brief Get negotiated cipher suite name
  * @ingroup security
  * @param socket The socket instance with completed handshake
  *
@@ -398,12 +400,16 @@ extern ssize_t SocketTLS_recv (Socket_T socket, void *buf, size_t len);
  *
  * @return Const string with cipher name, or NULL if unavailable
  * @throws None
- * @threadsafe Yes - reads immutable post-handshake state
+ * @threadsafe Yes - reads immutable post-handshake state - reads immutable post-handshake state
+ *
+ * @see SocketTLS_get_version() for protocol version.
+ * @see SocketTLSContext_set_cipher_list() for configuring ciphers.
+ * @see docs/SECURITY_GUIDE.md for cipher security recommendations.
  */
 extern const char *SocketTLS_get_cipher (Socket_T socket);
 
 /**
- * @brief SocketTLS_get_version - Get negotiated TLS protocol version
+ * @brief Get negotiated TLS protocol version
  * @ingroup security
  * @param socket The socket instance with completed handshake
  *
@@ -411,12 +417,16 @@ extern const char *SocketTLS_get_cipher (Socket_T socket);
  *
  * @return Const string with version, or NULL if unavailable
  * @throws None
- * @threadsafe Yes
+ * @threadsafe Yes - reads immutable post-handshake state
+ *
+ * @see SocketTLS_get_cipher() for negotiated cipher suite.
+ * @see SocketTLSContext_set_min_protocol() for minimum version.
+ * @see SocketTLSContext_set_max_protocol() for maximum version.
  */
 extern const char *SocketTLS_get_version (Socket_T socket);
 
 /**
- * @brief SocketTLS_get_verify_result - Get peer certificate verification result
+ * @brief Get peer certificate verification result
  * @ingroup security
  * @param socket The socket instance with completed handshake
  *
@@ -426,14 +436,19 @@ extern const char *SocketTLS_get_version (Socket_T socket);
  *
  * @return long verify result code (X509_V_OK = 0 on success)
  * @throws None (caller checks and may raise SocketTLS_VerifyFailed)
- * @threadsafe Yes (read-only post-handshake)
+ * @threadsafe Yes - reads immutable post-handshake state (read-only post-handshake)
+ *
+ * @see SocketTLS_VerifyFailed exception for handling verification failures.
+ * @see SocketTLS_get_verify_error_string() for detailed error description.
+ * @see SocketTLSContext_set_verify_mode() to configure verification policy.
+ * @see X509_verify_cert_error_string() for OpenSSL error code meanings.
  *
  * Requires: tls_enabled and tls_handshake_done
  */
 extern long SocketTLS_get_verify_result (Socket_T socket);
 
 /**
- * @brief SocketTLS_get_verify_error_string - Get detailed verification error string
+ * @brief Get detailed verification error string
  * @ingroup security
  * @param socket TLS socket
  * @param buf Output buffer for error description
@@ -447,13 +462,17 @@ extern long SocketTLS_get_verify_result (Socket_T socket);
  * @throws None
  * @threadsafe No (ERR queue shared)
  *
+ * @see SocketTLS_get_verify_result() for the numeric error code.
+ * @see SocketTLS_VerifyFailed for when verification fails.
+ * @see ERR_get_error() for accessing OpenSSL error queue directly.
+ *
  * Requires: tls_handshake_done
  */
 extern const char *SocketTLS_get_verify_error_string (Socket_T socket,
                                                       char *buf, size_t size);
 
 /**
- * @brief SocketTLS_is_session_reused - Check if TLS session was resumed
+ * @brief Check if TLS session was resumed
  * @ingroup security
  * @param socket The socket instance with completed handshake
  *
@@ -462,12 +481,17 @@ extern const char *SocketTLS_get_verify_error_string (Socket_T socket,
  *
  * @return 1 if reused, 0 if full handshake, -1 if unavailable
  * @throws None
- * @threadsafe Yes
+ * @threadsafe Yes - reads immutable post-handshake state
+ *
+ * @see SocketTLSContext_enable_session_cache() for enabling session caching.
+ * @see SocketTLSContext_enable_session_tickets() for ticket-based resumption.
+ * @see SocketTLSContext_get_cache_stats() for monitoring cache performance.
+ * @see docs/SECURITY_GUIDE.md for session resumption security considerations.
  */
 extern int SocketTLS_is_session_reused (Socket_T socket);
 
 /**
- * @brief SocketTLS_get_alpn_selected - Get the negotiated ALPN protocol
+ * @brief Get the negotiated ALPN protocol
  * @ingroup security
  * @param socket Socket instance with completed handshake
  *
@@ -478,7 +502,11 @@ extern int SocketTLS_is_session_reused (Socket_T socket);
  * @return Negotiated protocol string, or NULL if none negotiated or
  * unavailable
  * @throws None
- * @threadsafe Yes - reads immutable post-handshake state
+ * @threadsafe Yes - reads immutable post-handshake state - reads immutable post-handshake state
+ *
+ * @see SocketTLSContext_set_alpn_protos() for advertising supported protocols.
+ * @see SocketTLSContext_set_alpn_callback() for custom protocol selection.
+ * @see @ref http for examples like "h2" (HTTP/2) and "http/1.1".
  */
 extern const char *SocketTLS_get_alpn_selected (Socket_T socket);
 

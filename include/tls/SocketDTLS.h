@@ -4,6 +4,7 @@
 /**
  * @file SocketDTLS.h
  * @ingroup security
+ * @addtogroup security
  * @brief Datagram TLS (DTLS) protocol implementation for UDP sockets.
  *
  * Enables secure, encrypted communication over UDP using DTLS 1.2+, providing
@@ -170,7 +171,6 @@ typedef enum
  * The socket should be connected (clients) or bound (servers) prior to calling.
  * Associates an SSL object with the socket and initializes DTLS-specific state.
  *
- * @return void
  * @throws SocketDTLS_Failed if enabling fails (e.g., already enabled, invalid socket or context).
  * @threadsafe No - directly modifies socket internal state.
  *
@@ -195,7 +195,6 @@ extern void SocketDTLS_enable (SocketDgram_T socket, SocketDTLSContext_T ctx);
  * this via @ref SocketDgram_connect() before enabling DTLS. Servers use this
  * to target responses to specific clients on unbound sockets.
  *
- * @return void
  * @throws SocketDTLS_Failed on invalid address format or resolution failure.
  * @threadsafe No - updates socket DTLS state.
  *
@@ -210,16 +209,15 @@ extern void SocketDTLS_set_peer (SocketDgram_T socket, const char *host,
                                  int port);
 
 /**
- * @brief SocketDTLS_set_hostname - Set SNI hostname for client DTLS connections
+ * @brief Set SNI hostname for client DTLS connections
  * @ingroup security
  * @param socket The datagram socket instance
- * @hostname Null-terminated hostname string for SNI and verification
+ * @param hostname Null-terminated hostname string for SNI and verification
  *
  * Sets the Server Name Indication (SNI) hostname for the DTLS connection.
  * Required for virtual hosting and enables hostname verification. Should be
  * called after SocketDTLS_enable() but before SocketDTLS_handshake().
  *
- * @return void
  * @throws SocketDTLS_Failed if DTLS not enabled or invalid hostname
  * @threadsafe No - modifies socket and SSL state
  */
@@ -227,15 +225,14 @@ extern void SocketDTLS_set_hostname (SocketDgram_T socket,
                                      const char *hostname);
 
 /**
- * @brief SocketDTLS_set_mtu - Set link MTU for this connection
+ * @brief Set link MTU for this connection
  * @ingroup security
  * @param socket The datagram socket instance
- * @mtu Maximum Transmission Unit in bytes
+ * @param mtu Maximum Transmission Unit in bytes
  *
  * Overrides the context-level MTU for this specific connection.
  * Use for path-specific MTU optimization.
  *
- * @return void
  * @throws SocketDTLS_Failed if MTU invalid or DTLS not enabled
  * @threadsafe No
  */
@@ -247,7 +244,7 @@ extern void SocketDTLS_set_mtu (SocketDgram_T socket, size_t mtu);
  */
 
 /**
- * @brief SocketDTLS_handshake - Perform non-blocking DTLS handshake step
+ * @brief Perform non-blocking DTLS handshake step
  * @ingroup security
  * @param socket The datagram socket instance with DTLS enabled
  *
@@ -265,7 +262,7 @@ extern void SocketDTLS_set_mtu (SocketDgram_T socket, size_t mtu);
 extern DTLSHandshakeState SocketDTLS_handshake (SocketDgram_T socket);
 
 /**
- * @brief SocketDTLS_handshake_loop - Complete handshake with timeout (blocking helper)
+ * @brief Complete handshake with timeout (blocking helper)
  * @ingroup security
  * @param socket The datagram socket instance with DTLS enabled
  * @param timeout_ms Maximum time to wait for handshake (0 for non-blocking single step)
@@ -281,7 +278,7 @@ extern DTLSHandshakeState SocketDTLS_handshake_loop (SocketDgram_T socket,
                                                      int timeout_ms);
 
 /**
- * @brief SocketDTLS_listen - Server Wait for incoming DTLS connection
+ * @brief Server Wait for incoming DTLS connection
  * @ingroup security
  * @param socket Bound datagram socket with DTLS enabled
  *
@@ -301,11 +298,11 @@ extern DTLSHandshakeState SocketDTLS_listen (SocketDgram_T socket);
  */
 
 /**
- * @brief SocketDTLS_send - Send data over DTLS-encrypted connection
+ * @brief Send data over DTLS-encrypted connection
  * @ingroup security
  * @param socket The datagram socket instance with completed DTLS handshake
- * @buf Buffer containing data to send
- * @len Number of bytes to send from buf
+ * @param buf Buffer containing data to send
+ * @param len Number of bytes to send from buf
  *
  * Sends data using SSL_write(). For non-blocking sockets, returns 0 and sets
  * errno=EAGAIN if would block. Handshake must be complete before calling.
@@ -322,11 +319,11 @@ extern ssize_t SocketDTLS_send (SocketDgram_T socket, const void *buf,
                                 size_t len);
 
 /**
- * @brief SocketDTLS_recv - Receive data from DTLS-encrypted connection
+ * @brief Receive data from DTLS-encrypted connection
  * @ingroup security
  * @param socket The datagram socket instance with completed DTLS handshake
- * @buf Buffer to receive data into
- * @len Maximum number of bytes to receive
+ * @param buf Buffer to receive data into
+ * @param len Maximum number of bytes to receive
  *
  * Receives data using SSL_read(). For non-blocking sockets, returns 0 and
  * sets errno=EAGAIN if would block.
@@ -341,13 +338,13 @@ extern ssize_t SocketDTLS_send (SocketDgram_T socket, const void *buf,
 extern ssize_t SocketDTLS_recv (SocketDgram_T socket, void *buf, size_t len);
 
 /**
- * @brief SocketDTLS_sendto - Send DTLS datagram to specific address
+ * @brief Send DTLS datagram to specific address
  * @ingroup security
  * @param socket The datagram socket instance with DTLS enabled
- * @buf Data to send
- * @len Length of data
- * @host Destination IP address or hostname
- * @port Destination port
+ * @param buf Data to send
+ * @param len Length of data
+ * @param host Destination IP address or hostname
+ * @param port Destination port
  *
  * For unconnected DTLS sockets (e.g., server responding to multiple clients).
  * Must have completed handshake with this peer.
@@ -360,14 +357,14 @@ extern ssize_t SocketDTLS_sendto (SocketDgram_T socket, const void *buf,
                                   size_t len, const char *host, int port);
 
 /**
- * @brief SocketDTLS_recvfrom - Receive DTLS datagram with sender address
+ * @brief Receive DTLS datagram with sender address
  * @ingroup security
  * @param socket The datagram socket instance with DTLS enabled
- * @buf Buffer for received data
- * @len Buffer size
- * @host Output buffer for sender IP address (>= 46 bytes for IPv6)
- * @host_len Size of host buffer
- * @port Output for sender port
+ * @param buf Buffer for received data
+ * @param len Buffer size
+ * @param host Output buffer for sender IP address (>= 46 bytes for IPv6)
+ * @param host_len Size of host buffer
+ * @param port Output for sender port
  *
  * Receives DTLS datagram and provides sender address info.
  *
@@ -385,7 +382,7 @@ extern ssize_t SocketDTLS_recvfrom (SocketDgram_T socket, void *buf,
  */
 
 /**
- * @brief SocketDTLS_get_cipher - Get negotiated cipher suite name
+ * @brief Get negotiated cipher suite name
  * @ingroup security
  * @param socket The datagram socket instance with completed handshake
  *
@@ -397,7 +394,7 @@ extern ssize_t SocketDTLS_recvfrom (SocketDgram_T socket, void *buf,
 extern const char *SocketDTLS_get_cipher (SocketDgram_T socket);
 
 /**
- * @brief SocketDTLS_get_version - Get negotiated DTLS protocol version
+ * @brief Get negotiated DTLS protocol version
  * @ingroup security
  * @param socket The datagram socket instance with completed handshake
  *
@@ -409,7 +406,7 @@ extern const char *SocketDTLS_get_cipher (SocketDgram_T socket);
 extern const char *SocketDTLS_get_version (SocketDgram_T socket);
 
 /**
- * @brief SocketDTLS_get_verify_result - Get peer certificate verification result
+ * @brief Get peer certificate verification result
  * @ingroup security
  * @param socket The datagram socket instance with completed handshake
  *
@@ -422,7 +419,7 @@ extern const char *SocketDTLS_get_version (SocketDgram_T socket);
 extern long SocketDTLS_get_verify_result (SocketDgram_T socket);
 
 /**
- * @brief SocketDTLS_is_session_reused - Check if DTLS session was resumed
+ * @brief Check if DTLS session was resumed
  * @ingroup security
  * @param socket The datagram socket instance with completed handshake
  *
@@ -435,7 +432,7 @@ extern long SocketDTLS_get_verify_result (SocketDgram_T socket);
 extern int SocketDTLS_is_session_reused (SocketDgram_T socket);
 
 /**
- * @brief SocketDTLS_get_alpn_selected - Get the negotiated ALPN protocol
+ * @brief Get the negotiated ALPN protocol
  * @ingroup security
  * @param socket Datagram socket instance with completed handshake
  *
@@ -447,7 +444,7 @@ extern int SocketDTLS_is_session_reused (SocketDgram_T socket);
 extern const char *SocketDTLS_get_alpn_selected (SocketDgram_T socket);
 
 /**
- * @brief SocketDTLS_get_mtu - Get current effective MTU
+ * @brief Get current effective MTU
  * @ingroup security
  * @param socket The datagram socket instance
  *
@@ -464,21 +461,20 @@ extern size_t SocketDTLS_get_mtu (SocketDgram_T socket);
  */
 
 /**
- * @brief SocketDTLS_shutdown - Perform graceful DTLS connection shutdown
+ * @brief Perform graceful DTLS connection shutdown
  * @ingroup security
  * @param socket The datagram socket instance with DTLS enabled
  *
  * Initiates DTLS shutdown (close_notify alert). May need multiple calls
  * for full shutdown in non-blocking mode. Call before closing socket.
  *
- * @return void
  * @throws SocketDTLS_ShutdownFailed on error
  * @threadsafe No - modifies SSL state
  */
 extern void SocketDTLS_shutdown (SocketDgram_T socket);
 
 /**
- * @brief SocketDTLS_is_shutdown - Check if DTLS shutdown completed
+ * @brief Check if DTLS shutdown completed
  * @ingroup security
  * @param socket The datagram socket instance
  *
@@ -494,7 +490,7 @@ extern int SocketDTLS_is_shutdown (SocketDgram_T socket);
  */
 
 /**
- * @brief SocketDTLS_is_enabled - Check if DTLS is enabled on socket
+ * @brief Check if DTLS is enabled on socket
  * @ingroup security
  * @param socket The datagram socket instance
  *
@@ -504,7 +500,7 @@ extern int SocketDTLS_is_shutdown (SocketDgram_T socket);
 extern int SocketDTLS_is_enabled (SocketDgram_T socket);
 
 /**
- * @brief SocketDTLS_is_handshake_done - Check if DTLS handshake is complete
+ * @brief Check if DTLS handshake is complete
  * @ingroup security
  * @param socket The datagram socket instance
  *
@@ -514,7 +510,7 @@ extern int SocketDTLS_is_enabled (SocketDgram_T socket);
 extern int SocketDTLS_is_handshake_done (SocketDgram_T socket);
 
 /**
- * @brief SocketDTLS_get_last_state - Get last handshake state
+ * @brief Get last handshake state
  * @ingroup security
  * @param socket The datagram socket instance
  *

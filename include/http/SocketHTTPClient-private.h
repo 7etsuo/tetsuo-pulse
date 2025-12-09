@@ -395,17 +395,139 @@ extern HTTPPool *httpclient_pool_new (Arena_T arena,
  * @see Arena_dispose() if pool owns the arena.
  */
 extern void httpclient_pool_free (HTTPPool *pool);
+/**
+ * @brief Get or create a pool entry for the specified host:port and security.
+ * @ingroup http
+ *
+ * Searches the pool's hash table for an existing idle entry matching the key.
+ * If found, returns it marked as in_use. If not, and under limits, creates a new entry.
+ * Does not establish the connection; that's done by httpclient_connect().
+ *
+ * @param pool The HTTP connection pool.
+ * @param host The target hostname (copied).
+ * @param port The target port.
+ * @param is_secure 1 if TLS connection required, 0 for plain HTTP.
+ * @return HTTPPoolEntry* for the connection slot, or raises exception.
+ * @throws SocketHTTPClient_Failed if max per host/total reached or allocation fails.
+ * @threadsafe Yes - acquires pool mutex.
+ * @see httpclient_pool_release() to return after use.
+ * @see httpclient_connect() to connect the entry.
+ * @see httpclient_pool_new() for pool creation.
+ */
 extern HTTPPoolEntry *httpclient_pool_get (HTTPPool *pool, const char *host,
                                            int port, int is_secure);
+/**
+ * @brief Release a pool entry back to available state.
+ * @ingroup http
+ *
+ * Marks the entry as idle (in_use = 0), updates last_used timestamp.
+ * Does not close the connection; it's kept for reuse.
+ * The entry remains in the hash table until idle timeout or explicit close.
+ *
+ * @param pool The HTTP pool.
+ * @param entry The entry to release.
+ * @throws None - failures logged.
+ * @threadsafe Yes - mutex protected.
+ * @see httpclient_pool_get() to acquire entry.
+ * @see httpclient_pool_close() to close instead.
+ * @see httpclient_pool_cleanup_idle() for idle cleanup.
+ */
 extern void httpclient_pool_release (HTTPPool *pool, HTTPPoolEntry *entry);
+/**
+ * @brief Close and remove a pool entry from the pool.
+ * @ingroup http
+ *
+ * Closes the underlying socket connection, marks entry as closed, removes from hash table and lists.
+ * Updates pool stats for failed connections.
+ * Used when connection error or explicit shutdown needed.
+ *
+ * @param pool The HTTP pool.
+ * @param entry The entry to close.
+ * @throws None - socket close errors logged, not raised.
+ * @threadsafe Conditional - hold mutex if concurrent.
+ * @see httpclient_pool_release() for normal release without close.
+ * @see Socket_close() for low-level close.
+ */
 extern void httpclient_pool_close (HTTPPool *pool, HTTPPoolEntry *entry);
+/**
+ * @brief Clean up idle connections that have exceeded timeout.
+ * @ingroup http
+ *
+ * Scans all connections in the pool, closes those idle longer than configured timeout.
+ * Removes closed entries from hash and lists, updates stats.
+ * Called periodically or on pool access.
+ *
+ * @param pool The HTTP pool to clean.
+ * @throws None - close failures logged.
+ * @threadsafe Yes - acquires mutex.
+ * @see SocketHTTPClient_Config.idle_timeout_ms for timeout config.
+ * @see SocketPool_drain() for pool drain during shutdown.
+ */
 extern void httpclient_pool_cleanup_idle (HTTPPool *pool);
 
 /* Connection management */
+/**
+ * @brief Establish connection to target URI, handling proxy and TLS.
+ * @ingroup http
+ *
+ * Resolves host via DNS, connects socket, applies TLS if secure or proxy TLS.
+ * Performs HTTP CONNECT to proxy if configured in client config.
+ * Negotiates HTTP version (1.1 or 2) via ALPN or upgrade.
+ * Initializes protocol state (parser or conn) in the pool entry.
+ *
+ * @param client The HTTP client instance for config, pool, DNS, TLS.
+ * @param uri The target URI to connect to (host/port from URI).
+ * @return HTTPPoolEntry with connected and initialized protocol state.
+ * @throws SocketHTTPClient_DNSFailed on resolve fail.
+ * @throws SocketHTTPClient_ConnectFailed on socket connect error.
+ * @throws SocketHTTPClient_TLSFailed on handshake fail.
+ * @throws SocketHTTPClient_ProtocolError on HTTP negotiation fail.
+ * @threadsafe Conditional - client mutex held.
+ * @see SocketDNS_resolve_sync() for DNS.
+ * @see SocketTLS_handshake_auto() for TLS.
+ * @see SocketHTTPClient_Config for proxy configuration options.
+ */
 extern HTTPPoolEntry *httpclient_connect (SocketHTTPClient_T client,
                                           const SocketHTTP_URI *uri);
+/**
+ * @brief Send HTTP request over the connection entry.
+ * @ingroup http
+ *
+ * Serializes request to outbuf, sends via socket (TLS if secure).
+ * Handles HTTP/1.1 or HTTP/2 send (headers frame + data stream).
+ * Adds auth headers if needed, cookies from jar.
+ * Updates pool stats for requests.
+ *
+ * @param conn The pool entry with socket and proto state.
+ * @param req The request to send (method, URI, headers, body).
+ * @return 0 on success, -1 on send error (sets error in client).
+ * @throws SocketHTTPClient_Failed on serialization or send fail.
+ * @threadsafe No - conn must be exclusively held.
+ * @see SocketHTTP1_serialize_request() for HTTP/1.1.
+ * @see SocketHTTP2_Stream_send_request() for HTTP/2.
+ * @see httpclient_receive_response() to receive reply.
+ */
 extern int httpclient_send_request (HTTPPoolEntry *conn,
                                     SocketHTTPClient_Request_T req);
+/**
+ * @brief Receive and parse HTTP response from connection.
+ * @ingroup http
+ *
+ * Reads from inbuf/socket, parses headers/body based on proto (HTTP/1.1 or 2).
+ * Handles chunked, content-length, trailers.
+ * Stores in response struct, allocates from arena.
+ * Updates last_used time, checks keep-alive.
+ *
+ * @param conn The pool entry with socket and proto state.
+ * @param response Output response to fill.
+ * @param arena Arena for response allocations (headers, body).
+ * @return 0 on success, -1 on parse or read error.
+ * @throws SocketHTTPClient_Failed on parse error, SocketHTTP_ParseError propagated.
+ * @threadsafe No - conn exclusive.
+ * @see SocketHTTP1_Parser_execute() for HTTP/1.1 parse.
+ * @see SocketHTTP2_Conn_process() for HTTP/2.
+ * @see SocketHTTPClient_Response for fields.
+ */
 extern int httpclient_receive_response (HTTPPoolEntry *conn,
                                         SocketHTTPClient_Response *response,
                                         Arena_T arena);
@@ -450,9 +572,55 @@ extern int httpclient_receive_response (HTTPPoolEntry *conn,
 #define HTTPCLIENT_DIGEST_A_BUFFER_SIZE 512
 
 /* Authentication helpers (uses SocketCrypto) */
+/**
+ * @brief Generate Basic authentication header value.
+ * @ingroup http
+ *
+ * Encodes "username:password" in Base64, formats as "Basic <base64>".
+ * No validation on inputs; assumes valid UTF8.
+ *
+ * @param username The username string.
+ * @param password The password string.
+ * @param output Buffer for the header value string.
+ * @param output_size Size of output buffer (recommended 512).
+ * @return 0 on success, -1 if buffer too small or null inputs.
+ * @threadsafe Yes - stateless.
+ * @see SocketCrypto_base64_encode() underlying.
+ * @see docs/SECURITY.md for auth security notes.
+ */
 extern int httpclient_auth_basic_header (const char *username,
                                          const char *password, char *output,
                                          size_t output_size);
+/**
+ * @brief Compute Digest authentication response value.
+ * @ingroup http
+ *
+ * Implements RFC 2617 Digest auth response calculation.
+ * Supports qop="auth", MD5 or SHA-256 algorithm.
+ * Computes HA1 = H({username:realm:password}), HA2 = H({method:uri}), 
+ * response = H(HA1:nonce:nc:cnonce:qop:HA2).
+ * Outputs hex digest to buffer.
+ *
+ * @param username The username.
+ * @param password The password (not stored after call).
+ * @param realm The realm from challenge.
+ * @param nonce The server nonce.
+ * @param uri The request URI without query.
+ * @param method The HTTP method name (e.g., "GET").
+ * @param qop The qop value ("auth").
+ * @param nc The nonce count string (e.g., "00000001").
+ * @param cnonce The client nonce string.
+ * @param use_sha256 1 for SHA-256, 0 for MD5.
+ * @param output Buffer for hex response string.
+ * @param output_size Size of output (33 for MD5, 65 for SHA256 + null).
+ * @return 0 on success, -1 on invalid params or hash error.
+ * @threadsafe Yes - stateless.
+ * @throws None - returns -1.
+ * @see SocketCrypto_md5(), SocketCrypto_sha256().
+ * @see httpclient_auth_digest_challenge() for full handling.
+ * @see docs/SECURITY.md for auth details.
+ * @note Password zeroed after use? No, but sensitive; use secure memory if possible.
+ */
 extern int httpclient_auth_digest_response (
     const char *username, const char *password, const char *realm,
     const char *nonce, const char *uri, const char *method, const char *qop,
@@ -461,21 +629,28 @@ extern int httpclient_auth_digest_response (
 
 /**
  * @brief Handle Digest authentication challenge from WWW-Authenticate header and generate Authorization response.
- * @param www_authenticate WWW-Authenticate header value from server 401 response.
  * @ingroup http
- * @username: User's username
- * @password: User's password
- * @method: HTTP method (GET, POST, etc.)
- * @uri: Request URI
- * @nc_value: Nonce count (e.g., "00000001")
- * @output: Output buffer for Authorization header value
- * @output_size: Size of output buffer
  *
- * Returns: 0 on success, -1 on error
+ * Parses the WWW-Authenticate header for Digest params (realm, nonce, qop, etc.).
+ * Generates client nonce, computes response using httpclient_auth_digest_response().
+ * Formats Authorization: Digest ... header value.
+ * Handles MD5 or SHA256 based on algorithm param.
+ * NOTE: Supports only qop=auth; not auth-int.
  *
- * Parses a Digest challenge and generates the appropriate Authorization
- * header value. Handles both MD5 and SHA-256 algorithms, qop=auth.
- * NOTE: qop=auth-int is NOT supported.
+ * @param www_authenticate The WWW-Authenticate header value string.
+ * @param username User's username.
+ * @param password User's password (sensitive).
+ * @param method HTTP method (e.g., "GET").
+ * @param uri Request URI (without host).
+ * @param nc_value Nonce count string like "00000001".
+ * @param output Buffer for Authorization header value.
+ * @param output_size Size of output buffer (recommended 1024).
+ * @return 0 on success, -1 on parse or computation error.
+ * @threadsafe Yes - stateless.
+ * @throws None - returns -1 on failure.
+ * @see httpclient_auth_digest_response() for response calc.
+ * @see docs/SECURITY.md for Digest auth details.
+ * @see https://datatracker.ietf.org/doc/html/rfc7616 for spec.
  */
 extern int httpclient_auth_digest_challenge (
     const char *www_authenticate, const char *username, const char *password,
@@ -504,22 +679,67 @@ extern int httpclient_auth_bearer_header (const char *token, char *output,
                                           size_t output_size);
 
 /**
- * httpclient_auth_is_stale_nonce - Check if WWW-Authenticate contains
- * stale=true
- * @www_authenticate: WWW-Authenticate header value
+ * @brief Check if Digest challenge indicates stale nonce.
+ * @ingroup http
  *
- * Returns: 1 if stale=true present, 0 otherwise
+ * Parses WWW-Authenticate for "stale=true" param.
+ * Allows automatic retry on stale nonce (server-side expiration) vs bad credentials.
  *
- * Used to determine if a 401 response is due to an expired nonce
- * (which should be retried) vs. invalid credentials (which should not).
+ * @param www_authenticate The WWW-Authenticate header string.
+ * @return 1 if stale=true found, 0 otherwise (or parse fail).
+ * @threadsafe Yes - stateless parse.
+ * @see httpclient_auth_digest_challenge() for full auth.
+ * @see docs/SECURITY.md for retry logic.
  */
 extern int httpclient_auth_is_stale_nonce (const char *www_authenticate);
 
 /* Cookie helpers */
+/**
+ * @brief Generate Cookie header value from jar cookies applicable to URI.
+ * @ingroup http
+ *
+ * Queries jar for cookies matching URI domain/path, sorts by path length, selects per domain.
+ * Formats as "name1=value1; name2=value2; ..." string.
+ * Applies SameSite policy if enforce_samesite=1 (skip Lax/Strict for cross-site).
+ * Handles secure/httponly flags implicitly by selection.
+ *
+ * @param jar The cookie jar to query.
+ * @param uri The request URI for domain/path/secure match.
+ * @param output Buffer for the Cookie header value string.
+ * @param output_size Size of output buffer (grow as needed? No, fixed).
+ * @param enforce_samesite 1 to enforce SameSite=Lax/Strict policy, 0 to include all.
+ * @return 0 on success (header written or empty), -1 if buffer too small.
+ * @threadsafe Yes - jar mutex held during query.
+ * @see SocketHTTPClient_CookieJar for jar details.
+ * @see httpclient_parse_set_cookie() for setting cookies.
+ * @see docs/SECURITY.md "Cookies" for policy.
+ * @note Empty string if no cookies; caller adds header only if length >0.
+ */
 extern int httpclient_cookies_for_request (
     SocketHTTPClient_CookieJar_T jar, const SocketHTTP_URI *uri, char *output,
     size_t output_size,
     int enforce_samesite); /* 1 to enforce SameSite cookie policy */
+/**
+ * @brief Parse Set-Cookie header and populate cookie structure.
+ * @ingroup http
+ *
+ * Parses RFC 6265 Set-Cookie string, extracts name=value, attributes (expires, path, domain, secure, httpOnly, SameSite).
+ * Sets defaults from request_uri if not specified (domain/path).
+ * Allocates strings from arena.
+ * Validates dates, domains.
+ *
+ * @param value The Set-Cookie header value string.
+ * @param len Length of value (for non-null term).
+ * @param request_uri URI for default domain/path/secure.
+ * @param cookie Output cookie struct to fill (strings allocated).
+ * @param arena Arena for allocations.
+ * @return 0 on success, -1 on parse error (invalid format, date, etc.).
+ * @threadsafe No - arena not safe, but parse stateless.
+ * @see SocketHTTPClient_Cookie for struct fields.
+ * @see httpclient_cookies_for_request() for using cookies.
+ * @see docs/SECURITY.md "Cookies" for parsing security.
+ * @note Handles quoted values, multiple attrs; strict RFC compliance.
+ */
 extern int httpclient_parse_set_cookie (const char *value, size_t len,
                                         const SocketHTTP_URI *request_uri,
                                         SocketHTTPClient_Cookie *cookie,
@@ -553,15 +773,105 @@ httpclient_host_hash (const char *host, int port, size_t table_size)
 }
 
 /* Retry helpers (from SocketHTTPClient-retry.c) */
+/**
+ * @brief Determine if an HTTP client error is retryable.
+ * @ingroup http
+ *
+ * Checks error type against client config retry policy.
+ * Retryable: transient like DNS fail, connect timeout, server 5xx.
+ * Non-retryable: client errors, TLS cert fail, too large response.
+ *
+ * @param client The client for config (max_retries, retryable_errors).
+ * @param error The error code to check.
+ * @return 1 if retryable (within attempts), 0 otherwise.
+ * @threadsafe Yes.
+ * @see SocketHTTPClient_Error for codes.
+ * @see SocketHTTPClient_Config.max_retries for policy.
+ * @see docs/HTTP-REFACTOR.md for retry logic.
+ */
 extern int httpclient_should_retry_error (const SocketHTTPClient_T client,
                                           SocketHTTPClient_Error error);
+/**
+ * @brief Determine if HTTP status code warrants retry.
+ * @ingroup http
+ *
+ * Typically retry on 5xx server errors, some 4xx like 429 too many requests.
+ * Configurable via client retry policy for specific codes.
+ * Does not retry client errors (4xx except retryable) or success.
+ *
+ * @param client The client for config retry policy.
+ * @param status The HTTP status code received.
+ * @return 1 if retryable, 0 otherwise.
+ * @threadsafe Yes.
+ * @see httpclient_should_retry_error() for error-based retry.
+ * @see SocketHTTPClient_Config.retry_status_codes for custom codes.
+ * @see docs/HTTP-REFACTOR.md for status handling.
+ */
 extern int httpclient_should_retry_status (const SocketHTTPClient_T client,
                                            int status);
+/**
+ * @brief Calculate exponential backoff delay for retry attempt.
+ * @ingroup http
+ *
+ * Uses client retry policy: initial_delay * multiplier^ (attempt-1) + jitter.
+ * Caps at max_delay.
+ * Jitter to avoid thundering herd.
+ *
+ * @param client The client for retry policy config.
+ * @param attempt The current attempt number (1 = first retry).
+ * @return Delay in milliseconds for sleep before next attempt.
+ * @threadsafe Yes.
+ * @see SocketHTTPClient_Config.retry_policy for params.
+ * @see httpclient_retry_sleep_ms() to sleep.
+ * @see docs/HTTP-REFACTOR.md for backoff strategy.
+ */
 extern int httpclient_calculate_retry_delay (const SocketHTTPClient_T client,
                                              int attempt);
+/**
+ * @brief Sleep for the specified milliseconds during retry backoff.
+ * @ingroup http
+ *
+ * Simple nanosleep or select for delay.
+ * Interruptible by signals? Handled per SocketTimeout.
+ * Used in retry loops after delay calc.
+ *
+ * @param ms Milliseconds to sleep.
+ * @throws None - continues on interrupt.
+ * @threadsafe Yes.
+ * @see httpclient_calculate_retry_delay() for delay value.
+ * @see Socket_get_monotonic_ms() for timing.
+ */
 extern void httpclient_retry_sleep_ms (int ms);
 
+/**
+ * @brief Clear HTTP response for retry, preserving useful fields.
+ * @ingroup http
+ *
+ * Resets body buffer, status, headers for new request/response cycle.
+ * Keeps connection info if keep-alive.
+ * Used before retrying same connection.
+ *
+ * @param response The response struct to clear.
+ * @throws None.
+ * @threadsafe Conditional - no locks, caller synchronize.
+ * @see SocketHTTP_Response for fields reset.
+ * @see httpclient_clear_response_for_retry() for client-specific.
+ */
 extern void clear_response_for_retry (SocketHTTP_Response *response);
+/**
+ * @brief Clear client-specific HTTP response for retry.
+ * @ingroup http
+ *
+ * Resets client response fields like body, headers, status, error.
+ * Calls clear_response_for_retry on internal SocketHTTP_Response.
+ * Prepares for new response on same or new connection.
+ *
+ * @param response The client response to clear.
+ * @throws None.
+ * @threadsafe Conditional.
+ * @see clear_response_for_retry() for core response clear.
+ * @see SocketHTTPClient_Response for fields.
+ */
 extern void
 httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
 
