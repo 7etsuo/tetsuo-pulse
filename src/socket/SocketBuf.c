@@ -636,4 +636,252 @@ SocketBuf_written (T buf, size_t len)
   SOCKETBUF_INVARIANTS (buf);
 }
 
+/* ==================== Buffer Management Operations ==================== */
+
+void
+SocketBuf_compact (T buf)
+{
+  VALIDATE_BUF (buf);
+
+  /* Nothing to do if empty or already compacted */
+  if (buf->size == 0 || buf->head == 0)
+    return;
+
+  /* Calculate contiguous bytes from head to end of buffer */
+  size_t first_part = buf->capacity - buf->head;
+
+  if (first_part >= buf->size)
+    {
+      /* No wrap - all data is contiguous, just memmove */
+      memmove (buf->data, buf->data + buf->head, buf->size);
+    }
+  else
+    {
+      /* Data wraps around - need temporary or two-part move */
+      /* Use a simple approach: copy wrapped part first */
+      size_t second_part = buf->size - first_part;
+
+      /* If there's room at the end, shift first part up temporarily */
+      if (first_part <= buf->head)
+        {
+          /* Can move directly: second part fits before first moves */
+          memmove (buf->data + first_part, buf->data, second_part);
+          memmove (buf->data, buf->data + buf->head, first_part);
+        }
+      else
+        {
+          /* Need to be careful - use arena temp buffer */
+          char *temp = Arena_alloc (buf->arena, buf->size, __FILE__, __LINE__);
+          if (temp)
+            {
+              memcpy (temp, buf->data + buf->head, first_part);
+              memcpy (temp + first_part, buf->data, second_part);
+              memcpy (buf->data, temp, buf->size);
+              /* Arena temp will be freed with arena */
+            }
+          else
+            {
+              /* Fall back to byte-by-byte rotation if no memory */
+              for (size_t i = 0; i < buf->size; i++)
+                {
+                  buf->data[i]
+                      = buf->data[(buf->head + i) % buf->capacity];
+                }
+            }
+        }
+    }
+
+  buf->head = 0;
+  buf->tail = buf->size;
+
+  SOCKETBUF_INVARIANTS (buf);
+}
+
+int
+SocketBuf_ensure (T buf, size_t min_space)
+{
+  VALIDATE_BUF (buf);
+
+  /* Check if already have enough space */
+  if (SocketBuf_space (buf) >= min_space)
+    return 1;
+
+  /* Try compacting first - might free up contiguous space */
+  SocketBuf_compact (buf);
+
+  /* Check again after compacting */
+  if (SocketBuf_space (buf) >= min_space)
+    return 1;
+
+  /* Need to resize */
+  TRY { SocketBuf_reserve (buf, min_space); }
+  EXCEPT (SocketBuf_Failed) { return 0; }
+  END_TRY;
+
+  return 1;
+}
+
+/**
+ * get_byte_at_offset - Get byte at offset from head (handles wraparound)
+ * @buf: Buffer to read from
+ * @offset: Offset from head
+ * Returns: Byte value at offset
+ */
+static unsigned char
+get_byte_at_offset (const T buf, size_t offset)
+{
+  return (unsigned char)buf->data[(buf->head + offset) % buf->capacity];
+}
+
+ssize_t
+SocketBuf_find (T buf, const void *needle, size_t needle_len)
+{
+  if (!buf || !SocketBuf_check_invariants (buf))
+    return -1;
+
+  if (needle_len == 0)
+    return 0;
+
+  if (!needle)
+    {
+      SOCKET_ERROR_MSG ("NULL needle with positive length");
+      RAISE_MODULE_ERROR (SocketBuf_Failed);
+      return -1;
+    }
+
+  if (needle_len > buf->size)
+    return -1;
+
+  const unsigned char *pattern = needle;
+  size_t search_limit = buf->size - needle_len + 1;
+
+  /* Simple search - handles circular buffer transparently */
+  for (size_t i = 0; i < search_limit; i++)
+    {
+      int found = 1;
+      for (size_t j = 0; j < needle_len; j++)
+        {
+          if (get_byte_at_offset (buf, i + j) != pattern[j])
+            {
+              found = 0;
+              break;
+            }
+        }
+      if (found)
+        return (ssize_t)i;
+    }
+
+  return -1;
+}
+
+ssize_t
+SocketBuf_readline (T buf, char *line, size_t max_len)
+{
+  VALIDATE_BUF (buf);
+
+  if (!line)
+    {
+      SOCKET_ERROR_MSG ("NULL line buffer");
+      RAISE_MODULE_ERROR (SocketBuf_Failed);
+      return -1;
+    }
+
+  if (max_len == 0)
+    return -1;
+
+  /* Search for newline */
+  ssize_t newline_pos = SocketBuf_find (buf, "\n", 1);
+  if (newline_pos < 0)
+    return -1; /* No complete line yet */
+
+  /* Calculate line length including newline */
+  size_t line_len = (size_t)newline_pos + 1;
+
+  /* Limit to max_len - 1 (reserve space for null) */
+  if (line_len > max_len - 1)
+    line_len = max_len - 1;
+
+  /* Read the line (consumes data) */
+  size_t bytes_read = SocketBuf_read (buf, line, line_len);
+  line[bytes_read] = '\0';
+
+  return (ssize_t)bytes_read;
+}
+
+/* ==================== Scatter-Gather I/O ==================== */
+
+#include <sys/uio.h>
+
+ssize_t
+SocketBuf_readv (T buf, const struct iovec *iov, int iovcnt)
+{
+  VALIDATE_BUF (buf);
+
+  if (iovcnt < 0)
+    return -1;
+
+  if (iovcnt == 0)
+    return 0;
+
+  if (!iov)
+    {
+      SOCKET_ERROR_MSG ("NULL iov with positive iovcnt");
+      RAISE_MODULE_ERROR (SocketBuf_Failed);
+      return -1;
+    }
+
+  size_t total_read = 0;
+
+  for (int i = 0; i < iovcnt && buf->size > 0; i++)
+    {
+      if (iov[i].iov_base == NULL || iov[i].iov_len == 0)
+        continue;
+
+      size_t n = SocketBuf_read (buf, iov[i].iov_base, iov[i].iov_len);
+      total_read += n;
+
+      /* If we read less than requested, buffer is empty */
+      if (n < iov[i].iov_len)
+        break;
+    }
+
+  return (ssize_t)total_read;
+}
+
+ssize_t
+SocketBuf_writev (T buf, const struct iovec *iov, int iovcnt)
+{
+  VALIDATE_BUF (buf);
+
+  if (iovcnt < 0)
+    return -1;
+
+  if (iovcnt == 0)
+    return 0;
+
+  if (!iov)
+    {
+      SOCKET_ERROR_MSG ("NULL iov with positive iovcnt");
+      RAISE_MODULE_ERROR (SocketBuf_Failed);
+      return -1;
+    }
+
+  size_t total_written = 0;
+
+  for (int i = 0; i < iovcnt && SocketBuf_space (buf) > 0; i++)
+    {
+      if (iov[i].iov_base == NULL || iov[i].iov_len == 0)
+        continue;
+
+      size_t n = SocketBuf_write (buf, iov[i].iov_base, iov[i].iov_len);
+      total_written += n;
+
+      /* If we wrote less than requested, buffer is full */
+      if (n < iov[i].iov_len)
+        break;
+    }
+
+  return (ssize_t)total_written;
+}
+
 #undef T

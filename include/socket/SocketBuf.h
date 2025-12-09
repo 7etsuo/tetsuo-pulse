@@ -483,5 +483,209 @@ extern void *SocketBuf_writeptr (T buf, size_t *len);
  */
 extern void SocketBuf_written (T buf, size_t len);
 
+/* ============================================================================
+ * Buffer Management Operations
+ * ============================================================================
+ */
+
+/**
+ * @brief Move data to front of buffer, maximizing contiguous write space.
+ * @ingroup core_io
+ * @param buf The buffer to compact.
+ *
+ * Moves all readable data to the beginning of the buffer (head=0).
+ * This maximizes contiguous write space for zero-copy operations.
+ * Useful before large writes or when writeptr() returns less than space().
+ *
+ * @throws SocketBuf_Failed if buffer is invalid.
+ * @note Performance: O(n) where n = bytes in buffer (memmove).
+ * @note No-op if buffer is empty or already compacted.
+ * @threadsafe No - modifies buffer internals.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * size_t space;
+ * void *ptr = SocketBuf_writeptr(buf, &space);
+ * if (space < needed) {
+ *     SocketBuf_compact(buf);  // Make space contiguous
+ *     ptr = SocketBuf_writeptr(buf, &space);
+ * }
+ * @endcode
+ *
+ * @see SocketBuf_writeptr() for zero-copy writes.
+ * @see SocketBuf_space() to check total available space.
+ */
+extern void SocketBuf_compact (T buf);
+
+/**
+ * @brief Ensure minimum write space is available, resizing if necessary.
+ * @ingroup core_io
+ * @param buf The buffer to ensure space in.
+ * @param min_space Minimum required write space in bytes.
+ * @return 1 if space is available, 0 on failure.
+ *
+ * Combines compact and reserve operations. First attempts to compact
+ * (move data to front), then resizes if still insufficient.
+ *
+ * @throws SocketBuf_Failed if resize fails.
+ * @note Performance: O(n) for compact or resize, O(1) if already sufficient.
+ * @threadsafe No - may modify buffer.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * if (SocketBuf_ensure(buf, 1024)) {
+ *     // Guaranteed at least 1024 bytes of write space
+ *     SocketBuf_write(buf, data, 1024);
+ * }
+ * @endcode
+ *
+ * @see SocketBuf_reserve() for resize without compact.
+ * @see SocketBuf_compact() for compact without resize.
+ * @see SocketBuf_space() to check current space.
+ */
+extern int SocketBuf_ensure (T buf, size_t min_space);
+
+/**
+ * @brief Search for a byte sequence in the buffer.
+ * @ingroup core_io
+ * @param buf The buffer to search.
+ * @param needle Pointer to byte sequence to find.
+ * @param needle_len Length of needle in bytes.
+ * @return Offset from head where needle starts, or -1 if not found.
+ *
+ * Searches the readable portion of the buffer for the needle sequence.
+ * Handles circular buffer wraparound transparently.
+ *
+ * @throws SocketBuf_Failed if buffer invalid or needle NULL with len > 0.
+ * @note Performance: O(n*m) worst case (n=buffer size, m=needle length).
+ * @note Empty needle (len=0) returns 0.
+ * @threadsafe Conditional - safe if buffer not mutated during search.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Find end of HTTP headers
+ * ssize_t pos = SocketBuf_find(buf, "\r\n\r\n", 4);
+ * if (pos >= 0) {
+ *     size_t header_len = pos + 4;
+ *     char headers[8192];
+ *     SocketBuf_read(buf, headers, header_len);
+ * }
+ * @endcode
+ *
+ * @see SocketBuf_readline() for line-oriented reading.
+ * @see SocketBuf_peek() to examine data without searching.
+ */
+extern ssize_t SocketBuf_find (T buf, const void *needle, size_t needle_len);
+
+/**
+ * @brief Read a line (up to and including newline) from the buffer.
+ * @ingroup core_io
+ * @param buf The buffer to read from.
+ * @param line Destination buffer for the line.
+ * @param max_len Maximum bytes to read (including null terminator).
+ * @return Number of bytes read (excluding null), or -1 if no newline found.
+ *
+ * Reads up to and including the first newline ('\n') or until max_len-1.
+ * The output is null-terminated. Handles both LF and CRLF line endings.
+ * Does NOT consume data if no complete line found (returns -1).
+ *
+ * @throws SocketBuf_Failed if buffer invalid or line NULL.
+ * @note Performance: O(n) where n = line length.
+ * @note Returns -1 if no '\n' found in available data.
+ * @threadsafe No - reads and consumes data.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * char line[256];
+ * ssize_t len;
+ * while ((len = SocketBuf_readline(buf, line, sizeof(line))) > 0) {
+ *     printf("Line: %s", line);  // line includes '\n'
+ * }
+ * @endcode
+ *
+ * @see SocketBuf_find() for searching without reading.
+ * @see SocketBuf_read() for length-based reading.
+ */
+extern ssize_t SocketBuf_readline (T buf, char *line, size_t max_len);
+
+/* ============================================================================
+ * Scatter-Gather I/O Operations
+ * ============================================================================
+ */
+
+#include <sys/uio.h>
+
+/**
+ * @brief Scatter read from buffer into multiple iovecs.
+ * @ingroup core_io
+ * @param buf The buffer to read from.
+ * @param iov Array of iovec structures to scatter data into.
+ * @param iovcnt Number of iovec entries.
+ * @return Total bytes read, or -1 on error.
+ *
+ * Reads data from the buffer and scatters it across multiple memory regions.
+ * Consumes data from buffer after successful read. Handles wraparound.
+ *
+ * @throws SocketBuf_Failed if buffer invalid or iov NULL with iovcnt > 0.
+ * @note Performance: O(n) where n = total bytes read.
+ * @note Partial fills possible if buffer has less data than iov capacity.
+ * @threadsafe No - modifies buffer state.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * struct header hdr;
+ * char body[1024];
+ * struct iovec iov[2] = {
+ *     {.iov_base = &hdr, .iov_len = sizeof(hdr)},
+ *     {.iov_base = body, .iov_len = sizeof(body)}
+ * };
+ * ssize_t n = SocketBuf_readv(buf, iov, 2);
+ * @endcode
+ *
+ * @see SocketBuf_writev() for gather write.
+ * @see SocketBuf_read() for single-buffer read.
+ * @see readv(2) system call for analogous operation.
+ */
+extern ssize_t SocketBuf_readv (T buf, const struct iovec *iov, int iovcnt);
+
+/**
+ * @brief Gather write from multiple iovecs into buffer.
+ * @ingroup core_io
+ * @param buf The buffer to write to.
+ * @param iov Array of iovec structures containing data to gather.
+ * @param iovcnt Number of iovec entries.
+ * @return Total bytes written, or -1 on error.
+ *
+ * Gathers data from multiple memory regions and writes into the buffer.
+ * Handles circular buffer wraparound transparently.
+ *
+ * @throws SocketBuf_Failed if buffer invalid or iov NULL with iovcnt > 0.
+ * @note Performance: O(n) where n = total bytes written.
+ * @note Partial writes possible if buffer space insufficient.
+ * @threadsafe No - modifies buffer state.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * struct header hdr = {...};
+ * char body[] = "Hello, World!";
+ * struct iovec iov[2] = {
+ *     {.iov_base = &hdr, .iov_len = sizeof(hdr)},
+ *     {.iov_base = body, .iov_len = strlen(body)}
+ * };
+ * ssize_t n = SocketBuf_writev(buf, iov, 2);
+ * @endcode
+ *
+ * @see SocketBuf_readv() for scatter read.
+ * @see SocketBuf_write() for single-buffer write.
+ * @see writev(2) system call for analogous operation.
+ */
+extern ssize_t SocketBuf_writev (T buf, const struct iovec *iov, int iovcnt);
+
 #undef T
 #endif /* SOCKETBUF_INCLUDED */

@@ -167,14 +167,14 @@
 ## Buffer Enhancements
 
 ### SocketBuf Operations
-- [ ] `SocketBuf_compact(buf)` - Move data to front, maximize contiguous space
-- [ ] `SocketBuf_ensure(buf, min_space)` - Ensure minimum write space
-- [ ] `SocketBuf_find(buf, needle, needle_len)` - Search in buffer
-- [ ] `SocketBuf_readline(buf, line, max_len)` - Read until newline
+- [x] `SocketBuf_compact(buf)` - Move data to front, maximize contiguous space
+- [x] `SocketBuf_ensure(buf, min_space)` - Ensure minimum write space
+- [x] `SocketBuf_find(buf, needle, needle_len)` - Search in buffer
+- [x] `SocketBuf_readline(buf, line, max_len)` - Read until newline
 
 ### Zero-Copy Improvements
-- [ ] `SocketBuf_readv(buf, iov, iovcnt)` - Scatter read from buffer
-- [ ] `SocketBuf_writev(buf, iov, iovcnt)` - Gather write to buffer
+- [x] `SocketBuf_readv(buf, iov, iovcnt)` - Scatter read from buffer
+- [x] `SocketBuf_writev(buf, iov, iovcnt)` - Gather write to buffer
 
 ---
 

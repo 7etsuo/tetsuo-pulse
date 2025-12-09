@@ -744,6 +744,67 @@ printf("Released %zu unused slots\n", released);
 SocketPool_reset_stats(pool);
 ```
 
+### Circular Buffer Operations
+
+```c
+#include "socket/SocketBuf.h"
+
+Arena_T arena = Arena_new();
+SocketBuf_T buf = SocketBuf_new(arena, 4096);
+
+/* Basic read/write */
+SocketBuf_write(buf, "Hello, World!\n", 14);
+printf("Available: %zu bytes\n", SocketBuf_available(buf));
+
+/* Search for patterns (useful for protocol parsing) */
+ssize_t pos = SocketBuf_find(buf, "\n", 1);  /* Find newline */
+if (pos >= 0) {
+    printf("Newline at offset %zd\n", pos);
+}
+
+/* Read line-by-line */
+char line[256];
+ssize_t len;
+while ((len = SocketBuf_readline(buf, line, sizeof(line))) > 0) {
+    printf("Line: %s", line);  /* Includes '\n' */
+}
+
+/* Ensure space for large write */
+if (SocketBuf_ensure(buf, 8192)) {
+    /* Guaranteed 8KB write space */
+    SocketBuf_write(buf, large_data, 8192);
+}
+
+/* Compact buffer for maximum contiguous space */
+SocketBuf_compact(buf);
+size_t contiguous;
+void *ptr = SocketBuf_writeptr(buf, &contiguous);
+/* contiguous now equals SocketBuf_space(buf) */
+
+/* Scatter-gather I/O */
+struct header hdr = {...};
+char body[1024] = "...";
+struct iovec iov[2] = {
+    {.iov_base = &hdr, .iov_len = sizeof(hdr)},
+    {.iov_base = body, .iov_len = strlen(body)}
+};
+SocketBuf_writev(buf, iov, 2);  /* Gather write */
+
+struct header recv_hdr;
+char recv_body[1024];
+struct iovec recv_iov[2] = {
+    {.iov_base = &recv_hdr, .iov_len = sizeof(recv_hdr)},
+    {.iov_base = recv_body, .iov_len = sizeof(recv_body)}
+};
+SocketBuf_readv(buf, recv_iov, 2);  /* Scatter read */
+
+/* Secure clear for sensitive data */
+SocketBuf_secureclear(buf);
+
+SocketBuf_release(&buf);
+Arena_dispose(&arena);
+```
+
 ### SYN Flood Protection
 
 ```c
